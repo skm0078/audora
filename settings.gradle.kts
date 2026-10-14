@@ -31,3 +31,6 @@ include(":core")
 include(":pdf")
 include(":speech")
 include(":playback")
+
+// Spikes: throwaway debug apps that answer one risky question each (docs/TICKET-PLAN.md). Never shipped.
+include(":spikes:playback")
