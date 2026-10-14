@@ -1,0 +1,282 @@
+# Audora — Build Spec v1.0 (LOCKED 2026-10-14)
+
+Oct 14, 2026 · Owner: Swarnakeshar (skm0078) · Supersedes "PDF Voice Reader — Build Spec v0.1" (archived in `docs/archive/`).
+
+> **Status: locked.** All decisions D1–D8 settled 2026-10-14 (`DECISIONS-OPEN.md`). Changes from here go through an ADR in `docs/adr/` and a version bump. Spike results (S1–S3) may revise defaults marked "decided by S1/S2/S3"; that is planned, not a change of scope. **Project rule: no cloud and no paid services; on-device only (local self-hosting at most).** Research behind every change is in `research/notes/` (01 TTS, 02 PDF, 03 playback/platform/distribution).
+
+## 0. What changed from v0.1 and why
+
+| # | Change | Why (evidence) |
+|---|---|---|
+| C1 | Primary PDF extractor: **PdfiumAndroidKt** (`io.legere:pdfiumandroid`) instead of PdfBox-Android | PdfBox-Android's last release is ~Jan 2023 (effectively unmaintained) and is the heaviest on memory. PdfiumAndroidKt is Apache-2.0, released 2026-07, native, 16 KB aligned, already exposes char boxes and font size. Needs a small JNI addition for font name/weight. PdfBox stays only as the S2 comparison. |
+| C2 | New pipeline stages: **Indic visual-to-logical reorder** and **legacy-font converter** (Krutidev, Bijoy/SutonnyMJ) before OCR | Neither PDF engine reorders pre-base matras (ि ি ে ৈ, ো ৌ). Legacy fonts can be converted deterministically from the font name + mapping table, which is faster and more accurate than OCR when it works. |
+| C3 | Bengali neural voice: **official Piper `bn_BD/google/medium`** (CC BY-SA 4.0) replaces the unofficial bn_BD candidate | Released upstream in rhasspy/piper-voices; 16 speakers, covers bn_IN. MMS-ben (non-commercial, 16 kHz) drops to fallback. |
+| C4 | English/Hindi candidates added: **KittenTTS v0.8 nano** (Apache-2.0, ~32 MB) and **Supertonic 3** (Hindi, OpenRAIL-M) | Both are in sherpa-onnx 1.13.x. Kitten may beat Piper on size; Supertonic is the only non-espeak Hindi neural option. S1 decides. |
+| C5 | Playback invariant: **the player must never reach ENDED while text remains** | Media3 releases its wake lock in ENDED/IDLE (checked in source). If synthesis falls behind, the CPU sleeps and reading stops with the screen off. This is the most likely way to fail the Phase 1 gate. See §6. |
+| C6 | Speed via **ExoPlayer `setPlaybackSpeed` (Sonic)**, not re-synthesis | No cache invalidation on speed change; instant response. Engine-native rate only if quality at >2x is bad. |
+| C7 | **Android 17 background-audio hardening**: playback starts only from a user action; FGS stays up while buffering | Android 17 silently mutes audio from apps without a visible activity or non-short FGS. |
+| C8 | **Resume anchor** = page + character offset + sentence fingerprint + pipeline version, not just sentence index | Sentence indices shift every time the Phase 2 pipeline improves; a pure index would resume at the wrong sentence after an update. |
+| C9 | Synthesis runs **only inside the playback service**, never in WorkManager | Android 16 counts jobs running alongside an FGS against JobScheduler quota. WorkManager is for model downloads only. |
+| C10 | **One app, open-source OCR only; no ML Kit** (D2) | espeak-ng makes the APK GPL-3.0; ML Kit is proprietary. User chose one app. OCR = Tesseract + PaddleOCR ONNX models (Apache-2.0) run on the ONNX Runtime already shipped with sherpa-onnx. |
+| C11 | Distribution: plan for **Android developer verification** (global 2027) | Free limited-distribution account covers 20 devices; register package + key before India enforcement. Never declare SMS / accessibility / notification-listener permissions (India Play Protect blocks those for sideloads). |
+| C12 | Phase 0 adds **S0: zero-code listening test** with sherpa-onnx's official TTS-engine APKs | Lets you hear Piper hi, Supertonic hi and two Bengali voices on your own phone today, before any code. |
+| C13 | Platform baseline pinned: targetSdk 36, minSdk 31 (D5), Media3 1.11.1, sherpa-onnx 1.13.8, 16 KB alignment check in CI | Current as of Oct 2026. |
+
+## 1. Summary and feasibility
+
+Audora is buildable as a free, offline-first, sideloaded Android APK. Every requirement (start from any page, choose a voice, play with screen off or in other apps, resume at the exact sentence) is supported by current Android APIs.
+
+Four real limits shape the design:
+
+1. **Voice speed vs. quality.** Kokoro sounds best but is not real time on mid/low phones (RTF ~1.0–3.0). Piper/Kitten are 5–10x faster than real time. Voices are tiered; premium voices render ahead.
+2. **Phone makers killing background apps.** Xiaomi/Oppo/Vivo/Realme can still kill a foreground media service. Mitigation: a correct mediaPlayback FGS, battery-exemption onboarding by brand, crash-safe resume.
+3. **PDF text quality.** "Reading like a human" depends on extraction more than on the voice. Digital English PDFs are good. Indic PDFs need reordering, legacy-font conversion, or OCR.
+4. **Bengali has the weakest offline voices.** The official Piper Bengali voice helps; S0/S1 decide whether it beats Google's system voice.
+
+## 2. Scope
+
+**MVP (Phases 1–2), English only**
+- Open a PDF via the system file picker (SAF); library of recent books.
+- Start from any page, or tap a sentence to start there.
+- Voices: one bundled English neural voice (Piper or Kitten, per S1) + Android system voices.
+- Playback with screen off and in other apps; lock-screen, notification and headset controls.
+- Speed 0.5x–3x, skip sentence back/forward, sleep timer (15/30/60 min, end of page, end of chapter).
+- Exact resume per book, surviving process death and app updates.
+- "Human reading" pipeline for digital PDFs (reading order, header/footer removal, hyphen repair, normalization, pauses).
+
+**v1 (Phases 3–4)**
+- Hindi and Bengali with per-sentence voice selection by Unicode script.
+- Indic reorder, legacy-font conversion, OCR fallback.
+- Premium voices (Kokoro English, Supertonic Hindi), voice manager, render-ahead mode.
+- Sentence highlight on the page.
+- ~~Hosted-AI page cleanup~~: **dropped (D6, no-cloud rule).** A post-v1 on-device experiment only if the deterministic pipeline proves insufficient.
+
+**Non-goals:** any cloud or paid service, iOS, Play Store listing, accounts, analytics/telemetry, EPUB, voice cloning, replacing TalkBack.
+
+## 3. Voice strategy
+
+All neural models run through **sherpa-onnx 1.13.8** (Apache-2.0 runtime). System voices go through `TextToSpeech`.
+
+| Language | Role | Candidate(s) | Engine | Size | License | Decided by |
+|---|---|---|---|---|---|---|
+| English | Default (bundled) | Piper en_US lessac/amy medium **or** KittenTTS v0.8 nano | sherpa VITS / Kitten | ~60 MB / ~32 MB | MIT-ish per card / Apache-2.0 | S1 (RTF + listening) |
+| English | Premium (download) | Kokoro v1.1 int8 (af_heart, bf_emma…) | sherpa Kokoro | ~100–150 MB *(verify)* | Apache-2.0 | S1; offered only if measured RTF < 0.8 |
+| English | Fallback | Android system TTS | `TextToSpeech` | 0 | device | — |
+| Hindi | Default | Google hi-IN system voice **or** Piper hi_IN (rohan / priyamvada / pratham) | system / sherpa VITS | 0 / ~60 MB | device / MIT card, IITM data terms unread | S0 + S1 |
+| Hindi | Premium | Supertonic-3 hi | sherpa Supertonic | ~?? *(verify)* | OpenRAIL-M (use restrictions to read) | S1 |
+| Bengali | Default | Google bn-IN system voice **or** Piper bn_BD google medium | system / sherpa VITS | 0 / 82 MB | device / CC BY-SA 4.0 | S0 + S1 |
+| Bengali | Fallback | MMS-TTS ben | sherpa VITS | ~110–140 MB | CC-BY-NC 4.0 | — |
+| Any | Advanced | Import any sherpa-onnx model folder (`.onnx` + `tokens.txt` [+ espeak data]) | sherpa | — | user's | — |
+
+**Script routing (ADR-005, unchanged).** Each sentence is tagged by Unicode script: Latin → English, Devanagari U+0900–097F → Hindi, Bengali U+0980–09FF → Bengali. Deterministic, instant. v1 splits English runs of ≥3 words inside Indic sentences.
+
+**Attribution.** CC BY-SA and CC-BY-NC voices require an in-app "Voices & licenses" screen.
+
+## 4. Architecture
+
+Native **Kotlin 2.x + Jetpack Compose**, five Gradle modules. Synthesis and playback live inside one foreground media service.
+
+```
+:app (Compose UI, nav, DI)
+  └─ :playback (PlaybackService, TtsDataSource, render queue, progress)
+        ├─ :speech (normalizer, script router, SpeechEngine impls, model manager)
+        ├─ :pdf    (extract → quality → reorder/convert/OCR → layout → cleanup → ReadingUnit)
+        └─ :core   (domain model, Result/errors, logging facade, config objects)
+```
+
+Dependencies flow `app → playback → (speech, pdf) → core`, never the reverse. `:pdf` and `:speech` keep their logic in plain Kotlin classes behind thin Android adapters, so most behavior is JVM-testable.
+
+**Stack (pinned in `libs.versions.toml`):** Kotlin 2.x, Compose (BOM), Media3 **1.11.1** (ExoPlayer + MediaSessionService), sherpa-onnx **1.13.8** AAR (arm64-v8a), **PdfiumAndroidKt 2.0.x** (text + render; Android `PdfRenderer` as display fallback), ICU `BreakIterator` (android.icu), Room, DataStore, WorkManager (downloads only), Hilt (KSP), kotlinx.coroutines. Phase 3: Tesseract4Android 4.9.x + PaddleOCR (PP-OCR) ONNX models via the existing ONNX Runtime, if S2/P3 shows they beat Tesseract. No ML Kit (D2).
+
+**Platform baseline:** compileSdk 36, targetSdk 36 (37 only after testing the while-in-use rule), minSdk 31 (Android 12, D5), AGP ≥ 8.5.1, NDK r28+, `abiFilters arm64-v8a`. Reference device: OnePlus 12 (SD 8 Gen 3, Android 16), edge-to-edge + predictive back supported from day one.
+
+```kotlin
+// File: core/src/main/kotlin/app/audora/core/ReadingUnit.kt
+// Purpose: One speakable sentence with enough position data to resume, highlight and re-anchor.
+data class ReadingUnit(
+    val page: Int,
+    val index: Int,              // sentence index within the page (display only, NOT the resume key)
+    val charStart: Int,          // offset into the page's raw extracted text
+    val charEnd: Int,
+    val text: String,            // normalized, speakable text
+    val lang: Lang,
+    val pauseAfterMs: Int,
+    val bounds: List<RectF>?,    // glyph boxes for highlighting; null for OCR'd/converted text
+)
+
+// File: core/src/main/kotlin/app/audora/core/ResumeAnchor.kt
+// Purpose: Survives pipeline changes: re-anchor by offset first, then by fingerprint.
+data class ResumeAnchor(
+    val bookId: BookId,
+    val page: Int,
+    val charStart: Int,
+    val fingerprint: Long,       // hash of the first ~48 normalized chars of the sentence
+    val pipelineVersion: Int,
+    val voice: VoiceId,
+)
+
+// File: speech/src/main/kotlin/app/audora/speech/SpeechEngine.kt
+// Purpose: Single contract every TTS backend implements; playback never knows which engine it uses.
+interface SpeechEngine {
+    val id: EngineId
+    fun supports(lang: Lang): Boolean
+    fun voices(): List<VoiceInfo>
+    /** Renders one sentence to 16-bit PCM. Cancellable; never on the main thread. Speed is applied by the player. */
+    suspend fun render(text: String, voice: VoiceId): RenderResult   // RenderResult = Pcm(sampleRate, samples) | Failure(reason)
+    fun release()
+}
+```
+
+## 5. PDF → human-like reading pipeline
+
+Runs lazily per page, two pages ahead of playback, cached per book. Each stage is a pure function with tests; `PIPELINE_VERSION` bumps whenever output can change.
+
+1. **Extract** chars with boxes, font size, font name/weight (PdfiumAndroidKt + JNI for `FPDFText_GetFontInfo`/`GetFontWeight`).
+2. **Score quality**: share of chars in expected Unicode blocks, invalid Indic sequences (matra with no base), empty-text ratio, known legacy font names. Route: OK → 3b; legacy font → 3a; garbage/empty → 3c.
+3. **Recover text**
+   - a. **Legacy-font converter**: table-driven Krutidev→Unicode and Bijoy/SutonnyMJ→Unicode, with reph and pre-base i-matra reordering. Unknown glyph rate above threshold → OCR.
+   - b. **Indic reorder**: move visually-ordered pre-base matras (ि ি ে ৈ) after their consonant cluster; compose two-part vowels (ে+া → ো). Validated against golden Indic PDFs.
+   - c. **OCR fallback**: per-script best open engine: PaddleOCR ONNX where it measures better (likely `eng`, `hin`), Tesseract otherwise (`ben` until Paddle Bengali support is confirmed). Page shows a "Scanned / OCR" badge.
+4. **Rebuild layout**: lines by baseline → columns by clustering line starts (XY-cut style; OpenDataLoader-PDF's XY-Cut++ as a reference) → reading order → paragraphs by gap/indent → headings by relative font size/weight.
+5. **Remove clutter**: lines repeating in the top/bottom 8% across ≥3 pages, standalone page numbers, figure/table interiors; citation markers skipped (setting).
+6. **Repair**: de-hyphenate across line breaks (keep real hyphens), expand ligatures, NFC normalize, fold soft hyphens / zero-width chars.
+7. **Split sentences**: ICU `BreakIterator` per locale; `।` as sentence end; per-language abbreviation lists.
+8. **Normalize for speech**: numbers, dates, ₹, %, ranges (incl. Devanagari/Bengali digits), URLs/emails → "link", Roman numerals in headings. Table-driven tests.
+9. **Prosody**: pause after headings (~600 ms), paragraphs (~400 ms), list items.
+
+**Golden corpus.** ~25 PDFs in `code/testdata/pdfs/` **that we are allowed to redistribute** (public-domain books, arXiv papers with permissive licenses, self-generated Hindi/Bengali PDFs incl. one legacy-font file). Copyrighted samples stay in `D:\AUDORA\test-pdfs\` and are only used locally. Each golden PDF has a hand-checked `testdata/expected/*.txt`. Pipeline changes must not lower the similarity score. This is the agent's main self-check.
+
+**AI cleanup: dropped (D6).** Nothing leaves the phone except model downloads.
+
+## 6. Playback and background audio
+
+**Design: a synthesis-backed DataSource inside a Media3 `MediaSessionService`.**
+
+- Each playlist item is a `MediaItem` with a URI like `audora://book/<id>/page/<p>/unit/<i>` (optionally grouping 2–5 sentences per item; S3 measures whether grouping is needed).
+- A custom **`TtsDataSource`** resolves the URI by asking the render queue for that unit's PCM and serves it as WAV bytes. **If the audio is not ready, `read()` blocks**, so the player sits in **BUFFERING**, not ENDED. Media3 keeps the wake lock and the FGS in BUFFERING, so synthesis continues with the screen off. *(C5)*
+- A **render-ahead queue** (coroutine in the service) prefetches N units ahead (3 for fast voices, measured-RTF-based for Kokoro) into a bounded cache (~20 MB, LRU, `cacheDir/tts/`).
+- The playlist always holds at least the next page of items, appended as pages are extracted; the last item of a book is the only legitimate ENDED.
+- Seek / voice change: cancel the queue from the current point and rebuild. Speed change: `player.setPlaybackParameters` only *(C6)*.
+- Try Media3's experimental `enablePerStreamMediaProgression()` to remove inter-item gaps on short clips (S3).
+- Belt and braces: hold our own `PARTIAL_WAKE_LOCK` while the render queue is non-empty and playWhenReady is true. S3 decides whether this is needed.
+
+**Staying alive with the screen off**
+- Manifest: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, service `foregroundServiceType="mediaPlayback"`, `MediaButtonReceiver`, `<queries>` for `TTS_SERVICE`. **Never** SMS, accessibility, or notification-listener permissions.
+- Playback starts only from a user action (UI, notification, media button) so Android 17 doesn't mute it *(C7)*. No auto-start on boot.
+- `POST_NOTIFICATIONS` requested on first play (Android 13+).
+- First-launch onboarding by `Build.MANUFACTURER`: battery-exemption deep link (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`) + brand steps, **OnePlus/OxygenOS first** (OnePlus: battery Don't optimize + allow background activity; Xiaomi autostart + No restrictions; Samsung Never sleeping apps; Oppo/Realme/Vivo allow background activity).
+- Playback resumption opt-in: `onPlaybackResumption()` rebuilds the playlist from the last `ResumeAnchor`.
+
+**State.** On each unit start, persist `ResumeAnchor` to Room (debounced, ≤1 write per 2 s, plus on pause/stop). On reopen: same `pipelineVersion` → exact; different → find the unit containing `charStart`, verify fingerprint, else nearest fingerprint match on that page *(C8)*.
+
+## 7. Build, signing and distribution
+
+- **Repo (D1)**: public GitHub `skm0078/audora`, GPL-3.0. `D:\AUDORA\code` is its working copy. `docs/` moves into the repo at P0-01.
+- **CI** (`.github/workflows/android.yml`, `actions/setup-java@v6`, `gradle/actions/setup-gradle@v6`, Temurin 21): every push/PR runs `ktlintCheck detekt test assembleDebug` + a **16 KB alignment check** on all `.so` files, uploads the debug APK. Tag `v*` → signed `assembleRelease` → GitHub Release (`softprops/action-gh-release`), APK named `audora-vX.Y.Z-arm64.apk` for Obtainium.
+- **Signing**: keystore generated once, kept in `D:\AUDORA\signing\` + two offline backups; CI gets it via secrets `KEYSTORE_B64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
+- **Size**: arm64-v8a + one bundled English voice ≈ 50–80 MB. Other voices download from GitHub Releases / Hugging Face, pinned by SHA-256 in `models.json`.
+- **Friends**: GitHub Releases + Obtainium. Expect a Play Protect prompt. Before India enforcement of developer verification (assume 2027), register the package name + signing key under a free **limited distribution** account (≤20 devices).
+- **License**: GPL-3.0 (espeak-ng). Every bundled component must be GPL-compatible open source; no proprietary SDKs (D2).
+
+## 8. Execution plan
+
+See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended first ticket.
+
+**Session rules (unchanged from v0.1, tightened):**
+1. Plan mode first; paste the ticket ID + done-when; approve before edits.
+2. Tests first for `:pdf` and `:speech`.
+3. Finish with `./gradlew ktlintCheck detekt test`; CI green before merge.
+4. One branch per ticket (`feat/P1-04-playback-service`), small PRs, reviewer subagent pass.
+5. Update `docs/PROGRESS.md`; add/modify an ADR in `docs/adr/` if a decision changed.
+6. Every PR lists what needs a real-device check.
+
+**Phase 1 gate:** a 50-page English PDF plays for 60 minutes with the screen off on your phone with no stop; lock-screen controls work; resume after force-stop is exact; Android 17 hardening test (`adb shell cmd audio set-enable-hardening throw`) passes if your phone runs 17.
+
+## 9. Risks and mitigations
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| Render queue drains → player ENDED → wake lock released → silent stop | **High without C5** | Fails Phase 1 gate | Blocking `TtsDataSource`; own wake lock as backup; S3 proves it |
+| OEM kills the FGS | Medium (Xiaomi, Oppo, Vivo) | Reading stops | Proper FGS, brand onboarding, unfinished-session detection, log process deaths |
+| Android 17 mutes background audio | Medium | Silent playback | Start only from user action; FGS through buffering; hardening test in gate |
+| Indic text in visual order / legacy fonts | High for older Hindi/Bengali PDFs | Garbled audio | Reorder pass, legacy converter, OCR fallback, "OCR" badge |
+| Kokoro too slow | High on mid/low phones | Stalls | Offer only when measured RTF < 0.8; Piper/Kitten default |
+| Open-source OCR weaker than ML Kit on Hindi | Medium | Some scanned pages read poorly | PaddleOCR ONNX vs Tesseract measured per script; legacy-font converter cuts OCR use |
+| PdfiumAndroidKt lacks font-name API | Certain | No heading/legacy detection | Small JNI patch or fork; PdfBox comparison in S2 |
+| Developer verification reaches India | Likely 2027 | Friends can't install unverified APK easily | Limited distribution account; keep keystore safe |
+| System voice pack missing (hi-IN/bn-IN) | Medium | Wrong/robotic voice | `isLanguageAvailable` + `KEY_FEATURE_NOT_INSTALLED` check; deep link to TTS settings |
+| Model host changes / corrupt download | Low | Voice fails | SHA-256 pin, bundled fallback, mirror to own Release |
+| Large PDFs (500+ pages) | Medium | OOM | Page-at-a-time extraction, bounded caches |
+| Keystore lost | Low | Friends must reinstall; verification registration lost | Two offline backups |
+
+## 10. Testing, diagnostics, maintainability
+
+| Layer | What | Where |
+|---|---|---|
+| Unit | Normalizers, splitter, script router, reorder, legacy converter, header/footer detector, quality scorer, queue logic, resume re-anchoring | Agent + CI |
+| Golden | Full `:pdf` pipeline vs expected scripts; score must not drop | Agent + CI |
+| Integration | Room migrations, model manager (fake downloads), `TtsDataSource` with a fake engine (blocking/ready/failed) | CI |
+| Instrumented | Service starts, notification appears, media buttons | CI emulator (optional) |
+| Manual device | 60-min screen-off run, app switching, phone call, Bluetooth headset, force-stop resume, Android 17 hardening | You + 1–2 friends' phones per release |
+
+**Diagnostics without telemetry:** rolling log (2 MB × 3), Settings → Share logs. Every failure is visible and specific ("Page 14 looks scanned — using OCR") plus a log line with book, page, engine, voice. No `!!` outside tests. ktlint + detekt in CI. Dependencies pinned; reviewed monthly.
+
+## 11. Decision log (ADRs)
+
+| ADR | Decision | Status |
+|---|---|---|
+| 001 | Native Kotlin + Compose | Accepted (v0.1) |
+| 002 | sherpa-onnx as the single neural runtime | Accepted |
+| 003 | **Revised:** ExoPlayer playlist fed by a blocking synthesis-backed `TtsDataSource` (was: WAV files appended) | Accepted (v1.0); S3 verifies |
+| 004 | On-device only; no cloud, no paid services; AI cleanup dropped | Accepted (D6) |
+| 005 | Script-based language routing | Accepted |
+| 006 | GitHub Releases + Obtainium; limited-distribution verification before 2027 | Accepted (v1.0) |
+| 007 | GPL-3.0 public repo; one APK; only GPL-compatible open-source components (no ML Kit) | Accepted (D1, D2) |
+| 008 | PdfiumAndroidKt as primary extractor (+ font-info JNI) | Accepted (v1.0); S2 verifies |
+| 009 | Resume by char-offset anchor + fingerprint + pipeline version | Accepted (v1.0) |
+
+## 12. AGENTS.md (to place at repo root in P0-01)
+
+```markdown
+# Audora — AGENTS.md
+
+## What this is
+Offline-first Android app that reads PDFs aloud like a human (English, Hindi, Bengali) with background playback. Personal use + friends, sideloaded APK.
+Spec: docs/BUILD-SPEC.md · Tickets: docs/TICKET-PLAN.md · Progress: docs/PROGRESS.md · Decisions: docs/adr/
+
+## Stack (change only via an ADR)
+Kotlin 2.x, Compose, Hilt, Media3 1.11.x (ExoPlayer + MediaSessionService), sherpa-onnx 1.13.x (arm64-v8a), PdfiumAndroidKt, ICU BreakIterator, Room, DataStore, WorkManager (downloads only). Phase 3: Tesseract4Android, PaddleOCR ONNX. No proprietary SDKs (GPL-3.0).
+
+## Modules and rules
+- :core — domain model, Result/error types, config objects. No Android UI imports.
+- :pdf — extract → quality → recover → layout → cleanup → ReadingUnit. Pure logic in plain Kotlin; Android adapters thin.
+- :speech — normalization, script routing, SpeechEngine implementations, model manager.
+- :playback — PlaybackService, TtsDataSource, render queue, progress. Synthesis runs HERE only.
+- :app — Compose UI only; no business logic in composables.
+Dependencies: app → playback → (speech, pdf) → core. Never the reverse.
+
+## Invariants
+- The player never reaches ENDED while text remains (TtsDataSource blocks instead).
+- Playback starts only from a user action. No boot auto-start.
+- Resume uses ResumeAnchor (page + charStart + fingerprint + pipelineVersion). Bump PIPELINE_VERSION when :pdf output can change.
+- Never declare SMS, accessibility, or notification-listener permissions.
+
+## Commands
+- Fast check: ./gradlew ktlintCheck detekt test
+- Golden quality: ./gradlew :pdf:goldenTest (writes docs/QUALITY.md)
+- Debug APK: ./gradlew assembleDebug (CI builds signed release on tag v*)
+
+## Conventions
+- File header comment: path + one-line purpose.
+- Errors: typed Result; never swallow; log with context (book, page, engine, voice).
+- No magic numbers: tunables in config objects (LayoutConfig, QueueConfig, QualityConfig).
+- Tests first for :pdf and :speech; table-driven tests for normalizers.
+- No new dependency without asking. No network except model downloads. No cloud or paid services, ever.
+- Never commit keystores, secrets, model binaries, or PDFs we can't redistribute.
+
+## Definition of done
+1. Ticket's done-when met. 2. ktlintCheck detekt test green. 3. Golden score not lower (if :pdf touched). 4. PROGRESS.md updated; ADR if a decision changed. 5. Real-device checks listed in the PR.
+```
+
+## 13. Sources
+See `research/notes/01-offline-tts.md`, `02-pdf-extraction.md`, `03-playback-platform-distribution.md` (each with links), plus the v0.1 sources.

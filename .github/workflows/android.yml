@@ -1,0 +1,116 @@
+# File: .github/workflows/android.yml
+# Purpose: On every push and PR: style, static analysis, unit tests, debug APK, 16 KB alignment check.
+#          The debug APK is uploaded as a downloadable artifact (Build Spec §7).
+# Signed release builds on tags arrive with P0-02.
+
+name: Android CI
+
+# Every branch push runs CI, so a PR from a branch in this repo shows the result without a second run.
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Check, test, assemble
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      apk-name: ${{ steps.apk.outputs.name }}
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          # Open-source (MIT) cache provider; the default "enhanced" provider is proprietary.
+          cache-provider: basic
+          # Only the long-lived branches write the cache; feature branches read it.
+          cache-read-only: ${{ github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/prod' }}
+
+      - name: Test the 16 KB checker itself
+        run: python3 -m unittest discover -s scripts/tests -v
+
+      - name: ktlint, detekt, unit tests, debug APK
+        run: ./gradlew ktlintCheck detekt test assembleDebug --stacktrace
+
+      - name: 16 KB alignment check
+        run: python3 scripts/check_16kb_alignment.py app/build/outputs/apk/debug/*.apk
+
+      - name: Name the debug APK
+        id: apk
+        run: |
+          short_sha="${GITHUB_SHA::7}"
+          name="audora-debug-${short_sha}"
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/*.apk "dist/${name}.apk"
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ steps.apk.outputs.name }}
+          path: dist/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: reports-${{ github.run_id }}
+          path: |
+            build/reports/
+            */build/reports/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # Rolling "dev build" pre-release: a fixed download link that opens on a phone without a GitHub login.
+  # Runs only for the dev branch, in its own job so only this job gets write access.
+  publish-dev-build:
+    name: Publish dev build
+    needs: build
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    concurrency:
+      group: publish-dev-build
+      cancel-in-progress: false
+
+    steps:
+      - name: Download debug APK
+        uses: actions/download-artifact@v5
+        with:
+          name: ${{ needs.build.outputs.apk-name }}
+          path: dist
+
+      - name: Replace the dev-build pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: dev-build
+        run: |
+          cp dist/*.apk audora-dev.apk
+          gh release delete "$TAG" --cleanup-tag --yes || echo "No previous $TAG release"
+          gh release create "$TAG" audora-dev.apk \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Dev build (${GITHUB_SHA::7})" \
+            --notes "Latest debug build of the dev branch, commit ${GITHUB_SHA}. For testing only; not signed for release."
