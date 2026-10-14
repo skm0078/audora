@@ -1,0 +1,866 @@
+[
+ {
+  "file": "/tmp/s2/real/bengali/bn-gov-bd-cabinet-apa-nikosh.pdf",
+  "pages": 99,
+  "mb": 2.2,
+  "open_ms": 3.8,
+  "ms_page_median": 3.81,
+  "routes": {
+   "REORDER": 8,
+   "OK": 40,
+   "OCR": 2
+  },
+  "why": {
+   "invalid signs": 8,
+   "no text": 2
+  },
+  "script": {
+   "beng": 0.94,
+   "latin": 0.04
+  },
+  "fonts": [
+   "NikoshBAN",
+   "Nikosh",
+   "Nikosh",
+   "NikoshBAN"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/bengali/bn-magazine-gramoday-sankalp-noto.pdf",
+  "pages": 52,
+  "mb": 3.1,
+  "open_ms": 0.3,
+  "ms_page_median": 5.08,
+  "routes": {
+   "OK": 51,
+   "LEGACY": 1
+  },
+  "why": {
+   "legacy font": 1
+  },
+  "script": {
+   "beng": 0.98,
+   "latin": 0.02
+  },
+  "fonts": [
+   "NotoSansBengali-Regular",
+   "NotoSansBengali-Bold",
+   "Cambria",
+   "NotoSansBengali-Medium"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/bengali/bn-us-fda-factsheet-vrinda-pd.pdf",
+  "pages": 8,
+  "mb": 0.3,
+  "open_ms": 0.4,
+  "ms_page_median": 2.5,
+  "routes": {
+   "OK": 2,
+   "REORDER": 6
+  },
+  "why": {
+   "invalid signs": 6
+  },
+  "script": {
+   "beng": 0.81,
+   "latin": 0.19
+  },
+  "fonts": [
+   "Vrinda",
+   "Vrinda,Bold",
+   "NirmalaUI",
+   "Vrinda"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/bengali/bn-us-hud-fairlending-guide-pd.pdf",
+  "pages": 66,
+  "mb": 6.4,
+  "open_ms": 0.4,
+  "ms_page_median": 0.96,
+  "routes": {
+   "REORDER": 49,
+   "OK": 17
+  },
+  "why": {
+   "invalid signs": 49
+  },
+  "script": {
+   "beng": 0.52,
+   "latin": 0.48
+  },
+  "fonts": [
+   "Bangla",
+   "Helvetica",
+   "Bangla",
+   "ArialMT"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/bengali/bn-wb-govt-agri-manual-printtopdf.pdf",
+  "pages": 15,
+  "mb": 1.2,
+  "open_ms": 0.2,
+  "ms_page_median": 1.6,
+  "routes": {
+   "OCR": 15
+  },
+  "why": {
+   "unicode map": 15
+  },
+  "script": {
+   "latin": 0.09,
+   "beng": 0.78,
+   "other": 0.13
+  },
+  "fonts": [
+   "F7",
+   "F4",
+   "F5",
+   "F8"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/english/en-2col-arxiv-ligo-gw150914.pdf",
+  "pages": 16,
+  "mb": 0.9,
+  "open_ms": 0.3,
+  "ms_page_median": 2.33,
+  "routes": {
+   "OK": 16
+  },
+  "why": {},
+  "script": {
+   "latin": 1.0,
+   "other": 0.0
+  },
+  "fonts": [
+   "AdvOT483a8203",
+   "AdvOTb748f40a.I",
+   "AdvOT19ee2aa8.B",
+   "AdvTTbdb21c9e"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/english/en-2col-arxiv-tracemonkey-pdfjs.pdf",
+  "pages": 14,
+  "mb": 1.0,
+  "open_ms": 0.4,
+  "ms_page_median": 2.52,
+  "routes": {
+   "OK": 14
+  },
+  "why": {},
+  "script": {
+   "latin": 1.0,
+   "other": 0.0
+  },
+  "fonts": [
+   "NimbusRomNo9L-Regu",
+   "CMTT9",
+   "Calibri",
+   "NimbusRomNo9L-Medi"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/english/en-2col-physimaging-radonc-ccby.pdf",
+  "pages": 6,
+  "mb": 1.9,
+  "open_ms": 0.4,
+  "ms_page_median": 3.9,
+  "routes": {
+   "OK": 6
+  },
+  "why": {},
+  "script": {
+   "latin": 1.0,
+   "other": 0.0
+  },
+  "fonts": [
+   "CharisSIL",
+   "CharisSIL-Italic",
+   "CharisSIL",
+   "CharisSIL-Italic"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/english/en-math-arxiv-attention.pdf",
+  "pages": 15,
+  "mb": 2.1,
+  "open_ms": 0.6,
+  "ms_page_median": 1.43,
+  "routes": {
+   "OK": 15
+  },
+  "why": {},
+  "script": {
+   "latin": 1.0,
+   "other": 0.0
+  },
+  "fonts": [
+   "NimbusRomNo9L-Regu",
+   "NimbusRomNo9L-ReguItal",
+   "ArialMT",
+   "NimbusRomNo9L-Medi"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/english/en-math-jmathbiol-integrodifference-ccby.pdf",
+  "pages": 50,
+  "mb": 2.5,
+  "open_ms": 1.4,
+  "ms_page_median": 1.46,
+  "routes": {
+   "OK": 49,
+   "OCR": 1
+  },
+  "why": {
+   "unicode map": 1
+  },
+  "script": {
+   "latin": 1.0,
+   "other": 0.0
+  },
+  "fonts": [
+   "Times-Roman",
+   "Times-Italic",
+   "MyriadPro-SemiCn",
+   "MTMI"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/english/en-novel-pd-moby-dick-gitenberg.pdf",
+  "pages": 424,
+  "mb": 1.6,
+  "open_ms": 0.6,
+  "ms_page_median": 4.06,
+  "routes": {
+   "OK": 43
+  },
+  "why": {},
+  "script": {
+   "latin": 1.0
+  },
+  "fonts": [
+   "LiberationSerif",
+   "LiberationSerif-Bold",
+   "LiberationMono",
+   "LiberationSerif-Italic"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/english/en-textbook-forallx-yyc-logic.pdf",
+  "pages": 437,
+  "mb": 1.5,
+  "open_ms": 0.7,
+  "ms_page_median": 0.77,
+  "routes": {
+   "OK": 41,
+   "OCR": 3
+  },
+  "why": {
+   "no text": 3
+  },
+  "script": {
+   "latin": 1.0,
+   "other": 0.0
+  },
+  "fonts": [
+   "Baskervaldx-Reg",
+   "Baskervaldx-Ita",
+   "txsys",
+   "NimbusSanL-Regu"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/hindi/hi-en-gazette-cerc-regulation-2021.pdf",
+  "pages": 76,
+  "mb": 3.1,
+  "open_ms": 0.5,
+  "ms_page_median": 2.38,
+  "routes": {
+   "OK": 46,
+   "REORDER": 15,
+   "LEGACY": 15
+  },
+  "why": {
+   "invalid signs": 15,
+   "legacy font": 15
+  },
+  "script": {
+   "latin": 0.43,
+   "deva": 0.57
+  },
+  "fonts": [
+   "Times New Roman",
+   "Arial Unicode MS",
+   "Times New Roman,Bold",
+   "Arial Unicode MS"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/hindi/hi-govreport-jalshakti-annual-2019-20.pdf",
+  "pages": 144,
+  "mb": 8.4,
+  "open_ms": 1.9,
+  "ms_page_median": 2.11,
+  "routes": {
+   "LEGACY": 1,
+   "OK": 4,
+   "REORDER": 41,
+   "OCR": 2
+  },
+  "why": {
+   "legacy font": 1,
+   "invalid signs": 41,
+   "no text": 2
+  },
+  "script": {
+   "latin": 0.03,
+   "deva": 0.93
+  },
+  "fonts": [
+   "Mangal-Regular",
+   "Calibri",
+   "ArialMT",
+   "Arial-BoldMT"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/hindi/hi-ncert-preschool-curriculum.pdf",
+  "pages": 104,
+  "mb": 19.7,
+  "open_ms": 0.6,
+  "ms_page_median": 3.28,
+  "routes": {
+   "REORDER": 44,
+   "OK": 8
+  },
+  "why": {
+   "invalid signs": 44
+  },
+  "script": {
+   "deva": 0.96,
+   "latin": 0.04
+  },
+  "fonts": [
+   "Kokila",
+   "Kokila",
+   "Kokila-Bold",
+   "Helvetica"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/hindi/hi-us-hud-factsheet-pd.pdf",
+  "pages": 4,
+  "mb": 1.6,
+  "open_ms": 0.3,
+  "ms_page_median": 3.04,
+  "routes": {
+   "REORDER": 4
+  },
+  "why": {
+   "invalid signs": 4
+  },
+  "script": {
+   "deva": 0.9,
+   "latin": 0.1
+  },
+  "fonts": [
+   "NirmalaUI",
+   "NirmalaUI-Bold",
+   "OpenSans-Bold",
+   "LucidaSansUnicode"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/legacy-fonts/bn-legacy-sutonnymj-college-result-table.pdf",
+  "pages": 3,
+  "mb": 0.4,
+  "open_ms": 0.3,
+  "ms_page_median": 1.85,
+  "routes": {
+   "LEGACY": 3
+  },
+  "why": {
+   "legacy font": 3
+  },
+  "script": {
+   "latin": 1.0
+  },
+  "fonts": [
+   "SutonnyMJ",
+   "SutonnyMJ",
+   "SutonnyMJ,BoldItalic",
+   "Nirmala UI,Bold"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/legacy-fonts/bn-legacy-sutonnymj-dmpi-integrity-plan.pdf",
+  "pages": 3,
+  "mb": 0.1,
+  "open_ms": 0.4,
+  "ms_page_median": 3.26,
+  "routes": {
+   "LEGACY": 3
+  },
+  "why": {
+   "legacy font": 3
+  },
+  "script": {
+   "latin": 1.0,
+   "other": 0.0
+  },
+  "fonts": [
+   "SutonnyMJ-Bold",
+   "SutonnyMJ-Bold",
+   "SutonnyMJ",
+   "SutonnyMJ"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/legacy-fonts/bn-legacy-sutonnymj-mixed-scan-notice.pdf",
+  "pages": 42,
+  "mb": 5.4,
+  "open_ms": 0.3,
+  "ms_page_median": 3.09,
+  "routes": {
+   "OK": 9,
+   "LEGACY": 24,
+   "REORDER": 9
+  },
+  "why": {
+   "legacy font": 24,
+   "invalid signs": 9
+  },
+  "script": {
+   "latin": 0.57,
+   "beng": 0.43,
+   "other": 0.0
+  },
+  "fonts": [
+   "NikoshBAN",
+   "SutonnyMJ",
+   "Helvetica",
+   "SutonnyMJ"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/legacy-fonts/hi-legacy-chanakya-devlys-raj-sanskrit-paper.pdf",
+  "pages": 6,
+  "mb": 0.2,
+  "open_ms": 0.2,
+  "ms_page_median": 1.89,
+  "routes": {
+   "LEGACY": 6
+  },
+  "why": {
+   "legacy font": 6
+  },
+  "script": {
+   "latin": 1.0
+  },
+  "fonts": [
+   "DevLys010",
+   "TimesNewRoman",
+   "TimesNewRoman,Bold",
+   "Cambria,Bold"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/legacy-fonts/hi-legacy-chanakya-gazette-cerc-574p.pdf",
+  "pages": 574,
+  "mb": 5.6,
+  "open_ms": 1.1,
+  "ms_page_median": 1.92,
+  "routes": {
+   "LEGACY": 41
+  },
+  "why": {
+   "legacy font": 41
+  },
+  "script": {
+   "latin": 0.68,
+   "deva": 0.32
+  },
+  "fonts": [
+   "Times-Roman",
+   "Times-Bold",
+   "Devnagari-ChanakyaNormalA",
+   "TT1D7t00"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/legacy-fonts/hi-legacy-chanakyauni-tadbhav-magazine.pdf",
+  "pages": 313,
+  "mb": 3.5,
+  "open_ms": 2.1,
+  "ms_page_median": 3.38,
+  "routes": {
+   "OK": 1,
+   "LEGACY": 44
+  },
+  "why": {
+   "legacy font": 44
+  },
+  "script": {
+   "latin": 0.03,
+   "deva": 0.97
+  },
+  "fonts": [
+   "ChanakyaUni",
+   "ChanakyaUni-Italic",
+   "ChanakyaUni-Bold",
+   "Shiva-Medium"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/legacy-fonts/hi-legacy-devlys-bihar-cm-press.pdf",
+  "pages": 2,
+  "mb": 0.2,
+  "open_ms": 0.3,
+  "ms_page_median": 1.95,
+  "routes": {
+   "LEGACY": 2
+  },
+  "why": {
+   "legacy font": 2
+  },
+  "script": {
+   "latin": 1.0
+  },
+  "fonts": [
+   "DevLys 010",
+   "DevLys 010",
+   "Times New Roman,Bold",
+   "Symbol"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/legacy-fonts/hi-legacy-krutidev-cg-govt-diary-160p.pdf",
+  "pages": 160,
+  "mb": 41.2,
+  "open_ms": 0.7,
+  "ms_page_median": 7.36,
+  "routes": {
+   "OK": 1,
+   "LEGACY": 39
+  },
+  "why": {
+   "legacy font": 39
+  },
+  "script": {
+   "latin": 1.0
+  },
+  "fonts": [
+   "KrutiDev010",
+   "MINNO-GOPI-01",
+   "TimesNewRomanPSMT",
+   "ArialMT"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/legacy-fonts/hi-legacy-krutidev-kundli-up-salarylist.pdf",
+  "pages": 38,
+  "mb": 0.4,
+  "open_ms": 0.2,
+  "ms_page_median": 2.11,
+  "routes": {
+   "LEGACY": 38
+  },
+  "why": {
+   "legacy font": 38
+  },
+  "script": {
+   "latin": 1.0
+  },
+  "fonts": [
+   "KrutiDev010",
+   "Helvetica",
+   "Calibri",
+   "Kundli"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/legacy-fonts/hi-legacy-krutidev010-up-pressrelease.pdf",
+  "pages": 6,
+  "mb": 0.2,
+  "open_ms": 0.3,
+  "ms_page_median": 1.34,
+  "routes": {
+   "LEGACY": 4,
+   "OK": 2
+  },
+  "why": {
+   "legacy font": 4
+  },
+  "script": {
+   "latin": 1.0
+  },
+  "fonts": [
+   "TimesNewRomanPSMT",
+   "KrutiDev010",
+   "TimesNewRomanPS-BoldMT",
+   "ArialMT"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/long/en-long-pgfmanual-3.1.11a.pdf",
+  "pages": 1323,
+  "mb": 9.0,
+  "open_ms": 9.2,
+  "ms_page_median": 2.4,
+  "routes": {
+   "OK": 39,
+   "OCR": 2
+  },
+  "why": {
+   "unicode map": 2
+  },
+  "script": {
+   "latin": 1.0,
+   "other": 0.0
+  },
+  "fonts": [
+   "LMRoman10-Regular",
+   "LMMono8-Regular",
+   "LMMono10-Regular",
+   "LMMono10-Italic"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/long/en-long-progit2-book.pdf",
+  "pages": 501,
+  "mb": 17.9,
+  "open_ms": 0.6,
+  "ms_page_median": 0.9,
+  "routes": {
+   "OCR": 1,
+   "OK": 41
+  },
+  "why": {
+   "no text": 1
+  },
+  "script": {
+   "latin": 0.98,
+   "other": 0.0
+  },
+  "fonts": [
+   "NotoSerif",
+   "mplus1mn-regular",
+   "NotoSerif-Bold",
+   "NotoSerif-Italic"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/scanned/bn-scan-gov-bd-cevdsc-notice.pdf",
+  "pages": 5,
+  "mb": 1.7,
+  "open_ms": 0.3,
+  "ms_page_median": 0.13,
+  "routes": {
+   "OCR": 5
+  },
+  "why": {
+   "no text": 5
+  },
+  "script": {},
+  "fonts": []
+ },
+ {
+  "file": "/tmp/s2/real/scanned/en-scan-1867-chicmedexam-imageonly.pdf",
+  "pages": 4,
+  "mb": 0.7,
+  "open_ms": 0.2,
+  "ms_page_median": 0.09,
+  "routes": {
+   "OCR": 4
+  },
+  "why": {
+   "no text": 4
+  },
+  "script": {},
+  "fonts": []
+ },
+ {
+  "file": "/tmp/s2/real/scanned/en-scan-1867-chicmedexam-ocrlayer.pdf",
+  "pages": 11,
+  "mb": 4.9,
+  "open_ms": 0.5,
+  "ms_page_median": 2.65,
+  "routes": {
+   "OK": 11
+  },
+  "why": {},
+  "script": {
+   "latin": 1.0
+  },
+  "fonts": [
+   "TimesNewRomanPSMT",
+   "TimesNewRomanPS-ItalicMT",
+   "ArialMT"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/scanned/hi-scan-mp-governor-rti-bad-ocr.pdf",
+  "pages": 59,
+  "mb": 14.8,
+  "open_ms": 0.7,
+  "ms_page_median": 0.67,
+  "routes": {
+   "OK": 59
+  },
+  "why": {},
+  "script": {
+   "latin": 1.0
+  },
+  "fonts": [
+   "Helvetica"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/scanned/hi-scan-raj-landrevenue-table-ccitt.pdf",
+  "pages": 4,
+  "mb": 0.2,
+  "open_ms": 0.3,
+  "ms_page_median": 0.04,
+  "routes": {
+   "OCR": 4
+  },
+  "why": {
+   "no text": 4
+  },
+  "script": {},
+  "fonts": []
+ },
+ {
+  "file": "/tmp/s2/real/scanned/hi-scan-up-revenue-board-letter.pdf",
+  "pages": 10,
+  "mb": 7.2,
+  "open_ms": 0.2,
+  "ms_page_median": 0.16,
+  "routes": {
+   "OCR": 10
+  },
+  "why": {
+   "no text": 10
+  },
+  "script": {},
+  "fonts": []
+ },
+ {
+  "file": "/tmp/s2/real/tricky/bn-rotated-pages-90-180-270-fda.pdf",
+  "pages": 8,
+  "mb": 0.4,
+  "open_ms": 0.3,
+  "ms_page_median": 2.7,
+  "routes": {
+   "OK": 2,
+   "REORDER": 6
+  },
+  "why": {
+   "invalid signs": 6
+  },
+  "script": {
+   "beng": 0.81,
+   "latin": 0.19
+  },
+  "fonts": [
+   "Vrinda",
+   "Vrinda,Bold",
+   "NirmalaUI",
+   "Vrinda"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/tricky/hi-broken-tounicode-planning-commission-ssa.pdf",
+  "pages": 176,
+  "mb": 5.8,
+  "open_ms": 2.5,
+  "ms_page_median": 2.12,
+  "routes": {
+   "REORDER": 41,
+   "OCR": 3
+  },
+  "why": {
+   "invalid signs": 41,
+   "no text": 3
+  },
+  "script": {
+   "deva": 0.93,
+   "latin": 0.0
+  },
+  "fonts": [
+   "Mangal-Regular",
+   "BookmanOldStyle",
+   "Mangal-Regular",
+   "BookmanOldStyle-Bold"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/tricky/hi-encrypted-ownerpw-aes256-hud.pdf",
+  "pages": 4,
+  "mb": 1.6,
+  "open_ms": 2.2,
+  "ms_page_median": 4.29,
+  "routes": {
+   "REORDER": 4
+  },
+  "why": {
+   "invalid signs": 4
+  },
+  "script": {
+   "deva": 0.9,
+   "latin": 0.1
+  },
+  "fonts": [
+   "NirmalaUI",
+   "NirmalaUI-Bold",
+   "OpenSans-Bold",
+   "LucidaSansUnicode"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/tricky/hi-encrypted-rc4-bc-budget-2021.pdf",
+  "pages": 8,
+  "mb": 0.5,
+  "open_ms": 0.5,
+  "ms_page_median": 4.91,
+  "routes": {
+   "OK": 8
+  },
+  "why": {},
+  "script": {
+   "deva": 0.97,
+   "latin": 0.03
+  },
+  "fonts": [
+   "Mangal-Regular",
+   "MyriadPro-SemiboldIt",
+   "MyriadPro-SemiCnIt",
+   "ProximaNova-Regular"
+  ]
+ },
+ {
+  "file": "/tmp/s2/real/tricky/tricky-encrypted-userpassword-libreoffice.pdf",
+  "error": "PdfiumError: Failed to load document (PDFium: Incorrect password error)."
+ },
+ {
+  "file": "/tmp/s2/real/tricky/tricky-rotated-cropped-scaled-pypdf.pdf",
+  "pages": 4,
+  "mb": 0.3,
+  "open_ms": 0.2,
+  "ms_page_median": 0.14,
+  "routes": {
+   "OK": 4
+  },
+  "why": {},
+  "script": {
+   "latin": 1.0
+  },
+  "fonts": [
+   "Helvetica"
+  ]
+ }
+]

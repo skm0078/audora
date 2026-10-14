@@ -86,7 +86,7 @@ Native **Kotlin 2.x + Jetpack Compose**, five Gradle modules. Synthesis and play
 
 Dependencies flow `app → playback → (speech, pdf) → core`, never the reverse. `:pdf` and `:speech` keep their logic in plain Kotlin classes behind thin Android adapters, so most behavior is JVM-testable.
 
-**Stack (pinned in `libs.versions.toml`):** Kotlin 2.x, Compose (BOM), Media3 **1.11.1** (ExoPlayer + MediaSessionService), sherpa-onnx **1.13.8** AAR (arm64-v8a), **PdfiumAndroidKt 2.0.x** (text + render; Android `PdfRenderer` as display fallback), ICU `BreakIterator` (android.icu), Room, DataStore, WorkManager (downloads only), Hilt (KSP), kotlinx.coroutines. Phase 3: Tesseract4Android 4.9.x + PaddleOCR (PP-OCR) ONNX models via the existing ONNX Runtime, if S2/P3 shows they beat Tesseract. No ML Kit (D2).
+**Stack (pinned in `libs.versions.toml`):** Kotlin 2.x, Compose (BOM), Media3 **1.11.1** (ExoPlayer + MediaSessionService), sherpa-onnx **1.13.8** AAR (arm64-v8a), **PdfiumAndroidKt 2.0.x** (text + render; Android `PdfRenderer` as display fallback), ICU `BreakIterator` (android.icu), Room, DataStore, WorkManager (downloads only), Hilt (KSP), kotlinx.coroutines. Phase 3: Tesseract4Android 4.9.x with `tessdata_best` eng/hin/ben (ADR-011); PaddleOCR (PP-OCR) ONNX on the existing ONNX Runtime only if the optional P3-05 experiment beats Tesseract on Hindi. No ML Kit (D2).
 
 **Platform baseline:** compileSdk 36, targetSdk 36 (37 only after testing the while-in-use rule), minSdk 31 (Android 12, D5), AGP ≥ 8.5.1, NDK r28+, `abiFilters arm64-v8a`. Reference device: OnePlus 12 (SD 8 Gen 3, Android 16), edge-to-edge + predictive back supported from day one.
 
@@ -131,12 +131,12 @@ interface SpeechEngine {
 
 Runs lazily per page, two pages ahead of playback, cached per book. Each stage is a pure function with tests; `PIPELINE_VERSION` bumps whenever output can change.
 
-1. **Extract** chars with boxes, font size, font name/weight (PdfiumAndroidKt + JNI for `FPDFText_GetFontInfo`/`GetFontWeight`).
-2. **Score quality**: share of chars in expected Unicode blocks, invalid Indic sequences (matra with no base), empty-text ratio, known legacy font names. Route: OK → 3b; legacy font → 3a; garbage/empty → 3c.
+1. **Extract** chars with boxes, font size, font name (PdfiumAndroidKt + our JNI library over its `libpdfium.so`: font info, generated flag, Unicode-map errors, `/ActualText` marks, render mode; ADR-011). Rebuild `/ActualText` spans so PDFium's fake spaces do not split Indic words. Reopen the document every 100 pages. Font weight is unreliable and unused.
+2. **Score quality** per page: Unicode-map errors, invisible text over a page image, empty/garbage text, legacy font names per glyph run, invalid Indic sequences. Route: legacy run → 3a; map errors / hidden OCR layer / garbage / empty → 3c; **Indic documents: OCR one sample page and compare with the (rebuilt, reordered) text layer; CER ≤ 5 % → text layer, else 3c for every page** (re-check 1 page in 50). English: text layer. (ADR-011)
 3. **Recover text**
    - a. **Legacy-font converter**: table-driven Krutidev→Unicode and Bijoy/SutonnyMJ→Unicode, with reph and pre-base i-matra reordering. Unknown glyph rate above threshold → OCR.
-   - b. **Indic reorder**: move visually-ordered pre-base matras (ि ি ে ৈ) after their consonant cluster; compose two-part vowels (ে+া → ো). Validated against golden Indic PDFs.
-   - c. **OCR fallback**: per-script best open engine: PaddleOCR ONNX where it measures better (likely `eng`, `hin`), Tesseract otherwise (`ben` until Paddle Bengali support is confirmed). Page shows a "Scanned / OCR" badge.
+   - b. **Indic reorder**: move visually-ordered pre-base matras (ि ি ে ৈ) after their consonant cluster; compose two-part vowels (ে+া → ো). A repair tried before the OCR cross-check; S2 found it fixes visual order only, not mis-mapped glyphs.
+   - c. **OCR**: Tesseract with `tessdata_best` for `eng`/`hin`/`ben` (PP-OCRv5 has no Bengali model; on Hindi it was not consistently better, ADR-011). Runs in the render-ahead window. Page shows a "Scanned / OCR" badge.
 4. **Rebuild layout**: lines by baseline → columns by clustering line starts (XY-cut style; OpenDataLoader-PDF's XY-Cut++ as a reference) → reading order → paragraphs by gap/indent → headings by relative font size/weight.
 5. **Remove clutter**: lines repeating in the top/bottom 8% across ≥3 pages, standalone page numbers, figure/table interiors; citation markers skipped (setting).
 6. **Repair**: de-hyphenate across line breaks (keep real hyphens), expand ligatures, NFC normalize, fold soft hyphens / zero-width chars.
@@ -201,12 +201,12 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | Android 17 mutes background audio | Medium | Silent playback | Start only from user action; FGS through buffering; hardening test in gate |
 | Indic text in visual order / legacy fonts | High for older Hindi/Bengali PDFs | Garbled audio | Reorder pass, legacy converter, OCR fallback, "OCR" badge |
 | Kokoro too slow | High on mid/low phones | Stalls | Offer only when measured RTF < 0.8; Piper/Kitten default |
-| Open-source OCR weaker than ML Kit on Hindi | Medium | Some scanned pages read poorly | PaddleOCR ONNX vs Tesseract measured per script; legacy-font converter cuts OCR use |
-| PdfiumAndroidKt lacks font-name API | Certain | No heading/legacy detection | Small JNI patch or fork; PdfBox comparison in S2 |
+| Open-source OCR weaker than ML Kit on Hindi | Medium | Some scanned pages read poorly | Tesseract `best` measured 3–4 % CER on Hindi scans in S2; optional PaddleOCR experiment in P3-05; legacy-font converter cuts OCR use |
+| PdfiumAndroidKt lacks font-name API | Certain | No heading/legacy detection | Own JNI library over PdfiumAndroidKt's `libpdfium.so`, which exports every needed function (S2, ADR-011) |
 | Developer verification reaches India | Likely 2027 | Friends can't install unverified APK easily | Limited distribution account; keep keystore safe |
 | System voice pack missing (hi-IN/bn-IN) | Medium | Wrong/robotic voice | `isLanguageAvailable` + `KEY_FEATURE_NOT_INSTALLED` check; deep link to TTS settings |
 | Model host changes / corrupt download | Low | Voice fails | SHA-256 pin, bundled fallback, mirror to own Release |
-| Large PDFs (500+ pages) | Medium | OOM | Page-at-a-time extraction, bounded caches |
+| Large PDFs (500+ pages) | Medium | OOM | Page-at-a-time extraction around the playhead, reopen the document every 100 pages, bounded caches, no page cap (S2: 1,323 pages at +18–45 MB) |
 | Keystore lost | Low | Friends must reinstall; verification registration lost | Two offline backups |
 
 ## 10. Testing, diagnostics, maintainability
@@ -232,8 +232,10 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 005 | Script-based language routing | Accepted |
 | 006 | GitHub Releases + Obtainium; limited-distribution verification before 2027 | Accepted (v1.0) |
 | 007 | GPL-3.0 public repo; one APK; only GPL-compatible open-source components (no ML Kit) | Accepted (D1, D2) |
-| 008 | PdfiumAndroidKt as primary extractor (+ font-info JNI) | Accepted (v1.0); S2 verifies |
+| 008 | PdfiumAndroidKt as primary extractor (+ font-info JNI) | Accepted; confirmed by S2 (ADR-011) |
 | 009 | Resume by char-offset anchor + fingerprint + pipeline version | Accepted (v1.0) |
+| 010 | compileSdk 37, targetSdk 36 | Accepted (P0-01) |
+| 011 | S2: PDFium confirmed + JNI scope, `/ActualText` rebuild, OCR cross-check for Indic, Tesseract for all scripts, reopen every 100 pages | Accepted (S2) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 
@@ -245,7 +247,7 @@ Offline-first Android app that reads PDFs aloud like a human (English, Hindi, Be
 Spec: docs/BUILD-SPEC.md · Tickets: docs/TICKET-PLAN.md · Progress: docs/PROGRESS.md · Decisions: docs/adr/
 
 ## Stack (change only via an ADR)
-Kotlin 2.x, Compose, Hilt, Media3 1.11.x (ExoPlayer + MediaSessionService), sherpa-onnx 1.13.x (arm64-v8a), PdfiumAndroidKt, ICU BreakIterator, Room, DataStore, WorkManager (downloads only). Phase 3: Tesseract4Android, PaddleOCR ONNX. No proprietary SDKs (GPL-3.0).
+Kotlin 2.x, Compose, Hilt, Media3 1.11.x (ExoPlayer + MediaSessionService), sherpa-onnx 1.13.x (arm64-v8a), PdfiumAndroidKt, ICU BreakIterator, Room, DataStore, WorkManager (downloads only). Phase 3: Tesseract4Android (PaddleOCR ONNX only if P3-05 proves it). No proprietary SDKs (GPL-3.0).
 
 ## Modules and rules
 - :core — domain model, Result/error types, config objects. No Android UI imports.

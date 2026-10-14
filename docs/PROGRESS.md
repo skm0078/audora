@@ -2,6 +2,15 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## S2 — PDF extraction spike (2026-10-14)
+- Report: `research/spikes/S2-pdf-extraction/REPORT.md`; decision: ADR-011 (ADR-008 confirmed).
+- Corpus: 40 real-world PDFs (2-column papers, 400–1,323 page books, Unicode/legacy Hindi and Bengali, scans, encrypted, rotated) + 12 generated ground-truth PDFs. Kept in the project's shared `audora/test-pdfs/` with a licence manifest; only the generator scripts are committed.
+- PDFium beats PdfBox on Indic (0–5 % vs 18–32 % CER, spacing ignored) and on open time and memory. No page cap needed: 0.7–4.6 ms/page; memory bounded by reopening every 100 pages.
+- New work for P1-02/P3-03: JNI library over PdfiumAndroidKt's `libpdfium.so`, `/ActualText` rebuild (Indic CER 9–22 % → 2–3 %), OCR cross-check for Indic text layers.
+- OCR: Tesseract `best` for eng/hin/ben; PP-OCRv5 has no Bengali model; PaddleOCR Hindi stays an optional experiment.
+
+**Real-device checks:** none yet (desktop spike). OCR and extraction timings on the OnePlus 12 and Moto Edge 50 Fusion come in P1-02 and P3-05.
+
 ## P0-01 — Repo scaffold + CI (2026-10-14)
 - Five modules (`:app`, `:playback`, `:speech`, `:pdf`, `:core`) wired `app → playback → (speech, pdf) → core`. `:core` is a pure JVM module; the others are Android modules.
 - Convention plugins in `build-logic/`; every version in `gradle/libs.versions.toml` (AGP 9.4.0, Gradle 9.8.1, Kotlin 2.3.21, KSP 2.3.12, Hilt 2.60.1, Compose BOM 2026.09.00; Media3 1.11.1, Room, DataStore, WorkManager, PdfiumAndroidKt pinned for later tickets).

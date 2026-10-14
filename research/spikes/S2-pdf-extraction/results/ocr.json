@@ -1,0 +1,126 @@
+{
+ "hi-udhr-noto.scan300": {
+  "tess_fast": {
+   "cer": 0.0366,
+   "cer_nows": 0.0383,
+   "bad_signs": 0,
+   "prebase_recall": 0.9761,
+   "ms_page": 800
+  },
+  "tess_best": {
+   "cer": 0.038,
+   "cer_nows": 0.0387,
+   "bad_signs": 7,
+   "prebase_recall": 0.9732,
+   "ms_page": 1156
+  },
+  "paddle_v5_mobile": {
+   "cer": 0.0186,
+   "cer_nows": 0.0191,
+   "bad_signs": 0,
+   "prebase_recall": 0.9094,
+   "ms_page": 1247
+  }
+ },
+ "hi-udhr-noto.scan200bad": {
+  "tess_fast": {
+   "cer": 0.0387,
+   "cer_nows": 0.039,
+   "bad_signs": 1,
+   "prebase_recall": 0.9732,
+   "ms_page": 587
+  },
+  "tess_best": {
+   "cer": 0.0367,
+   "cer_nows": 0.0367,
+   "bad_signs": 4,
+   "prebase_recall": 0.9771,
+   "ms_page": 841
+  },
+  "paddle_v5_mobile": {
+   "cer": 0.042,
+   "cer_nows": 0.0415,
+   "bad_signs": 1,
+   "prebase_recall": 0.8482,
+   "ms_page": 939
+  }
+ },
+ "bn-udhr-noto.scan300": {
+  "tess_fast": {
+   "cer": 0.0618,
+   "cer_nows": 0.065,
+   "bad_signs": 0,
+   "prebase_recall": 0.8814,
+   "ms_page": 591
+  },
+  "tess_best": {
+   "cer": 0.0546,
+   "cer_nows": 0.0566,
+   "bad_signs": 0,
+   "prebase_recall": 0.8742,
+   "ms_page": 1832
+  }
+ },
+ "bn-udhr-noto.scan200bad": {
+  "tess_fast": {
+   "cer": 0.0522,
+   "cer_nows": 0.0556,
+   "bad_signs": 0,
+   "prebase_recall": 0.8905,
+   "ms_page": 377
+  },
+  "tess_best": {
+   "cer": 0.032,
+   "cer_nows": 0.0348,
+   "bad_signs": 0,
+   "prebase_recall": 0.8877,
+   "ms_page": 1425
+  }
+ },
+ "en-udhr-noto.scan300": {
+  "tess_fast": {
+   "cer": 0.0216,
+   "cer_nows": 0.0217,
+   "bad_signs": 0,
+   "prebase_recall": null,
+   "ms_page": 1000
+  },
+  "tess_best": {
+   "cer": 0.0007,
+   "cer_nows": 0.0007,
+   "bad_signs": 0,
+   "prebase_recall": null,
+   "ms_page": 1429
+  },
+  "paddle_v5_mobile": {
+   "cer": 0.0007,
+   "cer_nows": 0.0007,
+   "bad_signs": 0,
+   "prebase_recall": null,
+   "ms_page": 1766
+  }
+ },
+ "en-udhr-noto.scan200bad": {
+  "tess_fast": {
+   "cer": 0.0044,
+   "cer_nows": 0.0045,
+   "bad_signs": 0,
+   "prebase_recall": null,
+   "ms_page": 761
+  },
+  "tess_best": {
+   "cer": 0.0008,
+   "cer_nows": 0.0009,
+   "bad_signs": 0,
+   "prebase_recall": null,
+   "ms_page": 1233
+  },
+  "paddle_v5_mobile": {
+   "cer": 0.0062,
+   "cer_nows": 0.0064,
+   "bad_signs": 0,
+   "prebase_recall": null,
+   "ms_page": 1513
+  }
+ }
+}
