@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: spikes/playback/src/main/res/values/themes.xml
+     Purpose: Window theme only; Compose draws the rest. -->
+<resources>
+    <style name="Theme.AudoraSpike" parent="android:Theme.DeviceDefault.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+</resources>

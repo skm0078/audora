@@ -5,7 +5,7 @@
 // how AGP wires Kotlin source sets (AGP 9 built-in Kotlin changed that), so they cannot silently skip
 // a module. The trade-off is that detekt runs without type resolution, which only disables a few rules.
 
-val lintedModules = listOf("app", "core", "pdf", "speech", "playback", "build-logic/convention")
+val lintedModules = listOf("app", "core", "pdf", "speech", "playback", "spikes/playback", "build-logic/convention")
 
 val ktlintCli: Configuration by configurations.creating
 val detektCli: Configuration by configurations.creating

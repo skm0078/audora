@@ -1,6 +1,6 @@
 # File: .github/workflows/android.yml
-# Purpose: On every push and PR: style, static analysis, unit tests, debug APK, 16 KB alignment check.
-#          The debug APK is uploaded as a downloadable artifact (Build Spec §7).
+# Purpose: On every push and PR: style, static analysis, unit tests, debug APKs, 16 KB alignment check.
+#          The debug APKs (Audora and the S3 playback spike) are uploaded as one artifact (Build Spec §7).
 # Signed release builds on tags arrive with P0-02.
 
 name: Android CI
@@ -50,18 +50,22 @@ jobs:
         run: ./gradlew ktlintCheck detekt test assembleDebug --stacktrace
 
       - name: 16 KB alignment check
-        run: python3 scripts/check_16kb_alignment.py app/build/outputs/apk/debug/*.apk
+        run: |
+          python3 scripts/check_16kb_alignment.py \
+            app/build/outputs/apk/debug/*.apk \
+            spikes/playback/build/outputs/apk/debug/*.apk
 
-      - name: Name the debug APK
+      - name: Name the debug APKs
         id: apk
         run: |
           short_sha="${GITHUB_SHA::7}"
           name="audora-debug-${short_sha}"
           mkdir -p dist
           cp app/build/outputs/apk/debug/*.apk "dist/${name}.apk"
+          cp spikes/playback/build/outputs/apk/debug/*.apk "dist/audora-s3-spike-${short_sha}.apk"
           echo "name=${name}" >> "$GITHUB_OUTPUT"
 
-      - name: Upload debug APK
+      - name: Upload debug APKs
         uses: actions/upload-artifact@v5
         with:
           name: ${{ steps.apk.outputs.name }}
@@ -95,7 +99,7 @@ jobs:
       cancel-in-progress: false
 
     steps:
-      - name: Download debug APK
+      - name: Download debug APKs
         uses: actions/download-artifact@v5
         with:
           name: ${{ needs.build.outputs.apk-name }}
@@ -107,10 +111,11 @@ jobs:
           GH_REPO: ${{ github.repository }}
           TAG: dev-build
         run: |
-          cp dist/*.apk audora-dev.apk
+          cp dist/audora-debug-*.apk audora-dev.apk
+          cp dist/audora-s3-spike-*.apk audora-s3-spike.apk
           gh release delete "$TAG" --cleanup-tag --yes || echo "No previous $TAG release"
-          gh release create "$TAG" audora-dev.apk \
+          gh release create "$TAG" audora-dev.apk audora-s3-spike.apk \
             --prerelease \
             --target "$GITHUB_SHA" \
             --title "Dev build (${GITHUB_SHA::7})" \
-            --notes "Latest debug build of the dev branch, commit ${GITHUB_SHA}. For testing only; not signed for release."
+            --notes "Latest debug builds of the dev branch, commit ${GITHUB_SHA}: audora-dev.apk (the app) and audora-s3-spike.apk (S3 background-playback test). For testing only; not signed for release."

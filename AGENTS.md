@@ -18,6 +18,7 @@ Package root: io.github.skm0078.audora (D7). Module packages: io.github.skm0078.
 - :playback — PlaybackService, TtsDataSource, render queue, progress. Synthesis runs HERE only.
 - :app — Compose UI only; no business logic in composables.
 Dependencies: app → playback → (speech, pdf) → core. Never the reverse.
+- :spikes:* — throwaway debug apps that answer one risky question each (S1–S3). They may depend on :core only; nothing depends on them.
 
 ## Invariants
 - The player never reaches ENDED while text remains (TtsDataSource blocks instead).
