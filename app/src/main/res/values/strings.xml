@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Audora</string>
+    <string name="placeholder_title">Audora</string>
+    <string name="placeholder_body">This is the scaffold build. Reading PDFs aloud arrives in Phase 1.</string>
+    <string name="placeholder_version">Version %1$s</string>
+</resources>
