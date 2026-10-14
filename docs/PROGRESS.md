@@ -2,6 +2,13 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## S3 — Background playback spike, harness (2026-10-14)
+- New debug app `:spikes:playback` (`spikes/playback/`): Media3 `MediaSessionService`, blocking `TtsDataSource` over a render-ahead queue, fake engine with configurable RTF (sleep or busy-CPU), run metrics and a shareable report. CI builds it and the dev-build release carries it as `audora-s3-spike.apk`.
+- Report and protocol: `research/spikes/S3-background-playback/REPORT.md`. Media3 source review found a 10-minute stuck-buffering timeout P1-04 must handle.
+- Verified: unit tests for the queue, WAV encoder, fake engine, playlist window and metrics; ktlint and detekt.
+
+**Real-device checks (pending, this closes S3):** 60-min gate preset screen-off on the OnePlus 12 and the Moto Edge 50 Fusion; gap check with and without per-stream progression.
+
 ## S2 — PDF extraction spike (2026-10-14)
 - Report: `research/spikes/S2-pdf-extraction/REPORT.md`; decision: ADR-011 (ADR-008 confirmed).
 - Corpus: 40 real-world PDFs (2-column papers, 400–1,323 page books, Unicode/legacy Hindi and Bengali, scans, encrypted, rotated) + 12 generated ground-truth PDFs. Kept in the project's shared `audora/test-pdfs/` with a licence manifest; only the generator scripts are committed.
