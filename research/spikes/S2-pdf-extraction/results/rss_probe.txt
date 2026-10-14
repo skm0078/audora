@@ -1,0 +1,6 @@
+hi-legacy-chanakya-gazette-cerc-574p.pdf reopen=0 pages 574 growth@25/50/75/100% MB [17.8, 29.6, 46.1, 46.1] peak+ 46.1 after close+ 46.2
+hi-legacy-chanakya-gazette-cerc-574p.pdf reopen=100 pages 574 growth@25/50/75/100% MB [16.0, 16.0, 22.1, 22.1] peak+ 22.1 after close+ 22.1
+en-long-pgfmanual-3.1.11a.pdf reopen=0 pages 1323 growth@25/50/75/100% MB [13.0, 19.7, 27.1, 33.6] peak+ 33.6 after close+ 33.6
+en-long-pgfmanual-3.1.11a.pdf reopen=100 pages 1323 growth@25/50/75/100% MB [8.1, 10.9, 14.9, 17.5] peak+ 17.5 after close+ 17.5
+en-kjv-2col-long.pdf reopen=0 pages 1191 growth@25/50/75/100% MB [7.2, 10.6, 14.3, 17.6] peak+ 17.6 after close+ 17.6
+en-kjv-2col-long.pdf reopen=100 pages 1191 growth@25/50/75/100% MB [5.7, 6.9, 8.3, 9.5] peak+ 9.5 after close+ 9.5

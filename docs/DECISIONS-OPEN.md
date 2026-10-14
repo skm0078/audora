@@ -14,6 +14,6 @@ Updated 2026-10-14 with Swarnakeshar's answers.
 | D4 | Target phones | **OnePlus 12 (Snapdragon 8 Gen 3, Android 16)**; friends on phones ≤ 2–3 years old | Kokoro premium English is realistic on your phone (published RTF ~0.3–0.7 on this chip). OxygenOS/ColorOS battery steps ship first in onboarding. |
 | D5 | Oldest Android | **minSdk 31 (Android 12), arm64-v8a only** | Covers phones from ~2021 onward with margin; drops pre-12 compat code. |
 | D6 | Hosted-AI page cleanup | **Dropped** (violates the no-cloud rule) | Removed from v1. A possible post-v1 experiment: an on-device small model, only if the deterministic pipeline proves insufficient. |
-| D2 | OCR engine | **One app; open-source OCR only, no ML Kit** | Tesseract + PaddleOCR ONNX (Apache-2.0) on the ONNX Runtime we already ship; S2 picks per script. |
+| D2 | OCR engine | **One app; open-source OCR only, no ML Kit** | Tesseract + PaddleOCR ONNX (Apache-2.0) on the ONNX Runtime we already ship; S2 picks per script. **S2 result: Tesseract for eng/hin/ben; PaddleOCR Hindi optional (ADR-011).** |
 | D8 | Reverse engineering (REA, morluto/rea) | **Use freely on open-source references and our own APK; closed apps (Adobe) by outside observation** | Reference set: Librera Reader (GPL PDF reader with read-aloud, confirm licence before reuse), VoxSherpa-TTS, sherpa-onnx TTS engine app, our CI APK. |
 | D7 | Package name | **`io.github.skm0078.audora`** | Permanent once installed/registered. |

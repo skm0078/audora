@@ -1,0 +1,219 @@
+{
+ "hi-udhr-noto": {
+  "pdfium": {
+   "cer": 0.0936,
+   "cer_nows": 0.0,
+   "bad_signs": 0,
+   "prebase_recall": 0.1627,
+   "ms_page": 1.52
+  },
+  "pdfium_nogen": {
+   "cer": 0.2179,
+   "cer_nows": 0.0413,
+   "bad_signs": 0,
+   "prebase_recall": 0.0
+  },
+  "pdfbox": {
+   "cer": 0.1496,
+   "cer_nows": 0.181,
+   "bad_signs": 65,
+   "prebase_recall": 0.0,
+   "ms_page": 6.77
+  },
+  "generated_share": 0.261,
+  "map_err": 0,
+  "font_name_rate": 0.9522,
+  "font_size_rate": 1.0,
+  "fonts": [
+   "AAAAAA+NotoSerifDevanagari-Regular"
+  ],
+  "sample_pdfium": "चूंकि मा नव अधि का रों के प्रति उपेक्षा और घृणा के फलस्वरूप ही ऐसे बर्बर का र्य हुए जि नसे मनुष्य की आत्मा पर अत्या चा र\r\nकि या गया , चूंकि एक ऐसी वि श्व-व्यवस्था की उस स्था पना को ( जि समें लो गों को भा षण और धर्म की आज़ा दी तथा भय और\r\nअभा",
+  "sample_pdfbox": "चंू\u0000क मानव अ\u0000धकारा\u0000  के प्र\u0000त उपेक्षा और घृणा के फलस्वरूप ही ऐसे बब\u0000र काय\u0000 हुए \u0000जनसे मनुष्य क\u0000 आत्मा पर अत्याचार\n\u0000कया गया, चंू\u0000क एक ऐसी \u0000वश्व-व्यवस्था क\u0000 उस स्थापना को ( \u0000जसम\u0000  लोगा\u0000  को भाषण और धम\u0000 क\u0000 आज़ादी तथा भय और\nअभाव से मु\u0000क्त \u0000मलेगी "
+ },
+ "hi-udhr-lohit": {
+  "pdfium": {
+   "cer": 0.0185,
+   "cer_nows": 0.0158,
+   "bad_signs": 0,
+   "prebase_recall": 0.9704,
+   "ms_page": 1.51
+  },
+  "pdfium_nogen": {
+   "cer": 0.1415,
+   "cer_nows": 0.0583,
+   "bad_signs": 0,
+   "prebase_recall": 0.1764
+  },
+  "pdfbox": {
+   "cer": 0.1594,
+   "cer_nows": 0.1793,
+   "bad_signs": 239,
+   "prebase_recall": 0.0,
+   "ms_page": 5.27
+  },
+  "generated_share": 0.1166,
+  "map_err": 0,
+  "font_name_rate": 0.9548,
+  "font_size_rate": 1.0,
+  "fonts": [
+   "AAAAAA+Lohit-Devanagari"
+  ],
+  "sample_pdfium": "चूंकि मानव अधिकारों के प्रति उपेक्षा और घृणा के फलस्वरूप ही ऐसे बर्बर कार्य हुए जिनसे मनुष्य की आत्मा पर\r\nअत्याचार किया गया, चूंकि एक ऐसी विश्व-व्यवस्था की उस स्थापना को ( जिसमें लोगों को भाषण और धर्म की\r\nआज़ादी तथा भय और अभाव से मुक्ति मिल",
+  "sample_pdfbox": "चूंिक मानव अ\u0000धकार\u0000 के प्र\u0000त उपेक्षा और घृणा के फलस्वरूप ही ऐसे बब\u0000र काय\u0000 हुए \u0000जनसे मनुष्य क\u0000 आत्मा पर\nअत्याचार िकया गया, चूंिक एक ऐसी िवश्व-व्यवस्था क\u0000 उस स्थापना को ( \u0000जसम\u0000 लोग\u0000 को भाषण और धम\u0000 क\u0000\nआज़ादी तथा भय और अभाव से मुिक्त िमलेगी ) सव\u0000"
+ },
+ "hi-udhr-fpdf2": {
+  "pdfium": {
+   "cer": 0.079,
+   "cer_nows": 0.065,
+   "bad_signs": 0,
+   "prebase_recall": 0.0088,
+   "ms_page": 0.99
+  },
+  "pdfium_nogen": {
+   "cer": 0.0959,
+   "cer_nows": 0.0653,
+   "bad_signs": 0,
+   "prebase_recall": 0.0039
+  },
+  "pdfbox": {
+   "cer": 0.0561,
+   "cer_nows": 0.0611,
+   "bad_signs": 0,
+   "prebase_recall": 0.0924,
+   "ms_page": 4.33
+  },
+  "generated_share": 0.0242,
+  "map_err": 598,
+  "font_name_rate": 1.0,
+  "font_size_rate": 1.0,
+  "fonts": [
+   "MPDFAA+NotoSerifDevanagari"
+  ],
+  "sample_pdfium": "चंूकि2 मानव अधि\u0007कारोंके प्रति? उपेक्षा और घृणा के फलस्वरूप ही ऐसेबर्ब\u000fर कार्य\u000fहुए जिuनसेमनुष्य की आत्मा पर अत्याचार कि2या गया,\r\nचंूकि2 एक ऐसी विNश्व-व्यवस्था की उस स्थापना को ( जिuसमेंलोगोंको भाषण और धर्म\u000f की आज़ादी तथा भय और अभाव सेमुक्ति{",
+  "sample_pdfbox": "चंूकिक मानव अधिधकारों के प्रतित उपेक्षा और घृणा के फलस्वरूप ही ऐसे बर्बर कार्य हुए जिजनसे मनुष्य की आत्मा पर अत्याचार किकया गया,\nचंूकिक एक ऐसी विवश्व-व्यवस्था की उस स्थापना को ( जिजसमें  लोगों को भाषण और धर्म की आज़ादी तथा भय और अभाव से मुक"
+ },
+ "bn-udhr-noto": {
+  "pdfium": {
+   "cer": 0.1845,
+   "cer_nows": 0.0175,
+   "bad_signs": 0,
+   "prebase_recall": 0.1155,
+   "ms_page": 1.74
+  },
+  "pdfium_nogen": {
+   "cer": 0.1918,
+   "cer_nows": 0.0562,
+   "bad_signs": 0,
+   "prebase_recall": 0.0
+  },
+  "pdfbox": {
+   "cer": 0.2803,
+   "cer_nows": 0.3186,
+   "bad_signs": 351,
+   "prebase_recall": 0.0178,
+   "ms_page": 6.92
+  },
+  "generated_share": 0.2781,
+  "map_err": 0,
+  "font_name_rate": 0.9501,
+  "font_size_rate": 1.0,
+  "fonts": [
+   "AAAAAA+NotoSerifBengali-Regular"
+  ],
+  "sample_pdfium": "যে হে তু সদস্য রা ষ্ট্রসমূহ জা তি সং ঘে র সহযো গি তা য় মা নবা ধি কা র ও মৌ লি ক স্বা ধী নতা সমূহে র প্রতি সা র্বজর্ব নী ন সম্মা ন\r\nবৃদ্ধি এবং এদে র যথা যথ পা লন নি শ্চি তকরণে র লক্ষ্য অর্জনে অঙ্গী কা রবদ্ধ;\r\nযে হে তু এ স্বা ধী নতা এবং অধি ",
+  "sample_pdfbox": "\u0000যেহতু সদস\u0000 রাষ্ট্রসমূহ জািতসংেঘর সহেযািগতায় মানবািধকার ও \u0000মৗিলক স্বাধীনত\u0000 সমূেহর প্রিত সাব\u0000জনীন সম্মান\nবৃিদ্ধ এবং এেদর যথাযথ পালন িনিশ্চতকরেণর লক্ষ\u0000 অজ\u0000 েন অঙ্গীকারবদ্ধ;\n\u0000যেহতু এ স্বাধীনত\u0000 এবং অিধকারসমূেহর একটি সাধারণ উপলি\u0000 এ অঙ্গীকােরর প\u0000"
+ },
+ "bn-udhr-lohit": {
+  "pdfium": {
+   "cer": 0.2175,
+   "cer_nows": 0.0548,
+   "bad_signs": 0,
+   "prebase_recall": 0.1021,
+   "ms_page": 1.51
+  },
+  "pdfium_nogen": {
+   "cer": 0.2195,
+   "cer_nows": 0.0947,
+   "bad_signs": 0,
+   "prebase_recall": 0.0
+  },
+  "pdfbox": {
+   "cer": 0.268,
+   "cer_nows": 0.305,
+   "bad_signs": 353,
+   "prebase_recall": 0.0,
+   "ms_page": 6.75
+  },
+  "generated_share": 0.2718,
+  "map_err": 0,
+  "font_name_rate": 0.9499,
+  "font_size_rate": 1.0,
+  "fonts": [
+   "AAAAAA+Lohit-Bengali"
+  ],
+  "sample_pdfium": "যে হে তু সদস্য রা ষ্ট্রসমূহমূ জা তি সং ঘে র সহযো গি তা য় মা নবা ধি কা র ও মৌ লি ক স্বা ধী নতা সমূহেমূহের প্রতি\r\nসা র্বজর্ব নী ন সম্মা ন বৃদ্ধিবৃদ্ধি এবং এদে র যথা যথ পা লন নি শ্চি তকরণে র লক্ষ্য অর্জনের্জনে অঙ্গী কা রবদ্ধ;\r\nযে হে তু এ স্বা",
+  "sample_pdfbox": "\u0000যেহতু সদস\u0000 রাষ্ট্রসমহূ জািতসংেঘর সহেযািগতায় মানবািধকার ও \u0000মৗিলক স্বাধীনতা সমেূহর প্রিত\nসাব\u0000জনীন সম্মান বিৃদ্ধ এবং এেদর যথাযথ পালন িনিশ্চতকরেণর লক্ষ\u0000 অজ\u0000েন অঙ্গীকারবদ্ধ;\n\u0000যেহতু এ স্বাধীনতা এবং অিধকারসমেূহর একিট সাধারণ উপলি\u0000 এ অঙ্গীকােরর পণূ"
+ },
+ "bn-udhr-fpdf2": {
+  "pdfium": {
+   "cer": 0.1144,
+   "cer_nows": 0.1207,
+   "bad_signs": 94,
+   "prebase_recall": 0.0519,
+   "ms_page": 0.9
+  },
+  "pdfium_nogen": {
+   "cer": 0.1239,
+   "cer_nows": 0.1232,
+   "bad_signs": 94,
+   "prebase_recall": 0.0297
+  },
+  "pdfbox": {
+   "cer": 0.1184,
+   "cer_nows": 0.1251,
+   "bad_signs": 1,
+   "prebase_recall": 0.049,
+   "ms_page": 4.04
+  },
+  "generated_share": 0.0187,
+  "map_err": 1189,
+  "font_name_rate": 1.0,
+  "font_size_rate": 1.0,
+  "fonts": [
+   "MPDFAA+NotoSerifBengali"
+  ],
+  "sample_pdfium": "যে\u001bহে\u001dতুসদস্য রাষ্ট্রসমূহ জাতি5সংঘে\u0011র সহয\u001bোগিতায় মানবাধি\u0006কার ও মৌলিKক স্বাধীনতা সমূহে\u001dর প্রতি5 সার্বজনীন \r সম্মান বৃদ্ধি¡ এবং\r\nএদের যথাযথ পালন নিiশ্চি¥তকরণে§র লক্ষ্য অর্জ\rনেi অঙ্গীকারবদ্ধ; যে\u001bহে\u001dতু এ স্বাধীনতা এবং অধি\u0006কারসমূহে\u001dর একটি সা",
+  "sample_pdfbox": "যেযহেহতু সদস্য রাষ্ট্রসমূহ জাতিতসংঘেঘর সহযযোগিগতায় মানবাধিধকার ও মমৌলিলক স্বাধীনতা সমূহেহর প্রতিত সার্বজনীন সম্মান বৃদ্ধি  এবং\nএদেদর যথাযথ পালন নিনশ্চি তকরণেণর লক্ষ্য অর্জনেন অঙ্গীকারবদ্ধ; যেযহেহতু এ স্বাধীনতা এবং অধিধকারসমূহেহর একটি সাধার"
+ },
+ "en-udhr-noto": {
+  "pdfium": {
+   "cer": 0.0001,
+   "cer_nows": 0.0,
+   "bad_signs": 0,
+   "prebase_recall": null,
+   "ms_page": 1.7
+  },
+  "pdfium_nogen": {
+   "cer": 0.1843,
+   "cer_nows": 0.0288,
+   "bad_signs": 0,
+   "prebase_recall": null
+  },
+  "pdfbox": {
+   "cer": 0.0001,
+   "cer_nows": 0.0,
+   "bad_signs": 0,
+   "prebase_recall": null,
+   "ms_page": 8.4
+  },
+  "generated_share": 0.1755,
+  "map_err": 0,
+  "font_name_rate": 0.9466,
+  "font_size_rate": 1.0,
+  "fonts": [
+   "AAAAAA+NotoSerif-Regular"
+  ],
+  "sample_pdfium": "Proclaims this Universal Declaration of Human Rights as a common standard of\r\nachievement for all peoples and all nations, to the end that every individual and\r\nevery organ of society, keeping this Declaration constantly in mind, shall stri",
+  "sample_pdfbox": "Proclaims this Universal Declaration of Human Rights as a common standard of\nachievement for all peoples and all nations, to the end that every individual and\nevery organ of society, keeping this Declaration constantly in mind, shall strive"
+ }
+}

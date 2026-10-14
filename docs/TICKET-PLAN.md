@@ -31,7 +31,7 @@ Why not start with features: the Phase 1 gate fails on background survival, not 
 | ID | Ticket | Depends on | Size | Done when |
 |---|---|---|---|---|
 | P1-01 | Library: SAF file picker, persisted URI permission, recent books (Room) | P0-01 | M | Reopening the app lists books; a deleted/moved file shows a clear error |
-| P1-02 | Basic extraction with PdfiumAndroidKt → `ReadingUnit` list with `charStart/charEnd` (no layout heuristics yet) + font-info JNI | S2 | M | Unit tests on 3 simple PDFs; page-at-a-time memory bound tested on a 500-page PDF |
+| P1-02 | Basic extraction with PdfiumAndroidKt → `ReadingUnit` list with `charStart/charEnd` (no layout heuristics yet) + JNI library over PdfiumAndroidKt's `libpdfium.so` (font info, generated flag, map errors, `/ActualText`, render mode; ADR-011) + password prompt | S2 | M | Unit tests on 3 simple PDFs; page-at-a-time memory bound tested on a 500-page PDF with reopen every 100 pages |
 | P1-03 | `SpeechEngine` + bundled English voice (from S1) + system TTS (`synthesizeToFile`, chunked by `getMaxSpeechInputLength`) | S1 | M | Both engines render a sentence to PCM; cancellation tested; missing voice pack reported clearly |
 | P1-04 | `PlaybackService` + `TtsDataSource` + render queue + notification/lock-screen/headset controls (productionized from S3) | S3, P1-02, P1-03 | L | Plays a real PDF screen-off for 15 min; seek and voice change rebuild the queue |
 | P1-05 | Reader screen: page picker, tap-to-start sentence, play/pause, skip, speed (Sonic), sleep timer | P1-04 | M | Start from page N works; speed change is immediate |
@@ -57,9 +57,9 @@ Moved earlier vs v0.1: diagnostics (was P5-01). The gate is tested on friends' p
 |---|---|---|---|---|
 | P3-01 | Script routing per sentence + per-language voice settings | P1-03 | M | Mixed en/hi PDF switches voices correctly |
 | P3-02 | Indic sentence splitting (`।`), Devanagari/Bengali digits, NFC | P3-01 | M | Indic unit tests pass |
-| P3-03 | Quality scorer + **Indic reorder pass** (pre-base matras, two-part vowels) | S2, P2-01 | M | Indic Unicode golden PDFs pass |
+| P3-03 | Quality scorer + `/ActualText` rebuild + **Indic reorder pass** + per-document OCR-sample cross-check (ADR-011) | S2, P2-01 | M | Indic Unicode golden PDFs pass; mis-mapped real PDFs route to OCR |
 | P3-04 | **Legacy-font converter** (Krutidev, Bijoy/SutonnyMJ), font-name triggered | P3-03 | L | Legacy golden PDFs read intelligibly; unknown-glyph rate routes to OCR |
-| P3-05 | OCR fallback: PaddleOCR ONNX vs Tesseract per script (`eng`/`hin`/`ben`), best open engine wins + "OCR" page badge | P3-03 | M | Scanned golden PDFs read intelligibly; per-page time logged |
+| P3-05 | OCR: Tesseract4Android with `tessdata_best` eng/hin/ben (downloaded models) + "OCR" page badge; optional PaddleOCR Devanagari experiment on device (ADR-011) | P3-03 | M | Scanned golden PDFs read intelligibly; per-page time logged on both test phones |
 | P3-06 | Hindi/Bengali neural voices chosen in S0/S1 + "Voices & licenses" screen | S1 | S | Attributions shown for CC BY-SA / CC-BY-NC voices |
 
 ## Phase 4 — Premium

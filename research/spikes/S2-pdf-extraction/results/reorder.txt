@@ -1,0 +1,14 @@
+hi-us-hud-factsheet-pd.pdf p2: vs-OCR CER raw=0.237 reordered=0.186 | invalid signs raw=64 reordered=21
+hi-us-hud-factsheet-pd.pdf p3: vs-OCR CER raw=0.204 reordered=0.140 | invalid signs raw=78 reordered=21
+bn-us-fda-factsheet-vrinda-pd.pdf p2: vs-OCR CER raw=0.345 reordered=0.354 | invalid signs raw=11 reordered=9
+bn-us-fda-factsheet-vrinda-pd.pdf p3: vs-OCR CER raw=0.396 reordered=0.417 | invalid signs raw=24 reordered=17
+hi-govreport-jalshakti-annual-2019-20.pdf p21: vs-OCR CER raw=0.424 reordered=0.428 | invalid signs raw=11 reordered=11
+hi-govreport-jalshakti-annual-2019-20.pdf p41: vs-OCR CER raw=0.176 reordered=0.192 | invalid signs raw=12 reordered=12
+hi-ncert-preschool-curriculum.pdf p21: vs-OCR CER raw=0.178 reordered=0.238 | invalid signs raw=29 reordered=28
+hi-ncert-preschool-curriculum.pdf p41: vs-OCR CER raw=0.142 reordered=0.184 | invalid signs raw=16 reordered=16
+hi-broken-tounicode-planning-commission-ssa.pdf p21: vs-OCR CER raw=0.165 reordered=0.107 | invalid signs raw=52 reordered=20
+hi-broken-tounicode-planning-commission-ssa.pdf p61: vs-OCR CER raw=0.802 reordered=0.799 | invalid signs raw=7 reordered=4
+bn-gov-bd-cabinet-apa-nikosh.pdf p11: vs-OCR CER raw=0.807 reordered=0.807 | invalid signs raw=3 reordered=2
+bn-gov-bd-cabinet-apa-nikosh.pdf p31: vs-OCR CER raw=0.830 reordered=0.828 | invalid signs raw=0 reordered=0
+bn-us-hud-fairlending-guide-pd.pdf p6: vs-OCR CER raw=11.375 reordered=11.375 | invalid signs raw=0 reordered=0
+bn-us-hud-fairlending-guide-pd.pdf p21: vs-OCR CER raw=0.424 reordered=0.262 | invalid signs raw=56 reordered=13
