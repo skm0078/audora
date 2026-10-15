@@ -9,6 +9,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.NoSampleRenderer
 import androidx.media3.exoplayer.Renderer
 import androidx.media3.exoplayer.RenderersFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -68,14 +69,15 @@ class BookSessionTest {
         // The session's own log lines, in logcat under one tag (CI prints it), to see why a run stalled.
         AudoraLog.install(LogSink { Log.i(LOG_TAG, "${it.tag}: ${it.message}", it.throwable) })
         onMain {
-            // No renderers: the player's position follows the system clock, because the CI emulator runs without
-            // sound and its audio output never advances. Loading, playlist moves and ENDED are all real.
+            // A renderer that plays nothing: the player's position follows the system clock, because the CI
+            // emulator runs without sound and its audio output never advances. Loading, playlist moves and
+            // ENDED are all real.
             player = SpeechPlayer.build(
                 instrumentation.targetContext,
                 registry,
                 CONFIG,
                 handleAudioFocus = false,
-                renderers = RenderersFactory { _, _, _, _, _ -> emptyArray<Renderer>() },
+                renderers = RenderersFactory { _, _, _, _, _ -> arrayOf<Renderer>(SilentRenderer()) },
             )
             player.addListener(Recorder())
             session = BookSession(
@@ -212,6 +214,13 @@ class BookSessionTest {
         }
 
         override fun close() = Unit
+    }
+
+    /** Consumes nothing and is always ready, so ExoPlayer runs on its own clock (Media3's [NoSampleRenderer]). */
+    private class SilentRenderer : NoSampleRenderer() {
+        override fun getName() = "SilentRenderer"
+
+        override fun render(positionUs: Long, elapsedRealtimeUs: Long) = Unit
     }
 
     private object Texts : ItemTexts {
