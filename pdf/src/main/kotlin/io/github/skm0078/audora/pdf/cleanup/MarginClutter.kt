@@ -12,7 +12,8 @@ internal enum class MarginReason { REPEATED, RUNNING_FOLIO, STANDALONE_FOLIO }
 
 /**
  * Spec §5 step 5, ADR-020. A line in the top or bottom band of the text area is clutter when:
- * - it repeats (same signature, same band) on at least [CleanupConfig.minRepeatPages] pages of the window;
+ * - it repeats (same signature, same band) on at least [CleanupConfig.minRepeatPages] pages of the window, and
+ *   no line in the page's body reads the same (numbered, templated lines are text);
  * - it carries a page number that runs with the page index on another page of the window ("31" on page 40 and
  *   "Page 3 of 50" beside "Page 2 of 50" on the page before), which catches headers whose text changes by chapter;
  * - or it is nothing but a page number.
@@ -30,7 +31,7 @@ internal class MarginClutter(private val config: CleanupConfig) {
         for (side in sides) {
             val others = neighbours.map { it.pageIndex to side.lines(it).filter { line -> side.inBand(line.box) } }
             for (line in side.lines(target).filter { side.inBand(it.box) }) {
-                reason(line, target.pageIndex, others, required)?.let { dropped.putIfAbsent(line.line, it) }
+                reason(line, target, others, required)?.let { dropped.putIfAbsent(line.line, it) }
             }
         }
         return dropped
@@ -38,11 +39,13 @@ internal class MarginClutter(private val config: CleanupConfig) {
 
     private fun reason(
         line: MarginLine,
-        pageIndex: Int,
+        target: PageProfile,
         others: List<Pair<Int, List<MarginLine>>>,
         required: Int,
     ): MarginReason? {
+        val pageIndex = target.pageIndex
         val repeats = line.letters >= config.minSignatureLetters &&
+            line.signature.hashCode() !in target.bodySignatures &&
             1 + others.count { (_, lines) -> lines.any { it.signature == line.signature } } >= required
         val runs = line.folios.any { value ->
             others.any { (page, lines) -> lines.any { other -> other.folios.any { it - page == value - pageIndex } } }
@@ -71,8 +74,8 @@ internal class MarginClutter(private val config: CleanupConfig) {
      * tell its margins from: nothing on it is called a header.
      */
     private fun hasBody(target: PageProfile, sides: List<Side>): Boolean {
-        val margin = (target.top + target.bottom).distinctBy { it.line }
-        return target.lineCount > margin.size || margin.any { line -> sides.none { it.inBand(line.box) } }
+        val margin = target.top + target.bottom
+        return target.bodySignatures.isNotEmpty() || margin.any { line -> sides.none { it.inBand(line.box) } }
     }
 
     private class Side(val lines: (PageProfile) -> List<MarginLine>, val inBand: (TextBox) -> Boolean)

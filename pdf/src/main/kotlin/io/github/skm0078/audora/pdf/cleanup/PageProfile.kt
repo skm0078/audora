@@ -11,22 +11,23 @@ import io.github.skm0078.audora.pdf.layout.TextLine
 
 /**
  * A page's summary for its neighbours (ADR-020): a few margin lines folded to signatures, their page numbers, and
- * the page's hyphenated words for de-hyphenation. A few hundred bytes, so a book keeps dozens of them while it holds
+ * the page's hyphenated words for de-hyphenation. About a kilobyte, so a book keeps dozens of them while it holds
  * only a handful of whole pages. In memory only and never logged: signatures are the PDF's own words.
  *
  * @property extent union of the page's line boxes; null when no line has a box.
- * @property lineCount lines with a box on the page.
  * @property top the page's topmost lines, highest first; [bottom] its lowest, lowest first.
  * @property hyphenated words printed with a hyphen inside a line on this page, as lower-case pairs ("block-pulse"),
  *   so a word broken at that hyphen at a line end keeps it.
+ * @property bodySignatures hashes of the signatures of the page's other lines (empty when every line is a margin
+ *   line): a margin line that reads like one of them (a book of numbered, templated lines) is text, not a header.
  */
 class PageProfile internal constructor(
     val pageIndex: Int,
     val extent: TextBox?,
-    val lineCount: Int,
     internal val top: List<MarginLine>,
     internal val bottom: List<MarginLine>,
     internal val hyphenated: Set<String>,
+    internal val bodySignatures: Set<Int>,
 )
 
 /**
@@ -52,13 +53,19 @@ internal class PageProfiler(private val config: CleanupConfig) {
         val k = config.maxMarginLines
         val top = lines.sortedByDescending { requireNotNull(it.box).top }.take(k).map { marginLine(page, it) }
         val bottom = lines.sortedBy { requireNotNull(it.box).bottom }.take(k).map { marginLine(page, it) }
-        return PageProfile(page.pageIndex, extent, lines.size, top, bottom, hyphenatedPairs(page.text))
+        val margin = (top + bottom).mapTo(HashSet()) { it.line }
+        val body = lines.filter { it !in margin }.mapTo(HashSet()) { signature(spanTexts(page, it)).hashCode() }
+        return PageProfile(page.pageIndex, extent, top, bottom, hyphenatedPairs(page.text), body)
     }
 
+    private fun spanTexts(page: PageText, line: TextLine) = line.spans.map { page.text.substring(it.start, it.end) }
+
+    private fun signature(spans: List<String>) = signature(spans.joinToString(" "))
+
     private fun marginLine(page: PageText, line: TextLine): MarginLine {
-        val spans = line.spans.map { page.text.substring(it.start, it.end) }
+        val spans = spanTexts(page, line)
         val folios = Folios.of(spans, config.maxFolioDigits)
-        val signature = signature(spans.joinToString(" "))
+        val signature = signature(spans)
         return MarginLine(
             line = line,
             box = requireNotNull(line.box),

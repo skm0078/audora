@@ -19,8 +19,8 @@ hyphens, ligatures, zero-width and control characters). Three facts shaped the d
    `CleanupConfig.neighbourPages` (3) pages on each side, shifted inward at the book's ends, and passes their
    `PageProfile`s to `ReadingUnitBuilder.build(page, neighbours)`. Two LRU caches per book: analysed pages
    (`analyzedCachePages`, 6) so a page read as a neighbour is not extracted again when it is read itself, and
-   profiles (`profileCachePages`, 64), a few hundred bytes each: the page's top and bottom three lines as
-   signatures (letters lower-cased, digit runs folded to `#`), their page numbers, and the page's hyphenated words.
+   profiles (`profileCachePages`, 64), about a kilobyte each: the page's top and bottom three lines as
+   signatures (letters lower-cased, digit runs folded to `#`), their page numbers, the page's hyphenated words and hashes of its body lines' signatures.
    Reading on page by page costs about one extraction per page; a jump costs one per window page (7). The caches
    belong to one builder; a different builder starts empty ones. A neighbour that fails to read is logged and
    left out. `ReadingUnitBuilder.build(page)` alone applies every rule that needs no neighbour.
@@ -28,7 +28,8 @@ hyphens, ligatures, zero-width and control characters). Three facts shaped the d
    the page: a line reaching into the top or bottom 8 % of that height is a candidate. A page whose every line is in
    a band (one or two lines) has no body to tell margins from, and nothing on it is removed.
 3. **A candidate is clutter when** (a) its signature repeats in the same band on at least 3 pages of the window,
-   itself included (a book shorter than 3 pages needs every page, never fewer than 2); or (b) it carries a page
+   itself included (a book shorter than 3 pages needs every page, never fewer than 2), and no line in the page's
+   body has the same signature (a book of numbered, templated lines such as "Exercise 3.4 ..." is text); or (b) it carries a page
    number that runs with the page index on another page of the window ("31" on page 40, "Page 3 of 50" after
    "Page 2 of 50"), which catches chapter headers whose words change; or (c) it is nothing but a numeric page number
    ("12", "Page 3 of 50", "– 7 –", Devanagari and Bengali digits). Roman numerals count for (b) only: alone, "IV"

@@ -67,21 +67,9 @@ class ClutterRemoverTest {
 
     @Test
     fun `Page N of M headers run with the page index`() {
+        val rightHeaders = listOf("A. Author", "Short title")
         val pages = (0..1).map { i ->
-            page(
-                i,
-                header = listOf(
-                    "57" to LEFT,
-                    "Page ${i + 2} of 50" to MID,
-                    if (i ==
-                        0
-                    ) {
-                        "A. Author" to RIGHT
-                    } else {
-                        "Short title" to RIGHT
-                    },
-                ),
-            )
+            page(i, header = listOf("57" to LEFT, "Page ${i + 2} of 50" to MID, rightHeaders[i] to RIGHT))
         }
         for (p in pages.indices) assertFalse(spoken(pages, p), "Page" in spoken(pages, p))
     }
@@ -108,6 +96,14 @@ class ClutterRemoverTest {
         assertTrue(text, text.startsWith("A unique opening line Amen."))
         // The footer repeats its words on every page, so it is a running footer; its numbers alone would not be.
         assertFalse(text, "room" in text)
+    }
+
+    @Test
+    fun `templated lines that differ only in their numbers are text, not headers`() {
+        // Every line reads "Page N, sentence L of ...": the top lines repeat on every page, but so does the body.
+        fun templated(i: Int) = List(BODY_LINES) { line -> "Page ${i + 1}, sentence ${line + 1} of a generated book." }
+        val pages = (0..6).map { i -> page(i, body = templated(i)) }
+        for (p in pages.indices) assertEquals(templated(p).joinToString(" "), spoken(pages, p))
     }
 
     @Test
