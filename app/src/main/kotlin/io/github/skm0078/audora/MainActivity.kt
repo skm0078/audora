@@ -3,19 +3,13 @@
 
 package io.github.skm0078.audora
 
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,18 +18,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
+import io.github.skm0078.audora.core.library.Book
+import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.diagnostics.LogSharer
-import io.github.skm0078.audora.ui.PlaceholderScreen
+import io.github.skm0078.audora.ui.AppDestination
+import io.github.skm0078.audora.ui.book.BookController
+import io.github.skm0078.audora.ui.book.BookScreen
 import io.github.skm0078.audora.ui.diagnostics.DiagnosticsController
 import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
-import io.github.skm0078.audora.ui.pdfcheck.PdfCheckController
-import io.github.skm0078.audora.ui.pdfcheck.PdfCheckSection
+import io.github.skm0078.audora.ui.library.LibraryActions
+import io.github.skm0078.audora.ui.library.LibraryController
+import io.github.skm0078.audora.ui.library.LibraryScreen
 import io.github.skm0078.audora.ui.settings.SettingsScreen
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import javax.inject.Inject
@@ -48,33 +45,40 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var logSharer: LogSharer
 
+    @Inject
+    lateinit var library: Library
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
             AudoraTheme {
-                val context = LocalContext.current.applicationContext
                 val scope = rememberCoroutineScope()
                 val diagnostics = remember { DiagnosticsController(readingSessionTracker, logSharer, scope) }
-                val pdfCheck = remember { PdfCheckController(context, scope) }
-                // Until P1-01 brings real navigation: two screens, Settings closes with back.
-                var showSettings by rememberSaveable { mutableStateOf(false) }
-                BackHandler(enabled = showSettings) { showSettings = false }
+                // Activity-wide, so an add still running when the user opens Settings is not cancelled.
+                val libraryController = remember { LibraryController(library, scope).also { it.start() } }
+                var route by rememberSaveable { mutableStateOf(AppDestination.Library.toRoute()) }
+                val destination = AppDestination.fromRoute(route)
+                val navigate = { next: AppDestination -> route = next.toRoute() }
+                BackHandler(enabled = destination != AppDestination.Library) { navigate(AppDestination.Library) }
                 LaunchedEffect(Unit) { diagnostics.checkUnfinishedSession() }
 
-                if (showSettings) {
-                    SettingsScreen(
+                when (destination) {
+                    AppDestination.Library -> LibraryRoute(libraryController, navigate)
+
+                    AppDestination.Settings -> SettingsScreen(
                         shareState = diagnostics.shareState,
+                        versionName = BuildConfig.VERSION_NAME,
                         showDebugTools = BuildConfig.DEBUG,
-                        onBack = { showSettings = false },
+                        onBack = { navigate(AppDestination.Library) },
                         onShareLogs = { diagnostics.shareLogs { intent -> startActivity(intent) } },
                         onSimulateReadingSession = {
                             diagnostics.simulateReadingSession()
                             Toast.makeText(this@MainActivity, R.string.debug_simulate_done, Toast.LENGTH_LONG).show()
                         },
                     )
-                } else {
-                    HomeScreen(pdfCheck = pdfCheck, onOpenSettings = { showSettings = true })
+
+                    is AppDestination.BookDetail -> BookRoute(destination.id) { navigate(AppDestination.Library) }
                 }
                 diagnostics.unfinishedSession?.let { session ->
                     UnfinishedSessionDialog(
@@ -86,34 +90,51 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HomeScreen(pdfCheck: PdfCheckController, onOpenSettings: () -> Unit) {
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {},
-                actions = {
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(painterResource(R.drawable.ic_settings), stringResource(R.string.settings_title))
-                    }
-                },
-            )
-        },
-    ) { innerPadding ->
-        PlaceholderScreen(
-            versionName = BuildConfig.VERSION_NAME,
-            modifier = Modifier.padding(innerPadding),
-        ) {
-            PdfCheckSection(
-                state = pdfCheck.state,
-                onPdfPicked = pdfCheck::open,
-                onPasswordSubmitted = pdfCheck::submitPassword,
-                onPasswordCancelled = pdfCheck::cancelPassword,
-            )
+    @Composable
+    private fun LibraryRoute(controller: LibraryController, navigate: (AppDestination) -> Unit) {
+        val actions = remember(controller) {
+            object : LibraryActions {
+                override fun onAddPdf(documentUri: Uri) = controller.add(documentUri.toString())
+
+                override fun onLocate(id: BookId, documentUri: Uri) = controller.locate(id, documentUri.toString())
+
+                override fun onOpenBook(book: Book) = navigate(AppDestination.BookDetail(book.id))
+
+                override fun onRequestRemoval(book: Book) = controller.proposeRemoval(book)
+
+                override fun onConfirmRemoval() = controller.confirmRemoval()
+
+                override fun onCancelRemoval() = controller.proposeRemoval(null)
+
+                override fun onMessageShown() = controller.messageShown()
+
+                override fun onOpenSettings() = navigate(AppDestination.Settings)
+
+                override fun onScreenResumed() = controller.refreshAvailability()
+            }
         }
+        LibraryScreen(
+            listState = controller.listState,
+            busy = controller.busy,
+            message = controller.message,
+            pendingRemoval = controller.pendingRemoval,
+            actions = actions,
+        )
+    }
+
+    @Composable
+    private fun BookRoute(id: BookId, onBack: () -> Unit) {
+        val context = LocalContext.current.applicationContext
+        val scope = rememberCoroutineScope()
+        val controller = remember(id) { BookController(context, library, scope, id).also { it.start() } }
+        BookScreen(
+            lookup = controller.lookup,
+            checkState = controller.check.state,
+            onPasswordSubmitted = controller.check::submitPassword,
+            onPasswordCancelled = controller.check::cancelPassword,
+            onRetry = controller.check::retry,
+            onBack = onBack,
+        )
     }
 }

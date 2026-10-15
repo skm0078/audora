@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/SettingsScreen.kt
-// Purpose: Settings: Share logs (P1-07), plus a debug-only tool to test unfinished-session detection.
+// Purpose: Settings: Share logs (P1-07), the app version, and a debug-only tool to test unfinished-session detection.
 
 package io.github.skm0078.audora.ui.settings
 
@@ -34,6 +34,7 @@ import io.github.skm0078.audora.ui.theme.AudoraTheme
 @Composable
 fun SettingsScreen(
     shareState: ShareLogsState,
+    versionName: String,
     showDebugTools: Boolean,
     onBack: () -> Unit,
     onShareLogs: () -> Unit,
@@ -55,6 +56,11 @@ fun SettingsScreen(
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).verticalScroll(rememberScrollState())) {
             ShareLogsItem(shareState, onShareLogs)
+            HorizontalDivider()
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.settings_version_title)) },
+                supportingContent = { Text(versionName) },
+            )
             if (showDebugTools) {
                 HorizontalDivider()
                 ListItem(
@@ -98,6 +104,7 @@ private fun SettingsScreenPreview() {
     AudoraTheme {
         SettingsScreen(
             shareState = ShareLogsState.Idle,
+            versionName = "0.0.1-debug",
             showDebugTools = true,
             onBack = {},
             onShareLogs = {},

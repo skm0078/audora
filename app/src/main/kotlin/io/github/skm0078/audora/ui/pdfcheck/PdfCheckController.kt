@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/pdfcheck/PdfCheckController.kt
-// Purpose: Opens a picked PDF with :pdf off the main thread and turns the result into PdfCheckState.
+// Purpose: Opens a book's PDF with :pdf off the main thread and turns the result into PdfCheckState.
 
 package io.github.skm0078.audora.ui.pdfcheck
 
@@ -25,11 +25,16 @@ import kotlinx.coroutines.withContext
 /**
  * Plain state holder (no Compose UI here). Holds the password only in memory, for this check.
  * The first pages are extracted so a real-device run shows that PDFium, the JNI library and the
- * `/ActualText` rebuild work on the phone.
+ * `/ActualText` rebuild work on the phone. Until the reader (P1-05) this is what opening a book shows.
+ *
+ * @param logContext identifies the book in logs (e.g. "book=3f2a9c01"); never its title.
+ * @param onOpened called on the caller's thread with the page count after the book opened.
  */
 class PdfCheckController(
     private val context: Context,
     private val scope: CoroutineScope,
+    private val logContext: String,
+    private val onOpened: (pageCount: Int) -> Unit = {},
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
     var state: PdfCheckState by mutableStateOf(PdfCheckState.Idle)
@@ -46,6 +51,9 @@ class PdfCheckController(
 
     fun submitPassword(password: String) = load(password)
 
+    /** Opens the same document again, e.g. after the password prompt was cancelled. */
+    fun retry() = load(password = null)
+
     fun cancelPassword() {
         state = PdfCheckState.Idle
     }
@@ -54,12 +62,16 @@ class PdfCheckController(
         val target = uri ?: return
         job?.cancel()
         state = PdfCheckState.Opening
-        job = scope.launch { state = withContext(io) { check(target, password) } }
+        job = scope.launch {
+            val result = withContext(io) { check(target, password) }
+            state = result
+            if (result is PdfCheckState.Ready) onOpened(result.summary.pageCount)
+        }
     }
 
     private fun check(target: Uri, password: String?): PdfCheckState {
         val engine = PdfiumEngine.forUri(context, target)
-        return when (val opened = PdfBook.open(engine, password, logContext = LOG_CONTEXT)) {
+        return when (val opened = PdfBook.open(engine, password, logContext = logContext)) {
             is Outcome.Failure -> failureState(opened.error)
             is Outcome.Success -> opened.value.use(::summarize)
         }
@@ -77,7 +89,7 @@ class PdfCheckController(
                 is Outcome.Success -> result.value
 
                 is Outcome.Failure -> {
-                    AudoraLog.w(TAG, "Check failed, $LOG_CONTEXT page=$page error=${result.error}")
+                    AudoraLog.w(TAG, "Check failed, $logContext page=$page error=${result.error}")
                     return PdfCheckState.Failed(PdfCheckFailure.PAGE_FAILED)
                 }
             }
@@ -88,7 +100,7 @@ class PdfCheckController(
             if (firstSentence == null) firstSentence = units.firstOrNull()?.text
         }
         val millis = SystemClock.elapsedRealtime() - started
-        AudoraLog.i(TAG, "Check done, $LOG_CONTEXT pages=$pages/${book.pageCount} sentences=$sentences ms=$millis")
+        AudoraLog.i(TAG, "Check done, $logContext pages=$pages/${book.pageCount} sentences=$sentences ms=$millis")
         return PdfCheckState.Ready(
             PdfCheckSummary(book.pageCount, pages, sentences, spans, mapErrors, millis, firstSentence),
         )
@@ -104,7 +116,6 @@ class PdfCheckController(
 
     private companion object {
         const val TAG = "Audora.PdfCheck"
-        const val LOG_CONTEXT = "book=check"
         const val PAGES_TO_CHECK = 3
     }
 }

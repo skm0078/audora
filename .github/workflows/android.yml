@@ -52,7 +52,9 @@ jobs:
 
       - name: ktlint, detekt, unit tests, debug APKs, unsigned release APK
         # assembleDebugAndroidTest only compiles the instrumented tests; the device-tests job runs them.
-        run: ./gradlew ktlintCheck detekt test assembleDebug :app:assembleRelease :pdf:assembleDebugAndroidTest --stacktrace
+        run: >-
+          ./gradlew ktlintCheck detekt test assembleDebug :app:assembleRelease
+          :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest --stacktrace
 
       - name: 16 KB alignment check
         run: |
@@ -78,6 +80,21 @@ jobs:
           path: dist/*.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Room schemas are committed
+        # The build exports every database schema version to */schemas/ (P1-01). A schema the build changed or
+        # added but nobody committed would leave a later migration nothing to migrate from, so fail and print it.
+        run: |
+          changes="$(git status --porcelain --untracked-files=all -- ':(glob)**/schemas/**')"
+          if [ -n "$changes" ]; then
+            echo "::error::Room schema files changed by the build are not committed. Commit these:"
+            echo "$changes"
+            echo "$changes" | cut -c4- | while read -r path; do
+              echo "----- $path"
+              cat "$path"
+            done
+            exit 1
+          fi
 
       - name: Upload reports on failure
         if: failure()
@@ -124,7 +141,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Build the test APK
-        run: ./gradlew :pdf:assembleDebugAndroidTest --stacktrace
+        run: ./gradlew :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest --stacktrace
 
       - name: Start the emulator
         timeout-minutes: 15
@@ -162,9 +179,9 @@ jobs:
           [ "$booted" = "1" ] || fail "Emulator did not finish booting"
           echo "Emulator booted"
 
-      - name: Instrumented tests (:pdf)
+      - name: Instrumented tests (:pdf, :playback)
         timeout-minutes: 20
-        run: ./gradlew :pdf:connectedDebugAndroidTest --stacktrace
+        run: ./gradlew :pdf:connectedDebugAndroidTest :playback:connectedDebugAndroidTest --stacktrace
 
       - name: Failed device tests
         if: failure()
@@ -172,7 +189,7 @@ jobs:
           python3 - <<'PY'
           import glob
           import xml.etree.ElementTree as ET
-          for path in glob.glob("pdf/build/outputs/androidTest-results/connected/**/*.xml", recursive=True):
+          for path in glob.glob("*/build/outputs/androidTest-results/connected/**/*.xml", recursive=True):
               for case in ET.parse(path).getroot().iter("testcase"):
                   for problem in list(case.findall("failure")) + list(case.findall("error")):
                       print(f"::error::{case.get('classname')}.{case.get('name')}")
@@ -189,8 +206,8 @@ jobs:
         with:
           name: device-test-reports-${{ github.run_id }}
           path: |
-            pdf/build/reports/androidTests/
-            pdf/build/outputs/androidTest-results/
+            */build/reports/androidTests/
+            */build/outputs/androidTest-results/
             emulator.log
           if-no-files-found: ignore
           retention-days: 14
