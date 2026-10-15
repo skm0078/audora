@@ -6,7 +6,8 @@ package io.github.skm0078.audora.core.model
 /**
  * @property page zero-based page index in the document.
  * @property index sentence index within the page. Display only, NOT the resume key (that is [charStart]).
- * @property charStart start offset (inclusive) into the page's extracted text, after the `/ActualText` rebuild.
+ * @property charStart start offset (inclusive) into the page's reading-order text (layout output, ADR-018). Units
+ *   of a page ascend by [charStart] in reading order and do not overlap.
  * @property charEnd end offset (exclusive) into the same text.
  * @property text the speakable text: whitespace collapsed; later tickets normalize it further (P2-04).
  * @property pauseAfterMs silence after the sentence; prosody (P2-04) sets real values.

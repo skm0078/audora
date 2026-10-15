@@ -4,15 +4,15 @@
 package io.github.skm0078.audora.pdf.units
 
 import io.github.skm0078.audora.core.model.TextBox
-import io.github.skm0078.audora.pdf.extract.PageText
+import io.github.skm0078.audora.pdf.layout.ReadingText
 
 internal class LineBoxes(private val lineOverlapRatio: Float) {
-    /** One box per line covered by [start] until [end] of [page]'s text; null when no glyph has a box. */
-    fun of(page: PageText, start: Int, end: Int): List<TextBox>? {
+    /** One box per line covered by [start] until [end] of [text]; null when no glyph has a box. */
+    fun of(text: ReadingText, start: Int, end: Int): List<TextBox>? {
         val lines = ArrayList<TextBox>()
         var current: TextBox? = null
         for (offset in start until end) {
-            val box = (if (page.text[offset].isWhitespace()) null else page.boxAt(offset)) ?: continue
+            val box = (if (text.text[offset].isWhitespace()) null else text.boxAt(offset)) ?: continue
             val line = current
             current = when {
                 line == null -> box

@@ -98,7 +98,7 @@ Dependencies flow `app → playback → (speech, pdf) → core`, never the rever
 data class ReadingUnit(
     val page: Int,
     val index: Int,              // sentence index within the page (display only, NOT the resume key)
-    val charStart: Int,          // offset into the page's raw extracted text
+    val charStart: Int,          // offset into the page's reading-order text (ADR-018)
     val charEnd: Int,
     val text: String,            // normalized, speakable text
     val lang: Lang,
@@ -139,7 +139,7 @@ Runs lazily per page, two pages ahead of playback, cached per book. Each stage i
    - a. **Legacy-font converter**: table-driven Krutidev→Unicode and Bijoy/SutonnyMJ→Unicode, with reph and pre-base i-matra reordering. Unknown glyph rate above threshold → OCR.
    - b. **Indic reorder**: move visually-ordered pre-base matras (ि ি ে ৈ) after their consonant cluster; compose two-part vowels (ে+া → ো). A repair tried before the OCR cross-check; S2 found it fixes visual order only, not mis-mapped glyphs.
    - c. **OCR**: Tesseract with `tessdata_best` for `eng`/`hin`/`ben` (PP-OCRv5 has no Bengali model; on Hindi it was not consistently better, ADR-011). Runs in the render-ahead window. Page shows a "Scanned / OCR" badge.
-4. **Rebuild layout**: lines by baseline → columns by clustering line starts (XY-cut style; OpenDataLoader-PDF's XY-Cut++ as a reference) → reading order → paragraphs by gap/indent → headings by relative font size/weight.
+4. **Rebuild layout**: lines by baseline → columns by recursive XY-cut, columns first (OpenDataLoader-PDF's XY-Cut++ as a reference) → reading order → paragraphs by gap/indent → headings by relative font size and a bold font name (weight is unreliable, ADR-011). Unit offsets index the resulting reading-order text (ADR-018).
 5. **Remove clutter**: lines repeating in the top/bottom 8% across ≥3 pages, standalone page numbers, figure/table interiors; citation markers skipped (setting).
 6. **Repair**: de-hyphenate across line breaks (keep real hyphens), expand ligatures, NFC normalize, fold soft hyphens / zero-width chars.
 7. **Split sentences**: ICU `BreakIterator` per locale; `।` as sentence end; per-language abbreviation lists.
@@ -240,6 +240,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 011 | S2: PDFium confirmed + JNI scope, `/ActualText` rebuild, OCR cross-check for Indic, Tesseract for all scripts, reopen every 100 pages | Accepted (S2) |
 | 012 | S1: sherpa-onnx AAR vendored from its GitHub release (SHA-pinned), models mirrored to our own release, Kokoro v1.0, no Lessac-derived voices, English default rule, Moto Edge 50 Fusion as dev reference phone | Accepted (S1); English default pending phone run |
 | 014 | Bundled English voice chosen in `speech/bundled-voices.json`, fetched at build time from sherpa-onnx's release (SHA-pinned), espeak-ng-data trimmed to en/hi/bn; Piper ljspeech provisional | Accepted (P1-03) |
+| 018 | Layout: column-first XY-cut, paragraphs, headings by size + bold font name; `charStart` indexes the page's reading-order text; `PIPELINE_VERSION` 2 | Accepted (P2-02) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

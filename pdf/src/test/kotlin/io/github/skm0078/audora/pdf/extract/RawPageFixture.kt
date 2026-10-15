@@ -4,8 +4,9 @@
 package io.github.skm0078.audora.pdf.extract
 
 object RawPageFixture {
-    fun load(name: String): RawPage {
-        val stream = requireNotNull(javaClass.getResourceAsStream("/rawpages/$name.rawpage")) { "missing $name" }
+    /** [dir] is a folder under test resources: `rawpages` (extraction), `layout` (P2-02's layout pages). */
+    fun load(name: String, dir: String = "rawpages"): RawPage {
+        val stream = requireNotNull(javaClass.getResourceAsStream("/$dir/$name.rawpage")) { "missing $dir/$name" }
         var pageIndex = 0
         val fonts = ArrayList<String>()
         val codePoints = ArrayList<Int>()

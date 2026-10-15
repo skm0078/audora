@@ -32,10 +32,12 @@ class PdfiumExtractionTest {
             val page = requireNotNull(it.pageText(0).getOrNull())
             assertEquals(0, page.stats.unicodeMapErrors)
             assertTrue(page.fontRuns.any { run -> run.fontName.contains("NotoSerif") && run.fontSize > 0f })
-            val units = builder.build(page)
+            // Units index the page's reading-order text (ADR-018), not the extracted text.
+            val reading = builder.readingText(page)
+            val units = builder.build(reading)
             assertTrue("sentences: ${units.size}", units.size >= MIN_SENTENCES_ON_PAGE)
             units.forEach { unit ->
-                assertEquals(unit.text, collapseWhitespace(page.text.substring(unit.charStart, unit.charEnd)))
+                assertEquals(unit.text, collapseWhitespace(reading.text.substring(unit.charStart, unit.charEnd)))
                 assertEquals(Lang.EN, unit.lang)
                 assertTrue("unit ${unit.index} has no bounds", !unit.bounds.isNullOrEmpty())
             }
