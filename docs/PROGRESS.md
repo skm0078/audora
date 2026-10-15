@@ -2,6 +2,18 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## P0-02 — Signed releases (2026-10-15)
+- `.github/workflows/release.yml`: run from `prod` (Actions → Release → Run workflow) or push a `v*` tag on `prod`. Builds and signs `:app:assembleRelease`, checks 16 KB alignment and the signer certificate, publishes `audora-vX.Y.Z-arm64.apk` + `SHA256SUMS.txt` to GitHub Releases. Refuses commits not on `prod` and tags that differ from the version.
+- Version: `audora.versionName` in `gradle.properties` is the single source; `versionCode` is derived (`MAJOR*1000000 + MINOR*1000 + PATCH`).
+- Signing secrets (`KEYSTORE_B64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`, spec §7) live in a GitHub environment `release` limited to `prod` and `v*`, so a workflow edited on a feature branch cannot read them. Publishing runs in a separate job without the secrets, using the `gh` CLI like the dev-build job instead of `softprops/action-gh-release` (one fewer third-party action with write access).
+- Key runbook and Windows key script (no Android Studio): `docs/RELEASING.md`, `scripts/release/new-release-key.ps1` (PKCS12, RSA 4096, ~27 years, random 32-char password, never overwrites an existing key).
+- Android CI now also builds the unsigned release APK on every push, and ignores tags.
+- Verified: key script end to end under PowerShell 7 with the JDK `keytool` (key created, secrets copied, base64 round-trip, re-run keeps the key); actionlint + shellcheck on both workflows; ktlint. The release build itself is verified only in CI.
+
+**Pending (user):** one-time key setup and backups and ruleset change (docs/RELEASING.md steps 1–4), dev → prod PR, run the Release workflow; then pin `EXPECTED_CERT_SHA256` from the v0.0.1 release notes.
+
+**Real-device checks:** Obtainium installs `audora-v0.0.1-arm64.apk` on the Moto Edge 50 Fusion next to the dev build; the app opens.
+
 ## S3 — Background playback spike, harness (2026-10-14)
 - New debug app `:spikes:playback` (`spikes/playback/`): Media3 `MediaSessionService`, blocking `TtsDataSource` over a render-ahead queue, fake engine with configurable RTF (sleep or busy-CPU), run metrics and a shareable report. CI builds it and the dev-build release carries it as `audora-s3-spike.apk`.
 - Report and protocol: `research/spikes/S3-background-playback/REPORT.md`. Media3 source review found a 10-minute stuck-buffering timeout P1-04 must handle.
