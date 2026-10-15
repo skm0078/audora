@@ -55,7 +55,7 @@ jobs:
         # assembleDebugAndroidTest only compiles the instrumented tests; the device-tests job runs them.
         run: >-
           ./gradlew ktlintCheck detekt test assembleDebug :app:assembleRelease
-          :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest --stacktrace
+          :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest --stacktrace
 
       - name: 16 KB alignment check
         run: |
@@ -144,7 +144,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Build the test APK
-        run: ./gradlew :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest --stacktrace
+        run: ./gradlew :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest --stacktrace
 
       - name: Start the emulator
         timeout-minutes: 15
@@ -182,9 +182,11 @@ jobs:
           [ "$booted" = "1" ] || fail "Emulator did not finish booting"
           echo "Emulator booted"
 
-      - name: Instrumented tests (:pdf, :playback)
+      - name: Instrumented tests (:pdf, :playback, :speech)
         timeout-minutes: 20
-        run: ./gradlew :pdf:connectedDebugAndroidTest :playback:connectedDebugAndroidTest --stacktrace
+        run: >-
+          ./gradlew :pdf:connectedDebugAndroidTest :playback:connectedDebugAndroidTest
+          :speech:connectedDebugAndroidTest --stacktrace
 
       - name: Failed device tests
         if: failure()
@@ -194,14 +196,16 @@ jobs:
           import xml.etree.ElementTree as ET
           for path in glob.glob("*/build/outputs/androidTest-results/connected/**/*.xml", recursive=True):
               for case in ET.parse(path).getroot().iter("testcase"):
+                  print(f"ran {case.get('classname')}.{case.get('name')} in {case.get('time')} s")
                   for problem in list(case.findall("failure")) + list(case.findall("error")):
                       print(f"::error::{case.get('classname')}.{case.get('name')}")
-                      print((problem.text or problem.get("message") or "")[:3000])
+                      print(f"message: {problem.get('message') or ''}"[:1000])
+                      print((problem.text or "").strip()[:3000])
           PY
 
       - name: Memory test numbers
         if: always()
-        run: 'timeout 30 "$ANDROID_HOME/platform-tools/adb" logcat -d -s AudoraMemoryTest:I || true'
+        run: 'timeout 30 "$ANDROID_HOME/platform-tools/adb" logcat -d -s AudoraMemoryTest:I AudoraSpeechTest:I AndroidRuntime:E DEBUG:F libc:F sherpa-onnx:W TestRunner:I || true'
 
       - name: Upload reports on failure
         if: failure()

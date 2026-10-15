@@ -100,15 +100,10 @@ private class OfflineTtsSynthesizer(private val tts: OfflineTts) : SherpaSynthes
 
     override fun generate(text: String, speakerId: Int, keepGoing: () -> Boolean): FloatArray {
         val config = GenerationConfig(sid = speakerId, speed = 1f)
-        return tts.generateWithConfigAndCallback(text, config) { _ -> if (keepGoing()) CONTINUE else STOP }.samples
+        return tts.generateWithConfigAndCallback(text, config, SherpaStopCallback(keepGoing)).samples
     }
 
     override fun release() = tts.release()
-
-    private companion object {
-        const val CONTINUE = 1
-        const val STOP = 0
-    }
 }
 
 private class AndroidAssetTree(private val assets: AssetManager) : AssetTree {
