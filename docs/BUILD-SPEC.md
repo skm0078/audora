@@ -143,7 +143,7 @@ Runs lazily per page, two pages ahead of playback, cached per book (a few analys
 5. **Remove clutter**: lines repeating in the top/bottom 8% of the text area across ≥3 pages of a 7-page window, header lines whose page number runs with the page, standalone page numbers, table interiors; citation markers skipped (setting) (ADR-020).
 6. **Repair**: de-hyphenate across line breaks (keep real hyphens), expand ligatures, fold soft hyphens / zero-width and control chars (ZWJ/ZWNJ kept), drop line-start bullets; NFC is P3-02's (ADR-020).
 7. **Split sentences**: ICU `BreakIterator` per locale; `।` as sentence end; per-language abbreviation lists.
-8. **Normalize for speech**: numbers, dates, ₹, %, ranges (incl. Devanagari/Bengali digits), URLs/emails → "link", Roman numerals in headings. Table-driven tests.
+8. **Normalize for speech**: numbers, dates, ₹, %, ranges (incl. Devanagari/Bengali digits), URLs/emails → "link", Roman numerals in headings. Table-driven tests. Runs in `:speech` at render time, not on `ReadingUnit.text` (ADR-019).
 9. **Prosody**: pause after headings (~600 ms), paragraphs (~400 ms), list items.
 
 **Golden corpus.** Redistributable PDFs (public-domain books, CC BY papers, US-government Hindi/Bengali documents, self-generated Hindi/Bengali PDFs) in `pdf/golden/`, scored on the JVM from PDFium page dumps (ADR-017). Copyrighted samples stay in the shared `audora/test-pdfs/` folder and are only used locally. Each golden PDF has an expected text (`pdf/golden/expected/*.txt`, hand-checked). Pipeline changes must not lower the corpus score; CI enforces it. This is the agent's main self-check.
@@ -244,6 +244,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 016 | Render-ahead cache is an 8 MiB in-memory LRU (`QueueConfig.recentAudioBytes`) instead of a 20 MB disk LRU in `cacheDir/tts/` (§6) | Accepted (P1-04) |
 | 017 | Golden corpus in `pdf/golden/`, scored on the JVM from PDFium page dumps; corpus score gated against `dev` in CI | Accepted (P2-01) |
 | 018 | Layout: column-first XY-cut, paragraphs, headings by size + bold font name; `charStart` indexes the page's reading-order text; `PIPELINE_VERSION` 2 | Accepted (P2-02) |
+| 019 | Speech normalization lives in `:speech` and runs at render time; `ReadingUnit.text` stays the extracted text (display, fingerprints) | Accepted (P2-04) |
 | 020 | Clutter removal against neighbouring pages (window cached in `PdfBook`), margin bands on the text area, tables by aligned cell runs; repair keeps offsets mapped and ZWJ/ZWNJ; `PIPELINE_VERSION` 3 | Accepted (P2-03) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
