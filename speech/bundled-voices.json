@@ -1,0 +1,45 @@
+{
+  "comment": "File: speech/bundled-voices.json. Purpose: the English voice packed into the APK (ADR-012 rule, ADR-014). 'bundled' picks one entry; changing it is the whole swap once the phone blind rating is in. Archives come from sherpa-onnx's tts-models release and are checked against sha256 at build time. Never add Lessac/Blizzard-derived voices (lessac, amy, hfc_*, hi_IN rohan).",
+  "bundled": "piper-en-ljspeech",
+  "baseUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/",
+  "espeakDictionaries": ["en", "hi", "bn"],
+  "voices": [
+    {
+      "id": "piper-en-ljspeech",
+      "label": "English (US), Piper ljspeech",
+      "lang": "en",
+      "family": "vits",
+      "archive": "vits-piper-en_US-ljspeech-medium",
+      "sha256": "3dfb4b759d8be032a4903a9538d128b0fda2a06ab1de6cbc2d93a97e2dd83dba",
+      "model": "en_US-ljspeech-medium.onnx",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 0,
+      "licence": "Piper voice (MIT), trained on LJ Speech (public domain)"
+    },
+    {
+      "id": "piper-en-cori",
+      "label": "English (UK), Piper cori",
+      "lang": "en",
+      "family": "vits",
+      "archive": "vits-piper-en_GB-cori-medium",
+      "sha256": "49c9a5361bbdd95d7ca9687c4de11e5908481f65e7c7c368960df79949fdac2b",
+      "model": "en_GB-cori-medium.onnx",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 0,
+      "licence": "Piper voice (MIT), trained on LibriVox recordings (public domain)"
+    },
+    {
+      "id": "kitten-en-nano",
+      "label": "English, KittenTTS nano",
+      "lang": "en",
+      "family": "kitten",
+      "archive": "kitten-nano-en-v0_8-int8",
+      "sha256": "6fa5be852612ce761094ba74ee6123b4fc4acfefa79bf64dc63acae4a83af2fd",
+      "model": "model.int8.onnx",
+      "voices": "voices.bin",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 7,
+      "licence": "KittenTTS v0.8 (Apache-2.0)"
+    }
+  ]
+}
