@@ -19,6 +19,9 @@ dependencies {
     implementation(project(":pdf"))
     implementation(project(":speech"))
 
+    // api: playback.contract (shared with the reader) exposes Media3 session types.
+    api(libs.media3.session)
+
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.junit)

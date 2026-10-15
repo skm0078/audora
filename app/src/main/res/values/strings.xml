@@ -34,17 +34,37 @@
     <string name="library_error_not_in_library">That book is no longer in your library.</string>
     <string name="library_error_storage">Audora could not save your library. Is your phone\'s storage full?</string>
 
-    <!-- Opening a book, until the reader (P1-05) -->
-    <string name="book_reader_coming">Reading aloud arrives in a later update. For now this shows what Audora found in the first pages.</string>
+    <!-- Reader (P1-05) -->
     <string name="book_not_in_library">This book is no longer in your library.</string>
-    <string name="pdf_check_retry">Open again</string>
-    <string name="pdf_check_pages">%1$d pages. Read the first %2$d in %3$d ms.</string>
-    <string name="pdf_check_details">%1$d sentences, %2$d rebuilt word spans, %3$d unmapped characters.</string>
-    <string name="pdf_check_no_text">No text on these pages (scanned pages are read with OCR in Phase 3).</string>
-    <string name="pdf_check_damaged">This file is damaged or is not a PDF Audora can open.</string>
-    <string name="pdf_check_unreadable">Audora could not read this file. It may have been moved or deleted.</string>
-    <string name="pdf_check_engine">The PDF engine failed to start. Please share the logs.</string>
-    <string name="pdf_check_page_failed">A page could not be read. Please share the logs.</string>
+    <string name="reader_retry">Open again</string>
+    <string name="reader_damaged">This file is damaged or is not a PDF Audora can open.</string>
+    <string name="reader_unreadable">Audora could not read this file. It may have been moved or deleted.</string>
+    <string name="reader_engine">The PDF engine failed to start. Please share the logs.</string>
+    <string name="reader_locked">This PDF needs its password before Audora can read it.</string>
+    <string name="reader_enter_password">Enter password</string>
+    <string name="reader_page_of">Page %1$d of %2$d</string>
+    <string name="reader_previous_page">Previous page</string>
+    <string name="reader_next_page">Next page</string>
+    <string name="reader_pick_page">Go to page</string>
+    <string name="reader_pick_page_label">Page (1–%1$d)</string>
+    <string name="reader_pick_page_go">Go</string>
+    <string name="reader_back_to_reading">Back to page %1$d, where reading is</string>
+    <string name="reader_page_no_text">No text on this page. Scanned pages are read with OCR in a later update.</string>
+    <string name="reader_page_failed">This page could not be read. Please share the logs.</string>
+    <string name="reader_tap_hint">Tap a sentence to read from there.</string>
+    <string name="reader_play">Read aloud</string>
+    <string name="reader_pause">Pause</string>
+    <string name="reader_skip_back">Previous sentence</string>
+    <string name="reader_skip_forward">Next sentence</string>
+    <string name="reader_speed">Speed %1$s×</string>
+    <string name="reader_sleep_timer">Sleep timer</string>
+    <string name="reader_sleep_off">Off</string>
+    <string name="reader_sleep_minutes">%1$d minutes</string>
+    <string name="reader_sleep_end_of_page">End of page</string>
+    <string name="reader_sleep_finishing">Finishing the sentence</string>
+    <string name="reader_player_connecting">Connecting to the player…</string>
+    <string name="reader_player_unavailable">The player is not available. Please share the logs.</string>
+    <string name="reader_player_error">Reading stopped because of an error. Tap play to try again, or share the logs.</string>
 
     <!-- Password prompt -->
     <string name="password_title">This PDF is locked</string>

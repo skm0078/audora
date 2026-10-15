@@ -1,7 +1,7 @@
-// File: app/src/main/kotlin/io/github/skm0078/audora/ui/pdfcheck/PasswordPromptDialog.kt
+// File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/PasswordPromptDialog.kt
 // Purpose: Asks for a PDF's password; shown again with an error after a wrong one (P1-02).
 
-package io.github.skm0078.audora.ui.pdfcheck
+package io.github.skm0078.audora.ui.reader
 
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions

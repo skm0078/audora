@@ -6,21 +6,21 @@ package io.github.skm0078.audora.ui
 import io.github.skm0078.audora.core.library.BookId
 
 /**
- * Three screens, at most two deep: the library is the root, a book or Settings sits on top of it. Encoded as
- * a string so it survives process death through saved state. If the reader (P1-05) makes the graph deeper,
- * that is the point to ask for Navigation Compose.
+ * Three screens, at most two deep: the library is the root, the reader or Settings sits on top of it. Encoded
+ * as a string so it survives process death through saved state. The reader (P1-05) kept the graph this flat,
+ * so Navigation Compose is still not needed.
  */
 sealed interface AppDestination {
     data object Library : AppDestination
 
     data object Settings : AppDestination
 
-    data class BookDetail(val id: BookId) : AppDestination
+    data class Reader(val id: BookId) : AppDestination
 
     fun toRoute(): String = when (this) {
         Library -> LIBRARY
         Settings -> SETTINGS
-        is BookDetail -> BOOK_PREFIX + id.value
+        is Reader -> BOOK_PREFIX + id.value
     }
 
     companion object {
@@ -33,7 +33,7 @@ sealed interface AppDestination {
             route == SETTINGS -> Settings
 
             route != null && route.startsWith(BOOK_PREFIX) && route.length > BOOK_PREFIX.length ->
-                BookDetail(BookId(route.removePrefix(BOOK_PREFIX)))
+                Reader(BookId(route.removePrefix(BOOK_PREFIX)))
 
             else -> Library
         }
