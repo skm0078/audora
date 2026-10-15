@@ -146,7 +146,7 @@ Runs lazily per page, two pages ahead of playback, cached per book. Each stage i
 8. **Normalize for speech**: numbers, dates, ₹, %, ranges (incl. Devanagari/Bengali digits), URLs/emails → "link", Roman numerals in headings. Table-driven tests.
 9. **Prosody**: pause after headings (~600 ms), paragraphs (~400 ms), list items.
 
-**Golden corpus.** ~25 PDFs in `code/testdata/pdfs/` **that we are allowed to redistribute** (public-domain books, arXiv papers with permissive licenses, self-generated Hindi/Bengali PDFs incl. one legacy-font file). Copyrighted samples stay in `D:\AUDORA\test-pdfs\` and are only used locally. Each golden PDF has a hand-checked `testdata/expected/*.txt`. Pipeline changes must not lower the similarity score. This is the agent's main self-check.
+**Golden corpus.** Redistributable PDFs (public-domain books, CC BY papers, US-government Hindi/Bengali documents, self-generated Hindi/Bengali PDFs) in `pdf/golden/`, scored on the JVM from PDFium page dumps (ADR-017). Copyrighted samples stay in the shared `audora/test-pdfs/` folder and are only used locally. Each golden PDF has an expected text (`pdf/golden/expected/*.txt`, hand-checked). Pipeline changes must not lower the corpus score; CI enforces it. This is the agent's main self-check.
 
 **AI cleanup: dropped (D6).** Nothing leaves the phone except model downloads.
 
@@ -241,6 +241,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 012 | S1: sherpa-onnx AAR vendored from its GitHub release (SHA-pinned), models mirrored to our own release, Kokoro v1.0, no Lessac-derived voices, English default rule, Moto Edge 50 Fusion as dev reference phone | Accepted (S1); English default pending phone run |
 | 014 | Bundled English voice chosen in `speech/bundled-voices.json`, fetched at build time from sherpa-onnx's release (SHA-pinned), espeak-ng-data trimmed to en/hi/bn; Piper ljspeech provisional | Accepted (P1-03) |
 | 016 | Render-ahead cache is an 8 MiB in-memory LRU (`QueueConfig.recentAudioBytes`) instead of a 20 MB disk LRU in `cacheDir/tts/` (§6) | Accepted (P1-04) |
+| 017 | Golden corpus in `pdf/golden/`, scored on the JVM from PDFium page dumps; corpus score gated against `dev` in CI | Accepted (P2-01) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 
