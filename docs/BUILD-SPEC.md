@@ -240,6 +240,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 011 | S2: PDFium confirmed + JNI scope, `/ActualText` rebuild, OCR cross-check for Indic, Tesseract for all scripts, reopen every 100 pages | Accepted (S2) |
 | 012 | S1: sherpa-onnx AAR vendored from its GitHub release (SHA-pinned), models mirrored to our own release, Kokoro v1.0, no Lessac-derived voices, English default rule, Moto Edge 50 Fusion as dev reference phone | Accepted (S1); English default pending phone run |
 | 014 | Bundled English voice chosen in `speech/bundled-voices.json`, fetched at build time from sherpa-onnx's release (SHA-pinned), espeak-ng-data trimmed to en/hi/bn; Piper ljspeech provisional | Accepted (P1-03) |
+| 016 | Render-ahead cache is an 8 MiB in-memory LRU (`QueueConfig.recentAudioBytes`) instead of a 20 MB disk LRU in `cacheDir/tts/` (§6) | Accepted (P1-04) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 
