@@ -17,6 +17,10 @@ package io.github.skm0078.audora.core.config
  *   10-minute timeout, S3 finding 3) before that sentence is skipped; the first time restarts the render queue.
  * @property stuckBufferingTimeoutMs Media3's stuck-buffering timeout. Its default (10 min) in production;
  *   tests lower it. Setting it always comes with an explicit wake mode (S3 finding 4).
+ * @property playbackStartBufferMs audio the player needs buffered before it starts or resumes. 0: a sentence
+ *   plays as soon as it is rendered. Media3's defaults (1 s, 2 s after a rebuffer) never fill when the
+ *   rendered sentences are short and the next one waits for the playhead to move (render window), so the
+ *   player would sit in BUFFERING for good.
  */
 data class QueueConfig(
     val prefetchUnits: Int = 3,
@@ -26,6 +30,7 @@ data class QueueConfig(
     val renderRetryLimit: Int = 3,
     val stuckRetryLimit: Int = 2,
     val stuckBufferingTimeoutMs: Int = 600_000,
+    val playbackStartBufferMs: Int = 0,
 ) {
     init {
         require(prefetchUnits >= 1) { "prefetchUnits must be >= 1, was $prefetchUnits" }
@@ -35,6 +40,7 @@ data class QueueConfig(
         require(renderRetryLimit >= 1) { "renderRetryLimit must be >= 1, was $renderRetryLimit" }
         require(stuckRetryLimit >= 1) { "stuckRetryLimit must be >= 1, was $stuckRetryLimit" }
         require(stuckBufferingTimeoutMs > 0) { "stuckBufferingTimeoutMs must be > 0, was $stuckBufferingTimeoutMs" }
+        require(playbackStartBufferMs >= 0) { "playbackStartBufferMs must be >= 0, was $playbackStartBufferMs" }
     }
 
     private companion object {
