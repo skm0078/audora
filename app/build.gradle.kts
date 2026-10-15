@@ -35,6 +35,19 @@ android {
         }
     }
 
+    androidResources {
+        // The bundled voice's weights (:speech, ADR-014) are read straight from the APK; stored uncompressed they
+        // load without inflating ~60 MB first.
+        noCompress += "onnx"
+    }
+
+    packaging {
+        jniLibs {
+            // sherpa-onnx's Kotlin API loads only libsherpa-onnx-jni.so and libonnxruntime.so (ADR-012).
+            excludes += listOf("**/libsherpa-onnx-c-api.so", "**/libsherpa-onnx-cxx-api.so")
+        }
+    }
+
     buildTypes {
         debug {
             // Lets a debug build sit next to a release build on the same phone.
