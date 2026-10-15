@@ -10,6 +10,10 @@ Start from any page, pick a voice, and keep listening with the screen off or in 
 - Free and open source under [GPL-3.0](LICENSE).
 - Android 12+ on 64-bit ARM phones.
 
+## Install
+Stable releases: **https://github.com/skm0078/audora/releases/latest** (download `audora-vX.Y.Z-arm64.apk`
+on your phone). To get updates automatically, add `https://github.com/skm0078/audora` in Obtainium.
+
 ## Try a build
 On your phone, download the latest dev build:
 **https://github.com/skm0078/audora/releases/download/dev-build/audora-dev.apk**

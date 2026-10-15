@@ -1,13 +1,16 @@
 # File: .github/workflows/android.yml
 # Purpose: On every push and PR: style, static analysis, unit tests, debug APKs, 16 KB alignment check.
 #          The debug APKs (Audora and the S3 playback spike) are uploaded as one artifact (Build Spec §7).
-# Signed release builds on tags arrive with P0-02.
+#          It also builds the unsigned release APK, so a release-only failure (lint-vital, release config) shows up here
+#          and not first on release day. Signed releases: release.yml.
 
 name: Android CI
 
 # Every branch push runs CI, so a PR from a branch in this repo shows the result without a second run.
+# Tags are left to release.yml.
 on:
   push:
+    branches: ["**"]
   workflow_dispatch:
 
 permissions:
@@ -46,13 +49,14 @@ jobs:
       - name: Test the 16 KB checker itself
         run: python3 -m unittest discover -s scripts/tests -v
 
-      - name: ktlint, detekt, unit tests, debug APK
-        run: ./gradlew ktlintCheck detekt test assembleDebug --stacktrace
+      - name: ktlint, detekt, unit tests, debug APKs, unsigned release APK
+        run: ./gradlew ktlintCheck detekt test assembleDebug :app:assembleRelease --stacktrace
 
       - name: 16 KB alignment check
         run: |
           python3 scripts/check_16kb_alignment.py \
             app/build/outputs/apk/debug/*.apk \
+            app/build/outputs/apk/release/*.apk \
             spikes/playback/build/outputs/apk/debug/*.apk
 
       - name: Name the debug APKs

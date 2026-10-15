@@ -1,0 +1,216 @@
+# File: .github/workflows/release.yml
+# Purpose: Builds the signed release APK and publishes it to GitHub Releases as audora-vX.Y.Z-arm64.apk
+#          (Build Spec §7, ticket P0-02). Runbook: docs/RELEASING.md.
+#
+# Two ways to start it, both only from the prod branch:
+#   1. Actions → Release → Run workflow (branch: prod). Creates the tag v<audora.versionName> itself.
+#   2. Push a tag v<audora.versionName> that points at a commit on prod.
+# The signing secrets live in the "release" environment, which only prod and v* tags can use, so a
+# workflow edited on a feature branch can never read the key.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  # SHA-256 of the release signing certificate. Empty until the first release prints it; once pinned,
+  # a build signed with any other key fails here instead of reaching friends' phones as a non-update.
+  EXPECTED_CERT_SHA256: ""
+
+jobs:
+  build:
+    name: Build signed release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: release
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      cert-sha256: ${{ steps.verify.outputs.cert-sha256 }}
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+        with:
+          # Full history and tags: needed to prove the commit is on prod and the tag is new.
+          fetch-depth: 0
+
+      - name: Check version, tag and branch
+        id: version
+        run: |
+          version="$(sed -n 's/^audora\.versionName=//p' gradle.properties | tr -d '[:space:]')"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::audora.versionName in gradle.properties is '$version', expected MAJOR.MINOR.PATCH"
+            exit 1
+          fi
+          tag="v${version}"
+
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            if [[ "$GITHUB_REF_NAME" != "$tag" ]]; then
+              echo "::error::Tag $GITHUB_REF_NAME does not match audora.versionName ($version). Tag $tag instead, or bump the version first."
+              exit 1
+            fi
+          else
+            if [[ "$GITHUB_REF" != "refs/heads/prod" ]]; then
+              echo "::error::Run this workflow from the prod branch (chosen: $GITHUB_REF_NAME)."
+              exit 1
+            fi
+            if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+              echo "::error::Tag $tag already exists. Bump audora.versionName in gradle.properties (via dev → prod) before releasing again."
+              exit 1
+            fi
+          fi
+
+          git fetch --no-tags origin prod
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/prod; then
+            echo "::error::Commit ${GITHUB_SHA::7} is not on prod. Releases are cut from prod only."
+            exit 1
+          fi
+
+          echo "Releasing $tag from ${GITHUB_SHA::7}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Check the signing secrets are set
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          missing=()
+          for name in KEYSTORE_B64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            [[ -n "${!name}" ]] || missing+=("$name")
+          done
+          if (( ${#missing[@]} )); then
+            echo "::error::Missing secrets in the 'release' environment: ${missing[*]} (docs/RELEASING.md, step 2)."
+            exit 1
+          fi
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+          # A release build reads the cache but never writes it.
+          cache-read-only: true
+
+      - name: Write the keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: |
+          umask 077
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/release.p12"
+
+      - name: ktlint, detekt, unit tests, signed release APK
+        env:
+          AUDORA_KEYSTORE_PATH: ${{ runner.temp }}/release.p12
+          AUDORA_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          AUDORA_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          AUDORA_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew ktlintCheck detekt test :app:assembleRelease --stacktrace
+
+      - name: Delete the keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.p12"
+
+      - name: 16 KB alignment check
+        run: python3 scripts/check_16kb_alignment.py app/build/outputs/apk/release/*.apk
+
+      - name: Verify the signature
+        id: verify
+        run: |
+          shopt -s nullglob
+          apks=(app/build/outputs/apk/release/*.apk)
+          if (( ${#apks[@]} != 1 )) || [[ "${apks[0]}" == *-unsigned.apk ]]; then
+            echo "::error::Expected exactly one signed release APK, found: ${apks[*]:-none}"
+            exit 1
+          fi
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          apksigner="$build_tools/apksigner"
+          "$apksigner" verify --verbose --print-certs "${apks[0]}" | tee verify.txt
+          cert="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' verify.txt | tr -d '[:space:]')"
+          if [[ -z "$cert" ]]; then
+            echo "::error::apksigner printed no signer certificate"
+            exit 1
+          fi
+          if [[ -n "$EXPECTED_CERT_SHA256" && "$cert" != "$EXPECTED_CERT_SHA256" ]]; then
+            echo "::error::Signed with certificate $cert, but releases must use $EXPECTED_CERT_SHA256. Friends could not update to this APK."
+            exit 1
+          fi
+          if [[ -z "$EXPECTED_CERT_SHA256" ]]; then
+            echo "::warning::Signing certificate not pinned yet. Pin EXPECTED_CERT_SHA256 in release.yml to $cert"
+          fi
+          echo "cert-sha256=$cert" >> "$GITHUB_OUTPUT"
+
+      - name: Name the APK
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/release/*.apk "dist/audora-${TAG}-arm64.apk"
+          (cd dist && sha256sum ./*.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
+
+      - name: Upload the release APK
+        uses: actions/upload-artifact@v5
+        with:
+          name: audora-release-${{ steps.version.outputs.tag }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
+
+  # Separate job so only this one holds write access, and it never sees the signing secrets.
+  publish:
+    name: Publish GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download the release APK
+        uses: actions/download-artifact@v5
+        with:
+          name: audora-release-${{ needs.build.outputs.tag }}
+          path: dist
+
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.build.outputs.tag }}
+          CERT: ${{ needs.build.outputs.cert-sha256 }}
+        run: |
+          cat > notes.md <<NOTES
+          Install or update: download \`audora-${TAG}-arm64.apk\` on your phone and open it.
+          Android 12 or newer, 64-bit phones. Expect a Play Protect prompt for apps from outside the Play Store.
+
+          To get updates automatically, add \`https://github.com/${GH_REPO}\` in Obtainium.
+
+          Signing certificate SHA-256: \`${CERT}\`
+          NOTES
+
+          # A tag pushed from the GitHub "Draft a new release" page may already have a release: add the files to it.
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* \
+              --target "$GITHUB_SHA" \
+              --title "Audora ${TAG}" \
+              --notes-file notes.md \
+              --latest
+          fi

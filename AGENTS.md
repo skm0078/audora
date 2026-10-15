@@ -31,7 +31,8 @@ Dependencies: app → playback → (speech, pdf) → core. Never the reverse.
 - Fast check: ./gradlew ktlintCheck detekt test
 - Auto-fix style: ./gradlew ktlintFormat
 - Golden quality (from P2-01): ./gradlew :pdf:goldenTest (writes docs/QUALITY.md)
-- Debug APK: ./gradlew assembleDebug (CI builds it on every push and uploads it; signed release on tag v* from P0-02)
+- Debug APK: ./gradlew assembleDebug (CI builds it on every push and uploads it)
+- Signed release: Release workflow from prod (docs/RELEASING.md); version lives in gradle.properties (audora.versionName)
 - 16 KB check: python3 scripts/check_16kb_alignment.py app/build/outputs/apk/debug/*.apk
 The maintainer has no Android Studio: CI on GitHub Actions is the build of record.
 
