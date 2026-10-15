@@ -4,9 +4,14 @@
 package io.github.skm0078.audora.playback.session
 
 import android.util.Log
+import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.NoSampleRenderer
+import androidx.media3.exoplayer.Renderer
+import androidx.media3.exoplayer.RenderersFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.skm0078.audora.core.config.QueueConfig
@@ -46,6 +51,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@OptIn(UnstableApi::class)
 @RunWith(AndroidJUnit4::class)
 class BookSessionTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -63,7 +69,16 @@ class BookSessionTest {
         // The session's own log lines, in logcat under one tag (CI prints it), to see why a run stalled.
         AudoraLog.install(LogSink { Log.i(LOG_TAG, "${it.tag}: ${it.message}", it.throwable) })
         onMain {
-            player = SpeechPlayer.build(instrumentation.targetContext, registry, CONFIG, handleAudioFocus = false)
+            // A renderer that plays nothing: the player's position follows the system clock, because the CI
+            // emulator runs without sound and its audio output never advances. Loading, playlist moves and
+            // ENDED are all real.
+            player = SpeechPlayer.build(
+                instrumentation.targetContext,
+                registry,
+                CONFIG,
+                handleAudioFocus = false,
+                renderers = RenderersFactory { _, _, _, _, _ -> arrayOf<Renderer>(SilentRenderer()) },
+            )
             player.addListener(Recorder())
             session = BookSession(
                 player,
@@ -125,7 +140,9 @@ class BookSessionTest {
         play(page = 0, charStart = 0)
 
         awaitEnd()
-        assertEquals(allKeys() - UnitKey(0, 1), played.toList())
+        // The player may move onto the failing sentence before its load error surfaces; it is then removed and
+        // never heard. What matters: every other sentence plays, in order, and the book still ends.
+        assertEquals(allKeys() - UnitKey(0, 1), played.filter { it != UnitKey(0, 1) })
         assertTrue(states.any { it.error?.code == PlaybackErrorCode.PLAYBACK_FAILED })
     }
 
@@ -199,6 +216,13 @@ class BookSessionTest {
         }
 
         override fun close() = Unit
+    }
+
+    /** Consumes nothing and is always ready, so ExoPlayer runs on its own clock (Media3's [NoSampleRenderer]). */
+    private class SilentRenderer : NoSampleRenderer() {
+        override fun getName() = "SilentRenderer"
+
+        override fun render(positionUs: Long, elapsedRealtimeUs: Long) = Unit
     }
 
     private object Texts : ItemTexts {

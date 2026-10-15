@@ -10,6 +10,7 @@ import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.RenderersFactory
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.extractor.Extractor
 import androidx.media3.extractor.ExtractorsFactory
@@ -23,6 +24,8 @@ object SpeechPlayer {
     /**
      * WAV only, from [TtsDataSource]. Audio focus and becoming-noisy (headphones unplugged) pause playback.
      * @param handleAudioFocus false only in device tests, where nothing should depend on the emulator's focus.
+     * @param renderers device tests only: replaces the audio output, whose clock does not advance on an emulator
+     *   started without sound. Null = ExoPlayer's own renderers.
      */
     @OptIn(UnstableApi::class)
     fun build(
@@ -30,6 +33,7 @@ object SpeechPlayer {
         registry: QueueRegistry,
         config: QueueConfig,
         handleAudioFocus: Boolean = HANDLE_AUDIO_FOCUS,
+        renderers: RenderersFactory? = null,
     ): ExoPlayer {
         val wavOnly = ExtractorsFactory { arrayOf<Extractor>(WavExtractor()) }
         val speech = AudioAttributes.Builder()
@@ -44,7 +48,9 @@ object SpeechPlayer {
                 config.playbackStartBufferMs,
             )
             .build()
-        return ExoPlayer.Builder(context)
+        val builder = ExoPlayer.Builder(context)
+        if (renderers != null) builder.setRenderersFactory(renderers)
+        return builder
             .setLoadControl(startAtOnce)
             .setMediaSourceFactory(ProgressiveMediaSource.Factory(TtsDataSource.Factory(registry), wavOnly))
             .setAudioAttributes(speech, handleAudioFocus)
