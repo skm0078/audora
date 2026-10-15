@@ -169,7 +169,7 @@ $created = Get-Date -Format 'yyyy-MM-dd'
     'Key password: same as Password',
     "Certificate SHA-256: $fingerprint",
     '',
-    'Backups: copy this whole folder to two places that are not this PC (docs/RELEASING.md, step 3).'
+    'Backups: copy this whole folder to two places that are not this PC (docs/RELEASING.md, step 4).'
 ) | Set-Content -Path $notesPath -Encoding ASCII
 
 Write-Host ''

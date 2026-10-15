@@ -19,7 +19,7 @@ How a signed APK gets from `prod` to friends' phones, and how the signing key is
 
 > **If the key is lost, nobody can update Audora.** Android only installs an update signed with the same key.
 > Friends would have to uninstall the app (losing their library and reading positions) and install a new one.
-> The backups in step 3 are the only protection against this.
+> The backups in step 4 are the only protection against this.
 
 ## One-time setup
 
@@ -56,7 +56,19 @@ This needs `keytool`, which comes with any Java JDK. Android Studio is not neede
 If a paste went wrong, run the script again: it never replaces an existing key, it only repeats the copying.
 If you use Windows clipboard history (Win+V), clear it afterwards (Win+V → **Clear all**).
 
-### 3. Back up the key (do not skip)
+### 3. Allow merge commits into prod
+
+The "protect dev and prod" ruleset currently allows only squash and rebase merges. Promoting dev to prod needs
+a merge commit (see "Cutting a release"), so add it once:
+
+1. Open https://github.com/skm0078/audora/settings/rules and click **protect dev and prod**.
+2. Scroll to **Require a pull request before merging** and expand **Additional settings**.
+3. Under **Allowed merge methods**, tick **Merge** (leave Squash and Rebase ticked).
+4. Scroll to the bottom and click **Save changes**.
+
+Ticket PRs into `dev` keep using squash or rebase; the merge option is just for dev → prod.
+
+### 4. Back up the key (do not skip)
 
 Copy the whole `D:\AUDORA\signing` folder to **two** places that are not this PC, for example two USB sticks,
 or one USB stick and an encrypted password manager entry (attach the `.p12` file and the password).
