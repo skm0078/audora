@@ -96,11 +96,12 @@ Pushing a tag `vX.Y.Z` that points at a commit on `prod` does the same as step 3
 The release app (`io.github.skm0078.audora`) and the dev build (`io.github.skm0078.audora.debug`) install side
 by side. Expect a Play Protect prompt the first time; that is normal for apps from outside the Play Store.
 
-## After the first release
+## Pinned certificate
 
-The release notes show the signing certificate's SHA-256. Pin it as `EXPECTED_CERT_SHA256` in
-`.github/workflows/release.yml` (a one-line PR). From then on, a build signed with any other key fails before
-it is published, instead of reaching phones as an APK that cannot update the installed app.
+The release certificate's SHA-256 is pinned as `EXPECTED_CERT_SHA256` in `.github/workflows/release.yml`:
+`a4a558acec075b159872c52a91bd6873b16fa340ba40eafd2608888e0ecef8ea` (also in the release notes and in
+`audora-release-passwords.txt`). A build signed with any other key fails before it is published, instead of
+reaching phones as an APK that cannot update the installed app. Only a deliberate key change updates the pin.
 
 ## When something fails
 

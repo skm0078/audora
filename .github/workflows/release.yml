@@ -23,9 +23,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # SHA-256 of the release signing certificate. Empty until the first release prints it; once pinned,
-  # a build signed with any other key fails here instead of reaching friends' phones as a non-update.
-  EXPECTED_CERT_SHA256: ""
+  # SHA-256 of the release signing certificate (key created 2026-10-15, docs/RELEASING.md). A build signed
+  # with any other key fails here instead of reaching friends' phones as an APK that cannot update the app.
+  EXPECTED_CERT_SHA256: "a4a558acec075b159872c52a91bd6873b16fa340ba40eafd2608888e0ecef8ea"
 
 jobs:
   build:
