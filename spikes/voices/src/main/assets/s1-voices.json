@@ -1,0 +1,203 @@
+{
+  "comment": "File: spikes/voices/src/main/assets/s1-voices.json. Purpose: S1 voice catalog and benchmark texts, read by the :spikes:voices app, the desktop benchmark script and the s1-voices CI workflow. One source of truth, so every run measures the same voices on the same texts.",
+  "version": 1,
+  "modelBaseUrl": "https://github.com/skm0078/audora/releases/download/s1-voices/",
+  "texts": [
+    {
+      "id": "en-first",
+      "lang": "en",
+      "kind": "first",
+      "text": "Chapter One. The house stood at the end of a quiet street."
+    },
+    {
+      "id": "en-novel",
+      "lang": "en",
+      "kind": "prose",
+      "text": "Call me Ishmael. Some years ago, never mind how long precisely, having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation."
+    },
+    {
+      "id": "en-formal",
+      "lang": "en",
+      "kind": "formal",
+      "text": "All human beings are born free and equal in dignity and rights. They are endowed with reason and conscience and should act towards one another in a spirit of brotherhood. Everyone has the right to life, liberty and security of person."
+    },
+    {
+      "id": "en-hard",
+      "lang": "en",
+      "kind": "hard",
+      "text": "On 14 Oct 2026, Dr. Smith paid $1,250.50 for 3 copies of Vol. II, pages 45 to 67. The CO2 level rose by 12% between 1990 and 2020, see Fig. 3b."
+    },
+    {
+      "id": "hi-first",
+      "lang": "hi",
+      "kind": "first",
+      "text": "अध्याय एक। वह घर एक शांत गली के आखिर में खड़ा था।"
+    },
+    {
+      "id": "hi-prose",
+      "lang": "hi",
+      "kind": "prose",
+      "text": "सुबह की हल्की धूप खिड़की से अंदर आ रही थी। रीना ने चाय का कप उठाया और पुरानी किताब के पन्ने पलटने लगी। हर पन्ने पर किसी भूली हुई कहानी की खुशबू थी, और वह धीरे-धीरे उसमें खो गई।"
+    },
+    {
+      "id": "hi-formal",
+      "lang": "hi",
+      "kind": "formal",
+      "text": "सभी मनुष्यों को गौरव और अधिकारों के मामले में जन्मजात स्वतन्त्रता और समानता प्राप्त है। उन्हें बुद्धि और अन्तरात्मा की देन प्राप्त है और परस्पर उन्हें भाईचारे के भाव से बर्ताव करना चाहिए।"
+    },
+    {
+      "id": "hi-hard",
+      "lang": "hi",
+      "kind": "hard",
+      "text": "१५ अगस्त १९४७ को भारत स्वतंत्र हुआ। इस किताब की कीमत ₹२५० है, और Dr. शर्मा ने इसे 3.5 घंटे में पढ़ लिया। क्या कृष्ण, द्वारका, श्रृंखला और क्षत्रिय जैसे संयुक्ताक्षर ठीक से बोले जाते हैं?"
+    },
+    {
+      "id": "bn-first",
+      "lang": "bn",
+      "kind": "first",
+      "text": "প্রথম অধ্যায়। বাড়িটা একটা শান্ত গলির শেষ মাথায় দাঁড়িয়ে ছিল।"
+    },
+    {
+      "id": "bn-prose",
+      "lang": "bn",
+      "kind": "prose",
+      "text": "সকালের নরম রোদ জানালা দিয়ে ঘরে ঢুকছিল। মিতা চায়ের কাপটা হাতে নিয়ে পুরনো বইটার পাতা ওলটাতে লাগল। প্রতিটি পাতায় কোনো এক ভুলে যাওয়া গল্পের গন্ধ ছিল, আর সে ধীরে ধীরে তাতে হারিয়ে গেল।"
+    },
+    {
+      "id": "bn-formal",
+      "lang": "bn",
+      "kind": "formal",
+      "text": "সমস্ত মানুষ স্বাধীনভাবে সমান মর্যাদা এবং অধিকার নিয়ে জন্মগ্রহণ করে। তাঁদের বিবেক এবং বুদ্ধি আছে; সুতরাং সকলেরই একে অপরের প্রতি ভ্রাতৃত্বসুলভ মনোভাব নিয়ে আচরণ করা উচিত।"
+    },
+    {
+      "id": "bn-hard",
+      "lang": "bn",
+      "kind": "hard",
+      "text": "২১ ফেব্রুয়ারি ১৯৫২ সালে ভাষা আন্দোলন হয়েছিল। বইটির দাম ₹৩৫০, আর Dr. সেন এটি 2.5 ঘণ্টায় পড়ে ফেলেছেন। ক্ষমা, স্বপ্ন, বিজ্ঞান আর রাষ্ট্রের মতো যুক্তাক্ষর ঠিকঠাক উচ্চারণ হয় কি?"
+    }
+  ],
+  "voices": [
+    {
+      "id": "piper-en-ljspeech",
+      "label": "Piper en_US ljspeech (medium)",
+      "lang": "en",
+      "family": "vits",
+      "archive": "vits-piper-en_US-ljspeech-medium",
+      "model": "en_US-ljspeech-medium.onnx",
+      "dataDir": "espeak-ng-data",
+      "license": "LJ Speech data public domain; trained from scratch"
+    },
+    {
+      "id": "piper-en-cori",
+      "label": "Piper en_GB cori (medium)",
+      "lang": "en",
+      "family": "vits",
+      "archive": "vits-piper-en_GB-cori-medium",
+      "model": "en_GB-cori-medium.onnx",
+      "dataDir": "espeak-ng-data",
+      "license": "LibriVox data public domain; trained from scratch"
+    },
+    {
+      "id": "kitten-en-nano",
+      "label": "KittenTTS v0.8 nano int8 (expr-voice-2-f)",
+      "lang": "en",
+      "family": "kitten",
+      "archive": "kitten-nano-en-v0_8-int8",
+      "model": "model.int8.onnx",
+      "voices": "voices.bin",
+      "dataDir": "espeak-ng-data",
+      "sid": 1,
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "kokoro-en-heart",
+      "label": "Kokoro v1.0 int8 (af_heart)",
+      "lang": "en",
+      "family": "kokoro",
+      "archive": "kokoro-int8-multi-lang-v1_0",
+      "model": "model.int8.onnx",
+      "voices": "voices.bin",
+      "dataDir": "espeak-ng-data",
+      "lexicon": "lexicon-us-en.txt",
+      "kokoroLang": "en-us",
+      "sid": 3,
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "supertonic-en",
+      "label": "Supertonic 3 int8, English",
+      "lang": "en",
+      "family": "supertonic",
+      "archive": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+      "extraLang": "en",
+      "sid": 0,
+      "numSteps": 5,
+      "license": "Code MIT; model OpenRAIL-M (use restrictions)"
+    },
+    {
+      "id": "piper-hi-priyamvada",
+      "label": "Piper hi_IN priyamvada (medium)",
+      "lang": "hi",
+      "family": "vits",
+      "archive": "vits-piper-hi_IN-priyamvada-medium",
+      "model": "hi_IN-priyamvada-medium.onnx",
+      "dataDir": "espeak-ng-data",
+      "license": "CC BY-NC-SA 4.0"
+    },
+    {
+      "id": "piper-hi-pratham",
+      "label": "Piper hi_IN pratham (medium)",
+      "lang": "hi",
+      "family": "vits",
+      "archive": "vits-piper-hi_IN-pratham-medium",
+      "model": "hi_IN-pratham-medium.onnx",
+      "dataDir": "espeak-ng-data",
+      "license": "CC BY-NC-SA 4.0"
+    },
+    {
+      "id": "supertonic-hi",
+      "label": "Supertonic 3 int8, Hindi",
+      "lang": "hi",
+      "family": "supertonic",
+      "archive": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+      "extraLang": "hi",
+      "sid": 0,
+      "numSteps": 5,
+      "license": "Code MIT; model OpenRAIL-M (use restrictions)"
+    },
+    {
+      "id": "kokoro-hi-alpha",
+      "label": "Kokoro v1.0 int8 (hf_alpha), Hindi",
+      "lang": "hi",
+      "family": "kokoro",
+      "archive": "kokoro-int8-multi-lang-v1_0",
+      "model": "model.int8.onnx",
+      "voices": "voices.bin",
+      "dataDir": "espeak-ng-data",
+      "lexicon": "",
+      "kokoroLang": "hi",
+      "sid": 31,
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "piper-bn-google",
+      "label": "Piper bn_BD google (medium, converted)",
+      "lang": "bn",
+      "family": "vits",
+      "archive": "vits-piper-bn_BD-google-medium",
+      "model": "bn_BD-google-medium.onnx",
+      "dataDir": "espeak-ng-data",
+      "sid": 0,
+      "license": "CC BY-SA 4.0 (OpenSLR 37) + CMU Indic"
+    },
+    {
+      "id": "mms-bn",
+      "label": "MMS-TTS ben (converted)",
+      "lang": "bn",
+      "family": "vits",
+      "archive": "vits-mms-ben",
+      "model": "model.onnx",
+      "license": "CC BY-NC 4.0"
+    }
+  ]
+}

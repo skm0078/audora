@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: spikes/voices/src/main/res/values/strings.xml
+     Purpose: Spike app name. Other text is inline: this app is a test harness, not shipped UI. -->
+<resources>
+    <string name="app_name">Audora S1 voices</string>
+</resources>

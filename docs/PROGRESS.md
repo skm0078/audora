@@ -2,6 +2,16 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## S1 — Voice benchmark, harness and desktop pre-run (2026-10-15)
+- New debug app `:spikes:voices` (`spikes/voices/`): downloads the voice models from our `s1-voices` release (zip + SHA-256 check, zip-slip guard), benchmarks every voice at 2 and 4 threads plus the system TTS (load, first sentence, RTF, RSS, thermal), blind listening test with ratings, shareable Markdown report and log. CI builds it as `audora-s1-voices.apk` on the dev-build release.
+- sherpa-onnx 1.13.8 AAR resolved from its GitHub release through an exclusive Ivy repository, SHA-256 pinned and checked before every build (ADR-012). Its arm64 libraries are 16 KB aligned; the unused C/C++ API libraries are excluded.
+- `.github/workflows/s1-voices.yml`: repacks sherpa-onnx's models as zip, converts Piper bn_BD google and MMS ben, runs the desktop pre-run with an ASR round trip and publishes it all to the `s1-voices` pre-release.
+- Desktop pre-run: Piper RTF ≈ 0.07, Supertonic ≈ 0.17, Kitten ≈ 0.30 (2.3 s first sentence), Kokoro ≈ 1.2–1.3 (not real time). Report: `research/spikes/S1-voice-benchmark/REPORT.md`; samples: `research/voice-samples/`.
+- Decisions (ADR-012): Kokoro v1.0 instead of v1.1; no Lessac-derived Piper voices (lessac, amy, hfc_*, hi rohan); English default = Piper ljspeech or cori by blind rating, Kitten only if rated higher and RTF ≤ 0.5 on the Moto; Moto Edge 50 Fusion is the dev reference phone.
+- Verified: 30 unit tests (catalog-free logic: model store with a fake HTTP fetcher, zip extraction, WAV, runner, plan, report, blind order), ktlint and detekt locally; Python catalog test; MMS converter checked end to end on a tiny random VITS model. The Android build itself is verified only in CI.
+
+**Real-device checks (pending, this closes S1):** on the Moto Edge 50 Fusion, download all voices, run the benchmark, rate the samples blind, share the report (`/mnt/project-files/audora/s1/phone-test-steps.md`, batched with the S3 overnight run).
+
 ## P0-02 — Signed releases (2026-10-15)
 - `.github/workflows/release.yml`: run from `prod` (Actions → Release → Run workflow) or push a `v*` tag on `prod`. Builds and signs `:app:assembleRelease`, checks 16 KB alignment and the signer certificate, publishes `audora-vX.Y.Z-arm64.apk` + `SHA256SUMS.txt` to GitHub Releases. Refuses commits not on `prod` and tags that differ from the version.
 - Version: `audora.versionName` in `gradle.properties` is the single source; `versionCode` is derived (`MAJOR*1000000 + MINOR*1000 + PATCH`).

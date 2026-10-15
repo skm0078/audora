@@ -59,18 +59,20 @@ All neural models run through **sherpa-onnx 1.13.8** (Apache-2.0 runtime). Syste
 
 | Language | Role | Candidate(s) | Engine | Size | License | Decided by |
 |---|---|---|---|---|---|---|
-| English | Default (bundled) | Piper en_US lessac/amy medium **or** KittenTTS v0.8 nano | sherpa VITS / Kitten | ~60 MB / ~32 MB | MIT-ish per card / Apache-2.0 | S1 (RTF + listening) |
-| English | Premium (download) | Kokoro v1.1 int8 (af_heart, bf_emma…) | sherpa Kokoro | ~100–150 MB *(verify)* | Apache-2.0 | S1; offered only if measured RTF < 0.8 |
+| English | Default (bundled) | Piper medium **ljspeech or cori** (public-domain data) **or** KittenTTS v0.8 nano | sherpa VITS / Kitten | ~64 MB / ~28 MB + 19 MB espeak-ng-data | MIT + public domain / Apache-2.0 | S1 rule, ADR-012 (blind rating; Kitten only if RTF ≤ 0.5 on the Moto) |
+| English | Premium (download) | Kokoro **v1.0** int8 (af_heart, bf_emma…); Supertonic 3 en | sherpa Kokoro / Supertonic | 132 MB / 145 MB | Apache-2.0 / OpenRAIL-M | S1; offered only if measured RTF < 0.8 |
 | English | Fallback | Android system TTS | `TextToSpeech` | 0 | device | — |
-| Hindi | Default | Google hi-IN system voice **or** Piper hi_IN (rohan / priyamvada / pratham) | system / sherpa VITS | 0 / ~60 MB | device / MIT card, IITM data terms unread | S0 + S1 |
-| Hindi | Premium | Supertonic-3 hi | sherpa Supertonic | ~?? *(verify)* | OpenRAIL-M (use restrictions to read) | S1 |
-| Bengali | Default | Google bn-IN system voice **or** Piper bn_BD google medium | system / sherpa VITS | 0 / 82 MB | device / CC BY-SA 4.0 | S0 + S1 |
-| Bengali | Fallback | MMS-TTS ben | sherpa VITS | ~110–140 MB | CC-BY-NC 4.0 | — |
+| Hindi | Default | Google hi-IN system voice **or** Piper hi_IN priyamvada / pratham | system / sherpa VITS | 0 / ~64 MB | device / CC BY-NC-SA 4.0 | S0 + S1 |
+| Hindi | Premium | Supertonic-3 hi | sherpa Supertonic | 145 MB (shared with en) | OpenRAIL-M | S1 |
+| Bengali | Default | Google bn-IN system voice **or** Piper bn_BD google medium (converted) | system / sherpa VITS | 0 / 82 MB | device / CC BY-SA 4.0 | S0 + S1 |
+| Bengali | Fallback | MMS-TTS ben (converted) | sherpa VITS | ~110–140 MB | CC-BY-NC 4.0 | — |
 | Any | Advanced | Import any sherpa-onnx model folder (`.onnx` + `tokens.txt` [+ espeak data]) | sherpa | — | user's | — |
 
 **Script routing (ADR-005, unchanged).** Each sentence is tagged by Unicode script: Latin → English, Devanagari U+0900–097F → Hindi, Bengali U+0980–09FF → Bengali. Deterministic, instant. v1 splits English runs of ≥3 words inside Indic sentences.
 
-**Attribution.** CC BY-SA and CC-BY-NC voices require an in-app "Voices & licenses" screen.
+**Never shipped (ADR-012):** Piper voices trained on or fine-tuned from Lessac/Blizzard 2013 data (lessac, amy, hfc_*, hi_IN rohan): research-only, no redistribution.
+
+**Attribution.** CC BY-SA, CC BY-NC-SA and CC-BY-NC voices require an in-app "Voices & licenses" screen.
 
 ## 4. Architecture
 
@@ -88,7 +90,7 @@ Dependencies flow `app → playback → (speech, pdf) → core`, never the rever
 
 **Stack (pinned in `libs.versions.toml`):** Kotlin 2.x, Compose (BOM), Media3 **1.11.1** (ExoPlayer + MediaSessionService), sherpa-onnx **1.13.8** AAR (arm64-v8a), **PdfiumAndroidKt 2.0.x** (text + render; Android `PdfRenderer` as display fallback), ICU `BreakIterator` (android.icu), Room, DataStore, WorkManager (downloads only), Hilt (KSP), kotlinx.coroutines. Phase 3: Tesseract4Android 4.9.x with `tessdata_best` eng/hin/ben (ADR-011); PaddleOCR (PP-OCR) ONNX on the existing ONNX Runtime only if the optional P3-05 experiment beats Tesseract on Hindi. No ML Kit (D2).
 
-**Platform baseline:** compileSdk 36, targetSdk 36 (37 only after testing the while-in-use rule), minSdk 31 (Android 12, D5), AGP ≥ 8.5.1, NDK r28+, `abiFilters arm64-v8a`. Reference device: OnePlus 12 (SD 8 Gen 3, Android 16), edge-to-edge + predictive back supported from day one.
+**Platform baseline:** compileSdk 36, targetSdk 36 (37 only after testing the while-in-use rule), minSdk 31 (Android 12, D5), AGP ≥ 8.5.1, NDK r28+, `abiFilters arm64-v8a`. Reference device for development: Moto Edge 50 Fusion (Snapdragon 7s Gen 2); OnePlus 12 (SD 8 Gen 3, Android 16) is a pre-release check (ADR-012). Edge-to-edge + predictive back supported from day one.
 
 ```kotlin
 // File: core/src/main/kotlin/app/audora/core/ReadingUnit.kt
@@ -236,6 +238,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 009 | Resume by char-offset anchor + fingerprint + pipeline version | Accepted (v1.0) |
 | 010 | compileSdk 37, targetSdk 36 | Accepted (P0-01) |
 | 011 | S2: PDFium confirmed + JNI scope, `/ActualText` rebuild, OCR cross-check for Indic, Tesseract for all scripts, reopen every 100 pages | Accepted (S2) |
+| 012 | S1: sherpa-onnx AAR vendored from its GitHub release (SHA-pinned), models mirrored to our own release, Kokoro v1.0, no Lessac-derived voices, English default rule, Moto Edge 50 Fusion as dev reference phone | Accepted (S1); English default pending phone run |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

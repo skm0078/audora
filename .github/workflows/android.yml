@@ -1,6 +1,6 @@
 # File: .github/workflows/android.yml
 # Purpose: On every push and PR: style, static analysis, unit tests, debug APKs, 16 KB alignment check.
-#          The debug APKs (Audora and the S3 playback spike) are uploaded as one artifact (Build Spec §7).
+#          The debug APKs (Audora, the S3 playback spike and the S1 voices spike) are uploaded as one artifact (Build Spec §7).
 #          It also builds the unsigned release APK, so a release-only failure (lint-vital, release config) shows up here
 #          and not first on release day. Signed releases: release.yml.
 
@@ -57,7 +57,8 @@ jobs:
           python3 scripts/check_16kb_alignment.py \
             app/build/outputs/apk/debug/*.apk \
             app/build/outputs/apk/release/*.apk \
-            spikes/playback/build/outputs/apk/debug/*.apk
+            spikes/playback/build/outputs/apk/debug/*.apk \
+            spikes/voices/build/outputs/apk/debug/*.apk
 
       - name: Name the debug APKs
         id: apk
@@ -67,6 +68,7 @@ jobs:
           mkdir -p dist
           cp app/build/outputs/apk/debug/*.apk "dist/${name}.apk"
           cp spikes/playback/build/outputs/apk/debug/*.apk "dist/audora-s3-spike-${short_sha}.apk"
+          cp spikes/voices/build/outputs/apk/debug/*.apk "dist/audora-s1-voices-${short_sha}.apk"
           echo "name=${name}" >> "$GITHUB_OUTPUT"
 
       - name: Upload debug APKs
@@ -117,9 +119,10 @@ jobs:
         run: |
           cp dist/audora-debug-*.apk audora-dev.apk
           cp dist/audora-s3-spike-*.apk audora-s3-spike.apk
+          cp dist/audora-s1-voices-*.apk audora-s1-voices.apk
           gh release delete "$TAG" --cleanup-tag --yes || echo "No previous $TAG release"
-          gh release create "$TAG" audora-dev.apk audora-s3-spike.apk \
+          gh release create "$TAG" audora-dev.apk audora-s3-spike.apk audora-s1-voices.apk \
             --prerelease \
             --target "$GITHUB_SHA" \
             --title "Dev build (${GITHUB_SHA::7})" \
-            --notes "Latest debug builds of the dev branch, commit ${GITHUB_SHA}: audora-dev.apk (the app) and audora-s3-spike.apk (S3 background-playback test). For testing only; not signed for release."
+            --notes "Latest debug builds of the dev branch, commit ${GITHUB_SHA}: audora-dev.apk (the app) audora-s3-spike.apk (S3 background-playback test) and audora-s1-voices.apk (S1 voice benchmark). For testing only; not signed for release."
