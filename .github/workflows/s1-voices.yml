@@ -1,0 +1,137 @@
+# File: .github/workflows/s1-voices.yml
+# Purpose: S1 voice benchmark support (ADR-012). Builds the voice-model mirror the :spikes:voices app downloads from,
+#          converts the two Bengali candidates sherpa-onnx does not ship prebuilt, and runs the desktop pre-run
+#          (speed + ASR round trip) on every catalog voice. Publishes everything to the "s1-voices" pre-release.
+#
+# Why a mirror: the phone app has no bzip2 support (adding one would be a new dependency), sherpa-onnx ships its
+# models as .tar.bz2, and the Bengali voices exist only on Hugging Face in a format sherpa-onnx cannot load.
+# The mirror holds one <archive>.zip per catalog archive plus SHA256SUMS.txt, which the app verifies.
+
+name: S1 voices
+
+on:
+  push:
+    branches: ["feat/s1-**", "feat/S1-**"]
+    paths:
+      - spikes/voices/src/main/assets/s1-voices.json
+      - research/spikes/S1-voice-benchmark/scripts/**
+      - .github/workflows/s1-voices.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: s1-voices
+  cancel-in-progress: false
+
+env:
+  CATALOG: spikes/voices/src/main/assets/s1-voices.json
+  SCRIPTS: research/spikes/S1-voice-benchmark/scripts
+  SHERPA_TTS: https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models
+  SHERPA_ASR: https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models
+  ASR_EN: sherpa-onnx-whisper-turbo
+  ASR_INDIC: sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12
+  PIPER_BN_URL: https://huggingface.co/rhasspy/piper-voices/resolve/main/bn/bn_BD/google/medium
+  PIPER_BN_ARCHIVE: vits-piper-bn_BD-google-medium
+  MMS_BN_ARCHIVE: vits-mms-ben
+  MMS_BN_REPO: facebook/mms-tts-ben
+  # Any prebuilt Piper archive carries the same espeak-ng-data (bn included); the converted Piper voice reuses it.
+  ESPEAK_SOURCE: vits-piper-en_US-ljspeech-medium
+
+jobs:
+  mirror-and-bench:
+    name: Mirror models and run the desktop pre-run
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Check the catalog
+        run: python3 -m unittest discover -s "$SCRIPTS" -p "test_*.py" -v
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q ffmpeg zip
+          python3 -m pip install --upgrade pip
+          python3 -m pip install "sherpa-onnx==1.13.8" "onnx==1.23.2" "numpy<3"
+          python3 -m pip install "torch==2.14.1" --index-url https://download.pytorch.org/whl/cpu
+          python3 -m pip install "transformers==4.57.1"
+
+      - name: Download prebuilt sherpa-onnx voices
+        run: |
+          mkdir -p models
+          for archive in $(jq -r '.voices[].archive' "$CATALOG" | sort -u); do
+            if [ "$archive" = "$PIPER_BN_ARCHIVE" ] || [ "$archive" = "$MMS_BN_ARCHIVE" ]; then continue; fi
+            echo "::group::$archive"
+            curl -fsSL --retry 5 --retry-all-errors -o "models/$archive.tar.bz2" "$SHERPA_TTS/$archive.tar.bz2"
+            tar -xjf "models/$archive.tar.bz2" -C models
+            rm "models/$archive.tar.bz2"
+            test -d "models/$archive"
+            echo "::endgroup::"
+          done
+
+      - name: Convert Piper bn_BD google (Hugging Face → sherpa-onnx)
+        run: |
+          mkdir -p hf/piper-bn
+          for f in bn_BD-google-medium.onnx bn_BD-google-medium.onnx.json; do
+            curl -fsSL --retry 5 --retry-all-errors -o "hf/piper-bn/$f" "$PIPER_BN_URL/$f"
+          done
+          # The model card carries the attribution; keep going without it but say so.
+          curl -fsSL --retry 5 --retry-all-errors -o hf/piper-bn/MODEL_CARD "$PIPER_BN_URL/MODEL_CARD" \
+            || echo "::warning::MODEL_CARD not found for bn_BD google medium"
+          python3 "$SCRIPTS/convert_bn_voices.py" piper --src hf/piper-bn \
+            --espeak-data "models/$ESPEAK_SOURCE/espeak-ng-data" --out "models/$PIPER_BN_ARCHIVE"
+
+      - name: Convert MMS Bengali (Transformers VITS → ONNX)
+        run: python3 "$SCRIPTS/convert_bn_voices.py" mms --repo "$MMS_BN_REPO" --out "models/$MMS_BN_ARCHIVE"
+
+      - name: Download ASR models for the round trip
+        run: |
+          mkdir -p asr
+          for model in "$ASR_EN" "$ASR_INDIC"; do
+            curl -fsSL --retry 5 --retry-all-errors -o "asr/$model.tar.bz2" "$SHERPA_ASR/$model.tar.bz2"
+            tar -xjf "asr/$model.tar.bz2" -C asr
+            rm "asr/$model.tar.bz2"
+          done
+
+      - name: Desktop pre-run (all voices, 2 threads)
+        run: |
+          python3 "$SCRIPTS/bench_desktop.py" --catalog "$CATALOG" --models-dir models --out out \
+            --asr-en "asr/$ASR_EN" --asr-indic "asr/$ASR_INDIC" --threads 2 --mp3
+          cat out/desktop-results.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Package the mirror
+        run: |
+          mkdir -p dist
+          for archive in $(jq -r '.voices[].archive' "$CATALOG" | sort -u); do
+            # -X drops extra file attributes so the same files give the same zip.
+            (cd models && zip -q -r -X "../dist/$archive.zip" "$archive")
+          done
+          (cd out && zip -q -r -X ../dist/s1-desktop-samples.zip wav mp3)
+          cp out/desktop-results.md out/desktop-results.json dist/
+          (cd dist && sha256sum -- *.zip > SHA256SUMS.txt)
+          ls -l dist
+
+      - name: Replace the s1-voices pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: s1-voices
+        run: |
+          gh release delete "$TAG" --cleanup-tag --yes || echo "No previous $TAG release"
+          gh release create "$TAG" dist/* \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "S1 voice models (${GITHUB_SHA::7})" \
+            --notes "Voice models for the S1 benchmark app (audora-s1-voices.apk), repackaged as zip from sherpa-onnx's tts-models release, plus the two converted Bengali voices. Licences are listed per voice in docs/adr/012-s1-voice-benchmark.md; some are non-commercial (CC BY-NC) and are mirrored here for testing only. desktop-results.md holds the desktop pre-run for commit ${GITHUB_SHA}."

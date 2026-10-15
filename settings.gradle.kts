@@ -21,6 +21,20 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // sherpa-onnx ships its Android AAR only as a GitHub release asset, not on Maven (ADR-012). Exclusive, so
+        // this module is never looked up anywhere else and nothing else is looked up here. Checksum: see
+        // sherpaOnnxAarSha256 in libs.versions.toml.
+        exclusiveContent {
+            forRepository {
+                ivy {
+                    name = "sherpaOnnxGitHubReleases"
+                    url = uri("https://github.com/k2-fsa/sherpa-onnx/releases/download/")
+                    patternLayout { artifact("v[revision]/[artifact]-[revision].[ext]") }
+                    metadataSources { artifact() }
+                }
+            }
+            filter { includeModule("com.k2fsa", "sherpa-onnx") }
+        }
     }
 }
 
@@ -34,3 +48,4 @@ include(":playback")
 
 // Spikes: throwaway debug apps that answer one risky question each (docs/TICKET-PLAN.md). Never shipped.
 include(":spikes:playback")
+include(":spikes:voices")

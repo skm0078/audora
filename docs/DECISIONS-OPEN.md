@@ -11,7 +11,7 @@ Updated 2026-10-14 with Swarnakeshar's answers.
 |---|---|---|---|
 | D1 | GitHub repo | **Public, GPL-3.0** | Repo `skm0078/audora` created at P0-01. |
 | D3 | Build/dev setup | **Your phone for testing; CI builds the APKs** | No Android Studio needed. For logs and the Android 17 audio test, install Google's free "SDK Platform-Tools" (adb only, ~10 MB) on Windows; wireless debugging works without a cable. |
-| D4 | Target phones | **OnePlus 12 (Snapdragon 8 Gen 3, Android 16)**; friends on phones ≤ 2–3 years old | Kokoro premium English is realistic on your phone (published RTF ~0.3–0.7 on this chip). OxygenOS/ColorOS battery steps ship first in onboarding. |
+| D4 | Target phones | **OnePlus 12 (Snapdragon 8 Gen 3, Android 16)**; friends on phones ≤ 2–3 years old. *Amended by ADR-012: development reference is the maintainer's Moto Edge 50 Fusion (Snapdragon 7s Gen 2); the OnePlus 12 is a pre-release check.* | Kokoro premium English is realistic on your phone (published RTF ~0.3–0.7 on this chip). OxygenOS/ColorOS battery steps ship first in onboarding. |
 | D5 | Oldest Android | **minSdk 31 (Android 12), arm64-v8a only** | Covers phones from ~2021 onward with margin; drops pre-12 compat code. |
 | D6 | Hosted-AI page cleanup | **Dropped** (violates the no-cloud rule) | Removed from v1. A possible post-v1 experiment: an on-device small model, only if the deterministic pipeline proves insufficient. |
 | D2 | OCR engine | **One app; open-source OCR only, no ML Kit** | Tesseract + PaddleOCR ONNX (Apache-2.0) on the ONNX Runtime we already ship; S2 picks per script. **S2 result: Tesseract for eng/hin/ben; PaddleOCR Hindi optional (ADR-011).** |

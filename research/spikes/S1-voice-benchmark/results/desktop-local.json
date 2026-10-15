@@ -1,0 +1,630 @@
+[
+  {
+    "voice_id": "piper-en-lessac",
+    "label": "Piper en_US lessac (medium)",
+    "lang": "en",
+    "family": "vits",
+    "sid": 0,
+    "threads": 2,
+    "disk_mb": 81.1,
+    "sample_rate": 22050,
+    "load_s": 1.104,
+    "first_sentence_s": 0.257,
+    "rtf_mean": 0.071,
+    "cer_scored": 0.0,
+    "cer_hard": 0.147,
+    "error": "",
+    "texts": [
+      {
+        "text_id": "en-first",
+        "kind": "first",
+        "synth_s": 0.257,
+        "audio_s": 3.15,
+        "rtf": 0.082,
+        "asr_text": "Chapter 1. The house stood at the end of a quiet street. Chapter 1. The",
+        "cer": 0.311
+      },
+      {
+        "text_id": "en-novel",
+        "kind": "prose",
+        "synth_s": 1.13,
+        "audio_s": 14.99,
+        "rtf": 0.075,
+        "asr_text": "Call me Ishmael. Some years ago, never mind how long precisely, having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation.",
+        "cer": 0.0
+      },
+      {
+        "text_id": "en-formal",
+        "kind": "formal",
+        "synth_s": 0.751,
+        "audio_s": 12.32,
+        "rtf": 0.061,
+        "asr_text": "All human beings are born free and equal in dignity and rights. They are endowed with reason and conscience and should act towards one another in a spirit of brotherhood. Everyone has the right to life, liberty and security of person.",
+        "cer": 0.0
+      },
+      {
+        "text_id": "en-hard",
+        "kind": "hard",
+        "synth_s": 1.051,
+        "audio_s": 16.53,
+        "rtf": 0.064,
+        "asr_text": "On 14 Oc 2026, Dr. Smith paid $1250.50 for three copies of Vol. Roman 2, pages 45 to 67. The CO2 level rose by 12% between 1990 and 2020. C-Fig, 3B.",
+        "cer": 0.147
+      }
+    ]
+  },
+  {
+    "voice_id": "piper-en-ljspeech",
+    "label": "Piper en_US ljspeech (medium)",
+    "lang": "en",
+    "family": "vits",
+    "sid": 0,
+    "threads": 2,
+    "disk_mb": 81.5,
+    "sample_rate": 22050,
+    "load_s": 1.528,
+    "first_sentence_s": 0.225,
+    "rtf_mean": 0.064,
+    "cer_scored": 0.0,
+    "cer_hard": 0.333,
+    "error": "",
+    "texts": [
+      {
+        "text_id": "en-first",
+        "kind": "first",
+        "synth_s": 0.225,
+        "audio_s": 3.61,
+        "rtf": 0.062,
+        "asr_text": "CHAPTER I. THE HOUSE STOOD AT THE END OF A QUIET STRE",
+        "cer": 0.111
+      },
+      {
+        "text_id": "en-novel",
+        "kind": "prose",
+        "synth_s": 1.274,
+        "audio_s": 17.47,
+        "rtf": 0.073,
+        "asr_text": "call me ishmael some years ago never mind how long precisely having little or no money in my purse and nothing particular to interest me on shore i thought i would sail about a little and see the watery part of the world it is a way i have of driving off the spleen and regulating the circulation",
+        "cer": 0.0
+      },
+      {
+        "text_id": "en-formal",
+        "kind": "formal",
+        "synth_s": 0.964,
+        "audio_s": 15.24,
+        "rtf": 0.063,
+        "asr_text": "all human beings are born free and equal in dignity and rights they are endowed with reason and conscience and should act towards one another in a spirit of brotherhood everyone has the right to life liberty and security of person",
+        "cer": 0.0
+      },
+      {
+        "text_id": "en-hard",
+        "kind": "hard",
+        "synth_s": 1.233,
+        "audio_s": 21.28,
+        "rtf": 0.058,
+        "asr_text": "on 14 oct 2026 doctor smith pay dollar 1250.50 for three copies of all roman 2 pages 45 to 67 the co2 level rose by 12 percent between 1990 and 2020 c fit 3b",
+        "cer": 0.333
+      }
+    ]
+  },
+  {
+    "voice_id": "piper-en-cori",
+    "label": "Piper en_GB cori (medium)",
+    "lang": "en",
+    "family": "vits",
+    "sid": 0,
+    "threads": 2,
+    "disk_mb": 81.5,
+    "sample_rate": 22050,
+    "load_s": 1.796,
+    "first_sentence_s": 0.243,
+    "rtf_mean": 0.073,
+    "cer_scored": 0.006,
+    "cer_hard": 1.588,
+    "error": "",
+    "texts": [
+      {
+        "text_id": "en-first",
+        "kind": "first",
+        "synth_s": 0.243,
+        "audio_s": 3.43,
+        "rtf": 0.071,
+        "asr_text": "had to do one, the house stood at the end of a quiet street,",
+        "cer": 0.111
+      },
+      {
+        "text_id": "en-novel",
+        "kind": "prose",
+        "synth_s": 1.261,
+        "audio_s": 15.6,
+        "rtf": 0.081,
+        "asr_text": "call me ishmael some years ago never mind how long precisely having little or no money in my purse and nothing particular to interest me unsure i thought i would sail about a little and see the watery part of the world it is a way i have of driving off the spleen and regulating the circulation",
+        "cer": 0.013
+      },
+      {
+        "text_id": "en-formal",
+        "kind": "formal",
+        "synth_s": 0.933,
+        "audio_s": 14.4,
+        "rtf": 0.065,
+        "asr_text": "all human beings are born free and equal in dignity and rights they are endowed with reason and conscience and should act towards one another in a spirit of brotherhood every one has the right to life liberty and security of person",
+        "cer": 0.0
+      },
+      {
+        "text_id": "en-hard",
+        "kind": "hard",
+        "synth_s": 1.28,
+        "audio_s": 17.01,
+        "rtf": 0.075,
+        "asr_text": "on fourteen oct two thousand and twenty six dr smith paid dollar one thousand two hundred fifty point five zero for three copies of vol for the pages forty five to sixty seven the co two level rose by twelve percent between nineteen four nine and two thousand and fifty c fig three b",
+        "cer": 1.588
+      }
+    ]
+  },
+  {
+    "voice_id": "kitten-en-nano",
+    "label": "KittenTTS v0.8 nano int8 (expr-voice-2-f)",
+    "lang": "en",
+    "family": "kitten",
+    "sid": 1,
+    "threads": 2,
+    "disk_mb": 45.7,
+    "sample_rate": 24000,
+    "load_s": 0.712,
+    "first_sentence_s": 2.25,
+    "rtf_mean": 0.319,
+    "cer_scored": 0.0,
+    "cer_hard": 0.088,
+    "error": "",
+    "texts": [
+      {
+        "text_id": "en-first",
+        "kind": "first",
+        "synth_s": 2.25,
+        "audio_s": 6.14,
+        "rtf": 0.367,
+        "asr_text": "chapter i the house stood at the end of a quiet street",
+        "cer": 0.067
+      },
+      {
+        "text_id": "en-novel",
+        "kind": "prose",
+        "synth_s": 8.798,
+        "audio_s": 29.34,
+        "rtf": 0.3,
+        "asr_text": "Call me Ishmael. Some years ago, never mind how long precisely, having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation.",
+        "cer": 0.0
+      },
+      {
+        "text_id": "en-formal",
+        "kind": "formal",
+        "synth_s": 6.979,
+        "audio_s": 22.26,
+        "rtf": 0.313,
+        "asr_text": "all human beings are born free and equal in dignity and rights they are endowed with reason and conscience and should act towards one another in a spirit of brotherhood everyone has the right to life liberty and security of person",
+        "cer": 0.0
+      },
+      {
+        "text_id": "en-hard",
+        "kind": "hard",
+        "synth_s": 7.807,
+        "audio_s": 26.49,
+        "rtf": 0.295,
+        "asr_text": "On 14 oct 2026, Dr. Smith paid 250.50 for three copies of Vol. 2. Pages 45 to 67. The CO2 level rose by 12% between 1990 and 2020. See Fig. 3B.",
+        "cer": 0.088
+      }
+    ]
+  },
+  {
+    "voice_id": "kokoro-en-heart",
+    "label": "Kokoro v1.0 int8 (af_heart)",
+    "lang": "en",
+    "family": "kokoro",
+    "sid": 3,
+    "threads": 2,
+    "disk_mb": 189.9,
+    "sample_rate": 24000,
+    "load_s": 1.474,
+    "first_sentence_s": 4.623,
+    "rtf_mean": 1.339,
+    "cer_scored": 0.0,
+    "cer_hard": 0.108,
+    "error": "",
+    "texts": [
+      {
+        "text_id": "en-first",
+        "kind": "first",
+        "synth_s": 4.623,
+        "audio_s": 3.01,
+        "rtf": 1.536,
+        "asr_text": "Chapter 1. The house stood at the end of a quiet street.",
+        "cer": 0.067
+      },
+      {
+        "text_id": "en-novel",
+        "kind": "prose",
+        "synth_s": 19.457,
+        "audio_s": 15.7,
+        "rtf": 1.239,
+        "asr_text": "Call me Ishmael. Some years ago, never mind how long precisely, having little or no money in my purse and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation.",
+        "cer": 0.0
+      },
+      {
+        "text_id": "en-formal",
+        "kind": "formal",
+        "synth_s": 15.563,
+        "audio_s": 12.23,
+        "rtf": 1.273,
+        "asr_text": "All human beings are born free and equal in dignity and rights. They are endowed with reason and conscience and should act towards one another in a spirit of brotherhood. Everyone has the right to life, liberty, and security of person.",
+        "cer": 0.0
+      },
+      {
+        "text_id": "en-hard",
+        "kind": "hard",
+        "synth_s": 22.958,
+        "audio_s": 17.57,
+        "rtf": 1.307,
+        "asr_text": "On 14 oct 2026, Dr. Smith paid $1250.50 for three copies of vol. Roman 2, pages 45 to 67. The CO2 level rose by 12% between 1990 and 2020. See fig. 3b.",
+        "cer": 0.108
+      }
+    ]
+  },
+  {
+    "voice_id": "supertonic-en",
+    "label": "Supertonic 3 int8, English",
+    "lang": "en",
+    "family": "supertonic",
+    "sid": 0,
+    "threads": 2,
+    "disk_mb": 145.3,
+    "sample_rate": 44100,
+    "load_s": 0.665,
+    "first_sentence_s": 0.84,
+    "rtf_mean": 0.179,
+    "cer_scored": 0.0,
+    "cer_hard": 0.265,
+    "error": "",
+    "texts": [
+      {
+        "text_id": "en-first",
+        "kind": "first",
+        "synth_s": 0.84,
+        "audio_s": 4.13,
+        "rtf": 0.204,
+        "asr_text": "Chapter 1. The House Stood at the End of a Quiet Street.",
+        "cer": 0.067
+      },
+      {
+        "text_id": "en-novel",
+        "kind": "prose",
+        "synth_s": 3.666,
+        "audio_s": 20.79,
+        "rtf": 0.176,
+        "asr_text": "Call me Ishmael some years ago, never mind how long precisely, having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation.",
+        "cer": 0.0
+      },
+      {
+        "text_id": "en-formal",
+        "kind": "formal",
+        "synth_s": 2.522,
+        "audio_s": 15.64,
+        "rtf": 0.161,
+        "asr_text": "All human beings are born free and equal in dignity and rights. They are endowed with reason and conscience and should act towards one another in a spirit of brotherhood. Everyone has the right to life, liberty and security of person.",
+        "cer": 0.0
+      },
+      {
+        "text_id": "en-hard",
+        "kind": "hard",
+        "synth_s": 2.936,
+        "audio_s": 16.85,
+        "rtf": 0.174,
+        "asr_text": "On 14-Auc-2026, Dr. Smith-Smith-Paint-1-Town-In-Town-505050 for 3 copies of VOL e, pages 45-67. The CO2 level rose by 12% between 1990 and 2020. See FIG33B.",
+        "cer": 0.265
+      }
+    ]
+  },
+  {
+    "voice_id": "piper-hi-rohan",
+    "label": "Piper hi_IN rohan (medium)",
+    "lang": "hi",
+    "family": "vits",
+    "sid": 0,
+    "threads": 2,
+    "disk_mb": 80.9,
+    "sample_rate": 22050,
+    "load_s": 1.112,
+    "first_sentence_s": 0.318,
+    "rtf_mean": 0.081,
+    "cer_scored": 0.084,
+    "cer_hard": 0.352,
+    "error": "",
+    "texts": [
+      {
+        "text_id": "hi-first",
+        "kind": "first",
+        "synth_s": 0.318,
+        "audio_s": 3.64,
+        "rtf": 0.087,
+        "asr_text": "अध्याय ए वह घर एक शांतगली के आखिर में खड़ा था",
+        "cer": 0.029
+      },
+      {
+        "text_id": "hi-prose",
+        "kind": "prose",
+        "synth_s": 0.916,
+        "audio_s": 12.46,
+        "rtf": 0.074,
+        "asr_text": "सुबह की हलकी धूप کھिड़की से अनदर आ रही थी रीना ने चाय का कब उٹाया और पुरानी किताब के पनने पर اटने लگी हर पनने पर किसी भھूली हुई कहानी की خुशबू थी और वह धीरे धीरे उसमिक हो गی",
+        "cer": 0.129
+      },
+      {
+        "text_id": "hi-formal",
+        "kind": "formal",
+        "synth_s": 1.109,
+        "audio_s": 13.08,
+        "rtf": 0.085,
+        "asr_text": "सभी मनुष्यों को गौर और अधिकारों के मामले में जन्मजात स्वतंत्रता और समानता प्राप्त है उन्हें बुद्धी और अन्तरात्मा की दिन प्राप्त है और परस्पर उन्हें भाईचारे के भाव से बरताव करना चाहिए",
+        "cer": 0.039
+      },
+      {
+        "text_id": "hi-hard",
+        "kind": "hard",
+        "synth_s": 1.219,
+        "audio_s": 15.87,
+        "rtf": 0.077,
+        "asr_text": "पंद्रह अगस्त एक हजरौौसैाीस को भारत स्तंत्र हुआ इस किताब की कीमत दो सौ पचास है और दृक्त शर्मा ने इसे तीनद समलो पाँच घंटे में पढ़लिया क्या कृष्ण द्वार का शिंखला और क्षत्रीये जैसे संयुप्ताक्षर ठीक से बोले जाते हैं",
+        "cer": 0.352
+      }
+    ]
+  },
+  {
+    "voice_id": "piper-hi-priyamvada",
+    "label": "Piper hi_IN priyamvada (medium)",
+    "lang": "hi",
+    "family": "vits",
+    "sid": 0,
+    "threads": 2,
+    "disk_mb": 81.1,
+    "sample_rate": 22050,
+    "load_s": 1.124,
+    "first_sentence_s": 0.3,
+    "rtf_mean": 0.067,
+    "cer_scored": 0.258,
+    "cer_hard": 0.408,
+    "error": "",
+    "texts": [
+      {
+        "text_id": "hi-first",
+        "kind": "first",
+        "synth_s": 0.3,
+        "audio_s": 4.24,
+        "rtf": 0.071,
+        "asr_text": "अध्याय ए वह घर एक शांत गली के आखिर में खड़ा था",
+        "cer": 0.029
+      },
+      {
+        "text_id": "hi-prose",
+        "kind": "prose",
+        "synth_s": 0.986,
+        "audio_s": 14.75,
+        "rtf": 0.067,
+        "asr_text": "सुبح कی हرकی धूप کھिڑ़کی से اندर آ रहی थھی रीना नے چाی का کپ اٹھایा اوर पुरاनی کताब کे पनने पलٹने लگی हर पनने पर किسی भھूलی हुی کहاनی की खुشبू थی اوर वह धीरे धھीरے اसने کو گئی",
+        "cer": 0.47
+      },
+      {
+        "text_id": "hi-formal",
+        "kind": "formal",
+        "synth_s": 1.077,
+        "audio_s": 14.96,
+        "rtf": 0.072,
+        "asr_text": "सभी मनुष्यों को गौरग और अधिकारों के मामले में जन्मज़ात स्वतंत्रता और समानता प्राप्त है उन्हें बुद्धी और अंतरात्मा की देन प्राप्त है और परस्पर उन्हें भाईचारे के भाव से बरताव करना चाहिए",
+        "cer": 0.046
+      },
+      {
+        "text_id": "hi-hard",
+        "kind": "hard",
+        "synth_s": 1.058,
+        "audio_s": 18.09,
+        "rtf": 0.059,
+        "asr_text": "पंदरह अगस्त एकहज़ार नौव सौ सैतालिस को भारत स्वतंत्र हुआ इस किताब की कीमत दोसव पचास है और दक्त शर्मा ने इसे तीन दसमलो पाँच घंते में पढ़ीया क्य कृष्न द्वारका शिंखना और क्षत्रिय जैसे संयुक्तक्षिर ठीक से बोले जाते हैं",
+        "cer": 0.408
+      }
+    ]
+  },
+  {
+    "voice_id": "piper-hi-pratham",
+    "label": "Piper hi_IN pratham (medium)",
+    "lang": "hi",
+    "family": "vits",
+    "sid": 0,
+    "threads": 2,
+    "disk_mb": 81.1,
+    "sample_rate": 22050,
+    "load_s": 1.086,
+    "first_sentence_s": 0.256,
+    "rtf_mean": 0.071,
+    "cer_scored": 0.035,
+    "cer_hard": 0.373,
+    "error": "",
+    "texts": [
+      {
+        "text_id": "hi-first",
+        "kind": "first",
+        "synth_s": 0.256,
+        "audio_s": 3.56,
+        "rtf": 0.072,
+        "asr_text": "अध्या एक वह घर एक शांत गली के आकर में खड़ा था",
+        "cer": 0.086
+      },
+      {
+        "text_id": "hi-prose",
+        "kind": "prose",
+        "synth_s": 0.841,
+        "audio_s": 11.81,
+        "rtf": 0.071,
+        "asr_text": "सुबह की हलकी धूप खिड़की से अंदर आरही थी रीना ने चाय क कप उठाया और पुरानी किताब के पन्ने पलतने लगी हर पनने पर किसी भूली हुई कहानी की खुशबू थी और वह धीरे धीरे उसमें खो गई",
+        "cer": 0.03
+      },
+      {
+        "text_id": "hi-formal",
+        "kind": "formal",
+        "synth_s": 0.918,
+        "audio_s": 12.29,
+        "rtf": 0.075,
+        "asr_text": "सभी मनुष्यों को गौरव और अधिकारों के मामले में जन्मजात स्वतंत्रता और समानता प्राप्त है उन्हें बुद्धी और अंतरात्मा की देन प्राप्त है और परस्पर उन्हें भायचारे के भाव से बर्ताव करना चाहिए",
+        "cer": 0.039
+      },
+      {
+        "text_id": "hi-hard",
+        "kind": "hard",
+        "synth_s": 1.021,
+        "audio_s": 15.27,
+        "rtf": 0.067,
+        "asr_text": "पंद अगस्त एक हज़ार नौसौ सैंतालीस को भारत स्वतंत्र हुआ इस कि ताब की कीमत दो सौ पचास है और द्प्त शर्मा ने ऐसे तीन दसम लोग पाँच घंटे में पढ़ लिया क्या कृष्ण द्वार का श्विंखला और क्षत्रिय जैसे सयनयुकताक्षर ठीक से बोले जाते हैं",
+        "cer": 0.373
+      }
+    ]
+  },
+  {
+    "voice_id": "supertonic-hi",
+    "label": "Supertonic 3 int8, Hindi",
+    "lang": "hi",
+    "family": "supertonic",
+    "sid": 0,
+    "threads": 2,
+    "disk_mb": 145.3,
+    "sample_rate": 44100,
+    "load_s": 0.714,
+    "first_sentence_s": 0.939,
+    "rtf_mean": 0.174,
+    "cer_scored": 0.52,
+    "cer_hard": 1.0,
+    "error": "",
+    "texts": [
+      {
+        "text_id": "hi-first",
+        "kind": "first",
+        "synth_s": 0.939,
+        "audio_s": 4.53,
+        "rtf": 0.207,
+        "asr_text": "अधियाय एक वह घरएक शांत गली के आखिर में खड़ा था",
+        "cer": 0.029
+      },
+      {
+        "text_id": "hi-prose",
+        "kind": "prose",
+        "synth_s": 2.74,
+        "audio_s": 15.71,
+        "rtf": 0.174,
+        "asr_text": "سुبح کی हلکی دھوپ کڑکی سے اندرآرہی تھی رینا نے چائے کا کپ اٹھایا اور پुرانی کتاب کے پन्نے پلٹنے لگی ہر پनنے پر کسی بھولی ہوئی کہانی کی خुشبو تھی اور وह دھیرے دھیرے اس میں کھو گئی",
+        "cer": 1.008
+      },
+      {
+        "text_id": "hi-formal",
+        "kind": "formal",
+        "synth_s": 2.654,
+        "audio_s": 16.94,
+        "rtf": 0.157,
+        "asr_text": "सभी मनुष्ियों को गौरव और अधिकारों के मामले में जन्मजात स्वतंत्रता और समानता प्राप्त है उन्हें बुद्धी और अनतरात्मा की देन प्राप्त है और परस्पर उन्हें भाईचारे के भाव से बर्ताव करना चाहिए",
+        "cer": 0.033
+      },
+      {
+        "text_id": "hi-hard",
+        "kind": "hard",
+        "synth_s": 2.608,
+        "audio_s": 16.55,
+        "rtf": 0.158,
+        "asr_text": "آرا اگست و یرکو کو بھارت سوتنطر ہوا اس کتاب کی کیمت اوڑے ہے اور ڈاٹشمہ نے اسے تری پائن گھنٹے میں پڑ لیا کیا کرشن دوار کا شرنکلا اور کشتریے جیسے سنیکتاکشر ٹھیک سے بولے جاتے ہیں",
+        "cer": 1.0
+      }
+    ]
+  },
+  {
+    "voice_id": "kokoro-hi-alpha",
+    "label": "Kokoro v1.0 int8 (hf_alpha), Hindi",
+    "lang": "hi",
+    "family": "kokoro",
+    "sid": 31,
+    "threads": 2,
+    "disk_mb": 189.9,
+    "sample_rate": 24000,
+    "load_s": 1.568,
+    "first_sentence_s": 5.617,
+    "rtf_mean": 1.194,
+    "cer_scored": 0.064,
+    "cer_hard": 0.401,
+    "error": "",
+    "texts": [
+      {
+        "text_id": "hi-first",
+        "kind": "first",
+        "synth_s": 5.617,
+        "audio_s": 4.58,
+        "rtf": 1.227,
+        "asr_text": "अध्याई एक वह घर एक शांथ गली के आखिर में खड़ा था",
+        "cer": 0.057
+      },
+      {
+        "text_id": "hi-prose",
+        "kind": "prose",
+        "synth_s": 17.03,
+        "audio_s": 13.85,
+        "rtf": 1.23,
+        "asr_text": "सुबा कि हलकि धूप खिड़ किसे अंदर आ रही थी रीना ने चाई का कब उठाया और पुरानी किताब की पन्ने पलटने लगी हर पन्ने पर किसी भूली हुई कहानी की खुशपू थी और वह धीरे-धीरे उसमें खो गई",
+        "cer": 0.068
+      },
+      {
+        "text_id": "hi-formal",
+        "kind": "formal",
+        "synth_s": 16.284,
+        "audio_s": 13.97,
+        "rtf": 1.166,
+        "asr_text": "सभी मनूष्ों को गौरव और अधिकारों के मामले में जन्मजात स्वतंत्रता और समानता प्राप्त है उन्हें बुद्धी और अंतरात्मा की देन प्राप्त है और परस्पर उन्हें भाईचारे के भाव से परताव करना चाहिए",
+        "cer": 0.059
+      },
+      {
+        "text_id": "hi-hard",
+        "kind": "hard",
+        "synth_s": 21.295,
+        "audio_s": 18.45,
+        "rtf": 1.154,
+        "asr_text": "पंद्रह अगस्त एक हजार नौ सौ सैंतालीस को भारत स्वतंत्र हुआ इस किताब की कीमत दो सौ पचास है और दौक्तर शर्मा ने इसे तीन दिसमलों पाँच घंटे में पढ़ह लिया क्या कृष्न द्वार का श्रिंखला और क्षत्री जैसे संयुक्ताक्षर ठीक से बोले जाते हैं",
+        "cer": 0.401
+      }
+    ]
+  },
+  {
+    "voice_id": "piper-bn-google",
+    "label": "Piper bn_BD google (medium, converted)",
+    "lang": "bn",
+    "family": "vits",
+    "sid": 0,
+    "threads": 2,
+    "disk_mb": 0.0,
+    "sample_rate": 0,
+    "load_s": 0.0,
+    "first_sentence_s": 0.0,
+    "rtf_mean": 0.0,
+    "cer_scored": null,
+    "cer_hard": null,
+    "error": "model directory missing: /tmp/claude-0/s1/models/vits-piper-bn_BD-google-medium",
+    "texts": []
+  },
+  {
+    "voice_id": "mms-bn",
+    "label": "MMS-TTS ben (converted)",
+    "lang": "bn",
+    "family": "vits",
+    "sid": 0,
+    "threads": 2,
+    "disk_mb": 0.0,
+    "sample_rate": 0,
+    "load_s": 0.0,
+    "first_sentence_s": 0.0,
+    "rtf_mean": 0.0,
+    "cer_scored": null,
+    "cer_hard": null,
+    "error": "model directory missing: /tmp/claude-0/s1/models/vits-mms-ben",
+    "texts": []
+  }
+]
