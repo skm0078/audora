@@ -21,4 +21,22 @@
     <string name="password_wrong">Wrong password. Try again.</string>
     <string name="password_open">Open</string>
     <string name="password_cancel">Cancel</string>
+
+    <!-- Settings and diagnostics (P1-07) -->
+    <string name="settings_title">Settings</string>
+    <string name="navigate_back">Back</string>
+    <string name="share_logs_title">Share logs</string>
+    <string name="share_logs_body_hint">Send Audora\'s log to whoever is helping you. It never contains text from your PDFs.</string>
+    <string name="share_logs_failed">Could not prepare the logs. Please try again.</string>
+    <string name="share_logs_chooser_title">Send Audora logs with</string>
+    <string name="share_logs_subject">Audora logs (%1$s, %2$s)</string>
+    <string name="share_logs_body">Audora logs attached. What happened, and roughly when?</string>
+    <string name="unfinished_title">Reading stopped unexpectedly</string>
+    <string name="unfinished_body">Audora stopped while reading page %1$d. Resume where it stopped?</string>
+    <string name="unfinished_resume">Resume</string>
+    <string name="unfinished_not_now">Not now</string>
+    <string name="debug_tools_label">Debug build only</string>
+    <string name="debug_simulate_title">Simulate a reading session</string>
+    <string name="debug_simulate_body">Marks a book as playing without sound. Then force-stop Audora in App info and reopen it: the resume prompt should appear and the log should name the stop.</string>
+    <string name="debug_simulate_done">Marked as reading. Now force-stop Audora and reopen it.</string>
 </resources>
