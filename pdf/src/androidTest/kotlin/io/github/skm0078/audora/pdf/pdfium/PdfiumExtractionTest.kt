@@ -50,7 +50,12 @@ class PdfiumExtractionTest {
         book.use {
             assertEquals(12, it.pageCount)
             assertPagesMatchGroundTruth(it, HI, requireRebuild = true)
-            assertTrue(builder.build(requireNotNull(it.pageText(1).getOrNull())).all { unit -> unit.lang == Lang.HI })
+            // The corpus banner is an English line of its own since layout (ADR-018); everything else is Hindi.
+            val (banner, body) = builder.build(requireNotNull(it.pageText(1).getOrNull()))
+                .partition { unit -> unit.text.startsWith(CORPUS_BANNER) }
+            assertTrue("banner: $banner", banner.all { unit -> unit.lang == Lang.EN })
+            val languages = body.map { unit -> unit.lang }.toSet()
+            assertEquals(setOf(Lang.HI), languages)
         }
     }
 
@@ -113,6 +118,7 @@ class PdfiumExtractionTest {
     private companion object {
         const val EN = "en-udhr-noto.pdf"
         const val HI = "hi-udhr-noto.pdf"
+        const val CORPUS_BANNER = "Audora S2 test corpus"
         const val BN = "bn-udhr-noto.pdf"
         const val ENCRYPTED = "encrypted-userpassword-libreoffice.pdf"
         const val ENCRYPTED_PASSWORD = "openpassword"

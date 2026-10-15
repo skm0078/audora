@@ -36,7 +36,7 @@ operand (1 pt) because the size is set by the text matrix.
      (PDFium joins two columns' lines when a content stream alternates between them) and at a jump back of more than
      2 em (Indic pre-base vowel signs jump back less, so words never split).
    - *Recursive XY-cut, columns first:* an empty vertical strip at least 0.75 em wide and 2 em tall, with at least 5 em
-     of text on each side, is a gutter. Otherwise cut at the widest horizontal gaps. Columns first is what keeps two
+     of text on each side and each side at least 2 em tall, is a gutter. Otherwise cut at the widest horizontal gaps. Columns first is what keeps two
      aligned columns apart: their line gaps line up into full-width strips that a rows-first cut would take. Leaves
      stacked in one column are joined back into one block.
    - *Lines* by vertical overlap; *paragraphs* by line spacing (1.3× the block's usual pitch), first-line indent and

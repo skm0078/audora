@@ -10,7 +10,8 @@ import io.github.skm0078.audora.core.model.TextBox
  * Recursive XY-cut (Spec §5 step 4; OpenDataLoader-PDF's XY-Cut++ as a reference), columns first:
  *
  * 1. An empty vertical strip at least [LayoutConfig.columnGapEm] wide and [LayoutConfig.minColumnHeightEm] tall,
- *    with at least [LayoutConfig.minColumnWidthEm] of text on each side, is a gutter: cut there, left side first.
+ *    with at least [LayoutConfig.minColumnWidthEm] of text on each side and each side at least as tall, is a
+ *    gutter: cut there, left side first.
  *    No run crosses such a strip, so a full-width title or figure caption keeps the cut from happening above or
  *    below it. A single line is never cut: a wide justified space is not a gutter.
  * 2. Otherwise cut at every empty horizontal strip of at least [LayoutConfig.yCutShare] of the widest one, top first.
@@ -69,22 +70,34 @@ internal class XyCut(private val config: LayoutConfig) {
     private fun columnCut(runs: List<GlyphRun>, em: Float): Float? {
         val minGap = config.columnGapEm * em
         val minWidth = config.minColumnWidthEm * em
-        val groupHeight = runs.maxOf { it.box.top } - runs.minOf { it.box.bottom }
-        if (groupHeight < config.minColumnHeightEm * em) return null
+        if (heightOf(runs) < config.minColumnHeightEm * em) return null
         val groupLeft = runs.minOf { it.box.left }
         val groupRight = runs.maxOf { it.box.right }
         var best: Float? = null
         var bestGap = 0f
         for (gap in gaps(runs.map { it.box.left to it.box.right })) {
-            val wide = gap.second - gap.first >= minGap
+            val width = gap.second - gap.first
             val sidesWideEnough = gap.first - groupLeft >= minWidth && groupRight - gap.second >= minWidth
-            if (wide && sidesWideEnough && gap.second - gap.first > bestGap) {
+            val candidate = width >= minGap && width > bestGap && sidesWideEnough
+            if (candidate && sidesTallEnough(runs, gap.first, em)) {
                 best = gap.first
-                bestGap = gap.second - gap.first
+                bestGap = width
             }
         }
         return best
     }
+
+    /**
+     * Both sides of a gutter at [x] span at least [LayoutConfig.minColumnHeightEm]: a gap that only one line has
+     * (the end of a paragraph's last-but-one line above a short last line) is not a gutter.
+     */
+    private fun sidesTallEnough(runs: List<GlyphRun>, x: Float, em: Float): Boolean {
+        val (left, right) = runs.partition { it.box.right <= x }
+        val minHeight = config.minColumnHeightEm * em
+        return heightOf(left) >= minHeight && heightOf(right) >= minHeight
+    }
+
+    private fun heightOf(runs: List<GlyphRun>): Float = runs.maxOf { it.box.top } - runs.minOf { it.box.bottom }
 
     /** Runs split into bands at the widest horizontal gaps, top band first; null when there is no gap. */
     private fun rowCut(runs: List<GlyphRun>): List<List<GlyphRun>>? {

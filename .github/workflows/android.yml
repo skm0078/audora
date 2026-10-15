@@ -1,5 +1,6 @@
 # File: .github/workflows/android.yml
-# Purpose: On every push and PR: style, static analysis, unit tests, debug APKs, 16 KB alignment check.
+# Purpose: On every push and PR: style, static analysis, unit tests, golden corpus score, debug APKs, 16 KB alignment
+#          check.
 #          The debug APKs (Audora, the S3 playback spike and the S1 voices spike) are uploaded as one artifact
 #          (Build Spec §7).
 #          A second job runs the instrumented tests (real PDFium on real PDFs, P1-02) on an x86_64 emulator.
@@ -51,11 +52,42 @@ jobs:
       - name: Test the 16 KB checker itself
         run: python3 -m unittest discover -s scripts/tests -v
 
-      - name: ktlint, detekt, unit tests, debug APKs, unsigned release APK
+      - name: Golden corpus page dumps are current
+        # The JVM golden test reads PDFium page dumps (P2-01, pdf/golden/README.md). Re-dump every golden page with
+        # the pinned desktop PDFium and the production page reader, and fail if a golden PDF or page_reader.cpp
+        # changed without new dumps. Keep the pypdfium2 version in step with scripts/pdf/golden_corpus.py.
+        run: |
+          python3 -m venv "$RUNNER_TEMP/golden-venv"
+          "$RUNNER_TEMP/golden-venv/bin/pip" install --quiet pypdfium2==5.13.0
+          "$RUNNER_TEMP/golden-venv/bin/python" scripts/pdf/golden_corpus.py dump --check
+
+      - name: Fetch the base branch's golden scores
+        # The golden gate compares with dev's scores, so a branch cannot lower the bar by editing its own
+        # scores.tsv. An empty file (dev has no scores yet) skips the gate.
+        run: |
+          baseline="$RUNNER_TEMP/golden-baseline.tsv"
+          git fetch --no-tags --depth=1 origin dev
+          git show FETCH_HEAD:pdf/golden/scores.tsv > "$baseline" 2>/dev/null || : > "$baseline"
+          echo "GOLDEN_BASELINE=$baseline" >> "$GITHUB_ENV"
+
+      - name: ktlint, detekt, unit tests, golden scores, debug APKs, unsigned release APK
         # assembleDebugAndroidTest only compiles the instrumented tests; the device-tests job runs them.
+        # :pdf:goldenTest rewrites docs/QUALITY.md and pdf/golden/scores.tsv; the next step checks they were committed.
         run: >-
-          ./gradlew ktlintCheck detekt test assembleDebug :app:assembleRelease
+          ./gradlew ktlintCheck detekt test :pdf:goldenTest -Pgolden.baseline="$GOLDEN_BASELINE"
+          assembleDebug :app:assembleRelease
           :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest --stacktrace
+
+      - name: Golden scores are committed
+        # docs/QUALITY.md and scores.tsv depend only on the code and the corpus, so a difference means the commit
+        # changed the pipeline's output without recording its score.
+        run: |
+          changes="$(git status --porcelain -- docs/QUALITY.md pdf/golden/scores.tsv)"
+          if [ -n "$changes" ]; then
+            echo "::error::Golden scores changed. Run ./gradlew :pdf:goldenTest and commit docs/QUALITY.md and pdf/golden/scores.tsv."
+            git --no-pager diff -- docs/QUALITY.md pdf/golden/scores.tsv
+            exit 1
+          fi
 
       - name: 16 KB alignment check
         run: |
@@ -107,6 +139,7 @@ jobs:
           path: |
             build/reports/
             */build/reports/
+            pdf/build/golden/
           if-no-files-found: ignore
           retention-days: 14
 
@@ -205,7 +238,7 @@ jobs:
 
       - name: Memory test numbers
         if: always()
-        run: 'timeout 30 "$ANDROID_HOME/platform-tools/adb" logcat -d -s AudoraMemoryTest:I AudoraSpeechTest:I AndroidRuntime:E DEBUG:F libc:F sherpa-onnx:W TestRunner:I || true'
+        run: 'timeout 30 "$ANDROID_HOME/platform-tools/adb" logcat -d -s AudoraMemoryTest:I AudoraSpeechTest:I AudoraPlaybackTest:I ExoPlayerImpl:W DefaultAudioSink:W AudioTrack:W AndroidRuntime:E DEBUG:F libc:F sherpa-onnx:W TestRunner:I || true'
 
       - name: Upload reports on failure
         if: failure()

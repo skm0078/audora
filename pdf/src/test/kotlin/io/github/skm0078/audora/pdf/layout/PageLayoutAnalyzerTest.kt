@@ -143,6 +143,20 @@ class PageLayoutAnalyzerTest {
     }
 
     @Test
+    fun `a gap only one line has is not a gutter`() {
+        // A wide gap in a paragraph's last-but-one line, above a short last line: the line must stay whole.
+        val sketch = PageSketch()
+        val gapped = "first line of a paragraph that has" + " ".repeat(8) + "a wide gap at its end"
+        sketch.line(gapped, left = 50f, top = 700f)
+        sketch.line("short last line.", left = 50f, top = 688f)
+        val reading = read(sketch)
+        assertEquals(
+            "first line of a paragraph that has a wide gap at its end short last line.",
+            reading.text.split(Regex("\\s+")).joinToString(" "),
+        )
+    }
+
+    @Test
     fun `a pre-base vowel sign drawn left of its consonant does not split the word`() {
         // "किताब": the vowel sign ि is stored after क but drawn left of it.
         val page = PageSketch().glyphs(listOf('क' to 55f, 'ि' to 50f, 'त' to 60f, 'ा' to 65f, 'ब' to 70f), 700f).build()
