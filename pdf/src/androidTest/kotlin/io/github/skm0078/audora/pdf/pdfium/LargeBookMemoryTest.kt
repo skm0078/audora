@@ -43,9 +43,10 @@ class LargeBookMemoryTest {
     private data class Run(val opens: Int, val nativeGrowthMb: Double, val javaGrowthMb: Double)
 
     private fun readWholeBook(reopenEveryPages: Int): Run {
-        val engine = TestPdfs.engine(book, ExtractionConfig(reopenEveryPages = reopenEveryPages))
+        val config = ExtractionConfig(reopenEveryPages = reopenEveryPages)
         val builder = ReadingUnitBuilder()
-        val opened = requireNotNull(PdfBook.open(engine, logContext = "test=memory").getOrNull())
+        val engine = TestPdfs.engine(book, config)
+        val opened = requireNotNull(PdfBook.open(engine, config = config, logContext = "test=memory").getOrNull())
         return opened.use { pdf ->
             assertEquals(PAGES, pdf.pageCount)
             var nativeBaseline = 0L
