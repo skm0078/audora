@@ -52,6 +52,11 @@ class PdfBook private constructor(
         }
     }
 
+    /** The bookmarks. Does not count as a page read: PDFium's outline walk loads no pages. */
+    @Synchronized
+    fun outline(): Outcome<List<OutlineEntry>, PdfPageError> =
+        handle?.let { Outcome.Success(it.outline()) } ?: Outcome.Failure(PdfPageError.BookClosed)
+
     fun readingUnits(pageIndex: Int, builder: ReadingUnitBuilder): Outcome<List<ReadingUnit>, PdfPageError> =
         pageText(pageIndex).map(builder::build)
 

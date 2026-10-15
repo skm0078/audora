@@ -17,6 +17,9 @@ interface PdfDocumentHandle : Closeable {
     val pageCount: Int
 
     fun readPage(pageIndex: Int): Outcome<RawPage, PdfPageError>
+
+    /** The document's bookmarks, top level first; empty when it has none or they cannot be read. */
+    fun outline(): List<OutlineEntry> = emptyList()
 }
 
 /** Why a document could not be opened. */

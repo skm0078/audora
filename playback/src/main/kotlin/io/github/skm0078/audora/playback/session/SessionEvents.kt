@@ -25,6 +25,7 @@ data class SessionState(
     val error: SessionError?,
     val sleepMode: SleepTimerMode,
     val sleepEndsAtWallMillis: Long?,
+    val hasChapters: Boolean = false,
 )
 
 /**

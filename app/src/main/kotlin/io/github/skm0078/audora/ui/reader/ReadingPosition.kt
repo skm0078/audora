@@ -20,7 +20,7 @@ data class ReadingPosition(val bookId: BookId, val page: Int, val charStart: Int
     }
 }
 
-/** What the listener picks (Build Spec §2). End of chapter needs headings or the PDF outline (P2-02). */
+/** What the listener picks (Build Spec §2). End of chapter is offered only for books that have chapters. */
 sealed interface SleepTimerSetting {
     data object Off : SleepTimerSetting
 
@@ -31,6 +31,8 @@ sealed interface SleepTimerSetting {
     }
 
     data object EndOfPage : SleepTimerSetting
+
+    data object EndOfChapter : SleepTimerSetting
 }
 
 /** The timer as the playback service reports it; it runs there so it works with the screen off. */
@@ -41,4 +43,6 @@ sealed interface SleepTimerState {
     data class Counting(val endsAtMillis: Long) : SleepTimerState
 
     data object EndOfPage : SleepTimerState
+
+    data object EndOfChapter : SleepTimerState
 }

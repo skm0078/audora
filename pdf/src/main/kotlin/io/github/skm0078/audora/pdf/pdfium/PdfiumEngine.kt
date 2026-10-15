@@ -7,13 +7,16 @@ import android.content.Context
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import io.github.skm0078.audora.core.config.ExtractionConfig
+import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.flatMap
+import io.github.skm0078.audora.pdf.document.OutlineEntry
 import io.github.skm0078.audora.pdf.document.PdfDocumentHandle
 import io.github.skm0078.audora.pdf.document.PdfEngine
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.pdf.extract.RawPage
+import io.legere.pdfiumandroid.api.Bookmark
 import io.legere.pdfiumandroid.api.PdfPasswordException
 import io.legere.pdfiumandroid.core.unlocked.PdfDocumentU
 import io.legere.pdfiumandroid.core.unlocked.PdfiumCoreU
@@ -110,7 +113,27 @@ private class PdfiumDocumentHandle(private val document: PdfDocumentU, private v
         }
     }
 
+    // A broken outline must not stop the book from being read: log it and read on without chapters.
+    @Suppress("TooGenericExceptionCaught") // PdfiumAndroidKt and JNI report failures as RuntimeExceptions.
+    override fun outline(): List<OutlineEntry> = try {
+        pdfiumLocked { document.getTableOfContents() }.map(::entryOf)
+    } catch (e: RuntimeException) {
+        AudoraLog.w(TAG, "Could not read the outline, pages=$pageCount", e)
+        emptyList()
+    }
+
+    private fun entryOf(bookmark: Bookmark): OutlineEntry = OutlineEntry(
+        title = bookmark.title.orEmpty(),
+        // PDFium returns -1 for a bookmark without a page destination (a URI or named action).
+        page = bookmark.pageIdx.takeIf { it in 0L until pageCount }?.toInt(),
+        children = bookmark.children.map(::entryOf),
+    )
+
     override fun close() {
         pdfiumLocked { document.close() }
+    }
+
+    private companion object {
+        const val TAG = "Audora.Pdfium"
     }
 }
