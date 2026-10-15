@@ -11,6 +11,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,21 +19,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
+import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
+import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.diagnostics.LogSharer
 import io.github.skm0078.audora.ui.AppDestination
-import io.github.skm0078.audora.ui.book.BookController
-import io.github.skm0078.audora.ui.book.BookScreen
 import io.github.skm0078.audora.ui.diagnostics.DiagnosticsController
 import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
 import io.github.skm0078.audora.ui.library.LibraryActions
 import io.github.skm0078.audora.ui.library.LibraryController
 import io.github.skm0078.audora.ui.library.LibraryScreen
+import io.github.skm0078.audora.ui.reader.LibraryReaderBooks
+import io.github.skm0078.audora.ui.reader.NoPlaybackPort
+import io.github.skm0078.audora.ui.reader.ReaderActions
+import io.github.skm0078.audora.ui.reader.ReaderDocumentOpener
+import io.github.skm0078.audora.ui.reader.ReaderModel
+import io.github.skm0078.audora.ui.reader.ReaderScreen
+import io.github.skm0078.audora.ui.reader.SpeedPreference
+import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.settings.SettingsScreen
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import javax.inject.Inject
@@ -47,6 +56,15 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var library: Library
+
+    @Inject
+    lateinit var readerConfig: ReaderConfig
+
+    @Inject
+    lateinit var speedPreference: SpeedPreference
+
+    @Inject
+    lateinit var documentOpener: ReaderDocumentOpener
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -78,7 +96,7 @@ class MainActivity : ComponentActivity() {
                         },
                     )
 
-                    is AppDestination.BookDetail -> BookRoute(destination.id) { navigate(AppDestination.Library) }
+                    is AppDestination.Reader -> ReaderRoute(destination.id) { navigate(AppDestination.Library) }
                 }
                 diagnostics.unfinishedSession?.let { session ->
                     UnfinishedSessionDialog(
@@ -99,7 +117,7 @@ class MainActivity : ComponentActivity() {
 
                 override fun onLocate(id: BookId, documentUri: Uri) = controller.locate(id, documentUri.toString())
 
-                override fun onOpenBook(book: Book) = navigate(AppDestination.BookDetail(book.id))
+                override fun onOpenBook(book: Book) = navigate(AppDestination.Reader(book.id))
 
                 override fun onRequestRemoval(book: Book) = controller.proposeRemoval(book)
 
@@ -124,17 +142,55 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun BookRoute(id: BookId, onBack: () -> Unit) {
-        val context = LocalContext.current.applicationContext
+    private fun ReaderRoute(id: BookId, onBack: () -> Unit) {
         val scope = rememberCoroutineScope()
-        val controller = remember(id) { BookController(context, library, scope, id).also { it.start() } }
-        BookScreen(
-            lookup = controller.lookup,
-            checkState = controller.check.state,
-            onPasswordSubmitted = controller.check::submitPassword,
-            onPasswordCancelled = controller.check::cancelPassword,
-            onRetry = controller.check::retry,
-            onBack = onBack,
-        )
+        val port = remember(id) { NoPlaybackPort() }
+        val model = remember(id) {
+            ReaderModel(id, LibraryReaderBooks(library), documentOpener, port, speedPreference, readerConfig, scope)
+                .also { it.start() }
+        }
+        DisposableEffect(model) { onDispose { model.close() } }
+        val state by model.state.collectAsStateWithLifecycle()
+        val playWithPermission = rememberPlayWithNotificationPermission()
+        val actions = remember(model) { readerActions(model, playWithPermission, onBack) }
+        ReaderScreen(state = state, config = readerConfig, actions = actions)
+    }
+
+    private fun readerActions(
+        model: ReaderModel,
+        playWithPermission: (() -> Unit) -> Unit,
+        navigateBack: () -> Unit,
+    ): ReaderActions = object : ReaderActions {
+        override fun onBack() = navigateBack()
+
+        override fun onPreviousPage() = model.previousPage()
+
+        override fun onNextPage() = model.nextPage()
+
+        override fun onGoToPage(page: Int) = model.showPage(page)
+
+        override fun onShowReadingPosition() = model.showReadingPosition()
+
+        override fun onSentenceTapped(unit: ReadingUnit) = playWithPermission { model.readFrom(unit) }
+
+        override fun onPlayPause() {
+            if (model.state.value.isReading) model.playOrPause() else playWithPermission(model::playOrPause)
+        }
+
+        override fun onSkipBack() = model.skipBack()
+
+        override fun onSkipForward() = model.skipForward()
+
+        override fun onSpeed(speed: Float) = model.setSpeed(speed)
+
+        override fun onSleepTimer(setting: SleepTimerSetting) = model.setSleepTimer(setting)
+
+        override fun onPasswordSubmitted(password: String) = model.submitPassword(password)
+
+        override fun onPasswordDismissed() = model.dismissPassword()
+
+        override fun onAskForPassword() = model.askForPassword()
+
+        override fun onRetry() = model.retry()
     }
 }

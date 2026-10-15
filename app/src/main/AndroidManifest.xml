@@ -7,6 +7,9 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Asked on the first play (P1-05) so the media notification and lock-screen controls show. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".AudoraApplication"
         android:allowBackup="false"
