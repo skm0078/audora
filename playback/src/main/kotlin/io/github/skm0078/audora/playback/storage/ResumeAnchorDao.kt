@@ -12,6 +12,10 @@ internal interface ResumeAnchorDao {
     @Query("SELECT * FROM resume_anchors WHERE book_id = :bookId")
     suspend fun byBookId(bookId: String): ResumeAnchorEntity?
 
+    // book_id breaks ties so the answer is stable when two saves share a millisecond.
+    @Query("SELECT * FROM resume_anchors ORDER BY saved_at DESC, book_id LIMIT 1")
+    suspend fun latest(): ResumeAnchorEntity?
+
     /** Throws SQLiteConstraintException when the book is gone (foreign key). */
     @Upsert
     suspend fun upsert(anchor: ResumeAnchorEntity)

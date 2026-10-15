@@ -4,6 +4,9 @@
 package io.github.skm0078.audora.core.resume
 
 import io.github.skm0078.audora.core.config.ResumeConfig
+import io.github.skm0078.audora.core.library.StorageError
+import io.github.skm0078.audora.core.result.Outcome
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -90,6 +93,27 @@ class ResumeRecorderTest {
         runCurrent()
 
         assertEquals(page[1].charStart, store.anchors.getValue(BOOK).charStart)
+    }
+
+    @Test
+    fun `a sentence that starts while a write is still running is written next`() = runTest {
+        // Regression: the scheduled job is still active while its write runs; the next sentence must not be lost.
+        val gate = CompletableDeferred<Unit>()
+        val slowStore = object : ResumeAnchorStore by store {
+            override suspend fun put(anchor: ResumeAnchor): Outcome<Unit, StorageError> {
+                if (store.writes.isEmpty()) gate.await()
+                return store.put(anchor)
+            }
+        }
+        val recorder = ResumeRecorder(slowStore, backgroundScope, 1, { testScheduler.currentTime })
+        recorder.onUnitStarted(BOOK, page[0])
+        runCurrent()
+
+        recorder.onUnitStarted(BOOK, page[1])
+        gate.complete(Unit)
+        advanceTimeBy(INTERVAL * 2)
+
+        assertEquals(listOf(page[0].charStart, page[1].charStart), store.writes.map { it.charStart })
     }
 
     @Test

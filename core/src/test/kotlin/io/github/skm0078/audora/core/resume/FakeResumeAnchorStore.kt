@@ -16,6 +16,8 @@ class FakeResumeAnchorStore : ResumeAnchorStore {
 
     override suspend fun get(bookId: BookId): ResumeAnchor? = anchors[bookId]
 
+    override suspend fun latest(): ResumeAnchor? = anchors.values.maxByOrNull { it.savedAtMillis }
+
     override suspend fun put(anchor: ResumeAnchor): Outcome<Unit, StorageError> {
         if (failWrites) return Outcome.Failure(StorageError("disk full"))
         anchors[anchor.bookId] = anchor

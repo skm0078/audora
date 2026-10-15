@@ -35,6 +35,8 @@ class ReaderModel(
     private val speeds: SpeedPreference,
     private val config: ReaderConfig,
     private val scope: CoroutineScope,
+    private val resume: ReaderResume = ReaderResume.None,
+    autoResume: Boolean = false,
 ) {
     private val mutableState = MutableStateFlow(ReaderState(bookId))
     val state: StateFlow<ReaderState> = mutableState.asStateFlow()
@@ -46,6 +48,15 @@ class ReaderModel(
     private var openJob: Job? = null
     private var pageJob: Job? = null
     private var started = false
+
+    /** Where this book was left (its resume anchor), when the player is not already on this book. */
+    private var savedPosition: ReadingPosition? = null
+
+    /**
+     * "Resume" in the "Reading stopped unexpectedly" prompt (P1-07): a user action (C7), so reading starts by
+     * itself once the book is open and the player connected. One shot: never repeats on reconnects.
+     */
+    private var pendingAutoResume = autoResume
 
     fun start() {
         if (started) return
@@ -93,6 +104,7 @@ class ReaderModel(
             !current.playerReady -> AudoraLog.w(TAG, "Play ignored, $logContext player not ready")
             current.isReading -> player.pause()
             current.readingPosition?.page == current.page -> player.play()
+            savedPosition?.page == current.page -> startReading(requireNotNull(savedPosition))
             else -> startReading(ReadingPosition.startOfPage(bookId, current.page))
         }
     }
@@ -151,10 +163,28 @@ class ReaderModel(
         document = opened
         this.password = password
         mutableState.update { it.copy(document = DocumentState.Open(opened.pageCount)) }
-        // TODO(P1-06): open at the book's resume anchor when nothing of this book is loaded in the player.
-        val startPage = state.value.readingPosition?.page ?: 0
+        val playing = state.value.readingPosition
+        if (playing == null) {
+            savedPosition =
+                resume.locate(bookId, opened.pageCount) { page -> (opened.units(page) as? Outcome.Success)?.value }
+                    ?.let { ReadingPosition(bookId, it.page, it.charStart) }
+        }
+        val startPage = playing?.page ?: savedPosition?.page ?: 0
         loadPage(startPage.coerceIn(0, opened.pageCount - 1))
         books.markOpened(bookId, opened.pageCount)
+        autoResumeIfDue()
+    }
+
+    private fun autoResumeIfDue() {
+        val current = state.value
+        if (!pendingAutoResume || document == null || !current.playerReady) return
+        pendingAutoResume = false
+        when {
+            current.isReading -> Unit
+            current.readingPosition != null -> player.play()
+            else -> startReading(savedPosition ?: ReadingPosition.startOfPage(bookId, current.page))
+        }
+        AudoraLog.i(TAG, "Auto-resumed after an unexpected stop, $logContext")
     }
 
     private fun onPlayback(snapshot: PlaybackSnapshot) {
@@ -165,6 +195,7 @@ class ReaderModel(
         ) {
             applySavedSpeed(snapshot.speed)
         }
+        autoResumeIfDue()
         if (snapshot.errorCode != null && snapshot.errorCode != previous.errorCode) {
             AudoraLog.w(TAG, "Playback error, $logContext code=${snapshot.errorCode}")
         }

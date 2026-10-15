@@ -13,6 +13,8 @@ import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 internal class RoomResumeAnchorStore(private val dao: ResumeAnchorDao) : ResumeAnchorStore {
     override suspend fun get(bookId: BookId): ResumeAnchor? = dao.byBookId(bookId.value)?.toAnchor()
 
+    override suspend fun latest(): ResumeAnchor? = dao.latest()?.toAnchor()
+
     override suspend fun put(anchor: ResumeAnchor): Outcome<Unit, StorageError> = try {
         dao.upsert(ResumeAnchorEntity.of(anchor))
         Outcome.Success(Unit)

@@ -32,6 +32,7 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.diagnostics.LogSharer
 import io.github.skm0078.audora.ui.AppDestination
 import io.github.skm0078.audora.ui.battery.BatterySetupCard
@@ -43,6 +44,7 @@ import io.github.skm0078.audora.ui.library.LibraryActions
 import io.github.skm0078.audora.ui.library.LibraryController
 import io.github.skm0078.audora.ui.library.LibraryScreen
 import io.github.skm0078.audora.ui.reader.LibraryReaderBooks
+import io.github.skm0078.audora.ui.reader.LocatorReaderResume
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.ReaderActions
 import io.github.skm0078.audora.ui.reader.ReaderDocumentOpener
@@ -75,6 +77,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var documentOpener: ReaderDocumentOpener
 
+    @Inject
+    lateinit var resumeLocator: ResumeLocator
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -88,6 +93,8 @@ class MainActivity : ComponentActivity() {
                 var route by rememberSaveable { mutableStateOf(AppDestination.Library.toRoute()) }
                 val destination = AppDestination.fromRoute(route)
                 val navigate = { next: AppDestination -> route = next.toRoute() }
+                // Not saveable on purpose: a restored activity must never start reading by itself (C7).
+                var autoResumeBook by remember { mutableStateOf<BookId?>(null) }
                 BackHandler(enabled = destination != AppDestination.Library) { navigate(parentOf(destination)) }
                 LaunchedEffect(Unit) { diagnostics.checkUnfinishedSession() }
 
@@ -112,12 +119,23 @@ class MainActivity : ComponentActivity() {
                         onBack = { navigate(parentOf(destination)) },
                     )
 
-                    is AppDestination.Reader -> ReaderRoute(destination.id) { navigate(AppDestination.Library) }
+                    is AppDestination.Reader -> {
+                        ReaderRoute(destination.id, autoResume = autoResumeBook == destination.id) {
+                            navigate(AppDestination.Library)
+                        }
+                        // The reader took the flag when it was created; opening the book later must not replay it.
+                        LaunchedEffect(destination.id) { autoResumeBook = null }
+                    }
                 }
                 diagnostics.unfinishedSession?.let { session ->
                     UnfinishedSessionDialog(
                         session = session,
-                        onResume = diagnostics::resumeUnfinished,
+                        onResume = {
+                            diagnostics.resumeUnfinished { id ->
+                                autoResumeBook = id
+                                navigate(AppDestination.Reader(id))
+                            }
+                        },
                         onDismiss = diagnostics::dismissUnfinished,
                     )
                 }
@@ -206,13 +224,22 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun ReaderRoute(id: BookId, onBack: () -> Unit) {
+    private fun ReaderRoute(id: BookId, autoResume: Boolean, onBack: () -> Unit) {
         val context = LocalContext.current.applicationContext
         val scope = rememberCoroutineScope()
         val port = remember(id) { MediaControllerPlaybackPort(context) }
         val model = remember(id) {
-            ReaderModel(id, LibraryReaderBooks(library), documentOpener, port, speedPreference, readerConfig, scope)
-                .also { it.start() }
+            ReaderModel(
+                bookId = id,
+                books = LibraryReaderBooks(library),
+                opener = documentOpener,
+                player = port,
+                speeds = speedPreference,
+                config = readerConfig,
+                scope = scope,
+                resume = LocatorReaderResume(resumeLocator),
+                autoResume = autoResume,
+            ).also { it.start() }
         }
         // Connected only while visible: a controller left connected keeps the playback service bound.
         LifecycleStartEffect(port) {

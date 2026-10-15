@@ -11,6 +11,9 @@ import io.github.skm0078.audora.core.result.Outcome
 interface ResumeAnchorStore {
     suspend fun get(bookId: BookId): ResumeAnchor?
 
+    /** The most recently saved anchor of any book: what a headset's play button resumes after a restart. */
+    suspend fun latest(): ResumeAnchor?
+
     /** Replaces the book's anchor. Fails when the book is no longer in the library. */
     suspend fun put(anchor: ResumeAnchor): Outcome<Unit, StorageError>
 }

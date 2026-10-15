@@ -32,6 +32,11 @@ the saved sentence changes, whether the anchor carries the voice (the §4 sample
    (Motorola, OnePlus, Samsung, Xiaomi, OPPO, realme, vivo, generic) are shown as text. Brand-specific settings
    activities (`com.miui.securitycenter/...`, `com.coloros.safecenter/...`) are private, change between OS versions
    and crash when missing, so they are not opened directly.
+6. **Where a resume starts.** Opening a book that is not playing shows the saved page, and Play starts at the saved
+   sentence (only from a user action, C7). The "Reading stopped unexpectedly" prompt's Resume starts reading the
+   book it names. A headset or Bluetooth play button with Audora closed reaches Media3's playback resumption
+   (`MediaButtonReceiver` in the manifest), which plays the most recently saved book from its anchor; that is a
+   user action too. No boot start.
 
 ## Alternatives considered
 - **Head fingerprint only (spec as written):** loses the sentence whenever its start changes; the unverified offset

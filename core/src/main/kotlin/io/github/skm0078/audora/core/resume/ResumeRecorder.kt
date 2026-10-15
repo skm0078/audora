@@ -44,7 +44,13 @@ class ResumeRecorder(
     private val stateLock = Any()
     private var pending: ResumeAnchor? = null
     private var lastWritten: ResumeAnchor? = null
-    private var lastWriteAtMillis: Long? = null
+    private var lastAttemptAtMillis: Long? = null
+
+    /**
+     * True from scheduling a write until that write takes [pending]. Not `Job.isActive`: a job still finishing
+     * its database write is active, and a sentence started meanwhile would never be scheduled.
+     */
+    private var writeScheduled = false
     private var scheduled: Job? = null
 
     fun onUnitStarted(bookId: BookId, unit: ReadingUnit) {
@@ -61,8 +67,9 @@ class ResumeRecorder(
             // A rebuffer or a seek to the same sentence restarts it: nothing new to save.
             if (pending == null && lastWritten?.samePlace(anchor) == true) return
             pending = anchor
-            if (scheduled?.isActive == true) return
-            val wait = lastWriteAtMillis?.let { config.minWriteIntervalMs - (clock() - it) }?.coerceAtLeast(0) ?: 0
+            if (writeScheduled) return
+            writeScheduled = true
+            val wait = lastAttemptAtMillis?.let { config.minWriteIntervalMs - (clock() - it) }?.coerceAtLeast(0) ?: 0
             scheduled = scope.launch {
                 delay(wait)
                 writePending()
@@ -72,20 +79,30 @@ class ResumeRecorder(
 
     /** Writes the newest position now. Call on pause, stop, sleep timer and before the service goes away. */
     suspend fun flush() {
-        synchronized(stateLock) { scheduled?.cancel() }
+        synchronized(stateLock) {
+            scheduled?.cancel()
+            writeScheduled = false
+        }
         writePending()
     }
 
     private suspend fun writePending() = withContext(NonCancellable) {
         writeLock.withLock {
-            val anchor = synchronized(stateLock) { pending.also { pending = null } } ?: return@withLock
-            when (val written = store.put(anchor)) {
-                is Outcome.Success -> synchronized(stateLock) {
-                    lastWritten = anchor
-                    lastWriteAtMillis = clock()
+            val anchor = synchronized(stateLock) {
+                writeScheduled = false
+                pending?.also {
+                    pending = null
+                    lastAttemptAtMillis = clock()
                 }
+            } ?: return@withLock
+            when (val written = store.put(anchor)) {
+                is Outcome.Success -> synchronized(stateLock) { lastWritten = anchor }
 
-                is Outcome.Failure -> AudoraLog.w(TAG, "Could not save position ${anchor.logLabel}: ${written.error}")
+                is Outcome.Failure -> {
+                    AudoraLog.w(TAG, "Could not save position ${anchor.logLabel}: ${written.error}")
+                    // A failed write saved nothing, so the next sentence retries at once rather than waiting.
+                    synchronized(stateLock) { lastAttemptAtMillis = null }
+                }
             }
         }
     }
