@@ -112,6 +112,7 @@ reaching phones as an APK that cannot update the installed app. Only a deliberat
 | `Commit ... is not on prod` | A tag was pushed on a commit outside `prod` | Delete the tag; release from `prod` |
 | `Missing secrets in the 'release' environment` | Step 2 incomplete | Run the key script again (it reuses the key) |
 | Job waits or fails with a deployment protection message | The environment rules from step 1 do not allow this branch or tag | Check the two rules in step 1 |
+| dev → prod PR shows conflicts in files nobody changed on prod | A previous dev → prod PR was squashed, so prod's commit is not in dev's history | On a branch from dev run `git merge -s ours origin/prod` (keeps dev's files, records prod as merged), merge it into dev with **Create a merge commit**, then retry |
 | `Signed with certificate ... but releases must use ...` | The secrets hold a different key | Restore the original key from backup and re-add the secrets |
 
 ## If the key is lost or leaked
