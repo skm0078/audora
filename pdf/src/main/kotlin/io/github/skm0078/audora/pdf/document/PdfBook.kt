@@ -1,5 +1,5 @@
 // File: pdf/src/main/kotlin/io/github/skm0078/audora/pdf/document/PdfBook.kt
-// Purpose: Page-at-a-time access to one open PDF with bounded native memory (reopen every N pages, ADR-011 §5).
+// Purpose: Page-at-a-time access to one open PDF with bounded memory (reopen every N pages, small page caches).
 
 package io.github.skm0078.audora.pdf.document
 
@@ -9,14 +9,19 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.flatMap
 import io.github.skm0078.audora.core.result.map
+import io.github.skm0078.audora.pdf.cleanup.PageProfile
 import io.github.skm0078.audora.pdf.extract.PageText
 import io.github.skm0078.audora.pdf.extract.PageTextAssembler
+import io.github.skm0078.audora.pdf.units.AnalyzedPage
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import java.io.Closeable
 
 /**
- * One book, read a page at a time around the playhead. Nothing is cached here: callers keep only the pages
- * they need (the render queue holds about two pages ahead), so books of any length fit in memory.
+ * One book, read a page at a time around the playhead, so books of any length fit in memory. Header and footer
+ * removal compares a page with its neighbours (ADR-020), so [readingUnits] reads up to
+ * `CleanupConfig.neighbourPages` pages on each side and keeps two small LRU caches: a few analysed pages (so the
+ * next page, already read as a neighbour, is not extracted again) and a few dozen page profiles of a few hundred
+ * bytes each. Reading on from page to page costs about one extraction per page; a jump costs one per window page.
  *
  * PDFium's document cache grows with every page visited, so after [ExtractionConfig.reopenEveryPages] reads
  * the document is closed and opened again with the same password. Thread-safe: calls are serialized, because
@@ -32,6 +37,7 @@ class PdfBook private constructor(
     private var handle: PdfDocumentHandle?,
 ) : Closeable {
     private val assembler = PageTextAssembler(config)
+    private var caches: PageCaches? = null
 
     /** Fixed for the book's lifetime: the source does not change between reopens. */
     val pageCount: Int = requireNotNull(handle).pageCount
@@ -52,13 +58,57 @@ class PdfBook private constructor(
         }
     }
 
-    fun readingUnits(pageIndex: Int, builder: ReadingUnitBuilder): Outcome<List<ReadingUnit>, PdfPageError> =
-        pageText(pageIndex).map(builder::build)
+    /**
+     * The page's units after layout and cleanup. A neighbour that fails to read is left out (logged): the page
+     * is still read, at worst with a header the missing neighbour would have confirmed.
+     */
+    @Synchronized
+    fun readingUnits(pageIndex: Int, builder: ReadingUnitBuilder): Outcome<List<ReadingUnit>, PdfPageError> {
+        val cache = cachesFor(builder)
+        return analyzedPage(pageIndex, cache).map { page ->
+            val neighbours = window(pageIndex, builder.cleanupConfig.neighbourPages)
+                .filter { it != pageIndex }
+                .mapNotNull { profileOf(it, cache) }
+            builder.build(page, neighbours)
+        }
+    }
 
     @Synchronized
     override fun close() {
         handle?.close()
         handle = null
+        caches = null
+    }
+
+    /** Profiles depend on the builder's configuration, so a different builder starts empty caches. */
+    private fun cachesFor(builder: ReadingUnitBuilder): PageCaches =
+        caches?.takeIf { it.owner === builder } ?: PageCaches(builder).also { caches = it }
+
+    private fun analyzedPage(pageIndex: Int, cache: PageCaches): Outcome<AnalyzedPage, PdfPageError> {
+        cache.analyzed[pageIndex]?.let { return Outcome.Success(it) }
+        return pageText(pageIndex).map(cache.owner::analyze).also { result ->
+            if (result is Outcome.Success) {
+                cache.analyzed[pageIndex] = result.value
+                cache.profiles[pageIndex] = result.value.profile
+            }
+        }
+    }
+
+    private fun profileOf(pageIndex: Int, cache: PageCaches): PageProfile? = cache.profiles[pageIndex]
+        ?: when (val page = analyzedPage(pageIndex, cache)) {
+            is Outcome.Success -> page.value.profile
+
+            is Outcome.Failure -> {
+                AudoraLog.w(TAG, "Neighbour page skipped for cleanup, $logContext page=$pageIndex error=${page.error}")
+                null
+            }
+        }
+
+    /** [radius] pages on each side of [pageIndex], shifted inward at the book's ends so the window stays full. */
+    private fun window(pageIndex: Int, radius: Int): IntRange {
+        val size = minOf(2 * radius + 1, pageCount)
+        val start = (pageIndex - radius).coerceIn(0, pageCount - size)
+        return start until start + size
     }
 
     private fun currentHandle(): Outcome<PdfDocumentHandle, PdfPageError> {
@@ -85,8 +135,20 @@ class PdfBook private constructor(
         }
     }
 
+    private class PageCaches(val owner: ReadingUnitBuilder) {
+        val analyzed: MutableMap<Int, AnalyzedPage> = lru(owner.cleanupConfig.analyzedCachePages)
+        val profiles: MutableMap<Int, PageProfile> = lru(owner.cleanupConfig.profileCachePages)
+    }
+
     companion object {
         private const val TAG = "Audora.PdfBook"
+        private const val LOAD_FACTOR = 0.75f
+
+        /** Least recently used entries go first once [capacity] is exceeded. */
+        private fun <K, V> lru(capacity: Int): MutableMap<K, V> =
+            object : LinkedHashMap<K, V>(capacity + 1, LOAD_FACTOR, true) {
+                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>?): Boolean = size > capacity
+            }
 
         /** Opens the book. A [PdfOpenError.PasswordRequired] failure means: ask for the password, call again. */
         fun open(

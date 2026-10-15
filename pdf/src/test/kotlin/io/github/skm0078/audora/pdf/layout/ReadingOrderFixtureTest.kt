@@ -14,6 +14,10 @@ import org.junit.Test
 
 class ReadingOrderFixtureTest {
     private val builder = ReadingUnitBuilder()
+    private val analyzer = PageLayoutAnalyzer()
+
+    /** Layout's own reading text, before cleanup (P2-03) drops headers, tables and citation markers. */
+    private fun layoutText(page: PageText): ReadingText = ReadingTextBuilder().build(page, analyzer.analyze(page))
 
     private fun page(name: String, dir: String = "layout"): PageText =
         PageTextAssembler().assemble(RawPageFixture.load(name, dir))
@@ -23,8 +27,8 @@ class ReadingOrderFixtureTest {
 
     @Test
     fun `two-column Bible page reads left column then right column`() {
-        val text = normalizeForComparison(builder.readingText(page("kjv-p0")).text)
-        // The S2 corpus header and the page number are P2-03's to remove.
+        val text = normalizeForComparison(layoutText(page("kjv-p0")).text)
+        // Layout keeps the S2 corpus header and the page number; cleanup removes them (CleanupFixtureTest).
         val body = text.removePrefix("Audora S2 test corpus - en-kjv-2col-long ").removeSuffix(" 1")
         assertEquals(normalizeForComparison(expected("kjv-p0")), body)
     }
@@ -32,9 +36,10 @@ class ReadingOrderFixtureTest {
     @Test
     fun `sentences crossing the gutter of a two-column paper are one unit each`() {
         val units = builder.build(page("physimaging-p0")).map { it.text }
+        // Cleanup (P2-03) joins the soft-hyphenated "radia-tion" and drops the citation marker.
         assertTrue(
-            "Damage to the white matter in the brain is often observed within the first year, while radia­tion " +
-                "effects in the grey matter often do not occur until after six to 12 months [1]." in units,
+            "Damage to the white matter in the brain is often observed within the first year, while radiation " +
+                "effects in the grey matter often do not occur until after six to 12 months." in units,
         )
         // The full-width abstract is read before the columns, the left column before the right one.
         val abstract = units.indexOfFirst { it.startsWith("Conclusion: In the long-term follow-up") }
@@ -59,7 +64,7 @@ class ReadingOrderFixtureTest {
     fun `single-column pages keep their text and order`() {
         for ((name, dir) in SINGLE_COLUMN) {
             val page = page(name, dir)
-            val reading = normalizeForComparison(builder.readingText(page).text)
+            val reading = normalizeForComparison(layoutText(page).text)
             // Only the S2 header (top of the page) and the page number (bottom) move: PDFium emits them together.
             assertEquals(name, withoutCorpusMarks(normalizeForComparison(page.text)), withoutCorpusMarks(reading))
         }
@@ -69,7 +74,7 @@ class ReadingOrderFixtureTest {
     fun `layout neither drops nor duplicates text`() {
         for ((name, dir) in ALL) {
             val page = page(name, dir)
-            val reading = builder.readingText(page)
+            val reading = layoutText(page)
             val sources = reading.text.indices.map(reading::sourceOffset).filter { it != ReadingText.INSERTED }
             assertEquals(name, sources.size, sources.toSet().size)
             val glyphs = page.text.indices.filter { !page.text[it].isWhitespace() }.toSet()

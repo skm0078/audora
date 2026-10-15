@@ -18,6 +18,7 @@ class PdfBookTest {
     private class FakeEngine(val pages: Int, val password: String? = null) : PdfEngine {
         val passwordsSeen = ArrayList<String?>()
         var openHandles = 0
+        var reads = 0
         var failNextOpen = false
 
         override fun open(password: String?): Outcome<PdfDocumentHandle, PdfOpenError> {
@@ -39,9 +40,12 @@ class PdfBookTest {
         private fun handle() = object : PdfDocumentHandle {
             override val pageCount = pages
 
-            override fun readPage(pageIndex: Int): Outcome<RawPage, PdfPageError> = Outcome.Success(
-                RawPageFixture.page(RawPageFixture.chars("Page $pageIndex."), pageIndex = pageIndex),
-            )
+            override fun readPage(pageIndex: Int): Outcome<RawPage, PdfPageError> {
+                reads++
+                return Outcome.Success(
+                    RawPageFixture.page(RawPageFixture.chars("Page $pageIndex."), pageIndex = pageIndex),
+                )
+            }
 
             override fun close() {
                 openHandles--
@@ -59,7 +63,9 @@ class PdfBookTest {
             assertEquals("Page $page.", units.single().text)
             assertEquals(1, engine.openHandles)
         }
-        assertEquals(5, book.opens)
+        // Cleanup reads up to three pages ahead as neighbours (ADR-020); the caches keep it to one read per page.
+        assertTrue("reads=${engine.reads}", engine.reads <= 500 + ReadingUnitBuilder().cleanupConfig.neighbourPages)
+        assertEquals(1 + (engine.reads - 1) / 100, book.opens)
         book.close()
         assertEquals(0, engine.openHandles)
     }

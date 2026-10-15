@@ -131,7 +131,7 @@ interface SpeechEngine {
 
 ## 5. PDF → human-like reading pipeline
 
-Runs lazily per page, two pages ahead of playback, cached per book. Each stage is a pure function with tests; `PIPELINE_VERSION` bumps whenever output can change.
+Runs lazily per page, two pages ahead of playback, cached per book (a few analysed pages and small page profiles, ADR-020). Each stage is a pure function with tests; `PIPELINE_VERSION` bumps whenever output can change.
 
 1. **Extract** chars with boxes, font size, font name (PdfiumAndroidKt + our JNI library over its `libpdfium.so`: font info, generated flag, Unicode-map errors, `/ActualText` marks, render mode; ADR-011). Rebuild `/ActualText` spans so PDFium's fake spaces do not split Indic words. Reopen the document every 100 pages. Font weight is unreliable and unused.
 2. **Score quality** per page: Unicode-map errors, invisible text over a page image, empty/garbage text, legacy font names per glyph run, invalid Indic sequences. Route: legacy run → 3a; map errors / hidden OCR layer / garbage / empty → 3c; **Indic documents: OCR one sample page and compare with the (rebuilt, reordered) text layer; CER ≤ 5 % → text layer, else 3c for every page** (re-check 1 page in 50). English: text layer. (ADR-011)
@@ -140,8 +140,8 @@ Runs lazily per page, two pages ahead of playback, cached per book. Each stage i
    - b. **Indic reorder**: move visually-ordered pre-base matras (ि ি ে ৈ) after their consonant cluster; compose two-part vowels (ে+া → ো). A repair tried before the OCR cross-check; S2 found it fixes visual order only, not mis-mapped glyphs.
    - c. **OCR**: Tesseract with `tessdata_best` for `eng`/`hin`/`ben` (PP-OCRv5 has no Bengali model; on Hindi it was not consistently better, ADR-011). Runs in the render-ahead window. Page shows a "Scanned / OCR" badge.
 4. **Rebuild layout**: lines by baseline → columns by recursive XY-cut, columns first (OpenDataLoader-PDF's XY-Cut++ as a reference) → reading order → paragraphs by gap/indent → headings by relative font size and a bold font name (weight is unreliable, ADR-011). Unit offsets index the resulting reading-order text (ADR-018).
-5. **Remove clutter**: lines repeating in the top/bottom 8% across ≥3 pages, standalone page numbers, figure/table interiors; citation markers skipped (setting).
-6. **Repair**: de-hyphenate across line breaks (keep real hyphens), expand ligatures, NFC normalize, fold soft hyphens / zero-width chars.
+5. **Remove clutter**: lines repeating in the top/bottom 8% of the text area across ≥3 pages of a 7-page window, header lines whose page number runs with the page, standalone page numbers, table interiors; citation markers skipped (setting) (ADR-020).
+6. **Repair**: de-hyphenate across line breaks (keep real hyphens), expand ligatures, fold soft hyphens / zero-width and control chars (ZWJ/ZWNJ kept), drop line-start bullets; NFC is P3-02's (ADR-020).
 7. **Split sentences**: ICU `BreakIterator` per locale; `।` as sentence end; per-language abbreviation lists.
 8. **Normalize for speech**: numbers, dates, ₹, %, ranges (incl. Devanagari/Bengali digits), URLs/emails → "link", Roman numerals in headings. Table-driven tests.
 9. **Prosody**: pause after headings (~600 ms), paragraphs (~400 ms), list items.
@@ -244,6 +244,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 016 | Render-ahead cache is an 8 MiB in-memory LRU (`QueueConfig.recentAudioBytes`) instead of a 20 MB disk LRU in `cacheDir/tts/` (§6) | Accepted (P1-04) |
 | 017 | Golden corpus in `pdf/golden/`, scored on the JVM from PDFium page dumps; corpus score gated against `dev` in CI | Accepted (P2-01) |
 | 018 | Layout: column-first XY-cut, paragraphs, headings by size + bold font name; `charStart` indexes the page's reading-order text; `PIPELINE_VERSION` 2 | Accepted (P2-02) |
+| 020 | Clutter removal against neighbouring pages (window cached in `PdfBook`), margin bands on the text area, tables by aligned cell runs; repair keeps offsets mapped and ZWJ/ZWNJ; `PIPELINE_VERSION` 3 | Accepted (P2-03) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 
