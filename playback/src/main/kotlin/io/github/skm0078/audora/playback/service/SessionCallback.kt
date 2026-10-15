@@ -97,8 +97,9 @@ class SessionCallback(
     private fun setSleepTimer(args: Bundle): SessionResult {
         val mode = PlaybackContract.sleepModeFrom(args)
         val minutes = args.getInt(PlaybackContract.ARG_SLEEP_MINUTES, 0)
-        val valid = mode != null && (mode != SleepTimerMode.MINUTES || minutes in 1..MAX_SLEEP_MINUTES)
-        if (!valid || mode == null) return failure(PlaybackErrorCode.BAD_REQUEST)
+        if (mode == null || (mode == SleepTimerMode.MINUTES && minutes !in 1..MAX_SLEEP_MINUTES)) {
+            return failure(PlaybackErrorCode.BAD_REQUEST)
+        }
         bookSession().setSleepTimer(mode, minutes)
         return SessionResult(SessionResult.RESULT_SUCCESS)
     }
