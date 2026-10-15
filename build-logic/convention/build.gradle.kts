@@ -33,5 +33,9 @@ gradlePlugin {
             id = "audora.hilt"
             implementationClass = "HiltConventionPlugin"
         }
+        register("room") {
+            id = "audora.room"
+            implementationClass = "RoomConventionPlugin"
+        }
     }
 }

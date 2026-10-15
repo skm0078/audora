@@ -6,7 +6,7 @@ Spec: docs/BUILD-SPEC.md · Tickets: docs/TICKET-PLAN.md · Progress: docs/PROGR
 
 ## Stack (change only via an ADR)
 Kotlin 2.x, Compose, Hilt, Media3 1.11.x (ExoPlayer + MediaSessionService), sherpa-onnx 1.13.x (arm64-v8a), PdfiumAndroidKt, ICU BreakIterator, Room, DataStore, WorkManager (downloads only). Phase 3: Tesseract4Android (PaddleOCR ONNX only if P3-05 proves it, ADR-011). No proprietary SDKs (GPL-3.0).
-Versions live only in gradle/libs.versions.toml. Build setup lives in build-logic/ (convention plugins: audora.android.application, audora.android.library, audora.jvm.library, audora.hilt).
+Versions live only in gradle/libs.versions.toml. Build setup lives in build-logic/ (convention plugins: audora.android.application, audora.android.library, audora.jvm.library, audora.hilt, audora.room).
 Platform: compileSdk 37, targetSdk 36, minSdk 31, arm64-v8a only (ADR-010).
 Toolchain: AGP 9 (built-in Kotlin, so no kotlin-android plugin), Gradle wrapper, JDK 21 to run Gradle, Java/Kotlin target 17.
 
@@ -15,7 +15,7 @@ Package root: io.github.skm0078.audora (D7). Module packages: io.github.skm0078.
 - :core — domain model, Result/error types, config objects, logging facade (AudoraLog). Pure Kotlin JVM module: no Android imports at all.
 - :pdf — extract → quality → recover → layout → cleanup → ReadingUnit. Pure logic in plain Kotlin; Android adapters thin.
 - :speech — normalization, script routing, SpeechEngine implementations, model manager.
-- :playback — PlaybackService, TtsDataSource, render queue, progress. Synthesis runs HERE only.
+- :playback — PlaybackService, TtsDataSource, render queue, progress, the app's Room database (library, resume anchors) and the file-access adapter. Synthesis runs HERE only.
 - :app — Compose UI only; no business logic in composables.
 Dependencies: app → playback → (speech, pdf) → core. Never the reverse.
 - :spikes:* — throwaway debug apps that answer one risky question each (S1–S3). They may depend on :core only; nothing depends on them.

@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/pdfcheck/PdfCheckState.kt
-// Purpose: UI state of the temporary "open a PDF" extraction check (P1-02, until the library in P1-01).
+// Purpose: UI state of opening a book: password, extraction summary or a typed failure (P1-02, until P1-05).
 
 package io.github.skm0078.audora.ui.pdfcheck
 

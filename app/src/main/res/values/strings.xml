@@ -1,12 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Audora</string>
-    <string name="placeholder_title">Audora</string>
-    <string name="placeholder_body">This is a development build. Reading aloud arrives later in Phase 1; for now you can check how Audora reads a PDF\'s text.</string>
-    <string name="placeholder_version">Version %1$s</string>
 
-    <!-- PDF extraction check (P1-02), until the library screen (P1-01) -->
-    <string name="pdf_check_open">Open a PDF to test</string>
+    <!-- Library (P1-01) -->
+    <string name="library_title">Library</string>
+    <string name="library_add_pdf">Add PDF</string>
+    <string name="library_empty_title">Your library is empty</string>
+    <string name="library_empty_body">Add a PDF from your phone. Audora remembers where it is; the file is not copied.</string>
+    <string name="library_load_failed">Audora could not load your library. Please share the logs from Settings.</string>
+    <string name="library_untitled">Untitled PDF</string>
+    <string name="library_book_menu">More options</string>
+    <plurals name="library_pages">
+        <item quantity="one">%1$d page</item>
+        <item quantity="other">%1$d pages</item>
+    </plurals>
+    <string name="library_details">%1$s · %2$s</string>
+    <string name="library_opened_ago">opened %1$s</string>
+    <string name="library_added_ago">added %1$s</string>
+    <string name="library_file_missing">File moved or deleted. Tap to find it.</string>
+    <string name="library_access_lost">Audora can no longer open this file. Tap to pick it again.</string>
+    <string name="library_added">Added “%1$s”</string>
+    <string name="library_already">“%1$s” is already in your library</string>
+    <string name="library_found_again">Found “%1$s” again</string>
+    <string name="library_removed">Removed “%1$s”</string>
+    <string name="library_remove">Remove from library</string>
+    <string name="library_remove_title">Remove “%1$s”?</string>
+    <string name="library_remove_body">The PDF stays on your phone. You can add it again later.</string>
+    <string name="library_cancel">Cancel</string>
+    <string name="library_error_cannot_keep">The app you picked from only lends the file for a moment. Save the PDF to your phone first, then add it from there.</string>
+    <string name="library_error_unreadable">Audora could not read that file. It may have been moved or deleted.</string>
+    <string name="library_error_not_pdf">That file is not a PDF.</string>
+    <string name="library_error_different_file">That is a different PDF. Pick the same file, or remove this book and add the new one.</string>
+    <string name="library_error_not_in_library">That book is no longer in your library.</string>
+    <string name="library_error_storage">Audora could not save your library. Is your phone\'s storage full?</string>
+
+    <!-- Opening a book, until the reader (P1-05) -->
+    <string name="book_reader_coming">Reading aloud arrives in a later update. For now this shows what Audora found in the first pages.</string>
+    <string name="book_not_in_library">This book is no longer in your library.</string>
+    <string name="pdf_check_retry">Open again</string>
     <string name="pdf_check_pages">%1$d pages. Read the first %2$d in %3$d ms.</string>
     <string name="pdf_check_details">%1$d sentences, %2$d rebuilt word spans, %3$d unmapped characters.</string>
     <string name="pdf_check_no_text">No text on these pages (scanned pages are read with OCR in Phase 3).</string>
@@ -25,6 +56,7 @@
     <!-- Settings and diagnostics (P1-07) -->
     <string name="settings_title">Settings</string>
     <string name="navigate_back">Back</string>
+    <string name="settings_version_title">Version</string>
     <string name="share_logs_title">Share logs</string>
     <string name="share_logs_body_hint">Send Audora\'s log to whoever is helping you. It never contains text from your PDFs.</string>
     <string name="share_logs_failed">Could not prepare the logs. Please try again.</string>

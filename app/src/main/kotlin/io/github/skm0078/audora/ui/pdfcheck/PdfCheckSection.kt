@@ -1,11 +1,8 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/pdfcheck/PdfCheckSection.kt
-// Purpose: "Open a PDF" button, password prompt and extraction summary on the temporary home screen.
+// Purpose: Password prompt and extraction summary for an opened book, until the reader screen (P1-05).
 
 package io.github.skm0078.audora.ui.pdfcheck
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,24 +25,18 @@ import io.github.skm0078.audora.ui.theme.AudoraTheme
 @Composable
 fun PdfCheckSection(
     state: PdfCheckState,
-    onPdfPicked: (Uri) -> Unit,
     onPasswordSubmitted: (String) -> Unit,
     onPasswordCancelled: () -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let(onPdfPicked)
-    }
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Button(onClick = { picker.launch(arrayOf(PDF_MIME_TYPE)) }, enabled = state != PdfCheckState.Opening) {
-            Text(stringResource(R.string.pdf_check_open))
-        }
         when (state) {
-            PdfCheckState.Idle -> Unit
+            PdfCheckState.Idle -> Button(onClick = onRetry) { Text(stringResource(R.string.pdf_check_retry)) }
 
             PdfCheckState.Opening -> CircularProgressIndicator()
 
@@ -100,7 +91,6 @@ private fun failureText(reason: PdfCheckFailure): Int = when (reason) {
     PdfCheckFailure.PAGE_FAILED -> R.string.pdf_check_page_failed
 }
 
-private const val PDF_MIME_TYPE = "application/pdf"
 private const val FIRST_SENTENCE_LINES = 3
 
 @Preview(showBackground = true)
@@ -109,9 +99,9 @@ private fun PdfCheckSectionPreview() {
     AudoraTheme {
         PdfCheckSection(
             state = PdfCheckState.Ready(PdfCheckSummary(574, 3, 41, 0, 0, 38, "Universal Declaration of Human Rights")),
-            onPdfPicked = {},
             onPasswordSubmitted = {},
             onPasswordCancelled = {},
+            onRetry = {},
         )
     }
 }
