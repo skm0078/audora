@@ -23,7 +23,7 @@ native libraries, English default chosen.
   `tts-models` archives repacked as zip (the app has no bzip2), plus the two Bengali conversions
   (`scripts/convert_bn_voices.py`), with `SHA256SUMS.txt` that the app verifies before unpacking.
 
-Definitions: **RTF** = render time / audio time over the prose, formal and hard texts (warm). **First sentence** =
+Definitions: **First render** = first synthesis right after loading (desktop tables). **RTF** = render time / audio time over the prose, formal and hard texts (warm). **First sentence** =
 load + first render, what a reader waits for after tapping Play on a voice that is not loaded yet.
 
 ## Changes to the candidate set (vs. the ticket)
@@ -39,18 +39,18 @@ load + first render, what a reader waits for after tapping Play on a voice that 
 Disk = unpacked model directory (Piper/Kitten/Kokoro include 19 MB of espeak-ng-data that every espeak-based voice
 shares). Bengali rows come from the CI run (`desktop-results.md` on the `s1-voices` release).
 
-| Voice | Disk MB | Load s | First sentence s | RTF | CER prose+formal | Notes |
+| Voice | Disk MB | Load s | First render s | RTF | CER prose+formal | Notes |
 |---|---|---|---|---|---|---|
 | piper-en-lessac *(reference only)* | 81 | 1.10 | 0.26 | 0.067 | 0.0 % | not redistributable |
 | piper-en-ljspeech | 82 | 1.53 | 0.23 | 0.065 | 0.0 % | |
 | piper-en-cori | 82 | 1.80 | 0.24 | 0.074 | 0.6 % | |
-| kitten-en-nano | 46 | 0.71 | 2.25 | 0.303 | 0.0 % | speaks ~60 % longer for the same text (slow pacing) |
+| kitten-en-nano (speaker 7) | 46 | 0.58 | 1.71 | 0.340 | 0.0 % | speaker 1 paced ~50 % slower; see sweep |
 | kokoro-en-heart | 190 | 1.47 | 4.62 | **1.273** | 0.0 % | slower than real time on desktop |
 | supertonic-en | 145 | 0.67 | 0.84 | 0.170 | 0.0 % | 44.1 kHz; garbles numbers/abbreviations (no text normalizer) |
 | piper-hi-rohan *(reference only)* | 81 | 1.11 | 0.32 | 0.079 | 8.4 % | not redistributable |
 | piper-hi-priyamvada | 81 | 1.12 | 0.30 | 0.066 | 4.6 % | 1 text in Urdu script, not scored |
 | piper-hi-pratham | 81 | 1.09 | 0.26 | 0.071 | 3.5 % | |
-| supertonic-hi | 145 | 0.71 | 0.94 | 0.163 | 3.3 % | 2 texts in Urdu script, not scored |
+| supertonic-hi (speaker 2) | 145 | 0.75 | 1.17 | 0.169 | 2.4 % | |
 | kokoro-hi-alpha | 190 | 1.57 | 5.62 | **1.183** | 6.4 % | slower than real time on desktop |
 | piper-bn-google | — | — | — | — | — | CI run |
 | mms-bn | — | — | — | — | — | CI run |
@@ -64,7 +64,7 @@ The Moto's Cortex-A78 cores are roughly 2–3× slower per thread than this x86 
 inference (estimate, to be replaced by the phone table):
 - **Piper (all languages):** RTF ≈ 0.15–0.25. Comfortably real time; first sentence under 1 s once loaded.
 - **Supertonic:** RTF ≈ 0.35–0.5. Real time with render-ahead.
-- **Kitten nano:** RTF ≈ 0.6–0.9 and a 2+ s cold first sentence on desktop already. Borderline.
+- **Kitten nano:** RTF ≈ 0.7–1.0 and a 1.5–2.5 s cold first render on desktop already. Borderline.
 - **Kokoro:** RTF ≈ 2.5–4. Cannot keep up; the spec's rule (offer only if measured RTF < 0.8) will exclude it.
 
 ## 16 KB alignment
@@ -89,7 +89,7 @@ C++ API libraries (−4.8 MB). CI runs `scripts/check_16kb_alignment.py` on `aud
 are in `s1-desktop-samples.zip` on the `s1-voices` release. The phone app saves its own samples for the blind test.
 
 ## Speaker sweeps (desktop)
-Multi-speaker models were swept to pick the benchmarked speaker; see `results/desktop-sweep.md`.
+Multi-speaker models were swept to pick the benchmarked speaker; see `results/desktop-sweep.md`. Kitten uses speaker 7 (speaker 1 paces ~50 % slower than every other voice) and Supertonic Hindi speaker 2 (lowest CER, every text scored).
 
 ## Phone results (Moto Edge 50 Fusion)
 Pending: filled from the app's shared report (`s1-report.md`). Phone steps:

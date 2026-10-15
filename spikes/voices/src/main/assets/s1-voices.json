@@ -99,14 +99,14 @@
     },
     {
       "id": "kitten-en-nano",
-      "label": "KittenTTS v0.8 nano int8 (expr-voice-2-f)",
+      "label": "KittenTTS v0.8 nano int8 (expr-voice-5-f)",
       "lang": "en",
       "family": "kitten",
       "archive": "kitten-nano-en-v0_8-int8",
       "model": "model.int8.onnx",
       "voices": "voices.bin",
       "dataDir": "espeak-ng-data",
-      "sid": 1,
+      "sid": 7,
       "license": "Apache-2.0"
     },
     {
@@ -156,12 +156,12 @@
     },
     {
       "id": "supertonic-hi",
-      "label": "Supertonic 3 int8, Hindi",
+      "label": "Supertonic 3 int8, Hindi (speaker 2)",
       "lang": "hi",
       "family": "supertonic",
       "archive": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
       "extraLang": "hi",
-      "sid": 0,
+      "sid": 2,
       "numSteps": 5,
       "license": "Code MIT; model OpenRAIL-M (use restrictions)"
     },
