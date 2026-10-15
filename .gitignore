@@ -27,6 +27,8 @@ signing/
 models/
 *.pdf
 !testdata/pdfs/**/*.pdf
+# Small redistributable fixtures for :pdf's instrumented tests (licences in that folder's SOURCES.md)
+!pdf/src/androidTest/assets/pdfs/*.pdf
 
 # Python
 __pycache__/

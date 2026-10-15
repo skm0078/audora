@@ -29,6 +29,7 @@ Dependencies: app → playback → (speech, pdf) → core. Never the reverse.
 
 ## Commands
 - Fast check: ./gradlew ktlintCheck detekt test
+- Device tests (:pdf, needs a device or emulator; CI runs them on an emulator): ./gradlew :pdf:connectedDebugAndroidTest
 - Auto-fix style: ./gradlew ktlintFormat
 - Golden quality (from P2-01): ./gradlew :pdf:goldenTest (writes docs/QUALITY.md)
 - Debug APK: ./gradlew assembleDebug (CI builds it on every push and uploads it)
