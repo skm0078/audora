@@ -258,6 +258,9 @@ class BookSession(
         private val timer = SleepTimer(env.elapsedRealtime)
         private var job: Job? = null
 
+        /** The minutes ran out: reading stops at the end of the sentence playing, not mid-word. */
+        private var finishingSentence = false
+
         val mode: SleepTimerMode get() = timer.mode
         var endsAtWall: Long? = null
             private set
@@ -275,14 +278,21 @@ class BookSession(
         fun cancel() {
             job?.cancel()
             job = null
+            finishingSentence = false
         }
 
-        fun pauseAfter(current: PlaybackItem?, next: PlaybackItem?): Boolean = timer.pauseAfter(current, next)
+        fun pauseAfter(current: PlaybackItem?, next: PlaybackItem?): Boolean =
+            (finishingSentence && current is PlaybackItem.Sentence) || timer.pauseAfter(current, next)
 
-        /** The player paused at the end of a sentence: if that was the end-of-page timer, it is done. */
-        fun onPausedAtItemEnd() {
-            if (timer.mode != SleepTimerMode.END_OF_PAGE) return
-            AudoraLog.i(TAG, "Sleep timer: end of page, paused book=${bookId?.logLabel}")
+        /**
+         * The player paused. At the end of a sentence, an end-of-page or ran-out timer is done; any other pause
+         * while the ran-out timer finishes its sentence ends that timer too, so resuming reads on normally.
+         */
+        fun onPaused(atItemEnd: Boolean) {
+            val done = finishingSentence || (atItemEnd && timer.mode == SleepTimerMode.END_OF_PAGE)
+            if (!done) return
+            AudoraLog.i(TAG, "Sleep timer done, paused book=${bookId?.logLabel}")
+            finishingSentence = false
             clearAndPublish()
             player.pauseAtEndOfMediaItems = false
         }
@@ -293,9 +303,15 @@ class BookSession(
                 delay(remaining)
                 remaining = timer.remainingMs() ?: return
             }
-            AudoraLog.i(TAG, "Sleep timer ended, pausing book=${bookId?.logLabel}")
-            player.pause()
-            clearAndPublish()
+            if (player.isPlaying && playlist.current() is PlaybackItem.Sentence) {
+                AudoraLog.i(TAG, "Sleep timer ended, finishing the sentence, book=${bookId?.logLabel}")
+                finishingSentence = true
+                updateWindow()
+            } else {
+                AudoraLog.i(TAG, "Sleep timer ended, pausing book=${bookId?.logLabel}")
+                player.pause()
+                clearAndPublish()
+            }
         }
 
         private fun clearAndPublish() {
@@ -325,10 +341,11 @@ class BookSession(
         }
 
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
-            if (!playWhenReady &&
-                reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM
-            ) {
-                sleep.onPausedAtItemEnd()
+            if (!playWhenReady) {
+                sleep.onPaused(
+                    atItemEnd =
+                        reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM,
+                )
             }
         }
 
