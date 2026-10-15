@@ -55,7 +55,7 @@ jobs:
         # assembleDebugAndroidTest only compiles the instrumented tests; the device-tests job runs them.
         run: >-
           ./gradlew ktlintCheck detekt test assembleDebug :app:assembleRelease
-          :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest --stacktrace
+          :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest --stacktrace
 
       - name: 16 KB alignment check
         run: |
@@ -144,7 +144,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Build the test APK
-        run: ./gradlew :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest --stacktrace
+        run: ./gradlew :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest --stacktrace
 
       - name: Start the emulator
         timeout-minutes: 15
@@ -182,9 +182,11 @@ jobs:
           [ "$booted" = "1" ] || fail "Emulator did not finish booting"
           echo "Emulator booted"
 
-      - name: Instrumented tests (:pdf, :playback)
+      - name: Instrumented tests (:pdf, :playback, :speech)
         timeout-minutes: 20
-        run: ./gradlew :pdf:connectedDebugAndroidTest :playback:connectedDebugAndroidTest --stacktrace
+        run: >-
+          ./gradlew :pdf:connectedDebugAndroidTest :playback:connectedDebugAndroidTest
+          :speech:connectedDebugAndroidTest --stacktrace
 
       - name: Failed device tests
         if: failure()
@@ -201,7 +203,7 @@ jobs:
 
       - name: Memory test numbers
         if: always()
-        run: 'timeout 30 "$ANDROID_HOME/platform-tools/adb" logcat -d -s AudoraMemoryTest:I || true'
+        run: 'timeout 30 "$ANDROID_HOME/platform-tools/adb" logcat -d -s AudoraMemoryTest:I AudoraSpeechTest:I || true'
 
       - name: Upload reports on failure
         if: failure()
