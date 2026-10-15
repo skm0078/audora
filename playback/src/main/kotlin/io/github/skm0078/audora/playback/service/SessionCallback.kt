@@ -33,6 +33,7 @@ class SessionCallback(
     private val scope: CoroutineScope,
     private val voices: SpeechVoices,
     private val bookSession: () -> BookSession,
+    private val resumption: () -> PlaybackResumption?,
 ) : MediaSession.Callback {
     override fun onConnect(
         session: MediaSession,
@@ -63,6 +64,15 @@ class SessionCallback(
         PlaybackContract.ACTION_SET_VOICE -> Futures.immediateFuture(setVoice(args))
         PlaybackContract.ACTION_SET_SLEEP_TIMER -> Futures.immediateFuture(setSleepTimer(args))
         else -> Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
+    }
+
+    override fun onPlaybackResumption(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        isForPlayback: Boolean,
+    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+        AudoraLog.i(TAG, "Playback resumption from ${controller.packageName} forPlayback=$isForPlayback")
+        return resumption()?.resume(isForPlayback) ?: PlaybackResumption.unsupported()
     }
 
     private fun playFrom(args: Bundle): ListenableFuture<SessionResult> {

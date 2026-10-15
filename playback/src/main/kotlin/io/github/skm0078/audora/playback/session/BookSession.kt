@@ -14,6 +14,7 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.playback.book.BookSource
 import io.github.skm0078.audora.playback.book.OpenFailure
@@ -59,6 +60,8 @@ class SessionEnvironment(
  * the playhead as they are extracted ([PageLoader], [PlaylistFeeder]). Player errors go through
  * [PlaybackRecovery] (S3 finding 3: Media3's 10-minute stuck timeout must lead to recovery, not a dead player).
  */
+// The session's entry points (play from, resume, voice, sleep timer, release) plus the playlist steps they share.
+@Suppress("TooManyFunctions")
 @OptIn(UnstableApi::class)
 class BookSession(
     private val player: ExoPlayer,
@@ -117,6 +120,27 @@ class BookSession(
             rebuild(page, charStart, play = true)
             Outcome.Success(Unit)
         }
+
+    /**
+     * Playback resumption (P1-06): reopens [id] without a password and plays from its saved anchor, re-anchored
+     * on the current pipeline ([ResumeLocator]); from page 1 if it has none. An encrypted book fails with
+     * PASSWORD_REQUIRED, because its password is never stored.
+     */
+    suspend fun resume(id: BookId, locator: ResumeLocator): Outcome<Unit, OpenFailure> {
+        // The open book if it is [id]; else open [id] without a password and make it the session's book.
+        val opened = opening.withLock {
+            book?.takeIf { it.book.id == id }?.let { Outcome.Success(it) }
+                ?: sources.books.open(id, null).also { if (it is Outcome.Success) replaceBook(it.value, null) }
+        }
+        val text = when (opened) {
+            is Outcome.Success -> opened.value.text
+            is Outcome.Failure -> return Outcome.Failure(opened.error)
+        }
+        val point = withContext(env.extraction) {
+            locator.locate(id, text.pageCount) { page -> (text.units(page) as? Outcome.Success)?.value }
+        }
+        return playFrom(id, point?.page ?: 0, point?.charStart ?: 0, password = bookPassword)
+    }
 
     /** The voice changed: the current sentence restarts in the new voice (Build Spec §6). */
     fun restartRendering() {
@@ -334,7 +358,10 @@ class BookSession(
     private inner class PlayerListener : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) faults.onSentenceCompleted()
-            (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.let { lastSentence = it.unit }
+            (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.let { sentence ->
+                lastSentence = sentence.unit
+                bookId?.let { events.onSentenceStarted(it, sentence.unit) }
+            }
             feeder?.trimBehind()
             updateWindow()
             pump()

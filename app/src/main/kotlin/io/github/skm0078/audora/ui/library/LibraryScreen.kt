@@ -60,6 +60,7 @@ fun LibraryScreen(
     pendingRemoval: Book?,
     actions: LibraryActions,
     modifier: Modifier = Modifier,
+    banner: @Composable () -> Unit = {},
 ) {
     val snackbar = remember { SnackbarHostState() }
     // Saveable: the picker can outlive this process, and its result must still reach the right book.
@@ -102,6 +103,7 @@ fun LibraryScreen(
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             if (busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            banner()
             LibraryContent(
                 listState = listState,
                 busy = busy,

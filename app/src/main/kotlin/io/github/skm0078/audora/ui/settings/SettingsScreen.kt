@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/SettingsScreen.kt
-// Purpose: Settings: Share logs (P1-07), the app version, and a debug-only tool to test unfinished-session detection.
+// Purpose: Settings: background reading (P1-06), Share logs (P1-07), the app version, and a debug-only session tool.
 
 package io.github.skm0078.audora.ui.settings
 
@@ -34,9 +34,11 @@ import io.github.skm0078.audora.ui.theme.AudoraTheme
 @Composable
 fun SettingsScreen(
     shareState: ShareLogsState,
+    batteryExempt: Boolean,
     versionName: String,
     showDebugTools: Boolean,
     onBack: () -> Unit,
+    onOpenBatterySetup: () -> Unit,
     onShareLogs: () -> Unit,
     onSimulateReadingSession: () -> Unit,
     modifier: Modifier = Modifier,
@@ -55,6 +57,8 @@ fun SettingsScreen(
         },
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).verticalScroll(rememberScrollState())) {
+            BatteryItem(batteryExempt, onOpenBatterySetup)
+            HorizontalDivider()
             ShareLogsItem(shareState, onShareLogs)
             HorizontalDivider()
             ListItem(
@@ -72,6 +76,21 @@ fun SettingsScreen(
             }
         }
     }
+}
+
+@Composable
+private fun BatteryItem(exempt: Boolean, onOpen: () -> Unit) {
+    ListItem(
+        headlineContent = { Text(stringResource(R.string.settings_battery_title)) },
+        supportingContent = {
+            if (exempt) {
+                Text(stringResource(R.string.settings_battery_allowed))
+            } else {
+                Text(stringResource(R.string.settings_battery_limited), color = MaterialTheme.colorScheme.error)
+            }
+        },
+        modifier = Modifier.clickable(onClick = onOpen),
+    )
 }
 
 @Composable
@@ -104,9 +123,11 @@ private fun SettingsScreenPreview() {
     AudoraTheme {
         SettingsScreen(
             shareState = ShareLogsState.Idle,
+            batteryExempt = false,
             versionName = "0.0.1-debug",
             showDebugTools = true,
             onBack = {},
+            onOpenBatterySetup = {},
             onShareLogs = {},
             onSimulateReadingSession = {},
         )
