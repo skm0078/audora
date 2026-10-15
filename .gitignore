@@ -1,0 +1,33 @@
+# Gradle / Android build output
+.gradle/
+build/
+local.properties
+.kotlin/
+captures/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Never commit signing material or secrets (AGENTS.md)
+*.jks
+*.keystore
+*.p12
+keystore.properties
+signing/
+
+# Large binaries live outside git (models download at runtime; PDFs may not be redistributable)
+*.onnx
+models/
+*.pdf
+!testdata/pdfs/**/*.pdf
+
+# Python
+__pycache__/
+*.pyc

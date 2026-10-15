@@ -1,0 +1,190 @@
+{
+ "en-mobydick-1col-long": {
+  "pdfium": {
+   "pages": 387,
+   "open_ms": 0.3,
+   "ms_median": 4.13,
+   "ms_p95": 5.74,
+   "ms_max": 7.5,
+   "total_s": 1.64,
+   "jump_to_last_ms": 7.8,
+   "rss_start_mb": 23.9,
+   "rss_peak_mb": 33.8,
+   "rss_growth_firstq_to_lastq_mb": 5.0,
+   "word_recall": 0.9989,
+   "size_mb": 2.9
+  },
+  "pdfbox": {
+   "pages_run": 387,
+   "open_ms": 189.7,
+   "ms_median": 5.18,
+   "ms_p95": 12.46,
+   "heap_peak_mb": 139.0,
+   "wall_s_incl_jvm": 2.7
+  }
+ },
+ "en-kjv-2col-long": {
+  "pdfium": {
+   "pages": 1191,
+   "open_ms": 0.7,
+   "ms_median": 4.64,
+   "ms_p95": 6.41,
+   "ms_max": 12.4,
+   "total_s": 5.7,
+   "jump_to_last_ms": 16.1,
+   "rss_start_mb": 42.0,
+   "rss_peak_mb": 51.8,
+   "rss_growth_firstq_to_lastq_mb": 7.5,
+   "word_recall": 1.0,
+   "size_mb": 8.42
+  },
+  "pdfbox": {
+   "pages_run": 1191,
+   "open_ms": 245.4,
+   "ms_median": 5.4,
+   "ms_p95": 8.81,
+   "heap_peak_mb": 149.1,
+   "wall_s_incl_jvm": 7.7
+  }
+ },
+ "hi-udhr-x200-long": {
+  "pdfium": {
+   "pages": 1034,
+   "open_ms": 0.7,
+   "ms_median": 3.34,
+   "ms_p95": 4.77,
+   "ms_max": 8.5,
+   "total_s": 3.56,
+   "jump_to_last_ms": 16.1,
+   "rss_start_mb": 66.0,
+   "rss_peak_mb": 66.0,
+   "rss_growth_firstq_to_lastq_mb": 0.0,
+   "word_recall": 0.6222,
+   "size_mb": 8.17
+  },
+  "pdfbox": {
+   "pages_run": 1034,
+   "open_ms": 215.3,
+   "ms_median": 3.85,
+   "ms_p95": 6.42,
+   "heap_peak_mb": 148.6,
+   "wall_s_incl_jvm": 4.9
+  }
+ },
+ "bn-udhr-x200-long": {
+  "pdfium": {
+   "pages": 1001,
+   "open_ms": 0.5,
+   "ms_median": 3.39,
+   "ms_p95": 3.99,
+   "ms_max": 6.0,
+   "total_s": 3.39,
+   "jump_to_last_ms": 15.6,
+   "rss_start_mb": 85.4,
+   "rss_peak_mb": 85.4,
+   "rss_growth_firstq_to_lastq_mb": 0.0,
+   "word_recall": 0.2806,
+   "size_mb": 7.21
+  },
+  "pdfbox": {
+   "pages_run": 1001,
+   "open_ms": 220.6,
+   "ms_median": 3.46,
+   "ms_p95": 6.54,
+   "heap_peak_mb": 147.2,
+   "wall_s_incl_jvm": 4.5
+  }
+ },
+ "en-long-pgfmanual-3.1.11a": {
+  "pdfium": {
+   "pages": 1323,
+   "open_ms": 9.9,
+   "ms_median": 1.86,
+   "ms_p95": 3.09,
+   "ms_max": 9.0,
+   "total_s": 2.57,
+   "jump_to_last_ms": 48.3,
+   "rss_start_mb": 56.4,
+   "rss_peak_mb": 79.6,
+   "rss_growth_firstq_to_lastq_mb": 18.4,
+   "size_mb": 9.01
+  },
+  "pdfbox": {
+   "pages_run": 1323,
+   "open_ms": 915.2,
+   "ms_median": 2.79,
+   "ms_p95": 6.03,
+   "heap_peak_mb": 241.6,
+   "wall_s_incl_jvm": 6.2
+  }
+ },
+ "en-long-progit2-book": {
+  "pdfium": {
+   "pages": 501,
+   "open_ms": 0.7,
+   "ms_median": 0.72,
+   "ms_p95": 1.08,
+   "ms_max": 2.4,
+   "total_s": 0.36,
+   "jump_to_last_ms": 8.3,
+   "rss_start_mb": 79.8,
+   "rss_peak_mb": 80.5,
+   "rss_growth_firstq_to_lastq_mb": 0.0,
+   "size_mb": 17.93
+  },
+  "pdfbox": {
+   "pages_run": 501,
+   "open_ms": 277.5,
+   "ms_median": 1.8,
+   "ms_p95": 4.3,
+   "heap_peak_mb": 146.3,
+   "wall_s_incl_jvm": 1.6
+  }
+ },
+ "hi-legacy-chanakya-gazette-cerc-574p": {
+  "pdfium": {
+   "pages": 574,
+   "open_ms": 1.2,
+   "ms_median": 1.47,
+   "ms_p95": 3.31,
+   "ms_max": 34.2,
+   "total_s": 1.01,
+   "jump_to_last_ms": 8.1,
+   "rss_start_mb": 80.5,
+   "rss_peak_mb": 80.5,
+   "rss_growth_firstq_to_lastq_mb": 0.0,
+   "size_mb": 5.59
+  },
+  "pdfbox": {
+   "pages_run": 574,
+   "open_ms": 278.4,
+   "ms_median": 2.79,
+   "ms_p95": 9.76,
+   "heap_peak_mb": 161.4,
+   "wall_s_incl_jvm": 2.8
+  }
+ },
+ "en-novel-pd-moby-dick-gitenberg": {
+  "pdfium": {
+   "pages": 424,
+   "open_ms": 0.7,
+   "ms_median": 3.94,
+   "ms_p95": 5.97,
+   "ms_max": 8.0,
+   "total_s": 1.57,
+   "jump_to_last_ms": 7.1,
+   "rss_start_mb": 80.6,
+   "rss_peak_mb": 80.6,
+   "rss_growth_firstq_to_lastq_mb": 0.0,
+   "size_mb": 1.58
+  },
+  "pdfbox": {
+   "pages_run": 424,
+   "open_ms": 194.8,
+   "ms_median": 3.55,
+   "ms_p95": 9.54,
+   "heap_peak_mb": 137.4,
+   "wall_s_incl_jvm": 2.2
+  }
+ }
+}

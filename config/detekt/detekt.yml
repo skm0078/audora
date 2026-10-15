@@ -1,0 +1,35 @@
+# File: config/detekt/detekt.yml
+# Purpose: Audora's deltas on top of detekt's default rules (run with --build-upon-default-config).
+# Keep this short: every override needs a reason in a comment.
+
+config:
+  validation: true
+
+naming:
+  FunctionNaming:
+    # Compose functions are PascalCase by convention.
+    ignoreAnnotated: ['Composable']
+  TopLevelPropertyNaming:
+    constantPattern: '[A-Z][A-Za-z0-9_]*'
+
+complexity:
+  LongParameterList:
+    # Composables take many optional UI parameters by design.
+    ignoreAnnotated: ['Composable']
+
+style:
+  MagicNumber:
+    # Previews and tests hold literal sample values; production code uses config objects (AGENTS.md).
+    ignoreAnnotated: ['Preview']
+    excludes: ['**/test/**', '**/androidTest/**', '**/*.kts']
+  UnusedPrivateMember:
+    ignoreAnnotated: ['Preview']
+  ForbiddenComment:
+    # TODOs are allowed only when they point at a ticket, e.g. "TODO(P1-07): ...".
+    comments:
+      - reason: 'Reference a ticket: TODO(P1-07): ...'
+        value: 'TODO:'
+      - reason: 'Use a ticket-referenced TODO instead.'
+        value: 'FIXME:'
+      - reason: 'Use a ticket-referenced TODO instead.'
+        value: 'STOPSHIP:'
