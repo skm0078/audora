@@ -4,9 +4,13 @@
 package io.github.skm0078.audora.playback.session
 
 import android.util.Log
+import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.Renderer
+import androidx.media3.exoplayer.RenderersFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.skm0078.audora.core.config.QueueConfig
@@ -46,6 +50,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@OptIn(UnstableApi::class)
 @RunWith(AndroidJUnit4::class)
 class BookSessionTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -63,7 +68,15 @@ class BookSessionTest {
         // The session's own log lines, in logcat under one tag (CI prints it), to see why a run stalled.
         AudoraLog.install(LogSink { Log.i(LOG_TAG, "${it.tag}: ${it.message}", it.throwable) })
         onMain {
-            player = SpeechPlayer.build(instrumentation.targetContext, registry, CONFIG, handleAudioFocus = false)
+            // No renderers: the player's position follows the system clock, because the CI emulator runs without
+            // sound and its audio output never advances. Loading, playlist moves and ENDED are all real.
+            player = SpeechPlayer.build(
+                instrumentation.targetContext,
+                registry,
+                CONFIG,
+                handleAudioFocus = false,
+                renderers = RenderersFactory { _, _, _, _, _ -> emptyArray<Renderer>() },
+            )
             player.addListener(Recorder())
             session = BookSession(
                 player,
