@@ -46,11 +46,19 @@ def convert_piper(src: Path, espeak_data: Path, out: Path) -> None:
     config = json.loads((src / f"{PIPER_NAME}.onnx.json").read_text(encoding="utf-8"))
     out.mkdir(parents=True, exist_ok=True)
 
+    # sherpa-onnx (like Piper itself) maps espeak output one code point at a time and rejects longer token
+    # lines, so multi-code-point entries (this voice has some, e.g. "aɪ") can never be looked up: drop them.
+    skipped = []
     with open(out / "tokens.txt", "w", encoding="utf-8") as f:
         for symbol, ids in config["phoneme_id_map"].items():
             if symbol == "\n":
                 continue
+            if len(symbol) != 1:
+                skipped.append(symbol)
+                continue
             f.write(f"{symbol} {ids[0] if isinstance(ids, list) else ids}\n")
+    if skipped:
+        print(f"piper: skipped {len(skipped)} multi-code-point tokens: {' '.join(skipped)}")
 
     sample_rate = config["audio"]["sample_rate"]
     if sample_rate == PIPER_SAMPLE_RATE_TYPO:

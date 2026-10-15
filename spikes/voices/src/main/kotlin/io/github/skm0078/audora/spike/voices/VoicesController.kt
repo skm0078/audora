@@ -18,14 +18,14 @@ import io.github.skm0078.audora.spike.voices.bench.VoiceRun
 import io.github.skm0078.audora.spike.voices.catalog.Catalog
 import io.github.skm0078.audora.spike.voices.catalog.CatalogParser
 import io.github.skm0078.audora.spike.voices.device.DeviceInfo
+import io.github.skm0078.audora.spike.voices.download.InstallOutcome
+import io.github.skm0078.audora.spike.voices.download.ModelStore
+import io.github.skm0078.audora.spike.voices.download.UrlHttpFetcher
 import io.github.skm0078.audora.spike.voices.engine.SherpaEngine
 import io.github.skm0078.audora.spike.voices.engine.SystemTtsEngine
 import io.github.skm0078.audora.spike.voices.listen.BlindEntry
 import io.github.skm0078.audora.spike.voices.listen.BlindOrder
 import io.github.skm0078.audora.spike.voices.listen.ListeningStore
-import io.github.skm0078.audora.spike.voices.models.InstallOutcome
-import io.github.skm0078.audora.spike.voices.models.ModelStore
-import io.github.skm0078.audora.spike.voices.models.UrlHttpFetcher
 import io.github.skm0078.audora.spike.voices.ui.LanguageStatus
 import io.github.skm0078.audora.spike.voices.ui.ListenItem
 import io.github.skm0078.audora.spike.voices.ui.VoicesUiState
