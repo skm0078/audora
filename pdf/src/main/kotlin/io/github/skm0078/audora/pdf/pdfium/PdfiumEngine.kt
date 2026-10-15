@@ -17,7 +17,6 @@ import io.github.skm0078.audora.pdf.extract.RawPage
 import io.legere.pdfiumandroid.api.PdfPasswordException
 import io.legere.pdfiumandroid.core.unlocked.PdfDocumentU
 import io.legere.pdfiumandroid.core.unlocked.PdfiumCoreU
-import io.legere.pdfiumandroid.core.util.wrapLock
 import java.io.FileNotFoundException
 import java.io.IOException
 
@@ -49,7 +48,7 @@ class PdfiumEngine(
         descriptor: ParcelFileDescriptor,
         password: String?,
     ): Outcome<PdfDocumentHandle, PdfOpenError> = try {
-        val document = wrapLock { pdfium.newDocument(descriptor, password) }
+        val document = pdfiumLocked { pdfium.newDocument(descriptor, password) }
         Outcome.Success(PdfiumDocumentHandle(document, config))
     } catch (e: PdfPasswordException) {
         descriptor.close()
@@ -85,11 +84,11 @@ class PdfiumEngine(
 
 private class PdfiumDocumentHandle(private val document: PdfDocumentU, private val config: ExtractionConfig) :
     PdfDocumentHandle {
-    override val pageCount: Int = wrapLock { document.getPageCount() }
+    override val pageCount: Int = pdfiumLocked { document.getPageCount() }
 
     @Suppress("TooGenericExceptionCaught") // PdfiumAndroidKt and JNI report page failures as RuntimeExceptions.
     override fun readPage(pageIndex: Int): Outcome<RawPage, PdfPageError> = try {
-        wrapLock { readLocked(pageIndex) }
+        pdfiumLocked { readLocked(pageIndex) }
     } catch (e: RuntimeException) {
         Outcome.Failure(PdfPageError.ExtractionFailed(pageIndex, e.toString(), e))
     }
@@ -112,6 +111,6 @@ private class PdfiumDocumentHandle(private val document: PdfDocumentU, private v
     }
 
     override fun close() {
-        wrapLock { document.close() }
+        pdfiumLocked { document.close() }
     }
 }

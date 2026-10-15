@@ -7,11 +7,10 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.legere.pdfiumandroid.core.unlocked.PdfiumCoreU
-import io.legere.pdfiumandroid.core.util.wrapLock
 
 /**
  * We use PdfiumAndroidKt's "unlocked" core because it exposes the native page pointers our JNI library needs
- * (the public wrapper keeps them internal). Every PDFium call still goes through [wrapLock], the library's
+ * (the public wrapper keeps them internal). Every PDFium call still goes through [pdfiumLocked], the library's
  * own global lock, so we never race the public API (a future page renderer) on PDFium's global state.
  *
  * One [PdfiumCoreU] per process: its constructor also sets PdfiumAndroidKt's global config.
@@ -29,7 +28,7 @@ internal object PdfiumRuntime {
     private fun load(): Outcome<PdfiumCoreU, PdfOpenError> = try {
         val pdfium = PdfiumCoreU()
         System.loadLibrary(EXT_LIBRARY)
-        val missing = wrapLock { PdfiumExtNative.nativeInit() }
+        val missing = pdfiumLocked { PdfiumExtNative.nativeInit() }
         if (missing == null) {
             AudoraLog.i(TAG, "PDFium and $EXT_LIBRARY loaded")
             Outcome.Success(pdfium)
@@ -42,3 +41,10 @@ internal object PdfiumRuntime {
         Outcome.Failure(PdfOpenError.EngineUnavailable(e.toString(), e))
     }
 }
+
+/**
+ * Runs [block] under PdfiumAndroidKt's global lock, like its `wrapLock`. We cannot call `wrapLock` itself: it is
+ * an inline function compiled for JVM 21 and our modules target JVM 17, so we call the same lock non-inline.
+ * The lock is read on every call because the library lets callers replace it.
+ */
+internal fun <T> pdfiumLocked(block: () -> T): T = PdfiumCoreU.lock.withLockBlocking(block)
