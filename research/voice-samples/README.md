@@ -6,8 +6,8 @@ sentence with numbers and abbreviations. Texts: `spikes/voices/src/main/assets/s
 
 - `desktop-<voice id>.mp3`: voice ids, models and licences are in the catalog and in
   `research/spikes/S1-voice-benchmark/REPORT.md`.
-- Bengali samples are produced in CI and published, with full per-text WAVs, as `s1-desktop-samples.zip` on the
-  `s1-voices` release.
+- The Bengali samples come from the CI run; full per-text WAVs for every voice are in `s1-desktop-samples.zip` on
+  the `s1-voices` release.
 - Voices trained on Lessac/Blizzard 2013 data (Piper lessac, hi_IN rohan) were measured as a reference but are
   not sampled here (ADR-012).
 

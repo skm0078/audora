@@ -37,7 +37,7 @@ load + first render, what a reader waits for after tapping Play on a voice that 
 
 ## Desktop results (x86, 2 threads)
 Disk = unpacked model directory (Piper/Kitten/Kokoro include 19 MB of espeak-ng-data that every espeak-based voice
-shares). Bengali rows come from the CI run (`desktop-results.md` on the `s1-voices` release).
+shares). Bengali rows come from the CI run (`results/desktop-ci.md`; the CI runner is ~10–30 % faster than this container, and its English/Hindi numbers agree in ranking).
 
 | Voice | Disk MB | Load s | First render s | RTF | CER prose+formal | Notes |
 |---|---|---|---|---|---|---|
@@ -52,8 +52,8 @@ shares). Bengali rows come from the CI run (`desktop-results.md` on the `s1-voic
 | piper-hi-pratham | 81 | 1.09 | 0.26 | 0.071 | 3.5 % | |
 | supertonic-hi (speaker 2) | 145 | 0.75 | 1.17 | 0.169 | 2.4 % | |
 | kokoro-hi-alpha | 190 | 1.57 | 5.62 | **1.183** | 6.4 % | slower than real time on desktop |
-| piper-bn-google | — | — | — | — | — | CI run |
-| mms-bn | — | — | — | — | — | CI run |
+| piper-bn-google | 95 | 0.80 | 0.28 | 0.068 | 13.9 % | CI runner; 22.05 kHz |
+| mms-bn | 114 | 1.21 | 1.44 | 0.369 | 9.7 % | CI runner; 16 kHz, 5× slower than Piper |
 
 Hard texts (numbers, "Dr.", "Vol. II", ₹) are not scored: no voice expands them reliably and ASR writes numbers
 inconsistently. Listening shows the gap P2-04's normalizer must close: Piper and Kokoro read "$1,250.50" and
@@ -62,6 +62,7 @@ inconsistently. Listening shows the gap P2-04's normalizer must close: Piper and
 ## What the desktop numbers predict for the phone
 The Moto's Cortex-A78 cores are roughly 2–3× slower per thread than this x86 container for ONNX Runtime int8/fp32
 inference (estimate, to be replaced by the phone table):
+- **MMS ben:** RTF ≈ 0.8–1.1. Borderline; a fallback at best.
 - **Piper (all languages):** RTF ≈ 0.15–0.25. Comfortably real time; first sentence under 1 s once loaded.
 - **Supertonic:** RTF ≈ 0.35–0.5. Real time with render-ahead.
 - **Kitten nano:** RTF ≈ 0.7–1.0 and a 1.5–2.5 s cold first render on desktop already. Borderline.
