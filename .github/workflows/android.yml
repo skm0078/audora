@@ -1,6 +1,7 @@
 # File: .github/workflows/android.yml
 # Purpose: On every push and PR: style, static analysis, unit tests, debug APKs, 16 KB alignment check.
 #          The debug APKs (Audora and the S3 playback spike) are uploaded as one artifact (Build Spec §7).
+#          A second job runs the instrumented tests (real PDFium on real PDFs, P1-02) on an x86_64 emulator.
 #          It also builds the unsigned release APK, so a release-only failure (lint-vital, release config) shows up here
 #          and not first on release day. Signed releases: release.yml.
 
@@ -50,7 +51,8 @@ jobs:
         run: python3 -m unittest discover -s scripts/tests -v
 
       - name: ktlint, detekt, unit tests, debug APKs, unsigned release APK
-        run: ./gradlew ktlintCheck detekt test assembleDebug :app:assembleRelease --stacktrace
+        # assembleDebugAndroidTest only compiles the instrumented tests; the device-tests job runs them.
+        run: ./gradlew ktlintCheck detekt test assembleDebug :app:assembleRelease :pdf:assembleDebugAndroidTest --stacktrace
 
       - name: 16 KB alignment check
         run: |
@@ -85,6 +87,111 @@ jobs:
           path: |
             build/reports/
             */build/reports/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # Instrumented tests need a real Android runtime: PDFium and our JNI library are native code.
+  # Plain sdkmanager/avdmanager/emulator calls instead of a third-party emulator action (AGENTS.md: no new
+  # dependencies). x86_64 because GitHub's Linux runners are x86_64 with KVM; :pdf builds that ABI for tests only.
+  device-tests:
+    name: Device tests (emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EMULATOR_IMAGE: "system-images;android-34;aosp_atd;x86_64"
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+          cache-read-only: ${{ github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/prod' }}
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Build the test APK
+        run: ./gradlew :pdf:assembleDebugAndroidTest --stacktrace
+
+      - name: Start the emulator
+        timeout-minutes: 15
+        run: |
+          tools="$ANDROID_HOME/cmdline-tools/latest/bin"
+          adb="$ANDROID_HOME/platform-tools/adb"
+          emulator="$ANDROID_HOME/emulator/emulator"
+          fail() {
+            echo "::error::$1"
+            tail -n 80 emulator.log 2> /dev/null || true
+            exit 1
+          }
+          yes | "$tools/sdkmanager" --licenses > /dev/null || true
+          "$tools/sdkmanager" --install emulator platform-tools "$EMULATOR_IMAGE" > /dev/null
+          # Pin where the AVD lives: the runner's older avdmanager and the new emulator disagree on the default.
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | "$tools/avdmanager" create avd --force --name ci --package "$EMULATOR_IMAGE"
+          if ! "$emulator" -list-avds | grep -qx ci; then
+            find "$HOME" "$RUNNER_TEMP" -name 'ci.ini' 2> /dev/null || true
+            fail "AVD 'ci' was not created in $ANDROID_AVD_HOME"
+          fi
+          "$emulator" -accel-check || true
+          "$adb" start-server
+          nohup "$emulator" -avd ci -no-window -no-audio -no-boot-anim -no-snapshot \
+            -gpu swiftshader_indirect -camera-back none -camera-front none -memory 4096 > emulator.log 2>&1 &
+          emulator_pid=$!
+          booted=""
+          for _ in $(seq 1 120); do
+            kill -0 "$emulator_pid" 2> /dev/null || fail "Emulator exited before booting"
+            booted="$(timeout 10 "$adb" shell getprop sys.boot_completed 2> /dev/null | tr -d '\r' || true)"
+            [ "$booted" = "1" ] && break
+            sleep 5
+          done
+          [ "$booted" = "1" ] || fail "Emulator did not finish booting"
+          echo "Emulator booted"
+
+      - name: Instrumented tests (:pdf)
+        timeout-minutes: 20
+        run: ./gradlew :pdf:connectedDebugAndroidTest --stacktrace
+
+      - name: Failed device tests
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+          for path in glob.glob("pdf/build/outputs/androidTest-results/connected/**/*.xml", recursive=True):
+              for case in ET.parse(path).getroot().iter("testcase"):
+                  for problem in list(case.findall("failure")) + list(case.findall("error")):
+                      print(f"::error::{case.get('classname')}.{case.get('name')}")
+                      print((problem.text or problem.get("message") or "")[:3000])
+          PY
+
+      - name: Memory test numbers
+        if: always()
+        run: 'timeout 30 "$ANDROID_HOME/platform-tools/adb" logcat -d -s AudoraMemoryTest:I || true'
+
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: device-test-reports-${{ github.run_id }}
+          path: |
+            pdf/build/reports/androidTests/
+            pdf/build/outputs/androidTest-results/
+            emulator.log
           if-no-files-found: ignore
           retention-days: 14
 
