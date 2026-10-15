@@ -35,6 +35,19 @@ android {
         }
     }
 
+    androidResources {
+        // The bundled voice's weights (:speech, ADR-014) are read straight from the APK; stored uncompressed they
+        // load without inflating ~60 MB first.
+        noCompress += "onnx"
+    }
+
+    packaging {
+        jniLibs {
+            // sherpa-onnx's Kotlin API loads only libsherpa-onnx-jni.so and libonnxruntime.so (ADR-012).
+            excludes += listOf("**/libsherpa-onnx-c-api.so", "**/libsherpa-onnx-cxx-api.so")
+        }
+    }
+
     buildTypes {
         debug {
             // Lets a debug build sit next to a release build on the same phone.
@@ -75,10 +88,14 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.coroutines.android)
+    // The reader keeps the listener's speed in DataStore (P1-05).
+    implementation(libs.datastore.preferences)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation(libs.compose.ui.tooling.preview)
     debugImplementation(libs.compose.ui.tooling)
+
+    testImplementation(libs.kotlinx.coroutines.test)
 }

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: playback/src/main/AndroidManifest.xml
+  Purpose: The playback service and the permissions background reading needs (Build Spec §6), merged into the app.
+  Never SMS, accessibility or notification-listener permissions (AGENTS.md).
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- The playback notification on Android 13+; the UI asks for it on first play. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- ExoPlayer's WAKE_MODE_LOCAL keeps the CPU awake while a sentence is synthesized with the screen off. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- The phone's own text-to-speech engines must be visible to bind them (Android 11+ package visibility). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
+
+    <application>
+        <service
+            android:name=".service.AudoraPlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>
