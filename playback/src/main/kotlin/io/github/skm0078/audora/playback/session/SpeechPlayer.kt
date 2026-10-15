@@ -8,6 +8,7 @@ import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.extractor.Extractor
@@ -35,7 +36,16 @@ object SpeechPlayer {
             .setUsage(C.USAGE_MEDIA)
             .setContentType(C.AUDIO_CONTENT_TYPE_SPEECH)
             .build()
+        val startAtOnce = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
+                DefaultLoadControl.DEFAULT_MAX_BUFFER_MS,
+                config.playbackStartBufferMs,
+                config.playbackStartBufferMs,
+            )
+            .build()
         return ExoPlayer.Builder(context)
+            .setLoadControl(startAtOnce)
             .setMediaSourceFactory(ProgressiveMediaSource.Factory(TtsDataSource.Factory(registry), wavOnly))
             .setAudioAttributes(speech, handleAudioFocus)
             .setHandleAudioBecomingNoisy(true)
