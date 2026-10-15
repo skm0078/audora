@@ -22,6 +22,9 @@ class AppLogging @Inject constructor(@ApplicationContext private val context: Co
 
     private val asyncFileSink by lazy { AsyncLogSink(fileSink) }
 
+    /** Writes every queued line to disk, so Share logs (P1-07) includes the newest ones. Blocks; false on timeout. */
+    fun flush(): Boolean = asyncFileSink.flush(SHARE_FLUSH_TIMEOUT_MS)
+
     fun start() {
         val logcatMinLevel = if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.INFO
         AudoraLog.install(LogcatLogSink(logcatMinLevel), asyncFileSink)
@@ -50,5 +53,8 @@ class AppLogging @Inject constructor(@ApplicationContext private val context: Co
 
         /** Upper bound on how long a crash waits for its stack trace to reach disk. */
         const val CRASH_FLUSH_TIMEOUT_MS = 1_000L
+
+        /** Upper bound on how long Share logs waits for queued lines before zipping the files. */
+        const val SHARE_FLUSH_TIMEOUT_MS = 2_000L
     }
 }
