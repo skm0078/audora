@@ -61,9 +61,8 @@
     <string name="reader_sleep_off">Off</string>
     <string name="reader_sleep_minutes">%1$d minutes</string>
     <string name="reader_sleep_end_of_page">End of page</string>
-    <string name="reader_sleep_finishing">Finishing the sentence</string>
     <string name="reader_player_connecting">Connecting to the player…</string>
-    <string name="reader_player_unavailable">The player is not available. Please share the logs.</string>
+    <string name="reader_player_unavailable">Reading aloud arrives with the next update. For now you can browse the pages.</string>
     <string name="reader_player_error">Reading stopped because of an error. Tap play to try again, or share the logs.</string>
 
     <!-- Password prompt -->

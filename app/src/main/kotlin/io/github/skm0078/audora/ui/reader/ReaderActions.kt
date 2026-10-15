@@ -4,7 +4,6 @@
 package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.model.ReadingUnit
-import io.github.skm0078.audora.playback.contract.SleepTimerSetting
 
 /** One interface instead of many lambdas keeps [ReaderScreen]'s signature readable. */
 @Suppress("TooManyFunctions") // One per control on the screen.

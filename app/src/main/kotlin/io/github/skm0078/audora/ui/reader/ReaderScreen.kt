@@ -49,8 +49,6 @@ import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
-import io.github.skm0078.audora.playback.contract.PlaybackAddress
-import io.github.skm0078.audora.playback.contract.SleepTimerSetting
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -257,7 +255,7 @@ private fun ReaderScreenPreview() {
         content = PageContent.Ready(units),
         playback = PlaybackSnapshot(
             connection = PlaybackSnapshot.Connection.CONNECTED,
-            position = PlaybackAddress(book, 0, units[1].charStart),
+            position = ReadingPosition(book, 0, units[1].charStart),
             wantsToPlay = true,
             speed = 1.25f,
             canSkipBack = true,

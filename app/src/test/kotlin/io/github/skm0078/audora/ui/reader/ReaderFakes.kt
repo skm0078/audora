@@ -10,8 +10,6 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.document.PdfPageError
-import io.github.skm0078.audora.playback.contract.PlaybackAddress
-import io.github.skm0078.audora.playback.contract.SleepTimerSetting
 import kotlinx.coroutines.flow.MutableStateFlow
 
 val BOOK = BookId("3f2a9c01-7b1e-4c55-9a0d-2f6c1e8b7d10")
@@ -27,18 +25,18 @@ fun unitsOf(page: Int, count: Int = 3) = List(count) { i ->
 class FakePlaybackPort : PlaybackPort {
     override val state = MutableStateFlow(PlaybackSnapshot.Connecting)
     val calls = mutableListOf<String>()
-    val starts = mutableListOf<Pair<PlaybackAddress, String?>>()
+    val starts = mutableListOf<Pair<ReadingPosition, String?>>()
 
     fun connect(speed: Float = 1f) {
         state.value = PlaybackSnapshot(PlaybackSnapshot.Connection.CONNECTED, speed = speed)
     }
 
-    fun readingAt(address: PlaybackAddress, playing: Boolean = true) {
-        state.value = state.value.copy(position = address, wantsToPlay = playing)
+    fun readingAt(position: ReadingPosition, playing: Boolean = true) {
+        state.value = state.value.copy(position = position, wantsToPlay = playing)
     }
 
-    override fun start(address: PlaybackAddress, password: String?) {
-        starts += address to password
+    override fun start(position: ReadingPosition, password: String?) {
+        starts += position to password
     }
 
     override fun play() {

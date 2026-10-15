@@ -5,7 +5,6 @@ package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.ReadingUnit
-import io.github.skm0078.audora.playback.contract.PlaybackAddress
 
 sealed interface DocumentState {
     data object Loading : DocumentState
@@ -51,7 +50,7 @@ data class ReaderState(
     val pageCount: Int? get() = (document as? DocumentState.Open)?.pageCount
 
     /** Where the player is in THIS book; null when it holds nothing or another book. */
-    val readingPosition: PlaybackAddress? get() = playback.position?.takeIf { it.bookId == bookId }
+    val readingPosition: ReadingPosition? get() = playback.position?.takeIf { it.bookId == bookId }
 
     /** This book is being read aloud (or buffering to be). */
     val isReading: Boolean get() = readingPosition != null && playback.wantsToPlay

@@ -10,8 +10,6 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PdfOpenError
-import io.github.skm0078.audora.playback.contract.PlaybackAddress
-import io.github.skm0078.audora.playback.contract.SleepTimerSetting
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +22,7 @@ import kotlinx.coroutines.launch
  * Plain state holder (no Compose here), one per open book, living as long as the reader screen. Main thread.
  *
  * The reader never synthesizes anything: it shows the page's sentences from its own copy of the PDF and asks
- * the playback service to read from an address (C7: only ever on a tap). The PDF's password stays in this
+ * the playback service to read from an position (C7: only ever on a tap). The PDF's password stays in this
  * object's memory and goes to the service with each start request; it is never saved or logged.
  */
 // One small function per control on the screen; each constructor parameter is a seam the tests fake.
@@ -83,7 +81,7 @@ class ReaderModel(
     }
 
     /** Tap on a sentence: read from there. */
-    fun readFrom(unit: ReadingUnit) = startReading(PlaybackAddress(bookId, unit.page, unit.charStart))
+    fun readFrom(unit: ReadingUnit) = startReading(ReadingPosition(bookId, unit.page, unit.charStart))
 
     /**
      * Pauses while reading. Otherwise resumes where reading stopped if that is on the page shown, or starts at
@@ -95,7 +93,7 @@ class ReaderModel(
             !current.playerReady -> AudoraLog.w(TAG, "Play ignored, $logContext player not ready")
             current.isReading -> player.pause()
             current.readingPosition?.page == current.page -> player.play()
-            else -> startReading(PlaybackAddress.startOfPage(bookId, current.page))
+            else -> startReading(ReadingPosition.startOfPage(bookId, current.page))
         }
     }
 
@@ -119,14 +117,14 @@ class ReaderModel(
         document = null
     }
 
-    private fun startReading(address: PlaybackAddress) {
+    private fun startReading(position: ReadingPosition) {
         if (!state.value.playerReady) {
             AudoraLog.w(TAG, "Start ignored, $logContext player not ready")
             return
         }
         mutableState.update { it.copy(following = true) }
-        player.start(address, password)
-        if (address.page != state.value.page) loadPage(address.page)
+        player.start(position, password)
+        if (position.page != state.value.page) loadPage(position.page)
     }
 
     private fun open(password: String?) {
