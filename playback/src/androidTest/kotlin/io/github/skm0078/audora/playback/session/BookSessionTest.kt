@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.playback.session
 
+import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -11,6 +12,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.skm0078.audora.core.config.QueueConfig
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.logging.LogSink
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
@@ -38,6 +41,7 @@ import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,6 +60,8 @@ class BookSessionTest {
 
     @Before
     fun setUp() {
+        // The session's own log lines, in logcat under one tag (CI prints it), to see why a run stalled.
+        AudoraLog.install(LogSink { Log.i(LOG_TAG, "${it.tag}: ${it.message}", it.throwable) })
         onMain {
             player = SpeechPlayer.build(instrumentation.targetContext, registry, CONFIG, handleAudioFocus = false)
             player.addListener(Recorder())
@@ -82,13 +88,14 @@ class BookSessionTest {
             player.release()
         }
         scope.cancel()
+        AudoraLog.install()
     }
 
     @Test
     fun readsEverySentenceInOrderAndEndsOnlyAfterTheLast() {
         play(page = 0, charStart = 0)
 
-        assertTrue("book did not end", ended.await(TIMEOUT_S, TimeUnit.SECONDS))
+        awaitEnd()
         assertEquals(allKeys(), played.toList())
     }
 
@@ -97,7 +104,7 @@ class BookSessionTest {
         // Unit 1 of page 1 spans chars 10..19, so offset 15 starts there.
         play(page = 1, charStart = 15)
 
-        assertTrue("book did not end", ended.await(TIMEOUT_S, TimeUnit.SECONDS))
+        awaitEnd()
         assertEquals(UnitKey(1, 1), played.first())
         assertEquals(allKeys().dropWhile { it != UnitKey(1, 1) }, played.toList())
     }
@@ -108,7 +115,7 @@ class BookSessionTest {
         onMain { session.restartRendering() }
 
         assertTrue(onMain { player.currentMediaItem?.mediaId.orEmpty() }.contains("/e/2/"))
-        assertTrue("book did not end", ended.await(TIMEOUT_S, TimeUnit.SECONDS))
+        awaitEnd()
         assertEquals(UnitKey(PAGES - 1, UNITS_PER_PAGE - 1), played.last())
     }
 
@@ -117,9 +124,20 @@ class BookSessionTest {
         failOn = UnitKey(0, 1)
         play(page = 0, charStart = 0)
 
-        assertTrue("book did not end", ended.await(TIMEOUT_S, TimeUnit.SECONDS))
+        awaitEnd()
         assertEquals(allKeys() - UnitKey(0, 1), played.toList())
         assertTrue(states.any { it.error?.code == PlaybackErrorCode.PLAYBACK_FAILED })
+    }
+
+    private fun awaitEnd() {
+        if (!ended.await(TIMEOUT_S, TimeUnit.SECONDS)) fail("book did not end: ${describePlayer()}")
+    }
+
+    private fun describePlayer(): String = onMain {
+        "state=${player.playbackState} playWhenReady=${player.playWhenReady} playing=${player.isPlaying} " +
+            "item=${player.currentMediaItem?.mediaId} index=${player.currentMediaItemIndex}/${player.mediaItemCount} " +
+            "positionMs=${player.currentPosition} error=${player.playerError?.errorCodeName} " +
+            "played=${played.toList()} lastState=${states.lastOrNull()}"
     }
 
     private fun play(page: Int, charStart: Int) {
@@ -198,6 +216,7 @@ class BookSessionTest {
         const val RENDER_DELAY_MS = 30L
         const val PAGE_DELAY_MS = 400L
         const val TIMEOUT_S = 30L
+        const val LOG_TAG = "AudoraPlaybackTest"
         val CONFIG = QueueConfig(minUnitsAhead = 2, keepBehindUnits = 2)
         val VOICE = VoiceId(EngineId.SHERPA, "test")
         val BOOK = Book(BookId("book-1"), "content://test/book-1", "Test book", 1L, "fp", PAGES, 0L, null)

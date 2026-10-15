@@ -239,6 +239,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 010 | compileSdk 37, targetSdk 36 | Accepted (P0-01) |
 | 011 | S2: PDFium confirmed + JNI scope, `/ActualText` rebuild, OCR cross-check for Indic, Tesseract for all scripts, reopen every 100 pages | Accepted (S2) |
 | 012 | S1: sherpa-onnx AAR vendored from its GitHub release (SHA-pinned), models mirrored to our own release, Kokoro v1.0, no Lessac-derived voices, English default rule, Moto Edge 50 Fusion as dev reference phone | Accepted (S1); English default pending phone run |
+| 014 | Bundled English voice chosen in `speech/bundled-voices.json`, fetched at build time from sherpa-onnx's release (SHA-pinned), espeak-ng-data trimmed to en/hi/bn; Piper ljspeech provisional | Accepted (P1-03) |
 | 015 | Resume anchor details: head + tail fingerprints (FNV-1a 64, normalized), no voice in the anchor, `resume_anchors` table (DB v2), brand battery steps as text with public intents only | Accepted (P1-06) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
