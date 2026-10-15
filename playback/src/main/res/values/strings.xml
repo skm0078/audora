@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: playback/src/main/res/values/strings.xml
+     Purpose: Notification and lock-screen text for the playback service. -->
+<resources>
+    <!-- Shown under the book title, e.g. "Page 3 of 50". -->
+    <string name="playback_page_of">Page %1$d of %2$d</string>
+    <!-- Shown while the next page is still being prepared. -->
+    <string name="playback_loading_next_page">Preparing the next page…</string>
+</resources>
