@@ -205,7 +205,7 @@ jobs:
 
       - name: Memory test numbers
         if: always()
-        run: 'timeout 30 "$ANDROID_HOME/platform-tools/adb" logcat -d -s AudoraMemoryTest:I AudoraSpeechTest:I AndroidRuntime:E DEBUG:F libc:F sherpa-onnx:W TestRunner:I || true'
+        run: 'timeout 30 "$ANDROID_HOME/platform-tools/adb" logcat -d -s AudoraMemoryTest:I AudoraSpeechTest:I AudoraPlaybackTest:I ExoPlayerImpl:W DefaultAudioSink:W AudioTrack:W AndroidRuntime:E DEBUG:F libc:F sherpa-onnx:W TestRunner:I || true'
 
       - name: Upload reports on failure
         if: failure()
