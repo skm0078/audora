@@ -10,7 +10,7 @@ One entry per merged ticket, newest first. Each entry: what changed, what was ve
 - Android CI now also builds the unsigned release APK on every push, and ignores tags.
 - Verified: key script end to end under PowerShell 7 with the JDK `keytool` (key created, secrets copied, base64 round-trip, re-run keeps the key); actionlint + shellcheck on both workflows; ktlint. The release build itself is verified only in CI.
 
-**Pending (user):** one-time key setup and backups and ruleset change (docs/RELEASING.md steps 1–4), dev → prod PR, run the Release workflow; then pin `EXPECTED_CERT_SHA256` from the v0.0.1 release notes.
+**Pending (user):** one-time key setup and backups and ruleset change (docs/RELEASING.md steps 1–4), dev → prod PR, run the Release workflow; key created and backed up 2026-10-15 and its certificate pinned in release.yml.
 
 **Real-device checks:** Obtainium installs `audora-v0.0.1-arm64.apk` on the Moto Edge 50 Fusion next to the dev build; the app opens.
 

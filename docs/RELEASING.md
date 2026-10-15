@@ -96,11 +96,12 @@ Pushing a tag `vX.Y.Z` that points at a commit on `prod` does the same as step 3
 The release app (`io.github.skm0078.audora`) and the dev build (`io.github.skm0078.audora.debug`) install side
 by side. Expect a Play Protect prompt the first time; that is normal for apps from outside the Play Store.
 
-## After the first release
+## Pinned certificate
 
-The release notes show the signing certificate's SHA-256. Pin it as `EXPECTED_CERT_SHA256` in
-`.github/workflows/release.yml` (a one-line PR). From then on, a build signed with any other key fails before
-it is published, instead of reaching phones as an APK that cannot update the installed app.
+The release certificate's SHA-256 is pinned as `EXPECTED_CERT_SHA256` in `.github/workflows/release.yml`:
+`a4a558acec075b159872c52a91bd6873b16fa340ba40eafd2608888e0ecef8ea` (also in the release notes and in
+`audora-release-passwords.txt`). A build signed with any other key fails before it is published, instead of
+reaching phones as an APK that cannot update the installed app. Only a deliberate key change updates the pin.
 
 ## When something fails
 
@@ -111,6 +112,7 @@ it is published, instead of reaching phones as an APK that cannot update the ins
 | `Commit ... is not on prod` | A tag was pushed on a commit outside `prod` | Delete the tag; release from `prod` |
 | `Missing secrets in the 'release' environment` | Step 2 incomplete | Run the key script again (it reuses the key) |
 | Job waits or fails with a deployment protection message | The environment rules from step 1 do not allow this branch or tag | Check the two rules in step 1 |
+| dev → prod PR shows conflicts in files nobody changed on prod | A previous dev → prod PR was squashed, so prod's commit is not in dev's history | On a branch from dev run `git merge -s ours origin/prod` (keeps dev's files, records prod as merged), merge it into dev with **Create a merge commit**, then retry |
 | `Signed with certificate ... but releases must use ...` | The secrets hold a different key | Restore the original key from backup and re-add the secrets |
 
 ## If the key is lost or leaked
