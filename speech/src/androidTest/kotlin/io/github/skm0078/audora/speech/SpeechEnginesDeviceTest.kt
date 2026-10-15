@@ -51,12 +51,16 @@ class SpeechEnginesDeviceTest {
         render(bundled.engine, "Warm up.", bundled) // loads the model
 
         val long = List(SENTENCES) { "This is sentence number ${it + 1} of a long paragraph." }.joinToString(" ")
+        val started = System.nanoTime()
         val job = async(Dispatchers.Default) { bundled.engine.render(long, bundled.voice.id) }
         delay(CANCEL_AFTER_MS)
         withTimeout(CANCEL_DEADLINE_MS) { job.cancelAndJoin() }
+        val stoppedMs = (System.nanoTime() - started) / NANOS_PER_MS
 
-        assertTrue(job.isCancelled)
-        assertTrue(render(bundled.engine, "Still here.", bundled).durationMs > 0)
+        val outcome = if (job.isCancelled) "cancelled" else "completed with ${runCatching { job.await() }}"
+        assertTrue("render was not cancelled after $stoppedMs ms: $outcome", job.isCancelled)
+        val next = render(bundled.engine, "Still here.", bundled)
+        assertTrue("render after cancel gave $next", next.durationMs > 0)
     }
 
     @Test
@@ -108,5 +112,6 @@ class SpeechEnginesDeviceTest {
         const val SENTENCES = 12
         const val CANCEL_AFTER_MS = 200L
         const val CANCEL_DEADLINE_MS = 10_000L
+        const val NANOS_PER_MS = 1_000_000L
     }
 }
