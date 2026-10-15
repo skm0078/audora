@@ -66,6 +66,7 @@ class PdfBookTest {
         // Cleanup reads up to three pages ahead as neighbours (ADR-020); the caches keep it to one read per page.
         assertTrue("reads=${engine.reads}", engine.reads <= 500 + ReadingUnitBuilder().cleanupConfig.neighbourPages)
         assertEquals(1 + (engine.reads - 1) / 100, book.opens)
+        assertEquals(engine.reads, book.pagesRead)
         book.close()
         assertEquals(0, engine.openHandles)
     }

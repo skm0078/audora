@@ -47,6 +47,14 @@ class PdfBook private constructor(
     var opens: Int = 1
         private set
 
+    /**
+     * Pages extracted since the book was opened, neighbours read for cleanup included (ADR-020). Diagnostics and
+     * tests: the reopen rule counts these, so [opens] follows from it.
+     */
+    @get:Synchronized
+    var pagesRead: Int = 0
+        private set
+
     private var readsSinceOpen = 0
 
     @Synchronized
@@ -54,6 +62,7 @@ class PdfBook private constructor(
         if (pageIndex !in 0 until pageCount) return Outcome.Failure(PdfPageError.PageOutOfRange(pageIndex, pageCount))
         return currentHandle().flatMap { open ->
             readsSinceOpen++
+            pagesRead++
             open.readPage(pageIndex).map(assembler::assemble)
         }
     }
