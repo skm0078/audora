@@ -7,6 +7,10 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Battery onboarding (P1-06): the system "always run in background" prompt. Reading stops with the screen
+         off on several brands without it (Build Spec §6). -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <application
         android:name=".AudoraApplication"
         android:allowBackup="false"
