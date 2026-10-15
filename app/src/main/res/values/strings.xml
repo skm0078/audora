@@ -2,6 +2,23 @@
 <resources>
     <string name="app_name">Audora</string>
     <string name="placeholder_title">Audora</string>
-    <string name="placeholder_body">This is the scaffold build. Reading PDFs aloud arrives in Phase 1.</string>
+    <string name="placeholder_body">This is a development build. Reading aloud arrives later in Phase 1; for now you can check how Audora reads a PDF\'s text.</string>
     <string name="placeholder_version">Version %1$s</string>
+
+    <!-- PDF extraction check (P1-02), until the library screen (P1-01) -->
+    <string name="pdf_check_open">Open a PDF to test</string>
+    <string name="pdf_check_pages">%1$d pages. Read the first %2$d in %3$d ms.</string>
+    <string name="pdf_check_details">%1$d sentences, %2$d rebuilt word spans, %3$d unmapped characters.</string>
+    <string name="pdf_check_no_text">No text on these pages (scanned pages are read with OCR in Phase 3).</string>
+    <string name="pdf_check_damaged">This file is damaged or is not a PDF Audora can open.</string>
+    <string name="pdf_check_unreadable">Audora could not read this file. It may have been moved or deleted.</string>
+    <string name="pdf_check_engine">The PDF engine failed to start. Please share the logs.</string>
+    <string name="pdf_check_page_failed">A page could not be read. Please share the logs.</string>
+
+    <!-- Password prompt -->
+    <string name="password_title">This PDF is locked</string>
+    <string name="password_label">Password</string>
+    <string name="password_wrong">Wrong password. Try again.</string>
+    <string name="password_open">Open</string>
+    <string name="password_cancel">Cancel</string>
 </resources>

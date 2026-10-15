@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/PlaceholderScreen.kt
-// Purpose: Temporary home screen proving the Compose + Hilt build works; replaced by the library in P1-01.
+// Purpose: Temporary home screen: build info plus the PDF extraction check; replaced by the library in P1-01.
 
 package io.github.skm0078.audora.ui
 
@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,9 +21,9 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 
 @Composable
-fun PlaceholderScreen(versionName: String, modifier: Modifier = Modifier) {
+fun PlaceholderScreen(versionName: String, modifier: Modifier = Modifier, pdfCheck: @Composable () -> Unit = {}) {
     Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
+        modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -32,6 +34,7 @@ fun PlaceholderScreen(versionName: String, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        pdfCheck()
     }
 }
 

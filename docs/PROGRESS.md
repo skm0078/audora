@@ -2,6 +2,20 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## P1-02 — PDF text extraction (2026-10-15)
+- `:pdf` reads a PDF one page at a time through PdfiumAndroidKt and turns each page into `ReadingUnit`s (sentence-sized, `charStart`/`charEnd` into the page text, language, line boxes). No layout heuristics yet (P2).
+- JNI library `libaudora_pdfium_ext.so` (`pdf/src/main/cpp/`) over PdfiumAndroidKt's own `libpdfium.so`, loaded with `dlopen`/`dlsym` so no PDFium headers or second PDFium copy: per char the generated flag, Unicode-map errors, render mode, font name and size; per text object its `/ActualText` (outermost marked span, form XObjects included). 16 KB aligned, NDK pinned in `libs.versions.toml`.
+- `/ActualText` rebuild (ADR-011 §2): PDFium's fake spaces inside Indic words are replaced by each span's `/ActualText`; if any text object cannot be aligned the page keeps PDFium's text (`ALIGNMENT_FAILED`, logged). On the UDHR test files Hindi and Bengali go from 13 % / 22 % word errors to ≤ 1 % CER.
+- `PdfBook`: page-at-a-time reading, reopens the document every 100 pages (`ExtractionConfig.reopenEveryPages`), typed errors (`PdfOpenError`, `PdfPageError`) in an `Outcome` result in `:core`.
+- Password prompt: the app's placeholder screen has an "Open a PDF to test" button (SAF picker) that opens the file, asks for a password if needed (never saved), and shows for the first 3 pages: page count, sentences, `/ActualText` spans, Unicode-map errors, time taken and the first sentence.
+- `PIPELINE_VERSION = 1`.
+- Tests: JVM tests on PDFium output captured from the three UDHR PDFs (rebuild, assembler, PDFDocEncoding, script detection, sentence units, `PdfBook` reopen/password/error paths). Device tests (`./gradlew :pdf:connectedDebugAndroidTest`, new CI job "Device tests (emulator)" on an x86_64 API 34 emulator): English/Hindi/Bengali UDHR at ≤ 1 % CER per page, encrypted PDF password flow, damaged/missing files, and a generated 500-page PDF read with a reopen every 100 pages (native heap growth ≤ 24 MB, Java ≤ 16 MB, and reopening never uses more native memory than staying open). Measured numbers are in the job's log under `AudoraMemoryTest`.
+- New test-only dependencies: `androidx.test:runner`, `androidx.test.ext:junit`. `kotlinx-coroutines-core` added to `:pdf` because PdfiumAndroidKt's POM leaves it out.
+
+**Known risks:** the JNI layer uses PdfiumAndroidKt's "unlocked" API (`PdfDocumentU`/`PdfPageU` native pointers) and its global lock; a library upgrade must re-run the device tests. PdfiumAndroidKt 2.0.3 brings kotlin-stdlib 2.4.x into a Kotlin 2.3 build (supported by Kotlin's forward metadata compatibility). Footers and headers are still read aloud (P2).
+
+**Real-device checks (Moto Edge 50 Fusion):** install the dev build, tap "Open a PDF to test" and open (1) an English PDF, (2) a Hindi and a Bengali Unicode PDF: the first sentence shown has whole words, not split into pieces, (3) a password-protected PDF: the prompt appears, a wrong password says so, the right one opens it; (4) a 400+ page book opens without lag.
+
 ## S1 — Voice benchmark, harness and desktop pre-run (2026-10-15)
 - New debug app `:spikes:voices` (`spikes/voices/`): downloads the voice models from our `s1-voices` release (zip + SHA-256 check, zip-slip guard), benchmarks every voice at 2 and 4 threads plus the system TTS (load, first sentence, RTF, RSS, thermal), blind listening test with ratings, shareable Markdown report and log. CI builds it as `audora-s1-voices.apk` on the dev-build release.
 - sherpa-onnx 1.13.8 AAR resolved from its GitHub release through an exclusive Ivy repository, SHA-256 pinned and checked before every build (ADR-012). Its arm64 libraries are 16 KB aligned; the unused C/C++ API libraries are excluded.
