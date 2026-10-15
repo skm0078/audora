@@ -11,7 +11,7 @@ import java.io.Closeable
 
 /**
  * What the reader shows. The playback service opens the same PDF on its own and builds the same units (same
- * :pdf pipeline, same `charStart`s), so a tapped sentence's address matches the service's playlist item.
+ * :pdf pipeline, same `charStart`s), so a tapped sentence's position matches the service's playlist item.
  */
 interface ReaderDocument : Closeable {
     val pageCount: Int

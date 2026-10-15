@@ -19,8 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.core.config.ReaderConfig
@@ -30,7 +28,6 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.diagnostics.LogSharer
-import io.github.skm0078.audora.playback.contract.SleepTimerSetting
 import io.github.skm0078.audora.ui.AppDestination
 import io.github.skm0078.audora.ui.diagnostics.DiagnosticsController
 import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
@@ -38,7 +35,7 @@ import io.github.skm0078.audora.ui.library.LibraryActions
 import io.github.skm0078.audora.ui.library.LibraryController
 import io.github.skm0078.audora.ui.library.LibraryScreen
 import io.github.skm0078.audora.ui.reader.LibraryReaderBooks
-import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
+import io.github.skm0078.audora.ui.reader.NoPlaybackPort
 import io.github.skm0078.audora.ui.reader.ReaderActions
 import io.github.skm0078.audora.ui.reader.ReaderDocumentOpener
 import io.github.skm0078.audora.ui.reader.ReaderModel
@@ -146,17 +143,11 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun ReaderRoute(id: BookId, onBack: () -> Unit) {
-        val context = LocalContext.current.applicationContext
         val scope = rememberCoroutineScope()
-        val port = remember(id) { MediaControllerPlaybackPort(context) }
+        val port = remember(id) { NoPlaybackPort() }
         val model = remember(id) {
             ReaderModel(id, LibraryReaderBooks(library), documentOpener, port, speedPreference, readerConfig, scope)
                 .also { it.start() }
-        }
-        // Connected only while visible: a controller left connected keeps the playback service bound.
-        LifecycleStartEffect(port) {
-            port.connect()
-            onStopOrDispose { port.release() }
         }
         DisposableEffect(model) { onDispose { model.close() } }
         val state by model.state.collectAsStateWithLifecycle()

@@ -5,8 +5,6 @@ package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.pdf.document.PdfOpenError
-import io.github.skm0078.audora.playback.contract.PlaybackAddress
-import io.github.skm0078.audora.playback.contract.SleepTimerSetting
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -66,7 +64,7 @@ class ReaderModelTest {
         assertEquals(DocumentState.Open(10), model.state.value.document)
         port.connect()
         model.playOrPause()
-        assertEquals(listOf(PlaybackAddress(BOOK, 0, 0) to "secret"), port.starts)
+        assertEquals(listOf(ReadingPosition(BOOK, 0, 0) to "secret"), port.starts)
     }
 
     @Test
@@ -105,7 +103,7 @@ class ReaderModelTest {
         port.connect()
         model.showPage(6)
         model.playOrPause()
-        assertEquals(listOf(PlaybackAddress(BOOK, 6, 0) to null), port.starts)
+        assertEquals(listOf(ReadingPosition(BOOK, 6, 0) to null), port.starts)
         assertTrue(model.state.value.following)
     }
 
@@ -114,7 +112,7 @@ class ReaderModelTest {
         val model = model()
         port.connect()
         model.readFrom(unitsOf(0)[2])
-        assertEquals(listOf(PlaybackAddress(BOOK, 0, 40) to null), port.starts)
+        assertEquals(listOf(ReadingPosition(BOOK, 0, 40) to null), port.starts)
     }
 
     @Test
@@ -129,12 +127,12 @@ class ReaderModelTest {
     fun `play pauses while reading and resumes on the reading page`() = runTest(UnconfinedTestDispatcher()) {
         val model = model()
         port.connect()
-        port.readingAt(PlaybackAddress(BOOK, 0, 20))
+        port.readingAt(ReadingPosition(BOOK, 0, 20))
         assertTrue(model.state.value.isReading)
         model.playOrPause()
         assertEquals(listOf("pause"), port.calls)
 
-        port.readingAt(PlaybackAddress(BOOK, 0, 20), playing = false)
+        port.readingAt(ReadingPosition(BOOK, 0, 20), playing = false)
         model.playOrPause()
         assertEquals(listOf("pause", "play"), port.calls)
         assertTrue("resume, not restart", port.starts.isEmpty())
@@ -144,23 +142,23 @@ class ReaderModelTest {
     fun `play after browsing elsewhere starts at the page shown`() = runTest(UnconfinedTestDispatcher()) {
         val model = model()
         port.connect()
-        port.readingAt(PlaybackAddress(BOOK, 0, 20), playing = false)
+        port.readingAt(ReadingPosition(BOOK, 0, 20), playing = false)
         model.showPage(5)
         model.playOrPause()
-        assertEquals(listOf(PlaybackAddress(BOOK, 5, 0) to null), port.starts)
+        assertEquals(listOf(ReadingPosition(BOOK, 5, 0) to null), port.starts)
     }
 
     @Test
     fun `the screen follows reading until the listener browses away`() = runTest(UnconfinedTestDispatcher()) {
         val model = model()
         port.connect()
-        port.readingAt(PlaybackAddress(BOOK, 2, 0))
+        port.readingAt(ReadingPosition(BOOK, 2, 0))
         assertEquals(2, model.state.value.page)
         assertEquals(0, model.state.value.spokenUnitIndex)
 
         model.showPage(7)
         assertFalse(model.state.value.following)
-        port.readingAt(PlaybackAddress(BOOK, 3, 0))
+        port.readingAt(ReadingPosition(BOOK, 3, 0))
         assertEquals("browsing is not interrupted", 7, model.state.value.page)
         assertTrue(model.state.value.readingElsewhere)
         assertNull(model.state.value.spokenUnitIndex)
@@ -168,7 +166,7 @@ class ReaderModelTest {
         model.showReadingPosition()
         assertEquals(3, model.state.value.page)
         assertTrue(model.state.value.following)
-        port.readingAt(PlaybackAddress(BOOK, 4, 0))
+        port.readingAt(ReadingPosition(BOOK, 4, 0))
         assertEquals(4, model.state.value.page)
     }
 
@@ -176,7 +174,7 @@ class ReaderModelTest {
     fun `browsing back to the reading page follows again`() = runTest(UnconfinedTestDispatcher()) {
         val model = model()
         port.connect()
-        port.readingAt(PlaybackAddress(BOOK, 2, 0))
+        port.readingAt(ReadingPosition(BOOK, 2, 0))
         model.showPage(5)
         model.showPage(2)
         assertTrue(model.state.value.following)
@@ -186,18 +184,18 @@ class ReaderModelTest {
     fun `another book in the player is not this book's position`() = runTest(UnconfinedTestDispatcher()) {
         val model = model()
         port.connect()
-        port.readingAt(PlaybackAddress(OTHER_BOOK, 6, 0))
+        port.readingAt(ReadingPosition(OTHER_BOOK, 6, 0))
         assertEquals(0, model.state.value.page)
         assertNull(model.state.value.readingPosition)
         assertFalse(model.state.value.isReading)
         model.playOrPause()
-        assertEquals(listOf(PlaybackAddress(BOOK, 0, 0) to null), port.starts)
+        assertEquals(listOf(ReadingPosition(BOOK, 0, 0) to null), port.starts)
     }
 
     @Test
     fun `opening a book that is already playing shows the reading page`() = runTest(UnconfinedTestDispatcher()) {
         port.connect()
-        port.readingAt(PlaybackAddress(BOOK, 4, 40))
+        port.readingAt(ReadingPosition(BOOK, 4, 40))
         val model = model()
         assertEquals(4, model.state.value.page)
         assertEquals(2, model.state.value.spokenUnitIndex)
@@ -252,9 +250,9 @@ class ReaderModelTest {
             bookId = BOOK,
             document = DocumentState.Open(10),
             content = PageContent.Ready(units),
-            playback = PlaybackSnapshot(PlaybackSnapshot.Connection.CONNECTED, position = PlaybackAddress(BOOK, 0, 23)),
+            playback = PlaybackSnapshot(PlaybackSnapshot.Connection.CONNECTED, position = ReadingPosition(BOOK, 0, 23)),
         )
         assertEquals(1, state.spokenUnitIndex)
-        assertNull(state.copy(playback = state.playback.copy(position = PlaybackAddress(BOOK, 0, 17))).spokenUnitIndex)
+        assertNull(state.copy(playback = state.playback.copy(position = ReadingPosition(BOOK, 0, 17))).spokenUnitIndex)
     }
 }

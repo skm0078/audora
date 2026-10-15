@@ -75,8 +75,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.coroutines.android)
-    // The reader controls the playback service through a MediaController (P1-05) and keeps its speed in DataStore.
-    implementation(libs.media3.session)
+    // The reader keeps the listener's speed in DataStore (P1-05).
     implementation(libs.datastore.preferences)
 
     implementation(platform(libs.compose.bom))

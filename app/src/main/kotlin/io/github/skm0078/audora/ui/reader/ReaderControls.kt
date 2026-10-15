@@ -3,7 +3,6 @@
 
 package io.github.skm0078.audora.ui.reader
 
-import android.os.SystemClock
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -37,8 +36,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
-import io.github.skm0078.audora.playback.contract.SleepTimerSetting
-import io.github.skm0078.audora.playback.contract.SleepTimerState
 import kotlinx.coroutines.delay
 
 @Composable
@@ -152,18 +149,16 @@ private fun sleepTimerLabel(timer: SleepTimerState): String? = when (timer) {
     SleepTimerState.Off -> null
 
     is SleepTimerState.Counting -> {
-        val remaining by produceState(timer.deadlineElapsedMs - SystemClock.elapsedRealtime(), timer) {
+        val remaining by produceState(timer.endsAtMillis - System.currentTimeMillis(), timer) {
             while (value > 0) {
                 delay(TICK_MS)
-                value = timer.deadlineElapsedMs - SystemClock.elapsedRealtime()
+                value = timer.endsAtMillis - System.currentTimeMillis()
             }
         }
         remainingLabel(remaining)
     }
 
     SleepTimerState.EndOfPage -> stringResource(R.string.reader_sleep_end_of_page)
-
-    SleepTimerState.FinishingSentence -> stringResource(R.string.reader_sleep_finishing)
 }
 
 private val PLAY_BUTTON_SIZE = 64.dp
