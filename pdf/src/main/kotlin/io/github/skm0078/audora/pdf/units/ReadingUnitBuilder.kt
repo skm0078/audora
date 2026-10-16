@@ -29,10 +29,10 @@ import io.github.skm0078.audora.pdf.quality.indicOrderOf
 /**
  * The quality scorer (P3-03) routes the page and measures whether its Indic text is in visual order; layout (P2-02)
  * puts the page in reading order; cleanup (P2-03) drops running headers, page numbers and table interiors and
- * repairs the text, after the Indic repair and reorder pass (P3-03); sentences are then split within each
- * paragraph, so a heading without a full stop never runs into the paragraph below it. `charStart`/`charEnd` index
- * [ReadingText.text] (ADR-018, ADR-020). Number and date normalization is P2-04. Units without a letter or digit
- * are skipped.
+ * repairs the text, after legacy-font conversion (P3-04) and the Indic repair and reorder pass (P3-03); sentences
+ * are then split within each paragraph, so a heading without a full stop never runs into the paragraph below it.
+ * `charStart`/`charEnd` index [ReadingText.text] (ADR-018, ADR-020). Number and date normalization is P2-04. Units
+ * without a letter or digit are skipped.
  *
  * Header and footer removal compares a page with its neighbours ([PageProfile]). `PdfBook.readingUnits` supplies
  * them; [build] with a page alone applies every rule that needs no neighbour.
@@ -92,7 +92,7 @@ class ReadingUnitBuilder(
     private fun textOf(page: AnalyzedPage, neighbours: List<PageProfile>, layout: PageLayout): ReadingText {
         val lexicon = neighbours.fold(page.profile.hyphenated) { words, other -> words + other.hyphenated }
         val order = indicOrderOf(page.profile.indicOrder, neighbours.map { it.indicOrder }, qualityConfig)
-        return textBuilder.build(page.text, layout, lexicon, order)
+        return textBuilder.build(page.text, layout, lexicon, order, page.quality.legacyRuns)
     }
 
     fun build(reading: ReadingText): List<ReadingUnit> {

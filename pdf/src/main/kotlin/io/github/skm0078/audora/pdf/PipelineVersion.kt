@@ -12,5 +12,8 @@ package io.github.skm0078.audora.pdf
  *     junk characters folded, bullets and numeric citation markers dropped (ADR-020).
  * 4 = P3-03: Indic repair before text repair: placeholder glyphs inside a cluster dropped; on visual-order pages
  *     pre-base vowel signs and rephs moved to logical order, Bengali two-part vowels composed (ADR-021).
+ * 5 = P3-04: text in Kruti Dev, DevLys, Chanakya and Bijoy fonts converted to Unicode; "অ্য" no longer counts as
+ *     an impossible sequence (ADR-023).
+ * 6 = P3-05: pages routed to OCR are read from Tesseract's text instead of their text layer (ADR-025).
  */
-const val PIPELINE_VERSION: Int = 4
+const val PIPELINE_VERSION: Int = 6

@@ -17,3 +17,5 @@ bn-udhr-fpdf2	bn-broken-map	generated/bn-udhr-fpdf2.pdf	all	bn-udhr-fpdf2	exact
 bn-us-fda-factsheet-vrinda-pd	bn-broken-map	bengali/bn-us-fda-factsheet-vrinda-pd.pdf	0-3	bn-us-fda-factsheet-vrinda-pd	draft
 bn-rotated-pages-90-180-270-fda	bn-broken-map	tricky/bn-rotated-pages-90-180-270-fda.pdf	0-3	bn-us-fda-factsheet-vrinda-pd	draft
 bn-us-hud-fairlending-guide-pd	bn-broken-map	bengali/bn-us-hud-fairlending-guide-pd.pdf	7-9	bn-us-hud-fairlending-guide-pd	draft
+hi-udhr-krutidev	hi-legacy	repo:scripts/pdf/legacy_golden.py	all	hi-udhr-krutidev	exact
+bn-udhr-bijoy	bn-legacy	repo:scripts/pdf/legacy_golden.py	all	bn-udhr-bijoy	exact

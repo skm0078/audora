@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.pdf.quality
 
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.pdf.extract.PageTextAssembler
 import io.github.skm0078.audora.pdf.extract.RawChars
 import io.github.skm0078.audora.pdf.extract.RawPageFixture
@@ -61,10 +62,32 @@ class PageQualityScorerTest {
     @Test
     fun `legacy-font runs go to the converter, a Unicode font with a legacy name does not`() {
         val legacy = RawPageFixture.chars(repeat("vkt dh rkt[kcj gS"))
-        assertEquals(RouteReason.LEGACY_FONT, score(legacy, listOf("ABCDEF+KrutiDev010", "Body")).reason)
-        assertEquals(PageRoute.LEGACY_FONT, score(legacy, listOf("ABCDEF+KrutiDev010", "Body")).route)
+        val quality = score(legacy, listOf("ABCDEF+KrutiDev010", "Body"))
+        assertEquals(RouteReason.LEGACY_FONT, quality.reason)
+        assertEquals(PageRoute.LEGACY_FONT, quality.route)
+        // Judged on its converted text: a Hindi page, OCR'd in Hindi if it ever needs OCR.
+        assertTrue(quality.isIndic)
+        assertEquals(setOf(Lang.HI), quality.ocrLangs)
+        assertEquals(0f, quality.signals.legacyUnknownRate)
         val unicode = RawPageFixture.chars(repeat("मानव अधिकारों की घोषणा।"))
         assertEquals(RouteReason.TEXT_LAYER_OK, score(unicode, listOf("ChanakyaUni", "Body")).reason)
+    }
+
+    @Test
+    fun `legacy text the converter cannot read goes to OCR`() {
+        // ©, ®, Ð and þ are no Kruti Dev codes: a font variant the tables do not know.
+        val variant = RawPageFixture.chars(repeat("vkt dh ©®Ðþ ©®Ðþ gS"))
+        assertEquals(RouteReason.LEGACY_UNKNOWN_GLYPHS, score(variant, listOf("KrutiDev010", "Body")).reason)
+        val shusha = RawPageFixture.chars(repeat("vkt dh rkt[kcj gS"))
+        val quality = score(shusha, listOf("Shusha02", "Body"))
+        assertEquals(RouteReason.LEGACY_UNKNOWN_GLYPHS, quality.reason)
+        assertEquals(PageRoute.OCR, quality.route)
+    }
+
+    @Test
+    fun `Bengali a-phala after a vowel is valid`() {
+        assertEquals(0, TextDefects.invalidIndicChars("অ্যাসাইনমেন্ট এ্যাসিড"))
+        assertEquals(1, TextDefects.invalidIndicChars("অ্ক"))
     }
 
     @Test

@@ -1,5 +1,6 @@
 // File: core/src/main/kotlin/io/github/skm0078/audora/core/config/QualityConfig.kt
-// Purpose: Tunables for the page quality scorer, the Indic reorder pass and the OCR-sample cross-check (P3-03).
+// Purpose: Tunables for the page quality scorer, the Indic reorder pass, the legacy-font converter (P3-04) and the
+//          OCR-sample cross-check (P3-03).
 
 package io.github.skm0078.audora.core.config
 
@@ -16,12 +17,16 @@ package io.github.skm0078.audora.core.config
  *   word) above which the page goes to OCR.
  * @property maxInvalidIndicRate share of Indic letters in an impossible position (a vowel sign or virama with no
  *   consonant before it), counted after the reorder pass, above which the page goes to OCR.
- * @property legacyFontNames font-name fragments of pre-Unicode Hindi and Bengali fonts (matched case-insensitively,
- *   subset prefix ignored). Their glyphs extract as ASCII; P3-04 converts them.
- * @property minLegacyAsciiShare a legacy-font run counts only when at least this share of its letters is ASCII
- *   (a Unicode font whose name matches is read as is).
- * @property minLegacyShare the page goes to the legacy converter when legacy runs hold at least this share of its
+ * @property legacyFonts font-name fragments of pre-Unicode Hindi and Bengali fonts (matched case-insensitively,
+ *   subset prefix ignored, first match wins) and their encodings. Their glyphs extract as ASCII; the legacy-font
+ *   converter (P3-04, ADR-023) maps every run in one of them back to Unicode, whatever the page's route.
+ * @property minLegacyLatinShare a legacy-font run counts only when at least this share of its letters are Latin
+ *   (ASCII, Latin-1 and the Windows-1252 extras such as š and Ÿ, where these fonts put their glyphs); a Unicode font
+ *   whose name matches, such as ChanakyaUni, is read as is.
+ * @property minLegacyShare the page is routed as a legacy-font page when legacy runs hold at least this share of its
  *   letters.
+ * @property maxLegacyUnknownRate share of a legacy page's legacy-run letters that the converter has no mapping for
+ *   (a font variant it does not know, or [LegacyEncoding.UNSUPPORTED]) above which the page goes to OCR.
  *
  * Indic reorder (visual-order text layers):
  * @property minVisualOrderSigns a page decides its own order only with at least this many pre-base vowel signs
@@ -46,9 +51,10 @@ data class QualityConfig(
     val maxInvisibleShare: Float = 0.5f,
     val maxGarbageRate: Float = 0.02f,
     val maxInvalidIndicRate: Float = 0.01f,
-    val legacyFontNames: List<String> = DEFAULT_LEGACY_FONTS,
-    val minLegacyAsciiShare: Float = 0.8f,
+    val legacyFonts: Map<String, LegacyEncoding> = DEFAULT_LEGACY_FONTS,
+    val minLegacyLatinShare: Float = 0.8f,
     val minLegacyShare: Float = 0.2f,
+    val maxLegacyUnknownRate: Float = 0.02f,
     val minVisualOrderSigns: Int = 8,
     val minWordInitialShare: Float = 0.1f,
     val minRephs: Int = 3,
@@ -60,8 +66,9 @@ data class QualityConfig(
 ) {
     init {
         val shares = listOf(
-            maxUnicodeMapErrorRate, maxInvisibleShare, maxGarbageRate, maxInvalidIndicRate, minLegacyAsciiShare,
-            minLegacyShare, minWordInitialShare, minRephAtSyllableEndShare, minIndicShare, maxSampleCer,
+            maxUnicodeMapErrorRate, maxInvisibleShare, maxGarbageRate, maxInvalidIndicRate, minLegacyLatinShare,
+            minLegacyShare, maxLegacyUnknownRate, minWordInitialShare, minRephAtSyllableEndShare, minIndicShare,
+            maxSampleCer,
         )
         require(shares.all { it in 0f..1f }) { "rates and shares must be in 0..1" }
         require(minPageLetters >= 0) { "minPageLetters must be >= 0, was $minPageLetters" }
@@ -70,9 +77,23 @@ data class QualityConfig(
     }
 
     companion object {
-        /** Krutidev/DevLys/Chanakya-family Hindi fonts and Bijoy (SutonnyMJ etc.) Bengali fonts (S2 corpus). */
-        val DEFAULT_LEGACY_FONTS: List<String> = listOf(
-            "krutidev", "kruti dev", "devlys", "chanakya", "shusha", "sutonnymj", "sutonny mj", "bijoy", "boishakhimj",
+        /**
+         * Kruti Dev-layout and Chanakya Hindi fonts and Bijoy-layout Bengali fonts, as named in the S2 corpus's
+         * legacy-font files (test-pdfs/MANIFEST.md). Shusha has its own layout, which nothing converts yet.
+         */
+        val DEFAULT_LEGACY_FONTS: Map<String, LegacyEncoding> = linkedMapOf(
+            "krutidev" to LegacyEncoding.KRUTIDEV,
+            "kruti dev" to LegacyEncoding.KRUTIDEV,
+            "devlys" to LegacyEncoding.DEVLYS,
+            "kundli" to LegacyEncoding.KRUTIDEV,
+            "minno-gopi" to LegacyEncoding.KRUTIDEV,
+            "chanakya" to LegacyEncoding.CHANAKYA,
+            "shusha" to LegacyEncoding.UNSUPPORTED,
+            "sutonnymj" to LegacyEncoding.BIJOY,
+            "sutonny mj" to LegacyEncoding.BIJOY,
+            "sutonnyomj" to LegacyEncoding.BIJOY,
+            "bijoy" to LegacyEncoding.BIJOY,
+            "boishakhimj" to LegacyEncoding.BIJOY,
         )
     }
 }

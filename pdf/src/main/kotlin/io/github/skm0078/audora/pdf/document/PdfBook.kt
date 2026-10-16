@@ -24,7 +24,6 @@ import io.github.skm0078.audora.pdf.quality.PageRouting
 import io.github.skm0078.audora.pdf.quality.RouteReason
 import io.github.skm0078.audora.pdf.quality.TextLayerCheck
 import io.github.skm0078.audora.pdf.quality.TextLayerVerdict
-import io.github.skm0078.audora.pdf.quality.ocrLangs
 import io.github.skm0078.audora.pdf.units.AnalyzedPage
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import java.io.Closeable
@@ -37,10 +36,10 @@ import java.io.Closeable
  * bytes each. Reading on from page to page costs about one extraction per page; a jump costs one per window page.
  *
  * Each page is routed (P3-03, ADR-021): text layer, legacy-font converter or OCR. For a Hindi or Bengali book the
- * first page with enough text is also OCR'd and compared with its text layer ([TextLayerCheck]). Pages routed to
- * OCR are read by the book's [PageOcr] (P3-05, ADR-025) in the languages [OcrLanguages] picks; when OCR is missing
- * (no models yet) or fails, the page falls back to its text layer and [PageReading.source] says why. The converter
- * (P3-04) is not built here, so legacy-font pages still read their text layer.
+ * first page with enough text is also OCR'd and compared with its text layer ([TextLayerCheck]). Legacy-font text
+ * is converted wherever it is read (P3-04, ADR-023). Pages routed to OCR are read by the book's [PageOcr] (P3-05,
+ * ADR-025) in the languages [OcrLanguages] picks; when OCR is missing (no models yet) or fails, the page falls back
+ * to its text layer and [PageReading.source] says why.
  *
  * PDFium's document cache grows with every page visited, so after [ExtractionConfig.reopenEveryPages] reads
  * the document is closed and opened again with the same password. Thread-safe: calls are serialized, because
@@ -118,14 +117,14 @@ class PdfBook private constructor(
                 .mapNotNull { profileOf(it, cache) }
             val check = textLayerCheck ?: TextLayerCheck(builder.qualityConfig, ocr, logContext)
             textLayerCheck = check
-            val routing = check.route(pageIndex, page.quality, ocrLangs(page.text.text, builder.qualityConfig)) {
+            val routing = check.route(pageIndex, page.quality, page.quality.ocrLangs) {
                 builder.sampleText(page, neighbours)
             }
             val languages = ocrLanguages ?: OcrLanguages(builder.qualityConfig).also { ocrLanguages = it }
             if (routing.route == PageRoute.OCR) {
                 readByOcr(page, routing, languages, builder) { builder.build(page, neighbours) }
             } else {
-                if (routing.route == PageRoute.TEXT_LAYER) languages.learn(page.text.text)
+                languages.learn(page.quality.ocrLangs)
                 PageReading(builder.build(page, neighbours), routing, PageSource.TextLayer)
             }
         }
@@ -154,18 +153,21 @@ class PdfBook private constructor(
     ): PageReading {
         val pageIndex = page.pageIndex
         val ocr = ocr ?: return PageReading(textLayer(), routing, PageSource.OcrUnavailable(OcrError.NoModels))
-        val recognized = languages.forPage(pageIndex, routing.reason, page.text.text, ocr).flatMap { langs ->
+        val recognized = languages.forPage(pageIndex, routing.reason, page.quality.ocrLangs, ocr).flatMap { langs ->
             ocr.recognize(pageIndex, langs).map { text -> langs to text }
         }
         return when (recognized) {
             is Outcome.Success -> {
                 val (langs, text) = recognized.value
-                languages.learn(text)
+                languages.learnFrom(text)
                 PageReading(builder.buildOcr(pageIndex, text), routing, PageSource.Ocr(langs))
             }
 
             is Outcome.Failure -> {
-                AudoraLog.w(TAG, "OCR unavailable, reading the text layer, $logContext page=$pageIndex: ${recognized.error}")
+                AudoraLog.w(
+                    TAG,
+                    "OCR unavailable, reading the text layer, $logContext page=$pageIndex: ${recognized.error}",
+                )
                 PageReading(textLayer(), routing, PageSource.OcrUnavailable(recognized.error))
             }
         }
@@ -282,7 +284,8 @@ class PdfBook private constructor(
 /** Route, reason and the scorer's measurements, for the log (no text). */
 private fun describe(quality: PageQuality): String = with(quality.signals) {
     "${quality.route} (${quality.reason}) letters=$letters indic=$indicLetters mapErrors=$unicodeMapErrorRate " +
-        "invisible=$invisibleShare garbage=$garbageRate invalidIndic=$invalidIndicRate legacy=$legacyShare"
+        "invisible=$invisibleShare garbage=$garbageRate invalidIndic=$invalidIndicRate legacy=$legacyShare " +
+        "legacyUnknown=$legacyUnknownRate"
 }
 
 /** A page's units, its route and where its words actually came from. */

@@ -1,8 +1,10 @@
 // File: pdf/src/test/kotlin/io/github/skm0078/audora/pdf/golden/GoldenRoutingTest.kt
-// Purpose: P3-03's done-when on the golden corpus: Unicode Indic PDFs keep their text layer, mis-mapped ones go to OCR.
+// Purpose: P3-03's and P3-04's done-when on the golden corpus: Unicode Indic PDFs keep their text layer, mis-mapped
+//          ones go to OCR, legacy-font ones go through the converter.
 
 package io.github.skm0078.audora.pdf.golden
 
+import io.github.skm0078.audora.core.config.LegacyEncoding
 import io.github.skm0078.audora.core.config.QualityConfig
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
@@ -14,6 +16,7 @@ import io.github.skm0078.audora.pdf.quality.OcrError
 import io.github.skm0078.audora.pdf.quality.PageOcr
 import io.github.skm0078.audora.pdf.quality.PageRoute
 import io.github.skm0078.audora.pdf.quality.PageRouting
+import io.github.skm0078.audora.pdf.quality.RouteReason
 import io.github.skm0078.audora.pdf.quality.TextLayerVerdict
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import java.io.File
@@ -79,6 +82,20 @@ class GoldenRoutingTest {
             val (routes, book) = routes(document, scorerOff)
             assertEquals(document.id, TextLayerVerdict.REJECTED, book.textLayerVerdict)
             assertTrue("${document.id}: $routes", routes.all { it.route == PageRoute.OCR })
+        }
+    }
+
+    @Test
+    fun `legacy-font documents are read through the converter, or go to OCR when it cannot read them`() {
+        val documents = documents("hi-legacy", "bn-legacy")
+        assertTrue(documents.isNotEmpty())
+        documents.forEach { document ->
+            val (routes, _) = routes(document, QualityConfig())
+            assertTrue("${document.id}: $routes", routes.all { it.route == PageRoute.LEGACY_FONT })
+            // The same fonts with no converter (P3-04 ADR-023: unknown glyphs route to OCR).
+            val unconverted = QualityConfig().legacyFonts.mapValues { LegacyEncoding.UNSUPPORTED }
+            val (unknown, _) = routes(document, QualityConfig(legacyFonts = unconverted))
+            assertTrue("${document.id}: $unknown", unknown.all { it.reason == RouteReason.LEGACY_UNKNOWN_GLYPHS })
         }
     }
 
