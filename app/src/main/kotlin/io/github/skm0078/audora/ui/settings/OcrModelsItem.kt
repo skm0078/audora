@@ -15,9 +15,6 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.ui.voices.megabytes
 
-/** What the row can ask the OCR model manager to do. */
-enum class OcrModelsAction { DOWNLOAD, CANCEL, DELETE }
-
 @Composable
 internal fun OcrModelsItem(state: OcrModelsState, onAction: (OcrModelsAction) -> Unit) {
     ListItem(
@@ -28,7 +25,9 @@ internal fun OcrModelsItem(state: OcrModelsState, onAction: (OcrModelsAction) ->
                 is OcrModelsState.NotDownloaded, is OcrModelsState.Failed ->
                     OcrModelsAction.DOWNLOAD to R.string.ocr_models_download_short
 
-                OcrModelsState.Queued, is OcrModelsState.Downloading -> OcrModelsAction.CANCEL to R.string.ocr_models_cancel
+                OcrModelsState.Queued, is OcrModelsState.Downloading ->
+                    OcrModelsAction.CANCEL to
+                        R.string.ocr_models_cancel
 
                 is OcrModelsState.Ready -> OcrModelsAction.DELETE to R.string.ocr_models_delete
 
@@ -42,7 +41,9 @@ internal fun OcrModelsItem(state: OcrModelsState, onAction: (OcrModelsAction) ->
 @Composable
 private fun OcrModelsStatus(state: OcrModelsState) {
     when (state) {
-        is OcrModelsState.NotDownloaded -> Text(stringResource(R.string.settings_ocr_missing, megabytes(state.missingBytes)))
+        is OcrModelsState.NotDownloaded -> Text(
+            stringResource(R.string.settings_ocr_missing, megabytes(state.missingBytes)),
+        )
 
         OcrModelsState.Queued -> Text(stringResource(R.string.ocr_models_queued))
 

@@ -125,10 +125,18 @@ class OcrModels private constructor(context: Context, private val config: VoiceD
             WorkInfo.State.FAILED -> if (missing == 0L) {
                 OcrModelsState.Ready(catalog.totalBytes)
             } else {
-                OcrModelsState.Failed(info.outputData.getString(OcrModelDownloadWorker.KEY_MESSAGE) ?: "download failed")
+                OcrModelsState.Failed(
+                    info.outputData.getString(OcrModelDownloadWorker.KEY_MESSAGE) ?: "download failed",
+                )
             }
 
-            else -> if (missing == 0L) OcrModelsState.Ready(catalog.totalBytes) else OcrModelsState.NotDownloaded(missing)
+            else -> if (missing ==
+                0L
+            ) {
+                OcrModelsState.Ready(catalog.totalBytes)
+            } else {
+                OcrModelsState.NotDownloaded(missing)
+            }
         }
     }
 
@@ -146,7 +154,10 @@ class OcrModels private constructor(context: Context, private val config: VoiceD
             Outcome.Failure("unreadable: ${e.message}")
         }
         return when (parsed) {
-            is Outcome.Success -> parsed.value.also { AudoraLog.i(TAG, "OCR models ${it.revision}: ${it.models.map { m -> m.lang }}") }
+            is Outcome.Success -> parsed.value.also {
+                AudoraLog.i(TAG, "OCR models ${it.revision}: ${it.models.map { m -> m.lang }}")
+            }
+
             is Outcome.Failure -> null.also { AudoraLog.e(TAG, "OCR model catalog broken: ${parsed.error}") }
         }
     }

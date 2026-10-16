@@ -66,7 +66,8 @@ class TesseractEngine(private val models: TessdataSource) : OcrEngine {
     /** The loaded instance if it has [codes], else a fresh one; null when the models do not load. */
     private fun apiFor(root: File, codes: String): TessBaseAPI? {
         val key = "${root.path}|$codes"
-        if (loaded == key) api?.let { return it }
+        val current = api
+        if (loaded == key && current != null) return current
         release()
         val tess = TessBaseAPI()
         val ok = try {
@@ -75,14 +76,15 @@ class TesseractEngine(private val models: TessdataSource) : OcrEngine {
             AudoraLog.e(TAG, "Tesseract data folder rejected for $codes", e)
             false
         }
-        if (!ok) {
+        return if (ok) {
+            AudoraLog.i(TAG, "Tesseract ${tess.getVersion()} loaded $codes")
+            api = tess
+            loaded = key
+            tess
+        } else {
             tess.recycle()
-            return null
+            null
         }
-        AudoraLog.i(TAG, "Tesseract ${tess.getVersion()} loaded $codes")
-        api = tess
-        loaded = key
-        return tess
     }
 
     private fun release() {

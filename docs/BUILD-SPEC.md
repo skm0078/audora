@@ -249,6 +249,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 021 | Page quality scorer and routes (`QualityConfig`); Indic repair and visual-order reorder per paragraph before text repair, decided per page; OCR sample compared by line-wise containment CER; `PdfBook.readPage` returns the route; `PIPELINE_VERSION` 4 | Accepted (P3-03) |
 | 022 | Voice manager: catalog voices mirrored as reproducible zips on this repo's `voices` release, `models.json` packed into APK assets at build time, resumable WorkManager download with a final SHA-256 check, folder import of Piper/MMS/Kitten voices | Accepted (P4-01) |
 | 023 | Legacy-font converter: Kruti Dev, DevLys, Chanakya and Bijoy tables chosen by font name, converted wherever read before the Indic repair; unknown-code rate checked first and routed to OCR; generated golden documents; `PIPELINE_VERSION` 5 | Accepted (P3-04) |
+| 025 | OCR: Tesseract4Android (JitPack, AAR SHA-256 pinned), `tessdata_best` en/hi/bn pinned at an upstream commit and downloaded as one pack, disk cache per page, language probe, OCR text through the normal repair; PaddleOCR experiment not built; `PIPELINE_VERSION` 6 | Accepted (P3-05) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

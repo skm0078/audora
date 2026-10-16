@@ -33,7 +33,12 @@ object BookOcr {
      * The OCR for one book. [documentUri] keys the text cache (the same book opened by the reader and the player
      * shares it); [logContext] names the book in logs, never its text.
      */
-    fun factory(context: Context, documentUri: String, logContext: String, config: OcrConfig = OcrConfig()): PageOcrFactory {
+    fun factory(
+        context: Context,
+        documentUri: String,
+        logContext: String,
+        config: OcrConfig = OcrConfig(),
+    ): PageOcrFactory {
         val (engine, cache) = sharedFor(context, config)
         return RenderedPageOcr.factory(engine, cache, bookKey(documentUri), logContext, config)
     }
@@ -67,7 +72,13 @@ internal class ModelsTessdata(private val models: OcrModels) : TessdataSource {
         val installed = models.installed()
         if (installed.isEmpty()) return Outcome.Failure(OcrError.NoModels)
         val missing = langs.firstOrNull { it !in installed }
-        return if (missing == null) Outcome.Success(models.dataRoot) else Outcome.Failure(OcrError.ModelMissing(missing))
+        return if (missing ==
+            null
+        ) {
+            Outcome.Success(models.dataRoot)
+        } else {
+            Outcome.Failure(OcrError.ModelMissing(missing))
+        }
     }
 
     private companion object {

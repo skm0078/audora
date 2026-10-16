@@ -36,7 +36,8 @@ class TessdataFiles(val root: File) {
     }
 
     /** Bytes of the installed models. */
-    fun installedBytes(catalog: TessdataCatalog): Long = catalog.models.filter { isInstalled(it) }.sumOf { it.sizeBytes }
+    fun installedBytes(catalog: TessdataCatalog): Long =
+        catalog.models.filter { isInstalled(it) }.sumOf { it.sizeBytes }
 
     /** Moves a verified download into place, replacing an older copy; the marker is written last. */
     fun install(verified: File, model: OcrModel): Outcome<Unit, String> {
@@ -46,10 +47,10 @@ class TessdataFiles(val root: File) {
             tessdataDir.mkdirs()
             marker.delete()
             if (target.exists() && !target.delete()) throw IOException("cannot replace ${target.name}")
-            if (!verified.renameTo(target)) throw IOException("cannot move ${verified.name} into place")
+            move(verified, target)
             val tempMarker = File(marker.path + TEMP_SUFFIX)
             tempMarker.writeText(model.sha256, Charsets.UTF_8)
-            if (!tempMarker.renameTo(marker)) throw IOException("cannot write ${marker.name}")
+            move(tempMarker, marker)
             AudoraLog.i(TAG, "Installed OCR model ${model.fileName} (${model.sizeBytes} bytes)")
             Outcome.Success(Unit)
         } catch (e: IOException) {
@@ -63,6 +64,10 @@ class TessdataFiles(val root: File) {
         val clean = listOf(tessdataDir, downloadsDir).all { !it.exists() || it.deleteRecursively() }
         AudoraLog.i(TAG, if (clean) "Deleted the OCR models" else "Could not fully delete the OCR models")
         return if (clean) Outcome.Success(Unit) else Outcome.Failure("could not delete every OCR model file")
+    }
+
+    private fun move(from: File, to: File) {
+        if (!from.renameTo(to)) throw IOException("cannot move ${from.name} to ${to.name}")
     }
 
     private fun markerOf(model: File): File = File(model.path + MARKER_SUFFIX)

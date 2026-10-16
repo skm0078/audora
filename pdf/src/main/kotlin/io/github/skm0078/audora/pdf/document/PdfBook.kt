@@ -47,6 +47,7 @@ import java.io.Closeable
  *
  * @param logContext identifies the book in logs (e.g. "book=3f2a"); never the title or the PDF's text.
  */
+@Suppress("TooManyFunctions") // Reading, rendering, the neighbour caches and the reopen rule share one lock.
 class PdfBook private constructor(
     private val engine: PdfEngine,
     private val password: String?,
@@ -160,7 +161,7 @@ class PdfBook private constructor(
             is Outcome.Success -> {
                 val (langs, text) = recognized.value
                 languages.learnFrom(text)
-                PageReading(builder.buildOcr(pageIndex, text), routing, PageSource.Ocr(langs))
+                PageReading(builder.build(builder.ocrReadingText(pageIndex, text)), routing, PageSource.Ocr(langs))
             }
 
             is Outcome.Failure -> {
@@ -256,7 +257,7 @@ class PdfBook private constructor(
 
         /**
          * Opens the book. A [PdfOpenError.PasswordRequired] failure means: ask for the password, call again.
-         * [ocr] builds the book's OCR from its page renderer (P3-05, `TesseractPageOcr.factory`): it reads pages
+         * [ocr] builds the book's OCR from its page renderer (P3-05, `RenderedPageOcr.factory`): it reads pages
          * routed to OCR and samples a Hindi/Bengali book's text layer. Null reads every page from its text layer and
          * leaves Indic text layers unverified.
          */

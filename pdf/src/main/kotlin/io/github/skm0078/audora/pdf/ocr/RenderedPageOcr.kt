@@ -36,6 +36,7 @@ interface OcrEngine {
  * Logs one line per recognised page with the time spent drawing and recognising it (done-when: per-page time on
  * the test phones), never the text.
  */
+@Suppress("LongParameterList") // The book, its renderer and logs, the engine, the cache and two configs.
 class RenderedPageOcr(
     private val pages: PageRenderer,
     private val engine: OcrEngine,
@@ -103,6 +104,7 @@ class RenderedPageOcr(
         private fun lockFor(key: OcrKey): Any = locks[Math.floorMod(key.hashCode(), LOCK_STRIPES)]
 
         /** What `PdfBook.open(ocr = …)` takes: this OCR bound to the book being opened. */
+        @Suppress("LongParameterList") // Everything the constructor takes except the renderer.
         fun factory(
             engine: OcrEngine,
             cache: OcrCache?,

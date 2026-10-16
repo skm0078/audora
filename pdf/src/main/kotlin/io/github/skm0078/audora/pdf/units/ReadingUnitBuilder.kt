@@ -37,6 +37,7 @@ import io.github.skm0078.audora.pdf.quality.indicOrderOf
  * Header and footer removal compares a page with its neighbours ([PageProfile]). `PdfBook.readingUnits` supplies
  * them; [build] with a page alone applies every rule that needs no neighbour.
  */
+@Suppress("TooManyFunctions") // The pipeline's one entry point: one function per way a page is read or sampled.
 class ReadingUnitBuilder(
     private val config: ReadingUnitConfig = ReadingUnitConfig(),
     private val splitter: SentenceSplitter = BreakIteratorSentenceSplitter(),
@@ -78,12 +79,9 @@ class ReadingUnitBuilder(
         textOf(page, neighbours, page.layout).text
 
     /**
-     * Units of a page read by OCR (P3-05): Tesseract's text with the same repair and sentence split as a text
-     * layer; `charStart` indexes the returned text's [ReadingText], and units carry no glyph boxes.
+     * The reading text of a page read by OCR (P3-05): Tesseract's text with the same repair as a text layer
+     * (Tesseract writes Indic text in logical order). [build] splits it into units without glyph boxes.
      */
-    fun buildOcr(pageIndex: Int, ocrText: String): List<ReadingUnit> = build(ocrReadingText(pageIndex, ocrText))
-
-    /** The reading text [buildOcr]'s offsets index. Tesseract writes Indic text in logical order. */
     fun ocrReadingText(pageIndex: Int, ocrText: String): ReadingText {
         val page = OcrPageText.build(pageIndex, ocrText)
         return textBuilder.build(page.text, page.layout, page.hyphenated, IndicOrder.LOGICAL)

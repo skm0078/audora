@@ -5,6 +5,8 @@ package io.github.skm0078.audora.speech.ocr
 
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.result.flatMap
+import io.github.skm0078.audora.core.result.map
 import io.github.skm0078.audora.speech.voices.PinnedFile
 import java.util.Properties
 
@@ -41,23 +43,28 @@ object TessdataCatalogParser {
     private val FILE_NAME = Regex("[a-z_]+\\.traineddata")
 
     fun parse(properties: Properties): Outcome<TessdataCatalog, String> {
-        val revision = properties.value("revision") ?: return Outcome.Failure("tessdata catalog has no revision")
-        val baseUrl = properties.value("baseUrl")
-        if (baseUrl == null || !baseUrl.startsWith(HTTPS) || !baseUrl.endsWith("/")) {
-            return Outcome.Failure("tessdata catalog needs an https baseUrl ending in '/', has '$baseUrl'")
-        }
+        val revision = properties.value("revision")
+        val baseUrl = properties.value("baseUrl").orEmpty()
         val tags = properties.value("langs")?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
-        if (tags.isEmpty()) return Outcome.Failure("tessdata catalog lists no langs")
-        val models = ArrayList<OcrModel>(tags.size)
-        for (tag in tags) {
-            when (val model = model(properties, tag, baseUrl)) {
-                is Outcome.Success -> models.add(model.value)
-                is Outcome.Failure -> return model
-            }
+        return when {
+            revision == null -> Outcome.Failure("tessdata catalog has no revision")
+
+            !baseUrl.startsWith(HTTPS) || !baseUrl.endsWith("/") ->
+                Outcome.Failure("tessdata catalog needs an https baseUrl ending in '/', has '$baseUrl'")
+
+            tags.isEmpty() -> Outcome.Failure("tessdata catalog lists no langs")
+
+            tags.distinct().size != tags.size -> Outcome.Failure("tessdata catalog repeats a lang")
+
+            else -> models(properties, tags, baseUrl).map { TessdataCatalog(revision, it) }
         }
-        if (models.distinctBy { it.lang }.size != models.size) return Outcome.Failure("tessdata catalog repeats a lang")
-        return Outcome.Success(TessdataCatalog(revision, models))
     }
+
+    /** Every model, or the first broken entry. */
+    private fun models(properties: Properties, tags: List<String>, baseUrl: String): Outcome<List<OcrModel>, String> =
+        tags.fold<String, Outcome<List<OcrModel>, String>>(Outcome.Success(emptyList())) { parsed, tag ->
+            parsed.flatMap { models -> model(properties, tag, baseUrl).map { models + it } }
+        }
 
     private fun model(properties: Properties, tag: String, baseUrl: String): Outcome<OcrModel, String> {
         val lang = Lang.entries.firstOrNull { it.bcp47Tag == tag }

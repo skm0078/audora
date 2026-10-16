@@ -70,7 +70,10 @@ private fun NeedsModelsCard(state: OcrModelsState?, onDownload: () -> Unit) {
             }
 
             is OcrModelsState.Failed -> {
-                Text(stringResource(R.string.ocr_models_failed, state.message), style = MaterialTheme.typography.bodySmall)
+                Text(
+                    stringResource(R.string.ocr_models_failed, state.message),
+                    style = MaterialTheme.typography.bodySmall,
+                )
                 Button(onClick = onDownload) { Text(stringResource(R.string.ocr_models_retry)) }
             }
 

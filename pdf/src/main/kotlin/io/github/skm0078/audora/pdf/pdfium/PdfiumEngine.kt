@@ -133,18 +133,39 @@ private class PdfiumDocumentHandle(private val document: PdfDocumentU, private v
         Outcome.Failure(PdfPageError.ExtractionFailed(pageIndex, "no memory to render the page: $e", e))
     }
 
-    private fun drawLocked(pageIndex: Int, dpi: Int, maxPixels: Long): Outcome<Pair<Bitmap, RenderSize>, PdfPageError> {
+    /** Draws the page on white; the bitmap is recycled here if drawing throws, otherwise the caller owns it. */
+    private fun drawLocked(
+        pageIndex: Int,
+        dpi: Int,
+        maxPixels: Long,
+    ): Outcome<Pair<Bitmap, RenderSize>, PdfPageError> {
         val page = document.openPage(pageIndex)
             ?: return Outcome.Failure(PdfPageError.ExtractionFailed(pageIndex, "PDFium could not load the page"))
-        try {
+        return try {
             val size = RenderSize.of(page.getPageWidthPoint(), page.getPageHeightPoint(), dpi, maxPixels)
-                ?: return Outcome.Failure(PdfPageError.ExtractionFailed(pageIndex, "the page has no size"))
-            val bitmap = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888)
-            page.renderPageBitmap(bitmap, 0, 0, size.width, size.height, false, false, Color.WHITE, Color.WHITE)
-            return Outcome.Success(bitmap to size)
+            if (size == null) {
+                Outcome.Failure(PdfPageError.ExtractionFailed(pageIndex, "the page has no size"))
+            } else {
+                val bitmap = drawnOrRecycled(Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888)) {
+                    page.renderPageBitmap(it, 0, 0, size.width, size.height, false, false, Color.WHITE, Color.WHITE)
+                }
+                Outcome.Success(bitmap to size)
+            }
         } finally {
             page.close()
         }
+    }
+
+    /** [bitmap] after [draw], or recycled (and the error passed on) if [draw] throws. */
+    private inline fun drawnOrRecycled(bitmap: Bitmap, draw: (Bitmap) -> Unit): Bitmap {
+        var drawn = false
+        try {
+            draw(bitmap)
+            drawn = true
+        } finally {
+            if (!drawn) bitmap.recycle()
+        }
+        return bitmap
     }
 
     /** ITU-R BT.601 luma, one row at a time so only one extra row of pixels is held. */

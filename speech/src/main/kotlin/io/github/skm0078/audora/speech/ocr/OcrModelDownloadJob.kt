@@ -33,24 +33,38 @@ class OcrModelDownloadJob(
         val missing = catalog.models.filterNot(files::isInstalled)
         AudoraLog.i(TAG, "OCR models to download ${missing.map { it.fileName }} attempt=${attempt + 1}")
         for (model in missing) {
-            val before = files.installedBytes(catalog)
-            val downloaded = downloader.download(
-                model,
-                files.partialDownload(model),
-                { bytes, _ -> onProgress(before + bytes, catalog.totalBytes) },
-                keepGoing,
-            )
-            val result = when (downloaded) {
-                is Outcome.Success -> when (val installed = files.install(downloaded.value, model)) {
-                    is Outcome.Success -> null.also { onInstalled() }
-                    is Outcome.Failure -> JobResult.Failed(installed.error)
-                }
-
-                is Outcome.Failure -> failed(model, attempt, downloaded.error)
-            }
-            if (result != null) return result
+            val failure = fetch(model, attempt, onProgress, keepGoing)
+            if (failure != null) return failure
         }
         return JobResult.Installed
+    }
+
+    /** Downloads and installs one model; null when it is installed, else what the job should report. */
+    private fun fetch(
+        model: OcrModel,
+        attempt: Int,
+        onProgress: (Long, Long) -> Unit,
+        keepGoing: () -> Boolean,
+    ): JobResult? {
+        val before = files.installedBytes(catalog)
+        val downloaded = downloader.download(
+            model,
+            files.partialDownload(model),
+            { bytes, _ -> onProgress(before + bytes, catalog.totalBytes) },
+            keepGoing,
+        )
+        return when (downloaded) {
+            is Outcome.Failure -> failed(model, attempt, downloaded.error)
+
+            is Outcome.Success -> when (val installed = files.install(downloaded.value, model)) {
+                is Outcome.Failure -> JobResult.Failed(installed.error)
+
+                is Outcome.Success -> {
+                    onInstalled()
+                    null
+                }
+            }
+        }
     }
 
     private fun failed(model: OcrModel, attempt: Int, error: DownloadError): JobResult {
