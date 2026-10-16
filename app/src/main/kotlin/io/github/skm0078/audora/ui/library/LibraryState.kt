@@ -5,10 +5,14 @@ package io.github.skm0078.audora.ui.library
 
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookAvailability
+import io.github.skm0078.audora.core.library.BookProgress
 import io.github.skm0078.audora.core.library.LibraryError
 
-/** [availability] is null until the file has been checked; the row then shows no warning. */
-data class LibraryItem(val book: Book, val availability: BookAvailability?) {
+/**
+ * [availability] is null until the file has been checked; the row then shows no warning. [progress] is null for a
+ * book never read (or never opened, so its page count is unknown).
+ */
+data class LibraryItem(val book: Book, val availability: BookAvailability?, val progress: BookProgress? = null) {
     val needsLocating: Boolean
         get() = availability == BookAvailability.MISSING || availability == BookAvailability.ACCESS_LOST
 }
@@ -16,7 +20,8 @@ data class LibraryItem(val book: Book, val availability: BookAvailability?) {
 sealed interface LibraryListState {
     data object Loading : LibraryListState
 
-    data class Loaded(val items: List<LibraryItem>) : LibraryListState
+    /** [continueReading]: the book read most recently, offered on top; null when none was read yet. */
+    data class Loaded(val items: List<LibraryItem>, val continueReading: LibraryItem? = null) : LibraryListState
 
     /** The database could not be read; the log has the cause. */
     data object Failed : LibraryListState

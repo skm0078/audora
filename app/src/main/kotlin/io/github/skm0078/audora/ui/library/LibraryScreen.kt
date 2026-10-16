@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/LibraryScreen.kt
-// Purpose: Home screen: the books in the library, Add PDF, and finding a moved file again (P1-01).
+// Purpose: Home screen: Continue reading, the books with their progress, Add PDF, the mini player (P1-01, ADR-033).
 
 package io.github.skm0078.audora.ui.library
 
@@ -60,6 +60,7 @@ fun LibraryScreen(
     pendingRemoval: Book?,
     actions: LibraryActions,
     modifier: Modifier = Modifier,
+    nowPlaying: NowPlaying? = null,
     banner: @Composable () -> Unit = {},
 ) {
     val snackbar = remember { SnackbarHostState() }
@@ -79,13 +80,7 @@ fun LibraryScreen(
         actions.onScreenResumed()
         onPauseOrDispose {}
     }
-    val messageText = message?.let { messageText(it) }
-    LaunchedEffect(message) {
-        if (messageText != null) {
-            snackbar.showSnackbar(messageText)
-            actions.onMessageShown()
-        }
-    }
+    MessageEffect(message, snackbar, actions::onMessageShown)
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -100,6 +95,7 @@ fun LibraryScreen(
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },
+        bottomBar = { nowPlaying?.let { MiniPlayer(it, actions) } },
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             if (busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
@@ -117,6 +113,7 @@ fun LibraryScreen(
                     }
                 },
                 onRemove = actions::onRequestRemoval,
+                onContinue = actions::onContinue,
             )
         }
     }
@@ -143,6 +140,7 @@ private fun LibraryContent(
     onAddPdf: () -> Unit,
     onTap: (LibraryItem) -> Unit,
     onRemove: (Book) -> Unit,
+    onContinue: (Book) -> Unit,
 ) {
     when (listState) {
         LibraryListState.Loading -> Centered { CircularProgressIndicator() }
@@ -158,7 +156,7 @@ private fun LibraryContent(
         is LibraryListState.Loaded -> if (listState.items.isEmpty()) {
             EmptyLibrary(enabled = !busy, onAddPdf = onAddPdf)
         } else {
-            BookList(items = listState.items, onTap = onTap, onRemove = onRemove)
+            BookList(listState, onTap = onTap, onRemove = onRemove, onContinue = onContinue)
         }
     }
 }
@@ -179,9 +177,19 @@ private fun RemovalDialog(book: Book, actions: LibraryActions) {
 }
 
 @Composable
-private fun BookList(items: List<LibraryItem>, onTap: (LibraryItem) -> Unit, onRemove: (Book) -> Unit) {
+private fun BookList(
+    list: LibraryListState.Loaded,
+    onTap: (LibraryItem) -> Unit,
+    onRemove: (Book) -> Unit,
+    onContinue: (Book) -> Unit,
+) {
     LazyColumn(contentPadding = PaddingValues(bottom = FAB_CLEARANCE)) {
-        items(items, key = { it.book.id.value }) { item ->
+        list.continueReading?.let { latest ->
+            item(key = CONTINUE_KEY) {
+                ContinueReadingCard(latest, onContinue = { onContinue(latest.book) }, onOpen = { onTap(latest) })
+            }
+        }
+        items(list.items, key = { it.book.id.value }) { item ->
             BookRow(item = item, onTap = { onTap(item) }, onRemove = { onRemove(item.book) })
             HorizontalDivider()
         }
@@ -213,6 +221,9 @@ private fun Centered(content: @Composable () -> Unit) {
 
 private val FAB_CLEARANCE = 88.dp
 
+/** Book ids are UUIDs, so this key never clashes with a row's. */
+private const val CONTINUE_KEY = "continue-reading"
+
 /** OpenDocument filters by MIME type; providers that mislabel PDFs are caught by the header check. */
 private val PDF_MIME_TYPES = arrayOf("application/pdf")
 
@@ -236,12 +247,30 @@ private fun LibraryScreenPreview() {
     }
 }
 
+@Composable
+private fun MessageEffect(message: LibraryMessage?, snackbar: SnackbarHostState, onShown: () -> Unit) {
+    val messageText = message?.let { messageText(it) }
+    LaunchedEffect(message) {
+        if (messageText != null) {
+            snackbar.showSnackbar(messageText)
+            onShown()
+        }
+    }
+}
+
+@Suppress("TooManyFunctions") // Implements LibraryActions.
 private object PreviewActions : LibraryActions {
     override fun onAddPdf(documentUri: Uri) = Unit
 
     override fun onLocate(id: BookId, documentUri: Uri) = Unit
 
     override fun onOpenBook(book: Book) = Unit
+
+    override fun onContinue(book: Book) = Unit
+
+    override fun onOpenPlaying(id: BookId) = Unit
+
+    override fun onPlayPause() = Unit
 
     override fun onRequestRemoval(book: Book) = Unit
 

@@ -2,6 +2,20 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## App basics — speed, pace, library progress, Open with Audora, rewind on resume (2026-10-16, ADR-033)
+- **Speed without smeared words:** the voice model now speaks at the chosen rate itself (Piper/VITS, Kokoro, Kitten, Supertonic, and the phone's engine through `setSpeechRate`) up to 1.5×; only the rest above that is time-stretched. 0.5×–3× in 0.05 steps.
+- **Natural pauses:** sherpa-onnx renders now keep the voice's own pauses inside a sentence (`silenceScale` 1.0; the library default 0.2 cut every comma pause to a fifth).
+- **Speed and pace sheet** in the reader: slider, −/+ by 0.05, presets 0.75×–2.5×, and pace Short / Normal / Long (gap after each sentence, scaled pauses; pauses shrink with the square root of the speed). The service keeps the style, so lock-screen play uses it too; a change restarts the sentence playing.
+- **Library:** progress line per book (page of pages and percent), a "Continue reading" card for the book read last (opens and resumes), and a mini player under the list with play/pause.
+- **Open with Audora:** PDFs opened or shared from another app (Files, Gmail, WhatsApp, a browser) are added and opened; when their grant cannot be kept, Audora keeps its own copy (up to 512 MiB), deleted when the book is removed.
+- **Rewind on resume:** after a pause of 20 s or more the cut-off sentence restarts; after 5 min or more the one before is replayed too.
+- `PIPELINE_VERSION` unchanged (no `:pdf` output change). No new dependency. Room schema unchanged (one new query).
+- Tests: `SpeechStyleConfig` (clamp, model/player split, pace silences), `SpeechStyleStore`, rate through `RoutedSpeech`, the sherpa and system engines and the sherpa config, render-speed normalisation, the renderer's model cap and pace silence, `BookProgress`, `ResumeRewind`, reader speed snapping and pace. Locally: core, speech, pdf and the pure playback tests in a JVM harness, ktlint and detekt clean; the Android build in CI.
+
+**Known limits:** the 1.5× model cap and the pace timings are first guesses from published listening tests, not tuned by ear per voice. A speed change has a short gap while the sentence restarts. Progress counts pages, not words.
+
+**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the other phone checks):** (1) With the English default voice, play a page at 0.75×, 1×, 1.5× and 2.5× from the speed sheet: words stay clear at each, and 2.5× is only slightly smeared. (2) Switch pace Short → Long mid-page: the pauses after sentences and paragraphs change audibly. (3) Set 1.25× and Long, force-stop, play from the lock screen notification: the same speed and pace. (4) Read a few pages of two books, go back to the library: each shows "Page x of y", the Continue reading card names the last one, and Continue plays from where it stopped; the mini player shows the page and pauses/plays. (5) From Files, tap a PDF and pick Audora; from Gmail or WhatsApp, share a PDF to Audora: the book is added and opens; force-stop and reopen it later: it is still readable. (6) Pause for 30 s and play: the sentence restarts from its first word; pause 6 min and play: the previous sentence plays first.
+
 ## Known gaps after Phase 4 — scanned pages, legacy fonts, premium voices, citation switch (2026-10-16)
 - **Scanned pages (P3-05, ADR-032):** OCR now keeps each word's position. OCR'd sentences are highlighted on the page like any other. A sideways or upside-down scan (low OCR confidence) is probed in all four turns and read the right way up. Running headers, footers and page numbers are dropped by comparing the page's top and bottom lines with strips read from the two pages on each side (cached; about 0.4 of a page of extra OCR per page). Cached OCR from earlier builds is read again once.
 - **Legacy fonts (P3-04, ADR-032):** the Rajasthan paper's single Chanakya glyphs inside DevLys words now read as their conjuncts ("सिद्धिकार्यं", "निम्नांङ्कितेषु"); a page set sideways (its landscape table) is laid out in its reading direction instead of drawing order.

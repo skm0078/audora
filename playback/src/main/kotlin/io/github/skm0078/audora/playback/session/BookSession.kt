@@ -83,6 +83,7 @@ class BookSession(
     private val loader = PageLoader(env.scope, env.extraction, LoaderEvents())
     private val faults = FaultHandler()
     private val sleep = SleepControl()
+    private val rewind = ResumeRewind(config.resumeRewind, env.elapsedRealtime)
     private val playerListener = PlayerListener()
 
     private var book: OpenedBook? = null
@@ -211,6 +212,8 @@ class BookSession(
     private fun rebuild(page: Int, charStart: Int, play: Boolean) {
         val opened = book ?: return
         loader.cancel()
+        // A new position: a pause before it says nothing about where the listener lost the thread.
+        rewind.forget()
         epoch++
         val newQueue = RenderAheadQueue(sources.renderer, config, QueueLog(opened.book.id), sources.renderAhead)
         newQueue.start("audora-render-$epoch")
@@ -253,6 +256,22 @@ class BookSession(
         is PlaybackItem.Sentence -> item.unit.page to item.unit.charStart
         is PlaybackItem.More -> lastSentence?.let { it.page to it.charEnd } ?: cursor?.let { it.startPage to 0 }
         null -> null
+    }
+
+    /** Resuming after a pause steps back by whole sentences (ADR-033); placeholders are never rewound. */
+    private fun rewindOnResume() {
+        val step = rewind.onResumed()
+        val index = player.currentMediaItemIndex
+        if (step == RewindStep.NONE || playlist.itemAt(index) !is PlaybackItem.Sentence) return
+        val previous = index - 1
+        val target =
+            if (step == RewindStep.PREVIOUS_SENTENCE && playlist.itemAt(previous) is PlaybackItem.Sentence) {
+                previous
+            } else {
+                index
+            }
+        AudoraLog.i(TAG, "Resume rewind $step to item $target, book=${bookId?.logLabel}")
+        player.seekTo(target, 0L)
     }
 
     private fun publishState() {
@@ -421,12 +440,22 @@ class BookSession(
         }
 
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
-            if (!playWhenReady) {
-                sleep.onPaused(
-                    atItemEnd =
-                        reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM,
-                )
+            if (playWhenReady) {
+                rewindOnResume()
+                return
             }
+            val atItemEnd = reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM
+            sleep.onPaused(atItemEnd = atItemEnd)
+            rewind.onPaused(atSentenceEnd = atItemEnd)
+        }
+
+        override fun onPositionDiscontinuity(
+            oldPosition: Player.PositionInfo,
+            newPosition: Player.PositionInfo,
+            reason: Int,
+        ) {
+            // The listener chose a new place while paused (skip, seek bar): start there, not before it.
+            if (reason == Player.DISCONTINUITY_REASON_SEEK && !player.playWhenReady) rewind.forget()
         }
 
         override fun onEvents(player: Player, events: Player.Events) {

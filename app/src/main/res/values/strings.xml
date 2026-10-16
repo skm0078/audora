@@ -6,7 +6,7 @@
     <string name="library_title">Library</string>
     <string name="library_add_pdf">Add PDF</string>
     <string name="library_empty_title">Your library is empty</string>
-    <string name="library_empty_body">Add a PDF from your phone. Audora remembers where it is; the file is not copied.</string>
+    <string name="library_empty_body">Add a PDF from your phone, or open one from Files, WhatsApp or mail with Audora. Audora remembers where a file is; it copies only PDFs another app lends for a moment.</string>
     <string name="library_load_failed">Audora could not load your library. Please share the logs from Settings.</string>
     <string name="library_untitled">Untitled PDF</string>
     <string name="library_book_menu">More options</string>
@@ -15,6 +15,11 @@
         <item quantity="other">%1$d pages</item>
     </plurals>
     <string name="library_details">%1$s · %2$s</string>
+    <string name="library_continue_label">Continue reading</string>
+    <string name="library_continue">Continue</string>
+    <string name="library_progress">Page %1$d of %2$d · %3$d%%</string>
+    <string name="library_playing_page_of">Page %1$d of %2$d</string>
+    <string name="library_playing_page">Page %1$d</string>
     <string name="library_opened_ago">opened %1$s</string>
     <string name="library_added_ago">added %1$s</string>
     <string name="library_file_missing">File moved or deleted. Tap to find it.</string>

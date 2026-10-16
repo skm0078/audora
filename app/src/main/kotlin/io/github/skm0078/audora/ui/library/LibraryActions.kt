@@ -7,13 +7,22 @@ import android.net.Uri
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 
-/** One interface instead of nine lambdas keeps [LibraryScreen]'s signature readable. */
+/** One interface instead of a dozen lambdas keeps [LibraryScreen]'s signature readable. */
+@Suppress("TooManyFunctions") // One per control on the screen.
 interface LibraryActions {
     fun onAddPdf(documentUri: Uri)
 
     fun onLocate(id: BookId, documentUri: Uri)
 
     fun onOpenBook(book: Book)
+
+    /** "Continue" on the Continue reading card: opens the book and reads on from where it was left. */
+    fun onContinue(book: Book)
+
+    /** The mini player's book: opens it in the reader. */
+    fun onOpenPlaying(id: BookId)
+
+    fun onPlayPause()
 
     fun onRequestRemoval(book: Book)
 

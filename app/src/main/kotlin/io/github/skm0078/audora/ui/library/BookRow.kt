@@ -1,11 +1,12 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/BookRow.kt
-// Purpose: One library row: title, pages and last use, a clear warning when the file is gone, and Remove.
+// Purpose: One library row: title, pages, last use and progress, a clear warning when the file is gone, and Remove.
 
 package io.github.skm0078.audora.ui.library
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -41,7 +42,10 @@ internal fun BookRow(item: LibraryItem, onTap: () -> Unit, onRemove: () -> Unit)
             if (warning != null) {
                 Text(warning, color = MaterialTheme.colorScheme.error)
             } else {
-                Text(bookDetails(item.book))
+                Column {
+                    Text(bookDetails(item.book))
+                    item.progress?.let { ProgressLine(it) }
+                }
             }
         },
         trailingContent = {

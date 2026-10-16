@@ -30,8 +30,21 @@ The research behind the choices below is in the project's `research/05-read-alou
    render-ahead policy treats the model's share of the speed like the player's (ADR-027), so a rate change neither
    skews a voice's measured speed nor starves the queue.
 
+6. **Library basics.** Each book shows its progress in pages, from its resume anchor (`BookProgress`; counting
+   text would mean extracting every page). The book read most recently gets a "Continue reading" card that opens
+   and resumes it, and a mini player under the list shows what is playing with play/pause. Resuming from the card
+   is a user action, so C7 holds.
+7. **Open with Audora.** Audora accepts `application/pdf` from other apps (VIEW and SEND). Such a grant usually
+   cannot be kept across restarts, so when the library cannot keep it the PDF is copied into app storage
+   (`filesDir/shared-pdfs`, at most 512 MiB) and the copy is the book; removing the book deletes the copy.
+8. **Rewind on resume.** Resuming after a pause steps back by whole sentences, never seconds: 20 s or more restarts
+   the sentence that was cut off, 5 min or more also replays the one before (`ResumeRewindConfig`). A pause at a
+   sentence end (sleep timer) steps one sentence less; a seek while paused, or a new position, cancels it.
+
 ## Consequences
 - A speed change costs a restart of the current sentence (a short gap) instead of being instant. Accepted: clear
   words matter more, and the slider sends once per drag.
 - PIPELINE_VERSION is unchanged: `:pdf` output is the same; only rendering changed.
+- Shared PDFs that cannot be kept use storage twice (the other app's and Audora's copy). Accepted: otherwise the
+  book is lost on the next restart.
 - External controllers (a car, a watch) still see and may set the player's speed; Audora's own controls do not use it.

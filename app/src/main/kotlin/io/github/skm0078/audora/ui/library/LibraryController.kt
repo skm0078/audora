@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/LibraryController.kt
-// Purpose: Library screen state from the Library's books and file checks; I/O stays off the main thread.
+// Purpose: Library screen state from the books, their progress and file checks; I/O stays off the main thread.
 
 package io.github.skm0078.audora.ui.library
 
@@ -10,16 +10,34 @@ import io.github.skm0078.audora.core.library.AddResult
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.library.BookProgress
 import io.github.skm0078.audora.core.library.Library
+import io.github.skm0078.audora.core.library.LibraryError
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.resume.ResumeAnchor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
-/** Plain state holder (no Compose UI here), like the other controllers. Call [start] once. */
-class LibraryController(private val library: Library, private val scope: CoroutineScope) {
+/**
+ * Plain state holder (no Compose UI here), like the other controllers. Call [start] once.
+ *
+ * @param anchors every book's resume anchor, for its progress and "Continue reading".
+ * @param importShared copies a PDF another app only lends for a moment into a URI Audora can keep; null on failure.
+ */
+// Add, locate, share, remove and their messages, plus the list they publish.
+@Suppress("TooManyFunctions")
+class LibraryController(
+    private val library: Library,
+    private val scope: CoroutineScope,
+    private val anchors: Flow<List<ResumeAnchor>> = flowOf(emptyList()),
+    private val importShared: suspend (String) -> String? = { null },
+) {
     var listState: LibraryListState by mutableStateOf(LibraryListState.Loading)
         private set
 
@@ -34,6 +52,7 @@ class LibraryController(private val library: Library, private val scope: Corouti
         private set
 
     private var books: List<Book> = emptyList()
+    private var progress: Map<BookId, ResumeAnchor> = emptyMap()
 
     /** Last check per book, with the URI it was made for: a book moved to a new URI is checked again. */
     private var checked: Map<BookId, Pair<String, BookAvailability>> = emptyMap()
@@ -41,16 +60,23 @@ class LibraryController(private val library: Library, private val scope: Corouti
 
     fun start() {
         if (watch != null) return
+        // Progress is a nicety: if the anchors cannot be read the library still shows, without it.
+        val saved = anchors.catch { e ->
+            AudoraLog.w(TAG, "Reading positions could not be loaded; the library shows no progress", e)
+            emit(emptyList())
+        }
         watch = scope.launch {
-            library.books()
+            combine(library.books(), saved) { latest, positions -> latest to positions }
                 .catch { e ->
                     AudoraLog.e(TAG, "Library could not be loaded", e)
                     listState = LibraryListState.Failed
                 }
-                .collect { latest ->
+                .collect { (latest, positions) ->
+                    val fresh = latest.filter { checked[it.id]?.first != it.documentUri }
                     books = latest
+                    progress = positions.associateBy { it.bookId }
                     publish()
-                    checkFiles(latest.filter { checked[it.id]?.first != it.documentUri })
+                    checkFiles(fresh)
                 }
         }
     }
@@ -58,8 +84,27 @@ class LibraryController(private val library: Library, private val scope: Corouti
     /** The screen came back to the foreground: files may have been moved or deleted meanwhile. */
     fun refreshAvailability() = checkFiles(books)
 
-    fun add(documentUri: String) = runPick {
-        message = when (val added = library.add(documentUri)) {
+    fun add(documentUri: String) = runPick { addNow(documentUri) }
+
+    /**
+     * A PDF opened or shared from another app ("Open with Audora"): added like a picked one, then [open]ed. When the
+     * other app's grant cannot be kept, the PDF is added through a copy made by `importShared`.
+     */
+    fun addShared(documentUri: String, open: (BookId) -> Unit) = runPick {
+        val kept = library.add(documentUri)
+        val added = if (kept.isCannotKeepAccess()) {
+            importShared(documentUri)?.let { copy -> library.add(copy) } ?: kept
+        } else {
+            kept
+        }
+        report(added)
+        (added as? Outcome.Success)?.let { open(it.value.book.id) }
+    }
+
+    private suspend fun addNow(documentUri: String) = report(library.add(documentUri))
+
+    private fun report(added: Outcome<AddResult, LibraryError>) {
+        message = when (added) {
             is Outcome.Failure -> LibraryMessage.Failed(added.error)
 
             is Outcome.Success -> when (val result = added.value) {
@@ -69,6 +114,9 @@ class LibraryController(private val library: Library, private val scope: Corouti
             }
         }
     }
+
+    private fun Outcome<AddResult, LibraryError>.isCannotKeepAccess(): Boolean =
+        this is Outcome.Failure && error == LibraryError.CannotKeepAccess
 
     fun locate(id: BookId, documentUri: String) = runPick {
         message = when (val moved = library.relocate(id, documentUri)) {
@@ -120,12 +168,15 @@ class LibraryController(private val library: Library, private val scope: Corouti
     }
 
     private fun publish() {
-        listState = LibraryListState.Loaded(
-            books.map { book ->
-                val check = checked[book.id]?.takeIf { it.first == book.documentUri }
-                LibraryItem(book, check?.second)
-            },
-        )
+        val items = books.map { book ->
+            val check = checked[book.id]?.takeIf { it.first == book.documentUri }
+            LibraryItem(book, check?.second, BookProgress.of(book, progress[book.id]))
+        }
+        val latest = items.filterNot { it.needsLocating }
+            .mapNotNull { item -> item.progress?.let { item to it.savedAtMillis } }
+            .maxByOrNull { it.second }
+            ?.first
+        listState = LibraryListState.Loaded(items, continueReading = latest)
     }
 
     private companion object {
