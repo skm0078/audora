@@ -16,8 +16,13 @@ import io.github.skm0078.audora.core.config.QueueConfig
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.resume.ResumeAnchorStore
+import io.github.skm0078.audora.core.resume.ResumeLocator
+import io.github.skm0078.audora.core.resume.ResumeRecorder
+import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.book.LibraryBookSource
+import io.github.skm0078.audora.playback.queue.MeasuredRenderAhead
 import io.github.skm0078.audora.playback.session.BookSession
 import io.github.skm0078.audora.playback.session.ItemTexts
 import io.github.skm0078.audora.playback.session.QueueRegistry
@@ -25,6 +30,7 @@ import io.github.skm0078.audora.playback.session.SessionEnvironment
 import io.github.skm0078.audora.playback.session.SessionSources
 import io.github.skm0078.audora.playback.session.SpeechPlayer
 import io.github.skm0078.audora.playback.voice.EngineRenderer
+import io.github.skm0078.audora.playback.voice.RenderSpeedTracker
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
 import javax.inject.Inject
@@ -39,7 +45,7 @@ import kotlinx.coroutines.cancel
  * player plays or buffers with playWhenReady, which is exactly when a sentence is being synthesized (C5).
  *
  * Playback starts only from a user action (C7): PLAY_FROM from the UI, or play on the notification, lock
- * screen or a headset. Nothing starts it on boot, and there is no playback resumption until P1-06.
+ * screen or a headset (playback resumption after Audora was closed, P1-06). Nothing starts it on boot.
  */
 @OptIn(UnstableApi::class)
 @AndroidEntryPoint
@@ -50,7 +56,15 @@ class AudoraPlaybackService : MediaSessionService() {
     @Inject
     lateinit var tracker: ReadingSessionTracker
 
+    @Inject
+    lateinit var resumeAnchors: ResumeAnchorStore
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    // Resume anchor writes (P1-06). Never cancelled: the flush sent while the service is destroyed must land;
+    // it holds no work afterwards.
+    private val resumeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var resumption: PlaybackResumption? = null
     private val config = QueueConfig()
     private val registry = QueueRegistry()
     private lateinit var voices: SpeechVoices
@@ -60,10 +74,12 @@ class AudoraPlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate() // Hilt injects fields here.
-        voices = SpeechVoices(VoiceEngines(this))
+        val engines = VoiceEngines(this)
+        voices = SpeechVoices(engines)
         player = SpeechPlayer.build(this, registry, config)
         val diagnostics = DiagnosticsBridge(tracker, scope)
-        val callback = SessionCallback(packageName, scope, voices) { bookSession }
+        val recorder = ResumeRecorder(resumeAnchors, resumeScope, PIPELINE_VERSION, System::currentTimeMillis)
+        val callback = SessionCallback(packageName, scope, voices, { bookSession }, { resumption })
         val mediaSession = MediaSession.Builder(this, player)
             .setCallback(callback)
             .apply { sessionActivity()?.let { setSessionActivity(it) } }
@@ -72,9 +88,14 @@ class AudoraPlaybackService : MediaSessionService() {
         bookSession = BookSession(
             player = player,
             registry = registry,
-            sources = SessionSources(EngineRenderer(voices), LibraryBookSource(this, library), ResourceTexts()),
+            sources = SessionSources(
+                renderer = EngineRenderer(voices, speed = RenderSpeedTracker(engines::speeds)),
+                books = LibraryBookSource(this, library),
+                texts = ResourceTexts(),
+                renderAhead = MeasuredRenderAhead(voices::speedOf),
+            ),
             config = config,
-            events = SessionPublisher(mediaSession, diagnostics),
+            events = SessionPublisher(mediaSession, diagnostics, ResumeBridge(recorder, resumeScope)),
             env = SessionEnvironment(
                 scope = scope,
                 extraction = Dispatchers.IO.limitedParallelism(1),
@@ -82,6 +103,13 @@ class AudoraPlaybackService : MediaSessionService() {
                 wallClock = System::currentTimeMillis,
             ),
         )
+        resumption = PlaybackResumption(
+            anchors = resumeAnchors,
+            library = library,
+            locator = ResumeLocator(resumeAnchors, PIPELINE_VERSION),
+            scope = scope,
+            player = player,
+        ) { bookSession }
         AudoraLog.i(TAG, "Service created")
     }
 

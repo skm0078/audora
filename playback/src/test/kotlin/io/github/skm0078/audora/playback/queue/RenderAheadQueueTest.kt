@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.playback.queue
 
 import io.github.skm0078.audora.core.config.QueueConfig
+import io.github.skm0078.audora.core.config.RenderAheadConfig
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.VoiceId
@@ -15,6 +16,7 @@ import io.github.skm0078.audora.speech.audio.PcmAudio
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -24,7 +26,9 @@ import org.junit.Assert.fail
 import org.junit.Test
 
 class RenderAheadQueueTest {
-    private val config = QueueConfig(prefetchUnits = 2, recentAudioBytes = 1_000)
+    // The queue renders what it is given, up to renderAhead.maxAheadUnits; picking the window is tested apart.
+    private val config =
+        QueueConfig(prefetchUnits = 2, recentAudioBytes = 1_000, renderAhead = RenderAheadConfig(maxAheadUnits = 2))
     private val rendered: MutableList<UnitKey> = Collections.synchronizedList(ArrayList())
     private val failures: MutableList<UnitKey> = Collections.synchronizedList(ArrayList())
     private val listener = object : RenderListener {
@@ -43,11 +47,71 @@ class RenderAheadQueueTest {
         queue?.close()
     }
 
-    private fun start(renderer: SentenceRenderer): RenderAheadQueue =
-        RenderAheadQueue(renderer, config, listener).also {
-            it.start("test-render")
-            queue = it
+    private fun start(
+        policy: RenderAheadPolicy = RenderAheadPolicy.FIXED,
+        queueConfig: QueueConfig = config,
+        clock: () -> Long = System::nanoTime,
+        renderer: SentenceRenderer,
+    ): RenderAheadQueue = RenderAheadQueue(renderer, queueConfig, listener, policy, clock).also {
+        it.start("test-render")
+        queue = it
+    }
+
+    /** Lets playback start only once nothing in the window is left to render. */
+    private val waitForAll = object : RenderAheadPolicy {
+        override fun window(candidates: List<ReadingUnit>, config: QueueConfig) = candidates
+
+        override fun canStart(bufferedSeconds: Double, pending: List<ReadingUnit>, config: QueueConfig) =
+            pending.isEmpty()
+    }
+
+    @Test
+    fun firstSentenceIsHeldUntilThePolicyPredictsNoStall() {
+        val gate = CountDownLatch(1)
+        val q = start(waitForAll) { unit ->
+            if (unit.index == 2) gate.await()
+            Outcome.Success(pcm(10))
         }
+        q.setWindow(page(0, 3))
+        val got = AtomicReference<PcmAudio>()
+        val reader = Thread { got.set(q.awaitPcm(UnitKey(0, 0))) }.apply { start() }
+        Thread.sleep(SETTLE_MS)
+        assertTrue("first sentence must wait for the third", reader.isAlive)
+        gate.countDown()
+        reader.join(JOIN_MS)
+        assertEquals(10, got.get().samples.size)
+        // Once started, nothing is held again.
+        assertEquals(10, q.awaitPcm(UnitKey(0, 1)).samples.size)
+    }
+
+    @Test
+    fun theStartHoldEndsAtItsLimitEvenIfAStallIsPredicted() {
+        val now = AtomicLong(0)
+        val holdConfig = config.copy(renderAhead = config.renderAhead.copy(maxStartHoldSeconds = 1.0))
+        val q = start(waitForAll, holdConfig, now::get) { unit ->
+            if (unit.index == 1) Thread.sleep(LONG_RENDER_MS)
+            Outcome.Success(pcm(10))
+        }
+        q.setWindow(page(0, 2))
+        val reader = Thread { q.awaitPcm(UnitKey(0, 0)) }.apply { start() }
+        Thread.sleep(SETTLE_MS)
+        assertTrue("held while the clock stands still", reader.isAlive)
+        now.set(2_000_000_000)
+        reader.join(JOIN_MS)
+        assertTrue("released once the limit passed", !reader.isAlive)
+    }
+
+    @Test
+    fun onlyTheWindowsFirstSentenceIsHeld() {
+        val gate = CountDownLatch(1)
+        val q = start(waitForAll) { unit ->
+            if (unit.index == 2) gate.await()
+            Outcome.Success(pcm(10))
+        }
+        q.setWindow(page(0, 3))
+        assertEquals(10, q.awaitPcm(UnitKey(0, 1)).samples.size)
+        gate.countDown()
+    }
 
     @Test
     fun rendersTheWindowInPlaylistOrderAndNoFurther() {

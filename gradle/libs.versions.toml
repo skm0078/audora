@@ -41,6 +41,11 @@ pdfiumAndroid = "2.0.3"
 # Bump both together.
 sherpaOnnx = "1.13.8"
 sherpaOnnxAarSha256 = "633c24321e06b1fe79feafa03ea16cbc0f8a286641e2da3559bac91bdb13bd96"
+# Tesseract4Android (Phase 3 OCR, ADR-011/ADR-025): Tesseract 5.5.1 + Leptonica, built 16 KB-aligned. Published only on
+# JitPack, resolved through an exclusive repository (settings.gradle.kts) and checked against this SHA-256 before
+# every :pdf build. Standard (single-threaded) variant. Bump both together.
+tesseract4android = "4.9.0"
+tesseract4androidAarSha256 = "bce5d6413a1a5ae3d7240033fbbc851ba3217d0a08d9769400e17a077f42cb2a"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
@@ -76,6 +81,7 @@ work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "w
 pdfium-android-core = { module = "io.legere:pdfiumandroid-core", version.ref = "pdfiumAndroid" }
 pdfium-android-api = { module = "io.legere:pdfiumandroid-api", version.ref = "pdfiumAndroid" }
 sherpa-onnx = { module = "com.k2fsa:sherpa-onnx", version.ref = "sherpaOnnx" }
+tesseract4android = { module = "cz.adaptech.tesseract4android:tesseract4android", version.ref = "tesseract4android" }
 
 # Code-quality CLIs, run by the root build (not shipped in the APK)
 ktlint-cli = { module = "com.pinterest.ktlint:ktlint-cli", version.ref = "ktlint" }

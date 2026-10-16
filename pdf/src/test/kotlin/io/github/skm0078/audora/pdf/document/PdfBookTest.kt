@@ -18,6 +18,7 @@ class PdfBookTest {
     private class FakeEngine(val pages: Int, val password: String? = null) : PdfEngine {
         val passwordsSeen = ArrayList<String?>()
         var openHandles = 0
+        var reads = 0
         var failNextOpen = false
 
         override fun open(password: String?): Outcome<PdfDocumentHandle, PdfOpenError> {
@@ -39,14 +40,30 @@ class PdfBookTest {
         private fun handle() = object : PdfDocumentHandle {
             override val pageCount = pages
 
-            override fun readPage(pageIndex: Int): Outcome<RawPage, PdfPageError> = Outcome.Success(
-                RawPageFixture.page(RawPageFixture.chars("Page $pageIndex."), pageIndex = pageIndex),
-            )
+            override fun readPage(pageIndex: Int): Outcome<RawPage, PdfPageError> {
+                reads++
+                return Outcome.Success(
+                    RawPageFixture.page(RawPageFixture.chars("Page $pageIndex."), pageIndex = pageIndex),
+                )
+            }
+
+            override fun outline() = listOf(OutlineEntry("Chapter", 0))
 
             override fun close() {
                 openHandles--
             }
         }
+    }
+
+    @Test
+    fun `the outline comes from the open document and does not count as a page read`() {
+        val engine = FakeEngine(pages = 3)
+        val book = requireNotNull(PdfBook.open(engine, config = ExtractionConfig(reopenEveryPages = 1)).getOrNull())
+        assertEquals(listOf(0), book.outline().getOrNull()?.map { it.page })
+        assertTrue(book.pageText(0) is Outcome.Success)
+        assertEquals(1, book.opens)
+        book.close()
+        assertEquals(PdfPageError.BookClosed, book.outline().errorOrNull())
     }
 
     @Test
@@ -59,7 +76,10 @@ class PdfBookTest {
             assertEquals("Page $page.", units.single().text)
             assertEquals(1, engine.openHandles)
         }
-        assertEquals(5, book.opens)
+        // Cleanup reads up to three pages ahead as neighbours (ADR-020); the caches keep it to one read per page.
+        assertTrue("reads=${engine.reads}", engine.reads <= 500 + ReadingUnitBuilder().cleanupConfig.neighbourPages)
+        assertEquals(1 + (engine.reads - 1) / 100, book.opens)
+        assertEquals(engine.reads, book.pagesRead)
         book.close()
         assertEquals(0, engine.openHandles)
     }

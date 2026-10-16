@@ -32,6 +32,9 @@ import kotlinx.coroutines.withContext
  * Only one model is kept loaded (a Piper voice is ~60 MB of weights plus ONNX Runtime arenas); asking for another
  * voice releases the current one first. Loading happens on the first render of a voice, not at construction.
  *
+ * The voice list comes from [source] on every call, so voices downloaded or deleted while the engine lives (P4-01)
+ * are seen at once. A voice whose files changed (an update: new `contentVersion`) is reloaded on its next render.
+ *
  * Cancellation: sherpa-onnx can only stop between its internal sentences, so a cancelled render returns as soon as
  * the sentence being computed finishes (a fraction of a second for Piper on the Moto) and its audio is discarded.
  *
@@ -39,30 +42,32 @@ import kotlinx.coroutines.withContext
  *   call, and two renders at once would only compete for the same cores.
  */
 class SherpaSpeechEngine(
-    voices: List<SherpaVoiceSpec>,
+    private val source: SherpaVoiceSource,
     private val factory: SherpaSynthesizerFactory,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(1),
 ) : SpeechEngine {
+    /** A fixed set of voices (tests, and the bundled voice alone). */
+    constructor(
+        voices: List<SherpaVoiceSpec>,
+        factory: SherpaSynthesizerFactory,
+        dispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(1),
+    ) : this(fixedVoices(voices), factory, dispatcher)
+
     override val id: EngineId = EngineId.SHERPA
 
-    private val voicesById: Map<VoiceId, SherpaVoiceSpec> = voices.associateBy { it.voiceId }
     private val mutex = Mutex()
     private val released = AtomicBoolean(false)
 
     /** Guarded by [mutex]. */
     private var loaded: LoadedVoice? = null
 
-    init {
-        require(voicesById.size == voices.size) { "Duplicate voice ids in ${voices.map { it.id }}" }
-    }
-
-    override fun supports(lang: Lang): Boolean = voicesById.values.any { it.lang == lang }
+    override fun supports(lang: Lang): Boolean = source.voices().any { it.lang == lang }
 
     override suspend fun voices(): Outcome<List<VoiceInfo>, SpeechError> =
-        Outcome.Success(voicesById.values.map { it.toVoiceInfo() })
+        Outcome.Success(source.byId().values.map { it.toVoiceInfo() })
 
     override suspend fun render(text: String, voice: VoiceId): RenderResult {
-        val spec = voicesById[voice]
+        val spec = source.byId()[voice]
             ?: return Outcome.Failure(
                 SpeechError.VoiceUnavailable(id, SpeechError.VoiceUnavailable.Reason.UNKNOWN_VOICE, voice),
             )
@@ -136,7 +141,7 @@ class SherpaSpeechEngine(
     }
 
     private fun synthesizerFor(spec: SherpaVoiceSpec): Outcome<SherpaSynthesizer, SpeechError> {
-        loaded?.takeIf { it.spec.id == spec.id }?.let { return Outcome.Success(it.synthesizer) }
+        loaded?.takeIf { it.spec == spec }?.let { return Outcome.Success(it.synthesizer) }
         unloadLocked()
         val started = System.nanoTime()
         return when (val result = factory.load(spec)) {
@@ -170,5 +175,21 @@ class SherpaSpeechEngine(
 
     private companion object {
         const val TAG = "Speech.Sherpa"
+
+        fun fixedVoices(voices: List<SherpaVoiceSpec>): SherpaVoiceSource {
+            val ids = voices.map { it.id }
+            require(ids.toSet().size == ids.size) { "Duplicate voice ids in $ids" }
+            return SherpaVoiceSource { voices }
+        }
     }
+}
+
+/** The voices an engine can render right now; called on every lookup, so it must be cheap (no disk I/O). */
+fun interface SherpaVoiceSource {
+    fun voices(): List<SherpaVoiceSpec>
+}
+
+/** The first voice with an id wins, so the bundled voice shadows a download that later shares its id. */
+private fun SherpaVoiceSource.byId(): Map<VoiceId, SherpaVoiceSpec> = buildMap {
+    voices().forEach { if (it.voiceId !in this) put(it.voiceId, it) }
 }

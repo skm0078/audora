@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/session/SleepTimer.kt
-// Purpose: Sleep-timer rules: pause after N minutes or at the end of the current page.
+// Purpose: Sleep-timer rules: pause after N minutes, or at the end of the current page or chapter.
 
 package io.github.skm0078.audora.playback.session
 
@@ -13,6 +13,12 @@ import io.github.skm0078.audora.playback.playlist.PlaybackItem
 class SleepTimer(private val clock: () -> Long) {
     var mode: SleepTimerMode = SleepTimerMode.OFF
         private set
+
+    /**
+     * First pages of the open book's chapters, ascending (see `BookText.chapterStarts`). Chapters are
+     * page-granular: a chapter that starts mid-page is taken to start with that page.
+     */
+    var chapterStarts: List<Int> = emptyList()
 
     /** [clock] time when a [SleepTimerMode.MINUTES] timer is due; null otherwise. */
     var dueAt: Long? = null
@@ -29,12 +35,25 @@ class SleepTimer(private val clock: () -> Long) {
     /** Milliseconds until a minutes timer is due (0 when overdue); null when no minutes timer is set. */
     fun remainingMs(): Long? = dueAt?.let { (it - clock()).coerceAtLeast(0) }
 
-    /** End-of-page mode: pause after [current] when [next] does not continue the same page. */
+    /**
+     * End-of-page and end-of-chapter modes: pause after [current] when [next] starts a new page, or a page
+     * at or past the next chapter start. A null [next] is the end of the book, which ends both.
+     */
     fun pauseAfter(current: PlaybackItem?, next: PlaybackItem?): Boolean {
-        if (mode != SleepTimerMode.END_OF_PAGE) return false
-        val page = (current as? PlaybackItem.Sentence)?.unit?.page
-        val nextPage = (next as? PlaybackItem.Sentence)?.unit?.page
-        return page != null && nextPage != page
+        val page = (current as? PlaybackItem.Sentence)?.unit?.page ?: return false
+        val nextPage = when (next) {
+            is PlaybackItem.Sentence -> next.unit.page
+
+            // The next page is still being extracted; pages are appended whole, so it is a later page.
+            is PlaybackItem.More -> page + 1
+
+            null -> null
+        }
+        return when (mode) {
+            SleepTimerMode.END_OF_PAGE -> nextPage != page
+            SleepTimerMode.END_OF_CHAPTER -> nextPage == null || chapterStarts.any { it in page + 1..nextPage }
+            SleepTimerMode.OFF, SleepTimerMode.MINUTES -> false
+        }
     }
 
     private companion object {

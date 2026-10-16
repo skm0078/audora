@@ -1,0 +1,183 @@
+{
+  "comment": "File: speech/models.json. Purpose: the voices Audora can download (P4-01, ADR-022). Each voice is a flat, uncompressed zip on this repo's 'voices' release, built from the SHA-pinned upstream archive by scripts/build_voice_mirror.py (same bytes every run) and published by .github/workflows/voice-mirror.yml, which never replaces an asset. The app checks every download against sha256 and sizeBytes. A voice whose id matches the bundled voice (bundled-voices.json) is left out of the APK's catalog. To add or change a voice: edit its entry, run the script with --print-pins, paste file/sha256/sizeBytes. Never add Lessac/Blizzard-derived voices (lessac, amy, hfc_*, hi_IN rohan).",
+  "baseUrl": "https://github.com/skm0078/audora/releases/download/voices/",
+  "sourceBaseUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/",
+  "espeakDictionaries": [
+    "en",
+    "hi",
+    "bn"
+  ],
+  "recommended": {
+    "hi": "piper-hi-pratham",
+    "bn": "piper-bn-google"
+  },
+  "voices": [
+    {
+      "id": "piper-en-cori",
+      "label": "English (UK), Piper cori",
+      "lang": "en",
+      "family": "vits",
+      "model": "en_GB-cori-medium.onnx",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 0,
+      "licence": "Piper voice (MIT), trained on LibriVox recordings (public domain)",
+      "credit": "Piper voice by Michael Hansen (rhasspy), trained on LibriVox recordings read by Cori Samuel (public domain). Packaged for sherpa-onnx by k2-fsa; files unchanged.",
+      "licenceUrl": "https://github.com/rhasspy/piper/blob/master/LICENSE.md",
+      "sourceUrl": "https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_GB/cori/medium",
+      "source": {
+        "archive": "vits-piper-en_GB-cori-medium",
+        "sha256": "49c9a5361bbdd95d7ca9687c4de11e5908481f65e7c7c368960df79949fdac2b"
+      },
+      "file": "piper-en-cori-408f038280ea.zip",
+      "sha256": "408f038280ea236bbbb16fd5ab986ed48acbc68bd2e7ab35e1ee549da8956994",
+      "sizeBytes": 64649879
+    },
+    {
+      "id": "kitten-en-nano",
+      "label": "English, KittenTTS nano",
+      "lang": "en",
+      "family": "kitten",
+      "model": "model.int8.onnx",
+      "voices": "voices.bin",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 7,
+      "licence": "KittenTTS v0.8 (Apache-2.0)",
+      "credit": "KittenTTS v0.8 nano by KittenML. Packaged for sherpa-onnx by k2-fsa; files unchanged.",
+      "licenceUrl": "https://www.apache.org/licenses/LICENSE-2.0",
+      "sourceUrl": "https://github.com/KittenML/KittenTTS",
+      "source": {
+        "archive": "kitten-nano-en-v0_8-int8",
+        "sha256": "6fa5be852612ce761094ba74ee6123b4fc4acfefa79bf64dc63acae4a83af2fd"
+      },
+      "file": "kitten-en-nano-9b9a3d2b8697.zip",
+      "sha256": "9b9a3d2b8697fb8d95acc8f41fd0b7ec37b3a8699c72ca31ac3d2520e77a2da0",
+      "sizeBytes": 28778024
+    },
+    {
+      "id": "kokoro-en-heart",
+      "label": "English (US), Kokoro Heart (premium)",
+      "lang": "en",
+      "family": "kokoro",
+      "model": "model.int8.onnx",
+      "voices": "voices.bin",
+      "lexicon": "lexicon-us-en.txt",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 3,
+      "engineLang": "en-us",
+      "licence": "Kokoro v1.0 (Apache-2.0)",
+      "credit": "Kokoro-82M v1.0 by hexgrad, voice af_heart. Packaged for sherpa-onnx by k2-fsa (int8); files unchanged.",
+      "licenceUrl": "https://www.apache.org/licenses/LICENSE-2.0",
+      "sourceUrl": "https://huggingface.co/hexgrad/Kokoro-82M",
+      "source": {
+        "archive": "kokoro-int8-multi-lang-v1_0",
+        "sha256": "4c3052abaa60943a341f193888cf6abd68787dae6ab8ae5c925a706caa247e4e"
+      },
+      "file": "kokoro-en-heart-5bade7e6fb72.zip",
+      "sha256": "5bade7e6fb72265288ab73838c93742f44452302fc792d619117b44fc0e9db1d",
+      "sizeBytes": 149491614
+    },
+    {
+      "id": "supertonic-hi",
+      "label": "Hindi, Supertonic 3 (premium)",
+      "lang": "hi",
+      "family": "supertonic",
+      "model": "tts.json",
+      "voices": "voice.bin",
+      "speakerId": 2,
+      "engineLang": "hi",
+      "numSteps": 5,
+      "licence": "Supertonic 3: code MIT, model OpenRAIL-M with use restrictions (huggingface.co/Supertone/supertonic-3)",
+      "credit": "Supertonic 3 by Supertone Inc., speaker 2. Packaged for sherpa-onnx by k2-fsa (int8); files unchanged. The model's OpenRAIL-M licence forbids harmful, illegal and deceptive uses; using it means accepting those terms.",
+      "licenceUrl": "https://huggingface.co/supertone-oss-archive/supertonic-3/blob/main/LICENSE",
+      "sourceUrl": "https://github.com/supertone-inc/supertonic",
+      "source": {
+        "archive": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+        "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427"
+      },
+      "file": "supertonic-hi-24d94e841d36.zip",
+      "sha256": "24d94e841d368cc4bfef0a89fee30419a4275256d6835f56531907148d6d2233",
+      "sizeBytes": 145317352
+    },
+    {
+      "id": "piper-hi-pratham",
+      "label": "Hindi, Piper pratham",
+      "lang": "hi",
+      "family": "vits",
+      "model": "hi_IN-pratham-medium.onnx",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 0,
+      "licence": "CC BY-NC-SA 4.0: Piper voice by PravalX",
+      "credit": "Piper voice “pratham” trained by PravalX (github.com/PravalX) on the AI4Bharat Indic corpus. Packaged for sherpa-onnx by k2-fsa; files unchanged.",
+      "licenceUrl": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+      "sourceUrl": "https://huggingface.co/rhasspy/piper-voices/tree/main/hi/hi_IN/pratham/medium",
+      "source": {
+        "archive": "vits-piper-hi_IN-pratham-medium",
+        "sha256": "2084d321e1d2752f2b64ed3012ba27751df01a80da46f52920098cdcb7e35648"
+      },
+      "file": "piper-hi-pratham-c281bbe5b8f0.zip",
+      "sha256": "c281bbe5b8f0a517bad67000e22b94577a25b6ed3b1cfba9a8c699a3189116c6",
+      "sizeBytes": 64263386
+    },
+    {
+      "id": "piper-hi-priyamvada",
+      "label": "Hindi, Piper priyamvada",
+      "lang": "hi",
+      "family": "vits",
+      "model": "hi_IN-priyamvada-medium.onnx",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 0,
+      "licence": "CC BY-NC-SA 4.0: Piper voice by PravalX",
+      "credit": "Piper voice “priyamvada” trained by PravalX (github.com/PravalX) on the AI4Bharat Indic corpus. Packaged for sherpa-onnx by k2-fsa; files unchanged.",
+      "licenceUrl": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+      "sourceUrl": "https://huggingface.co/rhasspy/piper-voices/tree/main/hi/hi_IN/priyamvada/medium",
+      "source": {
+        "archive": "vits-piper-hi_IN-priyamvada-medium",
+        "sha256": "399d91cc97eb288725633261f26b715f9a971e3bf7ec4fa1d7910cd0080d37eb"
+      },
+      "file": "piper-hi-priyamvada-68325e40d5f7.zip",
+      "sha256": "68325e40d5f7a5bf64ef9575fd377194ea05a8e5d87554facac7824b8c089079",
+      "sizeBytes": 64263395
+    },
+    {
+      "id": "piper-bn-google",
+      "label": "Bengali, Piper google",
+      "lang": "bn",
+      "family": "vits",
+      "model": "bn_BD-google-medium.onnx",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 0,
+      "licence": "CC BY-SA 4.0: Google's Bengali speech data (OpenSLR 37) and CMU Indic",
+      "credit": "Piper voice “google” (speaker 0 of 16), fine-tuned from Piper's LibriTTS-R voice on Google's crowd-sourced Bengali speech (OpenSLR 37, CC BY-SA 4.0) and CMU Indic (© 2009-2017 Carnegie Mellon University; its notice is in the voice's MODEL_CARD). Converted to the sherpa-onnx format by Audora; weights unchanged.",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "sourceUrl": "https://huggingface.co/rhasspy/piper-voices/tree/main/bn/bn_BD/google/medium",
+      "source": {
+        "archive": "vits-piper-bn_BD-google-medium",
+        "sha256": "e32f683b65b361fb7e11684947c5996071a9469c152497c2a4458a65345a31bf",
+        "url": "https://github.com/skm0078/audora/releases/download/s1-voices/vits-piper-bn_BD-google-medium.zip"
+      },
+      "file": "piper-bn-google-04f8a557afb8.zip",
+      "sha256": "04f8a557afb8433ed9a66afa80b1cdad3d997bca85abe39ff18aa81c72bdbc88",
+      "sizeBytes": 77903022
+    },
+    {
+      "id": "mms-bn",
+      "label": "Bengali, MMS (slower)",
+      "lang": "bn",
+      "family": "vits",
+      "model": "model.onnx",
+      "speakerId": 0,
+      "licence": "CC BY-NC 4.0: Meta MMS-TTS",
+      "credit": "MMS-TTS Bengali (facebook/mms-tts-ben) by Meta AI, from the Massively Multilingual Speech project. Converted to the sherpa-onnx format by Audora; weights unchanged.",
+      "licenceUrl": "https://creativecommons.org/licenses/by-nc/4.0/",
+      "sourceUrl": "https://huggingface.co/facebook/mms-tts-ben",
+      "source": {
+        "archive": "vits-mms-ben",
+        "sha256": "e77b056fb314da464c59353f98b53ffb80d8e5518753715c28baf49fecacaaa5",
+        "url": "https://github.com/skm0078/audora/releases/download/s1-voices/vits-mms-ben.zip"
+      },
+      "file": "mms-bn-43bfe7db9d7a.zip",
+      "sha256": "43bfe7db9d7a92b2985c3d2d673db1262b399b68330e18ed81fe97dc435241bd",
+      "sizeBytes": 114392967
+    }
+  ]
+}

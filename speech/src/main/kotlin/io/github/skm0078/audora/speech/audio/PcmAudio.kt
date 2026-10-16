@@ -13,6 +13,34 @@ class PcmAudio(val samples: ShortArray, val sampleRate: Int) {
 
     val durationMs: Long get() = samples.size * MS_PER_SECOND / sampleRate
 
+    /**
+     * The same sound at [rate] Hz, by linear interpolation. Meant for upsampling (joining voices of different
+     * rates at the highest one); downsampling this way would alias.
+     */
+    fun resampled(rate: Int): PcmAudio {
+        require(rate > 0) { "rate must be > 0, was $rate" }
+        if (rate == sampleRate) return this
+        val size = (samples.size.toLong() * rate / sampleRate).toInt()
+        val last = samples.lastIndex
+        val out = ShortArray(size) { i ->
+            val position = i.toDouble() * sampleRate / rate
+            val index = position.toInt()
+            val fraction = position - index
+            val a = samples[index]
+            val b = samples[minOf(index + 1, last)]
+            (a + (b - a) * fraction).roundToInt().toShort()
+        }
+        return PcmAudio(out, rate)
+    }
+
+    /** This audio followed by [ms] of silence: a pause after a sentence (prosody, P2-04). Itself when [ms] is 0. */
+    fun withSilenceAfter(ms: Int): PcmAudio {
+        require(ms >= 0) { "ms must be >= 0, was $ms" }
+        if (ms == 0) return this
+        val padding = (ms.toLong() * sampleRate / MS_PER_SECOND).toInt()
+        return PcmAudio(samples.copyOf(samples.size + padding), sampleRate)
+    }
+
     override fun toString(): String = "PcmAudio(${samples.size} samples @ $sampleRate Hz, $durationMs ms)"
 
     companion object {

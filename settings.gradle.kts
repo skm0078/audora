@@ -35,6 +35,17 @@ dependencyResolutionManagement {
             }
             filter { includeModule("com.k2fsa", "sherpa-onnx") }
         }
+        // Tesseract4Android is published only on JitPack (ADR-025). Exclusive and limited to its group, so JitPack
+        // serves nothing else and this library is looked up nowhere else. Checksum: tesseract4androidAarSha256.
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = "jitpack"
+                    url = uri("https://jitpack.io")
+                }
+            }
+            filter { includeGroup("cz.adaptech.tesseract4android") }
+        }
     }
 }
 

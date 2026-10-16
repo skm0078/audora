@@ -1,0 +1,22 @@
+# Golden scores (P2-01). Written by ./gradlew :pdf:goldenTest; do not edit by hand.
+document	category	status	pages	similarity	word_recall	word_precision
+en-udhr-noto	en-basic	exact	8	1.0000	1.0000	1.0000
+en-mobydick-1col-long	en-book	exact	5	0.9998	0.9990	0.9983
+en-novel-moby-dick-gitenberg	en-book	draft	3	0.9999	0.9994	0.9994
+en-textbook-forallx-yyc-logic	en-book	draft	4	0.9992	0.9955	0.9911
+en-kjv-2col-long	en-2col	exact	4	1.0000	1.0000	1.0000
+en-2col-physimaging-radonc-ccby	en-2col	draft	2	0.7666	0.9937	0.8364
+en-math-jmathbiol-integrodifference-ccby	en-math	draft	2	0.9979	0.9908	0.9827
+enhi-udhr-bilingual	bilingual	exact	10	1.0000	0.9997	0.9995
+hi-udhr-noto	hi-unicode	exact	12	1.0000	1.0000	1.0000
+hi-udhr-lohit	hi-unicode	exact	12	0.9993	0.9934	0.9953
+hi-udhr-fpdf2	hi-broken-map	exact	12	0.9321	0.5851	0.6759
+hi-us-hud-factsheet-pd	hi-broken-map	draft	2	0.8592	0.7752	0.7675
+bn-udhr-noto	bn-unicode	exact	10	0.9994	0.9915	0.9957
+bn-udhr-lohit	bn-unicode	exact	10	0.9976	0.9682	0.9842
+bn-udhr-fpdf2	bn-broken-map	exact	10	0.9072	0.5378	0.5138
+bn-us-fda-factsheet-vrinda-pd	bn-broken-map	draft	4	0.6635	0.1971	0.1865
+bn-rotated-pages-90-180-270-fda	bn-broken-map	draft	4	0.6551	0.1826	0.1637
+bn-us-hud-fairlending-guide-pd	bn-broken-map	draft	3	0.7611	0.6799	0.6423
+hi-udhr-krutidev	hi-legacy	exact	2	0.9989	0.9953	0.9953
+bn-udhr-bijoy	bn-legacy	exact	2	1.0000	1.0000	1.0000

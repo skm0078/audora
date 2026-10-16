@@ -14,6 +14,7 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.playback.book.BookSource
 import io.github.skm0078.audora.playback.book.OpenFailure
@@ -23,6 +24,7 @@ import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.playlist.PlaybackItem
 import io.github.skm0078.audora.playback.playlist.PlaylistFeeder
+import io.github.skm0078.audora.playback.queue.RenderAheadPolicy
 import io.github.skm0078.audora.playback.queue.RenderAheadQueue
 import io.github.skm0078.audora.playback.queue.SentenceRenderer
 import io.github.skm0078.audora.playback.recovery.PlaybackRecovery
@@ -37,8 +39,13 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-/** What the session reads and how it speaks. */
-class SessionSources(val renderer: SentenceRenderer, val books: BookSource, val texts: ItemTexts)
+/** What the session reads, how it speaks, and how far ahead it renders (P4-02: from each voice's measured speed). */
+class SessionSources(
+    val renderer: SentenceRenderer,
+    val books: BookSource,
+    val texts: ItemTexts,
+    val renderAhead: RenderAheadPolicy = RenderAheadPolicy.FIXED,
+)
 
 /**
  * Where the session runs. [scope] is main-thread; [extraction] is one thread (PDFium, P1-02);
@@ -59,6 +66,8 @@ class SessionEnvironment(
  * the playhead as they are extracted ([PageLoader], [PlaylistFeeder]). Player errors go through
  * [PlaybackRecovery] (S3 finding 3: Media3's 10-minute stuck timeout must lead to recovery, not a dead player).
  */
+// The session's entry points (play from, resume, voice, sleep timer, release) plus the playlist steps they share.
+@Suppress("TooManyFunctions")
 @OptIn(UnstableApi::class)
 class BookSession(
     private val player: ExoPlayer,
@@ -118,6 +127,27 @@ class BookSession(
             Outcome.Success(Unit)
         }
 
+    /**
+     * Playback resumption (P1-06): reopens [id] without a password and plays from its saved anchor, re-anchored
+     * on the current pipeline ([ResumeLocator]); from page 1 if it has none. An encrypted book fails with
+     * PASSWORD_REQUIRED, because its password is never stored.
+     */
+    suspend fun resume(id: BookId, locator: ResumeLocator): Outcome<Unit, OpenFailure> {
+        // The open book if it is [id]; else open [id] without a password and make it the session's book.
+        val opened = opening.withLock {
+            book?.takeIf { it.book.id == id }?.let { Outcome.Success(it) }
+                ?: sources.books.open(id, null).also { if (it is Outcome.Success) replaceBook(it.value, null) }
+        }
+        val text = when (opened) {
+            is Outcome.Success -> opened.value.text
+            is Outcome.Failure -> return Outcome.Failure(opened.error)
+        }
+        val point = withContext(env.extraction) {
+            locator.locate(id, text.pageCount) { page -> (text.units(page) as? Outcome.Success)?.value }
+        }
+        return playFrom(id, point?.page ?: 0, point?.charStart ?: 0, password = bookPassword)
+    }
+
     /** The voice changed: the current sentence restarts in the new voice (Build Spec §6). */
     fun restartRendering() {
         val (page, char) = resumePoint() ?: return
@@ -125,7 +155,8 @@ class BookSession(
         rebuild(page, char, play = player.playWhenReady)
     }
 
-    fun setSleepTimer(mode: SleepTimerMode, minutes: Int) = sleep.set(mode, minutes)
+    /** False when [mode] cannot apply to the open book: end of chapter in a book without chapters. */
+    fun setSleepTimer(mode: SleepTimerMode, minutes: Int): Boolean = sleep.set(mode, minutes)
 
     fun release() {
         player.removeListener(playerListener)
@@ -146,14 +177,19 @@ class BookSession(
         bookPassword = password
         lastSentence = null
         // On the extraction thread, after any page read still running there.
-        if (old != null) withContext(env.extraction) { old.text.close() }
+        val chapters = withContext(env.extraction) {
+            old?.text?.close()
+            opened.text.chapterStarts()
+        }
+        sleep.onBookChanged(chapters)
+        AudoraLog.i(TAG, "Opened book=${opened.book.id.logLabel} chapters=${chapters.size}")
     }
 
     private fun rebuild(page: Int, charStart: Int, play: Boolean) {
         val opened = book ?: return
         loader.cancel()
         epoch++
-        val newQueue = RenderAheadQueue(sources.renderer, config, QueueLog(opened.book.id))
+        val newQueue = RenderAheadQueue(sources.renderer, config, QueueLog(opened.book.id), sources.renderAhead)
         newQueue.start("audora-render-$epoch")
         val oldQueue = queue
         queue = newQueue
@@ -184,7 +220,8 @@ class BookSession(
     /** Tells the render queue what to render next and arms the end-of-page sleep timer. */
     private fun updateWindow() {
         val currentFeeder = feeder ?: return
-        queue?.setWindow(currentFeeder.window())
+        val candidates = currentFeeder.window(1 + config.renderAhead.maxAheadUnits)
+        queue?.setWindow(sources.renderAhead.window(candidates, config))
         player.pauseAtEndOfMediaItems = sleep.pauseAfter(playlist.current(), playlist.next())
     }
 
@@ -196,7 +233,7 @@ class BookSession(
     }
 
     private fun publishState() {
-        events.onStateChanged(SessionState(bookId?.value, error, sleep.mode, sleep.endsAtWall))
+        events.onStateChanged(SessionState(bookId?.value, error, sleep.mode, sleep.endsAtWall, sleep.hasChapters))
     }
 
     /** Errors: classify, ask [PlaybackRecovery], act. */
@@ -253,7 +290,7 @@ class BookSession(
         }
     }
 
-    /** Sleep timer: minutes on a coroutine, end of page through the player's pause-at-end-of-item. */
+    /** Sleep timer: minutes on a coroutine, end of page or chapter through the player's pause-at-end-of-item. */
     private inner class SleepControl {
         private val timer = SleepTimer(env.elapsedRealtime)
         private var job: Job? = null
@@ -265,7 +302,13 @@ class BookSession(
         var endsAtWall: Long? = null
             private set
 
-        fun set(mode: SleepTimerMode, minutes: Int) {
+        val hasChapters: Boolean get() = timer.chapterStarts.isNotEmpty()
+
+        fun set(mode: SleepTimerMode, minutes: Int): Boolean {
+            if (mode == SleepTimerMode.END_OF_CHAPTER && !hasChapters) {
+                AudoraLog.w(TAG, "Sleep timer $mode refused: no chapters, book=${bookId?.logLabel}")
+                return false
+            }
             cancel()
             timer.set(mode, minutes)
             endsAtWall = timer.remainingMs()?.let { env.wallClock() + it }
@@ -273,6 +316,16 @@ class BookSession(
             AudoraLog.i(TAG, "Sleep timer $mode minutes=$minutes book=${bookId?.logLabel}")
             updateWindow()
             publishState()
+            return true
+        }
+
+        /** A new book: its chapters replace the old ones, and an end-of-chapter timer without any is dropped. */
+        fun onBookChanged(chapters: List<Int>) {
+            timer.chapterStarts = chapters
+            if (timer.mode == SleepTimerMode.END_OF_CHAPTER && chapters.isEmpty()) {
+                AudoraLog.i(TAG, "Sleep timer cleared: the new book has no chapters, book=${bookId?.logLabel}")
+                clearAndPublish()
+            }
         }
 
         fun cancel() {
@@ -285,11 +338,12 @@ class BookSession(
             (finishingSentence && current is PlaybackItem.Sentence) || timer.pauseAfter(current, next)
 
         /**
-         * The player paused. At the end of a sentence, an end-of-page or ran-out timer is done; any other pause
-         * while the ran-out timer finishes its sentence ends that timer too, so resuming reads on normally.
+         * The player paused. At the end of a sentence, an end-of-page, end-of-chapter or ran-out timer is done;
+         * any other pause while the ran-out timer finishes its sentence ends that timer too, so resuming reads
+         * on normally.
          */
         fun onPaused(atItemEnd: Boolean) {
-            val done = finishingSentence || (atItemEnd && timer.mode == SleepTimerMode.END_OF_PAGE)
+            val done = finishingSentence || (atItemEnd && timer.mode in ITEM_END_MODES)
             if (!done) return
             AudoraLog.i(TAG, "Sleep timer done, paused book=${bookId?.logLabel}")
             finishingSentence = false
@@ -334,7 +388,10 @@ class BookSession(
     private inner class PlayerListener : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) faults.onSentenceCompleted()
-            (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.let { lastSentence = it.unit }
+            (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.let { sentence ->
+                lastSentence = sentence.unit
+                bookId?.let { events.onSentenceStarted(it, sentence.unit) }
+            }
             feeder?.trimBehind()
             updateWindow()
             pump()
@@ -371,5 +428,8 @@ class BookSession(
 
     private companion object {
         const val TAG = "Playback.Session"
+
+        /** Timer modes that end by pausing at the end of a sentence (pause-at-end-of-item). */
+        val ITEM_END_MODES = setOf(SleepTimerMode.END_OF_PAGE, SleepTimerMode.END_OF_CHAPTER)
     }
 }

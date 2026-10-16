@@ -1,0 +1,82 @@
+a finite habitat patch (e.g., Kot and Schaffer 1986; Van Kirk and Lewis 1997; Reimer
+et al. 2016), and critical speeds of climate-change-driven range shifts (e.g., Zhou and
+Kot 2011; Harsch et al. 2014; Cobbold and Stana 2020).
+IDEs are spatially nonlocal models (Lee et al. 2001) that are discrete in time and
+continuous in space. They are especially useful for modeling the dynamics of species
+that have non-overlapping generations and distinct growth and dispersal stages (Kot
+and Schaffer 1986; Lutscher 2019). The basic IDE for a population with discrete and
+nonoverlapping generations is
+nt+1(x) = ∫Ω k(x, y) g[nt(y)] dy, (1)
+where nt(x) is the population density in generation t at a spatial location x, Ω is
+the spatial domain, k(x, y) is the dispersal kernel, and g[nt(y)] is the growth or
+recruitment function. Population density is mapped from the current generation to the
+next in two distinct phases. First, the population grows, while remaining fixed in space.
+In particular, g[nt(y)] gives the new population-density at location y after growth has
+occurred. After growth, individuals disperse, relocating from starting location y to new
+location x with probability governed by k(x, y). The dispersal kernel is a probability
+density function for the final location x of the individuals.
+In contrast to reaction–diffusion models, which are continuous in both time and
+space, IDE models account for seasonal growth and can incorporate a variety of dispersal patterns, including long-distance dispersal (Lewis et al. 2016). The ability to
+choose a dispersal kernel that best fits the population being modeled is a key feature
+of IDEs. As a result, IDE models have the advantage of increased ecological realism,
+as many species possess the features of seasonal growth and long-distance dispersal
+(Okubo and Levin 1989; Andersen 1991; Kot et al. 1996; Lutscher 2019).
+Despite the advantages of IDEs, these models have drawbacks as well. IDEs can
+be computationally expensive since, as for most spatially nonlocal models, individuals may disperse long distances (Lutscher 2019). At the extreme end of this spatial
+complexity, under certain conditions, a propagule may start from any location in the
+spatial domain of the model and disperse to any other location in that domain.
+In addition, it is often difficult to write down exact solutions for the equilibria or
+to perform general analytical explorations, except in certain special cases (Kot and
+Schaffer 1986; Zhou and Kot 2011; Bramburger and Lutscher 2019; Lutscher 2019).
+This analytic difficulty arises because finding equilibria amounts to finding functions
+that are fixed points of nonlinear integral equations. Finally, most analyses of IDEs
+lack information about unstable equilibria, as unstable equilibria do not show up in
+standard numerical experiments. While an argument may be made that it is more
+relevant to focus on (asymptotically) stable equilibria, in the interest of a complete
+characterization of the model it would be useful to observe all equilibria.
+In order to circumvent some of these difficulties in analyzing IDE models, a number
+of tools have been developed to approximate or simplify the original model. Special
+cases, such as an IDE model with a separable kernel or with the Laplace kernel, may
+allow for analytical results (Kot and Schaffer 1986; Zhou and Kot 2011; Bramburger
+and Lutscher 2019; Lutscher 2019). Other tools for analyzing IDE models involve
+various approximations of the dispersal kernel, which can be used to approximate
+steady states and eigenvalues of IDEs, and may be employed for models with one or
+more species. These methods include average dispersal-success (Van Kirk and Lewis
+1997, 1999; Fagan and Lutscher 2006), modified average dispersal-success (Reimer
+et al. 2016), and geometric symmetrization (Kot and Phillips 2015; Phillips and Kot
+2015; Rinnan 2018a, b; Marcinko 2020).
+In this paper, we focus on an alternative for analyzing the population dynamics of a
+single species confined to a finite spatial domain. In contrast to the methods discussed
+above, which approximate the dispersal kernel, we approximate the growth function.
+Drawing inspiration from early work by Mark Lewis on the infinite-domain problem
+(Kot et al. 1996) and more recent developments by Otto (2017) and Nestor and Li
+(2022), we use a piecewise-constant function to approximate the growth function. We
+refer to the IDE with this approximated growth as a block-pulse IDE. An m-step block-pulse IDE has m terms, or steps, in the block-pulse approximation. This terminology
+does not preclude using block-pulse approximations for the dispersal kernel as well;
+indeed, many applications of block-pulse methods for solving other integral problems
+involve approximating the entire integrand rather than a single component (Jiang and
+Schaufelberger 1992; Babolian et al. 2008).
+The piecewise-constant nature of the growth function makes the block-pulse IDE
+simple and analytically tractable. This formulation of the IDE removes many of the
+analytical barriers mentioned earlier and also offers numerical advantages. With the
+increased tractability of the block-pulse IDE, we are able to obtain analytic expressions
+for both the iterates and the equilibria of the model. Of particular interest, we gain
+explicit formulas for not only the stable but also the unstable equilibria of the block-pulse model.
+The analytic formulas for the block-pulse equilibria involve a set of constants
+whose values are found by using a numerical root-finder to solve a finite, nonlinear set of implicit equations. In other words, we use block-pulse IDEs as part of a
+hybrid analytical–numerical method for analyzing IDEs. The numerical component,
+however, is small, and involves solving for a relatively small number of values. Our
+method is thus more numerically efficient than a pure root-finding method for an
+operator equation, while the dominant analytic part of the method provides significant
+insight regarding model equilibria.
+Furthermore, this method can be used for a broad set of growth functions, including
+growth functions with Allee effects. An Allee effect, or depensation, occurs when a
+population’s per-capita recruitment increases, with density, at low densities (Allee
+et al. 1949; Lewis and Kareiva 1993). Integrodifference equations with Allee effects
+have, historically, been challenging to analyze (Lutscher 2019). However, the block-pulse method allows us to analyze both simple forms of growth, like compensatory
+growth, as well as challenging forms of growth, such as depensatory growth.
+In Sect. 2, we look at block-pulse series and show how they can be used to approximate growth functions. In Sect. 3, we describe the block-pulse IDE model and discuss
+assumptions and properties of the model, including a general, closed-form, analytic
+expression for the iterates of the spatial population-distributions. In Sect. 4, we perform
+formal analyses of one-, two-, and three-step block-pulse IDEs and determine general
+patterns for these models. Our analyses include equilibrium solutions, stability and

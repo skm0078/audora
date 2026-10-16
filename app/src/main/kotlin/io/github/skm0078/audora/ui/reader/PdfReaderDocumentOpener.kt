@@ -5,13 +5,22 @@ package io.github.skm0078.audora.ui.reader
 
 import android.content.Context
 import android.net.Uri
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.result.map
+import io.github.skm0078.audora.pdf.document.PageSource
 import io.github.skm0078.audora.pdf.document.PdfBook
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.pdf.pdfium.PdfiumEngine
+import io.github.skm0078.audora.pdf.pdfium.PdfiumPageRenderer
+import io.github.skm0078.audora.pdf.pdfium.RenderedPage
+import io.github.skm0078.audora.pdf.quality.OcrError
+import io.github.skm0078.audora.pdf.render.PageTransform
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
+import io.github.skm0078.audora.playback.ocr.BookOcr
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 
@@ -24,20 +33,85 @@ class PdfReaderDocumentOpener(private val context: Context, private val io: Coro
         logContext: String,
     ): Outcome<ReaderDocument, PdfOpenError> = withContext(io) {
         val engine = PdfiumEngine.forUri(context, Uri.parse(documentUri))
-        when (val opened = PdfBook.open(engine, password, logContext = logContext)) {
-            is Outcome.Success -> Outcome.Success(PdfReaderDocument(opened.value, io))
+        // Same OCR, models and text cache as the playback service, so a page is recognised once for both.
+        val ocr = BookOcr.factory(context, documentUri, logContext)
+        when (val opened = PdfBook.open(engine, password, logContext = logContext, ocr = ocr)) {
+            is Outcome.Success -> Outcome.Success(PdfReaderDocument(opened.value, engine, password, logContext, io))
             is Outcome.Failure -> opened
         }
     }
 }
 
-private class PdfReaderDocument(private val book: PdfBook, private val io: CoroutineDispatcher) : ReaderDocument {
+/**
+ * The page renderer is a second PDFium document over the same file, opened on the first [render] so the text
+ * view never pays for it. It cannot fail on a password: the book's own open already checked it.
+ */
+private class PdfReaderDocument(
+    private val book: PdfBook,
+    private val engine: PdfiumEngine,
+    private val password: String?,
+    private val logContext: String,
+    private val io: CoroutineDispatcher,
+) : ReaderDocument {
     private val builder = ReadingUnitBuilder()
+    private var renderer: PdfiumPageRenderer? = null
+    private var closed = false
 
     override val pageCount: Int get() = book.pageCount
 
     override suspend fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError> =
         withContext(io) { book.readingUnits(page, builder) }
 
-    override fun close() = book.close()
+    override suspend fun page(page: Int): Outcome<ReaderPage, PdfPageError> =
+        withContext(io) { book.readPage(page, builder) }.map { ReaderPage(it.units, originOf(it.source)) }
+
+    override suspend fun render(page: Int, widthPx: Int, maxPixels: Int): Outcome<PageImage, PdfPageError> =
+        withContext(io) {
+            when (val open = rendererOrOpen()) {
+                is Outcome.Success -> open.value.render(page, widthPx, maxPixels).map(::BitmapPageImage)
+                is Outcome.Failure -> open
+            }
+        }
+
+    @Synchronized
+    private fun rendererOrOpen(): Outcome<PdfiumPageRenderer, PdfPageError> {
+        val open = renderer
+        return when {
+            closed -> Outcome.Failure(PdfPageError.BookClosed)
+
+            open != null -> Outcome.Success(open)
+
+            else -> when (val opened = engine.openRenderer(password, logContext)) {
+                is Outcome.Success -> Outcome.Success(opened.value.also { renderer = it })
+                is Outcome.Failure -> Outcome.Failure(PdfPageError.ReopenFailed(opened.error))
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        closed = true
+        renderer?.close()
+        renderer = null
+        book.close()
+    }
+}
+
+private class BitmapPageImage(page: RenderedPage) : PageImage {
+    private val image = page.bitmap.asImageBitmap()
+    override val transform: PageTransform = page.transform
+    override val aspectRatio: Float = page.aspectRatio
+
+    override fun imageBitmap(): ImageBitmap = image
+}
+
+private fun originOf(source: PageSource): PageOrigin = when (source) {
+    PageSource.TextLayer -> PageOrigin.TEXT
+
+    is PageSource.Ocr -> PageOrigin.OCR
+
+    is PageSource.OcrUnavailable -> when (source.error) {
+        is OcrError.ModelMissing, OcrError.NoModels -> PageOrigin.NEEDS_OCR_MODELS
+        is OcrError.Failed -> PageOrigin.OCR_FAILED
+    }
 }

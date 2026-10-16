@@ -14,6 +14,7 @@ import io.github.skm0078.audora.pdf.document.PdfBook
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.pdfium.PdfiumEngine
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
+import io.github.skm0078.audora.playback.ocr.BookOcr
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -40,7 +41,9 @@ class LibraryBookSource(
             OpenFailure(PlaybackErrorCode.BOOK_NOT_FOUND, "This book is no longer in the library"),
         )
         val engine = PdfiumEngine.forUri(context, Uri.parse(book.documentUri))
-        val opened = withContext(io) { PdfBook.open(engine, password, logContext = "book=${id.logLabel}") }
+        val logContext = "book=${id.logLabel}"
+        val ocr = BookOcr.factory(context, book.documentUri, logContext)
+        val opened = withContext(io) { PdfBook.open(engine, password, logContext = logContext, ocr = ocr) }
         return when (opened) {
             is Outcome.Success -> {
                 val marked = library.markOpened(id, opened.value.pageCount)

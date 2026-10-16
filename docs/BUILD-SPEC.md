@@ -62,17 +62,17 @@ All neural models run through **sherpa-onnx 1.13.8** (Apache-2.0 runtime). Syste
 | English | Default (bundled) | Piper medium **ljspeech or cori** (public-domain data) **or** KittenTTS v0.8 nano | sherpa VITS / Kitten | ~64 MB / ~28 MB + 19 MB espeak-ng-data | MIT + public domain / Apache-2.0 | S1 rule, ADR-012 (blind rating; Kitten only if RTF ≤ 0.5 on the Moto) |
 | English | Premium (download) | Kokoro **v1.0** int8 (af_heart, bf_emma…); Supertonic 3 en | sherpa Kokoro / Supertonic | 132 MB / 145 MB | Apache-2.0 / OpenRAIL-M | S1; offered only if measured RTF < 0.8 |
 | English | Fallback | Android system TTS | `TextToSpeech` | 0 | device | — |
-| Hindi | Default | Google hi-IN system voice **or** Piper hi_IN priyamvada / pratham | system / sherpa VITS | 0 / ~64 MB | device / CC BY-NC-SA 4.0 | S0 + S1 |
+| Hindi | Default | Google hi-IN system voice until a voice is downloaded; recommended download Piper hi_IN **pratham** (priyamvada offered) | system / sherpa VITS | 0 / 64 MB | device / CC BY-NC-SA 4.0 | S0 + S1; provisional by S1 desktop (ADR-030) |
 | Hindi | Premium | Supertonic-3 hi | sherpa Supertonic | 145 MB (shared with en) | OpenRAIL-M | S1 |
-| Bengali | Default | Google bn-IN system voice **or** Piper bn_BD google medium (converted) | system / sherpa VITS | 0 / 82 MB | device / CC BY-SA 4.0 | S0 + S1 |
-| Bengali | Fallback | MMS-TTS ben (converted) | sherpa VITS | ~110–140 MB | CC-BY-NC 4.0 | — |
+| Bengali | Default | Google bn-IN system voice until a voice is downloaded; recommended download Piper bn_BD **google** medium (converted, speaker 0) | system / sherpa VITS | 0 / 78 MB | device / CC BY-SA 4.0 | S0 + S1; provisional by S1 desktop (ADR-030) |
+| Bengali | Fallback | MMS-TTS ben (converted) | sherpa VITS | 114 MB | CC-BY-NC 4.0 | — (offered as a download) |
 | Any | Advanced | Import any sherpa-onnx model folder (`.onnx` + `tokens.txt` [+ espeak data]) | sherpa | — | user's | — |
 
-**Script routing (ADR-005, unchanged).** Each sentence is tagged by Unicode script: Latin → English, Devanagari U+0900–097F → Hindi, Bengali U+0980–09FF → Bengali. Deterministic, instant. v1 splits English runs of ≥3 words inside Indic sentences.
+**Script routing (ADR-005, unchanged).** Each sentence is tagged by Unicode script: Latin → English, Devanagari U+0900–097F → Hindi, Bengali U+0980–09FF → Bengali. Deterministic, instant. v1 splits English runs of ≥3 words inside Indic sentences; the split happens at render time, one clip per sentence (ADR-026).
 
 **Never shipped (ADR-012):** Piper voices trained on or fine-tuned from Lessac/Blizzard 2013 data (lessac, amy, hfc_*, hi_IN rohan): research-only, no redistribution.
 
-**Attribution.** CC BY-SA, CC BY-NC-SA and CC-BY-NC voices require an in-app "Voices & licenses" screen.
+**Attribution.** CC BY-SA, CC BY-NC-SA and CC-BY-NC voices require an in-app "Voices & licenses" screen. *(P3-06, ADR-030: Settings → Voices & licences lists every voice with licence, credit and source links, from credits kept in the catalog; the first voice downloaded for Hindi or Bengali becomes that language's reader.)*
 
 ## 4. Architecture
 
@@ -88,7 +88,7 @@ Native **Kotlin 2.x + Jetpack Compose**, five Gradle modules. Synthesis and play
 
 Dependencies flow `app → playback → (speech, pdf) → core`, never the reverse. `:pdf` and `:speech` keep their logic in plain Kotlin classes behind thin Android adapters, so most behavior is JVM-testable.
 
-**Stack (pinned in `libs.versions.toml`):** Kotlin 2.x, Compose (BOM), Media3 **1.11.1** (ExoPlayer + MediaSessionService), sherpa-onnx **1.13.8** AAR (arm64-v8a), **PdfiumAndroidKt 2.0.x** (text + render; Android `PdfRenderer` as display fallback), ICU `BreakIterator` (android.icu), Room, DataStore, WorkManager (downloads only), Hilt (KSP), kotlinx.coroutines. Phase 3: Tesseract4Android 4.9.x with `tessdata_best` eng/hin/ben (ADR-011); PaddleOCR (PP-OCR) ONNX on the existing ONNX Runtime only if the optional P3-05 experiment beats Tesseract on Hindi. No ML Kit (D2).
+**Stack (pinned in `libs.versions.toml`):** Kotlin 2.x, Compose (BOM), Media3 **1.11.1** (ExoPlayer + MediaSessionService), sherpa-onnx **1.13.8** AAR (arm64-v8a), **PdfiumAndroidKt 2.0.x** (text + render; no `PdfRenderer` fallback, ADR-024), ICU `BreakIterator` (android.icu), Room, DataStore, WorkManager (downloads only), Hilt (KSP), kotlinx.coroutines. Phase 3: Tesseract4Android 4.9.x with `tessdata_best` eng/hin/ben (ADR-011); PaddleOCR (PP-OCR) ONNX on the existing ONNX Runtime only if the optional P3-05 experiment beats Tesseract on Hindi. No ML Kit (D2).
 
 **Platform baseline:** compileSdk 36, targetSdk 36 (37 only after testing the while-in-use rule), minSdk 31 (Android 12, D5), AGP ≥ 8.5.1, NDK r28+, `abiFilters arm64-v8a`. Reference device for development: Moto Edge 50 Fusion (Snapdragon 7s Gen 2); OnePlus 12 (SD 8 Gen 3, Android 16) is a pre-release check (ADR-012). Edge-to-edge + predictive back supported from day one.
 
@@ -98,7 +98,7 @@ Dependencies flow `app → playback → (speech, pdf) → core`, never the rever
 data class ReadingUnit(
     val page: Int,
     val index: Int,              // sentence index within the page (display only, NOT the resume key)
-    val charStart: Int,          // offset into the page's raw extracted text
+    val charStart: Int,          // offset into the page's reading-order text (ADR-018)
     val charEnd: Int,
     val text: String,            // normalized, speakable text
     val lang: Lang,
@@ -131,22 +131,22 @@ interface SpeechEngine {
 
 ## 5. PDF → human-like reading pipeline
 
-Runs lazily per page, two pages ahead of playback, cached per book. Each stage is a pure function with tests; `PIPELINE_VERSION` bumps whenever output can change.
+Runs lazily per page, two pages ahead of playback, cached per book (a few analysed pages and small page profiles, ADR-020). Each stage is a pure function with tests; `PIPELINE_VERSION` bumps whenever output can change.
 
 1. **Extract** chars with boxes, font size, font name (PdfiumAndroidKt + our JNI library over its `libpdfium.so`: font info, generated flag, Unicode-map errors, `/ActualText` marks, render mode; ADR-011). Rebuild `/ActualText` spans so PDFium's fake spaces do not split Indic words. Reopen the document every 100 pages. Font weight is unreliable and unused.
-2. **Score quality** per page: Unicode-map errors, invisible text over a page image, empty/garbage text, legacy font names per glyph run, invalid Indic sequences. Route: legacy run → 3a; map errors / hidden OCR layer / garbage / empty → 3c; **Indic documents: OCR one sample page and compare with the (rebuilt, reordered) text layer; CER ≤ 5 % → text layer, else 3c for every page** (re-check 1 page in 50). English: text layer. (ADR-011)
+2. **Score quality** per page: Unicode-map errors, invisible text over a page image, empty/garbage text, legacy font names per glyph run, invalid Indic sequences. Route: legacy run → 3a; map errors / hidden OCR layer / garbage / empty → 3c; **Indic documents: OCR one sample page and compare with the (rebuilt, reordered) text layer; CER ≤ 5 % → text layer, else 3c for every page** (re-check 1 page in 50; CER line by line so block order does not count). English: text layer. (ADR-011, ADR-021)
 3. **Recover text**
-   - a. **Legacy-font converter**: table-driven Krutidev→Unicode and Bijoy/SutonnyMJ→Unicode, with reph and pre-base i-matra reordering. Unknown glyph rate above threshold → OCR.
-   - b. **Indic reorder**: move visually-ordered pre-base matras (ि ি ে ৈ) after their consonant cluster; compose two-part vowels (ে+া → ো). A repair tried before the OCR cross-check; S2 found it fixes visual order only, not mis-mapped glyphs.
+   - a. **Legacy-font converter**: table-driven Kruti Dev / DevLys / Chanakya → Unicode and Bijoy/SutonnyMJ → Unicode, chosen by font name, with reph and pre-base matra reordering; runs wherever legacy text is read. Unknown glyph rate above threshold (or an unsupported layout such as Shusha) → OCR (ADR-023).
+   - b. **Indic reorder**: on pages detected as visual order, move pre-base matras (ि ি ে ৈ) after their consonant cluster, compose two-part vowels (ে+া → ো) and move rephs before their syllable; drop placeholder glyphs inside clusters on every page. A repair tried before the OCR cross-check; S2 found it fixes visual order only, not mis-mapped glyphs (ADR-021).
    - c. **OCR**: Tesseract with `tessdata_best` for `eng`/`hin`/`ben` (PP-OCRv5 has no Bengali model; on Hindi it was not consistently better, ADR-011). Runs in the render-ahead window. Page shows a "Scanned / OCR" badge.
-4. **Rebuild layout**: lines by baseline → columns by clustering line starts (XY-cut style; OpenDataLoader-PDF's XY-Cut++ as a reference) → reading order → paragraphs by gap/indent → headings by relative font size/weight.
-5. **Remove clutter**: lines repeating in the top/bottom 8% across ≥3 pages, standalone page numbers, figure/table interiors; citation markers skipped (setting).
-6. **Repair**: de-hyphenate across line breaks (keep real hyphens), expand ligatures, NFC normalize, fold soft hyphens / zero-width chars.
-7. **Split sentences**: ICU `BreakIterator` per locale; `।` as sentence end; per-language abbreviation lists.
-8. **Normalize for speech**: numbers, dates, ₹, %, ranges (incl. Devanagari/Bengali digits), URLs/emails → "link", Roman numerals in headings. Table-driven tests.
-9. **Prosody**: pause after headings (~600 ms), paragraphs (~400 ms), list items.
+4. **Rebuild layout**: lines by baseline → columns by recursive XY-cut, columns first (OpenDataLoader-PDF's XY-Cut++ as a reference) → reading order → paragraphs by gap/indent, list items by bullet or label (ADR-029) → headings by relative font size and a bold font name (weight is unreliable, ADR-011). Unit offsets index the resulting reading-order text (ADR-018).
+5. **Remove clutter**: lines repeating in the top/bottom 8% of the text area across ≥3 pages of a 7-page window, header lines whose page number runs with the page, standalone page numbers, table interiors; citation markers skipped (setting) (ADR-020).
+6. **Repair**: de-hyphenate across line breaks (keep real hyphens), expand ligatures, fold soft hyphens / zero-width and control chars (ZWJ/ZWNJ kept), drop line-start bullets (ADR-020); NFC first, and "|" typed for a danda after Indic text becomes `।` (ADR-028).
+7. **Split sentences**: ICU `BreakIterator` per locale, then the Indic rules: `।`/`॥` as sentence end, Hindi/Bengali abbreviations and initials, verse numbers kept with their verse (ADR-028).
+8. **Normalize for speech**: numbers, dates, ₹, %, ranges (incl. Devanagari/Bengali digits), URLs/emails → "link", Roman numerals in headings. Table-driven tests. Runs in `:speech` at render time, not on `ReadingUnit.text` (ADR-019).
+9. **Prosody**: pause after headings (~600 ms), paragraphs (~400 ms), list items (~300 ms; items found by bullet or label at layout), played as silence at the end of each sentence's clip (ADR-029).
 
-**Golden corpus.** ~25 PDFs in `code/testdata/pdfs/` **that we are allowed to redistribute** (public-domain books, arXiv papers with permissive licenses, self-generated Hindi/Bengali PDFs incl. one legacy-font file). Copyrighted samples stay in `D:\AUDORA\test-pdfs\` and are only used locally. Each golden PDF has a hand-checked `testdata/expected/*.txt`. Pipeline changes must not lower the similarity score. This is the agent's main self-check.
+**Golden corpus.** Redistributable PDFs (public-domain books, CC BY papers, US-government Hindi/Bengali documents, self-generated Hindi/Bengali PDFs) in `pdf/golden/`, scored on the JVM from PDFium page dumps (ADR-017). Copyrighted samples stay in the shared `audora/test-pdfs/` folder and are only used locally. Each golden PDF has an expected text (`pdf/golden/expected/*.txt`, hand-checked). Pipeline changes must not lower the corpus score; CI enforces it. This is the agent's main self-check.
 
 **AI cleanup: dropped (D6).** Nothing leaves the phone except model downloads.
 
@@ -156,7 +156,7 @@ Runs lazily per page, two pages ahead of playback, cached per book. Each stage i
 
 - Each playlist item is a `MediaItem` with a URI like `audora://book/<id>/page/<p>/unit/<i>` (optionally grouping 2–5 sentences per item; S3 measures whether grouping is needed).
 - A custom **`TtsDataSource`** resolves the URI by asking the render queue for that unit's PCM and serves it as WAV bytes. **If the audio is not ready, `read()` blocks**, so the player sits in **BUFFERING**, not ENDED. Media3 keeps the wake lock and the FGS in BUFFERING, so synthesis continues with the screen off. *(C5)*
-- A **render-ahead queue** (coroutine in the service) prefetches N units ahead (3 for fast voices, measured-RTF-based for Kokoro) into a bounded cache (~20 MB, LRU, `cacheDir/tts/`).
+- A **render-ahead queue** (coroutine in the service) prefetches N units ahead (3 for fast voices, measured-RTF-based for Kokoro) into a bounded cache (~20 MB, LRU, `cacheDir/tts/`). *(P4-02, ADR-027: the window is seconds of audio from each voice's measured RTF, with a short start hold; the cache is in memory, ADR-016.)*
 - The playlist always holds at least the next page of items, appended as pages are extracted; the last item of a book is the only legitimate ENDED.
 - Seek / voice change: cancel the queue from the current point and rebuild. Speed change: `player.setPlaybackParameters` only *(C6)*.
 - Try Media3's experimental `enablePerStreamMediaProgression()` to remove inter-item gaps on short clips (S3).
@@ -240,7 +240,22 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 011 | S2: PDFium confirmed + JNI scope, `/ActualText` rebuild, OCR cross-check for Indic, Tesseract for all scripts, reopen every 100 pages | Accepted (S2) |
 | 012 | S1: sherpa-onnx AAR vendored from its GitHub release (SHA-pinned), models mirrored to our own release, Kokoro v1.0, no Lessac-derived voices, English default rule, Moto Edge 50 Fusion as dev reference phone | Accepted (S1); English default pending phone run |
 | 014 | Bundled English voice chosen in `speech/bundled-voices.json`, fetched at build time from sherpa-onnx's release (SHA-pinned), espeak-ng-data trimmed to en/hi/bn; Piper ljspeech provisional | Accepted (P1-03) |
+| 015 | Resume anchor details: head + tail fingerprints (FNV-1a 64, normalized), no voice in the anchor, `resume_anchors` table (DB v2), brand battery steps as text with public intents only | Accepted (P1-06) |
 | 016 | Render-ahead cache is an 8 MiB in-memory LRU (`QueueConfig.recentAudioBytes`) instead of a 20 MB disk LRU in `cacheDir/tts/` (§6) | Accepted (P1-04) |
+| 017 | Golden corpus in `pdf/golden/`, scored on the JVM from PDFium page dumps; corpus score gated against `dev` in CI | Accepted (P2-01) |
+| 018 | Layout: column-first XY-cut, paragraphs, headings by size + bold font name; `charStart` indexes the page's reading-order text; `PIPELINE_VERSION` 2 | Accepted (P2-02) |
+| 019 | Speech normalization lives in `:speech` and runs at render time; `ReadingUnit.text` stays the extracted text (display, fingerprints) | Accepted (P2-04) |
+| 020 | Clutter removal against neighbouring pages (window cached in `PdfBook`), margin bands on the text area, tables by aligned cell runs; repair keeps offsets mapped and ZWJ/ZWNJ; `PIPELINE_VERSION` 3 | Accepted (P2-03) |
+| 021 | Page quality scorer and routes (`QualityConfig`); Indic repair and visual-order reorder per paragraph before text repair, decided per page; OCR sample compared by line-wise containment CER; `PdfBook.readPage` returns the route; `PIPELINE_VERSION` 4 | Accepted (P3-03) |
+| 022 | Voice manager: catalog voices mirrored as reproducible zips on this repo's `voices` release, `models.json` packed into APK assets at build time, resumable WorkManager download with a final SHA-256 check, folder import of Piper/MMS/Kitten voices | Accepted (P4-01) |
+| 023 | Legacy-font converter: Kruti Dev, DevLys, Chanakya and Bijoy tables chosen by font name, converted wherever read before the Indic repair; unknown-code rate checked first and routed to OCR; generated golden documents; `PIPELINE_VERSION` 5 | Accepted (P3-04) |
+| 024 | Page view: pages drawn by a second, display-only PDFium document; glyph boxes mapped through PDFium's own page matrix; tap the nearest line to read; no `PdfRenderer` fallback | Accepted (P4-03) |
+| 025 | OCR: Tesseract4Android (JitPack, AAR SHA-256 pinned), `tessdata_best` en/hi/bn pinned at an upstream commit and downloaded as one pack, disk cache per page, language probe, OCR text through the normal repair; PaddleOCR experiment not built; `PIPELINE_VERSION` 6 | Accepted (P3-05) |
+| 026 | Script routing at render time: each script run of a sentence is read by its language's voice (≥3 English words to leave an Indic voice), parts joined into one clip; `ReadingUnit` and `:pdf` output unchanged | Accepted (P3-01) |
+| 027 | Premium voices (Kokoro v1.0 en, Supertonic 3 hi) as catalog downloads; each voice's speed measured from the sentences it reads; render-ahead window in seconds from measured RTF, plus a start hold; voices measured at RTF ≥ 0.8 marked too slow | Accepted (P4-02) |
+| 028 | Indic sentence rules after `BreakIterator` (danda, abbreviations, initials, closing quotes, verse numbers); NFC as the first text repair with offsets kept; "|" as danda; Hindi/Bengali numbers read as words at render time; `PIPELINE_VERSION` 7 | Accepted (P3-02) |
+| 029 | Pauses (heading 600, paragraph 400, list item 300 ms) appended as silence to each sentence's clip; list items detected by layout; `ReadingUnit.kind`; English normalizer wired next to the Indic ones, headings read as headings; render speed measured without pauses; `PIPELINE_VERSION` 8 | Accepted (P2-04) |
+| 030 | Hindi/Bengali catalog voices (pratham, priyamvada, Piper bn google, MMS ben); provisional defaults pratham and Piper google as a one-line `recommended` map; first download of a language becomes its reader; credits in the catalog; "Voices & licences" screen | Accepted (P3-06); defaults pending S0 + phone run |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

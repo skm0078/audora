@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReaderScreen.kt
-// Purpose: The reader: a page's sentences (tap one to read from it), page picker, and the playback controls.
+// Purpose: The reader: a page drawn or as sentences (tap to read from there), page picker, playback controls.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -49,11 +49,19 @@ import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.pdf.render.ViewPoint
+import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReaderScreen(state: ReaderState, config: ReaderConfig, actions: ReaderActions, modifier: Modifier = Modifier) {
+fun ReaderScreen(
+    state: ReaderState,
+    config: ReaderConfig,
+    actions: ReaderActions,
+    modifier: Modifier = Modifier,
+    ocrModels: OcrModelsState? = null,
+) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -64,6 +72,7 @@ fun ReaderScreen(state: ReaderState, config: ReaderConfig, actions: ReaderAction
                         Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.navigate_back))
                     }
                 },
+                actions = { if (state.document is DocumentState.Open) ViewToggle(state.view, actions) },
             )
         },
         bottomBar = { if (state.document is DocumentState.Open) ReaderControls(state, config, actions) },
@@ -88,14 +97,14 @@ fun ReaderScreen(state: ReaderState, config: ReaderConfig, actions: ReaderAction
                     Button(onClick = actions::onRetry) { Text(stringResource(R.string.reader_retry)) }
                 }
 
-                is DocumentState.Open -> OpenBook(state, document.pageCount, actions)
+                is DocumentState.Open -> OpenBook(state, document.pageCount, actions, ocrModels)
             }
         }
     }
 }
 
 @Composable
-private fun OpenBook(state: ReaderState, pageCount: Int, actions: ReaderActions) {
+private fun OpenBook(state: ReaderState, pageCount: Int, actions: ReaderActions, ocrModels: OcrModelsState?) {
     var picking by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
         PageBar(state.page, pageCount, actions, onPick = { picking = true })
@@ -115,10 +124,13 @@ private fun OpenBook(state: ReaderState, pageCount: Int, actions: ReaderActions)
 
             PageContent.Failed -> Message(stringResource(R.string.reader_page_failed))
 
-            is PageContent.Ready -> if (content.units.isEmpty()) {
-                Message(stringResource(R.string.reader_page_no_text))
-            } else {
-                Sentences(state, content.units, actions)
+            is PageContent.Ready -> {
+                PageOriginNotice(content.origin, ocrModels, actions::onDownloadOcrModels)
+                when {
+                    state.view == ReaderView.PAGE -> PageView(state, content.units, actions)
+                    content.units.isNotEmpty() -> Sentences(state, content.units, actions)
+                    content.origin == PageOrigin.TEXT -> Message(stringResource(R.string.reader_page_no_text))
+                }
             }
         }
     }
@@ -253,6 +265,7 @@ private fun ReaderScreenPreview() {
         title = "Moby Dick",
         document = DocumentState.Open(574),
         content = PageContent.Ready(units),
+        view = ReaderView.TEXT,
         playback = PlaybackSnapshot(
             connection = PlaybackSnapshot.Connection.CONNECTED,
             position = ReadingPosition(book, 0, units[1].charStart),
@@ -273,6 +286,9 @@ private object PreviewActions : ReaderActions {
     override fun onGoToPage(page: Int) = Unit
     override fun onShowReadingPosition() = Unit
     override fun onSentenceTapped(unit: ReadingUnit) = Unit
+    override fun onPageTapped(point: ViewPoint) = Unit
+    override fun onViewChanged(view: ReaderView) = Unit
+    override fun onPageWidth(widthPx: Int) = Unit
     override fun onPlayPause() = Unit
     override fun onSkipBack() = Unit
     override fun onSkipForward() = Unit

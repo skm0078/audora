@@ -5,11 +5,13 @@ package io.github.skm0078.audora.pdf.units
 
 import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.pdf.extract.PageText
 import io.github.skm0078.audora.pdf.extract.PageTextAssembler
 import io.github.skm0078.audora.pdf.extract.RawPageFixture
 import io.github.skm0078.audora.pdf.extract.SyntheticChar
 import io.github.skm0078.audora.pdf.extract.normalizeForComparison
+import io.github.skm0078.audora.pdf.layout.PageSketch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -30,12 +32,13 @@ class ReadingUnitBuilderTest {
     }
 
     @Test
-    fun `charStart and charEnd point at the sentence in the page text`() {
+    fun `charStart and charEnd point at the sentence in the reading text`() {
         val page = pageOf("  First one.   Second one!  ")
+        val reading = builder.readingText(page)
         builder.build(page).forEach { unit ->
-            assertEquals(unit.text, normalizeForComparison(page.text.substring(unit.charStart, unit.charEnd)))
+            assertEquals(unit.text, normalizeForComparison(reading.text.substring(unit.charStart, unit.charEnd)))
         }
-        assertEquals(2, builder.build(page).first().charStart)
+        assertEquals(0, builder.build(page).first().charStart)
     }
 
     @Test
@@ -75,18 +78,32 @@ class ReadingUnitBuilderTest {
     }
 
     @Test
+    fun `Indic units are NFC, split at a typed pipe and keep a doctor's name whole`() {
+        // Bengali "ো" typed in two parts (U+09C7 U+09BE), "|" typed for the danda, and "ডা." before a name.
+        val page = pageOf("ডা. রায় \u0995\u09C7\u09BEথায় যাবেন| তিনি বাড়ি যাবেন।")
+        val units = builder.build(page)
+        assertEquals(listOf("ডা. রায় \u0995\u09CBথায় যাবেন।", "তিনি বাড়ি যাবেন।"), units.map { it.text })
+        assertTrue(units.all { it.lang == Lang.BN })
+        val reading = builder.readingText(page)
+        units.forEach { unit -> assertEquals(unit.text, reading.text.substring(unit.charStart, unit.charEnd)) }
+    }
+
+    @Test
     fun `bounds are one box per line`() {
         val twoLines =
-            "ab".map { SyntheticChar(it.code, box = floatArrayOf(it.code * 10f, 120f, it.code * 10f + 8f, 110f)) } +
+            "ab".map {
+                val left = (it.code - 'a'.code) * 10f
+                SyntheticChar(it.code, box = floatArrayOf(left, 120f, left + 8f, 110f))
+            } +
                 SyntheticChar(' '.code, generated = true) +
                 "cd".map {
                     SyntheticChar(
                         it.code,
                         box = floatArrayOf(
                             (it.code - 'c'.code) * 10f,
-                            100f,
+                            106f,
                             (it.code - 'c'.code) * 10f + 8f,
-                            90f,
+                            96f,
                         ),
                     )
                 }
@@ -94,6 +111,74 @@ class ReadingUnitBuilderTest {
         val bounds = requireNotNull(builder.build(page).single().bounds)
         assertEquals(2, bounds.size)
         assertEquals(120f, bounds[0].top, 0f)
-        assertEquals(90f, bounds[1].bottom, 0f)
+        assertEquals(96f, bounds[1].bottom, 0f)
+    }
+
+    @Test
+    fun `a heading without a full stop is its own unit and pauses take the configured lengths`() {
+        val sketch = PageSketch()
+        sketch.line("Introduction", left = 50f, top = 720f, size = 14f)
+        sketch.lines(listOf("Body text follows the heading. It", "carries on for a second line."), 50f, 700f)
+        val config = ReadingUnitConfig(sentencePauseMs = 10, paragraphPauseMs = 400, headingPauseMs = 600)
+        val units = ReadingUnitBuilder(config).build(sketch.build())
+        assertEquals(
+            listOf("Introduction", "Body text follows the heading.", "It carries on for a second line."),
+            units.map { it.text },
+        )
+        assertEquals(listOf(600, 10, 400), units.map { it.pauseAfterMs })
+    }
+
+    @Test
+    fun `each list item is its own unit with the list pause, and the list ends where the text moves back left`() {
+        val sketch = PageSketch()
+        sketch.line("Pack these things:", left = 50f, top = 720f)
+        sketch.line("\u2022 Apples", left = 50f, top = 708f)
+        sketch.line("\u2022 Pears and", left = 50f, top = 696f)
+        sketch.line("plums", left = 62f, top = 684f)
+        sketch.line("Then we leave.", left = 50f, top = 672f)
+        val config = ReadingUnitConfig(sentencePauseMs = 10, paragraphPauseMs = 400, listItemPauseMs = 300)
+        val units = ReadingUnitBuilder(config).build(sketch.build())
+        assertEquals(listOf("Pack these things:", "Apples", "Pears and plums", "Then we leave."), units.map { it.text })
+        assertEquals(
+            listOf(UnitKind.BODY, UnitKind.LIST_ITEM, UnitKind.LIST_ITEM, UnitKind.BODY),
+            units.map { it.kind },
+        )
+        assertEquals(listOf(400, 300, 300, 400), units.map { it.pauseAfterMs })
+    }
+
+    @Test
+    fun `numbered items split after a clause or inside a list, never in running prose`() {
+        val sketch = PageSketch()
+        sketch.line("Do this:", left = 50f, top = 720f)
+        sketch.line("1. Open the box", left = 50f, top = 708f)
+        sketch.line("2. Take it out", left = 50f, top = 696f)
+        // A gap, then prose whose wrapped line happens to start with "3." after a line that ends mid-clause.
+        sketch.line("Read the steps in section", left = 50f, top = 660f)
+        sketch.line("3. We then close it.", left = 50f, top = 648f)
+        val units = ReadingUnitBuilder().build(sketch.build())
+        assertEquals(
+            listOf(
+                "Do this:",
+                "1. Open the box",
+                "2. Take it out",
+                "Read the steps in section 3.",
+                "We then close it.",
+            ),
+            units.map { it.text },
+        )
+        assertEquals(
+            listOf(UnitKind.BODY, UnitKind.LIST_ITEM, UnitKind.LIST_ITEM, UnitKind.BODY, UnitKind.BODY),
+            units.map { it.kind },
+        )
+    }
+
+    @Test
+    fun `headings carry their kind and default pauses follow the spec`() {
+        val sketch = PageSketch()
+        sketch.line("Introduction", left = 50f, top = 720f, size = 14f)
+        sketch.line("Body text follows the heading.", left = 50f, top = 700f)
+        val units = ReadingUnitBuilder().build(sketch.build())
+        assertEquals(listOf(UnitKind.HEADING, UnitKind.BODY), units.map { it.kind })
+        assertEquals(listOf(600, 400), units.map { it.pauseAfterMs })
     }
 }

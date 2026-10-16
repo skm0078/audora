@@ -1,0 +1,76 @@
+C : Dipan is an avid reader of Tolstoy
+It is important to understand that whatever structure an English
+sentence might have is lost when it is symbolized by a sentence
+letter of TFL. From the point of view of TFL, a sentence letter is
+just a letter. It can be used to build more complex sentences, but
+it cannot be taken apart.
+
+CHAPTER 5
+
+Connectives
+In the previous chapter, we considered symbolizing fairly basic
+English sentences with sentence letters of TFL. This leaves us
+wanting to deal with the English expressions ‘and’, ‘or’, ‘not’,
+and so forth. These are connectives—they can be used to form new
+sentences out of old ones. In TFL, we will make use of logical
+connectives to build complex sentences from atomic components.
+There are five logical connectives in TFL. This table summarizes
+them, and they are explained throughout this section.
+These are not the only connectives of English of interest. Others are, e.g., ‘unless’, ‘neither . . . nor . . . ’, and ‘because’. We will
+see that the first two can be expressed by the connectives we will
+discuss, while the last cannot. ‘Because’, in contrast to the others,
+is not truth functional.
+
+5.1 Negation
+
+Consider how we might symbolize these sentences:
+1. Mary is in Barcelona.
+2. It is not the case that Mary is in Barcelona.
+3. Mary is not in Barcelona.
+In order to symbolize sentence 1, we will need a sentence letter.
+We might offer this symbolization key:
+B: Mary is in Barcelona.
+Since sentence 2 is obviously related to sentence 1, we will not
+want to symbolize it with a completely different sentence letter.
+Roughly, sentence 2 means something like ‘It is not the case
+that B’. In order to symbolize this, we need a symbol for negation. We will use ‘¬’. Now we can symbolize sentence 2 with ‘¬B’.
+Sentence 3 also contains the word ‘not’, and it is obviously
+equivalent to sentence 2. As such, we can also symbolize it
+with ‘¬B’.
+A sentence can be symbolized as ¬A if it can be paraphrased in English as ‘It is not the case that. . . ’.
+It will help to offer a few more examples:
+4. The widget can be replaced.
+5. The widget is irreplaceable.
+6. The widget is not irreplaceable.
+Let us use the following representation key:
+R: The widget is replaceable
+Sentence 4 can now be symbolized by ‘R’. Moving on to sentence 5: saying the widget is irreplaceable means that it is not
+the case that the widget is replaceable. So even though sentence 5 does not contain the word ‘not’, we will symbolize it as
+follows: ‘¬R’.
+Sentence 6 can be paraphrased as ‘It is not the case that the
+widget is irreplaceable.’ Which can again be paraphrased as ‘It
+is not the case that it is not the case that the widget is replaceable’. So we might symbolize this English sentence with the TFL
+sentence ‘¬¬R’.
+But some care is needed when handling negations. Consider:
+7. Jane is happy.
+8. Jane is unhappy.
+If we let the TFL-sentence ‘H’ symbolize ‘Jane is happy’, then we
+can symbolize sentence 7 as ‘H’. However, it would be a mistake
+to symbolize sentence 8 with ‘¬H’. If Jane is unhappy, then she is
+not happy; but sentence 8 does not mean the same thing as ‘It is
+not the case that Jane is happy’. Jane might be neither happy nor
+unhappy; she might be in a state of blank indifference. In order to
+symbolize sentence 8, then, we would need a new sentence letter
+of TFL.
+
+5.2 Conjunction
+
+Consider these sentences:
+9. Adam is athletic.
+10. Barbara is athletic.
+11. Adam is athletic, and also Barbara is athletic.
+We will need separate sentence letters of TFL to symbolize sentences 9 and 10; perhaps
+A: Adam is athletic.
+B: Barbara is athletic.
+Sentence 9 can now be symbolized as ‘A’, and sentence 10 can
+be symbolized as ‘B’. Sentence 11 roughly says ‘A and B’. We

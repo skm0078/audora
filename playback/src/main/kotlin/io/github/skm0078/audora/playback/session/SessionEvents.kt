@@ -4,6 +4,8 @@
 package io.github.skm0078.audora.playback.session
 
 import androidx.media3.common.Player
+import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 
@@ -16,6 +18,9 @@ interface SessionEvents {
     fun onNotReading()
 
     fun onStateChanged(state: SessionState)
+
+    /** A sentence became the current item (about to be read): P1-06 saves it as the book's resume anchor. */
+    fun onSentenceStarted(bookId: BookId, unit: ReadingUnit) = Unit
 }
 
 data class SessionError(val code: PlaybackErrorCode, val message: String)
@@ -25,6 +30,7 @@ data class SessionState(
     val error: SessionError?,
     val sleepMode: SleepTimerMode,
     val sleepEndsAtWallMillis: Long?,
+    val hasChapters: Boolean = false,
 )
 
 /**

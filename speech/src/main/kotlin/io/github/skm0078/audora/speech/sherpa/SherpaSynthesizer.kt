@@ -25,3 +25,13 @@ interface SherpaSynthesizer {
 fun interface SherpaSynthesizerFactory {
     fun load(spec: SherpaVoiceSpec): Outcome<SherpaSynthesizer, SpeechError>
 }
+
+/** Sends the bundled voice to the APK-asset loader and every other voice to the on-disk loader. */
+class RoutingSynthesizerFactory(
+    private val bundledId: String,
+    private val bundled: SherpaSynthesizerFactory,
+    private val installed: SherpaSynthesizerFactory,
+) : SherpaSynthesizerFactory {
+    override fun load(spec: SherpaVoiceSpec): Outcome<SherpaSynthesizer, SpeechError> =
+        if (spec.id == bundledId) bundled.load(spec) else installed.load(spec)
+}
