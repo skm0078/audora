@@ -1,5 +1,5 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/SpeechEngines.kt
-// Purpose: Builds the two Phase 1 engines (bundled neural voice, phone's TTS) from an Android Context.
+// Purpose: Builds the two engines (neural voices: bundled + downloaded, phone's TTS) from an Android Context.
 
 package io.github.skm0078.audora.speech
 
@@ -11,16 +11,19 @@ import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.SpeechError.VoiceUnavailable.Reason
 import io.github.skm0078.audora.speech.sherpa.AssetSherpaSynthesizerFactory
+import io.github.skm0078.audora.speech.sherpa.FileSherpaSynthesizerFactory
+import io.github.skm0078.audora.speech.sherpa.RoutingSynthesizerFactory
 import io.github.skm0078.audora.speech.sherpa.SherpaSpeechEngine
 import io.github.skm0078.audora.speech.sherpa.SherpaVoiceManifest
 import io.github.skm0078.audora.speech.sherpa.SherpaVoiceSpec
 import io.github.skm0078.audora.speech.system.AndroidSystemTtsClient
 import io.github.skm0078.audora.speech.system.SystemSpeechEngine
+import io.github.skm0078.audora.speech.voices.VoiceLibrary
 import java.io.File
 import java.io.IOException
 import java.util.Properties
 
-/** The bundled engine together with the voice it ships, which is the English default (ADR-012, ADR-014). */
+/** The neural engine together with the voice the APK ships, which is the English default (ADR-012, ADR-014). */
 class BundledSpeech(val engine: SherpaSpeechEngine, val voice: VoiceInfo)
 
 object SpeechEngines {
@@ -32,8 +35,9 @@ object SpeechEngines {
     private const val SYSTEM_WORK_DIR = "tts-system"
 
     /**
-     * The neural English voice packed into the APK. Cheap: reads one small properties file; the model loads on the
-     * first render. Fails only when the APK was built without the voice, which is a build bug worth surfacing.
+     * The neural engine: the English voice packed into the APK plus every voice downloaded or imported in Settings →
+     * Voices (P4-01), seen as they come and go. Cheap: reads one small properties file; a model loads on its first
+     * render. Fails only when the APK was built without its voice, which is a build bug worth surfacing.
      */
     fun bundled(context: Context, config: SpeechConfig = SpeechConfig()): Outcome<BundledSpeech, SpeechError> {
         val assets = context.assets
@@ -50,21 +54,29 @@ object SpeechEngines {
                 return Outcome.Failure(error)
             }
         }
-        val factory = AssetSherpaSynthesizerFactory(
+        val fromAssets = AssetSherpaSynthesizerFactory(
             assets = assets,
             assetDir = BUNDLED_ASSET_DIR,
             dataRoot = File(context.noBackupFilesDir, BUNDLED_DATA_DIR),
             threads = config.sherpaThreads,
         )
+        val library = VoiceLibrary.get(context)
+        val fromDisk = FileSherpaSynthesizerFactory(library::voiceDir, config.sherpaThreads)
+        // The bundled voice first: it wins if a downloaded voice ever shares its id (after a bundled-voice swap).
+        val engine = SherpaSpeechEngine(
+            source = { listOf(spec) + library.installedSpecs() },
+            factory = RoutingSynthesizerFactory(spec.id, fromAssets, fromDisk),
+        )
         AudoraLog.i(TAG, "Bundled voice ${spec.voiceId} (${spec.family}, ${spec.lang})")
-        return Outcome.Success(BundledSpeech(SherpaSpeechEngine(listOf(spec), factory), spec.toVoiceInfo()))
+        return Outcome.Success(BundledSpeech(engine, spec.toVoiceInfo()))
     }
 
     /** The phone's own TTS engine. Connects lazily on first use. */
     fun system(context: Context, config: SpeechConfig = SpeechConfig()): SystemSpeechEngine =
         SystemSpeechEngine(AndroidSystemTtsClient(context, File(context.cacheDir, SYSTEM_WORK_DIR), config))
 
-    private fun readBundledSpec(assets: AssetManager): Outcome<SherpaVoiceSpec, String> {
+    /** The bundled voice's `voice.properties`, written by the build (ADR-014). */
+    internal fun readBundledSpec(assets: AssetManager): Outcome<SherpaVoiceSpec, String> {
         val path = "$BUNDLED_ASSET_DIR/${SherpaVoiceManifest.FILE_NAME}"
         val properties = try {
             assets.open(path).reader(Charsets.UTF_8).use { reader -> Properties().apply { load(reader) } }

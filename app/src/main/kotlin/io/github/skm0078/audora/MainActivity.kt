@@ -31,9 +31,11 @@ import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.diagnostics.LogSharer
+import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.ui.AppDestination
 import io.github.skm0078.audora.ui.battery.BatterySetupCard
 import io.github.skm0078.audora.ui.battery.BatterySetupController
@@ -55,6 +57,10 @@ import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.settings.SettingsScreen
 import io.github.skm0078.audora.ui.theme.AudoraTheme
+import io.github.skm0078.audora.ui.voices.VoiceManager
+import io.github.skm0078.audora.ui.voices.VoicesActions
+import io.github.skm0078.audora.ui.voices.VoicesController
+import io.github.skm0078.audora.ui.voices.VoicesScreen
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 
@@ -81,6 +87,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var resumeLocator: ResumeLocator
 
+    @Inject
+    lateinit var voiceManager: VoiceManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -91,12 +100,16 @@ class MainActivity : ComponentActivity() {
                 // Activity-wide, so an add still running when the user opens Settings is not cancelled.
                 val libraryController = remember { LibraryController(library, scope).also { it.start() } }
                 val battery = rememberBatterySetup(scope)
+                // Activity-wide too, so an import keeps going when the user leaves the screen; created on first visit.
+                val voicesController = remember { lazy { VoicesController(voiceManager, scope).also { it.start() } } }
                 var route by rememberSaveable { mutableStateOf(AppDestination.Library.toRoute()) }
                 val destination = AppDestination.fromRoute(route)
                 val navigate = { next: AppDestination -> route = next.toRoute() }
                 // Not saveable on purpose: a restored activity must never start reading by itself (C7).
                 var autoResumeBook by remember { mutableStateOf<BookId?>(null) }
-                BackHandler(enabled = destination != AppDestination.Library) { navigate(parentOf(destination)) }
+                BackHandler(enabled = destination.parent != null) {
+                    navigate(destination.parent ?: AppDestination.Library)
+                }
                 LaunchedEffect(Unit) { diagnostics.checkUnfinishedSession() }
 
                 when (destination) {
@@ -111,13 +124,15 @@ class MainActivity : ComponentActivity() {
 
                     AppDestination.Settings -> SettingsRoute(diagnostics, battery, navigate)
 
+                    AppDestination.Voices -> VoicesRoute(voicesController.value) { navigate(AppDestination.Settings) }
+
                     is AppDestination.BatterySetup -> BatterySetupScreen(
                         exempt = battery.exempt,
                         brand = battery.brand,
                         steps = battery.steps,
                         onAllow = { battery.requestExemption(::startActivity) },
                         onOpenAppSettings = { battery.openAppSettings(::startActivity) },
-                        onBack = { navigate(parentOf(destination)) },
+                        onBack = { navigate(destination.parent ?: AppDestination.Library) },
                     )
 
                     is AppDestination.Reader -> {
@@ -142,11 +157,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    private fun parentOf(destination: AppDestination): AppDestination = when {
-        destination is AppDestination.BatterySetup && destination.fromSettings -> AppDestination.Settings
-        else -> AppDestination.Library
     }
 
     /** Re-checks the exemption on every resume: the user comes back from the system prompt or Settings. */
@@ -179,6 +189,7 @@ class MainActivity : ComponentActivity() {
             showDebugTools = BuildConfig.DEBUG,
             onBack = { navigate(AppDestination.Library) },
             onOpenBatterySetup = { navigate(AppDestination.BatterySetup(fromSettings = true)) },
+            onOpenVoices = { navigate(AppDestination.Voices) },
             onShareLogs = { diagnostics.shareLogs { intent -> startActivity(intent) } },
             onSimulateReadingSession = {
                 diagnostics.simulateReadingSession()
@@ -222,6 +233,36 @@ class MainActivity : ComponentActivity() {
             actions = actions,
             banner = banner,
         )
+    }
+
+    @Composable
+    private fun VoicesRoute(controller: VoicesController, navigateBack: () -> Unit) {
+        val state by controller.state.collectAsStateWithLifecycle()
+        val actions = remember(controller) {
+            object : VoicesActions {
+                override fun onBack() = navigateBack()
+
+                override fun onDownload(row: VoiceRow) = controller.download(row)
+
+                override fun onCancel(row: VoiceRow) = controller.cancel(row)
+
+                override fun onUse(row: VoiceRow) = controller.use(row)
+
+                override fun onUseDefault(lang: Lang) = controller.useDefault(lang)
+
+                override fun onRequestDelete(row: VoiceRow) = controller.proposeDelete(row)
+
+                override fun onConfirmDelete() = controller.confirmDelete()
+
+                override fun onCancelDelete() = controller.proposeDelete(null)
+
+                override fun onImport(treeUri: Uri, lang: Lang, label: String) =
+                    controller.import(treeUri.toString(), lang, label)
+
+                override fun onMessageShown() = controller.messageShown()
+            }
+        }
+        VoicesScreen(state = state, actions = actions)
     }
 
     @Composable

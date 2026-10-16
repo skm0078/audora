@@ -1,6 +1,7 @@
 // File: speech/build.gradle.kts
 // Purpose: Normalization, script routing, SpeechEngine implementations, model manager.
-//          Also packs the bundled English voice into the module's assets at build time (ADR-014).
+//          Also packs the bundled English voice (ADR-014) and the downloadable-voice catalog (ADR-022) into the
+//          module's assets at build time.
 
 import java.security.MessageDigest
 
@@ -42,9 +43,16 @@ val bundledVoiceAssets = tasks.register<BundledVoiceAssetsTask>("bundledVoiceAss
     downloadDirectory.set(File(gradle.gradleUserHomeDir, "caches/audora-voices"))
 }
 
+// The downloadable voices (P4-01, ADR-022): speech/models.json, validated and packed as one properties file per voice.
+val voiceCatalogAssets = tasks.register<VoiceCatalogAssetsTask>("voiceCatalogAssets") {
+    catalog.set(layout.projectDirectory.file("models.json"))
+    bundledCatalog.set(layout.projectDirectory.file("bundled-voices.json"))
+}
+
 androidComponents {
     onVariants { variant ->
         variant.sources.assets?.addGeneratedSourceDirectory(bundledVoiceAssets, BundledVoiceAssetsTask::outputDirectory)
+        variant.sources.assets?.addGeneratedSourceDirectory(voiceCatalogAssets, VoiceCatalogAssetsTask::outputDirectory)
     }
 }
 
@@ -58,6 +66,8 @@ dependencies {
     implementation(project(":core"))
 
     implementation(variantOf(libs.sherpa.onnx) { artifactType("aar") })
+    // Voice downloads only (AGENTS.md stack: WorkManager for downloads).
+    implementation(libs.work.runtime.ktx)
     sherpaOnnxAar(variantOf(libs.sherpa.onnx) { artifactType("aar") })
 
     testImplementation(libs.kotlinx.coroutines.test)
