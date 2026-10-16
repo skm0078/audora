@@ -2,6 +2,13 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## ADR-031 — One signing key for dev builds (2026-10-16)
+- **Problem (confirmed):** every CI run signed the debug APK with a key made in that run (the published `dev-build` APK's certificate dates from 2026-10-15 22:06:38 UTC, inside the run that published it). A newer dev build could not install over an older one, so each test install meant uninstalling and losing the library and reading positions.
+- **Change:** `android.yml` restores a fixed debug keystore from the repository secret `AUDORA_DEBUG_KEYSTORE_B64` before building, and checks that the debug APK carries that key's certificate. Without the secret nothing changes (throwaway key, as before), so this commit is safe to merge before the secret exists. One secret only: the keystore password is Android's public debug convention (`android`). ADR-031; how to add or replace it in `docs/RELEASING.md`; README's test-build note updated.
+- Release signing, `release.yml` and the release key are untouched.
+
+**Check after the secret is added:** the next dev CI run logs the same SHA-256 on its "Dev key certificate" and "Debug APK signing certificate" lines. On the Moto, uninstall the old dev build once, install the new one, then install the next one over it: the library stays.
+
 ## P5-01 — README for friends, Obtainium setup, Play Protect note (2026-10-16)
 - **README rewritten for friends:** what Audora does, what phone it needs, installing with Obtainium (get Obtainium, allow installs from a source, add `https://github.com/skm0078/audora`, install, update), installing without Obtainium, the Play Protect prompts and what to tap, the permissions Audora asks for and the release key's SHA-256, a first-run walk-through (add a PDF, background-reading setup, voices, OCR files) and what to do when something goes wrong (Share logs). Contributor notes moved to the end.
 - **Test builds:** the README says the `dev-build` APK installs next to the release and is not for Obtainium. Each CI run signs it with a fresh debug key (no stable debug keystore in CI), so a newer test build cannot install over an older one; the README says to uninstall the old one first.
