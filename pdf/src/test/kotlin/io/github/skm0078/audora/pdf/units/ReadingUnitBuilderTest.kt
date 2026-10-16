@@ -5,6 +5,7 @@ package io.github.skm0078.audora.pdf.units
 
 import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.pdf.extract.PageText
 import io.github.skm0078.audora.pdf.extract.PageTextAssembler
 import io.github.skm0078.audora.pdf.extract.RawPageFixture
@@ -125,5 +126,59 @@ class ReadingUnitBuilderTest {
             units.map { it.text },
         )
         assertEquals(listOf(600, 10, 400), units.map { it.pauseAfterMs })
+    }
+
+    @Test
+    fun `each list item is its own unit with the list pause, and the list ends where the text moves back left`() {
+        val sketch = PageSketch()
+        sketch.line("Pack these things:", left = 50f, top = 720f)
+        sketch.line("\u2022 Apples", left = 50f, top = 708f)
+        sketch.line("\u2022 Pears and", left = 50f, top = 696f)
+        sketch.line("plums", left = 62f, top = 684f)
+        sketch.line("Then we leave.", left = 50f, top = 672f)
+        val config = ReadingUnitConfig(sentencePauseMs = 10, paragraphPauseMs = 400, listItemPauseMs = 300)
+        val units = ReadingUnitBuilder(config).build(sketch.build())
+        assertEquals(listOf("Pack these things:", "Apples", "Pears and plums", "Then we leave."), units.map { it.text })
+        assertEquals(
+            listOf(UnitKind.BODY, UnitKind.LIST_ITEM, UnitKind.LIST_ITEM, UnitKind.BODY),
+            units.map { it.kind },
+        )
+        assertEquals(listOf(400, 300, 300, 400), units.map { it.pauseAfterMs })
+    }
+
+    @Test
+    fun `numbered items split after a clause or inside a list, never in running prose`() {
+        val sketch = PageSketch()
+        sketch.line("Do this:", left = 50f, top = 720f)
+        sketch.line("1. Open the box", left = 50f, top = 708f)
+        sketch.line("2. Take it out", left = 50f, top = 696f)
+        // A gap, then prose whose wrapped line happens to start with "3." after a line that ends mid-clause.
+        sketch.line("Read the steps in section", left = 50f, top = 660f)
+        sketch.line("3. We then close it.", left = 50f, top = 648f)
+        val units = ReadingUnitBuilder().build(sketch.build())
+        assertEquals(
+            listOf(
+                "Do this:",
+                "1. Open the box",
+                "2. Take it out",
+                "Read the steps in section 3.",
+                "We then close it.",
+            ),
+            units.map { it.text },
+        )
+        assertEquals(
+            listOf(UnitKind.BODY, UnitKind.LIST_ITEM, UnitKind.LIST_ITEM, UnitKind.BODY, UnitKind.BODY),
+            units.map { it.kind },
+        )
+    }
+
+    @Test
+    fun `headings carry their kind and default pauses follow the spec`() {
+        val sketch = PageSketch()
+        sketch.line("Introduction", left = 50f, top = 720f, size = 14f)
+        sketch.line("Body text follows the heading.", left = 50f, top = 700f)
+        val units = ReadingUnitBuilder().build(sketch.build())
+        assertEquals(listOf(UnitKind.HEADING, UnitKind.BODY), units.map { it.kind })
+        assertEquals(listOf(600, 400), units.map { it.pauseAfterMs })
     }
 }

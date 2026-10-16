@@ -34,7 +34,8 @@ fun interface RenderAheadPolicy {
  * `RenderAheadConfig.targetAheadSeconds(rtf)` for the slowest voice among the candidates, and sentences are added
  * until their estimated audio reaches it, never fewer than [QueueConfig.prefetchUnits]. A sentence's audio is
  * estimated from its length and its voice's measured speech rate; voices not measured yet use the config's
- * assumptions. The sentence playing is not counted: part of it has already played.
+ * assumptions, plus its pause (ADR-029): silence plays like audio but costs no render time. The sentence playing is
+ * not counted: part of it has already played.
  *
  * @param speedOf the measured speed of the voice that reads a language now, or null if not measured.
  */
@@ -49,7 +50,7 @@ class MeasuredRenderAhead(private val speedOf: (Lang) -> VoiceSpeed?) : RenderAh
         var seconds = 0.0
         var count = 0
         while (count < ahead.size && (count < config.prefetchUnits || seconds < target)) {
-            seconds += audioSeconds(ahead[count], speeds, config)
+            seconds += audioSeconds(ahead[count], speeds, config) + pauseSeconds(ahead[count])
             count++
         }
         return candidates.take(1 + count)
@@ -69,7 +70,7 @@ class MeasuredRenderAhead(private val speedOf: (Lang) -> VoiceSpeed?) : RenderAh
             val seconds = audioSeconds(unit, speeds, config)
             rendering += (speeds[unit.lang]?.rtf ?: config.renderAhead.assumedRtf) * margin * seconds
             if (rendering > playable) return false
-            playable += seconds
+            playable += seconds + pauseSeconds(unit)
         }
         return true
     }
@@ -77,7 +78,13 @@ class MeasuredRenderAhead(private val speedOf: (Lang) -> VoiceSpeed?) : RenderAh
     private fun speedsOf(units: List<ReadingUnit>): Map<Lang, VoiceSpeed?> =
         units.map { it.lang }.distinct().associateWith(speedOf)
 
-    /** A sentence's length in audio, guessed from its text and its voice's measured speech rate. */
+    private fun pauseSeconds(unit: ReadingUnit): Double = unit.pauseAfterMs / MS_PER_SECOND
+
+    /** A sentence's spoken length, guessed from its text and its voice's measured speech rate. */
     private fun audioSeconds(unit: ReadingUnit, speeds: Map<Lang, VoiceSpeed?>, config: QueueConfig): Double =
         unit.text.length / (speeds[unit.lang]?.charsPerSecond ?: config.renderAhead.assumedCharsPerSecond)
+
+    private companion object {
+        const val MS_PER_SECOND = 1_000.0
+    }
 }

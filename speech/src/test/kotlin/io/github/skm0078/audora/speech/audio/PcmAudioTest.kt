@@ -23,6 +23,19 @@ class PcmAudioTest {
         assertEquals(0L, PcmAudio.silence(24_000).durationMs)
     }
 
+    @Test
+    fun `a pause is silence of the given length after the sound`() {
+        val audio = PcmAudio(shortArrayOf(5, -5), 16_000)
+
+        val paused = audio.withSilenceAfter(250)
+
+        assertEquals(2 + 4_000, paused.samples.size)
+        assertArrayEquals(shortArrayOf(5, -5, 0, 0), paused.samples.copyOf(4))
+        assertEquals(0, paused.samples.drop(2).count { it != 0.toShort() })
+        assertEquals(16_000, paused.sampleRate)
+        assertSame(audio, audio.withSilenceAfter(0))
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun `zero sample rate is rejected`() {
         PcmAudio(ShortArray(1), 0)

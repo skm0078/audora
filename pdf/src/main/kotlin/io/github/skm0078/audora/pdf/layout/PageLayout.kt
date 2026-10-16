@@ -36,7 +36,13 @@ data class Paragraph(
     val continuesPrevious: Boolean = false,
 )
 
-enum class ParagraphKind { BODY, HEADING }
+enum class ParagraphKind {
+    BODY,
+    HEADING,
+
+    /** Starts with a bullet or a label ("1.", "(a)"); its continuation lines belong to it (P2-04). */
+    LIST_ITEM,
+}
 
 /**
  * One visual line. [spans] are the runs of glyphs on it, left to right; a line split by a large gap (a table

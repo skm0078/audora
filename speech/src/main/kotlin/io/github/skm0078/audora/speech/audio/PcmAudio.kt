@@ -33,6 +33,14 @@ class PcmAudio(val samples: ShortArray, val sampleRate: Int) {
         return PcmAudio(out, rate)
     }
 
+    /** This audio followed by [ms] of silence: a pause after a sentence (prosody, P2-04). Itself when [ms] is 0. */
+    fun withSilenceAfter(ms: Int): PcmAudio {
+        require(ms >= 0) { "ms must be >= 0, was $ms" }
+        if (ms == 0) return this
+        val padding = (ms.toLong() * sampleRate / MS_PER_SECOND).toInt()
+        return PcmAudio(samples.copyOf(samples.size + padding), sampleRate)
+    }
+
     override fun toString(): String = "PcmAudio(${samples.size} samples @ $sampleRate Hz, $durationMs ms)"
 
     companion object {

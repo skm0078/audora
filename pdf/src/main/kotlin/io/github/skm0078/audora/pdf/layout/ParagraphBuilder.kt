@@ -1,5 +1,5 @@
 // File: pdf/src/main/kotlin/io/github/skm0078/audora/pdf/layout/ParagraphBuilder.kt
-// Purpose: Splits a block's lines into paragraphs (gap, indent, style change) and marks headings.
+// Purpose: Splits a block's lines into paragraphs (gap, indent, style change, list item) and marks headings.
 
 package io.github.skm0078.audora.pdf.layout
 
@@ -20,13 +20,25 @@ internal class ParagraphBuilder(
         val pitch = usualPitch(lines)
         val groups = ArrayList<MutableList<TextLine>>()
         lines.forEachIndexed { i, line ->
-            if (i == 0 || startsParagraph(lines[i - 1], line, blockLeft, pitch)) groups.add(ArrayList())
+            val inList = i > 0 && startsWithMarker(groups.last().first())
+            val starts = i == 0 ||
+                startsParagraph(lines[i - 1], line, blockLeft, pitch, inList) ||
+                startsItem(lines[i - 1], line, inList) ||
+                (inList && outdented(lines[i - 1], line))
+            if (starts) groups.add(ArrayList())
             groups.last().add(line)
         }
         return groups.map { Paragraph(it, kindOf(it)) }
     }
 
-    private fun startsParagraph(previous: TextLine, line: TextLine, blockLeft: Float, pitch: Float): Boolean {
+    /** [inList]: the paragraph so far is a list item, whose indented continuation lines are not first-line indents. */
+    private fun startsParagraph(
+        previous: TextLine,
+        line: TextLine,
+        blockLeft: Float,
+        pitch: Float,
+        inList: Boolean,
+    ): Boolean {
         val above = requireNotNull(previous.box)
         val box = requireNotNull(line.box)
         val lineEm = if (line.size > 0f) line.size else em
@@ -37,7 +49,36 @@ internal class ParagraphBuilder(
         val farBelow = above.top - box.top > expectedPitch * config.paragraphPitchRatio
         val indented = box.left - blockLeft >= config.indentEm * lineEm &&
             above.left - blockLeft < config.indentEm * lineEm
-        return styleChanged || farBelow || indented
+        return styleChanged || farBelow || (indented && !inList)
+    }
+
+    /**
+     * Each list item is a paragraph of its own, so it gets its own sentences and pause: "• Apples" and "• Pears" are
+     * not read as one sentence. A label ("3.") counts only after a line that ends a clause, or inside a list
+     * ([inList]: the paragraph so far is an item), never in the middle of running prose ([ListMarkers]).
+     */
+    private fun startsItem(previous: TextLine, line: TextLine, inList: Boolean): Boolean {
+        val start = line.spans.first().start
+        return ListMarkers.startsWithBullet(page.text, start) ||
+            (
+                ListMarkers.startsWithLabel(page.text, start, line.spans.last().end) &&
+                    (inList || ListMarkers.endsClause(page.text, previous.spans.last().end))
+                )
+    }
+
+    /**
+     * Back left of an item's indented continuation lines: the list has ended and body text carries on ("• Pears and
+     * /   plums / Then we leave.").
+     */
+    private fun outdented(previous: TextLine, line: TextLine): Boolean {
+        val lineEm = if (line.size > 0f) line.size else em
+        return requireNotNull(previous.box).left - requireNotNull(line.box).left >= config.indentEm * lineEm
+    }
+
+    private fun startsWithMarker(line: TextLine): Boolean {
+        val start = line.spans.first().start
+        return ListMarkers.startsWithBullet(page.text, start) ||
+            ListMarkers.startsWithLabel(page.text, start, line.spans.last().end)
     }
 
     /** Median top-to-top distance between consecutive lines of the same size; a default when too few. */
@@ -58,7 +99,11 @@ internal class ParagraphBuilder(
             lines.any { line ->
                 line.spans.any { span -> (span.start until span.end).any { page.text[it].isLetter() } }
             }
-        return if (heading) ParagraphKind.HEADING else ParagraphKind.BODY
+        return when {
+            heading -> ParagraphKind.HEADING
+            startsWithMarker(lines.first()) -> ParagraphKind.LIST_ITEM
+            else -> ParagraphKind.BODY
+        }
     }
 
     private fun isHeadingStyled(line: TextLine): Boolean =

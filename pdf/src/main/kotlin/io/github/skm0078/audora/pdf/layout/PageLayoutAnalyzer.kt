@@ -76,7 +76,7 @@ class PageLayoutAnalyzer(private val config: LayoutConfig = LayoutConfig()) {
         return beforeBox != null &&
             box != null &&
             box.top > beforeBox.bottom &&
-            last.kind == ParagraphKind.BODY &&
+            last.kind != ParagraphKind.HEADING &&
             first.kind == ParagraphKind.BODY &&
             sameSize(last.lines.last().size, first.lines.first().size, config) &&
             !endsSentence(page.text, last)

@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.speech.route
 
+import io.github.skm0078.audora.core.config.NormalizerConfig
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
@@ -12,6 +13,7 @@ import io.github.skm0078.audora.core.result.map
 import io.github.skm0078.audora.speech.SpeechEngine
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.audio.PcmAudio
+import io.github.skm0078.audora.speech.normalize.EnglishNormalizer
 import io.github.skm0078.audora.speech.normalize.IndicNormalizer
 import io.github.skm0078.audora.speech.normalize.TextNormalizer
 import io.github.skm0078.audora.speech.normalize.TextRole
@@ -41,21 +43,22 @@ class RoutedAudio(val audio: PcmAudio, val langs: List<Lang>, val voices: List<V
  * sentence is read whole with its own language's voice rather than failing: an English book with one Hindi word
  * keeps playing on a phone without Hindi. A failure of the sentence's own language fails the sentence, as before.
  *
- * Each part is normalized for its voice's language right before synthesis ([normalizers], ADR-019): Hindi and
- * Bengali numbers become words (P3-02). A language without a normalizer is read as written.
+ * Each part is normalized for its voice's language right before synthesis ([normalizers], ADR-019): English
+ * numbers, dates, money, abbreviations and links become words (P2-04), Hindi and Bengali numbers too (P3-02). A
+ * language without a normalizer is read as written. [TextRole] tells the normalizer what the sentence is on the page.
  */
 class RoutedSpeech(
     private val voices: VoiceSource,
     private val router: ScriptRouter,
-    private val normalizers: Map<Lang, TextNormalizer> = indicNormalizers(),
+    private val normalizers: Map<Lang, TextNormalizer> = speechNormalizers(),
 ) {
-    suspend fun render(text: String, lang: Lang): Outcome<RoutedAudio, SpeechError> {
+    suspend fun render(text: String, lang: Lang, role: TextRole = TextRole.BODY): Outcome<RoutedAudio, SpeechError> {
         val segments = router.route(text, lang).ifEmpty { listOf(ScriptSegment(text, lang)) }
         val parts = ArrayList<Voiced>(segments.size)
         for (segment in segments) {
-            when (val part = renderWith(segment.text, segment.lang)) {
+            when (val part = renderWith(segment.text, segment.lang, role)) {
                 is Outcome.Success -> parts.add(part.value)
-                is Outcome.Failure -> return fallBack(text, lang, segment.lang, part.error)
+                is Outcome.Failure -> return fallBack(text, lang, role, segment.lang, part.error)
             }
         }
         val rate = parts.maxOf { it.audio.sampleRate }
@@ -67,28 +70,30 @@ class RoutedSpeech(
     private suspend fun fallBack(
         text: String,
         lang: Lang,
+        role: TextRole,
         failedLang: Lang,
         error: SpeechError,
     ): Outcome<RoutedAudio, SpeechError> = if (failedLang == lang) {
         Outcome.Failure(error)
     } else {
-        renderWith(text, lang).map { RoutedAudio(it.audio, listOf(lang), listOf(it.voice), error) }
+        renderWith(text, lang, role).map { RoutedAudio(it.audio, listOf(lang), listOf(it.voice), error) }
     }
 
-    private suspend fun renderWith(text: String, lang: Lang): Outcome<Voiced, SpeechError> =
+    private suspend fun renderWith(text: String, lang: Lang, role: TextRole): Outcome<Voiced, SpeechError> =
         voices.voiceFor(lang).flatMap { voice ->
             when (val engine = voices.engine(voice.engine)) {
-                is Outcome.Success -> engine.value.render(spoken(text, lang), voice).map { Voiced(it, voice) }
+                is Outcome.Success -> engine.value.render(spoken(text, lang, role), voice).map { Voiced(it, voice) }
                 is Outcome.Failure -> engine
             }
         }
 
-    private fun spoken(text: String, lang: Lang): String =
-        normalizers[lang]?.normalize(text, TextRole.BODY)?.takeIf { it.isNotBlank() } ?: text
-
     private class Voiced(val audio: PcmAudio, val voice: VoiceId)
+
+    private fun spoken(text: String, lang: Lang, role: TextRole): String =
+        normalizers[lang]?.normalize(text, role)?.takeIf { it.isNotBlank() } ?: text
 }
 
-/** The Hindi and Bengali normalizers, keyed by language. */
-fun indicNormalizers(): Map<Lang, TextNormalizer> =
-    Lang.entries.mapNotNull { lang -> IndicNormalizer.forLang(lang)?.let { lang to it } }.toMap()
+/** Every language's normalizer, keyed by language: English (P2-04), Hindi and Bengali (P3-02). */
+fun speechNormalizers(config: NormalizerConfig = NormalizerConfig()): Map<Lang, TextNormalizer> =
+    mapOf(Lang.EN to EnglishNormalizer(config)) +
+        Lang.entries.mapNotNull { lang -> IndicNormalizer.forLang(lang)?.let { lang to it } }

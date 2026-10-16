@@ -9,11 +9,13 @@ import io.github.skm0078.audora.core.config.QualityConfig
 import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.pdf.cleanup.ClutterRemover
 import io.github.skm0078.audora.pdf.cleanup.PageProfile
 import io.github.skm0078.audora.pdf.cleanup.PageProfiler
 import io.github.skm0078.audora.pdf.cleanup.TextRepair
 import io.github.skm0078.audora.pdf.extract.PageText
+import io.github.skm0078.audora.pdf.layout.ListMarkers
 import io.github.skm0078.audora.pdf.layout.PageLayout
 import io.github.skm0078.audora.pdf.layout.PageLayoutAnalyzer
 import io.github.skm0078.audora.pdf.layout.ParagraphKind
@@ -116,6 +118,7 @@ class ReadingUnitBuilder(
                         lang = ScriptDetector.dominantLang(raw) ?: pageLang,
                         pauseAfterMs = pauseAfter(paragraph.kind, last = i == pieces.lastIndex),
                         bounds = lineBoxes.of(reading, piece.first, piece.last + 1),
+                        kind = paragraph.kind.unitKind(),
                     ),
                 )
             }
@@ -127,13 +130,30 @@ class ReadingUnitBuilder(
     private fun sentencesOf(flat: String, paragraph: ReadingParagraph, pageLang: Lang): List<IntRange> {
         val slice = flat.substring(paragraph.start, paragraph.end)
         val lang = ScriptDetector.dominantLang(slice) ?: pageLang
-        return splitter.split(slice, lang).map { (it.first + paragraph.start)..(it.last + paragraph.start) }
+        val sentences = splitter.split(slice, lang).map { (it.first + paragraph.start)..(it.last + paragraph.start) }
+        return if (paragraph.kind == ParagraphKind.LIST_ITEM) keepLabel(flat, sentences) else sentences
     }
 
+    /** An item's label is read with its first sentence ("1. Open the box"), never as a sentence of its own. */
+    private fun keepLabel(flat: String, sentences: List<IntRange>): List<IntRange> {
+        val first = sentences.firstOrNull()
+        val alone = first != null && sentences.size >= 2 &&
+            ListMarkers.isLabel(flat.substring(first.first, first.last + 1))
+        return if (alone) listOf(first.first..sentences[1].last) + sentences.drop(2) else sentences
+    }
+
+    /** Each sentence of a heading pauses like a heading; of a paragraph or list item, only the last one does. */
     private fun pauseAfter(kind: ParagraphKind, last: Boolean): Int = when {
         kind == ParagraphKind.HEADING -> maxOf(config.sentencePauseMs, config.headingPauseMs)
-        last -> maxOf(config.sentencePauseMs, config.paragraphPauseMs)
-        else -> config.sentencePauseMs
+        !last -> config.sentencePauseMs
+        kind == ParagraphKind.LIST_ITEM -> maxOf(config.sentencePauseMs, config.listItemPauseMs)
+        else -> maxOf(config.sentencePauseMs, config.paragraphPauseMs)
+    }
+
+    private fun ParagraphKind.unitKind(): UnitKind = when (this) {
+        ParagraphKind.BODY -> UnitKind.BODY
+        ParagraphKind.HEADING -> UnitKind.HEADING
+        ParagraphKind.LIST_ITEM -> UnitKind.LIST_ITEM
     }
 
     private companion object {

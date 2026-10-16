@@ -17,5 +17,7 @@ package io.github.skm0078.audora.pdf
  * 6 = P3-05: pages routed to OCR are read from Tesseract's text instead of their text layer (ADR-025).
  * 7 = P3-02: text in NFC; "|" after Indic text read as a danda; sentence breaks corrected after dandas, closing
  *     quotes, Hindi/Bengali abbreviations and initials, and verse numbers (ADR-028).
+ * 8 = P2-04: each list item is a paragraph of its own (no longer run into the next item as one sentence); units
+ *     carry their kind (body, heading, list item) and real pauses (ADR-029).
  */
-const val PIPELINE_VERSION: Int = 7
+const val PIPELINE_VERSION: Int = 8

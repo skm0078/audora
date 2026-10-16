@@ -79,6 +79,20 @@ class MeasuredRenderAheadTest {
         assertEquals(4, RenderAheadPolicy.FIXED.window(sentences(30), config).size)
     }
 
+    @Test
+    fun `pauses count as time to render in, but cost no render time`() {
+        val paused = sentences(30).map { it.copy(pauseAfterMs = 1_000) }
+
+        // 24 s at RTF 0.8: five 5 s sentences without pauses, four 6 s ones with them.
+        assertEquals(4, ahead(paused, mapOf(Lang.EN to speed(0.8))))
+        // Start hold at RTF 1, margin 1.2: each pending 5 s sentence takes 6 s to render. With 6.5 s buffered, the
+        // second one is ready in time (12 s) only because the first one's pause makes 12.5 s playable, not 11.5 s.
+        val policy = MeasuredRenderAhead { speed(1.0) }
+        assertEquals(false, policy.canStart(5.5, paused.take(1), config))
+        assertEquals(true, policy.canStart(6.5, paused.take(2), config))
+        assertEquals(false, policy.canStart(6.5, sentences(2), config))
+    }
+
     private companion object {
         const val CPS = 10
     }

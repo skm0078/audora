@@ -5,6 +5,7 @@ package io.github.skm0078.audora.pdf.cleanup
 
 import io.github.skm0078.audora.core.config.CleanupConfig
 import io.github.skm0078.audora.pdf.extract.IntArrayBuilder
+import io.github.skm0078.audora.pdf.layout.ListMarkers
 
 /**
  * Text with the extracted-text offset of every UTF-16 unit, as ReadingText keeps it (ADR-018). Repairs only
@@ -117,7 +118,7 @@ internal class TextRepair(private val config: CleanupConfig) {
         var i = 0
         while (i < text.length) {
             val lineStart = i == 0 || text[i - 1] == '\n'
-            if (lineStart && text[i] in BULLETS) {
+            if (lineStart && text[i] in ListMarkers.BULLETS) {
                 // The bullet and the spaces after it.
                 i++
                 while (i < text.length && text[i] == ' ') i++
@@ -167,10 +168,6 @@ internal class TextRepair(private val config: CleanupConfig) {
 
         /** Hyphen-minus, hyphen, non-breaking hyphen, en dash, em dash. */
         const val DASHES = "-\u2010\u2011\u2013\u2014"
-
-        /** Bullets, including the Symbol and Wingdings private-use codes PDFs map them to. */
-        const val BULLETS = "\u2022\u25E6\u25AA\u25AB\u25A0\u25A1\u25CF\u25CB\u25C6\u25C7\u25BA\u25B6\u2023\u2043" +
-            "\u2219\u2756\u27A2\u2713\uF0B7\uF0A7\uF0D8\uF076"
 
         /** A citation may follow closing punctuation as well as a word: "(Gliomas’) [3]." */
         const val CITATION_AFTER = ")]\u2019\u201D\"'.,;:"

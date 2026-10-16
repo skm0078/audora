@@ -12,6 +12,7 @@ import io.github.skm0078.audora.speech.SpeechEngine
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.VoiceInfo
 import io.github.skm0078.audora.speech.audio.PcmAudio
+import io.github.skm0078.audora.speech.normalize.TextRole
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -115,6 +116,25 @@ class RoutedSpeechTest {
 
         assertEquals(listOf(EN_VOICE to "Read the world,"), voices.sherpa.calls)
         assertEquals(listOf(HI_VOICE to "इसी के दो भाग हैं ।"), voices.system.calls)
+    }
+
+    @Test
+    fun `English parts are normalized too, and a heading reads its Roman numeral`() = runTest {
+        val voices = FakeVoices()
+        val speech = RoutedSpeech(voices, ScriptRouter())
+
+        speech.render("Dr. Rao paid ₹1,50,000 on 15/08/1947.", Lang.EN)
+        speech.render("IV. Results", Lang.EN, TextRole.HEADING)
+        speech.render("IV. Results", Lang.EN)
+
+        assertEquals(
+            listOf(
+                EN_VOICE to "Doctor Rao paid one lakh fifty thousand rupees on fifteenth August nineteen forty-seven.",
+                EN_VOICE to "four. Results",
+                EN_VOICE to "IV. Results",
+            ),
+            voices.sherpa.calls,
+        )
     }
 
     @Test

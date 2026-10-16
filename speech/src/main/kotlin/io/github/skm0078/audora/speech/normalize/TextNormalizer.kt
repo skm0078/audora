@@ -5,7 +5,7 @@ package io.github.skm0078.audora.speech.normalize
 
 /**
  * What a piece of text is on the page. Some readings depend on it: "IV. Results" is "four" only in a heading.
- * Units carry no role until P2-02 detects headings, so callers pass [BODY] until then.
+ * Playback passes [HEADING] for sentences layout found in a heading (`UnitKind.HEADING`), [BODY] for the rest.
  */
 enum class TextRole { BODY, HEADING }
 
