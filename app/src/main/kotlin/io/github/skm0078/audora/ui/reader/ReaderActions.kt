@@ -38,4 +38,7 @@ interface ReaderActions {
     fun onAskForPassword()
 
     fun onRetry()
+
+    /** Download the text recognition files a scanned page needs (P3-05). */
+    fun onDownloadOcrModels() = Unit
 }

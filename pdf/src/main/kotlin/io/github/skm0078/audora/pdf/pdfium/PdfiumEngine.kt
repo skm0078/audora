@@ -4,15 +4,19 @@
 package io.github.skm0078.audora.pdf.pdfium
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Color
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import io.github.skm0078.audora.core.config.ExtractionConfig
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.flatMap
+import io.github.skm0078.audora.pdf.document.PageImage
 import io.github.skm0078.audora.pdf.document.PdfDocumentHandle
 import io.github.skm0078.audora.pdf.document.PdfEngine
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.document.PdfPageError
+import io.github.skm0078.audora.pdf.document.RenderSize
 import io.github.skm0078.audora.pdf.extract.RawPage
 import io.legere.pdfiumandroid.api.PdfPasswordException
 import io.legere.pdfiumandroid.core.unlocked.PdfDocumentU
@@ -110,7 +114,65 @@ private class PdfiumDocumentHandle(private val document: PdfDocumentU, private v
         }
     }
 
+    /**
+     * Draws under PDFium's lock, converts to grey outside it, so other books only wait for the drawing. The ARGB
+     * bitmap (4 bytes per pixel, bounded by `maxPixels`) lives only until the grey copy is made.
+     */
+    @Suppress("TooGenericExceptionCaught") // PdfiumAndroidKt reports page failures as RuntimeExceptions.
+    override fun render(pageIndex: Int, dpi: Int, maxPixels: Long): Outcome<PageImage, PdfPageError> = try {
+        pdfiumLocked { drawLocked(pageIndex, dpi, maxPixels) }.flatMap { (bitmap, size) ->
+            try {
+                Outcome.Success(PageImage(pageIndex, size.width, size.height, size.dpi, grayOf(bitmap)))
+            } finally {
+                bitmap.recycle()
+            }
+        }
+    } catch (e: RuntimeException) {
+        Outcome.Failure(PdfPageError.ExtractionFailed(pageIndex, "render failed: $e", e))
+    } catch (e: OutOfMemoryError) {
+        Outcome.Failure(PdfPageError.ExtractionFailed(pageIndex, "no memory to render the page: $e", e))
+    }
+
+    private fun drawLocked(pageIndex: Int, dpi: Int, maxPixels: Long): Outcome<Pair<Bitmap, RenderSize>, PdfPageError> {
+        val page = document.openPage(pageIndex)
+            ?: return Outcome.Failure(PdfPageError.ExtractionFailed(pageIndex, "PDFium could not load the page"))
+        try {
+            val size = RenderSize.of(page.getPageWidthPoint(), page.getPageHeightPoint(), dpi, maxPixels)
+                ?: return Outcome.Failure(PdfPageError.ExtractionFailed(pageIndex, "the page has no size"))
+            val bitmap = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888)
+            page.renderPageBitmap(bitmap, 0, 0, size.width, size.height, false, false, Color.WHITE, Color.WHITE)
+            return Outcome.Success(bitmap to size)
+        } finally {
+            page.close()
+        }
+    }
+
+    /** ITU-R BT.601 luma, one row at a time so only one extra row of pixels is held. */
+    private fun grayOf(bitmap: Bitmap): ByteArray {
+        val width = bitmap.width
+        val gray = ByteArray(width * bitmap.height)
+        val row = IntArray(width)
+        for (y in 0 until bitmap.height) {
+            bitmap.getPixels(row, 0, width, 0, y, width, 1)
+            val base = y * width
+            for (x in 0 until width) {
+                val pixel = row[x]
+                val luma = (LUMA_R * Color.red(pixel) + LUMA_G * Color.green(pixel) + LUMA_B * Color.blue(pixel)) /
+                    LUMA_SCALE
+                gray[base + x] = luma.toByte()
+            }
+        }
+        return gray
+    }
+
     override fun close() {
         pdfiumLocked { document.close() }
+    }
+
+    private companion object {
+        const val LUMA_R = 299
+        const val LUMA_G = 587
+        const val LUMA_B = 114
+        const val LUMA_SCALE = 1000
     }
 }

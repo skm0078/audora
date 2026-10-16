@@ -20,6 +20,8 @@ import io.github.skm0078.audora.pdf.layout.ParagraphKind
 import io.github.skm0078.audora.pdf.layout.ReadingParagraph
 import io.github.skm0078.audora.pdf.layout.ReadingText
 import io.github.skm0078.audora.pdf.layout.ReadingTextBuilder
+import io.github.skm0078.audora.pdf.ocr.OcrPageText
+import io.github.skm0078.audora.pdf.quality.IndicOrder
 import io.github.skm0078.audora.pdf.quality.PageQuality
 import io.github.skm0078.audora.pdf.quality.PageQualityScorer
 import io.github.skm0078.audora.pdf.quality.indicOrderOf
@@ -74,6 +76,18 @@ class ReadingUnitBuilder(
      */
     fun sampleText(page: AnalyzedPage, neighbours: List<PageProfile>): String =
         textOf(page, neighbours, page.layout).text
+
+    /**
+     * Units of a page read by OCR (P3-05): Tesseract's text with the same repair and sentence split as a text
+     * layer; `charStart` indexes the returned text's [ReadingText], and units carry no glyph boxes.
+     */
+    fun buildOcr(pageIndex: Int, ocrText: String): List<ReadingUnit> = build(ocrReadingText(pageIndex, ocrText))
+
+    /** The reading text [buildOcr]'s offsets index. Tesseract writes Indic text in logical order. */
+    fun ocrReadingText(pageIndex: Int, ocrText: String): ReadingText {
+        val page = OcrPageText.build(pageIndex, ocrText)
+        return textBuilder.build(page.text, page.layout, page.hyphenated, IndicOrder.LOGICAL)
+    }
 
     private fun textOf(page: AnalyzedPage, neighbours: List<PageProfile>, layout: PageLayout): ReadingText {
         val lexicon = neighbours.fold(page.profile.hyphenated) { words, other -> words + other.hyphenated }

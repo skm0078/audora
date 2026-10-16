@@ -212,16 +212,25 @@ class ReaderModel(
         }
     }
 
+    /**
+     * Reads the shown page again if it waits for the OCR models (P3-05): called when they finish downloading, so the
+     * scanned page appears without the listener turning pages.
+     */
+    fun reloadIfWaitingForOcr() {
+        val current = mutableState.value
+        if ((current.content as? PageContent.Ready)?.origin == PageOrigin.NEEDS_OCR_MODELS) loadPage(current.page)
+    }
+
     private fun loadPage(page: Int) {
         val open = document ?: return
         pageJob?.cancel()
         mutableState.update { it.copy(page = page, content = PageContent.Loading) }
         pageJob = scope.launch {
-            val content = when (val units = open.units(page)) {
-                is Outcome.Success -> PageContent.Ready(units.value)
+            val content = when (val shown = open.page(page)) {
+                is Outcome.Success -> PageContent.Ready(shown.value.units, shown.value.origin)
 
                 is Outcome.Failure -> {
-                    AudoraLog.w(TAG, "Page failed, $logContext page=$page error=${units.error}")
+                    AudoraLog.w(TAG, "Page failed, $logContext page=$page error=${shown.error}")
                     PageContent.Failed
                 }
             }

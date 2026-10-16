@@ -35,3 +35,4 @@ models/
 # Python
 __pycache__/
 *.pyc
+pdf/src/androidTest/assets/ocr/

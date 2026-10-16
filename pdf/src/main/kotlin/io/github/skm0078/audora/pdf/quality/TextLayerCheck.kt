@@ -7,20 +7,44 @@ import io.github.skm0078.audora.core.config.QualityConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.pdf.document.PageImage
+import io.github.skm0078.audora.pdf.document.PdfPageError
 import java.text.Normalizer
 import java.util.Locale
 
 /**
- * Recognizes the text of one rendered page. The Tesseract implementation is P3-05 (models from the P4-01 model
- * manager); until then a book has no OCR and its Indic text layer stays [TextLayerVerdict.UNVERIFIED].
+ * Recognizes the text of one page of a book: Tesseract over the rendered page (P3-05, `pdf.ocr.TesseractPageOcr`),
+ * with its models from the model manager. A book opened without one keeps its Indic text layer
+ * [TextLayerVerdict.UNVERIFIED] and reads OCR-routed pages from their text layer.
  */
 fun interface PageOcr {
+    /** The page's text in reading order: lines separated by a line break, paragraphs by a blank line. */
     fun recognize(pageIndex: Int, langs: Set<Lang>): Outcome<String, OcrError>
+
+    /**
+     * The languages a page without a usable text layer is written in (a scan gives no hint). The default cannot
+     * tell; the Tesseract implementation reads the page once at low resolution with every installed language.
+     */
+    fun detectLangs(pageIndex: Int): Outcome<Set<Lang>, OcrError> =
+        Outcome.Failure(OcrError.Failed("language detection is not supported"))
+}
+
+/** Builds a book's [PageOcr] from the book's own renderer (`PdfBook.open`). */
+fun interface PageOcrFactory {
+    fun create(pages: PageRenderer): PageOcr
+}
+
+/** Draws a page of the open book for OCR, at most [dpi] and [maxPixels] (`PdfDocumentHandle.render`). */
+fun interface PageRenderer {
+    fun render(pageIndex: Int, dpi: Int, maxPixels: Long): Outcome<PageImage, PdfPageError>
 }
 
 sealed interface OcrError {
     /** The language's model is not downloaded yet; the check is tried again later. */
     data class ModelMissing(val lang: Lang) : OcrError
+
+    /** No OCR model is downloaded at all, so a scan's language cannot even be detected. */
+    data object NoModels : OcrError
 
     data class Failed(val detail: String, val cause: Throwable? = null) : OcrError
 }

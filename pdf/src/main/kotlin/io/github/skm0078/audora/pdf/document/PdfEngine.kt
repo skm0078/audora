@@ -17,6 +17,24 @@ interface PdfDocumentHandle : Closeable {
     val pageCount: Int
 
     fun readPage(pageIndex: Int): Outcome<RawPage, PdfPageError>
+
+    /**
+     * The page as an 8-bit grey image for OCR (P3-05), at [dpi] or lower so it stays within [maxPixels]. Engines
+     * that cannot draw (desktop page dumps in tests) keep this default.
+     */
+    fun render(pageIndex: Int, dpi: Int, maxPixels: Long): Outcome<PageImage, PdfPageError> =
+        Outcome.Failure(PdfPageError.ExtractionFailed(pageIndex, "this engine cannot render pages"))
+}
+
+/**
+ * One page drawn for OCR: [width] × [height] grey pixels, one byte each (0 black, 255 white), row by row with no
+ * padding. [dpi] is the resolution it was actually drawn at, which Tesseract uses to judge text size.
+ */
+class PageImage(val pageIndex: Int, val width: Int, val height: Int, val dpi: Int, val gray: ByteArray) {
+    init {
+        require(width > 0 && height > 0) { "image must not be empty, was ${width}x$height" }
+        require(gray.size == width * height) { "gray must hold width × height bytes" }
+    }
 }
 
 /** Why a document could not be opened. */

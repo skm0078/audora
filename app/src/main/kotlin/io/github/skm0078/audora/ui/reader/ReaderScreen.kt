@@ -49,11 +49,18 @@ import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReaderScreen(state: ReaderState, config: ReaderConfig, actions: ReaderActions, modifier: Modifier = Modifier) {
+fun ReaderScreen(
+    state: ReaderState,
+    config: ReaderConfig,
+    actions: ReaderActions,
+    modifier: Modifier = Modifier,
+    ocrModels: OcrModelsState? = null,
+) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -88,14 +95,14 @@ fun ReaderScreen(state: ReaderState, config: ReaderConfig, actions: ReaderAction
                     Button(onClick = actions::onRetry) { Text(stringResource(R.string.reader_retry)) }
                 }
 
-                is DocumentState.Open -> OpenBook(state, document.pageCount, actions)
+                is DocumentState.Open -> OpenBook(state, document.pageCount, actions, ocrModels)
             }
         }
     }
 }
 
 @Composable
-private fun OpenBook(state: ReaderState, pageCount: Int, actions: ReaderActions) {
+private fun OpenBook(state: ReaderState, pageCount: Int, actions: ReaderActions, ocrModels: OcrModelsState?) {
     var picking by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
         PageBar(state.page, pageCount, actions, onPick = { picking = true })
@@ -115,10 +122,12 @@ private fun OpenBook(state: ReaderState, pageCount: Int, actions: ReaderActions)
 
             PageContent.Failed -> Message(stringResource(R.string.reader_page_failed))
 
-            is PageContent.Ready -> if (content.units.isEmpty()) {
-                Message(stringResource(R.string.reader_page_no_text))
-            } else {
-                Sentences(state, content.units, actions)
+            is PageContent.Ready -> {
+                PageOriginNotice(content.origin, ocrModels, actions::onDownloadOcrModels)
+                when {
+                    content.units.isNotEmpty() -> Sentences(state, content.units, actions)
+                    content.origin == PageOrigin.TEXT -> Message(stringResource(R.string.reader_page_no_text))
+                }
             }
         }
     }
