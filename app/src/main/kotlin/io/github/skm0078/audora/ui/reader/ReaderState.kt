@@ -5,6 +5,7 @@ package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.pdf.render.ViewRect
 
 sealed interface DocumentState {
     data object Loading : DocumentState
@@ -37,6 +38,8 @@ sealed interface PageContent {
  * @property page the zero-based page on screen. Not necessarily the page being read: the listener can browse.
  * @property following the screen turns pages with the reading position; browsing elsewhere stops that until
  *   the listener starts reading again or goes back to the reading position.
+ * @property view the page drawn as in the PDF, or its sentences as text; the listener's choice, remembered.
+ * @property pageImage the shown page drawn, in the page view.
  */
 data class ReaderState(
     val bookId: BookId,
@@ -46,6 +49,8 @@ data class ReaderState(
     val content: PageContent = PageContent.Loading,
     val following: Boolean = true,
     val playback: PlaybackSnapshot = PlaybackSnapshot.Connecting,
+    val view: ReaderView = ReaderView.PAGE,
+    val pageImage: PageImageState = PageImageState.None,
 ) {
     val pageCount: Int? get() = (document as? DocumentState.Open)?.pageCount
 
@@ -69,5 +74,17 @@ data class ReaderState(
             // Containment, not equality: robust if the service's units were cut slightly differently.
             return units.indexOfFirst { position.charStart in it.charStart until it.charEnd }
                 .takeIf { it >= 0 }
+        }
+
+    /**
+     * The spoken sentence's lines on the page image (P4-03): one rect per line, in fractions of the image.
+     * Empty when the sentence is not on the page shown, the image is not ready, or the text has no boxes (OCR).
+     */
+    val spokenHighlight: List<ViewRect>
+        get() {
+            val image = (pageImage as? PageImageState.Ready)?.takeIf { it.page == page }?.image ?: return emptyList()
+            val index = spokenUnitIndex ?: return emptyList()
+            val units = (content as? PageContent.Ready)?.units ?: return emptyList()
+            return units[index].bounds.orEmpty().map(image.transform::toView)
         }
 }

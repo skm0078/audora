@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReaderDocument.kt
-// Purpose: The reader's own read-only view of a book's PDF: page count and one page's sentences at a time.
+// Purpose: The reader's own read-only view of a book's PDF: page count, one page's sentences and its image.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -17,6 +17,9 @@ interface ReaderDocument : Closeable {
     val pageCount: Int
 
     suspend fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError>
+
+    /** [page] drawn [widthPx] pixels wide (smaller if [maxPixels] would be exceeded), for the page view (P4-03). */
+    suspend fun render(page: Int, widthPx: Int, maxPixels: Int): Outcome<PageImage, PdfPageError>
 }
 
 fun interface ReaderDocumentOpener {

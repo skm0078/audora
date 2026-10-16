@@ -34,6 +34,7 @@ import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.diagnostics.LogSharer
+import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.ui.AppDestination
 import io.github.skm0078.audora.ui.battery.BatterySetupCard
 import io.github.skm0078.audora.ui.battery.BatterySetupController
@@ -50,8 +51,10 @@ import io.github.skm0078.audora.ui.reader.ReaderActions
 import io.github.skm0078.audora.ui.reader.ReaderDocumentOpener
 import io.github.skm0078.audora.ui.reader.ReaderModel
 import io.github.skm0078.audora.ui.reader.ReaderScreen
+import io.github.skm0078.audora.ui.reader.ReaderView
 import io.github.skm0078.audora.ui.reader.SleepTimerSetting
 import io.github.skm0078.audora.ui.reader.SpeedPreference
+import io.github.skm0078.audora.ui.reader.ViewPreference
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.settings.SettingsScreen
 import io.github.skm0078.audora.ui.theme.AudoraTheme
@@ -74,6 +77,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var speedPreference: SpeedPreference
+
+    @Inject
+    lateinit var viewPreference: ViewPreference
 
     @Inject
     lateinit var documentOpener: ReaderDocumentOpener
@@ -240,6 +246,7 @@ class MainActivity : ComponentActivity() {
                 scope = scope,
                 resume = LocatorReaderResume(resumeLocator),
                 autoResume = autoResume,
+                views = viewPreference,
             ).also { it.start() }
         }
         // Connected only while visible: a controller left connected keeps the playback service bound.
@@ -270,6 +277,16 @@ class MainActivity : ComponentActivity() {
         override fun onShowReadingPosition() = model.showReadingPosition()
 
         override fun onSentenceTapped(unit: ReadingUnit) = playWithPermission { model.readFrom(unit) }
+
+        // Asks for the notification permission only when the tap is on a sentence.
+        override fun onPageTapped(point: ViewPoint) {
+            val unit = model.sentenceAt(point) ?: return
+            playWithPermission { model.readFrom(unit) }
+        }
+
+        override fun onViewChanged(view: ReaderView) = model.setView(view)
+
+        override fun onPageWidth(widthPx: Int) = model.setPageWidth(widthPx)
 
         override fun onPlayPause() {
             if (model.state.value.isReading) model.playOrPause() else playWithPermission(model::playOrPause)

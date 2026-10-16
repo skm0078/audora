@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReaderModel.kt
-// Purpose: Reader logic: opens the book, shows a page, starts and steers reading through the PlaybackPort.
+// Purpose: Reader logic: opens the book, shows a page (drawn or as text), starts and steers reading.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -10,6 +10,8 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PdfOpenError
+import io.github.skm0078.audora.pdf.render.SentenceHitTest
+import io.github.skm0078.audora.pdf.render.ViewPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +39,7 @@ class ReaderModel(
     private val scope: CoroutineScope,
     private val resume: ReaderResume = ReaderResume.None,
     autoResume: Boolean = false,
+    private val views: ViewPreference = ViewPreference.None,
 ) {
     private val mutableState = MutableStateFlow(ReaderState(bookId))
     val state: StateFlow<ReaderState> = mutableState.asStateFlow()
@@ -47,6 +50,10 @@ class ReaderModel(
     private var password: String? = null
     private var openJob: Job? = null
     private var pageJob: Job? = null
+    private var renderJob: Job? = null
+
+    /** The page view's width in pixels, once the screen has laid it out; pages are drawn at this width. */
+    private var pageWidthPx: Int? = null
     private var started = false
 
     /** Where this book was left (its resume anchor), when the player is not already on this book. */
@@ -62,6 +69,7 @@ class ReaderModel(
         if (started) return
         started = true
         scope.launch { player.state.collect(::onPlayback) }
+        scope.launch { views.loadView()?.let(::applyView) }
         open(password = null)
     }
 
@@ -94,6 +102,28 @@ class ReaderModel(
     /** Tap on a sentence: read from there. */
     fun readFrom(unit: ReadingUnit) = startReading(ReadingPosition(bookId, unit.page, unit.charStart))
 
+    /** The sentence under a tap on the page image at [point], if the tap is on (or right next to) one. */
+    fun sentenceAt(point: ViewPoint): ReadingUnit? {
+        val current = state.value
+        val image = (current.pageImage as? PageImageState.Ready)?.takeIf { it.page == current.page }?.image
+        val units = (current.content as? PageContent.Ready)?.units
+        if (image == null || units == null) return null
+        return SentenceHitTest.unitAt(units, image.transform.toPage(point), config.pageTapSlopPoints)
+    }
+
+    fun setView(view: ReaderView) {
+        if (view == state.value.view) return
+        applyView(view)
+        scope.launch { views.saveView(view) }
+    }
+
+    /** The screen laid the page view out [widthPx] wide (again after a rotation): draw the page at that width. */
+    fun setPageWidth(widthPx: Int) {
+        if (widthPx <= 0 || widthPx == pageWidthPx) return
+        pageWidthPx = widthPx
+        renderPage(state.value.page)
+    }
+
     /**
      * Pauses while reading. Otherwise resumes where reading stopped if that is on the page shown, or starts at
      * the top of the page shown: what is on screen is what gets read ("start from page N").
@@ -125,6 +155,7 @@ class ReaderModel(
     fun close() {
         openJob?.cancel()
         pageJob?.cancel()
+        renderJob?.cancel()
         document?.close()
         document = null
     }
@@ -226,6 +257,35 @@ class ReaderModel(
                 }
             }
             mutableState.update { if (it.page == page) it.copy(content = content) else it }
+        }
+        renderPage(page)
+    }
+
+    private fun applyView(view: ReaderView) {
+        mutableState.update { it.copy(view = view) }
+        renderPage(state.value.page)
+    }
+
+    /** Draws [page] for the page view; nothing in the text view, so its bitmap is not held there. */
+    private fun renderPage(page: Int) {
+        renderJob?.cancel()
+        val open = document
+        val width = pageWidthPx
+        if (open == null || width == null || state.value.view != ReaderView.PAGE) {
+            mutableState.update { it.copy(pageImage = PageImageState.None) }
+            return
+        }
+        mutableState.update { it.copy(pageImage = PageImageState.Loading) }
+        renderJob = scope.launch {
+            val image = when (val rendered = open.render(page, width, config.pageMaxPixels)) {
+                is Outcome.Success -> PageImageState.Ready(page, rendered.value)
+
+                is Outcome.Failure -> {
+                    AudoraLog.w(TAG, "Page render failed, $logContext page=$page error=${rendered.error}")
+                    PageImageState.Failed
+                }
+            }
+            mutableState.update { if (it.page == page) it.copy(pageImage = image) else it }
         }
     }
 

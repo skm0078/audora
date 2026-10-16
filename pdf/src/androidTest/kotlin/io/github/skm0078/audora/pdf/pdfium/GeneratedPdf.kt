@@ -11,7 +11,8 @@ import java.io.File
  * objects per page as it would in a real book.
  */
 object GeneratedPdf {
-    fun write(file: File, pages: Int, linesPerPage: Int) {
+    /** [rotate] is the pages' `/Rotate` (0, 90, 180 or 270), for the page renderer's test (P4-03). */
+    fun write(file: File, pages: Int, linesPerPage: Int, rotate: Int = 0) {
         val objects = ArrayList<String>()
         objects += "<< /Type /Catalog /Pages 2 0 R >>"
         val kids = (0 until pages).joinToString(" ") { "${FIRST_PAGE_OBJECT + it * 2} 0 R" }
@@ -19,7 +20,7 @@ object GeneratedPdf {
         objects += "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>"
         for (page in 0 until pages) {
             val contentObject = FIRST_PAGE_OBJECT + page * 2 + 1
-            objects += "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] " +
+            objects += "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Rotate $rotate " +
                 "/Resources << /Font << /F1 3 0 R >> >> /Contents $contentObject 0 R >>"
             val content = contentStream(page, linesPerPage)
             objects += "<< /Length ${content.length} >>\nstream\n$content\nendstream"
