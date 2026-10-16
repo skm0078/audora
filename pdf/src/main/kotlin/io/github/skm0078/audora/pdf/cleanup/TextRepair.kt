@@ -37,10 +37,11 @@ internal class MappedText(val text: String, val sources: IntArray) {
 
 /**
  * Spec §5 step 6, ADR-020, on one paragraph at a time (lines separated by "\n"):
- * 1. **Fold** characters a listener cannot hear and a voice may stumble on: zero-width space, word joiner, BOM,
- *    soft hyphens, control characters (glyphs a font maps to nothing arrive as C0 controls). ZWJ and ZWNJ stay:
- *    they change how Devanagari and Bengali clusters form. Latin presentation-form ligatures ("ﬁ") are expanded.
- *    Indic normalization (NFC, nukta forms) is P3-02's.
+ * 1. **NFC** ([UnicodeRepair.compose], P3-02, ADR-028), then **fold** characters a listener cannot hear and a voice
+ *    may stumble on: zero-width space, word joiner, BOM, soft hyphens, control characters (glyphs a font maps to
+ *    nothing arrive as C0 controls). ZWJ and ZWNJ stay: they change how Devanagari and Bengali clusters form.
+ *    Latin presentation-form ligatures ("ﬁ") are expanded. A "|" typed for a danda after Hindi or Bengali text
+ *    becomes "।" ([UnicodeRepair.dandasFromPipes]).
  * 2. **De-hyphenate.** PDFium replaces a hyphen at a line end with U+0002 and joins the lines (P2-02). Between two
  *    letters it is resolved: the hyphen stays when the word is printed with a hyphen elsewhere nearby
  *    ([lexicon], "block-pulse"), when the second part starts with a capital ("Cape-Horner") or the first
@@ -52,7 +53,7 @@ internal class MappedText(val text: String, val sources: IntArray) {
  */
 internal class TextRepair(private val config: CleanupConfig) {
     fun repair(paragraph: MappedText, lexicon: Set<String>): MappedText {
-        var text = fold(paragraph)
+        var text = UnicodeRepair.dandasFromPipes(fold(UnicodeRepair.compose(paragraph)))
         text = dehyphenate(text, lexicon)
         text = dropBullets(text)
         if (config.skipCitationMarkers) text = dropCitations(text)

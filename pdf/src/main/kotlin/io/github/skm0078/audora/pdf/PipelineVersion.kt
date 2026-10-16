@@ -15,5 +15,7 @@ package io.github.skm0078.audora.pdf
  * 5 = P3-04: text in Kruti Dev, DevLys, Chanakya and Bijoy fonts converted to Unicode; "অ্য" no longer counts as
  *     an impossible sequence (ADR-023).
  * 6 = P3-05: pages routed to OCR are read from Tesseract's text instead of their text layer (ADR-025).
+ * 7 = P3-02: text in NFC; "|" after Indic text read as a danda; sentence breaks corrected after dandas, closing
+ *     quotes, Hindi/Bengali abbreviations and initials, and verse numbers (ADR-028).
  */
-const val PIPELINE_VERSION: Int = 6
+const val PIPELINE_VERSION: Int = 7

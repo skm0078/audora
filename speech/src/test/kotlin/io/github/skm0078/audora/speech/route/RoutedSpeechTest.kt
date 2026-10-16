@@ -106,6 +106,16 @@ class RoutedSpeechTest {
     }
 
     @Test
+    fun `each part is normalized for its own language`() = runTest {
+        val voices = FakeVoices()
+
+        RoutedSpeech(voices, ScriptRouter()).render("Read the world, इसी के २ भाग हैं ।", Lang.EN)
+
+        assertEquals(listOf(EN_VOICE to "Read the world,"), voices.sherpa.calls)
+        assertEquals(listOf(HI_VOICE to "इसी के दो भाग हैं ।"), voices.system.calls)
+    }
+
+    @Test
     fun `blank text renders once with the sentence's voice`() = runTest {
         val voices = FakeVoices()
 
