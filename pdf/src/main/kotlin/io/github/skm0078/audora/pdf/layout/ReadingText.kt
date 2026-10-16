@@ -8,6 +8,8 @@ import io.github.skm0078.audora.pdf.cleanup.MappedText
 import io.github.skm0078.audora.pdf.cleanup.TextRepair
 import io.github.skm0078.audora.pdf.extract.IntArrayBuilder
 import io.github.skm0078.audora.pdf.extract.PageText
+import io.github.skm0078.audora.pdf.legacy.LegacyConverter
+import io.github.skm0078.audora.pdf.legacy.LegacyRuns
 import io.github.skm0078.audora.pdf.quality.IndicOrder
 import io.github.skm0078.audora.pdf.quality.IndicReorder
 
@@ -39,21 +41,26 @@ data class ReadingParagraph(val start: Int, val end: Int, val kind: ParagraphKin
 
 /**
  * Builds the reading text from a layout. With a [repair] (P2-03, ADR-020) each paragraph is repaired for speech
- * before it is added: Indic clusters repaired and, on visual-order pages, reordered (P3-03, [IndicReorder]); then
- * hyphens at line ends resolved, ligatures expanded, junk characters, bullets and citation markers dropped.
+ * before it is added: legacy-font text converted to Unicode (P3-04, [LegacyConverter]); Indic clusters repaired
+ * and, on visual-order pages, reordered (P3-03, [IndicReorder]); then hyphens at line ends resolved, ligatures
+ * expanded, junk characters, bullets and citation markers dropped.
  * Without one the text is the layout's characters as extracted (layout tests use that).
  */
 class ReadingTextBuilder internal constructor(private val repair: TextRepair?) {
     constructor() : this(null)
 
-    /** [lexicon]: hyphenated words printed on this page and its neighbours ("block-pulse"), for de-hyphenation. */
+    /**
+     * [lexicon]: hyphenated words printed on this page and its neighbours ("block-pulse"), for de-hyphenation.
+     * [legacy]: the page's legacy-font runs (`PageQuality.legacyRuns`).
+     */
     fun build(
         page: PageText,
         layout: PageLayout,
         lexicon: Set<String> = emptySet(),
         indicOrder: IndicOrder = IndicOrder.LOGICAL,
+        legacy: LegacyRuns = LegacyRuns.NONE,
     ): ReadingText {
-        val out = Output(page.text, repair, lexicon, indicOrder)
+        val out = Output(page.text, repair, lexicon, indicOrder, legacy)
         for (block in layout.blocks) {
             for (paragraph in block.paragraphs) {
                 // Continuations are body text on both sides (PageLayoutAnalyzer), so the paragraph keeps its kind.
@@ -81,6 +88,7 @@ class ReadingTextBuilder internal constructor(private val repair: TextRepair?) {
         private val repair: TextRepair?,
         private val lexicon: Set<String>,
         private val indicOrder: IndicOrder,
+        private val legacy: LegacyRuns,
     ) {
         val text = StringBuilder(source.length)
         val sources = IntArrayBuilder(source.length)
@@ -101,7 +109,10 @@ class ReadingTextBuilder internal constructor(private val repair: TextRepair?) {
             val open = paragraph ?: return
             paragraph = null
             val raw = open.build()
-            val done = repair?.repair(IndicReorder.apply(raw, indicOrder), lexicon) ?: raw
+            val done = repair?.let {
+                val unicode = LegacyConverter.convert(raw, legacy).text
+                it.repair(IndicReorder.apply(unicode, indicOrder), lexicon)
+            } ?: raw
             if (done.text.isBlank()) return
             if (text.isNotEmpty()) {
                 text.append(PARAGRAPH_BREAK)

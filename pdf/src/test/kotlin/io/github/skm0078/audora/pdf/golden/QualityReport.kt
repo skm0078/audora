@@ -151,8 +151,9 @@ object QualityReport {
                 "eye and waits for a hand-check; `checked` was hand-checked. Rules: `pdf/golden/README.md`.",
         )
         appendLine(
-            "- Not scored here: scanned pages (OCR runs on the phone, P3-05), legacy-font PDFs (P3-04) and " +
-                "password or damaged files (device tests).",
+            "- Not scored here: scanned pages (OCR runs on the phone, P3-05), real legacy-font PDFs (not " +
+                "redistributable; the legacy categories are generated, ADR-023) and password or damaged files " +
+                "(device tests).",
         )
     }
 

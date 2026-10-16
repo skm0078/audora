@@ -38,6 +38,8 @@ DUMPER_SOURCE = REPO / "scripts" / "pdf" / "rawpage_dump.cpp"
 # The dumps depend on the exact PDFium build. Bump together with a full `dump` and a new goldenTest run.
 PYPDFIUM2_VERSION = "5.13.0"
 COLUMNS = ["id", "category", "source", "pages", "text", "status"]
+# A source that names a script of this repo: the PDF and its expected text are generated here (legacy_golden.py).
+GENERATED_HERE = "repo:"
 STATUSES = {"exact", "draft", "checked"}
 
 
@@ -142,7 +144,7 @@ def command_excerpt(args):
     PDFS.mkdir(parents=True, exist_ok=True)
     for doc in read_corpus():
         target = PDFS / f"{doc['id']}.pdf"
-        if target.exists() and not args.force:
+        if doc["source"].startswith(GENERATED_HERE) or (target.exists() and not args.force):
             continue
         reader = PdfReader(str(Path(args.sources) / doc["source"]))
         if reader.is_encrypted:
