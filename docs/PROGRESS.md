@@ -2,6 +2,16 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## P5-01 — README for friends, Obtainium setup, Play Protect note (2026-10-16)
+- **README rewritten for friends:** what Audora does, what phone it needs, installing with Obtainium (get Obtainium, allow installs from a source, add `https://github.com/skm0078/audora`, install, update), installing without Obtainium, the Play Protect prompts and what to tap, the permissions Audora asks for and the release key's SHA-256, a first-run walk-through (add a PDF, background-reading setup, voices, OCR files) and what to do when something goes wrong (Share logs). Contributor notes moved to the end.
+- **Test builds:** the README says the `dev-build` APK installs next to the release and is not for Obtainium. Each CI run signs it with a fresh debug key (no stable debug keystore in CI), so a newer test build cannot install over an older one; the README says to uninstall the old one first.
+- **RELEASING.md:** the troubleshooting row for dev → prod conflicts now says to merge the `-s ours` branch into prod, not dev. Its Obtainium section points to the README and notes why each release must carry exactly one APK.
+- No code changes; no ADR (no decision changed).
+
+**Known limits:** the latest release is still v0.0.1 (the P0-02 install test), so a friend following the README today installs an app that does not read yet; the README is right from v0.1.0 on. Obtainium's own asset names and Play Protect's wording vary by version, so the README describes them loosely.
+
+**Real-device check (done-when, with a friend's phone; batch with the v0.1.0 checks):** (1) Give a friend only the README link. Without help they install Obtainium, add Audora, install it, and get past Play Protect. (2) After v0.1.1 (or any next release) is published, Obtainium shows the update and installing it keeps their library and reading position. Note where they hesitated.
+
 ## P3-06 — Hindi and Bengali voices, "Voices & licences" (2026-10-16)
 - **Four new downloads in Settings → Voices:** "Hindi, Piper pratham" and "Hindi, Piper priyamvada" (64 MB each, CC BY-NC-SA 4.0), "Bengali, Piper google" (78 MB, CC BY-SA 4.0 + CMU Indic) and "Bengali, MMS (slower)" (114 MB, CC BY-NC 4.0), next to P4-02's Supertonic Hindi. The Bengali zips are rebuilt from S1's pinned conversions on the `s1-voices` release (`source.url` in `models.json`, new in `build_voice_mirror.py`). All four zips were built with the script and rendered with sherpa-onnx 1.13.8 using the app's config (desktop, 2 threads: Piper RTF 0.11–0.13, MMS 0.49).
 - **Provisional defaults (ADR-030):** pratham for Hindi and Piper google for Bengali, picked by S1's desktop numbers (lowest ASR error among the Piper Hindi voices; Piper Bengali 5× faster than MMS at a higher sample rate). They show "Recommended for this language" and come first. The choice is one line, `recommended` in `speech/models.json`, to be settled by the listening check below.

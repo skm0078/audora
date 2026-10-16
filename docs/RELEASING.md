@@ -89,12 +89,14 @@ Pushing a tag `vX.Y.Z` that points at a commit on `prod` does the same as step 3
 
 ## Installing and updating with Obtainium
 
-1. Install Obtainium (from its GitHub releases or F-Droid).
-2. In Obtainium tap **Add app**, paste `https://github.com/skm0078/audora`, tap **Add**, then **Install**.
-3. Leave *Include prereleases* off, so Obtainium follows real releases and ignores the rolling `dev-build`.
+The friend-facing steps (Obtainium, installing without it, the Play Protect prompt, first run) are in the
+[README](../README.md#install-the-easy-way-obtainium). Obtainium follows real releases only: `dev-build`, `voices`
+and `s1-voices` are pre-releases, which it ignores with its default settings, and each release carries exactly one
+APK, so no asset filter is needed. Keep it that way: a second `.apk` on a release would make Obtainium ask which one
+to install.
 
 The release app (`io.github.skm0078.audora`) and the dev build (`io.github.skm0078.audora.debug`) install side
-by side. Expect a Play Protect prompt the first time; that is normal for apps from outside the Play Store.
+by side.
 
 ## Pinned certificate
 
@@ -112,7 +114,7 @@ reaching phones as an APK that cannot update the installed app. Only a deliberat
 | `Commit ... is not on prod` | A tag was pushed on a commit outside `prod` | Delete the tag; release from `prod` |
 | `Missing secrets in the 'release' environment` | Step 2 incomplete | Run the key script again (it reuses the key) |
 | Job waits or fails with a deployment protection message | The environment rules from step 1 do not allow this branch or tag | Check the two rules in step 1 |
-| dev → prod PR shows conflicts in files nobody changed on prod | A previous dev → prod PR was squashed, so prod's commit is not in dev's history | On a branch from dev run `git merge -s ours origin/prod` (keeps dev's files, records prod as merged), merge it into dev with **Create a merge commit**, then retry |
+| dev → prod PR shows conflicts in files nobody changed on prod | A previous dev → prod PR was squashed, so prod's commit is not in dev's history | On a branch from dev run `git merge -s ours origin/prod` (keeps dev's files, records prod as merged), push it, open a PR from that branch into **prod** (not dev) and merge it with **Create a merge commit**. Later dev → prod PRs merge cleanly |
 | `Signed with certificate ... but releases must use ...` | The secrets hold a different key | Restore the original key from backup and re-add the secrets |
 
 ## If the key is lost or leaked
