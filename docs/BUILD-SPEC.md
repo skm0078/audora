@@ -143,7 +143,7 @@ Runs lazily per page, two pages ahead of playback, cached per book. Each stage i
 5. **Remove clutter**: lines repeating in the top/bottom 8% across ≥3 pages, standalone page numbers, figure/table interiors; citation markers skipped (setting).
 6. **Repair**: de-hyphenate across line breaks (keep real hyphens), expand ligatures, NFC normalize, fold soft hyphens / zero-width chars.
 7. **Split sentences**: ICU `BreakIterator` per locale; `।` as sentence end; per-language abbreviation lists.
-8. **Normalize for speech**: numbers, dates, ₹, %, ranges (incl. Devanagari/Bengali digits), URLs/emails → "link", Roman numerals in headings. Table-driven tests.
+8. **Normalize for speech**: numbers, dates, ₹, %, ranges (incl. Devanagari/Bengali digits), URLs/emails → "link", Roman numerals in headings. Table-driven tests. Runs in `:speech` at render time, not on `ReadingUnit.text` (ADR-019).
 9. **Prosody**: pause after headings (~600 ms), paragraphs (~400 ms), list items.
 
 **Golden corpus.** ~25 PDFs in `code/testdata/pdfs/` **that we are allowed to redistribute** (public-domain books, arXiv papers with permissive licenses, self-generated Hindi/Bengali PDFs incl. one legacy-font file). Copyrighted samples stay in `D:\AUDORA\test-pdfs\` and are only used locally. Each golden PDF has a hand-checked `testdata/expected/*.txt`. Pipeline changes must not lower the similarity score. This is the agent's main self-check.
@@ -242,6 +242,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 014 | Bundled English voice chosen in `speech/bundled-voices.json`, fetched at build time from sherpa-onnx's release (SHA-pinned), espeak-ng-data trimmed to en/hi/bn; Piper ljspeech provisional | Accepted (P1-03) |
 | 015 | Resume anchor details: head + tail fingerprints (FNV-1a 64, normalized), no voice in the anchor, `resume_anchors` table (DB v2), brand battery steps as text with public intents only | Accepted (P1-06) |
 | 016 | Render-ahead cache is an 8 MiB in-memory LRU (`QueueConfig.recentAudioBytes`) instead of a 20 MB disk LRU in `cacheDir/tts/` (§6) | Accepted (P1-04) |
+| 019 | Speech normalization lives in `:speech` and runs at render time; `ReadingUnit.text` stays the extracted text (display, fingerprints) | Accepted (P2-04) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 
