@@ -14,5 +14,6 @@ package io.github.skm0078.audora.pdf
  *     pre-base vowel signs and rephs moved to logical order, Bengali two-part vowels composed (ADR-021).
  * 5 = P3-04: text in Kruti Dev, DevLys, Chanakya and Bijoy fonts converted to Unicode; "অ্য" no longer counts as
  *     an impossible sequence (ADR-023).
+ * 6 = P3-05: pages routed to OCR are read from Tesseract's text instead of their text layer (ADR-025).
  */
-const val PIPELINE_VERSION: Int = 5
+const val PIPELINE_VERSION: Int = 6

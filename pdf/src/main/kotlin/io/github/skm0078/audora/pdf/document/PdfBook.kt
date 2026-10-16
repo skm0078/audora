@@ -5,6 +5,7 @@ package io.github.skm0078.audora.pdf.document
 
 import io.github.skm0078.audora.core.config.ExtractionConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.flatMap
@@ -12,8 +13,13 @@ import io.github.skm0078.audora.core.result.map
 import io.github.skm0078.audora.pdf.cleanup.PageProfile
 import io.github.skm0078.audora.pdf.extract.PageText
 import io.github.skm0078.audora.pdf.extract.PageTextAssembler
+import io.github.skm0078.audora.pdf.ocr.OcrLanguages
+import io.github.skm0078.audora.pdf.quality.OcrError
 import io.github.skm0078.audora.pdf.quality.PageOcr
+import io.github.skm0078.audora.pdf.quality.PageOcrFactory
 import io.github.skm0078.audora.pdf.quality.PageQuality
+import io.github.skm0078.audora.pdf.quality.PageRenderer
+import io.github.skm0078.audora.pdf.quality.PageRoute
 import io.github.skm0078.audora.pdf.quality.PageRouting
 import io.github.skm0078.audora.pdf.quality.RouteReason
 import io.github.skm0078.audora.pdf.quality.TextLayerCheck
@@ -30,9 +36,10 @@ import java.io.Closeable
  * bytes each. Reading on from page to page costs about one extraction per page; a jump costs one per window page.
  *
  * Each page is routed (P3-03, ADR-021): text layer, legacy-font converter or OCR. For a Hindi or Bengali book the
- * first page with enough text is also OCR'd through [ocr] and compared with its text layer ([TextLayerCheck]).
- * Legacy-font text is converted wherever it is read (P3-04, ADR-023); OCR (P3-05) is not built yet, so a page
- * routed to OCR is still read from its text layer, and the route is returned with the units for P3-05 to act on.
+ * first page with enough text is also OCR'd and compared with its text layer ([TextLayerCheck]). Legacy-font text
+ * is converted wherever it is read (P3-04, ADR-023). Pages routed to OCR are read by the book's [PageOcr] (P3-05,
+ * ADR-025) in the languages [OcrLanguages] picks; when OCR is missing (no models yet) or fails, the page falls back
+ * to its text layer and [PageReading.source] says why.
  *
  * PDFium's document cache grows with every page visited, so after [ExtractionConfig.reopenEveryPages] reads
  * the document is closed and opened again with the same password. Thread-safe: calls are serialized, because
@@ -40,17 +47,20 @@ import java.io.Closeable
  *
  * @param logContext identifies the book in logs (e.g. "book=3f2a"); never the title or the PDF's text.
  */
+@Suppress("TooManyFunctions") // Reading, rendering, the neighbour caches and the reopen rule share one lock.
 class PdfBook private constructor(
     private val engine: PdfEngine,
     private val password: String?,
     private val config: ExtractionConfig,
     private val logContext: String,
-    private val ocr: PageOcr?,
+    ocrFactory: PageOcrFactory?,
     private var handle: PdfDocumentHandle?,
 ) : Closeable {
     private val assembler = PageTextAssembler(config)
     private var caches: PageCaches? = null
     private var textLayerCheck: TextLayerCheck? = null
+    private var ocrLanguages: OcrLanguages? = null
+    private val ocr: PageOcr? = ocrFactory?.create(PageRenderer(::render))
 
     /** What the book's OCR sample said about its Hindi/Bengali text layer. Diagnostics. */
     @get:Synchronized
@@ -103,7 +113,7 @@ class PdfBook private constructor(
     fun readingUnits(pageIndex: Int, builder: ReadingUnitBuilder): Outcome<List<ReadingUnit>, PdfPageError> =
         readPage(pageIndex, builder).map { it.units }
 
-    /** [readingUnits] with the page's route (P3-03). */
+    /** [readingUnits] with the page's route (P3-03) and where its words came from (P3-05). */
     @Synchronized
     fun readPage(pageIndex: Int, builder: ReadingUnitBuilder): Outcome<PageReading, PdfPageError> {
         val cache = cachesFor(builder)
@@ -116,7 +126,56 @@ class PdfBook private constructor(
             val routing = check.route(pageIndex, page.quality, page.quality.ocrLangs) {
                 builder.sampleText(page, neighbours)
             }
-            PageReading(builder.build(page, neighbours), routing)
+            val languages = ocrLanguages ?: OcrLanguages(builder.qualityConfig).also { ocrLanguages = it }
+            if (routing.route == PageRoute.OCR) {
+                readByOcr(page, routing, languages, builder) { builder.build(page, neighbours) }
+            } else {
+                languages.learn(page.quality.ocrLangs)
+                PageReading(builder.build(page, neighbours), routing, PageSource.TextLayer)
+            }
+        }
+    }
+
+    /**
+     * The page's own picture, drawn for OCR. Counts towards the periodic reopen like a page read: drawing fills
+     * PDFium's caches too.
+     */
+    @Synchronized
+    fun render(pageIndex: Int, dpi: Int, maxPixels: Long): Outcome<PageImage, PdfPageError> {
+        if (pageIndex !in 0 until pageCount) return Outcome.Failure(PdfPageError.PageOutOfRange(pageIndex, pageCount))
+        return currentHandle().flatMap { open ->
+            readsSinceOpen++
+            open.render(pageIndex, dpi, maxPixels)
+        }
+    }
+
+    /** OCR when the book has it and the languages are known; the text layer, with the reason, when not. */
+    private fun readByOcr(
+        page: AnalyzedPage,
+        routing: PageRouting,
+        languages: OcrLanguages,
+        builder: ReadingUnitBuilder,
+        textLayer: () -> List<ReadingUnit>,
+    ): PageReading {
+        val pageIndex = page.pageIndex
+        val ocr = ocr ?: return PageReading(textLayer(), routing, PageSource.OcrUnavailable(OcrError.NoModels))
+        val recognized = languages.forPage(pageIndex, routing.reason, page.quality.ocrLangs, ocr).flatMap { langs ->
+            ocr.recognize(pageIndex, langs).map { text -> langs to text }
+        }
+        return when (recognized) {
+            is Outcome.Success -> {
+                val (langs, text) = recognized.value
+                languages.learnFrom(text)
+                PageReading(builder.build(builder.ocrReadingText(pageIndex, text)), routing, PageSource.Ocr(langs))
+            }
+
+            is Outcome.Failure -> {
+                AudoraLog.w(
+                    TAG,
+                    "OCR unavailable, reading the text layer, $logContext page=$pageIndex: ${recognized.error}",
+                )
+                PageReading(textLayer(), routing, PageSource.OcrUnavailable(recognized.error))
+            }
         }
     }
 
@@ -203,14 +262,16 @@ class PdfBook private constructor(
 
         /**
          * Opens the book. A [PdfOpenError.PasswordRequired] failure means: ask for the password, call again.
-         * [ocr] samples a Hindi/Bengali book's text layer (P3-05 supplies it); null leaves it unverified.
+         * [ocr] builds the book's OCR from its page renderer (P3-05, `RenderedPageOcr.factory`): it reads pages
+         * routed to OCR and samples a Hindi/Bengali book's text layer. Null reads every page from its text layer and
+         * leaves Indic text layers unverified.
          */
         fun open(
             engine: PdfEngine,
             password: String? = null,
             config: ExtractionConfig = ExtractionConfig(),
             logContext: String = "",
-            ocr: PageOcr? = null,
+            ocr: PageOcrFactory? = null,
         ): Outcome<PdfBook, PdfOpenError> = when (val opened = engine.open(password)) {
             is Outcome.Success -> {
                 val book = PdfBook(engine, password, config, logContext, ocr, opened.value)
@@ -233,5 +294,17 @@ private fun describe(quality: PageQuality): String = with(quality.signals) {
         "legacyUnknown=$legacyUnknownRate"
 }
 
-/** A page's units and where its words come from. */
-class PageReading(val units: List<ReadingUnit>, val routing: PageRouting)
+/** A page's units, its route and where its words actually came from. */
+class PageReading(val units: List<ReadingUnit>, val routing: PageRouting, val source: PageSource)
+
+/** Where a page's words came from: what the reader's "OCR" badge shows (P3-05). */
+sealed interface PageSource {
+    /** The PDF's own text (possibly repaired, P3-03). */
+    data object TextLayer : PageSource
+
+    /** Tesseract read the rendered page in [langs]. */
+    data class Ocr(val langs: Set<Lang>) : PageSource
+
+    /** The page needs OCR but got its text layer instead (often nothing, for a scan) because of [error]. */
+    data class OcrUnavailable(val error: OcrError) : PageSource
+}

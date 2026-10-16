@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/SettingsScreen.kt
-// Purpose: Settings: Voices (P4-01), background reading (P1-06), Share logs (P1-07), the version and debug tools.
+// Purpose: Settings: Voices (P4-01), OCR models (P3-05), background reading (P1-06), Share logs (P1-07), version.
 
 package io.github.skm0078.audora.ui.settings
 
@@ -27,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.ui.diagnostics.ShareLogsState
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 
@@ -43,6 +44,8 @@ fun SettingsScreen(
     onShareLogs: () -> Unit,
     onSimulateReadingSession: () -> Unit,
     modifier: Modifier = Modifier,
+    ocrModels: OcrModelsState? = null,
+    onOcrModels: (OcrModelsAction) -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -64,6 +67,10 @@ fun SettingsScreen(
                 modifier = Modifier.clickable(onClick = onOpenVoices),
             )
             HorizontalDivider()
+            ocrModels?.let {
+                OcrModelsItem(it, onOcrModels)
+                HorizontalDivider()
+            }
             BatteryItem(batteryExempt, onOpenBatterySetup)
             HorizontalDivider()
             ShareLogsItem(shareState, onShareLogs)

@@ -36,6 +36,8 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.diagnostics.LogSharer
 import io.github.skm0078.audora.pdf.render.ViewPoint
+import io.github.skm0078.audora.speech.ocr.OcrModels
+import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.ui.AppDestination
 import io.github.skm0078.audora.ui.battery.BatterySetupCard
@@ -58,6 +60,7 @@ import io.github.skm0078.audora.ui.reader.SleepTimerSetting
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
+import io.github.skm0078.audora.ui.settings.OcrModelsAction
 import io.github.skm0078.audora.ui.settings.SettingsScreen
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import io.github.skm0078.audora.ui.voices.VoiceManager
@@ -66,6 +69,7 @@ import io.github.skm0078.audora.ui.voices.VoicesController
 import io.github.skm0078.audora.ui.voices.VoicesScreen
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -95,6 +99,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var voiceManager: VoiceManager
+
+    /** The OCR model manager (P3-05); one per process, shared with the playback service's OCR. */
+    private val ocrModels: OcrModels by lazy { OcrModels.get(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -188,6 +195,8 @@ class MainActivity : ComponentActivity() {
         battery: BatterySetupController,
         navigate: (AppDestination) -> Unit,
     ) {
+        val ocrState by remember { ocrModels.state() }.collectAsStateWithLifecycle(initialValue = null)
+        val scope = rememberCoroutineScope()
         SettingsScreen(
             shareState = diagnostics.shareState,
             batteryExempt = battery.exempt,
@@ -200,6 +209,14 @@ class MainActivity : ComponentActivity() {
             onSimulateReadingSession = {
                 diagnostics.simulateReadingSession()
                 Toast.makeText(this@MainActivity, R.string.debug_simulate_done, Toast.LENGTH_LONG).show()
+            },
+            ocrModels = ocrState,
+            onOcrModels = { action ->
+                when (action) {
+                    OcrModelsAction.DOWNLOAD -> ocrModels.download()
+                    OcrModelsAction.CANCEL -> ocrModels.cancel()
+                    OcrModelsAction.DELETE -> scope.launch { ocrModels.delete() }
+                }
             },
         )
     }
@@ -297,9 +314,14 @@ class MainActivity : ComponentActivity() {
         }
         DisposableEffect(model) { onDispose { model.close() } }
         val state by model.state.collectAsStateWithLifecycle()
+        val ocrState by remember { ocrModels.state() }.collectAsStateWithLifecycle(initialValue = null)
+        // A scanned page waiting for the OCR models is read as soon as they are in.
+        LaunchedEffect(model, ocrState is OcrModelsState.Ready) {
+            if (ocrState is OcrModelsState.Ready) model.reloadIfWaitingForOcr()
+        }
         val playWithPermission = rememberPlayWithNotificationPermission()
         val actions = remember(model) { readerActions(model, playWithPermission, onBack) }
-        ReaderScreen(state = state, config = readerConfig, actions = actions)
+        ReaderScreen(state = state, config = readerConfig, actions = actions, ocrModels = ocrState)
     }
 
     private fun readerActions(
@@ -348,5 +370,7 @@ class MainActivity : ComponentActivity() {
         override fun onAskForPassword() = model.askForPassword()
 
         override fun onRetry() = model.retry()
+
+        override fun onDownloadOcrModels() = ocrModels.download()
     }
 }

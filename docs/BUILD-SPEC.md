@@ -250,6 +250,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 022 | Voice manager: catalog voices mirrored as reproducible zips on this repo's `voices` release, `models.json` packed into APK assets at build time, resumable WorkManager download with a final SHA-256 check, folder import of Piper/MMS/Kitten voices | Accepted (P4-01) |
 | 023 | Legacy-font converter: Kruti Dev, DevLys, Chanakya and Bijoy tables chosen by font name, converted wherever read before the Indic repair; unknown-code rate checked first and routed to OCR; generated golden documents; `PIPELINE_VERSION` 5 | Accepted (P3-04) |
 | 024 | Page view: pages drawn by a second, display-only PDFium document; glyph boxes mapped through PDFium's own page matrix; tap the nearest line to read; no `PdfRenderer` fallback | Accepted (P4-03) |
+| 025 | OCR: Tesseract4Android (JitPack, AAR SHA-256 pinned), `tessdata_best` en/hi/bn pinned at an upstream commit and downloaded as one pack, disk cache per page, language probe, OCR text through the normal repair; PaddleOCR experiment not built; `PIPELINE_VERSION` 6 | Accepted (P3-05) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

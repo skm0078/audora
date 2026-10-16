@@ -20,6 +20,8 @@ import io.github.skm0078.audora.pdf.layout.ParagraphKind
 import io.github.skm0078.audora.pdf.layout.ReadingParagraph
 import io.github.skm0078.audora.pdf.layout.ReadingText
 import io.github.skm0078.audora.pdf.layout.ReadingTextBuilder
+import io.github.skm0078.audora.pdf.ocr.OcrPageText
+import io.github.skm0078.audora.pdf.quality.IndicOrder
 import io.github.skm0078.audora.pdf.quality.PageQuality
 import io.github.skm0078.audora.pdf.quality.PageQualityScorer
 import io.github.skm0078.audora.pdf.quality.indicOrderOf
@@ -35,6 +37,7 @@ import io.github.skm0078.audora.pdf.quality.indicOrderOf
  * Header and footer removal compares a page with its neighbours ([PageProfile]). `PdfBook.readingUnits` supplies
  * them; [build] with a page alone applies every rule that needs no neighbour.
  */
+@Suppress("TooManyFunctions") // The pipeline's one entry point: one function per way a page is read or sampled.
 class ReadingUnitBuilder(
     private val config: ReadingUnitConfig = ReadingUnitConfig(),
     private val splitter: SentenceSplitter = BreakIteratorSentenceSplitter(),
@@ -74,6 +77,15 @@ class ReadingUnitBuilder(
      */
     fun sampleText(page: AnalyzedPage, neighbours: List<PageProfile>): String =
         textOf(page, neighbours, page.layout).text
+
+    /**
+     * The reading text of a page read by OCR (P3-05): Tesseract's text with the same repair as a text layer
+     * (Tesseract writes Indic text in logical order). [build] splits it into units without glyph boxes.
+     */
+    fun ocrReadingText(pageIndex: Int, ocrText: String): ReadingText {
+        val page = OcrPageText.build(pageIndex, ocrText)
+        return textBuilder.build(page.text, page.layout, page.hyphenated, IndicOrder.LOGICAL)
+    }
 
     private fun textOf(page: AnalyzedPage, neighbours: List<PageProfile>, layout: PageLayout): ReadingText {
         val lexicon = neighbours.fold(page.profile.hyphenated) { words, other -> words + other.hyphenated }

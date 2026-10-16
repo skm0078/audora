@@ -38,7 +38,7 @@ class GoldenRoutingTest {
     private fun routes(document: GoldenDocument, config: QualityConfig): Pair<List<PageRouting>, PdfBook> {
         val pages = corpus.pages(document)
         val ocr = ExpectedTextOcr(pages, corpus.expectedText(document))
-        val opened = PdfBook.open(GoldenPipeline.DumpEngine(pages), logContext = "golden=${document.id}", ocr = ocr)
+        val opened = PdfBook.open(GoldenPipeline.DumpEngine(pages), logContext = "golden=${document.id}", ocr = { ocr })
         val book = (opened as Outcome.Success).value
         val builder = ReadingUnitBuilder(qualityConfig = config)
         val routes = book.use {

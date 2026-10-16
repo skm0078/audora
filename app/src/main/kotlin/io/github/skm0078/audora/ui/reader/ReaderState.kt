@@ -25,11 +25,26 @@ sealed interface DocumentState {
 
 enum class ReaderFailure { DAMAGED, UNREADABLE, ENGINE_UNAVAILABLE }
 
+/** Where the shown page's words come from: drives the "OCR" badge and the scanned-page notice (P3-05). */
+enum class PageOrigin {
+    /** The PDF's own text. */
+    TEXT,
+
+    /** Recognised from the page image. */
+    OCR,
+
+    /** The page needs OCR, but the text recognition files are not downloaded yet. */
+    NEEDS_OCR_MODELS,
+
+    /** The page needs OCR and it failed (logged). */
+    OCR_FAILED,
+}
+
 sealed interface PageContent {
     data object Loading : PageContent
 
-    /** Empty for a page without text (a scan, before OCR in Phase 3). */
-    data class Ready(val units: List<ReadingUnit>) : PageContent
+    /** Empty for a page without text (a blank page, or a scan that could not be read yet: see [origin]). */
+    data class Ready(val units: List<ReadingUnit>, val origin: PageOrigin = PageOrigin.TEXT) : PageContent
 
     data object Failed : PageContent
 }

@@ -1,5 +1,5 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/voices/ResumableDownloader.kt
-// Purpose: Downloads a catalog voice into a partial file that later attempts resume, then checks its SHA-256.
+// Purpose: Downloads a pinned model file into a partial file that later attempts resume, then checks its SHA-256.
 
 package io.github.skm0078.audora.speech.voices
 
@@ -45,7 +45,7 @@ sealed interface DownloadError {
 
     /** The phone is full, or the file cannot be written. */
     data class Storage(val detail: String, val cause: Throwable? = null) : DownloadError {
-        override val message: String get() = "cannot save the voice: $detail"
+        override val message: String get() = "cannot save the file: $detail"
         override val retryable: Boolean get() = false
     }
 
@@ -57,8 +57,18 @@ sealed interface DownloadError {
 }
 
 /**
+ * A file the app may download: a catalog voice zip (P4-01) or an OCR model (P3-05). The pins travel inside the APK.
+ */
+interface PinnedFile {
+    val id: String
+    val url: String
+    val sha256: String
+    val sizeBytes: Long
+}
+
+/**
  * One attempt per call: resumes from the bytes already in the partial file with an HTTP `Range` request, appends,
- * and once all [CatalogVoice.sizeBytes] are there hashes the whole file against [CatalogVoice.sha256]. The hash
+ * and once all [PinnedFile.sizeBytes] are there hashes the whole file against [PinnedFile.sha256]. The hash
  * covers every byte from every attempt, so a resume that stitched in the wrong bytes (the server changed the file
  * between attempts) is caught as [DownloadError.Corrupt] rather than installed.
  *
@@ -74,27 +84,28 @@ class ResumableDownloader(
      * @param keepGoing polled between buffers; false stops with [DownloadError.Stopped].
      */
     fun download(
-        voice: CatalogVoice,
+        pinned: PinnedFile,
         partial: File,
         onProgress: (Long, Long) -> Unit,
         keepGoing: () -> Boolean,
     ): Outcome<File, DownloadError> {
-        val problem = prepare(voice, partial) ?: if (partial.length() < voice.sizeBytes) {
-            fetch(Transfer(voice, partial, partial.length(), onProgress, keepGoing))
+        val problem = prepare(pinned, partial) ?: if (partial.length() < pinned.sizeBytes) {
+            fetch(Transfer(pinned, partial, partial.length(), onProgress, keepGoing))
         } else {
             null
         }
-        return if (problem == null) verify(voice, partial) else Outcome.Failure(problem)
+        return if (problem == null) verify(pinned, partial) else Outcome.Failure(problem)
     }
 
     /** Drops a partial file longer than the pin and checks there is room for the rest plus the unpacked copy. */
-    private fun prepare(voice: CatalogVoice, partial: File): DownloadError? {
+    private fun prepare(pinned: PinnedFile, partial: File): DownloadError? {
         val dir = partial.absoluteFile.parentFile
         dir.mkdirs()
-        if (partial.length() > voice.sizeBytes) partial.delete()
-        val missing = voice.sizeBytes - partial.length()
-        // The zip is unpacked next to itself before it is deleted, so both must fit.
-        val needed = missing + voice.sizeBytes + config.installHeadroomBytes
+        if (partial.length() > pinned.sizeBytes) partial.delete()
+        val missing = pinned.sizeBytes - partial.length()
+        // A voice zip is unpacked next to itself before it is deleted, so both must fit (an OCR model is only
+        // renamed, so this over-asks by one file, which keeps the rule simple).
+        val needed = missing + pinned.sizeBytes + config.installHeadroomBytes
         val free = freeBytes(dir)
         return when {
             !dir.isDirectory -> DownloadError.Storage("cannot create ${dir.name}")
@@ -110,7 +121,7 @@ class ResumableDownloader(
     private fun fetch(transfer: Transfer): DownloadError? {
         val have = transfer.written
         val response = try {
-            http.open(transfer.voice.url, have)
+            http.open(transfer.pinned.url, have)
         } catch (e: IOException) {
             return DownloadError.Network(e.message ?: e.javaClass.simpleName, e)
         }
@@ -150,17 +161,17 @@ class ResumableDownloader(
             else -> Outcome.Failure(DownloadError.Http(response.code))
         }
 
-    private fun verify(voice: CatalogVoice, partial: File): Outcome<File, DownloadError> {
+    private fun verify(pinned: PinnedFile, partial: File): Outcome<File, DownloadError> {
         val actual = try {
             sha256(partial, config.bufferBytes)
         } catch (e: IOException) {
             return Outcome.Failure(DownloadError.Storage("cannot read ${partial.name}: ${e.message}", e))
         }
-        if (actual != voice.sha256) {
+        if (actual != pinned.sha256) {
             partial.delete()
-            AudoraLog.e(TAG, "voice=${voice.id} SHA-256 $actual does not match the pin ${voice.sha256}; deleted")
+            AudoraLog.e(TAG, "file=${pinned.id} SHA-256 $actual does not match the pin ${pinned.sha256}; deleted")
         }
-        return if (actual == voice.sha256) {
+        return if (actual == pinned.sha256) {
             Outcome.Success(partial)
         } else {
             Outcome.Failure(DownloadError.Corrupt("SHA-256 does not match the catalog"))
@@ -171,7 +182,7 @@ class ResumableDownloader(
 
     /** The bytes of one attempt flowing into the partial file. [written] counts what is on disk. */
     private inner class Transfer(
-        val voice: CatalogVoice,
+        val pinned: PinnedFile,
         val partial: File,
         var written: Long,
         private val onProgress: (Long, Long) -> Unit,
@@ -188,9 +199,9 @@ class ResumableDownloader(
                 return DownloadError.Storage("cannot open ${partial.name}: ${e.message}", e)
             }
             val problem = out.use { pump(body, it) }
-            onProgress(written, voice.sizeBytes)
-            return problem ?: if (written < voice.sizeBytes) {
-                DownloadError.Network("connection closed at byte $written of ${voice.sizeBytes}")
+            onProgress(written, pinned.sizeBytes)
+            return problem ?: if (written < pinned.sizeBytes) {
+                DownloadError.Network("connection closed at byte $written of ${pinned.sizeBytes}")
             } else {
                 null
             }
@@ -217,9 +228,9 @@ class ResumableDownloader(
         }
 
         private fun write(out: OutputStream, buffer: ByteArray, count: Int): DownloadError? =
-            if (written + count > voice.sizeBytes) {
+            if (written + count > pinned.sizeBytes) {
                 partial.delete()
-                DownloadError.Corrupt("more than the pinned ${voice.sizeBytes} bytes")
+                DownloadError.Corrupt("more than the pinned ${pinned.sizeBytes} bytes")
             } else {
                 try {
                     out.write(buffer, 0, count)
@@ -234,7 +245,7 @@ class ResumableDownloader(
             written += count
             if (written - reported >= config.progressStepBytes) {
                 reported = written
-                onProgress(written, voice.sizeBytes)
+                onProgress(written, pinned.sizeBytes)
             }
         }
     }

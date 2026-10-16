@@ -5,6 +5,7 @@ package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.result.map
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import java.io.Closeable
@@ -20,7 +21,12 @@ interface ReaderDocument : Closeable {
 
     /** [page] drawn [widthPx] pixels wide (smaller if [maxPixels] would be exceeded), for the page view (P4-03). */
     suspend fun render(page: Int, widthPx: Int, maxPixels: Int): Outcome<PageImage, PdfPageError>
+
+    /** [units] with where the page's words came from (P3-05); documents that cannot tell say the text layer. */
+    suspend fun page(page: Int): Outcome<ReaderPage, PdfPageError> = units(page).map { ReaderPage(it, PageOrigin.TEXT) }
 }
+
+data class ReaderPage(val units: List<ReadingUnit>, val origin: PageOrigin)
 
 fun interface ReaderDocumentOpener {
     /** A [PdfOpenError.PasswordRequired] failure means: ask for the password, call again. */
