@@ -10,6 +10,7 @@ import io.github.skm0078.audora.pdf.extract.PageTextAssembler
 import io.github.skm0078.audora.pdf.extract.RawPageFixture
 import io.github.skm0078.audora.pdf.extract.SyntheticChar
 import io.github.skm0078.audora.pdf.extract.normalizeForComparison
+import io.github.skm0078.audora.pdf.layout.PageSketch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -30,12 +31,13 @@ class ReadingUnitBuilderTest {
     }
 
     @Test
-    fun `charStart and charEnd point at the sentence in the page text`() {
+    fun `charStart and charEnd point at the sentence in the reading text`() {
         val page = pageOf("  First one.   Second one!  ")
+        val reading = builder.readingText(page)
         builder.build(page).forEach { unit ->
-            assertEquals(unit.text, normalizeForComparison(page.text.substring(unit.charStart, unit.charEnd)))
+            assertEquals(unit.text, normalizeForComparison(reading.text.substring(unit.charStart, unit.charEnd)))
         }
-        assertEquals(2, builder.build(page).first().charStart)
+        assertEquals(0, builder.build(page).first().charStart)
     }
 
     @Test
@@ -77,16 +79,19 @@ class ReadingUnitBuilderTest {
     @Test
     fun `bounds are one box per line`() {
         val twoLines =
-            "ab".map { SyntheticChar(it.code, box = floatArrayOf(it.code * 10f, 120f, it.code * 10f + 8f, 110f)) } +
+            "ab".map {
+                val left = (it.code - 'a'.code) * 10f
+                SyntheticChar(it.code, box = floatArrayOf(left, 120f, left + 8f, 110f))
+            } +
                 SyntheticChar(' '.code, generated = true) +
                 "cd".map {
                     SyntheticChar(
                         it.code,
                         box = floatArrayOf(
                             (it.code - 'c'.code) * 10f,
-                            100f,
+                            106f,
                             (it.code - 'c'.code) * 10f + 8f,
-                            90f,
+                            96f,
                         ),
                     )
                 }
@@ -94,6 +99,20 @@ class ReadingUnitBuilderTest {
         val bounds = requireNotNull(builder.build(page).single().bounds)
         assertEquals(2, bounds.size)
         assertEquals(120f, bounds[0].top, 0f)
-        assertEquals(90f, bounds[1].bottom, 0f)
+        assertEquals(96f, bounds[1].bottom, 0f)
+    }
+
+    @Test
+    fun `a heading without a full stop is its own unit and pauses take the configured lengths`() {
+        val sketch = PageSketch()
+        sketch.line("Introduction", left = 50f, top = 720f, size = 14f)
+        sketch.lines(listOf("Body text follows the heading. It", "carries on for a second line."), 50f, 700f)
+        val config = ReadingUnitConfig(sentencePauseMs = 10, paragraphPauseMs = 400, headingPauseMs = 600)
+        val units = ReadingUnitBuilder(config).build(sketch.build())
+        assertEquals(
+            listOf("Introduction", "Body text follows the heading.", "It carries on for a second line."),
+            units.map { it.text },
+        )
+        assertEquals(listOf(600, 10, 400), units.map { it.pauseAfterMs })
     }
 }

@@ -7,17 +7,22 @@ package io.github.skm0078.audora.core.config
  * @property maxUnitChars a "sentence" longer than this (tables, text without punctuation) is cut at the last
  *   space before the limit, so one unit never stalls the render queue. P1-03 chunks further per engine.
  * @property sentencePauseMs silence after each sentence. 0 until prosody (P2-04): voices already end in silence.
+ * @property paragraphPauseMs silence after a paragraph's last sentence; P2-04 (prosody) tunes it by ear (spec: ~400).
+ * @property headingPauseMs silence after a heading; P2-04 tunes it (spec: ~600).
  * @property lineOverlapRatio two glyph boxes are on the same line when their vertical overlap is at least
  *   this share of the smaller height.
  */
 data class ReadingUnitConfig(
     val maxUnitChars: Int = 400,
     val sentencePauseMs: Int = 0,
+    val paragraphPauseMs: Int = 0,
+    val headingPauseMs: Int = 0,
     val lineOverlapRatio: Float = 0.5f,
 ) {
     init {
         require(maxUnitChars > 0) { "maxUnitChars must be > 0, was $maxUnitChars" }
         require(sentencePauseMs >= 0) { "sentencePauseMs must be >= 0, was $sentencePauseMs" }
+        require(paragraphPauseMs >= 0 && headingPauseMs >= 0) { "pauses must be >= 0" }
         require(lineOverlapRatio in 0f..1f) { "lineOverlapRatio must be in 0..1, was $lineOverlapRatio" }
     }
 }
