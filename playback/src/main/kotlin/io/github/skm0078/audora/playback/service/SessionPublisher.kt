@@ -6,7 +6,9 @@ package io.github.skm0078.audora.playback.service
 import android.os.Bundle
 import androidx.media3.session.MediaSession
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
+import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
@@ -17,11 +19,19 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class SessionPublisher(private val session: MediaSession, private val diagnostics: DiagnosticsBridge) :
-    SessionEvents {
+class SessionPublisher(
+    private val session: MediaSession,
+    private val diagnostics: DiagnosticsBridge,
+    private val resume: ResumeBridge,
+) : SessionEvents {
     override fun onReading(bookId: String, page: Int) = diagnostics.reading(bookId, page)
 
-    override fun onNotReading() = diagnostics.notReading()
+    override fun onNotReading() {
+        diagnostics.notReading()
+        resume.flush()
+    }
+
+    override fun onSentenceStarted(bookId: BookId, unit: ReadingUnit) = resume.sentenceStarted(bookId, unit)
 
     override fun onStateChanged(state: SessionState) {
         session.setSessionExtras(

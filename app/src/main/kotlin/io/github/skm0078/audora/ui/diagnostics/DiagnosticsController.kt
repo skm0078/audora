@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import io.github.skm0078.audora.core.diagnostics.ReadingSession
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
+import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.diagnostics.LogSharer
@@ -36,8 +37,15 @@ class DiagnosticsController(
         scope.launch { unfinishedSession = withContext(io) { tracker.unfinishedSession() } }
     }
 
-    // TODO(P1-06): start playback at the session's ResumeAnchor; until then Resume only closes the prompt.
-    fun resumeUnfinished() = resolve(resumed = true)
+    /**
+     * [openReader] opens the book's reader set to start reading at its resume anchor (P1-06); tapping Resume is
+     * the user action C7 asks for.
+     */
+    fun resumeUnfinished(openReader: (BookId) -> Unit) {
+        val session = unfinishedSession
+        resolve(resumed = true)
+        if (session != null) openReader(BookId(session.bookId))
+    }
 
     fun dismissUnfinished() = resolve(resumed = false)
 
