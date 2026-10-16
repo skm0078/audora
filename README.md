@@ -95,9 +95,10 @@ Downloads need a connection; everything else works offline.
 The newest build of the `dev` branch, rebuilt on every change, is at
 **https://github.com/skm0078/audora/releases/download/dev-build/audora-dev.apk**.
 It installs as a separate app ("Audora" with package `io.github.skm0078.audora.debug`), next to the released one,
-and is for testing only. Each test build is signed with a throwaway key, so if Android says
-**"App not installed"** when you install a newer one, uninstall the old test build first (this clears its library
-and reading positions). Don't add the test build to Obtainium.
+and is for testing only. A newer test build installs over the older one and keeps its library. If Android says
+**"App not installed"**, the old test build was signed with a different key (builds from before the dev key was set
+up were): uninstall it first, which clears its library and reading positions. Don't add the test build to
+Obtainium; its release name never changes, so Obtainium would not notice new builds.
 
 ## For contributors
 

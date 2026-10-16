@@ -49,6 +49,31 @@ jobs:
           # Only the long-lived branches write the cache; feature branches read it.
           cache-read-only: ${{ github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/prod' }}
 
+      - name: Stable debug signing key (optional)
+        # Without a fixed key every run signs with a fresh debug key, so a newer dev build cannot install over an
+        # older one (ADR-031). When the secret holds the dev key, AGP uses it as its default debug keystore
+        # (store and key password "android", alias androiddebugkey: not secret for a debug key). Without the secret,
+        # or on a fork, nothing changes: AGP creates a throwaway key as before.
+        env:
+          DEBUG_KEYSTORE_B64: ${{ secrets.AUDORA_DEBUG_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$DEBUG_KEYSTORE_B64" ]; then
+            echo "No AUDORA_DEBUG_KEYSTORE_B64 secret: debug APKs use a throwaway key for this run."
+            exit 0
+          fi
+          keystore_dir="${ANDROID_USER_HOME:-$HOME/.android}"
+          mkdir -p "$keystore_dir"
+          keystore="$keystore_dir/debug.keystore"
+          printf '%s' "$DEBUG_KEYSTORE_B64" | tr -d '[:space:]' | base64 --decode > "$keystore"
+          # Fails here, with a clear message, if the secret is not a keystore AGP can open.
+          if ! keytool -exportcert -keystore "$keystore" -storepass android -alias androiddebugkey -file "$RUNNER_TEMP/dev-key.der"; then
+            echo "::error::AUDORA_DEBUG_KEYSTORE_B64 is not a keystore with alias androiddebugkey and password android (docs/RELEASING.md)."
+            exit 1
+          fi
+          cert_sha256="$(sha256sum "$RUNNER_TEMP/dev-key.der" | cut -d' ' -f1)"
+          echo "Dev key certificate: $cert_sha256"
+          echo "EXPECTED_DEBUG_CERT_SHA256=$cert_sha256" >> "$GITHUB_ENV"
+
       - name: Test the repo scripts (16 KB checker, voice mirror)
         run: python3 -m unittest discover -s scripts/tests -v
 
@@ -96,6 +121,20 @@ jobs:
             app/build/outputs/apk/release/*.apk \
             spikes/playback/build/outputs/apk/debug/*.apk \
             spikes/voices/build/outputs/apk/debug/*.apk
+
+      - name: Debug signing certificate
+        # Logs the debug APK's certificate. With the dev key installed it must be that key's, so a build that fell
+        # back to a throwaway key fails here instead of publishing a dev build that cannot update the previous one.
+        run: |
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          apk="$(find app/build/outputs/apk/debug -name '*.apk' | head -n 1)"
+          certs="$("$build_tools/apksigner" verify --print-certs "$apk" \
+            | grep -oE 'certificate SHA-256 digest: [0-9a-f]{64}' | awk '{print $NF}' | sort -u)"
+          echo "Debug APK signing certificate: ${certs:-none}"
+          if [ -n "${EXPECTED_DEBUG_CERT_SHA256:-}" ] && [ "$certs" != "$EXPECTED_DEBUG_CERT_SHA256" ]; then
+            echo "::error::Debug APK signed with ${certs:-no certificate}, not with the dev key $EXPECTED_DEBUG_CERT_SHA256 (docs/RELEASING.md)."
+            exit 1
+          fi
 
       - name: Name the debug APKs
         id: apk
