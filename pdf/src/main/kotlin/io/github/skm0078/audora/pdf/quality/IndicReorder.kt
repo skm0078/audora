@@ -163,7 +163,7 @@ internal object IndicReorder {
     }
 
     /** End (exclusive) of the consonant cluster at [start]: C nukta? (virama C nukta?)*; -1 when none starts there. */
-    private fun clusterEnd(chars: CharArray, start: Int): Int {
+    internal fun clusterEnd(chars: CharArray, start: Int): Int {
         if (start >= chars.size || !IndicChars.isConsonant(chars[start])) return -1
         var end = afterNukta(chars, start + 1)
         while (end + 1 < chars.size && IndicChars.isVirama(chars[end]) && IndicChars.isConsonant(chars[end + 1])) {
@@ -210,7 +210,7 @@ internal object IndicReorder {
      * a consonant (with nukta), then virama-joined consonants. -1 when no consonant is there (a word-initial reph,
      * or a conjunct: ra + virama right after a virama is a cluster, not a reph). Dropped characters are skipped.
      */
-    private fun syllableStart(chars: CharArray, keep: BooleanArray, end: Int): Int {
+    internal fun syllableStart(chars: CharArray, keep: BooleanArray, end: Int): Int {
         var k = end - 1
         while (k >= 0 && (!keep[k] || IndicChars.classOf(chars[k]).followsBase())) k--
         if (k >= 0 && IndicChars.classOf(chars[k]) == IndicClass.NUKTA) k--

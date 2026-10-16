@@ -18,7 +18,6 @@ import io.github.skm0078.audora.pdf.quality.PageRouting
 import io.github.skm0078.audora.pdf.quality.RouteReason
 import io.github.skm0078.audora.pdf.quality.TextLayerCheck
 import io.github.skm0078.audora.pdf.quality.TextLayerVerdict
-import io.github.skm0078.audora.pdf.quality.ocrLangs
 import io.github.skm0078.audora.pdf.units.AnalyzedPage
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import java.io.Closeable
@@ -32,8 +31,8 @@ import java.io.Closeable
  *
  * Each page is routed (P3-03, ADR-021): text layer, legacy-font converter or OCR. For a Hindi or Bengali book the
  * first page with enough text is also OCR'd through [ocr] and compared with its text layer ([TextLayerCheck]).
- * The converter (P3-04) and OCR (P3-05) are not built yet, so every page is still read from its text layer; the
- * route is returned with the units for them to act on.
+ * Legacy-font text is converted wherever it is read (P3-04, ADR-023); OCR (P3-05) is not built yet, so a page
+ * routed to OCR is still read from its text layer, and the route is returned with the units for P3-05 to act on.
  *
  * PDFium's document cache grows with every page visited, so after [ExtractionConfig.reopenEveryPages] reads
  * the document is closed and opened again with the same password. Thread-safe: calls are serialized, because
@@ -109,7 +108,7 @@ class PdfBook private constructor(
                 .mapNotNull { profileOf(it, cache) }
             val check = textLayerCheck ?: TextLayerCheck(builder.qualityConfig, ocr, logContext)
             textLayerCheck = check
-            val routing = check.route(pageIndex, page.quality, ocrLangs(page.text.text, builder.qualityConfig)) {
+            val routing = check.route(pageIndex, page.quality, page.quality.ocrLangs) {
                 builder.sampleText(page, neighbours)
             }
             PageReading(builder.build(page, neighbours), routing)
@@ -225,7 +224,8 @@ class PdfBook private constructor(
 /** Route, reason and the scorer's measurements, for the log (no text). */
 private fun describe(quality: PageQuality): String = with(quality.signals) {
     "${quality.route} (${quality.reason}) letters=$letters indic=$indicLetters mapErrors=$unicodeMapErrorRate " +
-        "invisible=$invisibleShare garbage=$garbageRate invalidIndic=$invalidIndicRate legacy=$legacyShare"
+        "invisible=$invisibleShare garbage=$garbageRate invalidIndic=$invalidIndicRate legacy=$legacyShare " +
+        "legacyUnknown=$legacyUnknownRate"
 }
 
 /** A page's units and where its words come from. */

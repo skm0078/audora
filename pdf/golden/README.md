@@ -22,6 +22,7 @@ against `expected/` to see what a score change means. CI uploads that folder whe
 pip install pypdfium2==5.13.0                  # once; its libpdfium.so is what the dumps are made with
 python3 scripts/pdf/golden_corpus.py dump      # after changing a golden PDF or pdf/src/main/cpp/page_reader.cpp
 python3 scripts/pdf/golden_corpus.py dump --check   # what CI runs
+python3 scripts/pdf/legacy_golden.py           # after changing LegacyTables.kt: regenerate the legacy PDFs, then dump
 ```
 
 CI fails when: a dump is stale; the corpus score is lower than `dev`'s on the documents both share; or
@@ -83,12 +84,13 @@ Source files come from the shared test-PDF folder (`audora/test-pdfs/`, licence 
 | bn-us-fda-factsheet-vrinda-pd | US FDA Pfizer-BioNTech EUA fact sheet (Bengali), https://www.fda.gov/media/150079/download, pages 1–4 | Public domain (US federal government work) |
 | bn-rotated-pages-90-180-270-fda | The FDA file above with pages rotated 0°, 90°, 180°, 270° (derived in S2), pages 1–4 | Public domain |
 | bn-us-hud-fairlending-guide-pd | US HUD Fair Lending guide (Bengali), https://www.hud.gov/sites/documents/FAIR_LENDING_GUIDE_BN.PDF, pages 8–10 | Public domain (US federal government work) |
+| hi-udhr-krutidev, bn-udhr-bijoy | Generated here by `python3 scripts/pdf/legacy_golden.py` (P3-04, ADR-023) from the first five paragraphs of hi-/bn-udhr-noto's expected text, encoded with the app's Kruti Dev and Bijoy tables; the PDFs name KrutiDev010 and SutonnyMJ without embedding them | UDHR text free to reproduce; no font included |
 
 Page numbers above are 1-based PDF pages; `corpus.tsv` uses 0-based indices.
 
 ## Not covered here
 
-Scanned pages (OCR runs on the phone; scored when P3-05 lands), legacy-font Hindi/Bengali (no redistributable
-KrutiDev or Bijoy PDF exists; P3-04 generates one), and password or damaged files (device tests in
+Scanned pages (OCR runs on the phone; scored when P3-05 lands), real legacy-font Hindi/Bengali files (none is
+redistributable; the two generated ones check the converter against its own tables, ADR-023), and password or damaged files (device tests in
 `pdf/src/androidTest`). Pro Git (CC BY-NC-SA) and the pgf manual (LPPL/FDL) were left out to keep the corpus's
 licences simple.
