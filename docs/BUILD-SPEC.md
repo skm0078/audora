@@ -68,7 +68,7 @@ All neural models run through **sherpa-onnx 1.13.8** (Apache-2.0 runtime). Syste
 | Bengali | Fallback | MMS-TTS ben (converted) | sherpa VITS | ~110–140 MB | CC-BY-NC 4.0 | — |
 | Any | Advanced | Import any sherpa-onnx model folder (`.onnx` + `tokens.txt` [+ espeak data]) | sherpa | — | user's | — |
 
-**Script routing (ADR-005, unchanged).** Each sentence is tagged by Unicode script: Latin → English, Devanagari U+0900–097F → Hindi, Bengali U+0980–09FF → Bengali. Deterministic, instant. v1 splits English runs of ≥3 words inside Indic sentences.
+**Script routing (ADR-005, unchanged).** Each sentence is tagged by Unicode script: Latin → English, Devanagari U+0900–097F → Hindi, Bengali U+0980–09FF → Bengali. Deterministic, instant. v1 splits English runs of ≥3 words inside Indic sentences; the split happens at render time, one clip per sentence (ADR-026).
 
 **Never shipped (ADR-012):** Piper voices trained on or fine-tuned from Lessac/Blizzard 2013 data (lessac, amy, hfc_*, hi_IN rohan): research-only, no redistribution.
 
@@ -251,6 +251,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 023 | Legacy-font converter: Kruti Dev, DevLys, Chanakya and Bijoy tables chosen by font name, converted wherever read before the Indic repair; unknown-code rate checked first and routed to OCR; generated golden documents; `PIPELINE_VERSION` 5 | Accepted (P3-04) |
 | 024 | Page view: pages drawn by a second, display-only PDFium document; glyph boxes mapped through PDFium's own page matrix; tap the nearest line to read; no `PdfRenderer` fallback | Accepted (P4-03) |
 | 025 | OCR: Tesseract4Android (JitPack, AAR SHA-256 pinned), `tessdata_best` en/hi/bn pinned at an upstream commit and downloaded as one pack, disk cache per page, language probe, OCR text through the normal repair; PaddleOCR experiment not built; `PIPELINE_VERSION` 6 | Accepted (P3-05) |
+| 026 | Script routing at render time: each script run of a sentence is read by its language's voice (≥3 English words to leave an Indic voice), parts joined into one clip; `ReadingUnit` and `:pdf` output unchanged | Accepted (P3-01) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

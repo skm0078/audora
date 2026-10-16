@@ -1,5 +1,5 @@
 // File: speech/src/test/kotlin/io/github/skm0078/audora/speech/audio/PcmAudioTest.kt
-// Purpose: Float → 16-bit conversion (clipping, rounding), duration and concatenation of rendered chunks.
+// Purpose: Float → 16-bit conversion (clipping, rounding), duration, concatenation and resampling of chunks.
 
 package io.github.skm0078.audora.speech.audio
 
@@ -52,5 +52,28 @@ class PcmAudioTest {
     @Test(expected = IllegalArgumentException::class)
     fun `concat refuses mixed sample rates`() {
         PcmAudio.concat(listOf(PcmAudio(shortArrayOf(1), 16_000), PcmAudio(shortArrayOf(2), 24_000)))
+    }
+
+    @Test
+    fun `upsampling interpolates between neighbours`() {
+        val up = PcmAudio(shortArrayOf(0, 100, 200, 100), 8_000).resampled(16_000)
+
+        assertArrayEquals(shortArrayOf(0, 50, 100, 150, 200, 150, 100, 100), up.samples)
+        assertEquals(16_000, up.sampleRate)
+    }
+
+    @Test
+    fun `resampling keeps the duration`() {
+        val audio = PcmAudio(ShortArray(16_000), 16_000)
+
+        assertEquals(22_050, audio.resampled(22_050).samples.size)
+        assertEquals(0, PcmAudio.silence(16_000).resampled(24_000).samples.size)
+    }
+
+    @Test
+    fun `resampling to the same rate returns it unchanged`() {
+        val audio = PcmAudio(shortArrayOf(1, 2, 3), 16_000)
+
+        assertSame(audio, audio.resampled(16_000))
     }
 }
