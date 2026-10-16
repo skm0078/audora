@@ -13,6 +13,26 @@ class PcmAudio(val samples: ShortArray, val sampleRate: Int) {
 
     val durationMs: Long get() = samples.size * MS_PER_SECOND / sampleRate
 
+    /**
+     * The same sound at [rate] Hz, by linear interpolation. Meant for upsampling (joining voices of different
+     * rates at the highest one); downsampling this way would alias.
+     */
+    fun resampled(rate: Int): PcmAudio {
+        require(rate > 0) { "rate must be > 0, was $rate" }
+        if (rate == sampleRate) return this
+        val size = (samples.size.toLong() * rate / sampleRate).toInt()
+        val last = samples.lastIndex
+        val out = ShortArray(size) { i ->
+            val position = i.toDouble() * sampleRate / rate
+            val index = position.toInt()
+            val fraction = position - index
+            val a = samples[index]
+            val b = samples[minOf(index + 1, last)]
+            (a + (b - a) * fraction).roundToInt().toShort()
+        }
+        return PcmAudio(out, rate)
+    }
+
     override fun toString(): String = "PcmAudio(${samples.size} samples @ $sampleRate Hz, $durationMs ms)"
 
     companion object {

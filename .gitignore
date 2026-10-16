@@ -29,6 +29,8 @@ models/
 !testdata/pdfs/**/*.pdf
 # Small redistributable fixtures for :pdf's instrumented tests (licences in that folder's SOURCES.md)
 !pdf/src/androidTest/assets/pdfs/*.pdf
+# The same kind of fixture for :playback's instrumented tests (P3-01)
+!playback/src/androidTest/assets/pdfs/*.pdf
 # The golden corpus (P2-01): redistributable excerpts only, licences in pdf/golden/README.md
 !pdf/golden/pdfs/*.pdf
 

@@ -133,14 +133,9 @@ class MainActivity : ComponentActivity() {
 
                     AppDestination.Voices -> VoicesRoute(voicesController.value) { navigate(AppDestination.Settings) }
 
-                    is AppDestination.BatterySetup -> BatterySetupScreen(
-                        exempt = battery.exempt,
-                        brand = battery.brand,
-                        steps = battery.steps,
-                        onAllow = { battery.requestExemption(::startActivity) },
-                        onOpenAppSettings = { battery.openAppSettings(::startActivity) },
-                        onBack = { navigate(destination.parent ?: AppDestination.Library) },
-                    )
+                    is AppDestination.BatterySetup -> BatterySetupRoute(battery) {
+                        navigate(destination.parent ?: AppDestination.Library)
+                    }
 
                     is AppDestination.Reader -> {
                         ReaderRoute(destination.id, autoResume = autoResumeBook == destination.id) {
@@ -181,6 +176,18 @@ class MainActivity : ComponentActivity() {
             onPauseOrDispose {}
         }
         return battery
+    }
+
+    @Composable
+    private fun BatterySetupRoute(battery: BatterySetupController, navigateBack: () -> Unit) {
+        BatterySetupScreen(
+            exempt = battery.exempt,
+            brand = battery.brand,
+            steps = battery.steps,
+            onAllow = { battery.requestExemption(::startActivity) },
+            onOpenAppSettings = { battery.openAppSettings(::startActivity) },
+            onBack = navigateBack,
+        )
     }
 
     @Composable

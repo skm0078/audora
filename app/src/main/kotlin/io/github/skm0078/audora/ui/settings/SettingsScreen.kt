@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/SettingsScreen.kt
-// Purpose: Settings: Voices (P4-01), OCR models (P3-05), background reading (P1-06), Share logs (P1-07), version.
+// Purpose: Settings: Voices (P4-01), OCR models (P3-05), background reading (P1-06), Share logs (P1-07), version, and a debug tool.
 
 package io.github.skm0078.audora.ui.settings
 
