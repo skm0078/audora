@@ -64,6 +64,22 @@ class PageTransformTest {
     }
 
     @Test
+    fun `a box on the drawn page maps back to the page box under it, on rotated pages too`() {
+        val transforms = listOf(
+            PageTransform.upright(W, H),
+            sampled { x, y -> ViewPoint(y / H, x / W) },
+            sampled { x, y -> ViewPoint(1f - y / H, 1f - x / W) },
+        )
+        transforms.forEach { transform ->
+            val back = transform.toPage(transform.toView(box))
+            assertEquals(box.left, back.left, POINT_EPSILON)
+            assertEquals(box.top, back.top, POINT_EPSILON)
+            assertEquals(box.right, back.right, POINT_EPSILON)
+            assertEquals(box.bottom, back.bottom, POINT_EPSILON)
+        }
+    }
+
+    @Test
     fun `a transform that collapses the page is rejected`() {
         val flat = ViewPoint(0.5f, 0.5f)
         assertThrows(IllegalArgumentException::class.java) {

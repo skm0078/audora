@@ -1,9 +1,11 @@
 // File: pdf/src/test/kotlin/io/github/skm0078/audora/pdf/ocr/OcrPageTextTest.kt
-// Purpose: Tesseract text becomes reading units: paragraphs, line-end hyphens, page numbers, no glyph boxes.
+// Purpose: OCR'd words become reading units: paragraphs, line-end hyphens, page numbers and highlight boxes.
 
 package io.github.skm0078.audora.pdf.ocr
 
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.pdf.render.PageTransform
+import io.github.skm0078.audora.pdf.render.ViewRect
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -41,7 +43,7 @@ class OcrPageTextTest {
     }
 
     @Test
-    fun `units have no boxes, index the OCR reading text and carry the page language`() {
+    fun `text without positions gives boxless units that index the OCR text and carry the page language`() {
         val ocr = "मनुष्य स्वतंत्र पैदा होता है।\n\nसभी समान हैं।"
         val text = builder.ocrReadingText(PAGE, ocr).text
         val units = builder.build(builder.ocrReadingText(PAGE, ocr))
@@ -60,7 +62,33 @@ class OcrPageTextTest {
         assertTrue(read(" \n\n \n").isEmpty())
     }
 
+    @Test
+    fun `words with boxes give each unit one box per line on the page, and dropped lines are left out`() {
+        fun word(text: String, left: Float, top: Float) = OcrWord(text, ViewRect(left, top, left + 0.1f, top + 0.02f))
+        val ocr = OcrText(
+            listOf(
+                OcrLine(listOf(word("Running", 0.1f, 0.02f), word("head", 0.3f, 0.02f)), paragraph = 0),
+                OcrLine(listOf(word("One", 0.1f, 0.3f), word("line", 0.3f, 0.3f)), paragraph = 1),
+                OcrLine(listOf(word("and", 0.1f, 0.33f), word("two.", 0.3f, 0.33f)), paragraph = 1),
+            ),
+        )
+        val transform = PageTransform.upright(PAGE_WIDTH, PAGE_HEIGHT)
+        val reading = builder.ocrReadingText(PAGE, ocr, dropped = setOf(0)) { transform.toPage(it) }
+        val units = builder.build(reading)
+        assertEquals(listOf("One line and two."), units.map { it.text })
+        val boxes = requireNotNull(units.single().bounds)
+        assertEquals(2, boxes.size)
+        val first = transform.toView(boxes[0])
+        assertEquals(0.1f, first.left, EPSILON)
+        assertEquals(0.4f, first.right, EPSILON)
+        assertEquals(0.3f, first.top, EPSILON)
+        assertEquals(0.32f, first.bottom, EPSILON)
+    }
+
     private companion object {
         const val PAGE = 4
+        const val PAGE_WIDTH = 600f
+        const val PAGE_HEIGHT = 800f
+        const val EPSILON = 1e-4f
     }
 }

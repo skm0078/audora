@@ -30,10 +30,13 @@ enum class TextTurn {
     /** [box] in the turned frame. */
     fun apply(box: TextBox): TextBox = when (this) {
         NONE -> box
+
         // (x, y) → (y, −x)
         CLOCKWISE -> TextBox(left = box.bottom, top = -box.left, right = box.top, bottom = -box.right)
+
         // (x, y) → (−y, x)
         COUNTER_CLOCKWISE -> TextBox(left = -box.top, top = box.right, right = -box.bottom, bottom = box.left)
+
         // (x, y) → (−x, −y)
         HALF -> TextBox(left = -box.right, top = -box.bottom, right = -box.left, bottom = -box.top)
     }

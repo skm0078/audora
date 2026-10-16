@@ -9,6 +9,8 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PageImage
 import io.github.skm0078.audora.pdf.document.PdfPageError
+import io.github.skm0078.audora.pdf.ocr.OcrMargins
+import io.github.skm0078.audora.pdf.ocr.OcrText
 import java.text.Normalizer
 import java.util.Locale
 
@@ -18,8 +20,8 @@ import java.util.Locale
  * [TextLayerVerdict.UNVERIFIED] and reads OCR-routed pages from their text layer.
  */
 fun interface PageOcr {
-    /** The page's text in reading order: lines separated by a line break, paragraphs by a blank line. */
-    fun recognize(pageIndex: Int, langs: Set<Lang>): Outcome<String, OcrError>
+    /** The page's words in reading order, with their places on the page when the engine gives them. */
+    fun recognize(pageIndex: Int, langs: Set<Lang>): Outcome<OcrText, OcrError>
 
     /**
      * The languages a page without a usable text layer is written in (a scan gives no hint). The default cannot
@@ -27,6 +29,14 @@ fun interface PageOcr {
      */
     fun detectLangs(pageIndex: Int): Outcome<Set<Lang>, OcrError> =
         Outcome.Failure(OcrError.Failed("language detection is not supported"))
+
+    /**
+     * The lines in the top and bottom [share] of the page once turned [quarterTurns] quarter turns clockwise (as the
+     * scanned page being cleaned was): what running-header removal compares that page's margins with (ADR-032).
+     * The default reads nothing, so scanned pages keep their headers.
+     */
+    fun margins(pageIndex: Int, langs: Set<Lang>, quarterTurns: Int, share: Float): Outcome<OcrMargins, OcrError> =
+        Outcome.Failure(OcrError.Failed("margin strips are not supported"))
 }
 
 /** Builds a book's [PageOcr] from the book's own renderer (`PdfBook.open`). */
@@ -147,7 +157,7 @@ class TextLayerCheck(private val config: QualityConfig, private val ocr: PageOcr
             return
         }
         when (val result = ocr.recognize(pageIndex, langs)) {
-            is Outcome.Success -> judge(pageIndex, CharacterErrorRate.ofLines(reference = result.value, layerText))
+            is Outcome.Success -> judge(pageIndex, CharacterErrorRate.ofLines(reference = result.value.text, layerText))
 
             is Outcome.Failure -> {
                 // A failed sample never rejects a book: it keeps a verdict it already had, or stays unverified.
@@ -204,6 +214,9 @@ object CharacterErrorRate {
         if (length == 0) return if (hyp.isEmpty()) 0f else 1f
         return errors.toFloat() / length
     }
+
+    /** Plain Levenshtein distance from [a] to [b] (OCR'd running headers on different pages, ADR-032). */
+    internal fun editDistance(a: String, b: String): Int = distance(a, b, freeEnds = false)
 
     /** Keeps letters, combining marks and digits; NFC first so precomposed and decomposed forms compare equal. */
     internal fun fold(text: String): String {

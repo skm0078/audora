@@ -16,22 +16,40 @@ package io.github.skm0078.audora.core.config
  *   Hindi, Bengali and English apart on every S2 scan.
  * @property cacheMaxBytes OCR text is kept on disk so a page is never recognised twice (the reader and the player
  *   both read it, and so does a resume); the oldest pages are dropped beyond this size. A page is a few kilobytes.
+ * @property orientationCheckBelow a page read with a mean word confidence (0–100) below this may be sideways or
+ *   upside down: it is read again turned each way at [orientationDpi] and the best turn wins (ADR-032). Upright
+ *   print reads at 85–95; a sideways page reads as noise, well below 50.
+ * @property orientationDpi the shrunk copy the orientation check reads four times; enough to tell text from noise.
+ * @property orientationMinGain a turn wins only when it reads at least this much more confidently than the page as
+ *   it is, so a merely poor scan is never turned.
+ * @property marginDpi the strips at the top and bottom of neighbouring pages, read to find running headers on
+ *   scanned pages (ADR-032), are drawn at this resolution: enough for 8 pt header text, cheaper than [renderDpi].
  */
 data class OcrConfig(
     val renderDpi: Int = 300,
     val maxRenderPixels: Long = DEFAULT_MAX_RENDER_PIXELS,
     val probeDpi: Int = 100,
     val cacheMaxBytes: Long = DEFAULT_CACHE_MAX_BYTES,
+    val orientationCheckBelow: Int = 65,
+    val orientationDpi: Int = 150,
+    val orientationMinGain: Int = 10,
+    val marginDpi: Int = 200,
 ) {
     init {
         require(renderDpi > 0) { "renderDpi must be > 0, was $renderDpi" }
         require(probeDpi in 1..renderDpi) { "probeDpi must be in 1..renderDpi, was $probeDpi" }
         require(maxRenderPixels > 0) { "maxRenderPixels must be > 0, was $maxRenderPixels" }
         require(cacheMaxBytes > 0) { "cacheMaxBytes must be > 0, was $cacheMaxBytes" }
+        require(orientationCheckBelow in 0..MAX_CONFIDENCE) { "orientationCheckBelow must be in 0..100" }
+        require(orientationDpi in 1..renderDpi && marginDpi in 1..renderDpi) {
+            "probe resolutions must be in 1..renderDpi"
+        }
+        require(orientationMinGain >= 0) { "orientationMinGain must be >= 0, was $orientationMinGain" }
     }
 
     companion object {
         const val DEFAULT_MAX_RENDER_PIXELS = 12_000_000L
         const val DEFAULT_CACHE_MAX_BYTES = 16L shl 20 // 16 MiB
+        const val MAX_CONFIDENCE = 100
     }
 }

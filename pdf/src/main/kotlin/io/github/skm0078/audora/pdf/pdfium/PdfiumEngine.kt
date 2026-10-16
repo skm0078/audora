@@ -21,6 +21,7 @@ import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.pdf.document.RenderSize
 import io.github.skm0078.audora.pdf.extract.RawPage
+import io.github.skm0078.audora.pdf.render.PageTransform
 import io.legere.pdfiumandroid.api.Bookmark
 import io.legere.pdfiumandroid.api.PdfPasswordException
 import io.legere.pdfiumandroid.core.unlocked.PdfDocumentU
@@ -144,6 +145,23 @@ private class PdfiumDocumentHandle(private val document: PdfDocumentU, private v
         page = bookmark.pageIdx.takeIf { it in 0L until pageCount }?.toInt(),
         children = bookmark.children.map(::entryOf),
     )
+
+    // No transform means no highlight on an OCR'd page, never an unreadable one: log it and read on.
+    @Suppress("TooGenericExceptionCaught") // PdfiumAndroidKt reports page failures as RuntimeExceptions.
+    override fun pageTransform(pageIndex: Int): PageTransform? = try {
+        pdfiumLocked {
+            document.openPage(pageIndex)?.let { page ->
+                try {
+                    pageTransformOf(page)
+                } finally {
+                    page.close()
+                }
+            }
+        }
+    } catch (e: RuntimeException) {
+        AudoraLog.w(TAG, "Could not read the page transform, page=$pageIndex", e)
+        null
+    }
 
     /**
      * Draws under PDFium's lock, converts to grey outside it, so other books only wait for the drawing. The ARGB

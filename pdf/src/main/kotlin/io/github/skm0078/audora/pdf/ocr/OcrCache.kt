@@ -9,18 +9,28 @@ import java.io.File
 import java.io.IOException
 
 /**
- * What a cached text depends on: the book, the page, the languages, the resolution and the engine with its models
- * ([tag]). A new model pin or engine version changes [tag], so stale text is never read back.
+ * What a cached text depends on: the book, the page, the languages, the resolution, the engine with its models
+ * ([tag]) and what was read ([variant]: the whole page, the language probe, or the margin strips). A new model pin
+ * or engine version changes [tag], so stale text is never read back.
  */
-data class OcrKey(val book: String, val page: Int, val langs: Set<Lang>, val dpi: Int, val tag: String) {
+data class OcrKey(
+    val book: String,
+    val page: Int,
+    val langs: Set<Lang>,
+    val dpi: Int,
+    val tag: String,
+    val variant: String = "page",
+) {
     /** A file name of letters, digits, '-' and '.': book keys and tags are hashes or plain words. */
     internal fun fileName(): String {
         val codes = langs.map { it.bcp47Tag }.sorted().joinToString("+")
-        return "${safe(book)}-p$page-$codes-${dpi}dpi-${safe(tag)}$SUFFIX"
+        return "${safe(book)}-p$page-${safe(variant)}-$codes-${dpi}dpi-${safe(tag)}$SUFFIX"
     }
 
     internal companion object {
-        const val SUFFIX = ".txt"
+        /** OcrTextCodec files. Plain-text pages from before ADR-032 ended in [OLD_SUFFIX]; they are deleted. */
+        const val SUFFIX = ".ocr"
+        const val OLD_SUFFIX = ".txt"
         private val UNSAFE = Regex("[^A-Za-z0-9.]")
 
         fun safe(part: String): String = part.replace(UNSAFE, "_")
@@ -62,8 +72,9 @@ class OcrCache(private val dir: File, private val maxBytes: Long) {
         trim()
     }
 
-    /** Deletes the least recently used pages until the folder fits [maxBytes] again. */
+    /** Deletes pages in the old format, then the least recently used pages until the folder fits [maxBytes]. */
     private fun trim() {
+        dir.listFiles { file -> file.isFile && file.name.endsWith(OcrKey.OLD_SUFFIX) }.orEmpty().forEach { it.delete() }
         val files = dir.listFiles { file -> file.isFile && file.name.endsWith(OcrKey.SUFFIX) }.orEmpty()
         var total = files.sumOf { it.length() }
         if (total <= maxBytes) return

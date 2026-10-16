@@ -75,26 +75,28 @@ internal class PageProfiler(private val config: CleanupConfig) {
             line = line,
             box = requireNotNull(line.box),
             signature = signature,
-            letters = signature.count { it != DIGITS },
+            letters = signature.count { it != SIGNATURE_DIGITS },
             folios = folios.values,
             standaloneFolio = folios.standalone,
         )
     }
 
-    private fun signature(text: String): String {
-        val out = StringBuilder(text.length)
-        text.codePoints().forEach { cp ->
-            when {
-                Character.isLetter(cp) -> out.appendCodePoint(Character.toLowerCase(cp))
-                Character.isDigit(cp) -> if (out.isEmpty() || out.last() != DIGITS) out.append(DIGITS)
-            }
-        }
-        return out.toString()
-    }
+    private fun signature(text: String): String = marginSignature(text)
+}
 
-    private companion object {
-        const val DIGITS = '#'
+/** Digits stand in for one '#' in a [marginSignature]; letters are everything else it holds. */
+internal const val SIGNATURE_DIGITS = '#'
+
+/** [text]'s letters lower-cased, each run of digits folded to one [SIGNATURE_DIGITS] ([MarginLine.signature]). */
+internal fun marginSignature(text: String): String {
+    val out = StringBuilder(text.length)
+    text.codePoints().forEach { cp ->
+        when {
+            Character.isLetter(cp) -> out.appendCodePoint(Character.toLowerCase(cp))
+            Character.isDigit(cp) -> if (out.isEmpty() || out.last() != SIGNATURE_DIGITS) out.append(SIGNATURE_DIGITS)
+        }
     }
+    return out.toString()
 }
 
 /** Lower-case "left-right" for every hyphen between two letters in [text]; U+2010 counts as a hyphen. */

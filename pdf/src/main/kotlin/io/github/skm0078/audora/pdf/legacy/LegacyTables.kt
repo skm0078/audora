@@ -180,7 +180,10 @@ private object KrutiDevCodes {
         "=" to "त्र्",
     )
 
-    /** The Rajasthan Board paper's supplement Chanakya ("flf[f]dk;aZ" = सिद्धिकार्यं, "fu[E]ukaf[V]rs"kq" = निम्नाङ्कितेषु). */
+    /**
+     * The Rajasthan Board paper's supplement Chanakya ("flf[f]dk;aZ" = सिद्धिकार्यं, "fu[E]ukaf[V]rs"kq" =
+     * निम्नाङ्कितेषु; the bracketed glyph is the Chanakya one).
+     */
     val CHANAKYA_SUPPLEMENT: Map<String, String> = mapOf("f" to "द्ध", "V" to "ङ्क")
 }
 

@@ -5,6 +5,7 @@ package io.github.skm0078.audora.pdf.document
 
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.extract.RawPage
+import io.github.skm0078.audora.pdf.render.PageTransform
 import java.io.Closeable
 
 /** Opens one PDF. Each call opens it again from its source, which is how [PdfBook] bounds native memory. */
@@ -20,6 +21,13 @@ interface PdfDocumentHandle : Closeable {
 
     /** The document's bookmarks, top level first; empty when it has none or they cannot be read. */
     fun outline(): List<OutlineEntry> = emptyList()
+
+    /**
+     * Maps the page's boxes onto the page as displayed, exactly as the reader draws it: OCR'd words, found on the
+     * drawn page, are mapped back through it to get page-space highlight boxes (ADR-032). Null when the engine
+     * cannot tell (desktop page dumps in tests): OCR'd sentences then have no highlight.
+     */
+    fun pageTransform(pageIndex: Int): PageTransform? = null
 
     /**
      * The page as an 8-bit grey image for OCR (P3-05), at [dpi] or lower so it stays within [maxPixels]. Engines

@@ -129,7 +129,7 @@ class LegacyConverterTest {
         assertEquals("स्थिति", LegacyConverter.convert(MappedText.plain(text), runs).text.text)
     }
 
-    /** [text] as PDFium extracts it, with the characters in [chanakya] set in a Chanakya font and the rest in DevLys. */
+    /** [text] as PDFium extracts it: the characters in [chanakya] set in a Chanakya font, the rest in DevLys. */
     private fun mixedFonts(text: String, chanakya: Set<Int>): LegacyConversion {
         val chars = RawPageFixture.chars(text).mapIndexed { i, c -> c.copy(fontId = if (i in chanakya) 1 else 0) }
         val page = PageTextAssembler().assemble(

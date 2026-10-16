@@ -67,6 +67,13 @@ class PageTransform private constructor(
         return PagePoint(x = (e * du - b * dv) / determinant, y = (a * dv - d * du) / determinant)
     }
 
+    /** The page-space box under [rect] (an OCR'd word, ADR-032): the inverse of [toView] for a box. */
+    fun toPage(rect: ViewRect): TextBox {
+        val a = toPage(ViewPoint(rect.left, rect.top))
+        val b = toPage(ViewPoint(rect.right, rect.bottom))
+        return TextBox(left = minOf(a.x, b.x), top = maxOf(a.y, b.y), right = maxOf(a.x, b.x), bottom = minOf(a.y, b.y))
+    }
+
     override fun toString(): String = "PageTransform(u=$a·x+$b·y+$c, v=$d·x+$e·y+$f)"
 
     companion object {

@@ -33,15 +33,15 @@ class PageText internal constructor(
     internal fun withBoxes(transform: (TextBox) -> TextBox): PageText {
         val mapped = FloatArray(boxes.size) { Float.NaN }
         for (offset in text.indices) {
-            val box = boxAt(offset)?.let(transform) ?: continue
-            val o = offset * RawChars.BOX_FLOATS
-            mapped[o] = box.left
-            mapped[o + 1] = box.top
-            mapped[o + 2] = box.right
-            mapped[o + 3] = box.bottom
+            boxAt(offset)?.let(transform)?.let { mapped.putBox(offset, it) }
         }
         return PageText(pageIndex, text, mapped, fontRuns, stats)
     }
+}
+
+/** Writes [box] as UTF-16 unit [offset]'s four floats (left, top, right, bottom): the layout [PageText.boxAt] reads. */
+internal fun FloatArray.putBox(offset: Int, box: TextBox) {
+    floatArrayOf(box.left, box.top, box.right, box.bottom).copyInto(this, offset * RawChars.BOX_FLOATS)
 }
 
 /** A run of [text][PageText.text] in one font at one size, [start] inclusive to [end] exclusive. */
