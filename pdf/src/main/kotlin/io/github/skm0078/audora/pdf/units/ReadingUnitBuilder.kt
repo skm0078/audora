@@ -3,11 +3,17 @@
 
 package io.github.skm0078.audora.pdf.units
 
+import io.github.skm0078.audora.core.config.CleanupConfig
 import io.github.skm0078.audora.core.config.LayoutConfig
 import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.pdf.cleanup.ClutterRemover
+import io.github.skm0078.audora.pdf.cleanup.PageProfile
+import io.github.skm0078.audora.pdf.cleanup.PageProfiler
+import io.github.skm0078.audora.pdf.cleanup.TextRepair
 import io.github.skm0078.audora.pdf.extract.PageText
+import io.github.skm0078.audora.pdf.layout.PageLayout
 import io.github.skm0078.audora.pdf.layout.PageLayoutAnalyzer
 import io.github.skm0078.audora.pdf.layout.ParagraphKind
 import io.github.skm0078.audora.pdf.layout.ReadingParagraph
@@ -15,24 +21,46 @@ import io.github.skm0078.audora.pdf.layout.ReadingText
 import io.github.skm0078.audora.pdf.layout.ReadingTextBuilder
 
 /**
- * Layout (P2-02) puts the page in reading order; sentences are then split within each paragraph, so a heading
- * without a full stop never runs into the paragraph below it. `charStart`/`charEnd` index [ReadingText.text]
- * (ADR-018). Headers and de-hyphenation are P2-03; number and date normalization is P2-04. Units without a
- * letter or digit are skipped.
+ * Layout (P2-02) puts the page in reading order; cleanup (P2-03) drops running headers, page numbers and table
+ * interiors and repairs the text; sentences are then split within each paragraph, so a heading without a full stop
+ * never runs into the paragraph below it. `charStart`/`charEnd` index [ReadingText.text] (ADR-018, ADR-020).
+ * Number and date normalization is P2-04. Units without a letter or digit are skipped.
+ *
+ * Header and footer removal compares a page with its neighbours ([PageProfile]). `PdfBook.readingUnits` supplies
+ * them; [build] with a page alone applies every rule that needs no neighbour.
  */
 class ReadingUnitBuilder(
     private val config: ReadingUnitConfig = ReadingUnitConfig(),
     private val splitter: SentenceSplitter = BreakIteratorSentenceSplitter(),
     layoutConfig: LayoutConfig = LayoutConfig(),
+    val cleanupConfig: CleanupConfig = CleanupConfig(),
 ) {
     private val lineBoxes = LineBoxes(config.lineOverlapRatio)
     private val analyzer = PageLayoutAnalyzer(layoutConfig)
-    private val textBuilder = ReadingTextBuilder()
+    private val profiler = PageProfiler(cleanupConfig)
+    private val clutter = ClutterRemover(cleanupConfig, layoutConfig)
+    private val textBuilder = ReadingTextBuilder(TextRepair(cleanupConfig))
+
+    /** Layout and neighbour summary of one page: what a book caches between calls. */
+    fun analyze(page: PageText): AnalyzedPage {
+        val layout = analyzer.analyze(page)
+        return AnalyzedPage(page, layout, profiler.profile(page, layout))
+    }
 
     fun build(page: PageText): List<ReadingUnit> = build(readingText(page))
 
+    /** [neighbours]: profiles of the pages around [page] (not [page] itself), in any order. */
+    fun build(page: AnalyzedPage, neighbours: List<PageProfile>): List<ReadingUnit> =
+        build(readingText(page, neighbours))
+
     /** The page's text in reading order: what [build]'s offsets index. */
-    fun readingText(page: PageText): ReadingText = textBuilder.build(page, analyzer.analyze(page))
+    fun readingText(page: PageText): ReadingText = readingText(analyze(page), emptyList())
+
+    fun readingText(page: AnalyzedPage, neighbours: List<PageProfile>): ReadingText {
+        val cleaned = clutter.clean(page.text, page.layout, page.profile, neighbours)
+        val lexicon = neighbours.fold(page.profile.hyphenated) { words, other -> words + other.hyphenated }
+        return textBuilder.build(page.text, cleaned, lexicon)
+    }
 
     fun build(reading: ReadingText): List<ReadingUnit> {
         val text = reading.text
@@ -109,4 +137,9 @@ class ReadingUnitBuilder(
         val WHITESPACE = Regex("\\s+")
         const val LINE_BREAKS = "\n\r\t"
     }
+}
+
+/** A page after layout, with the summary its neighbours use. Built by [ReadingUnitBuilder.analyze]. */
+class AnalyzedPage internal constructor(val text: PageText, val layout: PageLayout, val profile: PageProfile) {
+    val pageIndex: Int get() = text.pageIndex
 }

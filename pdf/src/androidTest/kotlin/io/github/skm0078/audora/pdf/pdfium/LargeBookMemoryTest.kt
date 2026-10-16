@@ -7,6 +7,7 @@ import android.os.Debug
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import io.github.skm0078.audora.core.config.CleanupConfig
 import io.github.skm0078.audora.core.config.ExtractionConfig
 import io.github.skm0078.audora.core.result.getOrNull
 import io.github.skm0078.audora.pdf.document.PdfBook
@@ -23,7 +24,9 @@ class LargeBookMemoryTest {
     @Test
     fun fiveHundredPagesReadInOrderReopenEveryHundredAndStayBounded() {
         val run = readWholeBook(reopenEveryPages = REOPEN_EVERY)
-        assertEquals("opens", PAGES / REOPEN_EVERY, run.opens)
+        // Cleanup reads a few pages ahead as neighbours (ADR-020); the caches keep it near one read per page.
+        assertTrue("pages read ${run.pagesRead}", run.pagesRead <= PAGES + NEIGHBOUR_PAGES)
+        assertEquals("opens", 1 + (run.pagesRead - 1) / REOPEN_EVERY, run.opens)
         assertTrue("native heap grew ${run.nativeGrowthMb} MB", run.nativeGrowthMb <= MAX_NATIVE_GROWTH_MB)
         assertTrue("Java heap grew ${run.javaGrowthMb} MB", run.javaGrowthMb <= MAX_JAVA_GROWTH_MB)
     }
@@ -32,7 +35,7 @@ class LargeBookMemoryTest {
     fun reopeningHoldsLessNativeMemoryThanKeepingTheDocumentOpen() {
         // Not a bound, a regression signal: if this inverts, the reopen rule stopped doing its job.
         val withReopen = readWholeBook(reopenEveryPages = REOPEN_EVERY)
-        val withoutReopen = readWholeBook(reopenEveryPages = PAGES + 1)
+        val withoutReopen = readWholeBook(reopenEveryPages = PAGES + NEIGHBOUR_PAGES + 1)
         assertEquals(1, withoutReopen.opens)
         assertTrue(
             "with reopen ${withReopen.nativeGrowthMb} MB, without ${withoutReopen.nativeGrowthMb} MB",
@@ -40,7 +43,7 @@ class LargeBookMemoryTest {
         )
     }
 
-    private data class Run(val opens: Int, val nativeGrowthMb: Double, val javaGrowthMb: Double)
+    private data class Run(val opens: Int, val pagesRead: Int, val nativeGrowthMb: Double, val javaGrowthMb: Double)
 
     private fun readWholeBook(reopenEveryPages: Int): Run {
         val config = ExtractionConfig(reopenEveryPages = reopenEveryPages)
@@ -65,10 +68,10 @@ class LargeBookMemoryTest {
             val javaGrowth = (settledJavaHeap() - javaBaseline) / BYTES_PER_MB
             Log.i(
                 TAG,
-                "reopenEvery=$reopenEveryPages opens=${pdf.opens} " +
+                "reopenEvery=$reopenEveryPages opens=${pdf.opens} pagesRead=${pdf.pagesRead} " +
                     "nativeGrowthMb=$nativeGrowth javaGrowthMb=$javaGrowth",
             )
-            Run(pdf.opens, nativeGrowth, javaGrowth)
+            Run(pdf.opens, pdf.pagesRead, nativeGrowth, javaGrowth)
         }
     }
 
@@ -94,6 +97,7 @@ class LargeBookMemoryTest {
         private const val TAG = "AudoraMemoryTest"
         private const val PAGES = 500
         private const val REOPEN_EVERY = 100
+        private val NEIGHBOUR_PAGES = CleanupConfig().neighbourPages
         private const val LINES_PER_PAGE = 40
         private const val WARM_UP_PAGES = 5
         private const val MAX_NATIVE_GROWTH_MB = 24.0

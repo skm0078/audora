@@ -63,7 +63,7 @@ fun characterErrorRate(expected: String, actual: String): Double {
 
 fun collapseWhitespace(s: String): String = s.split(Regex("\\s+")).filter { it.isNotEmpty() }.joinToString(" ")
 
-/** Whitespace collapsed, ZWNJ/ZWJ dropped (P2-03 folds them), S2's page footer removed. */
+/** Whitespace collapsed, ZWNJ/ZWJ dropped (the golden score ignores them too), S2's page footer removed. */
 fun comparable(s: String): String = collapseWhitespace(
     s.replace(Regex("Audora S2 test corpus - \\S+\\s+\\d+"), " ").replace("\u200C", "").replace("\u200D", ""),
 )
