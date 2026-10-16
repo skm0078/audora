@@ -24,6 +24,7 @@ import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.playlist.PlaybackItem
 import io.github.skm0078.audora.playback.playlist.PlaylistFeeder
+import io.github.skm0078.audora.playback.queue.RenderAheadPolicy
 import io.github.skm0078.audora.playback.queue.RenderAheadQueue
 import io.github.skm0078.audora.playback.queue.SentenceRenderer
 import io.github.skm0078.audora.playback.recovery.PlaybackRecovery
@@ -38,8 +39,13 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
-/** What the session reads and how it speaks. */
-class SessionSources(val renderer: SentenceRenderer, val books: BookSource, val texts: ItemTexts)
+/** What the session reads, how it speaks, and how far ahead it renders (P4-02: from each voice's measured speed). */
+class SessionSources(
+    val renderer: SentenceRenderer,
+    val books: BookSource,
+    val texts: ItemTexts,
+    val renderAhead: RenderAheadPolicy = RenderAheadPolicy.FIXED,
+)
 
 /**
  * Where the session runs. [scope] is main-thread; [extraction] is one thread (PDFium, P1-02);
@@ -183,7 +189,7 @@ class BookSession(
         val opened = book ?: return
         loader.cancel()
         epoch++
-        val newQueue = RenderAheadQueue(sources.renderer, config, QueueLog(opened.book.id))
+        val newQueue = RenderAheadQueue(sources.renderer, config, QueueLog(opened.book.id), sources.renderAhead)
         newQueue.start("audora-render-$epoch")
         val oldQueue = queue
         queue = newQueue
@@ -214,7 +220,8 @@ class BookSession(
     /** Tells the render queue what to render next and arms the end-of-page sleep timer. */
     private fun updateWindow() {
         val currentFeeder = feeder ?: return
-        queue?.setWindow(currentFeeder.window())
+        val candidates = currentFeeder.window(1 + config.renderAhead.maxAheadUnits)
+        queue?.setWindow(sources.renderAhead.window(candidates, config))
         player.pauseAtEndOfMediaItems = sleep.pauseAfter(playlist.current(), playlist.next())
     }
 

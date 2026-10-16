@@ -22,6 +22,7 @@ import io.github.skm0078.audora.core.resume.ResumeRecorder
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.book.LibraryBookSource
+import io.github.skm0078.audora.playback.queue.MeasuredRenderAhead
 import io.github.skm0078.audora.playback.session.BookSession
 import io.github.skm0078.audora.playback.session.ItemTexts
 import io.github.skm0078.audora.playback.session.QueueRegistry
@@ -29,6 +30,7 @@ import io.github.skm0078.audora.playback.session.SessionEnvironment
 import io.github.skm0078.audora.playback.session.SessionSources
 import io.github.skm0078.audora.playback.session.SpeechPlayer
 import io.github.skm0078.audora.playback.voice.EngineRenderer
+import io.github.skm0078.audora.playback.voice.RenderSpeedTracker
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
 import javax.inject.Inject
@@ -72,7 +74,8 @@ class AudoraPlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate() // Hilt injects fields here.
-        voices = SpeechVoices(VoiceEngines(this))
+        val engines = VoiceEngines(this)
+        voices = SpeechVoices(engines)
         player = SpeechPlayer.build(this, registry, config)
         val diagnostics = DiagnosticsBridge(tracker, scope)
         val recorder = ResumeRecorder(resumeAnchors, resumeScope, PIPELINE_VERSION, System::currentTimeMillis)
@@ -85,7 +88,12 @@ class AudoraPlaybackService : MediaSessionService() {
         bookSession = BookSession(
             player = player,
             registry = registry,
-            sources = SessionSources(EngineRenderer(voices), LibraryBookSource(this, library), ResourceTexts()),
+            sources = SessionSources(
+                renderer = EngineRenderer(voices, speed = RenderSpeedTracker(engines::speeds)),
+                books = LibraryBookSource(this, library),
+                texts = ResourceTexts(),
+                renderAhead = MeasuredRenderAhead(voices::speedOf),
+            ),
             config = config,
             events = SessionPublisher(mediaSession, diagnostics, ResumeBridge(recorder, resumeScope)),
             env = SessionEnvironment(

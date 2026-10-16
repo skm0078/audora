@@ -37,7 +37,7 @@ class FileSherpaSynthesizerFactory(private val voiceDir: (String) -> File, priva
         val model = sherpaModelConfig(spec, threads, dataDir) { File(dir, it).path }
         return try {
             val config = OfflineTtsConfig(model = model, maxNumSentences = 1)
-            Outcome.Success(OfflineTtsSynthesizer(OfflineTts(config = config)))
+            Outcome.Success(OfflineTtsSynthesizer(OfflineTts(config = config), spec))
         } catch (e: IllegalArgumentException) {
             Outcome.Failure(SpeechError.SynthesisFailed(spec.voiceId, "sherpa-onnx rejected the model config", e))
         } catch (e: UnsatisfiedLinkError) {

@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.speech.voices
 
+import io.github.skm0078.audora.core.config.VoiceSpeedConfig
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.speech.sherpa.SherpaVoiceSpec
@@ -39,6 +40,9 @@ sealed interface VoiceStatus {
 /**
  * @property readsLanguage this voice reads [lang] now (the user's choice, or the default when there is none).
  * @property sizeBytes download size for a catalog voice not yet installed, else the size on disk (0 when built in).
+ * @property speed how fast it rendered on this phone; null until it has read something (P4-02).
+ * @property tooSlow measured too slow to keep up (Build Spec §3: offered only below the limit); it cannot be newly
+ *   picked, but stays if it is already the language's voice, since the user chose it.
  */
 data class VoiceRow(
     val id: VoiceId,
@@ -49,12 +53,17 @@ data class VoiceRow(
     val kind: VoiceKind,
     val status: VoiceStatus,
     val readsLanguage: Boolean,
+    val speed: VoiceSpeed? = null,
+    val tooSlow: Boolean = false,
 ) {
     /** Unique in the list even when an installed voice shares the built-in voice's id after a bundled-voice swap. */
     val key: String get() = "${kind.name}:${id.name}"
 }
 
 object VoiceRows {
+    /** Measured speeds and the rule that judges them. */
+    class Speeds(val byVoice: Map<VoiceId, VoiceSpeed>, val config: VoiceSpeedConfig)
+
     /**
      * @param bundled the APK's voice, the English default; null if the APK lacks it (logged where it is read).
      * @param preferred the user's choice per language; a language without one reads with its default (built-in
@@ -103,6 +112,11 @@ object VoiceRows {
 
     private fun installed(voice: CatalogVoice, copy: InstalledVoice): VoiceStatus =
         if (copy.spec.contentVersion == voice.sha256) VoiceStatus.Installed else VoiceStatus.UpdateAvailable
+
+    /** Adds each voice's measured speed and the too-slow verdict (P4-02). */
+    fun withSpeeds(rows: List<VoiceRow>, speeds: Speeds): List<VoiceRow> = rows.map { row ->
+        speeds.byVoice[row.id]?.let { row.copy(speed = it, tooSlow = it.tooSlow(speeds.config)) } ?: row
+    }
 
     private fun row(spec: SherpaVoiceSpec, kind: VoiceKind, status: VoiceStatus, size: Long, reads: Boolean) =
         VoiceRow(spec.voiceId, spec.label, spec.lang, spec.licence, size, kind, status, reads)

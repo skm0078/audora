@@ -1,5 +1,5 @@
 // File: speech/src/test/kotlin/io/github/skm0078/audora/speech/sherpa/SherpaVoiceManifestTest.kt
-// Purpose: voice.properties parsing: the build's Piper and Kitten manifests, defaults and every rejection.
+// Purpose: voice.properties parsing: Piper, Kitten, Kokoro and Supertonic manifests, defaults and every rejection.
 
 package io.github.skm0078.audora.speech.sherpa
 
@@ -57,6 +57,34 @@ class SherpaVoiceManifestTest {
     }
 
     @Test
+    fun `parses a Kokoro manifest with its lexicon and language`() {
+        val kokoro = piper.replace("family=vits", "family=kokoro").replace("speakerId=0", "speakerId=3")
+            .replace("model=en_US-ljspeech-medium.onnx", "model=model.int8.onnx") +
+            "\nvoices=voices.bin\nlexicon=lexicon-us-en.txt\nengineLang=en-us"
+        val spec = requireNotNull(parse(kokoro).getOrNull())
+
+        assertEquals(SherpaFamily.KOKORO, spec.family)
+        assertEquals("en-us", spec.engineLang)
+        assertEquals(
+            listOf("model.int8.onnx", "tokens.txt", "voices.bin", "lexicon-us-en.txt"),
+            spec.requiredFiles,
+        )
+        assertNull(spec.numSteps)
+    }
+
+    @Test
+    fun `parses a Supertonic manifest, which needs its fixed parts and no tokens`() {
+        val spec = requireNotNull(parse(supertonic).getOrNull())
+
+        assertEquals(SherpaFamily.SUPERTONIC, spec.family)
+        assertEquals(Lang.HI, spec.lang)
+        assertEquals("hi", spec.engineLang)
+        assertEquals(5, spec.numSteps)
+        assertEquals(listOf("tts.json", "voice.bin") + SupertonicParts.ALL, spec.requiredFiles)
+        assertTrue("tokens.txt" !in spec.requiredFiles)
+    }
+
+    @Test
     fun `tokens and speaker default, data dir is optional`() {
         val minimal = piper.lines().filterNot { it.startsWith("tokens=") || it.startsWith("speakerId=") }
             .filterNot { it.startsWith("dataDir=") }.joinToString("\n")
@@ -73,7 +101,13 @@ class SherpaVoiceManifestTest {
             "missing model" to piper.lines().filterNot { it.startsWith("model=") }.joinToString("\n"),
             "blank id" to piper.replace("id=piper-en-ljspeech", "id= "),
             "unknown lang" to piper.replace("lang=en", "lang=fr"),
-            "unknown family" to piper.replace("family=vits", "family=kokoro"),
+            "unknown family" to piper.replace("family=vits", "family=opera"),
+            "kokoro without voices" to piper.replace("family=vits", "family=kokoro") + "\nengineLang=en-us",
+            "kokoro without engineLang" to piper.replace("family=vits", "family=kokoro") + "\nvoices=voices.bin",
+            "supertonic without engineLang" to supertonic.lines().filterNot { it.startsWith("engineLang=") }
+                .joinToString("\n"),
+            "zero steps" to supertonic.replace("numSteps=5", "numSteps=0"),
+            "steps not a number" to supertonic.replace("numSteps=5", "numSteps=five"),
             "bad speaker" to piper.replace("speakerId=0", "speakerId=-1"),
             "kitten without voices" to piper.replace("family=vits", "family=kitten"),
         )
@@ -83,6 +117,20 @@ class SherpaVoiceManifestTest {
             assertTrue("$name: $error", error.orEmpty().startsWith("voice.properties"))
         }
     }
+
+    private val supertonic = """
+        contentVersion=24d94e841d36
+        engineLang=hi
+        family=supertonic
+        id=supertonic-hi
+        label=Hindi, Supertonic 3 (premium)
+        lang=hi
+        licence=OpenRAIL-M
+        model=tts.json
+        numSteps=5
+        speakerId=2
+        voices=voice.bin
+    """.trimIndent()
 
     private fun parse(text: String): Outcome<SherpaVoiceSpec, String> =
         SherpaVoiceManifest.parse(Properties().apply { load(StringReader(text)) })

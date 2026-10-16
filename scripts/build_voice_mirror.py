@@ -30,21 +30,40 @@ DICT_SUFFIX = "_dict"
 ATTRIBUTION_FILES = ("MODEL_CARD", "LICENSE", "README.md")
 DEFAULT_TOKENS = "tokens.txt"
 SHA_PREFIX_CHARS = 12
+# Supertonic's model is its tts.json (the catalog's "model") plus these files under fixed names (SupertonicParts in
+# :speech); it has no tokens file.
+SUPERTONIC = "supertonic"
+SUPERTONIC_PARTS = (
+    "duration_predictor.int8.onnx",
+    "text_encoder.int8.onnx",
+    "vector_estimator.int8.onnx",
+    "vocoder.int8.onnx",
+    "unicode_indexer.bin",
+)
 CHUNK_BYTES = 1 << 20
 
 
 @dataclass(frozen=True)
 class Voice:
     id: str
+    family: str
     model: str
     tokens: str
     voices: str | None
+    lexicon: str | None
     data_dir: str | None
     archive: str
     source_sha256: str
     file: str
     sha256: str
     size_bytes: int
+
+    def required_files(self) -> list[str]:
+        """Single files the voice cannot load without (espeak-ng-data is checked separately)."""
+        optional = [self.voices, self.lexicon]
+        if self.family == SUPERTONIC:
+            return [self.model, *SUPERTONIC_PARTS, *[name for name in optional if name]]
+        return [self.model, self.tokens, *[name for name in optional if name]]
 
 
 @dataclass(frozen=True)
@@ -77,9 +96,11 @@ def load_catalog(path: Path) -> tuple[dict, list[Voice]]:
         voices.append(
             Voice(
                 id=entry["id"],
+                family=entry["family"],
                 model=entry["model"],
                 tokens=entry.get("tokens", DEFAULT_TOKENS),
                 voices=entry.get("voices"),
+                lexicon=entry.get("lexicon"),
                 data_dir=entry.get("dataDir"),
                 archive=source["archive"],
                 source_sha256=source["sha256"].lower(),
@@ -124,9 +145,7 @@ def fetch_source(voice: Voice, base_url: str, cache: Path) -> Path:
 
 def wanted(voice: Voice, relative: str, dictionaries: set[str]) -> bool:
     """Whether a path inside the archive (without its top folder) goes into the zip."""
-    singles = {voice.model, voice.tokens, *ATTRIBUTION_FILES}
-    if voice.voices:
-        singles.add(voice.voices)
+    singles = {*voice.required_files(), *ATTRIBUTION_FILES}
     if relative in singles:
         return True
     if voice.data_dir and relative.startswith(voice.data_dir + "/"):
@@ -150,8 +169,7 @@ def build_zip(voice: Voice, archive: Path, out_dir: Path, espeak_dictionaries: l
                     raise ValueError(f"{member.name} unreadable")
                 members[relative] = extracted.read()
 
-    required = [voice.model, voice.tokens] + ([voice.voices] if voice.voices else [])
-    missing = [name for name in required if name not in members]
+    missing = [name for name in voice.required_files() if name not in members]
     if voice.data_dir and not any(name.startswith(voice.data_dir + "/") for name in members):
         missing.append(voice.data_dir)
     if missing:

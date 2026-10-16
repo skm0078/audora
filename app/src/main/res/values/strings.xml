@@ -146,6 +146,8 @@
     <string name="voices_status_imported">Imported · %1$d MB</string>
     <string name="voices_status_update">A newer version is available</string>
     <string name="voices_status_failed">Download failed: %1$s</string>
+    <string name="voices_speed_ok">On this phone it renders %1$s× faster than it speaks</string>
+    <string name="voices_speed_slow">Too slow on this phone: it takes %1$s s to render each second of speech, so reading would pause</string>
     <string name="voices_download">Download</string>
     <string name="voices_update">Update</string>
     <string name="voices_cancel">Cancel</string>

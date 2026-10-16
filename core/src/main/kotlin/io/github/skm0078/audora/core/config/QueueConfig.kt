@@ -4,7 +4,8 @@
 package io.github.skm0078.audora.core.config
 
 /**
- * @property prefetchUnits sentences rendered ahead of the one playing (Build Spec §6: 3 for fast voices).
+ * @property prefetchUnits sentences rendered ahead of the one playing at least (Build Spec §6: 3 for fast voices).
+ *   Slower voices get more, sized from their measured speed by [renderAhead] (P4-02, ADR-027).
  * @property minUnitsAhead the playlist is topped up with the next page whenever fewer sentences than this are
  *   queued after the current one ("at least the next page of items").
  * @property keepBehindUnits sentences kept in the playlist behind the current one, so skip-back works; older
@@ -21,6 +22,8 @@ package io.github.skm0078.audora.core.config
  *   plays as soon as it is rendered. Media3's defaults (1 s, 2 s after a rebuffer) never fill when the
  *   rendered sentences are short and the next one waits for the playhead to move (render window), so the
  *   player would sit in BUFFERING for good.
+ * @property renderAhead how far ahead to render for a voice of a given speed; its `maxAheadUnits` also caps the
+ *   window the render queue accepts.
  */
 data class QueueConfig(
     val prefetchUnits: Int = 3,
@@ -31,6 +34,7 @@ data class QueueConfig(
     val stuckRetryLimit: Int = 2,
     val stuckBufferingTimeoutMs: Int = 600_000,
     val playbackStartBufferMs: Int = 0,
+    val renderAhead: RenderAheadConfig = RenderAheadConfig(),
 ) {
     init {
         require(prefetchUnits >= 1) { "prefetchUnits must be >= 1, was $prefetchUnits" }
@@ -41,6 +45,9 @@ data class QueueConfig(
         require(stuckRetryLimit >= 1) { "stuckRetryLimit must be >= 1, was $stuckRetryLimit" }
         require(stuckBufferingTimeoutMs > 0) { "stuckBufferingTimeoutMs must be > 0, was $stuckBufferingTimeoutMs" }
         require(playbackStartBufferMs >= 0) { "playbackStartBufferMs must be >= 0, was $playbackStartBufferMs" }
+        require(renderAhead.maxAheadUnits >= prefetchUnits) {
+            "renderAhead.maxAheadUnits (${renderAhead.maxAheadUnits}) must be >= prefetchUnits ($prefetchUnits)"
+        }
     }
 
     private companion object {

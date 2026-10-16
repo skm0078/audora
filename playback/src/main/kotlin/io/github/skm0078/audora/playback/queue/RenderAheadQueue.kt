@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.playback.queue
 
 import io.github.skm0078.audora.core.config.QueueConfig
+import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.SpeechError
@@ -28,8 +29,8 @@ class RenderFailedException(val key: UnitKey, val error: SpeechError) :
     IOException("Rendering $key failed: ${error.message}")
 
 /**
- * One worker thread renders, in order, the sentences of the current window: the one playing plus
- * [QueueConfig.prefetchUnits] after it, as set by [setWindow] on every playlist move. Readers (TtsDataSource
+ * One worker thread renders, in order, the sentences of the current window: the one playing plus those after it
+ * that a [RenderAheadPolicy] picked, as set by [setWindow] on every playlist move. Readers (TtsDataSource
  * on ExoPlayer's loader threads) call [awaitPcm] and block until their sentence is ready, so the player waits
  * in BUFFERING and never reaches ENDED while text remains (Build Spec C5).
  *
@@ -39,11 +40,16 @@ class RenderFailedException(val key: UnitKey, val error: SpeechError) :
  *
  * A reader asking for a sentence outside the window waits until the window reaches it. That cannot deadlock:
  * the sentence playing is always the first in the window.
+ *
+ * Start hold (P4-02, ADR-027): each queue is one (re)start. Its first sentence is handed out only once
+ * [RenderAheadPolicy.canStart] predicts the rest of the window renders in time, or after
+ * `renderAhead.maxStartHoldSeconds`, so a slow voice starts a little later instead of pausing after one sentence.
  */
 class RenderAheadQueue(
     private val renderer: SentenceRenderer,
     private val config: QueueConfig,
     private val listener: RenderListener,
+    private val policy: RenderAheadPolicy = RenderAheadPolicy.FIXED,
     private val nanoClock: () -> Long = System::nanoTime,
 ) : Closeable {
     private val lock = ReentrantLock()
@@ -54,6 +60,7 @@ class RenderAheadQueue(
     private val failed = HashMap<UnitKey, SpeechError>()
     private val recent = RecentAudio(config.recentAudioBytes)
     private var rendering: UnitKey? = null
+    private val startHold = StartHold(policy, config, nanoClock)
     private var closed = false
     private var worker: Thread? = null
 
@@ -69,13 +76,13 @@ class RenderAheadQueue(
     }
 
     /**
-     * [units] are the sentence playing followed by the next ones in playlist order; only the first
-     * `1 + prefetchUnits` are rendered. Call on every playlist move (transition, seek, append).
+     * [units] are the sentence playing followed by the next ones to render, in playlist order; at most
+     * `1 + renderAhead.maxAheadUnits` are kept. Call on every playlist move (transition, seek, append).
      */
     fun setWindow(units: List<ReadingUnit>) {
         val cancelled = lock.withLock {
             if (closed) return
-            window = units.take(1 + config.prefetchUnits)
+            window = units.take(1 + config.renderAhead.maxAheadUnits)
             windowKeys = window.mapTo(HashSet(), UnitKey::of)
             retireOutsideWindow()
             changed.signalAll()
@@ -95,7 +102,8 @@ class RenderAheadQueue(
         try {
             while (true) {
                 if (closed) throw QueueClosedException()
-                (ready[key] ?: recent.get(key))?.let { return it }
+                val pcm = ready[key] ?: recent.get(key)
+                if (pcm != null && startHold.allows(key, window, ready, failed)) return pcm
                 failed[key]?.let { throw RenderFailedException(key, it) }
                 changed.await(WAIT_SLICE_MS, TimeUnit.MILLISECONDS)
             }
@@ -214,8 +222,61 @@ class RenderAheadQueue(
     }
 
     private companion object {
-        /** Readers re-check state at least this often, as a guard against a missed signal. */
+        /** Readers re-check state at least this often, as a guard against a missed signal (and the start hold). */
         const val WAIT_SLICE_MS = 500L
+    }
+}
+
+/**
+ * The start hold of one render queue (ADR-027): until playback starts, the window's first sentence is handed out
+ * only once [RenderAheadPolicy.canStart] predicts no stall, nothing is left to render, or the hold reached
+ * `renderAhead.maxStartHoldSeconds`. Every other sentence, and everything after the start, passes at once.
+ * Not thread-safe: the queue calls it under its lock.
+ */
+internal class StartHold(
+    private val policy: RenderAheadPolicy,
+    private val config: QueueConfig,
+    private val nanoClock: () -> Long,
+) {
+    private var started = false
+    private var heldSinceNanos: Long? = null
+
+    fun allows(
+        key: UnitKey,
+        window: List<ReadingUnit>,
+        ready: Map<UnitKey, PcmAudio>,
+        failed: Map<UnitKey, SpeechError>,
+    ): Boolean {
+        val holding = !started && window.firstOrNull()?.let { UnitKey.of(it) == key } == true
+        if (holding && readyToStart(key, window, ready, failed)) started = true
+        return !holding || started
+    }
+
+    private fun readyToStart(
+        key: UnitKey,
+        window: List<ReadingUnit>,
+        ready: Map<UnitKey, PcmAudio>,
+        failed: Map<UnitKey, SpeechError>,
+    ): Boolean {
+        val now = nanoClock()
+        val heldSince = heldSinceNanos ?: now.also { heldSinceNanos = it }
+        val heldSeconds = (now - heldSince) / NANOS_PER_SECOND
+        val rendered = window.takeWhile { UnitKey.of(it) in ready }
+        val bufferedSeconds = rendered.sumOf { requireNotNull(ready[UnitKey.of(it)]).durationMs } / MS_PER_SECOND
+        val pending = window.drop(rendered.size).filter { UnitKey.of(it) !in failed }
+        val go = pending.isEmpty() || heldSeconds >= config.renderAhead.maxStartHoldSeconds ||
+            policy.canStart(bufferedSeconds, pending, config)
+        if (go && heldSeconds > 0) {
+            val heldMs = (heldSeconds * MS_PER_SECOND).toLong()
+            AudoraLog.d(TAG, "Start held $heldMs ms for $key: buffered ${bufferedSeconds}s, ${pending.size} pending")
+        }
+        return go
+    }
+
+    private companion object {
+        const val TAG = "Playback.Queue"
+        const val NANOS_PER_SECOND = 1_000_000_000.0
+        const val MS_PER_SECOND = 1_000.0
     }
 }
 

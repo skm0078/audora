@@ -2,7 +2,11 @@
   "comment": "File: speech/models.json. Purpose: the voices Audora can download (P4-01, ADR-022). Each voice is a flat, uncompressed zip on this repo's 'voices' release, built from the SHA-pinned upstream archive by scripts/build_voice_mirror.py (same bytes every run) and published by .github/workflows/voice-mirror.yml, which never replaces an asset. The app checks every download against sha256 and sizeBytes. A voice whose id matches the bundled voice (bundled-voices.json) is left out of the APK's catalog. To add or change a voice: edit its entry, run the script with --print-pins, paste file/sha256/sizeBytes. Never add Lessac/Blizzard-derived voices (lessac, amy, hfc_*, hi_IN rohan).",
   "baseUrl": "https://github.com/skm0078/audora/releases/download/voices/",
   "sourceBaseUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/",
-  "espeakDictionaries": ["en", "hi", "bn"],
+  "espeakDictionaries": [
+    "en",
+    "hi",
+    "bn"
+  ],
   "voices": [
     {
       "id": "piper-en-cori",
@@ -38,6 +42,45 @@
       "file": "kitten-en-nano-9b9a3d2b8697.zip",
       "sha256": "9b9a3d2b8697fb8d95acc8f41fd0b7ec37b3a8699c72ca31ac3d2520e77a2da0",
       "sizeBytes": 28778024
+    },
+    {
+      "id": "kokoro-en-heart",
+      "label": "English (US), Kokoro Heart (premium)",
+      "lang": "en",
+      "family": "kokoro",
+      "model": "model.int8.onnx",
+      "voices": "voices.bin",
+      "lexicon": "lexicon-us-en.txt",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 3,
+      "engineLang": "en-us",
+      "licence": "Kokoro v1.0 (Apache-2.0)",
+      "source": {
+        "archive": "kokoro-int8-multi-lang-v1_0",
+        "sha256": "4c3052abaa60943a341f193888cf6abd68787dae6ab8ae5c925a706caa247e4e"
+      },
+      "file": "kokoro-en-heart-5bade7e6fb72.zip",
+      "sha256": "5bade7e6fb72265288ab73838c93742f44452302fc792d619117b44fc0e9db1d",
+      "sizeBytes": 149491614
+    },
+    {
+      "id": "supertonic-hi",
+      "label": "Hindi, Supertonic 3 (premium)",
+      "lang": "hi",
+      "family": "supertonic",
+      "model": "tts.json",
+      "voices": "voice.bin",
+      "speakerId": 2,
+      "engineLang": "hi",
+      "numSteps": 5,
+      "licence": "Supertonic 3: code MIT, model OpenRAIL-M with use restrictions (huggingface.co/Supertone/supertonic-3)",
+      "source": {
+        "archive": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+        "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427"
+      },
+      "file": "supertonic-hi-24d94e841d36.zip",
+      "sha256": "24d94e841d368cc4bfef0a89fee30419a4275256d6835f56531907148d6d2233",
+      "sizeBytes": 145317352
     }
   ]
 }
