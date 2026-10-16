@@ -58,8 +58,30 @@ class LegacyRuns internal constructor(
                 LegacyRun(run.start, run.end, encoding)
             }
             if (runs.isEmpty()) return NONE
-            return LegacyRuns(runs.sortedBy { it.start }, letters)
+            return LegacyRuns(withSupplements(page.text, runs.sortedBy { it.start }, config), letters)
         }
+
+        /**
+         * A Chanakya run of at most [QualityConfig.maxSupplementLetters] letters that touches a Kruti Dev or DevLys
+         * run on either side (a single space between them allowed: PDFium inserts one at some font switches) draws
+         * a conjunct that font lacks, in codes of its own ([LegacyEncoding.CHANAKYA_SUPPLEMENT], ADR-032).
+         */
+        private fun withSupplements(text: String, runs: List<LegacyRun>, config: QualityConfig): List<LegacyRun> {
+            fun touchesKrutiLayout(i: Int, step: Int): Boolean {
+                var k = i
+                if (k in text.indices && text[k] == ' ') k += step
+                if (k !in text.indices || !text[k].isLetter()) return false
+                return runs.any { k >= it.start && k < it.end && it.encoding in KRUTI_LAYOUT }
+            }
+            return runs.map { run ->
+                val letters = (run.start until run.end).count { text[it].isLetter() }
+                val supplement = run.encoding == LegacyEncoding.CHANAKYA && letters <= config.maxSupplementLetters &&
+                    (touchesKrutiLayout(run.start - 1, -1) || touchesKrutiLayout(run.end, 1))
+                if (supplement) run.copy(encoding = LegacyEncoding.CHANAKYA_SUPPLEMENT) else run
+            }
+        }
+
+        private val KRUTI_LAYOUT = setOf(LegacyEncoding.KRUTIDEV, LegacyEncoding.DEVLYS)
 
         internal fun encodingOf(fontName: String, config: QualityConfig): LegacyEncoding? {
             val name = fontName.substringAfter('+').lowercase()

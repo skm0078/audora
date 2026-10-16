@@ -28,6 +28,20 @@ class PageText internal constructor(
         if (left.isNaN()) return null
         return TextBox(left = left, top = boxes[o + 1], right = boxes[o + 2], bottom = boxes[o + 3])
     }
+
+    /** The same page with every box mapped by [transform]: what layout analyses a page set sideways on (ADR-032). */
+    internal fun withBoxes(transform: (TextBox) -> TextBox): PageText {
+        val mapped = FloatArray(boxes.size) { Float.NaN }
+        for (offset in text.indices) {
+            val box = boxAt(offset)?.let(transform) ?: continue
+            val o = offset * RawChars.BOX_FLOATS
+            mapped[o] = box.left
+            mapped[o + 1] = box.top
+            mapped[o + 2] = box.right
+            mapped[o + 3] = box.bottom
+        }
+        return PageText(pageIndex, text, mapped, fontRuns, stats)
+    }
 }
 
 /** A run of [text][PageText.text] in one font at one size, [start] inclusive to [end] exclusive. */

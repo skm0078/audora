@@ -27,6 +27,9 @@ package io.github.skm0078.audora.core.config
  *   letters.
  * @property maxLegacyUnknownRate share of a legacy page's legacy-run letters that the converter has no mapping for
  *   (a font variant it does not know, or [LegacyEncoding.UNSUPPORTED]) above which the page goes to OCR.
+ * @property maxSupplementLetters a Chanakya run of at most this many letters set right inside a Kruti Dev or DevLys
+ *   word is a supplement font for a conjunct or two, with codes of its own ([LegacyEncoding.CHANAKYA_SUPPLEMENT]).
+ *   The Gazette sets whole words in Chanakya, so its runs are never this short inside another font's word.
  *
  * Indic reorder (visual-order text layers):
  * @property minVisualOrderSigns a page decides its own order only with at least this many pre-base vowel signs
@@ -55,6 +58,7 @@ data class QualityConfig(
     val minLegacyLatinShare: Float = 0.8f,
     val minLegacyShare: Float = 0.2f,
     val maxLegacyUnknownRate: Float = 0.02f,
+    val maxSupplementLetters: Int = 2,
     val minVisualOrderSigns: Int = 8,
     val minWordInitialShare: Float = 0.1f,
     val minRephs: Int = 3,
@@ -72,6 +76,7 @@ data class QualityConfig(
         )
         require(shares.all { it in 0f..1f }) { "rates and shares must be in 0..1" }
         require(minPageLetters >= 0) { "minPageLetters must be >= 0, was $minPageLetters" }
+        require(maxSupplementLetters >= 0) { "maxSupplementLetters must be >= 0, was $maxSupplementLetters" }
         require(minVisualOrderSigns > 0 && minRephs > 0) { "minVisualOrderSigns and minRephs must be > 0" }
         require(minSampleLetters > 0 && recheckEveryPages > 0) { "minSampleLetters and recheckEveryPages must be > 0" }
     }

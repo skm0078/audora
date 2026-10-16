@@ -17,6 +17,13 @@ enum class LegacyEncoding {
     /** Chanakya (the Gazette of India's font): Kruti Dev's layout with a few codes of its own. Hindi. */
     CHANAKYA,
 
+    /**
+     * A Chanakya font used only for a glyph or two inside a Kruti Dev or DevLys word, for conjuncts the main font
+     * draws badly (a Rajasthan Board paper: f = द्ध, V = ङ्क). Never named in [QualityConfig.legacyFonts]: the
+     * converter gives a Chanakya run this encoding from its place in the word (ADR-032). Hindi.
+     */
+    CHANAKYA_SUPPLEMENT,
+
     /** Bijoy, the layout of SutonnyMJ and the other "MJ" fonts. Bengali. */
     BIJOY,
 

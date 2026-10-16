@@ -60,6 +60,7 @@ internal class LegacyTable(
             LegacyEncoding.KRUTIDEV -> KRUTIDEV
             LegacyEncoding.DEVLYS -> DEVLYS
             LegacyEncoding.CHANAKYA -> CHANAKYA
+            LegacyEncoding.CHANAKYA_SUPPLEMENT -> CHANAKYA_SUPPLEMENT
             LegacyEncoding.BIJOY -> BIJOY
             LegacyEncoding.UNSUPPORTED -> null
         }
@@ -97,6 +98,11 @@ internal class LegacyTable(
         val CHANAKYA: LegacyTable by lazy {
             val entries = KrutiDevCodes.ENTRIES - KrutiDevCodes.NOT_IN_CHANAKYA + KrutiDevCodes.CHANAKYA_OVERRIDES
             LegacyTable(entries, KRUTIDEV_ROLES, "र्", DEVANAGARI_COMPOSITIONS, ABBREVIATION)
+        }
+
+        /** Only the codes seen drawn (ADR-032); any other code is unknown and counts towards OCR. */
+        val CHANAKYA_SUPPLEMENT: LegacyTable by lazy {
+            LegacyTable(KrutiDevCodes.CHANAKYA_SUPPLEMENT, emptyMap(), "र्", DEVANAGARI_COMPOSITIONS, ABBREVIATION)
         }
 
         val BIJOY: LegacyTable by lazy {
@@ -173,6 +179,9 @@ private object KrutiDevCodes {
         "=k" to "त्र",
         "=" to "त्र्",
     )
+
+    /** The Rajasthan Board paper's supplement Chanakya ("flf[f]dk;aZ" = सिद्धिकार्यं, "fu[E]ukaf[V]rs"kq" = निम्नाङ्कितेषु). */
+    val CHANAKYA_SUPPLEMENT: Map<String, String> = mapOf("f" to "द्ध", "V" to "ङ्क")
 }
 
 /**

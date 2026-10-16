@@ -38,7 +38,11 @@ package io.github.skm0078.audora.core.config
  * @property minBoxedShare below this share of glyphs with a box (OCR'd or converted text), the page keeps the
  *   extraction order instead of a geometric layout.
  * @property minRunShare below this share of glyphs in runs of two or more (vertical or rotated text), the page
- *   keeps the extraction order as well.
+ *   keeps the extraction order as well, unless its text is turned (below).
+ * @property minDirectionSteps a page's text direction is judged from the steps between neighbouring glyphs inside
+ *   words; with fewer steps than this it is not judged (ADR-032).
+ * @property minTurnedShare a page is laid out turned when at least this share of its steps go up, down or left.
+ * @property maxGlyphStepEm a step longer than this many glyph sizes is a jump to another line or cell, not counted.
  */
 data class LayoutConfig(
     val minFontSize: Float = 2f,
@@ -59,6 +63,9 @@ data class LayoutConfig(
     val boldFontMarkers: List<String> = DEFAULT_BOLD_MARKERS,
     val minBoxedShare: Float = 0.5f,
     val minRunShare: Float = 0.5f,
+    val minDirectionSteps: Int = 20,
+    val minTurnedShare: Float = 0.6f,
+    val maxGlyphStepEm: Float = 2f,
 ) {
     init {
         require(minFontSize >= 0f) { "minFontSize must be >= 0, was $minFontSize" }
@@ -74,6 +81,8 @@ data class LayoutConfig(
         require(maxHeadingLines > 0 && maxHeadingChars > 0) { "heading limits must be > 0" }
         require(boldFontMarkers.all { it.isNotEmpty() && it == it.lowercase() }) { "bold markers must be lower case" }
         require(minBoxedShare in 0f..1f && minRunShare in 0f..1f) { "shares must be in 0..1" }
+        require(minDirectionSteps > 0 && minTurnedShare in 0f..1f) { "direction thresholds out of range" }
+        require(maxGlyphStepEm > 0f) { "maxGlyphStepEm must be > 0, was $maxGlyphStepEm" }
     }
 
     private companion object {
