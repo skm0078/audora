@@ -1,0 +1,43 @@
+{
+  "comment": "File: speech/models.json. Purpose: the voices Audora can download (P4-01, ADR-022). Each voice is a flat, uncompressed zip on this repo's 'voices' release, built from the SHA-pinned upstream archive by scripts/build_voice_mirror.py (same bytes every run) and published by .github/workflows/voice-mirror.yml, which never replaces an asset. The app checks every download against sha256 and sizeBytes. A voice whose id matches the bundled voice (bundled-voices.json) is left out of the APK's catalog. To add or change a voice: edit its entry, run the script with --print-pins, paste file/sha256/sizeBytes. Never add Lessac/Blizzard-derived voices (lessac, amy, hfc_*, hi_IN rohan).",
+  "baseUrl": "https://github.com/skm0078/audora/releases/download/voices/",
+  "sourceBaseUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/",
+  "espeakDictionaries": ["en", "hi", "bn"],
+  "voices": [
+    {
+      "id": "piper-en-cori",
+      "label": "English (UK), Piper cori",
+      "lang": "en",
+      "family": "vits",
+      "model": "en_GB-cori-medium.onnx",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 0,
+      "licence": "Piper voice (MIT), trained on LibriVox recordings (public domain)",
+      "source": {
+        "archive": "vits-piper-en_GB-cori-medium",
+        "sha256": "49c9a5361bbdd95d7ca9687c4de11e5908481f65e7c7c368960df79949fdac2b"
+      },
+      "file": "piper-en-cori-408f038280ea.zip",
+      "sha256": "408f038280ea236bbbb16fd5ab986ed48acbc68bd2e7ab35e1ee549da8956994",
+      "sizeBytes": 64649879
+    },
+    {
+      "id": "kitten-en-nano",
+      "label": "English, KittenTTS nano",
+      "lang": "en",
+      "family": "kitten",
+      "model": "model.int8.onnx",
+      "voices": "voices.bin",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 7,
+      "licence": "KittenTTS v0.8 (Apache-2.0)",
+      "source": {
+        "archive": "kitten-nano-en-v0_8-int8",
+        "sha256": "6fa5be852612ce761094ba74ee6123b4fc4acfefa79bf64dc63acae4a83af2fd"
+      },
+      "file": "kitten-en-nano-9b9a3d2b8697.zip",
+      "sha256": "9b9a3d2b8697fb8d95acc8f41fd0b7ec37b3a8699c72ca31ac3d2520e77a2da0",
+      "sizeBytes": 28778024
+    }
+  ]
+}

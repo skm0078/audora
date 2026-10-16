@@ -28,8 +28,10 @@ import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.diagnostics.LogSharer
+import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.ui.AppDestination
 import io.github.skm0078.audora.ui.diagnostics.DiagnosticsController
 import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
@@ -47,6 +49,10 @@ import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.settings.SettingsScreen
 import io.github.skm0078.audora.ui.theme.AudoraTheme
+import io.github.skm0078.audora.ui.voices.VoiceManager
+import io.github.skm0078.audora.ui.voices.VoicesActions
+import io.github.skm0078.audora.ui.voices.VoicesController
+import io.github.skm0078.audora.ui.voices.VoicesScreen
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -69,6 +75,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var documentOpener: ReaderDocumentOpener
 
+    @Inject
+    lateinit var voiceManager: VoiceManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -78,10 +87,14 @@ class MainActivity : ComponentActivity() {
                 val diagnostics = remember { DiagnosticsController(readingSessionTracker, logSharer, scope) }
                 // Activity-wide, so an add still running when the user opens Settings is not cancelled.
                 val libraryController = remember { LibraryController(library, scope).also { it.start() } }
+                // Activity-wide too, so an import keeps going when the user leaves the screen; created on first visit.
+                val voicesController = remember { lazy { VoicesController(voiceManager, scope).also { it.start() } } }
                 var route by rememberSaveable { mutableStateOf(AppDestination.Library.toRoute()) }
                 val destination = AppDestination.fromRoute(route)
                 val navigate = { next: AppDestination -> route = next.toRoute() }
-                BackHandler(enabled = destination != AppDestination.Library) { navigate(AppDestination.Library) }
+                BackHandler(enabled = destination.parent != null) {
+                    navigate(destination.parent ?: AppDestination.Library)
+                }
                 LaunchedEffect(Unit) { diagnostics.checkUnfinishedSession() }
 
                 when (destination) {
@@ -92,12 +105,15 @@ class MainActivity : ComponentActivity() {
                         versionName = BuildConfig.VERSION_NAME,
                         showDebugTools = BuildConfig.DEBUG,
                         onBack = { navigate(AppDestination.Library) },
+                        onOpenVoices = { navigate(AppDestination.Voices) },
                         onShareLogs = { diagnostics.shareLogs { intent -> startActivity(intent) } },
                         onSimulateReadingSession = {
                             diagnostics.simulateReadingSession()
                             Toast.makeText(this@MainActivity, R.string.debug_simulate_done, Toast.LENGTH_LONG).show()
                         },
                     )
+
+                    AppDestination.Voices -> VoicesRoute(voicesController.value) { navigate(AppDestination.Settings) }
 
                     is AppDestination.Reader -> ReaderRoute(destination.id) { navigate(AppDestination.Library) }
                 }
@@ -142,6 +158,36 @@ class MainActivity : ComponentActivity() {
             pendingRemoval = controller.pendingRemoval,
             actions = actions,
         )
+    }
+
+    @Composable
+    private fun VoicesRoute(controller: VoicesController, navigateBack: () -> Unit) {
+        val state by controller.state.collectAsStateWithLifecycle()
+        val actions = remember(controller) {
+            object : VoicesActions {
+                override fun onBack() = navigateBack()
+
+                override fun onDownload(row: VoiceRow) = controller.download(row)
+
+                override fun onCancel(row: VoiceRow) = controller.cancel(row)
+
+                override fun onUse(row: VoiceRow) = controller.use(row)
+
+                override fun onUseDefault(lang: Lang) = controller.useDefault(lang)
+
+                override fun onRequestDelete(row: VoiceRow) = controller.proposeDelete(row)
+
+                override fun onConfirmDelete() = controller.confirmDelete()
+
+                override fun onCancelDelete() = controller.proposeDelete(null)
+
+                override fun onImport(treeUri: Uri, lang: Lang, label: String) =
+                    controller.import(treeUri.toString(), lang, label)
+
+                override fun onMessageShown() = controller.messageShown()
+            }
+        }
+        VoicesScreen(state = state, actions = actions)
     }
 
     @Composable

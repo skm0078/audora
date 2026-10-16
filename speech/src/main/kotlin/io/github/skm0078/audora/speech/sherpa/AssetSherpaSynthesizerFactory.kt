@@ -62,40 +62,43 @@ class AssetSherpaSynthesizerFactory(
         }
     }
 
-    private fun modelConfig(spec: SherpaVoiceSpec, dataDir: String): OfflineTtsModelConfig {
-        val base = OfflineTtsModelConfig(numThreads = threads, debug = false, provider = PROVIDER)
-        return when (spec.family) {
-            SherpaFamily.VITS -> base.copy(
-                vits = OfflineTtsVitsModelConfig(
-                    model = asset(spec.model),
-                    tokens = asset(spec.tokens),
-                    dataDir = dataDir,
-                ),
-            )
-
-            SherpaFamily.KITTEN -> base.copy(
-                kitten = OfflineTtsKittenModelConfig(
-                    model = asset(spec.model),
-                    voices = asset(requireNotNull(spec.voices) { "kitten voice without voices file" }),
-                    tokens = asset(spec.tokens),
-                    dataDir = dataDir,
-                ),
-            )
-        }
-    }
+    private fun modelConfig(spec: SherpaVoiceSpec, dataDir: String): OfflineTtsModelConfig =
+        sherpaModelConfig(spec, threads, dataDir, ::asset)
 
     private fun asset(name: String) = "$assetDir/$name"
 
     private fun missing(spec: SherpaVoiceSpec, detail: String): Outcome.Failure<SpeechError> = Outcome.Failure(
         SpeechError.VoiceUnavailable(EngineId.SHERPA, Reason.MODEL_FILES_MISSING, spec.voiceId, spec.lang, detail),
     )
+}
 
-    private companion object {
-        const val PROVIDER = "cpu"
+/** sherpa-onnx's model config for [spec]; [path] turns a file name from the voice's folder into what sherpa opens. */
+internal fun sherpaModelConfig(
+    spec: SherpaVoiceSpec,
+    threads: Int,
+    dataDir: String,
+    path: (String) -> String,
+): OfflineTtsModelConfig {
+    val base = OfflineTtsModelConfig(numThreads = threads, debug = false, provider = SHERPA_PROVIDER)
+    return when (spec.family) {
+        SherpaFamily.VITS -> base.copy(
+            vits = OfflineTtsVitsModelConfig(model = path(spec.model), tokens = path(spec.tokens), dataDir = dataDir),
+        )
+
+        SherpaFamily.KITTEN -> base.copy(
+            kitten = OfflineTtsKittenModelConfig(
+                model = path(spec.model),
+                voices = path(requireNotNull(spec.voices) { "kitten voice without voices file" }),
+                tokens = path(spec.tokens),
+                dataDir = dataDir,
+            ),
+        )
     }
 }
 
-private class OfflineTtsSynthesizer(private val tts: OfflineTts) : SherpaSynthesizer {
+private const val SHERPA_PROVIDER = "cpu"
+
+internal class OfflineTtsSynthesizer(private val tts: OfflineTts) : SherpaSynthesizer {
     override val sampleRate: Int = tts.sampleRate()
 
     override fun generate(text: String, speakerId: Int, keepGoing: () -> Boolean): FloatArray {

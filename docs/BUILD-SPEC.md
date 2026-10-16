@@ -241,6 +241,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 012 | S1: sherpa-onnx AAR vendored from its GitHub release (SHA-pinned), models mirrored to our own release, Kokoro v1.0, no Lessac-derived voices, English default rule, Moto Edge 50 Fusion as dev reference phone | Accepted (S1); English default pending phone run |
 | 014 | Bundled English voice chosen in `speech/bundled-voices.json`, fetched at build time from sherpa-onnx's release (SHA-pinned), espeak-ng-data trimmed to en/hi/bn; Piper ljspeech provisional | Accepted (P1-03) |
 | 016 | Render-ahead cache is an 8 MiB in-memory LRU (`QueueConfig.recentAudioBytes`) instead of a 20 MB disk LRU in `cacheDir/tts/` (§6) | Accepted (P1-04) |
+| 022 | Voice manager: catalog voices mirrored as reproducible zips on this repo's `voices` release, `models.json` packed into APK assets at build time, resumable WorkManager download with a final SHA-256 check, folder import of Piper/MMS/Kitten voices | Accepted (P4-01) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

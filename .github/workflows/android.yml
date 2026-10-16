@@ -48,7 +48,7 @@ jobs:
           # Only the long-lived branches write the cache; feature branches read it.
           cache-read-only: ${{ github.ref != 'refs/heads/dev' && github.ref != 'refs/heads/prod' }}
 
-      - name: Test the 16 KB checker itself
+      - name: Test the repo scripts (16 KB checker, voice mirror)
         run: python3 -m unittest discover -s scripts/tests -v
 
       - name: ktlint, detekt, unit tests, debug APKs, unsigned release APK
