@@ -11,10 +11,10 @@ enhi-udhr-bilingual	bilingual	exact	10	1.0000	0.9997	0.9995
 hi-udhr-noto	hi-unicode	exact	12	1.0000	1.0000	1.0000
 hi-udhr-lohit	hi-unicode	exact	12	0.9993	0.9934	0.9953
 hi-udhr-fpdf2	hi-broken-map	exact	12	0.9317	0.5851	0.6744
-hi-us-hud-factsheet-pd	hi-broken-map	draft	2	0.7997	0.6434	0.6371
+hi-us-hud-factsheet-pd	hi-broken-map	draft	2	0.8592	0.7752	0.7675
 bn-udhr-noto	bn-unicode	exact	10	0.9994	0.9915	0.9957
 bn-udhr-lohit	bn-unicode	exact	10	0.9976	0.9682	0.9842
 bn-udhr-fpdf2	bn-broken-map	exact	10	0.9072	0.5378	0.5138
 bn-us-fda-factsheet-vrinda-pd	bn-broken-map	draft	4	0.6635	0.1971	0.1865
 bn-rotated-pages-90-180-270-fda	bn-broken-map	draft	4	0.6551	0.1826	0.1637
-bn-us-hud-fairlending-guide-pd	bn-broken-map	draft	3	0.5757	0.2343	0.2213
+bn-us-hud-fairlending-guide-pd	bn-broken-map	draft	3	0.7611	0.6799	0.6423

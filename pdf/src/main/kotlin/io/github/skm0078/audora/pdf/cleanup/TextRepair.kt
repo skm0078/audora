@@ -28,6 +28,11 @@ internal class MappedText(val text: String, val sources: IntArray) {
 
         fun build(): MappedText = MappedText(text.toString(), sources.toArray())
     }
+
+    companion object {
+        /** [text] mapped onto itself: unit i comes from offset i. */
+        fun plain(text: String): MappedText = MappedText(text, IntArray(text.length) { it })
+    }
 }
 
 /**

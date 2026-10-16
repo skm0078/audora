@@ -34,6 +34,9 @@ CI fails when: a dump is stale; the corpus score is lower than `dev`'s on the do
 same way the playback service runs it, then runs `goldenTest` and commits the new scores. Keep its signature and the
 `scores.tsv` columns stable: other branches and CI read them.
 
+`GoldenRoutingTest` reads the same documents through `PdfBook.readPage` and checks page routing (P3-03): Unicode
+Indic documents keep their text layer and pass the OCR sample, broken-map documents go to OCR.
+
 ## Expected text
 
 What a careful human narrator would read aloud, in reading order:

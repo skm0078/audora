@@ -68,7 +68,12 @@ object RawPageFixture {
     /**
      * A synthetic page. Each [SyntheticChar] is one PDFium char; boxes advance 10 pt per char on one line.
      */
-    fun page(chars: List<SyntheticChar>, objects: List<RawTextObject> = emptyList(), pageIndex: Int = 0): RawPage {
+    fun page(
+        chars: List<SyntheticChar>,
+        objects: List<RawTextObject> = emptyList(),
+        pageIndex: Int = 0,
+        fontNames: List<String> = listOf("Body", "Heading"),
+    ): RawPage {
         val n = chars.size
         val boxes = FloatArray(n * RawChars.BOX_FLOATS)
         chars.forEachIndexed { i, c ->
@@ -83,7 +88,7 @@ object RawPageFixture {
                 boxes = boxes,
                 fontSizes = FloatArray(n) { chars[it].fontSize },
                 fontIds = IntArray(n) { if (chars[it].generated) RawChars.NO_FONT else chars[it].fontId },
-                fontNames = listOf("Body", "Heading"),
+                fontNames = fontNames,
             ),
             textObjects = objects,
         )

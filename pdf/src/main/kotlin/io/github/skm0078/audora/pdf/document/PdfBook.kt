@@ -12,6 +12,13 @@ import io.github.skm0078.audora.core.result.map
 import io.github.skm0078.audora.pdf.cleanup.PageProfile
 import io.github.skm0078.audora.pdf.extract.PageText
 import io.github.skm0078.audora.pdf.extract.PageTextAssembler
+import io.github.skm0078.audora.pdf.quality.PageOcr
+import io.github.skm0078.audora.pdf.quality.PageQuality
+import io.github.skm0078.audora.pdf.quality.PageRouting
+import io.github.skm0078.audora.pdf.quality.RouteReason
+import io.github.skm0078.audora.pdf.quality.TextLayerCheck
+import io.github.skm0078.audora.pdf.quality.TextLayerVerdict
+import io.github.skm0078.audora.pdf.quality.ocrLangs
 import io.github.skm0078.audora.pdf.units.AnalyzedPage
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import java.io.Closeable
@@ -22,6 +29,11 @@ import java.io.Closeable
  * `CleanupConfig.neighbourPages` pages on each side and keeps two small LRU caches: a few analysed pages (so the
  * next page, already read as a neighbour, is not extracted again) and a few dozen page profiles of a few hundred
  * bytes each. Reading on from page to page costs about one extraction per page; a jump costs one per window page.
+ *
+ * Each page is routed (P3-03, ADR-021): text layer, legacy-font converter or OCR. For a Hindi or Bengali book the
+ * first page with enough text is also OCR'd through [ocr] and compared with its text layer ([TextLayerCheck]).
+ * The converter (P3-04) and OCR (P3-05) are not built yet, so every page is still read from its text layer; the
+ * route is returned with the units for them to act on.
  *
  * PDFium's document cache grows with every page visited, so after [ExtractionConfig.reopenEveryPages] reads
  * the document is closed and opened again with the same password. Thread-safe: calls are serialized, because
@@ -34,10 +46,22 @@ class PdfBook private constructor(
     private val password: String?,
     private val config: ExtractionConfig,
     private val logContext: String,
+    private val ocr: PageOcr?,
     private var handle: PdfDocumentHandle?,
 ) : Closeable {
     private val assembler = PageTextAssembler(config)
     private var caches: PageCaches? = null
+    private var textLayerCheck: TextLayerCheck? = null
+
+    /** What the book's OCR sample said about its Hindi/Bengali text layer. Diagnostics. */
+    @get:Synchronized
+    val textLayerVerdict: TextLayerVerdict
+        get() = textLayerCheck?.verdict ?: TextLayerVerdict.UNCHECKED
+
+    /** The character error rate of the book's last OCR sample; null before one ran. Diagnostics. */
+    @get:Synchronized
+    val textLayerSampleCer: Float?
+        get() = textLayerCheck?.lastSampleCer
 
     /** Fixed for the book's lifetime: the source does not change between reopens. */
     val pageCount: Int = requireNotNull(handle).pageCount
@@ -77,13 +101,23 @@ class PdfBook private constructor(
      * is still read, at worst with a header the missing neighbour would have confirmed.
      */
     @Synchronized
-    fun readingUnits(pageIndex: Int, builder: ReadingUnitBuilder): Outcome<List<ReadingUnit>, PdfPageError> {
+    fun readingUnits(pageIndex: Int, builder: ReadingUnitBuilder): Outcome<List<ReadingUnit>, PdfPageError> =
+        readPage(pageIndex, builder).map { it.units }
+
+    /** [readingUnits] with the page's route (P3-03). */
+    @Synchronized
+    fun readPage(pageIndex: Int, builder: ReadingUnitBuilder): Outcome<PageReading, PdfPageError> {
         val cache = cachesFor(builder)
         return analyzedPage(pageIndex, cache).map { page ->
             val neighbours = window(pageIndex, builder.cleanupConfig.neighbourPages)
                 .filter { it != pageIndex }
                 .mapNotNull { profileOf(it, cache) }
-            builder.build(page, neighbours)
+            val check = textLayerCheck ?: TextLayerCheck(builder.qualityConfig, ocr, logContext)
+            textLayerCheck = check
+            val routing = check.route(pageIndex, page.quality, ocrLangs(page.text.text, builder.qualityConfig)) {
+                builder.sampleText(page, neighbours)
+            }
+            PageReading(builder.build(page, neighbours), routing)
         }
     }
 
@@ -104,6 +138,10 @@ class PdfBook private constructor(
             if (result is Outcome.Success) {
                 cache.analyzed[pageIndex] = result.value
                 cache.profiles[pageIndex] = result.value.profile
+                // Pages off the text layer are logged once per extraction, with the measurements behind it.
+                if (result.value.quality.reason != RouteReason.TEXT_LAYER_OK) {
+                    AudoraLog.i(TAG, "Page routed ${describe(result.value.quality)}, $logContext page=$pageIndex")
+                }
             }
         }
     }
@@ -164,15 +202,19 @@ class PdfBook private constructor(
                 override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>?): Boolean = size > capacity
             }
 
-        /** Opens the book. A [PdfOpenError.PasswordRequired] failure means: ask for the password, call again. */
+        /**
+         * Opens the book. A [PdfOpenError.PasswordRequired] failure means: ask for the password, call again.
+         * [ocr] samples a Hindi/Bengali book's text layer (P3-05 supplies it); null leaves it unverified.
+         */
         fun open(
             engine: PdfEngine,
             password: String? = null,
             config: ExtractionConfig = ExtractionConfig(),
             logContext: String = "",
+            ocr: PageOcr? = null,
         ): Outcome<PdfBook, PdfOpenError> = when (val opened = engine.open(password)) {
             is Outcome.Success -> {
-                val book = PdfBook(engine, password, config, logContext, opened.value)
+                val book = PdfBook(engine, password, config, logContext, ocr, opened.value)
                 AudoraLog.i(TAG, "Opened $logContext pages=${book.pageCount} encrypted=${password != null}")
                 Outcome.Success(book)
             }
@@ -184,3 +226,12 @@ class PdfBook private constructor(
         }
     }
 }
+
+/** Route, reason and the scorer's measurements, for the log (no text). */
+private fun describe(quality: PageQuality): String = with(quality.signals) {
+    "${quality.route} (${quality.reason}) letters=$letters indic=$indicLetters mapErrors=$unicodeMapErrorRate " +
+        "invisible=$invisibleShare garbage=$garbageRate invalidIndic=$invalidIndicRate legacy=$legacyShare"
+}
+
+/** A page's units and where its words come from. */
+class PageReading(val units: List<ReadingUnit>, val routing: PageRouting)

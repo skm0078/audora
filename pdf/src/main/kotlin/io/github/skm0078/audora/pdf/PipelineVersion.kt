@@ -10,5 +10,7 @@ package io.github.skm0078.audora.pdf
  *     text, not the extracted text (ADR-018).
  * 3 = P2-03: running headers, page numbers and table interiors removed; line-end hyphens resolved, ligatures and
  *     junk characters folded, bullets and numeric citation markers dropped (ADR-020).
+ * 4 = P3-03: Indic repair before text repair: placeholder glyphs inside a cluster dropped; on visual-order pages
+ *     pre-base vowel signs and rephs moved to logical order, Bengali two-part vowels composed (ADR-021).
  */
-const val PIPELINE_VERSION: Int = 3
+const val PIPELINE_VERSION: Int = 4
