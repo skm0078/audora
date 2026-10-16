@@ -31,6 +31,7 @@ interface PlaybackPort {
  * @property position the sentence being read (or about to be, while buffering); null when nothing is loaded
  *   or the item is not an Audora position.
  * @property wantsToPlay play was pressed and not paused since: true while buffering the next sentence too.
+ * @property hasChapters the book being read has chapters, so [SleepTimerSetting.EndOfChapter] can be offered.
  * @property errorCode Media3's error code name of the last playback error, for the log and a generic message.
  */
 data class PlaybackSnapshot(
@@ -42,6 +43,7 @@ data class PlaybackSnapshot(
     val canSkipBack: Boolean = false,
     val canSkipForward: Boolean = false,
     val sleepTimer: SleepTimerState = SleepTimerState.Off,
+    val hasChapters: Boolean = false,
     val errorCode: String? = null,
 ) {
     enum class Connection { CONNECTING, CONNECTED, UNAVAILABLE }

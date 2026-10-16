@@ -1,5 +1,5 @@
 // File: playback/src/androidTest/kotlin/io/github/skm0078/audora/playback/session/BookSessionTest.kt
-// Purpose: The book session on a real ExoPlayer: reads every sentence in order, seeks, rebuilds, skips failures.
+// Purpose: The book session on a real ExoPlayer: reads in order, seeks, rebuilds, skips failures, sleeps at chapters.
 
 package io.github.skm0078.audora.playback.session
 
@@ -29,6 +29,7 @@ import io.github.skm0078.audora.playback.book.BookSource
 import io.github.skm0078.audora.playback.book.BookText
 import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
+import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.playlist.PlaybackItem
 import io.github.skm0078.audora.playback.queue.SentenceRenderer
 import io.github.skm0078.audora.playback.queue.UnitKey
@@ -45,6 +46,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -59,6 +61,7 @@ class BookSessionTest {
     private val registry = QueueRegistry()
     private val played: MutableList<UnitKey> = Collections.synchronizedList(mutableListOf())
     private val ended = CountDownLatch(1)
+    private val pausedAtItemEnd = CountDownLatch(1)
     private val states: MutableList<SessionState> = Collections.synchronizedList(mutableListOf())
     private var failOn: UnitKey? = null
     private lateinit var player: ExoPlayer
@@ -83,7 +86,13 @@ class BookSessionTest {
             session = BookSession(
                 player,
                 registry,
-                SessionSources(renderer(), BookSource { _, _ -> Outcome.Success(OpenedBook(BOOK, FakeText())) }, Texts),
+                SessionSources(
+                    renderer(),
+                    BookSource { _, _ ->
+                        Outcome.Success(OpenedBook(BOOK, FakeText(CHAPTER_STARTS)))
+                    },
+                    Texts,
+                ),
                 CONFIG,
                 Events(),
                 SessionEnvironment(
@@ -146,6 +155,21 @@ class BookSessionTest {
         assertTrue(states.any { it.error?.code == PlaybackErrorCode.PLAYBACK_FAILED })
     }
 
+    @Test
+    fun endOfChapterTimerPausesAfterTheChapterLastSentence() {
+        play(page = 0, charStart = 0)
+        assertTrue(onMain { session.setSleepTimer(SleepTimerMode.END_OF_CHAPTER, 0) })
+
+        if (!pausedAtItemEnd.await(TIMEOUT_S, TimeUnit.SECONDS)) fail("did not pause: ${describePlayer()}")
+        // Chapter 2 starts on page 2, so chapter 1 is pages 0 and 1. The player pauses at the end of the
+        // chapter's last sentence, before moving on.
+        val chapterOne = allKeys().takeWhile { it.page < CHAPTER_STARTS.last() }
+        assertEquals(chapterOne, played.toList())
+        assertFalse(onMain { player.playWhenReady })
+        assertEquals(SleepTimerMode.OFF, onMain { states.last().sleepMode })
+        assertTrue(states.last().hasChapters)
+    }
+
     private fun awaitEnd() {
         if (!ended.await(TIMEOUT_S, TimeUnit.SECONDS)) fail("book did not end: ${describePlayer()}")
     }
@@ -190,6 +214,12 @@ class BookSessionTest {
         override fun onPlaybackStateChanged(playbackState: Int) {
             if (playbackState == Player.STATE_ENDED) ended.countDown()
         }
+
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            if (!playWhenReady && reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) {
+                pausedAtItemEnd.countDown()
+            }
+        }
     }
 
     private inner class Events : SessionEvents {
@@ -203,8 +233,10 @@ class BookSessionTest {
     }
 
     /** Pages load slowly, so playback catches up with extraction and waits on the "more is coming" item. */
-    private class FakeText : BookText {
+    private class FakeText(private val chapters: List<Int>) : BookText {
         override val pageCount = PAGES
+
+        override fun chapterStarts() = chapters
 
         override fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError> {
             Thread.sleep(PAGE_DELAY_MS)
@@ -241,6 +273,7 @@ class BookSessionTest {
         const val PAGE_DELAY_MS = 400L
         const val TIMEOUT_S = 30L
         const val LOG_TAG = "AudoraPlaybackTest"
+        val CHAPTER_STARTS = listOf(0, 2)
         val CONFIG = QueueConfig(minUnitsAhead = 2, keepBehindUnits = 2)
         val VOICE = VoiceId(EngineId.SHERPA, "test")
         val BOOK = Book(BookId("book-1"), "content://test/book-1", "Test book", 1L, "fp", PAGES, 0L, null)

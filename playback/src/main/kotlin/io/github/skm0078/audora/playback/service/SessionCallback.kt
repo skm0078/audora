@@ -110,8 +110,9 @@ class SessionCallback(
         if (mode == null || (mode == SleepTimerMode.MINUTES && minutes !in 1..MAX_SLEEP_MINUTES)) {
             return failure(PlaybackErrorCode.BAD_REQUEST)
         }
-        bookSession().setSleepTimer(mode, minutes)
-        return SessionResult(SessionResult.RESULT_SUCCESS)
+        // End of chapter needs a book with chapters; the reader only offers it then (SESSION_HAS_CHAPTERS).
+        val accepted = bookSession().setSleepTimer(mode, minutes)
+        return if (accepted) SessionResult(SessionResult.RESULT_SUCCESS) else failure(PlaybackErrorCode.BAD_REQUEST)
     }
 
     private fun failure(code: PlaybackErrorCode): SessionResult {

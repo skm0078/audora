@@ -88,6 +88,9 @@ object PlaybackContract {
     /** Wall-clock millis when a [SleepTimerMode.MINUTES] timer pauses playback. */
     const val SESSION_SLEEP_ENDS_AT = "sleep_ends_at_millis"
 
+    /** True when the open book has chapters, so [SleepTimerMode.END_OF_CHAPTER] can be set; absent = false. */
+    const val SESSION_HAS_CHAPTERS = "has_chapters"
+
     /** The last [PlaybackErrorCode] name that stopped or skipped reading; absent when none. */
     const val SESSION_ERROR = "error"
 

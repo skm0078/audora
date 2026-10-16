@@ -11,6 +11,8 @@ package io.github.skm0078.audora.core.config
  * @property actualTextSearchBehind how far back the rebuild looks, for objects PDFium placed earlier.
  * @property zeroWidthObjectPt a text object narrower than this is a space glyph (Chromium/Skia output, S2).
  * @property maxFormDepth how deep the native reader descends into nested form XObjects.
+ * @property outlineChapterDepth how many outline levels are searched for chapters: a book's outline often
+ *   wraps everything in one title entry, or splits into parts before chapters.
  */
 data class ExtractionConfig(
     val reopenEveryPages: Int = 100,
@@ -18,10 +20,12 @@ data class ExtractionConfig(
     val actualTextSearchBehind: Int = 16,
     val zeroWidthObjectPt: Float = 0.01f,
     val maxFormDepth: Int = 8,
+    val outlineChapterDepth: Int = 3,
 ) {
     init {
         require(reopenEveryPages > 0) { "reopenEveryPages must be > 0, was $reopenEveryPages" }
         require(actualTextSearchAhead >= 0 && actualTextSearchBehind >= 0) { "search windows must be >= 0" }
         require(maxFormDepth >= 0) { "maxFormDepth must be >= 0, was $maxFormDepth" }
+        require(outlineChapterDepth > 0) { "outlineChapterDepth must be > 0, was $outlineChapterDepth" }
     }
 }

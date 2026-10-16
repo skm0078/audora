@@ -43,10 +43,23 @@ class PdfBookTest {
                 RawPageFixture.page(RawPageFixture.chars("Page $pageIndex."), pageIndex = pageIndex),
             )
 
+            override fun outline() = listOf(OutlineEntry("Chapter", 0))
+
             override fun close() {
                 openHandles--
             }
         }
+    }
+
+    @Test
+    fun `the outline comes from the open document and does not count as a page read`() {
+        val engine = FakeEngine(pages = 3)
+        val book = requireNotNull(PdfBook.open(engine, config = ExtractionConfig(reopenEveryPages = 1)).getOrNull())
+        assertEquals(listOf(0), book.outline().getOrNull()?.map { it.page })
+        assertTrue(book.pageText(0) is Outcome.Success)
+        assertEquals(1, book.opens)
+        book.close()
+        assertEquals(PdfPageError.BookClosed, book.outline().errorOrNull())
     }
 
     @Test

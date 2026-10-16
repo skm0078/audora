@@ -61,7 +61,13 @@ fun ReaderControls(state: ReaderState, config: ReaderConfig, actions: ReaderActi
             IconButton(onClick = actions::onSkipForward, enabled = enabled && loaded && state.playback.canSkipForward) {
                 Icon(painterResource(R.drawable.ic_skip_next), stringResource(R.string.reader_skip_forward))
             }
-            SleepTimerButton(state.playback.sleepTimer, config, enabled, actions::onSleepTimer)
+            SleepTimerButton(
+                state.playback.sleepTimer,
+                state.playback.hasChapters,
+                config,
+                enabled,
+                actions::onSleepTimer,
+            )
         }
     }
 }
@@ -107,6 +113,7 @@ private fun SpeedButton(speed: Float, config: ReaderConfig, enabled: Boolean, on
 @Composable
 private fun SleepTimerButton(
     timer: SleepTimerState,
+    hasChapters: Boolean,
     config: ReaderConfig,
     enabled: Boolean,
     onSleepTimer: (SleepTimerSetting) -> Unit,
@@ -139,6 +146,12 @@ private fun SleepTimerButton(
                 text = { Text(stringResource(R.string.reader_sleep_end_of_page)) },
                 onClick = { choose(SleepTimerSetting.EndOfPage) },
             )
+            if (hasChapters) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.reader_sleep_end_of_chapter)) },
+                    onClick = { choose(SleepTimerSetting.EndOfChapter) },
+                )
+            }
         }
     }
 }
@@ -159,6 +172,8 @@ private fun sleepTimerLabel(timer: SleepTimerState): String? = when (timer) {
     }
 
     SleepTimerState.EndOfPage -> stringResource(R.string.reader_sleep_end_of_page)
+
+    SleepTimerState.EndOfChapter -> stringResource(R.string.reader_sleep_end_of_chapter)
 }
 
 private val PLAY_BUTTON_SIZE = 64.dp

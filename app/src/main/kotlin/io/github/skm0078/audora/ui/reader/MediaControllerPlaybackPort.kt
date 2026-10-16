@@ -84,6 +84,8 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             )
 
             SleepTimerSetting.EndOfPage -> PlaybackContract.sleepTimerArgs(SleepTimerMode.END_OF_PAGE)
+
+            SleepTimerSetting.EndOfChapter -> PlaybackContract.sleepTimerArgs(SleepTimerMode.END_OF_CHAPTER)
         }
         send(player, PlaybackContract.SET_SLEEP_TIMER, args, "sleep timer $setting")
     }
@@ -128,6 +130,7 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             canSkipBack = player.currentMediaItem != null && player.isCommandAvailable(Player.COMMAND_SEEK_TO_PREVIOUS),
             canSkipForward = player.hasNextMediaItem(),
             sleepTimer = sleepTimerOf(extras),
+            hasChapters = extras.getBoolean(PlaybackContract.SESSION_HAS_CHAPTERS, false),
             // A skipped sentence is reported in the extras while reading goes on; only a stop is an error.
             errorCode = player.playerError?.errorCodeName
                 ?: extras.getString(PlaybackContract.SESSION_ERROR)?.takeUnless { player.playWhenReady },
@@ -153,6 +156,8 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
                 SleepTimerState.Counting(extras.getLong(PlaybackContract.SESSION_SLEEP_ENDS_AT))
 
             SleepTimerMode.END_OF_PAGE.name -> SleepTimerState.EndOfPage
+
+            SleepTimerMode.END_OF_CHAPTER.name -> SleepTimerState.EndOfChapter
 
             else -> SleepTimerState.Off
         }

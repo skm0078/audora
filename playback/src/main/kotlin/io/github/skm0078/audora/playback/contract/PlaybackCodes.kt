@@ -11,6 +11,9 @@ enum class SleepTimerMode {
 
     /** Pause when the last sentence of the current page has been read. */
     END_OF_PAGE,
+
+    /** Pause before the page where the next chapter starts. Only when [PlaybackContract.SESSION_HAS_CHAPTERS]. */
+    END_OF_CHAPTER,
 }
 
 /** Why a command failed or reading stopped. Names are stable: the UI maps them to its own strings. */
