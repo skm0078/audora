@@ -48,6 +48,9 @@ import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
 import io.github.skm0078.audora.ui.library.LibraryActions
 import io.github.skm0078.audora.ui.library.LibraryController
 import io.github.skm0078.audora.ui.library.LibraryScreen
+import io.github.skm0078.audora.ui.licences.LicenceSource
+import io.github.skm0078.audora.ui.licences.LicencesController
+import io.github.skm0078.audora.ui.licences.LicencesScreen
 import io.github.skm0078.audora.ui.reader.LibraryReaderBooks
 import io.github.skm0078.audora.ui.reader.LocatorReaderResume
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
@@ -103,6 +106,9 @@ class MainActivity : ComponentActivity() {
     /** The OCR model manager (P3-05); one per process, shared with the playback service's OCR. */
     private val ocrModels: OcrModels by lazy { OcrModels.get(applicationContext) }
 
+    @Inject
+    lateinit var licenceSource: LicenceSource
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -138,6 +144,8 @@ class MainActivity : ComponentActivity() {
                     AppDestination.Settings -> SettingsRoute(diagnostics, battery, navigate)
 
                     AppDestination.Voices -> VoicesRoute(voicesController.value) { navigate(AppDestination.Settings) }
+
+                    AppDestination.Licences -> LicencesRoute { navigate(AppDestination.Settings) }
 
                     is AppDestination.BatterySetup -> BatterySetupRoute(battery) {
                         navigate(destination.parent ?: AppDestination.Library)
@@ -212,6 +220,7 @@ class MainActivity : ComponentActivity() {
             onBack = { navigate(AppDestination.Library) },
             onOpenBatterySetup = { navigate(AppDestination.BatterySetup(fromSettings = true)) },
             onOpenVoices = { navigate(AppDestination.Voices) },
+            onOpenLicences = { navigate(AppDestination.Licences) },
             onShareLogs = { diagnostics.shareLogs { intent -> startActivity(intent) } },
             onSimulateReadingSession = {
                 diagnostics.simulateReadingSession()
@@ -293,6 +302,20 @@ class MainActivity : ComponentActivity() {
             }
         }
         VoicesScreen(state = state, actions = actions)
+    }
+
+    /** Loaded on each visit: a voice downloaded since then shows its licence files. */
+    @Composable
+    private fun LicencesRoute(navigateBack: () -> Unit) {
+        val scope = rememberCoroutineScope()
+        val controller = remember { LicencesController(licenceSource, scope).also { it.start() } }
+        val state by controller.state.collectAsStateWithLifecycle()
+        LicencesScreen(
+            state = state,
+            onBack = navigateBack,
+            onOpenTexts = controller::openTexts,
+            onCloseTexts = controller::closeTexts,
+        )
     }
 
     @Composable

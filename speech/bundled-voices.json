@@ -14,7 +14,10 @@
       "model": "en_US-ljspeech-medium.onnx",
       "dataDir": "espeak-ng-data",
       "speakerId": 0,
-      "licence": "Piper voice (MIT), trained on LJ Speech (public domain)"
+      "licence": "Piper voice (MIT), trained on LJ Speech (public domain)",
+      "credit": "Piper voice by Michael Hansen (rhasspy), trained on the LJ Speech dataset by Keith Ito and Linda Johnson (public domain). Packaged for sherpa-onnx by k2-fsa; files unchanged.",
+      "licenceUrl": "https://github.com/rhasspy/piper/blob/master/LICENSE.md",
+      "sourceUrl": "https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/ljspeech/medium"
     },
     {
       "id": "piper-en-cori",
@@ -26,7 +29,10 @@
       "model": "en_GB-cori-medium.onnx",
       "dataDir": "espeak-ng-data",
       "speakerId": 0,
-      "licence": "Piper voice (MIT), trained on LibriVox recordings (public domain)"
+      "licence": "Piper voice (MIT), trained on LibriVox recordings (public domain)",
+      "credit": "Piper voice by Michael Hansen (rhasspy), trained on LibriVox recordings read by Cori Samuel (public domain). Packaged for sherpa-onnx by k2-fsa; files unchanged.",
+      "licenceUrl": "https://github.com/rhasspy/piper/blob/master/LICENSE.md",
+      "sourceUrl": "https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_GB/cori/medium"
     },
     {
       "id": "kitten-en-nano",
@@ -39,7 +45,10 @@
       "voices": "voices.bin",
       "dataDir": "espeak-ng-data",
       "speakerId": 7,
-      "licence": "KittenTTS v0.8 (Apache-2.0)"
+      "licence": "KittenTTS v0.8 (Apache-2.0)",
+      "credit": "KittenTTS v0.8 nano by KittenML. Packaged for sherpa-onnx by k2-fsa; files unchanged.",
+      "licenceUrl": "https://www.apache.org/licenses/LICENSE-2.0",
+      "sourceUrl": "https://github.com/KittenML/KittenTTS"
     }
   ]
 }

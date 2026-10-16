@@ -9,6 +9,8 @@ import io.github.skm0078.audora.core.config.SpeechConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.result.flatMap
+import io.github.skm0078.audora.core.result.getOrNull
 import io.github.skm0078.audora.speech.SpeechError.VoiceUnavailable.Reason
 import io.github.skm0078.audora.speech.sherpa.AssetSherpaSynthesizerFactory
 import io.github.skm0078.audora.speech.sherpa.FileSherpaSynthesizerFactory
@@ -18,6 +20,7 @@ import io.github.skm0078.audora.speech.sherpa.SherpaVoiceManifest
 import io.github.skm0078.audora.speech.sherpa.SherpaVoiceSpec
 import io.github.skm0078.audora.speech.system.AndroidSystemTtsClient
 import io.github.skm0078.audora.speech.system.SystemSpeechEngine
+import io.github.skm0078.audora.speech.voices.VoiceCredits
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
 import java.io.File
 import java.io.IOException
@@ -76,13 +79,19 @@ object SpeechEngines {
         SystemSpeechEngine(AndroidSystemTtsClient(context, File(context.cacheDir, SYSTEM_WORK_DIR), config))
 
     /** The bundled voice's `voice.properties`, written by the build (ADR-014). */
-    internal fun readBundledSpec(assets: AssetManager): Outcome<SherpaVoiceSpec, String> {
+    internal fun readBundledSpec(assets: AssetManager): Outcome<SherpaVoiceSpec, String> =
+        readBundledManifest(assets).flatMap { SherpaVoiceManifest.parse(it) }
+
+    /** The bundled voice's credits for the licences screen (P3-06); null if the build wrote none. */
+    internal fun readBundledCredits(assets: AssetManager): VoiceCredits? =
+        readBundledManifest(assets).getOrNull()?.let { VoiceCredits.parse(it) }
+
+    private fun readBundledManifest(assets: AssetManager): Outcome<Properties, String> {
         val path = "$BUNDLED_ASSET_DIR/${SherpaVoiceManifest.FILE_NAME}"
-        val properties = try {
-            assets.open(path).reader(Charsets.UTF_8).use { reader -> Properties().apply { load(reader) } }
+        return try {
+            Outcome.Success(assets.open(path).reader(Charsets.UTF_8).use { Properties().apply { load(it) } })
         } catch (e: IOException) {
-            return Outcome.Failure("assets/$path unreadable: ${e.message}")
+            Outcome.Failure("assets/$path unreadable: ${e.message}")
         }
-        return SherpaVoiceManifest.parse(properties)
     }
 }

@@ -62,17 +62,17 @@ All neural models run through **sherpa-onnx 1.13.8** (Apache-2.0 runtime). Syste
 | English | Default (bundled) | Piper medium **ljspeech or cori** (public-domain data) **or** KittenTTS v0.8 nano | sherpa VITS / Kitten | ~64 MB / ~28 MB + 19 MB espeak-ng-data | MIT + public domain / Apache-2.0 | S1 rule, ADR-012 (blind rating; Kitten only if RTF ≤ 0.5 on the Moto) |
 | English | Premium (download) | Kokoro **v1.0** int8 (af_heart, bf_emma…); Supertonic 3 en | sherpa Kokoro / Supertonic | 132 MB / 145 MB | Apache-2.0 / OpenRAIL-M | S1; offered only if measured RTF < 0.8 |
 | English | Fallback | Android system TTS | `TextToSpeech` | 0 | device | — |
-| Hindi | Default | Google hi-IN system voice **or** Piper hi_IN priyamvada / pratham | system / sherpa VITS | 0 / ~64 MB | device / CC BY-NC-SA 4.0 | S0 + S1 |
+| Hindi | Default | Google hi-IN system voice until a voice is downloaded; recommended download Piper hi_IN **pratham** (priyamvada offered) | system / sherpa VITS | 0 / 64 MB | device / CC BY-NC-SA 4.0 | S0 + S1; provisional by S1 desktop (ADR-030) |
 | Hindi | Premium | Supertonic-3 hi | sherpa Supertonic | 145 MB (shared with en) | OpenRAIL-M | S1 |
-| Bengali | Default | Google bn-IN system voice **or** Piper bn_BD google medium (converted) | system / sherpa VITS | 0 / 82 MB | device / CC BY-SA 4.0 | S0 + S1 |
-| Bengali | Fallback | MMS-TTS ben (converted) | sherpa VITS | ~110–140 MB | CC-BY-NC 4.0 | — |
+| Bengali | Default | Google bn-IN system voice until a voice is downloaded; recommended download Piper bn_BD **google** medium (converted, speaker 0) | system / sherpa VITS | 0 / 78 MB | device / CC BY-SA 4.0 | S0 + S1; provisional by S1 desktop (ADR-030) |
+| Bengali | Fallback | MMS-TTS ben (converted) | sherpa VITS | 114 MB | CC-BY-NC 4.0 | — (offered as a download) |
 | Any | Advanced | Import any sherpa-onnx model folder (`.onnx` + `tokens.txt` [+ espeak data]) | sherpa | — | user's | — |
 
 **Script routing (ADR-005, unchanged).** Each sentence is tagged by Unicode script: Latin → English, Devanagari U+0900–097F → Hindi, Bengali U+0980–09FF → Bengali. Deterministic, instant. v1 splits English runs of ≥3 words inside Indic sentences; the split happens at render time, one clip per sentence (ADR-026).
 
 **Never shipped (ADR-012):** Piper voices trained on or fine-tuned from Lessac/Blizzard 2013 data (lessac, amy, hfc_*, hi_IN rohan): research-only, no redistribution.
 
-**Attribution.** CC BY-SA, CC BY-NC-SA and CC-BY-NC voices require an in-app "Voices & licenses" screen.
+**Attribution.** CC BY-SA, CC BY-NC-SA and CC-BY-NC voices require an in-app "Voices & licenses" screen. *(P3-06, ADR-030: Settings → Voices & licences lists every voice with licence, credit and source links, from credits kept in the catalog; the first voice downloaded for Hindi or Bengali becomes that language's reader.)*
 
 ## 4. Architecture
 
@@ -255,6 +255,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 027 | Premium voices (Kokoro v1.0 en, Supertonic 3 hi) as catalog downloads; each voice's speed measured from the sentences it reads; render-ahead window in seconds from measured RTF, plus a start hold; voices measured at RTF ≥ 0.8 marked too slow | Accepted (P4-02) |
 | 028 | Indic sentence rules after `BreakIterator` (danda, abbreviations, initials, closing quotes, verse numbers); NFC as the first text repair with offsets kept; "|" as danda; Hindi/Bengali numbers read as words at render time; `PIPELINE_VERSION` 7 | Accepted (P3-02) |
 | 029 | Pauses (heading 600, paragraph 400, list item 300 ms) appended as silence to each sentence's clip; list items detected by layout; `ReadingUnit.kind`; English normalizer wired next to the Indic ones, headings read as headings; render speed measured without pauses; `PIPELINE_VERSION` 8 | Accepted (P2-04) |
+| 030 | Hindi/Bengali catalog voices (pratham, priyamvada, Piper bn google, MMS ben); provisional defaults pratham and Piper google as a one-line `recommended` map; first download of a language becomes its reader; credits in the catalog; "Voices & licences" screen | Accepted (P3-06); defaults pending S0 + phone run |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

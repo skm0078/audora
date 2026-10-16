@@ -21,7 +21,7 @@ sealed interface JobResult {
  * The worker's logic without WorkManager, so it is JVM-tested. A stop (cancel, or Android ending the job after its
  * time limit) and network trouble keep the bytes received; a corrupt file or a full phone ends the download.
  *
- * @param onInstalled called after a voice is swapped in, so the voice list and the engine see it.
+ * @param onInstalled called with the voice after it is swapped in, so the voice list and the engine see it.
  */
 class VoiceDownloadJob(
     private val catalog: VoiceCatalog,
@@ -29,7 +29,7 @@ class VoiceDownloadJob(
     private val downloader: ResumableDownloader,
     private val installer: VoiceArchiveInstaller,
     private val config: VoiceDownloadConfig,
-    private val onInstalled: () -> Unit,
+    private val onInstalled: (CatalogVoice) -> Unit,
 ) {
     /** @param attempt WorkManager's run attempt count, 0 for the first run. */
     fun run(id: String, attempt: Int, onProgress: (Long, Long) -> Unit, keepGoing: () -> Boolean): JobResult {
@@ -37,7 +37,7 @@ class VoiceDownloadJob(
         AudoraLog.i(TAG, "Download voice=$id attempt=${attempt + 1}/${config.maxAttempts}")
         return when (val downloaded = downloader.download(voice, files.partialDownload(voice), onProgress, keepGoing)) {
             is Outcome.Success -> when (val installed = installer.install(downloaded.value, voice)) {
-                is Outcome.Success -> JobResult.Installed.also { onInstalled() }
+                is Outcome.Success -> JobResult.Installed.also { onInstalled(voice) }
                 is Outcome.Failure -> JobResult.Failed(installed.error)
             }
 

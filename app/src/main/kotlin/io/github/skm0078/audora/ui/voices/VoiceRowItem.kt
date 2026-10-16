@@ -50,6 +50,13 @@ internal fun VoiceRowItem(row: VoiceRow, actions: VoicesActions) {
         headlineContent = { Text(row.label) },
         supportingContent = {
             Column {
+                if (row.recommended) {
+                    Text(
+                        stringResource(R.string.voices_recommended),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
                 StatusLine(row)
                 SpeedLine(row)
                 Text(
