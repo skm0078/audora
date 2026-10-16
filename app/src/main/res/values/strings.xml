@@ -201,4 +201,8 @@
     <string name="settings_ocr_missing">Reads scanned and garbled pages aloud. Needs %1$d MB of text recognition files.</string>
     <string name="settings_ocr_ready">Ready for English, Hindi and Bengali · %1$d MB</string>
     <string name="settings_ocr_unavailable">Not available in this build.</string>
+
+    <!-- Reading text (P2-03) -->
+    <string name="settings_skip_citations_title">Skip citation numbers</string>
+    <string name="settings_skip_citations_body">Reads “[12]” and “[4–7]” markers aloud when off. Applies to books you open next.</string>
 </resources>

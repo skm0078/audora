@@ -21,8 +21,9 @@ package io.github.skm0078.audora.core.config
  *   Above the layout's run gap (`LayoutConfig.columnGapEm`): Bengali glyph boxes leave gaps of up to ~1.2 em.
  * @property tableAlignEm two rows share a column when cells start within this distance of each other.
  * @property minTableRows a run of at least this many aligned rows is a table interior. Its caption is kept.
- * @property skipCitationMarkers drop bracketed numeric citations ("[4–7]"): the spec's default. A setting in
- *   :app may turn it off later; the expected text of the golden corpus skips them.
+ * @property skipCitationMarkers drop bracketed numeric citations ("[4–7]"): the spec's default. Settings → "Skip
+ *   citation numbers" turns it off for books opened afterwards (`ReadingTextPreferences` in :playback, read by both
+ *   the reader and the playback service); the expected text of the golden corpus skips them.
  * @property profileCachePages page summaries a book keeps for its neighbours; about a kilobyte each.
  * @property analyzedCachePages extracted and analysed pages a book keeps, so a page read as a neighbour is
  *   not extracted again when it is read itself. Must exceed [neighbourPages] + 1, or reading on page by page

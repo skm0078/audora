@@ -1,5 +1,6 @@
 // File: speech/src/test/kotlin/io/github/skm0078/audora/speech/sherpa/SherpaSpeechEngineTest.kt
-// Purpose: The sherpa engine's own logic over a fake model: loading, voice switching, errors, cancellation, release.
+// Purpose: The sherpa engine's own logic over a fake model: loading, the loaded-voice limit, trimming, errors,
+//          cancellation, release.
 
 package io.github.skm0078.audora.speech.sherpa
 
@@ -28,6 +29,7 @@ import org.junit.Test
 class SherpaSpeechEngineTest {
     private val english = spec("piper-en-ljspeech", speakerId = 3)
     private val other = spec("piper-en-cori")
+    private val hindi = spec("supertonic-hi", Lang.HI)
     private val loaded = mutableListOf<Pair<String, FakeSynthesizer>>()
     private var loadFailure: SpeechError? = null
 
@@ -39,6 +41,12 @@ class SherpaSpeechEngineTest {
     }
 
     private val engine = SherpaSpeechEngine(listOf(english, other), factory, Dispatchers.IO.limitedParallelism(1))
+
+    /** Two voices kept loaded, the default. */
+    private val bilingual =
+        SherpaSpeechEngine(listOf(english, other, hindi), factory, Dispatchers.IO.limitedParallelism(1), 2)
+
+    private fun synthesizerOf(id: String): FakeSynthesizer = loaded.single { it.first == id }.second
 
     @Test
     fun `renders with the voice's speaker and returns 16-bit PCM at the model's rate`() = runBlocking {
@@ -64,13 +72,110 @@ class SherpaSpeechEngineTest {
     }
 
     @Test
-    fun `switching voices releases the previous model first`() = runBlocking {
-        engine.render("One.", english.voiceId)
-        engine.render("Two.", other.voiceId)
+    fun `with one voice allowed, switching voices releases the previous model first`() = runBlocking {
+        val single = SherpaSpeechEngine(listOf(english, other), factory, Dispatchers.IO.limitedParallelism(1), 1)
+
+        single.render("One.", english.voiceId)
+        single.render("Two.", other.voiceId)
 
         assertEquals(listOf("piper-en-ljspeech", "piper-en-cori"), loaded.map { it.first })
         assertTrue(loaded[0].second.released)
         assertFalse(loaded[1].second.released)
+    }
+
+    @Test
+    fun `two voices alternating are each loaded once`() = runBlocking {
+        repeat(3) {
+            bilingual.render("English.", english.voiceId)
+            bilingual.render("Hindi.", hindi.voiceId)
+        }
+
+        assertEquals(listOf("piper-en-ljspeech", "supertonic-hi"), loaded.map { it.first })
+        assertTrue(loaded.none { it.second.released })
+        assertEquals(3, synthesizerOf("supertonic-hi").calls.size)
+    }
+
+    @Test
+    fun `a third voice evicts the least recently used one`() = runBlocking {
+        bilingual.render("One.", english.voiceId)
+        bilingual.render("Two.", hindi.voiceId)
+        bilingual.render("Three.", english.voiceId) // English is now the most recently used
+
+        bilingual.render("Four.", other.voiceId)
+
+        assertTrue(synthesizerOf("supertonic-hi").released)
+        assertFalse(synthesizerOf("piper-en-ljspeech").released)
+        assertFalse(synthesizerOf("piper-en-cori").released)
+        bilingual.render("Five.", english.voiceId)
+        assertEquals(3, loaded.size) // English was still loaded
+    }
+
+    @Test
+    fun `trimming memory keeps only the most recently used voice`() = runBlocking {
+        bilingual.render("One.", hindi.voiceId)
+        bilingual.render("Two.", english.voiceId)
+
+        bilingual.trimMemory()
+
+        assertTrue(synthesizerOf("supertonic-hi").released)
+        assertFalse(synthesizerOf("piper-en-ljspeech").released)
+        bilingual.render("Three.", english.voiceId)
+        assertEquals(2, loaded.size)
+    }
+
+    @Test
+    fun `a trim during a render waits for it, and keeps the voice it used`() = runBlocking {
+        bilingual.render("Warm up.", english.voiceId)
+        bilingual.render("Warm up.", hindi.voiceId)
+        val synthesizer = synthesizerOf("piper-en-ljspeech")
+        val gate = CountDownLatch(1)
+        synthesizer.gate = gate
+
+        val render = async(Dispatchers.Default) { bilingual.render("In flight.", english.voiceId) }
+        assertTrue(synthesizer.entered.await(5, TimeUnit.SECONDS))
+        bilingual.trimMemory()
+        assertFalse("trimmed under a running render", synthesizerOf("supertonic-hi").released)
+
+        gate.countDown()
+        assertTrue(withTimeout(5_000) { render.await() } is Outcome.Success)
+        assertTrue(synthesizerOf("supertonic-hi").released)
+        assertFalse(synthesizer.released)
+    }
+
+    @Test
+    fun `release unloads every loaded voice`() = runBlocking {
+        bilingual.render("One.", english.voiceId)
+        bilingual.render("Two.", hindi.voiceId)
+
+        bilingual.release()
+
+        assertEquals(2, loaded.size)
+        assertTrue(loaded.all { it.second.released })
+    }
+
+    @Test
+    fun `a voice in use is never released mid-render, even when another voice is evicted`() = runBlocking {
+        val single = SherpaSpeechEngine(listOf(english, hindi), factory, Dispatchers.IO.limitedParallelism(1), 1)
+        single.render("Warm up.", english.voiceId)
+        val synthesizer = loaded.single().second
+        val gate = CountDownLatch(1)
+        synthesizer.gate = gate
+
+        val inFlight = async(Dispatchers.Default) { single.render("In flight.", english.voiceId) }
+        assertTrue(synthesizer.entered.await(5, TimeUnit.SECONDS))
+        val next = async(Dispatchers.Default) { single.render("Next.", hindi.voiceId) }
+        assertFalse("evicted under a running render", synthesizer.released)
+
+        gate.countDown()
+        assertTrue(withTimeout(5_000) { inFlight.await() } is Outcome.Success)
+        assertTrue(withTimeout(5_000) { next.await() } is Outcome.Success)
+        assertTrue(synthesizer.released) // evicted for Hindi only once its render was done
+        assertFalse(synthesizerOf("supertonic-hi").released)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `a limit below one voice is refused`() {
+        SherpaSpeechEngine(listOf(english), factory, Dispatchers.IO.limitedParallelism(1), 0)
     }
 
     @Test
@@ -185,7 +290,7 @@ class SherpaSpeechEngineTest {
         live.render("Two.", other.voiceId)
 
         assertEquals(2, loaded.size)
-        assertTrue(loaded[0].second.released)
+        assertTrue(loaded[0].second.released) // not kept beside the new files, though two voices fit
         assertEquals(other.label, requireNotNull(live.voices().getOrNull()).single { it.id == other.voiceId }.label)
     }
 

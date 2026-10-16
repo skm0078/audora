@@ -103,7 +103,8 @@ class BookSession(
 
     /**
      * Starts reading [id] at the first sentence of [page] that ends after [charStart]. Reuses the open book
-     * when it is the same one (a seek). Plays at once: callers send this only from a user action (C7).
+     * when it is the same one (a seek), unless the reading text settings changed since it was opened. Plays at
+     * once: callers send this only from a user action (C7).
      */
     suspend fun playFrom(id: BookId, page: Int, charStart: Int, password: String?): Outcome<Unit, OpenFailure> =
         opening.withLock {
@@ -112,9 +113,12 @@ class BookSession(
                 publishState()
                 return Outcome.Failure(failure)
             }
-            val opened = book?.takeIf { it.book.id == id && (password == null || password == bookPassword) }
-                ?: when (val result = sources.books.open(id, password)) {
-                    is Outcome.Success -> result.value.also { replaceBook(it, password) }
+            val same = book?.takeIf { it.book.id == id && (password == null || password == bookPassword) }
+            // A same book opened again (settings changed) keeps the password it was opened with.
+            val openPassword = password ?: same?.let { bookPassword }
+            val opened = same?.takeIf { current(it) }
+                ?: when (val result = sources.books.open(id, openPassword)) {
+                    is Outcome.Success -> result.value.also { replaceBook(it, openPassword) }
                     is Outcome.Failure -> return@withLock fail(result.error)
                 }
             val pageCount = opened.text.pageCount
@@ -135,8 +139,10 @@ class BookSession(
     suspend fun resume(id: BookId, locator: ResumeLocator): Outcome<Unit, OpenFailure> {
         // The open book if it is [id]; else open [id] without a password and make it the session's book.
         val opened = opening.withLock {
-            book?.takeIf { it.book.id == id }?.let { Outcome.Success(it) }
-                ?: sources.books.open(id, null).also { if (it is Outcome.Success) replaceBook(it.value, null) }
+            val same = book?.takeIf { it.book.id == id }
+            val password = same?.let { bookPassword }
+            same?.takeIf { current(it) }?.let { Outcome.Success(it) }
+                ?: sources.books.open(id, password).also { if (it is Outcome.Success) replaceBook(it.value, password) }
         }
         val text = when (opened) {
             is Outcome.Success -> opened.value.text
@@ -168,6 +174,11 @@ class BookSession(
         book?.text?.close()
         book = null
         reporter.notReading()
+    }
+
+    /** False (logged) when [opened] must be opened again: the reading text settings changed since (P2-03). */
+    private suspend fun current(opened: OpenedBook): Boolean = sources.books.isCurrent(opened).also { fresh ->
+        if (!fresh) AudoraLog.i(TAG, "Reading text settings changed, reopening book=${opened.book.id.logLabel}")
     }
 
     private suspend fun replaceBook(opened: OpenedBook, password: String?) {
@@ -420,6 +431,11 @@ class BookSession(
             }
             if (events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED) && player.playbackState == Player.STATE_ENDED) {
                 AudoraLog.i(TAG, "Book finished, book=${bookId?.logLabel}")
+            }
+            // A faster speed drains the queue sooner (ADR-027): resize the window now, not at the next sentence.
+            if (events.contains(Player.EVENT_PLAYBACK_PARAMETERS_CHANGED)) {
+                updateWindow()
+                pump()
             }
         }
 

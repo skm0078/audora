@@ -102,7 +102,7 @@ class RenderAheadSimulationTest {
         return minOf(limit, finished[opened])
     }
 
-    private fun measured(rtf: Double) = MeasuredRenderAhead { VoiceSpeed(rtf, CHARS_PER_SECOND, MEASURED) }
+    private fun measured(rtf: Double) = MeasuredRenderAhead({ VoiceSpeed(rtf, CHARS_PER_SECOND, MEASURED) })
 
     @Test
     fun `voices well inside the usable limit never stall with the measured window`() {

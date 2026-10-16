@@ -55,17 +55,41 @@ remaining stall was in the first three sentences.
   and long ones and wastes memory on fast voices. Rejected.
 - **Disk cache of rendered audio** (spec §6's 20 MB `cacheDir/tts/`): ADR-016 chose memory; 90 s of 44.1 kHz audio is
   7.6 MiB, so the window fits in memory. Unchanged.
-- **Parallel rendering:** sherpa-onnx already uses several threads inside one call, and the engine keeps one model
-  loaded; two renders would compete for the same cores. Rejected.
+- **Parallel rendering:** sherpa-onnx already uses several threads inside one call, and the engine serializes
+  renders; two renders would compete for the same cores. Rejected.
 - **Supertonic 3 for English too:** same 145 MB model, but S1 found it garbles numbers until P2-04 part 2 wires the
   normalizer; and the catalog's one-language-per-entry model would download it twice. Left for later.
 
 ## Consequences
 - Kokoro will very likely measure too slow on the Moto (S1 predicted 2.5–4, desktop 1.4): it is downloadable and
   playable, and the Voices screen says so after 30 s of reading. Supertonic should qualify.
-- The window is sized for 1.0× speed; at 1.5× a voice effectively runs 1.5× slower. Not handled yet.
-- A mixed English+Hindi book with both premium voices swaps models at each switch (one model loaded); those
-  sentences are slower and not measured.
+- ~~The window is sized for 1.0× speed; at 1.5× a voice effectively runs 1.5× slower. Not handled yet.~~ Handled:
+  see "Playback speed (follow-up)".
+- ~~A mixed English+Hindi book with both premium voices swaps models at each switch (one model loaded); those
+  sentences are slower and not measured.~~ Two models now stay loaded: see "Loaded models (follow-up)".
 - Supertonic's model licence (OpenRAIL-M) asks redistributors to pass on its use restrictions; the mirror zip
   carries Supertonic's MIT code licence and README, and the in-app licence line names OpenRAIL-M and where to read
   it. The full OpenRAIL-M text should go into the zip and the "Voices & licenses" screen (P3-06).
+
+## Playback speed (follow-up)
+Audio is rendered at 1.0× and the player time-stretches it (Sonic, Build Spec C6), so at speed `s` the queue
+drains `s` times faster: a voice of real-time factor `rtf` is effectively `rtf × s` slow. `MeasuredRenderAhead`
+now takes the player's speed and uses `targetAheadSeconds(rtf × s)` for the window (still within its 8–90 s and
+3–40 sentence clamps) and `rtf × startMargin × s` per second of audio in the start hold. Below 1.0× the window
+shrinks the same way, which is also right: the queue drains slower. A speed that is not positive counts as 1.0×.
+
+The start hold runs on the render thread under the queue's lock, where ExoPlayer may not be called, so the speed
+comes from `LivePlaybackSpeed`: a `Player.Listener` holding a volatile copy, set from `playbackParameters` on the
+main thread and updated in `onPlaybackParametersChanged`. `BookSession` resizes the window when
+`EVENT_PLAYBACK_PARAMETERS_CHANGED` arrives, so a speed-up renders further ahead at once rather than at the next
+sentence. Covered by `MeasuredRenderAheadTest`; the simulation still runs at 1.0×.
+
+## Loaded models (follow-up)
+`SherpaSpeechEngine` keeps up to `SpeechConfig.maxLoadedVoices` models loaded (default 2), least recently used
+released first, so a bilingual book with two premium voices loads each model once instead of at every language
+switch. The cost is memory: a premium model is ~150 MB on disk and more in RAM, so two premium voices can hold
+well over 300 MB while both languages are read. When Android signals memory pressure (`onTrimMemory` at
+`TRIM_MEMORY_BACKGROUND` or above; the RUNNING_* levels are deprecated and no longer sent since API 34) the
+service drops every model but the most recently used one. As with `release()`, a model is never freed mid-render:
+a trim that finds a render running is done when that render ends. A voice whose files changed is still reloaded,
+not kept beside its old files.

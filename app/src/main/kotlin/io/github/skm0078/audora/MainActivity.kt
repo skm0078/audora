@@ -36,6 +36,7 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.diagnostics.LogSharer
 import io.github.skm0078.audora.pdf.render.ViewPoint
+import io.github.skm0078.audora.playback.book.ReadingTextPreferences
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.voices.VoiceRow
@@ -72,7 +73,9 @@ import io.github.skm0078.audora.ui.voices.VoicesController
 import io.github.skm0078.audora.ui.voices.VoicesScreen
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -212,6 +215,11 @@ class MainActivity : ComponentActivity() {
     ) {
         val ocrState by remember { ocrModels.state() }.collectAsStateWithLifecycle(initialValue = null)
         val scope = rememberCoroutineScope()
+        val textPreferences = remember { ReadingTextPreferences.forContext(applicationContext) }
+        // A one-line properties file, read once when Settings opens (like the onboarding flags). Saved off the main
+        // thread, one write at a time and in order, so quick taps leave the file as the switch shows.
+        var skipCitations by remember { mutableStateOf(textPreferences.skipCitationMarkers()) }
+        val textWrites = remember { Dispatchers.IO.limitedParallelism(1) }
         SettingsScreen(
             shareState = diagnostics.shareState,
             batteryExempt = battery.exempt,
@@ -232,6 +240,14 @@ class MainActivity : ComponentActivity() {
                     OcrModelsAction.DOWNLOAD -> ocrModels.download()
                     OcrModelsAction.CANCEL -> ocrModels.cancel()
                     OcrModelsAction.DELETE -> scope.launch { ocrModels.delete() }
+                }
+            },
+            skipCitations = skipCitations,
+            onSkipCitationsChange = { skip ->
+                skipCitations = skip
+                scope.launch {
+                    val saved = withContext(textWrites) { textPreferences.setSkipCitationMarkers(skip) }
+                    if (!saved) skipCitations = !skip // logged; the switch shows what books will use
                 }
             },
         )

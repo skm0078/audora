@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.playback.service
 
 import android.app.PendingIntent
+import android.content.ComponentCallbacks2
 import android.content.Intent
 import android.os.SystemClock
 import androidx.annotation.OptIn
@@ -25,6 +26,7 @@ import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.queue.MeasuredRenderAhead
 import io.github.skm0078.audora.playback.session.BookSession
 import io.github.skm0078.audora.playback.session.ItemTexts
+import io.github.skm0078.audora.playback.session.LivePlaybackSpeed
 import io.github.skm0078.audora.playback.session.QueueRegistry
 import io.github.skm0078.audora.playback.session.SessionEnvironment
 import io.github.skm0078.audora.playback.session.SessionSources
@@ -69,6 +71,7 @@ class AudoraPlaybackService : MediaSessionService() {
     private val registry = QueueRegistry()
     private lateinit var voices: SpeechVoices
     private lateinit var player: ExoPlayer
+    private lateinit var speed: LivePlaybackSpeed
     private lateinit var bookSession: BookSession
     private var session: MediaSession? = null
 
@@ -77,6 +80,7 @@ class AudoraPlaybackService : MediaSessionService() {
         val engines = VoiceEngines(this)
         voices = SpeechVoices(engines)
         player = SpeechPlayer.build(this, registry, config)
+        speed = LivePlaybackSpeed(player)
         val diagnostics = DiagnosticsBridge(tracker, scope)
         val recorder = ResumeRecorder(resumeAnchors, resumeScope, PIPELINE_VERSION, System::currentTimeMillis)
         val callback = SessionCallback(packageName, scope, voices, { bookSession }, { resumption })
@@ -92,7 +96,7 @@ class AudoraPlaybackService : MediaSessionService() {
                 renderer = EngineRenderer(voices, speed = RenderSpeedTracker(engines::speeds)),
                 books = LibraryBookSource(this, library),
                 texts = ResourceTexts(),
-                renderAhead = MeasuredRenderAhead(voices::speedOf),
+                renderAhead = MeasuredRenderAhead(voices::speedOf, speed::value),
             ),
             config = config,
             events = SessionPublisher(mediaSession, diagnostics, ResumeBridge(recorder, resumeScope)),
@@ -115,9 +119,24 @@ class AudoraPlaybackService : MediaSessionService() {
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
+    /**
+     * Gives back the neural models not in use (P4-02). Since API 34 Android delivers only UI_HIDDEN and BACKGROUND
+     * (the RUNNING_* levels are deprecated and no longer sent). UI_HIDDEN just means the user left the app, which
+     * is how people listen, so it keeps both models; BACKGROUND and above (MODERATE and COMPLETE on older releases)
+     * mean the process is on the kill list, where a second ~150 MB model is the first thing to give back.
+     */
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
+            AudoraLog.i(TAG, "Trim memory level=$level, book=${bookSession.bookId?.logLabel}")
+            voices.trimMemory()
+        }
+    }
+
     override fun onDestroy() {
         AudoraLog.i(TAG, "Service destroyed, book=${bookSession.bookId?.logLabel}")
         bookSession.release()
+        speed.release()
         session?.release()
         session = null
         player.release()

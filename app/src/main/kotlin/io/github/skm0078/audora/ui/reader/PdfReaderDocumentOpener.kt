@@ -20,13 +20,20 @@ import io.github.skm0078.audora.pdf.pdfium.RenderedPage
 import io.github.skm0078.audora.pdf.quality.OcrError
 import io.github.skm0078.audora.pdf.render.PageTransform
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
+import io.github.skm0078.audora.playback.book.ReadingTextPreferences
 import io.github.skm0078.audora.playback.ocr.BookOcr
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 
-/** PDFium-backed; all native work runs on [io]. */
-class PdfReaderDocumentOpener(private val context: Context, private val io: CoroutineDispatcher) :
-    ReaderDocumentOpener {
+/**
+ * PDFium-backed; all native work runs on [io]. Sentences are built with the user's reading text settings, read at
+ * each open from the same [ReadingTextPreferences] as the playback service, so both agree on `charStart` offsets.
+ */
+class PdfReaderDocumentOpener(
+    private val context: Context,
+    private val io: CoroutineDispatcher,
+    private val textPreferences: ReadingTextPreferences = ReadingTextPreferences.forContext(context),
+) : ReaderDocumentOpener {
     override suspend fun open(
         documentUri: String,
         password: String?,
@@ -35,8 +42,12 @@ class PdfReaderDocumentOpener(private val context: Context, private val io: Coro
         val engine = PdfiumEngine.forUri(context, Uri.parse(documentUri))
         // Same OCR, models and text cache as the playback service, so a page is recognised once for both.
         val ocr = BookOcr.factory(context, documentUri, logContext)
+        val builder = ReadingUnitBuilder(cleanupConfig = textPreferences.cleanupConfig())
         when (val opened = PdfBook.open(engine, password, logContext = logContext, ocr = ocr)) {
-            is Outcome.Success -> Outcome.Success(PdfReaderDocument(opened.value, engine, password, logContext, io))
+            is Outcome.Success -> Outcome.Success(
+                PdfReaderDocument(opened.value, engine, password, logContext, io, builder),
+            )
+
             is Outcome.Failure -> opened
         }
     }
@@ -52,8 +63,8 @@ private class PdfReaderDocument(
     private val password: String?,
     private val logContext: String,
     private val io: CoroutineDispatcher,
+    private val builder: ReadingUnitBuilder,
 ) : ReaderDocument {
-    private val builder = ReadingUnitBuilder()
     private var renderer: PdfiumPageRenderer? = null
     private var closed = false
 

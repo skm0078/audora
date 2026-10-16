@@ -24,8 +24,9 @@ import io.github.skm0078.audora.speech.voices.VoiceSpeeds
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Owned by the playback service and released with it, so the ~60 MB neural model never outlives playback.
- * Engines are created lazily: the bundled model loads on its first render, the phone's TTS binds on first use.
+ * Owned by the playback service and released with it, so the neural models (~60 MB each, ~150 MB for a premium
+ * voice) never outlive playback. Engines are created lazily: the bundled model loads on its first render, the phone's
+ * TTS binds on first use.
  *
  * Which voice reads a language, first match wins: [select] (the SET_VOICE command, for this service's life), the
  * voice picked in Settings → Voices (P4-01; read per sentence, so a change applies from the next sentence rendered),
@@ -64,6 +65,9 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
         EngineId.SYSTEM -> Outcome.Success(engines.system())
     }
 
+    /** Android asked for memory back: keep only the neural model in use (P4-02). Main thread. */
+    fun trimMemory() = engines.trimMemory()
+
     fun release() = engines.release()
 
     private companion object {
@@ -87,6 +91,11 @@ class VoiceEngines(context: Context, config: SpeechConfig = SpeechConfig()) {
     fun speeds(): VoiceSpeeds = library.value.speeds
 
     fun system(): SystemSpeechEngine = system.value
+
+    /** Drops all but the most recently used neural model, if the neural engine was ever created; never creates it. */
+    fun trimMemory() {
+        if (bundled.isInitialized()) bundled.value.getOrNull()?.engine?.trimMemory()
+    }
 
     fun release() {
         if (library.isInitialized()) library.value.speeds.save()
