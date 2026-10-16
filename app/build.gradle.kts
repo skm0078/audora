@@ -83,6 +83,8 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":pdf"))
     implementation(project(":playback"))
+    // Settings → Voices talks to the voice manager directly (P4-01); still app → speech, never the reverse.
+    implementation(project(":speech"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

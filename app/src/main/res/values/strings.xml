@@ -122,4 +122,39 @@
     <string name="settings_battery_title">Background reading</string>
     <string name="settings_battery_allowed">Battery optimization is off for Audora</string>
     <string name="settings_battery_limited">Android may stop reading with the screen off. Tap to set up.</string>
+
+    <!-- Voices (P4-01): Settings → Voices -->
+    <string name="settings_voices_title">Voices</string>
+    <string name="settings_voices_body">Download more voices, import your own, and pick the voice for each language.</string>
+    <string name="voices_title">Voices</string>
+    <string name="voices_load_failed">Could not load the voices. Share logs from Settings if this keeps happening.</string>
+    <string name="voices_lang_en">English</string>
+    <string name="voices_lang_hi">Hindi</string>
+    <string name="voices_lang_bn">Bengali</string>
+    <string name="voices_phone_voice">Phone\'s voice</string>
+    <string name="voices_phone_voice_body">The offline voice installed in Android\'s text-to-speech settings.</string>
+    <string name="voices_status_built_in">Built in</string>
+    <string name="voices_status_available">Not downloaded · %1$d MB</string>
+    <string name="voices_status_queued">Waiting to download (needs a connection)…</string>
+    <string name="voices_status_downloading">Downloading %1$d of %2$d MB</string>
+    <string name="voices_status_installed">Downloaded · %1$d MB</string>
+    <string name="voices_status_imported">Imported · %1$d MB</string>
+    <string name="voices_status_update">A newer version is available</string>
+    <string name="voices_status_failed">Download failed: %1$s</string>
+    <string name="voices_download">Download</string>
+    <string name="voices_update">Update</string>
+    <string name="voices_cancel">Cancel</string>
+    <string name="voices_delete">Delete</string>
+    <string name="voices_delete_title">Delete %1$s?</string>
+    <string name="voices_delete_body">The voice\'s files are removed from this phone. You can download or import it again later.</string>
+    <string name="voices_deleted">Deleted %1$s</string>
+    <string name="voices_delete_failed">Could not delete %1$s. Please try again.</string>
+    <string name="voices_import_title">Import a voice</string>
+    <string name="voices_import_body">A sherpa-onnx voice folder: one .onnx model, tokens.txt and, for Piper and KittenTTS, espeak-ng-data.</string>
+    <string name="voices_import_action">Import</string>
+    <string name="voices_import_language">Language it speaks</string>
+    <string name="voices_import_name">Name (optional)</string>
+    <string name="voices_import_hint">Next, pick the folder that holds the voice\'s files. Audora copies them; the folder stays as it is.</string>
+    <string name="voices_import_choose_folder">Choose folder</string>
+    <string name="voices_imported">Imported %1$s. Pick it below to read with it.</string>
 </resources>

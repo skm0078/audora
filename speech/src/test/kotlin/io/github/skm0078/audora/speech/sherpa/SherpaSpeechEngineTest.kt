@@ -158,4 +158,39 @@ class SherpaSpeechEngineTest {
         assertTrue(withTimeout(5_000) { render.await() } is Outcome.Success)
         assertTrue(synthesizer.released)
     }
+
+    @Test
+    fun `voices from a live source are seen as they are installed and deleted`() = runBlocking {
+        val installed = mutableListOf<SherpaVoiceSpec>()
+        val live = SherpaSpeechEngine({ listOf(english) + installed }, factory, Dispatchers.IO.limitedParallelism(1))
+        val hindi = spec("custom-hindi-1", Lang.HI)
+
+        assertFalse(live.supports(Lang.HI))
+        installed += hindi
+        assertTrue(live.supports(Lang.HI))
+        assertTrue(live.render("Namaste.", hindi.voiceId) is Outcome.Success)
+
+        installed.clear()
+        val error = live.render("Namaste.", hindi.voiceId).errorOrNull()
+        assertEquals(Reason.UNKNOWN_VOICE, (error as SpeechError.VoiceUnavailable).reason)
+    }
+
+    @Test
+    fun `an updated voice is reloaded and the first voice with an id wins`() = runBlocking {
+        var current = other
+        val live = SherpaSpeechEngine({ listOf(english, current, other.copy(label = "shadowed")) }, factory)
+
+        live.render("One.", other.voiceId)
+        current = other.copy(contentVersion = "v2")
+        live.render("Two.", other.voiceId)
+
+        assertEquals(2, loaded.size)
+        assertTrue(loaded[0].second.released)
+        assertEquals(other.label, requireNotNull(live.voices().getOrNull()).single { it.id == other.voiceId }.label)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `a fixed list with duplicate ids is refused`() {
+        SherpaSpeechEngine(listOf(english, english.copy(label = "again")), factory)
+    }
 }
