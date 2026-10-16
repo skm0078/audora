@@ -256,6 +256,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 028 | Indic sentence rules after `BreakIterator` (danda, abbreviations, initials, closing quotes, verse numbers); NFC as the first text repair with offsets kept; "|" as danda; Hindi/Bengali numbers read as words at render time; `PIPELINE_VERSION` 7 | Accepted (P3-02) |
 | 029 | Pauses (heading 600, paragraph 400, list item 300 ms) appended as silence to each sentence's clip; list items detected by layout; `ReadingUnit.kind`; English normalizer wired next to the Indic ones, headings read as headings; render speed measured without pauses; `PIPELINE_VERSION` 8 | Accepted (P2-04) |
 | 030 | Hindi/Bengali catalog voices (pratham, priyamvada, Piper bn google, MMS ben); provisional defaults pratham and Piper google as a one-line `recommended` map; first download of a language becomes its reader; credits in the catalog; "Voices & licences" screen | Accepted (P3-06); defaults pending S0 + phone run |
+| 031 | Debug APKs signed with one dev key restored from the repository secret `AUDORA_DEBUG_KEYSTORE_B64` (password `android`), APK certificate checked against it in CI; without the secret CI is unchanged | Accepted (CI) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

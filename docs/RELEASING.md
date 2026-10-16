@@ -98,6 +98,37 @@ to install.
 The release app (`io.github.skm0078.audora`) and the dev build (`io.github.skm0078.audora.debug`) install side
 by side.
 
+## Dev build signing key
+
+Debug APKs (the `dev-build` release and every branch's artifact) are signed with the dev key when the repository
+secret `AUDORA_DEBUG_KEYSTORE_B64` exists, so a newer dev build installs over an older one (ADR-031). Without the
+secret, each CI run signs with a throwaway key, as Android tooling does by default.
+
+- The secret is the base64 of a PKCS12 keystore with store and key password `android` and alias `androiddebugkey`
+  (Android's debug-key convention; the password is not secret). It is a repository secret, not in the `release`
+  environment, so every branch's build can use it.
+- CI logs the dev key's certificate SHA-256 and fails the "Debug signing certificate" step if the debug APK was
+  signed with anything else.
+- It only signs `io.github.skm0078.audora.debug`, which nobody registers or distributes, so losing it costs one
+  uninstall of the test build. Never use it for release builds.
+
+### Add the dev key (once, about 5 minutes)
+
+1. Open PowerShell (Java is already installed from the release-key setup) and create the key next to the release key:
+   ```
+   keytool -genkeypair -keystore D:\AUDORA\signing\audora-dev-debug.p12 -storetype PKCS12 -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10950 -dname "CN=Audora Dev Build,O=Audora,C=IN"
+   ```
+2. Copy it to the clipboard as one line of text:
+   ```
+   [Convert]::ToBase64String([IO.File]::ReadAllBytes("D:\AUDORA\signing\audora-dev-debug.p12")) | Set-Clipboard
+   ```
+3. Open https://github.com/skm0078/audora/settings/secrets/actions and click **New repository secret** (under
+   *Repository secrets*, not *Environment secrets*).
+4. **Name:** `AUDORA_DEBUG_KEYSTORE_B64`. Click into **Secret**, press **Ctrl+V**, click **Add secret**.
+5. On the phone, uninstall the old dev build once. From the next dev build on, each one installs over the last.
+
+To replace the key, repeat with a new file name and update the secret; the next dev build then needs one uninstall.
+
 ## Pinned certificate
 
 The release certificate's SHA-256 is pinned as `EXPECTED_CERT_SHA256` in `.github/workflows/release.yml`:
@@ -115,6 +146,8 @@ reaching phones as an APK that cannot update the installed app. Only a deliberat
 | `Missing secrets in the 'release' environment` | Step 2 incomplete | Run the key script again (it reuses the key) |
 | Job waits or fails with a deployment protection message | The environment rules from step 1 do not allow this branch or tag | Check the two rules in step 1 |
 | dev → prod PR shows conflicts in files nobody changed on prod | A previous dev → prod PR was squashed, so prod's commit is not in dev's history | On a branch from dev run `git merge -s ours origin/prod` (keeps dev's files, records prod as merged), push it, open a PR from that branch into **prod** (not dev) and merge it with **Create a merge commit**. Later dev → prod PRs merge cleanly |
+| `AUDORA_DEBUG_KEYSTORE_B64 is not a keystore ...` (Android CI) | The secret was cut short or is another file | Repeat steps 2 to 4 of "Add the dev key" |
+| `Debug APK signed with ..., not with the dev key ...` (Android CI) | The build did not pick up the restored keystore | Check the "Stable debug signing key" step's log; the keystore path may have moved in a new AGP |
 | `Signed with certificate ... but releases must use ...` | The secrets hold a different key | Restore the original key from backup and re-add the secrets |
 
 ## If the key is lost or leaked
