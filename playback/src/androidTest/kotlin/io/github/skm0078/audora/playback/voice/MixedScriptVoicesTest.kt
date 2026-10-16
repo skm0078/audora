@@ -1,6 +1,6 @@
 // File: playback/src/androidTest/kotlin/io/github/skm0078/audora/playback/voice/MixedScriptVoicesTest.kt
 // Purpose: P3-01 done-when on the device: the bilingual English/Hindi PDF switches voices correctly, through the
-//   real PDF pipeline and the playback renderer, with recording fake voices.
+//   real PDF pipeline and the playback renderer, with recording fake voices; Hindi numbers as words (P3-02).
 
 package io.github.skm0078.audora.playback.voice
 
@@ -62,7 +62,8 @@ class MixedScriptVoicesTest {
     fun bilingualBookSwitchesVoicesCorrectly() {
         val units = bookUnits()
         val voices = RecordingVoices()
-        val renderer = EngineRenderer(voices)
+        // Without normalizers, so the parts add up to the sentence as printed; numbers are checked below.
+        val renderer = EngineRenderer(voices, normalizers = emptyMap())
         var mixedSentences = 0
 
         for (unit in units) {
@@ -90,6 +91,19 @@ class MixedScriptVoicesTest {
         assertTrue(english.joinToString(" ") { it.text }.contains("Universal Declaration of Human Rights"))
         assertTrue(hindi.joinToString(" ") { it.text }.contains("मानव अधिकारों की सार्वभौम घोषणा"))
         assertTrue(english.joinToString(" ") { it.text }.contains("All human beings are born free"))
+    }
+
+    @Test
+    fun hindiPartsAreReadWithNumbersAsHindiWords() {
+        val voices = RecordingVoices()
+        val renderer = EngineRenderer(voices)
+        val units = bookUnits()
+        units.forEach { renderer.render(it) }
+
+        val hindi = voices.spoken.filter { it.voice == Lang.HI.name }
+        hindi.forEach { assertTrue("Hindi voice got digits: ${it.text.take(TRACE)}", it.text.none(Char::isDigit)) }
+        // "अनुच्छेद १." heads each article in the Hindi text.
+        assertTrue(hindi.any { it.text.contains("अनुच्छेद एक") })
     }
 
     private fun bookUnits(): List<ReadingUnit> {

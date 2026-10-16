@@ -77,6 +77,17 @@ class ReadingUnitBuilderTest {
     }
 
     @Test
+    fun `Indic units are NFC, split at a typed pipe and keep a doctor's name whole`() {
+        // Bengali "ো" typed in two parts (U+09C7 U+09BE), "|" typed for the danda, and "ডা." before a name.
+        val page = pageOf("ডা. রায় \u0995\u09C7\u09BEথায় যাবেন| তিনি বাড়ি যাবেন।")
+        val units = builder.build(page)
+        assertEquals(listOf("ডা. রায় \u0995\u09CBথায় যাবেন।", "তিনি বাড়ি যাবেন।"), units.map { it.text })
+        assertTrue(units.all { it.lang == Lang.BN })
+        val reading = builder.readingText(page)
+        units.forEach { unit -> assertEquals(unit.text, reading.text.substring(unit.charStart, unit.charEnd)) }
+    }
+
+    @Test
     fun `bounds are one box per line`() {
         val twoLines =
             "ab".map {

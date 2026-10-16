@@ -1,0 +1,111 @@
+// File: pdf/src/main/kotlin/io/github/skm0078/audora/pdf/units/IndicSentenceRules.kt
+// Purpose: Corrects BreakIterator's sentence breaks for Hindi and Bengali: danda, abbreviations, verse numbers.
+
+package io.github.skm0078.audora.pdf.units
+
+import io.github.skm0078.audora.core.config.SentenceConfig
+import java.text.Normalizer
+
+/**
+ * BreakIterator already ends a sentence at the danda on ICU (Android) and on the JDK, but both get Hindi and
+ * Bengali wrong in the same few ways, and the JDK differs from ICU on closing quotes (P3-02, ADR-028):
+ * 1. **Danda.** A break after every danda (। ॥) and the closing quotes and spaces after it, whatever the
+ *    iterator did, unless a comma-like mark follows. Both platforms then agree.
+ * 2. **Closing quotes** after a sentence end belong to that sentence: `है।" उसने` breaks after the quote, and a
+ *    comma after a danda continues the sentence. The JDK breaks before both; ICU already does this.
+ * 3. **Abbreviations and initials.** No break after "डॉ." or "ए." ([SentenceConfig]): Indic text ends sentences with
+ *    the danda, so a full stop after one of these words is part of a name. When unsure, two sentences become one
+ *    unit, which is cheaper than a name cut in half.
+ * 4. **Verse numbers.** "॥ १ ॥" after a verse is read with that verse, not as a unit of its own.
+ *
+ * The rules move breaks only; the ranges still cover the text in order.
+ */
+internal class IndicSentenceRules(config: SentenceConfig) {
+    private val nonBreaking: Set<String> = (config.abbreviations + config.initials).mapTo(HashSet(), ::nfc)
+
+    /** [breaks]: the iterator's sentence ends inside [text] (not 0 or its length). Returns the corrected ones. */
+    fun refine(text: String, breaks: Collection<Int>): List<Int> {
+        val corrected = sortedSetOf<Int>()
+        breaks.mapTo(corrected) { moveAfterClosers(text, it) }
+        dandaBreaks(text).forEach(corrected::add)
+        corrected.removeAll {
+            it <= 0 || it >= text.length || text[skipSpaces(text, it)] in CONTINUERS || followsNonBreakingWord(text, it)
+        }
+        removeVerseNumberBreaks(text, corrected)
+        return corrected.toList()
+    }
+
+    private fun dandaBreaks(text: String): List<Int> {
+        val breaks = ArrayList<Int>()
+        var i = 0
+        while (i < text.length) {
+            if (text[i] !in DANDAS) {
+                i++
+                continue
+            }
+            var end = i
+            while (end < text.length && (text[end] in DANDAS || text[end] in CLOSERS)) end++
+            end = skipSpaces(text, end)
+            if (end < text.length && text[end] !in CONTINUERS) breaks.add(end)
+            i = end
+        }
+        return breaks
+    }
+
+    /** A break right after a sentence end and before closing quotes moves past the quotes and the spaces after them. */
+    private fun moveAfterClosers(text: String, at: Int): Int {
+        val afterSentenceEnd = at in 1 until text.length && text[at - 1] in TERMINATORS
+        if (!afterSentenceEnd || text[at] !in CLOSERS) return at
+        var end = at
+        while (end < text.length && text[end] in CLOSERS) end++
+        return if (end == text.length || text[end].isWhitespace()) skipSpaces(text, end) else at
+    }
+
+    /** The text before [at] ends with "word." where the word is a listed abbreviation or initial. */
+    private fun followsNonBreakingWord(text: String, at: Int): Boolean {
+        var stop = at - 1
+        while (stop >= 0 && text[stop].isWhitespace()) stop--
+        if (stop < 1 || text[stop] != '.') return false
+        var start = stop
+        while (start > 0 && !text[start - 1].isWhitespace() && text[start - 1] !in OPENERS) start--
+        return nfc(text.substring(start, stop)) in nonBreaking
+    }
+
+    /** Merges a piece made only of a verse number between dandas ("॥ १ ॥") into the piece before it. */
+    private fun removeVerseNumberBreaks(text: String, breaks: MutableSet<Int>) {
+        val ends = breaks.toList() + text.length
+        for (k in 0 until ends.size - 1) {
+            val piece = text.substring(ends[k], ends[k + 1]).trim()
+            val isVerseNumber = piece.isNotEmpty() && piece.last() in DANDAS && piece.any(Char::isDigit) &&
+                piece.all { it.isDigit() || it in DANDAS || it.isWhitespace() || it in VERSE_BRACKETS }
+            if (isVerseNumber) breaks.remove(ends[k])
+        }
+    }
+
+    private fun skipSpaces(text: String, from: Int): Int {
+        var i = from
+        while (i < text.length && text[i].isWhitespace()) i++
+        return i
+    }
+
+    private companion object {
+        /** Danda and double danda (U+0964, U+0965), shared by Devanagari and Bengali. */
+        const val DANDAS = "\u0964\u0965"
+
+        /** Sentence ends after which closing quotes still belong to the sentence. */
+        const val TERMINATORS = "$DANDAS.?!"
+
+        /** Closing quotes and brackets; the straight quotes count only when a space follows them. */
+        const val CLOSERS = "\"'\u2019\u201D\u00BB)]"
+
+        /** Opening quotes and brackets before a word: "(डॉ." is still the word "डॉ". */
+        const val OPENERS = "\"'\u2018\u201C\u00AB(["
+
+        /** After a danda these continue the sentence, as in ICU's sentence rules. */
+        const val CONTINUERS = ",;:\u2013\u2014"
+
+        const val VERSE_BRACKETS = "()[]"
+
+        fun nfc(text: String): String = Normalizer.normalize(text, Normalizer.Form.NFC)
+    }
+}

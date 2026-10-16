@@ -141,8 +141,8 @@ Runs lazily per page, two pages ahead of playback, cached per book (a few analys
    - c. **OCR**: Tesseract with `tessdata_best` for `eng`/`hin`/`ben` (PP-OCRv5 has no Bengali model; on Hindi it was not consistently better, ADR-011). Runs in the render-ahead window. Page shows a "Scanned / OCR" badge.
 4. **Rebuild layout**: lines by baseline → columns by recursive XY-cut, columns first (OpenDataLoader-PDF's XY-Cut++ as a reference) → reading order → paragraphs by gap/indent → headings by relative font size and a bold font name (weight is unreliable, ADR-011). Unit offsets index the resulting reading-order text (ADR-018).
 5. **Remove clutter**: lines repeating in the top/bottom 8% of the text area across ≥3 pages of a 7-page window, header lines whose page number runs with the page, standalone page numbers, table interiors; citation markers skipped (setting) (ADR-020).
-6. **Repair**: de-hyphenate across line breaks (keep real hyphens), expand ligatures, fold soft hyphens / zero-width and control chars (ZWJ/ZWNJ kept), drop line-start bullets; NFC is P3-02's (ADR-020).
-7. **Split sentences**: ICU `BreakIterator` per locale; `।` as sentence end; per-language abbreviation lists.
+6. **Repair**: de-hyphenate across line breaks (keep real hyphens), expand ligatures, fold soft hyphens / zero-width and control chars (ZWJ/ZWNJ kept), drop line-start bullets (ADR-020); NFC first, and "|" typed for a danda after Indic text becomes `।` (ADR-028).
+7. **Split sentences**: ICU `BreakIterator` per locale, then the Indic rules: `।`/`॥` as sentence end, Hindi/Bengali abbreviations and initials, verse numbers kept with their verse (ADR-028).
 8. **Normalize for speech**: numbers, dates, ₹, %, ranges (incl. Devanagari/Bengali digits), URLs/emails → "link", Roman numerals in headings. Table-driven tests. Runs in `:speech` at render time, not on `ReadingUnit.text` (ADR-019).
 9. **Prosody**: pause after headings (~600 ms), paragraphs (~400 ms), list items.
 
@@ -252,6 +252,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 024 | Page view: pages drawn by a second, display-only PDFium document; glyph boxes mapped through PDFium's own page matrix; tap the nearest line to read; no `PdfRenderer` fallback | Accepted (P4-03) |
 | 025 | OCR: Tesseract4Android (JitPack, AAR SHA-256 pinned), `tessdata_best` en/hi/bn pinned at an upstream commit and downloaded as one pack, disk cache per page, language probe, OCR text through the normal repair; PaddleOCR experiment not built; `PIPELINE_VERSION` 6 | Accepted (P3-05) |
 | 026 | Script routing at render time: each script run of a sentence is read by its language's voice (≥3 English words to leave an Indic voice), parts joined into one clip; `ReadingUnit` and `:pdf` output unchanged | Accepted (P3-01) |
+| 028 | Indic sentence rules after `BreakIterator` (danda, abbreviations, initials, closing quotes, verse numbers); NFC as the first text repair with offsets kept; "|" as danda; Hindi/Bengali numbers read as words at render time; `PIPELINE_VERSION` 7 | Accepted (P3-02) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

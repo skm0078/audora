@@ -5,6 +5,7 @@ package io.github.skm0078.audora.playback.voice
 
 import io.github.skm0078.audora.core.config.ScriptRoutingConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.map
@@ -12,10 +13,12 @@ import io.github.skm0078.audora.playback.queue.SentenceRenderer
 import io.github.skm0078.audora.playback.queue.UnitKey
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.audio.PcmAudio
+import io.github.skm0078.audora.speech.normalize.TextNormalizer
 import io.github.skm0078.audora.speech.route.RoutedAudio
 import io.github.skm0078.audora.speech.route.RoutedSpeech
 import io.github.skm0078.audora.speech.route.ScriptRouter
 import io.github.skm0078.audora.speech.route.VoiceSource
+import io.github.skm0078.audora.speech.route.indicNormalizers
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -24,10 +27,15 @@ import kotlinx.coroutines.runBlocking
  * expects; the engine stays usable (SpeechEngine contract).
  *
  * Each part of a mixed-script sentence is read by its language's voice (P3-01, ADR-026); the voices come from
- * [voices], so a change in Settings → Voices applies from the next sentence rendered.
+ * [voices], so a change in Settings → Voices applies from the next sentence rendered. Each part is normalized for
+ * its language first ([normalizers]: Hindi and Bengali numbers as words, P3-02).
  */
-class EngineRenderer(voices: VoiceSource, config: ScriptRoutingConfig = ScriptRoutingConfig()) : SentenceRenderer {
-    private val speech = RoutedSpeech(voices, ScriptRouter(config))
+class EngineRenderer(
+    voices: VoiceSource,
+    config: ScriptRoutingConfig = ScriptRoutingConfig(),
+    normalizers: Map<Lang, TextNormalizer> = indicNormalizers(),
+) : SentenceRenderer {
+    private val speech = RoutedSpeech(voices, ScriptRouter(config), normalizers)
 
     override fun render(unit: ReadingUnit): Outcome<PcmAudio, SpeechError> =
         runBlocking { speech.render(unit.text, unit.lang) }.map { routed ->
