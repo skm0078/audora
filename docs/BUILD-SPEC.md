@@ -88,7 +88,7 @@ Native **Kotlin 2.x + Jetpack Compose**, five Gradle modules. Synthesis and play
 
 Dependencies flow `app → playback → (speech, pdf) → core`, never the reverse. `:pdf` and `:speech` keep their logic in plain Kotlin classes behind thin Android adapters, so most behavior is JVM-testable.
 
-**Stack (pinned in `libs.versions.toml`):** Kotlin 2.x, Compose (BOM), Media3 **1.11.1** (ExoPlayer + MediaSessionService), sherpa-onnx **1.13.8** AAR (arm64-v8a), **PdfiumAndroidKt 2.0.x** (text + render; Android `PdfRenderer` as display fallback), ICU `BreakIterator` (android.icu), Room, DataStore, WorkManager (downloads only), Hilt (KSP), kotlinx.coroutines. Phase 3: Tesseract4Android 4.9.x with `tessdata_best` eng/hin/ben (ADR-011); PaddleOCR (PP-OCR) ONNX on the existing ONNX Runtime only if the optional P3-05 experiment beats Tesseract on Hindi. No ML Kit (D2).
+**Stack (pinned in `libs.versions.toml`):** Kotlin 2.x, Compose (BOM), Media3 **1.11.1** (ExoPlayer + MediaSessionService), sherpa-onnx **1.13.8** AAR (arm64-v8a), **PdfiumAndroidKt 2.0.x** (text + render; no `PdfRenderer` fallback, ADR-024), ICU `BreakIterator` (android.icu), Room, DataStore, WorkManager (downloads only), Hilt (KSP), kotlinx.coroutines. Phase 3: Tesseract4Android 4.9.x with `tessdata_best` eng/hin/ben (ADR-011); PaddleOCR (PP-OCR) ONNX on the existing ONNX Runtime only if the optional P3-05 experiment beats Tesseract on Hindi. No ML Kit (D2).
 
 **Platform baseline:** compileSdk 36, targetSdk 36 (37 only after testing the while-in-use rule), minSdk 31 (Android 12, D5), AGP ≥ 8.5.1, NDK r28+, `abiFilters arm64-v8a`. Reference device for development: Moto Edge 50 Fusion (Snapdragon 7s Gen 2); OnePlus 12 (SD 8 Gen 3, Android 16) is a pre-release check (ADR-012). Edge-to-edge + predictive back supported from day one.
 
@@ -249,6 +249,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 021 | Page quality scorer and routes (`QualityConfig`); Indic repair and visual-order reorder per paragraph before text repair, decided per page; OCR sample compared by line-wise containment CER; `PdfBook.readPage` returns the route; `PIPELINE_VERSION` 4 | Accepted (P3-03) |
 | 022 | Voice manager: catalog voices mirrored as reproducible zips on this repo's `voices` release, `models.json` packed into APK assets at build time, resumable WorkManager download with a final SHA-256 check, folder import of Piper/MMS/Kitten voices | Accepted (P4-01) |
 | 023 | Legacy-font converter: Kruti Dev, DevLys, Chanakya and Bijoy tables chosen by font name, converted wherever read before the Indic repair; unknown-code rate checked first and routed to OCR; generated golden documents; `PIPELINE_VERSION` 5 | Accepted (P3-04) |
+| 024 | Page view: pages drawn by a second, display-only PDFium document; glyph boxes mapped through PDFium's own page matrix; tap the nearest line to read; no `PdfRenderer` fallback | Accepted (P4-03) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

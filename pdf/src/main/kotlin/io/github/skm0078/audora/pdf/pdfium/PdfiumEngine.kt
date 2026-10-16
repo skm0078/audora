@@ -1,5 +1,5 @@
 // File: pdf/src/main/kotlin/io/github/skm0078/audora/pdf/pdfium/PdfiumEngine.kt
-// Purpose: PdfEngine over PDFium: opens a PDF from a file descriptor and reads pages through our JNI library.
+// Purpose: PdfEngine over PDFium: opens a PDF from a file descriptor, reads pages through our JNI library, renders.
 
 package io.github.skm0078.audora.pdf.pdfium
 
@@ -10,6 +10,7 @@ import io.github.skm0078.audora.core.config.ExtractionConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.flatMap
+import io.github.skm0078.audora.core.result.map
 import io.github.skm0078.audora.pdf.document.OutlineEntry
 import io.github.skm0078.audora.pdf.document.PdfDocumentHandle
 import io.github.skm0078.audora.pdf.document.PdfEngine
@@ -32,6 +33,18 @@ class PdfiumEngine(
     private val config: ExtractionConfig = ExtractionConfig(),
 ) : PdfEngine {
     override fun open(password: String?): Outcome<PdfDocumentHandle, PdfOpenError> =
+        openDocument(password).map { PdfiumDocumentHandle(it, config) }
+
+    /**
+     * A second, display-only view of the same PDF (P4-03): rendering never shares a document with text
+     * extraction, so [PdfBook][io.github.skm0078.audora.pdf.document.PdfBook] stays free of Android types.
+     */
+    fun openRenderer(password: String?, logContext: String): Outcome<PdfiumPageRenderer, PdfOpenError> =
+        openDocument(password).map { document ->
+            PdfiumPageRenderer(document, reopen = { openDocument(password) }, config, logContext)
+        }
+
+    private fun openDocument(password: String?): Outcome<PdfDocumentU, PdfOpenError> =
         PdfiumRuntime.core().flatMap { pdfium ->
             openDescriptor().flatMap { descriptor -> openDocument(pdfium, descriptor, password) }
         }
@@ -50,9 +63,8 @@ class PdfiumEngine(
         pdfium: PdfiumCoreU,
         descriptor: ParcelFileDescriptor,
         password: String?,
-    ): Outcome<PdfDocumentHandle, PdfOpenError> = try {
-        val document = pdfiumLocked { pdfium.newDocument(descriptor, password) }
-        Outcome.Success(PdfiumDocumentHandle(document, config))
+    ): Outcome<PdfDocumentU, PdfOpenError> = try {
+        Outcome.Success(pdfiumLocked { pdfium.newDocument(descriptor, password) })
     } catch (e: PdfPasswordException) {
         descriptor.close()
         Outcome.Failure(if (password == null) PdfOpenError.PasswordRequired else PdfOpenError.IncorrectPassword)

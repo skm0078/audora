@@ -52,6 +52,11 @@
     <string name="reader_page_no_text">No text on this page. Scanned pages are read with OCR in a later update.</string>
     <string name="reader_page_failed">This page could not be read. Please share the logs.</string>
     <string name="reader_tap_hint">Tap a sentence to read from there.</string>
+    <string name="reader_show_page">Show the page</string>
+    <string name="reader_show_text">Show the text</string>
+    <string name="reader_page_image">Page %1$d. Tap a line to read from there.</string>
+    <string name="reader_page_render_failed">This page could not be drawn. Show the text instead, or share the logs.</string>
+    <string name="reader_page_no_highlight">This page\'s text has no positions, so it is not highlighted. Show the text to follow along.</string>
     <string name="reader_play">Read aloud</string>
     <string name="reader_pause">Pause</string>
     <string name="reader_skip_back">Previous sentence</string>

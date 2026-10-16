@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/di/ReaderModule.kt
-// Purpose: Provides the reader's config, saved speed and PDF opener as app singletons (P1-05).
+// Purpose: Provides the reader's config, saved settings and PDF opener as app singletons (P1-05, P4-03).
 
 package io.github.skm0078.audora.di
 
@@ -10,10 +10,11 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.skm0078.audora.core.config.ReaderConfig
-import io.github.skm0078.audora.ui.reader.DataStoreSpeedPreference
+import io.github.skm0078.audora.ui.reader.DataStoreReaderPreferences
 import io.github.skm0078.audora.ui.reader.PdfReaderDocumentOpener
 import io.github.skm0078.audora.ui.reader.ReaderDocumentOpener
 import io.github.skm0078.audora.ui.reader.SpeedPreference
+import io.github.skm0078.audora.ui.reader.ViewPreference
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 
@@ -26,7 +27,14 @@ object ReaderModule {
 
     @Provides
     @Singleton
-    fun speedPreference(@ApplicationContext context: Context): SpeedPreference = DataStoreSpeedPreference(context)
+    fun readerPreferences(@ApplicationContext context: Context): DataStoreReaderPreferences =
+        DataStoreReaderPreferences(context)
+
+    @Provides
+    fun speedPreference(preferences: DataStoreReaderPreferences): SpeedPreference = preferences
+
+    @Provides
+    fun viewPreference(preferences: DataStoreReaderPreferences): ViewPreference = preferences
 
     @Provides
     @Singleton

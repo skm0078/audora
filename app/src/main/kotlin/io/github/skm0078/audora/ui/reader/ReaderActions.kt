@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.pdf.render.ViewPoint
 
 /** One interface instead of many lambdas keeps [ReaderScreen]'s signature readable. */
 @Suppress("TooManyFunctions") // One per control on the screen.
@@ -20,6 +21,14 @@ interface ReaderActions {
     fun onShowReadingPosition()
 
     fun onSentenceTapped(unit: ReadingUnit)
+
+    /** A tap on the page image, in fractions of its size: reads from the sentence there, if any. */
+    fun onPageTapped(point: ViewPoint)
+
+    fun onViewChanged(view: ReaderView)
+
+    /** The page view's width in pixels, so pages are drawn at the screen's resolution. */
+    fun onPageWidth(widthPx: Int)
 
     fun onPlayPause()
 
