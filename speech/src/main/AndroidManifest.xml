@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: speech/src/main/AndroidManifest.xml
+  Purpose: The voice manager's only network use: downloading catalog voices (P4-01, ADR-022). WorkManager adds its
+  own ACCESS_NETWORK_STATE, WAKE_LOCK and boot receiver (it reschedules an unfinished download after a reboot;
+  nothing plays on boot). Never SMS, accessibility or notification-listener permissions (AGENTS.md).
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>

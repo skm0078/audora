@@ -246,6 +246,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 018 | Layout: column-first XY-cut, paragraphs, headings by size + bold font name; `charStart` indexes the page's reading-order text; `PIPELINE_VERSION` 2 | Accepted (P2-02) |
 | 019 | Speech normalization lives in `:speech` and runs at render time; `ReadingUnit.text` stays the extracted text (display, fingerprints) | Accepted (P2-04) |
 | 020 | Clutter removal against neighbouring pages (window cached in `PdfBook`), margin bands on the text area, tables by aligned cell runs; repair keeps offsets mapped and ZWJ/ZWNJ; `PIPELINE_VERSION` 3 | Accepted (P2-03) |
+| 022 | Voice manager: catalog voices mirrored as reproducible zips on this repo's `voices` release, `models.json` packed into APK assets at build time, resumable WorkManager download with a final SHA-256 check, folder import of Piper/MMS/Kitten voices | Accepted (P4-01) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

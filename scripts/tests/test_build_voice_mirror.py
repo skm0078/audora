@@ -1,0 +1,131 @@
+# File: scripts/tests/test_build_voice_mirror.py
+# Purpose: Checks that build_voice_mirror.py picks the right files and writes the same bytes on every run (ADR-022).
+
+from __future__ import annotations
+
+import hashlib
+import io
+import sys
+import tarfile
+import tempfile
+import unittest
+import zipfile
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import build_voice_mirror as mirror  # noqa: E402
+
+
+def voice(**overrides) -> mirror.Voice:
+    values = dict(
+        id="piper-en-test",
+        model="en.onnx",
+        tokens="tokens.txt",
+        voices=None,
+        data_dir="espeak-ng-data",
+        archive="vits-piper-en-test",
+        source_sha256="0" * 64,
+        file="",
+        sha256="",
+        size_bytes=0,
+    )
+    values.update(overrides)
+    return mirror.Voice(**values)
+
+
+def make_archive(path: Path, files: dict[str, bytes], mtime: int) -> None:
+    with tarfile.open(path, "w:bz2") as tar:
+        for name, data in files.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            info.mtime = mtime
+            tar.addfile(info, io.BytesIO(data))
+
+
+FILES = {
+    "vits-piper-en-test/en.onnx": b"weights",
+    "vits-piper-en-test/en.onnx.json": b"{}",
+    "vits-piper-en-test/tokens.txt": b"a 1\n",
+    "vits-piper-en-test/MODEL_CARD": b"card",
+    "vits-piper-en-test/espeak-ng-data/phontab": b"ph",
+    "vits-piper-en-test/espeak-ng-data/en_dict": b"en",
+    "vits-piper-en-test/espeak-ng-data/fr_dict": b"fr",
+    "vits-piper-en-test/espeak-ng-data/voices/!v/zac": b"zac",
+}
+
+
+class WantedTest(unittest.TestCase):
+    def test_keeps_voice_files_and_spoken_dictionaries_only(self):
+        dictionaries = {"en_dict", "hi_dict", "bn_dict"}
+        v = voice()
+        self.assertTrue(mirror.wanted(v, "en.onnx", dictionaries))
+        self.assertTrue(mirror.wanted(v, "tokens.txt", dictionaries))
+        self.assertTrue(mirror.wanted(v, "MODEL_CARD", dictionaries))
+        self.assertTrue(mirror.wanted(v, "espeak-ng-data/en_dict", dictionaries))
+        self.assertTrue(mirror.wanted(v, "espeak-ng-data/voices/!v/zac", dictionaries))
+        self.assertFalse(mirror.wanted(v, "espeak-ng-data/fr_dict", dictionaries))
+        self.assertFalse(mirror.wanted(v, "en.onnx.json", dictionaries))
+
+    def test_kitten_keeps_its_voices_file(self):
+        self.assertTrue(mirror.wanted(voice(voices="voices.bin"), "voices.bin", set()))
+
+
+class BuildZipTest(unittest.TestCase):
+    def test_same_files_give_the_same_bytes_whatever_their_dates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            digests = []
+            for run, mtime in enumerate((1_600_000_000, 1_700_000_000)):
+                archive = root / f"src{run}.tar.bz2"
+                make_archive(archive, FILES, mtime)
+                built = mirror.build_zip(voice(), archive, root / f"out{run}", ["en", "hi", "bn"])
+                digests.append(hashlib.sha256(built.path.read_bytes()).hexdigest())
+            self.assertEqual(digests[0], digests[1])
+
+    def test_zip_is_flat_stored_and_trimmed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            archive = root / "src.tar.bz2"
+            make_archive(archive, FILES, 1_600_000_000)
+            built = mirror.build_zip(voice(), archive, root / "out", ["en"])
+            self.assertEqual(built.path.name, f"piper-en-test-{built.sha256[:12]}.zip")
+            with zipfile.ZipFile(built.path) as zf:
+                names = zf.namelist()
+                self.assertEqual(names, sorted(names))
+                self.assertIn("en.onnx", names)
+                self.assertIn("espeak-ng-data/en_dict", names)
+                self.assertNotIn("espeak-ng-data/fr_dict", names)
+                self.assertTrue(all(i.compress_type == zipfile.ZIP_STORED for i in zf.infolist()))
+
+    def test_missing_model_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            archive = root / "src.tar.bz2"
+            make_archive(archive, {k: v for k, v in FILES.items() if not k.endswith("en.onnx")}, 0)
+            with self.assertRaises(ValueError):
+                mirror.build_zip(voice(), archive, root / "out", ["en"])
+
+    def test_pins_are_checked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            archive = root / "src.tar.bz2"
+            make_archive(archive, FILES, 0)
+            built = mirror.build_zip(voice(), archive, root / "out", ["en"])
+            self.assertEqual(len(built.problems()), 3)
+            pinned = voice(file=built.pinned_name, sha256=built.sha256, size_bytes=built.size_bytes)
+            self.assertEqual(mirror.Built(pinned, built.path, built.sha256, built.size_bytes).problems(), [])
+
+
+class CatalogTest(unittest.TestCase):
+    def test_repo_catalog_parses_and_pins_look_valid(self):
+        root, voices = mirror.load_catalog(Path(__file__).resolve().parents[2] / "speech" / "models.json")
+        self.assertTrue(root["baseUrl"].startswith("https://"))
+        for v in voices:
+            self.assertEqual(len(v.sha256), 64, v.id)
+            self.assertEqual(v.file, f"{v.id}-{v.sha256[:12]}.zip")
+            self.assertGreater(v.size_bytes, 0)
+
+
+if __name__ == "__main__":
+    unittest.main()

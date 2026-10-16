@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/SettingsScreen.kt
-// Purpose: Settings: background reading (P1-06), Share logs (P1-07), the app version, and a debug-only session tool.
+// Purpose: Settings: background reading (P1-06), Voices (P4-01), Share logs (P1-07), version, and a debug tool.
 
 package io.github.skm0078.audora.ui.settings
 
@@ -39,6 +39,7 @@ fun SettingsScreen(
     showDebugTools: Boolean,
     onBack: () -> Unit,
     onOpenBatterySetup: () -> Unit,
+    onOpenVoices: () -> Unit,
     onShareLogs: () -> Unit,
     onSimulateReadingSession: () -> Unit,
     modifier: Modifier = Modifier,
@@ -58,6 +59,12 @@ fun SettingsScreen(
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).verticalScroll(rememberScrollState())) {
             BatteryItem(batteryExempt, onOpenBatterySetup)
+            HorizontalDivider()
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.settings_voices_title)) },
+                supportingContent = { Text(stringResource(R.string.settings_voices_body)) },
+                modifier = Modifier.clickable(onClick = onOpenVoices),
+            )
             HorizontalDivider()
             ShareLogsItem(shareState, onShareLogs)
             HorizontalDivider()
@@ -128,6 +135,7 @@ private fun SettingsScreenPreview() {
             showDebugTools = true,
             onBack = {},
             onOpenBatterySetup = {},
+            onOpenVoices = {},
             onShareLogs = {},
             onSimulateReadingSession = {},
         )
