@@ -2,6 +2,16 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## P5-02 — Developer verification readiness (2026-10-16)
+- **Done (by the maintainer, in the Android Developer Console):** free limited distribution account (Personal; no fee, no ID). Package `io.github.skm0078.audora` registered with the release certificate `A4:A5:58:…:F8:EA`: status *Registered*, key *Verified*. This meets the ticket's done-when ahead of India's enforcement.
+- **What Google's docs say (checked 2026-10-16):** enforcement began 2026-09-30 in Brazil, Indonesia, Singapore and Thailand for installs from seven named stores; sideloads are not affected yet. The rest of the world, India included, follows in 2027 with no month given. A limited account covers up to 20 devices, each authorized once (link or QR → code on the phone → **Add device**); full distribution costs $25 plus ID, so it is out under the zero-spend rule.
+- **README:** new "Add your phone (once)" step for friends. **RELEASING.md:** how to add or remove a device, the 20-device cap, what a key change means for the registration, and why the dev build is not registered.
+- No code changes; no ADR (ADR-006 already chose limited distribution).
+
+**Known limits:** past 20 phones, Audora needs the paid account or each extra friend uses Android's advanced flow. The dev build's package is not registered.
+
+**Real-device check (batch with the v0.1.0 checks):** the Moto shows up under **Devices** after the link-and-code handshake; once enforcement reaches India, check that a release installs and updates on an authorized phone.
+
 ## ADR-031 — One signing key for dev builds (2026-10-16)
 - **Problem (confirmed):** every CI run signed the debug APK with a key made in that run (the published `dev-build` APK's certificate dates from 2026-10-15 22:06:38 UTC, inside the run that published it). A newer dev build could not install over an older one, so each test install meant uninstalling and losing the library and reading positions.
 - **Change:** `android.yml` restores a fixed debug keystore from the repository secret `AUDORA_DEBUG_KEYSTORE_B64` before building, and checks that the debug APK carries that key's certificate. Without the secret nothing changes (throwaway key, as before), so this commit is safe to merge before the secret exists. One secret only: the keystore password is Android's public debug convention (`android`). ADR-031; how to add or replace it in `docs/RELEASING.md`; README's test-build note updated.
