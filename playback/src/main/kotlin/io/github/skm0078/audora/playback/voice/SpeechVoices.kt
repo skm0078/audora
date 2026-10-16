@@ -16,6 +16,7 @@ import io.github.skm0078.audora.speech.BundledSpeech
 import io.github.skm0078.audora.speech.SpeechEngine
 import io.github.skm0078.audora.speech.SpeechEngines
 import io.github.skm0078.audora.speech.SpeechError
+import io.github.skm0078.audora.speech.route.VoiceSource
 import io.github.skm0078.audora.speech.system.SystemSpeechEngine
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
 import java.util.concurrent.ConcurrentHashMap
@@ -29,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap
  * then the default (Build Spec §3): English = the bundled neural voice; Hindi and Bengali = the phone's best offline
  * voice for the language. Thread-safe: the render worker resolves voices while the main thread may change them.
  */
-class SpeechVoices(private val engines: VoiceEngines) {
+class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
     private val chosen = ConcurrentHashMap<Lang, VoiceId>()
     private val defaults = ConcurrentHashMap<Lang, VoiceId>()
 
@@ -39,7 +40,7 @@ class SpeechVoices(private val engines: VoiceEngines) {
     }
 
     /** The voice reading [lang]. Suspends while the phone's TTS binds to find a default. */
-    suspend fun voiceFor(lang: Lang): Outcome<VoiceId, SpeechError> {
+    override suspend fun voiceFor(lang: Lang): Outcome<VoiceId, SpeechError> {
         val known = chosen[lang] ?: engines.preferred(lang) ?: defaults[lang]
         if (known != null) return Outcome.Success(known)
         val resolved = if (lang == Lang.EN) engines.bundled().map { it.voice.id } else engines.system().bestVoice(lang)
@@ -47,7 +48,7 @@ class SpeechVoices(private val engines: VoiceEngines) {
         return resolved
     }
 
-    fun engine(id: EngineId): Outcome<SpeechEngine, SpeechError> = when (id) {
+    override fun engine(id: EngineId): Outcome<SpeechEngine, SpeechError> = when (id) {
         EngineId.SHERPA -> engines.bundled().map { it.engine }
         EngineId.SYSTEM -> Outcome.Success(engines.system())
     }
