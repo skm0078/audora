@@ -12,12 +12,17 @@ import java.util.Properties
 /**
  * One voice the user can download: its sherpa-onnx files plus where the zip is and what it must hash to.
  * [spec]'s `contentVersion` is [sha256], so an installed copy from an older pin shows as an update.
+ *
+ * @property credits for the licences screen (P3-06); null only for an asset written by an older build.
+ * @property recommended its language's suggested download (speech/models.json `recommended`, ADR-030).
  */
 data class CatalogVoice(
     val spec: SherpaVoiceSpec,
     override val url: String,
     override val sha256: String,
     override val sizeBytes: Long,
+    val credits: VoiceCredits? = null,
+    val recommended: Boolean = false,
 ) : PinnedFile {
     override val id: String get() = spec.id
 }
@@ -40,13 +45,15 @@ class VoiceCatalog(val voices: List<CatalogVoice>) {
 }
 
 /**
- * Parses one catalog entry: the `voice.properties` keys of [SherpaVoiceManifest] plus `url`, `sha256` and
- * `sizeBytes`. The build already validated it; this guards against a hand-edited asset or a build bug.
+ * Parses one catalog entry: the `voice.properties` keys of [SherpaVoiceManifest] plus `url`, `sha256`,
+ * `sizeBytes`, the credits ([VoiceCredits]) and `recommended`. The build already validated it; this guards against
+ * a hand-edited asset or a build bug.
  */
 object CatalogVoiceParser {
     private const val KEY_URL = "url"
     private const val KEY_SHA256 = "sha256"
     private const val KEY_SIZE = "sizeBytes"
+    private const val KEY_RECOMMENDED = "recommended"
     private const val HTTPS = "https://"
     private val SHA256_HEX = Regex("[0-9a-f]{64}")
 
@@ -57,9 +64,21 @@ object CatalogVoiceParser {
             val size = properties.getProperty(KEY_SIZE)?.trim()?.toLongOrNull()
             when {
                 !url.startsWith(HTTPS) -> Outcome.Failure("catalog voice ${spec.id} needs an https url, has '$url'")
+
                 !SHA256_HEX.matches(sha256) -> Outcome.Failure("catalog voice ${spec.id} has an invalid sha256")
+
                 size == null || size <= 0 -> Outcome.Failure("catalog voice ${spec.id} has an invalid sizeBytes")
-                else -> Outcome.Success(CatalogVoice(spec.copy(contentVersion = sha256), url, sha256, size))
+
+                else -> Outcome.Success(
+                    CatalogVoice(
+                        spec = spec.copy(contentVersion = sha256),
+                        url = url,
+                        sha256 = sha256,
+                        sizeBytes = size,
+                        credits = VoiceCredits.parse(properties),
+                        recommended = properties.getProperty(KEY_RECOMMENDED)?.trim().toBoolean(),
+                    ),
+                )
             }
         }
 }

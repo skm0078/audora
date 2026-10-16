@@ -134,6 +134,28 @@ class BuildZipTest(unittest.TestCase):
             self.assertEqual(mirror.Built(pinned, built.path, built.sha256, built.size_bytes).problems(), [])
 
 
+class ZipSourceTest(unittest.TestCase):
+    def test_a_zip_source_gives_the_same_bytes_as_the_tar_of_the_same_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            tar = root / "src.tar.bz2"
+            make_archive(tar, FILES, 1_600_000_000)
+            source_zip = root / "src.zip"
+            with zipfile.ZipFile(source_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+                zf.writestr("vits-piper-en-test/", b"")
+                for name, data in FILES.items():
+                    zf.writestr(name, data)
+            from_tar = mirror.build_zip(voice(), tar, root / "a", ["en"])
+            from_zip = mirror.build_zip(voice(), source_zip, root / "b", ["en"])
+            self.assertEqual(from_tar.sha256, from_zip.sha256)
+
+    def test_source_url_defaults_to_the_sherpa_tarball(self):
+        base = "https://example.test/tts-models/"
+        self.assertEqual(voice().source(base), base + "vits-piper-en-test.tar.bz2")
+        own = "https://example.test/s1-voices/x.zip"
+        self.assertEqual(voice(source_url=own).source(base), own)
+
+
 class CatalogTest(unittest.TestCase):
     def test_repo_catalog_parses_and_pins_look_valid(self):
         root, voices = mirror.load_catalog(Path(__file__).resolve().parents[2] / "speech" / "models.json")
@@ -142,6 +164,16 @@ class CatalogTest(unittest.TestCase):
             self.assertEqual(len(v.sha256), 64, v.id)
             self.assertEqual(v.file, f"{v.id}-{v.sha256[:12]}.zip")
             self.assertGreater(v.size_bytes, 0)
+
+    def test_every_voice_is_credited_and_recommendations_name_a_voice_of_their_language(self):
+        root, _ = mirror.load_catalog(Path(__file__).resolve().parents[2] / "speech" / "models.json")
+        langs = {entry["id"]: entry["lang"] for entry in root["voices"]}
+        for entry in root["voices"]:
+            self.assertTrue(entry["credit"].strip(), entry["id"])
+            self.assertTrue(entry["licenceUrl"].startswith("https://"), entry["id"])
+            self.assertTrue(entry["sourceUrl"].startswith("https://"), entry["id"])
+        for lang, voice_id in root["recommended"].items():
+            self.assertEqual(langs.get(voice_id), lang, voice_id)
 
 
 if __name__ == "__main__":

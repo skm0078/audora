@@ -38,6 +38,16 @@ class ReadingVoices(private val preferences: VoicePreferences) {
         AudoraLog.i(TAG, "Reading voice for ${lang.name} set to ${voice ?: "default"}")
     }
 
+    /**
+     * Makes [voice] read [lang] only if the user has not picked one; true if it did. Used when the first voice of a
+     * language finishes downloading (P3-06): the user downloaded it to hear it.
+     */
+    fun chooseIfUnset(lang: Lang, voice: VoiceId): Boolean = synchronized(lock) {
+        if (current().containsKey(lang)) return false
+        choose(lang, voice)
+        true
+    }
+
     /** A deleted voice stops being any language's choice. */
     fun forget(voice: VoiceId) {
         current().filterValues { it == voice }.keys.forEach { choose(it, null) }

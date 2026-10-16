@@ -38,6 +38,15 @@ class ReadingVoicesTest {
     }
 
     @Test
+    fun `a first download takes an unset language but never replaces a choice`() {
+        val other = voiceSpec("piper-hi-other", Lang.HI).voiceId
+
+        assertEquals(true, voices.chooseIfUnset(Lang.HI, hindi))
+        assertEquals(false, voices.chooseIfUnset(Lang.HI, other))
+        assertEquals(mapOf(Lang.HI to hindi), ReadingVoices(VoicePreferences(file)).current())
+    }
+
+    @Test
     fun `choosing null or forgetting a deleted voice goes back to the default`() {
         voices.choose(Lang.EN, cori)
         voices.choose(Lang.HI, hindi)

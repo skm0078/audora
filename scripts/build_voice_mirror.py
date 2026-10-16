@@ -2,6 +2,8 @@
 # File: scripts/build_voice_mirror.py
 # Purpose: Builds the downloadable voice zips named in speech/models.json from their SHA-pinned upstream
 #          sherpa-onnx archives, byte-for-byte reproducibly, and checks them against the catalog's pins (ADR-022).
+#          A source is a sherpa-onnx .tar.bz2 by default; a voice sherpa-onnx does not publish (the Bengali Piper and MMS
+#          conversions, P3-06) names a pinned .zip on this repo's s1-voices release instead (source.url, ADR-030).
 #
 # Why zips: the phone has no bzip2 (adding one is a new dependency) and java.util.zip reads zips. Why reproducible:
 # the pins are written into the catalog before the release asset exists, and CI rebuilds the same bytes to publish.
@@ -41,6 +43,8 @@ SUPERTONIC_PARTS = (
     "unicode_indexer.bin",
 )
 CHUNK_BYTES = 1 << 20
+TAR_SUFFIX = ".tar.bz2"
+ZIP_SUFFIX = ".zip"
 
 
 @dataclass(frozen=True)
@@ -57,6 +61,11 @@ class Voice:
     file: str
     sha256: str
     size_bytes: int
+    # Full URL of a .zip source; None means sourceBaseUrl + archive + ".tar.bz2".
+    source_url: str | None = None
+
+    def source(self, base_url: str) -> str:
+        return self.source_url or f"{base_url}{self.archive}{TAR_SUFFIX}"
 
     def required_files(self) -> list[str]:
         """Single files the voice cannot load without (espeak-ng-data is checked separately)."""
@@ -107,11 +116,15 @@ def load_catalog(path: Path) -> tuple[dict, list[Voice]]:
                 file=entry["file"],
                 sha256=entry["sha256"].lower(),
                 size_bytes=int(entry["sizeBytes"]),
+                source_url=source.get("url"),
             )
         )
     ids = [v.id for v in voices]
     if len(set(ids)) != len(ids):
         raise ValueError(f"duplicate voice ids in {path}: {ids}")
+    for v in voices:
+        if v.source_url is not None and not (v.source_url.startswith("https://") and v.source_url.endswith(ZIP_SUFFIX)):
+            raise ValueError(f"{v.id}: source.url must be an https .zip, is {v.source_url}")
     return root, voices
 
 
@@ -125,12 +138,12 @@ def sha256_of(path: Path) -> str:
 
 def fetch_source(voice: Voice, base_url: str, cache: Path) -> Path:
     """Downloads the upstream archive once (cached by its SHA-256) and fails on a mismatch."""
-    cached = cache / f"{voice.source_sha256}.tar.bz2"
+    url = voice.source(base_url)
+    cached = cache / (voice.source_sha256 + (ZIP_SUFFIX if url.endswith(ZIP_SUFFIX) else TAR_SUFFIX))
     if cached.is_file() and sha256_of(cached) == voice.source_sha256:
         return cached
     cache.mkdir(parents=True, exist_ok=True)
     partial = cached.with_suffix(".partial")
-    url = f"{base_url}{voice.archive}.tar.bz2"
     print(f"Downloading {url}", flush=True)
     with urllib.request.urlopen(url) as response, partial.open("wb") as out:  # noqa: S310 (pinned https URL)
         while chunk := response.read(CHUNK_BYTES):
@@ -154,10 +167,17 @@ def wanted(voice: Voice, relative: str, dictionaries: set[str]) -> bool:
     return False
 
 
-def build_zip(voice: Voice, archive: Path, out_dir: Path, espeak_dictionaries: list[str]) -> Built:
-    dictionaries = {f"{lang}{DICT_SUFFIX}" for lang in espeak_dictionaries}
+def read_members(voice: Voice, archive: Path, dictionaries: set[str]) -> dict[str, bytes]:
+    """The wanted files under the archive's top folder (named like the archive), from a .tar.bz2 or a .zip."""
     prefix = voice.archive + "/"
     members: dict[str, bytes] = {}
+    if archive.name.endswith(ZIP_SUFFIX):
+        with zipfile.ZipFile(archive) as zf:
+            for info in zf.infolist():
+                relative = info.filename[len(prefix):]
+                if not info.is_dir() and info.filename.startswith(prefix) and wanted(voice, relative, dictionaries):
+                    members[relative] = zf.read(info)
+        return members
     with tarfile.open(archive, mode="r:bz2") as tar:
         for member in tar:
             if not member.isfile() or not member.name.startswith(prefix):
@@ -168,6 +188,12 @@ def build_zip(voice: Voice, archive: Path, out_dir: Path, espeak_dictionaries: l
                 if extracted is None:
                     raise ValueError(f"{member.name} unreadable")
                 members[relative] = extracted.read()
+    return members
+
+
+def build_zip(voice: Voice, archive: Path, out_dir: Path, espeak_dictionaries: list[str]) -> Built:
+    dictionaries = {f"{lang}{DICT_SUFFIX}" for lang in espeak_dictionaries}
+    members = read_members(voice, archive, dictionaries)
 
     missing = [name for name in voice.required_files() if name not in members]
     if voice.data_dir and not any(name.startswith(voice.data_dir + "/") for name in members):

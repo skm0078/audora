@@ -46,6 +46,46 @@ class CatalogVoiceParserTest {
     }
 
     @Test
+    fun `credits and the recommended flag are read when present`() {
+        val voice = requireNotNull(
+            CatalogVoiceParser.parse(
+                entry(
+                    "credit" to "Voice by someone",
+                    "licenceUrl" to "https://creativecommons.org/licenses/by-sa/4.0/",
+                    "sourceUrl" to "https://example.test/voice",
+                    "recommended" to "true",
+                ),
+            ).getOrNull(),
+        )
+
+        assertEquals(
+            VoiceCredits(
+                "Voice by someone",
+                "https://creativecommons.org/licenses/by-sa/4.0/",
+                "https://example.test/voice",
+            ),
+            voice.credits,
+        )
+        assertTrue(voice.recommended)
+    }
+
+    @Test
+    fun `an entry without credits still parses, with none and not recommended`() {
+        val cases = listOf(
+            entry(),
+            entry("credit" to "x", "licenceUrl" to "https://a.test", "sourceUrl" to null),
+            entry("credit" to "x", "licenceUrl" to "http://a.test", "sourceUrl" to "https://b.test"),
+            entry("credit" to " ", "licenceUrl" to "https://a.test", "sourceUrl" to "https://b.test"),
+            entry("recommended" to "yes"),
+        )
+        cases.forEachIndexed { index, properties ->
+            val voice = requireNotNull(CatalogVoiceParser.parse(properties).getOrNull()) { "case $index" }
+            if (index < cases.lastIndex) assertNull("case $index", voice.credits)
+            assertEquals("case $index", false, voice.recommended)
+        }
+    }
+
+    @Test
     fun `invalid entries are refused`() {
         val cases = listOf(
             entry("url" to "http://example.test/a.zip"),

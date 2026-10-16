@@ -1,7 +1,8 @@
 // File: build-logic/convention/src/main/kotlin/VoiceCatalogAssetsTask.kt
 // Purpose: Validates speech/models.json and packs it into :speech's assets as one voice.properties-style file per
 //          downloadable voice (P4-01, ADR-022), so the app parses it without a JSON library. The bundled voice is
-//          left out: it is already in the APK.
+//          left out: it is already in the APK. Each entry carries its credits for the licences screen and whether it
+//          is its language's recommended voice (P3-06, ADR-030).
 
 import groovy.json.JsonSlurper
 import java.io.File
@@ -55,11 +56,26 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
         fileSystem.delete { delete(outputDirectory) }
         val target = outputDirectory.get().dir(ASSET_DIR).asFile.apply { mkdirs() }
         val packed = entries.filter { it.text("id") != bundledId }
-        packed.forEach { entry -> File(target, "${entry.text("id")}.properties").writeText(manifest(entry, baseUrl)) }
+        val recommended = recommendedIds(root, packed)
+        packed.forEach { entry ->
+            val id = entry.text("id")
+            File(target, "$id.properties").writeText(manifest(entry, baseUrl, id in recommended))
+        }
         logger.lifecycle("Voice catalog: ${packed.map { it.text("id") }} (bundled $bundledId left out)")
     }
 
-    private fun manifest(entry: Map<String, Any?>, baseUrl: String): String {
+    /** `recommended` maps a language to its default download (one line to change after the listening test). */
+    private fun recommendedIds(root: Map<String, Any?>, packed: List<Map<String, Any?>>): Set<String> {
+        val byId = packed.associateBy { it.text("id") }
+        val recommended = (root["recommended"] as? Map<*, *>).orEmpty()
+        recommended.forEach { (lang, id) ->
+            val entry = byId[id.toString()] ?: fail("recommended voice '$id' for $lang is not a downloadable voice")
+            if (entry.text("lang") != lang.toString()) fail("recommended voice '$id' does not speak $lang")
+        }
+        return recommended.values.map { it.toString() }.toSet()
+    }
+
+    private fun manifest(entry: Map<String, Any?>, baseUrl: String, recommended: Boolean): String {
         val id = entry.text("id")
         val sha256 = entry.text("sha256").lowercase()
         val size = (entry["sizeBytes"] as? Number)?.toLong() ?: 0L
@@ -73,6 +89,7 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
             entry.text("lang") !in LANGS -> fail("$id: lang must be one of $LANGS")
         }
         validateEngine(id, entry)
+        CREDIT_LINKS.forEach { key -> if (!entry.text(key).startsWith("https://")) fail("$id: $key must be https") }
         val values = sortedMapOf(
             "id" to id,
             "label" to entry.text("label"),
@@ -87,6 +104,10 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
             "engineLang" to entry["engineLang"]?.toString(),
             "numSteps" to (entry["numSteps"] as? Number)?.toInt()?.toString(),
             "licence" to entry.text("licence"),
+            "credit" to entry.text("credit"),
+            "licenceUrl" to entry.text("licenceUrl"),
+            "sourceUrl" to entry.text("sourceUrl"),
+            "recommended" to recommended.toString(),
             "contentVersion" to sha256,
             "url" to "$baseUrl$file",
             "sha256" to sha256,
@@ -129,5 +150,6 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
         val FAMILIES = setOf("vits", "kitten", "kokoro", "supertonic")
         val NEEDS_VOICES = setOf("kitten", "kokoro", "supertonic")
         val NEEDS_ENGINE_LANG = setOf("kokoro", "supertonic")
+        val CREDIT_LINKS = listOf("licenceUrl", "sourceUrl")
     }
 }

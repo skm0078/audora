@@ -98,6 +98,9 @@ abstract class BundledVoiceAssetsTask : DefaultTask() {
             dataDir = entry["dataDir"]?.toString(),
             speakerId = (entry["speakerId"] as? Number)?.toInt() ?: 0,
             licence = entry.string("licence"),
+            credit = entry.string("credit"),
+            licenceUrl = entry.string("licenceUrl"),
+            sourceUrl = entry.string("sourceUrl"),
             espeakDictionaries = dictionaries,
         )
     }
@@ -162,6 +165,10 @@ abstract class BundledVoiceAssetsTask : DefaultTask() {
         val dataDir: String?,
         val speakerId: Int,
         val licence: String,
+        // Shown on the licences screen (P3-06, ADR-030).
+        val credit: String,
+        val licenceUrl: String,
+        val sourceUrl: String,
         val espeakDictionaries: List<String>,
     ) {
         /** voice.properties, read by :speech's SherpaVoiceManifest. Written by hand: Properties.store adds a date. */
@@ -177,6 +184,9 @@ abstract class BundledVoiceAssetsTask : DefaultTask() {
                 "dataDir" to dataDir,
                 "speakerId" to speakerId.toString(),
                 "licence" to licence,
+                "credit" to credit,
+                "licenceUrl" to licenceUrl,
+                "sourceUrl" to sourceUrl,
                 "contentVersion" to "$sha256+dicts=${espeakDictionaries.sorted().joinToString(",")}",
             )
             return values.entries.filter { it.value != null }.joinToString("\n", postfix = "\n") { (key, value) ->

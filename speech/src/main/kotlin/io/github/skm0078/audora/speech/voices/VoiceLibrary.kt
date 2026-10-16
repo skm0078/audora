@@ -49,6 +49,8 @@ class VoiceLibrary private constructor(
     /** The APK's own voice; null only for a broken build (logged by [SpeechEngines.bundled]). */
     val bundled: SherpaVoiceSpec? by lazy { SpeechEngines.readBundledSpec(appContext.assets).getOrNull() }
 
+    private val bundledCredits: VoiceCredits? by lazy { SpeechEngines.readBundledCredits(appContext.assets) }
+
     /** The downloadable voices this APK knows, minus the bundled one. */
     val catalog: VoiceCatalog by lazy { readCatalog(appContext.assets, bundled?.id) }
 
@@ -111,8 +113,20 @@ class VoiceLibrary private constructor(
         downloader = ResumableDownloader(UrlConnectionHttpSource(config, USER_AGENT), config),
         installer = VoiceArchiveInstaller(files, config),
         config = config,
-        onInstalled = { synchronized(lock) { refreshLocked() } },
+        onInstalled = { voice ->
+            synchronized(lock) { refreshLocked() }
+            // A language without a voice of its own in the APK (Hindi, Bengali) reads with the phone's voice until
+            // the user picks one; the first voice they download for it reads it from then on (P3-06, ADR-030). A
+            // language with a choice keeps it, and the bundled voice's language keeps its default.
+            val spec = voice.spec
+            if (spec.lang != bundled?.lang) readingVoices.chooseIfUnset(spec.lang, spec.voiceId)
+        },
     )
+
+    /** Every voice's credits for the "Voices & licences" screen (P3-06). Reads the disk on the IO dispatcher. */
+    suspend fun licences(): List<VoiceLicence> = withContext(Dispatchers.IO) {
+        VoiceLicences.build(bundled, bundledCredits, catalog, installedNow())
+    }
 
     private fun installedNow(): List<InstalledVoice> = installedState.value ?: synchronized(lock) {
         installedState.value ?: run {
