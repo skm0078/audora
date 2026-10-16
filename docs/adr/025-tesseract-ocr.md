@@ -68,6 +68,6 @@ nothing, for a scan). Measured on the S2 corpus with desktop Tesseract 5.3.4 and
 - The device test (`TesseractOcrTest`) reads page 1 of the degraded en/hi/bn UDHR scans with the real Tesseract and
   PDFium on the CI emulator and fails above 10 % CER; the build downloads the pinned models into the test APK.
 - The golden corpus is unchanged: its JVM pipeline has no OCR engine.
-- **Known limits:** running headers on OCR'd pages are read (only page numbers are dropped without positions); no
-  rotation or orientation detection; no sentence highlight boxes on OCR'd pages; the first page of a scanned book
+- **Known limits:** ~~running headers on OCR'd pages are read (only page numbers are dropped without positions); no
+  rotation or orientation detection; no sentence highlight boxes on OCR'd pages~~ (fixed in ADR-032); the first page of a scanned book
   costs one extra low-resolution probe.

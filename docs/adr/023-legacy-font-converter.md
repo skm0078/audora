@@ -64,7 +64,6 @@ list, a Bangladeshi college notice and a typed diary) showed:
 - Real files: the UP press release, DMPI college notice, Bihar press release, Kundli salary list and diary read
   correctly, unknown rate ≈ 0, every legacy page → `LEGACY_FONT`. The Gazette goes to OCR for the Unicode-map errors
   of its other fonts; ChanakyaUni stays on its text layer.
-- **Known limits:** rotated text in a table header converts in drawing order; a second "Chanakya" layout (one
-  Rajasthan file, f = द्ध) is read with Gazette Chanakya's table and mangles that glyph (its unknown rate stays low,
-  so it is not caught); typos in the source PDF are read as typed; NFC of nukta letters is P3-02's.
+- **Known limits:** ~~rotated text in a table header converts in drawing order; a second "Chanakya" layout (one
+  Rajasthan file, f = द्ध) is read with Gazette Chanakya's table and mangles that glyph~~ (fixed in ADR-032); typos in the source PDF are read as typed; NFC of nukta letters is P3-02's.
 - Adding a font is a config entry when its layout matches a known encoding, else a new table and encoding.
