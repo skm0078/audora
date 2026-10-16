@@ -24,16 +24,24 @@ import kotlinx.coroutines.runBlocking
  * expects; the engine stays usable (SpeechEngine contract).
  *
  * Each part of a mixed-script sentence is read by its language's voice (P3-01, ADR-026); the voices come from
- * [voices], so a change in Settings → Voices applies from the next sentence rendered.
+ * [voices], so a change in Settings → Voices applies from the next sentence rendered. Each render is timed for
+ * [speed], which sizes the render-ahead window (P4-02).
  */
-class EngineRenderer(voices: VoiceSource, config: ScriptRoutingConfig = ScriptRoutingConfig()) : SentenceRenderer {
+class EngineRenderer(
+    voices: VoiceSource,
+    config: ScriptRoutingConfig = ScriptRoutingConfig(),
+    private val speed: RenderSpeedTracker? = null,
+) : SentenceRenderer {
     private val speech = RoutedSpeech(voices, ScriptRouter(config))
 
-    override fun render(unit: ReadingUnit): Outcome<PcmAudio, SpeechError> =
-        runBlocking { speech.render(unit.text, unit.lang) }.map { routed ->
+    override fun render(unit: ReadingUnit): Outcome<PcmAudio, SpeechError> {
+        val started = System.nanoTime()
+        return runBlocking { speech.render(unit.text, unit.lang) }.map { routed ->
+            speed?.onRendered(unit.text.trim().length, routed, System.nanoTime() - started)
             log(unit, routed)
             routed.audio
         }
+    }
 
     /** Context only (page, sentence, languages), never the sentence's text. */
     private fun log(unit: ReadingUnit, routed: RoutedAudio) {

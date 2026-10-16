@@ -19,6 +19,8 @@ import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.route.VoiceSource
 import io.github.skm0078.audora.speech.system.SystemSpeechEngine
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
+import io.github.skm0078.audora.speech.voices.VoiceSpeed
+import io.github.skm0078.audora.speech.voices.VoiceSpeeds
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -39,9 +41,18 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
         AudoraLog.i(TAG, "Voice for ${lang.name} set to $voice")
     }
 
+    /**
+     * The voice that reads [lang] now if it is already known, without binding the phone's TTS: what the render-ahead
+     * window sizes for. Null before the language's default was first resolved.
+     */
+    fun knownVoice(lang: Lang): VoiceId? = chosen[lang] ?: engines.preferred(lang) ?: defaults[lang]
+
+    /** How fast the voice reading [lang] renders on this phone; null if unknown or not measured yet (P4-02). */
+    fun speedOf(lang: Lang): VoiceSpeed? = knownVoice(lang)?.let { engines.speeds().get(it) }
+
     /** The voice reading [lang]. Suspends while the phone's TTS binds to find a default. */
     override suspend fun voiceFor(lang: Lang): Outcome<VoiceId, SpeechError> {
-        val known = chosen[lang] ?: engines.preferred(lang) ?: defaults[lang]
+        val known = knownVoice(lang)
         if (known != null) return Outcome.Success(known)
         val resolved = if (lang == Lang.EN) engines.bundled().map { it.voice.id } else engines.system().bestVoice(lang)
         if (resolved is Outcome.Success) defaults.putIfAbsent(lang, resolved.value)
@@ -72,9 +83,13 @@ class VoiceEngines(context: Context, config: SpeechConfig = SpeechConfig()) {
 
     fun bundled(): Outcome<BundledSpeech, SpeechError> = bundled.value
 
+    /** Measured voice speeds, shared with the Voices screen. */
+    fun speeds(): VoiceSpeeds = library.value.speeds
+
     fun system(): SystemSpeechEngine = system.value
 
     fun release() {
+        if (library.isInitialized()) library.value.speeds.save()
         if (bundled.isInitialized()) bundled.value.getOrNull()?.engine?.release()
         if (system.isInitialized()) system.value.release()
     }

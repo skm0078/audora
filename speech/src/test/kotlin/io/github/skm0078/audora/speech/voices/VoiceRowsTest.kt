@@ -83,4 +83,19 @@ class VoiceRowsTest {
         assertEquals(true, custom.readsLanguage)
         assertEquals("CUSTOM:custom-mine-1", custom.key)
     }
+
+    @Test
+    fun `measured speed shows on its voice, and a slow one is marked too slow`() {
+        val config = io.github.skm0078.audora.core.config.VoiceSpeedConfig()
+        val fast = VoiceSpeed(rtf = 0.2, charsPerSecond = 15.0, measuredSeconds = 300.0)
+        val slow = VoiceSpeed(rtf = 2.5, charsPerSecond = 15.0, measuredSeconds = 300.0)
+        val speeds = VoiceRows.Speeds(mapOf(bundled.voiceId to fast, hindi.spec.voiceId to slow), config)
+
+        val rows = VoiceRows.withSpeeds(rows(installed = listOf(installed(hindi))), speeds)
+
+        assertEquals(fast, rows.single { it.kind == VoiceKind.BUILT_IN }.speed)
+        assertEquals(false, rows.single { it.kind == VoiceKind.BUILT_IN }.tooSlow)
+        assertEquals(true, rows.single { it.id == hindi.spec.voiceId }.tooSlow)
+        assertEquals(null, rows.single { it.id.name == cori.id }.speed)
+    }
 }

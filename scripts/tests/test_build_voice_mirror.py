@@ -20,9 +20,11 @@ import build_voice_mirror as mirror  # noqa: E402
 def voice(**overrides) -> mirror.Voice:
     values = dict(
         id="piper-en-test",
+        family="vits",
         model="en.onnx",
         tokens="tokens.txt",
         voices=None,
+        lexicon=None,
         data_dir="espeak-ng-data",
         archive="vits-piper-en-test",
         source_sha256="0" * 64,
@@ -69,6 +71,21 @@ class WantedTest(unittest.TestCase):
 
     def test_kitten_keeps_its_voices_file(self):
         self.assertTrue(mirror.wanted(voice(voices="voices.bin"), "voices.bin", set()))
+
+    def test_kokoro_keeps_its_lexicon_and_drops_the_other_languages(self):
+        v = voice(family="kokoro", model="model.int8.onnx", voices="voices.bin", lexicon="lexicon-us-en.txt")
+        self.assertTrue(mirror.wanted(v, "lexicon-us-en.txt", set()))
+        self.assertTrue(mirror.wanted(v, "voices.bin", set()))
+        self.assertFalse(mirror.wanted(v, "lexicon-zh.txt", set()))
+        self.assertFalse(mirror.wanted(v, "lexicon-gb-en.txt", set()))
+        self.assertFalse(mirror.wanted(v, "date-zh.fst", set()))
+        self.assertFalse(mirror.wanted(v, "dict/jieba.dict.utf8", set()))
+
+    def test_supertonic_keeps_its_parts_and_needs_no_tokens(self):
+        v = voice(family="supertonic", model="tts.json", voices="voice.bin", data_dir=None)
+        for name in ("tts.json", "voice.bin", *mirror.SUPERTONIC_PARTS):
+            self.assertTrue(mirror.wanted(v, name, set()), name)
+        self.assertNotIn("tokens.txt", v.required_files())
 
 
 class BuildZipTest(unittest.TestCase):

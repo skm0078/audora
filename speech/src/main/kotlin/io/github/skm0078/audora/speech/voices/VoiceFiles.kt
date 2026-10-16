@@ -163,6 +163,9 @@ internal object InstalledVoiceManifest {
         "speakerId" to spec.speakerId.toString(),
         "licence" to spec.licence,
         "contentVersion" to spec.contentVersion,
+        "lexicon" to spec.lexicon,
+        "engineLang" to spec.engineLang,
+        "numSteps" to spec.numSteps?.toString(),
         KEY_ORIGIN to origin.name,
     )
 }

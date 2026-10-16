@@ -66,13 +66,27 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
         val file = entry.text("file")
         when {
             !ID.matches(id) -> fail("id '$id' must be lower-case letters, digits and dashes")
+
             id.startsWith(CUSTOM_PREFIX) -> fail("id '$id' must not start with $CUSTOM_PREFIX (imported voices)")
+
             !SHA256.matches(sha256) -> fail("$id: sha256 must be 64 hex characters")
+
             size <= 0 -> fail("$id: sizeBytes must be > 0")
+
             file != "$id-${sha256.take(PIN_PREFIX)}.zip" -> fail("$id: file must be $id-${sha256.take(PIN_PREFIX)}.zip")
+
             entry.text("lang") !in LANGS -> fail("$id: lang must be one of $LANGS")
+
             entry.text("family") !in FAMILIES -> fail("$id: family must be one of $FAMILIES")
-            entry.text("family") == "kitten" && entry["voices"] == null -> fail("$id: a kitten voice needs voices")
+
+            entry.text("family") in NEEDS_VOICES && entry["voices"] == null ->
+                fail("$id: a ${entry.text("family")} voice needs voices")
+
+            entry.text("family") in NEEDS_ENGINE_LANG && entry["engineLang"] == null ->
+                fail("$id: a ${entry.text("family")} voice needs engineLang")
+
+            entry["numSteps"] != null && ((entry["numSteps"] as? Number)?.toInt() ?: 0) <= 0 ->
+                fail("$id: numSteps must be a number > 0")
         }
         val values = sortedMapOf(
             "id" to id,
@@ -84,6 +98,9 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
             "voices" to entry["voices"]?.toString(),
             "dataDir" to entry["dataDir"]?.toString(),
             "speakerId" to ((entry["speakerId"] as? Number)?.toInt() ?: 0).toString(),
+            "lexicon" to entry["lexicon"]?.toString(),
+            "engineLang" to entry["engineLang"]?.toString(),
+            "numSteps" to (entry["numSteps"] as? Number)?.toInt()?.toString(),
             "licence" to entry.text("licence"),
             "contentVersion" to sha256,
             "url" to "$baseUrl$file",
@@ -109,6 +126,8 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
         val ID = Regex("[a-z0-9]+(-[a-z0-9]+)*")
         val SHA256 = Regex("[0-9a-f]{64}")
         val LANGS = setOf("en", "hi", "bn")
-        val FAMILIES = setOf("vits", "kitten")
+        val FAMILIES = setOf("vits", "kitten", "kokoro", "supertonic")
+        val NEEDS_VOICES = setOf("kitten", "kokoro", "supertonic")
+        val NEEDS_ENGINE_LANG = setOf("kokoro", "supertonic")
     }
 }

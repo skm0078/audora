@@ -8,6 +8,7 @@ import android.content.res.AssetManager
 import android.net.Uri
 import androidx.work.WorkManager
 import io.github.skm0078.audora.core.config.VoiceDownloadConfig
+import io.github.skm0078.audora.core.config.VoiceSpeedConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
@@ -23,6 +24,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
@@ -33,7 +36,11 @@ import kotlinx.coroutines.withContext
  *
  * Network: only [downloads] uses it, through WorkManager, and only for URLs from the catalog inside the APK.
  */
-class VoiceLibrary private constructor(context: Context, val config: VoiceDownloadConfig) {
+class VoiceLibrary private constructor(
+    context: Context,
+    val config: VoiceDownloadConfig,
+    val speedConfig: VoiceSpeedConfig,
+) {
     private val appContext = context.applicationContext
     private val files = VoiceFiles(File(appContext.noBackupFilesDir, ROOT_DIR))
     private val installedState = MutableStateFlow<List<InstalledVoice>?>(null)
@@ -46,6 +53,9 @@ class VoiceLibrary private constructor(context: Context, val config: VoiceDownlo
     val catalog: VoiceCatalog by lazy { readCatalog(appContext.assets, bundled?.id) }
 
     val readingVoices = ReadingVoices(VoicePreferences(File(files.root, PREFERENCES_FILE)))
+
+    /** Each voice's speed on this phone, measured by the playback service (P4-02). Read from disk on first use. */
+    val speeds: VoiceSpeeds by lazy { VoiceSpeeds(File(files.root, SPEEDS_FILE), speedConfig) }
 
     val downloads = VoiceDownloads({ WorkManager.getInstance(appContext) }, { catalog }, files, config)
 
@@ -60,19 +70,25 @@ class VoiceLibrary private constructor(context: Context, val config: VoiceDownlo
     }
 
     /** Everything the Voices screen lists, updated as downloads progress. The work runs on the IO dispatcher. */
-    fun rows(): Flow<List<VoiceRow>> =
-        combine(installedState, readingVoices.choices, downloads.states()) { installed, chosen, running ->
-            VoiceRows.build(bundled, catalog, installed.orEmpty(), running, chosen.orEmpty())
-        }.onStart {
-            installedNow()
-            readingVoices.current()
-        }.flowOn(Dispatchers.IO)
+    fun rows(): Flow<List<VoiceRow>> = combine(
+        installedState,
+        readingVoices.choices,
+        downloads.states(),
+        flow { emitAll(speeds.all) }, // speeds read their file on first use: on the IO dispatcher, not here
+    ) { installed, chosen, running, measured ->
+        val judged = VoiceRows.Speeds(measured, speedConfig)
+        VoiceRows.withSpeeds(VoiceRows.build(bundled, catalog, installed.orEmpty(), running, chosen.orEmpty()), judged)
+    }.onStart {
+        installedNow()
+        readingVoices.current()
+    }.flowOn(Dispatchers.IO)
 
     /** Deletes a downloaded or imported voice; it also stops being the reading voice of its language. */
     suspend fun delete(id: String): Outcome<Unit, String> = withContext(Dispatchers.IO) {
         downloads.cancel(id)
         val result = synchronized(lock) { files.delete(id).also { refreshLocked() } }
         readingVoices.forget(VoiceId(EngineId.SHERPA, id))
+        speeds.forget(VoiceId(EngineId.SHERPA, id))
         result
     }
 
@@ -112,15 +128,19 @@ class VoiceLibrary private constructor(context: Context, val config: VoiceDownlo
         private const val TAG = "Speech.Voices"
         private const val ROOT_DIR = "voices/managed"
         private const val PREFERENCES_FILE = "reading-voices.properties"
+        private const val SPEEDS_FILE = "voice-speeds.properties"
         private const val USER_AGENT = "Audora (voice download)"
 
         @Volatile
         private var instance: VoiceLibrary? = null
 
-        fun get(context: Context, config: VoiceDownloadConfig = VoiceDownloadConfig()): VoiceLibrary =
-            instance ?: synchronized(this) {
-                instance ?: VoiceLibrary(context, config).also { instance = it }
-            }
+        fun get(
+            context: Context,
+            config: VoiceDownloadConfig = VoiceDownloadConfig(),
+            speedConfig: VoiceSpeedConfig = VoiceSpeedConfig(),
+        ): VoiceLibrary = instance ?: synchronized(this) {
+            instance ?: VoiceLibrary(context, config, speedConfig).also { instance = it }
+        }
     }
 }
 

@@ -32,12 +32,17 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.speech.voices.VoiceStatus
+import java.util.Locale
 
-/** The radio picks the reading voice; it is enabled only for voices that can speak now. */
+/**
+ * The radio picks the reading voice; it is enabled only for voices that can speak now and were not measured too slow
+ * on this phone (P4-02). A too-slow voice that already reads its language stays selected.
+ */
 @Composable
 internal fun VoiceRowItem(row: VoiceRow, actions: VoicesActions) {
-    val usable = row.status is VoiceStatus.BuiltIn || row.status is VoiceStatus.Installed ||
+    val canSpeak = row.status is VoiceStatus.BuiltIn || row.status is VoiceStatus.Installed ||
         row.status is VoiceStatus.UpdateAvailable
+    val usable = canSpeak && (!row.tooSlow || row.readsLanguage)
     ListItem(
         leadingContent = {
             RadioButton(selected = row.readsLanguage, onClick = { actions.onUse(row) }, enabled = usable)
@@ -46,6 +51,7 @@ internal fun VoiceRowItem(row: VoiceRow, actions: VoicesActions) {
         supportingContent = {
             Column {
                 StatusLine(row)
+                SpeedLine(row)
                 Text(
                     row.licence,
                     style = MaterialTheme.typography.bodySmall,
@@ -79,6 +85,24 @@ private fun StatusLine(row: VoiceRow) {
         )
 
         else -> Text(statusText(row))
+    }
+}
+
+/** Measured render speed, once the voice has read something on this phone. */
+@Composable
+private fun SpeedLine(row: VoiceRow) {
+    val speed = row.speed ?: return
+    if (row.tooSlow) {
+        Text(
+            stringResource(R.string.voices_speed_slow, String.format(Locale.getDefault(), ONE_DECIMAL, speed.rtf)),
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall,
+        )
+    } else if (speed.rtf > 0) {
+        Text(
+            stringResource(R.string.voices_speed_ok, String.format(Locale.getDefault(), ONE_DECIMAL, 1 / speed.rtf)),
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }
 
@@ -193,5 +217,6 @@ internal val HORIZONTAL_PADDING = 16.dp
 internal val HEADER_PADDING = 8.dp
 private val PROGRESS_TOP = 4.dp
 private const val MAX_LABEL_INPUT = 60
+private const val ONE_DECIMAL = "%.1f"
 private const val BYTES_PER_MB = 1024L * 1024
 private const val HALF_MB = BYTES_PER_MB / 2

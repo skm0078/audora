@@ -156,7 +156,7 @@ Runs lazily per page, two pages ahead of playback, cached per book (a few analys
 
 - Each playlist item is a `MediaItem` with a URI like `audora://book/<id>/page/<p>/unit/<i>` (optionally grouping 2–5 sentences per item; S3 measures whether grouping is needed).
 - A custom **`TtsDataSource`** resolves the URI by asking the render queue for that unit's PCM and serves it as WAV bytes. **If the audio is not ready, `read()` blocks**, so the player sits in **BUFFERING**, not ENDED. Media3 keeps the wake lock and the FGS in BUFFERING, so synthesis continues with the screen off. *(C5)*
-- A **render-ahead queue** (coroutine in the service) prefetches N units ahead (3 for fast voices, measured-RTF-based for Kokoro) into a bounded cache (~20 MB, LRU, `cacheDir/tts/`).
+- A **render-ahead queue** (coroutine in the service) prefetches N units ahead (3 for fast voices, measured-RTF-based for Kokoro) into a bounded cache (~20 MB, LRU, `cacheDir/tts/`). *(P4-02, ADR-027: the window is seconds of audio from each voice's measured RTF, with a short start hold; the cache is in memory, ADR-016.)*
 - The playlist always holds at least the next page of items, appended as pages are extracted; the last item of a book is the only legitimate ENDED.
 - Seek / voice change: cancel the queue from the current point and rebuild. Speed change: `player.setPlaybackParameters` only *(C6)*.
 - Try Media3's experimental `enablePerStreamMediaProgression()` to remove inter-item gaps on short clips (S3).
@@ -248,6 +248,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 020 | Clutter removal against neighbouring pages (window cached in `PdfBook`), margin bands on the text area, tables by aligned cell runs; repair keeps offsets mapped and ZWJ/ZWNJ; `PIPELINE_VERSION` 3 | Accepted (P2-03) |
 | 022 | Voice manager: catalog voices mirrored as reproducible zips on this repo's `voices` release, `models.json` packed into APK assets at build time, resumable WorkManager download with a final SHA-256 check, folder import of Piper/MMS/Kitten voices | Accepted (P4-01) |
 | 026 | Script routing at render time: each script run of a sentence is read by its language's voice (≥3 English words to leave an Indic voice), parts joined into one clip; `ReadingUnit` and `:pdf` output unchanged | Accepted (P3-01) |
+| 027 | Premium voices (Kokoro v1.0 en, Supertonic 3 hi) as catalog downloads; each voice's speed measured from the sentences it reads; render-ahead window in seconds from measured RTF, plus a start hold; voices measured at RTF ≥ 0.8 marked too slow | Accepted (P4-02) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

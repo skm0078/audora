@@ -67,6 +67,7 @@ class RoutedSpeechTest {
         assertEquals(listOf(EN_VOICE to "Read the world,"), voices.sherpa.calls)
         assertEquals(listOf(HI_VOICE to "इसी घोषणा को ।"), voices.system.calls)
         assertEquals(listOf(Lang.EN, Lang.HI), routed.langs)
+        assertEquals(listOf(VoiceId(EngineId.SHERPA, EN_VOICE), VoiceId(EngineId.SYSTEM, HI_VOICE)), routed.voices)
         assertNull(routed.fallback)
         assertEquals(EN_RATE, routed.audio.sampleRate)
         // 15 samples at 22 050 Hz plus 14 at 16 000 Hz upsampled to 22 050 Hz.
@@ -93,6 +94,7 @@ class RoutedSpeechTest {
 
         assertEquals(listOf(EN_VOICE to "The word", EN_VOICE to text), voices.sherpa.calls)
         assertEquals(listOf(Lang.EN), routed.langs)
+        assertEquals(listOf(VoiceId(EngineId.SHERPA, EN_VOICE)), routed.voices)
         assertEquals(Lang.HI, (routed.fallback as SpeechError.VoiceUnavailable).lang)
     }
 
