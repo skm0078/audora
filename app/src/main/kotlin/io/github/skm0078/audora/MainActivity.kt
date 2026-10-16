@@ -32,6 +32,7 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.diagnostics.LogSharer
@@ -406,6 +407,8 @@ class MainActivity : ComponentActivity() {
         override fun onSkipForward() = model.skipForward()
 
         override fun onSpeed(speed: Float) = model.setSpeed(speed)
+
+        override fun onPace(pace: Pace) = model.setPace(pace)
 
         override fun onSleepTimer(setting: SleepTimerSetting) = model.setSleepTimer(setting)
 

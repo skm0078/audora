@@ -49,10 +49,10 @@ class MixedScriptVoicesTest {
 
         override suspend fun voices(): Outcome<List<VoiceInfo>, SpeechError> = Outcome.Success(emptyList())
 
-        override suspend fun render(text: String, voice: VoiceId): RenderResult {
+        override suspend fun render(text: String, voice: VoiceId, rate: Float): RenderResult {
             spoken.add(Spoken(voice.name, text))
-            val rate = if (voice.name == Lang.EN.name) EN_RATE else HI_RATE
-            return Outcome.Success(PcmAudio(ShortArray(text.length), rate))
+            val sampleRate = if (voice.name == Lang.EN.name) EN_RATE else HI_RATE
+            return Outcome.Success(PcmAudio(ShortArray(text.length), sampleRate))
         }
 
         override fun release() = Unit

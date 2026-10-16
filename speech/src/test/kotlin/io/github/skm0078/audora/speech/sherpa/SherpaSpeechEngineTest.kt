@@ -55,6 +55,14 @@ class SherpaSpeechEngineTest {
         assertArrayEquals(shortArrayOf(16_384, -16_383), audio.samples)
         assertEquals(22_050, audio.sampleRate)
         assertEquals(listOf("Hello there." to 3), loaded.single().second.calls)
+        assertEquals(listOf(1f), loaded.single().second.rates)
+    }
+
+    @Test
+    fun `the speaking rate goes to the model`() = runBlocking {
+        engine.render("Hello there.", english.voiceId, rate = 1.75f)
+
+        assertEquals(listOf(1.75f), loaded.single().second.rates)
     }
 
     @Test

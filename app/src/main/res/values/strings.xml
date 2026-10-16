@@ -62,6 +62,14 @@
     <string name="reader_skip_back">Previous sentence</string>
     <string name="reader_skip_forward">Next sentence</string>
     <string name="reader_speed">Speed %1$s×</string>
+    <string name="speech_sheet_speed">Speed %1$s×</string>
+    <string name="speech_sheet_slower">Slower</string>
+    <string name="speech_sheet_faster">Faster</string>
+    <string name="speech_sheet_pace">Pause between sentences</string>
+    <string name="speech_pace_tight">Short</string>
+    <string name="speech_pace_normal">Normal</string>
+    <string name="speech_pace_relaxed">Long</string>
+    <string name="speech_sheet_hint">The voice itself speaks faster or slower, so words stay clear. The sentence playing restarts at the new setting.</string>
     <string name="reader_sleep_timer">Sleep timer</string>
     <string name="reader_sleep_off">Off</string>
     <string name="reader_sleep_minutes">%1$d minutes</string>

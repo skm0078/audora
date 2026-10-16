@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.core.result.Outcome
@@ -77,6 +78,10 @@ class FakePlaybackPort : PlaybackPort {
 
     override fun skipToPreviousSentence() {
         calls += "previous"
+    }
+
+    override fun setPace(pace: Pace) {
+        calls += "pace $pace"
     }
 
     override fun setSpeed(speed: Float) {

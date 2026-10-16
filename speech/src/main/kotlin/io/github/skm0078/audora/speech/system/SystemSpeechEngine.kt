@@ -59,9 +59,9 @@ class SystemSpeechEngine(private val client: SystemTtsClient) : SpeechEngine {
         }
     }
 
-    override suspend fun render(text: String, voice: VoiceId): RenderResult = mutex.withLock {
+    override suspend fun render(text: String, voice: VoiceId, rate: Float): RenderResult = mutex.withLock {
         if (voice.engine != id) return@withLock unavailable(Reason.UNKNOWN_VOICE, voice)
-        connected { engine -> renderConnected(engine, text, voice) }
+        connected { engine -> renderConnected(engine, text, voice, rate) }
     }
 
     override fun release() {
@@ -70,8 +70,8 @@ class SystemSpeechEngine(private val client: SystemTtsClient) : SpeechEngine {
         AudoraLog.i(TAG, "Released")
     }
 
-    private suspend fun renderConnected(engine: String, text: String, voice: VoiceId): RenderResult =
-        checkVoice(engine, voice).flatMap { synthesizeChunks(engine, text, voice) }
+    private suspend fun renderConnected(engine: String, text: String, voice: VoiceId, rate: Float): RenderResult =
+        checkVoice(engine, voice).flatMap { synthesizeChunks(engine, text, voice, rate) }
 
     private fun checkVoice(engine: String, voice: VoiceId): Outcome<Unit, SpeechError> {
         val match = client.voices().firstOrNull { it.name == voice.name }
@@ -83,13 +83,13 @@ class SystemSpeechEngine(private val client: SystemTtsClient) : SpeechEngine {
         }
     }
 
-    private suspend fun synthesizeChunks(engine: String, text: String, voice: VoiceId): RenderResult {
+    private suspend fun synthesizeChunks(engine: String, text: String, voice: VoiceId, rate: Float): RenderResult {
         val chunks = TextChunker.chunk(text, client.maxInputChars)
         if (chunks.isEmpty()) return Outcome.Success(PcmAudio.silence(SILENCE_SAMPLE_RATE))
         val parts = ArrayList<PcmAudio>(chunks.size)
         var failure: String? = null
         for ((index, chunk) in chunks.withIndex()) {
-            when (val result = client.synthesize(chunk, voice.name)) {
+            when (val result = client.synthesize(chunk, voice.name, rate)) {
                 is Outcome.Success -> parts += result.value
 
                 is Outcome.Failure -> {

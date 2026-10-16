@@ -161,6 +161,18 @@ class BookSession(
         rebuild(page, char, play = player.playWhenReady)
     }
 
+    /**
+     * The speaking rate or pace changed (ADR-033): the player takes its share of the speed ([playerSpeed], above the
+     * voice model's cap) and, like a voice change, the current sentence restarts, since the sentences rendered ahead
+     * were spoken at the old rate. With nothing loaded, only the session extras change.
+     */
+    fun onSpeechStyleChanged(playerSpeed: Float) {
+        player.setPlaybackSpeed(playerSpeed)
+        val (page, char) = resumePoint() ?: return publishState()
+        AudoraLog.i(TAG, "Speech style changed, restart book=${bookId?.logLabel} page=$page char=$char")
+        rebuild(page, char, play = player.playWhenReady)
+    }
+
     /** False when [mode] cannot apply to the open book: end of chapter in a book without chapters. */
     fun setSleepTimer(mode: SleepTimerMode, minutes: Int): Boolean = sleep.set(mode, minutes)
 

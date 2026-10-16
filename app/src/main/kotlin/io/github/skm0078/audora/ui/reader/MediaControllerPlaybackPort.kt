@@ -13,6 +13,8 @@ import androidx.media3.session.SessionResult
 import com.google.common.util.concurrent.ListenableFuture
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,7 +74,14 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
 
     override fun skipToPreviousSentence() = withPlayer("skip back") { it.seekToPreviousMediaItem() }
 
-    override fun setSpeed(speed: Float) = withPlayer("speed") { it.setPlaybackSpeed(speed) }
+    override fun setSpeed(speed: Float) = setStyle(SpeechStyle(speed, mutableState.value.pace))
+
+    override fun setPace(pace: Pace) = setStyle(SpeechStyle(mutableState.value.speed, pace))
+
+    private fun setStyle(style: SpeechStyle) = withPlayer("speech style") { player ->
+        AudoraLog.i(TAG, "Speech style rate=${style.rate} pace=${style.pace}")
+        send(player, PlaybackContract.SET_SPEECH_STYLE, PlaybackContract.speechStyleArgs(style), "speech style")
+    }
 
     override fun setSleepTimer(setting: SleepTimerSetting) = withPlayer("sleep timer") { player ->
         val args = when (setting) {
@@ -126,7 +135,9 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             position = positionOf(player.currentMediaItem?.mediaMetadata?.extras),
             wantsToPlay = player.playWhenReady,
             buffering = player.playbackState == Player.STATE_BUFFERING,
-            speed = player.playbackParameters.speed,
+            speed = extras.getFloat(PlaybackContract.SESSION_SPEECH_RATE, SpeechStyle.NORMAL_RATE),
+            pace = Pace.entries.firstOrNull { it.name == extras.getString(PlaybackContract.SESSION_PACE) }
+                ?: Pace.NORMAL,
             canSkipBack = player.currentMediaItem != null && player.isCommandAvailable(Player.COMMAND_SEEK_TO_PREVIOUS),
             canSkipForward = player.hasNextMediaItem(),
             sleepTimer = sleepTimerOf(extras),

@@ -9,6 +9,7 @@ import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
@@ -23,6 +24,7 @@ class SessionPublisher(
     private val session: MediaSession,
     private val diagnostics: DiagnosticsBridge,
     private val resume: ResumeBridge,
+    private val style: () -> SpeechStyle,
 ) : SessionEvents {
     override fun onReading(bookId: String, page: Int) = diagnostics.reading(bookId, page)
 
@@ -48,6 +50,9 @@ class SessionPublisher(
                     putString(PlaybackContract.SESSION_ERROR, it.code.name)
                     putString(PlaybackContract.SESSION_ERROR_MESSAGE, it.message)
                 }
+                val speech = style()
+                putFloat(PlaybackContract.SESSION_SPEECH_RATE, speech.rate)
+                putString(PlaybackContract.SESSION_PACE, speech.pace.name)
             },
         )
     }

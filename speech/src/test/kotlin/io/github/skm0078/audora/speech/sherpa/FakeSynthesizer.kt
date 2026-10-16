@@ -12,6 +12,7 @@ class FakeSynthesizer(
     private val output: FloatArray = floatArrayOf(0.5f, -0.5f),
 ) : SherpaSynthesizer {
     val calls = mutableListOf<Pair<String, Int>>()
+    val rates = mutableListOf<Float>()
     var released = false
         private set
 
@@ -22,9 +23,10 @@ class FakeSynthesizer(
         private set
     var failure: RuntimeException? = null
 
-    override fun generate(text: String, speakerId: Int, keepGoing: () -> Boolean): FloatArray {
+    override fun generate(text: String, speakerId: Int, rate: Float, keepGoing: () -> Boolean): FloatArray {
         check(!released) { "generate after release" }
         calls += text to speakerId
+        rates += rate
         failure?.let { throw it }
         val wait = gate
         if (wait != null) {

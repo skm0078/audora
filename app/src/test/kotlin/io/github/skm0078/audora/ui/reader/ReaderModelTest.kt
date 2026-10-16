@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.config.ReaderConfig
+import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -203,10 +204,10 @@ class ReaderModelTest {
 
     @Test
     fun `the saved speed is applied when the player connects`() = runTest(UnconfinedTestDispatcher()) {
-        speeds.saved = 1.3f // from an older version's steps: the nearest offered is 1.25
+        speeds.saved = 1.33f // between the slider's steps: snapped to 1.35
         model()
         port.connect(speed = 1f)
-        assertEquals(listOf("speed 1.25"), port.calls)
+        assertEquals(listOf("speed 1.35"), port.calls)
     }
 
     @Test
@@ -225,6 +226,17 @@ class ReaderModelTest {
         assertEquals(listOf("speed 2.0"), port.calls)
         assertEquals(2f, speeds.saved)
     }
+
+    @Test
+    fun `speeds between the steps snap to the slider, and pace goes to the player`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val model = model()
+            port.connect()
+            model.setSpeed(1.33f)
+            model.setPace(Pace.RELAXED)
+            assertEquals(listOf("speed 1.35", "pace RELAXED"), port.calls)
+            assertEquals(1.35f, speeds.saved)
+        }
 
     @Test
     fun `controls pass through to the player`() = runTest(UnconfinedTestDispatcher()) {

@@ -1,0 +1,133 @@
+// File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/SpeechSheet.kt
+// Purpose: The player's speed and pace sheet: a fine speed slider with presets, and the pause between sentences.
+
+package io.github.skm0078.audora.ui.reader
+
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.config.ReaderConfig
+import io.github.skm0078.audora.core.model.Pace
+import kotlin.math.roundToInt
+
+/**
+ * The slider only sends its speed when the finger lifts: every change restarts the sentence playing at the new
+ * speed (ADR-033), so sending while dragging would restart it many times a second.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SpeechSheet(
+    speed: Float,
+    pace: Pace,
+    config: ReaderConfig,
+    onSpeed: (Float) -> Unit,
+    onPace: (Pace) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.navigationBarsPadding().padding(horizontal = 24.dp).padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            SpeedSection(speed, config, onSpeed)
+            PaceSection(pace, onPace)
+            Text(
+                stringResource(R.string.speech_sheet_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SpeedSection(speed: Float, config: ReaderConfig, onSpeed: (Float) -> Unit) {
+    val range = config.speech.minRate..config.speech.maxRate
+    val step = config.speech.rateStep
+    // Follows the player's speed, but shows the finger's position while dragging.
+    var dragged by remember(speed) { mutableFloatStateOf(speed) }
+    Text(
+        stringResource(R.string.speech_sheet_speed, speedLabel(config.nearestSpeed(dragged))),
+        style = MaterialTheme.typography.titleMedium,
+    )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = { onSpeed(config.nearestSpeed(speed - step)) }, enabled = speed > range.start) {
+            Icon(painterResource(R.drawable.ic_remove), stringResource(R.string.speech_sheet_slower))
+        }
+        Slider(
+            value = dragged,
+            onValueChange = { dragged = it },
+            onValueChangeFinished = { onSpeed(config.nearestSpeed(dragged)) },
+            valueRange = range,
+            steps = stepsBetween(range, step),
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = { onSpeed(config.nearestSpeed(speed + step)) }, enabled = speed < range.endInclusive) {
+            Icon(painterResource(R.drawable.ic_add), stringResource(R.string.speech_sheet_faster))
+        }
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        config.speeds.forEach { preset ->
+            FilterChip(
+                selected = preset == speed,
+                onClick = { onSpeed(preset) },
+                label = { Text("${speedLabel(preset)}×") },
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PaceSection(pace: Pace, onPace: (Pace) -> Unit) {
+    Text(stringResource(R.string.speech_sheet_pace), style = MaterialTheme.typography.titleMedium)
+    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+        Pace.entries.forEachIndexed { index, option ->
+            SegmentedButton(
+                selected = option == pace,
+                onClick = { onPace(option) },
+                shape = SegmentedButtonDefaults.itemShape(index, Pace.entries.size),
+            ) { Text(stringResource(paceLabel(option))) }
+        }
+    }
+}
+
+private fun paceLabel(pace: Pace): Int = when (pace) {
+    Pace.TIGHT -> R.string.speech_pace_tight
+    Pace.NORMAL -> R.string.speech_pace_normal
+    Pace.RELAXED -> R.string.speech_pace_relaxed
+}
+
+/** Material's Slider counts the stops between the ends, not the intervals. */
+internal fun stepsBetween(range: ClosedFloatingPointRange<Float>, step: Float): Int =
+    (((range.endInclusive - range.start) / step).roundToInt() - 1).coerceAtLeast(0)

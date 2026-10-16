@@ -33,6 +33,7 @@ import io.github.skm0078.audora.playback.session.SessionSources
 import io.github.skm0078.audora.playback.session.SpeechPlayer
 import io.github.skm0078.audora.playback.voice.EngineRenderer
 import io.github.skm0078.audora.playback.voice.RenderSpeedTracker
+import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
 import javax.inject.Inject
@@ -79,11 +80,14 @@ class AudoraPlaybackService : MediaSessionService() {
         super.onCreate() // Hilt injects fields here.
         val engines = VoiceEngines(this)
         voices = SpeechVoices(engines)
+        val style = SpeechStyleStore.forContext(this)
         player = SpeechPlayer.build(this, registry, config)
+        // The player's share of the listener's speed (ADR-033); the voice model speaks the rest.
+        player.setPlaybackSpeed(style.config.playerSpeed(style.current.rate))
         speed = LivePlaybackSpeed(player)
         val diagnostics = DiagnosticsBridge(tracker, scope)
         val recorder = ResumeRecorder(resumeAnchors, resumeScope, PIPELINE_VERSION, System::currentTimeMillis)
-        val callback = SessionCallback(packageName, scope, voices, { bookSession }, { resumption })
+        val callback = SessionCallback(packageName, scope, voices, style, { bookSession }, { resumption })
         val mediaSession = MediaSession.Builder(this, player)
             .setCallback(callback)
             .apply { sessionActivity()?.let { setSessionActivity(it) } }
@@ -93,13 +97,21 @@ class AudoraPlaybackService : MediaSessionService() {
             player = player,
             registry = registry,
             sources = SessionSources(
-                renderer = EngineRenderer(voices, speed = RenderSpeedTracker(engines::speeds)),
+                renderer = EngineRenderer(
+                    voices,
+                    speed = RenderSpeedTracker(engines::speeds),
+                    style = style::current,
+                    styleConfig = style.config,
+                ),
                 books = LibraryBookSource(this, library),
                 texts = ResourceTexts(),
-                renderAhead = MeasuredRenderAhead(voices::speedOf, speed::value),
+                // The model's share of the speed drains the queue like the player's share does (ADR-033).
+                renderAhead = MeasuredRenderAhead(voices::speedOf) {
+                    speed.value * style.config.modelRate(style.current.rate)
+                },
             ),
             config = config,
-            events = SessionPublisher(mediaSession, diagnostics, ResumeBridge(recorder, resumeScope)),
+            events = SessionPublisher(mediaSession, diagnostics, ResumeBridge(recorder, resumeScope), style::current),
             env = SessionEnvironment(
                 scope = scope,
                 extraction = Dispatchers.IO.limitedParallelism(1),
