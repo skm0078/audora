@@ -134,10 +134,10 @@ interface SpeechEngine {
 Runs lazily per page, two pages ahead of playback, cached per book (a few analysed pages and small page profiles, ADR-020). Each stage is a pure function with tests; `PIPELINE_VERSION` bumps whenever output can change.
 
 1. **Extract** chars with boxes, font size, font name (PdfiumAndroidKt + our JNI library over its `libpdfium.so`: font info, generated flag, Unicode-map errors, `/ActualText` marks, render mode; ADR-011). Rebuild `/ActualText` spans so PDFium's fake spaces do not split Indic words. Reopen the document every 100 pages. Font weight is unreliable and unused.
-2. **Score quality** per page: Unicode-map errors, invisible text over a page image, empty/garbage text, legacy font names per glyph run, invalid Indic sequences. Route: legacy run → 3a; map errors / hidden OCR layer / garbage / empty → 3c; **Indic documents: OCR one sample page and compare with the (rebuilt, reordered) text layer; CER ≤ 5 % → text layer, else 3c for every page** (re-check 1 page in 50). English: text layer. (ADR-011)
+2. **Score quality** per page: Unicode-map errors, invisible text over a page image, empty/garbage text, legacy font names per glyph run, invalid Indic sequences. Route: legacy run → 3a; map errors / hidden OCR layer / garbage / empty → 3c; **Indic documents: OCR one sample page and compare with the (rebuilt, reordered) text layer; CER ≤ 5 % → text layer, else 3c for every page** (re-check 1 page in 50; CER line by line so block order does not count). English: text layer. (ADR-011, ADR-021)
 3. **Recover text**
    - a. **Legacy-font converter**: table-driven Krutidev→Unicode and Bijoy/SutonnyMJ→Unicode, with reph and pre-base i-matra reordering. Unknown glyph rate above threshold → OCR.
-   - b. **Indic reorder**: move visually-ordered pre-base matras (ि ি ে ৈ) after their consonant cluster; compose two-part vowels (ে+া → ো). A repair tried before the OCR cross-check; S2 found it fixes visual order only, not mis-mapped glyphs.
+   - b. **Indic reorder**: on pages detected as visual order, move pre-base matras (ि ি ে ৈ) after their consonant cluster, compose two-part vowels (ে+া → ো) and move rephs before their syllable; drop placeholder glyphs inside clusters on every page. A repair tried before the OCR cross-check; S2 found it fixes visual order only, not mis-mapped glyphs (ADR-021).
    - c. **OCR**: Tesseract with `tessdata_best` for `eng`/`hin`/`ben` (PP-OCRv5 has no Bengali model; on Hindi it was not consistently better, ADR-011). Runs in the render-ahead window. Page shows a "Scanned / OCR" badge.
 4. **Rebuild layout**: lines by baseline → columns by recursive XY-cut, columns first (OpenDataLoader-PDF's XY-Cut++ as a reference) → reading order → paragraphs by gap/indent → headings by relative font size and a bold font name (weight is unreliable, ADR-011). Unit offsets index the resulting reading-order text (ADR-018).
 5. **Remove clutter**: lines repeating in the top/bottom 8% of the text area across ≥3 pages of a 7-page window, header lines whose page number runs with the page, standalone page numbers, table interiors; citation markers skipped (setting) (ADR-020).
@@ -246,6 +246,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 018 | Layout: column-first XY-cut, paragraphs, headings by size + bold font name; `charStart` indexes the page's reading-order text; `PIPELINE_VERSION` 2 | Accepted (P2-02) |
 | 019 | Speech normalization lives in `:speech` and runs at render time; `ReadingUnit.text` stays the extracted text (display, fingerprints) | Accepted (P2-04) |
 | 020 | Clutter removal against neighbouring pages (window cached in `PdfBook`), margin bands on the text area, tables by aligned cell runs; repair keeps offsets mapped and ZWJ/ZWNJ; `PIPELINE_VERSION` 3 | Accepted (P2-03) |
+| 021 | Page quality scorer and routes (`QualityConfig`); Indic repair and visual-order reorder per paragraph before text repair, decided per page; OCR sample compared by line-wise containment CER; `PdfBook.readPage` returns the route; `PIPELINE_VERSION` 4 | Accepted (P3-03) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

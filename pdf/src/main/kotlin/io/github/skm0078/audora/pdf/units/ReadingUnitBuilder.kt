@@ -5,6 +5,7 @@ package io.github.skm0078.audora.pdf.units
 
 import io.github.skm0078.audora.core.config.CleanupConfig
 import io.github.skm0078.audora.core.config.LayoutConfig
+import io.github.skm0078.audora.core.config.QualityConfig
 import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
@@ -19,12 +20,17 @@ import io.github.skm0078.audora.pdf.layout.ParagraphKind
 import io.github.skm0078.audora.pdf.layout.ReadingParagraph
 import io.github.skm0078.audora.pdf.layout.ReadingText
 import io.github.skm0078.audora.pdf.layout.ReadingTextBuilder
+import io.github.skm0078.audora.pdf.quality.PageQuality
+import io.github.skm0078.audora.pdf.quality.PageQualityScorer
+import io.github.skm0078.audora.pdf.quality.indicOrderOf
 
 /**
- * Layout (P2-02) puts the page in reading order; cleanup (P2-03) drops running headers, page numbers and table
- * interiors and repairs the text; sentences are then split within each paragraph, so a heading without a full stop
- * never runs into the paragraph below it. `charStart`/`charEnd` index [ReadingText.text] (ADR-018, ADR-020).
- * Number and date normalization is P2-04. Units without a letter or digit are skipped.
+ * The quality scorer (P3-03) routes the page and measures whether its Indic text is in visual order; layout (P2-02)
+ * puts the page in reading order; cleanup (P2-03) drops running headers, page numbers and table interiors and
+ * repairs the text, after the Indic repair and reorder pass (P3-03); sentences are then split within each
+ * paragraph, so a heading without a full stop never runs into the paragraph below it. `charStart`/`charEnd` index
+ * [ReadingText.text] (ADR-018, ADR-020). Number and date normalization is P2-04. Units without a letter or digit
+ * are skipped.
  *
  * Header and footer removal compares a page with its neighbours ([PageProfile]). `PdfBook.readingUnits` supplies
  * them; [build] with a page alone applies every rule that needs no neighbour.
@@ -34,17 +40,20 @@ class ReadingUnitBuilder(
     private val splitter: SentenceSplitter = BreakIteratorSentenceSplitter(),
     layoutConfig: LayoutConfig = LayoutConfig(),
     val cleanupConfig: CleanupConfig = CleanupConfig(),
+    val qualityConfig: QualityConfig = QualityConfig(),
 ) {
     private val lineBoxes = LineBoxes(config.lineOverlapRatio)
     private val analyzer = PageLayoutAnalyzer(layoutConfig)
     private val profiler = PageProfiler(cleanupConfig)
     private val clutter = ClutterRemover(cleanupConfig, layoutConfig)
     private val textBuilder = ReadingTextBuilder(TextRepair(cleanupConfig))
+    private val scorer = PageQualityScorer(qualityConfig)
 
-    /** Layout and neighbour summary of one page: what a book caches between calls. */
+    /** Quality, layout and neighbour summary of one page: what a book caches between calls. */
     fun analyze(page: PageText): AnalyzedPage {
+        val quality = scorer.score(page)
         val layout = analyzer.analyze(page)
-        return AnalyzedPage(page, layout, profiler.profile(page, layout))
+        return AnalyzedPage(page, layout, profiler.profile(page, layout, quality.indicOrder), quality)
     }
 
     fun build(page: PageText): List<ReadingUnit> = build(readingText(page))
@@ -56,10 +65,20 @@ class ReadingUnitBuilder(
     /** The page's text in reading order: what [build]'s offsets index. */
     fun readingText(page: PageText): ReadingText = readingText(analyze(page), emptyList())
 
-    fun readingText(page: AnalyzedPage, neighbours: List<PageProfile>): ReadingText {
-        val cleaned = clutter.clean(page.text, page.layout, page.profile, neighbours)
+    fun readingText(page: AnalyzedPage, neighbours: List<PageProfile>): ReadingText =
+        textOf(page, neighbours, clutter.clean(page.text, page.layout, page.profile, neighbours))
+
+    /**
+     * The page's whole text layer in layout order, repaired, with headers and page numbers kept: what OCR of the
+     * same page is compared with in the book's cross-check (P3-03).
+     */
+    fun sampleText(page: AnalyzedPage, neighbours: List<PageProfile>): String =
+        textOf(page, neighbours, page.layout).text
+
+    private fun textOf(page: AnalyzedPage, neighbours: List<PageProfile>, layout: PageLayout): ReadingText {
         val lexicon = neighbours.fold(page.profile.hyphenated) { words, other -> words + other.hyphenated }
-        return textBuilder.build(page.text, cleaned, lexicon)
+        val order = indicOrderOf(page.profile.indicOrder, neighbours.map { it.indicOrder }, qualityConfig)
+        return textBuilder.build(page.text, layout, lexicon, order)
     }
 
     fun build(reading: ReadingText): List<ReadingUnit> {
@@ -71,7 +90,7 @@ class ReadingUnitBuilder(
         val units = ArrayList<ReadingUnit>()
         for (paragraph in reading.paragraphs) {
             val sentences = sentencesOf(flat, paragraph, pageLang)
-            val pieces = sentences.flatMap { capLength(text, trim(text, it.first, it.last + 1)) }
+            val pieces = sentences.flatMap { capLength(text, trim(text, it.first, it.last + 1), config.maxUnitChars) }
             pieces.forEachIndexed { i, piece ->
                 val raw = text.substring(piece.first, piece.last + 1)
                 if (raw.none { it.isLetterOrDigit() }) return@forEachIndexed
@@ -105,41 +124,46 @@ class ReadingUnitBuilder(
         else -> config.sentencePauseMs
     }
 
-    /** [start] until [end] without leading and trailing whitespace; empty when it is all whitespace. */
-    private fun trim(text: String, start: Int, end: Int): IntRange {
-        var s = start
-        var e = end
-        while (s < e && text[s].isWhitespace()) s++
-        while (e > s && text[e - 1].isWhitespace()) e--
-        return s until e
-    }
-
-    /** Splits [range] into pieces of at most maxUnitChars, at the last whitespace before the limit. */
-    private fun capLength(text: String, range: IntRange): List<IntRange> {
-        if (range.isEmpty()) return emptyList()
-        val pieces = ArrayList<IntRange>()
-        var start = range.first
-        val end = range.last + 1
-        while (end - start > config.maxUnitChars) {
-            val limit = start + config.maxUnitChars
-            var cut = limit
-            while (cut > start && !text[cut].isWhitespace()) cut--
-            if (cut == start) cut = limit
-            if (Character.isLowSurrogate(text[cut]) && cut > start) cut--
-            pieces.add(trim(text, start, cut))
-            start = trim(text, cut, end).first
-        }
-        pieces.add(start until end)
-        return pieces.filterNot { it.isEmpty() }
-    }
-
     private companion object {
         val WHITESPACE = Regex("\\s+")
         const val LINE_BREAKS = "\n\r\t"
     }
 }
 
-/** A page after layout, with the summary its neighbours use. Built by [ReadingUnitBuilder.analyze]. */
-class AnalyzedPage internal constructor(val text: PageText, val layout: PageLayout, val profile: PageProfile) {
+/** [start] until [end] without leading and trailing whitespace; empty when it is all whitespace. */
+private fun trim(text: String, start: Int, end: Int): IntRange {
+    var s = start
+    var e = end
+    while (s < e && text[s].isWhitespace()) s++
+    while (e > s && text[e - 1].isWhitespace()) e--
+    return s until e
+}
+
+/** Splits [range] into pieces of at most maxUnitChars, at the last whitespace before the limit. */
+private fun capLength(text: String, range: IntRange, maxUnitChars: Int): List<IntRange> {
+    if (range.isEmpty()) return emptyList()
+    val pieces = ArrayList<IntRange>()
+    var start = range.first
+    val end = range.last + 1
+    while (end - start > maxUnitChars) {
+        val limit = start + maxUnitChars
+        var cut = limit
+        while (cut > start && !text[cut].isWhitespace()) cut--
+        if (cut == start) cut = limit
+        if (Character.isLowSurrogate(text[cut]) && cut > start) cut--
+        pieces.add(trim(text, start, cut))
+        start = trim(text, cut, end).first
+    }
+    pieces.add(start until end)
+    return pieces.filterNot { it.isEmpty() }
+}
+
+/** A page after scoring and layout, with the summary its neighbours use. Built by [ReadingUnitBuilder.analyze]. */
+class AnalyzedPage internal constructor(
+    val text: PageText,
+    val layout: PageLayout,
+    val profile: PageProfile,
+    val quality: PageQuality,
+) {
     val pageIndex: Int get() = text.pageIndex
 }

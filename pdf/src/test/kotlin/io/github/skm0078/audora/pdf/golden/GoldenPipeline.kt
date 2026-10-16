@@ -36,7 +36,7 @@ object GoldenPipeline {
     }
 
     /** A [PdfEngine] over pages PDFium already read on the desktop (scripts/pdf/golden_corpus.py). */
-    private class DumpEngine(private val pages: List<RawPage>) : PdfEngine {
+    internal class DumpEngine(private val pages: List<RawPage>) : PdfEngine {
         override fun open(password: String?): Outcome<PdfDocumentHandle, PdfOpenError> = Outcome.Success(
             object : PdfDocumentHandle {
                 override val pageCount = pages.size

@@ -8,6 +8,7 @@ import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.pdf.extract.PageText
 import io.github.skm0078.audora.pdf.layout.PageLayout
 import io.github.skm0078.audora.pdf.layout.TextLine
+import io.github.skm0078.audora.pdf.quality.IndicOrderEvidence
 
 /**
  * A page's summary for its neighbours (ADR-020): a few margin lines folded to signatures, their page numbers, and
@@ -20,7 +21,10 @@ import io.github.skm0078.audora.pdf.layout.TextLine
  *   so a word broken at that hyphen at a line end keeps it.
  * @property bodySignatures hashes of the signatures of the page's other lines (empty when every line is a margin
  *   line): a margin line that reads like one of them (a book of numbered, templated lines) is text, not a header.
+ * @property indicOrder the page's evidence of visual-order Indic text, so a page with too few vowel signs to tell
+ *   follows its neighbours (P3-03).
  */
+@Suppress("LongParameterList") // One flat summary per page; a wrapper type would only add indirection.
 class PageProfile internal constructor(
     val pageIndex: Int,
     val extent: TextBox?,
@@ -28,6 +32,7 @@ class PageProfile internal constructor(
     internal val bottom: List<MarginLine>,
     internal val hyphenated: Set<String>,
     internal val bodySignatures: Set<Int>,
+    internal val indicOrder: IndicOrderEvidence,
 )
 
 /**
@@ -47,7 +52,7 @@ internal data class MarginLine(
 )
 
 internal class PageProfiler(private val config: CleanupConfig) {
-    fun profile(page: PageText, layout: PageLayout): PageProfile {
+    fun profile(page: PageText, layout: PageLayout, indicOrder: IndicOrderEvidence): PageProfile {
         val lines = layout.blocks.flatMap { block -> block.paragraphs.flatMap { it.lines } }.filter { it.box != null }
         val extent = lines.mapNotNull { it.box }.reduceOrNull(TextBox::union)
         val k = config.maxMarginLines
@@ -55,7 +60,7 @@ internal class PageProfiler(private val config: CleanupConfig) {
         val bottom = lines.sortedBy { requireNotNull(it.box).bottom }.take(k).map { marginLine(page, it) }
         val margin = (top + bottom).mapTo(HashSet()) { it.line }
         val body = lines.filter { it !in margin }.mapTo(HashSet()) { signature(spanTexts(page, it)).hashCode() }
-        return PageProfile(page.pageIndex, extent, top, bottom, hyphenatedPairs(page.text), body)
+        return PageProfile(page.pageIndex, extent, top, bottom, hyphenatedPairs(page.text), body, indicOrder)
     }
 
     private fun spanTexts(page: PageText, line: TextLine) = line.spans.map { page.text.substring(it.start, it.end) }
