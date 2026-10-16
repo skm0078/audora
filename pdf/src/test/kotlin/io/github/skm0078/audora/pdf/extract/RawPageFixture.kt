@@ -6,6 +6,11 @@ package io.github.skm0078.audora.pdf.extract
 object RawPageFixture {
     fun load(name: String): RawPage {
         val stream = requireNotNull(javaClass.getResourceAsStream("/rawpages/$name.rawpage")) { "missing $name" }
+        return stream.bufferedReader().useLines(::parse)
+    }
+
+    /** One page's records, as written by scripts/pdf/rawpage_dump.cpp (the golden corpus reuses this). */
+    fun parse(lines: Sequence<String>): RawPage {
         var pageIndex = 0
         val fonts = ArrayList<String>()
         val codePoints = ArrayList<Int>()
@@ -14,37 +19,35 @@ object RawPageFixture {
         val sizes = ArrayList<Float>()
         val fontIds = ArrayList<Int>()
         val objects = ArrayList<RawTextObject>()
-        stream.bufferedReader().useLines { lines ->
-            lines.filter { it.isNotBlank() && !it.startsWith("#") }.forEach { line ->
-                val f = line.split(' ')
-                when (f[0]) {
-                    "page" -> pageIndex = f[1].toInt()
+        lines.filter { it.isNotBlank() && !it.startsWith("#") }.forEach { line ->
+            val f = line.split(' ')
+            when (f[0]) {
+                "page" -> pageIndex = f[1].toInt()
 
-                    "font" -> fonts.add(if (f[2] == "-") "" else String(hex(f[2]), Charsets.UTF_8))
+                "font" -> fonts.add(if (f[2] == "-") "" else String(hex(f[2]), Charsets.UTF_8))
 
-                    "char" -> {
-                        codePoints.add(f[1].toInt())
-                        flags.add(RawChars.flagsOf(f[2] == "1", f[3] == "1", f[4].toInt()))
-                        (5..8).forEach { boxes.add(f[it].toFloat()) }
-                        sizes.add(f[9].toFloat())
-                        fontIds.add(f[10].toInt())
-                    }
-
-                    "obj" -> objects.add(
-                        RawTextObject(
-                            text = if (f[1] == "-") "" else String(hex(f[1]), Charsets.UTF_8),
-                            actualText = when (f[2]) {
-                                "-" -> null
-                                "=" -> ""
-                                else -> PdfTextString.decode(hex(f[2]))
-                            },
-                            spanKey = f[3].toLong(),
-                            width = f[4].toFloat(),
-                        ),
-                    )
-
-                    else -> error("unknown record ${f[0]}")
+                "char" -> {
+                    codePoints.add(f[1].toInt())
+                    flags.add(RawChars.flagsOf(f[2] == "1", f[3] == "1", f[4].toInt()))
+                    (5..8).forEach { boxes.add(f[it].toFloat()) }
+                    sizes.add(f[9].toFloat())
+                    fontIds.add(f[10].toInt())
                 }
+
+                "obj" -> objects.add(
+                    RawTextObject(
+                        text = if (f[1] == "-") "" else String(hex(f[1]), Charsets.UTF_8),
+                        actualText = when (f[2]) {
+                            "-" -> null
+                            "=" -> ""
+                            else -> PdfTextString.decode(hex(f[2]))
+                        },
+                        spanKey = f[3].toLong(),
+                        width = f[4].toFloat(),
+                    ),
+                )
+
+                else -> error("unknown record ${f[0]}")
             }
         }
         val chars = RawChars(

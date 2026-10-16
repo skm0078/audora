@@ -1,0 +1,161 @@
+// File: pdf/src/test/kotlin/io/github/skm0078/audora/pdf/golden/QualityReport.kt
+// Purpose: Renders docs/QUALITY.md and pdf/golden/scores.tsv, and compares a run with the baseline scores.
+
+package io.github.skm0078.audora.pdf.golden
+
+import java.util.Locale
+import kotlin.math.roundToLong
+
+data class GoldenResult(val document: GoldenDocument, val pages: Int, val score: TextScore)
+
+/**
+ * The gate (Build Spec §5: "pipeline changes must not lower the similarity score"). Compared on the documents both
+ * runs scored, so adding a hard document or retiring one never trips it. Values are compared as written (4 decimals),
+ * so the gate cannot flap on floating-point noise.
+ */
+data class BaselineComparison(
+    val shared: Int,
+    val before: Double,
+    val after: Double,
+    val changes: List<Pair<String, Double>>,
+    val added: List<String>,
+    val removed: List<String>,
+) {
+    val passed: Boolean get() = shared == 0 || after >= before - TOLERANCE
+
+    fun render(): String = buildString {
+        if (shared == 0) {
+            appendLine("No baseline scores to compare with: the gate is skipped for this run.")
+        } else {
+            val verdict = if (passed) "not lower" else "LOWER"
+            appendLine(
+                "Corpus score on the $shared shared documents: ${QualityReport.decimal(before)} → " +
+                    "${QualityReport.decimal(after)} ($verdict than the baseline).",
+            )
+        }
+        changes.forEach { (id, delta) -> appendLine("  $id: ${QualityReport.signed(delta)}") }
+        if (added.isNotEmpty()) appendLine("New documents (not gated): ${added.joinToString()}")
+        if (removed.isNotEmpty()) appendLine("Documents no longer in the corpus: ${removed.joinToString()}")
+    }
+
+    private companion object {
+        const val TOLERANCE = 1e-9
+    }
+}
+
+object QualityReport {
+    private const val DECIMALS = 4
+    private const val SCALE = 10_000.0
+    private val TSV_COLUMNS =
+        listOf("document", "category", "status", "pages", "similarity", "word_recall", "word_precision")
+
+    fun round(value: Double): Double = (value * SCALE).roundToLong() / SCALE
+
+    /** Always via [round], so the written value is the one the gate compares. */
+    fun decimal(value: Double): String = String.format(Locale.ROOT, "%.${DECIMALS}f", round(value))
+
+    fun signed(value: Double): String = String.format(Locale.ROOT, "%+.${DECIMALS}f", value)
+
+    fun corpusScore(results: List<GoldenResult>): Double = results.map { round(it.score.similarity) }.average()
+
+    /** Machine-readable scores, one row per document. The format is stable: CI reads the base branch's copy. */
+    fun scoresTsv(results: List<GoldenResult>): String = buildString {
+        appendLine("# Golden scores (P2-01). Written by ./gradlew :pdf:goldenTest; do not edit by hand.")
+        appendLine(TSV_COLUMNS.joinToString("\t"))
+        results.forEach { r ->
+            val d = r.document
+            val values = listOf(r.score.similarity, r.score.wordRecall, r.score.wordPrecision).map(::decimal)
+            appendLine((listOf(d.id, d.category, d.status.label, r.pages.toString()) + values).joinToString("\t"))
+        }
+    }
+
+    /** Document id → similarity, from a scores.tsv. Blank or empty input means no baseline. */
+    fun parseScores(tsv: String): Map<String, Double> {
+        val rows = tsv.lines().filter { it.isNotBlank() && !it.startsWith("#") }
+        if (rows.isEmpty()) return emptyMap()
+        require(rows.first().split('\t') == TSV_COLUMNS) { "baseline scores: unexpected header ${rows.first()}" }
+        val similarity = TSV_COLUMNS.indexOf("similarity")
+        return rows.drop(1).associate { row ->
+            val f = row.split('\t')
+            f[0] to f[similarity].toDouble()
+        }
+    }
+
+    fun compare(baseline: Map<String, Double>, results: List<GoldenResult>): BaselineComparison {
+        val current = results.associate { it.document.id to round(it.score.similarity) }
+        val shared = current.keys.filter { it in baseline }
+        val changes = shared.map { it to current.getValue(it) - baseline.getValue(it) }
+            .filter { (_, delta) -> round(delta) != 0.0 }
+        return BaselineComparison(
+            shared = shared.size,
+            before = shared.map { baseline.getValue(it) }.average().takeIf { shared.isNotEmpty() } ?: 0.0,
+            after = shared.map { current.getValue(it) }.average().takeIf { shared.isNotEmpty() } ?: 0.0,
+            changes = changes,
+            added = current.keys.filterNot { it in baseline },
+            removed = baseline.keys.filterNot { it in current },
+        )
+    }
+
+    /** docs/QUALITY.md. Depends only on the code and the corpus (no dates, no baseline), so CI can diff it. */
+    fun markdown(results: List<GoldenResult>, pipelineVersion: Int): String = buildString {
+        appendLine("# Golden corpus quality")
+        appendLine()
+        appendLine(
+            "Generated by `./gradlew :pdf:goldenTest` from `pdf/golden/` (P2-01). Do not edit by hand: CI " +
+                "regenerates it on every push and fails when the committed copy differs.",
+        )
+        appendLine()
+        appendLine(
+            "**Corpus score: ${decimal(corpusScore(results))}** (mean similarity over ${results.size} documents, " +
+                ":pdf pipeline version $pipelineVersion). A pipeline change must not lower it (Build Spec §5); CI " +
+                "compares it with the base branch on the documents both share.",
+        )
+        appendLine()
+        appendLine("## By category")
+        appendLine()
+        appendLine("| Category | Documents | Similarity | Word recall | Word precision |")
+        appendLine("|---|---:|---:|---:|---:|")
+        results.groupBy { it.document.category }.forEach { (category, group) ->
+            appendLine(
+                "| $category | ${group.size} | ${mean(group) { it.similarity }} | ${mean(group) { it.wordRecall }} " +
+                    "| ${mean(group) { it.wordPrecision }} |",
+            )
+        }
+        appendLine()
+        appendLine("## By document")
+        appendLine()
+        appendLine("| Document | Category | Pages | Expected text | Similarity | Word recall | Word precision |")
+        appendLine("|---|---|---:|---|---:|---:|---:|")
+        results.forEach { r ->
+            val s = r.score
+            appendLine(
+                "| ${r.document.id} | ${r.document.category} | ${r.pages} | ${r.document.status.label} " +
+                    "| ${decimal(s.similarity)} | ${decimal(s.wordRecall)} | ${decimal(s.wordPrecision)} |",
+            )
+        }
+        appendLine()
+        appendLine("## Reading the numbers")
+        appendLine()
+        appendLine(
+            "- **Similarity**: 1 − character error rate between what the player would speak and the expected " +
+                "text, after folding whitespace, Unicode normalization, soft hyphens and zero-width characters. " +
+                "Order counts: interleaved columns cost about twice their length.",
+        )
+        appendLine("- **Word recall**: share of expected words that are spoken. Low means text is lost or garbled.")
+        appendLine(
+            "- **Word precision**: share of spoken words that are expected. Low means clutter is read aloud " +
+                "(running headers, page numbers, figure labels) or words are garbled.",
+        )
+        appendLine(
+            "- **Expected text**: `exact` comes from the generator that made the PDF; `draft` was corrected by " +
+                "eye and waits for a hand-check; `checked` was hand-checked. Rules: `pdf/golden/README.md`.",
+        )
+        appendLine(
+            "- Not scored here: scanned pages (OCR runs on the phone, P3-05), legacy-font PDFs (P3-04) and " +
+                "password or damaged files (device tests).",
+        )
+    }
+
+    private fun mean(group: List<GoldenResult>, metric: (TextScore) -> Double): String =
+        decimal(group.map { round(metric(it.score)) }.average())
+}
