@@ -15,6 +15,8 @@ class VoiceShapingTest {
             trimPauses = true,
             expressiveness = 4,
             characterVoices = true,
+            blendWith = 11,
+            blendPercent = 40,
         )
         assertEquals(shaping, VoiceShaping.decode(shaping.encode()))
     }
@@ -25,6 +27,7 @@ class VoiceShapingTest {
         assertEquals(VoiceShaping(), VoiceShaping.decode("even=maybe;boost=-3;trim"))
         assertEquals(VoiceShaping(boostDb = 3), VoiceShaping.decode("boost=3"))
         assertEquals(VoiceShaping(), VoiceShaping.decode("expression=-1"))
+        assertEquals(VoiceShaping(), VoiceShaping.decode("blendWith=-2;blendPercent=100"))
     }
 
     @Test
@@ -32,6 +35,7 @@ class VoiceShapingTest {
         val old = VoiceShaping.decode("even=true;boost=0;trim=false")
         assertEquals(VoiceShaping.DEFAULT_EXPRESSION, old.expressiveness)
         assertEquals(false, old.characterVoices)
+        assertEquals(null, old.blendWith)
     }
 
     @Test

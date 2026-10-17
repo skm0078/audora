@@ -60,7 +60,7 @@ sealed interface OcrModelsState {
  */
 class OcrModels private constructor(context: Context, private val config: VoiceDownloadConfig) {
     private val appContext = context.applicationContext
-    private val files = TessdataFiles(File(appContext.noBackupFilesDir, ROOT_DIR))
+    internal val files = TessdataFiles(File(appContext.noBackupFilesDir, ROOT_DIR))
     private val installedState = MutableStateFlow<Set<Lang>?>(null)
     private val lock = Any()
 
@@ -89,6 +89,7 @@ class OcrModels private constructor(context: Context, private val config: VoiceD
         AudoraLog.i(TAG, "OCR model download cancelled")
     }
 
+    /** Clears everything in any state, leftovers included. */
     suspend fun delete(): Outcome<Unit, String> = withContext(Dispatchers.IO) {
         workManager().cancelUniqueWork(WORK_NAME)
         synchronized(lock) { files.deleteAll().also { refreshLocked() } }
@@ -201,3 +202,6 @@ class OcrModelDownloadWorker(context: Context, params: WorkerParameters) : Corou
         const val KEY_MESSAGE = "message"
     }
 }
+
+/** Bytes on disk in any state, a cancelled or failed download's leftovers included (the Storage screen). */
+suspend fun OcrModels.sizeOnDisk(): Long = withContext(Dispatchers.IO) { files.sizeOnDisk() }

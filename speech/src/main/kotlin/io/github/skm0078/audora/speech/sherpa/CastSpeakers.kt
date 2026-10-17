@@ -39,6 +39,9 @@ object CastSpeakers {
         CastSpeaker(i, "Kitten ${i / 2 + KITTEN_FIRST_NUMBER}${if (gender == SpeakerGender.MALE) "M" else "F"}", gender)
     }
 
+    /** Kokoro's English speakers, for the narrator blend's choices (plan item 75). */
+    val kokoroEnglish: List<CastSpeaker> get() = KOKORO_ENGLISH
+
     /** The speakers [spec]'s model holds; empty for a one-speaker model. */
     fun of(spec: SherpaVoiceSpec): List<CastSpeaker> = when {
         spec.family == SherpaFamily.KOKORO && spec.engineLang?.startsWith(ENGLISH) == true -> KOKORO_ENGLISH

@@ -19,6 +19,7 @@ import io.github.skm0078.audora.speech.sherpa.SherpaFamily
 import io.github.skm0078.audora.speech.sherpa.SherpaSpeechEngine
 import io.github.skm0078.audora.speech.sherpa.SherpaVoiceManifest
 import io.github.skm0078.audora.speech.sherpa.SherpaVoiceSpec
+import io.github.skm0078.audora.speech.sherpa.StyleBlend
 import io.github.skm0078.audora.speech.sherpa.VitsNoise
 import io.github.skm0078.audora.speech.system.AndroidSystemTtsClient
 import io.github.skm0078.audora.speech.system.SystemSpeechEngine
@@ -27,6 +28,8 @@ import io.github.skm0078.audora.speech.voices.VoiceLibrary
 import java.io.File
 import java.io.IOException
 import java.util.Properties
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** The neural engine together with the voice the APK ships, which is the English default (ADR-012, ADR-014). */
 class BundledSpeech(val engine: SherpaSpeechEngine, val voice: VoiceInfo)
@@ -38,6 +41,7 @@ object SpeechEngines {
     private const val TAG = "Speech.Engines"
     private const val BUNDLED_DATA_DIR = "voices/bundled"
     private const val SYSTEM_WORK_DIR = "tts-system"
+    private const val BLEND_DIR = "voice-blends"
 
     /**
      * The neural engine: the English voice packed into the APK plus every voice downloaded or imported in Settings →
@@ -45,11 +49,13 @@ object SpeechEngines {
      * render. Fails only when the APK was built without its voice, which is a build bug worth surfacing.
      *
      * [noise] is read on every render and given to the Piper and MMS (VITS) voices, so an expressiveness change
-     * (plan item 8) reloads the voice on its next sentence; the other families have no such values.
+     * (plan item 8) reloads the voice on its next sentence; the other families have no such values. [blend] is
+     * read the same way and given to the Kokoro voices (narrator blend, plan item 75).
      */
     fun bundled(
         context: Context,
         config: SpeechConfig = SpeechConfig(),
+        blend: () -> StyleBlend? = { null },
         noise: () -> VitsNoise? = { null },
     ): Outcome<BundledSpeech, SpeechError> {
         val assets = context.assets
@@ -73,10 +79,11 @@ object SpeechEngines {
             threads = config.sherpaThreads,
         )
         val library = VoiceLibrary.get(context)
-        val fromDisk = FileSherpaSynthesizerFactory(library::voiceDir, config.sherpaThreads)
+        val blends = File(context.cacheDir, BLEND_DIR)
+        val fromDisk = FileSherpaSynthesizerFactory(library::voiceDir, config.sherpaThreads, blends)
         // The bundled voice first: it wins if a downloaded voice ever shares its id (after a bundled-voice swap).
         val engine = SherpaSpeechEngine(
-            source = { (listOf(spec) + library.installedSpecs()).withNoise(noise()) },
+            source = { (listOf(spec) + library.installedSpecs()).withNoise(noise()).withBlend(blend()) },
             factory = RoutingSynthesizerFactory(spec.id, fromAssets, fromDisk),
             maxLoadedVoices = config.maxLoadedVoices,
         )
@@ -84,8 +91,25 @@ object SpeechEngines {
         return Outcome.Success(BundledSpeech(engine, spec.toVoiceInfo()))
     }
 
+    private fun List<SherpaVoiceSpec>.withBlend(blend: StyleBlend?): List<SherpaVoiceSpec> =
+        if (blend == null) this else map { if (it.family == SherpaFamily.KOKORO) it.copy(blend = blend) else it }
+
     private fun List<SherpaVoiceSpec>.withNoise(noise: VitsNoise?): List<SherpaVoiceSpec> =
         if (noise == null) this else map { if (it.family == SherpaFamily.VITS) it.copy(noise = noise) else it }
+
+    /** Bytes of the narrator blends' voices files (plan item 75), for the Storage screen. */
+    suspend fun blendCacheBytes(context: Context): Long = withContext(Dispatchers.IO) {
+        File(context.cacheDir, BLEND_DIR).walkBottomUp().filter { it.isFile }.sumOf { it.length() }
+    }
+
+    /**
+     * Deletes the blends' voices files. A blend in use is rebuilt the next time its voice loads, so this frees the
+     * space for as long as no blend is chosen.
+     */
+    suspend fun clearBlendCache(context: Context): Outcome<Unit, String> = withContext(Dispatchers.IO) {
+        val dir = File(context.cacheDir, BLEND_DIR)
+        if (!dir.exists() || dir.deleteRecursively()) Outcome.Success(Unit) else Outcome.Failure("blend files remain")
+    }
 
     /** The phone's own TTS engine. Connects lazily on first use. */
     fun system(context: Context, config: SpeechConfig = SpeechConfig()): SystemSpeechEngine =

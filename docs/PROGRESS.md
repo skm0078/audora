@@ -2,6 +2,17 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Narrator blend (plan item 75; 2026-10-17)
+- **Blend the narrator** in the speech sheet: mix another Kokoro English voice into the Kokoro narrator, from 1% to 99% (30% by default). Off by default. The voice reloads after a change, which takes about a second, like expressiveness.
+- How:
+  - The narrator's style row in the Kokoro voices file becomes the weighted mean of its own and the other speaker's row, the way Kokoro's own tools mix voices (`KokoroBlends`).
+  - It is written to a copy of the file (cacheDir/voice-blends, one per voice, about 28 MB). The copy has the same size and speaker count as the original, so sherpa-onnx loads it as usual, and the other speakers, the character voices among them, stay as they were. No extra RAM.
+  - If the copy can't be made (a full disk, say), the voice loads as installed and the reason is logged.
+  - The setting is saved in `VoiceShaping.blendWith`/`blendPercent`; `StyleBlend` is set on the Kokoro specs by the engine's voice source.
+- Storage screen calls: `SpeechEngines.blendCacheBytes`/`clearBlendCache`, `OcrModels.sizeOnDisk()` and `PunctuationModels.sizeOnDisk()` (any state, leftovers included; `delete()` now clears leftovers too), and `SharedPdfCopies.sizeBytes()`.
+- Tests: `KokoroBlendsTest`, `VoiceShapingTest`.
+- Phone check: K13.
+
 ## A voice for each character (plan item 63; 2026-10-17)
 - The speech sheet's cast has the **A voice for each character** switch, off by default. When it's on, a quote whose speaker is clear is read in that character's own voice, and the voice stays with the character for the book. The speaker comes from:
   - the line's tag ("said Tom", "Mrs Gupta asked", "राम ने कहा", "রহিম বলল");

@@ -85,6 +85,7 @@ fun SpeechSheet(
             PaceSection(pace, onPace)
             ClausePausesRow(clausePauses, onClausePauses)
             VoiceShapingSection(voiceShaping, config.voiceShaping, onVoiceShaping)
+            NarratorBlendSection(voiceShaping, onVoiceShaping)
             CastVoicesSection(voices.rows, voiceShaping, onVoiceShaping)
             ReadingModesSection(readingModes, onReadingModes)
             StudySection(readingModes, study, onReadingModes)

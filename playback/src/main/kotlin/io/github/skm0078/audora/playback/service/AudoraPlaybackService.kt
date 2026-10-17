@@ -63,6 +63,7 @@ import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.StudyGapRenderer
 import io.github.skm0078.audora.playback.voice.VoiceEngines
+import io.github.skm0078.audora.playback.voice.styleBlend
 import io.github.skm0078.audora.speech.sherpa.castSpeakers
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -126,7 +127,9 @@ class AudoraPlaybackService : MediaLibraryService() {
         super.onCreate() // Hilt injects fields here.
         val style = SpeechStyleStore.forContext(this)
         // Expressiveness (plan item 8) is global, like the rest of the voice shaping; a change reloads the voice.
-        val engines = VoiceEngines(this) { style.current.shaping.expressiveness }
+        val engines = VoiceEngines(this, blend = { style.current.shaping.styleBlend() }) {
+            style.current.shaping.expressiveness
+        }
         voices = SpeechVoices(engines)
         val sleepOptions = SleepOptionsStore.forContext(this)
         val book = BookContext(bookSettings, pronunciations, scope) { bookSession.restartRendering() }

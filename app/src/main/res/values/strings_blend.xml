@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_blend.xml -->
+<!-- Purpose: Strings for the narrator blend (plan item 75). -->
+<resources>
+    <string name="speech_blend">Blend the narrator</string>
+    <string name="speech_blend_detail">Mix another voice into the Kokoro narrator for a voice of your own. Kokoro voices only. The voice reloads after each change, about a second, and each blend keeps a 28 MB copy in the cache.</string>
+    <string name="speech_blend_off">Off</string>
+    <string name="speech_blend_amount">Mixed in: %1$d%%</string>
+</resources>
