@@ -5,6 +5,7 @@ package io.github.skm0078.audora.core.progress
 
 import io.github.skm0078.audora.core.config.SpeechStyleConfig
 import io.github.skm0078.audora.core.config.TimeLeftConfig
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SpeechStyle
 
@@ -42,6 +43,16 @@ class TimeLeft(
             }
         }
         return total.toLong()
+    }
+
+    /**
+     * A rough figure for [pages] pages of a book whose text is not known yet: typical pages in [lang] at [rate],
+     * without the pauses. Null for no pages.
+     */
+    fun roughMs(pages: Int, lang: Lang, rate: Float): Long? {
+        if (pages <= 0) return null
+        val chars = pages.toDouble() * config.typicalCharsPerPage
+        return (chars / config.charsPerSecond.getValue(lang) / speech.clampRate(rate) * MS_PER_SECOND).toLong()
     }
 
     private fun pageMs(units: List<ReadingUnit>, style: SpeechStyle): Double = units.sumOf { unitMs(it, style) }

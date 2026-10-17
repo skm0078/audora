@@ -52,6 +52,8 @@ class SessionSources(
     val reading: ReadingSource = ReadingSource(),
     val sleepOptions: () -> SleepOptions = { SleepOptions() },
     val onBook: suspend (BookId) -> Unit = {},
+    val keepGoingToNextChapter: () -> Boolean = { true },
+    val onBookFinished: (BookId) -> Unit = {},
 )
 
 /**
@@ -95,6 +97,9 @@ class BookSession(
     private val loader = PageLoader(env.scope, env.extraction, LoaderEvents())
     private val faults = FaultHandler()
     private val sleep = SleepControl()
+
+    /** "Keep going to the next chapter" off (plan item 25): an end-of-chapter rule that never runs out. */
+    private val chapterStop = SleepTimer(env.elapsedRealtime)
     private val rewind = ResumeRewind(config.resumeRewind, env.elapsedRealtime)
     private val playerListener = PlayerListener()
     private val jumps = JumpHistory(config.jumps)
@@ -247,6 +252,7 @@ class BookSession(
             opened.text.chapterStarts()
         }
         sleep.onBookChanged(chapters)
+        chapterStop.chapterStarts = chapters
         sources.reading.chapterPages = chapters.toSet()
         // The book's own speed, voices and pronunciation fixes, before its first sentence is rendered.
         sources.onBook(opened.book.id)
@@ -292,7 +298,16 @@ class BookSession(
         val currentFeeder = feeder ?: return
         val candidates = currentFeeder.window(1 + config.renderAhead.maxAheadUnits)
         queue?.setWindow(sources.renderAhead.window(candidates, config))
-        player.pauseAtEndOfMediaItems = sleep.pauseAfter(playlist.current(), playlist.next())
+        val current = playlist.current()
+        val next = playlist.next()
+        player.pauseAtEndOfMediaItems = sleep.pauseAfter(current, next) || stopsAtChapterEnd(current, next)
+    }
+
+    /** With "Keep going to the next chapter" off, reading pauses where a chapter ends (the book's end included). */
+    private fun stopsAtChapterEnd(current: PlaybackItem?, next: PlaybackItem?): Boolean {
+        if (sources.keepGoingToNextChapter() || chapterStop.chapterStarts.isEmpty()) return false
+        if (chapterStop.mode != SleepTimerMode.END_OF_CHAPTER) chapterStop.set(SleepTimerMode.END_OF_CHAPTER, 0)
+        return chapterStop.pauseAfter(current, next)
     }
 
     /** Where a rebuild restarts: the current sentence, or just after the last one while waiting for a page. */
@@ -618,6 +633,7 @@ class BookSession(
             }
             if (events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED) && player.playbackState == Player.STATE_ENDED) {
                 AudoraLog.i(TAG, "Book finished, book=${bookId?.logLabel}")
+                bookId?.let(sources.onBookFinished)
             }
             // A faster speed drains the queue sooner (ADR-027): resize the window now, not at the next sentence.
             if (events.contains(Player.EVENT_PLAYBACK_PARAMETERS_CHANGED)) {

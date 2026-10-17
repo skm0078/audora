@@ -62,10 +62,7 @@ interface UpNextPort {
     fun setThenPlayQueue(on: Boolean)
 }
 
-/**
- * Keeps the queue in memory only, so the Up next sheet can be built and previewed before the service backs it.
- * Titles are unknown here, so rows show none; nothing plays from it.
- */
+/** Keeps a queue in memory only, for previews and tests; the app uses [StoredUpNext], which the service plays from. */
 class InMemoryUpNext : UpNextPort {
     private val mutableState = MutableStateFlow(UpNextState())
     override val state: StateFlow<UpNextState> = mutableState.asStateFlow()
