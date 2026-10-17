@@ -41,6 +41,12 @@
             android:exported="false"
             android:foregroundServiceType="dataSync|mediaProcessing" />
 
+        <!-- Studio mode (ADR-039): renders a book ahead while the phone charges; started only from the library (C7). -->
+        <service
+            android:name=".studio.StudioService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|mediaProcessing" />
+
         <!-- Playback resumption (P1-06): a headset's play button after Audora was closed resumes the last book.
              A media button press is a user action (C7); nothing here runs on boot. -->
         <receiver

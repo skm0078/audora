@@ -55,6 +55,7 @@ import io.github.skm0078.audora.playback.book.ReadingTextPreferences
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
+import io.github.skm0078.audora.playback.studio.StudioMode
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.voices.VoiceRow
@@ -65,6 +66,7 @@ import io.github.skm0078.audora.ui.battery.BatterySetupController
 import io.github.skm0078.audora.ui.battery.BatterySetupScreen
 import io.github.skm0078.audora.ui.diagnostics.DiagnosticsController
 import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
+import io.github.skm0078.audora.ui.library.BookAction
 import io.github.skm0078.audora.ui.library.BookCovers
 import io.github.skm0078.audora.ui.library.LibraryActions
 import io.github.skm0078.audora.ui.library.LibraryController
@@ -439,6 +441,13 @@ class MainActivity : ComponentActivity() {
                 override fun onQuery(query: LibraryQuery) = controller.setQuery(query)
 
                 override fun onAddToUpNext(book: Book) = upNext.add(book.id)
+
+                // Studio mode and the exports report in a notification, so they ask for that permission first.
+                override fun onBookAction(book: Book, action: BookAction) = playWithPermission {
+                    when (action) {
+                        BookAction.STUDIO -> StudioMode.start(context, book.id)
+                    }
+                }
             }
         }
         val books = (controller.listState as? LibraryListState.Loaded)?.all?.mapTo(HashSet()) { it.book.id }

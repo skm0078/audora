@@ -19,6 +19,15 @@ class PronunciationFixer(rules: List<PronunciationRule>) {
 
     val isEmpty: Boolean get() = patterns.isEmpty()
 
+    /**
+     * The rules in a stable order, for studio mode's audio key (ADR-039): equal for the same rules in any order. The
+     * listener's own words, so callers hash it and never log it.
+     */
+    val signature: String = rules
+        .map { rule -> "${rule.lang.name}:${rule.wholeWord}:${rule.written.trim()}=>${rule.spoken}" }
+        .sorted()
+        .joinToString("\n")
+
     fun apply(text: String): String = patterns.fold(text) { current, (regex, spoken) ->
         regex.replace(current) { spoken }
     }

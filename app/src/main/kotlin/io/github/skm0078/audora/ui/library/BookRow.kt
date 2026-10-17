@@ -49,6 +49,7 @@ internal fun BookRow(
     onExport: () -> Unit,
     covers: CoverSource = CoverSource.None,
     onAddToUpNext: () -> Unit = {},
+    onAction: (BookAction) -> Unit = {},
 ) {
     ListItem(
         leadingContent = { BookCover(item.book, covers) },
@@ -66,14 +67,20 @@ internal fun BookRow(
                 }
             }
         },
-        trailingContent = { BookMenu(item, onRemove, onExport, onAddToUpNext) },
+        trailingContent = { BookMenu(item, onRemove, onExport, onAddToUpNext, onAction) },
         modifier = Modifier.clickable(onClick = onTap),
     )
 }
 
-/** A book's menu: Up next and Save as audiobook while the file can be opened, and Remove. */
+/** A book's menu: Up next, Save as audiobook and the [BookAction]s while the file can be opened, and Remove. */
 @Composable
-internal fun BookMenu(item: LibraryItem, onRemove: () -> Unit, onExport: () -> Unit, onAddToUpNext: () -> Unit) {
+internal fun BookMenu(
+    item: LibraryItem,
+    onRemove: () -> Unit,
+    onExport: () -> Unit,
+    onAddToUpNext: () -> Unit,
+    onAction: (BookAction) -> Unit = {},
+) {
     var menuOpen by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { menuOpen = true }) {
@@ -94,6 +101,12 @@ internal fun BookMenu(item: LibraryItem, onRemove: () -> Unit, onExport: () -> U
                     text = { Text(stringResource(R.string.library_export_audiobook)) },
                     onClick = { choose(onExport) },
                 )
+                BookAction.entries.forEach { action ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(action.label)) },
+                        onClick = { choose { onAction(action) } },
+                    )
+                }
             }
             DropdownMenuItem(text = { Text(stringResource(R.string.library_remove)) }, onClick = { choose(onRemove) })
         }
