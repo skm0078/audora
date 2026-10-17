@@ -5,11 +5,11 @@ package io.github.skm0078.audora.core.notes
 
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.StorageError
-import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
+import io.github.skm0078.audora.core.model.VoiceMaps
 import io.github.skm0078.audora.core.result.Outcome
 
 /**
@@ -26,18 +26,10 @@ data class BookSettings(
     fun over(global: SpeechStyle): SpeechStyle = global.copy(rate = rate ?: global.rate, pace = pace ?: global.pace)
 
     companion object {
-        /** `EN=SHERPA/name;HI=...`, the voices' stored form; [decodeVoices] reads it back, dropping bad entries. */
-        fun encodeVoices(voices: Map<Lang, VoiceId>): String = voices.entries.sortedBy {
-            it.key
-        }.joinToString(";") { (lang, voice) -> "$lang=${voice.engine}/${voice.name}" }
+        /** The voices' stored form ([VoiceMaps]); [decodeVoices] reads it back, dropping bad entries. */
+        fun encodeVoices(voices: Map<Lang, VoiceId>): String = VoiceMaps.encode(voices)
 
-        fun decodeVoices(line: String?): Map<Lang, VoiceId> = line.orEmpty().split(';').mapNotNull { entry ->
-            val (lang, voice) = entry.split('=', limit = 2).takeIf { it.size == 2 } ?: return@mapNotNull null
-            val (engine, name) = voice.split('/', limit = 2).takeIf { it.size == 2 } ?: return@mapNotNull null
-            val parsedLang = Lang.entries.firstOrNull { it.name == lang } ?: return@mapNotNull null
-            val parsedEngine = EngineId.entries.firstOrNull { it.name == engine } ?: return@mapNotNull null
-            name.takeIf { it.isNotBlank() }?.let { parsedLang to VoiceId(parsedEngine, it) }
-        }.toMap()
+        fun decodeVoices(line: String?): Map<Lang, VoiceId> = VoiceMaps.decode(line)
     }
 }
 

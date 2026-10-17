@@ -7,6 +7,7 @@ import io.github.skm0078.audora.core.config.ScriptRoutingConfig
 import io.github.skm0078.audora.core.config.SpeakabilityConfig
 import io.github.skm0078.audora.core.config.SpeechStyleConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.ClauseMark
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SpeechStyle
@@ -25,10 +26,12 @@ import io.github.skm0078.audora.speech.audio.VoiceShaper
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
 import io.github.skm0078.audora.speech.normalize.TextNormalizer
 import io.github.skm0078.audora.speech.punct.RunOnPunctuation
+import io.github.skm0078.audora.speech.route.Cast
+import io.github.skm0078.audora.speech.route.CastSpeech
 import io.github.skm0078.audora.speech.route.ClauseProsody
 import io.github.skm0078.audora.speech.route.RoutedAudio
-import io.github.skm0078.audora.speech.route.RoutedSpeech
 import io.github.skm0078.audora.speech.route.ScriptRouter
+import io.github.skm0078.audora.speech.route.SpeechRequest
 import io.github.skm0078.audora.speech.route.VoiceSource
 import io.github.skm0078.audora.speech.route.speechNormalizers
 import kotlinx.coroutines.runBlocking
@@ -63,6 +66,9 @@ import kotlinx.coroutines.runBlocking
  * column names, "Equation 3", a cue in place of unreadable text, a cue before a caption or a chapter's heading.
  *
  * Each clip's layout (cue, voice, silence after) goes to [timings] for the reader's word highlight (plan item 14).
+ *
+ * With cast voices in the style's shaping (plan item 7), headings and quoted speech are read by their own voices
+ * ([CastSpeech]), the quote's clause pause where the voice changes, each part evened before the join.
  */
 @Suppress("LongParameterList") // All optional: the app passes the speed tracker, style, reading setup and timings.
 class EngineRenderer(
@@ -75,7 +81,7 @@ class EngineRenderer(
     private val reading: ReadingSetup = ReadingSetup(),
     private val timings: SentenceTimings? = null,
 ) : SentenceRenderer {
-    private val routedSpeech = RoutedSpeech(voices, ScriptRouter(config), normalizers)
+    private val castSpeech = CastSpeech(voices, ScriptRouter(config), normalizers)
 
     override fun render(unit: ReadingUnit): Outcome<PcmAudio, SpeechError> {
         val now = style()
@@ -119,7 +125,11 @@ class EngineRenderer(
         val shaping = now.shaping
         val shaper = reading.shaper
         val trim: (PcmAudio) -> PcmAudio = if (shaping.trimPauses) shaper::trimPauses else { audio -> audio }
-        return runBlocking { routedSpeech.render(text, unit.lang, speech.role, rate, prosody, trim) }.map { routed ->
+        val cast = Cast(shaping.dialogueVoices, shaping.headingVoices)
+        val quotePauseMs = if (now.clausePauses) styleConfig.clauseSilenceMs(ClauseMark.QUOTE, now) else 0
+        val level: (PcmAudio) -> PcmAudio = { shaper.level(it, shaping.evenLoudness, boostDb = 0) }
+        val request = SpeechRequest(speech.role, rate, prosody, trim)
+        return runBlocking { castSpeech.render(text, unit.lang, request, cast, quotePauseMs, level) }.map { routed ->
             speed?.onRendered(text.trim().length, routed, System.nanoTime() - started, rate)
             log(unit, routed)
             shaper.level(routed.audio, shaping.evenLoudness, shaping.boostDb)
