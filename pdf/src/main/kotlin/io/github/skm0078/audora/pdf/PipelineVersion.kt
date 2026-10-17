@@ -25,5 +25,6 @@ package io.github.skm0078.audora.pdf
  * 10 = RI-7a: figure and table captions and display equations tagged (ADR-035); a display line of maths, or a
  *     caption joined to the paragraph above it, is a paragraph of its own, so the sentences around it end there.
  *     RI-4a: tables kept as a header unit and row units instead of dropped (same version: 10 had not shipped).
+ *     RI-5a: note markers left out of the text, footnotes and "Note:" paragraphs tagged (same version).
  */
 const val PIPELINE_VERSION: Int = 10

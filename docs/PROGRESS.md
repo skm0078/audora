@@ -2,6 +2,17 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Reading intelligence, step 4 — footnotes and note markers (RI-5a; 2026-10-17, ADR-035)
+- **Note markers fall silent:** small raised numbers and symbols after a word or punctuation ("both.¹", "Abbott,³", "Gal∗") are left out of what the voice is given, the way "[4]" citations already were. Exponents are read: "x²", "10⁻²¹", "χ²", "600 deg²", "(x+1)²", and subscripts ("B₁"). A switch in `NoteConfig` keeps markers if a reading mode ever wants them.
+- **Footnotes tagged** (`FOOTNOTE`, with the note's number in `noteRef`): the small lines at the foot of a column, split into one note per number; a note carried over from the previous page is tagged without a number. They stay where they are printed, so playback reads them at the end of the page as now; RI-5b (app basics) adds "Footnotes: read / skip".
+- **"Note:" paragraphs tagged** (`ASIDE`): "Note:", "NOTE –", "N.B.", "टिप्पणी:", "नोट:", "দ্রষ্টব্য:", "টীকা:".
+- `PIPELINE_VERSION` stays 10 (not on `dev` yet). Golden 0.9268 unchanged; listening 0.9782 → 0.9783 (the forall x footnote page no longer hears its "1"). `docs/LISTENING.md` regenerated. No new dependency.
+- Tests: `NoteFinderTest` (markers vs exponents in a table, subscripts, ordinals, numbered footnotes, a carried-over note, a stray table cell and a smaller quotation that are not footnotes, asides in three languages, the switch), `NoteConfigTest`, and `pdf/golden/notes/labels.tsv` (both corpora: every marker and footnote, nothing else). Counted outside the repository on the ticket's four books (arXiv TraceMonkey, the LIGO paper with about 1,000 authors, the CERC Hindi–English gazette, 60 pages of forall x): 1,172 of 1,172 markers silenced, 0 of 18 exponents and fractions taken for one, a footnote found for every footnote marker but one (the LIGO paper's, see below).
+
+**Known limits:** scanned pages: OCR gives no sizes, so markers there are still read ("both.1") and footnotes are body text. A marker printed at full size (only raised) is read. Small print at a column's foot without a number (a journal's licence lines, a print slug) is tagged as a footnote too, so "Skip footnotes" will skip it, which is what a listener wants. A footnote that cleanup takes for page furniture is dropped as before (the LIGO paper's "Full author list given at the end").
+
+**Real-device checks:** open forall x page 13 (or any book with footnotes) and check that "never both." is read without "one", and the footnote is read after the page's text.
+
 ## Reading intelligence, step 3b — tables kept as rows and columns (RI-4a; 2026-10-17, ADR-035)
 - **Tables are kept, not dropped:** each table cleanup finds becomes a header unit (`TABLE_SUMMARY`, the header row) and one `TABLE_ROW` unit per data row, with each cell as a span of the row's real text and the header texts alongside (`TableRowInfo`). Works on English, Hindi and Bengali text layers, legacy fonts included.
 - **Grid from geometry** (`TableGrid`): cells wrapped over two lines stay in their row, a rank printed once beside two records goes with the first, a header over two or three lines is one header, a header or total row that layout cut off from the table joins it, and a chart's letter-by-letter axis titles are not taken for a table (dropped as before). A title across the table's edge stays text.

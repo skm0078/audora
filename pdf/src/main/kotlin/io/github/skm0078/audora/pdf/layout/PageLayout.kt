@@ -22,6 +22,8 @@ data class PageLayout(
      * block boxes are in that turned frame; glyph boxes in `PageText` stay in page space, for highlighting.
      */
     val turn: TextTurn = TextTurn.NONE,
+    /** Note markers ("both.¹", "Abbott,³") the reading text leaves out (RI-5a, NoteFinder); offsets into `PageText`. */
+    val noteMarkers: List<TextSpan> = emptyList(),
 )
 
 enum class LayoutMode {
@@ -41,9 +43,12 @@ data class Paragraph(
     val continuesPrevious: Boolean = false,
     /** Set exactly on [ParagraphKind.TABLE_HEADER] and [ParagraphKind.TABLE_ROW] paragraphs (RI-4a). */
     val table: TableCells? = null,
+    /** The note number a [ParagraphKind.FOOTNOTE] holds; null when unknown (a note carried on from the page before). */
+    val noteRef: Int? = null,
 ) {
     init {
         require((table != null) == kind.isTable) { "table cells must be set exactly on table paragraphs, was $kind" }
+        require(noteRef == null || kind == ParagraphKind.FOOTNOTE) { "noteRef is only for footnotes, was $kind" }
     }
 }
 
@@ -86,6 +91,12 @@ enum class ParagraphKind {
 
     /** One data row of a table (RI-4a). */
     TABLE_ROW,
+
+    /** One footnote at the foot of the page, without its number (RI-5a). */
+    FOOTNOTE,
+
+    /** A paragraph set apart as a note ("Note: …", "टिप्पणी: …") (RI-5a). */
+    ASIDE,
     ;
 
     val isTable: Boolean get() = this == TABLE_HEADER || this == TABLE_ROW

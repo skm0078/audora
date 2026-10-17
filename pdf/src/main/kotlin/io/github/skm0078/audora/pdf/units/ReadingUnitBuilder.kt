@@ -19,6 +19,7 @@ import io.github.skm0078.audora.pdf.cleanup.TextRepair
 import io.github.skm0078.audora.pdf.extract.PageText
 import io.github.skm0078.audora.pdf.layout.FurnitureFinder
 import io.github.skm0078.audora.pdf.layout.ListMarkers
+import io.github.skm0078.audora.pdf.layout.NoteFinder
 import io.github.skm0078.audora.pdf.layout.PageLayout
 import io.github.skm0078.audora.pdf.layout.PageLayoutAnalyzer
 import io.github.skm0078.audora.pdf.layout.ParagraphKind
@@ -63,6 +64,7 @@ class ReadingUnitBuilder(
     private val profiler = PageProfiler(cleanupConfig)
     private val clutter = ClutterRemover(cleanupConfig, layoutConfig)
     private val furniture = FurnitureFinder(layoutConfig.furniture)
+    private val notes = NoteFinder(layoutConfig)
 
     /** Running headers and page numbers on scanned pages (ADR-032); `PdfBook` feeds it the neighbours' strips. */
     internal val ocrClutter = OcrClutter(cleanupConfig)
@@ -87,7 +89,7 @@ class ReadingUnitBuilder(
 
     fun readingText(page: AnalyzedPage, neighbours: List<PageProfile>): ReadingText {
         val cleaned = clutter.clean(page.text, page.layout, page.profile, neighbours)
-        return textOf(page, neighbours, furniture.tag(page.text, cleaned))
+        return textOf(page, neighbours, notes.tag(page.text, furniture.tag(page.text, cleaned)))
     }
 
     /**
@@ -155,6 +157,7 @@ class ReadingUnitBuilder(
                         kind = paragraph.kind.unitKind(),
                         speakScore = speakability.score(unitText, ocrConfidence),
                         table = paragraph.table?.let { cells -> row?.let { tableInfo(cells, it, headers) } },
+                        noteRef = paragraph.noteRef,
                     ),
                 )
             }
@@ -213,6 +216,8 @@ class ReadingUnitBuilder(
         ParagraphKind.EQUATION -> UnitKind.EQUATION
         ParagraphKind.TABLE_HEADER -> UnitKind.TABLE_SUMMARY
         ParagraphKind.TABLE_ROW -> UnitKind.TABLE_ROW
+        ParagraphKind.FOOTNOTE -> UnitKind.FOOTNOTE
+        ParagraphKind.ASIDE -> UnitKind.ASIDE
     }
 
     private companion object {

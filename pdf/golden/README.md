@@ -44,7 +44,8 @@ What the voice is given (normalizers, playback's reading modes) is scored by the
 [listening/README.md](listening/README.md).
 How well the gibberish gate tells junk from real sentences is checked on the labelled lines in
 [speakability/README.md](speakability/README.md) (RI-2a). Which units are captions and display equations is checked
-on the labelled units in [furniture/README.md](furniture/README.md) (RI-7a).
+on the labelled units in [furniture/README.md](furniture/README.md) (RI-7a), and which markers fall silent and which
+units are footnotes in [notes/README.md](notes/README.md) (RI-5a).
 
 `GoldenRoutingTest` reads the same documents through `PdfBook.readPage` and checks page routing (P3-03): Unicode
 Indic documents keep their text layer and pass the OCR sample, broken-map documents go to OCR.

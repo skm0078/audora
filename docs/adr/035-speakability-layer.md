@@ -110,4 +110,22 @@ and highlight need a unit to land on.
   145 of 145 cells) and by eye on a Bengali result list and a Hindi government report kept outside the repository.
   Tables on scanned pages are not read yet: Tesseract gives each cell its own block, which needs a block-grid
   path of its own.
+- RI-5a (notes) runs in `:pdf/layout/NoteFinder` after the furniture tags, on text-layer pages (OCR'd and turned
+  pages carry no font sizes). A note marker is a run of small, raised glyphs (at most 0.85 of the line's size, bottom
+  at least 0.25 em above its baseline) holding only numbers ("3", "8,16,17") or note symbols ("∗", "†"), after a
+  word of two or more letters, closing punctuation or a bracket closing words, or opening a line before a word (a
+  footnote's or affiliation's own number). After a digit, an operator, a single letter, a Greek letter or a unit
+  ("deg²") it is an exponent and is read. Markers are left out of the reading text like citation markers, offsets
+  still mapped (ADR-018); `NoteConfig.silenceMarkers` turns that off. Unicode superscript digits do not count by
+  themselves: legacy and broken font maps reuse "²" and "³" for Bengali conjuncts. Footnotes are a column's
+  trailing lines set smaller than the body (at most 0.92) and at least half an em below the line above, with
+  nothing under them; each line opening with a marker starts a `FOOTNOTE` paragraph holding that note's number
+  (`noteRef`), and lines before the first marker carry on a note from the page before (no number, and only when
+  they run at least half the column's width, so a stray table cell is not one). Small print at a column's foot
+  without a number (a publisher's licence lines, a print slug) is tagged the same: playback treats it alike.
+  Footnotes stay where they are printed, so playback's page order is unchanged. A body paragraph opening with a
+  note label ("Note:", "NOTE –", "टिप्पणी:", "দ্রষ্টব্য:") is an `ASIDE`. Still PIPELINE_VERSION 10 (not on `dev`
+  yet). Checked by pdf/golden/notes/labels.tsv and by a count on 4 test PDFs kept outside the repository (an arXiv
+  compiler paper, the LIGO detection paper with its author list of about 1,000 names, a Hindi–English gazette, a logic
+  textbook): all 1,172 markers silenced, none of the 18 exponents and fractions taken for one.
 - Logs carry kinds, scores, page and unit index, never the page's text (AGENTS.md).
