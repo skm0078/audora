@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/VoiceShapingSection.kt
-// Purpose: The speech sheet's sound section: even loudness, voice boost and pause trim (plan items 9, 10).
+// Purpose: The speech sheet's sound section: even loudness, voice boost, pause trim (items 9, 10), expressiveness (8).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -11,19 +11,26 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.config.VoiceShapingConfig
 import io.github.skm0078.audora.core.model.VoiceShaping
+import kotlin.math.roundToInt
 
 /** Each change applies from the next sentence rendered; the sentence playing restarts like a speed change. */
 @Composable
-fun VoiceShapingSection(shaping: VoiceShaping, boostChoicesDb: List<Int>, onChange: (VoiceShaping) -> Unit) {
+fun VoiceShapingSection(shaping: VoiceShaping, config: VoiceShapingConfig, onChange: (VoiceShaping) -> Unit) {
     Text(stringResource(R.string.speech_sound), style = MaterialTheme.typography.titleMedium)
     ShapingSwitch(
         stringResource(R.string.speech_even_loudness),
@@ -40,13 +47,40 @@ fun VoiceShapingSection(shaping: VoiceShaping, boostChoicesDb: List<Int>, onChan
         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        boostChoicesDb.forEach { db ->
+        config.boostChoicesDb.forEach { db ->
             FilterChip(
                 selected = shaping.boostDb == db,
                 onClick = { onChange(shaping.copy(boostDb = db)) },
                 label = { Text(boostLabel(db)) },
             )
         }
+    }
+    ExpressivenessSlider(shaping.expressiveness, config.maxExpression) { onChange(shaping.copy(expressiveness = it)) }
+}
+
+/**
+ * Newsreader to storyteller in whole steps (plan item 8). Applied when the thumb is let go, not while dragging: each
+ * new step reloads the voice.
+ */
+@Composable
+private fun ExpressivenessSlider(step: Int, maxStep: Int, onChange: (Int) -> Unit) {
+    var dragged by remember(step) { mutableFloatStateOf(step.toFloat()) }
+    Text(stringResource(R.string.speech_expressiveness), style = MaterialTheme.typography.bodyLarge)
+    Text(
+        stringResource(R.string.speech_expressiveness_detail),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Slider(
+        value = dragged,
+        onValueChange = { dragged = it },
+        valueRange = 0f..maxStep.toFloat(),
+        steps = (maxStep - 1).coerceAtLeast(0),
+        onValueChangeFinished = { dragged.roundToInt().takeIf { it != step }?.let(onChange) },
+    )
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(stringResource(R.string.speech_expressiveness_newsreader), style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.speech_expressiveness_storyteller), style = MaterialTheme.typography.bodySmall)
     }
 }
 

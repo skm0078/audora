@@ -80,7 +80,7 @@ fun SpeechSheet(
             SpeedSection(speed, config, onSpeed)
             PaceSection(pace, onPace)
             ClausePausesRow(clausePauses, onClausePauses)
-            VoiceShapingSection(voiceShaping, config.voiceShaping.boostChoicesDb, onVoiceShaping)
+            VoiceShapingSection(voiceShaping, config.voiceShaping, onVoiceShaping)
             ReadingModesSection(readingModes, onReadingModes)
             Text(
                 stringResource(R.string.speech_sheet_hint),

@@ -1,5 +1,5 @@
 // File: core/src/main/kotlin/io/github/skm0078/audora/core/model/VoiceShaping.kt
-// Purpose: What is done to the voice's audio after synthesis: even loudness, voice boost, pause trim (items 9, 10).
+// Purpose: How the voice sounds: even loudness, voice boost, pause trim (items 9, 10) and expressiveness (item 8).
 
 package io.github.skm0078.audora.core.model
 
@@ -10,19 +10,33 @@ package io.github.skm0078.audora.core.model
  *   limited instead of clipped. 0 = none.
  * @property trimPauses the voice's own long silences (between words, and its lead-in and tail) are shortened, like
  *   a podcast app's "smart speed". The pauses Audora adds (pace, punctuation, paragraphs) are kept.
+ * @property expressiveness from 0, a newsreader's even delivery, up to `VoiceShapingConfig.maxExpression`, a
+ *   storyteller's livelier one. Unlike the rest, set when the voice is synthesized (Piper and MMS voices' noise
+ *   values), so a change reloads the voice, about a second.
  */
-data class VoiceShaping(val evenLoudness: Boolean = true, val boostDb: Int = 0, val trimPauses: Boolean = false) {
+data class VoiceShaping(
+    val evenLoudness: Boolean = true,
+    val boostDb: Int = 0,
+    val trimPauses: Boolean = false,
+    val expressiveness: Int = DEFAULT_EXPRESSION,
+) {
     init {
         require(boostDb >= 0) { "boostDb must be >= 0, was $boostDb" }
+        require(expressiveness >= 0) { "expressiveness must be >= 0, was $expressiveness" }
     }
 
     /** One line, `key=value` pairs separated by `;`, like [ReadingModes.encode]; [decode] reads it back. */
-    fun encode(): String = "$KEY_EVEN=$evenLoudness;$KEY_BOOST=$boostDb;$KEY_TRIM=$trimPauses"
+    fun encode(): String =
+        "$KEY_EVEN=$evenLoudness;$KEY_BOOST=$boostDb;$KEY_TRIM=$trimPauses;$KEY_EXPRESSION=$expressiveness"
 
     companion object {
+        /** The middle step: the voices' own noise values, as before the setting existed. */
+        const val DEFAULT_EXPRESSION = 2
+
         private const val KEY_EVEN = "even"
         private const val KEY_BOOST = "boost"
         private const val KEY_TRIM = "trim"
+        private const val KEY_EXPRESSION = "expression"
 
         /** Reads [encode]'s line; a missing or bad value takes its default, so this never fails. */
         fun decode(line: String?): VoiceShaping {
@@ -34,6 +48,7 @@ data class VoiceShaping(val evenLoudness: Boolean = true, val boostDb: Int = 0, 
                 evenLoudness = values[KEY_EVEN]?.toBooleanStrictOrNull() ?: defaults.evenLoudness,
                 boostDb = values[KEY_BOOST]?.toIntOrNull()?.takeIf { it >= 0 } ?: defaults.boostDb,
                 trimPauses = values[KEY_TRIM]?.toBooleanStrictOrNull() ?: defaults.trimPauses,
+                expressiveness = values[KEY_EXPRESSION]?.toIntOrNull()?.takeIf { it >= 0 } ?: defaults.expressiveness,
             )
         }
     }

@@ -176,6 +176,10 @@
     <string name="speech_boost">Voice boost</string>
     <string name="speech_boost_off">Off</string>
     <string name="speech_boost_db">+%1$d dB</string>
+    <string name="speech_expressiveness">Expressiveness</string>
+    <string name="speech_expressiveness_detail">For Piper and MMS voices. Changing it reloads the voice, about a second</string>
+    <string name="speech_expressiveness_newsreader">Newsreader</string>
+    <string name="speech_expressiveness_storyteller">Storyteller</string>
     <string name="reader_sleep_chapters">After %1$d chapters</string>
     <string name="sleep_options_menu">Sleep options…</string>
     <string name="sleep_options_title">Sleep options</string>

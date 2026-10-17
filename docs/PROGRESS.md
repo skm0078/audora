@@ -2,6 +2,13 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Expressiveness slider (plan item 8; 2026-10-17)
+- The speech sheet's sound section gains **Expressiveness**, a five-step slider from **Newsreader** (flat, even delivery) to **Storyteller** (livelier pitch, energy and timing). The middle step, the default, is the voices' own delivery, so nothing changes until it is moved.
+- How: Piper's `noise_scale` and `noise_w`, the two values calibre's Piper settings tune, set when a Piper or MMS voice loads (0.33/0.4 up to 0.9/1.05; the middle is the voices' 0.667/0.8; `VoiceShapingConfig`). Saved with the voice shaping, so it reaches playback and audiobook export alike; the change applies when the thumb is let go and restarts the sentence playing, which reloads the voice once (about a second on the Moto). Kokoro, Kitten, Supertonic and the phone's own voices have no such values and sound the same at every step.
+- Tests: `VoiceShapingConfigTest`, `VoiceShapingTest`, `SherpaSpeechEngineTest` (a new step reloads the voice once), `SherpaModelConfigTest`.
+
+**Real-device checks (final phone session):** an English and a Hindi Piper page at Newsreader, the middle and Storyteller; the reload pause when it changes; Storyteller must not slur.
+
 ## Hindi and Bengali text pack (plan item 3; 2026-10-17)
 - Hindi and Bengali now read **dates** day first as India writes them ("15/08/1947", "15-8-47", "15.08.1947" become "पंद्रह अगस्त उन्नीस सौ सैंतालीस", and in Bengali the day takes its date ending: পয়লা, দোসরা, পাঁচই, উনিশে), **ordinals** ("1ला, 2री, 6ठे, 21वीं"; "১ম, ২য়, ৪র্থ, ১১শ, ২১তম", "১লা, ১৯শে"), **units** written as Latin symbols after a number ("5 km", "10kg", "37°C") and the languages' own **abbreviations** ("डॉ.", "प्रो.", "कि.मी.", "पृ.", "1947 ई.", "ई.पू."; "ডঃ", "পৃঃ", "কিমি", "খ্রিঃ"). "रु." and "টা." join ₹ and Rs. as money.
 - Rules live in `IndicTextPack` with the words in `IndicTextTable`, run by `IndicNormalizer` before its number rules; anything not recognised (month 13, an ordinal past 999) is left for the number rules as before. Both encodings of Bengali য় match. No `:pdf` change; golden unchanged.
