@@ -16,6 +16,7 @@ import io.github.skm0078.audora.pdf.cleanup.PageProfile
 import io.github.skm0078.audora.pdf.cleanup.PageProfiler
 import io.github.skm0078.audora.pdf.cleanup.TextRepair
 import io.github.skm0078.audora.pdf.extract.PageText
+import io.github.skm0078.audora.pdf.layout.FurnitureFinder
 import io.github.skm0078.audora.pdf.layout.ListMarkers
 import io.github.skm0078.audora.pdf.layout.PageLayout
 import io.github.skm0078.audora.pdf.layout.PageLayoutAnalyzer
@@ -39,8 +40,9 @@ import io.github.skm0078.audora.pdf.render.ViewRect
  * repairs the text, after legacy-font conversion (P3-04) and the Indic repair and reorder pass (P3-03); sentences
  * are then split within each paragraph, so a heading without a full stop never runs into the paragraph below it.
  * `charStart`/`charEnd` index [ReadingText.text] (ADR-018, ADR-020). Number and date normalization is P2-04. Units
- * without a letter or digit are skipped. Every unit gets a speakability score (RI-2a, ADR-035), with the OCR
- * engine's confidence in its words on a scanned page.
+ * without a letter or digit are skipped. Figure and table captions and display equations are tagged after cleanup
+ * (RI-7a). Every unit gets a speakability score (RI-2a, ADR-035), with the OCR engine's confidence in its words on a
+ * scanned page.
  *
  * Header and footer removal compares a page with its neighbours ([PageProfile]). `PdfBook.readingUnits` supplies
  * them; [build] with a page alone applies every rule that needs no neighbour.
@@ -58,6 +60,7 @@ class ReadingUnitBuilder(
     private val analyzer = PageLayoutAnalyzer(layoutConfig)
     private val profiler = PageProfiler(cleanupConfig)
     private val clutter = ClutterRemover(cleanupConfig, layoutConfig)
+    private val furniture = FurnitureFinder(layoutConfig.furniture)
 
     /** Running headers and page numbers on scanned pages (ADR-032); `PdfBook` feeds it the neighbours' strips. */
     internal val ocrClutter = OcrClutter(cleanupConfig)
@@ -80,8 +83,10 @@ class ReadingUnitBuilder(
     /** The page's text in reading order: what [build]'s offsets index. */
     fun readingText(page: PageText): ReadingText = readingText(analyze(page), emptyList())
 
-    fun readingText(page: AnalyzedPage, neighbours: List<PageProfile>): ReadingText =
-        textOf(page, neighbours, clutter.clean(page.text, page.layout, page.profile, neighbours))
+    fun readingText(page: AnalyzedPage, neighbours: List<PageProfile>): ReadingText {
+        val cleaned = clutter.clean(page.text, page.layout, page.profile, neighbours)
+        return textOf(page, neighbours, furniture.tag(page.text, cleaned))
+    }
 
     /**
      * The page's whole text layer in layout order, repaired, with headers and page numbers kept: what OCR of the
@@ -102,7 +107,7 @@ class ReadingUnitBuilder(
         toPage: ((ViewRect) -> TextBox)? = null,
     ): ReadingText {
         val page = OcrPageText.build(pageIndex, ocr, dropped, toPage)
-        return textBuilder.build(page.text, page.layout, page.hyphenated, IndicOrder.LOGICAL)
+        return textBuilder.build(page.text, furniture.tag(page.text, page.layout), page.hyphenated, IndicOrder.LOGICAL)
     }
 
     /** Text without positions (tests, and engines without boxes): blank lines start paragraphs. */
@@ -152,6 +157,8 @@ class ReadingUnitBuilder(
     private fun sentencesOf(flat: String, paragraph: ReadingParagraph, pageLang: Lang): List<IntRange> {
         val slice = flat.substring(paragraph.start, paragraph.end)
         val lang = ScriptDetector.dominantLang(slice) ?: pageLang
+        // An equation is read whole ("Equation 9"); its dots and brackets are not sentence ends.
+        if (paragraph.kind == ParagraphKind.EQUATION) return listOf(paragraph.start until paragraph.end)
         val sentences = splitter.split(slice, lang).map { (it.first + paragraph.start)..(it.last + paragraph.start) }
         return if (paragraph.kind == ParagraphKind.LIST_ITEM) keepLabel(flat, sentences) else sentences
     }
@@ -176,6 +183,8 @@ class ReadingUnitBuilder(
         ParagraphKind.BODY -> UnitKind.BODY
         ParagraphKind.HEADING -> UnitKind.HEADING
         ParagraphKind.LIST_ITEM -> UnitKind.LIST_ITEM
+        ParagraphKind.CAPTION -> UnitKind.CAPTION
+        ParagraphKind.EQUATION -> UnitKind.EQUATION
     }
 
     private companion object {

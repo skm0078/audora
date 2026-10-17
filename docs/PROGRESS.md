@@ -2,6 +2,17 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Reading intelligence, step 3a — captions and equations (RI-7a; 2026-10-17, ADR-035)
+- **Captions tagged** (`CAPTION`): every sentence of a figure or table caption, in English, Hindi and Bengali ("Fig. 2.", "Table 3:", "चित्र 4:", "সারণি ২ ।"), when the label is set apart (a delimiter, nothing or a capital after it, or a heading, bold or smaller line). "Fig. 2 shows…" in the text stays body. A caption that layout ran into the paragraph above it ("…format takes. / Table 1. Useful specifiers") is split off.
+- **Display equations tagged** (`EQUATION`): lines of maths set off from the text (an equation number, an indent, or a block of their own). Maths inside a sentence stays in the sentence; code, garbled chart labels and broken-font Bengali are not taken for maths.
+- Unit boundaries kept: a caption's label stays its own sentence and each equation line its own unit, so positions saved on older builds still resume. Playback gives the kinds their readings in RI-7b (announce or skip; a run of equation lines read as one equation).
+- `PIPELINE_VERSION` 10 (a display line now ends the sentence before it). Golden 0.9268 and listening 0.9775 unchanged; `docs/QUALITY.md` regenerated. No new dependency.
+- Tests: table-driven caption and equation cases (`FurnitureFinderTest`), `FurnitureConfig`, and `pdf/golden/furniture/labels.tsv`: all 36 labelled captions and equations of both corpora tagged, nothing else. Checked by eye on 12 more test PDFs (arXiv papers, forall x, Pro Git, Hindi and Bengali government documents): no wrong caption.
+
+**Known limits:** numbers in tables that cleanup does not find yet are tagged as equations (RI-4a reads tables). A caption that layout ran together with the body text after it takes that text with it. On scanned pages only captions with a delimiter are found (OCR gives no sizes or bold).
+
+**Real-device checks:** none yet (the kinds are read as body text until RI-7b).
+
 ## Reading intelligence, step 2 — gibberish scoring (RI-2a; 2026-10-17, ADR-035)
 - **Every sentence gets a `speakScore`** (0–1) from `SpeakabilityScorer`: OCR word confidence, the share of words in the language's word list, how word-like the letters are (a letter-trigram model trained from the list), clean tokens (no symbol soup, no "PTfuqT", no Devanagari glued to Latin digits) and words in one script. Nothing is skipped yet: RI-2b (app basics) adds "Skip unreadable text" in playback.
 - **Word lists bundled, not downloaded:** `scripts/speakability/build_models.py` builds them from wordfreq 3.1.1 (data CC BY-SA 4.0): English 78k, Hindi 24k, Bengali 93k words, 0.9 MB in `:pdf`'s resources. Loaded per language on first use; a missing list is logged once and that language scores without them.

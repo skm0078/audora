@@ -80,4 +80,16 @@ and highlight need a unit to land on.
   look right. OCR confidence now travels with each word (`OcrWord.confidence`, OCR cache format 2; pages cached
   before it score without that signal). Scores only, no text change: PIPELINE_VERSION stays 9, golden and
   listening scores are unchanged.
+- RI-7a (captions and equations) tags in `:pdf/layout/FurnitureFinder` after cleanup, on text-layer and OCR pages.
+  A caption is a paragraph opening with a label ("Fig. 2", "Table 3", "चित्र", "सारणी", "চিত্র", "সারণি") that is set
+  apart: a delimiter, nothing or a capital after the label, or a heading, bold or smaller line. "Fig. 4 shows…" stays
+  body. A display equation is a line with few dictionary words and a maths symbol or equation number, set off by an
+  equation number, an indent or a block of its own; code, garbled glyph runs and broken-font Indic text are not
+  maths. Unit boundaries were kept where they were: a caption's label stays its own sentence and each display line
+  its own unit, because merging them made resume fingerprints miss and gave the listening score nothing until
+  playback reads equations (RI-7b reads a run of equation units as one). PIPELINE_VERSION 10: a display line or a
+  caption that layout joined to the paragraph above now ends the sentence before it. Checked by
+  pdf/golden/furniture/labels.tsv (all 36 labelled units of both corpora tagged, nothing else) and by eye on 12
+  test PDFs (arXiv papers, a logic textbook, Pro Git, Hindi and Bengali government documents): no wrong caption;
+  wrong equations only on table cells of tables cleanup does not find (RI-4a).
 - Logs carry kinds, scores, page and unit index, never the page's text (AGENTS.md).

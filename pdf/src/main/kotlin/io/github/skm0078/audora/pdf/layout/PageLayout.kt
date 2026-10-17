@@ -47,6 +47,12 @@ enum class ParagraphKind {
 
     /** Starts with a bullet or a label ("1.", "(a)"); its continuation lines belong to it (P2-04). */
     LIST_ITEM,
+
+    /** A figure or table caption ("Fig. 2. …", "सारणी 3: …"), tagged after cleanup (RI-7a, ADR-035). */
+    CAPTION,
+
+    /** A display equation: one or more lines of maths, read as one unit (RI-7a, ADR-035). */
+    EQUATION,
 }
 
 /**

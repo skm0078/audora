@@ -42,7 +42,8 @@ starts emitting a new kind checks the rules and extends that set only for kinds 
 What the voice is given (normalizers, playback's reading modes) is scored by the listening corpus next door:
 [listening/README.md](listening/README.md).
 How well the gibberish gate tells junk from real sentences is checked on the labelled lines in
-[speakability/README.md](speakability/README.md) (RI-2a).
+[speakability/README.md](speakability/README.md) (RI-2a). Which units are captions and display equations is checked
+on the labelled units in [furniture/README.md](furniture/README.md) (RI-7a).
 
 `GoldenRoutingTest` reads the same documents through `PdfBook.readPage` and checks page routing (P3-03): Unicode
 Indic documents keep their text layer and pass the OCR sample, broken-map documents go to OCR.

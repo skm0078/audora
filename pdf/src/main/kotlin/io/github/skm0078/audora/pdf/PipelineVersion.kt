@@ -22,5 +22,7 @@ package io.github.skm0078.audora.pdf
  * 9 = known gaps (ADR-032): single Chanakya glyphs inside Kruti Dev/DevLys words read as their conjuncts; pages set
  *     sideways laid out in their reading direction; scanned pages turned upright before OCR, running headers and
  *     page numbers on them dropped, and their words carry boxes for the highlight.
+ * 10 = RI-7a: figure and table captions and display equations tagged (ADR-035); a display line of maths, or a
+ *     caption joined to the paragraph above it, is a paragraph of its own, so the sentences around it end there.
  */
-const val PIPELINE_VERSION: Int = 9
+const val PIPELINE_VERSION: Int = 10
