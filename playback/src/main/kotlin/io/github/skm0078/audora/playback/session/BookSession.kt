@@ -108,6 +108,9 @@ class BookSession(
     private var rewindTarget: Int? = null
 
     private var book: OpenedBook? = null
+
+    // The book the player's playlist was built for; differs from [book] between a book switch and its rebuild.
+    private var playlistBook: BookId? = null
     private var bookPassword: String? = null
     private var epoch = 0
     private var queue: RenderAheadQueue? = null
@@ -149,7 +152,10 @@ class BookSession(
             }
             error = null
             AudoraLog.i(TAG, "Play book=${id.logLabel} page=$page char=$charStart pages=$pageCount")
-            currentSpot()?.let { from -> recordJump(from, Spot(page, charStart), JumpOrigin.START) }
+            // Only a jump within the book: after a book switch the player still holds the old book's playlist.
+            if (playlistBook == id) {
+                currentSpot()?.let { from -> recordJump(from, Spot(page, charStart), JumpOrigin.START) }
+            }
             rebuild(page, charStart, play = true)
             sleep.onStarted()
             Outcome.Success(Unit)
@@ -183,7 +189,9 @@ class BookSession(
      * playing or paused as now. False when there is nothing to undo.
      */
     fun undoJump(): Boolean {
-        val spot = jumps.undo() ?: return false
+        val pageCount = book?.text?.pageCount ?: 0
+        // Never outside the open book, whatever the history holds.
+        val spot = jumps.undo()?.takeIf { it.page in 0 until pageCount } ?: return false
         AudoraLog.i(TAG, "Undo jump to page=${spot.page} char=${spot.charStart}, book=${bookId?.logLabel}")
         rebuild(spot.page, spot.charStart, play = player.playWhenReady)
         return true
@@ -266,6 +274,7 @@ class BookSession(
 
     private fun rebuild(page: Int, charStart: Int, play: Boolean) {
         val opened = book ?: return
+        playlistBook = opened.book.id
         loader.cancel()
         // A new position: a pause before it says nothing about where the listener lost the thread.
         rewind.forget()
@@ -636,7 +645,10 @@ class BookSession(
                         ?: cursor?.startPage
                 reporter.update(bookId?.value, player, page)
             }
-            if (events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED) && player.playbackState == Player.STATE_ENDED) {
+            // Only a book read to its end while playing: an ENDED reached while paused (a seek past the last item,
+            // a replaced playlist) is not the listener finishing it, so Up next must not move on.
+            val ended = player.playbackState == Player.STATE_ENDED && player.playWhenReady
+            if (events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED) && ended) {
                 AudoraLog.i(TAG, "Book finished, book=${bookId?.logLabel}")
                 bookId?.let(sources.onBookFinished)
             }

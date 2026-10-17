@@ -14,11 +14,11 @@ import androidx.media3.session.MediaSession.MediaItemsWithStartPosition
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import com.google.common.util.concurrent.SettableFuture
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.playback.async.launchedFuture
+import io.github.skm0078.audora.playback.async.launchedValue
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 /**
  * Main thread, like Media3's callbacks; each answer is a future completed on [scope] once the library has been read.
@@ -47,7 +47,7 @@ class LibraryBrowser(
             AudoraLog.w(TAG, "Browse of something that is not a folder")
             LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE)
         } else {
-            LibraryResult.ofItemList(paged(entries, page, pageSize).map(BrowseItems::of), params)
+            LibraryResult.ofItemList(BrowsePages.of(entries, page, pageSize).map(BrowseItems::of), params)
         }
     }
 
@@ -75,7 +75,7 @@ class LibraryBrowser(
         pageSize: Int,
         params: LibraryParams?,
     ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> = later {
-        LibraryResult.ofItemList(paged(lookup.search(query), page, pageSize).map(BrowseItems::of), params)
+        LibraryResult.ofItemList(BrowsePages.of(lookup.search(query), page, pageSize).map(BrowseItems::of), params)
     }
 
     /**
@@ -89,9 +89,8 @@ class LibraryBrowser(
         return if (query == null && node == null) null else play(node, query)
     }
 
-    private fun play(node: BrowseNode?, query: String?): ListenableFuture<MediaItemsWithStartPosition> {
-        val result = SettableFuture.create<MediaItemsWithStartPosition>()
-        scope.launch {
+    private fun play(node: BrowseNode?, query: String?): ListenableFuture<MediaItemsWithStartPosition> =
+        scope.launchedFuture(TAG, "Browse play") { result ->
             val target = node ?: lookup.search(query.orEmpty()).firstOrNull()?.node
             when (val played = target?.let { lookup.play(it) }) {
                 is Outcome.Success -> result.set(playlist())
@@ -107,21 +106,11 @@ class LibraryBrowser(
                 }
             }
         }
-        return result
-    }
 
-    private fun <T : Any> later(block: suspend () -> LibraryResult<T>): ListenableFuture<LibraryResult<T>> {
-        val result = SettableFuture.create<LibraryResult<T>>()
-        scope.launch { result.set(block()) }
-        return result
-    }
+    private fun <T : Any> later(block: suspend () -> LibraryResult<T>): ListenableFuture<LibraryResult<T>> =
+        scope.launchedValue(TAG, "Library call", block)
 
     private companion object {
         const val TAG = "Playback.Browse"
-
-        fun <T> paged(entries: List<T>, page: Int, pageSize: Int): List<T> {
-            val size = pageSize.coerceAtLeast(1)
-            return entries.drop(page.coerceAtLeast(0) * size).take(size)
-        }
     }
 }

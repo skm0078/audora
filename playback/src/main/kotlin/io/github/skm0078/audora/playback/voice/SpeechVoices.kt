@@ -54,7 +54,8 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
      * The voice that reads [lang] now if it is already known, without binding the phone's TTS: what the render-ahead
      * window sizes for. Null before the language's default was first resolved.
      */
-    fun knownVoice(lang: Lang): VoiceId? = bookVoice(lang) ?: chosen[lang] ?: engines.preferred(lang) ?: defaults[lang]
+    fun knownVoice(lang: Lang): VoiceId? =
+        bookVoice(lang)?.takeIf(engines::canSpeak) ?: chosen[lang] ?: engines.preferred(lang) ?: defaults[lang]
 
     /** How fast the voice reading [lang] renders on this phone; null if unknown or not measured yet (P4-02). */
     fun speedOf(lang: Lang): VoiceSpeed? = knownVoice(lang)?.let { engines.speeds().get(it) }
@@ -105,6 +106,9 @@ class VoiceEngines(
 
     /** The voice picked for [lang] in Settings → Voices, if it is still installed. */
     fun preferred(lang: Lang): VoiceId? = library.value.preferredVoice(lang)
+
+    /** Whether [voice] is still on the phone; a book's own voice that was deleted falls back to the reading voice. */
+    fun canSpeak(voice: VoiceId): Boolean = library.value.canSpeak(voice)
 
     fun bundled(): Outcome<BundledSpeech, SpeechError> = bundled.value
 

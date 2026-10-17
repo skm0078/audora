@@ -7,6 +7,7 @@ import android.content.Context
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.upnext.UpNextQueue
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -41,7 +42,11 @@ class UpNextStore(private val file: File, private val scope: CoroutineScope, pri
         val temp = File(file.path + TEMP_SUFFIX)
         try {
             file.parentFile?.mkdirs()
-            temp.writeText(queue.encode(), Charsets.UTF_8)
+            // Synced before the rename, so a power cut leaves the old queue or the new one, never an empty file.
+            FileOutputStream(temp).use { out ->
+                out.write(queue.encode().toByteArray(Charsets.UTF_8))
+                out.fd.sync()
+            }
             if (!temp.renameTo(file)) throw IOException("cannot replace ${file.name}")
             AudoraLog.d(TAG, "Up next saved: ${queue.entries.size} books")
         } catch (e: IOException) {
@@ -50,10 +55,19 @@ class UpNextStore(private val file: File, private val scope: CoroutineScope, pri
     }
 
     private fun load(): UpNextQueue = try {
-        UpNextQueue.decode(file.takeIf { it.isFile }?.readText(Charsets.UTF_8))
+        val text = file.takeIf { it.isFile }?.readText(Charsets.UTF_8)
+        UpNextQueue.decode(text).also { decoded -> reportDropped(text, decoded) }
     } catch (e: IOException) {
         AudoraLog.w(TAG, "Up next unreadable, starting empty: ${e.message}")
         UpNextQueue()
+    }
+
+    /** Logs (counts only) when a saved queue did not decode whole: a damaged file or one from a newer version. */
+    private fun reportDropped(text: String?, decoded: UpNextQueue) {
+        val saved = text?.lines()?.count { it.isNotBlank() }?.minus(1)?.coerceAtLeast(0) ?: 0
+        if (decoded.entries.size < saved) {
+            AudoraLog.w(TAG, "Up next file partly unreadable: kept ${decoded.entries.size} of $saved books")
+        }
     }
 
     companion object {
