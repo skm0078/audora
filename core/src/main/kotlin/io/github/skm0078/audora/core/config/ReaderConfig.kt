@@ -17,6 +17,9 @@ package io.github.skm0078.audora.core.config
  *   this reads "OCR quality good" (RI-9). Clean scans land in the 90s; a few misread words pull a page into the 80s.
  * @property ocrFairFrom at least this and below [ocrGoodFrom] reads "fair"; below it, "poor": by then whole lines are
  *   noise and "Skip unreadable text" is doing real work.
+ * @property chapterListDepth how many outline levels the chapter list shows (plan item 11): chapters, sections and
+ *   subsections; deeper entries are usually figure lists that would bury the chapters.
+ * @property timeLeft how "time left at your speed" is estimated (plan item 24).
  */
 data class ReaderConfig(
     val speeds: List<Float> = DEFAULT_SPEEDS,
@@ -27,6 +30,8 @@ data class ReaderConfig(
     val speech: SpeechStyleConfig = SpeechStyleConfig(),
     val ocrGoodFrom: Int = DEFAULT_OCR_GOOD_FROM,
     val ocrFairFrom: Int = DEFAULT_OCR_FAIR_FROM,
+    val chapterListDepth: Int = DEFAULT_CHAPTER_LIST_DEPTH,
+    val timeLeft: TimeLeftConfig = TimeLeftConfig(),
 ) {
     init {
         require(speeds.isNotEmpty() && speeds == speeds.sorted()) { "speeds must be non-empty and ascending" }
@@ -35,6 +40,7 @@ data class ReaderConfig(
         require(sleepMinutes.all { it > 0 }) { "sleepMinutes must be positive" }
         require(pageMaxPixels > 0) { "pageMaxPixels must be positive" }
         require(pageTapSlopPoints >= 0f) { "pageTapSlopPoints must not be negative" }
+        require(chapterListDepth > 0) { "chapterListDepth must be > 0, was $chapterListDepth" }
         require(ocrFairFrom in 0..ocrGoodFrom && ocrGoodFrom <= MAX_OCR_CONFIDENCE) {
             "OCR bands must satisfy 0 <= ocrFairFrom <= ocrGoodFrom <= 100, were $ocrFairFrom and $ocrGoodFrom"
         }
@@ -52,5 +58,6 @@ data class ReaderConfig(
         private const val DEFAULT_OCR_GOOD_FROM = 85
         private const val DEFAULT_OCR_FAIR_FROM = 70
         private const val MAX_OCR_CONFIDENCE = 100
+        private const val DEFAULT_CHAPTER_LIST_DEPTH = 3
     }
 }

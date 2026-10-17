@@ -7,9 +7,11 @@ import android.content.Context
 import android.net.Uri
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.map
+import io.github.skm0078.audora.pdf.document.OutlineEntry
 import io.github.skm0078.audora.pdf.document.PageSource
 import io.github.skm0078.audora.pdf.document.PdfBook
 import io.github.skm0078.audora.pdf.document.PdfOpenError
@@ -78,6 +80,17 @@ private class PdfReaderDocument(
             ReaderPage(reading.units, originOf(reading.source), reading.ocrConfidence)
         }
 
+    override suspend fun outline(): List<OutlineEntry> = withContext(io) {
+        when (val outline = book.outline()) {
+            is Outcome.Success -> outline.value
+
+            is Outcome.Failure -> {
+                AudoraLog.w(TAG, "Outline unavailable, $logContext: ${outline.error}")
+                emptyList()
+            }
+        }
+    }
+
     override suspend fun render(page: Int, widthPx: Int, maxPixels: Int): Outcome<PageImage, PdfPageError> =
         withContext(io) {
             when (val open = rendererOrOpen()) {
@@ -128,3 +141,5 @@ private fun originOf(source: PageSource): PageOrigin = when (source) {
         is OcrError.Failed -> PageOrigin.OCR_FAILED
     }
 }
+
+private const val TAG = "Audora.ReaderDocument"

@@ -12,6 +12,7 @@ import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.pdf.document.OutlineEntry
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.pdf.render.PageTransform
@@ -113,6 +114,7 @@ class FakeDocument(
     private val failingPages: Set<Int> = emptySet(),
     private val unitsOnPage: (Int) -> List<ReadingUnit> = { unitsOf(it) },
     private val failingRenders: Set<Int> = emptySet(),
+    private val outline: List<OutlineEntry> = emptyList(),
 ) : ReaderDocument {
     var closed = false
     val reads = mutableListOf<Int>()
@@ -126,6 +128,8 @@ class FakeDocument(
             Outcome.Success(unitsOnPage(page))
         }
     }
+
+    override suspend fun outline(): List<OutlineEntry> = outline
 
     override suspend fun render(page: Int, widthPx: Int, maxPixels: Int): Outcome<PageImage, PdfPageError> =
         if (page in failingRenders) {

@@ -6,6 +6,7 @@ package io.github.skm0078.audora.ui.reader
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 
@@ -42,6 +43,9 @@ interface ReaderActions {
     fun onReadUnreadable() = Unit
 
     fun onUnreadableDismissed() = Unit
+
+    /** A row of the chapter list (plan item 11). */
+    fun onChapter(chapter: ChapterEntry) = Unit
 
     fun onViewChanged(view: ReaderView)
 

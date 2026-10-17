@@ -5,6 +5,8 @@ package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.pdf.outline.ChapterEntry
+import io.github.skm0078.audora.pdf.outline.ChapterList
 import io.github.skm0078.audora.pdf.render.ViewRect
 import io.github.skm0078.audora.playback.reading.UnitReading
 
@@ -58,12 +60,20 @@ sealed interface PageContent {
 }
 
 /**
+ * Listening time left at the listener's speed and pace (plan item 24), from the reading position (or the top of the
+ * page shown); [chapterMs] is null in a book without chapters.
+ */
+data class TimeLeftEstimate(val bookMs: Long, val chapterMs: Long?)
+
+/**
  * @property page the zero-based page on screen. Not necessarily the page being read: the listener can browse.
  * @property following the screen turns pages with the reading position; browsing elsewhere stops that until
  *   the listener starts reading again or goes back to the reading position.
  * @property view the page drawn as in the PDF, or its sentences as text; the listener's choice, remembered.
  * @property pageImage the shown page drawn, in the page view.
  * @property reporting the sentence a long-press picked for "This sounded wrong" (RI-8b), while its reasons show.
+ * @property chapters the chapter list (plan item 11), from the PDF outline; empty without one.
+ * @property chapterStarts the pages chapters start on, as the end-of-chapter sleep timer counts them.
  * @property unreadableTapped a greyed sentence the listener tapped (RI-9), while the screen explains why it is skipped.
  */
 data class ReaderState(
@@ -78,6 +88,9 @@ data class ReaderState(
     val pageImage: PageImageState = PageImageState.None,
     val reporting: ReadingUnit? = null,
     val unreadableTapped: ReadingUnit? = null,
+    val chapters: List<ChapterEntry> = emptyList(),
+    val chapterStarts: List<Int> = emptyList(),
+    val timeLeft: TimeLeftEstimate? = null,
 ) {
     val pageCount: Int? get() = (document as? DocumentState.Open)?.pageCount
 
@@ -92,6 +105,9 @@ data class ReaderState(
 
     /** The reading position is on another page than the one shown. */
     val readingElsewhere: Boolean get() = readingPosition?.let { it.page != page } ?: false
+
+    /** The chapter-list row being read (or shown, when nothing of this book is read), if any. */
+    val currentChapter: Int? get() = ChapterList.currentIndex(chapters, readingPosition?.page ?: page)
 
     /** Index in the shown page's units of the sentence being read, if it is on this page. */
     val spokenUnitIndex: Int?

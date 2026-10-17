@@ -105,6 +105,13 @@
     <string name="unreadable_title">Skipped as unreadable</string>
     <string name="unreadable_body">This line looks like scan noise or a broken font, so a soft sound plays instead of it. Reading it anyway turns off Skip unreadable text; turn it back on under What to read.</string>
     <string name="unreadable_read">Read it anyway</string>
+    <string name="chapters_title">Chapters</string>
+    <string name="chapters_untitled">Page %1$d</string>
+    <string name="reader_time_left">About %1$s left at %2$s×</string>
+    <string name="reader_time_left_chapter">About %1$s left at %2$s×, %3$s in this chapter</string>
+    <string name="duration_hours_minutes">%1$d h %2$d min</string>
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_under_minute">under a minute</string>
     <string name="speech_sheet_hint">The voice itself speaks faster or slower, so words stay clear. The sentence playing restarts at the new setting.</string>
     <string name="reader_sleep_timer">Sleep timer</string>
     <string name="reader_sleep_off">Off</string>

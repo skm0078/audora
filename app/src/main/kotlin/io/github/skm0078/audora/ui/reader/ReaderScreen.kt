@@ -74,7 +74,12 @@ fun ReaderScreen(
                         Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.navigate_back))
                     }
                 },
-                actions = { if (state.document is DocumentState.Open) ViewToggle(state.view, actions) },
+                actions = {
+                    if (state.document is DocumentState.Open) {
+                        ChaptersButton(state, actions)
+                        ViewToggle(state.view, actions)
+                    }
+                },
             )
         },
         bottomBar = { if (state.document is DocumentState.Open) ReaderControls(state, config, actions) },
@@ -116,6 +121,7 @@ private fun OpenBook(
     var picking by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
         PageBar(state.page, pageCount, actions, onPick = { picking = true })
+        state.timeLeft?.let { TimeLeftLine(it, state.playback.speed) }
         state.readingPosition?.takeIf { state.readingElsewhere }?.let { position ->
             TextButton(
                 onClick = actions::onShowReadingPosition,

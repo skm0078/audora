@@ -10,8 +10,13 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.progress.TimeLeft
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PdfOpenError
+import io.github.skm0078.audora.pdf.outline.ChapterEntry
+import io.github.skm0078.audora.pdf.outline.ChapterList
+import io.github.skm0078.audora.pdf.outline.ChapterStarts
 import io.github.skm0078.audora.pdf.render.SentenceHitTest
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
@@ -68,6 +73,14 @@ class ReaderModel(
      * itself once the book is open and the player connected. One shot: never repeats on reconnects.
      */
     private var pendingAutoResume = autoResume
+
+    private val timeLeft = TimeLeft(config.timeLeft, config.speech)
+
+    /** The pages shown so far, for the time-left estimate; the first shown are forgotten first. */
+    private val samples = object : LinkedHashMap<Int, List<ReadingUnit>>(INITIAL_SAMPLES, LOAD_FACTOR, false) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, List<ReadingUnit>>?) =
+            size > config.timeLeft.samplePages
+    }
 
     fun start() {
         if (started) return
@@ -145,6 +158,15 @@ class ReaderModel(
         val units = (current.content as? PageContent.Ready)?.units
         if (image == null || units == null) return null
         return SentenceHitTest.unitAt(units, image.transform.toPage(point), config.pageTapSlopPoints)
+    }
+
+    /** A row of the chapter list: reads from its page while this book is being read, else shows it. */
+    fun goToChapter(chapter: ChapterEntry) {
+        if (state.value.isReading) {
+            startReading(ReadingPosition.startOfPage(bookId, chapter.page))
+        } else {
+            showPage(chapter.page)
+        }
     }
 
     fun setView(view: ReaderView) {
@@ -244,6 +266,7 @@ class ReaderModel(
         }
         val startPage = playing?.page ?: savedPosition?.page ?: 0
         loadPage(startPage.coerceIn(0, opened.pageCount - 1))
+        loadChapters(opened)
         books.markOpened(bookId, opened.pageCount)
         autoResumeIfDue()
     }
@@ -276,6 +299,31 @@ class ReaderModel(
         val position = current.readingPosition ?: return
         val pageCount = current.pageCount ?: return
         if (current.following && position.page != current.page && position.page < pageCount) loadPage(position.page)
+        refreshTimeLeft()
+    }
+
+    private fun loadChapters(opened: ReaderDocument) {
+        scope.launch {
+            val outline = opened.outline()
+            val chapters = ChapterList.from(outline, opened.pageCount, config.chapterListDepth)
+            val starts = ChapterStarts.from(outline, opened.pageCount, config.chapterListDepth)
+            AudoraLog.i(TAG, "Chapter list, $logContext rows=${chapters.size} chapters=${starts.size}")
+            mutableState.update { it.copy(chapters = chapters, chapterStarts = starts) }
+            refreshTimeLeft()
+        }
+    }
+
+    /** Recomputes the time left; cheap (a sum over the pages seen), so it runs on every position change. */
+    private fun refreshTimeLeft() {
+        val current = state.value
+        val pageCount = current.pageCount ?: return
+        val position = current.readingPosition ?: ReadingPosition.startOfPage(bookId, current.page)
+        val style = current.playback.let { SpeechStyle(it.speed, it.pace, it.clausePauses, it.readingModes) }
+        fun until(endPage: Int) = timeLeft.msUntil(position.page, position.charStart, endPage, samples, style)
+        val chapterEnd = current.chapterStarts.takeIf { it.isNotEmpty() }
+            ?.let { starts -> starts.firstOrNull { it > position.page } ?: pageCount }
+        val estimate = until(pageCount)?.let { TimeLeftEstimate(it, chapterEnd?.let(::until)) }
+        if (estimate != current.timeLeft) mutableState.update { it.copy(timeLeft = estimate) }
     }
 
     private fun applySavedSpeed(playerSpeed: Float) {
@@ -307,7 +355,9 @@ class ReaderModel(
                     PageContent.Failed
                 }
             }
+            if (content is PageContent.Ready) samples[page] = content.units
             mutableState.update { if (it.page == page) it.copy(content = content) else it }
+            refreshTimeLeft()
         }
         renderPage(page)
     }
@@ -350,5 +400,7 @@ class ReaderModel(
 
     private companion object {
         const val TAG = "Audora.Reader"
+        const val INITIAL_SAMPLES = 16
+        const val LOAD_FACTOR = 0.75f
     }
 }
