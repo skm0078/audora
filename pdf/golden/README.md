@@ -35,6 +35,13 @@ CI fails when: a dump is stale; the corpus score is lower than `dev`'s on the do
 same way the playback service runs it, then runs `goldenTest` and commits the new scores. Keep its signature and the
 `scores.tsv` columns stable: other branches and CI read them.
 
+Since ADR-035 `:pdf` tags page furniture instead of dropping it. `GoldenPipeline.UNSCORED_KINDS` leaves out the kinds
+the expected-text rules below skip (table rows); captions, footnote text and equations stay scored. A ticket that
+starts emitting a new kind checks the rules and extends that set only for kinds the expected texts leave out.
+
+What the voice is given (normalizers, playback's reading modes) is scored by the listening corpus next door:
+[listening/README.md](listening/README.md).
+
 `GoldenRoutingTest` reads the same documents through `PdfBook.readPage` and checks page routing (P3-03): Unicode
 Indic documents keep their text layer and pass the OCR sample, broken-map documents go to OCR.
 

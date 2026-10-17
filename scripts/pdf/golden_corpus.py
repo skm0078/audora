@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
 # File: scripts/pdf/golden_corpus.py
-# Purpose: Builds and checks the golden corpus in pdf/golden/ (P2-01): page excerpts of the source PDFs, the PDFium
-#          page dumps the JVM golden test reads, and first drafts of the expected text.
+# Purpose: Builds and checks the golden corpus in pdf/golden/ (P2-01) and the listening corpus in pdf/golden/listening/
+#          (RI-8a): page excerpts of the source PDFs, the PDFium page dumps the JVM tests read, recorded OCR of scanned
+#          pages, and first drafts of the expected text.
 #
 # The JVM test (./gradlew :pdf:goldenTest) cannot run PDFium, so every golden page is dumped once with the production
 # page reader (pdf/src/main/cpp/page_reader.cpp, through scripts/pdf/rawpage_dump.cpp) against pypdfium2's desktop
 # libpdfium.so, and the dumps are committed. CI re-dumps them and fails if they differ, so a change to the PDFs or to
 # page_reader.cpp cannot leave stale dumps behind.
 #
-#   python3 scripts/pdf/golden_corpus.py dump            # rewrite pdf/golden/rawpages/*.rawpages.gz
+#   python3 scripts/pdf/golden_corpus.py dump            # rewrite both corpora's rawpages/*.rawpages.gz
 #   python3 scripts/pdf/golden_corpus.py dump --check    # CI: exit 1 if a committed dump is stale or missing
-#   python3 scripts/pdf/golden_corpus.py excerpt --sources DIR   # once per new document: copy its pages from DIR
-#   python3 scripts/pdf/golden_corpus.py draft --sources DIR     # once per new document: first expected-text draft
+#   python3 scripts/pdf/golden_corpus.py excerpt --sources DIR [--corpus listening]  # copy a new document's pages
+#   python3 scripts/pdf/golden_corpus.py draft --sources DIR [--corpus listening]    # first expected-text draft
+#   python3 scripts/pdf/golden_corpus.py ocr --corpus listening   # record Tesseract hOCR of the scanned documents
 #
 # Needs: pypdfium2 (pinned below; its libpdfium.so is what the dumps are made with), g++, and for excerpt/draft also
-# pypdf. DIR is the shared test-PDF folder (audora/test-pdfs, see pdf/golden/README.md).
+# pypdf; for ocr, the tesseract command with eng/hin/ben. DIR is the shared test-PDF folder (audora/test-pdfs, see
+# pdf/golden/README.md).
 
 import argparse
 import gzip
@@ -28,10 +31,25 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 GOLDEN = REPO / "pdf" / "golden"
-CORPUS = GOLDEN / "corpus.tsv"
-PDFS = GOLDEN / "pdfs"
-RAWPAGES = GOLDEN / "rawpages"
-EXPECTED = GOLDEN / "expected"
+
+
+class Corpus:
+    """A corpus folder: corpus.tsv, pdfs/, rawpages/ and the expected texts (expected/ or, when spoken, spoken/)."""
+
+    def __init__(self, name, root, expected):
+        self.name = name
+        self.index = root / "corpus.tsv"
+        self.pdfs = root / "pdfs"
+        self.rawpages = root / "rawpages"
+        self.expected = root / expected
+        self.ocr = root / "ocr"
+
+
+CORPORA = {
+    "golden": Corpus("golden", GOLDEN, "expected"),
+    # What a listener should hear (RI-8a, pdf/golden/listening/README.md): scored by :playback:listeningTest.
+    "listening": Corpus("listening", GOLDEN / "listening", "spoken"),
+}
 CPP = REPO / "pdf" / "src" / "main" / "cpp"
 DUMPER_SOURCE = REPO / "scripts" / "pdf" / "rawpage_dump.cpp"
 
@@ -40,21 +58,28 @@ PYPDFIUM2_VERSION = "5.13.0"
 COLUMNS = ["id", "category", "source", "pages", "text", "status"]
 # A source that names a script of this repo: the PDF and its expected text are generated here (legacy_golden.py).
 GENERATED_HERE = "repo:"
+# A listening source that reuses a golden PDF (pdf/golden/pdfs/<id>.pdf), so generated golden files need no copy.
+FROM_GOLDEN = "golden:"
 STATUSES = {"exact", "draft", "checked"}
+# Listening documents whose category starts with this are scans: `ocr` records their pages for the JVM test.
+SCAN_CATEGORY = "scan"
+# Tesseract languages for a listening scan, from the language prefix of its id (the app's OCR packs, ADR-025).
+OCR_LANGS = {"en": "eng", "hi": "hin+eng", "bn": "ben+eng"}
+OCR_DPI = 300
 
 
-def read_corpus():
-    lines = CORPUS.read_text(encoding="utf-8").splitlines()
+def read_corpus(corpus):
+    lines = corpus.index.read_text(encoding="utf-8").splitlines()
     if lines[0].split("\t") != COLUMNS:
-        sys.exit(f"{CORPUS}: header must be {COLUMNS}")
+        sys.exit(f"{corpus.index}: header must be {COLUMNS}")
     docs = []
     for number, line in enumerate(lines[1:], start=2):
         fields = line.split("\t")
         if len(fields) != len(COLUMNS):
-            sys.exit(f"{CORPUS}:{number}: expected {len(COLUMNS)} tab-separated fields")
+            sys.exit(f"{corpus.index}:{number}: expected {len(COLUMNS)} tab-separated fields")
         doc = dict(zip(COLUMNS, fields))
         if doc["status"] not in STATUSES:
-            sys.exit(f"{CORPUS}:{number}: status must be one of {sorted(STATUSES)}")
+            sys.exit(f"{corpus.index}:{number}: status must be one of {sorted(STATUSES)}")
         docs.append(doc)
     return docs
 
@@ -114,22 +139,23 @@ def dump_document(dumper, libpdfium, pdf):
 
 def command_dump(args):
     libpdfium = libpdfium_path()
-    RAWPAGES.mkdir(parents=True, exist_ok=True)
     stale = []
     with tempfile.TemporaryDirectory() as workdir:
         dumper = build_dumper(workdir)
-        for doc in read_corpus():
-            pdf = PDFS / f"{doc['id']}.pdf"
-            if not pdf.is_file():
-                sys.exit(f"missing {pdf.relative_to(REPO)}: run `excerpt` first")
-            target = RAWPAGES / f"{doc['id']}.rawpages.gz"
-            data = dump_document(dumper, libpdfium, pdf)
-            if args.check:
-                if not target.is_file() or target.read_bytes() != data:
-                    stale.append(str(target.relative_to(REPO)))
-            else:
-                target.write_bytes(data)
-                print(f"wrote {target.relative_to(REPO)} ({len(data)} bytes)")
+        for corpus in CORPORA.values():
+            corpus.rawpages.mkdir(parents=True, exist_ok=True)
+            for doc in read_corpus(corpus):
+                pdf = corpus.pdfs / f"{doc['id']}.pdf"
+                if not pdf.is_file():
+                    sys.exit(f"missing {pdf.relative_to(REPO)}: run `excerpt` first")
+                target = corpus.rawpages / f"{doc['id']}.rawpages.gz"
+                data = dump_document(dumper, libpdfium, pdf)
+                if args.check:
+                    if not target.is_file() or target.read_bytes() != data:
+                        stale.append(str(target.relative_to(REPO)))
+                else:
+                    target.write_bytes(data)
+                    print(f"wrote {target.relative_to(REPO)} ({len(data)} bytes)")
     if stale:
         print("Golden page dumps are stale. Run `python3 scripts/pdf/golden_corpus.py dump`, then "
               "`./gradlew :pdf:goldenTest`, and commit the results:", file=sys.stderr)
@@ -141,17 +167,22 @@ def command_dump(args):
 
 def command_excerpt(args):
     from pypdf import PdfReader, PdfWriter
-    PDFS.mkdir(parents=True, exist_ok=True)
-    for doc in read_corpus():
-        target = PDFS / f"{doc['id']}.pdf"
+    corpus = CORPORA[args.corpus]
+    corpus.pdfs.mkdir(parents=True, exist_ok=True)
+    for doc in read_corpus(corpus):
+        target = corpus.pdfs / f"{doc['id']}.pdf"
         if doc["source"].startswith(GENERATED_HERE) or (target.exists() and not args.force):
             continue
-        reader = PdfReader(str(Path(args.sources) / doc["source"]))
+        if doc["source"].startswith(FROM_GOLDEN):
+            source = CORPORA["golden"].pdfs / f"{doc['source'][len(FROM_GOLDEN):]}.pdf"
+        else:
+            source = Path(args.sources) / doc["source"]
+        reader = PdfReader(str(source))
         if reader.is_encrypted:
             sys.exit(f"{doc['id']}: encrypted sources are not golden documents (open paths are device-tested)")
         pages = page_range(doc["pages"], len(reader.pages))
         if doc["pages"] == "all":
-            target.write_bytes((Path(args.sources) / doc["source"]).read_bytes())
+            target.write_bytes(source.read_bytes())
         else:
             writer = PdfWriter()
             for index in pages:
@@ -179,18 +210,46 @@ def ground_truth(sources, doc):
 
 
 def command_draft(args):
-    EXPECTED.mkdir(parents=True, exist_ok=True)
-    for doc in read_corpus():
-        target = EXPECTED / f"{doc['text']}.txt"
+    corpus = CORPORA[args.corpus]
+    corpus.expected.mkdir(parents=True, exist_ok=True)
+    for doc in read_corpus(corpus):
+        target = corpus.expected / f"{doc['text']}.txt"
         if target.exists():
             continue
         text = ground_truth(args.sources, doc)
         if text is None:
-            pdf = PDFS / f"{doc['id']}.pdf"
+            pdf = corpus.pdfs / f"{doc['id']}.pdf"
             text = subprocess.run(["pdftotext", "-enc", "UTF-8", str(pdf), "-"], capture_output=True, text=True,
                                   check=True).stdout
         target.write_text(text.strip() + "\n", encoding="utf-8")
         print(f"drafted {target.relative_to(REPO)}: edit it by hand (README.md, 'Expected text')")
+
+
+def command_ocr(args):
+    """Tesseract hOCR of every page of the corpus's scans, gzipped: what the JVM test reads instead of the phone's
+    OCR. Not re-checked by CI (Tesseract builds differ); re-run only when a scan is added."""
+    import pypdfium2
+    corpus = CORPORA[args.corpus]
+    corpus.ocr.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory() as workdir:
+        for doc in read_corpus(corpus):
+            if not doc["category"].startswith(SCAN_CATEGORY):
+                continue
+            langs = OCR_LANGS[doc["id"].split("-")[0]]
+            document = pypdfium2.PdfDocument(str(corpus.pdfs / f"{doc['id']}.pdf"))
+            try:
+                for index in range(len(document)):
+                    image = Path(workdir) / "page.png"
+                    document[index].render(scale=OCR_DPI / 72, grayscale=True).to_pil().save(image)
+                    base = Path(workdir) / "page"
+                    subprocess.run(["tesseract", str(image), str(base), "-l", langs, "--dpi", str(OCR_DPI), "hocr"],
+                                   check=True, capture_output=True)
+                    target = corpus.ocr / f"{doc['id']}.p{index}.hocr.gz"
+                    with gzip.GzipFile(target, mode="wb", compresslevel=9, mtime=0) as out:
+                        out.write(base.with_suffix(".hocr").read_bytes())
+                    print(f"wrote {target.relative_to(REPO)}")
+            finally:
+                document.close()
 
 
 def main():
@@ -202,11 +261,16 @@ def main():
     excerpt = commands.add_parser("excerpt", help="copy each document's pages from the source PDFs")
     excerpt.add_argument("--sources", required=True, help="the shared test-pdfs folder")
     excerpt.add_argument("--force", action="store_true", help="overwrite existing excerpts")
+    excerpt.add_argument("--corpus", choices=sorted(CORPORA), default="golden")
     excerpt.set_defaults(run=command_excerpt)
     # Never overwrites: expected text is hand-edited.
     draft = commands.add_parser("draft", help="first draft of each missing expected-text file")
     draft.add_argument("--sources", required=True, help="the shared test-pdfs folder")
+    draft.add_argument("--corpus", choices=sorted(CORPORA), default="golden")
     draft.set_defaults(run=command_draft)
+    ocr = commands.add_parser("ocr", help="record Tesseract hOCR of the corpus's scanned documents")
+    ocr.add_argument("--corpus", choices=sorted(CORPORA), default="listening")
+    ocr.set_defaults(run=command_ocr)
     args = parser.parse_args()
     os.chdir(REPO)
     args.run(args)

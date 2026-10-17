@@ -2,6 +2,18 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Reading intelligence, step 1 — speakability contract and listening score (RI-1, RI-8a; 2026-10-17, ADR-035)
+- **Contract (RI-1):** `ReadingUnit` gains six kinds (`TABLE_SUMMARY`, `TABLE_ROW`, `FOOTNOTE`, `CAPTION`, `EQUATION`, `ASIDE`), a `speakScore` (0–1, null = not scored), `TableRowInfo` (table, row, size, header texts, cell spans) and `noteRef`, all defaulted, with invariants (table info exactly on table units, note refs only on footnotes, cells inside the text). New `SpeakabilityConfig` holds the skip threshold and signal weights for RI-2a. ADR-035 records the layer: `:pdf` tags and scores and never drops, `:playback` decides by setting, `:speech` voices.
+- **Golden filter:** `GoldenPipeline` leaves out `TABLE_ROW` units (table interiors were never in the expected texts); every other kind stays scored. Golden 0.9268, unchanged per document.
+- **Listening score (RI-8a):** a second corpus, `pdf/golden/listening/` (8 documents: clean English, Hindi and Bengali, a degraded Hindi scan through recorded OCR, two tables with figure captions and chart labels, a footnote over a page break, display equations, Kruti Dev), with scripts of what a careful reader says. `:pdf` writes each document's units; `:playback` runs them through the real `EngineRenderer` with a voice that records its text, and scores words against the script. `./gradlew :playback:listeningTest` writes `docs/LISTENING.md`; CI fails if it drops against `dev`, like the golden score. Baseline 0.9775; the lowest are the equations page (0.8961: "(x)" read as "ten", symbol soup) and the tables page (0.9418: chart axis labels read letter by letter).
+- `scripts/pdf/golden_corpus.py` handles both corpora (`--corpus listening`) and records OCR for scans (`ocr`). The renderer reads the new kinds as body text until RI-4b, RI-5b and RI-7b give them readings (one-line change in `EngineRenderer`).
+- `PIPELINE_VERSION` unchanged (9): no `:pdf` output change, resume fingerprints untouched. No new dependency.
+- Tests: `ReadingUnit` invariants, `SpeakabilityConfig`, the golden kind filter, the units TSV both ways, the listening score and gate. Locally: core, pdf and the speech/playback pure-code tests in a JVM harness, ktlint and detekt clean, page dumps current; the Android build in CI.
+
+**Known limits:** the scripts are drafts written from ground truth or pdftotext and corrected by eye, waiting for a hand-check. The scan's OCR is desktop Tesseract 5.3.4, not the phone's pinned `tessdata_best`, and its orientation check is not replayed.
+
+**Real-device checks:** none (no app behaviour changed).
+
 ## App basics — speed, pace, library progress, Open with Audora, rewind on resume (2026-10-16, ADR-033)
 - **Speed without smeared words:** the voice model now speaks at the chosen rate itself (Piper/VITS, Kokoro, Kitten, Supertonic, and the phone's engine through `setSpeechRate`) up to 1.5×; only the rest above that is time-stretched. 0.5×–3× in 0.05 steps.
 - **Natural pauses:** sherpa-onnx renders now keep the voice's own pauses inside a sentence (`silenceScale` 1.0; the library default 0.2 cut every comma pause to a fifth).

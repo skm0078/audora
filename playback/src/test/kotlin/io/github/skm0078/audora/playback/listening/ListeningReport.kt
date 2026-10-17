@@ -1,0 +1,127 @@
+// File: playback/src/test/kotlin/io/github/skm0078/audora/playback/listening/ListeningReport.kt
+// Purpose: The listening corpus index, docs/LISTENING.md, the scores file and the comparison with the base branch.
+
+package io.github.skm0078.audora.playback.listening
+
+import java.io.File
+import java.util.Locale
+import kotlin.math.roundToLong
+
+/** One row of pdf/golden/listening/corpus.tsv (the same columns as the golden corpus). */
+data class ListeningDocument(val id: String, val category: String, val scriptId: String, val status: String) {
+    companion object {
+        private val COLUMNS = listOf("id", "category", "source", "pages", "text", "status")
+
+        fun readIndex(root: File): List<ListeningDocument> {
+            val lines = root.resolve("corpus.tsv").readLines(Charsets.UTF_8).filter { it.isNotBlank() }
+            require(lines.firstOrNull()?.split('\t') == COLUMNS) { "listening corpus.tsv header must be $COLUMNS" }
+            return lines.drop(1).map { line ->
+                val f = line.split('\t')
+                require(f.size == COLUMNS.size) { "listening corpus.tsv: expected ${COLUMNS.size} fields in '$line'" }
+                ListeningDocument(id = f[0], category = f[1], scriptId = f[4], status = f[5])
+            }
+        }
+    }
+}
+
+data class ListeningResult(val document: ListeningDocument, val units: Int, val score: ListeningScore)
+
+/**
+ * Same rules as the golden gate (pdf/golden/README.md): compared on the documents both runs scored, values rounded
+ * to 4 decimals as written, so adding a document never trips it and float noise cannot flap it.
+ */
+object ListeningReport {
+    private const val SCALE = 10_000.0
+    private const val TOLERANCE = 1e-9
+    private val TSV_COLUMNS =
+        listOf("document", "category", "status", "units", "similarity", "word_recall", "word_precision")
+
+    fun round(value: Double): Double = (value * SCALE).roundToLong() / SCALE
+
+    fun decimal(value: Double): String = String.format(Locale.ROOT, "%.4f", round(value))
+
+    fun corpusScore(results: List<ListeningResult>): Double = results.map { round(it.score.similarity) }.average()
+
+    fun scoresTsv(results: List<ListeningResult>): String = buildString {
+        appendLine("# Listening scores (RI-8a). Written by ./gradlew :playback:listeningTest; do not edit by hand.")
+        appendLine(TSV_COLUMNS.joinToString("\t"))
+        results.forEach { r ->
+            val values = listOf(r.score.similarity, r.score.wordRecall, r.score.wordPrecision).map(::decimal)
+            val d = r.document
+            appendLine((listOf(d.id, d.category, d.status, r.units.toString()) + values).joinToString("\t"))
+        }
+    }
+
+    /** Document id → similarity. Blank input means no baseline (the base branch has no listening scores yet). */
+    fun parseScores(tsv: String): Map<String, Double> {
+        val rows = tsv.lines().filter { it.isNotBlank() && !it.startsWith("#") }
+        if (rows.isEmpty()) return emptyMap()
+        require(rows.first().split('\t') == TSV_COLUMNS) { "baseline listening scores: unexpected header" }
+        val similarity = TSV_COLUMNS.indexOf("similarity")
+        return rows.drop(1).associate { row -> row.split('\t').let { it[0] to it[similarity].toDouble() } }
+    }
+
+    /** Null when the gate passes; otherwise why it failed. Always also returns the summary to print. */
+    fun compare(baseline: Map<String, Double>, results: List<ListeningResult>): Pair<Boolean, String> {
+        val current = results.associate { it.document.id to round(it.score.similarity) }
+        val shared = current.keys.filter { it in baseline }
+        if (shared.isEmpty()) return true to "No baseline listening scores: the gate is skipped for this run."
+        val before = shared.map { baseline.getValue(it) }.average()
+        val after = shared.map { current.getValue(it) }.average()
+        val passed = after >= before - TOLERANCE
+        val summary = buildString {
+            appendLine(
+                "Listening score on the ${shared.size} shared documents: ${decimal(before)} → ${decimal(after)} " +
+                    "(${if (passed) "not lower" else "LOWER"} than the baseline).",
+            )
+            shared.map { it to current.getValue(it) - baseline.getValue(it) }
+                .filter { (_, delta) -> round(delta) != 0.0 }
+                .forEach { (id, delta) -> appendLine("  $id: ${String.format(Locale.ROOT, "%+.4f", delta)}") }
+            current.keys.filterNot { it in baseline }.takeIf { it.isNotEmpty() }
+                ?.let { appendLine("New documents (not gated): ${it.joinToString()}") }
+        }
+        return passed to summary
+    }
+
+    /** docs/LISTENING.md. Depends only on the code and the corpus, so CI can diff it. */
+    fun markdown(results: List<ListeningResult>): String = buildString {
+        appendLine("# Listening score")
+        appendLine()
+        appendLine(
+            "Generated by `./gradlew :playback:listeningTest` from `pdf/golden/listening/` (RI-8a, ADR-035). Do not " +
+                "edit by hand: CI regenerates it on every push and fails when the committed copy differs.",
+        )
+        appendLine()
+        appendLine(
+            "**Listening score: ${decimal(corpusScore(results))}** (mean similarity over ${results.size} documents). " +
+                "It measures what the voice is given (the `:pdf` units, playback's default reading modes and the " +
+                "normalizers) against what a careful human reader would say. CI fails if it drops against `dev`.",
+        )
+        appendLine()
+        appendLine("| Document | Category | Units | Script | Similarity | Word recall | Word precision |")
+        appendLine("|---|---|---:|---|---:|---:|---:|")
+        results.forEach { r ->
+            val s = r.score
+            appendLine(
+                "| ${r.document.id} | ${r.document.category} | ${r.units} | ${r.document.status} " +
+                    "| ${decimal(s.similarity)} | ${decimal(s.wordRecall)} | ${decimal(s.wordPrecision)} |",
+            )
+        }
+        appendLine()
+        appendLine("## Reading the numbers")
+        appendLine()
+        appendLine(
+            "- **Similarity**: 1 − character error rate between the heard words and the script's words. Only " +
+                "words count: case, punctuation and spacing are ignored (the listener hears them as pauses).",
+        )
+        appendLine("- **Word recall**: share of the script's words that are heard. Low means text skipped or garbled.")
+        appendLine(
+            "- **Word precision**: share of heard words that are in the script. Low means junk, footnote markers, " +
+                "symbol soup or table cells are read aloud.",
+        )
+        appendLine(
+            "- **Script**: `draft` was written from the page and corrected by eye; `checked` was hand-checked by " +
+                "the maintainer. How scripts are written: `pdf/golden/listening/README.md`.",
+        )
+    }
+}

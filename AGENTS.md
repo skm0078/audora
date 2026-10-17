@@ -32,6 +32,7 @@ Dependencies: app → playback → (speech, pdf) → core. Never the reverse.
 - Device tests (:pdf, needs a device or emulator; CI runs them on an emulator): ./gradlew :pdf:connectedDebugAndroidTest
 - Auto-fix style: ./gradlew ktlintFormat
 - Golden quality (from P2-01): ./gradlew :pdf:goldenTest (writes docs/QUALITY.md)
+- Listening score (RI-8a): ./gradlew :playback:listeningTest (writes docs/LISTENING.md; corpus in pdf/golden/listening/)
 - Debug APK: ./gradlew assembleDebug (CI builds it on every push and uploads it)
 - Signed release: Release workflow from prod (docs/RELEASING.md); version lives in gradle.properties (audora.versionName)
 - 16 KB check: python3 scripts/check_16kb_alignment.py app/build/outputs/apk/debug/*.apk

@@ -36,26 +36,18 @@ data class GoldenDocument(
     val status: ExpectedStatus,
 )
 
-class GoldenCorpus(private val root: File) {
+/**
+ * A corpus folder (pdf/golden/README.md): the golden corpus keeps its expected texts in `expected/`; the listening
+ * corpus (pdf/golden/listening/, RI-8a) has the same layout with spoken scripts in `spoken/`.
+ */
+class GoldenCorpus(private val root: File, private val expectedDir: String = "expected") {
     val documents: List<GoldenDocument> by lazy { readIndex() }
 
     /** Every page of the document's dump, in order. */
-    fun pages(document: GoldenDocument): List<RawPage> {
-        val dump = root.resolve("rawpages/${document.id}.rawpages.gz")
-        require(dump.isFile) { "missing $dump: run python3 scripts/pdf/golden_corpus.py dump" }
-        val pages = ArrayList<ArrayList<String>>()
-        GZIPInputStream(dump.inputStream()).bufferedReader(Charsets.UTF_8).useLines { lines ->
-            lines.forEach { line ->
-                if (line.startsWith(PAGE_RECORD)) pages.add(ArrayList())
-                val page = pages.lastOrNull() ?: error("$dump does not start with a page record")
-                page.add(line)
-            }
-        }
-        return pages.map { RawPageFixture.parse(it.asSequence()) }
-    }
+    fun pages(document: GoldenDocument): List<RawPage> = readDump(root.resolve("rawpages/${document.id}.rawpages.gz"))
 
     fun expectedText(document: GoldenDocument): String {
-        val file = root.resolve("expected/${document.textId}.txt")
+        val file = root.resolve("$expectedDir/${document.textId}.txt")
         require(file.isFile) { "missing $file" }
         return file.readText(Charsets.UTF_8)
     }
@@ -76,6 +68,20 @@ class GoldenCorpus(private val root: File) {
     companion object {
         const val INDEX = "corpus.tsv"
         private const val PAGE_RECORD = "page "
+
+        /** Every page of a dump written by scripts/pdf/golden_corpus.py, in order. */
+        fun readDump(dump: File): List<RawPage> {
+            require(dump.isFile) { "missing $dump: run python3 scripts/pdf/golden_corpus.py dump" }
+            val pages = ArrayList<ArrayList<String>>()
+            GZIPInputStream(dump.inputStream()).bufferedReader(Charsets.UTF_8).useLines { lines ->
+                lines.forEach { line ->
+                    if (line.startsWith(PAGE_RECORD)) pages.add(ArrayList())
+                    val page = pages.lastOrNull() ?: error("$dump does not start with a page record")
+                    page.add(line)
+                }
+            }
+            return pages.map { RawPageFixture.parse(it.asSequence()) }
+        }
         private val COLUMNS = listOf("id", "category", "source", "pages", "text", "status")
     }
 }
