@@ -70,6 +70,7 @@ import io.github.skm0078.audora.ui.licences.LicenceSource
 import io.github.skm0078.audora.ui.licences.LicencesController
 import io.github.skm0078.audora.ui.licences.LicencesScreen
 import io.github.skm0078.audora.ui.reader.BookNotesModel
+import io.github.skm0078.audora.ui.reader.KeepScreenOn
 import io.github.skm0078.audora.ui.reader.LibraryReaderBooks
 import io.github.skm0078.audora.ui.reader.LocatorReaderResume
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
@@ -78,6 +79,7 @@ import io.github.skm0078.audora.ui.reader.ReaderDocumentOpener
 import io.github.skm0078.audora.ui.reader.ReaderModel
 import io.github.skm0078.audora.ui.reader.ReaderScreen
 import io.github.skm0078.audora.ui.reader.ReaderView
+import io.github.skm0078.audora.ui.reader.ScreenPreference
 import io.github.skm0078.audora.ui.reader.SleepTimerSetting
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
@@ -114,6 +116,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var viewPreference: ViewPreference
+
+    @Inject
+    lateinit var screenPreference: ScreenPreference
 
     @Inject
     lateinit var documentOpener: ReaderDocumentOpener
@@ -256,6 +261,9 @@ class MainActivity : ComponentActivity() {
         // thread, one write at a time and in order, so quick taps leave the file as the switch shows.
         var skipCitations by remember { mutableStateOf(textPreferences.skipCitationMarkers()) }
         val textWrites = remember { Dispatchers.IO.limitedParallelism(1) }
+        val keepScreenOn by remember {
+            screenPreference.keepScreenOn()
+        }.collectAsStateWithLifecycle(initialValue = false)
         SettingsScreen(
             shareState = diagnostics.shareState,
             batteryExempt = battery.exempt,
@@ -286,6 +294,8 @@ class MainActivity : ComponentActivity() {
                     if (!saved) skipCitations = !skip // logged; the switch shows what books will use
                 }
             },
+            keepScreenOn = keepScreenOn,
+            onKeepScreenOnChange = { on -> scope.launch { screenPreference.saveKeepScreenOn(on) } },
         )
     }
 
@@ -439,6 +449,10 @@ class MainActivity : ComponentActivity() {
         val notesState by notes.state.collectAsStateWithLifecycle()
         val voiceRows by remember { voiceManager.rows() }.collectAsStateWithLifecycle(initialValue = emptyList())
         val actions = remember(model) { readerActions(model, notes, playWithPermission, onBack) }
+        val keepScreenOn by remember {
+            screenPreference.keepScreenOn()
+        }.collectAsStateWithLifecycle(initialValue = false)
+        KeepScreenOn(keepScreenOn && state.playback.wantsToPlay)
         ReaderScreen(
             state = state,
             config = readerConfig,

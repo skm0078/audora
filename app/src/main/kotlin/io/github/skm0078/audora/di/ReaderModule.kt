@@ -13,6 +13,7 @@ import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.ui.reader.DataStoreReaderPreferences
 import io.github.skm0078.audora.ui.reader.PdfReaderDocumentOpener
 import io.github.skm0078.audora.ui.reader.ReaderDocumentOpener
+import io.github.skm0078.audora.ui.reader.ScreenPreference
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
 import javax.inject.Singleton
@@ -35,6 +36,9 @@ object ReaderModule {
 
     @Provides
     fun viewPreference(preferences: DataStoreReaderPreferences): ViewPreference = preferences
+
+    @Provides
+    fun screenPreference(preferences: DataStoreReaderPreferences): ScreenPreference = preferences
 
     @Provides
     @Singleton

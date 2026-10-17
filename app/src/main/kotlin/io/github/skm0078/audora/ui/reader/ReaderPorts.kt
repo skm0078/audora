@@ -11,6 +11,7 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.core.resume.ResumePoint
+import kotlinx.coroutines.flow.Flow
 
 interface ReaderBooks {
     suspend fun find(id: BookId): Book?
@@ -55,6 +56,13 @@ interface ViewPreference {
             override suspend fun saveView(view: ReaderView) = Unit
         }
     }
+}
+
+/** "Keep screen on while reading aloud": off by default, since a lit screen costs battery. */
+interface ScreenPreference {
+    fun keepScreenOn(): Flow<Boolean>
+
+    suspend fun saveKeepScreenOn(on: Boolean)
 }
 
 class LibraryReaderBooks(private val library: Library) : ReaderBooks {

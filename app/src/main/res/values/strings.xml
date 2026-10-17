@@ -317,4 +317,6 @@
     <!-- Reading text (P2-03) -->
     <string name="settings_skip_citations_title">Skip citation numbers</string>
     <string name="settings_skip_citations_body">Reads “[12]” and “[4–7]” markers aloud when off. Applies to books you open next.</string>
+    <string name="settings_keep_screen_on_title">Keep screen on while reading aloud</string>
+    <string name="settings_keep_screen_on_body">The reader stays lit while Audora reads, so you can follow along. Uses more battery; the screen times out as usual when paused.</string>
 </resources>
