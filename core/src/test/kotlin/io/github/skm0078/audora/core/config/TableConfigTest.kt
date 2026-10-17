@@ -29,6 +29,7 @@ class TableConfigTest {
             { TableConfig(maxRowsPerTable = 1) },
             { TableConfig(ruleSnapEm = -1f) },
             { TableConfig(minProseLines = 0) },
+            { TableConfig(minProseWords = 1) },
             { TableConfig(maxRowGapEm = 0f) },
         )
         for (make in bad) assertThrows(IllegalArgumentException::class.java) { make() }

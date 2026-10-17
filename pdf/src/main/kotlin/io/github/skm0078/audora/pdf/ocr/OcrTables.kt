@@ -26,7 +26,7 @@ import io.github.skm0078.audora.pdf.layout.TextSpan
  * 2. **Borderless tables** from the words left: Tesseract reads a row of an unruled table as one line with wide gaps,
  *    or as pieces in blocks of columns, so OCR lines side by side are joined into rows (one run per word) and the
  *    text-layer table path ([TableFinder], [TableGrid]) finds and builds them. Prose rows (a Tesseract paragraph
- *    of wide lines, or two prose columns side by side) are left out and end a run, as does a gap wider than
+ *    of lines of running text, or two columns of it side by side) are left out and end a run, as does a gap wider than
  *    `TableConfig.maxRowGapEm`; a grid whose cells are mostly wider than `TableConfig.maxColumnCellEm` is prose
  *    too, not a table.
  */
@@ -70,33 +70,36 @@ internal class OcrTables(private val config: CleanupConfig, private val rowOverl
     }
 
     /**
-     * The words of prose lines: lines with a stretch wider than a table cell (`TableConfig.maxColumnCellEm`) in a
-     * paragraph with at least `TableConfig.minProseLines` such lines. Tesseract sets a column of prose as one paragraph
-     * of lines, and a table's rows as lines of their own; a row holding prose ends a run of rows instead of joining it.
+     * The words of prose lines: lines with a prose stretch ([isProse]) in a paragraph with at least
+     * `TableConfig.minProseLines` such lines. Tesseract sets a column of prose, or a cell's text wrapped over lines, as
+     * one paragraph of lines, and a table's rows as lines of their own; a row holding prose ends a run of rows instead
+     * of joining it, so a wrapped cell is read whole in OCR's order rather than cut line by line.
      */
     private fun proseLines(lines: List<TableLine>, em: Float): Set<TableWord> {
-        val wide = lines.filter { line -> stretches(line.words.sortedBy { it.box.left }, em).any { it > cellEm(em) } }
-        return wide.groupBy { it.paragraph }.values
+        val prose = lines.filter { line -> stretches(line.words.sortedBy { it.box.left }, em).any { isProse(it, em) } }
+        return prose.groupBy { it.paragraph }.values
             .filter { it.size >= config.tables.minProseLines }
             .flatMapTo(HashSet()) { paragraph -> paragraph.flatMap { it.words } }
     }
 
     private fun cellEm(em: Float) = config.tables.maxColumnCellEm * em
 
-    /** The widths of [row]'s stretches of words: words closer than `CleanupConfig.tableGapEm`. */
-    private fun stretches(row: List<TableWord>, em: Float): List<Float> {
-        val widths = ArrayList<Float>()
-        var start = row.first().box
-        var end = start
-        for (word in row.drop(1)) {
-            if (word.box.left - end.right >= config.tableGapEm * em) {
-                widths.add(end.right - start.left)
-                start = word.box
+    /** Running text, not a cell: wider than a table cell, or at least `TableConfig.minProseWords` words. */
+    private fun isProse(stretch: List<TableWord>, em: Float): Boolean =
+        stretch.size >= config.tables.minProseWords || stretch.last().box.right - stretch.first().box.left > cellEm(em)
+
+    /** [row]'s stretches of words: words closer than `CleanupConfig.tableGapEm`, left to right. */
+    private fun stretches(row: List<TableWord>, em: Float): List<List<TableWord>> {
+        val out = ArrayList<MutableList<TableWord>>()
+        for (word in row) {
+            val last = out.lastOrNull()?.last()
+            if (last == null || word.box.left - last.box.right >= config.tableGapEm * em) {
+                out.add(mutableListOf(word))
+            } else {
+                out.last().add(word)
             }
-            end = word.box
         }
-        widths.add(end.right - start.left)
-        return widths
+        return out
     }
 
     /**
@@ -121,12 +124,12 @@ internal class OcrTables(private val config: CleanupConfig, private val rowOverl
     }
 
     /**
-     * A row of two or more stretches of words, every one wider than a table cell (`TableConfig.maxColumnCellEm`):
-     * lines of two prose columns side by side. It ends a run of rows instead of joining one.
+     * A row of two or more stretches of words, every one prose ([isProse]): lines of two prose columns side by side.
+     * It ends a run of rows instead of joining one.
      */
     private fun isProseRow(row: List<TableWord>, em: Float): Boolean {
-        val widths = stretches(row, em)
-        return widths.size >= 2 && widths.all { it > cellEm(em) }
+        val stretches = stretches(row, em)
+        return stretches.size >= 2 && stretches.all { isProse(it, em) }
     }
 
     /** Most cells wider than a table cell runs: the columns of a page Tesseract read across as one line each. */

@@ -182,15 +182,20 @@ and highlight need a unit to land on.
   across it is text. A grid row with words in two or more cells that makes no table (one tall row of ruled columns)
   keeps OCR's column-at-a-time order rather than being cut into rows line by line. **Borderless tables**
   (`OcrTables`): the words left are joined into rows of OCR lines side by side and handed to the text-layer path
-  (`TableFinder`, `TableGrid`); prose stops a run (a Tesseract paragraph of two or more lines with a stretch wider
-  than 15 em, or a row of two such stretches side by side), as does a gap wider than 2 em, and a grid whose median
-  cell is wider than 15 em is prose. A table's units go where its first word was read; pages without tables lay out
+  (`TableFinder`, `TableGrid`); prose stops a run (a Tesseract paragraph of two or more lines of running text, or a
+  row of two stretches of it side by side; running text is a stretch of at least 5 words or wider than 15 em, since
+  OCR's em is a line's height and a narrow prose column is under 15 of them), as does a gap wider than 2 em, and a
+  grid whose median cell is wider than 15 em is prose. A cell wrapped over several lines is therefore read whole, in
+  OCR's order, rather than as a table cut line by line. A table's units go where its first word was read; pages without tables lay out
   exactly as before, and a lone number a table took is no longer dropped as a page number. **Measured** on the four
   labelled tables of the corpora OCR'd from 300 dpi renders (desktop Tesseract 5, the app's models): 145 of 145 cells
   in the right row and column, 106 exactly as printed (the rest are OCR misreads of ×, −, superscripts and
   symbols). On 9 scanned pages of two government documents kept outside the repository (a Bengali list, a Hindi
   form) the ruled tables come out row by row where Tesseract read them cell by cell, each cell only as clean as
-  Tesseract read it; the six UDHR scans are unchanged (no table, same character error rate).
+  Tesseract read it; the six UDHR scans are unchanged (no table, same character error rate). Book kinds (RI-10) on
+  the 57 test PDFs, re-measured with OCR'd pages read through this path: 49 right, from 50. The one change is the
+  Bengali staff-transfer notice, labelled a gazette, whose tables are now found and make 56% of its units table
+  rows, so it reads as a form; the label is kept (a notice), and the gazette rule does not outrank tables.
   Limits: a cell Tesseract never read stays empty (serial numbers in thick-ruled forms); a table continued from the
   previous page takes its first row as its header; a letterhead set as two aligned blocks reads as a small table;
   two prose columns that Tesseract ran together across the gutter stay run together. Same PIPELINE_VERSION 10.
