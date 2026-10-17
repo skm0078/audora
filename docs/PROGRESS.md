@@ -2,6 +2,14 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Skim mode (plan item 64; 2026-10-17)
+- A **Skim** switch at the top of the speech sheet's "What to read" (off by default) reads only headings, captions, table summaries and the first sentence of each paragraph, list item or aside, to get through a chapter fast; turning it off reads everything again from the sentence playing. Skipped sentences stay on the page and are still resume points.
+- How: at render time in `UnitReading` (no `:pdf` change, no pipeline version bump); a paragraph starts after a pause longer than a sentence's (`ReadingUnitConfig`), a change of kind, or at the top of a page. Table rows, footnotes and equations are left out; the other modes still apply (a skipped table stays skipped).
+- Tests: `UnitReadingTest`, `ReadingModesTest`.
+- **Gaps:** bold terms are not read yet: `:pdf` does not keep font weight, so it needs the PDF side to tag bold spans first (a pipeline version bump). A paragraph that continues from the previous page has its first sentence on this page read as if it opened a paragraph.
+
+**Real-device checks (final phone session):** skim through a textbook chapter and a novel chapter; turn it off mid-page and hear the full text resume.
+
 ## Android Auto (plan item 34; 2026-10-17)
 - Audora shows up in Android Auto as a media app. The car's screen has three tabs: **Recent** (the last 10 books; a tap resumes where it was left), **Up next** (the queue; a queued chapter plays from its page, a queued book from where it was left) and **Library** (every book by title; a book opens to **Resume** and its chapters, titled from the PDF's outline, numbered when the outline has no title). "Hey Google, play *Gita* on Audora" finds the book by its title words and resumes it; a bare "play Audora" resumes the most recent book. Search from the car's keyboard lists the matches.
 - How: the playback service is now a Media3 `MediaLibraryService`; `SessionCallback` passes the library calls to `LibraryBrowser`, over a pure `BrowseTree` and `BrowseLookup` (ids in `BrowseNode`). Playing a row opens the book exactly as the app or a headset does (a user action, C7) and hands Media3 the playlist the book session set, as playback resumption does. A book's chapters are read from its outline the first time its folder opens (`OutlineChapters`; the PDF is opened for the outline only, the last 8 books are remembered). Rows are lists, not tiles (there are no covers). Watches (Wear OS) already mirror the phone's media controls. Logs never hold a title or the words searched.

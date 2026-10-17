@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReadingModesSection.kt
-// Purpose: The speech sheet's "What to read" controls: unreadable text, tables, notes, equations, captions, skips.
+// Purpose: The speech sheet's "What to read" controls: skim, unreadable text, tables, notes, equations, skips.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -32,6 +32,7 @@ import io.github.skm0078.audora.core.model.TableMode
 @Composable
 fun ReadingModesSection(modes: ReadingModes, onChange: (ReadingModes) -> Unit) {
     Text(stringResource(R.string.reading_modes_title), style = MaterialTheme.typography.titleMedium)
+    ModeSwitch(R.string.reading_skim, R.string.reading_skim_detail, modes.skim) { onChange(modes.copy(skim = it)) }
     ModeSwitch(R.string.reading_skip_unreadable, R.string.reading_skip_unreadable_detail, modes.skipUnreadable) {
         onChange(modes.copy(skipUnreadable = it))
     }

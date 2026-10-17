@@ -48,6 +48,8 @@ enum class CaptionMode {
  * @property skipParentheses, [skipBrackets] and [skipLinks] leave out (asides), [notes] and web or e-mail addresses
  *   from the text read (plan item 2); a sentence left empty is not played.
  * @property announcePages says "Page 12" before a page's first sentence (plan item 2).
+ * @property skim reads only headings, captions, table summaries and the first sentence of each paragraph or list item,
+ *   to get through a chapter fast (plan item 64); the rest stays on the page and is still a resume point.
  */
 data class ReadingModes(
     val skipUnreadable: Boolean = true,
@@ -59,6 +61,7 @@ data class ReadingModes(
     val skipBrackets: Boolean = false,
     val skipLinks: Boolean = false,
     val announcePages: Boolean = false,
+    val skim: Boolean = false,
 ) {
     /**
      * One line for a settings file or a media session extra: `key=VALUE` pairs separated by `;`. [decode] reads it
@@ -74,6 +77,7 @@ data class ReadingModes(
         KEY_BRACKETS to skipBrackets.toString(),
         KEY_LINKS to skipLinks.toString(),
         KEY_PAGES to announcePages.toString(),
+        KEY_SKIM to skim.toString(),
     ).joinToString(PAIR_SEPARATOR) { (key, value) -> "$key$VALUE_SEPARATOR$value" }
 
     companion object {
@@ -88,6 +92,7 @@ data class ReadingModes(
         private const val KEY_BRACKETS = "skipBrackets"
         private const val KEY_LINKS = "skipLinks"
         private const val KEY_PAGES = "announcePages"
+        private const val KEY_SKIM = "skim"
 
         /** Reads [encode]'s line; a missing, unknown or malformed value takes its default, so this never fails. */
         fun decode(line: String?): ReadingModes {
@@ -105,6 +110,7 @@ data class ReadingModes(
                 skipBrackets = values[KEY_BRACKETS]?.toBooleanStrictOrNull() ?: defaults.skipBrackets,
                 skipLinks = values[KEY_LINKS]?.toBooleanStrictOrNull() ?: defaults.skipLinks,
                 announcePages = values[KEY_PAGES]?.toBooleanStrictOrNull() ?: defaults.announcePages,
+                skim = values[KEY_SKIM]?.toBooleanStrictOrNull() ?: defaults.skim,
             )
         }
 

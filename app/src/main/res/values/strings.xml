@@ -94,6 +94,8 @@
     <string name="speech_clause_pauses">Pause at punctuation</string>
     <string name="speech_clause_pauses_detail">Short pauses at dashes, colons, brackets and quotes; brackets a little quieter</string>
     <string name="reading_modes_title">What to read</string>
+    <string name="reading_skim">Skim</string>
+    <string name="reading_skim_detail">Only headings, captions and the first sentence of each paragraph</string>
     <string name="reading_skip_unreadable">Skip unreadable text</string>
     <string name="reading_skip_unreadable_detail">Garbled scans and broken fonts play a soft sound instead</string>
     <string name="reading_tables">Tables</string>
