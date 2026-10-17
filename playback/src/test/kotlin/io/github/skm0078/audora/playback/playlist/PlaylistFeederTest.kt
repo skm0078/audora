@@ -4,7 +4,11 @@
 package io.github.skm0078.audora.playback.playlist
 
 import io.github.skm0078.audora.core.config.QueueConfig
+import io.github.skm0078.audora.core.model.FootnoteMode
+import io.github.skm0078.audora.core.model.ReadingModes
+import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.playback.page
+import io.github.skm0078.audora.playback.reading.UnitReading
 import io.github.skm0078.audora.playback.unit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -51,6 +55,26 @@ class PlaylistFeederTest {
         val first = playlist.item(0)
         feeder.append(page(0, 1))
         assertTrue(first != playlist.item(playlist.size - 1))
+    }
+
+    @Test
+    fun theReadingModesPickTheUnitsAndTheUnreadableCountIsReturned() {
+        val modes = ReadingModes(footnotes = FootnoteMode.SKIP)
+        val reading = PlaylistFeeder(playlist, config, UnitReading(modes))
+        playlist.set(reading.initialItems())
+        val units = listOf(
+            unit(0, 0),
+            unit(0, 1).copy(speakScore = 0.1f),
+            unit(0, 2).copy(speakScore = 0.2f),
+            unit(0, 3).copy(kind = UnitKind.FOOTNOTE),
+            unit(0, 4),
+        )
+        assertEquals(2, reading.append(units))
+        assertEquals(
+            "one cue for the junk run, no footnote",
+            listOf("p0u0", "p0u1", "p0u4", "more"),
+            playlist.describe(),
+        )
     }
 
     @Test

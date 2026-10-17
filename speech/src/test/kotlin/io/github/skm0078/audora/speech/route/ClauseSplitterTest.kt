@@ -25,6 +25,7 @@ class ClauseSplitterTest {
         val cases = listOf(
             "Wait — then go." to "Wait |DASH| then go.",
             "Wait -- then go." to "Wait |DASH| then go.",
+            "Wait---then go." to "Wait |DASH| then go.",
             "Wait - then go." to "Wait |DASH| then go.",
             "Wait – then go." to "Wait |DASH| then go.",
             "Note: read this." to "Note |COLON| read this.",
@@ -40,7 +41,7 @@ class ClauseSplitterTest {
     }
 
     @Test
-    fun `commas, ranges, times, links and lone closing brackets never cut`() {
+    fun `commas, ranges, times, links, labels and lone closing brackets never cut`() {
         val cases = listOf(
             "Red, green, and blue.",
             "Pages 10–20 and 10 – 20 and 1990—2000.",
@@ -48,6 +49,8 @@ class ClauseSplitterTest {
             "See https://example.org now.",
             "COVID-19 and well-known words.",
             "a) first item",
+            "Two cases, (i) the first and (iv) the last.",
+            "See (a), Eq. (2.14) and the word(s) in it.",
             "Is it? Yes!",
             "Value 3.14 here.",
         )

@@ -67,7 +67,8 @@ class PageLoader(
         logContext: String,
     ): Boolean = when (val loaded = withContext(extraction) { text.units(page) }) {
         is Outcome.Success -> {
-            feeder.append(cursor.playable(page, loaded.value))
+            val unreadable = feeder.append(cursor.playable(page, loaded.value))
+            if (unreadable > 0) AudoraLog.i(TAG, "Unreadable units skipped, $logContext page=$page count=$unreadable")
             listener.onPageAppended()
             true
         }
