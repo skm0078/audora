@@ -113,6 +113,8 @@ import io.github.skm0078.audora.ui.voices.VoiceManager
 import io.github.skm0078.audora.ui.voices.VoicesActions
 import io.github.skm0078.audora.ui.voices.VoicesController
 import io.github.skm0078.audora.ui.voices.VoicesScreen
+import io.github.skm0078.audora.widget.ResumeWidgetEffect
+import io.github.skm0078.audora.widget.ResumeWidgetProvider
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -167,6 +169,9 @@ class MainActivity : ComponentActivity() {
     /** A PDF opened or shared from another app, waiting to be added. Never set on a restore: it was handled then. */
     private var sharedPdf by mutableStateOf<String?>(null)
 
+    /** A book the home-screen widget's Resume asked to continue (plan item 35), until it is opened. */
+    private var widgetResume by mutableStateOf<String?>(null)
+
     @Inject
     lateinit var voiceManager: VoiceManager
 
@@ -187,7 +192,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        if (savedInstanceState == null) sharedPdf = SharedPdfIntent.uriOf(intent)
+        if (savedInstanceState == null) {
+            sharedPdf = SharedPdfIntent.uriOf(intent)
+            widgetResume = ResumeWidgetProvider.bookIdOf(intent)
+        }
         setContent {
             val appearance by remember {
                 appearancePreferences.appearance
@@ -215,6 +223,7 @@ class MainActivity : ComponentActivity() {
         }
         LaunchedEffect(Unit) { diagnostics.checkUnfinishedSession() }
         SharedPdfEffect(sharedPdf, { sharedPdf = null }, libraryController::addShared, nav::navigate)
+        ResumeWidgetEffect(libraryController.listState, widgetResume, { widgetResume = null }, nav::continueReading)
         val books = libraryBooks(libraryController.listState)
 
         destination.tab?.let { tab ->
@@ -410,6 +419,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         SharedPdfIntent.uriOf(intent)?.let { sharedPdf = it }
+        ResumeWidgetProvider.bookIdOf(intent)?.let { widgetResume = it }
     }
 
     @Composable

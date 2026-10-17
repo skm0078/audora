@@ -44,6 +44,18 @@
             </intent-filter>
         </activity>
 
+        <!-- The Resume widget (plan item 35): draws what the app saved; Resume opens MainActivity. -->
+        <receiver
+            android:name=".widget.ResumeWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_resume_info" />
+        </receiver>
+
         <!-- Hands the Share logs zip (cacheDir/shared-logs only) to the app the user picks (P1-07). -->
         <provider
             android:name="androidx.core.content.FileProvider"

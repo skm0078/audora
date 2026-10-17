@@ -388,4 +388,9 @@
     <string name="settings_dark_mode_dark">Dark</string>
     <string name="settings_true_black_title">True black at night</string>
     <string name="settings_true_black_body">Pure black behind the text in dark mode. Saves battery on OLED screens.</string>
+    <!-- Home-screen widget (plan item 35) -->
+    <string name="widget_description">Pick up your book where you left off</string>
+    <string name="widget_empty_body">Open a PDF to start listening</string>
+    <string name="widget_resume">Resume</string>
+    <string name="widget_resume_label">Resume %1$s</string>
 </resources>
