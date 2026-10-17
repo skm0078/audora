@@ -66,7 +66,10 @@ class EngineRenderer(
 
     private fun roleOf(kind: UnitKind): TextRole = when (kind) {
         UnitKind.HEADING -> TextRole.HEADING
-        UnitKind.BODY, UnitKind.LIST_ITEM -> TextRole.BODY
+
+        UnitKind.BODY, UnitKind.LIST_ITEM, UnitKind.TABLE_SUMMARY, UnitKind.TABLE_ROW, UnitKind.FOOTNOTE,
+        UnitKind.CAPTION, UnitKind.EQUATION, UnitKind.ASIDE,
+        -> TextRole.BODY
     }
 
     /** Context only (page, sentence, languages), never the sentence's text. */
