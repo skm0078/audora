@@ -97,7 +97,8 @@ class ClipService : Service() {
     /** On the worker thread. */
     private fun makeClip(id: BookId, start: UnitKey) {
         try {
-            when (val opened = runBlocking { LibraryBookSource(this, library).open(id, password = null) }) {
+            val books = LibraryBookSource(this, library)
+            when (val opened = runBlocking { books.open(id, password = null) }) {
                 is Outcome.Success -> opened.value.text.use { clipOf(opened.value, start) }
                 is Outcome.Failure -> notices.showFailed(opened.error.message)
             }
