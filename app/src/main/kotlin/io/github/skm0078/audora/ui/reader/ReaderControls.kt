@@ -99,6 +99,8 @@ private fun SpeedButton(playback: PlaybackSnapshot, config: ReaderConfig, enable
             onPace = actions::onPace,
             clausePauses = playback.clausePauses,
             onClausePauses = actions::onClausePauses,
+            readingModes = playback.readingModes,
+            onReadingModes = actions::onReadingModes,
             onDismiss = { open = false },
         )
     }

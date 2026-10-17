@@ -14,6 +14,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
@@ -80,10 +81,16 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
 
     override fun setClausePauses(on: Boolean) = setStyle(currentStyle().copy(clausePauses = on))
 
-    private fun currentStyle(): SpeechStyle = mutableState.value.let { SpeechStyle(it.speed, it.pace, it.clausePauses) }
+    override fun setReadingModes(modes: ReadingModes) = setStyle(currentStyle().copy(modes = modes))
+
+    private fun currentStyle(): SpeechStyle =
+        mutableState.value.let { SpeechStyle(it.speed, it.pace, it.clausePauses, it.readingModes) }
 
     private fun setStyle(style: SpeechStyle) = withPlayer("speech style") { player ->
-        AudoraLog.i(TAG, "Speech style rate=${style.rate} pace=${style.pace} clauses=${style.clausePauses}")
+        AudoraLog.i(
+            TAG,
+            "Speech style rate=${style.rate} pace=${style.pace} clauses=${style.clausePauses} ${style.modes}",
+        )
         send(player, PlaybackContract.SET_SPEECH_STYLE, PlaybackContract.speechStyleArgs(style), "speech style")
     }
 
@@ -143,6 +150,7 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             pace = Pace.entries.firstOrNull { it.name == extras.getString(PlaybackContract.SESSION_PACE) }
                 ?: Pace.NORMAL,
             clausePauses = extras.getBoolean(PlaybackContract.SESSION_CLAUSE_PAUSES, true),
+            readingModes = ReadingModes.decode(extras.getString(PlaybackContract.SESSION_READING_MODES)),
             canSkipBack = player.currentMediaItem != null && player.isCommandAvailable(Player.COMMAND_SEEK_TO_PREVIOUS),
             canSkipForward = player.hasNextMediaItem(),
             sleepTimer = sleepTimerOf(extras),

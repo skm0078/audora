@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.SpeechStyle
 import kotlinx.coroutines.flow.StateFlow
 
@@ -31,6 +32,9 @@ interface PlaybackPort {
     /** Pauses at dashes, colons, brackets and the like inside a sentence (RI-6). */
     fun setClausePauses(on: Boolean)
 
+    /** What is read, announced or skipped: tables, footnotes, equations, captions, unreadable text (ADR-035). */
+    fun setReadingModes(modes: ReadingModes)
+
     fun setSleepTimer(setting: SleepTimerSetting)
 }
 
@@ -51,6 +55,7 @@ data class PlaybackSnapshot(
     val speed: Float = SpeechStyle.NORMAL_RATE,
     val pace: Pace = Pace.NORMAL,
     val clausePauses: Boolean = true,
+    val readingModes: ReadingModes = ReadingModes(),
     val canSkipBack: Boolean = false,
     val canSkipForward: Boolean = false,
     val sleepTimer: SleepTimerState = SleepTimerState.Off,

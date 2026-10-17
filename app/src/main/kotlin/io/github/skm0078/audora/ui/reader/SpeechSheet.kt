@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/SpeechSheet.kt
-// Purpose: The player's speed and pace sheet: a speed slider with presets, sentence pauses and clause pauses.
+// Purpose: The player's speech sheet: speed with presets, sentence and clause pauses, and what to read (ADR-035).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.ReadingModes
 import kotlin.math.roundToInt
 
 /**
@@ -53,15 +55,21 @@ fun SpeechSheet(
     onDismiss: () -> Unit,
     clausePauses: Boolean = true,
     onClausePauses: (Boolean) -> Unit = {},
+    readingModes: ReadingModes = ReadingModes(),
+    onReadingModes: (ReadingModes) -> Unit = {},
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
-            modifier = Modifier.navigationBarsPadding().padding(horizontal = 24.dp).padding(bottom = 24.dp),
+            modifier = Modifier.navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             SpeedSection(speed, config, onSpeed)
             PaceSection(pace, onPace)
             ClausePausesRow(clausePauses, onClausePauses)
+            ReadingModesSection(readingModes, onReadingModes)
             Text(
                 stringResource(R.string.speech_sheet_hint),
                 style = MaterialTheme.typography.bodySmall,

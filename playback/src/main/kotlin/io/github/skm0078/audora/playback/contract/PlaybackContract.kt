@@ -11,6 +11,7 @@ import androidx.media3.session.SessionToken
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.playback.service.AudoraPlaybackService
@@ -85,6 +86,9 @@ object PlaybackContract {
     /** Boolean: pauses at dashes, colons, brackets and the like inside a sentence (RI-6); absent = on. */
     const val ARG_CLAUSE_PAUSES = "clause_pauses"
 
+    /** String: [ReadingModes.encode]; absent or unreadable = the defaults (ADR-035). */
+    const val ARG_READING_MODES = "reading_modes"
+
     // Error result of a custom command: SessionResult.extras[RESULT_ERROR] is a [PlaybackErrorCode] name.
     const val RESULT_ERROR = "error"
 
@@ -127,6 +131,9 @@ object PlaybackContract {
     /** Whether clause pauses are on (Boolean), always present. */
     const val SESSION_CLAUSE_PAUSES = "clause_pauses"
 
+    /** The reading modes in effect ([ReadingModes.encode]), always present. */
+    const val SESSION_READING_MODES = "reading_modes"
+
     /** Token for `MediaController.Builder(context, PlaybackContract.sessionToken(context))`. */
     fun sessionToken(context: Context): SessionToken =
         SessionToken(context, ComponentName(context, AudoraPlaybackService::class.java))
@@ -153,6 +160,7 @@ object PlaybackContract {
         putFloat(ARG_SPEECH_RATE, style.rate)
         putString(ARG_PACE, style.pace.name)
         putBoolean(ARG_CLAUSE_PAUSES, style.clausePauses)
+        putString(ARG_READING_MODES, style.modes.encode())
     }
 
     /** Parses [speechStyleArgs]; null when a field is missing, unknown or not a positive number. */
@@ -160,7 +168,8 @@ object PlaybackContract {
         val rate = args.getFloat(ARG_SPEECH_RATE, Float.NaN).takeIf { it > 0f && it.isFinite() }
         val pace = enumOrNull<Pace>(args.getString(ARG_PACE))
         val clausePauses = args.getBoolean(ARG_CLAUSE_PAUSES, true)
-        return if (rate == null || pace == null) null else SpeechStyle(rate, pace, clausePauses)
+        val modes = ReadingModes.decode(args.getString(ARG_READING_MODES))
+        return if (rate == null || pace == null) null else SpeechStyle(rate, pace, clausePauses, modes)
     }
 
     /** Parses [setVoiceArgs]; null when a field is missing or unknown. */
