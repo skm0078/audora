@@ -67,7 +67,10 @@ class VoiceLibrary private constructor(
     fun voiceDir(id: String): File = files.voiceDir(id)
 
     /** The voice picked for [lang] in Settings → Voices if it can still speak, else null (the default reads). */
-    fun preferredVoice(lang: Lang): VoiceId? = readingVoices.preferred(lang) { voice ->
+    fun preferredVoice(lang: Lang): VoiceId? = readingVoices.preferred(lang, canSpeak)
+
+    /** Whether a voice can read now: a phone TTS voice always may; a neural one only while bundled or installed. */
+    val canSpeak: (VoiceId) -> Boolean = { voice ->
         voice.engine != EngineId.SHERPA || voice.name == bundled?.id || installedNow().any { it.spec.id == voice.name }
     }
 

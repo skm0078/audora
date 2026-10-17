@@ -14,11 +14,12 @@ import androidx.media3.session.MediaLibraryService.LibraryParams
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionCommands
+import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import com.google.common.util.concurrent.SettableFuture
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
@@ -26,6 +27,7 @@ import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.playback.async.launchedValue
 import io.github.skm0078.audora.playback.browse.LibraryBrowser
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
@@ -36,7 +38,6 @@ import io.github.skm0078.audora.playback.session.SleepOptionsStore
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 /**
  * Only controllers from Audora itself get the custom commands; the system UI, Bluetooth and other apps get
@@ -64,8 +65,15 @@ class SessionCallback(
         controller: MediaSession.ControllerInfo,
     ): MediaSession.ConnectionResult {
         val trusted = controller.packageName == ownPackage
-        AudoraLog.i(TAG, "Controller connected: ${controller.packageName} trusted=$trusted")
+        val browses = mayBrowse(session, controller)
+        AudoraLog.i(TAG, "Controller connected: ${controller.packageName} trusted=$trusted browses=$browses")
         val builder = MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+        if (!browses) {
+            // Any other app: play and pause what is playing, but never list the library (titles are often personal
+            // documents) or put a book in the player.
+            builder.setAvailableSessionCommands(SessionCommands.EMPTY)
+            builder.setAvailablePlayerCommands(OTHER_APPS)
+        }
         if (session.isMediaNotificationController(controller)) builder.setAvailablePlayerCommands(LOCKED_SLIDER)
         if (trusted) {
             builder.setAvailableSessionCommands(
@@ -113,6 +121,7 @@ class SessionCallback(
         params: LibraryParams?,
     ): ListenableFuture<LibraryResult<MediaItem>> {
         AudoraLog.i(TAG, "Library root asked by ${browser.packageName}")
+        if (!mayBrowse(session, browser)) return denied()
         return library?.root(params) ?: super.onGetLibraryRoot(session, browser, params)
     }
 
@@ -123,22 +132,31 @@ class SessionCallback(
         page: Int,
         pageSize: Int,
         params: LibraryParams?,
-    ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> = library?.children(parentId, page, pageSize, params)
-        ?: super.onGetChildren(session, browser, parentId, page, pageSize, params)
+    ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> = when {
+        !mayBrowse(session, browser) -> denied()
+
+        else -> library?.children(parentId, page, pageSize, params)
+            ?: super.onGetChildren(session, browser, parentId, page, pageSize, params)
+    }
 
     override fun onGetItem(
         session: MediaLibrarySession,
         browser: MediaSession.ControllerInfo,
         mediaId: String,
-    ): ListenableFuture<LibraryResult<MediaItem>> = library?.item(mediaId) ?: super.onGetItem(session, browser, mediaId)
+    ): ListenableFuture<LibraryResult<MediaItem>> = when {
+        !mayBrowse(session, browser) -> denied()
+        else -> library?.item(mediaId) ?: super.onGetItem(session, browser, mediaId)
+    }
 
     override fun onSearch(
         session: MediaLibrarySession,
         browser: MediaSession.ControllerInfo,
         query: String,
         params: LibraryParams?,
-    ): ListenableFuture<LibraryResult<Void>> =
-        library?.search(session, browser, query, params) ?: super.onSearch(session, browser, query, params)
+    ): ListenableFuture<LibraryResult<Void>> = when {
+        !mayBrowse(session, browser) -> denied()
+        else -> library?.search(session, browser, query, params) ?: super.onSearch(session, browser, query, params)
+    }
 
     override fun onGetSearchResult(
         session: MediaLibrarySession,
@@ -147,8 +165,12 @@ class SessionCallback(
         page: Int,
         pageSize: Int,
         params: LibraryParams?,
-    ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> = library?.searchResult(query, page, pageSize, params)
-        ?: super.onGetSearchResult(session, browser, query, page, pageSize, params)
+    ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> = when {
+        !mayBrowse(session, browser) -> denied()
+
+        else -> library?.searchResult(query, page, pageSize, params)
+            ?: super.onGetSearchResult(session, browser, query, page, pageSize, params)
+    }
 
     /** A browsed row or a spoken search (item 34); anything else keeps Media3's handling. */
     override fun onSetMediaItems(
@@ -159,8 +181,8 @@ class SessionCallback(
         startPositionMs: Long,
     ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
         AudoraLog.i(TAG, "Play request from ${controller.packageName}, items=${mediaItems.size}")
-        return library?.play(mediaItems)
-            ?: super.onSetMediaItems(mediaSession, controller, mediaItems, startIndex, startPositionMs)
+        val browsed = if (mayBrowse(mediaSession, controller)) library?.play(mediaItems) else null
+        return browsed ?: super.onSetMediaItems(mediaSession, controller, mediaItems, startIndex, startPositionMs)
     }
 
     override fun onPlaybackResumption(
@@ -172,6 +194,17 @@ class SessionCallback(
         return resumption()?.resume(isForPlayback) ?: PlaybackResumption.unsupported()
     }
 
+    /**
+     * Who may list the library and play from it (plan item 34): this app, Android Auto and cars, and controllers the
+     * system trusts (System UI's media controls, Assistant), never any other installed app.
+     */
+    private fun mayBrowse(session: MediaSession, controller: MediaSession.ControllerInfo): Boolean =
+        controller.packageName == ownPackage || controller.isTrusted ||
+            session.isAutoCompanionController(controller) || session.isAutomotiveController(controller)
+
+    private fun <V> denied(): ListenableFuture<LibraryResult<V>> =
+        Futures.immediateFuture(LibraryResult.ofError(SessionError.ERROR_PERMISSION_DENIED))
+
     private fun playFrom(args: Bundle): ListenableFuture<SessionResult> {
         val bookId = args.getString(PlaybackContract.ARG_BOOK_ID)?.takeIf { it.isNotBlank() }
         val page = args.getInt(PlaybackContract.ARG_PAGE, -1)
@@ -181,17 +214,12 @@ class SessionCallback(
             return Futures.immediateFuture(failure(PlaybackErrorCode.BAD_REQUEST))
         }
         val password = args.getString(PlaybackContract.ARG_PASSWORD)
-        val result = SettableFuture.create<SessionResult>()
-        scope.launch {
-            val outcome = bookSession().playFrom(BookId(bookId), page, charStart, password)
-            result.set(
-                when (outcome) {
-                    is Outcome.Success -> SessionResult(SessionResult.RESULT_SUCCESS)
-                    is Outcome.Failure -> failure(outcome.error.code)
-                },
-            )
+        return later {
+            when (val outcome = bookSession().playFrom(BookId(bookId), page, charStart, password)) {
+                is Outcome.Success -> SessionResult(SessionResult.RESULT_SUCCESS)
+                is Outcome.Failure -> failure(outcome.error.code)
+            }
         }
-        return result
     }
 
     private suspend fun setVoice(args: Bundle): SessionResult =
@@ -258,11 +286,8 @@ class SessionCallback(
     }
 
     /** Runs [block] on the service's main-thread scope, for commands that read or write the database. */
-    private fun later(block: suspend () -> SessionResult): ListenableFuture<SessionResult> {
-        val result = SettableFuture.create<SessionResult>()
-        scope.launch { result.set(block()) }
-        return result
-    }
+    private fun later(block: suspend () -> SessionResult): ListenableFuture<SessionResult> =
+        scope.launchedValue(TAG, "Custom command", block)
 
     /** Logs a "This sounded wrong" report (RI-8b) with the voice reading its language; never the sentence's text. */
     private fun report(args: Bundle): SessionResult {
@@ -316,6 +341,15 @@ class SessionCallback(
          */
         val LOCKED_SLIDER: Player.Commands = MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
             .remove(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM)
+            .build()
+
+        /**
+         * Commands for any other app that connects (plan item 34): it may see and drive what is playing, but never
+         * swap the book, so a stray app cannot load media into the reader's session.
+         */
+        val OTHER_APPS: Player.Commands = MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
+            .remove(Player.COMMAND_SET_MEDIA_ITEM)
+            .remove(Player.COMMAND_CHANGE_MEDIA_ITEMS)
             .build()
 
         /** A day; anything longer is a bug in the caller, not a bedtime. */
