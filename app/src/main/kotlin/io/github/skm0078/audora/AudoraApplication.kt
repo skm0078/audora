@@ -1,12 +1,15 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/AudoraApplication.kt
-// Purpose: Process entry point. Starts logging before anything else can fail, then logs how the last process ended.
+// Purpose: Process entry point. Applies a staged restore, starts logging, then logs how the last process ended.
 
 package io.github.skm0078.audora
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
 import io.github.skm0078.audora.core.diagnostics.StartupDiagnostics
+import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.logging.AppLogging
+import io.github.skm0078.audora.playback.backup.Backups
+import io.github.skm0078.audora.playback.backup.PendingRestore
 import javax.inject.Inject
 import kotlin.concurrent.thread
 
@@ -19,13 +22,17 @@ class AudoraApplication : Application() {
     lateinit var startupDiagnostics: StartupDiagnostics
 
     override fun onCreate() {
+        // Before Hilt builds anything that could open the database or preferences a restore replaces (ADR-046).
+        val restore = Backups.applyPending(this)
         super.onCreate() // Hilt injects fields here.
         appLogging.start()
+        if (restore.result != PendingRestore.Result.NONE) AudoraLog.i(TAG, "Backup restore at start: $restore")
         // File reads and a binder call: kept off the main thread so they never delay the first frame.
         thread(name = STARTUP_DIAGNOSTICS_THREAD) { startupDiagnostics.run() }
     }
 
     private companion object {
+        const val TAG = "App"
         const val STARTUP_DIAGNOSTICS_THREAD = "audora-startup-diagnostics"
     }
 }

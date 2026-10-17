@@ -13,6 +13,7 @@ import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.notes.VoiceNoteStore
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import java.io.Closeable
+import java.io.File
 
 /** One per process (the app's DI graph holds it). Room opens the file lazily, off the main thread. */
 class AudoraStorage private constructor(private val database: AudoraDatabase) : Closeable {
@@ -24,10 +25,22 @@ class AudoraStorage private constructor(private val database: AudoraDatabase) : 
     val highlights: HighlightStore = RoomHighlightStore(database.marks())
     val voiceNotes: VoiceNoteStore = RoomVoiceNoteStore(database.marks())
 
+    /**
+     * Writes a consistent copy of the whole database to [target] (which must not exist) with `VACUUM INTO`, while
+     * the app keeps reading and writing: SQLite copies one read transaction, WAL contents included. Blocking; call
+     * off the main thread. Throws SQLiteException if it fails.
+     */
+    fun snapshotTo(target: File) {
+        database.openHelper.writableDatabase.execSQL("VACUUM INTO ?", arrayOf(target.absolutePath))
+    }
+
     override fun close() = database.close()
 
     companion object {
         const val DATABASE_NAME = "audora.db"
+
+        /** The database schema version this build writes. */
+        const val SCHEMA_VERSION = DATABASE_VERSION
 
         /** [name] other than the default is for tests that reopen a database file, as after a process death. */
         fun open(context: Context, name: String = DATABASE_NAME): AudoraStorage = AudoraStorage(

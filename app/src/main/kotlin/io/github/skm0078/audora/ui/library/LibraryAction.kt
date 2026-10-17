@@ -13,4 +13,7 @@ enum class LibraryAction(@StringRes val label: Int) {
 
     /** Lists the watched folders, whose new books join the library when it opens (plan item 26, ADR-044). */
     WATCHED_FOLDERS(R.string.library_watched_folders),
+
+    /** Saves one backup file, or restores one on a new phone (plan item 28, ADR-046). */
+    BACKUP(R.string.library_backup),
 }

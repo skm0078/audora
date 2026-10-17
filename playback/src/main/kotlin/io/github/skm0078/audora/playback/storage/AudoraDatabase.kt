@@ -7,6 +7,9 @@ import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
 
+/** The schema version; a backup records it and a restore refuses a newer one (ADR-046). */
+internal const val DATABASE_VERSION = 4
+
 /**
  * Schema changes need a version bump and an explicit migration, never a destructive fallback: losing the
  * library and every reading position on an update is worse than a failed build. Schemas are in `schemas/`.
@@ -21,7 +24,7 @@ import androidx.room.RoomDatabase
         HighlightEntity::class,
         VoiceNoteEntity::class,
     ],
-    version = 4,
+    version = DATABASE_VERSION,
     exportSchema = true,
     autoMigrations = [
         // 1 → 2 (P1-06): adds the resume_anchors table. Room generates it from the committed schemas.

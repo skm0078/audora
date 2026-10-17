@@ -60,6 +60,7 @@ import io.github.skm0078.audora.diagnostics.LogSharer
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
+import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.documents.WatchedFolders
@@ -74,6 +75,7 @@ import io.github.skm0078.audora.playback.notes.VoiceNoteAudio
 import io.github.skm0078.audora.playback.photo.PhotoBooks
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.search.SearchIndexes
+import io.github.skm0078.audora.playback.storage.AudoraStorage
 import io.github.skm0078.audora.playback.studio.StudioMode
 import io.github.skm0078.audora.speech.dictionary.Dictionaries
 import io.github.skm0078.audora.speech.ocr.OcrModels
@@ -87,6 +89,7 @@ import io.github.skm0078.audora.ui.battery.BatterySetupController
 import io.github.skm0078.audora.ui.battery.BatterySetupScreen
 import io.github.skm0078.audora.ui.diagnostics.DiagnosticsController
 import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
+import io.github.skm0078.audora.ui.library.BackupRoute
 import io.github.skm0078.audora.ui.library.BookAction
 import io.github.skm0078.audora.ui.library.BookCovers
 import io.github.skm0078.audora.ui.library.LibraryAction
@@ -238,6 +241,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var upNext: UpNextPort
 
+    @Inject
+    lateinit var storage: AudoraStorage
+
     private val appearancePreferences: AppearancePreferences by lazy { AppearancePreferences(applicationContext) }
 
     private val readingLookPreferences: ReadingLookPreferences by lazy { ReadingLookPreferences(applicationContext) }
@@ -248,6 +254,7 @@ class MainActivity : ComponentActivity() {
 
     private val photoBooks: PhotoBooks by lazy { PhotoBooks(applicationContext, sharedCopies) }
     private val watchedFolders: WatchedFolders by lazy { WatchedFolders(applicationContext, library) }
+    private val backups: Backups by lazy { Backups(applicationContext, storage) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -511,6 +518,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Plan item 28: a staged restore is put in place at process start, so the app starts again in a new process.
+     * The task is relaunched first, then this process ends; playback stops with it (nothing resumes on its own).
+     */
+    private fun restartForRestore() {
+        val launch = packageManager.getLaunchIntentForPackage(packageName)?.component ?: return
+        AudoraLog.i(TAG, "Restarting to apply a restore")
+        startActivity(Intent.makeRestartActivityTask(launch))
+        Runtime.getRuntime().exit(0)
+    }
+
     /** Plan item 62: the camera app takes the photo (no camera permission); [makePhotoBook] reads what it saved. */
     private fun pointAndRead(takePhoto: ActivityResultLauncher<Uri>) {
         try {
@@ -576,6 +594,7 @@ class MainActivity : ComponentActivity() {
             if (taken) makePhotoBook()
         }
         var watchedOpen by rememberSaveable { mutableStateOf(false) }
+        var backupOpen by rememberSaveable { mutableStateOf(false) }
         val actions = remember(controller) {
             object : LibraryActions {
                 override fun onAddPdf(documentUri: Uri) = controller.add(documentUri.toString())
@@ -621,6 +640,7 @@ class MainActivity : ComponentActivity() {
                 override fun onLibraryAction(action: LibraryAction) = when (action) {
                     LibraryAction.POINT_AND_READ -> pointAndRead(takePhoto)
                     LibraryAction.WATCHED_FOLDERS -> watchedOpen = true
+                    LibraryAction.BACKUP -> backupOpen = true
                 }
             }
         }
@@ -637,6 +657,7 @@ class MainActivity : ComponentActivity() {
             covers = bookCovers,
         )
         WatchedFoldersRoute(watchedFolders, open = watchedOpen) { watchedOpen = false }
+        BackupRoute(backups, open = backupOpen, onClose = { backupOpen = false }, onRestart = ::restartForRestore)
     }
 
     @Composable
