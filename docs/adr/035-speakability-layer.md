@@ -239,4 +239,21 @@ and highlight need a unit to land on.
   papers now read their 23 author names without "star", "hash" or "registered"; no figure or word was dropped. Two
   markers stay: one OCR read as a letter ("Bebenitat") and one read as "™#," with its comma. Most in-text numeric
   markers are dropped by Tesseract itself.
+- Sentence ends on scanned Hindi and Bengali pages (`OcrDandas`, `OcrAaBars`, RI-3). There is no offline Hindi or
+  Bengali punctuation model, so the danda Tesseract misreads is restored from the page itself. **Measured** against
+  the hand-checked text of the 40 UDHR scan pages (200 dpi degraded and 300 dpi): Hindi lost 2 of 208 sentence ends,
+  both at 200 dpi (one danda merged into a misread word, one heading's full stop read as a comma), and dandas read as
+  "|" were already restored by the text layer's pipe repair, so Hindi needs nothing. Bengali lost 14 of 130 to
+  misreads: a line-end danda read as "৷" (U+09F7, a currency sign drawn as the same bar) or as a lone "|" after a
+  misread word, and three dropped outright; worse, the vowel sign aa (also a bar) was read as "!", "|" or "৷" glued to
+  a word, making 14 false stops on the 200 dpi pages and the wrong word ("কর" for "করা", "ধার" for "ধারা"), which
+  `OcrRepair` left alone because the word as read is a word. Now a line-final "৷", or a lone "|" on a line of at least
+  `LayoutConfig.ocrDandaMinIndicWords` Hindi or Bengali words, is the danda; mid-line, an unsure word's glued bar that
+  runs on to another Bengali word is the sign aa after a consonant when that word is common, is dropped after the sign
+  itself (the bar read twice; "৷" after the sign is dropped anywhere), completes the sign o after the sign e when that
+  word is clearly commoner and is otherwise the danda. Result: running on 4 → 2 (one danda Tesseract dropped
+  mid-line, one "= |" mid-line), false stops 14 → 0, Bengali character errors 1.12% → 0.91%. Across the 221 pages of
+  the book-kind corpus, 47 units changed (into 23, as false stops no longer split sentences), all of them those repairs, except a "|" separator inside a bracket after
+  "JPG" now read as a danda, and in a scanned table a "!" after "আলোচনা" (perhaps a danda) dropped. The listening
+  corpus has no Bengali scan and its Hindi scan pages had no lost sentence end, so the listening score is unchanged.
 - Logs carry kinds, scores, page and unit index, never the page's text (AGENTS.md).

@@ -39,14 +39,18 @@ internal object OcrConfusions {
 
     /**
      * The sign a punctuation mark right after a word may really be: a colon for the visarga in both scripts, and in
-     * Bengali "!" or "৷" (U+09F7) for the vowel sign aa, drawn as the same bar as a danda.
+     * Bengali "!", "|" or "৷" (U+09F7) for the vowel sign aa, drawn as the same bar as a danda.
      */
     fun signFor(lang: Lang, mark: Char): String? = when {
         lang == Lang.HI && mark == ':' -> "ः"
         lang == Lang.BN && mark == ':' -> "ঃ"
-        lang == Lang.BN && (mark == '!' || mark == '৷') -> "া"
+        lang == Lang.BN && mark in AA_BARS -> AA
         else -> null
     }
+
+    /** The Bengali vowel sign aa, and what Tesseract reads its bar as. */
+    const val AA = "\u09BE"
+    const val AA_BARS = "!|\u09F7"
 
     private fun symmetric(vararg pairs: Pair<String, String>) = pairs.flatMap { listOf(it, it.second to it.first) }
 }

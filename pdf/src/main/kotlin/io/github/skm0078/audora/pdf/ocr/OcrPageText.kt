@@ -41,6 +41,7 @@ internal class OcrPage(val text: PageText, val layout: PageLayout, val hyphenate
  */
 internal class OcrPageText(private val tableFinder: OcrTables, private val layoutConfig: LayoutConfig) {
     private val noteMarkers = OcrNoteMarkers(layoutConfig.notes)
+    private val dandas = OcrDandas(layoutConfig.ocrDandaMinIndicWords)
 
     fun build(
         pageIndex: Int,
@@ -209,7 +210,7 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
 
     /**
      * Paragraphs of lines of NFC words, [dropped] lines, empty words and note markers ([OcrNoteMarkers]) left out and
-     * misread bullets restored ([OcrBullets]), and each line's size
+     * misread line-end dandas ([OcrDandas]) and bullets ([OcrBullets]) restored, and each line's size
      * (`OcrLine.size`) in the same shape.
      */
     private fun paragraphsOf(
@@ -228,7 +229,7 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
                 val text = Normalizer.normalize(word.text, Normalizer.Form.NFC).trim()
                 if (text.isEmpty()) null else OcrWord(text, word.box, word.confidence)
             }
-            val words = OcrBullets.restore(isBulletGap, noteMarkers.silence(read, ocr::readingFrame))
+            val words = OcrBullets.restore(isBulletGap, dandas.restore(noteMarkers.silence(read, ocr::readingFrame)))
             if (words.isEmpty()) return@forEachIndexed
             if (line.paragraph != paragraph && current.isNotEmpty()) {
                 paragraphs.add(current)
