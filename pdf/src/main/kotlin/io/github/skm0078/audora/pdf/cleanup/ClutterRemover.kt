@@ -42,21 +42,21 @@ internal class ClutterRemover(config: CleanupConfig, layoutConfig: LayoutConfig)
             TAG,
             "Cleanup page=${layout.pageIndex} neighbours=${neighbours.size} " +
                 MarginReason.entries.joinToString(" ") { "${it.name.lowercase()}=${counts[it] ?: 0}" } +
-                " tables=${built.count { it.second != null }} droppedTableLines=" +
-                built.filter { it.second == null }.sumOf { it.first.size },
+                " tables=${built.sumOf { it.second.size }} droppedTableLines=" +
+                built.filter { it.second.isEmpty() }.sumOf { it.first.size },
         )
-        val inserted = HashMap<TextLine, List<Paragraph>>()
+        // Two tables side by side share their first line: both go there, left first.
+        val inserted = HashMap<TextLine, MutableList<Paragraph>>()
         var tableIndex = 0
-        for ((_, grid) in built) {
-            if (grid == null) continue
+        for (grid in built.flatMap { it.second }) {
             val first = layout.blocks.asSequence().flatMap { it.paragraphs }.flatMap { it.lines }.first {
                 it in
                     grid.lines
             }
-            inserted[first] = paragraphsOf(grid, tableIndex++)
+            inserted.getOrPut(first) { ArrayList() }.addAll(paragraphsOf(grid, tableIndex++))
         }
         // A grid leaves a title across the table's edge to the text; a region that makes no grid goes whole.
-        val tableLines = built.flatMap { (region, grid) -> grid?.lines ?: region }
+        val tableLines = built.flatMap { (region, grids) -> grids.flatMap { it.lines }.ifEmpty { region } }
         return without(layout, margin.keys + tableLines, inserted)
     }
 

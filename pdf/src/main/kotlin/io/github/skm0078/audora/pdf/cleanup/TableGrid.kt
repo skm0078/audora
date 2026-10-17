@@ -14,9 +14,16 @@ import io.github.skm0078.audora.pdf.layout.TextSpan
  *
  * @property header what each column holds.
  * @property rows the data rows, in order.
- * @property lines the table's lines: all it was built from but a title or heading across its top or bottom edge.
+ * @property lines the table's lines: all it was built from but a title or heading across its top or bottom edge. Two
+ *   tables set side by side share the lines they both run across.
+ * @property spans the text the table takes: its lines' spans, or for one of two tables side by side, its cells'.
  */
-internal class Grid(val header: List<List<TextSpan>>, val rows: List<List<List<TextSpan>>>, val lines: Set<TextLine>) {
+internal class Grid(
+    val header: List<List<TextSpan>>,
+    val rows: List<List<List<TextSpan>>>,
+    val lines: Set<TextLine>,
+    val spans: Set<TextSpan> = lines.flatMapTo(HashSet()) { it.spans },
+) {
     val columnCount: Int get() = header.size
 }
 
@@ -40,33 +47,53 @@ internal class Grid(val header: List<List<TextSpan>>, val rows: List<List<List<T
  * 6. **Header.** The rows before the first one with a number for a cell ("12", "4.00", "১০২১"), up to
  *    `maxHeaderRows`: a header set over two lines ("State / Union" above "Territory"). The first row when no row has
  *    a number (a truth table) or every row does.
+ * 7. **Side by side.** Two tables set side by side on the same row heights come as one: layout joins each row across
+ *    the gutter. They are split there ([SideBySide]) and built as two grids.
  */
 internal class TableGrid(private val config: TableConfig, private val rowOverlapRatio: Float) {
     private val closeColumns = CloseColumns(ColumnChannels(config))
+    private val sideBySide = SideBySide(config)
 
-    /** The grid of a table covering [lines]; null when they do not make at least two columns and two rows. */
-    fun build(page: PageText, lines: Collection<TextLine>, bodySize: Float): Grid? {
+    /**
+     * The grid of a table covering [lines], or two when it is two tables side by side; empty when they do not make at
+     * least two columns and two rows.
+     */
+    fun build(page: PageText, lines: Collection<TextLine>, bodySize: Float): List<Grid> {
         val cells = lines.mapNotNull { cellsOf(page, it, bodySize) }.filter { it.isNotEmpty() }
         val all = closeColumns.split(page, lineRows(cells))
         val fits = all.size in 2..config.maxRowsPerTable && !isChart(page, lines)
-        val columns = Columns.of(all).takeIf { fits && it.size >= 2 } ?: return null
+        val columns = Columns.of(all).takeIf { fits && it.size >= 2 } ?: return emptyList()
         val lineRows = withoutEdgeTitles(all, columns)
-        val rows = rows(lineRows, lineRows.map(columns::place))
-        return if (rows.size >= 2 && isFilled(rows)) grid(page, rows, lines.toSet(), all - lineRows.toSet()) else null
+        val halves = sideBySide.split(page, lineRows, columns)
+        return halves?.mapNotNull { half -> gridOf(page, half, Columns.of(half), half.lines(), half.spans()) }
+            ?: listOfNotNull(gridOf(page, lineRows, columns, lines.toSet() - all.minus(lineRows.toSet()).lines()))
     }
 
-    /** The grid of [rows], its header rows joined; it holds [lines] but those of the edge [titles]. */
-    private fun grid(page: PageText, rows: List<List<List<Cell>>>, lines: Set<TextLine>, titles: List<LineRow>): Grid {
+    /** The grid of [lineRows] in [columns], holding [lines]; null under two rows or when too sparse for a table. */
+    private fun gridOf(
+        page: PageText,
+        lineRows: List<LineRow>,
+        columns: Columns,
+        lines: Set<TextLine>,
+        spans: Set<TextSpan>? = null,
+    ): Grid? {
+        if (columns.size < 2) return null
+        val rows = rows(lineRows, lineRows.map(columns::place))
+        return if (rows.size >= 2 && isFilled(rows)) grid(page, rows, lines, spans) else null
+    }
+
+    /** The grid of [rows], its header rows joined, holding [lines] (and [spans], when given). */
+    private fun grid(page: PageText, rows: List<List<List<Cell>>>, lines: Set<TextLine>, spans: Set<TextSpan>?): Grid {
         val headerRows = headerRows(rows, page)
         val header = rows.take(headerRows).reduce { a, b -> a.zip(b) { x, y -> x + y } }
         val asSpans = (listOf(header) + rows.drop(headerRows)).map { row ->
             row.map { cells -> cells.flatMap { it.spans } }
         }
-        return Grid(
-            asSpans.first(),
-            asSpans.drop(1),
-            lines - titles.flatMap { row -> row.cells.map { it.line } }.toSet(),
-        )
+        return if (spans == null) {
+            Grid(asSpans.first(), asSpans.drop(1), lines)
+        } else {
+            Grid(asSpans.first(), asSpans.drop(1), lines, spans)
+        }
     }
 
     /** [lineRows] without the single cells across two or more columns at the top and bottom edges. */
@@ -88,7 +115,9 @@ internal class TableGrid(private val config: TableConfig, private val rowOverlap
     /** The line's cells: its runs, those closer than `cellGapEm` joined. Null when a run has no glyph box. */
     private fun cellsOf(page: PageText, line: TextLine, bodySize: Float): List<Cell>? {
         val em = if (line.size > 0f) line.size else bodySize
-        val runs = line.spans.map { span -> span to boxOf(page, span) }
+        val runs = line.spans.map { span ->
+            span to (span.start until span.end).mapNotNull(page::boxAt).reduceOrNull(TextBox::union)
+        }
         if (em <= 0f || runs.any { it.second == null }) return null
         val cells = ArrayList<Cell>()
         var spans = ArrayList<TextSpan>()
@@ -106,9 +135,6 @@ internal class TableGrid(private val config: TableConfig, private val rowOverlap
         box?.let { cells.add(Cell(spans, it, em, line)) }
         return cells
     }
-
-    private fun boxOf(page: PageText, span: TextSpan): TextBox? =
-        (span.start until span.end).mapNotNull(page::boxAt).reduceOrNull(TextBox::union)
 
     /** Cells of vertically overlapping lines, top to bottom, each line row's cells left to right. */
     private fun lineRows(lines: List<List<Cell>>): List<LineRow> {
@@ -223,6 +249,63 @@ private class CloseColumns(private val channels: ColumnChannels) {
 
 private class Cell(val spans: List<TextSpan>, val box: TextBox, val em: Float, val line: TextLine)
 
+/** The lines the cells of these line rows come from. */
+private fun Collection<LineRow>.lines(): Set<TextLine> = flatMapTo(HashSet()) { row -> row.cells.map { it.line } }
+
+/** The spans of these line rows' cells. */
+private fun Collection<LineRow>.spans(): Set<TextSpan> = flatMapTo(HashSet()) { row -> row.cells.flatMap { it.spans } }
+
+/**
+ * Two tables set side by side on the same row heights, which layout joined row by row into one. The gap between two
+ * neighbouring columns is a gutter when it is more than `TableConfig.sideBySideGapRatio` times every other column
+ * gap, at least [MIN_SIDE_COLUMNS] columns lie on each side, no cell crosses it, and the two sides show they are two
+ * tables: the same header on both (a long list set in two halves), or a row of two or more cells on one side only
+ * (tables of different lengths). A single wide table with one wide gap has neither.
+ */
+private class SideBySide(private val config: TableConfig) {
+    /** [rows] as the line rows of the left table and of the right one, or null when they are one table. */
+    fun split(page: PageText, rows: List<LineRow>, columns: Columns): List<List<LineRow>>? {
+        val gaps = columns.gaps()
+        val k = gaps.indices.maxByOrNull { gaps[it].width() }
+        val gutter = k?.takeIf { isGutter(rows, gaps, it) }?.let { gaps[it] } ?: return null
+        val middle = (gutter.start + gutter.endInclusive) / 2
+        val halves = listOf(false, true).map { right ->
+            rows.mapNotNull { row -> row.cells.filter { (it.box.left >= middle) == right }.ifEmpty { null } }
+                .map(::LineRow)
+        }
+        val oneSided = rows.any { row ->
+            row.cells.size >= 2 &&
+                row.cells.map { it.box.left >= middle }.toSet().size == 1
+        }
+        return halves.takeIf { oneSided || sameHeader(page, halves) }
+    }
+
+    /** Whether gap [k] of [gaps] (the one after column k) is a gutter between two tables of [rows]. */
+    private fun isGutter(rows: List<LineRow>, gaps: List<ClosedFloatingPointRange<Float>>, k: Int): Boolean {
+        val gap = gaps[k]
+        val widest = gaps.filterIndexed { i, _ -> i != k }.maxOfOrNull { it.width() } ?: return false
+        val columnsEachSide = minOf(k + 1, gaps.size - k)
+        val crossed = rows.any { row -> row.cells.any { it.box.left < gap.endInclusive && it.box.right > gap.start } }
+        return columnsEachSide >= MIN_SIDE_COLUMNS && gap.width() > widest * config.sideBySideGapRatio && !crossed
+    }
+
+    private fun ClosedFloatingPointRange<Float>.width() = endInclusive - start
+
+    /** Both halves start with the same header row of two or more cells. */
+    private fun sameHeader(page: PageText, halves: List<List<LineRow>>): Boolean {
+        val (left, right) = halves.map { half ->
+            half.firstOrNull()?.cells.orEmpty().map { cell ->
+                cell.spans.joinToString(" ") { page.text.substring(it.start, it.end).trim() }
+            }
+        }
+        return left.size >= MIN_SIDE_COLUMNS && left == right
+    }
+
+    private companion object {
+        const val MIN_SIDE_COLUMNS = 2
+    }
+}
+
 private class LineRow(val cells: List<Cell>) {
     val box: TextBox = cells.map { it.box }.reduce(TextBox::union)
     val em: Float = cells.maxOf { it.em }
@@ -238,6 +321,9 @@ private class Columns(private val extents: List<ClosedFloatingPointRange<Float>>
         for (cell in row.cells) placed[indexOf(cell.box)].add(cell)
         return placed
     }
+
+    /** The gaps between neighbouring columns, left to right. */
+    fun gaps(): List<ClosedFloatingPointRange<Float>> = extents.zipWithNext { a, b -> a.endInclusive..b.start }
 
     /** How many columns [box] reaches into. */
     fun spannedBy(box: TextBox): Int = extents.count { overlap(box, it) > 0f }

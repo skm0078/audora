@@ -27,9 +27,10 @@ import kotlin.math.abs
  *    pairs with a distinct row of a run in another block, and so are short lines within the run's height of which
  *    enough pair (`TableConfig.maxColumnCellEm`, `minColumnPairShare`). Body text beside a table does neither.
  * 4. **One table per region.** Runs that share lines are one table, and so are runs over the same rows that overlap
- *    across, or whose lines mostly sit beside each other no farther apart than `TableConfig.sideBySideGapRatio` times
- *    their own widest cell gap: XY-cut cut one table into blocks. Two tables set side by side with a wider gutter
- *    stay two (a gutter no wider than a column gap cannot be told from one).
+ *    across, or whose lines mostly sit beside each other: XY-cut cut one table into blocks. They stay two tables set
+ *    side by side when the gutter is wider than `TableConfig.sideBySideGapRatio` times their own widest cell gap and
+ *    they show it: the same header on both, or rows on one side only. (Joined row by row by layout, two such tables
+ *    are split by [TableGrid].)
  * 5. **Header band.** Short lines right above a table, within its width, are its header set apart in blocks of
  *    their own (a two-line header: "State / Union" over "Territory"), see [TableHeaderBand]; so are short lines side
  *    by side right below it, under its columns (a last row of one-run cells, a total).
@@ -63,7 +64,7 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
             (run.lines + columns).toMutableSet()
         }
         val lines = blocks.flatten().flatten()
-        val merged = mergeOverlapping(regions) { line -> cellGaps[line] ?: 0f }
+        val merged = mergeOverlapping(regions, page, cellGaps)
         val taken = merged.flatten().toSet()
         return merged.map { table ->
             val free = lines - taken
@@ -76,11 +77,15 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
     /** Regions sharing a line, or one table cut by XY-cut into blocks ([oneTableCut]), are one table. */
     private fun mergeOverlapping(
         regions: List<MutableSet<TextLine>>,
-        cellGap: (TextLine) -> Float,
+        page: PageText,
+        cellGaps: Map<TextLine, Float>,
     ): List<Set<TextLine>> {
         val merged = ArrayList<MutableSet<TextLine>>()
         for (region in regions) {
-            val joined = merged.filter { other -> other.any { it in region } || oneTableCut(other, region, cellGap) }
+            val joined = merged.filter { other ->
+                other.any { it in region } ||
+                    oneTableCut(other, region, page, cellGaps)
+            }
             joined.forEach { region.addAll(it) }
             merged.removeAll(joined.toSet())
             merged.add(region)
@@ -91,24 +96,27 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
     /**
      * Whether regions [a] and [b], side by side over the same rows, are one table XY-cut cut apart: they overlap
      * across, or at least `TableConfig.minColumnPairShare` of the smaller one's lines sit beside lines of the other (a
-     * cell spanning rows sits beside several) and the gutter between them is no wider than
-     * `TableConfig.sideBySideGapRatio` times the widest gap between cells of their lines ([cellGap]).
+     * cell spanning rows sits beside several) and either the gutter between them is no wider than
+     * `TableConfig.sideBySideGapRatio` times the widest gap between cells of their lines, or nothing shows two tables
+     * ([looksLikeTwo]): one table may have a wide gap before its figures.
      */
-    private fun oneTableCut(a: Set<TextLine>, b: Set<TextLine>, cellGap: (TextLine) -> Float): Boolean {
+    private fun oneTableCut(
+        a: Set<TextLine>,
+        b: Set<TextLine>,
+        page: PageText,
+        cellGaps: Map<TextLine, Float>,
+    ): Boolean {
         val boxA = a.unionBox()
         val boxB = b.unionBox()
         if (boxA == null || boxB == null || !overlapsVertically(boxA, boxB, rowOverlapRatio)) return false
         val (fewer, more) = if (a.size <= b.size) a to b else b to a
-        val rowBoxes = more.mapNotNull { it.box }
-        val beside = fewer.count { line ->
-            line.box?.let { box -> rowBoxes.any { overlapsVertically(box, it, rowOverlapRatio) } } == true
-        }
+        val beside = fewer.count { line -> besideAny(line, more, rowOverlapRatio) }
         val gutter = maxOf(boxB.left - boxA.right, boxA.left - boxB.right)
-        val ownGap = (a + b).maxOf(cellGap)
+        val ownGap = (a + b).maxOf { cellGaps[it] ?: 0f }
         val besideRows = beside >= fewer.size * config.tables.minColumnPairShare
         val closeAsColumns = gutter <= ownGap * config.tables.sideBySideGapRatio
         // Overlapping across (a header over both halves), they cannot be two tables side by side.
-        return gutter <= 0f || (besideRows && closeAsColumns)
+        return gutter <= 0f || (besideRows && (closeAsColumns || !looksLikeTwo(fewer, more, page, rowOverlapRatio)))
     }
 
     private class Run(val block: Int, val lines: List<TextLine>)
@@ -234,4 +242,15 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
         val paired = lines.mapNotNull { pairedRow(it, rows, rowOverlapRatio) }.toSet().size
         return narrow && paired >= config.minTableRows - 1 && paired >= lines.size * config.tables.minColumnPairShare
     }
+}
+
+/**
+ * Two tables, not one: the same header line on top of both (a long list set in two halves), or rows on one side
+ * with nothing beside them (tables of different lengths).
+ */
+private fun looksLikeTwo(fewer: Set<TextLine>, more: Set<TextLine>, page: PageText, ratio: Float): Boolean {
+    fun header(lines: Set<TextLine>) = lines.maxByOrNull { it.box?.top ?: Float.NEGATIVE_INFINITY }
+        ?.spans?.joinToString(" ") { page.text.substring(it.start, it.end).trim() }
+    val uneven = more.any { line -> !besideAny(line, fewer, ratio) }
+    return uneven || header(fewer) == header(more)
 }
