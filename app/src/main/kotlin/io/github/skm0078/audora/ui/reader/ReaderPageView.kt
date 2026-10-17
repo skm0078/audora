@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReaderPageView.kt
-// Purpose: The page view: the PDF page as drawn, the spoken sentence highlighted on it, tap a line to read (P4-03).
+// Purpose: The page view: the PDF page as drawn, the spoken sentence highlighted, junk greyed, tap a line to read.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -118,9 +118,14 @@ private fun DrawnPage(state: ReaderState, image: PageImage, note: Int?, viewport
                 .onSizeChanged { pageHeightPx = it.height }
                 .pointerInput(enabled, actions) {
                     if (enabled) {
-                        detectTapGestures { offset ->
-                            actions.onPageTapped(ViewPoint(offset.x / size.width, offset.y / size.height))
-                        }
+                        detectTapGestures(
+                            onLongPress = { offset ->
+                                actions.onPageLongPressed(ViewPoint(offset.x / size.width, offset.y / size.height))
+                            },
+                            onTap = { offset ->
+                                actions.onPageTapped(ViewPoint(offset.x / size.width, offset.y / size.height))
+                            },
+                        )
                     }
                 },
         ) {
@@ -130,6 +135,7 @@ private fun DrawnPage(state: ReaderState, image: PageImage, note: Int?, viewport
                 contentScale = ContentScale.FillBounds,
                 modifier = Modifier.fillMaxSize(),
             )
+            Dimmed(state.unreadableHighlight, MaterialTheme.colorScheme.surface)
             Highlight(highlight, MaterialTheme.colorScheme.primaryContainer)
         }
     }
@@ -155,6 +161,23 @@ private fun Highlight(lines: List<ViewRect>, color: Color) {
     }
 }
 
+/** Greys the lines of unreadable sentences (RI-9): the paper colour over them, translucent, fades their ink. */
+@Composable
+private fun Dimmed(lines: List<ViewRect>, color: Color) {
+    if (lines.isEmpty()) return
+    Canvas(Modifier.fillMaxSize()) {
+        val pad = HIGHLIGHT_PADDING.toPx()
+        lines.forEach { line ->
+            val topLeft = Offset(line.left * size.width - pad, line.top * size.height - pad)
+            val extent = Size(
+                (line.right - line.left) * size.width + 2 * pad,
+                (line.bottom - line.top) * size.height + 2 * pad,
+            )
+            drawRect(color.copy(alpha = DIMMED_ALPHA), topLeft, extent)
+        }
+    }
+}
+
 /** Scrolls so the highlight is on screen, a little below the top, if any of it is outside the viewport. */
 private suspend fun ScrollState.keepInView(highlight: List<ViewRect>, pageHeightPx: Int, viewportHeightPx: Int) {
     if (highlight.isEmpty() || pageHeightPx <= 0) return
@@ -166,6 +189,9 @@ private suspend fun ScrollState.keepInView(highlight: List<ViewRect>, pageHeight
 
 private val HIGHLIGHT_PADDING = 2.dp
 private val HIGHLIGHT_CORNER = 3.dp
+
+/** How much of the ink under an unreadable line is covered: enough to read as greyed, not enough to hide it. */
+private const val DIMMED_ALPHA = 0.6f
 
 /** Where a highlight that scrolled into view sits: this fraction of the viewport below its top. */
 private const val HIGHLIGHT_LEAD = 0.25f

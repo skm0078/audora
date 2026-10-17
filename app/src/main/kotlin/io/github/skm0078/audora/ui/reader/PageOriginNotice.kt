@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,20 +28,26 @@ import io.github.skm0078.audora.ui.voices.megabytes
 
 /**
  * Nothing for a page read from its own text. "OCR" for a page read from its image (Build Spec §5 step 3c: the page
- * shows it, because OCR can misread). For a scanned page that cannot be read yet: why, and the one tap that fixes it.
+ * shows it, because OCR can misread), with [badgeText] beside it: how well it read ([ocrBadgeText], RI-9). For a
+ * scanned page that cannot be read yet: why, and the one tap that fixes it.
  */
 @Composable
-internal fun PageOriginNotice(origin: PageOrigin, ocrModels: OcrModelsState?, onDownload: () -> Unit) {
+internal fun PageOriginNotice(
+    origin: PageOrigin,
+    ocrModels: OcrModelsState?,
+    @StringRes badgeText: Int? = R.string.reader_ocr_badge_body,
+    onDownload: () -> Unit,
+) {
     when (origin) {
         PageOrigin.TEXT -> Unit
-        PageOrigin.OCR -> OcrBadge()
+        PageOrigin.OCR -> OcrBadge(badgeText ?: R.string.reader_ocr_badge_body)
         PageOrigin.NEEDS_OCR_MODELS -> NeedsModelsCard(ocrModels, onDownload)
         PageOrigin.OCR_FAILED -> NoticeCard(stringResource(R.string.reader_ocr_failed))
     }
 }
 
 @Composable
-private fun OcrBadge() {
+private fun OcrBadge(@StringRes text: Int) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -54,7 +61,7 @@ private fun OcrBadge() {
             )
         }
         Text(
-            stringResource(R.string.reader_ocr_badge_body),
+            stringResource(text),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -109,6 +116,7 @@ private fun PageOriginNoticePreview() {
     AudoraTheme {
         Column {
             PageOriginNotice(PageOrigin.OCR, null) {}
+            PageOriginNotice(PageOrigin.OCR, null, R.string.reader_ocr_quality_fair) {}
             PageOriginNotice(PageOrigin.NEEDS_OCR_MODELS, OcrModelsState.NotDownloaded(38_341_592)) {}
             PageOriginNotice(PageOrigin.NEEDS_OCR_MODELS, OcrModelsState.Downloading(12_000_000, 38_341_592)) {}
         }

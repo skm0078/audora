@@ -40,6 +40,22 @@ class OcrText(val lines: List<OcrLine>, val quarterTurns: Int = 0, val rules: Li
         require(quarterTurns in 0 until FULL_TURN) { "quarterTurns must be in 0..3, was $quarterTurns" }
     }
 
+    /**
+     * The engine's confidence in the page, 0–100: its words' confidences weighted by their length. Null when no word
+     * has one (fakes, engines without confidences). Shown as the page's OCR quality (RI-9).
+     */
+    val meanConfidence: Int? by lazy {
+        val scored = lines.flatMap { it.words }.mapNotNull { word -> word.confidence?.let { word.text.length to it } }
+        val chars = scored.sumOf { (length, _) -> length }
+        if (chars ==
+            0
+        ) {
+            null
+        } else {
+            (scored.sumOf { (length, confidence) -> length.toLong() * confidence } / chars).toInt()
+        }
+    }
+
     /** Lines separated by a line break, paragraphs by a blank line: what language checks and the text sample read. */
     val text: String by lazy {
         val out = StringBuilder()

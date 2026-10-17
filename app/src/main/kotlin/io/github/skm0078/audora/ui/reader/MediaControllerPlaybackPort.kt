@@ -18,6 +18,7 @@ import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
+import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -108,6 +109,10 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             SleepTimerSetting.EndOfChapter -> PlaybackContract.sleepTimerArgs(SleepTimerMode.END_OF_CHAPTER)
         }
         send(player, PlaybackContract.SET_SLEEP_TIMER, args, "sleep timer $setting")
+    }
+
+    override fun reportSoundedWrong(report: SoundedWrongReport) = withPlayer("report") { player ->
+        send(player, PlaybackContract.REPORT_SOUNDED_WRONG, PlaybackContract.reportArgs(report), "report")
     }
 
     private fun send(player: MediaController, command: SessionCommand, args: Bundle, what: String) {

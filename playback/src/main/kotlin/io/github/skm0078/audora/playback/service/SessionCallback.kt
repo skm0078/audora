@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/service/SessionCallback.kt
-// Purpose: Accepts controllers and runs the contract's custom commands (play from, voice, sleep timer).
+// Purpose: Accepts controllers and runs the contract's custom commands (play from, voice, sleep timer, reports).
 
 package io.github.skm0078.audora.playback.service
 
@@ -51,6 +51,7 @@ class SessionCallback(
                     .add(PlaybackContract.SET_VOICE)
                     .add(PlaybackContract.SET_SLEEP_TIMER)
                     .add(PlaybackContract.SET_SPEECH_STYLE)
+                    .add(PlaybackContract.REPORT_SOUNDED_WRONG)
                     .build(),
             )
         }
@@ -67,6 +68,7 @@ class SessionCallback(
         PlaybackContract.ACTION_SET_VOICE -> Futures.immediateFuture(setVoice(args))
         PlaybackContract.ACTION_SET_SLEEP_TIMER -> Futures.immediateFuture(setSleepTimer(args))
         PlaybackContract.ACTION_SET_SPEECH_STYLE -> Futures.immediateFuture(setSpeechStyle(args))
+        PlaybackContract.ACTION_REPORT_SOUNDED_WRONG -> Futures.immediateFuture(report(args))
         else -> Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
     }
 
@@ -113,6 +115,13 @@ class SessionCallback(
         val before = style.current
         val applied = style.set(requested)
         if (applied != before) bookSession().onSpeechStyleChanged(style.config.playerSpeed(applied.rate))
+        return SessionResult(SessionResult.RESULT_SUCCESS)
+    }
+
+    /** Logs a "This sounded wrong" report (RI-8b) with the voice reading its language; never the sentence's text. */
+    private fun report(args: Bundle): SessionResult {
+        val report = PlaybackContract.reportFrom(args) ?: return failure(PlaybackErrorCode.BAD_REQUEST)
+        AudoraLog.i(TAG, report.logLine(voices.knownVoice(report.lang), style.current.modes))
         return SessionResult(SessionResult.RESULT_SUCCESS)
     }
 

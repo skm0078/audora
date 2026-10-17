@@ -26,7 +26,8 @@ interface ReaderDocument : Closeable {
     suspend fun page(page: Int): Outcome<ReaderPage, PdfPageError> = units(page).map { ReaderPage(it, PageOrigin.TEXT) }
 }
 
-data class ReaderPage(val units: List<ReadingUnit>, val origin: PageOrigin)
+/** [ocrConfidence]: how sure OCR was of the page, 0–100, for a page read by OCR; else null (RI-9). */
+data class ReaderPage(val units: List<ReadingUnit>, val origin: PageOrigin, val ocrConfidence: Int? = null)
 
 fun interface ReaderDocumentOpener {
     /** A [PdfOpenError.PasswordRequired] failure means: ask for the password, call again. */

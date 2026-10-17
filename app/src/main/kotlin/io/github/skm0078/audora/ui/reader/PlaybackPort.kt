@@ -6,9 +6,11 @@ package io.github.skm0078.audora.ui.reader
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.flow.StateFlow
 
 /** Implemented over a Media3 `MediaController` by [MediaControllerPlaybackPort]; faked in tests. */
+@Suppress("TooManyFunctions") // One per player control.
 interface PlaybackPort {
     val state: StateFlow<PlaybackSnapshot>
 
@@ -36,6 +38,9 @@ interface PlaybackPort {
     fun setReadingModes(modes: ReadingModes)
 
     fun setSleepTimer(setting: SleepTimerSetting)
+
+    /** "This sounded wrong" (RI-8b): the service logs it with the voice that reads its language. */
+    fun reportSoundedWrong(report: SoundedWrongReport)
 }
 
 /**

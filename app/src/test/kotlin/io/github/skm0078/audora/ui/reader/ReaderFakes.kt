@@ -15,6 +15,7 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.pdf.render.PageTransform
+import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.flow.MutableStateFlow
 
 val BOOK = BookId("3f2a9c01-7b1e-4c55-9a0d-2f6c1e8b7d10")
@@ -52,6 +53,7 @@ class FakePlaybackPort : PlaybackPort {
     override val state = MutableStateFlow(PlaybackSnapshot.Connecting)
     val calls = mutableListOf<String>()
     val starts = mutableListOf<Pair<ReadingPosition, String?>>()
+    val reports = mutableListOf<SoundedWrongReport>()
 
     fun connect(speed: Float = 1f) {
         state.value = PlaybackSnapshot(PlaybackSnapshot.Connection.CONNECTED, speed = speed)
@@ -99,6 +101,10 @@ class FakePlaybackPort : PlaybackPort {
 
     override fun setSleepTimer(setting: SleepTimerSetting) {
         calls += "sleep $setting"
+    }
+
+    override fun reportSoundedWrong(report: SoundedWrongReport) {
+        reports += report
     }
 }
 

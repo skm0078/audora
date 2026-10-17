@@ -14,6 +14,8 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.render.SentenceHitTest
 import io.github.skm0078.audora.pdf.render.ViewPoint
+import io.github.skm0078.audora.playback.report.SoundedWrongReason
+import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -101,8 +103,40 @@ class ReaderModel(
         loadPage(position.page)
     }
 
-    /** Tap on a sentence: read from there. */
-    fun readFrom(unit: ReadingUnit) = startReading(ReadingPosition(bookId, unit.page, unit.charStart))
+    /**
+     * Tap on a sentence: read from there. A greyed one (skipped as unreadable, RI-9) would only play the cue, so the
+     * screen first says why it is skipped and offers to read it anyway ([readUnreadable]).
+     */
+    fun readFrom(unit: ReadingUnit) {
+        if (state.value.isUnreadable(unit)) {
+            mutableState.update { it.copy(unreadableTapped = unit) }
+            return
+        }
+        startReading(ReadingPosition(bookId, unit.page, unit.charStart))
+    }
+
+    /** "Read it anyway" on a greyed sentence: turns "Skip unreadable text" off and reads from that sentence. */
+    fun readUnreadable() {
+        val unit = state.value.unreadableTapped ?: return
+        mutableState.update { it.copy(unreadableTapped = null) }
+        AudoraLog.i(TAG, "Skip unreadable turned off from a greyed sentence, $logContext page=${unit.page}")
+        player.setReadingModes(state.value.playback.readingModes.copy(skipUnreadable = false))
+        startReading(ReadingPosition(bookId, unit.page, unit.charStart))
+    }
+
+    fun dismissUnreadable() = mutableState.update { it.copy(unreadableTapped = null) }
+
+    /** Long-press on a sentence: offer "This sounded wrong" and its reasons (RI-8b). */
+    fun askReport(unit: ReadingUnit) = mutableState.update { it.copy(reporting = unit) }
+
+    /** The listener picked [reason]: the report goes to the log, with where the sentence is but never its text. */
+    fun report(reason: SoundedWrongReason) {
+        val unit = state.value.reporting ?: return
+        mutableState.update { it.copy(reporting = null) }
+        player.reportSoundedWrong(SoundedWrongReport.of(bookId, unit, reason))
+    }
+
+    fun dismissReport() = mutableState.update { it.copy(reporting = null) }
 
     /** The sentence under a tap on the page image at [point], if the tap is on (or right next to) one. */
     fun sentenceAt(point: ViewPoint): ReadingUnit? {
@@ -266,7 +300,7 @@ class ReaderModel(
         mutableState.update { it.copy(page = page, content = PageContent.Loading) }
         pageJob = scope.launch {
             val content = when (val shown = open.page(page)) {
-                is Outcome.Success -> PageContent.Ready(shown.value.units, shown.value.origin)
+                is Outcome.Success -> shown.value.let { PageContent.Ready(it.units, it.origin, it.ocrConfidence) }
 
                 is Outcome.Failure -> {
                     AudoraLog.w(TAG, "Page failed, $logContext page=$page error=${shown.error}")

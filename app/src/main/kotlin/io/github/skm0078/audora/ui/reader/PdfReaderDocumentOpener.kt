@@ -74,7 +74,9 @@ private class PdfReaderDocument(
         withContext(io) { book.readingUnits(page, builder) }
 
     override suspend fun page(page: Int): Outcome<ReaderPage, PdfPageError> =
-        withContext(io) { book.readPage(page, builder) }.map { ReaderPage(it.units, originOf(it.source)) }
+        withContext(io) { book.readPage(page, builder) }.map { reading ->
+            ReaderPage(reading.units, originOf(reading.source), reading.ocrConfidence)
+        }
 
     override suspend fun render(page: Int, widthPx: Int, maxPixels: Int): Outcome<PageImage, PdfPageError> =
         withContext(io) {

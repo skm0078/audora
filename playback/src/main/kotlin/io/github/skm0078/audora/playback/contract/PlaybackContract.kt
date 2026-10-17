@@ -8,12 +8,16 @@ import android.content.Context
 import android.os.Bundle
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionToken
+import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.core.model.VoiceId
+import io.github.skm0078.audora.playback.report.SoundedWrongReason
+import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import io.github.skm0078.audora.playback.service.AudoraPlaybackService
 
 /**
@@ -30,6 +34,7 @@ import io.github.skm0078.audora.playback.service.AudoraPlaybackService
  * What the player API cannot say goes through custom commands ([playFrom], [setVoice], [setSleepTimer]) and
  * the session extras (`controller.sessionExtras`, `Listener.onExtrasChanged`), keys `SESSION_*`.
  */
+@Suppress("TooManyFunctions") // An args builder and a parser per custom command.
 object PlaybackContract {
     private const val PREFIX = "io.github.skm0078.audora.playback"
 
@@ -37,6 +42,7 @@ object PlaybackContract {
     const val ACTION_SET_VOICE = "$PREFIX.SET_VOICE"
     const val ACTION_SET_SLEEP_TIMER = "$PREFIX.SET_SLEEP_TIMER"
     const val ACTION_SET_SPEECH_STYLE = "$PREFIX.SET_SPEECH_STYLE"
+    const val ACTION_REPORT_SOUNDED_WRONG = "$PREFIX.REPORT_SOUNDED_WRONG"
 
     /** Starts reading [ARG_BOOK_ID] at [ARG_PAGE] / [ARG_CHAR_START]. Only ever send it from a user action (C7). */
     val PLAY_FROM = SessionCommand(ACTION_PLAY_FROM, Bundle.EMPTY)
@@ -49,6 +55,9 @@ object PlaybackContract {
 
     /** Sets the speaking rate and pace; the current sentence restarts with them, like a voice change. */
     val SET_SPEECH_STYLE = SessionCommand(ACTION_SET_SPEECH_STYLE, Bundle.EMPTY)
+
+    /** "This sounded wrong" (RI-8b): the service logs it with the voice reading that language; nothing else. */
+    val REPORT_SOUNDED_WRONG = SessionCommand(ACTION_REPORT_SOUNDED_WRONG, Bundle.EMPTY)
 
     // Arguments of PLAY_FROM.
     const val ARG_BOOK_ID = "book_id"
@@ -88,6 +97,15 @@ object PlaybackContract {
 
     /** String: [ReadingModes.encode]; absent or unreadable = the defaults (ADR-035). */
     const val ARG_READING_MODES = "reading_modes"
+
+    // Arguments of REPORT_SOUNDED_WRONG (and ARG_BOOK_ID, ARG_PAGE): where the sentence is and how it was judged.
+    const val ARG_UNIT_INDEX = "unit_index"
+    const val ARG_UNIT_KIND = "unit_kind"
+
+    /** Float; absent = the sentence was not scored. */
+    const val ARG_SPEAK_SCORE = "speak_score"
+    const val ARG_UNIT_LANG = "unit_lang"
+    const val ARG_REPORT_REASON = "report_reason"
 
     // Error result of a custom command: SessionResult.extras[RESULT_ERROR] is a [PlaybackErrorCode] name.
     const val RESULT_ERROR = "error"
@@ -178,6 +196,33 @@ object PlaybackContract {
         val lang = enumOrNull<Lang>(args.getString(ARG_VOICE_LANG))
         val name = args.getString(ARG_VOICE_NAME)?.takeIf { it.isNotBlank() }
         return if (engine == null || lang == null || name == null) null else VoiceId(engine, name) to lang
+    }
+
+    fun reportArgs(report: SoundedWrongReport): Bundle = Bundle().apply {
+        putString(ARG_BOOK_ID, report.bookId.value)
+        putInt(ARG_PAGE, report.page)
+        putInt(ARG_UNIT_INDEX, report.unitIndex)
+        putString(ARG_UNIT_KIND, report.kind.name)
+        report.speakScore?.let { putFloat(ARG_SPEAK_SCORE, it) }
+        putString(ARG_UNIT_LANG, report.lang.name)
+        putString(ARG_REPORT_REASON, report.reason.name)
+    }
+
+    /** Parses [reportArgs]; null when a field is missing or unknown. */
+    @Suppress("ComplexCondition") // Every field but the score is required.
+    fun reportFrom(args: Bundle): SoundedWrongReport? {
+        val bookId = args.getString(ARG_BOOK_ID)?.takeIf { it.isNotBlank() }?.let(::BookId)
+        val page = args.getInt(ARG_PAGE, -1).takeIf { it >= 0 }
+        val index = args.getInt(ARG_UNIT_INDEX, -1).takeIf { it >= 0 }
+        val kind = enumOrNull<UnitKind>(args.getString(ARG_UNIT_KIND))
+        val lang = enumOrNull<Lang>(args.getString(ARG_UNIT_LANG))
+        val reason = enumOrNull<SoundedWrongReason>(args.getString(ARG_REPORT_REASON))
+        val score = if (args.containsKey(ARG_SPEAK_SCORE)) args.getFloat(ARG_SPEAK_SCORE) else null
+        return if (bookId == null || page == null || index == null || kind == null || lang == null || reason == null) {
+            null
+        } else {
+            SoundedWrongReport(bookId, page, index, kind, score, lang, reason)
+        }
     }
 
     fun sleepModeFrom(args: Bundle): SleepTimerMode? = enumOrNull<SleepTimerMode>(args.getString(ARG_SLEEP_MODE))
