@@ -1,5 +1,6 @@
 // File: playback/src/androidTest/kotlin/io/github/skm0078/audora/playback/session/BookSessionTest.kt
-// Purpose: The book session on a real ExoPlayer: reads in order, seeks, rebuilds, skips failures, sleeps at chapters.
+// Purpose: The book session on a real ExoPlayer: reads in order, seeks, rebuilds, skips failures, sleeps at chapters,
+// studies, replays and finishes books.
 
 package io.github.skm0078.audora.playback.session
 
@@ -38,6 +39,7 @@ import io.github.skm0078.audora.speech.audio.PcmAudio
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -60,7 +62,12 @@ class BookSessionTest {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val registry = QueueRegistry()
     private val played: MutableList<UnitKey> = Collections.synchronizedList(mutableListOf())
+
+    // The player's speed as each sentence started (same index as [played]).
+    private val speeds: MutableList<Float> = Collections.synchronizedList(mutableListOf())
+    private val finished: MutableList<BookId> = Collections.synchronizedList(mutableListOf())
     private val ended = CountDownLatch(1)
+    private val endings = AtomicInteger()
     private val pausedAtItemEnd = CountDownLatch(1)
     private val states: MutableList<SessionState> = Collections.synchronizedList(mutableListOf())
     private var failOn: UnitKey? = null
@@ -88,10 +95,12 @@ class BookSessionTest {
                 registry,
                 SessionSources(
                     renderer(),
-                    BookSource { _, _ ->
-                        Outcome.Success(OpenedBook(BOOK, FakeText(CHAPTER_STARTS)))
+                    BookSource { id, _ ->
+                        val (book, pages) = if (id == SHORT_BOOK.id) SHORT_BOOK to SHORT_PAGES else BOOK to PAGES
+                        Outcome.Success(OpenedBook(book, FakeText(CHAPTER_STARTS, pages)))
                     },
                     Texts,
+                    onBookFinished = { finished += it },
                 ),
                 CONFIG,
                 Events(),
@@ -170,6 +179,90 @@ class BookSessionTest {
         assertTrue(states.last().hasChapters)
     }
 
+    @Test
+    fun aRangeReadOncePausesAfterItsLastSentence() {
+        // Chars 10..15 of the range's ends: from unit 1 of page 0 through unit 1 of page 1 (chars 10..19).
+        playRange(StudyRange(Spot(0, CHARS), Spot(1, CHARS + CHARS / 2), loop = false))
+
+        awaitCondition("range paused") { played.contains(UnitKey(1, 1)) && !player.playWhenReady }
+        val range = listOf(UnitKey(0, 1), UnitKey(0, 2), UnitKey(1, 0), UnitKey(1, 1))
+        assertEquals(range, played.take(range.size))
+        assertTrue("read past the range: ${played.toList()}", played.none { it.page == PAGES - 1 })
+        assertEquals(null, onMain { states.last().study })
+    }
+
+    @Test
+    fun aLoopingRangeGoesBackToItsStart() {
+        playRange(StudyRange(Spot(0, 0), Spot(0, CHARS + CHARS / 2), loop = true))
+
+        awaitCondition("looped twice") { played.size >= LOOP_ROUNDS * 2 }
+        onMain { player.pause() }
+        val round = listOf(UnitKey(0, 0), UnitKey(0, 1))
+        assertEquals((1..LOOP_ROUNDS).flatMap { round }, played.take(LOOP_ROUNDS * 2))
+    }
+
+    @Test
+    fun replayPlaysThePreviousSentenceSlowerThenGoesOnAtTheListenersSpeed() {
+        play(page = 0, charStart = 0)
+        awaitCondition("reached page 2") { played.contains(UnitKey(1, 0)) }
+
+        val before = onMain {
+            assertTrue(session.replayPrevious(REPLAY_FACTOR))
+            played.size
+        }
+
+        awaitEnd()
+        assertEquals(played[before - 2], played[before])
+        assertEquals(REPLAY_FACTOR, speeds[before], SPEED_DELTA)
+        assertEquals(1f, onMain { player.playbackParameters.speed }, SPEED_DELTA)
+        assertEquals(UnitKey(PAGES - 1, UNITS_PER_PAGE - 1), played.last())
+    }
+
+    @Test
+    fun undoJumpNeverCrossesIntoAnotherBook() {
+        play(page = 0, charStart = 0)
+        awaitCondition("first sentence") { played.isNotEmpty() }
+        play(page = PAGES - 1, charStart = 0)
+        // Within the book the jump is undone.
+        assertTrue(onMain { session.undoJump() })
+        awaitCondition("back on page 2") { session.currentSentence()?.page == 1 }
+
+        // Page 2 is also in the short book: only the book-switch guard keeps the old book's spot out of its history.
+        play(page = 0, charStart = 0, book = SHORT_BOOK)
+        assertFalse(onMain { session.undoJump() })
+    }
+
+    @Test
+    fun onlyABookReadToItsEndWhilePlayingCountsAsFinished() {
+        play(page = 0, charStart = 0)
+        awaitEnd()
+        // On the main thread: the session hears ENDED in the same dispatch as the latch, after it.
+        assertEquals(listOf(BOOK.id), onMain { finished.toList() })
+
+        // Paused, then a seek past the end of the last sentence (its audio is still loaded): ENDED again, but the
+        // listener did not finish the book.
+        onMain {
+            player.pause()
+            player.seekTo(player.currentMediaItemIndex, SEEK_PAST_END_MS)
+        }
+        awaitCondition("ended again while paused") { endings.get() >= 2 }
+        assertFalse(onMain { player.playWhenReady })
+        assertEquals(listOf(BOOK.id), onMain { finished.toList() })
+    }
+
+    private fun awaitCondition(what: String, condition: () -> Boolean) {
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(TIMEOUT_S)
+        while (!onMain(condition)) {
+            if (System.nanoTime() > deadline) fail("timed out waiting for $what: ${describePlayer()}")
+            Thread.sleep(POLL_MS)
+        }
+    }
+
+    private fun playRange(range: StudyRange) {
+        val result = runBlocking { withContext(Dispatchers.Main) { session.playRange(BOOK.id, range, null) } }
+        assertTrue("playRange failed: $result", result is Outcome.Success)
+    }
+
     private fun awaitEnd() {
         if (!ended.await(TIMEOUT_S, TimeUnit.SECONDS)) fail("book did not end: ${describePlayer()}")
     }
@@ -181,8 +274,8 @@ class BookSessionTest {
             "played=${played.toList()} lastState=${states.lastOrNull()}"
     }
 
-    private fun play(page: Int, charStart: Int) {
-        val result = runBlocking { withContext(Dispatchers.Main) { session.playFrom(BOOK.id, page, charStart, null) } }
+    private fun play(page: Int, charStart: Int, book: Book = BOOK) {
+        val result = runBlocking { withContext(Dispatchers.Main) { session.playFrom(book.id, page, charStart, null) } }
         assertTrue("playFrom failed: $result", result is Outcome.Success)
     }
 
@@ -208,11 +301,18 @@ class BookSessionTest {
 
     private inner class Recorder : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-            (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.let { played += UnitKey.of(it.unit) }
+            (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.let {
+                // Recorded before the session's own listener runs, so a replay's speed is still the one it set.
+                speeds += player.playbackParameters.speed
+                played += UnitKey.of(it.unit)
+            }
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
-            if (playbackState == Player.STATE_ENDED) ended.countDown()
+            if (playbackState == Player.STATE_ENDED) {
+                endings.incrementAndGet()
+                ended.countDown()
+            }
         }
 
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
@@ -233,9 +333,7 @@ class BookSessionTest {
     }
 
     /** Pages load slowly, so playback catches up with extraction and waits on the "more is coming" item. */
-    private class FakeText(private val chapters: List<Int>) : BookText {
-        override val pageCount = PAGES
-
+    private class FakeText(private val chapters: List<Int>, override val pageCount: Int) : BookText {
         override fun chapterStarts() = chapters
 
         override fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError> {
@@ -266,6 +364,7 @@ class BookSessionTest {
     private companion object {
         const val PAGES = 3
         const val UNITS_PER_PAGE = 3
+        const val SHORT_PAGES = 2
         const val CHARS = 10
         const val SAMPLE_RATE = 16_000
         const val SAMPLES_PER_SENTENCE = 1_600 // 100 ms
@@ -273,9 +372,15 @@ class BookSessionTest {
         const val PAGE_DELAY_MS = 400L
         const val TIMEOUT_S = 30L
         const val LOG_TAG = "AudoraPlaybackTest"
+        const val POLL_MS = 20L
+        const val LOOP_ROUNDS = 3
+        const val REPLAY_FACTOR = 0.5f
+        const val SPEED_DELTA = 0.001f
+        const val SEEK_PAST_END_MS = 60_000L
         val CHAPTER_STARTS = listOf(0, 2)
         val CONFIG = QueueConfig(minUnitsAhead = 2, keepBehindUnits = 2)
         val VOICE = VoiceId(EngineId.SHERPA, "test")
         val BOOK = Book(BookId("book-1"), "content://test/book-1", "Test book", 1L, "fp", PAGES, 0L, null)
+        val SHORT_BOOK = Book(BookId("book-2"), "content://test/book-2", "Short book", 1L, "fp2", SHORT_PAGES, 0L, null)
     }
 }
