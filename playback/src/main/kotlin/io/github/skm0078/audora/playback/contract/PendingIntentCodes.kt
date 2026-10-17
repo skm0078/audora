@@ -7,6 +7,9 @@ package io.github.skm0078.audora.playback.contract
  * Android matches PendingIntents by intent and request code, ignoring extras: two purposes built on the launch
  * intent with the same code share one PendingIntent, and FLAG_UPDATE_CURRENT on either rewrites the other's extras.
  * Every PendingIntent in Audora takes its code from here.
+ *
+ * Blocks, so branches landing apart never pick the same number: 1-9 playback and app basics, 10-19 the UI pass
+ * (widgets, tile), 20-39 studio (talking books, copies, clips). PendingIntentCodesTest fails when two share a value.
  */
 object PendingIntentCodes {
     /** The playback notification and lock screen: open Audora. */

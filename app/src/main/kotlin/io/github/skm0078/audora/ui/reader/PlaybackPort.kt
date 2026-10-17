@@ -70,6 +70,9 @@ interface PlaybackPort {
      */
     fun replayPrevious(factor: Float)
 
+    /** Long-press on next / previous: the next paragraph, or back to this one's start (the one before at its start). */
+    fun skipParagraph(forward: Boolean)
+
     /** The A–B study range (plan item 31): mark A or B at the sentence playing, loop on or off, or clear it. */
     fun study(action: StudyAction, loop: Boolean = true)
 

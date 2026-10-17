@@ -288,6 +288,13 @@ class ReaderModel(
         player.replayPrevious(config.replayFactor)
     }
 
+    /** Long-press on next / previous (the UI pass's full player): a paragraph on, or back; the screen follows. */
+    fun skipParagraph(forward: Boolean) {
+        if (!state.value.playerReady) return
+        mutableState.update { it.copy(following = true) }
+        player.skipParagraph(forward)
+    }
+
     /**
      * Study loops (plan item 31): marks A or B at the sentence being read in this book, turns looping on or off, or
      * clears the range. A mark needs this book to be the one being read.

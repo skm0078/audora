@@ -152,6 +152,11 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
         send(player, PlaybackContract.UNDO_JUMP, Bundle.EMPTY, "undo jump")
     }
 
+    override fun skipParagraph(forward: Boolean) = withPlayer("paragraph") { player ->
+        AudoraLog.i(TAG, "Skip paragraph forward=$forward")
+        send(player, PlaybackContract.SKIP_PARAGRAPH, PlaybackContract.skipParagraphArgs(forward), "paragraph")
+    }
+
     override fun replayPrevious(factor: Float) = withPlayer("replay") { player ->
         AudoraLog.i(TAG, "Replay previous sentence factor=$factor")
         send(player, PlaybackContract.REPLAY_PREVIOUS, PlaybackContract.replayPreviousArgs(factor), "replay")

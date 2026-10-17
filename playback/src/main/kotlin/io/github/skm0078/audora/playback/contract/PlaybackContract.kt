@@ -56,6 +56,7 @@ object PlaybackContract {
     const val ACTION_REPLAY_PREVIOUS = "$PREFIX.REPLAY_PREVIOUS"
     const val ACTION_STUDY = "$PREFIX.STUDY"
     const val ACTION_SET_FOCUS_SOUND = "$PREFIX.SET_FOCUS_SOUND"
+    const val ACTION_SKIP_PARAGRAPH = "$PREFIX.SKIP_PARAGRAPH"
 
     /** Starts reading [ARG_BOOK_ID] at [ARG_PAGE] / [ARG_CHAR_START]. Only ever send it from a user action (C7). */
     val PLAY_FROM = SessionCommand(ACTION_PLAY_FROM, Bundle.EMPTY)
@@ -80,6 +81,12 @@ object PlaybackContract {
 
     /** Saves the focus sound under the voice ([ARG_FOCUS_SOUND]): which one and how loud (plan item 72). */
     val SET_FOCUS_SOUND = SessionCommand(ACTION_SET_FOCUS_SOUND, Bundle.EMPTY)
+
+    /**
+     * To the next paragraph ([ARG_FORWARD] true) or back to this paragraph's start, the one before when already at it
+     * (long-press on next / previous). Fails with BAD_REQUEST, like REPLAY_PREVIOUS, when there is none that way.
+     */
+    val SKIP_PARAGRAPH = SessionCommand(ACTION_SKIP_PARAGRAPH, Bundle.EMPTY)
 
     /**
      * Gives the open book its own speed, pace and voices ([ARG_OWN_SETTINGS] true), starting from the current ones,
@@ -135,6 +142,9 @@ object PlaybackContract {
 
     /** String: [FocusSoundOptions.encode], the argument of SET_FOCUS_SOUND. */
     const val ARG_FOCUS_SOUND = "focus_sound"
+
+    /** Boolean, the argument of SKIP_PARAGRAPH: true = next paragraph, false = back. */
+    const val ARG_FORWARD = "forward"
 
     /** Boolean, the argument of SET_OWN_SETTINGS. */
     const val ARG_OWN_SETTINGS = "own_settings"
@@ -344,6 +354,8 @@ object PlaybackContract {
 
     fun sleepOptionsArgs(options: SleepOptions): Bundle =
         Bundle().apply { putString(ARG_SLEEP_OPTIONS, options.encode()) }
+
+    fun skipParagraphArgs(forward: Boolean): Bundle = Bundle().apply { putBoolean(ARG_FORWARD, forward) }
 
     fun focusSoundArgs(options: FocusSoundOptions): Bundle =
         Bundle().apply { putString(ARG_FOCUS_SOUND, options.encode()) }

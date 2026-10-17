@@ -134,6 +134,10 @@ class FakePlaybackPort : PlaybackPort {
         calls += "undo jump"
     }
 
+    override fun skipParagraph(forward: Boolean) {
+        calls += "paragraph forward=$forward"
+    }
+
     override fun replayPrevious(factor: Float) {
         calls += "replay $factor"
     }
