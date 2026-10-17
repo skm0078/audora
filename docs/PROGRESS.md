@@ -2,6 +2,15 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Reading intelligence, step 8 — headings and lists on scanned pages (RI-10; 2026-10-17, ADR-035)
+- **Headings from type size:** Tesseract's estimate of each line's type size is kept with the OCR text, and a clearly read line well above the page's body size (1.3×, `LayoutConfig.ocrHeadingSizeRatio`) becomes a heading, split from the paragraph under it. Large lines read badly, starting with a pointer ("> click here"), holding a table bar or ending a sentence stay body text (screenshots, stamps, noise).
+- **Bullets OCR misread restored:** the Hindi and Bengali models have no bullet, so "•" came out as "o", "०", "০", "*", "+", "°" or "©" and was read aloud ("zero") before every item. A line starting with one of those, then a word, now starts a list item and the bullet is silent (`OcrBullets`).
+- **Book kinds** on the 57 test PDFs: 51 right (89.5%), from 49; both scanned textbooks are now textbooks and no right answer changed. Still one PDF short of the ticket's 90%; the six misses are not about structure (listed in ADR-035).
+- `PIPELINE_VERSION` 11 (OCR'd pages change: headings, list items, silent bullets). OCR cache format v4 (line sizes), older entries still decode. Golden 0.9268, listening 0.9783 and the UDHR character error rates unchanged. No new dependency.
+- Tests: `OcrParagraphKindsTest` (a heading, large lines that are not headings, a heading split from its paragraph, nine misread bullets, signs that are not bullets, no sizes), `HocrTest` (type size), `OcrTextCodecTest` (v4 sizes, v3 decode), `OcrLineRetryTest` (a retried line keeps its size), `LayoutConfigTest`.
+
+**Real-device checks:** open a scanned textbook and check that chapter and section headings pause like headings and bulleted items are read without "zero" or "o" before them.
+
 ## Reading intelligence, step 7 — tables on scanned pages (RI-4a part 2; 2026-10-17, ADR-035)
 - **Ruled tables rebuilt from their rules:** the lines ruled on a scanned page are found in the page image (`RuleFinder`), and the table's rows and columns come from them (`RuledTables`), so a government list or form that Tesseract read cell by cell, a column at a time, is read row by row like a text-layer table. A "|" read from a rule is left out; a footer or title across the grid stays text; a heading inside a page frame is not taken for a cell.
 - **Borderless tables from OCR's rows:** lines read side by side are joined back into rows (Tesseract often splits a table into blocks of columns) and built by the same code as text-layer tables; prose paragraphs, two-column prose and cells wrapped over several lines are kept out, so they are read whole.

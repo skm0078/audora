@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.pdf.ocr
 
+import io.github.skm0078.audora.core.config.LayoutConfig
 import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.pdf.cleanup.hyphenatedPairs
 import io.github.skm0078.audora.pdf.cleanup.tableParagraphs
@@ -14,7 +15,6 @@ import io.github.skm0078.audora.pdf.extract.putBox
 import io.github.skm0078.audora.pdf.layout.LayoutMode
 import io.github.skm0078.audora.pdf.layout.PageLayout
 import io.github.skm0078.audora.pdf.layout.Paragraph
-import io.github.skm0078.audora.pdf.layout.ParagraphKind
 import io.github.skm0078.audora.pdf.layout.TextBlock
 import io.github.skm0078.audora.pdf.layout.TextLine
 import io.github.skm0078.audora.pdf.layout.TextSpan
@@ -36,34 +36,17 @@ internal class OcrPage(val text: PageText, val layout: PageLayout, val hyphenate
  * and a paragraph holding only a page number ("12", "- 3 -", "১২") at the top or bottom of the page is dropped too,
  * which also covers text without positions, unless a table took it (a ruled table's last cell, read last).
  *
- * With `tables` and boxes, the page's tables ([OcrTables], RI-4a part 2) become a header paragraph and one paragraph
+ * With boxes, the page's tables ([OcrTables], RI-4a part 2) become a header paragraph and one paragraph
  * per row, put where the table's first word was read; their words leave the lines they were read in.
  */
-internal object OcrPageText {
-    private const val PARAGRAPH_BREAK = "\n\n"
-    private const val LINE_BREAK = '\n'
-    private const val WORD_BREAK = ' '
-
-    /** PDFium's line-end hyphen mark, which the reading-text builder and TextRepair already resolve. */
-    private const val HYPHEN_MARKER = '\u0002'
-    private const val MAX_FOLIO_DIGITS = 4
-    private const val NO_CONFIDENCE = -1
-
-    /** Not the index of a word, nor one before any (so the first word kept always starts a run). */
-    private const val NO_WORD = -2
-
-    /** The turn that sets a page's boxes upright, by `OcrText.quarterTurns`. */
-    private val TURNS = listOf(TextTurn.NONE, TextTurn.CLOCKWISE, TextTurn.HALF, TextTurn.COUNTER_CLOCKWISE)
-    private val FOLIO = Regex("""[\s\-–—.|()\[\]]*\p{Nd}{1,$MAX_FOLIO_DIGITS}[\s\-–—.|()\[\]]*""")
-
+internal class OcrPageText(private val tableFinder: OcrTables, private val layoutConfig: LayoutConfig) {
     fun build(
         pageIndex: Int,
         ocr: OcrText,
         dropped: Set<Int> = emptySet(),
         toPage: ((ViewRect) -> TextBox)? = null,
-        tables: OcrTables? = null,
     ): OcrPage {
-        val paragraphs = paragraphsOf(ocr, dropped)
+        val (paragraphs, sizes) = paragraphsOf(ocr, dropped)
         val text = StringBuilder()
         val boxes = ArrayList<TextBox?>()
         val confidences = ArrayList<Byte>()
@@ -104,10 +87,12 @@ internal object OcrPageText {
             ocrConfidences = confidences.toByteArray(),
         )
         val read = paragraphs.zip(spans) { lines, lineSpans -> lines.zip(lineSpans) { words, of -> words.zip(of) } }
-        val found = if (tables != null && toPage != null) tablesOf(page, ocr, read, toPage, tables) else emptyList()
+        val found = if (toPage != null) tablesOf(page, ocr, read, toPage) else emptyList()
         val taken = found.flatMapTo(HashSet()) { it.words }
         val folios = folios(paragraphs).filterTo(HashSet()) { p -> spans[p].none { line -> line.any { it in taken } } }
-        val kept = layoutParagraphs(spans.filterIndexed { p, _ -> p !in folios }, found)
+        val keep = paragraphs.indices.filter { it !in folios }
+        val kinds = OcrParagraphKinds(page, layoutConfig, bodySizeOf(sizes))
+        val kept = layoutParagraphs(keep.map { spans[it] }, keep.map { sizes[it] }, found, kinds)
         val blocks = if (kept.isEmpty()) emptyList() else listOf(TextBlock(kept, box = null))
         val layout = PageLayout(pageIndex, blocks, bodySize = 0f, mode = LayoutMode.EXTRACTION_ORDER)
         return OcrPage(page, layout, hyphenatedPairs(flat), found.size)
@@ -122,7 +107,6 @@ internal object OcrPageText {
         ocr: OcrText,
         read: List<List<List<Pair<OcrWord, TextSpan>>>>,
         toPage: (ViewRect) -> TextBox,
-        tables: OcrTables,
     ): List<OcrTable> {
         val turn = TURNS[ocr.quarterTurns]
         val lines = read.flatMapIndexed { p, lines ->
@@ -132,35 +116,47 @@ internal object OcrPageText {
                 TableLine(placed.map { (span, box) -> TableWord(span, box, top) }, p)
             }
         }
-        return tables.find(page.withBoxes(turn::apply), lines, ocr.rules.map { turn.apply(toPage(it)) })
+        return tableFinder.find(page.withBoxes(turn::apply), lines, ocr.rules.map { turn.apply(toPage(it)) })
     }
 
     /**
      * The layout's paragraphs: the OCR paragraphs without the words [tables] took, each table's paragraphs put where
-     * its first word was read. A line keeps one run per stretch of words left to it.
+     * its first word was read, the rest split into headings, list items and body text ([OcrParagraphKinds]). A line
+     * keeps one run per stretch of words left to it, and its size.
      */
-    private fun layoutParagraphs(spans: List<List<List<TextSpan>>>, tables: List<OcrTable>): List<Paragraph> {
+    private fun layoutParagraphs(
+        spans: List<List<List<TextSpan>>>,
+        sizes: List<List<Float>>,
+        tables: List<OcrTable>,
+        kinds: OcrParagraphKinds,
+    ): List<Paragraph> {
         val taken = tables.flatMapTo(HashSet()) { it.words }
         val firstWords = tables.mapIndexed { i, table -> table.words.minBy { it.start } to i }.toMap()
         val out = ArrayList<Paragraph>()
-        for (lines in spans) {
+        spans.forEachIndexed { p, lines ->
             val kept = ArrayList<TextLine>()
             fun flush() {
-                if (kept.isNotEmpty()) out.add(Paragraph(kept.toList(), ParagraphKind.BODY))
+                out.addAll(kinds.paragraphs(kept.toList()))
                 kept.clear()
             }
-            for (words in lines) {
+            lines.forEachIndexed { l, words ->
                 words.firstNotNullOfOrNull { firstWords[it] }?.let { index ->
                     flush()
                     val table = tables[index]
                     out.addAll(tableParagraphs(table.header, table.rows, index, box = null, size = 0f))
                 }
                 val runs = runsOf(words.filterNot { it in taken }, words)
-                if (runs.isNotEmpty()) kept.add(TextLine(runs, box = null, size = 0f, bold = false))
+                if (runs.isNotEmpty()) kept.add(TextLine(runs, box = null, size = sizes[p][l], bold = false))
             }
             flush()
         }
         return out
+    }
+
+    /** The page's body text size: the median size of its lines that have one, 0 when none has. */
+    private fun bodySizeOf(sizes: List<List<Float>>): Float {
+        val known = sizes.flatten().filter { it > 0f }.sorted()
+        return if (known.isEmpty()) 0f else known[known.size / 2]
     }
 
     /** [left] (some of [words], in order) as one run per stretch of consecutive words. */
@@ -189,27 +185,41 @@ internal object OcrPageText {
         return out
     }
 
-    /** Paragraphs of lines of NFC words, [dropped] lines and empty words left out. */
-    private fun paragraphsOf(ocr: OcrText, dropped: Set<Int>): List<List<List<OcrWord>>> {
+    /**
+     * Paragraphs of lines of NFC words, [dropped] lines and empty words left out and misread bullets restored
+     * ([OcrBullets]), and each line's size
+     * (`OcrLine.size`) in the same shape.
+     */
+    private fun paragraphsOf(ocr: OcrText, dropped: Set<Int>): Pair<List<List<List<OcrWord>>>, List<List<Float>>> {
         val paragraphs = ArrayList<List<List<OcrWord>>>()
+        val sizes = ArrayList<List<Float>>()
         var current = ArrayList<List<OcrWord>>()
+        var currentSizes = ArrayList<Float>()
         var paragraph = -1
         ocr.lines.forEachIndexed { i, line ->
             if (i in dropped) return@forEachIndexed
-            val words = line.words.mapNotNull { word ->
-                val text = Normalizer.normalize(word.text, Normalizer.Form.NFC).trim()
-                if (text.isEmpty()) null else OcrWord(text, word.box, word.confidence)
-            }
+            val words = OcrBullets.restore(
+                line.words.mapNotNull { word ->
+                    val text = Normalizer.normalize(word.text, Normalizer.Form.NFC).trim()
+                    if (text.isEmpty()) null else OcrWord(text, word.box, word.confidence)
+                },
+            )
             if (words.isEmpty()) return@forEachIndexed
             if (line.paragraph != paragraph && current.isNotEmpty()) {
                 paragraphs.add(current)
+                sizes.add(currentSizes)
                 current = ArrayList()
+                currentSizes = ArrayList()
             }
             paragraph = line.paragraph
             current.add(words)
+            currentSizes.add(line.size)
         }
-        if (current.isNotEmpty()) paragraphs.add(current)
-        return paragraphs
+        if (current.isNotEmpty()) {
+            paragraphs.add(current)
+            sizes.add(currentSizes)
+        }
+        return paragraphs to sizes
     }
 
     /** The indexes of the first and last paragraphs when they hold only a page number. */
@@ -228,5 +238,23 @@ internal object OcrPageText {
         val last = line.last().text
         val first = next?.first()?.text ?: return false
         return last.length > 1 && last.last() == '-' && last[last.length - 2].isLetter() && first.first().isLowerCase()
+    }
+
+    private companion object {
+        const val PARAGRAPH_BREAK = "\n\n"
+        const val LINE_BREAK = '\n'
+        const val WORD_BREAK = ' '
+
+        /** PDFium's line-end hyphen mark, which the reading-text builder and TextRepair already resolve. */
+        const val HYPHEN_MARKER = '\u0002'
+        const val MAX_FOLIO_DIGITS = 4
+        const val NO_CONFIDENCE = -1
+
+        /** Not the index of a word, nor one before any (so the first word kept always starts a run). */
+        const val NO_WORD = -2
+
+        /** The turn that sets a page's boxes upright, by `OcrText.quarterTurns`. */
+        val TURNS = listOf(TextTurn.NONE, TextTurn.CLOCKWISE, TextTurn.HALF, TextTurn.COUNTER_CLOCKWISE)
+        val FOLIO = Regex("""[\s\-–—.|()\[\]]*\p{Nd}{1,$MAX_FOLIO_DIGITS}[\s\-–—.|()\[\]]*""")
     }
 }

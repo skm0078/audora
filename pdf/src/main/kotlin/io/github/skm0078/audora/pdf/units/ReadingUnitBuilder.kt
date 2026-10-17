@@ -66,7 +66,7 @@ class ReadingUnitBuilder(
     ocrRepairConfig: OcrRepairConfig = OcrRepairConfig(),
 ) {
     private val ocrRepair = OcrRepair(ocrRepairConfig, BundledWordModels)
-    private val ocrTables = OcrTables(cleanupConfig, layoutConfig.lineOverlapRatio)
+    private val ocrPages = OcrPageText(OcrTables(cleanupConfig, layoutConfig.lineOverlapRatio), layoutConfig)
     private val lineBoxes = LineBoxes(config.lineOverlapRatio)
     private val analyzer = PageLayoutAnalyzer(layoutConfig)
     private val profiler = PageProfiler(cleanupConfig)
@@ -119,7 +119,7 @@ class ReadingUnitBuilder(
         dropped: Set<Int> = emptySet(),
         toPage: ((ViewRect) -> TextBox)? = null,
     ): ReadingText {
-        val page = OcrPageText.build(pageIndex, ocrRepair.repair(ocr), dropped, toPage, ocrTables)
+        val page = ocrPages.build(pageIndex, ocrRepair.repair(ocr), dropped, toPage)
         return textBuilder.build(page.text, furniture.tag(page.text, page.layout), page.hyphenated, IndicOrder.LOGICAL)
     }
 

@@ -79,6 +79,7 @@ internal class OcrLineRetry(
             RecognizedLine(
                 words.map { RecognizedWord(it.text, it.left + x, it.top + y, it.right + x, it.bottom + y, it.conf) },
                 line.paragraph,
+                line.size,
             )
         }
     }

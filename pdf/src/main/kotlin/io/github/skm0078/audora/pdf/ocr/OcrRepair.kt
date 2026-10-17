@@ -30,7 +30,7 @@ internal class OcrRepair(private val config: OcrRepairConfig, private val models
 
     fun repair(ocr: OcrText): OcrText {
         if (!config.enabled) return ocr
-        val lines = ocr.lines.map { line -> OcrLine(repairLine(line.words), line.paragraph) }
+        val lines = ocr.lines.map { line -> OcrLine(repairLine(line.words), line.paragraph, line.size) }
         return OcrText(lines, ocr.quarterTurns, ocr.rules)
     }
 

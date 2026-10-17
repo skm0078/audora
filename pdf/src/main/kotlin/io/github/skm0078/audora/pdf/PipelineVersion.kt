@@ -30,5 +30,7 @@ package io.github.skm0078.audora.pdf
  *     corrected against the word lists (same version).
  *     RI-4a part 2: tables on scanned pages read as a header unit and row units, ruled ones from the rules found in
  *     the page image, borderless ones from OCR's rows (same version).
+ * 11 = RI-10 on scanned pages: headings from OCR's line sizes and list items from bullets OCR misread as letters,
+ *     zeros or signs, which are no longer read aloud (ADR-035).
  */
-const val PIPELINE_VERSION: Int = 10
+const val PIPELINE_VERSION: Int = 11
