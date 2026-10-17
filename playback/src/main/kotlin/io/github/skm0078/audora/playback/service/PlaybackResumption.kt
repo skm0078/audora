@@ -72,14 +72,17 @@ class PlaybackResumption(
         return MediaItemsWithStartPosition(listOf(item), 0, C.TIME_UNSET)
     }
 
-    private fun currentPlaylist(): MediaItemsWithStartPosition {
-        val items = (0 until player.mediaItemCount).map(player::getMediaItemAt)
-        return MediaItemsWithStartPosition(items, player.currentMediaItemIndex, C.TIME_UNSET)
-    }
+    private fun currentPlaylist(): MediaItemsWithStartPosition = playlistOf(player)
 
     companion object {
         private const val TAG = "Playback.Resume"
         private const val PREVIEW_MEDIA_ID = "audora-resume-preview"
+
+        /** What [player] holds now, for Media3 to keep after the book session already set and started it. */
+        fun playlistOf(player: Player): MediaItemsWithStartPosition {
+            val items = (0 until player.mediaItemCount).map(player::getMediaItemAt)
+            return MediaItemsWithStartPosition(items, player.currentMediaItemIndex, C.TIME_UNSET)
+        }
 
         /** For callers that cannot resume at all (no session yet). */
         fun unsupported(): ListenableFuture<MediaItemsWithStartPosition> =

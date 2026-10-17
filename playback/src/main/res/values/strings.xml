@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- File: playback/src/main/res/values/strings.xml
-     Purpose: Notification and lock-screen text for the playback service. -->
+     Purpose: Notification, lock-screen and media-browser text for the playback service. -->
 <resources>
     <!-- Shown under the book title, e.g. "Page 3 of 50". -->
     <string name="playback_page_of">Page %1$d of %2$d</string>
@@ -28,4 +28,15 @@
     <string name="export_cancelled_text">Chapters already saved are kept in %1$s</string>
     <string name="export_busy">Another book is being saved as an audiobook; try again when it finishes</string>
     <string name="export_untitled">Audiobook</string>
+
+    <!-- The library as Android Auto and other media browsers show it (plan item 34). -->
+    <string name="browse_recent">Recent</string>
+    <string name="browse_up_next">Up next</string>
+    <string name="browse_library">Library</string>
+    <string name="browse_resume">Resume</string>
+    <string name="browse_where_left_off">From where you left off</string>
+    <!-- e.g. "Page 12": where a chapter starts. -->
+    <string name="browse_page">Page %1$d</string>
+    <!-- A chapter whose outline entry has no title, e.g. "Chapter 3". -->
+    <string name="browse_chapter">Chapter %1$d</string>
 </resources>
