@@ -17,20 +17,26 @@ import io.github.skm0078.audora.core.model.Lang
  * plain numbers. Grouping follows the text (1,50,000 and 150,000 are both one lakh fifty thousand: Hindi and Bengali
  * count in lakh and crore); a decimal reads its digits one by one; leading zeros and runs longer than
  * [NormalizerConfig.maxCardinalDigits] read digit by digit; a bare year from 1100 to 1999 reads as "उन्नीस सौ
- * सैंतालीस". A slash between words reads "या"/"বা" and "&" reads "और"/"এবং" (RI-6). Text with none of these is
+ * सैंतालीस". Dates, ordinals, units and abbreviations come first ([IndicTextPack], plan item 3). A slash between
+ * words reads "या"/"বা" and "&" reads "और"/"এবং" (RI-6). Text with none of these is
  * returned unchanged.
  */
 class IndicNormalizer internal constructor(
     private val words: IndicNumberWords,
     private val config: NormalizerConfig,
     private val lang: Lang,
+    private val table: IndicTextTable,
 ) : TextNormalizer {
 
+    private val pack = IndicTextPack(words, config, table)
+
     override fun normalize(text: String, role: TextRole): String {
-        val spoken = speakSymbols(if (role == TextRole.EQUATION) MathSymbols.speak(text, lang) else text)
+        val written = if (role == TextRole.EQUATION) MathSymbols.speak(text, lang) else pack.abbreviations(text)
+        val spoken = speakSymbols(written)
         val ascii = asciiDigits(spoken)
-        if (ascii.none(Char::isAsciiDigit)) return if (spoken === text) text else tidy(spoken)
-        var result = CURRENCY.replace(ascii) { match -> money(match.groupValues[1]) }
+        if (ascii.none(Char::isAsciiDigit)) return if (spoken == text) text else tidy(spoken)
+        var result = pack.units(pack.ordinals(pack.dates(ascii)))
+        result = CURRENCY.replace(result) { match -> money(match.groupValues[1]) }
         result = PERCENT.replace(result) { match -> "${read(match.groupValues[1])} ${words.percent}" }
         result = RANGE.replace(result) { match ->
             val (from, to) = match.destructured
@@ -90,7 +96,8 @@ class IndicNormalizer internal constructor(
         private const val DIGIT_COUNT = 10
         private const val NUMBER = NumberPatterns.NUMBER
 
-        private val CURRENCY = Regex("""₹\s?($NUMBER)(?![\w])""")
+        /** The rupee sign, "Rs.", "रु." or Bengali "টা." before an amount, read after it in the part's language. */
+        private val CURRENCY = Regex("""(?:₹|Rs\.?|रु\.?|টা\.)\s?($NUMBER)(?![\w])""")
         private val PERCENT = Regex("""(?<![\w.])($NUMBER)\s?%""")
 
         /** Hyphen or dash, up to four digits a side: "10-12", "2019-20". Longer runs are codes. */
@@ -105,8 +112,8 @@ class IndicNormalizer internal constructor(
 
         /** The normalizer for [lang]'s parts, or null for a language the Indic rules do not cover. */
         fun forLang(lang: Lang, config: NormalizerConfig = NormalizerConfig()): IndicNormalizer? = when (lang) {
-            Lang.HI -> IndicNormalizer(IndicNumberWords.HINDI, config, Lang.HI)
-            Lang.BN -> IndicNormalizer(IndicNumberWords.BENGALI, config, Lang.BN)
+            Lang.HI -> IndicNormalizer(IndicNumberWords.HINDI, config, Lang.HI, IndicTextTable.HINDI)
+            Lang.BN -> IndicNormalizer(IndicNumberWords.BENGALI, config, Lang.BN, IndicTextTable.BENGALI)
             Lang.EN -> null
         }
 
