@@ -9,6 +9,7 @@ import io.github.skm0078.audora.core.config.QualityConfig
 import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.TableRowInfo
 import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.pdf.cleanup.ClutterRemover
@@ -24,6 +25,7 @@ import io.github.skm0078.audora.pdf.layout.ParagraphKind
 import io.github.skm0078.audora.pdf.layout.ReadingParagraph
 import io.github.skm0078.audora.pdf.layout.ReadingText
 import io.github.skm0078.audora.pdf.layout.ReadingTextBuilder
+import io.github.skm0078.audora.pdf.layout.TableCells
 import io.github.skm0078.audora.pdf.ocr.OcrClutter
 import io.github.skm0078.audora.pdf.ocr.OcrPageText
 import io.github.skm0078.audora.pdf.ocr.OcrText
@@ -126,13 +128,19 @@ class ReadingUnitBuilder(
         // Same length as text, so the splitter's offsets are offsets into text.
         val flat = String(CharArray(text.length) { i -> if (text[i] in LINE_BREAKS) ' ' else text[i] })
         val units = ArrayList<ReadingUnit>()
+        val headers = HashMap<Int, List<String>>()
         for (paragraph in reading.paragraphs) {
-            val sentences = sentencesOf(flat, paragraph, pageLang)
-            val pieces = sentences.flatMap { capLength(text, trim(text, it.first, it.last + 1), config.maxUnitChars) }
+            val pieces = if (paragraph.table != null) {
+                listOf(trim(text, paragraph.start, paragraph.end)).filterNot { it.isEmpty() }
+            } else {
+                sentencesOf(flat, paragraph, pageLang)
+                    .flatMap { capLength(text, trim(text, it.first, it.last + 1), config.maxUnitChars) }
+            }
             pieces.forEachIndexed { i, piece ->
                 val raw = text.substring(piece.first, piece.last + 1)
                 if (raw.none { it.isLetterOrDigit() }) return@forEachIndexed
-                val unitText = raw.split(WHITESPACE).filter { it.isNotEmpty() }.joinToString(" ")
+                val row = paragraph.table?.let { TableRowText.of(reading, piece.first, piece.last + 1, it) }
+                val unitText = row?.text ?: raw.split(WHITESPACE).filter { it.isNotEmpty() }.joinToString(" ")
                 val ocrConfidence = reading.ocrConfidence(piece.first, piece.last + 1)
                 units.add(
                     ReadingUnit(
@@ -146,11 +154,25 @@ class ReadingUnitBuilder(
                         bounds = lineBoxes.of(reading, piece.first, piece.last + 1),
                         kind = paragraph.kind.unitKind(),
                         speakScore = speakability.score(unitText, ocrConfidence),
+                        table = paragraph.table?.let { cells -> row?.let { tableInfo(cells, it, headers) } },
                     ),
                 )
             }
         }
         return units
+    }
+
+    /** A table unit's [TableRowInfo]; the header row records the table's header texts for its rows. */
+    private fun tableInfo(cells: TableCells, row: TableRowText, headers: MutableMap<Int, List<String>>): TableRowInfo {
+        if (cells.row == null) headers[cells.tableIndex] = row.cells.map { row.text.substring(it.start, it.end) }
+        return TableRowInfo(
+            tableIndex = cells.tableIndex,
+            row = cells.row,
+            rowCount = cells.rowCount,
+            columnCount = cells.columnCount,
+            headers = headers[cells.tableIndex].orEmpty(),
+            cells = row.cells,
+        )
     }
 
     /** Sentence ranges of [paragraph], as offsets into the whole text. */
@@ -174,8 +196,12 @@ class ReadingUnitBuilder(
     /** Each sentence of a heading pauses like a heading; of a paragraph or list item, only the last one does. */
     private fun pauseAfter(kind: ParagraphKind, last: Boolean): Int = when {
         kind == ParagraphKind.HEADING -> maxOf(config.sentencePauseMs, config.headingPauseMs)
+
         !last -> config.sentencePauseMs
-        kind == ParagraphKind.LIST_ITEM -> maxOf(config.sentencePauseMs, config.listItemPauseMs)
+
+        kind == ParagraphKind.LIST_ITEM || kind == ParagraphKind.TABLE_ROW ->
+            maxOf(config.sentencePauseMs, config.listItemPauseMs)
+
         else -> maxOf(config.sentencePauseMs, config.paragraphPauseMs)
     }
 
@@ -185,6 +211,8 @@ class ReadingUnitBuilder(
         ParagraphKind.LIST_ITEM -> UnitKind.LIST_ITEM
         ParagraphKind.CAPTION -> UnitKind.CAPTION
         ParagraphKind.EQUATION -> UnitKind.EQUATION
+        ParagraphKind.TABLE_HEADER -> UnitKind.TABLE_SUMMARY
+        ParagraphKind.TABLE_ROW -> UnitKind.TABLE_ROW
     }
 
     private companion object {

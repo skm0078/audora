@@ -40,7 +40,7 @@ internal class FurnitureFinder(private val config: FurnitureConfig, models: Word
     }
 
     private fun tag(page: PageText, block: TextBlock, bodySize: Float): List<Paragraph> {
-        val lines = block.paragraphs.flatMap { it.lines }
+        val lines = block.paragraphs.filterNot { it.kind.isTable }.flatMap { it.lines }
         val texts = lines.associateWith { line ->
             line.spans.joinToString(" ") { page.text.substring(it.start, it.end) }
         }
@@ -48,6 +48,11 @@ internal class FurnitureFinder(private val config: FurnitureConfig, models: Word
         val out = ArrayList<Paragraph>()
         var labelOnly = false
         for (paragraph in block.paragraphs) {
+            if (paragraph.kind.isTable) {
+                out.add(paragraph)
+                labelOnly = false
+                continue
+            }
             val captionAt = captionStart(paragraph, paragraph.lines.map(texts::getValue), bodySize)
             when {
                 captionAt != null -> {
@@ -118,13 +123,16 @@ internal class FurnitureFinder(private val config: FurnitureConfig, models: Word
         return out
     }
 
-    private companion object {
-        val CAPTION_LABEL = Regex(
+    internal companion object {
+        /** [text] opens with a caption label ("Table 2", "চিত্র ৪"), set apart or not. */
+        fun opensWithCaptionLabel(text: String): Boolean = CAPTION_LABEL.containsMatchIn(text)
+
+        private val CAPTION_LABEL = Regex(
             "^\\s*(?:Fig(?:ure)?s?\\.?|FIG(?:URE)?S?\\.?|Tables?|TABLES?|Charts?|Schemes?|Plates?|Exhibits?|" +
                 "चित्र|तालिका|सारणी|आकृति|চিত্র|সারণি|সারণী|ছক)\\s*" +
                 "(?:\\p{Nd}+|[IVXLC]+\\b|[A-Z]\\b)(?:[.\\-–]\\p{Nd}+|[a-z]\\b)*",
         )
-        const val DELIMITERS = ".:|—–-।"
-        const val SENTENCE_ENDS = ".!?।"
+        private const val DELIMITERS = ".:|—–-।"
+        private const val SENTENCE_ENDS = ".!?।"
     }
 }

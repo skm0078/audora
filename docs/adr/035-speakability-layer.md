@@ -92,4 +92,22 @@ and highlight need a unit to land on.
   pdf/golden/furniture/labels.tsv (all 36 labelled units of both corpora tagged, nothing else) and by eye on 12
   test PDFs (arXiv papers, a logic textbook, Pro Git, Hindi and Bengali government documents): no wrong caption;
   wrong equations only on table cells of tables cleanup does not find (RI-4a).
+- RI-4a (table grid) keeps the tables cleanup finds instead of dropping their lines. `:pdf/cleanup/TableGrid` turns
+  each into a header unit (`TABLE_SUMMARY`) and one `TABLE_ROW` unit per data row, cells as spans of the row's real
+  text (ADR-018) in `TableRowInfo`. The RI-1 contract is amended so the summary unit is the header row (its cells,
+  `row` null, `rowCount` counting data rows): the caption is already its own `CAPTION` unit (RI-7a), and a unit
+  whose text is only a caption or only counts would either duplicate it or synthesize text. Columns come from
+  geometry alone (ruled lines are not extracted): runs closer than 1 em are one cell, columns are the merged cell
+  extents of the body rows, a line row filling more than half the columns starts a row, a line lacking a key cell
+  carries on the row above (a wrapped cell), and a cell alone in columns empty above joins the row above (a rank
+  spanning two records). The header is the rows before the first with a number for a cell (up to three lines). A
+  header cut off into blocks of its own above the table, and a last row (a total) cut off below it, join the table.
+  A grid less than half filled, or with more than a fifth of its runs single letters (a chart's rotated axis
+  titles), is a chart and is dropped as before; a single cell across two columns at the table's edge is a title
+  left to the text. Playback carries a placeholder until RI-4b (`TablePlaceholder`): rows skipped, the summary
+  read as "4 rows, 5 columns.". Still PIPELINE_VERSION 10 (10 has not reached `dev`; a resume anchor saved inside
+  a table before resumes like removed text did). Checked by pdf/golden/tables/labels.tsv (4 redistributable tables,
+  145 of 145 cells) and by eye on a Bengali result list and a Hindi government report kept outside the repository.
+  Tables on scanned pages are not read yet: Tesseract gives each cell its own block, which needs a block-grid
+  path of its own.
 - Logs carry kinds, scores, page and unit index, never the page's text (AGENTS.md).

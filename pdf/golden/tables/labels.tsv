@@ -1,0 +1,28 @@
+corpus	document	page	table	row	cells…
+golden	en-textbook-forallx-yyc-logic	1	0	header	symbol	what it is called	rough meaning
+golden	en-textbook-forallx-yyc-logic	1	0	0	¬	negation	‘It is not the case that. . .’
+golden	en-textbook-forallx-yyc-logic	1	0	1	∧	conjunction	‘Both. . . and . . .’
+golden	en-textbook-forallx-yyc-logic	1	0	2	∨	disjunction	‘Either. . . or . . .’
+golden	en-textbook-forallx-yyc-logic	1	0	3	→	conditional	‘If . . . then . . .’
+golden	en-textbook-forallx-yyc-logic	1	0	4	↔	biconditional	‘. . . if and only if . . .’
+golden	en-2col-physimaging-radonc-ccby	1	0	header	Pat.	Age	Gender	Histopathological diagnosis (WHO 2007)	Dose	Technique	# of follow-up exams
+golden	en-2col-physimaging-radonc-ccby	1	0	0	1	63	M	Anaplastic Oligodendroglioma grade III	2 Gy × 30	VMAT	4
+golden	en-2col-physimaging-radonc-ccby	1	0	1	2	58	F	Glioblastoma	2 Gy × 30	VMAT	4
+golden	en-2col-physimaging-radonc-ccby	1	0	2	3	57	F	Glioblastoma	2 Gy × 30	3DCRT	4
+golden	en-2col-physimaging-radonc-ccby	1	0	3	4	61	F	Glioblastoma	2 Gy × 30	VMAT	8
+golden	en-2col-physimaging-radonc-ccby	1	0	4	5	65	F	Anaplastic Oligodendroglioma grade III	2 Gy × 30	VMAT	9
+golden	en-2col-physimaging-radonc-ccby	1	0	5	6	50	M	Anaplastic Oligodendroglioma grade III	2 Gy × 30	3DCRT	8
+golden	en-2col-physimaging-radonc-ccby	1	0	6	7	68	M	Glioblastoma	2 Gy × 30	3DCRT	3
+golden	en-2col-physimaging-radonc-ccby	1	0	7	8	43	M	Oligodendroglioma grade II	1,8 Gy × 28	3DCRT	7
+golden	en-2col-physimaging-radonc-ccby	1	0	8	9	65	M	Gliosarcoma	2 Gy × 30	VMAT	2
+golden	en-2col-physimaging-radonc-ccby	1	0	9	10	45	F	Glioblastoma	2 Gy × 30	VMAT	8
+listening	en-physimaging-tables-p2-3	0	0	header		1st post op. mean of difference (n = 104)	p-value	1st follow-up mean of difference (n = 116)	p-value
+listening	en-physimaging-tables-p2-3	0	0	0	PD (p.p.)	0.32	ns	1.5	<0.001
+listening	en-physimaging-tables-p2-3	0	0	1	cMy(p.p.)	−0.55	ns	−2.2	<0.001
+listening	en-physimaging-tables-p2-3	0	0	2	R1 (s−1)	−0.008	ns	−0.013	ns
+listening	en-physimaging-tables-p2-3	0	0	3	R2 (s−1)	−0.11	ns	0.33	<0.001
+listening	en-physimaging-tables-p2-3	1	0	header		Time factor (month−1)	p-value	Dose factor (Gy−1)	p-value
+listening	en-physimaging-tables-p2-3	1	0	0	PD (10−3p.p.)	−42	0.005	26	<0.001
+listening	en-physimaging-tables-p2-3	1	0	1	cMy (10−3p.p.)	67	0.002	−42	<0.001
+listening	en-physimaging-tables-p2-3	1	0	2	R1 (10−3s−1)	2	<0.001	0	ns
+listening	en-physimaging-tables-p2-3	1	0	3	R2 (10−3s−1)	−17	<0.001	7	<0.001

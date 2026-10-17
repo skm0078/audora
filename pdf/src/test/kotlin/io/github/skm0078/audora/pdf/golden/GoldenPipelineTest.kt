@@ -1,5 +1,5 @@
 // File: pdf/src/test/kotlin/io/github/skm0078/audora/pdf/golden/GoldenPipelineTest.kt
-// Purpose: The golden harness scores every unit kind the expected texts read, and leaves out table interiors.
+// Purpose: The golden harness scores every unit kind the expected texts read, and leaves out tables.
 
 package io.github.skm0078.audora.pdf.golden
 
@@ -35,8 +35,8 @@ class GoldenPipelineTest {
     }
 
     @Test
-    fun `only table rows are left out of the score`() {
+    fun `only tables are left out of the score`() {
         val scored = UnitKind.entries.filter { GoldenPipeline.isScored(unit(it)) }
-        assertEquals(UnitKind.entries - UnitKind.TABLE_ROW, scored)
+        assertEquals(UnitKind.entries - UnitKind.TABLE_SUMMARY - UnitKind.TABLE_ROW, scored)
     }
 }

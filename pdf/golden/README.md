@@ -36,8 +36,9 @@ same way the playback service runs it, then runs `goldenTest` and commits the ne
 `scores.tsv` columns stable: other branches and CI read them.
 
 Since ADR-035 `:pdf` tags page furniture instead of dropping it. `GoldenPipeline.UNSCORED_KINDS` leaves out the kinds
-the expected-text rules below skip (table rows); captions, footnote text and equations stay scored. A ticket that
-starts emitting a new kind checks the rules and extends that set only for kinds the expected texts leave out.
+the expected-text rules below skip (a table's header and rows, RI-4a); captions, footnote text and equations stay
+scored. A ticket that starts emitting a new kind checks the rules and extends that set only for kinds the expected
+texts leave out. Table cells are scored against hand labels instead (`tables/README.md`).
 
 What the voice is given (normalizers, playback's reading modes) is scored by the listening corpus next door:
 [listening/README.md](listening/README.md).

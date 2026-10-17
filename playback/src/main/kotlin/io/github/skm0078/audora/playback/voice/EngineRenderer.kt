@@ -57,8 +57,9 @@ class EngineRenderer(
         val started = System.nanoTime()
         val now = style()
         val rate = styleConfig.modelRate(now.rate)
-        return runBlocking { speech.render(unit.text, unit.lang, roleOf(unit.kind), rate) }.map { routed ->
-            speed?.onRendered(unit.text.trim().length, routed, System.nanoTime() - started, rate)
+        val text = TablePlaceholder.spokenText(unit)
+        return runBlocking { speech.render(text, unit.lang, roleOf(unit.kind), rate) }.map { routed ->
+            speed?.onRendered(text.trim().length, routed, System.nanoTime() - started, rate)
             log(unit, routed)
             routed.audio.withSilenceAfter(styleConfig.silenceAfterMs(unit.pauseAfterMs, now))
         }

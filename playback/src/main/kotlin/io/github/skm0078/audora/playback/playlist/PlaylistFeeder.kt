@@ -5,6 +5,7 @@ package io.github.skm0078.audora.playback.playlist
 
 import io.github.skm0078.audora.core.config.QueueConfig
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.playback.voice.TablePlaceholder
 
 /** One playlist entry: a sentence, or the placeholder that stands for the pages not extracted yet. */
 sealed interface PlaybackItem {
@@ -65,9 +66,10 @@ class PlaylistFeeder(private val playlist: Playlist, private val config: QueueCo
 
     /** Appends one extracted page. An empty page (no speakable text) changes nothing. */
     fun append(units: List<ReadingUnit>) {
-        if (finished || units.isEmpty()) return
+        val spoken = TablePlaceholder.spokenUnits(units)
+        if (finished || spoken.isEmpty()) return
         val more = moreIndex() ?: return
-        val sentences = units.map { PlaybackItem.Sentence(it) }
+        val sentences = spoken.map { PlaybackItem.Sentence(it) }
         if (more == playlist.currentIndex) {
             playlist.add(more + 1, sentences + newMore())
             playlist.remove(more, more + 1)

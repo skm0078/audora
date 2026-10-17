@@ -9,6 +9,7 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.voice.EngineRenderer
+import io.github.skm0078.audora.playback.voice.TablePlaceholder
 import io.github.skm0078.audora.speech.RenderResult
 import io.github.skm0078.audora.speech.SpeechEngine
 import io.github.skm0078.audora.speech.SpeechError
@@ -23,7 +24,8 @@ import io.github.skm0078.audora.speech.route.VoiceSource
  *
  * Playback's reading modes ("Skip unreadable text", Tables, Footnotes, Captions, Equations; RI-2b, RI-4b, RI-5b,
  * RI-7b) decide which units reach the renderer and how. Each of those tickets wires its real mode code into
- * [spokenUnits] with the default setting, so the score follows the app. Until then every unit is spoken as text.
+ * [spokenUnits] with the default setting, so the score follows the app. Until then every unit is spoken as text,
+ * but tables follow [TablePlaceholder] as the app does (rows skipped, the summary read as the table's size).
  */
 class HeardText {
     private val voice = RecordingVoice()
@@ -42,7 +44,7 @@ class HeardText {
     }
 
     /** The units playback reads with its default settings, in order. */
-    private fun spokenUnits(units: List<ReadingUnit>): List<ReadingUnit> = units
+    private fun spokenUnits(units: List<ReadingUnit>): List<ReadingUnit> = TablePlaceholder.spokenUnits(units)
 
     /** One voice per language that writes down what it is asked to say and returns a silent clip. */
     private class RecordingVoice :

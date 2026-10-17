@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.pdf.cleanup
 
+import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.pdf.layout.PageSketch
 import io.github.skm0078.audora.pdf.units.AnalyzedPage
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
@@ -115,7 +116,7 @@ class ClutterRemoverTest {
     }
 
     @Test
-    fun `a table interior goes, its caption and the text around it stay`() {
+    fun `a table becomes a header and rows, its caption and the text around it stay`() {
         val sketch = PageSketch()
         sketch.line("Table 1. Patients and doses.", LEFT, 700f)
         sketch.line("Pat.", LEFT, 680f).line("Age", 150f, 680f).line("Dose", 250f, 680f)
@@ -124,8 +125,17 @@ class ClutterRemoverTest {
             sketch.line("$row", LEFT, top).line("${50 + row}", 150f, top).line("2 Gy x 30", 250f, top)
         }
         sketch.lines(listOf("The table shows every patient.", "Doses were the same."), LEFT, 600f)
-        val text = builder.build(sketch.build()).joinToString(" ") { it.text }
-        assertEquals("Table 1. Patients and doses. The table shows every patient. Doses were the same.", text)
+        val units = builder.build(sketch.build())
+        val running = units.filterNot { it.kind.isTable }.joinToString(" ") { it.text }
+        assertEquals("Table 1. Patients and doses. The table shows every patient. Doses were the same.", running)
+
+        val table = units.filter { it.kind.isTable }
+        assertEquals(listOf(UnitKind.TABLE_SUMMARY) + List(4) { UnitKind.TABLE_ROW }, table.map { it.kind })
+        assertEquals(listOf("Pat.", "Age", "Dose"), table.first().table?.headers)
+        val third = table[3]
+        assertEquals(listOf("3", "53", "2 Gy x 30"), third.table?.cells?.map { third.text.substring(it.start, it.end) })
+        assertEquals(listOf(null, 0, 1, 2, 3), table.map { it.table?.row })
+        assertTrue(table.all { it.table?.rowCount == 4 && it.table?.columnCount == 3 })
     }
 
     @Test

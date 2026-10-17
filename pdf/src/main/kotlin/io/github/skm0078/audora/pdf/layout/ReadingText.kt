@@ -55,8 +55,11 @@ class ReadingText internal constructor(
     }
 }
 
-/** [start] inclusive to [end] exclusive in [ReadingText.text]. */
-data class ReadingParagraph(val start: Int, val end: Int, val kind: ParagraphKind)
+/**
+ * [start] inclusive to [end] exclusive in [ReadingText.text]. [table]: a table row's cells (RI-4a), as offsets into
+ * the extracted text (`ReadingText.sourceOffset` maps back).
+ */
+data class ReadingParagraph(val start: Int, val end: Int, val kind: ParagraphKind, val table: TableCells? = null)
 
 /**
  * Builds the reading text from a layout. With a [repair] (P2-03, ADR-020) each paragraph is repaired for speech
@@ -86,7 +89,7 @@ class ReadingTextBuilder internal constructor(private val repair: TextRepair?) {
                 if (paragraph.continuesPrevious && out.hasOpenParagraph) {
                     out.lineBreak()
                 } else {
-                    out.startParagraph(paragraph.kind)
+                    out.startParagraph(paragraph.kind, paragraph.table)
                 }
                 paragraph.lines.forEachIndexed { i, line ->
                     if (i > 0) out.lineBreak()
@@ -114,13 +117,15 @@ class ReadingTextBuilder internal constructor(private val repair: TextRepair?) {
         val paragraphs = ArrayList<ReadingParagraph>()
         private var paragraph: MappedText.Builder? = null
         private var kind = ParagraphKind.BODY
+        private var table: TableCells? = null
 
         val hasOpenParagraph: Boolean get() = paragraph != null
 
-        fun startParagraph(paragraphKind: ParagraphKind) {
+        fun startParagraph(paragraphKind: ParagraphKind, cells: TableCells?) {
             closeParagraph()
             paragraph = MappedText.Builder(LINE_CAPACITY)
             kind = paragraphKind
+            table = cells
         }
 
         /** Repairs the open paragraph and appends it; a paragraph left without a visible character is dropped. */
@@ -140,7 +145,7 @@ class ReadingTextBuilder internal constructor(private val repair: TextRepair?) {
             val start = text.length
             text.append(done.text)
             done.sources.forEach(sources::add)
-            paragraphs.add(ReadingParagraph(start, text.length, kind))
+            paragraphs.add(ReadingParagraph(start, text.length, kind, table))
         }
 
         /**

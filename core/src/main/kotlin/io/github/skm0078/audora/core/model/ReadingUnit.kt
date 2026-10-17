@@ -55,15 +55,18 @@ data class ReadingUnit(
 
 /**
  * The page element a [ReadingUnit] comes from, as layout detected it (P2-02 headings, P2-04 list items, ADR-035 for
- * the rest). The golden corpus scores every kind except [TABLE_ROW] (pdf/golden/README.md: table interiors are not
- * in the expected text).
+ * the rest). The golden corpus scores every kind except the table kinds (pdf/golden/README.md: tables are not in
+ * the expected text; their cells are scored against hand labels).
  */
 enum class UnitKind {
     BODY,
     HEADING,
     LIST_ITEM,
 
-    /** Opens a table: its caption, when it has one, as text; its size in [ReadingUnit.table]. */
+    /**
+     * Opens a table: its header row as text, the header cells and the table's size in [ReadingUnit.table]. The
+     * caption, when it has one, is the [CAPTION] unit before it.
+     */
     TABLE_SUMMARY,
 
     /** One row of a table, cells in reading order; the header texts and cell spans in [ReadingUnit.table]. */
@@ -91,12 +94,12 @@ enum class UnitKind {
  * `text` (ADR-018: text is what the page says).
  *
  * @property tableIndex the table's place among the page's tables, from 0.
- * @property row the row's index from 0, header row included; null on the [UnitKind.TABLE_SUMMARY] unit.
- * @property rowCount rows in the table, header row included.
+ * @property row the data row's index from 0; null on the [UnitKind.TABLE_SUMMARY] unit, which holds the header row.
+ * @property rowCount the table's data rows, header row not included.
  * @property columnCount columns in the table.
  * @property headers the header row's cell texts, one per column; empty when the table has no header row.
  * @property cells this row's cells as spans of the unit's text, one per column in order (an empty cell is an empty
- *   span); empty on the summary unit.
+ *   span); on the summary unit, the header row's cells.
  */
 data class TableRowInfo(
     val tableIndex: Int,

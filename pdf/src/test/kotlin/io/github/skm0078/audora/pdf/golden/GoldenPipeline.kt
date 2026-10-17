@@ -23,8 +23,11 @@ import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
  * written under (pdf/golden/README.md) by leaving out the kinds those rules skip: table interiors.
  */
 object GoldenPipeline {
-    /** Kinds the expected texts leave out. Captions, footnote text and equations are in them, so they are scored. */
-    val UNSCORED_KINDS: Set<UnitKind> = setOf(UnitKind.TABLE_ROW)
+    /**
+     * Kinds the expected texts leave out: a table's rows and its header row (RI-4a's summary unit holds the header's
+     * cells). Captions, footnote text and equations are in them, so they are scored.
+     */
+    val UNSCORED_KINDS: Set<UnitKind> = setOf(UnitKind.TABLE_SUMMARY, UnitKind.TABLE_ROW)
 
     /** The text the player would speak for the whole document: every scored ReadingUnit, in order, space-separated. */
     fun spokenText(pages: List<RawPage>): String {
