@@ -250,6 +250,45 @@ class BookSession(
     }
 
     /**
+     * "Next paragraph" / "previous paragraph" (long-press on the skip buttons): to the next paragraph's first
+     * sentence, or back to the start of this one (the one before when already at its start), playing or paused as
+     * now. A sentence already in the playlist is a seek (its audio may be rendered); otherwise reading rebuilds
+     * there. Counts as a jump for "Undo jump". False with no sentence playing, or no paragraph that way.
+     */
+    suspend fun skipParagraph(forward: Boolean): Boolean {
+        val (from, target) = paragraphTarget(forward) ?: return false
+        AudoraLog.i(
+            TAG,
+            "Paragraph forward=$forward to page=${target.page} char=${target.charStart}, book=${bookId?.logLabel}",
+        )
+        val index = (0 until player.mediaItemCount).firstOrNull { i ->
+            val at = (playlist.itemAt(i) as? PlaybackItem.Sentence)?.unit
+            at != null && Spot(at.page, at.charStart) == target
+        }
+        if (index != null) {
+            // The seek is recorded as a jump by the transition, like any skip.
+            player.seekTo(index, 0L)
+        } else {
+            recordJump(Spot(from.page, from.charStart), target, JumpOrigin.SKIP)
+            rebuild(target.page, target.charStart, play = player.playWhenReady)
+        }
+        return true
+    }
+
+    /** The sentence playing and where a paragraph skip goes; null with none, or when the book changed meanwhile. */
+    private suspend fun paragraphTarget(forward: Boolean): Pair<ReadingUnit, Spot>? {
+        val opened = book
+        val unit = currentSentence()
+        if (opened == null || unit == null) return null
+        val text = opened.text
+        val target = withContext(env.extraction) {
+            val skip = ParagraphSkip({ page -> (text.units(page) as? Outcome.Success)?.value }, text.pageCount)
+            if (forward) skip.next(unit) else skip.previous(unit)
+        }
+        return target?.takeIf { book === opened }?.let { unit to it }
+    }
+
+    /**
      * Sets A or B of a study loop at the sentence playing (plan item 31); [loop] false reads the range once and stops.
      * False with no sentence playing.
      */

@@ -93,6 +93,7 @@ class SessionCallback(
                     .add(PlaybackContract.REPLAY_PREVIOUS)
                     .add(PlaybackContract.STUDY)
                     .add(PlaybackContract.SET_FOCUS_SOUND)
+                    .add(PlaybackContract.SKIP_PARAGRAPH)
                     .build(),
             )
         }
@@ -116,6 +117,7 @@ class SessionCallback(
         PlaybackContract.ACTION_REPLAY_PREVIOUS -> Futures.immediateFuture(replayPrevious(args))
         PlaybackContract.ACTION_STUDY -> study(args)
         PlaybackContract.ACTION_SET_FOCUS_SOUND -> Futures.immediateFuture(setFocusSound(args))
+        PlaybackContract.ACTION_SKIP_PARAGRAPH -> later { skipParagraph(args) }
         else -> Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
     }
 
@@ -310,6 +312,12 @@ class SessionCallback(
         val factor = PlaybackContract.replayFactorFrom(args) ?: return failure(PlaybackErrorCode.BAD_REQUEST)
         val replayed = bookSession().replayPrevious(factor)
         return if (replayed) SessionResult(SessionResult.RESULT_SUCCESS) else failure(PlaybackErrorCode.BAD_REQUEST)
+    }
+
+    private suspend fun skipParagraph(args: Bundle): SessionResult {
+        if (!args.containsKey(PlaybackContract.ARG_FORWARD)) return badRequest()
+        val skipped = bookSession().skipParagraph(args.getBoolean(PlaybackContract.ARG_FORWARD))
+        return if (skipped) SessionResult(SessionResult.RESULT_SUCCESS) else badRequest()
     }
 
     /** The A–B study range (plan item 31); a range of a book plays it, like PLAY_FROM. */

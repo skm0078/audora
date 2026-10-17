@@ -94,6 +94,19 @@ class ReaderNavigationTest {
         }
 
     @Test
+    fun `paragraph skips go to the service once the player is there`() = runTest(UnconfinedTestDispatcher()) {
+        val model = model()
+        model.skipParagraph(forward = true)
+        assertTrue("not before the player is there", port.calls.isEmpty())
+
+        port.connect()
+        model.skipParagraph(forward = true)
+        model.skipParagraph(forward = false)
+
+        assertEquals(listOf("paragraph forward=true", "paragraph forward=false"), port.calls)
+    }
+
+    @Test
     fun `A and B are set only while this book is read, and clearing always goes through`() =
         runTest(UnconfinedTestDispatcher()) {
             val model = model()
