@@ -16,4 +16,7 @@ enum class BookAction(@StringRes val label: Int) {
 
     /** EPUB 3 with every sentence's audio synced to its text (plan item 76, ADR-040). */
     TALKING_BOOK(R.string.library_talking_book),
+
+    /** The book's highlights, bookmarks and voice notes as Markdown and text (plan item 30). */
+    EXPORT_NOTES(R.string.library_export_notes),
 }

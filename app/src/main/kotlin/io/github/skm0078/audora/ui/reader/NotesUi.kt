@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -53,19 +54,23 @@ fun BookmarksButton(notes: NotesState, actions: BookNotesActions) {
 @Composable
 fun NotesOverlays(notes: NotesState, actions: BookNotesActions, reader: ReaderActions) {
     notes.menuFor?.let { unit ->
-        SentenceMenuDialog(
-            onBookmark = { actions.bookmark(unit) },
-            onFix = { actions.fix(unit) },
-            onReport = {
+        val highlighted = notes.highlightOf(unit) != null
+        val rows = listOf(
+            MenuEntry(R.string.sentence_menu_bookmark) { actions.bookmark(unit) },
+            MenuEntry(if (highlighted) R.string.sentence_menu_unhighlight else R.string.sentence_menu_highlight) {
+                actions.toggleHighlight(unit)
+            },
+            MenuEntry(R.string.sentence_menu_fix) { actions.fix(unit) },
+            MenuEntry(R.string.report_title) {
                 actions.dismissMenu()
                 reader.onReportSentence(unit)
             },
-            onDismiss = actions::dismissMenu,
-            onShareClip = {
+            MenuEntry(R.string.sentence_menu_share_clip) {
                 actions.dismissMenu()
                 reader.onShareClip(unit)
             },
         )
+        SentenceMenuDialog(rows, onDismiss = actions::dismissMenu)
     }
     if (notes.listOpen) BookmarksSheet(notes.bookmarks, actions, reader)
     notes.editing?.let { BookmarkNoteDialog(it, actions::saveNote, actions::dismissNote) }
@@ -79,23 +84,17 @@ fun NotesOverlays(notes: NotesState, actions: BookNotesActions, reader: ReaderAc
     }
 }
 
+/** One row of the sentence menu. */
+private class MenuEntry(@StringRes val label: Int, val onClick: () -> Unit)
+
 @Composable
-private fun SentenceMenuDialog(
-    onBookmark: () -> Unit,
-    onFix: () -> Unit,
-    onReport: () -> Unit,
-    onDismiss: () -> Unit,
-    onShareClip: () -> Unit,
-) {
+private fun SentenceMenuDialog(rows: List<MenuEntry>, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.sentence_menu_title)) },
         text = {
             Column {
-                MenuRow(stringResource(R.string.sentence_menu_bookmark), onBookmark)
-                MenuRow(stringResource(R.string.sentence_menu_fix), onFix)
-                MenuRow(stringResource(R.string.report_title), onReport)
-                MenuRow(stringResource(R.string.sentence_menu_share_clip), onShareClip)
+                rows.forEach { MenuRow(stringResource(it.label), it.onClick) }
             }
         },
         confirmButton = {},

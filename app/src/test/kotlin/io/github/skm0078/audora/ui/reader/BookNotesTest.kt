@@ -80,7 +80,9 @@ class BookNotesTest {
     private val port = FakePlaybackPort()
 
     private fun TestScope.notes() =
-        BookNotesModel(BOOK, bookmarks, rules, backgroundScope, PIPELINE, clock = { NOW }).also { it.start() }
+        BookNotesModel(BOOK, NoteStores(bookmarks, rules), backgroundScope, PIPELINE, clock = {
+            NOW
+        }).also { it.start() }
 
     private fun TestScope.reader() = ReaderModel(
         BOOK,

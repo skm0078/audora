@@ -8,7 +8,9 @@ import androidx.room.Room
 import io.github.skm0078.audora.core.library.BookStore
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.BookmarkStore
+import io.github.skm0078.audora.core.notes.HighlightStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
+import io.github.skm0078.audora.core.notes.VoiceNoteStore
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import java.io.Closeable
 
@@ -19,6 +21,8 @@ class AudoraStorage private constructor(private val database: AudoraDatabase) : 
     val bookmarks: BookmarkStore = RoomBookmarkStore(database.notes())
     val bookSettings: BookSettingsStore = RoomBookSettingsStore(database.notes())
     val pronunciations: PronunciationStore = RoomPronunciationStore(database.notes())
+    val highlights: HighlightStore = RoomHighlightStore(database.marks())
+    val voiceNotes: VoiceNoteStore = RoomVoiceNoteStore(database.marks())
 
     override fun close() = database.close()
 

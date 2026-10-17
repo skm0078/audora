@@ -47,4 +47,12 @@
     <string name="copy_notes">Notes</string>
     <string name="copy_summary_text">Text from the PDF with its headings, lists, tables, notes and printed page numbers. Scanned pages were read with text recognition and may contain recognition errors.</string>
     <string name="copy_summary_audio">Text from the PDF with its headings, lists, tables, notes and printed page numbers, narrated by a synthetic voice with each sentence highlighted as it is read. Scanned pages were read with text recognition and may contain recognition errors.</string>
+    <!-- Highlights and notes export (plan item 30). %1$s is the book's title. -->
+    <string name="notes_file">%1$s - notes</string>
+    <string name="notes_highlights">Highlights</string>
+    <string name="notes_bookmarks">Bookmarks</string>
+    <string name="notes_voice_notes">Voice notes</string>
+    <!-- %d is a page number; keep exactly one %d. -->
+    <string name="notes_page" formatted="false">Page %d</string>
+    <string name="notes_note">Note</string>
 </resources>

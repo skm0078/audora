@@ -44,7 +44,10 @@ import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.BookmarkStore
+import io.github.skm0078.audora.core.notes.HighlightStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
+import io.github.skm0078.audora.core.notes.VoiceNoteStore
+import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.diagnostics.LogSharer
@@ -54,9 +57,12 @@ import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.epub.BookCopies
+import io.github.skm0078.audora.playback.epub.CopyError
 import io.github.skm0078.audora.playback.epub.CopyKind
 import io.github.skm0078.audora.playback.export.AudioClips
 import io.github.skm0078.audora.playback.export.AudiobookExport
+import io.github.skm0078.audora.playback.export.MarkStores
+import io.github.skm0078.audora.playback.export.NotesExport
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.studio.StudioMode
 import io.github.skm0078.audora.speech.ocr.OcrModels
@@ -89,6 +95,7 @@ import io.github.skm0078.audora.ui.reader.KeepScreenOn
 import io.github.skm0078.audora.ui.reader.LibraryReaderBooks
 import io.github.skm0078.audora.ui.reader.LocatorReaderResume
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
+import io.github.skm0078.audora.ui.reader.NoteStores
 import io.github.skm0078.audora.ui.reader.NotesState
 import io.github.skm0078.audora.ui.reader.PlaybackPort
 import io.github.skm0078.audora.ui.reader.PlayerScreen
@@ -126,6 +133,8 @@ import io.github.skm0078.audora.widget.ResumeWidgetProvider
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -170,6 +179,15 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var pronunciationStore: PronunciationStore
+
+    @Inject
+    lateinit var highlightStore: HighlightStore
+
+    @Inject
+    lateinit var voiceNoteStore: VoiceNoteStore
+
+    /** Short jobs started from a menu (the notes export); cancelled with the activity. */
+    private val exportScope = MainScope()
 
     /** Audora's own copies of PDFs another app only lends for a moment ("Open with Audora", ADR-033). */
     private val sharedCopies: SharedPdfCopies by lazy { SharedPdfCopies(applicationContext) }
@@ -427,6 +445,33 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    override fun onDestroy() {
+        exportScope.cancel()
+        super.onDestroy()
+    }
+
+    /** Plan item 30: the book's highlights, bookmarks and voice notes to Documents/Audora; a toast says where. */
+    private fun exportNotes(book: Book) {
+        val stores = MarkStores(highlightStore, bookmarkStore, voiceNoteStore)
+        exportScope.launch {
+            val saved = NotesExport.export(applicationContext, book.id, book.title, stores)
+            val message = when (saved) {
+                is Outcome.Success -> getString(R.string.notes_export_done, saved.value.joinToString(", "))
+
+                is Outcome.Failure -> getString(
+                    if (saved.error ==
+                        CopyError.NothingToCopy
+                    ) {
+                        R.string.notes_export_empty
+                    } else {
+                        R.string.notes_export_failed
+                    },
+                )
+            }
+            Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         SharedPdfIntent.uriOf(intent)?.let { sharedPdf = it }
@@ -471,13 +516,17 @@ class MainActivity : ComponentActivity() {
 
                 override fun onAddToUpNext(book: Book) = upNext.add(book.id)
 
-                // Studio mode and the exports report in a notification, so they ask for that permission first.
-                override fun onBookAction(book: Book, action: BookAction) = playWithPermission {
-                    when (action) {
-                        BookAction.STUDIO -> StudioMode.start(context, book.id)
-                        BookAction.ACCESSIBLE_COPY -> BookCopies.start(context, book.id, CopyKind.ACCESSIBLE)
-                        BookAction.TALKING_BOOK -> BookCopies.start(context, book.id, CopyKind.TALKING_BOOK)
-                    }
+                // Studio mode and the copies report in a notification, so they ask for that permission first.
+                override fun onBookAction(book: Book, action: BookAction) = when (action) {
+                    BookAction.STUDIO -> playWithPermission { StudioMode.start(context, book.id) }
+
+                    BookAction.ACCESSIBLE_COPY ->
+                        playWithPermission { BookCopies.start(context, book.id, CopyKind.ACCESSIBLE) }
+
+                    BookAction.TALKING_BOOK ->
+                        playWithPermission { BookCopies.start(context, book.id, CopyKind.TALKING_BOOK) }
+
+                    BookAction.EXPORT_NOTES -> exportNotes(book)
                 }
             }
         }
@@ -580,7 +629,8 @@ class MainActivity : ComponentActivity() {
         }
         val playWithPermission = rememberPlayWithNotificationPermission()
         val notes = remember(id) {
-            BookNotesModel(id, bookmarkStore, pronunciationStore, scope, PIPELINE_VERSION).also { it.start() }
+            BookNotesModel(id, NoteStores(bookmarkStore, pronunciationStore, highlightStore), scope, PIPELINE_VERSION)
+                .also { it.start() }
         }
         val notesState by notes.state.collectAsStateWithLifecycle()
         val voiceRows by remember { voiceManager.rows() }.collectAsStateWithLifecycle(initialValue = emptyList())
