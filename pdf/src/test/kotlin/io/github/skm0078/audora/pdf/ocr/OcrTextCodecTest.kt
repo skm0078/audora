@@ -35,10 +35,29 @@ class OcrTextCodecTest {
     }
 
     @Test
+    fun `line sizes round-trip and an unknown size is left out`() {
+        val text = OcrText(
+            listOf(
+                OcrLine(listOf(OcrWord("Heading", null)), 0, size = 0.03125f),
+                OcrLine(listOf(OcrWord("body", null)), 1),
+            ),
+        )
+        val encoded = OcrTextCodec.encode(text)
+        assertEquals("audora-ocr 4 0\n0~0.03125\t-\tHeading\n1\t-\tbody\n", encoded)
+        assertEquals(listOf(0.03125f, 0f), requireNotNull(OcrTextCodec.decode(encoded)).lines.map { it.size })
+    }
+
+    @Test
+    fun `version 3 pages from before line sizes still decode`() {
+        val back = requireNotNull(OcrTextCodec.decode("audora-ocr 3 0\n0\t0.1,0.2,0.3,0.4@88\tword\n"))
+        assertEquals(listOf(0f), back.lines.map { it.size })
+    }
+
+    @Test
     fun `a page without rules writes no rules row`() {
         val text = OcrText(listOf(OcrLine(listOf(OcrWord("a", null)), 0)))
         val encoded = OcrTextCodec.encode(text)
-        assertEquals("audora-ocr 3 0\n0\t-\ta\n", encoded)
+        assertEquals("audora-ocr 4 0\n0\t-\ta\n", encoded)
         assertEquals(emptyList<ViewRect>(), requireNotNull(OcrTextCodec.decode(encoded)).rules)
     }
 
@@ -65,7 +84,9 @@ class OcrTextCodecTest {
         assertNull(OcrTextCodec.decode("audora-ocr 1 0\n0\t0.5,0.5,0.1,0.1\tx\n"))
         assertNull(OcrTextCodec.decode("audora-ocr 2 0\n0\t-@101\tx\n"))
         assertNull(OcrTextCodec.decode("audora-ocr 2 0\n0\t-@high\tx\n"))
-        assertNull(OcrTextCodec.decode("audora-ocr 4 0\n"))
+        assertNull(OcrTextCodec.decode("audora-ocr 5 0\n"))
+        assertNull(OcrTextCodec.decode("audora-ocr 4 0\n0~big\t-\tx\n"))
+        assertNull(OcrTextCodec.decode("audora-ocr 4 0\n0~-0.1\t-\tx\n"))
         assertNull(OcrTextCodec.decode("audora-ocr 3 0\nR\t0.5,0.5,0.1,0.1\n"))
         assertNull(OcrTextCodec.decode("audora-ocr 3 0\nR\tleft\n"))
         assertEquals(0, OcrTextCodec.decode("audora-ocr 1 0\n")?.lines?.size)

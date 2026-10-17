@@ -22,8 +22,12 @@ class OcrWord(val text: String, val box: ViewRect?, val confidence: Int? = null)
     }
 }
 
-/** One line of words, left to right in reading order; [paragraph] numbers the page's paragraphs from 0. */
-class OcrLine(val words: List<OcrWord>, val paragraph: Int) {
+/**
+ * One line of words, left to right in reading order; [paragraph] numbers the page's paragraphs from 0. [size] is the
+ * engine's estimate of its type size as a fraction of the upright image's height, 0 when unknown: OCR gives no font
+ * sizes, and a heading is found by its size against the page's body text.
+ */
+class OcrLine(val words: List<OcrWord>, val paragraph: Int, val size: Float = 0f) {
     val text: String get() = words.joinToString(" ") { it.text }
 }
 

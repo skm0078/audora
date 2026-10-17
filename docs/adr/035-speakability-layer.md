@@ -199,4 +199,23 @@ and highlight need a unit to land on.
   Limits: a cell Tesseract never read stays empty (serial numbers in thick-ruled forms); a table continued from the
   previous page takes its first row as its header; a letterhead set as two aligned blocks reads as a small table;
   two prose columns that Tesseract ran together across the gutter stay run together. Same PIPELINE_VERSION 10.
+- RI-10 on scanned pages: headings and lists from OCR (`OcrParagraphKinds`, `OcrBullets` in `:pdf/ocr`). OCR gives
+  no fonts, so a scanned textbook had no headings or list items and read like a novel. Tesseract's hOCR gives each
+  line's type size (`x_size`); it is kept on `OcrLine.size` (cache format v4; v1-v3 still decode, page cache key
+  changed). A line at least 1.3 times the page's median line size is heading-sized (`LayoutConfig.ocrHeadingSizeRatio`;
+  higher than the text layer's 1.15 because the estimate varies a little between lines of one type); a change of size
+  splits a Tesseract paragraph, and a run of heading-sized lines within the text layer's heading limits is a heading
+  when it reads like one: mean OCR confidence at least 80 (`ocrHeadingMinConfidence`), starting with a letter or
+  digit, no "|", no sentence end. Those guards come from false headings on a UP revenue letter whose pages are
+  screenshots of a web form: large text there is noise, pointers ("> click here") or table rows read badly. **Misread
+  bullets:** Tesseract's Hindi and Bengali models have no bullet, so "•" and "○" come out as "o", "०", "০", "*", "+",
+  "°" or "©" (66 lines of "*" and 19 of "o" in one NCERT book); a line's first word that is one of those, followed by
+  a word starting with a letter, becomes "•", so the item is a list item and is no longer read as "zero" or "star".
+  List labels after a clause end start items as on a text layer. **Measured** on the 57 test PDFs: 51 right (89.5%),
+  from 49; 35 of 41 without the UDHR copies. The two scanned textbooks now classify (the Bengali fair-lending guide,
+  the NCERT preschool curriculum); no right answer changed. Still short of 90% by one PDF; the six misses are not
+  structure: a Bengali magazine and a scanned land-revenue table read as gazettes, a SutonnyMJ notice as a textbook,
+  a DevLys exam paper and a Bengali notice as forms, an RTI reply so badly scanned it has 101 words. Golden,
+  listening and the UDHR character error rates are unchanged (no scanned headings or bullets in them).
+  PIPELINE_VERSION 11.
 - Logs carry kinds, scores, page and unit index, never the page's text (AGENTS.md).

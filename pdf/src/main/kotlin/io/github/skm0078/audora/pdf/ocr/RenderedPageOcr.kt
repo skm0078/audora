@@ -192,8 +192,8 @@ class RenderedPageOcr(
         private const val TOP_STRIP = 0
         private const val BOTTOM_STRIP = 1
 
-        /** Pages read with the line retry (RI-3) and their rules found (RI-4a part 2); older text is not reused. */
-        private const val PAGE_VARIANT = "page-r2"
+        /** Pages with the line retry (RI-3), rules (RI-4a part 2) and line sizes (RI-10); older text is not reused. */
+        private const val PAGE_VARIANT = "page-r3"
 
         /** Striped, so the locks stay few however many pages a session reads. */
         private val locks = Array(LOCK_STRIPES) { Any() }

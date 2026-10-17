@@ -47,6 +47,13 @@ class HocrTest {
     }
 
     @Test
+    fun `a line's type size is read from x_size and becomes a fraction of the image height`() {
+        val page = Hocr.parse(hocr, 200, 100)
+        assertEquals(listOf(10, 0, 0), page.lines.map { it.size })
+        assertEquals(listOf(0.1f, 0f, 0f), page.toOcrText(0).lines.map { it.size })
+    }
+
+    @Test
     fun `boxes become fractions of the page as displayed, turned back by the image's turn`() {
         val page = RecognizedPage(listOf(RecognizedLine(listOf(RecognizedWord("x", 0, 0, 50, 10, 90)), 0)), 200, 100)
         assertEquals(ViewRect(0f, 0f, 0.25f, 0.1f), page.toOcrText(0).lines[0].words[0].box)

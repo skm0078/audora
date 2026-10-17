@@ -9,19 +9,21 @@ import java.util.Locale
 /**
  * A small text format, so a cached page stays a few kilobytes and readable in a debugger:
  * ```
- * audora-ocr 3 <quarterTurns>
+ * audora-ocr 4 <quarterTurns>
  * R\t<left,top,right,bottom>\t<left,top,right,bottom>…
- * <paragraph>\t<left,top,right,bottom or ->[@confidence]\t<word>\t<box>\t<word>…
+ * <paragraph>[~size]\t<left,top,right,bottom or ->[@confidence]\t<word>\t<box>\t<word>…
  * ```
- * The `R` row holds the page's rules and is left out when it has none. Version 2 (before RI-4a part 2) had no rules
- * and version 1 (before RI-2a) no confidence; both still decode, without them. Words never hold a tab or
+ * The `R` row holds the page's rules and is left out when it has none; a line's size is left out when unknown.
+ * Version 3 (before RI-10's OCR headings) had no sizes, version 2 (before RI-4a part 2) no rules and version 1
+ * (before RI-2a) no confidence; all still decode, without them. Words never hold a tab or
  * line break (they are split on whitespace). Anything else is a decoding failure, which the cache treats as a miss:
  * the page is recognised again.
  */
 internal object OcrTextCodec {
     private const val MAGIC = "audora-ocr"
-    private const val VERSION = "3"
-    private val READABLE = setOf("1", "2", VERSION)
+    private const val VERSION = "4"
+    private val READABLE = setOf("1", "2", "3", VERSION)
+    private const val SIZE = '~'
     private const val RULES = "R"
     private const val CONFIDENCE = '@'
     private const val SEPARATOR = '\t'
@@ -41,6 +43,7 @@ internal object OcrTextCodec {
         }
         for (line in text.lines) {
             out.append(line.paragraph)
+            if (line.size > 0f) out.append(SIZE).append(String.format(Locale.ROOT, "%.5f", line.size))
             for (word in line.words) {
                 out.append(SEPARATOR).append(box(word.box))
                 word.confidence?.let { out.append(CONFIDENCE).append(it) }
@@ -70,10 +73,11 @@ internal object OcrTextCodec {
 
     private fun lineOf(row: String): OcrLine? {
         val parts = row.split(SEPARATOR)
-        val paragraph = parts[0].toIntOrNull()
+        val paragraph = parts[0].substringBefore(SIZE).toIntOrNull()
+        val size = if (SIZE in parts[0]) parts[0].substringAfter(SIZE).toFloatOrNull()?.takeIf { it > 0f } else 0f
         val words = (1 until parts.size - 1 step 2).map { i -> wordOf(parts[i], parts[i + 1]) }
-        val valid = paragraph != null && parts.size % 2 == 1 && words.none { it == null }
-        return if (valid) OcrLine(words.filterNotNull(), requireNotNull(paragraph)) else null
+        val valid = paragraph != null && size != null && parts.size % 2 == 1 && words.none { it == null }
+        return if (valid) OcrLine(words.filterNotNull(), requireNotNull(paragraph), requireNotNull(size)) else null
     }
 
     private fun wordOf(field: String, text: String): OcrWord? {

@@ -34,7 +34,7 @@ class OcrLineRetryTest {
     private fun page(noisy: Int = 20) = RecognizedPage(
         listOf(
             RecognizedLine(listOf(RecognizedWord("मानव", 10, 10, 60, 20, 92)), 0),
-            RecognizedLine(listOf(RecognizedWord("#फ08", 10, 40, 60, 50, noisy)), 1),
+            RecognizedLine(listOf(RecognizedWord("#फ08", 10, 40, 60, 50, noisy)), 1, size = NOISY_SIZE),
         ),
         WIDTH,
         HEIGHT,
@@ -46,6 +46,7 @@ class OcrLineRetryTest {
         val improved = OcrLineRetry(engine, OcrConfig(), "test").improve(page(), image, setOf(Lang.HI))
         assertEquals(listOf("मानव", "Audora"), improved.lines.map { it.words.single().text })
         assertEquals(listOf(1), improved.lines.map { it.paragraph }.drop(1))
+        assertEquals(NOISY_SIZE, improved.lines[1].size)
         assertEquals(setOf(setOf(Lang.EN), setOf(Lang.BN)), engine.calls.map { it.first }.toSet())
         // The line alone, padded by half its height, and the words put back where they are on the page.
         val crop = engine.calls.first().second
@@ -92,5 +93,6 @@ class OcrLineRetryTest {
         const val WIDTH = 100
         const val HEIGHT = 80
         const val DPI = 300
+        const val NOISY_SIZE = 14
     }
 }
