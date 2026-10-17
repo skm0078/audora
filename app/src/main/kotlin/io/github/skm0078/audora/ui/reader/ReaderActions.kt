@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
@@ -77,6 +78,8 @@ interface ReaderActions {
     fun onSleepTimer(setting: SleepTimerSetting)
 
     fun onSleepOptions(options: SleepOptions) = Unit
+
+    fun onFocusSound(options: FocusSoundOptions) = Unit
 
     fun onUndoJump() = Unit
 

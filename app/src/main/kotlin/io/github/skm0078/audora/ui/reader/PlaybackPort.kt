@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
@@ -51,6 +52,9 @@ interface PlaybackPort {
     /** Shake to extend, fade-out and bedtime auto-on (plan item 37); the service keeps them. */
     fun setSleepOptions(options: SleepOptions)
 
+    /** Rain, café or brown noise under the voice, and how loud (plan item 72); the service keeps it. */
+    fun setFocusSound(options: FocusSoundOptions)
+
     /** The open book keeps its own speed, pace and voices (plan item 4), or follows the global ones again. */
     fun setOwnSettings(on: Boolean)
 
@@ -94,6 +98,7 @@ data class StudyRangeState(val start: ReadingPosition, val end: ReadingPosition?
  * @property wantsToPlay play was pressed and not paused since: true while buffering the next sentence too.
  * @property hasChapters the book being read has chapters, so [SleepTimerSetting.EndOfChapter] can be offered.
  * @property sleepOptions the sleep timer extras the service has saved.
+ * @property focusSound the focus sound the service has saved.
  * @property ownSettings the book being read has its own speed, pace and voices; changes to them are its own.
  * @property bookVoices the voices the book being read keeps for itself, by language, while [ownSettings].
  * @property undoJumpTo where "Undo jump" goes back to in the book being read (plan item 78); null with nothing to undo.
@@ -118,6 +123,7 @@ data class PlaybackSnapshot(
     val sleepTimer: SleepTimerState = SleepTimerState.Off,
     val hasChapters: Boolean = false,
     val sleepOptions: SleepOptions = SleepOptions(),
+    val focusSound: FocusSoundOptions = FocusSoundOptions(),
     val ownSettings: Boolean = false,
     val bookVoices: Map<Lang, VoiceId> = emptyMap(),
     val undoJumpTo: ReadingPosition? = null,

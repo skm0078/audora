@@ -299,6 +299,9 @@ class BookSession(
         publishState()
     }
 
+    /** A listening option the session only shows (the focus sound) changed: the extras carry it at once. */
+    fun onListeningOptionsChanged() = publishState()
+
     fun release() {
         player.removeListener(playerListener)
         loader.cancel()

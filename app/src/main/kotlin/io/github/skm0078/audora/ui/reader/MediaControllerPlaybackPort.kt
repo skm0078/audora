@@ -13,6 +13,7 @@ import androidx.media3.session.SessionResult
 import com.google.common.util.concurrent.ListenableFuture
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
@@ -131,6 +132,11 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
         send(player, PlaybackContract.SET_SLEEP_OPTIONS, PlaybackContract.sleepOptionsArgs(options), "sleep options")
     }
 
+    override fun setFocusSound(options: FocusSoundOptions) = withPlayer("focus sound") { player ->
+        AudoraLog.i(TAG, "Focus sound ${options.encode()}")
+        send(player, PlaybackContract.SET_FOCUS_SOUND, PlaybackContract.focusSoundArgs(options), "focus sound")
+    }
+
     override fun setOwnSettings(on: Boolean) = withPlayer("own settings") { player ->
         AudoraLog.i(TAG, "Own settings for this book: $on")
         val args = Bundle().apply { putBoolean(PlaybackContract.ARG_OWN_SETTINGS, on) }
@@ -226,6 +232,7 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             sleepTimer = sleepTimerOf(extras),
             hasChapters = extras.getBoolean(PlaybackContract.SESSION_HAS_CHAPTERS, false),
             sleepOptions = SleepOptions.decode(extras.getString(PlaybackContract.SESSION_SLEEP_OPTIONS)),
+            focusSound = FocusSoundOptions.decode(extras.getString(PlaybackContract.SESSION_FOCUS_SOUND)),
             ownSettings = extras.getBoolean(PlaybackContract.SESSION_OWN_SETTINGS, false),
             bookVoices = BookSettings.decodeVoices(extras.getString(PlaybackContract.SESSION_BOOK_VOICES)),
             undoJumpTo = undoOf(extras),
