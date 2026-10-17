@@ -151,7 +151,7 @@ class AudoraPlaybackService : MediaLibraryService() {
                 onBookFinished = queueAdvance()::onBookFinished,
             ),
             config = config,
-            events = publisher(mediaSession, stores, heard),
+            events = publisher(mediaSession, stores, heard).also { it.publishInitial() },
             env = SessionEnvironment(
                 scope = scope,
                 extraction = Dispatchers.IO.limitedParallelism(1),

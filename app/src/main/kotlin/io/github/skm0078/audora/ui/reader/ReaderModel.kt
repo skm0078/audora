@@ -343,12 +343,11 @@ class ReaderModel(
     private fun onPlayback(snapshot: PlaybackSnapshot) {
         val previous = state.value.playback
         mutableState.update { it.copy(playback = snapshot) }
-        if (snapshot.connection == PlaybackSnapshot.Connection.CONNECTED &&
-            previous.connection != PlaybackSnapshot.Connection.CONNECTED
-        ) {
-            // A book with its own speed (plan item 4) already reads at it.
-            if (!snapshot.ownSettings) applySavedSpeed(snapshot.speed)
-        }
+        // Once per connection, and only once the service has said what its style is: the speed shown before that is a
+        // default, not the service's. A book with its own speed (plan item 4) already reads at it.
+        val styleArrived = snapshot.connection == PlaybackSnapshot.Connection.CONNECTED && snapshot.styleKnown &&
+            !(previous.connection == PlaybackSnapshot.Connection.CONNECTED && previous.styleKnown)
+        if (styleArrived && !snapshot.ownSettings) applySavedSpeed(snapshot.speed)
         autoResumeIfDue()
         if (snapshot.errorCode != null && snapshot.errorCode != previous.errorCode) {
             AudoraLog.w(TAG, "Playback error, $logContext code=${snapshot.errorCode}")

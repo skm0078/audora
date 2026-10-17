@@ -64,6 +64,12 @@ class SessionPublisher(
         showTiming(key)
     }
 
+    /**
+     * The extras before any book plays: the speech style and sleep options, so a controller that connects to a fresh
+     * service sees the saved style instead of defaults.
+     */
+    fun publishInitial() = publish(lastState ?: SessionState(null, null, SleepTimerMode.OFF, null))
+
     override fun onStateChanged(state: SessionState) {
         lastState = state
         publish(state)

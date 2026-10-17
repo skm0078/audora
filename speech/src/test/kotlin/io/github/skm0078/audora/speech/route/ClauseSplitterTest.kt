@@ -102,4 +102,27 @@ class ClauseSplitterTest {
         assertEquals(listOf("The rule for everyone here", "इसी को पढ़ें।"), clauses.map { it.text })
         assertEquals(listOf(Lang.EN, Lang.HI), clauses.map { it.lang })
     }
+
+    @Test
+    fun `a symbol between two cuts is read with the next piece, never dropped`() {
+        assertEquals(
+            "Thus |BRACKET| (a + b) |BRACKET| (= c + d) |BRACKET| holds.",
+            cut("Thus (a + b) = (c + d) holds."),
+        )
+        assertEquals("(¬ P and Q) |BRACKET| is false.", cut("¬(P and Q) is false."))
+    }
+
+    @Test
+    fun `a label inside brackets keeps the outer aside whole`() {
+        assertEquals(
+            "The model |BRACKET| (see Eq. (3) below) |BRACKET| fits.",
+            cut("The model (see Eq. (3) below) fits."),
+        )
+        assertEquals(
+            "Read it |BRACKET| (as amended by clause (iv) of section 2) |BRACKET| today.",
+            cut("Read it (as amended by clause (iv) of section 2) today."),
+        )
+        assertEquals("Exceptions (i) and (iv) apply.", cut("Exceptions (i) and (iv) apply."))
+        assertEquals("Enter the word(s) here.", cut("Enter the word(s) here."))
+    }
 }

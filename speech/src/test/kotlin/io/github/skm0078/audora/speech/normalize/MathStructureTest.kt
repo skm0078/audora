@@ -38,6 +38,7 @@ class MathStructureTest {
             "1 + 2 + … + n" to "one plus two plus and so on plus n",
             "½mv²" to "one half m v squared",
             "-x + y" to "minus x plus y",
+            "v = u + at" to "v equals u plus a t",
             "sin(x) + g(t)" to "sine of x plus g of t",
         )
         for ((text, expected) in cases) assertEquals(text, expected, spoken(text))

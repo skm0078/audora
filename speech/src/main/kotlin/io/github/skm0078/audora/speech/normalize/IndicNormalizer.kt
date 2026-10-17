@@ -51,10 +51,14 @@ class IndicNormalizer internal constructor(
 
     private fun tidy(text: String): String = EXTRA_SPACES.replace(text, " ").trim()
 
-    /** "हाँ/नहीं" → "हाँ या नहीं", "&" → "और"; the text itself when it has neither. */
+    /**
+     * "हाँ/नहीं" → "हाँ या नहीं", "60 किमी/घंटा" → "60 किमी प्रति घंटा", "&" → "और"; the text itself when it has
+     * neither.
+     */
     private fun speakSymbols(text: String): String {
         if ('/' !in text && '&' !in text) return text
-        val slashed = WORD_SLASH.replace(text, " ${words.or} ")
+        val rated = RATE_SLASH.replace(text, " ${words.per} ")
+        val slashed = WORD_SLASH.replace(rated, " ${words.or} ")
         return AMPERSAND.replace(slashed, " ${words.and} ")
     }
 
@@ -105,6 +109,12 @@ class IndicNormalizer internal constructor(
         private val HYPHENATED_CODE = Regex("""(?<![\w.,-])\d+(?:-\d+)+(?![\w-])""")
         private val PLAIN = Regex("""(?<![\w.])$NUMBER(?![\w])""")
         private val EXTRA_SPACES = Regex("""[ \t]{2,}""")
+
+        /**
+         * A slash after a short unit (up to 4 letters, "किमी") that follows a number, any script's digits: a rate, read
+         * "per". A longer word ("10–12 देखें/पढ़ें") is not a unit, so its slash stays "or".
+         */
+        private val RATE_SLASH = Regex("""(?<=\p{Nd}\s?[\p{L}\p{M}]{1,4})/(?=[\p{L}\p{M}]{2})""")
 
         /** A slash between two words, Indic or Latin, two letters or more a side ("w/o" stays). */
         private val WORD_SLASH = Regex("""(?<=[\p{L}\p{M}]{2})/(?=[\p{L}\p{M}]{2})""")

@@ -24,6 +24,7 @@ import io.github.skm0078.audora.core.notes.BookSettings
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
+import io.github.skm0078.audora.playback.contract.SpeechStyleChange
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -82,26 +83,24 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
 
     override fun skipToPreviousSentence() = withPlayer("skip back") { it.seekToPreviousMediaItem() }
 
-    override fun setSpeed(speed: Float) = setStyle(currentStyle().copy(rate = speed))
+    override fun setSpeed(speed: Float) = setStyle(SpeechStyleChange(rate = speed))
 
-    override fun setPace(pace: Pace) = setStyle(currentStyle().copy(pace = pace))
+    override fun setPace(pace: Pace) = setStyle(SpeechStyleChange(pace = pace))
 
-    override fun setClausePauses(on: Boolean) = setStyle(currentStyle().copy(clausePauses = on))
+    override fun setClausePauses(on: Boolean) = setStyle(SpeechStyleChange(clausePauses = on))
 
-    override fun setReadingModes(modes: ReadingModes) = setStyle(currentStyle().copy(modes = modes))
+    override fun setReadingModes(modes: ReadingModes) = setStyle(SpeechStyleChange(modes = modes))
 
-    override fun setVoiceShaping(shaping: VoiceShaping) = setStyle(currentStyle().copy(shaping = shaping))
+    override fun setVoiceShaping(shaping: VoiceShaping) = setStyle(SpeechStyleChange(shaping = shaping))
 
-    private fun currentStyle(): SpeechStyle =
-        mutableState.value.let { SpeechStyle(it.speed, it.pace, it.clausePauses, it.readingModes, it.voiceShaping) }
-
-    private fun setStyle(style: SpeechStyle) = withPlayer("speech style") { player ->
+    /** Only the changed field goes: the service keeps the rest as saved, whatever this controller has seen. */
+    private fun setStyle(change: SpeechStyleChange) = withPlayer("speech style") { player ->
         AudoraLog.i(
             TAG,
-            "Speech style rate=${style.rate} pace=${style.pace} clauses=${style.clausePauses} ${style.modes} " +
-                "shaping=${style.shaping.encode()}",
+            "Speech style change rate=${change.rate} pace=${change.pace} clauses=${change.clausePauses} " +
+                "modes=${change.modes} shaping=${change.shaping?.encode()}",
         )
-        send(player, PlaybackContract.SET_SPEECH_STYLE, PlaybackContract.speechStyleArgs(style), "speech style")
+        send(player, PlaybackContract.SET_SPEECH_STYLE, PlaybackContract.speechStyleArgs(change), "speech style")
     }
 
     override fun setSleepTimer(setting: SleepTimerSetting) = withPlayer("sleep timer") { player ->
@@ -187,6 +186,7 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             position = positionOf(player.currentMediaItem?.mediaMetadata?.extras),
             wantsToPlay = player.playWhenReady,
             buffering = player.playbackState == Player.STATE_BUFFERING,
+            styleKnown = extras.containsKey(PlaybackContract.SESSION_SPEECH_RATE),
             speed = extras.getFloat(PlaybackContract.SESSION_SPEECH_RATE, SpeechStyle.NORMAL_RATE),
             pace = Pace.entries.firstOrNull { it.name == extras.getString(PlaybackContract.SESSION_PACE) }
                 ?: Pace.NORMAL,

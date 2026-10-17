@@ -23,6 +23,7 @@ class EnglishNormalizerTest {
     private val cases = listOf(
         // Punctuation you can hear (RI-6)
         Case("punctuation", "Tick yes/no and/or sign.", "Tick yes or no and or sign."),
+        Case("punctuation", "Drive at 60 km/hr; give 5 mg/kg.", "Drive at sixty km per hr; give five mg per kg."),
         Case("punctuation", "Store below °C levels", "Store below degrees Celsius levels"),
         Case("punctuation", "Is it ready? Yes!", "Is it ready? Yes!"),
         Case("punctuation", "w/o sugar, A/C on", "w/o sugar, A/C on"),

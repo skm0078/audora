@@ -197,8 +197,10 @@ class SessionCallback(
     private suspend fun setVoice(args: Bundle): SessionResult =
         PlaybackContract.voiceFrom(args)?.let { (voice, lang) -> setVoice(voice, lang) } ?: badRequest()
 
-    private suspend fun setSpeechStyle(args: Bundle): SessionResult =
-        PlaybackContract.speechStyleFrom(args)?.let { setSpeechStyle(it) } ?: badRequest()
+    /** On top of what is heard now: the open book's own speed and pace when it has them, else the global style. */
+    private suspend fun setSpeechStyle(args: Bundle): SessionResult = PlaybackContract.speechStyleChangeFrom(args)
+        ?.let { change -> setSpeechStyle(change.over(stores.book.style(stores.style.current))) }
+        ?: badRequest()
 
     private suspend fun setOwnSettings(args: Bundle): SessionResult =
         if (args.containsKey(PlaybackContract.ARG_OWN_SETTINGS)) {
