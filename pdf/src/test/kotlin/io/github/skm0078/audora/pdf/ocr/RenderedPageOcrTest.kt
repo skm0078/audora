@@ -152,7 +152,8 @@ class RenderedPageOcrTest {
         engine.confidence = { SIDEWAYS }
         val text = requireNotNull(ocr().recognize(0, setOf(Lang.EN)).getOrNull())
         assertEquals(0, text.quarterTurns)
-        assertEquals(1 + OcrText.FULL_TURN, engine.calls.size)
+        // Drawn, four turns tried, then its unsure line read again with the two other models (RI-3).
+        assertEquals(1 + OcrText.FULL_TURN + 2, engine.calls.size)
     }
 
     @Test

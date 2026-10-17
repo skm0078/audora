@@ -52,9 +52,11 @@ class RenderedPageOcr(
     private val config: OcrConfig = OcrConfig(),
     private val qualityConfig: QualityConfig = QualityConfig(),
 ) : PageOcr {
+    private val lineRetry = OcrLineRetry(engine, config, logContext)
+
     override fun recognize(pageIndex: Int, langs: Set<Lang>): Outcome<OcrText, OcrError> {
         if (langs.isEmpty()) return Outcome.Failure(OcrError.Failed("no language to recognise page $pageIndex in"))
-        val key = OcrKey(bookKey, pageIndex, langs, config.renderDpi, engine.cacheTag)
+        val key = OcrKey(bookKey, pageIndex, langs, config.renderDpi, engine.cacheTag, PAGE_VARIANT)
         return cached(key) { image -> readUpright(image, key.langs) }
     }
 
@@ -114,15 +116,17 @@ class RenderedPageOcr(
 
     /**
      * The page as drawn, unless it reads poorly and a shrunk copy turned a quarter, half or three quarters reads at
-     * least `OcrConfig.orientationMinGain` more confidently: then the page turned that way.
+     * least `OcrConfig.orientationMinGain` more confidently: then the page turned that way. Its unsure lines are then
+     * read again with the other models ([OcrLineRetry]).
      */
     private fun readUpright(image: PageImage, langs: Set<Lang>): Outcome<OcrText, OcrError> =
         engine.recognize(image, langs).flatMap { asDrawn ->
             val turns = if (asDrawn.meanConfidence >= config.orientationCheckBelow) 0 else bestTurn(image, langs)
             if (turns == 0) {
-                Outcome.Success(asDrawn.toOcrText(0))
+                Outcome.Success(lineRetry.improve(asDrawn, image, langs).toOcrText(0))
             } else {
-                engine.recognize(image.turned(turns), langs).map { it.toOcrText(turns) }
+                val upright = image.turned(turns)
+                engine.recognize(upright, langs).map { lineRetry.improve(it, upright, langs).toOcrText(turns) }
             }
         }
 
@@ -173,6 +177,9 @@ class RenderedPageOcr(
         private const val LOCK_STRIPES = 64
         private const val TOP_STRIP = 0
         private const val BOTTOM_STRIP = 1
+
+        /** Pages read with the line retry (RI-3); text cached before it ("page") is not reused. */
+        private const val PAGE_VARIANT = "page-r1"
 
         /** Striped, so the locks stay few however many pages a session reads. */
         private val locks = Array(LOCK_STRIPES) { Any() }

@@ -144,4 +144,27 @@ and highlight need a unit to land on.
   set in a table reads as a form, a merged notice of mostly school assignments reads as a textbook, and the RTI scan
   whose hidden OCR layer is Latin junk is too unreadable to tell (GENERAL). The next lever is headings and tables
   from OCR boxes, which changes OCR'd units and so bumps PIPELINE_VERSION.
+- RI-3 (offline OCR repair) has two parts in `:pdf/ocr`. **Line retry** (`OcrLineRetry`, tunables in `OcrConfig`):
+  a page is OCR'd in its book's languages, so a line in another script reads as noise; each line whose
+  letter-weighted confidence is below 60 is cut out of the page image (padded by half its height) and read alone
+  with each other installed model, and the best read replaces it when it gains at least 10 and itself reaches 60
+  (punctuation read confidently counts for nothing, so "AYE |" cannot replace a Bengali word). Least confident lines
+  first, at most 8 per page, within 2 s. **Word repair** (`OcrRepair`, `OcrRepairConfig`), on the words before they
+  become page text so offsets and highlight boxes follow: two unknown neighbours that are one known word together
+  are rejoined; an unknown word Tesseract was unsure of (below 90) becomes the one common known word one OCR
+  confusion away (`OcrConfusions`: "rn"/"m", ध/भ, ण/ए, ব/ষ…), in English also one plain edit away; a colon read for
+  a visarga and, in Bengali, "!" or "৷" read for the vowel sign aa are put back. Short words, compounds, words with
+  digits and ties are kept. Hindi and Bengali change only through the confusions and the sign rules: their word
+  lists lack many real inflected words, and free edits turned more of those into other words ("अकृत" → "अकूत") than
+  they fixed. No new dependency (the RI-2a word lists); no PIPELINE_VERSION change of its own (10 has not reached
+  `dev`); cached OCR from before is read again (its cache key changed). **Measured** on the six UDHR scans of the
+  P3-05 set (200 dpi degraded and 300 dpi, all pages, the same pinned tessdata_best models, desktop Tesseract 5, the
+  printed header stripped): en 0.12% → 0.12%, hi 3.89% → 0.31%, bn 1.16% → 1.12%. The ticket's baselines (2.6%,
+  4.5%, 4.3%) were inflated by the emulator test, whose header pattern wanted a page number the header does not have
+  and so counted the header as errors; fixed, and the test now asserts the ticket's targets (2.0%, 3.5%, 3.5%). Most
+  of the Hindi gain is the retry reading the English header in English. The ground truth carries a few source typos
+  (ঘোবণা, नির্বিশেবে), so some correct repairs still score as errors. On 13 real scans outside the repository (a CERC
+  Hindi–English gazette, a UP revenue board letter, others) the retry replaced 257 of 502 unsure lines, turning their
+  English forms and letters from noise into text. Limits: the 8-line, 2-second cap leaves whole English pages inside
+  a Hindi book partly unread; a word the list lacks is never repaired; online repair waits on ADR-037.
 - Logs carry kinds, scores, page and unit index, never the page's text (AGENTS.md).

@@ -5,6 +5,7 @@ package io.github.skm0078.audora.pdf.units
 
 import io.github.skm0078.audora.core.config.CleanupConfig
 import io.github.skm0078.audora.core.config.LayoutConfig
+import io.github.skm0078.audora.core.config.OcrRepairConfig
 import io.github.skm0078.audora.core.config.QualityConfig
 import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.model.Lang
@@ -29,7 +30,9 @@ import io.github.skm0078.audora.pdf.layout.ReadingTextBuilder
 import io.github.skm0078.audora.pdf.layout.TableCells
 import io.github.skm0078.audora.pdf.ocr.OcrClutter
 import io.github.skm0078.audora.pdf.ocr.OcrPageText
+import io.github.skm0078.audora.pdf.ocr.OcrRepair
 import io.github.skm0078.audora.pdf.ocr.OcrText
+import io.github.skm0078.audora.pdf.quality.BundledWordModels
 import io.github.skm0078.audora.pdf.quality.IndicOrder
 import io.github.skm0078.audora.pdf.quality.PageQuality
 import io.github.skm0078.audora.pdf.quality.PageQualityScorer
@@ -50,7 +53,8 @@ import io.github.skm0078.audora.pdf.render.ViewRect
  * Header and footer removal compares a page with its neighbours ([PageProfile]). `PdfBook.readingUnits` supplies
  * them; [build] with a page alone applies every rule that needs no neighbour.
  */
-@Suppress("TooManyFunctions") // The pipeline's one entry point: one function per way a page is read or sampled.
+// The pipeline's one entry point: one function per way a page is read or sampled, one config per stage.
+@Suppress("TooManyFunctions", "LongParameterList")
 class ReadingUnitBuilder(
     private val config: ReadingUnitConfig = ReadingUnitConfig(),
     private val splitter: SentenceSplitter = BreakIteratorSentenceSplitter(),
@@ -58,7 +62,9 @@ class ReadingUnitBuilder(
     val cleanupConfig: CleanupConfig = CleanupConfig(),
     val qualityConfig: QualityConfig = QualityConfig(),
     private val speakability: SpeakabilityScorer = SpeakabilityScorer(),
+    ocrRepairConfig: OcrRepairConfig = OcrRepairConfig(),
 ) {
+    private val ocrRepair = OcrRepair(ocrRepairConfig, BundledWordModels)
     private val lineBoxes = LineBoxes(config.lineOverlapRatio)
     private val analyzer = PageLayoutAnalyzer(layoutConfig)
     private val profiler = PageProfiler(cleanupConfig)
@@ -100,9 +106,10 @@ class ReadingUnitBuilder(
         textOf(page, neighbours, page.layout).text
 
     /**
-     * The reading text of a page read by OCR (P3-05): the OCR'd words with the same repair as a text layer
-     * (Tesseract writes Indic text in logical order), [dropped] lines (running headers, ADR-032) left out. With
-     * [toPage] the words keep their boxes, so [build] gives units a highlight; without it bounds stay null.
+     * The reading text of a page read by OCR (P3-05): the OCR'd words corrected against the word lists ([OcrRepair],
+     * RI-3), then given the same repair as a text layer (Tesseract writes Indic text in logical order), [dropped]
+     * lines (running headers, ADR-032) left out. With [toPage] the words keep their boxes, so [build] gives units a
+     * highlight; without it bounds stay null.
      */
     fun ocrReadingText(
         pageIndex: Int,
@@ -110,7 +117,7 @@ class ReadingUnitBuilder(
         dropped: Set<Int> = emptySet(),
         toPage: ((ViewRect) -> TextBox)? = null,
     ): ReadingText {
-        val page = OcrPageText.build(pageIndex, ocr, dropped, toPage)
+        val page = OcrPageText.build(pageIndex, ocrRepair.repair(ocr), dropped, toPage)
         return textBuilder.build(page.text, furniture.tag(page.text, page.layout), page.hyphenated, IndicOrder.LOGICAL)
     }
 

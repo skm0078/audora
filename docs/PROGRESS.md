@@ -2,6 +2,15 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Reading intelligence, step 6 — cleaner scanned pages (RI-3 offline; 2026-10-17, ADR-035)
+- **Lines in another script read again:** a scanned page is OCR'd in its book's languages, so an English header or form on a Hindi page came out as Devanagari noise. Unsure lines are now cut out and read alone with the other installed models; the clean read replaces the noise (at most 8 lines and 2 s per page, `OcrConfig`).
+- **OCR near-misses corrected** against the bundled word lists (`OcrRepair`, `OcrRepairConfig`): "rnodern" → "modern", "govern ment" → "government", "सद्धावना" → "सद्भावना", "विशेषत:" → "विशेषतः", "নিরাপত্ত!" → "নিরাপত্তা". Only unsure, unknown words with exactly one common fix change; Hindi and Bengali change only through known look-alike letters and signs, since free edits broke more real words than they fixed.
+- **Character error rate** on the six UDHR scans (all pages, desktop Tesseract 5 with the app's models): en 0.12% → 0.12%, hi 3.89% → 0.31%, bn 1.16% → 1.12%. All under the ticket's targets (2.0%, 3.5%, 3.5%). The ticket's starting figures were inflated: the emulator test's header pattern never matched, so the printed header counted as errors. Fixed; the emulator test now asserts the targets.
+- `PIPELINE_VERSION` stays 10 (not on `dev` yet; only OCR'd pages change). Golden 0.9268 unchanged (no OCR in it); listening 0.9783 unchanged overall, its scanned Hindi page 0.9940 → 0.9946. `docs/LISTENING.md` regenerated. No new dependency.
+- Tests: `OcrRepairTest` (fixes in three scripts, everything uncertain kept, rejoining with boxes, line-end hyphens, the switch), `OcrLineRetryTest`, `RenderedPageOcrTest`, `OcrRepairConfigTest` (both configs); `TesseractOcrTest` on the CI emulator.
+
+**Real-device checks:** open a scanned Hindi PDF with English lines (a gazette) and check they are read in English; note how long the first read of a scanned page takes.
+
 ## Reading intelligence, step 5 — what kind of book it is (RI-10; 2026-10-17, ADR-035)
 - **`PdfBook.documentKind`** reads a dozen pages spread over a book (OCR'd where the app would OCR them) and names it a novel, paper, textbook, gazette, form or general, so playback can pick its table, footnote, citation and skim defaults per kind (the player side, app basics). The listener's choice always wins. Call it once per book off the main thread: it costs up to 12 page reads.
 - **How it decides** (`DocumentKindClassifier`, thresholds in `DocumentKindConfig`): table rows or digits → form; citations, figures and equations in a short document → paper; official words in English, Hindi and Bengali → gazette; headings and lists in a longer book → textbook; long sentences with no structure → novel; else general. Junk text (below the gibberish gate's threshold) is not counted.

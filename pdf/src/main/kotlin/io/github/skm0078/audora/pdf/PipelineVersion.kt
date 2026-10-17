@@ -26,5 +26,7 @@ package io.github.skm0078.audora.pdf
  *     caption joined to the paragraph above it, is a paragraph of its own, so the sentences around it end there.
  *     RI-4a: tables kept as a header unit and row units instead of dropped (same version: 10 had not shipped).
  *     RI-5a: note markers left out of the text, footnotes and "Note:" paragraphs tagged (same version).
+ *     RI-3: on scanned pages, unsure lines read again with the other installed models, and OCR near-misses
+ *     corrected against the word lists (same version).
  */
 const val PIPELINE_VERSION: Int = 10
