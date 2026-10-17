@@ -75,6 +75,7 @@ import io.github.skm0078.audora.playback.photo.PhotoBooks
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.search.SearchIndexes
 import io.github.skm0078.audora.playback.studio.StudioMode
+import io.github.skm0078.audora.speech.dictionary.Dictionaries
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.punct.PunctuationModels
@@ -106,6 +107,8 @@ import io.github.skm0078.audora.ui.reader.DocumentState
 import io.github.skm0078.audora.ui.reader.KeepScreenOn
 import io.github.skm0078.audora.ui.reader.LibraryReaderBooks
 import io.github.skm0078.audora.ui.reader.LocatorReaderResume
+import io.github.skm0078.audora.ui.reader.LookUpBinding
+import io.github.skm0078.audora.ui.reader.LookUpModel
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.NoteStores
 import io.github.skm0078.audora.ui.reader.NotesState
@@ -727,6 +730,7 @@ class MainActivity : ComponentActivity() {
         val notesState by notes.state.collectAsStateWithLifecycle()
         val search = rememberSearch(id, model, scope)
         val voiceNotes = rememberVoiceNotes(id, notes, port)
+        val lookUp = rememberLookUp(id)
         val voiceRows by remember { voiceManager.rows() }.collectAsStateWithLifecycle(initialValue = emptyList())
         val actions = remember(model) { readerActions(model, notes, playWithPermission, onBack) }
         val keepScreenOn by remember {
@@ -744,6 +748,7 @@ class MainActivity : ComponentActivity() {
         }
         ReaderContent(
             target, books, state, actions, ocrState, notesState, notes, voiceRows, onShowPage, port, search, voiceNotes,
+            lookUp,
         )
     }
 
@@ -766,6 +771,19 @@ class MainActivity : ComponentActivity() {
         searchIndexes.dropBooksNotIn(books)
         StudioMode.reclaim(applicationContext, books)
         voiceNoteAudio.dropFilesNotIn(voiceNoteStore.observeAll().first().mapTo(HashSet()) { it.fileName })
+    }
+
+    /** The dictionary on tap (plan item 33): the sentence menu's "Look up a word". */
+    @Composable
+    private fun rememberLookUp(id: BookId): LookUpBinding {
+        val dictionaries = remember { Dictionaries.get(applicationContext) }
+        val scope = rememberCoroutineScope()
+        val model = remember(id) {
+            LookUpModel(dictionaries::english, scope, dictionaries::download, dictionaries::cancel)
+        }
+        val state by model.state.collectAsStateWithLifecycle()
+        val download by remember { dictionaries.state() }.collectAsStateWithLifecycle(initialValue = null)
+        return LookUpBinding(state, download, model)
     }
 
     /** Voice notes on sentences (plan item 32); reading pauses while one is recorded or played. */
@@ -797,6 +815,7 @@ class MainActivity : ComponentActivity() {
         port: PlaybackPort,
         search: SearchModel,
         voiceNotes: VoiceNotesBinding,
+        lookUp: LookUpBinding,
     ) {
         val scope = rememberCoroutineScope()
         var upNextOpen by rememberSaveable { mutableStateOf(false) }
@@ -832,6 +851,7 @@ class MainActivity : ComponentActivity() {
                 onOpenUpNext = { upNextOpen = true },
                 onSearch = { searchOpen = true },
                 voiceNotes = voiceNotes,
+                lookUp = lookUp,
             )
         }
         if (upNextOpen) UpNextRoute(books, playing = target.id) { upNextOpen = false }

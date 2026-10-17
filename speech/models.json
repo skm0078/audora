@@ -201,5 +201,26 @@
       "sha256": "a8fac296fa09911b974292efc845e028cd38d99809dad0186529d3aa4eb6e332",
       "sizeBytes": 7640490
     }
+  ],
+  "dictionaries": [
+    {
+      "id": "dict-en-oewn-2025",
+      "label": "English dictionary (Open English Wordnet 2025)",
+      "lang": "en",
+      "file": "dictionary.tsv",
+      "licence": "CC-BY-4.0 AND WordNet",
+      "licenceFile": "speech/licences/open-english-wordnet-LICENSE.md",
+      "credit": "Open English Wordnet 2025 by the Open English Wordnet team (CC BY 4.0), derived from Princeton WordNet 3.0 (WordNet License, Princeton University). Definitions and synonyms kept; examples and relations left out.",
+      "licenceUrl": "https://github.com/globalwordnet/english-wordnet/blob/2025-edition/LICENSE.md",
+      "sourceUrl": "https://en-word.net/",
+      "source": {
+        "url": "https://github.com/globalwordnet/english-wordnet/releases/download/2025-edition/english-wordnet-2025.xml.gz",
+        "sha256": "9ca6d1dcb75f822fdd66617f7d9da48142ace38dd544d6ad5e2feca1674ad3fe"
+      },
+      "zip": "dict-en-oewn-2025-4b43c1a566a4.zip",
+      "sha256": "4b43c1a566a4562b21317584d40c0a035f16a27e960555343067087242feba99",
+      "sizeBytes": 5364365,
+      "unpackedBytes": 16202235
+    }
   ]
 }

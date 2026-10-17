@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/NotesUi.kt
-// Purpose: The sentence menu, bookmarks sheet, bookmark note and pronunciation fix dialogs (plan items 29, 1, 30, 32).
+// Purpose: The sentence menu, bookmarks sheet, bookmark note and pronunciation fix dialogs (items 29, 1, 30, 32, 33).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -57,6 +57,7 @@ fun NotesOverlays(
     actions: BookNotesActions,
     reader: ReaderActions,
     voice: VoiceNotesBinding = VoiceNotesBinding.None,
+    lookUp: LookUpBinding = LookUpBinding.None,
 ) {
     notes.menuFor?.let { unit ->
         val highlighted = notes.highlightOf(unit) != null
@@ -69,6 +70,10 @@ fun NotesOverlays(
                 actions.dismissMenu()
                 voice.askToRecord(unit)
             }.takeIf { voice.enabled },
+            MenuEntry(R.string.sentence_menu_look_up) {
+                actions.dismissMenu()
+                lookUp.actions.open(unit)
+            }.takeIf { lookUp.enabled },
             MenuEntry(R.string.sentence_menu_fix) { actions.fix(unit) },
             MenuEntry(R.string.report_title) {
                 actions.dismissMenu()
@@ -83,6 +88,7 @@ fun NotesOverlays(
     }
     if (notes.listOpen) BookmarksSheet(notes.bookmarks, actions, reader, voice)
     VoiceNotesOverlays(voice)
+    LookUpOverlay(lookUp)
     notes.editing?.let { BookmarkNoteDialog(it, actions::saveNote, actions::dismissNote) }
     notes.fixing?.let { PronunciationDialog(it, notes.rules, actions) }
     if (notes.failed) {

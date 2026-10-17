@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The dictionary on tap (plan item 33, ADR-045). -->
+<resources>
+    <string name="sentence_menu_look_up">Look up a word</string>
+    <string name="dictionary_title">Look up a word</string>
+    <!-- %1$s the download size, %2$s the size on the phone, e.g. "5.4 MB" and "16 MB". -->
+    <string name="dictionary_offer">Look words up offline in the English dictionary (Open English Wordnet). It is a %1$s download and takes %2$s on the phone.</string>
+    <string name="dictionary_download">Download the dictionary</string>
+    <string name="dictionary_cancel">Cancel</string>
+    <string name="dictionary_waiting">Waiting for a connection…</string>
+    <!-- %1$s is the reason. -->
+    <string name="dictionary_failed">The download failed: %1$s</string>
+    <string name="dictionary_english_only">The dictionary is English only for now, so words of this sentence may not be found.</string>
+    <string name="dictionary_type">Or type a word</string>
+    <string name="dictionary_look_up">Look up</string>
+    <string name="dictionary_not_found">No entry for this word.</string>
+    <!-- %1$d the sense number, %2$s the part of speech, e.g. "1. noun". -->
+    <string name="dictionary_sense">%1$d. %2$s</string>
+    <!-- %1$s the synonyms, comma separated. -->
+    <string name="dictionary_synonyms">Also: %1$s</string>
+    <string name="dictionary_noun">noun</string>
+    <string name="dictionary_verb">verb</string>
+    <string name="dictionary_adjective">adjective</string>
+    <string name="dictionary_adverb">adverb</string>
+    <string name="dictionary_back">Back</string>
+    <string name="dictionary_close">Close</string>
+    <!-- Licences screen: the dictionary's terms. -->
+    <string name="licences_cc_by_wordnet">Creative Commons Attribution 4.0 and the Princeton WordNet License</string>
+</resources>

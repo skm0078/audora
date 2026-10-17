@@ -208,6 +208,11 @@ private val SPEECH_SOFTWARE = listOf(
         R.string.licences_apache,
         "https://github.com/frankyoujian/Edge-Punct-Casing",
     ),
+    Software(
+        "Open English Wordnet 2025 (Open English Wordnet team, from Princeton WordNet 3.0), dictionary, if downloaded",
+        R.string.licences_cc_by_wordnet,
+        "https://en-word.net/",
+    ),
     Software("Audora", R.string.licences_gpl3, "https://github.com/skm0078/audora"),
 )
 

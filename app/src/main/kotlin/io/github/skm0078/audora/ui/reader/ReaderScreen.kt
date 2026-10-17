@@ -61,6 +61,7 @@ fun ReaderScreen(
     spokenWord: IntRange? = null,
     onSearch: (() -> Unit)? = null,
     voiceNotes: VoiceNotesBinding = VoiceNotesBinding.None,
+    lookUp: LookUpBinding = LookUpBinding.None,
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -118,7 +119,7 @@ fun ReaderScreen(
                     OpenBook(state, document.pageCount, config, actions, ocrModels, look, spokenWord) {
                         notes.highlightOf(it) != null
                     }
-                    NotesOverlays(notes, notesActions, actions, voiceNotes)
+                    NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)
                 }
             }
         }
