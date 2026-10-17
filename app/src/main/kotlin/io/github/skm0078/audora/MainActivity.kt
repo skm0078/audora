@@ -41,6 +41,7 @@ import io.github.skm0078.audora.diagnostics.LogSharer
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
+import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.voices.VoiceRow
@@ -308,6 +309,11 @@ class MainActivity : ComponentActivity() {
                 }
 
                 override fun onRequestRemoval(book: Book) = controller.proposeRemoval(book)
+
+                // Its progress, Cancel and result are in a notification, so it asks for that permission first.
+                override fun onExportAudiobook(book: Book) = playWithPermission {
+                    AudiobookExport.start(context, book.id)
+                }
 
                 override fun onConfirmRemoval() = controller.confirmRemoval()
 

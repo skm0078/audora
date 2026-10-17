@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/BookRow.kt
-// Purpose: One library row: title, pages, last use and progress, a clear warning when the file is gone, and Remove.
+// Purpose: One library row: title, pages, last use and progress, a clear warning when the file is gone, and its menu.
 
 package io.github.skm0078.audora.ui.library
 
@@ -31,7 +31,7 @@ import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.library.LibraryError
 
 @Composable
-internal fun BookRow(item: LibraryItem, onTap: () -> Unit, onRemove: () -> Unit) {
+internal fun BookRow(item: LibraryItem, onTap: () -> Unit, onRemove: () -> Unit, onExport: () -> Unit) {
     var menuOpen by remember { mutableStateOf(false) }
     ListItem(
         headlineContent = {
@@ -54,6 +54,16 @@ internal fun BookRow(item: LibraryItem, onTap: () -> Unit, onRemove: () -> Unit)
                     Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.library_book_menu))
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    // Only a book Audora can still open can be read into audio files (ADR-034).
+                    if (item.availability == BookAvailability.AVAILABLE) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.library_export_audiobook)) },
+                            onClick = {
+                                menuOpen = false
+                                onExport()
+                            },
+                        )
+                    }
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.library_remove)) },
                         onClick = {

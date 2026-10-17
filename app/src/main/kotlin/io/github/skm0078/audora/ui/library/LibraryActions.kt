@@ -26,6 +26,9 @@ interface LibraryActions {
 
     fun onRequestRemoval(book: Book)
 
+    /** "Save as audiobook" in a book's menu: reads the whole book into audio files in the background (ADR-034). */
+    fun onExportAudiobook(book: Book)
+
     fun onConfirmRemoval()
 
     fun onCancelRemoval()
