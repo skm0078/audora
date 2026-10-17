@@ -35,6 +35,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Plain state holder (no Compose here), one per open book, living as long as the reader screen. Main thread.
@@ -68,6 +70,9 @@ class ReaderModel(
     private var openJob: Job? = null
     private var pageJob: Job? = null
     private var renderJob: Job? = null
+
+    // One page drawing at a time: the page view and the scrubber's thumbnails share one PDFium renderer.
+    private val renderLock = Mutex()
 
     /** The page view's width in pixels, once the screen has laid it out; pages are drawn at this width. */
     private var pageWidthPx: Int? = null
@@ -431,7 +436,8 @@ class ReaderModel(
         }
         mutableState.update { it.copy(pageImage = PageImageState.Loading) }
         renderJob = scope.launch {
-            val image = when (val rendered = open.render(page, width, config.pageMaxPixels)) {
+            val rendered = renderLock.withLock { open.render(page, width, config.pageMaxPixels) }
+            val image = when (rendered) {
                 is Outcome.Success -> PageImageState.Ready(page, rendered.value)
 
                 is Outcome.Failure -> {
@@ -440,6 +446,24 @@ class ReaderModel(
                 }
             }
             mutableState.update { if (it.page == page) it.copy(pageImage = image) else it }
+        }
+    }
+
+    /**
+     * [page] drawn [widthPx] wide for the page scrubber's thumbnails (plan item 17), through the page view's render
+     * path and [renderLock], capped by [ReaderConfig.pageMaxPixels]. Never touches the page view's image. Null with no
+     * open document, a width of 0 or less, or when the page can't be drawn (logged with book and page).
+     */
+    suspend fun thumbnail(page: Int, widthPx: Int): PageImage? {
+        val open = document
+        if (open == null || widthPx <= 0) return null
+        return when (val rendered = renderLock.withLock { open.render(page, widthPx, config.pageMaxPixels) }) {
+            is Outcome.Success -> rendered.value
+
+            is Outcome.Failure -> {
+                AudoraLog.w(TAG, "Thumbnail failed, $logContext page=$page error=${rendered.error}")
+                null
+            }
         }
     }
 
