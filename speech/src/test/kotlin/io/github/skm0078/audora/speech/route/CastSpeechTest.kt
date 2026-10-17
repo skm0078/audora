@@ -1,5 +1,6 @@
 // File: speech/src/test/kotlin/io/github/skm0078/audora/speech/route/CastSpeechTest.kt
-// Purpose: Quotes and headings are read by their own voices, and a cast voice that fails gives way (plan item 7).
+// Purpose: Quotes, headings and known characters are read by their own voices, and a cast voice that fails gives way
+// (plan items 7 and 63).
 
 package io.github.skm0078.audora.speech.route
 
@@ -13,6 +14,7 @@ import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.VoiceInfo
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.normalize.TextRole
+import io.github.skm0078.audora.speech.sherpa.SpeakerGender
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -129,6 +131,51 @@ class CastSpeechTest {
         assertEquals(2, levelled)
     }
 
+    @Test
+    fun `a known speaker's quote goes to that character's voice`() = runTest {
+        val engine = RecordingEngine()
+        val characters = CharacterVoices { _, speaker -> TOM.takeIf { speaker.key == "tom" } }
+        val cast = Cast(dialogue = mapOf(Lang.EN to DIALOGUE), characters = characters)
+
+        speech(engine).render(
+            "“Come here at once,” Tom said.",
+            Lang.EN,
+            SpeechRequest(speaker = Speaker("Tom", SpeakerGender.MALE)),
+            cast,
+        )
+
+        assertEquals(listOf(TOM.name to "Come here at once,", NARRATOR.name to "Tom said."), engine.calls)
+    }
+
+    @Test
+    fun `a speaker with no voice of their own keeps the dialogue voice`() = runTest {
+        val engine = RecordingEngine()
+        val cast = Cast(dialogue = mapOf(Lang.EN to DIALOGUE), characters = { _, _ -> null })
+
+        speech(engine).render(
+            "“Come here at once,” Ann said.",
+            Lang.EN,
+            SpeechRequest(speaker = Speaker("Ann", SpeakerGender.FEMALE)),
+            cast,
+        )
+
+        assertEquals(listOf(DIALOGUE.name to "Come here at once,", NARRATOR.name to "Ann said."), engine.calls)
+    }
+
+    @Test
+    fun `a sentence inside a quote opened earlier is read by the dialogue voice`() = runTest {
+        val engine = RecordingEngine()
+
+        speech(engine).render(
+            "It was late and the road was long.",
+            Lang.EN,
+            SpeechRequest(startsInQuote = true),
+            Cast(dialogue = mapOf(Lang.EN to DIALOGUE)),
+        )
+
+        assertEquals(listOf(DIALOGUE.name to "It was late and the road was long."), engine.calls)
+    }
+
     private companion object {
         const val SAMPLE_RATE = 16_000
         const val PAUSE_MS = 80
@@ -136,5 +183,6 @@ class CastSpeechTest {
         val NARRATOR = VoiceId(EngineId.SHERPA, "narrator")
         val DIALOGUE = VoiceId(EngineId.SHERPA, "dialogue")
         val HEADING = VoiceId(EngineId.SHERPA, "heading")
+        val TOM = VoiceId(EngineId.SHERPA, "tom")
     }
 }
