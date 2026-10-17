@@ -128,7 +128,7 @@ class EngineRenderer(
         val cast = Cast(shaping.dialogueVoices, shaping.headingVoices)
         val quotePauseMs = if (now.clausePauses) styleConfig.clauseSilenceMs(ClauseMark.QUOTE, now) else 0
         val level: (PcmAudio) -> PcmAudio = { shaper.level(it, shaping.evenLoudness, boostDb = 0) }
-        val request = SpeechRequest(speech.role, rate, prosody, trim)
+        val request = SpeechRequest(speech.role, rate, prosody, trim, reading.startsInQuote(unit))
         return runBlocking { castSpeech.render(text, unit.lang, request, cast, quotePauseMs, level) }.map { routed ->
             speed?.onRendered(text.trim().length, routed, System.nanoTime() - started, rate)
             log(unit, routed)
@@ -160,6 +160,8 @@ class EngineRenderer(
  * @property fixer the open book's pronunciation fixes, read on the render thread for each sentence.
  * @property scanned whether a page was read by OCR; only those pages' run-ons reach [runOn].
  * @property runOn the punctuation model's guard (RI-11); null leaves every sentence as written.
+ * @property startsInQuote whether a sentence starts inside a quote an earlier sentence of its paragraph opened
+ *   ([io.github.skm0078.audora.playback.reading.QuoteCarry], plan item 7).
  */
 @Suppress("LongParameterList") // All optional: each caller sets the few it has.
 class ReadingSetup(
@@ -170,6 +172,7 @@ class ReadingSetup(
     val fixer: () -> PronunciationFixer = { NO_FIXES },
     val scanned: (Int) -> Boolean = { false },
     val runOn: RunOnPunctuation? = null,
+    val startsInQuote: (ReadingUnit) -> Boolean = { false },
 ) {
     /** [text] with the model's pauses when it is a run-on on a scanned page, else [text]. */
     fun punctuated(text: String, unit: ReadingUnit): String = when {

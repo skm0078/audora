@@ -33,6 +33,7 @@ class AudiobookExporter(
     private val renderer: SentenceRenderer,
     private val config: AudiobookConfig = AudiobookConfig(),
     private val reading: UnitReading = UnitReading(ReadingModes()),
+    private val onPage: (List<ReadingUnit>) -> Unit = {},
 ) {
     fun export(
         text: BookText,
@@ -93,7 +94,11 @@ class AudiobookExporter(
             fun sentenceOf(unit: ReadingUnit) = sentence(chapter, unit)
             // The units playback reads with the listener's reading modes, so the file sounds like the player.
             val stop = when (val loaded = text.units(page)) {
-                is Outcome.Success -> reading.plays(loaded.value).firstNotNullOfOrNull(::sentenceOf)
+                is Outcome.Success -> {
+                    onPage(loaded.value)
+                    reading.plays(loaded.value).firstNotNullOfOrNull(::sentenceOf)
+                }
+
                 is Outcome.Failure -> pageFailed(page, loaded.error)
             }
             if (stop == null) listener.onPageDone(chapter, page)

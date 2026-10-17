@@ -24,12 +24,16 @@ data class Cast(val dialogue: Map<Lang, VoiceId> = emptyMap(), val headings: Map
     val isEmpty: Boolean get() = dialogue.isEmpty() && headings.isEmpty()
 }
 
-/** How one sentence is spoken, beyond its text and language: the defaults of a plain read. */
+/**
+ * How one sentence is spoken, beyond its text and language: the defaults of a plain read. [startsInQuote]: an earlier
+ * sentence of its paragraph opened a quote that is still open ([QuoteSplitter.endsInQuote]).
+ */
 class SpeechRequest(
     val role: TextRole = TextRole.BODY,
     val rate: Float = SpeechStyle.NORMAL_RATE,
     val prosody: ClauseProsody? = null,
     val shape: (PcmAudio) -> PcmAudio = { it },
+    val startsInQuote: Boolean = false,
 )
 
 /**
