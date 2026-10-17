@@ -1,9 +1,10 @@
-// File: app/src/test/kotlin/io/github/skm0078/audora/ui/reader/ReaderChaptersTest.kt
-// Purpose: The reader's chapter list (plan item 11) and time left at the listener's speed (plan item 24).
+// File: app/src/test/kotlin/io/github/skm0078/audora/ui/reader/ReaderNavigationTest.kt
+// Purpose: Getting around a book: chapter list (item 11), time left at your speed (item 24), undo jump (item 78).
 
 package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.config.ReaderConfig
+import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.pdf.document.OutlineEntry
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,7 +18,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ReaderChaptersTest {
+class ReaderNavigationTest {
     private val port = FakePlaybackPort()
     private val outline = listOf(OutlineEntry("One", 0), OutlineEntry("Two", 4), OutlineEntry("Three", 8))
 
@@ -63,6 +64,20 @@ class ReaderChaptersTest {
             assertTrue(later.bookMs < atStart.bookMs)
             assertNotNull(later.chapterMs)
         }
+
+    @Test
+    fun `undo jump is offered for this book only and goes to the player`() = runTest(UnconfinedTestDispatcher()) {
+        val model = model()
+        port.connect()
+        model.undoJump()
+        assertTrue("nothing to undo", port.calls.isEmpty())
+        port.state.value = port.state.value.copy(undoJumpTo = ReadingPosition(BookId("another-book"), 3, 0))
+        assertNull(model.state.value.undoJumpTo)
+        port.state.value = port.state.value.copy(undoJumpTo = ReadingPosition(BOOK, 3, 0))
+        assertEquals(ReadingPosition(BOOK, 3, 0), model.state.value.undoJumpTo)
+        model.undoJump()
+        assertEquals(listOf("undo jump"), port.calls)
+    }
 
     @Test
     fun `a book without an outline has no chapters and no chapter time`() = runTest(UnconfinedTestDispatcher()) {

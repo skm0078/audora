@@ -215,6 +215,13 @@ class ReaderModel(
 
     fun setSleepTimer(setting: SleepTimerSetting) = player.setSleepTimer(setting)
 
+    /** "Undo jump" (plan item 78); the screen follows reading back to where it was. */
+    fun undoJump() {
+        if (state.value.undoJumpTo == null) return
+        mutableState.update { it.copy(following = true) }
+        player.undoJump()
+    }
+
     /** Releases the PDF. Reading continues: the service has its own copy. */
     fun close() {
         openJob?.cancel()

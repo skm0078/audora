@@ -122,12 +122,17 @@ private fun OpenBook(
     Column(Modifier.fillMaxSize()) {
         PageBar(state.page, pageCount, actions, onPick = { picking = true })
         state.timeLeft?.let { TimeLeftLine(it, state.playback.speed) }
-        state.readingPosition?.takeIf { state.readingElsewhere }?.let { position ->
-            TextButton(
-                onClick = actions::onShowReadingPosition,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-            ) {
-                Text(stringResource(R.string.reader_back_to_reading, position.page + 1))
+        Row(Modifier.align(Alignment.CenterHorizontally)) {
+            state.readingPosition?.takeIf { state.readingElsewhere }?.let { position ->
+                TextButton(onClick = actions::onShowReadingPosition) {
+                    Text(stringResource(R.string.reader_back_to_reading, position.page + 1))
+                }
+            }
+            state.undoJumpTo?.let { target ->
+                TextButton(onClick = actions::onUndoJump) {
+                    Icon(painterResource(R.drawable.ic_undo), contentDescription = null)
+                    Text(stringResource(R.string.reader_undo_jump, target.page + 1))
+                }
             }
         }
         PlayerStatus(state.playback)

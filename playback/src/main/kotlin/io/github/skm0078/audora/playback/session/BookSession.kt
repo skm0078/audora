@@ -87,6 +87,10 @@ class BookSession(
     private val sleep = SleepControl()
     private val rewind = ResumeRewind(config.resumeRewind, env.elapsedRealtime)
     private val playerListener = PlayerListener()
+    private val jumps = JumpHistory(config.jumps)
+
+    /** The item a resume rewind seeks to: that seek is not the listener's jump. */
+    private var rewindTarget: Int? = null
 
     private var book: OpenedBook? = null
     private var bookPassword: String? = null
@@ -130,6 +134,7 @@ class BookSession(
             }
             error = null
             AudoraLog.i(TAG, "Play book=${id.logLabel} page=$page char=$charStart pages=$pageCount")
+            currentSpot()?.let { from -> recordJump(from, Spot(page, charStart), JumpOrigin.START) }
             rebuild(page, charStart, play = true)
             Outcome.Success(Unit)
         }
@@ -155,6 +160,17 @@ class BookSession(
             locator.locate(id, text.pageCount) { page -> (text.units(page) as? Outcome.Success)?.value }
         }
         return playFrom(id, point?.page ?: 0, point?.charStart ?: 0, password = bookPassword)
+    }
+
+    /**
+     * "Undo jump" (plan item 78): back to where reading was before the last jump (a burst of skips counts as one),
+     * playing or paused as now. False when there is nothing to undo.
+     */
+    fun undoJump(): Boolean {
+        val spot = jumps.undo() ?: return false
+        AudoraLog.i(TAG, "Undo jump to page=${spot.page} char=${spot.charStart}, book=${bookId?.logLabel}")
+        rebuild(spot.page, spot.charStart, play = player.playWhenReady)
+        return true
     }
 
     /** The voice changed: the current sentence restarts in the new voice (Build Spec §6). */
@@ -202,6 +218,7 @@ class BookSession(
         book = opened
         bookPassword = password
         lastSentence = null
+        jumps.clear()
         // On the extraction thread, after any page read still running there.
         val chapters = withContext(env.extraction) {
             old?.text?.close()
@@ -274,11 +291,41 @@ class BookSession(
                 index
             }
         AudoraLog.i(TAG, "Resume rewind $step to item $target, book=${bookId?.logLabel}")
+        rewindTarget = target
         player.seekTo(target, 0L)
     }
 
+    /** The sentence playing, or the one last played while waiting for a page. */
+    private fun currentSpot(): Spot? =
+        ((playlist.current() as? PlaybackItem.Sentence)?.unit ?: lastSentence)?.let { Spot(it.page, it.charStart) }
+
+    /** A seek to another sentence (skip buttons, headset, notification, car) is a jump, unless it is the rewind. */
+    private fun noteSeek(reason: Int, now: ReadingUnit?) {
+        val rewound = rewindTarget != null && rewindTarget == player.currentMediaItemIndex
+        rewindTarget = null
+        if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_SEEK || rewound) return
+        val from = lastSentence
+        if (from != null && now != null) {
+            recordJump(Spot(from.page, from.charStart), Spot(now.page, now.charStart), JumpOrigin.SKIP)
+        }
+    }
+
+    private fun recordJump(from: Spot, to: Spot, origin: JumpOrigin) {
+        val before = jumps.last
+        jumps.record(from, to, origin, env.elapsedRealtime())
+        if (jumps.last == before) return
+        AudoraLog.i(
+            TAG,
+            "Jump origin=$origin from page=${from.page} char=${from.charStart} to page=${to.page} " +
+                "char=${to.charStart}, book=${bookId?.logLabel}",
+        )
+        publishState()
+    }
+
     private fun publishState() {
-        events.onStateChanged(SessionState(bookId?.value, error, sleep.mode, sleep.endsAtWall, sleep.hasChapters))
+        events.onStateChanged(
+            SessionState(bookId?.value, error, sleep.mode, sleep.endsAtWall, sleep.hasChapters, jumps.last?.from),
+        )
     }
 
     /** Errors: classify, ask [PlaybackRecovery], act. */
@@ -433,6 +480,7 @@ class BookSession(
     private inner class PlayerListener : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) faults.onSentenceCompleted()
+            noteSeek(reason, (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.unit)
             (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.let { sentence ->
                 lastSentence = sentence.unit
                 bookId?.let { events.onSentenceStarted(it, sentence.unit) }

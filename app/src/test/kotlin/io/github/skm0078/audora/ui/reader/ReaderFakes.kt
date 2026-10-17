@@ -104,6 +104,10 @@ class FakePlaybackPort : PlaybackPort {
         calls += "sleep $setting"
     }
 
+    override fun undoJump() {
+        calls += "undo jump"
+    }
+
     override fun reportSoundedWrong(report: SoundedWrongReport) {
         reports += report
     }

@@ -68,6 +68,8 @@ interface ReaderActions {
 
     fun onSleepTimer(setting: SleepTimerSetting)
 
+    fun onUndoJump() = Unit
+
     fun onPasswordSubmitted(password: String)
 
     fun onPasswordDismissed()

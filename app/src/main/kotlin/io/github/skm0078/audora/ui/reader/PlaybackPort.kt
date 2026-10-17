@@ -39,6 +39,9 @@ interface PlaybackPort {
 
     fun setSleepTimer(setting: SleepTimerSetting)
 
+    /** Back to where reading was before the last jump (plan item 78), playing or paused as now. */
+    fun undoJump()
+
     /** "This sounded wrong" (RI-8b): the service logs it with the voice that reads its language. */
     fun reportSoundedWrong(report: SoundedWrongReport)
 }
@@ -50,6 +53,7 @@ interface PlaybackPort {
  *   or the item is not an Audora position.
  * @property wantsToPlay play was pressed and not paused since: true while buffering the next sentence too.
  * @property hasChapters the book being read has chapters, so [SleepTimerSetting.EndOfChapter] can be offered.
+ * @property undoJumpTo where "Undo jump" goes back to in the book being read (plan item 78); null with nothing to undo.
  * @property errorCode Media3's error code name of the last playback error, for the log and a generic message.
  */
 data class PlaybackSnapshot(
@@ -65,6 +69,7 @@ data class PlaybackSnapshot(
     val canSkipForward: Boolean = false,
     val sleepTimer: SleepTimerState = SleepTimerState.Off,
     val hasChapters: Boolean = false,
+    val undoJumpTo: ReadingPosition? = null,
     val errorCode: String? = null,
 ) {
     enum class Connection { CONNECTING, CONNECTED, UNAVAILABLE }

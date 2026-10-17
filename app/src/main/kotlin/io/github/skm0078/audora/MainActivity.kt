@@ -489,6 +489,8 @@ class MainActivity : ComponentActivity() {
 
         override fun onSleepTimer(setting: SleepTimerSetting) = model.setSleepTimer(setting)
 
+        override fun onUndoJump() = model.undoJump()
+
         override fun onPasswordSubmitted(password: String) = model.submitPassword(password)
 
         override fun onPasswordDismissed() = model.dismissPassword()
