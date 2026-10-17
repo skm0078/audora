@@ -19,6 +19,7 @@ import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.notes.BookSettingsStore
+import io.github.skm0078.audora.core.notes.BookmarkStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
@@ -82,6 +83,9 @@ class AudoraPlaybackService : MediaSessionService() {
     @Inject
     lateinit var upNext: UpNextStore
 
+    @Inject
+    lateinit var bookmarks: BookmarkStore
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     // Resume anchor writes (P1-06). Never cancelled: the flush sent while the service is destroyed must land;
@@ -114,7 +118,8 @@ class AudoraPlaybackService : MediaSessionService() {
         // The reading modes travel with the speech style; a change restarts the sentence playing (ADR-035).
         val reading = ReadingSource(modes = { style.current.modes })
         val stores = SessionStores(style, sleepOptions, book)
-        val callback = SessionCallback(packageName, scope, voices, stores, { bookSession }, { resumption })
+        val callback =
+            SessionCallback(packageName, scope, voices, stores, { bookSession }, { resumption }, mediaButtons())
         val mediaSession = MediaSession.Builder(this, player)
             .setCallback(callback)
             .apply { sessionActivity()?.let { setSessionActivity(it) } }
@@ -159,6 +164,15 @@ class AudoraPlaybackService : MediaSessionService() {
         ) { bookSession }
         AudoraLog.i(TAG, "Service created")
     }
+
+    /** A headset's play/pause button (plan item 20); a double press bookmarks and buzzes to confirm. */
+    private fun mediaButtons() = MediaButtons(
+        player = { player },
+        bookSession = { bookSession },
+        bookmarks = HeadsetBookmarks(bookmarks, scope, PIPELINE_VERSION, System::currentTimeMillis) {
+            buzz(config.sleep.buzzMs)
+        },
+    )
 
     /** Up next (plan item 25): a queued chapter starts on its page, a queued book where it was left. */
     private fun queueAdvance() = QueueAdvance(upNext, scope) { entry ->

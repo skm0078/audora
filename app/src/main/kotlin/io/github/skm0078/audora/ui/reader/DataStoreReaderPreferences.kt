@@ -53,6 +53,16 @@ class DataStoreReaderPreferences(context: Context) :
 
     override suspend fun saveKeepScreenOn(on: Boolean) = write("keep screen on $on") { it[KEEP_SCREEN_ON] = on }
 
+    override fun volumeKeysSkip(): Flow<Boolean> = store.data
+        .map { it[VOLUME_KEYS_SKIP] ?: false }
+        .catch { e ->
+            if (e !is IOException) throw e
+            AudoraLog.w(TAG, "Could not read the saved volume keys setting", e)
+            emit(false)
+        }
+
+    override suspend fun saveVolumeKeysSkip(on: Boolean) = write("volume keys skip $on") { it[VOLUME_KEYS_SKIP] = on }
+
     private suspend fun <T> read(what: String, get: (Preferences) -> T?): T? = try {
         get(store.data.first())
     } catch (e: IOException) {
@@ -73,5 +83,6 @@ class DataStoreReaderPreferences(context: Context) :
         val SPEED = floatPreferencesKey("speed")
         val VIEW = stringPreferencesKey("view")
         val KEEP_SCREEN_ON = booleanPreferencesKey("keepScreenOn")
+        val VOLUME_KEYS_SKIP = booleanPreferencesKey("volumeKeysSkip")
     }
 }

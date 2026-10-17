@@ -86,6 +86,7 @@ import io.github.skm0078.audora.ui.reader.ScreenPreference
 import io.github.skm0078.audora.ui.reader.SleepTimerSetting
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
+import io.github.skm0078.audora.ui.reader.VolumeKeySkips
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.settings.OcrModelsAction
 import io.github.skm0078.audora.ui.settings.SettingsScreen
@@ -264,6 +265,7 @@ class MainActivity : ComponentActivity() {
     ) {
         val ocrState by remember { ocrModels.state() }.collectAsStateWithLifecycle(initialValue = null)
         val punctState by remember { punctuationModels.state() }.collectAsStateWithLifecycle(initialValue = null)
+        val volumeKeys by remember { screenPreference.volumeKeysSkip() }.collectAsStateWithLifecycle(false)
         val scope = rememberCoroutineScope()
         val textPreferences = remember { ReadingTextPreferences.forContext(applicationContext) }
         // A one-line properties file, read once when Settings opens (like the onboarding flags). Saved off the main
@@ -306,6 +308,8 @@ class MainActivity : ComponentActivity() {
             keepScreenOn = keepScreenOn,
             onKeepScreenOnChange = { on -> scope.launch { screenPreference.saveKeepScreenOn(on) } },
             punctuationModel = punctState,
+            volumeKeysSkip = volumeKeys,
+            onVolumeKeysSkipChange = { on -> scope.launch { screenPreference.saveVolumeKeysSkip(on) } },
             onPunctuationModel = { action ->
                 scope.runModelAction(action, punctuationModels::download, punctuationModels::cancel) {
                     punctuationModels.delete()
@@ -472,6 +476,8 @@ class MainActivity : ComponentActivity() {
             screenPreference.keepScreenOn()
         }.collectAsStateWithLifecycle(initialValue = false)
         KeepScreenOn(keepScreenOn && state.playback.wantsToPlay)
+        val volumeKeys by remember { screenPreference.volumeKeysSkip() }.collectAsStateWithLifecycle(false)
+        VolumeKeySkips(volumeKeys && state.playback.wantsToPlay, model::skipForward, model::skipBack)
         ReaderScreen(
             state = state,
             config = readerConfig,

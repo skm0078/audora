@@ -11,8 +11,6 @@ import android.hardware.SensorManager
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.os.VibrationEffect
-import android.os.VibratorManager
 import io.github.skm0078.audora.core.config.SleepConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.playback.session.ShakeDetector
@@ -41,7 +39,7 @@ class AccelerometerShakes(context: Context, private val config: SleepConfig) : S
             override fun onSensorChanged(event: SensorEvent) {
                 val (x, y, z) = Triple(event.values[0], event.values[1], event.values[2])
                 if (detector.onSample(x, y, z, SystemClock.elapsedRealtime())) {
-                    buzz()
+                    appContext.buzz(config.buzzMs)
                     onShake()
                 }
             }
@@ -55,13 +53,6 @@ class AccelerometerShakes(context: Context, private val config: SleepConfig) : S
     override fun stop() {
         listener?.let { sensors?.unregisterListener(it) }
         listener = null
-    }
-
-    private fun buzz() {
-        val vibrator = appContext.getSystemService(VibratorManager::class.java)?.defaultVibrator
-        if (vibrator?.hasVibrator() == true) {
-            vibrator.vibrate(VibrationEffect.createOneShot(config.buzzMs, VibrationEffect.DEFAULT_AMPLITUDE))
-        }
     }
 
     private companion object {

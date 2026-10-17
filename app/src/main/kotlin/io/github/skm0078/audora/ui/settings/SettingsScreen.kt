@@ -57,6 +57,8 @@ fun SettingsScreen(
     onKeepScreenOnChange: (Boolean) -> Unit = {},
     punctuationModel: OcrModelsState? = null,
     onPunctuationModel: (OcrModelsAction) -> Unit = {},
+    volumeKeysSkip: Boolean = false,
+    onVolumeKeysSkipChange: (Boolean) -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -84,13 +86,7 @@ fun SettingsScreen(
                 onSkipCitationsChange,
             )
             HorizontalDivider()
-            SwitchItem(
-                R.string.settings_keep_screen_on_title,
-                R.string.settings_keep_screen_on_body,
-                keepScreenOn,
-                onKeepScreenOnChange,
-            )
-            HorizontalDivider()
+            ReaderSwitches(keepScreenOn, onKeepScreenOnChange, volumeKeysSkip, onVolumeKeysSkipChange)
             BatteryItem(batteryExempt, onOpenBatterySetup)
             HorizontalDivider()
             ShareLogsItem(shareState, onShareLogs)
@@ -110,6 +106,30 @@ fun SettingsScreen(
             }
         }
     }
+}
+
+/** The reader's own switches: keep the screen on, and volume keys that move by sentence (plan item 20). */
+@Composable
+private fun ReaderSwitches(
+    keepScreenOn: Boolean,
+    onKeepScreenOnChange: (Boolean) -> Unit,
+    volumeKeysSkip: Boolean,
+    onVolumeKeysSkipChange: (Boolean) -> Unit,
+) {
+    SwitchItem(
+        R.string.settings_keep_screen_on_title,
+        R.string.settings_keep_screen_on_body,
+        keepScreenOn,
+        onKeepScreenOnChange,
+    )
+    HorizontalDivider()
+    SwitchItem(
+        R.string.settings_volume_keys_title,
+        R.string.settings_volume_keys_body,
+        volumeKeysSkip,
+        onVolumeKeysSkipChange,
+    )
+    HorizontalDivider()
 }
 
 /** A downloadable model pack's row and its divider; nothing while its state is still loading. */
