@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.pdf.ocr
 
 import io.github.skm0078.audora.core.config.NoteConfig
+import io.github.skm0078.audora.pdf.layout.NoteMarkers.Companion.isOperator
 import io.github.skm0078.audora.pdf.render.ViewRect
 
 /**
@@ -13,7 +14,9 @@ import io.github.skm0078.audora.pdf.render.ViewRect
  * - **Glued to the word**, as a sign: "Vaswani*", "Eich*,", "Haghighat®,", "Smith#,", "double.!". A run of note signs
  *   ([MARKS]: stars, daggers, "#", "®", "™", "§", "¶", superscript digits) after a word of at least two letters is
  *   left out, punctuation after it kept ("Eich,"); so is a "!" glued after a full stop. Plain digits glued to a word
- *   are kept: "Fig.1" and "p.12" are references, not markers, and OCR's word box cannot tell them apart.
+ *   are kept: "Fig.1" and "p.12" are references, not markers, and OCR's word box cannot tell them apart. Next to a
+ *   maths operator (the word before or after starts or ends with one) the signs are an exponent and stay: "E = mc²",
+ *   "ax² + bx"; so does a raised sign of its own beside one.
  * - **As a word of its own**: a run of note signs right after another word (within [HUG_EM] of the line's median
  *   word height), small (`NoteConfig.markerSizeRatio` of that height) and raised (`markerRaiseEm` of it above the
  *   line's median word bottom), as on a text layer. A number on its own is kept even when it looks raised: on 364
@@ -27,13 +30,25 @@ internal class OcrNoteMarkers(private val config: NoteConfig) {
     fun silence(words: List<OcrWord>, frame: (ViewRect) -> ViewRect): List<OcrWord> {
         if (!config.silenceMarkers || words.isEmpty()) return words
         val raised = raisedMarkers(words, frame)
-        return words.filterIndexed { i, _ -> i !in raised }.mapNotNull { word ->
-            val text = GLUED.replace(word.text) {
-                it.groupValues[1] + it.groupValues[2]
-            }.let { STRAY_BANG.replace(it, ".") }
-            if (text == word.text) word else OcrWord(text, word.box, word.confidence)
+        return words.mapIndexedNotNull { i, word ->
+            val glued = if (besideOperator(words, i, i)) {
+                word.text
+            } else {
+                GLUED.replace(word.text) { it.groupValues[1] + it.groupValues[2] }
+            }
+            val text = STRAY_BANG.replace(glued, ".")
+            when {
+                i in raised && !besideOperator(words, i - 1, i) -> null
+                text == word.text -> word
+                else -> OcrWord(text, word.box, word.confidence)
+            }
         }
     }
+
+    /** The word before [from] ends, or the word after [to] starts, with a maths operator. */
+    private fun besideOperator(words: List<OcrWord>, from: Int, to: Int): Boolean =
+        words.getOrNull(from - 1)?.text?.lastOrNull().isOperator() ||
+            words.getOrNull(to + 1)?.text?.firstOrNull().isOperator()
 
     private fun raisedMarkers(words: List<OcrWord>, frame: (ViewRect) -> ViewRect): Set<Int> {
         val boxes = words.map { word -> word.box?.let(frame) }
