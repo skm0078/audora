@@ -37,6 +37,8 @@ import io.github.skm0078.audora.playback.session.SessionEnvironment
 import io.github.skm0078.audora.playback.session.SessionSources
 import io.github.skm0078.audora.playback.session.SleepOptionsStore
 import io.github.skm0078.audora.playback.session.SpeechPlayer
+import io.github.skm0078.audora.playback.upnext.QueueAdvance
+import io.github.skm0078.audora.playback.upnext.UpNextStore
 import io.github.skm0078.audora.playback.voice.EngineRenderer
 import io.github.skm0078.audora.playback.voice.ReadingSetup
 import io.github.skm0078.audora.playback.voice.RenderSpeedTracker
@@ -75,6 +77,9 @@ class AudoraPlaybackService : MediaSessionService() {
     @Inject
     lateinit var pronunciations: PronunciationStore
 
+    @Inject
+    lateinit var upNext: UpNextStore
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     // Resume anchor writes (P1-06). Never cancelled: the flush sent while the service is destroyed must land;
@@ -83,6 +88,7 @@ class AudoraPlaybackService : MediaSessionService() {
     private var resumption: PlaybackResumption? = null
     private val config = QueueConfig()
     private val registry = QueueRegistry()
+    private val locator by lazy { ResumeLocator(resumeAnchors, PIPELINE_VERSION) }
     private lateinit var voices: SpeechVoices
     private lateinit var player: ExoPlayer
     private lateinit var speed: LivePlaybackSpeed
@@ -129,6 +135,8 @@ class AudoraPlaybackService : MediaSessionService() {
                     book.open(id)
                     player.setPlaybackSpeed(style.config.playerSpeed(heard().rate))
                 },
+                keepGoingToNextChapter = { upNext.queue.value.keepGoingToNextChapter },
+                onBookFinished = queueAdvance()::onBookFinished,
             ),
             config = config,
             events = publisher(mediaSession, stores, heard),
@@ -143,11 +151,21 @@ class AudoraPlaybackService : MediaSessionService() {
         resumption = PlaybackResumption(
             anchors = resumeAnchors,
             library = library,
-            locator = ResumeLocator(resumeAnchors, PIPELINE_VERSION),
+            locator = locator,
             scope = scope,
             player = player,
         ) { bookSession }
         AudoraLog.i(TAG, "Service created")
+    }
+
+    /** Up next (plan item 25): a queued chapter starts on its page, a queued book where it was left. */
+    private fun queueAdvance() = QueueAdvance(upNext, scope) { entry ->
+        val page = entry.startPage
+        if (page != null) {
+            bookSession.playFrom(entry.bookId, page, charStart = 0, password = null)
+        } else {
+            bookSession.resume(entry.bookId, locator)
+        }
     }
 
     private fun renderer(

@@ -11,19 +11,24 @@ import io.github.skm0078.audora.core.model.Lang
  *   little slower per character (longer syllables per letter). Tuned against measured voices in the final session.
  * @property samplePages how many pages the estimate remembers the text of (the pages the reader has shown); pages it
  *   has not seen count as the average of those.
+ * @property typicalCharsPerPage a page's text for a book the reader has not shown yet (a queued book in Up next): a
+ *   printed book page holds about 1,800 characters; the figure is a rough "about 3 h", not a promise.
  */
 data class TimeLeftConfig(
     val charsPerSecond: Map<Lang, Float> = DEFAULT_CHARS_PER_SECOND,
     val samplePages: Int = DEFAULT_SAMPLE_PAGES,
+    val typicalCharsPerPage: Int = DEFAULT_TYPICAL_CHARS_PER_PAGE,
 ) {
     init {
         require(charsPerSecond.keys == Lang.entries.toSet()) { "every language needs a speaking rate" }
         require(charsPerSecond.values.all { it > 0f }) { "speaking rates must be positive, were $charsPerSecond" }
         require(samplePages > 0) { "samplePages must be > 0, was $samplePages" }
+        require(typicalCharsPerPage > 0) { "typicalCharsPerPage must be > 0, was $typicalCharsPerPage" }
     }
 
     private companion object {
         val DEFAULT_CHARS_PER_SECOND = mapOf(Lang.EN to 15f, Lang.HI to 13f, Lang.BN to 13f)
         const val DEFAULT_SAMPLE_PAGES = 64
+        const val DEFAULT_TYPICAL_CHARS_PER_PAGE = 1_800
     }
 }

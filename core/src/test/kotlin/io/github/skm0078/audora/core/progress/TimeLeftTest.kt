@@ -46,4 +46,13 @@ class TimeLeftTest {
         val normal = requireNotNull(estimate.msUntil(0, 0, 1, pages, tight.copy(pace = Pace.NORMAL)))
         assertEquals("150 ms after each sentence at the normal pace", 4_300L, normal)
     }
+
+    @Test
+    fun `a rough figure for unseen books scales with pages and speed`() {
+        val rough =
+            TimeLeft(TimeLeftConfig(charsPerSecond = Lang.entries.associateWith { 10f }, typicalCharsPerPage = 100))
+        assertEquals(30_000L, rough.roughMs(3, Lang.EN, 1f))
+        assertEquals(15_000L, rough.roughMs(3, Lang.EN, 2f))
+        assertNull(rough.roughMs(0, Lang.EN, 1f))
+    }
 }
