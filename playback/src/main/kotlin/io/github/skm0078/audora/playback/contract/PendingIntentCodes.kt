@@ -1,0 +1,20 @@
+// File: playback/src/main/kotlin/io/github/skm0078/audora/playback/contract/PendingIntentCodes.kt
+// Purpose: One request code per PendingIntent purpose, so two purposes on the same intent never share one.
+
+package io.github.skm0078.audora.playback.contract
+
+/**
+ * Android matches PendingIntents by intent and request code, ignoring extras: two purposes built on the launch
+ * intent with the same code share one PendingIntent, and FLAG_UPDATE_CURRENT on either rewrites the other's extras.
+ * Every PendingIntent in Audora takes its code from here.
+ */
+object PendingIntentCodes {
+    /** The playback notification and lock screen: open Audora. */
+    const val OPEN_FROM_PLAYBACK = 1
+
+    /** The audiobook export notifications: open Audora. */
+    const val OPEN_FROM_EXPORT = 2
+
+    /** The audiobook export notification's Cancel (a service intent). */
+    const val CANCEL_EXPORT = 3
+}

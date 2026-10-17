@@ -35,6 +35,7 @@ import io.github.skm0078.audora.playback.browse.BrowseTree
 import io.github.skm0078.audora.playback.browse.LibraryBrowser
 import io.github.skm0078.audora.playback.browse.OutlineChapters
 import io.github.skm0078.audora.playback.browse.ResourceBrowseTexts
+import io.github.skm0078.audora.playback.contract.PendingIntentCodes
 import io.github.skm0078.audora.playback.focus.FocusRenderersFactory
 import io.github.skm0078.audora.playback.focus.FocusSoundProcessor
 import io.github.skm0078.audora.playback.focus.FocusSoundStore
@@ -299,7 +300,7 @@ class AudoraPlaybackService : MediaLibraryService() {
         val launch: Intent = packageManager.getLaunchIntentForPackage(packageName) ?: return null
         return PendingIntent.getActivity(
             this,
-            0,
+            PendingIntentCodes.OPEN_FROM_PLAYBACK,
             launch.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
