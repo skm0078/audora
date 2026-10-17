@@ -375,6 +375,11 @@
     <string name="reader_more">More options</string>
     <string name="reader_focus_view">Focus view</string>
     <string name="reader_bold_word_starts">Bold word starts (English)</string>
+    <string name="reader_follow_along">Follow along</string>
+    <string name="reader_word_highlight">Highlight each word</string>
+    <string name="reader_highlight_fill">Highlight: band</string>
+    <string name="reader_highlight_underline">Highlight: underline</string>
+    <string name="reader_highlight_bold">Highlight: bold</string>
     <!-- Full player -->
     <string name="player_close">Close player</string>
     <string name="player_show_page">Show the page</string>
