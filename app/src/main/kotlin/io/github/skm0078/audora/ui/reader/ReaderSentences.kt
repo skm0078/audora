@@ -38,6 +38,7 @@ import io.github.skm0078.audora.ui.theme.Dimens
 /**
  * @param spokenWord the characters of the word being spoken in the spoken sentence (plan item 14); null when its
  *   timing is unknown or the word highlight is off.
+ * @param isHighlighted the listener highlighted this sentence (plan item 30); it gets a soft band.
  */
 @Composable
 internal fun Sentences(
@@ -46,6 +47,7 @@ internal fun Sentences(
     actions: ReaderActions,
     look: ReadingLook,
     spokenWord: IntRange? = null,
+    isHighlighted: (ReadingUnit) -> Boolean = { false },
 ) {
     // A new list state per page, so every page opens at its top.
     val listState = remember(state.page) { LazyListState() }
@@ -75,6 +77,7 @@ internal fun Sentences(
                     dimmed = look.focus && spoken != null && index != spoken,
                     look = look,
                     word = spokenWord.takeIf { index == spoken && look.wordHighlight },
+                    marked = isHighlighted(unit),
                 ),
                 enabled = state.playerReady,
                 onTap = actions::onSentenceTapped,
@@ -86,7 +89,8 @@ internal fun Sentences(
 
 /**
  * [unreadable]: playback skips it as junk (RI-2b), so it is greyed (RI-9). [dimmed]: Focus view fades every sentence
- * but the one being read. [word]: the spoken word's characters, in the spoken sentence only.
+ * but the one being read. [word]: the spoken word's characters, in the spoken sentence only. [marked]: the
+ * listener's own highlight (plan item 30), under the spoken sentence's band when both apply.
  */
 private data class SentenceLook(
     val spoken: Boolean,
@@ -94,6 +98,7 @@ private data class SentenceLook(
     val dimmed: Boolean,
     val look: ReadingLook,
     val word: IntRange?,
+    val marked: Boolean = false,
 )
 
 /** Tap reads from the sentence (once the player is ready); a long-press opens the sentence menu. */
@@ -108,14 +113,7 @@ private fun Sentence(
 ) {
     val colors = MaterialTheme.colorScheme
     val highlight = look.look.highlight.takeIf { look.spoken }
-    val background = if (highlight == HighlightStyle.FILL) colors.primaryContainer else Color.Transparent
-    val color = when {
-        highlight == HighlightStyle.FILL -> colors.onPrimaryContainer
-        highlight == HighlightStyle.BOLD -> colors.primary
-        look.unreadable -> colors.onSurface.copy(alpha = UNREADABLE_ALPHA)
-        look.dimmed -> colors.onSurface.copy(alpha = FOCUS_DIM_ALPHA)
-        else -> colors.onSurface
-    }
+    val (background, color) = sentenceColors(highlight, look, colors)
     Text(
         text = sentenceText(unit.text, look.look.boldWordStarts, look.word, wordStyle(highlight, colors)),
         style = if (look.look.focus) ReadingTextStyles.focus() else ReadingTextStyles.body(),
@@ -133,6 +131,24 @@ private fun Sentence(
             )
             .padding(horizontal = Dimens.SpaceS, vertical = SENTENCE_PADDING),
     )
+}
+
+/** The sentence's band and text colour: the spoken band first, then the listener's highlight, unreadable, Focus. */
+private fun sentenceColors(highlight: HighlightStyle?, look: SentenceLook, colors: ColorScheme): Pair<Color, Color> {
+    val background = when {
+        highlight == HighlightStyle.FILL -> colors.primaryContainer
+        look.marked -> colors.tertiaryContainer
+        else -> Color.Transparent
+    }
+    val text = when {
+        highlight == HighlightStyle.FILL -> colors.onPrimaryContainer
+        highlight == HighlightStyle.BOLD -> colors.primary
+        look.marked -> colors.onTertiaryContainer
+        look.unreadable -> colors.onSurface.copy(alpha = UNREADABLE_ALPHA)
+        look.dimmed -> colors.onSurface.copy(alpha = FOCUS_DIM_ALPHA)
+        else -> colors.onSurface
+    }
+    return background to text
 }
 
 /** The spoken word stands out against its sentence's own highlight: solid accent on the band, the band elsewhere. */

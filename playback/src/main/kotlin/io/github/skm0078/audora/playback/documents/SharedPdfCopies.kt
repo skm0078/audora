@@ -52,6 +52,26 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
         }
     }
 
+    /**
+     * Saves text shared from another app (plan item 42) as `<title>.txt` beside the copies, so the library keeps it
+     * like any shared book; returns its URI, or null (logged) if it could not be written. [maxChars] caps a share.
+     */
+    suspend fun saveText(text: String, title: String?, maxChars: Int): String? = withContext(Dispatchers.IO) {
+        val name = safeName(title ?: text.lineSequence().firstOrNull { it.isNotBlank() }?.take(TITLE_FROM_TEXT_CHARS))
+            .removeSuffix(".pdf").let { if (it == DEFAULT_NAME.removeSuffix(".pdf")) SHARED_TEXT_NAME else it }
+        val target = File(File(dir, UUID.randomUUID().toString()), "$name.txt")
+        try {
+            target.parentFile?.mkdirs()
+            target.writeText(text.take(maxChars))
+            AudoraLog.i(TAG, "Saved shared text, chars=${minOf(text.length, maxChars)}")
+            Uri.fromFile(target).toString()
+        } catch (e: IOException) {
+            AudoraLog.e(TAG, "Could not save shared text: ${e.javaClass.simpleName}")
+            target.parentFile?.deleteRecursively()
+            null
+        }
+    }
+
     /** Deletes a copy and its folder. */
     fun delete(uri: Uri) {
         val file = fileOf(uri)
@@ -78,6 +98,8 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
         const val TAG = "Audora.SharedPdf"
         const val DIR_NAME = "shared-pdfs"
         const val DEFAULT_NAME = "Shared PDF.pdf"
+        const val SHARED_TEXT_NAME = "Shared text"
+        const val TITLE_FROM_TEXT_CHARS = 60
         const val MAX_NAME_CHARS = 120
 
         /** Larger than any book in the test corpus (41 MB) by far; guards the phone's storage against a bad share. */

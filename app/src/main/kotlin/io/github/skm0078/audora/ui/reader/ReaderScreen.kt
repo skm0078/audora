@@ -114,7 +114,9 @@ fun ReaderScreen(
                 }
 
                 is DocumentState.Open -> {
-                    OpenBook(state, document.pageCount, config, actions, ocrModels, look, spokenWord)
+                    OpenBook(state, document.pageCount, config, actions, ocrModels, look, spokenWord) {
+                        notes.highlightOf(it) != null
+                    }
                     NotesOverlays(notes, notesActions, actions, voiceNotes)
                 }
             }
@@ -131,6 +133,7 @@ private fun OpenBook(
     ocrModels: OcrModelsState?,
     look: ReadingLook,
     spokenWord: IntRange?,
+    isHighlighted: (ReadingUnit) -> Boolean,
 ) {
     var picking by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
@@ -162,7 +165,16 @@ private fun OpenBook(
                 PageOriginNotice(content.origin, ocrModels, badge, actions::onDownloadOcrModels)
                 when {
                     state.view == ReaderView.PAGE -> PageView(state, content.units, actions)
-                    content.units.isNotEmpty() -> Sentences(state, content.units, actions, look, spokenWord)
+
+                    content.units.isNotEmpty() -> Sentences(
+                        state,
+                        content.units,
+                        actions,
+                        look,
+                        spokenWord,
+                        isHighlighted,
+                    )
+
                     content.origin == PageOrigin.TEXT -> Message(stringResource(R.string.reader_page_no_text))
                 }
             }

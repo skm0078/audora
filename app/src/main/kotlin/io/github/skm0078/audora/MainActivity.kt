@@ -30,6 +30,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.battery.BatteryExemption
 import io.github.skm0078.audora.battery.OnboardingPreferences
 import io.github.skm0078.audora.core.config.ReaderConfig
+import io.github.skm0078.audora.core.config.TextBookConfig
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
@@ -207,6 +208,9 @@ class MainActivity : ComponentActivity() {
     /** A book the home-screen widget's Resume asked to continue (plan item 35), until it is opened. */
     private var widgetResume by mutableStateOf<String?>(null)
 
+    /** Text shared from another app (plan item 42), until it is saved as a book. */
+    private var sharedText by mutableStateOf<SharedText?>(null)
+
     @Inject
     lateinit var voiceManager: VoiceManager
 
@@ -233,6 +237,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) {
             sharedPdf = SharedPdfIntent.uriOf(intent)
+            sharedText = SharedPdfIntent.textOf(intent)
             widgetResume = ResumeWidgetProvider.bookIdOf(intent)
         }
         setContent {
@@ -263,6 +268,7 @@ class MainActivity : ComponentActivity() {
         LaunchedEffect(Unit) { diagnostics.checkUnfinishedSession() }
         LaunchedEffect(Unit) { dropStaleBookFiles() }
         SharedPdfEffect(sharedPdf, { sharedPdf = null }, libraryController::addShared, nav::navigate)
+        SharedTextEffect()
         ResumeWidgetEffect(libraryController.listState, widgetResume, { widgetResume = null }, nav::continueReading)
         val books = libraryBooks(libraryController.listState)
 
@@ -486,9 +492,30 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Text shared from another app (plan item 42): saved as a .txt beside the shared copies, then added and opened. */
+    @Composable
+    private fun SharedTextEffect() {
+        LaunchedEffect(sharedText) {
+            val shared = sharedText ?: return@LaunchedEffect
+            sharedText = null
+            val saved = if (shared.isOnlyLink) {
+                null
+            } else {
+                sharedCopies.saveText(shared.text, shared.title, TextBookConfig().maxSharedChars)
+            }
+            if (saved != null) {
+                sharedPdf = saved
+            } else {
+                val message = if (shared.isOnlyLink) R.string.shared_text_link else R.string.shared_text_failed
+                Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         SharedPdfIntent.uriOf(intent)?.let { sharedPdf = it }
+        SharedPdfIntent.textOf(intent)?.let { sharedText = it }
         ResumeWidgetProvider.bookIdOf(intent)?.let { widgetResume = it }
     }
 

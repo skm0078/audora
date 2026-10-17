@@ -18,6 +18,9 @@ import java.io.Closeable
 interface ReaderDocument : Closeable {
     val pageCount: Int
 
+    /** False for EPUB and text books (ADR-042): they have no page images, so the reader shows the text view. */
+    val hasPageImages: Boolean get() = true
+
     suspend fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError>
 
     /** [page] drawn [widthPx] pixels wide (smaller if [maxPixels] would be exceeded), for the page view (P4-03). */

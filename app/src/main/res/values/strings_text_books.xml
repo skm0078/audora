@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Text shared from other apps, EPUB and TXT books (plan items 42 and 43). -->
+<resources>
+    <string name="shared_text_link">Audora reads the text you share, not web links. Select the text on the page and share that.</string>
+    <string name="shared_text_failed">Could not save the shared text.</string>
+</resources>

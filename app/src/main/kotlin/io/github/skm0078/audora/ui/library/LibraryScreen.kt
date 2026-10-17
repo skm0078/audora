@@ -333,8 +333,11 @@ private const val LARGE_TEXT_SCALE = 1.5f
 /** Book ids are UUIDs, so this key never clashes with a row's. */
 private const val CONTINUE_KEY = "continue-reading"
 
-/** OpenDocument filters by MIME type; providers that mislabel PDFs are caught by the header check. */
-private val PDF_MIME_TYPES = arrayOf("application/pdf")
+/**
+ * OpenDocument filters by MIME type; providers that mislabel files are caught by the header check. PDFs, EPUBs and
+ * text files (items 42 and 43, ADR-042).
+ */
+private val PDF_MIME_TYPES = arrayOf("application/pdf", "application/epub+zip", "text/plain")
 
 @Preview(showBackground = true)
 @Composable

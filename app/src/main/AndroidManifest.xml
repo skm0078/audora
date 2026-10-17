@@ -33,17 +33,22 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- "Open with Audora" and "Share to Audora" for PDFs from Files, Downloads, WhatsApp or mail (ADR-033). -->
+            <!-- "Open with Audora" and "Share to Audora" for PDFs from Files, Downloads, WhatsApp or mail (ADR-033),
+                 EPUB and text books (items 42 and 43, ADR-042), and shared text from a browser or chat. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="content" />
                 <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/epub+zip" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/epub+zip" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
 

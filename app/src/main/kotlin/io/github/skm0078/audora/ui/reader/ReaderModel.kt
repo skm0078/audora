@@ -320,6 +320,7 @@ class ReaderModel(
         document = opened
         this.password = password
         mutableState.update { it.copy(document = DocumentState.Open(opened.pageCount)) }
+        if (!opened.hasPageImages) applyView(ReaderView.TEXT)
         val playing = state.value.readingPosition
         if (playing == null) {
             savedPosition =
@@ -426,7 +427,9 @@ class ReaderModel(
     }
 
     private fun applyView(view: ReaderView) {
-        mutableState.update { it.copy(view = view) }
+        // An EPUB or text book has no page images (ADR-042): it always shows as text, the saved choice is kept.
+        val shown = if (document?.hasPageImages == false) ReaderView.TEXT else view
+        mutableState.update { it.copy(view = shown) }
         renderPage(state.value.page)
     }
 

@@ -91,8 +91,10 @@ class LibraryTest {
     }
 
     @Test
-    fun `a file not a PDF is refused and its grant given back`() = runTest(dispatcher) {
-        docs.put(URI_A, "photo.pdf", "\u0089PNG".toByteArray())
+    fun `a file not a PDF, EPUB or text is refused and its grant given back`() = runTest(dispatcher) {
+        // A real PNG head: binary, with NUL bytes (EPUB and text books are accepted since ADR-042).
+        val png = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0x0D)
+        docs.put(URI_A, "photo.pdf", png)
 
         assertEquals(LibraryError.NotAPdf, library.add(URI_A).errorOrNull())
         assertTrue(store.all.isEmpty())
