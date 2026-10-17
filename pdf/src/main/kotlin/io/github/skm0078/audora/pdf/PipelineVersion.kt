@@ -32,6 +32,7 @@ package io.github.skm0078.audora.pdf
  *     the page image, borderless ones from OCR's rows (same version).
  * 11 = RI-10 on scanned pages: headings from OCR's line sizes and list items from bullets OCR misread as letters,
  *     zeros or signs, which are no longer read aloud (ADR-035). RI-5a: note signs OCR glued to words left out
- *     (same version). RI-4a: two table columns set close together split (same version).
+ *     (same version). RI-4a: two table columns set close together split (same version). RI-3: Bengali dandas and
+ *     vowel signs OCR misread as "৷", "|" or "!" restored (same version).
  */
 const val PIPELINE_VERSION: Int = 11

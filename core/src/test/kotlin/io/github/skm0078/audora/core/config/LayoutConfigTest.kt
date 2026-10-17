@@ -21,6 +21,7 @@ class LayoutConfigTest {
             { LayoutConfig(ocrHeadingMinConfidence = 101) },
             { LayoutConfig(maxHeadingLines = 0) },
             { LayoutConfig(ocrBulletMaxGapEm = 0f) },
+            { LayoutConfig(ocrDandaMinIndicWords = 0) },
         )
         for (make in bad) assertThrows(IllegalArgumentException::class.java) { make() }
     }
