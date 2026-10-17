@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReadingModesSection.kt
-// Purpose: The speech sheet's "What to read" controls: unreadable text, tables, footnotes, equations, captions.
+// Purpose: The speech sheet's "What to read" controls: unreadable text, tables, notes, equations, captions, skips.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -32,16 +32,8 @@ import io.github.skm0078.audora.core.model.TableMode
 @Composable
 fun ReadingModesSection(modes: ReadingModes, onChange: (ReadingModes) -> Unit) {
     Text(stringResource(R.string.reading_modes_title), style = MaterialTheme.typography.titleMedium)
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.reading_skip_unreadable), style = MaterialTheme.typography.bodyLarge)
-            Text(
-                stringResource(R.string.reading_skip_unreadable_detail),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Switch(checked = modes.skipUnreadable, onCheckedChange = { onChange(modes.copy(skipUnreadable = it)) })
+    ModeSwitch(R.string.reading_skip_unreadable, R.string.reading_skip_unreadable_detail, modes.skipUnreadable) {
+        onChange(modes.copy(skipUnreadable = it))
     }
     ModeChoice(R.string.reading_tables, TableMode.entries, modes.tables, ::tableLabel) {
         onChange(modes.copy(tables = it))
@@ -54,6 +46,39 @@ fun ReadingModesSection(modes: ReadingModes, onChange: (ReadingModes) -> Unit) {
     }
     ModeChoice(R.string.reading_captions, CaptionMode.entries, modes.captions, ::captionLabel) {
         onChange(modes.copy(captions = it))
+    }
+    SkipSwitches(modes, onChange)
+}
+
+/** Plan item 2: one switch each for asides, bracketed notes, links and page numbers. */
+@Composable
+private fun SkipSwitches(modes: ReadingModes, onChange: (ReadingModes) -> Unit) {
+    ModeSwitch(R.string.reading_skip_parentheses, R.string.reading_skip_parentheses_detail, modes.skipParentheses) {
+        onChange(modes.copy(skipParentheses = it))
+    }
+    ModeSwitch(R.string.reading_skip_brackets, R.string.reading_skip_brackets_detail, modes.skipBrackets) {
+        onChange(modes.copy(skipBrackets = it))
+    }
+    ModeSwitch(R.string.reading_skip_links, R.string.reading_skip_links_detail, modes.skipLinks) {
+        onChange(modes.copy(skipLinks = it))
+    }
+    ModeSwitch(R.string.reading_announce_pages, R.string.reading_announce_pages_detail, modes.announcePages) {
+        onChange(modes.copy(announcePages = it))
+    }
+}
+
+@Composable
+private fun ModeSwitch(@StringRes title: Int, @StringRes detail: Int, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(title), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                stringResource(detail),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = checked, onCheckedChange = onChange)
     }
 }
 

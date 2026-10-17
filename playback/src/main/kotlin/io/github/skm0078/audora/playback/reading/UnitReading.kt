@@ -14,6 +14,7 @@ import io.github.skm0078.audora.core.model.TableMode
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.speech.normalize.TableSpeech
 import io.github.skm0078.audora.speech.normalize.TextRole
+import io.github.skm0078.audora.speech.normalize.TextSkips
 
 /** What the voice is given for one played unit. */
 sealed interface Speech {
@@ -41,17 +42,23 @@ sealed interface Speech {
  *   words; Skip leaves the run out.
  * - **Captions:** Announce plays a cue before a caption's label unit ("Fig. 2."), then reads it; Skip leaves it out.
  * - **Chapter starts:** a heading that opens a chapter page (the PDF outline's, [chapterPages]) gets a cue.
+ * - **Skip switches** (plan item 2): (parentheses), [brackets] and links leave the text of every unit but tables and
+ *   equations; a unit left empty is not played. "Page numbers" says "Page 12" before the page's first unit (index 0;
+ *   when that unit is itself skipped, the page goes unannounced).
  */
 class UnitReading(
     private val modes: ReadingModes,
     private val speakability: SpeakabilityConfig = SpeakabilityConfig(),
     private val chapterPages: Set<Int> = emptySet(),
 ) {
+    private val skips = TextSkips(modes.skipParentheses, modes.skipBrackets, modes.skipLinks)
+
     /** The units of one page (in order) that go into the playlist, in order. */
     fun plays(units: List<ReadingUnit>): List<ReadingUnit> = units.filterIndexed { i, unit ->
         val previous = units.getOrNull(i - 1)
         when {
             !playsKind(unit, next = units.getOrNull(i + 1)) -> false
+            leftEmpty(unit) -> false
             isUnreadable(unit) -> previous == null || !isUnreadable(previous)
             else -> true
         }
@@ -63,6 +70,15 @@ class UnitReading(
     /** What the voice says for [unit], one that [plays] kept. */
     fun speechOf(unit: ReadingUnit): Speech {
         if (isUnreadable(unit)) return Speech.Cue
+        val speech = textOf(unit)
+        return if (modes.announcePages && unit.index == 0) {
+            speech.copy(text = "${pageWords(unit)} ${speech.text}")
+        } else {
+            speech
+        }
+    }
+
+    private fun textOf(unit: ReadingUnit): Speech.Text {
         val table = unit.table
         return when (unit.kind) {
             UnitKind.TABLE_SUMMARY, UnitKind.TABLE_ROW -> Speech.Text(
@@ -76,15 +92,15 @@ class UnitReading(
             }
 
             UnitKind.CAPTION -> Speech.Text(
-                unit.text,
+                skips.apply(unit.text),
                 TextRole.BODY,
                 cueBefore = CAPTION_LABEL.containsMatchIn(unit.text),
             )
 
-            UnitKind.HEADING -> Speech.Text(unit.text, TextRole.HEADING, cueBefore = opensChapter(unit))
+            UnitKind.HEADING -> Speech.Text(skips.apply(unit.text), TextRole.HEADING, cueBefore = opensChapter(unit))
 
             UnitKind.BODY, UnitKind.LIST_ITEM, UnitKind.FOOTNOTE, UnitKind.ASIDE -> Speech.Text(
-                unit.text,
+                skips.apply(unit.text),
                 TextRole.BODY,
             )
         }
@@ -115,6 +131,16 @@ class UnitReading(
         UnitKind.BODY, UnitKind.HEADING, UnitKind.LIST_ITEM, UnitKind.ASIDE -> true
     }
 
+    /** A unit of plain text the skip switches leave with nothing to say (a sentence that was all aside). */
+    private fun leftEmpty(unit: ReadingUnit): Boolean =
+        !skips.isNone && !unit.kind.isTable && unit.kind != UnitKind.EQUATION && skips.apply(unit.text).isBlank()
+
+    /** "Page 12." in the unit's language; the page as the notification counts it (from 1), not the printed label. */
+    private fun pageWords(unit: ReadingUnit): String {
+        val stop = if (unit.lang == Lang.EN) "." else "।"
+        return "${PAGE_WORD.getValue(unit.lang)} ${unit.page + 1}$stop"
+    }
+
     /** The heading at the top of a chapter's first page (index 0: running headers are already gone). */
     private fun opensChapter(unit: ReadingUnit): Boolean = unit.index == 0 && unit.page in chapterPages
 
@@ -128,6 +154,7 @@ class UnitReading(
 
     private companion object {
         val EQUATION_WORD = mapOf(Lang.EN to "Equation", Lang.HI to "समीकरण", Lang.BN to "সমীকরণ")
+        val PAGE_WORD = mapOf(Lang.EN to "Page", Lang.HI to "पृष्ठ", Lang.BN to "পৃষ্ঠা")
 
         /** "(3)", "(2.14)", "(4a)" at the end of a line; Devanagari and Bengali digits count too. */
         val EQUATION_NUMBER = Regex("""\(\s*(\p{Nd}+(?:\.\p{Nd}+)*[a-z]?)\s*\)\s*$""")

@@ -2,6 +2,14 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Skip switches (plan item 2; 2026-10-17)
+- The speech sheet's "What to read" gains four switches, all off by default: **Skip (asides)** leaves out text in parentheses that open a word, from the inside out, so "f(x)" and "2(a)" stay; **Skip [notes]** leaves out square-bracketed text such as "[sic]" or "[3]"; **Skip links** leaves out web and e-mail addresses (otherwise read as "link"); **Say page numbers** says "Page 12" (Hindi "पृष्ठ", Bengali "পৃষ্ঠা") before a page's first sentence. Tables, footnotes, captions and equations already had their own modes (ADR-035), which completes the item.
+- Applied at render time to the written text (`TextSkips`, `UnitReading`), so the page still shows everything; tables and equations are never trimmed, and a sentence left empty (a caption that was all aside) is not played. Saved with the other reading modes; older saved values read as off. Golden and listening scores unchanged (defaults unchanged, no `:pdf` change).
+- Tests: `TextSkipsTest` (table-driven), `UnitReadingTest`, `ReadingModesTest`.
+- **Gap:** a page whose first sentence is itself skipped (a table in Skip mode, unreadable text) goes unannounced; the page number is the PDF's page count from 1, as the notification shows, not the printed label.
+
+**Real-device checks (final phone session):** each switch on a page with asides, [notes] and a URL; page numbers on and off while turning pages.
+
 ## Lock-screen slider lock, headset presses and volume keys (plan items 79, 20; 2026-10-17)
 - **Slider lock (79):** the notification and lock screen no longer offer seeking inside the playing item (each item is one sentence), so a stray touch on the slider cannot lose the place; play, pause and the skip buttons stay. Done by leaving `COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM` out of the media notification controller's commands, which Media3 copies to the system's media controls. No setting: seeking inside one sentence was never useful.
 - **Headset button (20):** a wired or Bluetooth headset's play/pause button: one press plays or pauses, two presses bookmark the sentence playing (a short buzz confirms, as the screen may be off; anchored like the reader's bookmarks, no note), three or more go back one sentence. Next and previous already move by sentence. Replaces Media3's double tap (skip ahead), with the same delay (Android's double-tap timeout, about 300 ms) before a single press acts. A press with no book open still resumes the last book, and long presses and other keys keep Media3's handling (`MediaButtons`, `HeadsetPresses`, `HeadsetBookmarks`).

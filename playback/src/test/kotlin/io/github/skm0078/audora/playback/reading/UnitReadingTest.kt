@@ -129,4 +129,32 @@ class UnitReadingTest {
         assertEquals(Speech.Text("A section", TextRole.HEADING), reading.speechOf(later))
         assertEquals(Speech.Text("Chapter 2", TextRole.HEADING), UnitReading(ReadingModes()).speechOf(heading))
     }
+
+    @Test
+    fun `skip switches trim the text, drop a unit left empty and never touch tables`() {
+        val modes = ReadingModes(skipParentheses = true, skipBrackets = true, skipLinks = true)
+        val units = listOf(
+            kind(0, UnitKind.BODY, "The river (see map) rose [3] at www.x.org."),
+            kind(1, UnitKind.ASIDE, "(Photo courtesy of the archive.)"),
+            table(2, row = null, text = "Name (yrs)"),
+        )
+        val reading = UnitReading(modes)
+
+        assertEquals(listOf(0, 2), reading.plays(units).map { it.index })
+        assertEquals("The river rose at.", (reading.speechOf(units[0]) as Speech.Text).text)
+        assertEquals(listOf(0, 1, 2), played(ReadingModes(), units))
+    }
+
+    @Test
+    fun `page numbers are said before a page's first unit only`() {
+        val reading = UnitReading(ReadingModes(announcePages = true))
+
+        assertEquals("Page 1. Text 0.", (reading.speechOf(kind(0, UnitKind.BODY)) as Speech.Text).text)
+        assertEquals("Text 1.", (reading.speechOf(kind(1, UnitKind.BODY)) as Speech.Text).text)
+        assertEquals(
+            "पृष्ठ 1। Text 0.",
+            (reading.speechOf(kind(0, UnitKind.HEADING, lang = Lang.HI)) as Speech.Text).text,
+        )
+        assertEquals("Text 0.", (UnitReading(ReadingModes()).speechOf(kind(0, UnitKind.BODY)) as Speech.Text).text)
+    }
 }

@@ -15,6 +15,10 @@ class ReadingModesTest {
             footnotes = FootnoteMode.SKIP,
             equations = EquationMode.AS_WRITTEN,
             captions = CaptionMode.SKIP,
+            skipParentheses = true,
+            skipBrackets = true,
+            skipLinks = true,
+            announcePages = true,
         )
         assertEquals(modes, ReadingModes.decode(modes.encode()))
         assertEquals(ReadingModes(), ReadingModes.decode(ReadingModes().encode()))
