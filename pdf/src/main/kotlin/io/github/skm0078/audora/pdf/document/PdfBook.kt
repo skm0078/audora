@@ -28,6 +28,8 @@ import io.github.skm0078.audora.pdf.quality.TextLayerCheck
 import io.github.skm0078.audora.pdf.quality.TextLayerVerdict
 import io.github.skm0078.audora.pdf.render.ViewRect
 import io.github.skm0078.audora.pdf.units.AnalyzedPage
+import io.github.skm0078.audora.pdf.units.PageCarry
+import io.github.skm0078.audora.pdf.units.PageTail
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import java.io.Closeable
 
@@ -130,13 +132,24 @@ class PdfBook private constructor(
                 builder.sampleText(page, neighbours)
             }
             val languages = ocrLanguages ?: OcrLanguages(builder.qualityConfig).also { ocrLanguages = it }
-            if (routing.route == PageRoute.OCR) {
+            val read = if (routing.route == PageRoute.OCR) {
                 readByOcr(page, routing, languages, builder) { builder.build(page, neighbours) }
             } else {
                 languages.learn(page.quality.ocrLangs)
                 PageReading(builder.build(page, neighbours), routing, PageSource.TextLayer)
             }
+            joined(pageIndex, read, cache)
         }
+    }
+
+    /**
+     * [read] joined to the page before it when that page was read since the book opened ([PageCarry]): a table or
+     * sentence carried over. What this page hands on is kept for the next one.
+     */
+    private fun joined(pageIndex: Int, read: PageReading, cache: PageCaches): PageReading {
+        val joined = PageCarry.join(read.units, cache.tails[pageIndex - 1])
+        cache.tails[pageIndex] = PageCarry.tailOf(joined.units)
+        return PageReading(joined.units, read.routing, read.source, read.ocrConfidence, joined.continuesPreviousPage)
     }
 
     /**
@@ -281,6 +294,9 @@ class PdfBook private constructor(
     private class PageCaches(val owner: ReadingUnitBuilder) {
         val analyzed: MutableMap<Int, AnalyzedPage> = lru(owner.cleanupConfig.analyzedCachePages)
         val profiles: MutableMap<Int, PageProfile> = lru(owner.cleanupConfig.profileCachePages)
+
+        /** What each page read hands on to the next ([PageCarry]); a few bytes each. */
+        val tails: MutableMap<Int, PageTail> = lru(owner.cleanupConfig.profileCachePages)
     }
 
     companion object {
@@ -329,13 +345,16 @@ private fun describe(quality: PageQuality): String = with(quality.signals) {
 
 /**
  * A page's units, its route and where its words actually came from. [ocrConfidence] is `OcrText.meanConfidence` for a
- * page read by OCR, else null: the reader's quality badge (RI-9).
+ * page read by OCR, else null: the reader's quality badge (RI-9). [continuesPreviousPage]: the page opens inside
+ * the sentence the page before broke off (plan item 7: a quote opened there is still open); false when it does not,
+ * or when the page before was not read since the book opened.
  */
 class PageReading(
     val units: List<ReadingUnit>,
     val routing: PageRouting,
     val source: PageSource,
     val ocrConfidence: Int? = null,
+    val continuesPreviousPage: Boolean = false,
 )
 
 /** Where a page's words came from: what the reader's "OCR" badge shows (P3-05). */

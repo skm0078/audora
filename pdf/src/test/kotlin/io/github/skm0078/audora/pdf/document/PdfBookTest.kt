@@ -11,11 +11,16 @@ import io.github.skm0078.audora.pdf.extract.RawPage
 import io.github.skm0078.audora.pdf.extract.RawPageFixture
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PdfBookTest {
-    private class FakeEngine(val pages: Int, val password: String? = null) : PdfEngine {
+    private class FakeEngine(
+        val pages: Int,
+        val password: String? = null,
+        val text: (Int) -> String = { "Page $it." },
+    ) : PdfEngine {
         val passwordsSeen = ArrayList<String?>()
         var openHandles = 0
         var reads = 0
@@ -43,7 +48,7 @@ class PdfBookTest {
             override fun readPage(pageIndex: Int): Outcome<RawPage, PdfPageError> {
                 reads++
                 return Outcome.Success(
-                    RawPageFixture.page(RawPageFixture.chars("Page $pageIndex."), pageIndex = pageIndex),
+                    RawPageFixture.page(RawPageFixture.chars(text(pageIndex)), pageIndex = pageIndex),
                 )
             }
 
@@ -53,6 +58,17 @@ class PdfBookTest {
                 openHandles--
             }
         }
+    }
+
+    @Test
+    fun `a page read after the one before knows it opens inside that page's broken sentence`() {
+        val texts = listOf("He turned and said that the", "rains came late that year.")
+        val builder = ReadingUnitBuilder()
+        val inOrder = requireNotNull(PdfBook.open(FakeEngine(pages = 2) { texts[it] }).getOrNull())
+        inOrder.readPage(0, builder)
+        assertTrue(requireNotNull(inOrder.readPage(1, builder).getOrNull()).continuesPreviousPage)
+        val jumped = requireNotNull(PdfBook.open(FakeEngine(pages = 2) { texts[it] }).getOrNull())
+        assertFalse(requireNotNull(jumped.readPage(1, builder).getOrNull()).continuesPreviousPage)
     }
 
     @Test
