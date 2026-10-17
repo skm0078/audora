@@ -18,6 +18,7 @@ import io.github.skm0078.audora.core.config.QueueConfig
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.AfterSentence
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.BookmarkStore
@@ -52,6 +53,7 @@ import io.github.skm0078.audora.playback.voice.BookRenderers
 import io.github.skm0078.audora.playback.voice.RenderSpeedTracker
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
+import io.github.skm0078.audora.playback.voice.StudyGapRenderer
 import io.github.skm0078.audora.playback.voice.VoiceEngines
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -225,15 +227,19 @@ class AudoraPlaybackService : MediaLibraryService() {
         stores: SessionStores,
         reading: ReadingSource,
         heard: () -> SpeechStyle,
-    ) = BookRenderers.create(
-        this,
-        voices,
-        style = heard,
-        styleConfig = stores.style.config,
-        book = reading.book(fixer = { stores.book.fixer }),
-        speakability = reading.speakability,
-        speed = RenderSpeedTracker(engines::speeds),
-        timings = timings,
+    ) = StudyGapRenderer(
+        BookRenderers.create(
+            this,
+            voices,
+            style = heard,
+            styleConfig = stores.style.config,
+            book = reading.book(fixer = { stores.book.fixer }),
+            speakability = reading.speakability,
+            speed = RenderSpeedTracker(engines::speeds),
+            timings = timings,
+        ),
+        // Live playback only: "Leave a gap to say it back" (plan item 31).
+        gaps = { heard().modes.afterSentence == AfterSentence.GAP },
     )
 
     private fun publisher(

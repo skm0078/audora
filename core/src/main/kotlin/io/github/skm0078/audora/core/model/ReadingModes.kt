@@ -1,5 +1,5 @@
 // File: core/src/main/kotlin/io/github/skm0078/audora/core/model/ReadingModes.kt
-// Purpose: What playback reads, announces or skips: unreadable text, tables, notes, equations, captions (ADR-035).
+// Purpose: What playback reads, announces or skips (ADR-035), and the study modes that repeat or pause (plan item 31).
 
 package io.github.skm0078.audora.core.model
 
@@ -39,6 +39,18 @@ enum class CaptionMode {
     SKIP,
 }
 
+/** What happens after each sentence (plan item 31, study modes). */
+enum class AfterSentence {
+    /** Reading goes straight on. */
+    CONTINUE,
+
+    /** A silence about as long as the sentence, to say it back (shadowing), then reading goes on. */
+    GAP,
+
+    /** Reading pauses; play goes on with the next sentence. */
+    STOP,
+}
+
 /**
  * What playback does with each kind of unit `:pdf` tags (ADR-035). `:pdf` never drops a unit; these decide whether it
  * is read, announced or skipped. A skipped unit is still a resume point: resuming on it starts at the next unit read.
@@ -50,6 +62,8 @@ enum class CaptionMode {
  * @property announcePages says "Page 12" before a page's first sentence (plan item 2).
  * @property skim reads only headings, captions, table summaries and the first sentence of each paragraph or list item,
  *   to get through a chapter fast (plan item 64); the rest stays on the page and is still a resume point.
+ * @property sentenceRepeats how many times each sentence is read, 1 to [MAX_SENTENCE_REPEATS] (plan item 31).
+ * @property afterSentence what follows each sentence, after its last repeat (plan item 31).
  */
 data class ReadingModes(
     val skipUnreadable: Boolean = true,
@@ -62,7 +76,18 @@ data class ReadingModes(
     val skipLinks: Boolean = false,
     val announcePages: Boolean = false,
     val skim: Boolean = false,
+    val sentenceRepeats: Int = 1,
+    val afterSentence: AfterSentence = AfterSentence.CONTINUE,
 ) {
+    init {
+        require(sentenceRepeats in 1..MAX_SENTENCE_REPEATS) {
+            "sentenceRepeats must be in 1..$MAX_SENTENCE_REPEATS, was $sentenceRepeats"
+        }
+    }
+
+    /** Whether a study mode is on, so playback must stop at each sentence's end to repeat or pause. */
+    val studying: Boolean get() = sentenceRepeats > 1 || afterSentence == AfterSentence.STOP
+
     /**
      * One line for a settings file or a media session extra: `key=VALUE` pairs separated by `;`. [decode] reads it
      * back, so adding a mode later keeps older saved values readable.
@@ -78,9 +103,13 @@ data class ReadingModes(
         KEY_LINKS to skipLinks.toString(),
         KEY_PAGES to announcePages.toString(),
         KEY_SKIM to skim.toString(),
+        KEY_REPEATS to sentenceRepeats.toString(),
+        KEY_AFTER_SENTENCE to afterSentence.name,
     ).joinToString(PAIR_SEPARATOR) { (key, value) -> "$key$VALUE_SEPARATOR$value" }
 
     companion object {
+        /** The most repeats offered: beyond five a learner rewinds instead. */
+        const val MAX_SENTENCE_REPEATS = 5
         private const val PAIR_SEPARATOR = ";"
         private const val VALUE_SEPARATOR = "="
         private const val KEY_SKIP_UNREADABLE = "skipUnreadable"
@@ -93,6 +122,8 @@ data class ReadingModes(
         private const val KEY_LINKS = "skipLinks"
         private const val KEY_PAGES = "announcePages"
         private const val KEY_SKIM = "skim"
+        private const val KEY_REPEATS = "sentenceRepeats"
+        private const val KEY_AFTER_SENTENCE = "afterSentence"
 
         /** Reads [encode]'s line; a missing, unknown or malformed value takes its default, so this never fails. */
         fun decode(line: String?): ReadingModes {
@@ -111,6 +142,9 @@ data class ReadingModes(
                 skipLinks = values[KEY_LINKS]?.toBooleanStrictOrNull() ?: defaults.skipLinks,
                 announcePages = values[KEY_PAGES]?.toBooleanStrictOrNull() ?: defaults.announcePages,
                 skim = values[KEY_SKIM]?.toBooleanStrictOrNull() ?: defaults.skim,
+                sentenceRepeats = values[KEY_REPEATS]?.toIntOrNull()?.takeIf { it in 1..MAX_SENTENCE_REPEATS }
+                    ?: defaults.sentenceRepeats,
+                afterSentence = enumOrNull<AfterSentence>(values[KEY_AFTER_SENTENCE]) ?: defaults.afterSentence,
             )
         }
 

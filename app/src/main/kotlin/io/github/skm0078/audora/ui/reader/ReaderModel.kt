@@ -26,6 +26,7 @@ import io.github.skm0078.audora.pdf.outline.ChapterList
 import io.github.skm0078.audora.pdf.outline.ChapterStarts
 import io.github.skm0078.audora.pdf.render.SentenceHitTest
 import io.github.skm0078.audora.pdf.render.ViewPoint
+import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.CoroutineScope
@@ -281,6 +282,26 @@ class ReaderModel(
         if (!state.value.playerReady) return
         mutableState.update { it.copy(following = true) }
         player.replayPrevious(config.replayFactor)
+    }
+
+    /**
+     * Study loops (plan item 31): marks A or B at the sentence being read in this book, turns looping on or off, or
+     * clears the range. A mark needs this book to be the one being read.
+     */
+    fun study(action: StudyAction, loop: Boolean = state.value.study?.loop ?: true) {
+        val marking = action == StudyAction.MARK_START || action == StudyAction.MARK_END
+        if (marking && state.value.readingPosition == null) return
+        player.study(action, loop)
+    }
+
+    /**
+     * "Read a selection only" (plan item 31): reads [start] through [end] (the selection's last character) of this
+     * book once, or over and over with [loop]. A user action, so it starts reading (C7).
+     */
+    fun readRange(start: ReadingPosition, end: ReadingPosition, loop: Boolean) {
+        if (!state.value.playerReady || start.bookId != bookId || end.bookId != bookId) return
+        mutableState.update { it.copy(following = true) }
+        player.playRange(start, end, loop, password)
     }
 
     /**

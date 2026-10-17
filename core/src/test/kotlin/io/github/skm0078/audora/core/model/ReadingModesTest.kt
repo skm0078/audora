@@ -20,6 +20,8 @@ class ReadingModesTest {
             skipLinks = true,
             announcePages = true,
             skim = true,
+            sentenceRepeats = 3,
+            afterSentence = AfterSentence.GAP,
         )
         assertEquals(modes, ReadingModes.decode(modes.encode()))
         assertEquals(ReadingModes(), ReadingModes.decode(ReadingModes().encode()))
@@ -34,7 +36,23 @@ class ReadingModesTest {
             "tables=LATER;footnotes=SKIP" to ReadingModes(footnotes = FootnoteMode.SKIP),
             "skipUnreadable=maybe;;=;captions" to ReadingModes(),
             " equations = SKIP ;newMode=1" to ReadingModes(equations = EquationMode.SKIP),
+            "sentenceRepeats=9;afterSentence=STOP" to ReadingModes(afterSentence = AfterSentence.STOP),
+            "sentenceRepeats=0" to ReadingModes(),
+            "sentenceRepeats=2" to ReadingModes(sentenceRepeats = 2),
         )
         for ((line, expected) in cases) assertEquals(line, expected, ReadingModes.decode(line))
+    }
+
+    @Test
+    fun `studying means playback must stop at each sentence end`() {
+        assertEquals(false, ReadingModes().studying)
+        assertEquals(false, ReadingModes(afterSentence = AfterSentence.GAP).studying)
+        assertEquals(true, ReadingModes(afterSentence = AfterSentence.STOP).studying)
+        assertEquals(true, ReadingModes(sentenceRepeats = 2).studying)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `repeats outside the offered range are refused`() {
+        ReadingModes(sentenceRepeats = ReadingModes.MAX_SENTENCE_REPEATS + 1)
     }
 }

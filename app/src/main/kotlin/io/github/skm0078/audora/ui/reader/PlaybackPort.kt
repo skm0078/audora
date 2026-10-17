@@ -11,6 +11,7 @@ import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.playback.contract.SentenceTiming
+import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.flow.StateFlow
 
@@ -65,6 +66,12 @@ interface PlaybackPort {
      */
     fun replayPrevious(factor: Float)
 
+    /** The A–B study range (plan item 31): mark A or B at the sentence playing, loop on or off, or clear it. */
+    fun study(action: StudyAction, loop: Boolean = true)
+
+    /** "Read a selection only": plays [start] through [end] (its last character) once, or looping (plan item 31). */
+    fun playRange(start: ReadingPosition, end: ReadingPosition, loop: Boolean, password: String?)
+
     /** "This sounded wrong" (RI-8b): the service logs it with the voice that reads its language. */
     fun reportSoundedWrong(report: SoundedWrongReport)
 
@@ -75,6 +82,9 @@ interface PlaybackPort {
      */
     fun positionInSentenceMs(): Long? = null
 }
+
+/** The A–B marks (plan item 31): [end] null while only A is set. */
+data class StudyRangeState(val start: ReadingPosition, val end: ReadingPosition?, val loop: Boolean)
 
 /**
  * The player as the reader sees it.
@@ -87,6 +97,7 @@ interface PlaybackPort {
  * @property ownSettings the book being read has its own speed, pace and voices; changes to them are its own.
  * @property bookVoices the voices the book being read keeps for itself, by language, while [ownSettings].
  * @property undoJumpTo where "Undo jump" goes back to in the book being read (plan item 78); null with nothing to undo.
+ * @property study the A–B study range of the book being read (plan item 31); null with no A set.
  * @property sentenceTiming where the voice speaks in the sentence playing (plan item 14), once it is rendered; use it
  *   only while its page and char start match [position].
  * @property errorCode Media3's error code name of the last playback error, for the log and a generic message.
@@ -110,6 +121,7 @@ data class PlaybackSnapshot(
     val ownSettings: Boolean = false,
     val bookVoices: Map<Lang, VoiceId> = emptyMap(),
     val undoJumpTo: ReadingPosition? = null,
+    val study: StudyRangeState? = null,
     val sentenceTiming: SentenceTiming? = null,
     val errorCode: String? = null,
 ) {

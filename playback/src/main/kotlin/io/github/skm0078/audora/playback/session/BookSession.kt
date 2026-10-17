@@ -111,6 +111,12 @@ class BookSession(
     /** "What did it say?": one sentence replayed slower, nothing saved. */
     private val replay = ReplaySpeed()
 
+    /** Study modes (plan item 31): repeats, pause after each sentence, A–B loops. */
+    private val study = StudyLoop()
+
+    /** The sleep timer or "Keep going" wants this sentence's end-of-item pause: study modes leave it alone. */
+    private var stopForSleep = false
+
     private var book: OpenedBook? = null
 
     // The book the player's playlist was built for; differs from [book] between a book switch and its rebuild.
@@ -244,6 +250,43 @@ class BookSession(
     }
 
     /**
+     * Sets A or B of a study loop at the sentence playing (plan item 31); [loop] false reads the range once and stops.
+     * False with no sentence playing.
+     */
+    fun markStudy(mark: StudyMark, loop: Boolean): Boolean = study.mark(mark, currentSentence(), loop).also { marked ->
+        if (marked) onStudyChanged("Study mark $mark loop=$loop")
+    }
+
+    /** Loop on or off for the A–B range. */
+    fun setStudyLoop(loop: Boolean) {
+        study.setLoop(loop)
+        onStudyChanged("Study loop=$loop")
+    }
+
+    fun clearStudy() {
+        study.clear()
+        onStudyChanged("Study range cleared")
+    }
+
+    /**
+     * "Read a selection only": plays [range] of [id] from its start, once or looping. A user action (C7), like
+     * [playFrom].
+     */
+    suspend fun playRange(id: BookId, range: StudyRange, password: String?): Outcome<Unit, OpenFailure> =
+        playFrom(id, range.start.page, range.start.charStart, password).also { played ->
+            if (played is Outcome.Success) {
+                study.set(range)
+                onStudyChanged("Study range set loop=${range.loop}")
+            }
+        }
+
+    private fun onStudyChanged(what: String) {
+        AudoraLog.i(TAG, "$what, book=${bookId?.logLabel}")
+        updateWindow()
+        publishState()
+    }
+
+    /**
      * False when [mode] cannot apply to the open book: end of chapter in a book without chapters. [chapters] is how
      * many chapter ends an end-of-chapter timer waits for.
      */
@@ -283,6 +326,7 @@ class BookSession(
         jumps.clear()
         // The new book's speed is set next (onBook); a replay of the old book must not restore over it.
         replay.forget()
+        study.clear()
         // On the extraction thread, after any page read still running there.
         val chapters = withContext(env.extraction) {
             old?.text?.close()
@@ -341,7 +385,8 @@ class BookSession(
         queue?.setWindow(sources.renderAhead.window(candidates, config))
         val current = playlist.current()
         val next = playlist.next()
-        player.pauseAtEndOfMediaItems = sleep.pauseAfter(current, next) || stopsAtChapterEnd(current, next)
+        stopForSleep = sleep.pauseAfter(current, next) || stopsAtChapterEnd(current, next)
+        player.pauseAtEndOfMediaItems = stopForSleep || study.pausesAfter(current, next, sources.reading.modes())
     }
 
     /** With "Keep going to the next chapter" off, reading pauses where a chapter ends (the book's end included). */
@@ -402,6 +447,48 @@ class BookSession(
         publishState()
     }
 
+    /** The player paused at a sentence end for a study mode: true when playback went on (repeat, next, loop). */
+    private fun onStudySentenceEnd(): Boolean {
+        val unit = (playlist.current() as? PlaybackItem.Sentence)?.unit ?: return false
+        val step = study.onSentenceEnd(unit, playlist.next(), sources.reading.modes())
+        studyStep(step)
+        return step != StudyStep.Stop
+    }
+
+    private fun studyStep(step: StudyStep) {
+        when (step) {
+            StudyStep.Repeat -> {
+                player.seekTo(player.currentMediaItemIndex, 0L)
+                player.play()
+            }
+
+            StudyStep.Continue -> player.play()
+
+            StudyStep.Stop -> {
+                if (player.playWhenReady) player.pause()
+                AudoraLog.i(TAG, "Study stop, book=${bookId?.logLabel}")
+                publishState()
+            }
+
+            is StudyStep.LoopTo -> loopTo(step.start)
+        }
+    }
+
+    /** Back to the range's first sentence: a seek when it is still in the playlist, else a rebuild from it. */
+    private fun loopTo(start: Spot) {
+        val index = (0 until player.mediaItemCount).firstOrNull { i ->
+            (playlist.itemAt(i) as? PlaybackItem.Sentence)?.unit?.let(study::startsRange) == true
+        }
+        AudoraLog.i(TAG, "Study loop to page=${start.page} char=${start.charStart} seek=${index != null}")
+        if (index == null) {
+            rebuild(start.page, start.charStart, play = true)
+            return
+        }
+        ownSeekTarget = index
+        player.seekTo(index, 0L)
+        player.play()
+    }
+
     private fun publishState() {
         events.onStateChanged(
             SessionState(
@@ -412,6 +499,7 @@ class BookSession(
                 sleep.hasChapters,
                 jumps.last?.from,
                 sleep.chapters,
+                study.marks(),
             ),
         )
     }
@@ -631,7 +719,12 @@ class BookSession(
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) faults.onSentenceCompleted()
             val started = (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.unit
+            val previous = lastSentence
             noteSeek(reason, started)
+            study.onNewSentence()
+            if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
+                study.onOvershoot(previous, started)?.let(::studyStep)
+            }
             replay.onSentence(started?.let(UnitKey::of))?.let(player::setPlaybackSpeed)
             (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.let { sentence ->
                 lastSentence = sentence.unit
@@ -649,7 +742,10 @@ class BookSession(
                 return
             }
             val atItemEnd = reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM
-            sleep.onPaused(atItemEnd = atItemEnd)
+            // A study mode's stop at a sentence end goes on by itself unless it is a real stop.
+            if (atItemEnd && !stopForSleep && onStudySentenceEnd()) return
+            // Only the timer's own stop ends an end-of-page or end-of-chapter timer, not a study pause.
+            sleep.onPaused(atItemEnd = atItemEnd && stopForSleep)
             rewind.onPaused(atSentenceEnd = atItemEnd)
         }
 

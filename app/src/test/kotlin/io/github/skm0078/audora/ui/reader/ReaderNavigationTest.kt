@@ -7,6 +7,7 @@ import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.pdf.document.OutlineEntry
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
+import io.github.skm0078.audora.playback.contract.StudyAction
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -90,6 +91,40 @@ class ReaderNavigationTest {
             model.replayPrevious()
 
             assertEquals(listOf("replay ${ReaderConfig().replayFactor}"), port.calls)
+        }
+
+    @Test
+    fun `A and B are set only while this book is read, and clearing always goes through`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val model = model()
+            port.connect()
+            model.study(StudyAction.MARK_START)
+            assertTrue("nothing is being read", port.calls.isEmpty())
+
+            port.readingAt(ReadingPosition(BOOK, 2, 0))
+            model.study(StudyAction.MARK_START)
+            model.study(StudyAction.MARK_END, loop = false)
+            model.study(StudyAction.CLEAR)
+
+            assertEquals(
+                listOf("study MARK_START loop=true", "study MARK_END loop=false", "study CLEAR loop=true"),
+                port.calls,
+            )
+        }
+
+    @Test
+    fun `the range shown is this book's only, and a selection is read through the player`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val model = model()
+            port.connect()
+            val otherBook = BookId("another-book")
+            val elsewhere = StudyRangeState(ReadingPosition(otherBook, 1, 0), end = null, loop = true)
+            port.state.value = port.state.value.copy(study = elsewhere)
+            assertNull(model.state.value.study)
+
+            model.readRange(ReadingPosition(BOOK, 3, 15), ReadingPosition(BOOK, 3, 80), loop = false)
+
+            assertEquals(listOf("range 3:15..3:80 loop=false"), port.calls)
         }
 
     @Test

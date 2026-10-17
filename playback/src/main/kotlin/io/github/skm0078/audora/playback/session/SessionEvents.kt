@@ -33,6 +33,7 @@ data class SessionState(
     val hasChapters: Boolean = false,
     val undoTo: Spot? = null,
     val sleepChapters: Int = 1,
+    val study: StudyMarks? = null,
 )
 
 /**

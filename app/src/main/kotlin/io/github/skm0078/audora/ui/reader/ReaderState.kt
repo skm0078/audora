@@ -106,6 +106,9 @@ data class ReaderState(
     /** Where "Undo jump" goes back to in this book (plan item 78), if anywhere. */
     val undoJumpTo: ReadingPosition? get() = playback.undoJumpTo?.takeIf { it.bookId == bookId }
 
+    /** The A–B study range in this book (plan item 31), if one is marked. */
+    val study: StudyRangeState? get() = playback.study?.takeIf { it.start.bookId == bookId }
+
     /** The reading position is on another page than the one shown. */
     val readingElsewhere: Boolean get() = readingPosition?.let { it.page != page } ?: false
 

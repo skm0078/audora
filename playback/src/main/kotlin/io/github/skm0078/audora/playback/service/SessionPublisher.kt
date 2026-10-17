@@ -103,6 +103,7 @@ class SessionPublisher(
                     putInt(PlaybackContract.SESSION_UNDO_PAGE, it.page)
                     putInt(PlaybackContract.SESSION_UNDO_CHAR, it.charStart)
                 }
+                state.study?.let { putAll(PlaybackContract.studyExtras(it)) }
                 state.error?.let {
                     putString(PlaybackContract.SESSION_ERROR, it.code.name)
                     putString(PlaybackContract.SESSION_ERROR_MESSAGE, it.message)

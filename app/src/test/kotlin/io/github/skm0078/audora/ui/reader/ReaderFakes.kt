@@ -19,6 +19,7 @@ import io.github.skm0078.audora.pdf.document.OutlineEntry
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.pdf.render.PageTransform
+import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -130,6 +131,14 @@ class FakePlaybackPort : PlaybackPort {
 
     override fun replayPrevious(factor: Float) {
         calls += "replay $factor"
+    }
+
+    override fun study(action: StudyAction, loop: Boolean) {
+        calls += "study $action loop=$loop"
+    }
+
+    override fun playRange(start: ReadingPosition, end: ReadingPosition, loop: Boolean, password: String?) {
+        calls += "range ${start.page}:${start.charStart}..${end.page}:${end.charStart} loop=$loop"
     }
 
     override fun reportSoundedWrong(report: SoundedWrongReport) {
