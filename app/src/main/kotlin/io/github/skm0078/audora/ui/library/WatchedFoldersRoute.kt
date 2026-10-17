@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.ui.library
 
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,21 +32,32 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.WatchedFolder
+import io.github.skm0078.audora.playback.documents.WatchResult
+import io.github.skm0078.audora.playback.documents.WatchScan
 import io.github.skm0078.audora.playback.documents.WatchedFolders
 import kotlinx.coroutines.launch
 
 /**
- * Scans the watched folders each time the library is shown and says how many books joined; while [open], shows the
- * folder list. A folder picked is watched and scanned at once.
+ * Scans the watched folders when the library is shown (at most every few minutes) and says how many books joined and
+ * whether a folder needs picking again; while [open], shows the folder list. A folder picked is watched and scanned
+ * at once; picking an unreachable folder again restores it with what it had seen.
  */
 @Composable
 fun WatchedFoldersRoute(watched: WatchedFolders, open: Boolean, onClose: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var folders by remember { mutableStateOf<List<WatchedFolder>?>(null) }
-    val tell: (Int) -> Unit = { added ->
-        if (added > 0) {
-            val text = context.resources.getQuantityString(R.plurals.watched_added, added, added)
+    val tell: (WatchScan) -> Unit = { scan ->
+        if (scan.added > 0) {
+            val text = context.resources.getQuantityString(R.plurals.watched_added, scan.added, scan.added)
+            Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+        }
+        if (scan.unreachable > 0) {
+            val text = context.resources.getQuantityString(
+                R.plurals.watched_unreachable,
+                scan.unreachable,
+                scan.unreachable,
+            )
             Toast.makeText(context, text, Toast.LENGTH_LONG).show()
         }
     }
@@ -53,11 +65,20 @@ fun WatchedFoldersRoute(watched: WatchedFolders, open: Boolean, onClose: () -> U
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { tree ->
         if (tree != null) {
             scope.launch {
-                if (watched.watch(tree)) {
-                    folders = watched.folders()
-                    tell(watched.scan())
-                } else {
-                    Toast.makeText(context, R.string.watched_no_grant, Toast.LENGTH_LONG).show()
+                when (watched.watch(tree)) {
+                    WatchResult.WATCHED -> {
+                        folders = watched.folders()
+                        tell(watched.scan())
+                        folders = watched.folders() // The scan may have found it unreachable.
+                    }
+
+                    WatchResult.NO_GRANT -> Toast.makeText(context, R.string.watched_no_grant, Toast.LENGTH_LONG).show()
+
+                    WatchResult.NOT_SAVED -> Toast.makeText(
+                        context,
+                        R.string.watched_not_saved,
+                        Toast.LENGTH_LONG,
+                    ).show()
                 }
             }
         }
@@ -67,6 +88,7 @@ fun WatchedFoldersRoute(watched: WatchedFolders, open: Boolean, onClose: () -> U
         WatchedFoldersDialog(
             folders = folders,
             onAdd = { picker.launch(null) },
+            onPickAgain = { folder -> picker.launch(Uri.parse(folder.treeUri)) },
             onRemove = { folder ->
                 scope.launch {
                     watched.unwatch(folder)
@@ -83,6 +105,7 @@ fun WatchedFoldersRoute(watched: WatchedFolders, open: Boolean, onClose: () -> U
 private fun WatchedFoldersDialog(
     folders: List<WatchedFolder>?,
     onAdd: () -> Unit,
+    onPickAgain: (WatchedFolder) -> Unit,
     onRemove: (WatchedFolder) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -99,7 +122,7 @@ private fun WatchedFoldersDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                folders.orEmpty().forEach { folder -> FolderRow(folder) { onRemove(folder) } }
+                folders.orEmpty().forEach { folder -> FolderRow(folder, { onPickAgain(folder) }) { onRemove(folder) } }
             }
         },
         confirmButton = { TextButton(onClick = onAdd) { Text(stringResource(R.string.watched_add)) } },
@@ -108,15 +131,24 @@ private fun WatchedFoldersDialog(
 }
 
 @Composable
-private fun FolderRow(folder: WatchedFolder, onRemove: () -> Unit) {
+private fun FolderRow(folder: WatchedFolder, onPickAgain: () -> Unit, onRemove: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            folder.name.ifBlank { stringResource(R.string.watched_unnamed) },
-            Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Column(Modifier.weight(1f)) {
+            Text(
+                folder.name.ifBlank { stringResource(R.string.watched_unnamed) },
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (!folder.reachable) {
+                Text(
+                    stringResource(R.string.watched_unreachable_row),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+        if (!folder.reachable) TextButton(onClick = onPickAgain) { Text(stringResource(R.string.watched_pick_again)) }
         TextButton(onClick = onRemove) { Text(stringResource(R.string.watched_remove)) }
     }
 }

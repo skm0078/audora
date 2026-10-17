@@ -12,8 +12,8 @@ import java.io.File
  *
  * Left out on purpose: voices, OCR and dictionary data (large, downloaded again), which voice each language uses
  * (it may name a voice the new phone lacks), covers and search indexes (rebuilt), logs, export records and studio
- * audio (they point at files on the old phone), watched folders (folder access does not move between phones),
- * the widget, and the first-run flag, so a restored phone still goes through first run.
+ * audio (they point at files on the old phone), the widget, and the first-run flag, so a restored phone still goes
+ * through first run. Watched folders are kept: their grants do not move, so they ask to be picked again (ADR-044).
  *
  * @property files single files.
  * @property folders folders taken whole, every file below them.
@@ -60,6 +60,7 @@ data class BackupContents(val files: List<String>, val folders: List<String>) {
                 "files/up-next.txt",
                 "files/speech-style.properties",
                 "files/sleep-options.txt",
+                "files/watched-folders.txt",
                 "files/datastore/reader.preferences_pb",
                 "files/datastore/reading_look.preferences_pb",
                 "files/datastore/appearance.preferences_pb",

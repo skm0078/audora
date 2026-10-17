@@ -20,12 +20,12 @@ small settings files.
    - `databases/audora.db`: a consistent snapshot of every table (books, resume anchors, bookmarks, book settings,
      pronunciations, highlights, voice notes) taken with SQLite's `VACUUM INTO` while the app runs
      (`AudoraStorage.snapshotTo`), WAL contents included;
-   - the reading-text, Up next, speech-style and sleep-option files, the reader, reading-look and appearance
+   - the reading-text, Up next, speech-style, sleep-option and watched-folder files, the reader, reading-look and appearance
      preferences, each voice's speed, the voice-note recordings and the books shared into the app.
    Left out: voices, OCR models and the dictionary (large, downloaded again), which voice each language uses (it may
    name a voice the new phone lacks), covers and search indexes (rebuilt), logs, export records and studio audio
-   (they point at files on the old phone), watched folders (folder grants do not move), the widget, and the first-run
-   flag, so a restored phone still goes through first run (voice download, battery setup).
+   (they point at files on the old phone), the widget, and the first-run flag, so a restored phone still goes
+   through first run (voice download, battery setup).
 3. **Restore is staged, then applied at the next start.** The picked file is unpacked into
    `no_backup/restore-pending/` and marked ready; the app restarts itself, and `AudoraApplication.onCreate` applies it
    (`Backups.applyPending`, `PendingRestore`) before Hilt builds anything that opens the database or preferences.
@@ -40,6 +40,8 @@ small settings files.
 5. **Books relink by content.** Books opened through the Storage Access Framework come back with positions and notes
    but show as needing their file: grants do not move between phones. Adding the same file again relinks the book
    by its fingerprint (`BookPlacement`, unchanged). Books shared into the app are inside the backup and open at once.
+   Watched folders come back as unreachable with *Pick again* (ADR-044 §6); picking the same folder again makes
+   its books readable without re-adding each one.
 6. **Logs** say counts, bytes and the refusal reason, never file names, URIs or exception messages (which can carry
    a URI).
 
