@@ -10,6 +10,7 @@ import androidx.media3.session.MediaSession
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
@@ -31,7 +32,7 @@ import kotlinx.coroutines.launch
  * Main thread. The sentence playing's timing ([timings], plan item 14) joins the extras when it starts, or when its
  * render finishes if it started first (the player waits for it then).
  */
-@Suppress("LongParameterList") // The session, two bridges and what the extras show; the last three are optional.
+@Suppress("LongParameterList") // The session, two bridges and what the extras show; the last four are optional.
 class SessionPublisher(
     private val session: MediaSession,
     private val diagnostics: DiagnosticsBridge,
@@ -40,6 +41,7 @@ class SessionPublisher(
     private val sleepOptions: () -> SleepOptions = { SleepOptions() },
     private val bookSettings: () -> BookSettings? = { null },
     private val timings: SentenceTimings? = null,
+    private val focusSound: () -> FocusSoundOptions = { FocusSoundOptions() },
 ) : SessionEvents {
     private val main = Handler(Looper.getMainLooper())
     private var lastState: SessionState? = null
@@ -95,6 +97,7 @@ class SessionPublisher(
                 if (state.hasChapters) putBoolean(PlaybackContract.SESSION_HAS_CHAPTERS, true)
                 if (state.sleepChapters > 1) putInt(PlaybackContract.SESSION_SLEEP_CHAPTERS, state.sleepChapters)
                 putString(PlaybackContract.SESSION_SLEEP_OPTIONS, sleepOptions().encode())
+                putString(PlaybackContract.SESSION_FOCUS_SOUND, focusSound().encode())
                 bookSettings()?.let {
                     putBoolean(PlaybackContract.SESSION_OWN_SETTINGS, true)
                     putString(PlaybackContract.SESSION_BOOK_VOICES, BookSettings.encodeVoices(it.voices))

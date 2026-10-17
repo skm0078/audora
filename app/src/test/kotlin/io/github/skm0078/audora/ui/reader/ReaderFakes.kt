@@ -6,6 +6,7 @@ package io.github.skm0078.audora.ui.reader
 import androidx.compose.ui.graphics.ImageBitmap
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
@@ -115,6 +116,10 @@ class FakePlaybackPort : PlaybackPort {
 
     override fun setSleepOptions(options: SleepOptions) {
         calls += "sleep options ${options.encode()}"
+    }
+
+    override fun setFocusSound(options: FocusSoundOptions) {
+        calls += "focus sound ${options.encode()}"
     }
 
     override fun setOwnSettings(on: Boolean) {

@@ -35,6 +35,9 @@ import io.github.skm0078.audora.playback.browse.BrowseTree
 import io.github.skm0078.audora.playback.browse.LibraryBrowser
 import io.github.skm0078.audora.playback.browse.OutlineChapters
 import io.github.skm0078.audora.playback.browse.ResourceBrowseTexts
+import io.github.skm0078.audora.playback.focus.FocusRenderersFactory
+import io.github.skm0078.audora.playback.focus.FocusSoundProcessor
+import io.github.skm0078.audora.playback.focus.FocusSoundStore
 import io.github.skm0078.audora.playback.notes.BookContext
 import io.github.skm0078.audora.playback.queue.MeasuredRenderAhead
 import io.github.skm0078.audora.playback.reading.ReadingSource
@@ -124,13 +127,16 @@ class AudoraPlaybackService : MediaLibraryService() {
         voices.bookVoice = book::voice
         // What is heard: the global style with the open book's own speed and pace on top (plan item 4).
         val heard = { book.style(style.current) }
-        player = SpeechPlayer.build(this, registry, config)
+        val focusSound = FocusSoundStore.forContext(this)
+        // The focus sound (plan item 72) is mixed into the voice's own audio, so it pauses and ducks with it.
+        val focus = FocusSoundProcessor(focusSound::current)
+        player = SpeechPlayer.build(this, registry, config, renderers = FocusRenderersFactory(this, focus))
         // The player's share of the listener's speed (ADR-033); the voice model speaks the rest.
         player.setPlaybackSpeed(style.config.playerSpeed(style.current.rate))
         speed = LivePlaybackSpeed(player)
         // The reading modes travel with the speech style; a change restarts the sentence playing (ADR-035).
         val reading = ReadingSource(modes = { style.current.modes })
-        val stores = SessionStores(style, sleepOptions, book)
+        val stores = SessionStores(style, sleepOptions, book, focusSound)
         val mediaSession = mediaSession(stores).also { session = it }
         bookSession = BookSession(
             player = player,
@@ -256,6 +262,7 @@ class AudoraPlaybackService : MediaLibraryService() {
             stores.sleepOptions::current,
             bookSettings = { stores.book.settings },
             timings = timings,
+            focusSound = stores.focusSound::current,
         )
     }
 

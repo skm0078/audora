@@ -4,6 +4,8 @@
 package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.config.ReaderConfig
+import io.github.skm0078.audora.core.model.FocusSound
+import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.pdf.document.PdfOpenError
@@ -260,6 +262,7 @@ class ReaderModelTest {
         model.setSleepTimer(SleepTimerSetting.EndOfPage)
         model.setSleepTimer(SleepTimerSetting.AfterChapters(2))
         model.setSleepOptions(SleepOptions(bedtime = true))
+        model.setFocusSound(FocusSoundOptions(FocusSound.RAIN, level = 0.3f))
         assertEquals(
             listOf(
                 "next",
@@ -267,6 +270,7 @@ class ReaderModelTest {
                 "sleep EndOfPage",
                 "sleep AfterChapters(count=2)",
                 "sleep options ${SleepOptions(bedtime = true).encode()}",
+                "focus sound sound=RAIN;level=0.3",
             ),
             port.calls,
         )

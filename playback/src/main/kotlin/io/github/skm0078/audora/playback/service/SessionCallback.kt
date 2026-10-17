@@ -22,6 +22,7 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
@@ -33,6 +34,7 @@ import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.contract.StudyAction
+import io.github.skm0078.audora.playback.focus.FocusSoundStore
 import io.github.skm0078.audora.playback.notes.BookContext
 import io.github.skm0078.audora.playback.session.BookSession
 import io.github.skm0078.audora.playback.session.SleepOptionsStore
@@ -90,6 +92,7 @@ class SessionCallback(
                     .add(PlaybackContract.SET_OWN_SETTINGS)
                     .add(PlaybackContract.REPLAY_PREVIOUS)
                     .add(PlaybackContract.STUDY)
+                    .add(PlaybackContract.SET_FOCUS_SOUND)
                     .build(),
             )
         }
@@ -112,6 +115,7 @@ class SessionCallback(
         PlaybackContract.ACTION_SET_OWN_SETTINGS -> later { setOwnSettings(args) }
         PlaybackContract.ACTION_REPLAY_PREVIOUS -> Futures.immediateFuture(replayPrevious(args))
         PlaybackContract.ACTION_STUDY -> study(args)
+        PlaybackContract.ACTION_SET_FOCUS_SOUND -> Futures.immediateFuture(setFocusSound(args))
         else -> Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
     }
 
@@ -360,6 +364,13 @@ class SessionCallback(
         return SessionResult(SessionResult.RESULT_SUCCESS)
     }
 
+    private fun setFocusSound(args: Bundle): SessionResult {
+        val line = args.getString(PlaybackContract.ARG_FOCUS_SOUND) ?: return badRequest()
+        stores.focusSound.set(FocusSoundOptions.decode(line))
+        bookSession().onListeningOptionsChanged()
+        return SessionResult(SessionResult.RESULT_SUCCESS)
+    }
+
     private fun badRequest(): SessionResult = failure(PlaybackErrorCode.BAD_REQUEST)
 
     private fun failure(code: PlaybackErrorCode): SessionResult {
@@ -398,4 +409,9 @@ class SessionCallback(
 }
 
 /** The listener's saved settings the custom commands change: style, sleep timer extras, the open book's own. */
-class SessionStores(val style: SpeechStyleStore, val sleepOptions: SleepOptionsStore, val book: BookContext)
+class SessionStores(
+    val style: SpeechStyleStore,
+    val sleepOptions: SleepOptionsStore,
+    val book: BookContext,
+    val focusSound: FocusSoundStore,
+)

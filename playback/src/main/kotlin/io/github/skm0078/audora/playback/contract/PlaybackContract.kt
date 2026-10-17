@@ -10,6 +10,7 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionToken
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.EngineId
+import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
@@ -54,6 +55,7 @@ object PlaybackContract {
     const val ACTION_SET_OWN_SETTINGS = "$PREFIX.SET_OWN_SETTINGS"
     const val ACTION_REPLAY_PREVIOUS = "$PREFIX.REPLAY_PREVIOUS"
     const val ACTION_STUDY = "$PREFIX.STUDY"
+    const val ACTION_SET_FOCUS_SOUND = "$PREFIX.SET_FOCUS_SOUND"
 
     /** Starts reading [ARG_BOOK_ID] at [ARG_PAGE] / [ARG_CHAR_START]. Only ever send it from a user action (C7). */
     val PLAY_FROM = SessionCommand(ACTION_PLAY_FROM, Bundle.EMPTY)
@@ -75,6 +77,9 @@ object PlaybackContract {
 
     /** Saves the sleep timer extras ([ARG_SLEEP_OPTIONS]): shake to extend, fade-out, bedtime (plan item 37). */
     val SET_SLEEP_OPTIONS = SessionCommand(ACTION_SET_SLEEP_OPTIONS, Bundle.EMPTY)
+
+    /** Saves the focus sound under the voice ([ARG_FOCUS_SOUND]): which one and how loud (plan item 72). */
+    val SET_FOCUS_SOUND = SessionCommand(ACTION_SET_FOCUS_SOUND, Bundle.EMPTY)
 
     /**
      * Gives the open book its own speed, pace and voices ([ARG_OWN_SETTINGS] true), starting from the current ones,
@@ -127,6 +132,9 @@ object PlaybackContract {
 
     /** String: [SleepOptions.encode], the argument of SET_SLEEP_OPTIONS. */
     const val ARG_SLEEP_OPTIONS = "sleep_options"
+
+    /** String: [FocusSoundOptions.encode], the argument of SET_FOCUS_SOUND. */
+    const val ARG_FOCUS_SOUND = "focus_sound"
 
     /** Boolean, the argument of SET_OWN_SETTINGS. */
     const val ARG_OWN_SETTINGS = "own_settings"
@@ -203,6 +211,9 @@ object PlaybackContract {
 
     /** The sleep timer extras in effect ([SleepOptions.encode]), always present. */
     const val SESSION_SLEEP_OPTIONS = "sleep_options"
+
+    /** The focus sound in effect ([FocusSoundOptions.encode]), always present. */
+    const val SESSION_FOCUS_SOUND = "focus_sound"
 
     /** True while the open book has its own speed, pace and voices; absent = false. */
     const val SESSION_OWN_SETTINGS = "own_settings"
@@ -333,6 +344,9 @@ object PlaybackContract {
 
     fun sleepOptionsArgs(options: SleepOptions): Bundle =
         Bundle().apply { putString(ARG_SLEEP_OPTIONS, options.encode()) }
+
+    fun focusSoundArgs(options: FocusSoundOptions): Bundle =
+        Bundle().apply { putString(ARG_FOCUS_SOUND, options.encode()) }
 
     /**
      * Only the fields given are sent; the service puts them on top of the style it has saved

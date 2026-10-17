@@ -116,6 +116,8 @@ private fun SpeedButton(
             onOwnSettings = actions::onOwnSettings,
             voices = BookVoices(voices, playback.bookVoices, actions::onBookVoice),
             study = study,
+            focusSound = playback.focusSound,
+            onFocusSound = actions::onFocusSound,
             onDismiss = { open = false },
         )
     }

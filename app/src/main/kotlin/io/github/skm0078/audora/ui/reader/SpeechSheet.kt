@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
+import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
@@ -67,6 +68,8 @@ fun SpeechSheet(
     onOwnSettings: (Boolean) -> Unit = {},
     voices: BookVoices = BookVoices(),
     study: StudyControls = StudyControls(),
+    focusSound: FocusSoundOptions = FocusSoundOptions(),
+    onFocusSound: (FocusSoundOptions) -> Unit = {},
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -85,6 +88,7 @@ fun SpeechSheet(
             CastVoicesSection(voices.rows, voiceShaping, onVoiceShaping)
             ReadingModesSection(readingModes, onReadingModes)
             StudySection(readingModes, study, onReadingModes)
+            FocusSoundSection(focusSound, onFocusSound)
             Text(
                 stringResource(R.string.speech_sheet_hint),
                 style = MaterialTheme.typography.bodySmall,
