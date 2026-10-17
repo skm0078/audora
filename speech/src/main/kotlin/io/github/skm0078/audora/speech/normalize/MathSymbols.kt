@@ -6,17 +6,19 @@ package io.github.skm0078.audora.speech.normalize
 import io.github.skm0078.audora.core.model.Lang
 
 /**
- * Applied only to [TextRole.EQUATION] text, first, so the language's own rules then read the numbers. In body text
- * these symbols are rare and the general rules (SymbolRule) are enough; an equation is nearly all symbols, and an
- * engine skips or spells most of them. Word order stays the equation's ("x ≤ 3" → "x at most 3"), which is how
- * maths is read aloud in English and close enough in Hindi and Bengali, where an equation's operands are Latin
- * letters read by the English voice anyway.
+ * Applied only to [TextRole.EQUATION] text, first, so the language's own rules then read the numbers; the equation's
+ * structure (powers, roots, fractions, derivatives) is read by [MathStructure] before the symbols. In body text these
+ * symbols are rare and the general rules (SymbolRule) are enough; an equation is nearly all symbols, and an engine
+ * skips or spells most of them. Word order stays the equation's ("x ≤ 3" → "x at most 3"), which is how maths is read
+ * aloud in English and close enough in Hindi and Bengali, where an equation's operands are Latin letters read by the
+ * English voice anyway.
  */
 internal object MathSymbols {
     fun speak(text: String, lang: Lang): String {
         val table = TABLES.getValue(lang)
-        val spoken = StringBuilder(text.length * 2)
-        text.forEach { char ->
+        val structured = MathStructure.speak(text, lang)
+        val spoken = StringBuilder(structured.length * 2)
+        structured.forEach { char ->
             val word = table[char] ?: COMMON[char]
             if (word == null) spoken.append(char) else spoken.append(' ').append(word).append(' ')
         }
@@ -56,6 +58,7 @@ internal object MathSymbols {
         '→' to "तो", '⇒' to "तो", '↔' to "तभी और केवल तभी", '⇔' to "तभी और केवल तभी", '∴' to "अतः",
         '∈' to "में", '=' to "बराबर", '≠' to "बराबर नहीं", '<' to "से कम", '>' to "से अधिक",
         '≤' to "से कम या बराबर", '≥' to "से अधिक या बराबर", '+' to "धन", '×' to "गुणा", '÷' to "भाग",
+        '/' to "बटा",
     )
 
     private val BENGALI = mapOf(
@@ -63,6 +66,7 @@ internal object MathSymbols {
         '→' to "হলে", '⇒' to "হলে", '↔' to "যদি এবং কেবল যদি", '⇔' to "যদি এবং কেবল যদি", '∴' to "অতএব",
         '∈' to "এর মধ্যে", '=' to "সমান", '≠' to "সমান নয়", '<' to "এর চেয়ে কম", '>' to "এর চেয়ে বেশি",
         '≤' to "এর চেয়ে কম বা সমান", '≥' to "এর চেয়ে বেশি বা সমান", '+' to "যোগ", '×' to "গুণ", '÷' to "ভাগ",
+        '/' to "বাই",
     )
 
     private val TABLES = mapOf(Lang.EN to ENGLISH, Lang.HI to HINDI, Lang.BN to BENGALI)
