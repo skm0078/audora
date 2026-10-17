@@ -39,6 +39,9 @@ class RenderedPageOcrTest {
         val images = ArrayList<PageImage>()
         var fail = false
         var confidence: (PageImage) -> Int = { CONFIDENT }
+
+        /** What each set of models reads and how sure it is, when set; else [text] at [confidence]. */
+        var reads: ((Set<Lang>) -> Pair<String, Int>)? = null
         override var cacheTag = "fake-1"
 
         override fun installedLangs() = installed
@@ -47,8 +50,8 @@ class RenderedPageOcrTest {
             calls.add(langs)
             images.add(image)
             if (fail) return Outcome.Failure(OcrError.Failed("engine broke"))
-            val conf = confidence(image)
-            val lines = text.lines().filter { it.isNotBlank() }.mapIndexed { i, line ->
+            val (read, conf) = reads?.invoke(langs) ?: (text to confidence(image))
+            val lines = read.lines().filter { it.isNotBlank() }.mapIndexed { i, line ->
                 RecognizedLine(
                     line.split(" ").map { RecognizedWord(it, 0, i, image.width, i + 1, conf) },
                     paragraph = 0,
@@ -168,7 +171,30 @@ class RenderedPageOcrTest {
         assertEquals(2, engine.calls.size)
     }
 
+    @Test
+    fun `margin strips get the line retry too, so a header the page's retry cleaned up matches its neighbours`() {
+        // An English running header on a Hindi page: the Hindi model garbles it, the English one reads it cleanly.
+        engine.installed = setOf(Lang.HI, Lang.EN)
+        engine.reads = { langs -> if (langs == setOf(Lang.EN)) "Audora Press" to CONFIDENT else "#फ08 52" to GARBLED }
+        val margins = requireNotNull(ocr().margins(2, setOf(Lang.HI), 0, 0.5f).getOrNull())
+        assertEquals(listOf("Audora Press"), margins.top)
+        assertEquals(listOf("Audora Press"), margins.bottom)
+    }
+
+    @Test
+    fun `a page read before another model was installed is read again, since the retry could now use it`() {
+        engine.installed = setOf(Lang.HI)
+        ocr().text(1, setOf(Lang.HI))
+        val before = engine.calls.size
+        ocr().text(1, setOf(Lang.HI))
+        assertEquals(before, engine.calls.size)
+        engine.installed = setOf(Lang.HI, Lang.EN)
+        ocr().text(1, setOf(Lang.HI))
+        assertTrue(engine.calls.size > before)
+    }
+
     private companion object {
+        const val GARBLED = 20
         const val CONFIDENT = 90
         const val SIDEWAYS = 20
     }

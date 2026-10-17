@@ -57,7 +57,7 @@ class RenderedPageOcr(
 
     override fun recognize(pageIndex: Int, langs: Set<Lang>): Outcome<OcrText, OcrError> {
         if (langs.isEmpty()) return Outcome.Failure(OcrError.Failed("no language to recognise page $pageIndex in"))
-        val key = OcrKey(bookKey, pageIndex, langs, config.renderDpi, engine.cacheTag, PAGE_VARIANT)
+        val key = OcrKey(bookKey, pageIndex, langs, config.renderDpi, engine.cacheTag, retried(PAGE_VARIANT, langs))
         return cached(key) { image -> readUpright(image, key.langs) }
     }
 
@@ -86,7 +86,7 @@ class RenderedPageOcr(
         share: Float,
     ): Outcome<OcrMargins, OcrError> {
         if (langs.isEmpty()) return Outcome.Failure(OcrError.Failed("no language to read page $pageIndex's margins in"))
-        val variant = String.format(Locale.ROOT, "margins%d-%.3f", quarterTurns, share)
+        val variant = retried(String.format(Locale.ROOT, "%s%d-%.3f", MARGIN_VARIANT, quarterTurns, share), langs)
         val key = OcrKey(bookKey, pageIndex, langs, config.marginDpi, engine.cacheTag, variant)
         val strips = cached(key) { image -> readStrips(image.turned(quarterTurns), langs, share) }
         return strips.map { text ->
@@ -104,7 +104,9 @@ class RenderedPageOcr(
             BOTTOM_STRIP to image.strip(1 - share, 1f),
         )) {
             if (strip == null) continue
-            when (val read = engine.recognize(strip, langs)) {
+            // Retried like the page itself, or a running header the page's retry cleaned up never matches the
+            // neighbours' garbled reads of it.
+            when (val read = engine.recognize(strip, langs).map { lineRetry.improve(it, strip, langs) }) {
                 is Outcome.Success -> read.value.lines.mapTo(lines) { line ->
                     OcrLine(line.words.map { OcrWord(it.text, null) }, paragraph)
                 }
@@ -130,6 +132,13 @@ class RenderedPageOcr(
                 engine.recognize(upright, langs).map { finished(it, upright, langs, turns) }
             }
         }
+
+    /**
+     * [variant] with the models the line retry may use: a page read before another model was installed is read again
+     * (the language probe's key already holds every installed model).
+     */
+    private fun retried(variant: String, langs: Set<Lang>): String =
+        lineRetry.otherModels(langs).joinToString("") { "+" + it.bcp47Tag }.let { variant + it }
 
     /** [page], read from [upright], with its unsure lines read again and the rules found in [upright]. */
     private fun finished(page: RecognizedPage, upright: PageImage, langs: Set<Lang>, turns: Int): OcrText {
@@ -194,6 +203,9 @@ class RenderedPageOcr(
 
         /** Pages with the line retry (RI-3), rules (RI-4a part 2) and line sizes (RI-10); older text is not reused. */
         private const val PAGE_VARIANT = "page-r3"
+
+        /** Margin strips with the line retry, like the page they are compared with. */
+        private const val MARGIN_VARIANT = "margins-r2-"
 
         /** Striped, so the locks stay few however many pages a session reads. */
         private val locks = Array(LOCK_STRIPES) { Any() }

@@ -10,6 +10,7 @@ import io.github.skm0078.audora.pdf.document.PageImage
 import io.github.skm0078.audora.pdf.quality.OcrError
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OcrLineRetryTest {
@@ -87,6 +88,38 @@ class OcrLineRetryTest {
             retry.improve(page(), image, setOf(Lang.HI)).lines.map { it.words.single().text },
         )
         assertEquals(0, slow.calls.size)
+    }
+
+    @Test
+    fun `a line with no letters is never retried, so it cannot use up the line limit`() {
+        val engine = FakeEngine(mapOf(Lang.HI to ("x" to 0), Lang.EN to ("Audora" to 91)))
+        val rules = (0 until OcrConfig().retryMaxLines).map { i ->
+            RecognizedLine(listOf(RecognizedWord("____", 10, 2 * i, 60, 2 * i + 1, 0)), 2)
+        }
+        val page = RecognizedPage(page().lines + rules, WIDTH, HEIGHT)
+        val improved = OcrLineRetry(engine, OcrConfig(), "test").improve(page, image, setOf(Lang.HI))
+        assertEquals("Audora", improved.lines[1].words.single().text)
+        assertEquals(1, engine.calls.size)
+    }
+
+    @Test
+    fun `each model reads every unsure line before the next model loads, and the budget is checked before each read`() {
+        val engine = FakeEngine(mapOf(Lang.HI to ("x" to 0), Lang.EN to ("Audora" to 40), Lang.BN to ("অ" to 30)))
+        val twoNoisy = RecognizedPage(
+            page().lines + RecognizedLine(listOf(RecognizedWord("#ক", 10, 60, 60, 70, 15)), 2),
+            WIDTH,
+            HEIGHT,
+        )
+        OcrLineRetry(engine, OcrConfig(), "test").improve(twoNoisy, image, setOf(Lang.HI))
+        // English for both lines, then Bengali for both: two model switches, not four.
+        assertEquals(listOf(Lang.EN, Lang.EN, Lang.BN, Lang.BN), engine.calls.map { it.first.single() })
+
+        var now = 0L
+        val timed = FakeEngine(mapOf(Lang.HI to ("x" to 0), Lang.EN to ("Audora" to 40), Lang.BN to ("অ" to 30)))
+        // Each clock read is 0.6 s: of four reads, only those starting inside the 2 s budget run.
+        val retry = OcrLineRetry(timed, OcrConfig(), "test", nanoTime = { now.also { now += 600_000_000L } })
+        retry.improve(twoNoisy, image, setOf(Lang.HI))
+        assertEquals(3, timed.calls.size)
     }
 
     private companion object {
