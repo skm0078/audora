@@ -64,6 +64,17 @@ class OcrParagraphKindsTest {
     }
 
     @Test
+    fun `a paragraph opening with a note label is an aside, in English, Hindi and Bengali`() {
+        val notes = listOf(
+            "Note: water the plants daily.",
+            "टिप्पणी: पौधों को रोज़ पानी दें।",
+            "দ্রষ্টব্য: গাছে রোজ জল দিন।",
+        )
+        for (note in notes) assertEquals(note, UnitKind.ASIDE, kinds(line(note, 0, 0)).first().first)
+        assertEquals(UnitKind.BODY, kinds(line("Notes on the plants we grew.", 0, 0)).first().first)
+    }
+
+    @Test
     fun `a heading at the top of a paragraph is split from the body text under it`() {
         val lines = listOf(line("How plants feed", 0, 0, LARGE)) + body.mapIndexed { i, text -> line(text, i + 1, 0) }
         val units = builder.build(builder.ocrReadingText(PAGE, OcrText(lines)) { transform.toPage(it) })
