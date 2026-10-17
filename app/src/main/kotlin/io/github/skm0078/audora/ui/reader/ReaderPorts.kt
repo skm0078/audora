@@ -12,6 +12,7 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.core.resume.ResumePoint
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 interface ReaderBooks {
     suspend fun find(id: BookId): Book?
@@ -63,6 +64,11 @@ interface ScreenPreference {
     fun keepScreenOn(): Flow<Boolean>
 
     suspend fun saveKeepScreenOn(on: Boolean)
+
+    /** Volume keys move by sentence while reading aloud in the reader (plan item 20); off by default. */
+    fun volumeKeysSkip(): Flow<Boolean> = flowOf(false)
+
+    suspend fun saveVolumeKeysSkip(on: Boolean) = Unit
 }
 
 class LibraryReaderBooks(private val library: Library) : ReaderBooks {

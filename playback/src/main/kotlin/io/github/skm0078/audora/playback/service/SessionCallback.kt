@@ -3,8 +3,10 @@
 
 package io.github.skm0078.audora.playback.service
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.annotation.OptIn
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
@@ -32,10 +34,14 @@ import kotlinx.coroutines.launch
 
 /**
  * Only controllers from Audora itself get the custom commands; the system UI, Bluetooth and other apps get
- * the standard transport controls (play, pause, skip), which is all a lock screen or headset needs.
+ * the standard transport controls (play, pause, skip), which is all a lock screen or headset needs. The lock screen's
+ * slider is locked (item 79), and a headset's play/pause button gets [buttons]' presses (item 20).
  */
 @OptIn(UnstableApi::class)
-@Suppress("TooManyFunctions") // One handler per custom command, plus the Media3 callbacks.
+@Suppress(
+    "TooManyFunctions", // One handler per custom command, plus the Media3 callbacks.
+    "LongParameterList", // The service parts the commands reach; the buttons are optional for tests.
+)
 class SessionCallback(
     private val ownPackage: String,
     private val scope: CoroutineScope,
@@ -43,6 +49,7 @@ class SessionCallback(
     private val stores: SessionStores,
     private val bookSession: () -> BookSession,
     private val resumption: () -> PlaybackResumption?,
+    private val buttons: MediaButtons? = null,
 ) : MediaSession.Callback {
     override fun onConnect(
         session: MediaSession,
@@ -51,6 +58,7 @@ class SessionCallback(
         val trusted = controller.packageName == ownPackage
         AudoraLog.i(TAG, "Controller connected: ${controller.packageName} trusted=$trusted")
         val builder = MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+        if (session.isMediaNotificationController(controller)) builder.setAvailablePlayerCommands(LOCKED_SLIDER)
         if (trusted) {
             builder.setAvailableSessionCommands(
                 MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
@@ -84,6 +92,12 @@ class SessionCallback(
         PlaybackContract.ACTION_SET_OWN_SETTINGS -> later { setOwnSettings(args) }
         else -> Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
     }
+
+    override fun onMediaButtonEvent(
+        session: MediaSession,
+        controllerInfo: MediaSession.ControllerInfo,
+        intent: Intent,
+    ): Boolean = buttons?.handle(controllerInfo, intent) == true
 
     override fun onPlaybackResumption(
         mediaSession: MediaSession,
@@ -228,6 +242,15 @@ class SessionCallback(
 
     private companion object {
         const val TAG = "Playback.Session"
+
+        /**
+         * The notification's and lock screen's commands (they drive the system's media controls): everything but
+         * seeking inside the item, which is one sentence, so a stray touch on the slider cannot lose the place
+         * (plan item 79). Skips, play and pause stay.
+         */
+        val LOCKED_SLIDER: Player.Commands = MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
+            .remove(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM)
+            .build()
 
         /** A day; anything longer is a bug in the caller, not a bedtime. */
         const val MAX_SLEEP_MINUTES = 24 * 60

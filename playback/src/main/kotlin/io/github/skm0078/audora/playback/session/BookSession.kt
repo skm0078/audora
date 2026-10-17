@@ -189,6 +189,9 @@ class BookSession(
         return true
     }
 
+    /** The sentence playing, or the last one heard while between sentences; null with no book. */
+    fun currentSentence(): ReadingUnit? = (playlist.current() as? PlaybackItem.Sentence)?.unit ?: lastSentence
+
     /** The voice changed: the current sentence restarts in the new voice (Build Spec §6). */
     fun restartRendering() {
         val (page, char) = resumePoint() ?: return
