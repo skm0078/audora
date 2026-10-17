@@ -16,17 +16,28 @@ import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.normalize.TextNormalizer
 import io.github.skm0078.audora.speech.normalize.TextRole
 
+/** Each character's own voice (plan item 63): null keeps the [Cast.dialogue] voice for that speaker. */
+fun interface CharacterVoices {
+    fun voiceFor(lang: Lang, speaker: Speaker): VoiceId?
+}
+
 /**
  * The voices that stand in for the narrator's, per language: [dialogue] reads quoted speech, [headings] headings. A
- * language missing from a map keeps the narrator's voice for that role.
+ * language missing from a map keeps the narrator's voice for that role. With [characters], a quote whose speaker is
+ * known ([SpeechRequest.speaker]) is read in that character's voice, before the dialogue voice.
  */
-data class Cast(val dialogue: Map<Lang, VoiceId> = emptyMap(), val headings: Map<Lang, VoiceId> = emptyMap()) {
-    val isEmpty: Boolean get() = dialogue.isEmpty() && headings.isEmpty()
+data class Cast(
+    val dialogue: Map<Lang, VoiceId> = emptyMap(),
+    val headings: Map<Lang, VoiceId> = emptyMap(),
+    val characters: CharacterVoices? = null,
+) {
+    val isEmpty: Boolean get() = dialogue.isEmpty() && headings.isEmpty() && characters == null
 }
 
 /**
  * How one sentence is spoken, beyond its text and language: the defaults of a plain read. [startsInQuote]: an earlier
- * sentence of its paragraph opened a quote that is still open ([QuoteSplitter.endsInQuote]).
+ * sentence of its paragraph opened a quote that is still open ([QuoteSplitter.endsInQuote]). [speaker]: who says the
+ * sentence's quotes, from its tag or the sentences around it ([SpeakerTags]); null when unknown.
  */
 class SpeechRequest(
     val role: TextRole = TextRole.BODY,
@@ -34,6 +45,7 @@ class SpeechRequest(
     val prosody: ClauseProsody? = null,
     val shape: (PcmAudio) -> PcmAudio = { it },
     val startsInQuote: Boolean = false,
+    val speaker: Speaker? = null,
 )
 
 /**
@@ -63,10 +75,10 @@ class CastSpeech(
         quotePauseMs: Int = 0,
         level: (PcmAudio) -> PcmAudio = { it },
     ): Outcome<RoutedAudio, SpeechError> {
-        val parts = if (cast.dialogue.isEmpty()) {
+        val parts = if (cast.dialogue.isEmpty() && cast.characters == null) {
             null
         } else {
-            quotes.split(text).takeIf { split ->
+            quotes.split(text, request.startsInQuote).takeIf { split ->
                 split.any { it.quoted }
             }
         }
@@ -74,10 +86,22 @@ class CastSpeech(
             request.role == TextRole.HEADING && cast.headings.isNotEmpty() ->
                 castOrNarrator(text, lang, request, cast.headings)
 
-            parts != null -> renderParts(parts, lang, request, cast.dialogue, Join(quotePauseMs, level))
+            parts != null -> renderParts(
+                parts,
+                lang,
+                request,
+                quoteVoices(lang, request, cast),
+                Join(quotePauseMs, level),
+            )
 
             else -> narrator.render(text, lang, request)
         }
+    }
+
+    /** The character's voice for this sentence's quotes when known, else the dialogue voice. */
+    private fun quoteVoices(lang: Lang, request: SpeechRequest, cast: Cast): Map<Lang, VoiceId> {
+        val character = request.speaker?.let { cast.characters?.voiceFor(lang, it) }
+        return if (character != null) cast.dialogue + (lang to character) else cast.dialogue
     }
 
     private suspend fun renderParts(

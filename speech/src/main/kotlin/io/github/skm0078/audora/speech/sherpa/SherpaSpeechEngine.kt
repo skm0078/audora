@@ -77,13 +77,16 @@ class SherpaSpeechEngine(
     override suspend fun voices(): Outcome<List<VoiceInfo>, SpeechError> =
         Outcome.Success(source.byId().values.map { it.toVoiceInfo() })
 
+    /** [voice] may name another speaker of an installed model ([CastSpeakers.variant]): same model, its speaker. */
     override suspend fun render(text: String, voice: VoiceId, rate: Float): RenderResult {
-        val spec = source.byId()[voice]
+        val (base, requested) = CastSpeakers.parse(voice)
+        val spec = source.byId()[base]
             ?: return Outcome.Failure(
                 SpeechError.VoiceUnavailable(id, SpeechError.VoiceUnavailable.Reason.UNKNOWN_VOICE, voice),
             )
+        val speaker = CastSpeakers.speakerFor(spec, requested)
         return try {
-            mutex.withLock { withContext(dispatcher) { renderLocked(spec, text, rate) } }
+            mutex.withLock { withContext(dispatcher) { renderLocked(spec, text, rate, speaker) } }
         } finally {
             // release() or trimMemory() may have found the lock taken by this render and left their work to whoever
             // holds it next.
@@ -125,7 +128,7 @@ class SherpaSpeechEngine(
         }
     }
 
-    private suspend fun renderLocked(spec: SherpaVoiceSpec, text: String, rate: Float): RenderResult {
+    private suspend fun renderLocked(spec: SherpaVoiceSpec, text: String, rate: Float, speaker: Int): RenderResult {
         if (released.get()) return Outcome.Failure(SpeechError.EngineUnavailable(id, "engine was released"))
         return synthesizerFor(spec).flatMap { synthesizer ->
             if (text.isBlank()) {
@@ -133,7 +136,7 @@ class SherpaSpeechEngine(
                     PcmAudio.silence(synthesizer.sampleRate),
                 )
             } else {
-                generate(spec, synthesizer, text, rate)
+                generate(spec, synthesizer, text, rate, speaker)
             }
         }
     }
@@ -143,11 +146,12 @@ class SherpaSpeechEngine(
         synthesizer: SherpaSynthesizer,
         text: String,
         rate: Float,
+        speaker: Int,
     ): RenderResult {
         val job = coroutineContext[Job]
         val started = System.nanoTime()
         val samples: Outcome<FloatArray, SpeechError> = try {
-            Outcome.Success(synthesizer.generate(text, spec.speakerId, rate) { job?.isActive != false })
+            Outcome.Success(synthesizer.generate(text, speaker, rate) { job?.isActive != false })
         } catch (e: IllegalStateException) {
             failed(spec, e)
         } catch (e: IllegalArgumentException) {
@@ -163,8 +167,8 @@ class SherpaSpeechEngine(
             } else {
                 AudoraLog.d(
                     TAG,
-                    "Rendered voice=${spec.voiceId} rate=$rate chars=${text.length} audioMs=${audio.durationMs} " +
-                        "renderMs=$renderMs",
+                    "Rendered voice=${spec.voiceId} speaker=$speaker rate=$rate chars=${text.length} " +
+                        "audioMs=${audio.durationMs} renderMs=$renderMs",
                 )
             }
             audio
