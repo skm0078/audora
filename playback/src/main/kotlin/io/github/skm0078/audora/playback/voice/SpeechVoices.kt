@@ -19,6 +19,7 @@ import io.github.skm0078.audora.speech.SpeechEngine
 import io.github.skm0078.audora.speech.SpeechEngines
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.route.VoiceSource
+import io.github.skm0078.audora.speech.sherpa.StyleBlend
 import io.github.skm0078.audora.speech.sherpa.VitsNoise
 import io.github.skm0078.audora.speech.system.SystemSpeechEngine
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
@@ -86,17 +87,19 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
 
 /**
  * Creates each engine once, on first use, and releases only what was created. [expressiveness] is the listener's step
- * (plan item 8), read on every neural render; the Piper and MMS voices reload when it changes.
+ * (plan item 8), read on every neural render; the Piper and MMS voices reload when it changes. [blend] is the
+ * listener's narrator blend (plan item 75), read the same way; the Kokoro voices reload when it changes.
  */
 class VoiceEngines(
     context: Context,
     config: SpeechConfig = SpeechConfig(),
     shapingConfig: VoiceShapingConfig = VoiceShapingConfig(),
+    blend: () -> StyleBlend? = { null },
     expressiveness: () -> Int = { VoiceShaping.DEFAULT_EXPRESSION },
 ) {
     private val appContext = context.applicationContext
     private val bundled = lazy {
-        SpeechEngines.bundled(appContext, config) {
+        SpeechEngines.bundled(appContext, config, blend) {
             val (scale, width) = shapingConfig.expressionNoise(expressiveness())
             VitsNoise(scale, width)
         }
@@ -128,3 +131,8 @@ class VoiceEngines(
         if (system.isInitialized()) system.value.release()
     }
 }
+
+/** The shaping's narrator blend as the engine takes it (plan item 75); null when there is none. */
+fun VoiceShaping.styleBlend(): StyleBlend? = blendWith?.let { StyleBlend(it, blendPercent / PERCENT) }
+
+private const val PERCENT = 100f

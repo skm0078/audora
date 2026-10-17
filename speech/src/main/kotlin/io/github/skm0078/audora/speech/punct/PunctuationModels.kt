@@ -48,7 +48,7 @@ class PunctuationModels private constructor(
 ) {
     private val appContext = context.applicationContext
     private val model = PunctuationModel.ENGLISH
-    private val files = PunctuationFiles(
+    internal val files = PunctuationFiles(
         File(appContext.noBackupFilesDir, ROOT_DIR),
         model,
         downloads.maxUnpackedBytes,
@@ -84,6 +84,7 @@ class PunctuationModels private constructor(
         AudoraLog.i(TAG, "Punctuation model download cancelled")
     }
 
+    /** Clears everything in any state, leftovers included. */
     suspend fun delete(): Outcome<Unit, String> = withContext(Dispatchers.IO) {
         workManager().cancelUniqueWork(WORK_NAME)
         synchronized(lock) {
@@ -177,3 +178,6 @@ class PunctuationDownloadWorker(context: Context, params: WorkerParameters) : Co
         const val KEY_MESSAGE = "message"
     }
 }
+
+/** Bytes on disk in any state, a cancelled or failed download's leftovers included (the Storage screen). */
+suspend fun PunctuationModels.sizeOnDisk(): Long = withContext(Dispatchers.IO) { files.sizeOnDisk() }

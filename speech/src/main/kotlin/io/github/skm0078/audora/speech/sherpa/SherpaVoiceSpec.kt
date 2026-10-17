@@ -53,6 +53,8 @@ data class VitsNoise(val scale: Float, val width: Float)
  * @property noise a VITS voice's noise values (expressiveness, plan item 8); null: sherpa's defaults. Not in
  *   `voice.properties`: the engine's voice source sets it from the listener's style, and a change reloads the model,
  *   as any change to the spec does.
+ * @property blend a Kokoro voice's narrator blend (plan item 75), set by the engine's voice source the same way;
+ *   null: the voice as installed.
  */
 data class SherpaVoiceSpec(
     val id: String,
@@ -70,6 +72,7 @@ data class SherpaVoiceSpec(
     val engineLang: String? = null,
     val numSteps: Int? = null,
     val noise: VitsNoise? = null,
+    val blend: StyleBlend? = null,
 ) {
     val voiceId: VoiceId get() = VoiceId(EngineId.SHERPA, id)
 

@@ -59,7 +59,10 @@ class PunctuationFiles(
         }
     }
 
-    /** Removes the model and any download. */
+    /** Every byte under [root] whatever the state: the model, a partial download, leftovers of a failed one. */
+    fun sizeOnDisk(): Long = root.walkBottomUp().filter { it.isFile }.sumOf { it.length() }
+
+    /** Removes the model and any download, leftovers of a cancelled or failed one included. */
     fun deleteAll(): Outcome<Unit, String> {
         val clean = !root.exists() || root.deleteRecursively()
         AudoraLog.i(TAG, if (clean) "Deleted the punctuation model" else "Could not fully delete the punctuation model")

@@ -59,9 +59,12 @@ class TessdataFiles(val root: File) {
         }
     }
 
-    /** Removes every model and download. */
+    /** Every byte under [root] whatever the state: installed models, partial downloads, leftovers of a failed one. */
+    fun sizeOnDisk(): Long = root.walkBottomUp().filter { it.isFile }.sumOf { it.length() }
+
+    /** Everything under [root], leftovers of a cancelled or failed download included. */
     fun deleteAll(): Outcome<Unit, String> {
-        val clean = listOf(tessdataDir, downloadsDir).all { !it.exists() || it.deleteRecursively() }
+        val clean = !root.exists() || root.deleteRecursively()
         AudoraLog.i(TAG, if (clean) "Deleted the OCR models" else "Could not fully delete the OCR models")
         return if (clean) Outcome.Success(Unit) else Outcome.Failure("could not delete every OCR model file")
     }

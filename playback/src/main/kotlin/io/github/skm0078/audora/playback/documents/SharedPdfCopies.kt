@@ -52,6 +52,14 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
         }
     }
 
+    /**
+     * Bytes of every copy, for the Storage screen. Size only: a copy is the book's only file, so it goes when its book
+     * is removed ([delete], through [SafDocumentAccess.releaseAccess]), never on its own.
+     */
+    suspend fun sizeBytes(): Long = withContext(Dispatchers.IO) {
+        dir.walkBottomUp().filter { it.isFile }.sumOf { it.length() }
+    }
+
     /** Deletes a copy and its folder. */
     fun delete(uri: Uri) {
         val file = fileOf(uri)
