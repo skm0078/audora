@@ -157,4 +157,35 @@ class UnitReadingTest {
         )
         assertEquals("Text 0.", (UnitReading(ReadingModes()).speechOf(kind(0, UnitKind.BODY)) as Speech.Text).text)
     }
+
+    @Test
+    fun `skim reads headings and each paragraph's first sentence`() {
+        val end = 400
+        val units = listOf(
+            kind(0, UnitKind.HEADING).copy(pauseAfterMs = 600),
+            kind(1, UnitKind.BODY),
+            kind(2, UnitKind.BODY).copy(pauseAfterMs = end),
+            kind(3, UnitKind.BODY),
+            kind(4, UnitKind.BODY).copy(pauseAfterMs = end),
+            kind(5, UnitKind.LIST_ITEM).copy(pauseAfterMs = 300),
+            kind(6, UnitKind.LIST_ITEM),
+            kind(7, UnitKind.LIST_ITEM).copy(pauseAfterMs = 300),
+            table(8, row = null),
+            table(9, row = 0),
+            kind(10, UnitKind.FOOTNOTE),
+            kind(11, UnitKind.CAPTION, text = "Fig. 2. A cell."),
+        )
+
+        assertEquals(listOf(0, 1, 3, 5, 6, 8, 11), played(ReadingModes(skim = true), units))
+        assertEquals(units.indices.toList(), played(ReadingModes(tables = TableMode.ROWS), units))
+    }
+
+    @Test
+    fun `skim still follows the other modes`() {
+        val units = listOf(kind(0, UnitKind.BODY), table(1, row = null), kind(2, UnitKind.CAPTION, text = "Fig. 1."))
+
+        val modes = ReadingModes(skim = true, tables = TableMode.SKIP, captions = CaptionMode.SKIP)
+
+        assertEquals(listOf(0), played(modes, units))
+    }
 }

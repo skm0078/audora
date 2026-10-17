@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.playback.reading
 
+import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.config.SpeakabilityConfig
 import io.github.skm0078.audora.core.model.CaptionMode
 import io.github.skm0078.audora.core.model.EquationMode
@@ -45,11 +46,15 @@ sealed interface Speech {
  * - **Skip switches** (plan item 2): (parentheses), [brackets] and links leave the text of every unit but tables and
  *   equations; a unit left empty is not played. "Page numbers" says "Page 12" before the page's first unit (index 0;
  *   when that unit is itself skipped, the page goes unannounced).
+ * - **Skim** (plan item 64): headings, captions and table summaries, and the first sentence of each paragraph, list
+ *   item or aside: one that follows a paragraph's end (a pause longer than a sentence's, [ReadingUnitConfig]), a
+ *   change of kind, or opens the page. Table rows, footnotes and equations are left out.
  */
 class UnitReading(
     private val modes: ReadingModes,
     private val speakability: SpeakabilityConfig = SpeakabilityConfig(),
     private val chapterPages: Set<Int> = emptySet(),
+    private val unitConfig: ReadingUnitConfig = ReadingUnitConfig(),
 ) {
     private val skips = TextSkips(modes.skipParentheses, modes.skipBrackets, modes.skipLinks)
 
@@ -58,6 +63,7 @@ class UnitReading(
         val previous = units.getOrNull(i - 1)
         when {
             !playsKind(unit, next = units.getOrNull(i + 1)) -> false
+            modes.skim && !skimKeeps(unit, previous, unitConfig.sentencePauseMs) -> false
             leftEmpty(unit) -> false
             isUnreadable(unit) -> previous == null || !isUnreadable(previous)
             else -> true
@@ -165,4 +171,14 @@ class UnitReading(
             RegexOption.IGNORE_CASE,
         )
     }
+}
+
+/** Skim mode's choice (plan item 64); [previous] is the unit before on the page, played or not. */
+private fun skimKeeps(unit: ReadingUnit, previous: ReadingUnit?, sentencePauseMs: Int): Boolean = when (unit.kind) {
+    UnitKind.HEADING, UnitKind.CAPTION, UnitKind.TABLE_SUMMARY -> true
+
+    UnitKind.TABLE_ROW, UnitKind.FOOTNOTE, UnitKind.EQUATION -> false
+
+    UnitKind.BODY, UnitKind.LIST_ITEM, UnitKind.ASIDE ->
+        previous == null || previous.kind != unit.kind || previous.pauseAfterMs > sentencePauseMs
 }

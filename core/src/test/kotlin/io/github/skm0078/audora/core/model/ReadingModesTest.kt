@@ -19,6 +19,7 @@ class ReadingModesTest {
             skipBrackets = true,
             skipLinks = true,
             announcePages = true,
+            skim = true,
         )
         assertEquals(modes, ReadingModes.decode(modes.encode()))
         assertEquals(ReadingModes(), ReadingModes.decode(ReadingModes().encode()))
