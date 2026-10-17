@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.pdf.render.ViewPoint
 
@@ -42,6 +43,8 @@ interface ReaderActions {
     fun onPace(pace: Pace) = Unit
 
     fun onClausePauses(on: Boolean) = Unit
+
+    fun onReadingModes(modes: ReadingModes) = Unit
 
     fun onSleepTimer(setting: SleepTimerSetting)
 

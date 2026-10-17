@@ -8,6 +8,7 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.core.result.Outcome
@@ -86,6 +87,10 @@ class FakePlaybackPort : PlaybackPort {
 
     override fun setClausePauses(on: Boolean) {
         calls += "clause pauses $on"
+    }
+
+    override fun setReadingModes(modes: ReadingModes) {
+        calls += "reading modes ${modes.encode()}"
     }
 
     override fun setSpeed(speed: Float) {

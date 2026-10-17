@@ -34,6 +34,7 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
@@ -457,6 +458,8 @@ class MainActivity : ComponentActivity() {
         override fun onPace(pace: Pace) = model.setPace(pace)
 
         override fun onClausePauses(on: Boolean) = model.setClausePauses(on)
+
+        override fun onReadingModes(modes: ReadingModes) = model.setReadingModes(modes)
 
         override fun onSleepTimer(setting: SleepTimerSetting) = model.setSleepTimer(setting)
 
