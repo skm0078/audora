@@ -14,9 +14,19 @@ import java.util.zip.CRC32
 
 /**
  * One rendered sentence. [textKey] is [StudioKeys.unitKey] of the unit it was rendered from: a sentence whose text
- * or kind changed since (a new pipeline, a fixed page) no longer matches and is rendered live.
+ * or kind changed since (a new pipeline, a fixed page) no longer matches and is rendered live. [leadMs] and
+ * [speechMs] place the voice in the clip (after any cue, before the silence after), for the word highlight.
  */
-class StudioClip(val index: Int, val textKey: Long, val sampleRate: Int, val sampleCount: Int, val data: ByteArray) {
+@Suppress("LongParameterList") // The stored fields of one clip, read and written as a record.
+class StudioClip(
+    val index: Int,
+    val textKey: Long,
+    val sampleRate: Int,
+    val sampleCount: Int,
+    val leadMs: Long,
+    val speechMs: Long,
+    val data: ByteArray,
+) {
     val durationMs: Long get() = sampleCount * MS_PER_SECOND / sampleRate
 
     fun matches(unit: ReadingUnit): Boolean = unit.index == index && StudioKeys.unitKey(unit) == textKey
@@ -26,12 +36,14 @@ class StudioClip(val index: Int, val textKey: Long, val sampleRate: Int, val sam
     companion object {
         private const val MS_PER_SECOND = 1_000L
 
-        fun of(unit: ReadingUnit, audio: PcmAudio, codec: LosslessPcm): StudioClip = StudioClip(
+        fun of(unit: ReadingUnit, voiced: StudioVoiced, codec: LosslessPcm): StudioClip = StudioClip(
             unit.index,
             StudioKeys.unitKey(unit),
-            audio.sampleRate,
-            audio.samples.size,
-            codec.encode(audio.samples),
+            voiced.audio.sampleRate,
+            voiced.audio.samples.size,
+            voiced.leadMs,
+            voiced.speechMs,
+            codec.encode(voiced.audio.samples),
         )
     }
 }
@@ -59,6 +71,8 @@ class StudioPage(val page: Int, val clips: List<StudioClip>) {
                 out.writeLong(clip.textKey)
                 out.writeInt(clip.sampleRate)
                 out.writeInt(clip.sampleCount)
+                out.writeLong(clip.leadMs)
+                out.writeLong(clip.speechMs)
                 out.writeInt(clip.data.size)
                 out.write(clip.data)
             }
@@ -72,7 +86,7 @@ class StudioPage(val page: Int, val clips: List<StudioClip>) {
 
     companion object {
         private const val MAGIC = 0x41535455 // "ASTU"
-        private const val VERSION = 1
+        private const val VERSION = 2 // 2: the voice's place in each clip, for the word highlight
         private const val CHECKSUM_BYTES = Long.SIZE_BYTES
 
         /** Throws [CorruptStudioData] on a truncated, damaged or foreign file. */
@@ -100,10 +114,14 @@ class StudioPage(val page: Int, val clips: List<StudioClip>) {
                 val textKey = input.readLong()
                 val sampleRate = input.readInt()
                 val sampleCount = input.readInt()
+                val leadMs = input.readLong()
+                val speechMs = input.readLong()
                 val size = input.readInt()
                 corruptUnless(sampleRate > 0 && sampleCount >= 0) { "bad clip format" }
+                corruptUnless(leadMs >= 0 && speechMs >= 0) { "bad clip timing" }
                 corruptUnless(size in 0..input.available()) { "bad clip size" }
-                StudioClip(index, textKey, sampleRate, sampleCount, ByteArray(size).also(input::readFully))
+                val data = ByteArray(size).also(input::readFully)
+                StudioClip(index, textKey, sampleRate, sampleCount, leadMs, speechMs, data)
             }
             return StudioPage(page, clips)
         }

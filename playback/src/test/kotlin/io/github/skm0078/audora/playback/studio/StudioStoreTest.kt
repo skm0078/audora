@@ -34,7 +34,10 @@ class StudioStoreTest {
     )
 
     private fun write(key: StudioKey, page: Int, samples: Int = 100): Long {
-        val written = store.write(key, StudioPage(page, listOf(StudioClip.of(unit(page, 0), pcm(samples), codec))))
+        val written = store.write(
+            key,
+            StudioPage(page, listOf(StudioClip.of(unit(page, 0), StudioVoiced(pcm(samples)), codec))),
+        )
         return (written as Outcome.Success).value
     }
 

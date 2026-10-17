@@ -114,7 +114,8 @@ class PunctuationModels private constructor(
         },
     )
 
-    private fun isInstalled(): Boolean = installedState.value ?: synchronized(lock) { refreshLocked() }
+    /** Whether the model is installed, without loading it; studio audio is keyed by it (ADR-039). */
+    fun isInstalled(): Boolean = installedState.value ?: synchronized(lock) { refreshLocked() }
 
     private fun refreshLocked(): Boolean = files.isInstalled().also { installedState.value = it }
 

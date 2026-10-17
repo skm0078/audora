@@ -33,15 +33,18 @@ class StudioSentenceRendererTest {
     }
 
     private fun studioAudio() {
-        store.write(key, StudioPage(0, listOf(StudioClip.of(unit(0, 0), pcm(50, fill = 7), codec))))
+        store.write(key, StudioPage(0, listOf(StudioClip.of(unit(0, 0), StudioVoiced(pcm(50, fill = 7)), codec))))
     }
 
     @Test
     fun `plays studio audio for a matching sentence`() {
         studioAudio()
-        val rendered = StudioSentenceRenderer(live, store) { key }.render(unit(0, 0))
+        var played: StudioClip? = null
+        val rendered = StudioSentenceRenderer(live, store, played = { _, clip -> played = clip }) { key }
+            .render(unit(0, 0))
         assertArrayEquals(pcm(50, fill = 7).samples, (rendered as Outcome.Success).value.samples)
         assertEquals(0, liveCalls)
+        assertEquals(50L, played?.speechMs)
     }
 
     @Test

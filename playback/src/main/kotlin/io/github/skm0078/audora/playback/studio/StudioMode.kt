@@ -12,6 +12,7 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
+import io.github.skm0078.audora.speech.punct.PunctuationModels
 import java.io.File
 
 object StudioMode {
@@ -44,6 +45,7 @@ object StudioMode {
             style = style,
             voices = Lang.entries.associateWith(voices),
             fixes = fixes,
+            punctuation = PunctuationModels.get(context).isInstalled(),
         )
 
     /**

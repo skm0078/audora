@@ -21,6 +21,7 @@ import java.security.MessageDigest
  * @property fixes the book's pronunciation fixes (`PronunciationFixer.signature`): the listener's own words, so only
  *   the hash is ever written or logged.
  * @property appStamp the app's install or update time: a new build may render differently.
+ * @property punctuation whether the punctuation model is installed: it changes how scanned run-ons are read (RI-11).
  */
 data class StudioSignature(
     val pipelineVersion: Int,
@@ -28,6 +29,7 @@ data class StudioSignature(
     val style: SpeechStyle,
     val voices: Map<Lang, VoiceId?>,
     val fixes: String,
+    val punctuation: Boolean = false,
 ) {
     /** 16 hex digits of SHA-256 over every field: the folder name, safe to log. */
     val hash: String by lazy {
@@ -42,6 +44,7 @@ data class StudioSignature(
             "shaping=${style.shaping.encode()}",
             "voices=$voiceLine",
             "fixes=$fixes",
+            "punct=$punctuation",
         ).joinToString("|")
         StudioKeys.hex(line, HASH_CHARS)
     }

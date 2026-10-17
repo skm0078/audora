@@ -20,10 +20,18 @@ class StudioPageTest {
     private fun page(): StudioPage = StudioPage(
         page = 3,
         clips = listOf(
-            StudioClip.of(unit(3, 0), pcm(1_500, fill = 5), codec),
-            StudioClip.of(unit(3, 1), pcm(500, fill = -9), codec),
+            StudioClip.of(unit(3, 0), StudioVoiced(pcm(1_500, fill = 5)), codec),
+            StudioClip.of(unit(3, 1), StudioVoiced(pcm(500, fill = -9)), codec),
         ),
     )
+
+    @Test
+    fun `keeps where the voice is in each clip`() {
+        val clip = StudioClip.of(unit(3, 0), StudioVoiced(pcm(1_500), leadMs = 120, speechMs = 900), codec)
+        val read = StudioPage.fromBytes(StudioPage(3, listOf(clip)).toBytes()).clips.single()
+        assertEquals(120L, read.leadMs)
+        assertEquals(900L, read.speechMs)
+    }
 
     @Test
     fun `reads back what it wrote`() {

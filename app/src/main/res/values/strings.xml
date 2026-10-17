@@ -31,11 +31,6 @@
     <string name="library_remove">Remove from library</string>
     <!-- Book menu (ADR-034): reads the whole book into audio files in Audiobooks/<title>. -->
     <string name="library_export_audiobook">Save as audiobook</string>
-    <!-- Studio mode (plan item 6, ADR-039): renders the book ahead while the phone charges. -->
-    <string name="library_studio_mode">Prepare in studio mode</string>
-    <!-- Plan items 69 and 76 (ADR-040): saved to Documents/Audora. -->
-    <string name="library_accessible_copy">Save an accessible copy (EPUB and text)</string>
-    <string name="library_talking_book">Save as a talking book (EPUB 3)</string>
     <string name="library_remove_title">Remove “%1$s”?</string>
     <string name="library_remove_body">The PDF stays on your phone. You can add it again later.</string>
     <string name="library_cancel">Cancel</string>
@@ -159,8 +154,6 @@
     <string name="sentence_menu_title">This sentence</string>
     <string name="sentence_menu_bookmark">Bookmark it</string>
     <string name="sentence_menu_fix">Fix how a word sounds</string>
-    <!-- Plan item 41: this sentence to the end of its paragraph, as an audio clip for WhatsApp and the like. -->
-    <string name="sentence_menu_share_clip">Share as audio</string>
     <string name="fix_title">Fix how a word sounds</string>
     <string name="fix_written">Word as written</string>
     <string name="fix_spoken">Say it like</string>

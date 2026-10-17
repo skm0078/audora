@@ -17,6 +17,7 @@ import io.github.skm0078.audora.core.config.QueueConfig
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.BookmarkStore
@@ -27,9 +28,11 @@ import io.github.skm0078.audora.core.resume.ResumeRecorder
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.book.LibraryBookSource
+import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.notes.BookContext
 import io.github.skm0078.audora.playback.queue.MeasuredRenderAhead
 import io.github.skm0078.audora.playback.queue.SentenceRenderer
+import io.github.skm0078.audora.playback.queue.UnitKey
 import io.github.skm0078.audora.playback.reading.ReadingSource
 import io.github.skm0078.audora.playback.session.BookSession
 import io.github.skm0078.audora.playback.session.ItemTexts
@@ -40,11 +43,12 @@ import io.github.skm0078.audora.playback.session.SessionEnvironment
 import io.github.skm0078.audora.playback.session.SessionSources
 import io.github.skm0078.audora.playback.session.SleepOptionsStore
 import io.github.skm0078.audora.playback.session.SpeechPlayer
-import io.github.skm0078.audora.playback.upnext.QueueAdvance
-import io.github.skm0078.audora.playback.upnext.UpNextStore
+import io.github.skm0078.audora.playback.studio.StudioClip
 import io.github.skm0078.audora.playback.studio.StudioKey
 import io.github.skm0078.audora.playback.studio.StudioMode
 import io.github.skm0078.audora.playback.studio.StudioSentenceRenderer
+import io.github.skm0078.audora.playback.upnext.QueueAdvance
+import io.github.skm0078.audora.playback.upnext.UpNextStore
 import io.github.skm0078.audora.playback.voice.EngineRenderer
 import io.github.skm0078.audora.playback.voice.ReadingSetup
 import io.github.skm0078.audora.playback.voice.RenderSpeedTracker
@@ -222,7 +226,13 @@ class AudoraPlaybackService : MediaSessionService() {
             timings = timings,
         )
         val book = stores.book
-        return StudioSentenceRenderer(live, StudioMode.store(this)) {
+        val played = { unit: ReadingUnit, clip: StudioClip ->
+            timings.record(
+                UnitKey.of(unit),
+                SentenceTiming(unit.page, unit.charStart, clip.leadMs, clip.speechMs, clip.durationMs),
+            )
+        }
+        return StudioSentenceRenderer(live, StudioMode.store(this), played = played) {
             book.bookId?.let { id ->
                 StudioKey(id, StudioMode.signature(this, heard(), voices::choiceFor, book.fixer.signature))
             }

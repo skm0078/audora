@@ -27,8 +27,6 @@ import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.reading.UnitReading
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
-import io.github.skm0078.audora.speech.SpeechError
-import io.github.skm0078.audora.speech.audio.PcmAudio
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -161,7 +159,7 @@ class StudioService : Service() {
             val progress = Progress(title)
             val chargingGate = ChargingGate(this, config, wakeLock, progress::onWaiting).also { gate = it }
             val run = StudioRun(
-                voice = { unit -> rendering.live.render(unit).messageOnFailure() },
+                voice = rendering.studioVoice(),
                 store = store,
                 gate = chargingGate,
                 config = config,
@@ -214,12 +212,6 @@ class StudioService : Service() {
 
     private companion object {
         const val TAG = "Studio.Service"
-
-        fun Outcome<PcmAudio, SpeechError>.messageOnFailure(): Outcome<PcmAudio, String> = when (this) {
-            is Outcome.Success -> this
-            is Outcome.Failure -> Outcome.Failure(error.message)
-        }
-
         const val THREAD_NAME = "studio-mode"
         const val WAKE_LOCK_TAG = "Audora:StudioMode"
 

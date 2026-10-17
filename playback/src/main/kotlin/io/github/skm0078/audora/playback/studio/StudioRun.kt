@@ -31,8 +31,11 @@ sealed interface StudioPagePlays {
  * [InterruptedException] when the run is cancelled. A failure's text is for the log.
  */
 fun interface StudioVoice {
-    fun render(unit: ReadingUnit): Outcome<PcmAudio, String>
+    fun render(unit: ReadingUnit): Outcome<StudioVoiced, String>
 }
+
+/** A rendered sentence and where its voice is in it ([leadMs] of cue first, [speechMs] of speech), for playback. */
+data class StudioVoiced(val audio: PcmAudio, val leadMs: Long = 0L, val speechMs: Long = audio.durationMs)
 
 /**
  * Blocks until rendering may go on: the phone is charging (or the listener chose to render on battery) and no audio

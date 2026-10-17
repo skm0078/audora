@@ -24,6 +24,7 @@ class StudioSentenceRenderer(
     private val live: SentenceRenderer,
     private val store: StudioStore,
     config: StudioConfig = StudioConfig(),
+    private val played: (ReadingUnit, StudioClip) -> Unit = { _, _ -> },
     private val key: () -> StudioKey?,
 ) : SentenceRenderer {
     private val codec = LosslessPcm(config.blockSamples)
@@ -32,7 +33,9 @@ class StudioSentenceRenderer(
     override fun render(unit: ReadingUnit): Outcome<PcmAudio, SpeechError> {
         val clip = key()?.let { pageFor(it, unit.page) }?.clipFor(unit)
         val studio = clip?.let { decode(unit, it) }
-        return if (studio != null) Outcome.Success(studio) else live.render(unit)
+        if (studio == null) return live.render(unit)
+        played(unit, clip)
+        return Outcome.Success(studio)
     }
 
     private fun decode(unit: ReadingUnit, clip: StudioClip): PcmAudio? = try {

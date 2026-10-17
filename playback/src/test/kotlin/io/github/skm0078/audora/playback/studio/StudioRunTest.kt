@@ -40,9 +40,9 @@ class StudioRunTest {
     private class CountingVoice(private val samples: Int, private val failAll: Boolean = false) : StudioVoice {
         val rendered = ArrayList<ReadingUnit>()
 
-        override fun render(unit: ReadingUnit): Outcome<io.github.skm0078.audora.speech.audio.PcmAudio, String> {
+        override fun render(unit: ReadingUnit): Outcome<StudioVoiced, String> {
             rendered.add(unit)
-            return if (failAll) Outcome.Failure("broken") else Outcome.Success(pcm(samples))
+            return if (failAll) Outcome.Failure("broken") else Outcome.Success(StudioVoiced(pcm(samples)))
         }
     }
 
