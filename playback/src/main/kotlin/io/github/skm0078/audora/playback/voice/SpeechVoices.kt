@@ -56,6 +56,12 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
      */
     fun knownVoice(lang: Lang): VoiceId? = bookVoice(lang) ?: chosen[lang] ?: engines.preferred(lang) ?: defaults[lang]
 
+    /**
+     * The voice explicitly chosen for [lang] (the book's, the session's or Settings → Voices), null when the language
+     * reads with its default. Never binds the phone's TTS; studio mode keys its audio by it (ADR-039).
+     */
+    fun choiceFor(lang: Lang): VoiceId? = bookVoice(lang) ?: chosen[lang] ?: engines.preferred(lang)
+
     /** How fast the voice reading [lang] renders on this phone; null if unknown or not measured yet (P4-02). */
     fun speedOf(lang: Lang): VoiceSpeed? = knownVoice(lang)?.let { engines.speeds().get(it) }
 

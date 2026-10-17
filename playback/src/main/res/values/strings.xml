@@ -28,4 +28,27 @@
     <string name="export_cancelled_text">Chapters already saved are kept in %1$s</string>
     <string name="export_busy">Another book is being saved as an audiobook; try again when it finishes</string>
     <string name="export_untitled">Audiobook</string>
+    <!-- Studio mode (plan item 6, ADR-039): renders a book ahead while the phone charges. -->
+    <string name="studio_channel">Studio mode</string>
+    <string name="studio_channel_description">Progress while a book is rendered ahead for listening</string>
+    <string name="studio_preparing_title">Studio mode</string>
+    <string name="studio_preparing">Preparing…</string>
+    <!-- %1$s is the book's title. -->
+    <string name="studio_running_title">Studio mode: “%1$s”</string>
+    <!-- %1$s and %2$s are durations like "1 h 05 min", e.g. "1 h 05 min of 6 h 00 min ready". -->
+    <string name="studio_running_text">%1$s of %2$s ready</string>
+    <!-- Appended to the running text while studio mode waits. -->
+    <string name="studio_waiting_charger">Waiting for the charger · %1$s</string>
+    <string name="studio_waiting_audio">Paused while audio plays · %1$s</string>
+    <string name="studio_start_now">Start now</string>
+    <string name="studio_stop">Stop</string>
+    <string name="studio_done_title">Ready to listen: “%1$s”</string>
+    <!-- %1$s a duration like "6 h 00 min". -->
+    <string name="studio_done_text">%1$s rendered ahead in studio quality</string>
+    <string name="studio_done_end_text">%1$s rendered ahead, to the end of the book</string>
+    <string name="studio_failed_title">Studio mode stopped: “%1$s”</string>
+    <string name="studio_stopped_title">Studio mode stopped: “%1$s”</string>
+    <string name="studio_stopped_text">What is already rendered stays and plays at once</string>
+    <string name="studio_busy">Studio mode is already preparing another book; stop it from its notification first</string>
+    <string name="studio_untitled">Book</string>
 </resources>

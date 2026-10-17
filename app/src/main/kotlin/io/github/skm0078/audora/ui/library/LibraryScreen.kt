@@ -124,7 +124,7 @@ fun LibraryScreen(
                 onExport = actions::onExportAudiobook,
                 onContinue = actions::onContinue,
                 covers = covers,
-                onAddToUpNext = actions::onAddToUpNext,
+                menu = actions,
             )
         }
     }
@@ -142,7 +142,7 @@ private fun LibraryContent(
     onExport: (Book) -> Unit,
     onContinue: (Book) -> Unit,
     covers: CoverSource,
-    onAddToUpNext: (Book) -> Unit,
+    menu: LibraryActions,
 ) {
     when (listState) {
         LibraryListState.Loading -> Centered { CircularProgressIndicator() }
@@ -167,7 +167,8 @@ private fun LibraryContent(
             }
 
             else -> {
-                val books = BookCallbacks(onTap, onRemove, onExport, onContinue, onAddToUpNext)
+                val books =
+                    BookCallbacks(onTap, onRemove, onExport, onContinue, menu::onAddToUpNext, menu::onBookAction)
                 // At 150 % text and above, two lines of title no longer fit under a cover: a list instead (item 39).
                 if (LocalDensity.current.fontScale >= LARGE_TEXT_SCALE) {
                     BookList(listState, books, covers)
@@ -201,6 +202,7 @@ private class BookCallbacks(
     val onExport: (Book) -> Unit,
     val onContinue: (Book) -> Unit,
     val onAddToUpNext: (Book) -> Unit,
+    val onAction: (Book, BookAction) -> Unit,
 )
 
 @Composable
@@ -234,6 +236,7 @@ private fun BookGrid(list: LibraryListState.Loaded, books: BookCallbacks, covers
                 onExport = { books.onExport(item.book) },
                 covers = covers,
                 onAddToUpNext = { books.onAddToUpNext(item.book) },
+                onAction = { action -> books.onAction(item.book, action) },
             )
         }
     }
@@ -262,6 +265,7 @@ private fun BookList(list: LibraryListState.Loaded, books: BookCallbacks, covers
                 onExport = { books.onExport(item.book) },
                 covers = covers,
                 onAddToUpNext = { books.onAddToUpNext(item.book) },
+                onAction = { action -> books.onAction(item.book, action) },
             )
             HorizontalDivider()
         }

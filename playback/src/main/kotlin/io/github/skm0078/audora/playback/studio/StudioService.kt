@@ -1,0 +1,262 @@
+// File: playback/src/main/kotlin/io/github/skm0078/audora/playback/studio/StudioService.kt
+// Purpose: Foreground service that renders one book ahead while the phone charges (plan item 6, ADR-039).
+
+package io.github.skm0078.audora.playback.studio
+
+import android.app.Service
+import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.os.Build
+import android.os.IBinder
+import android.os.PowerManager
+import dagger.hilt.android.AndroidEntryPoint
+import io.github.skm0078.audora.core.config.StudioConfig
+import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.library.BookTitles
+import io.github.skm0078.audora.core.library.Library
+import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.model.VoiceId
+import io.github.skm0078.audora.core.notes.BookSettingsStore
+import io.github.skm0078.audora.core.notes.PronunciationStore
+import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.resume.ResumeAnchorStore
+import io.github.skm0078.audora.pdf.document.PdfPageError
+import io.github.skm0078.audora.playback.R
+import io.github.skm0078.audora.playback.book.BookText
+import io.github.skm0078.audora.playback.book.LibraryBookSource
+import io.github.skm0078.audora.playback.book.OpenedBook
+import io.github.skm0078.audora.playback.reading.UnitReading
+import io.github.skm0078.audora.playback.voice.EngineRenderer
+import io.github.skm0078.audora.playback.voice.ReadingSetup
+import io.github.skm0078.audora.playback.voice.SpeechStyleStore
+import io.github.skm0078.audora.playback.voice.SpeechVoices
+import io.github.skm0078.audora.playback.voice.VoiceEngines
+import io.github.skm0078.audora.speech.SpeechError
+import io.github.skm0078.audora.speech.audio.PcmAudio
+import io.github.skm0078.audora.speech.normalize.PronunciationFixer
+import javax.inject.Inject
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+
+/**
+ * One book at a time, on its own thread (PDFium and the renderer are thread-confined). Synthesis outside the playback
+ * service is allowed for user-started foreground jobs since ADR-034; studio mode is one (ADR-039), never WorkManager.
+ *
+ * It renders exactly what playback would: the book's own speed, pace and voices over the listener's style, its
+ * pronunciation fixes, the reading modes and chapter cues, so playback finds the audio under the same
+ * [StudioSignature]. It waits (wake lock released) while the phone is not charging, unless the listener taps
+ * "Start now" on the notification, and pauses while any audio plays, so listening never stutters.
+ *
+ * Stop, Android 15's 6-hour limit for this kind of job and the service being destroyed all interrupt the thread;
+ * pages already rendered stay and are used.
+ */
+@AndroidEntryPoint
+class StudioService : Service() {
+    @Inject
+    lateinit var library: Library
+
+    @Inject
+    lateinit var resumeAnchors: ResumeAnchorStore
+
+    @Inject
+    lateinit var bookSettings: BookSettingsStore
+
+    @Inject
+    lateinit var pronunciations: PronunciationStore
+
+    private val config = StudioConfig()
+    private lateinit var notifications: StudioNotifications
+
+    @Volatile
+    private var worker: Thread? = null
+
+    @Volatile
+    private var gate: ChargingGate? = null
+
+    override fun onCreate() {
+        super.onCreate() // Hilt injects fields here.
+        notifications = StudioNotifications(this).apply { createChannel() }
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            StudioMode.ACTION_START -> start(intent.getStringExtra(StudioMode.EXTRA_BOOK)?.let(::BookId))
+            StudioMode.ACTION_STOP -> stop("stopped by the user")
+            StudioMode.ACTION_ON_BATTERY -> gate?.allowBattery()
+            else -> AudoraLog.w(TAG, "Unknown command ${intent?.action}")
+        }
+        if (worker == null) stopSelf(startId)
+        // Never restarted by the system: studio mode starts only from a user action (C7).
+        return START_NOT_STICKY
+    }
+
+    /** Android 15+: this kind of foreground job used up its daily 6 hours; stop now, keep what is rendered. */
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        stop("Android's time limit for background jobs")
+    }
+
+    override fun onDestroy() {
+        stop("service destroyed")
+        super.onDestroy()
+    }
+
+    private fun start(id: BookId?) {
+        // Foreground first, always: Android requires it within seconds of startForegroundService.
+        startForeground(StudioNotifications.RUNNING_ID, notifications.preparing(), foregroundType())
+        if (id == null) {
+            AudoraLog.w(TAG, "Studio request without a book")
+            return
+        }
+        if (worker != null) {
+            AudoraLog.w(TAG, "Studio mode already running; book=${id.logLabel} not started")
+            notifications.showFailed(getString(R.string.studio_untitled), getString(R.string.studio_busy))
+            return
+        }
+        worker = Thread({ runStudio(id) }, THREAD_NAME).apply { start() }
+    }
+
+    private fun stop(why: String) {
+        worker?.let { thread ->
+            AudoraLog.i(TAG, "Stopping studio mode: $why")
+            thread.interrupt()
+        }
+    }
+
+    /** On the worker thread. */
+    private fun runStudio(id: BookId) {
+        val wakeLock = getSystemService(PowerManager::class.java)
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)
+        try {
+            val books = LibraryBookSource(this, library)
+            when (val opened = runBlocking { books.open(id, password = null) }) {
+                is Outcome.Success -> opened.value.text.use { renderBook(opened.value, wakeLock) }
+
+                is Outcome.Failure -> {
+                    AudoraLog.w(TAG, "Studio mode not started, book=${id.logLabel}: ${opened.error.code}")
+                    notifications.showFailed(getString(R.string.studio_untitled), opened.error.message)
+                }
+            }
+        } catch (interrupted: InterruptedException) {
+            AudoraLog.i(TAG, "Studio mode interrupted before it started, book=${id.logLabel}")
+        } finally {
+            gate?.close()
+            gate = null
+            if (wakeLock.isHeld) wakeLock.release()
+            // The worker is done: the service goes with it.
+            worker = null
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
+    }
+
+    private fun renderBook(book: OpenedBook, wakeLock: PowerManager.WakeLock) {
+        val id = book.book.id
+        val title = book.book.title.takeUnless { it == BookTitles.UNTITLED } ?: getString(R.string.studio_untitled)
+        val voices = SpeechVoices(VoiceEngines(this))
+        try {
+            val setup = runBlocking { readSetup(id) }
+            voices.bookVoice = { lang -> setup.ownVoices[lang] }
+            val styleStore = SpeechStyleStore.forContext(this)
+            val heard = setup.style(styleStore.current)
+            val chapterPages = book.text.chapterStarts().toSet()
+            val renderer = EngineRenderer(
+                voices,
+                style = { heard },
+                styleConfig = styleStore.config,
+                reading = ReadingSetup(chapterPages = { chapterPages }, fixer = { setup.fixer }),
+            )
+            val key = StudioKey(id, StudioMode.signature(this, heard, voices::choiceFor, setup.fixer.signature))
+            val store = StudioMode.store(this)
+            store.dropBooksNotIn(runBlocking { library.books().first() }.mapTo(HashSet()) { it.id })
+            val fromPage = runBlocking { resumeAnchors.get(id) }?.page ?: 0
+            val progress = Progress(title)
+            val chargingGate = ChargingGate(this, config, wakeLock, progress::onWaiting).also { gate = it }
+            val run = StudioRun(
+                voice = { unit -> renderer.render(unit).messageOnFailure() },
+                store = store,
+                gate = chargingGate,
+                config = config,
+                freeBytes = { filesDir.usableSpace },
+                listener = progress,
+            )
+            AudoraLog.i(TAG, "Studio started, book=${id.logLabel}, from page=$fromPage, key=${key.signature.hash}")
+            val reading = UnitReading(heard.modes, chapterPages = chapterPages)
+            when (val result = run.run(key, PagePlays(book.text, reading), fromPage)) {
+                is Outcome.Success -> notifications.showDone(title, result.value)
+                is Outcome.Failure -> notifications.showFailed(title, result.error.message)
+            }
+        } catch (interrupted: InterruptedException) {
+            AudoraLog.i(TAG, "Studio mode stopped, book=${id.logLabel}")
+            notifications.showStopped(title)
+        } finally {
+            voices.release()
+        }
+    }
+
+    /** The book's own settings and fixes, read once: what playback applies when it opens the book. */
+    private suspend fun readSetup(id: BookId): BookSetup {
+        val own = bookSettings.get(id)
+        val rules = pronunciations.observe(id).first()
+        return BookSetup(own?.voices.orEmpty(), PronunciationFixer(rules)) { global -> own?.over(global) ?: global }
+    }
+
+    private class BookSetup(
+        val ownVoices: Map<Lang, VoiceId>,
+        val fixer: PronunciationFixer,
+        val style: (SpeechStyle) -> SpeechStyle,
+    )
+
+    /** The units playback plays on each page, with the same failure rules. */
+    private class PagePlays(private val text: BookText, private val reading: UnitReading) : StudioBook {
+        override val pageCount: Int get() = text.pageCount
+
+        override fun plays(page: Int): StudioPagePlays = when (val units = text.units(page)) {
+            is Outcome.Success -> StudioPagePlays.Units(reading.plays(units.value))
+
+            is Outcome.Failure -> when (units.error) {
+                is PdfPageError.ExtractionFailed, is PdfPageError.PageOutOfRange -> StudioPagePlays.Skipped
+                is PdfPageError.ReopenFailed, PdfPageError.BookClosed -> StudioPagePlays.BookUnreadable
+            }
+        }
+    }
+
+    private inner class Progress(private val title: String) : StudioListener {
+        private var readyMs = 0L
+        private var waiting: ChargingGate.Wait? = null
+
+        override fun onPageDone(page: Int, readyMs: Long) {
+            this.readyMs = readyMs
+            show()
+        }
+
+        fun onWaiting(wait: ChargingGate.Wait?) {
+            waiting = wait
+            show()
+        }
+
+        private fun show() = notifications.showRunning(title, readyMs, config.aheadMs, waiting)
+    }
+
+    private companion object {
+        const val TAG = "Studio.Service"
+
+        fun Outcome<PcmAudio, SpeechError>.messageOnFailure(): Outcome<PcmAudio, String> = when (this) {
+            is Outcome.Success -> this
+            is Outcome.Failure -> Outcome.Failure(error.message)
+        }
+
+        const val THREAD_NAME = "studio-mode"
+        const val WAKE_LOCK_TAG = "Audora:StudioMode"
+
+        /** mediaProcessing is the type made for this (Android 15+); dataSync before it existed. */
+        fun foregroundType(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
+        } else {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+        }
+    }
+}

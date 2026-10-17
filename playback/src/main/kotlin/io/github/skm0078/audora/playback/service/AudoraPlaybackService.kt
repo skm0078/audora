@@ -29,6 +29,7 @@ import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.notes.BookContext
 import io.github.skm0078.audora.playback.queue.MeasuredRenderAhead
+import io.github.skm0078.audora.playback.queue.SentenceRenderer
 import io.github.skm0078.audora.playback.reading.ReadingSource
 import io.github.skm0078.audora.playback.session.BookSession
 import io.github.skm0078.audora.playback.session.ItemTexts
@@ -41,6 +42,9 @@ import io.github.skm0078.audora.playback.session.SleepOptionsStore
 import io.github.skm0078.audora.playback.session.SpeechPlayer
 import io.github.skm0078.audora.playback.upnext.QueueAdvance
 import io.github.skm0078.audora.playback.upnext.UpNextStore
+import io.github.skm0078.audora.playback.studio.StudioKey
+import io.github.skm0078.audora.playback.studio.StudioMode
+import io.github.skm0078.audora.playback.studio.StudioSentenceRenderer
 import io.github.skm0078.audora.playback.voice.EngineRenderer
 import io.github.skm0078.audora.playback.voice.ReadingSetup
 import io.github.skm0078.audora.playback.voice.RenderSpeedTracker
@@ -196,25 +200,34 @@ class AudoraPlaybackService : MediaSessionService() {
         }
     }
 
+    /** The live voice, with studio audio in front of it: a sentence rendered ahead plays at once (ADR-039). */
     private fun renderer(
         engines: VoiceEngines,
         stores: SessionStores,
         reading: ReadingSource,
         heard: () -> SpeechStyle,
-    ) = EngineRenderer(
-        voices,
-        speed = RenderSpeedTracker(engines::speeds),
-        style = heard,
-        styleConfig = stores.style.config,
-        reading = ReadingSetup(
-            reading.speakability,
-            chapterPages = { reading.chapterPages },
-            fixer = { stores.book.fixer },
-            scanned = { page -> reading.scanned(page) },
-            runOn = RunOnPunctuation(punctuator = PunctuationModels.get(this)::punctuator),
-        ),
-        timings = timings,
-    )
+    ): SentenceRenderer {
+        val live = EngineRenderer(
+            voices,
+            speed = RenderSpeedTracker(engines::speeds),
+            style = heard,
+            styleConfig = stores.style.config,
+            reading = ReadingSetup(
+                reading.speakability,
+                chapterPages = { reading.chapterPages },
+                fixer = { stores.book.fixer },
+                scanned = { page -> reading.scanned(page) },
+                runOn = RunOnPunctuation(punctuator = PunctuationModels.get(this)::punctuator),
+            ),
+            timings = timings,
+        )
+        val book = stores.book
+        return StudioSentenceRenderer(live, StudioMode.store(this)) {
+            book.bookId?.let { id ->
+                StudioKey(id, StudioMode.signature(this, heard(), voices::choiceFor, book.fixer.signature))
+            }
+        }
+    }
 
     private fun publisher(
         mediaSession: MediaSession,

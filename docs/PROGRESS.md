@@ -2,6 +2,12 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Studio mode and exports (plan items 6, 41, 69, 76; 2026-10-17, ADR-039)
+- **Studio mode (6):** *Prepare in studio mode* in a book's menu renders the book from its resume page, 6 listening hours ahead, while the phone charges (`StudioService`, `ChargingGate`). Unplugged it waits with the wake lock released and offers *Start now* on battery; it pauses while any audio plays. It renders with exactly playback's voices, style, book settings, fixes and reading modes; playback (`StudioSentenceRenderer`) plays a sentence's studio clip when its signature and text match and renders live otherwise. Stored losslessly (`LosslessPcm`, FLAC-style fixed prediction and Rice codes, pure Kotlin) per page with a checksum; old pages, old signatures and removed books are deleted; 2 GiB in all; stops below 512 MiB free (`StudioConfig`).
+- Tests: `LosslessPcmTest`, `StudioPageTest`, `StudioStoreTest`, `StudioRunTest`, `StudioSentenceRendererTest`. No new dependency; no `:pdf` change.
+
+**Real-device checks (final phone session):** start studio mode on a Kokoro book unplugged (notification waits, *Start now* renders), plug in (it resumes), play a song (it pauses); after a run, the first sentence plays at once and the log shows `Studio.Play`; change the speed and confirm it renders live; measure render time and MB per ready hour on the Moto.
+
 ## UI wave 2 — follow-along, "What did it say?", word highlight, home-screen widget (plan items 13, 5, 14, 35; 2026-10-17, ADR-036 §10-13)
 - **Follow-along (13):** the text view keeps the spoken sentence centred; *Follow along* turns it off, and the highlight is a band, an underline or bold (reader ⋮ menu, saved with the reading look).
 - **What did it say? (5):** a button in the full player replays the sentence just heard at 0.85× the listener's speed, shows it in a card, and carries on at the listener's speed.
