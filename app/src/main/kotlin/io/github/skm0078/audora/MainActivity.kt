@@ -3,14 +3,18 @@
 
 package io.github.skm0078.audora
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +40,7 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.library.LibraryQuery
+import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
@@ -65,6 +70,7 @@ import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.playback.export.MarkStores
 import io.github.skm0078.audora.playback.export.NotesExport
 import io.github.skm0078.audora.playback.notes.VoiceNoteAudio
+import io.github.skm0078.audora.playback.photo.PhotoBooks
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.search.SearchIndexes
 import io.github.skm0078.audora.playback.studio.StudioMode
@@ -81,6 +87,7 @@ import io.github.skm0078.audora.ui.diagnostics.DiagnosticsController
 import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
 import io.github.skm0078.audora.ui.library.BookAction
 import io.github.skm0078.audora.ui.library.BookCovers
+import io.github.skm0078.audora.ui.library.LibraryAction
 import io.github.skm0078.audora.ui.library.LibraryActions
 import io.github.skm0078.audora.ui.library.LibraryController
 import io.github.skm0078.audora.ui.library.LibraryListState
@@ -139,6 +146,8 @@ import io.github.skm0078.audora.ui.voices.VoicesController
 import io.github.skm0078.audora.ui.voices.VoicesScreen
 import io.github.skm0078.audora.widget.ResumeWidgetEffect
 import io.github.skm0078.audora.widget.ResumeWidgetProvider
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -231,6 +240,8 @@ class MainActivity : ComponentActivity() {
     private val searchIndexes: SearchIndexes by lazy { SearchIndexes(applicationContext) }
 
     private val voiceNoteAudio: VoiceNoteAudio by lazy { VoiceNoteAudio(applicationContext) }
+
+    private val photoBooks: PhotoBooks by lazy { PhotoBooks(applicationContext, sharedCopies) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -492,6 +503,29 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Plan item 62: the camera app takes the photo (no camera permission); [makePhotoBook] reads what it saved. */
+    private fun pointAndRead(takePhoto: ActivityResultLauncher<Uri>) {
+        try {
+            takePhoto.launch(photoBooks.captureUri())
+        } catch (e: ActivityNotFoundException) {
+            AudoraLog.w(TAG, "No camera app: ${e.javaClass.simpleName}")
+            Toast.makeText(this, R.string.photo_no_camera, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /** The photo becomes a one-page book, then is added and opened like a shared PDF. */
+    private fun makePhotoBook() {
+        activityScope.launch {
+            val takenAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern(PHOTO_TITLE_DATE))
+            when (val made = photoBooks.toBook(getString(R.string.photo_book_title, takenAt))) {
+                is Outcome.Success -> sharedPdf = made.value
+
+                is Outcome.Failure ->
+                    Toast.makeText(this@MainActivity, R.string.photo_failed, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     /** Text shared from another app (plan item 42): saved as a .txt beside the shared copies, then added and opened. */
     @Composable
     private fun SharedTextEffect() {
@@ -528,6 +562,9 @@ class MainActivity : ComponentActivity() {
     ) {
         val context = LocalContext.current.applicationContext
         val playWithPermission = rememberPlayWithNotificationPermission()
+        val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
+            if (taken) makePhotoBook()
+        }
         val actions = remember(controller) {
             object : LibraryActions {
                 override fun onAddPdf(documentUri: Uri) = controller.add(documentUri.toString())
@@ -568,6 +605,10 @@ class MainActivity : ComponentActivity() {
                         playWithPermission { BookCopies.start(context, book.id, CopyKind.TALKING_BOOK) }
 
                     BookAction.EXPORT_NOTES -> exportNotes(book)
+                }
+
+                override fun onLibraryAction(action: LibraryAction) = when (action) {
+                    LibraryAction.POINT_AND_READ -> pointAndRead(takePhoto)
                 }
             }
         }
@@ -987,3 +1028,8 @@ private fun SharedPdfEffect(
         add(shared) { id -> navigate(AppDestination.Reader(id)) }
     }
 }
+
+private const val TAG = "Audora.Main"
+
+/** A photo book's title date: no colon or slash, since the title is also its file name (plan item 62). */
+private const val PHOTO_TITLE_DATE = "d MMM yyyy, HH.mm"

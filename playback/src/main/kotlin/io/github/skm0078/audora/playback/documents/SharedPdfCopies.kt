@@ -59,9 +59,8 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
     suspend fun saveText(text: String, title: String?, maxChars: Int): String? = withContext(Dispatchers.IO) {
         val name = safeName(title ?: text.lineSequence().firstOrNull { it.isNotBlank() }?.take(TITLE_FROM_TEXT_CHARS))
             .removeSuffix(".pdf").let { if (it == DEFAULT_NAME.removeSuffix(".pdf")) SHARED_TEXT_NAME else it }
-        val target = File(File(dir, UUID.randomUUID().toString()), "$name.txt")
+        val target = newCopy("$name.txt")
         try {
-            target.parentFile?.mkdirs()
             target.writeText(text.take(maxChars))
             AudoraLog.i(TAG, "Saved shared text, chars=${minOf(text.length, maxChars)}")
             Uri.fromFile(target).toString()
@@ -71,6 +70,13 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
             null
         }
     }
+
+    /**
+     * A new, empty place for a book Audora makes itself (shared text, a camera photo, plan items 42 and 62): its own
+     * folder beside the copies, so [owns] accepts it and removing the book deletes it. [fileName] is made safe.
+     */
+    fun newCopy(fileName: String): File =
+        File(File(dir, UUID.randomUUID().toString()), safeName(fileName)).also { it.parentFile?.mkdirs() }
 
     /** Deletes a copy and its folder. */
     fun delete(uri: Uri) {

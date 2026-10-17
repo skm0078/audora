@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Point and read: a photo of a page read as a book (plan item 62). -->
+<resources>
+    <string name="library_point_and_read">Point and read (take a photo)</string>
+    <!-- The book's title; %1$s is the date and time the photo was taken. -->
+    <string name="photo_book_title">Photo %1$s</string>
+    <string name="photo_no_camera">No camera app is available to take the photo.</string>
+    <string name="photo_failed">Audora could not read that photo. Try again in better light.</string>
+</resources>

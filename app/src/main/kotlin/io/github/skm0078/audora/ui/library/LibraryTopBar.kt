@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/LibraryTopBar.kt
-// Purpose: The library's top bar: title, search field, sort and filter menu (plan item 22).
+// Purpose: The library's top bar: title, search field, sort and filter menu (plan item 22), ⋮ tools menu.
 
 package io.github.skm0078.audora.ui.library
 
@@ -44,6 +44,7 @@ internal fun LibraryTopBar(listState: LibraryListState, actions: LibraryActions)
         query = loaded?.query ?: LibraryQuery(),
         hasBooks = loaded?.all?.isNotEmpty() == true,
         onQuery = actions::onQuery,
+        onAction = actions::onLibraryAction,
     )
 }
 
@@ -53,7 +54,12 @@ internal fun LibraryTopBar(listState: LibraryListState, actions: LibraryActions)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun LibraryTopBar(query: LibraryQuery, hasBooks: Boolean, onQuery: (LibraryQuery) -> Unit) {
+internal fun LibraryTopBar(
+    query: LibraryQuery,
+    hasBooks: Boolean,
+    onQuery: (LibraryQuery) -> Unit,
+    onAction: (LibraryAction) -> Unit = {},
+) {
     var searching by rememberSaveable { mutableStateOf(query.text.isNotEmpty()) }
     val closeSearch = {
         searching = false
@@ -85,6 +91,7 @@ internal fun LibraryTopBar(query: LibraryQuery, hasBooks: Boolean, onQuery: (Lib
                 }
             }
             if (hasBooks) SortMenu(query, onQuery)
+            if (!searching) LibraryActionsMenu(onAction)
         },
     )
 }
@@ -125,6 +132,28 @@ private fun SortMenu(query: LibraryQuery, onQuery: (LibraryQuery) -> Unit) {
                 Choice(filterLabel(filter), selected = query.filter == filter) {
                     onQuery(query.copy(filter = filter))
                 }
+            }
+        }
+    }
+}
+
+/** The library's own tools (plan items 62, 26, 28); shown with or without books, since they add books. */
+@Composable
+private fun LibraryActionsMenu(onAction: (LibraryAction) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { open = true }) {
+            Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.reader_more))
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            LibraryAction.entries.forEach { action ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(action.label)) },
+                    onClick = {
+                        open = false
+                        onAction(action)
+                    },
+                )
             }
         }
     }

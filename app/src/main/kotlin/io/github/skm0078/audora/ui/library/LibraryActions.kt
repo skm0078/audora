@@ -42,4 +42,7 @@ interface LibraryActions {
 
     /** One of the [BookAction]s in a book's menu (studio mode and the exports, plan items 6, 69, 76). */
     fun onBookAction(book: Book, action: BookAction) = Unit
+
+    /** One of the [LibraryAction]s in the library's ⋮ menu (point and read, plan item 62). */
+    fun onLibraryAction(action: LibraryAction) = Unit
 }
