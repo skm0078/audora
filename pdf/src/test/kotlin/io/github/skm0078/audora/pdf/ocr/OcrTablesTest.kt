@@ -5,6 +5,7 @@ package io.github.skm0078.audora.pdf.ocr
 
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.pdf.render.PageTransform
+import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.pdf.render.ViewRect
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import org.junit.Assert.assertEquals
@@ -26,8 +27,8 @@ class OcrTablesTest {
 
     private fun vertical(left: Float, top: Float, bottom: Float) = ViewRect(left, top, left + RULE, bottom)
 
-    private fun units(ocr: OcrText): List<ReadingUnit> =
-        builder.build(builder.ocrReadingText(PAGE, ocr) { transform.toPage(it) })
+    private fun units(ocr: OcrText, on: PageTransform = transform): List<ReadingUnit> =
+        builder.build(builder.ocrReadingText(PAGE, ocr) { on.toPage(it) })
 
     /** Each table unit as its cells' texts, header first; other units as their text. */
     private fun rows(units: List<ReadingUnit>): List<Any> = units.map { unit ->
@@ -57,6 +58,103 @@ class OcrTablesTest {
         val expected = listOf("Results follow.", listOf("Name", "Score"), listOf("Asha", "91"), listOf("Ravi", "78"))
         // The last cell read, a lone number, is inside the rules: a cell, not the page number.
         assertEquals(expected, rows(units(ocr)))
+    }
+
+    @Test
+    fun `two ruled tables side by side on the same row heights stay two tables`() {
+        val ys = listOf(0.2f, 0.25f, 0.3f, 0.35f)
+        val rules = grid(listOf(0.05f, 0.2f, 0.35f), ys) + grid(listOf(0.55f, 0.7f, 0.85f), ys)
+        val ocr = OcrText(
+            // Tesseract reads the two header cells as one line across the gutter: both tables start on it.
+            listOf(OcrLine(listOf(word("Name", 0.07f, 0.205f), word("City", 0.57f, 0.205f)), 0)) +
+                cells(
+                    word("Asha", 0.07f, 0.255f),
+                    word("Ravi", 0.07f, 0.305f),
+                    word("Score", 0.22f, 0.205f),
+                    word("91", 0.22f, 0.255f),
+                    word("78", 0.22f, 0.305f),
+                    word("Pune", 0.57f, 0.255f),
+                    word("Agra", 0.57f, 0.305f),
+                    word("Rank", 0.72f, 0.205f),
+                    word("8", 0.72f, 0.255f),
+                    word("19", 0.72f, 0.305f),
+                ).map { OcrLine(it.words, it.paragraph + 1) },
+            rules = rules,
+        )
+        val expected = listOf(
+            listOf("Name", "Score"),
+            listOf("Asha", "91"),
+            listOf("Ravi", "78"),
+            listOf("City", "Rank"),
+            listOf("Pune", "8"),
+            listOf("Agra", "19"),
+        )
+        assertEquals(expected, rows(units(ocr)))
+    }
+
+    @Test
+    fun `a one-character cell beside a rule is a cell, not a rule read as text`() {
+        // A narrow middle column: its one-character cells sit within the snap of the rule on their left.
+        val narrow = 0.008f
+        val ocr = OcrText(
+            cells(
+                word("Name", 0.12f, 0.205f),
+                word("#", 0.403f, 0.205f, width = narrow),
+                word("Score", 0.44f, 0.205f),
+                word("Asha", 0.12f, 0.255f),
+                word("5", 0.403f, 0.255f, width = narrow),
+                word("91", 0.44f, 0.255f),
+                word("Ravi", 0.12f, 0.305f),
+                word("|", 0.399f, 0.305f, width = 0.004f),
+                word("7", 0.403f, 0.305f, width = narrow),
+                word("78", 0.44f, 0.305f),
+            ),
+            rules = grid(listOf(0.1f, 0.4f, 0.425f, 0.7f), listOf(0.2f, 0.25f, 0.3f, 0.35f)),
+        )
+        val expected = listOf(listOf("Name", "#", "Score"), listOf("Asha", "5", "91"), listOf("Ravi", "7", "78"))
+        assertEquals(expected, rows(units(ocr)))
+    }
+
+    @Test
+    fun `a page with Rotate 90 or 270 reads its ruled and borderless tables as an upright page does`() {
+        val ruled = OcrText(
+            cells(
+                word("Name", 0.12f, 0.205f),
+                word("Asha", 0.12f, 0.255f),
+                word("Ravi", 0.12f, 0.305f),
+                word("Score", 0.42f, 0.205f),
+                word("91", 0.42f, 0.255f),
+                word("78", 0.42f, 0.305f),
+            ),
+            rules = grid(listOf(0.1f, 0.4f, 0.7f), listOf(0.2f, 0.25f, 0.3f, 0.35f)),
+        )
+        val borderless = OcrText(
+            listOf("Item" to "Cost", "Pens" to "12", "Paper" to "30", "Ink" to "45").mapIndexed { i, (item, cost) ->
+                OcrLine(listOf(word(item, 0.1f, 0.2f + i * ROW_PITCH), word(cost, 0.5f, 0.2f + i * ROW_PITCH)), i)
+            },
+        )
+        // The page as stored is 600 × 800 points; shown turned, 800 wide and 600 tall.
+        for (quarterTurns in listOf(1, 3)) {
+            val turned = rotated(quarterTurns)
+            assertEquals(rows(units(ruled)), rows(units(ruled, turned)))
+            assertEquals(rows(units(borderless)), rows(units(borderless, turned)))
+        }
+        assertEquals(listOf(listOf("Name", "Score"), listOf("Asha", "91"), listOf("Ravi", "78")), rows(units(ruled)))
+    }
+
+    /**
+     * A page stored [PAGE_WIDTH] × [PAGE_HEIGHT] shown with `/Rotate` of [quarterTurns] × 90°: at 90 the page's x runs
+     * down the view and its y to the right; at 270, up and to the left.
+     */
+    private fun rotated(quarterTurns: Int): PageTransform {
+        val step = 1f
+        val down = step / PAGE_WIDTH
+        val across = step / PAGE_HEIGHT
+        return if (quarterTurns == 1) {
+            PageTransform.fromSamples(ViewPoint(0f, 0f), ViewPoint(0f, down), ViewPoint(across, 0f), step)
+        } else {
+            PageTransform.fromSamples(ViewPoint(1f, 1f), ViewPoint(1f, 1f - down), ViewPoint(1f - across, 1f), step)
+        }
     }
 
     @Test

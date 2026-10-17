@@ -1,5 +1,5 @@
 // File: pdf/src/main/kotlin/io/github/skm0078/audora/pdf/cleanup/TableGeometry.kt
-// Purpose: Box tests shared by the table finder, its header band and the grid: union, row overlap, row pitch.
+// Purpose: Box tests shared by the table finder, its header band and the grid: union, row overlap, pairing, pitch.
 
 package io.github.skm0078.audora.pdf.cleanup
 
@@ -13,6 +13,11 @@ internal fun Collection<TextLine>.unionBox(): TextBox? = mapNotNull { it.box }.r
 internal fun overlapsVertically(a: TextBox, b: TextBox, ratio: Float): Boolean {
     val overlap = minOf(a.top, b.top) - maxOf(a.bottom, b.bottom)
     return overlap >= minOf(a.height, b.height) * ratio
+}
+
+/** The one of [rows] that [line] sits on ([overlapsVertically] by [ratio]); null when it sits on none or several. */
+internal fun pairedRow(line: TextLine, rows: List<TextLine>, ratio: Float): Int? = line.box?.let { box ->
+    rows.indices.singleOrNull { rows[it].box?.let { row -> overlapsVertically(box, row, ratio) } == true }
 }
 
 /** The median distance between the tops of consecutive rows (boxes side by side are one row); null under two rows. */
