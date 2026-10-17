@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # File: scripts/build_dictionary.py
-# Purpose: Builds the downloadable English dictionary (plan item 33, ADR-045) from the SHA-pinned Open English
-#          Wordnet release, byte-for-byte reproducibly, and checks it against the pin in speech/models.json.
+# Purpose: Builds the downloadable dictionaries (plan item 33, ADR-045): English from the SHA-pinned Open English
+#          Wordnet release, Hindi and Bengali from Wiktionary as extracted by kaikki.org (ADR-047), byte-for-byte
+#          reproducibly, and checks each against its pin in speech/models.json.
 #
 # Output: one zip holding
 #   dictionary.tsv  one line per headword, sorted by code point so the app finds a word by binary search in the file
@@ -18,6 +19,11 @@
 #
 #   python3 scripts/build_dictionary.py --out dist               # build and verify against the pin
 #   python3 scripts/build_dictionary.py --out dist --print-pin   # build and print file/sha256/sizeBytes
+#
+# Wiktionary sources ("format": "kaikki") are kaikki.org's per-language JSONL files, which are regenerated about
+# weekly under the same name. A spec marked "measure": true is fetched without a source pin and only printed (source
+# sha256 and size, then the built zip's pin), never checked, so CI can measure a snapshot this container cannot reach;
+# the printed values are then written into the spec and "measure" is removed.
 
 from __future__ import annotations
 
@@ -26,6 +32,7 @@ import gzip
 import hashlib
 import json
 import sys
+import unicodedata
 import urllib.request
 import xml.etree.ElementTree as ElementTree
 import zipfile
@@ -40,15 +47,33 @@ CHUNK_BYTES = 1 << 20
 # Wordnet parts of speech as the app shows them; "s" (adjective satellite) reads as an adjective.
 POS = {"n": "n", "v": "v", "a": "a", "s": "a", "r": "r"}
 FIELD_SEPARATORS = str.maketrans({"\t": " ", "|": "/", "\n": " ", "\r": " "})
+# Wiktionary parts of speech as the app labels them (core/dictionary/Dictionary.kt PartOfSpeech); others read "x".
+KAIKKI_POS = {
+    "noun": "n", "name": "n", "verb": "v", "adj": "a", "adv": "r", "pron": "p", "postp": "o", "prep": "o",
+    "conj": "c", "intj": "i", "num": "u",
+}
+# Form tags that are not another spelling of the word in its own script.
+SKIPPED_FORM_TAGS = {"romanization", "transliteration", "table-tags", "inflection-template", "class", "canonical"}
+# Joiners change only how a word is drawn; the app drops them from keys too (WordKey).
+JOINERS = str.maketrans({"\u200c": None, "\u200d": None})
+MAX_GLOSS_CHARS = 300
 
 
 def clean(text: str) -> str:
     return " ".join(text.translate(FIELD_SEPARATORS).split())
 
 
-def fetch(url: str, sha256: str, cache: Path) -> Path:
+def key_of(word: str) -> str:
+    """A word as the app keys it: NFC, joiners removed, lower case (WordKey.of)."""
+    return unicodedata.normalize("NFC", clean(word)).translate(JOINERS).lower()
+
+
+def fetch(url: str, sha256: str | None, cache: Path) -> Path:
+    """Downloads [url] once into [cache]; with no [sha256] (a measuring run) it is fetched fresh and not checked."""
     cache.mkdir(parents=True, exist_ok=True)
-    target = cache / f"{sha256[:SHA_PREFIX_CHARS]}-{url.rsplit('/', 1)[-1]}"
+    target = cache / f"{(sha256 or 'unpinned')[:SHA_PREFIX_CHARS]}-{url.rsplit('/', 1)[-1]}"
+    if sha256 is None:
+        target.unlink(missing_ok=True)
     if not target.is_file():
         partial = target.with_suffix(target.suffix + ".partial")
         with urllib.request.urlopen(url) as response, partial.open("wb") as out:
@@ -56,7 +81,7 @@ def fetch(url: str, sha256: str, cache: Path) -> Path:
                 out.write(chunk)
         partial.rename(target)
     actual = sha256_of(target)
-    if actual != sha256:
+    if sha256 is not None and actual != sha256:
         target.unlink()
         raise SystemExit(f"{url}: sha256 {actual} does not match the pin {sha256}")
     return target
@@ -120,6 +145,62 @@ def lines_of(senses, synsets, forms) -> list[str]:
     return lines
 
 
+def read_kaikki(source: Path, lang: str) -> tuple[dict[str, list[str]], dict[str, set[str]]]:
+    """Key -> senses (pos|gloss|syn,...) in Wiktionary's order; form -> keys of the words it is a form of."""
+    senses: dict[str, list[str]] = {}
+    forms: dict[str, set[str]] = {}
+    with source.open(encoding="utf-8") as stream:
+        for line in stream:
+            entry = json.loads(line)
+            if entry.get("lang_code") != lang or not entry.get("word"):
+                continue
+            key = key_of(entry["word"])
+            pos = KAIKKI_POS.get(entry.get("pos", ""), "x")
+            entry_synonyms = [s.get("word", "") for s in entry.get("synonyms", [])]
+            for sense in entry.get("senses", []):
+                read_sense(key, pos, sense, entry_synonyms, senses, forms)
+            for form in entry.get("forms", []):
+                written = key_of(form.get("form", ""))
+                if written and written != key and not SKIPPED_FORM_TAGS & set(form.get("tags", [])) \
+                        and not written.isascii():
+                    forms.setdefault(written, set()).add(key)
+    return senses, forms
+
+
+def read_sense(key, pos, sense, entry_synonyms, senses, forms) -> None:
+    """Adds one Wiktionary sense: a "form of" or "alternative of" sense indexes the form, any other its last gloss."""
+    targets = sense.get("form_of", []) + sense.get("alt_of", [])
+    if targets:
+        for target in targets:
+            word = key_of(target.get("word", ""))
+            if word and word != key:
+                forms.setdefault(key, set()).add(word)
+        return
+    glosses = sense.get("glosses") or []
+    if not glosses:
+        return
+    # Wiktextract repeats a parent sense's gloss before a sub-sense's own; the last one is the sense itself.
+    text = clean(glosses[-1])[:MAX_GLOSS_CHARS]
+    words = [s.get("word", "") for s in sense.get("synonyms", [])] or entry_synonyms
+    synonyms = [clean(w).replace(",", " ") for w in dict.fromkeys(words) if w and key_of(w) != key][:MAX_SYNONYMS]
+    part = f"{pos}|{text}|{','.join(synonyms)}"
+    entry = senses.setdefault(key, [])
+    if part not in entry:
+        entry.append(part)
+
+
+def kaikki_lines(senses: dict[str, list[str]], forms: dict[str, set[str]]) -> list[str]:
+    """Sorted lines: a word's senses, then (when it is also a form of other words) a last field pointing to them."""
+    lines = []
+    for key in sorted(set(senses) | set(forms)):
+        headwords = sorted(word for word in forms.get(key, ()) if word in senses and word != key)
+        redirect = [f"={','.join(headwords)}"] if headwords else []
+        fields = senses.get(key, []) + redirect
+        if fields:
+            lines.append(key + "\t" + "\t".join(fields))
+    return lines
+
+
 def repo_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
@@ -132,9 +213,16 @@ def entry(name: str) -> zipfile.ZipInfo:
 
 
 def build(spec: dict, cache: Path, out: Path) -> Path:
-    source = fetch(spec["source"]["url"], spec["source"]["sha256"], cache)
-    senses, synsets, forms = read_wordnet(source)
-    text = "\n".join(lines_of(senses, synsets, forms)) + "\n"
+    pinned = None if spec.get("measure") else spec["source"]["sha256"]
+    source = fetch(spec["source"]["url"], pinned, cache)
+    if spec.get("measure"):
+        print(json.dumps({"id": spec["id"], "source": {"sha256": sha256_of(source), "sizeBytes": source.stat().st_size}}))
+    if spec["source"].get("format") == "kaikki":
+        lines = kaikki_lines(*read_kaikki(source, spec["lang"]))
+    else:
+        senses, synsets, forms = read_wordnet(source)
+        lines = lines_of(senses, synsets, forms)
+    text = "\n".join(lines) + "\n"
     out.mkdir(parents=True, exist_ok=True)
     staging = out / f"{spec['id']}.zip.partial"
     with zipfile.ZipFile(staging, "w", compresslevel=DEFLATE_LEVEL) as archive:
@@ -145,6 +233,11 @@ def build(spec: dict, cache: Path, out: Path) -> Path:
     final = out / f"{spec['id']}-{sha[:SHA_PREFIX_CHARS]}.zip"
     staging.rename(final)
     return final
+
+
+def text_lines(built: Path, name: str) -> int:
+    with zipfile.ZipFile(built) as archive:
+        return archive.read(name).count(b"\n")
 
 
 def main(argv: list[str]) -> int:
@@ -159,8 +252,11 @@ def main(argv: list[str]) -> int:
     for spec in json.loads(args.catalog.read_text(encoding="utf-8")).get("dictionaries", []):
         built = build(spec, args.cache, args.out)
         sha, size = sha256_of(built), built.stat().st_size
-        if args.print_pin:
-            print(json.dumps({"id": spec["id"], "zip": built.name, "sha256": sha, "sizeBytes": size}))
+        if args.print_pin or spec.get("measure"):
+            with zipfile.ZipFile(built) as archive:
+                unpacked = archive.getinfo(spec["file"]).file_size
+            print(json.dumps({"id": spec["id"], "zip": built.name, "sha256": sha, "sizeBytes": size,
+                              "unpackedBytes": unpacked, "lines": text_lines(built, spec["file"])}))
         elif (built.name, sha, size) != (spec.get("zip"), spec.get("sha256"), spec.get("sizeBytes")):
             problems.append(f"{spec['id']}: built {built.name} {sha} {size}, pinned "
                             f"{spec.get('zip')} {spec.get('sha256')} {spec.get('sizeBytes')}")

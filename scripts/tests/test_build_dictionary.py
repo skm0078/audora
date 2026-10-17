@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import gzip
+import json
 import sys
 import tempfile
 import unittest
@@ -49,6 +50,49 @@ class BuildDictionaryTest(unittest.TestCase):
         lines = self.lines()
         self.assertIn("blue\ta|of the colour of the sky|", lines)
         self.assertIn("mice\t=mouse", lines)
+
+
+KAIKKI = [
+    {"word": "कुत्ता", "lang_code": "hi", "pos": "noun",
+     "forms": [{"form": "kutta", "tags": ["romanization"]}, {"form": "कुत्ते", "tags": ["oblique", "singular"]},
+               {"form": "no-table-tags", "tags": ["table-tags"]}],
+     "senses": [{"glosses": ["dog"], "synonyms": [{"word": "श्वान"}]},
+                {"glosses": ["dog", "a contemptible person, a cur | rascal"]}]},
+    {"word": "कुत्ते", "lang_code": "hi", "pos": "noun",
+     "senses": [{"glosses": ["inflection of कुत्ता"], "form_of": [{"word": "कुत्ता"}], "tags": ["form-of"]}]},
+    {"word": "\u0915\u093c\u093f\u0924\u093e\u092c", "lang_code": "hi", "pos": "noun", "senses": [{"glosses": ["book"]}]},
+    {"word": "और", "lang_code": "hi", "pos": "conj", "senses": [{"glosses": ["and"]}]},
+    {"word": "dog", "lang_code": "en", "pos": "noun", "senses": [{"glosses": ["a mammal"]}]},
+    {"word": "ব\u200cই", "lang_code": "bn", "pos": "noun", "senses": [{"glosses": ["book"]}]},
+]
+
+
+class KaikkiTest(unittest.TestCase):
+    def lines(self, lang: str) -> list[str]:
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "kaikki.jsonl"
+            source.write_text("\n".join(json.dumps(e, ensure_ascii=False) for e in KAIKKI) + "\n", encoding="utf-8")
+            return dictionary.kaikki_lines(*dictionary.read_kaikki(source, lang))
+
+    def test_only_the_language_is_kept_sorted_with_its_parts_of_speech(self):
+        lines = self.lines("hi")
+        self.assertEqual(sorted(lines), lines)
+        self.assertIn("और\tc|and|", lines)
+        self.assertFalse(any(line.startswith("dog") for line in lines))
+
+    def test_senses_take_the_last_gloss_and_synonyms_clean(self):
+        dog = next(line for line in self.lines("hi") if line.startswith("कुत्ता\t"))
+        self.assertEqual("कुत्ता\tn|dog|श्वान\tn|a contemptible person, a cur / rascal|", dog)
+
+    def test_forms_point_to_headwords_never_romanized(self):
+        lines = self.lines("hi")
+        self.assertIn("कुत्ते\t=कुत्ता", lines)
+        self.assertFalse(any(line.startswith(("kutta", "no-table-tags")) for line in lines))
+
+    def test_keys_are_nfc_without_joiners(self):
+        # क़ (U+0915 U+093C) stays decomposed under NFC; the app normalizes the same way.
+        self.assertIn("\u0915\u093c\u093f\u0924\u093e\u092c\tn|book|", self.lines("hi"))
+        self.assertEqual(["বই\tn|book|"], self.lines("bn"))
 
 
 if __name__ == "__main__":

@@ -224,6 +224,52 @@
         "speech/licences/open-english-wordnet-LICENSE.md",
         "speech/licences/princeton-wordnet-LICENSE.txt"
       ]
+    },
+    {
+      "id": "dict-hi-wiktionary",
+      "label": "Hindi dictionary (Wiktionary)",
+      "lang": "hi",
+      "file": "dictionary.tsv",
+      "licence": "CC-BY-SA-4.0",
+      "credit": "Hindi entries from Wiktionary by Wiktionary contributors (CC BY-SA 4.0), extracted by Wiktextract (kaikki.org). English glosses, parts of speech, synonyms and inflected forms kept; examples, etymology and translations left out.",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "sourceUrl": "https://kaikki.org/dictionary/Hindi/",
+      "source": {
+        "format": "kaikki",
+        "url": "https://kaikki.org/dictionary/Hindi/kaikki.org-dictionary-Hindi.jsonl",
+        "sha256": ""
+      },
+      "measure": true,
+      "zip": "",
+      "sha256": "",
+      "sizeBytes": 0,
+      "unpackedBytes": 0,
+      "licenceFiles": [
+        "speech/licences/wiktionary-CC-BY-SA-4.0.txt"
+      ]
+    },
+    {
+      "id": "dict-bn-wiktionary",
+      "label": "Bengali dictionary (Wiktionary)",
+      "lang": "bn",
+      "file": "dictionary.tsv",
+      "licence": "CC-BY-SA-4.0",
+      "credit": "Bengali entries from Wiktionary by Wiktionary contributors (CC BY-SA 4.0), extracted by Wiktextract (kaikki.org). English glosses, parts of speech, synonyms and inflected forms kept; examples, etymology and translations left out.",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "sourceUrl": "https://kaikki.org/dictionary/Bengali/",
+      "source": {
+        "format": "kaikki",
+        "url": "https://kaikki.org/dictionary/Bengali/kaikki.org-dictionary-Bengali.jsonl",
+        "sha256": ""
+      },
+      "measure": true,
+      "zip": "",
+      "sha256": "",
+      "sizeBytes": 0,
+      "unpackedBytes": 0,
+      "licenceFiles": [
+        "speech/licences/wiktionary-CC-BY-SA-4.0.txt"
+      ]
     }
   ]
 }
