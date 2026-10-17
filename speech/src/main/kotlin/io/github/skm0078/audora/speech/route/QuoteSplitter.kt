@@ -9,19 +9,19 @@ import io.github.skm0078.audora.core.config.DialogueConfig
 data class QuotePart(val text: String, val quoted: Boolean)
 
 /**
- * Pure and stateless, one sentence at a time, so it needs nothing from the sentences around it:
+ * Pure, one sentence at a time; the only state it takes from the sentences before is whether this one starts inside
+ * a quote ([endsInQuote] of the one before, within a paragraph):
  * - `“…”`, `«…»`, `„…“` and straight `"…"` are quotes; single quotes are not, since `'` is also an apostrophe.
  * - A sentence that ends inside an open quote is quoted to its end (a speech that runs on), and one that meets a
- *   closing mark before any opening one is quoted up to it (the last sentence of a speech).
+ *   closing mark before any opening one is quoted up to it (the last sentence of a speech). One that starts inside
+ *   a quote is quoted up to its first closing mark, or whole if it has none (the middle of a long speech).
  * - A quote shorter than [DialogueConfig.minQuoteWords] words stays narration, marks included.
- *
- * Known gap: the middle sentence of a speech three sentences long has no mark at all, so it stays with the narrator.
  *
  * Returns one unquoted part holding [text] unchanged when there is no speech, so a caller can read it as before.
  */
 class QuoteSplitter(private val config: DialogueConfig = DialogueConfig()) {
-    fun split(text: String): List<QuotePart> {
-        val raw = scan(text)
+    fun split(text: String, startsInQuote: Boolean = false): List<QuotePart> {
+        val raw = scan(text, startsInQuote).parts
         val parts = raw.map { part ->
             val tooShort = part.quoted && words(part.text) < config.minQuoteWords
             if (tooShort) QuotePart("“${part.text}”", quoted = false) else part
@@ -30,26 +30,32 @@ class QuoteSplitter(private val config: DialogueConfig = DialogueConfig()) {
         return merged(parts)
     }
 
-    private fun scan(text: String): List<QuotePart> {
+    /** Whether a quote is still open at the end of [text]: the next sentence of the paragraph starts inside it. */
+    fun endsInQuote(text: String, startsInQuote: Boolean = false): Boolean = scan(text, startsInQuote).open
+
+    private class Scan(val parts: List<QuotePart>, val open: Boolean)
+
+    private fun scan(text: String, startsInQuote: Boolean): Scan {
         val parts = ArrayList<QuotePart>()
         val buffer = StringBuilder()
-        var closer: Char? = null // the mark that ends the open quote; null outside quotes
+        // The marks that end the open quote; null outside quotes.
+        var closers: Set<Char>? = if (startsInQuote) CARRIED_CLOSERS else null
         fun flush(quoted: Boolean) {
             val piece = buffer.trim().toString()
             buffer.setLength(0)
             if (piece.any(Char::isLetterOrDigit)) parts.add(QuotePart(piece, quoted))
         }
         for (c in text) {
-            val open = closer
+            val open = closers
             when {
-                open != null && c == open -> {
+                open != null && c in open -> {
                     flush(quoted = true)
-                    closer = null
+                    closers = null
                 }
 
                 open == null && c in OPENERS -> {
                     flush(quoted = false)
-                    closer = OPENERS.getValue(c)
+                    closers = setOf(OPENERS.getValue(c))
                 }
 
                 open == null && c in CLOSERS && parts.isEmpty() -> flush(quoted = true)
@@ -57,8 +63,9 @@ class QuoteSplitter(private val config: DialogueConfig = DialogueConfig()) {
                 else -> buffer.append(c)
             }
         }
-        flush(quoted = closer != null)
-        return parts
+        val open = closers != null
+        flush(quoted = open)
+        return Scan(parts, open)
     }
 
     /** Neighbours of one kind become one part, so the voice keeps a whole clause's intonation. */
@@ -78,6 +85,9 @@ class QuoteSplitter(private val config: DialogueConfig = DialogueConfig()) {
         /** Each opening mark and the mark that closes it. */
         val OPENERS = mapOf('“' to '”', '«' to '»', '„' to '“', '"' to '"')
         val CLOSERS = setOf('”', '»')
+
+        /** A quote opened in an earlier sentence: any closing mark ends it (not `“`, which opens English quotes). */
+        val CARRIED_CLOSERS = CLOSERS + '"'
         val WHITESPACE = Regex("""\s+""")
     }
 }

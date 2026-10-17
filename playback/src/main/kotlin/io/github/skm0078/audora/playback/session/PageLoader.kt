@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.playback.session
 
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.playback.book.BookText
@@ -19,12 +20,14 @@ import kotlinx.coroutines.withContext
  * Main-thread object; only the PDF reads run on [extraction] (one thread: PDFium documents must not be used
  * from two threads, P1-02). Pages load while the feeder wants more (Build Spec §6: lazily, about two pages
  * ahead). [cancel] on every rebuild: a cancelled load never appends, because `withContext` re-checks
- * cancellation before returning.
+ * cancellation before returning. Every loaded page goes whole to [onPage] first, before the resume point trims it
+ * (the quote carry, plan item 7, reads the sentences before the one playing).
  */
 class PageLoader(
     private val scope: CoroutineScope,
     private val extraction: CoroutineDispatcher,
     private val listener: Listener,
+    private val onPage: (List<ReadingUnit>) -> Unit = {},
 ) {
     interface Listener {
         /** A page's sentences were appended; the render window may have grown. */
@@ -67,6 +70,7 @@ class PageLoader(
         logContext: String,
     ): Boolean = when (val loaded = withContext(extraction) { text.units(page) }) {
         is Outcome.Success -> {
+            onPage(loaded.value)
             val unreadable = feeder.append(cursor.playable(page, loaded.value))
             if (unreadable > 0) AudoraLog.i(TAG, "Unreadable units skipped, $logContext page=$page count=$unreadable")
             listener.onPageAppended()

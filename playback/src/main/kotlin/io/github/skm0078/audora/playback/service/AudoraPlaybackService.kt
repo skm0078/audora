@@ -48,14 +48,11 @@ import io.github.skm0078.audora.playback.session.SleepOptionsStore
 import io.github.skm0078.audora.playback.session.SpeechPlayer
 import io.github.skm0078.audora.playback.upnext.QueueAdvance
 import io.github.skm0078.audora.playback.upnext.UpNextStore
-import io.github.skm0078.audora.playback.voice.EngineRenderer
-import io.github.skm0078.audora.playback.voice.ReadingSetup
+import io.github.skm0078.audora.playback.voice.BookRenderers
 import io.github.skm0078.audora.playback.voice.RenderSpeedTracker
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
-import io.github.skm0078.audora.speech.punct.PunctuationModels
-import io.github.skm0078.audora.speech.punct.RunOnPunctuation
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -228,18 +225,14 @@ class AudoraPlaybackService : MediaLibraryService() {
         stores: SessionStores,
         reading: ReadingSource,
         heard: () -> SpeechStyle,
-    ) = EngineRenderer(
+    ) = BookRenderers.create(
+        this,
         voices,
-        speed = RenderSpeedTracker(engines::speeds),
         style = heard,
         styleConfig = stores.style.config,
-        reading = ReadingSetup(
-            reading.speakability,
-            chapterPages = { reading.chapterPages },
-            fixer = { stores.book.fixer },
-            scanned = { page -> reading.scanned(page) },
-            runOn = RunOnPunctuation(punctuator = PunctuationModels.get(this)::punctuator),
-        ),
+        book = reading.book(fixer = { stores.book.fixer }),
+        speakability = reading.speakability,
+        speed = RenderSpeedTracker(engines::speeds),
         timings = timings,
     )
 

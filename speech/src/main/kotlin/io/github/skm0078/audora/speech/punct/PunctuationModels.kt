@@ -114,7 +114,7 @@ class PunctuationModels private constructor(
         },
     )
 
-    private fun isInstalled(): Boolean = installedState.value ?: synchronized(lock) { refreshLocked() }
+    fun isInstalled(): Boolean = installedState.value ?: synchronized(lock) { refreshLocked() }
 
     private fun refreshLocked(): Boolean = files.isInstalled().also { installedState.value = it }
 

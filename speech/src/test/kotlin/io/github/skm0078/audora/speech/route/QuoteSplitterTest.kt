@@ -60,4 +60,26 @@ class QuoteSplitterTest {
             splitter.split("The “experts” said “this cannot possibly work.”"),
         )
     }
+
+    @Test
+    fun `a sentence that starts inside a quote is quoted to its closing mark, or whole`() {
+        assertEquals(listOf(q("I will not go back there.")), splitter.split("I will not go back there.", true))
+        assertEquals(
+            listOf(q("Not ever again."), n("She shut the door.")),
+            splitter.split("Not ever again.” She shut the door.", startsInQuote = true),
+        )
+        assertEquals(
+            listOf(q("Not ever again."), n("She shut the door.")),
+            splitter.split("Not ever again.\" She shut the door.", startsInQuote = true),
+        )
+    }
+
+    @Test
+    fun `whether a quote is still open at the end`() {
+        assertEquals(true, splitter.endsInQuote("She said, “Listen to me."))
+        assertEquals(false, splitter.endsInQuote("“Listen,” she said."))
+        assertEquals(true, splitter.endsInQuote("And another thing.", startsInQuote = true))
+        assertEquals(false, splitter.endsInQuote("That is all.” He left.", startsInQuote = true))
+        assertEquals(false, splitter.endsInQuote("Plain narration."))
+    }
 }
