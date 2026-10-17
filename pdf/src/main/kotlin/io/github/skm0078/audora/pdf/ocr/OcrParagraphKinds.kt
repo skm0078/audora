@@ -6,6 +6,7 @@ package io.github.skm0078.audora.pdf.ocr
 import io.github.skm0078.audora.core.config.LayoutConfig
 import io.github.skm0078.audora.pdf.extract.PageText
 import io.github.skm0078.audora.pdf.layout.ListMarkers
+import io.github.skm0078.audora.pdf.layout.NoteFinder
 import io.github.skm0078.audora.pdf.layout.Paragraph
 import io.github.skm0078.audora.pdf.layout.ParagraphKind
 import io.github.skm0078.audora.pdf.layout.TextLine
@@ -20,6 +21,8 @@ import io.github.skm0078.audora.pdf.layout.TextLine
  *   `maxHeadingLines` and `maxHeadingChars` that reads like one ([looksLikeHeading]) is a heading.
  * - **List items.** A line starting with a bullet, or with a label ("3.", "(क)") after a line that ends a clause or
  *   inside a list, starts an item ([ListMarkers]).
+ * - **Asides.** A body paragraph opening with a note label ("Note:", "टिप्पणी:", "দ্রষ্টব্য:") is a
+ *   [ParagraphKind.ASIDE], as on a text layer (`NoteFinder`, RI-5a).
  *
  * [page] holds the text and OCR confidences the lines' spans point into; [bodySize] 0 (no sizes, plain OCR text)
  * finds no headings.
@@ -68,6 +71,7 @@ internal class OcrParagraphKinds(
         return when {
             heading -> ParagraphKind.HEADING
             startsWithMarker(lines.first()) -> ParagraphKind.LIST_ITEM
+            NoteFinder.opensWithNoteLabel(lineText(lines.first())) -> ParagraphKind.ASIDE
             else -> ParagraphKind.BODY
         }
     }
@@ -87,6 +91,8 @@ internal class OcrParagraphKinds(
         val shaped = first.isLetterOrDigit() && last !in SENTENCE_ENDS && offsets.none { text[it] == TABLE_BAR }
         return letters.isNotEmpty() && confident && shaped
     }
+
+    private fun lineText(line: TextLine): String = line.spans.joinToString(" ") { text.substring(it.start, it.end) }
 
     private fun isHeadingSized(line: TextLine): Boolean =
         bodySize > 0f && line.size >= bodySize * config.ocrHeadingSizeRatio

@@ -72,7 +72,7 @@ internal class NoteFinder(private val layoutConfig: LayoutConfig) {
         if (paragraph.kind != ParagraphKind.BODY) return paragraph
         val first = paragraph.lines.first()
         val text = first.spans.joinToString(" ") { page.text.substring(it.start, it.end) }
-        return if (NOTE_LABEL.containsMatchIn(text)) paragraph.copy(kind = ParagraphKind.ASIDE) else paragraph
+        return if (opensWithNoteLabel(text)) paragraph.copy(kind = ParagraphKind.ASIDE) else paragraph
     }
 
     /**
@@ -139,12 +139,15 @@ internal class NoteFinder(private val layoutConfig: LayoutConfig) {
         }
     }
 
-    private companion object {
+    internal companion object {
+        /** [text] opens with a note label ("Note:", "टिप्पणी:", "দ্রষ্টব্য:"): an aside, on a text layer or a scan. */
+        fun opensWithNoteLabel(text: String): Boolean = NOTE_LABEL.containsMatchIn(text)
+
         /** Footnote lines come out of layout as body text or list items ("1 Arrays are…" looks like a label). */
-        val NOTE_KINDS = setOf(ParagraphKind.BODY, ParagraphKind.LIST_ITEM)
+        private val NOTE_KINDS = setOf(ParagraphKind.BODY, ParagraphKind.LIST_ITEM)
 
         /** "Note:", "NOTES –", "N.B.", "नोट:", "टिप्पणी:", "দ্রষ্টব্য:", "টীকা:", "বিঃদ্রঃ". */
-        val NOTE_LABEL = Regex(
+        private val NOTE_LABEL = Regex(
             "^\\s*(?:Notes?|NOTES?|N\\.\\s?B\\.|नोट|टिप्पणी|टिप्पणियाँ|ध्यान दें|দ্রষ্টব্য|টীকা|নোট|বিঃ\\s?দ্রঃ)" +
                 "(?:\\s*\\p{Nd}+)?\\s*[:：.\\-–—।]",
         )

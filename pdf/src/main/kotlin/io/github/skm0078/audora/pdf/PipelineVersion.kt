@@ -36,7 +36,8 @@ package io.github.skm0078.audora.pdf
  *     vowel signs OCR misread as "৷", "|" or "!" restored (same version). Review fixes: tables split at their intro
  *     line, side-by-side tables kept apart (also when layout joins their rows), one-character cells by a rule
  *     kept, `/Rotate` on scanned pages, exponents beside operators kept, retried margin strips (same version).
- *     RI-5a: footnotes at the foot of scanned pages tagged, their opening markers left out (same version).
+ *     RI-5a: footnotes at the foot of scanned pages tagged, their opening markers left out, "Note:" asides tagged
+ *     (same version).
  *     RI-4a: a table carried over a page break continues there; its first row of data is no longer a header row
  *     (same version).
  */
