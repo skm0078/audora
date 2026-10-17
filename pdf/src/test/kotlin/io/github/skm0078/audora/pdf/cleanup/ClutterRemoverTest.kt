@@ -139,6 +139,51 @@ class ClutterRemoverTest {
     }
 
     @Test
+    fun `an intro line set close above a table is read before it, and the line after it after it`() {
+        // Line spacing as tight as the rows', so layout joins intro, table and the line after into one paragraph.
+        val sketch = PageSketch()
+        sketch.line("The doses were as follows:", LEFT, 692f)
+        sketch.line("Pat.", LEFT, 680f).line("Age", 150f, 680f).line("Dose", 250f, 680f)
+        for (row in 1..4) {
+            val top = 680f - row * 12f
+            sketch.line("$row", LEFT, top).line("${50 + row}", 150f, top).line("2 Gy x 30", 250f, top)
+        }
+        sketch.line("Nobody missed a dose.", LEFT, 620f)
+        val units = builder.build(sketch.build())
+        val order = units.map { if (it.kind.isTable) it.kind.name else it.text }
+        val summary = order.indexOf(UnitKind.TABLE_SUMMARY.name)
+        assertTrue("$order", order.indexOfFirst { "as follows" in it } in 0 until summary)
+        assertTrue("$order", order.indexOfFirst { "Nobody" in it } > order.lastIndexOf(UnitKind.TABLE_ROW.name))
+        assertFalse("$order", order.any { "follows" in it && "Nobody" in it })
+    }
+
+    @Test
+    fun `two tables keyed in one paragraph are both read, in order`() {
+        // Two grids set at the rows' spacing with different columns: one paragraph to layout, two tables.
+        val sketch = PageSketch()
+        sketch.line("Pat.", LEFT, 700f).line("Age", 150f, 700f).line("Dose", 250f, 700f)
+        for (row in 1..3) {
+            val top = 700f - row * 12f
+            sketch.line("$row", LEFT, top).line("${50 + row}", 150f, top).line("2 Gy x 30", 250f, top)
+        }
+        sketch.line("Site", LEFT, 652f).line("Beds", 200f, 652f).line("Staff", 350f, 652f)
+        for (row in 1..3) {
+            val top = 652f - row * 12f
+            sketch.line("Ward $row", LEFT, top).line("${10 * row}", 200f, top).line("${row + 4}", 350f, top)
+        }
+        val units = builder.build(sketch.build())
+        val headers = units.filter { it.kind == UnitKind.TABLE_SUMMARY }.map { it.table?.headers }
+        assertEquals(
+            "${units.map {
+                it.text
+            }}",
+            listOf(listOf("Pat.", "Age", "Dose"), listOf("Site", "Beds", "Staff")),
+            headers,
+        )
+        assertEquals(6, units.count { it.kind == UnitKind.TABLE_ROW })
+    }
+
+    @Test
     fun `text with wide gaps that do not line up is not a table`() {
         val sketch = PageSketch()
         sketch.line("first", LEFT, 700f).line("words", 120f, 700f)

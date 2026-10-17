@@ -1,4 +1,4 @@
-// File: pdf/src/main/kotlin/io/github/skm0078/audora/pdf/ocr/OcrPageText.kt
+// File: pdf/src/main/kotlin/io/github/skm0078/audora/pdf/ocr/kt
 // Purpose: Turns OCR'd words of one page into a page with boxes and a layout the reading-text builder can repair.
 
 package io.github.skm0078.audora.pdf.ocr
@@ -21,6 +21,7 @@ import io.github.skm0078.audora.pdf.layout.TextSpan
 import io.github.skm0078.audora.pdf.layout.TextTurn
 import io.github.skm0078.audora.pdf.render.ViewRect
 import java.text.Normalizer
+import kotlin.math.abs
 
 /** OCR text as a page with word boxes (when known) plus its layout, and the hyphenated words it prints. */
 internal class OcrPage(val text: PageText, val layout: PageLayout, val hyphenated: Set<String>, val tables: Int = 0)
@@ -111,7 +112,7 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
         read: List<List<List<Pair<OcrWord, TextSpan>>>>,
         toPage: (ViewRect) -> TextBox,
     ): List<OcrTable> {
-        val turn = TURNS[ocr.quarterTurns]
+        val turn = ocr.uprightTurn(toPage)
         val lines = read.flatMapIndexed { p, lines ->
             lines.map { words ->
                 val placed = words.mapNotNull { (word, span) -> word.box?.let { span to turn.apply(toPage(it)) } }
@@ -143,8 +144,10 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
                 kept.clear()
             }
             lines.forEachIndexed { l, words ->
-                words.firstNotNullOfOrNull { firstWords[it] }?.let { index ->
-                    flush()
+                // Every table whose first word is on this line: two set side by side start on the same line.
+                val starting = words.mapNotNull { firstWords[it] }
+                if (starting.isNotEmpty()) flush()
+                for (index in starting) {
                     val table = tables[index]
                     out.addAll(tableParagraphs(table.header, table.rows, index, box = null, size = 0f))
                 }
@@ -162,7 +165,7 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
      * Without boxes, any distance passes.
      */
     private fun bulletGap(ocr: OcrText, toPage: ((ViewRect) -> TextBox)?): (OcrWord, OcrWord) -> Boolean {
-        val turn = TURNS[ocr.quarterTurns]
+        val turn = toPage?.let { ocr.uprightTurn(it) } ?: TextTurn.NONE
         return { bullet, text ->
             val a = bullet.box
             val b = text.box
@@ -285,8 +288,35 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
         /** Not the index of a word, nor one before any (so the first word kept always starts a run). */
         const val NO_WORD = -2
 
-        /** The turn that sets a page's boxes upright, by `OcrText.quarterTurns`. */
-        val TURNS = listOf(TextTurn.NONE, TextTurn.CLOCKWISE, TextTurn.HALF, TextTurn.COUNTER_CLOCKWISE)
         val FOLIO = Regex("""[\s\-–—.|()\[\]]*\p{Nd}{1,$MAX_FOLIO_DIGITS}[\s\-–—.|()\[\]]*""")
     }
 }
+
+/**
+ * The turn that sets the page's boxes upright in page space: the image's own turn (`OcrText.quarterTurns`) plus
+ * the page's `/Rotate`, read from [toPage] as the way the displayed page's left-to-right runs in page space
+ * (right: none; up: a quarter turn; left: a half; down: three quarters).
+ */
+internal fun OcrText.uprightTurn(toPage: (ViewRect) -> TextBox): TextTurn {
+    val from = toPage(PROBE_LEFT)
+    val to = toPage(PROBE_RIGHT)
+    val dx = to.left - from.left
+    val dy = to.bottom - from.bottom
+    val rotate = when {
+        abs(dx) >= abs(dy) -> if (dx >= 0f) 0 else HALF_TURN
+        dy > 0f -> 1
+        else -> HALF_TURN + 1
+    }
+    return TURNS[(quarterTurns + rotate) % OcrText.FULL_TURN]
+}
+
+/** The turn that sets a page's boxes upright, by quarter turns (the image's and the page's `/Rotate`). */
+private val TURNS = listOf(TextTurn.NONE, TextTurn.CLOCKWISE, TextTurn.HALF, TextTurn.COUNTER_CLOCKWISE)
+private const val HALF_TURN = 2
+
+/** Two points across the middle of the displayed page, left then right: where they land tells `/Rotate`. */
+private const val PROBE_LEFT_U = 0.25f
+private const val PROBE_RIGHT_U = 0.75f
+private const val PROBE_V = 0.5f
+private val PROBE_LEFT = ViewRect(PROBE_LEFT_U, PROBE_V, PROBE_LEFT_U, PROBE_V)
+private val PROBE_RIGHT = ViewRect(PROBE_RIGHT_U, PROBE_V, PROBE_RIGHT_U, PROBE_V)
