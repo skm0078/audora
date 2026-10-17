@@ -6,6 +6,7 @@ package io.github.skm0078.audora.ui.library
 import android.net.Uri
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.library.LibraryQuery
 
 /** One interface instead of a dozen lambdas keeps [LibraryScreen]'s signature readable. */
 @Suppress("TooManyFunctions") // One per control on the screen.
@@ -38,4 +39,7 @@ interface LibraryActions {
     fun onOpenSettings()
 
     fun onScreenResumed()
+
+    /** The search text, sort or filter changed (plan item 22). */
+    fun onQuery(query: LibraryQuery) = Unit
 }

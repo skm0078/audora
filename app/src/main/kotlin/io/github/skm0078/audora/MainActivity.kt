@@ -32,6 +32,7 @@ import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
+import io.github.skm0078.audora.core.library.LibraryQuery
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
@@ -341,6 +342,8 @@ class MainActivity : ComponentActivity() {
                 override fun onOpenSettings() = navigate(AppDestination.Settings)
 
                 override fun onScreenResumed() = controller.refreshAvailability()
+
+                override fun onQuery(query: LibraryQuery) = controller.setQuery(query)
             }
         }
         LibraryScreen(
