@@ -19,6 +19,7 @@ import io.github.skm0078.audora.playback.reading.UnitReading
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.audio.Earcon
 import io.github.skm0078.audora.speech.audio.PcmAudio
+import io.github.skm0078.audora.speech.audio.VoiceShaper
 import io.github.skm0078.audora.speech.normalize.TextNormalizer
 import io.github.skm0078.audora.speech.route.ClauseProsody
 import io.github.skm0078.audora.speech.route.RoutedAudio
@@ -46,6 +47,10 @@ import kotlinx.coroutines.runBlocking
  * plus the pace's gap after every sentence, is rendered as silence at the end of its clip (ADR-029), so the player,
  * highlight and sleep timer need no notion of pauses. The speed is measured on the voice's audio alone: silence
  * costs no render time and would make a voice look faster.
+ *
+ * The voice's audio is then shaped by the style's [SpeechStyle.shaping] (plan items 9, 10): with pause trim, each
+ * voiced piece's own long silences are cut before the clause pauses go in, so only the voice's are trimmed; then the
+ * whole sentence is evened to one loudness and boosted, before any cue and the silence after.
  *
  * What the voice is given follows the style's reading modes ([UnitReading], ADR-035): a table's size or a row with its
  * column names, "Equation 3", a cue in place of unreadable text, a cue before a caption or a chapter's heading.
@@ -86,10 +91,13 @@ class EngineRenderer(
             null
         }
         val text = speech.text
-        return runBlocking { routedSpeech.render(text, unit.lang, speech.role, rate, prosody) }.map { routed ->
+        val shaping = now.shaping
+        val shaper = reading.shaper
+        val trim: (PcmAudio) -> PcmAudio = if (shaping.trimPauses) shaper::trimPauses else { audio -> audio }
+        return runBlocking { routedSpeech.render(text, unit.lang, speech.role, rate, prosody, trim) }.map { routed ->
             speed?.onRendered(text.trim().length, routed, System.nanoTime() - started, rate)
             log(unit, routed)
-            routed.audio
+            shaper.level(routed.audio, shaping.evenLoudness, shaping.boostDb)
         }
     }
 
@@ -119,4 +127,5 @@ class ReadingSetup(
     val speakability: SpeakabilityConfig = SpeakabilityConfig(),
     val earcon: Earcon = Earcon(),
     val chapterPages: () -> Set<Int> = { emptySet() },
+    val shaper: VoiceShaper = VoiceShaper(),
 )

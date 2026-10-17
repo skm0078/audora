@@ -12,6 +12,7 @@ import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.progress.TimeLeft
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PdfOpenError
@@ -213,6 +214,8 @@ class ReaderModel(
     fun setClausePauses(on: Boolean) = player.setClausePauses(on)
 
     fun setReadingModes(modes: ReadingModes) = player.setReadingModes(modes)
+
+    fun setVoiceShaping(shaping: VoiceShaping) = player.setVoiceShaping(shaping)
 
     fun setSleepTimer(setting: SleepTimerSetting) = player.setSleepTimer(setting)
 

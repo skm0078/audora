@@ -7,6 +7,7 @@ import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.flow.StateFlow
 
@@ -37,6 +38,9 @@ interface PlaybackPort {
 
     /** What is read, announced or skipped: tables, footnotes, equations, captions, unreadable text (ADR-035). */
     fun setReadingModes(modes: ReadingModes)
+
+    /** Even loudness, voice boost and pause trim (plan items 9, 10), from the next sentence rendered. */
+    fun setVoiceShaping(shaping: VoiceShaping)
 
     fun setSleepTimer(setting: SleepTimerSetting)
 
@@ -70,6 +74,7 @@ data class PlaybackSnapshot(
     val pace: Pace = Pace.NORMAL,
     val clausePauses: Boolean = true,
     val readingModes: ReadingModes = ReadingModes(),
+    val voiceShaping: VoiceShaping = VoiceShaping(),
     val canSkipBack: Boolean = false,
     val canSkipForward: Boolean = false,
     val sleepTimer: SleepTimerState = SleepTimerState.Off,

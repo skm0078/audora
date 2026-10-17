@@ -12,6 +12,7 @@ import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.TextBox
+import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.OutlineEntry
 import io.github.skm0078.audora.pdf.document.PdfOpenError
@@ -95,6 +96,10 @@ class FakePlaybackPort : PlaybackPort {
 
     override fun setReadingModes(modes: ReadingModes) {
         calls += "reading modes ${modes.encode()}"
+    }
+
+    override fun setVoiceShaping(shaping: VoiceShaping) {
+        calls += "voice shaping ${shaping.encode()}"
     }
 
     override fun setSpeed(speed: Float) {

@@ -119,6 +119,14 @@
     <string name="reader_sleep_minutes">%1$d minutes</string>
     <string name="reader_sleep_end_of_page">End of page</string>
     <string name="reader_sleep_end_of_chapter">End of chapter</string>
+    <string name="speech_sound">Sound</string>
+    <string name="speech_even_loudness">Even loudness</string>
+    <string name="speech_even_loudness_detail">Every sentence and every voice at the same level</string>
+    <string name="speech_trim_pauses">Trim long pauses</string>
+    <string name="speech_trim_pauses_detail">Shortens the voice\'s own silences; Audora\'s pauses stay</string>
+    <string name="speech_boost">Voice boost</string>
+    <string name="speech_boost_off">Off</string>
+    <string name="speech_boost_db">+%1$d dB</string>
     <string name="reader_sleep_chapters">After %1$d chapters</string>
     <string name="sleep_options_menu">Sleep options…</string>
     <string name="sleep_options_title">Sleep options</string>

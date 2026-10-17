@@ -22,6 +22,7 @@ package io.github.skm0078.audora.core.config
  * @property chapterListDepth how many outline levels the chapter list shows (plan item 11): chapters, sections and
  *   subsections; deeper entries are usually figure lists that would bury the chapters.
  * @property timeLeft how "time left at your speed" is estimated (plan item 24).
+ * @property voiceShaping the voice boost steps the speech sheet offers (plan item 9); the service shapes with the same.
  */
 data class ReaderConfig(
     val speeds: List<Float> = DEFAULT_SPEEDS,
@@ -36,6 +37,7 @@ data class ReaderConfig(
     val ocrFairFrom: Int = DEFAULT_OCR_FAIR_FROM,
     val chapterListDepth: Int = DEFAULT_CHAPTER_LIST_DEPTH,
     val timeLeft: TimeLeftConfig = TimeLeftConfig(),
+    val voiceShaping: VoiceShapingConfig = VoiceShapingConfig(),
 ) {
     init {
         require(speeds.isNotEmpty() && speeds == speeds.sorted()) { "speeds must be non-empty and ascending" }

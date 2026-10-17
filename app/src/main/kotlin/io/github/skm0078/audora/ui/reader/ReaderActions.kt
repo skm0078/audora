@@ -7,6 +7,7 @@ import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SleepOptions
+import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
@@ -66,6 +67,8 @@ interface ReaderActions {
     fun onClausePauses(on: Boolean) = Unit
 
     fun onReadingModes(modes: ReadingModes) = Unit
+
+    fun onVoiceShaping(shaping: VoiceShaping) = Unit
 
     fun onSleepTimer(setting: SleepTimerSetting)
 

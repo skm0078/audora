@@ -63,6 +63,7 @@ class SessionPublisher(
                 putString(PlaybackContract.SESSION_PACE, speech.pace.name)
                 putBoolean(PlaybackContract.SESSION_CLAUSE_PAUSES, speech.clausePauses)
                 putString(PlaybackContract.SESSION_READING_MODES, speech.modes.encode())
+                putString(PlaybackContract.SESSION_VOICE_SHAPING, speech.shaping.encode())
             },
         )
     }

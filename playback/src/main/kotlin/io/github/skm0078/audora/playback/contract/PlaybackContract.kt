@@ -17,6 +17,7 @@ import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.core.model.VoiceId
+import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import io.github.skm0078.audora.playback.service.AudoraPlaybackService
@@ -113,6 +114,9 @@ object PlaybackContract {
     /** String: [ReadingModes.encode]; absent or unreadable = the defaults (ADR-035). */
     const val ARG_READING_MODES = "reading_modes"
 
+    /** String: [VoiceShaping.encode]; absent or unreadable = the defaults (plan items 9, 10). */
+    const val ARG_VOICE_SHAPING = "voice_shaping"
+
     // Arguments of REPORT_SOUNDED_WRONG (and ARG_BOOK_ID, ARG_PAGE): where the sentence is and how it was judged.
     const val ARG_UNIT_INDEX = "unit_index"
     const val ARG_UNIT_KIND = "unit_kind"
@@ -173,6 +177,9 @@ object PlaybackContract {
     /** The reading modes in effect ([ReadingModes.encode]), always present. */
     const val SESSION_READING_MODES = "reading_modes"
 
+    /** The voice shaping in effect ([VoiceShaping.encode]), always present. */
+    const val SESSION_VOICE_SHAPING = "voice_shaping"
+
     /** Int pair: where "Undo jump" goes back to in the book being read (plan item 78); absent with nothing to undo. */
     const val SESSION_UNDO_PAGE = "undo_page"
     const val SESSION_UNDO_CHAR = "undo_char"
@@ -208,6 +215,7 @@ object PlaybackContract {
         putString(ARG_PACE, style.pace.name)
         putBoolean(ARG_CLAUSE_PAUSES, style.clausePauses)
         putString(ARG_READING_MODES, style.modes.encode())
+        putString(ARG_VOICE_SHAPING, style.shaping.encode())
     }
 
     /** Parses [speechStyleArgs]; null when a field is missing, unknown or not a positive number. */
@@ -216,7 +224,8 @@ object PlaybackContract {
         val pace = enumOrNull<Pace>(args.getString(ARG_PACE))
         val clausePauses = args.getBoolean(ARG_CLAUSE_PAUSES, true)
         val modes = ReadingModes.decode(args.getString(ARG_READING_MODES))
-        return if (rate == null || pace == null) null else SpeechStyle(rate, pace, clausePauses, modes)
+        val shaping = VoiceShaping.decode(args.getString(ARG_VOICE_SHAPING))
+        return if (rate == null || pace == null) null else SpeechStyle(rate, pace, clausePauses, modes, shaping)
     }
 
     /** Parses [setVoiceArgs]; null when a field is missing or unknown. */
