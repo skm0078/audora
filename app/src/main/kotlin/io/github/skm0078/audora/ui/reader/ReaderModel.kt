@@ -272,6 +272,17 @@ class ReaderModel(
         player.undoJump()
     }
 
+    /**
+     * A user action outside this screen asked to resume this book (the widget's Resume, plan item 35) while its reader
+     * is already open: reading starts once the book is open and the player connected, exactly once, as a "Resume" in
+     * the unexpected-stop prompt does (C7).
+     */
+    fun requestAutoResume() {
+        AudoraLog.i(TAG, "Resume requested, $logContext")
+        pendingAutoResume = true
+        autoResumeIfDue()
+    }
+
     /** Releases the PDF. Reading continues: the service has its own copy. */
     fun close() {
         openJob?.cancel()
@@ -337,7 +348,7 @@ class ReaderModel(
             current.readingPosition != null -> player.play()
             else -> startReading(savedPosition ?: ReadingPosition.startOfPage(bookId, current.page))
         }
-        AudoraLog.i(TAG, "Auto-resumed after an unexpected stop, $logContext")
+        AudoraLog.i(TAG, "Auto-resumed, $logContext")
     }
 
     private fun onPlayback(snapshot: PlaybackSnapshot) {
