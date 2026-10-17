@@ -18,6 +18,10 @@ package io.github.skm0078.audora.core.config
  *   rule usually sits); body lines follow each other much closer.
  * @property minCarriedNoteWidthShare footnote lines that open without a number carry on a note from the page before,
  *   so their first line runs at least this share of the width of the line above (a stray table cell does not).
+ * @property ocrFootnoteBandShare on a scanned page, footnotes end within this share of the page's height from its
+ *   foot: OCR's sizes vary more than a font's, and small lines ending a short page mid-sheet are text, not notes.
+ * @property ocrFootnoteMinConfidence and their letters were read with at least this mean OCR confidence (0–100):
+ *   lower, the small strip is a stamp or a garbled print slug.
  */
 data class NoteConfig(
     val silenceMarkers: Boolean = true,
@@ -27,12 +31,17 @@ data class NoteConfig(
     val footnoteSizeRatio: Float = 0.92f,
     val footnoteGapEm: Float = 0.5f,
     val minCarriedNoteWidthShare: Float = 0.5f,
+    val ocrFootnoteBandShare: Float = 0.12f,
+    val ocrFootnoteMinConfidence: Int = 70,
 ) {
     init {
-        val shares = listOf(markerSizeRatio, footnoteSizeRatio, minCarriedNoteWidthShare)
+        val shares = listOf(markerSizeRatio, footnoteSizeRatio, minCarriedNoteWidthShare, ocrFootnoteBandShare)
         require(shares.all { it in 0f..1f }) { "note shares must be in 0..1, were $shares" }
         require(markerRaiseEm > 0f) { "markerRaiseEm must be > 0, was $markerRaiseEm" }
         require(footnoteGapEm >= 0f) { "footnoteGapEm must be >= 0, was $footnoteGapEm" }
+        require(ocrFootnoteMinConfidence in 0..OcrConfig.MAX_CONFIDENCE) {
+            "ocrFootnoteMinConfidence must be in 0..100, was $ocrFootnoteMinConfidence"
+        }
         require(maxMarkerDigits >= 1) { "maxMarkerDigits must be >= 1, was $maxMarkerDigits" }
     }
 }

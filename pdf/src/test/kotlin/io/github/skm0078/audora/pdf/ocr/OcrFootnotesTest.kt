@@ -1,0 +1,159 @@
+// File: pdf/src/test/kotlin/io/github/skm0078/audora/pdf/ocr/OcrFootnotesTest.kt
+// Purpose: Footnotes at the foot of a scanned page are tagged from OCR's line sizes and boxes (RI-5a).
+
+package io.github.skm0078.audora.pdf.ocr
+
+import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.UnitKind
+import io.github.skm0078.audora.pdf.render.PageTransform
+import io.github.skm0078.audora.pdf.render.ViewRect
+import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+class OcrFootnotesTest {
+    private val builder = ReadingUnitBuilder()
+    private val transform = PageTransform.upright(PAGE_WIDTH, PAGE_HEIGHT)
+
+    /** One OCR line of [text]'s words with its top at [top] (view fraction), in Tesseract paragraph [paragraph]. */
+    private fun line(
+        text: String,
+        top: Float,
+        paragraph: Int,
+        size: Float = BODY,
+        confidence: Int = CONFIDENT,
+    ): OcrLine {
+        val words = text.split(' ').mapIndexed { i, word ->
+            OcrWord(
+                word,
+                ViewRect(LEFT + i * WORD_PITCH, top, LEFT + i * WORD_PITCH + WORD_WIDTH, top + size),
+                confidence,
+            )
+        }
+        return OcrLine(words, paragraph, size)
+    }
+
+    private fun body(top: Float = BODY_TOP) = listOf(
+        "Plants make their food from light and water every day.",
+        "The leaves hold the green matter that catches the light.",
+        "Roots take water up from the soil into the stem below.",
+        "The stem carries the water up to every leaf it holds.",
+    ).mapIndexed { i, text -> line(text, top + i * BODY_PITCH, 0) }
+
+    private val body = body()
+
+    /** [notes] (text to Tesseract paragraph) set small from [NOTES_TOP] down, under the body text. */
+    private fun page(
+        vararg notes: Pair<String, Int>,
+        size: Float = SMALL,
+        confidence: Int = CONFIDENT,
+        top: Float = NOTES_TOP,
+    ): List<ReadingUnit> {
+        val lines = body(top - (NOTES_TOP - BODY_TOP)) + notes.mapIndexed { i, (text, paragraph) ->
+            line(text, top + i * NOTE_PITCH, paragraph, size, confidence)
+        }
+        return builder.build(builder.ocrReadingText(PAGE, OcrText(lines)) { transform.toPage(it) })
+    }
+
+    private fun List<ReadingUnit>.notes() = filter { it.kind == UnitKind.FOOTNOTE }.map { it.noteRef to it.text }
+
+    @Test
+    fun `numbered small lines at the foot are footnotes, their numbers not read`() {
+        val units = page(
+            "1 See the appendix for the full list of plants we grew." to 1,
+            "2 First printed in the spring of the year nineteen ninety." to 2,
+        )
+        assertEquals(
+            listOf(
+                1 to "See the appendix for the full list of plants we grew.",
+                2 to "First printed in the spring of the year nineteen ninety.",
+            ),
+            units.notes(),
+        )
+        assertEquals(List(body.size) { UnitKind.BODY }, units.take(body.size).map { it.kind })
+    }
+
+    @Test
+    fun `markers OCR glued to the note or read as signs open a note`() {
+        val cases = listOf(
+            "3The figures come from the survey of the last forty years." to
+                (3 to "The figures come from the survey of the last forty years."),
+            "*Equal share of the work on this paper by all the authors." to
+                (1 to "Equal share of the work on this paper by all the authors."),
+            "†Work done while at the university farm in the hill country." to
+                (2 to "Work done while at the university farm in the hill country."),
+        )
+        for ((note, want) in cases) assertEquals(note, listOf(want), page(note to 1).notes())
+    }
+
+    @Test
+    fun `a wide note line without a number carries on a note from the page before`() {
+        val units = page("the soil was dry that year, so the roots grew deeper." to 1)
+        assertEquals(listOf(null to "the soil was dry that year, so the roots grew deeper."), units.notes())
+    }
+
+    @Test
+    fun `a new Tesseract paragraph starts a new note even when its number was misread`() {
+        val units = page(
+            "1 See the appendix for the full list of plants we grew." to 1,
+            "“To check this, grow two plants side by side for a month." to 2,
+        )
+        assertEquals(listOf(1, null), units.notes().map { it.first })
+    }
+
+    @Test
+    fun `small lines that are not notes stay as they were`() {
+        val note = "1 See the appendix for the full list of plants we grew."
+        val cases = listOf(
+            "body-sized" to page(note to 1, size = BODY),
+            "read badly" to page(note to 1, confidence = UNSURE),
+            "ending a short page mid-sheet" to page(note to 1, top = MID_PAGE),
+            "a caption under a figure" to page("Figure 2: Leaves of the plants we grew in the long summer." to 1),
+            "a list in small type" to page("• Water the plants every morning before the sun is high." to 1),
+            "a short label" to page("Plate one" to 1),
+        )
+        for ((name, units) in cases) assertEquals(name, emptyList<Pair<Int?, String>>(), units.notes())
+    }
+
+    @Test
+    fun `a body line below the small lines keeps them in the text`() {
+        val lines = body + line("1 See the appendix for the full list of plants we grew.", NOTES_TOP, 1, SMALL) +
+            line("The plants were watered every morning before the sun was high.", NOTES_TOP + BODY_PITCH, 2)
+        val units = builder.build(builder.ocrReadingText(PAGE, OcrText(lines)) { transform.toPage(it) })
+        assertEquals(emptyList<Pair<Int?, String>>(), units.notes())
+    }
+
+    @Test
+    fun `a short body line OCR measured small, set apart above the notes, stays body text`() {
+        val lines = body + line("Consider these:", LEAD_TOP, 1, SMALL) +
+            line("1 See the appendix for the full list of plants we grew.", NOTES_TOP, 2, SMALL)
+        val units = builder.build(builder.ocrReadingText(PAGE, OcrText(lines)) { transform.toPage(it) })
+        assertEquals(UnitKind.BODY to "Consider these:", units[body.size].kind to units[body.size].text)
+        assertEquals(listOf(1 to "See the appendix for the full list of plants we grew."), units.notes())
+    }
+
+    @Test
+    fun `text without boxes has no footnotes`() {
+        val units = builder.build(builder.ocrReadingText(PAGE, "Plants make food.\n\n1 See the appendix."))
+        assertEquals(emptyList<Pair<Int?, String>>(), units.notes())
+    }
+
+    private companion object {
+        const val PAGE = 2
+        const val PAGE_WIDTH = 600f
+        const val PAGE_HEIGHT = 800f
+        const val BODY = 0.015f
+        const val SMALL = 0.012f
+        const val CONFIDENT = 95
+        const val UNSURE = 50
+        const val BODY_TOP = 0.7f
+        const val BODY_PITCH = 0.02f
+        const val LEAD_TOP = 0.8f
+        const val NOTES_TOP = 0.87f
+        const val NOTE_PITCH = 0.016f
+        const val MID_PAGE = 0.3f
+        const val LEFT = 0.05f
+        const val WORD_PITCH = 0.08f
+        const val WORD_WIDTH = 0.07f
+    }
+}
