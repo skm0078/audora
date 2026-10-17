@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/LibraryTopBar.kt
-// Purpose: The library's top bar: title, search field, sort and filter menu (plan item 22), settings.
+// Purpose: The library's top bar: title, search field, sort and filter menu (plan item 22).
 
 package io.github.skm0078.audora.ui.library
 
@@ -30,6 +30,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.LibraryFilter
 import io.github.skm0078.audora.core.library.LibraryQuery
@@ -42,7 +44,6 @@ internal fun LibraryTopBar(listState: LibraryListState, actions: LibraryActions)
         query = loaded?.query ?: LibraryQuery(),
         hasBooks = loaded?.all?.isNotEmpty() == true,
         onQuery = actions::onQuery,
-        onOpenSettings = actions::onOpenSettings,
     )
 }
 
@@ -52,12 +53,7 @@ internal fun LibraryTopBar(listState: LibraryListState, actions: LibraryActions)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun LibraryTopBar(
-    query: LibraryQuery,
-    hasBooks: Boolean,
-    onQuery: (LibraryQuery) -> Unit,
-    onOpenSettings: () -> Unit,
-) {
+internal fun LibraryTopBar(query: LibraryQuery, hasBooks: Boolean, onQuery: (LibraryQuery) -> Unit) {
     var searching by rememberSaveable { mutableStateOf(query.text.isNotEmpty()) }
     val closeSearch = {
         searching = false
@@ -68,7 +64,11 @@ internal fun LibraryTopBar(
             if (searching) {
                 SearchField(query.text) { onQuery(query.copy(text = it)) }
             } else {
-                Text(stringResource(R.string.library_title))
+                Text(
+                    stringResource(R.string.library_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.semantics { heading() },
+                )
             }
         },
         navigationIcon = {
@@ -85,9 +85,6 @@ internal fun LibraryTopBar(
                 }
             }
             if (hasBooks) SortMenu(query, onQuery)
-            IconButton(onClick = onOpenSettings) {
-                Icon(painterResource(R.drawable.ic_settings), stringResource(R.string.settings_title))
-            }
         },
     )
 }

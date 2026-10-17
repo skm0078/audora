@@ -2,6 +2,21 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## First UI pass — tabs, theme, cover grid, full player, Focus view, Up next, duplicate check (wave 1b, plan items 25, 27, 39, 77; 2026-10-17, ADR-036)
+- **Shell:** Library, Notes and Settings tabs with the mini player above the bar on every tab (cover, page, progress, play/pause); tapping it opens the full player. Settings left the library's top bar.
+- **Theme:** wallpaper colours by default, or Audora's warm lamp palette; System/Light/Dark and True black at night in Settings → Appearance (`AudoraTheme`, `Appearance`, `Dimens`). Bolder headings, rounder shapes, serif book text with taller lines for Indic marks. No font files added.
+- **Library:** cover grid with title and status per book and Continue reading across the top; a list at 150 % font scale and above. Book menu gains *Add to Up next*.
+- **Duplicate check (27):** picking a PDF already in the library opens a dialog with *Open it*; one copy only, since the fingerprint keys the book's place (ADR-036). Shared PDFs keep the snackbar.
+- **Full player:** the spoken sentence large between its neighbours, cover, chapters, Up next, undo jump, progress and time left, the reader's controls; *Show the page* opens the reader.
+- **Focus view and bold word starts (77):** in the text view's overflow menu; Focus view fades all but the spoken sentence, bold word starts bolds the first half of English words only (`boldWordStartRanges`).
+- **Up next (25):** a sheet over `UpNextPort`: reorder, remove, clear, add from the library, and the two switches.
+- **Notes tab:** every book's bookmarks and notes, grouped by book; a tap opens the bookmark.
+- **Settings:** grouped cards (Listening, Reading, Appearance, App, Debug).
+- **Accessibility (39):** labels on every icon, tiles as one TalkBack item, whole-row switches, headings marked, 48 dp targets.
+- Tests: `ReadingLookTest`, `DuplicateNoticeTest`, `AppDestinationTest`. No new dependency; no `:pdf` change.
+
+**Real-device checks (final phone session):** TalkBack through library, reader and player; 200 % font with Hindi and Bengali titles (grid becomes a list); wallpaper colours off, dark, true black; pick a PDF that is already in the library; mini player on all three tabs, then the full player; Focus view while reading; queue two books and reorder them; open a bookmark from the Notes tab.
+
 ## Convenience pack — chapters, time left, undo jump, sleep extras, sound, bookmarks, per-book settings, fixes, library search, covers, screen on (plan items 1, 4, 9, 10, 11, 21, 22, 24, 29, 37, 78; 2026-10-17)
 - **Chapter list (11):** a top-bar button opens the PDF outline (three levels) with the current chapter marked; a row reads from there while reading, else shows the page. A PDF without an outline has no list yet (see gaps).
 - **Time left (24):** "About 2 h 10 min left at 1.25x, 12 min in this chapter" under the page bar, from each language's speaking rate, the speed and the pace's silences; unseen pages count as the average of those seen (`TimeLeft`, `TimeLeftConfig`).
