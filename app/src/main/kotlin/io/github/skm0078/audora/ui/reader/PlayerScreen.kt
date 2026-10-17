@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/PlayerScreen.kt
-// Purpose: The full player: the sentence being read in large type between its neighbours, and every control.
+// Purpose: The full player: the sentence being read in large type between its neighbours, "What did it say?"
+//          (plan item 5) and every control.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -78,6 +79,7 @@ fun PlayerScreen(
                 PlayerTopBar(state, actions, onShowPage, onOpenUpNext)
                 BookLine(title, book, covers)
                 SentencesAround(state, Modifier.weight(1f))
+                if (state.document is DocumentState.Open) WhatDidItSay(rememberWhatDidItSay(state, config, actions))
                 state.undoJumpTo?.let { target ->
                     TextButton(onClick = actions::onUndoJump) {
                         Icon(painterResource(R.drawable.ic_undo), contentDescription = null)

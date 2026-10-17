@@ -368,6 +368,8 @@
     <string name="reader_highlight_bold">Highlight: bold</string>
     <!-- Full player -->
     <string name="player_close">Close player</string>
+    <string name="player_what_did_it_say">What did it say?</string>
+    <string name="player_replaying">Saying it again, a little slower</string>
     <string name="player_show_page">Show the page</string>
     <string name="player_idle">Press play to start reading.</string>
     <string name="player_page">Page %1$d</string>
