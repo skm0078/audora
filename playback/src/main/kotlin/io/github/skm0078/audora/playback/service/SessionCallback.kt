@@ -203,7 +203,7 @@ class SessionCallback(
             session.isAutoCompanionController(controller) || session.isAutomotiveController(controller)
 
     private fun <V> denied(): ListenableFuture<LibraryResult<V>> =
-        Futures.immediateFuture(LibraryResult.ofError(SessionError.ERROR_PERMISSION_DENIED))
+        Futures.immediateFuture(LibraryResult.ofError<V>(SessionError.ERROR_PERMISSION_DENIED))
 
     private fun playFrom(args: Bundle): ListenableFuture<SessionResult> {
         val bookId = args.getString(PlaybackContract.ARG_BOOK_ID)?.takeIf { it.isNotBlank() }

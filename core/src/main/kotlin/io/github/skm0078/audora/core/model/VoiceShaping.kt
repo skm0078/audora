@@ -3,8 +3,7 @@
 
 package io.github.skm0078.audora.core.model
 
-import java.net.URLDecoder
-import java.net.URLEncoder
+import io.github.skm0078.audora.core.text.UrlText
 
 /**
  * @property evenLoudness every sentence is brought to one loudness, so voices (a Hindi Piper voice beside English
@@ -68,10 +67,8 @@ data class VoiceShaping(
             )
         }
 
-        private fun encoded(voices: Map<Lang, VoiceId>): String =
-            URLEncoder.encode(VoiceMaps.encode(voices), Charsets.UTF_8)
+        private fun encoded(voices: Map<Lang, VoiceId>): String = UrlText.encode(VoiceMaps.encode(voices))
 
-        private fun decoded(value: String?): Map<Lang, VoiceId> =
-            VoiceMaps.decode(value?.let { runCatching { URLDecoder.decode(it, Charsets.UTF_8) }.getOrNull() })
+        private fun decoded(value: String?): Map<Lang, VoiceId> = VoiceMaps.decode(value?.let(UrlText::decode))
     }
 }

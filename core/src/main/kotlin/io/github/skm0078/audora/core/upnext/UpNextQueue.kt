@@ -4,8 +4,7 @@
 package io.github.skm0078.audora.core.upnext
 
 import io.github.skm0078.audora.core.library.BookId
-import java.net.URLDecoder
-import java.net.URLEncoder
+import io.github.skm0078.audora.core.text.UrlText
 
 /**
  * @property startPage the page a queued chapter starts on; null starts the book from where it was left.
@@ -101,8 +100,8 @@ data class UpNextQueue(
 
         private fun flag(on: Boolean) = if (on) ON else "0"
 
-        private fun encoded(text: String): String = URLEncoder.encode(text, Charsets.UTF_8)
+        private fun encoded(text: String): String = UrlText.encode(text)
 
-        private fun decoded(text: String): String? = runCatching { URLDecoder.decode(text, Charsets.UTF_8) }.getOrNull()
+        private fun decoded(text: String): String? = UrlText.decode(text)
     }
 }
