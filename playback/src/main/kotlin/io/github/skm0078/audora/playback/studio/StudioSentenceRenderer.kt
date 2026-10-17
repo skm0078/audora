@@ -23,8 +23,8 @@ import io.github.skm0078.audora.speech.audio.PcmAudio
 class StudioSentenceRenderer(
     private val live: SentenceRenderer,
     private val store: StudioStore,
-    private val key: () -> StudioKey?,
     config: StudioConfig = StudioConfig(),
+    private val key: () -> StudioKey?,
 ) : SentenceRenderer {
     private val codec = LosslessPcm(config.blockSamples)
     private var loaded: Loaded? = null

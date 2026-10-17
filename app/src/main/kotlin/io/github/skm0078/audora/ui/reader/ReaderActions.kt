@@ -82,6 +82,9 @@ interface ReaderActions {
     /** "This sounded wrong" from the sentence menu (RI-8b): its reasons show. */
     fun onReportSentence(unit: ReadingUnit) = Unit
 
+    /** "Share as audio" from the sentence menu (plan item 41): this sentence to the end of its paragraph, as a clip. */
+    fun onShareClip(unit: ReadingUnit) = Unit
+
     /** A bookmark picked in the bookmarks sheet (plan item 29). */
     fun onBookmark(bookmark: Bookmark) = Unit
 

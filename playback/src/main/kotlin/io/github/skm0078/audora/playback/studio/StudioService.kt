@@ -15,9 +15,6 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
-import io.github.skm0078.audora.core.model.Lang
-import io.github.skm0078.audora.core.model.SpeechStyle
-import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.result.Outcome
@@ -28,14 +25,10 @@ import io.github.skm0078.audora.playback.book.BookText
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.reading.UnitReading
-import io.github.skm0078.audora.playback.voice.EngineRenderer
-import io.github.skm0078.audora.playback.voice.ReadingSetup
-import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.audio.PcmAudio
-import io.github.skm0078.audora.speech.normalize.PronunciationFixer
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -158,25 +151,17 @@ class StudioService : Service() {
         val title = book.book.title.takeUnless { it == BookTitles.UNTITLED } ?: getString(R.string.studio_untitled)
         val voices = SpeechVoices(VoiceEngines(this))
         try {
-            val setup = runBlocking { readSetup(id) }
-            voices.bookVoice = { lang -> setup.ownVoices[lang] }
-            val styleStore = SpeechStyleStore.forContext(this)
-            val heard = setup.style(styleStore.current)
-            val chapterPages = book.text.chapterStarts().toSet()
-            val renderer = EngineRenderer(
-                voices,
-                style = { heard },
-                styleConfig = styleStore.config,
-                reading = ReadingSetup(chapterPages = { chapterPages }, fixer = { setup.fixer }),
-            )
-            val key = StudioKey(id, StudioMode.signature(this, heard, voices::choiceFor, setup.fixer.signature))
+            val rendering = runBlocking {
+                BookRendering.Factory(this@StudioService, bookSettings, pronunciations).prepare(id, book.text, voices)
+            }
+            val key = rendering.key
             val store = StudioMode.store(this)
             store.dropBooksNotIn(runBlocking { library.books().first() }.mapTo(HashSet()) { it.id })
             val fromPage = runBlocking { resumeAnchors.get(id) }?.page ?: 0
             val progress = Progress(title)
             val chargingGate = ChargingGate(this, config, wakeLock, progress::onWaiting).also { gate = it }
             val run = StudioRun(
-                voice = { unit -> renderer.render(unit).messageOnFailure() },
+                voice = { unit -> rendering.live.render(unit).messageOnFailure() },
                 store = store,
                 gate = chargingGate,
                 config = config,
@@ -184,8 +169,7 @@ class StudioService : Service() {
                 listener = progress,
             )
             AudoraLog.i(TAG, "Studio started, book=${id.logLabel}, from page=$fromPage, key=${key.signature.hash}")
-            val reading = UnitReading(heard.modes, chapterPages = chapterPages)
-            when (val result = run.run(key, PagePlays(book.text, reading), fromPage)) {
+            when (val result = run.run(key, PagePlays(book.text, rendering.reading), fromPage)) {
                 is Outcome.Success -> notifications.showDone(title, result.value)
                 is Outcome.Failure -> notifications.showFailed(title, result.error.message)
             }
@@ -196,19 +180,6 @@ class StudioService : Service() {
             voices.release()
         }
     }
-
-    /** The book's own settings and fixes, read once: what playback applies when it opens the book. */
-    private suspend fun readSetup(id: BookId): BookSetup {
-        val own = bookSettings.get(id)
-        val rules = pronunciations.observe(id).first()
-        return BookSetup(own?.voices.orEmpty(), PronunciationFixer(rules)) { global -> own?.over(global) ?: global }
-    }
-
-    private class BookSetup(
-        val ownVoices: Map<Lang, VoiceId>,
-        val fixer: PronunciationFixer,
-        val style: (SpeechStyle) -> SpeechStyle,
-    )
 
     /** The units playback plays on each page, with the same failure rules. */
     private class PagePlays(private val text: BookText, private val reading: UnitReading) : StudioBook {

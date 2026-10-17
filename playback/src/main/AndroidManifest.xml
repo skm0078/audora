@@ -47,6 +47,23 @@
             android:exported="false"
             android:foregroundServiceType="dataSync|mediaProcessing" />
 
+        <!-- Share as audio (plan item 41): renders one passage into a clip; started only from the reader (C7). -->
+        <service
+            android:name=".export.ClipService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|mediaProcessing" />
+
+        <!-- Hands the shared clip (cacheDir/shared-clips only) to the app the user picks (plan item 41). -->
+        <provider
+            android:name=".export.ClipFileProvider"
+            android:authorities="${applicationId}.clips"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/clip_share_paths" />
+        </provider>
+
         <!-- Playback resumption (P1-06): a headset's play button after Audora was closed resumes the last book.
              A media button press is a user action (C7); nothing here runs on boot. -->
         <receiver

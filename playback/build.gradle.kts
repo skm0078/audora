@@ -70,6 +70,8 @@ dependencies {
     // The playback contract (PlaybackContract) speaks Media3 types, so controllers get them through this module.
     api(libs.media3.session)
     implementation(libs.media3.exoplayer)
+    // FileProvider for shared audio clips (plan item 41); already in the app, so no new library in the APK.
+    implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.kotlinx.coroutines.test)

@@ -39,7 +39,7 @@ class StudioSentenceRendererTest {
     @Test
     fun `plays studio audio for a matching sentence`() {
         studioAudio()
-        val rendered = StudioSentenceRenderer(live, store, { key }).render(unit(0, 0))
+        val rendered = StudioSentenceRenderer(live, store) { key }.render(unit(0, 0))
         assertArrayEquals(pcm(50, fill = 7).samples, (rendered as Outcome.Success).value.samples)
         assertEquals(0, liveCalls)
     }
@@ -48,10 +48,10 @@ class StudioSentenceRendererTest {
     fun `renders live when the sentence, the signature or the book differ`() {
         studioAudio()
         val other = key.copy(signature = key.signature.copy(style = SpeechStyle(rate = 1.3f)))
-        StudioSentenceRenderer(live, store, { key }).render(unit(0, 1))
-        StudioSentenceRenderer(live, store, { other }).render(unit(0, 0))
-        StudioSentenceRenderer(live, store, { null }).render(unit(0, 0))
-        StudioSentenceRenderer(live, store, { key }).render(unit(0, 0).copy(text = "Changed."))
+        StudioSentenceRenderer(live, store) { key }.render(unit(0, 1))
+        StudioSentenceRenderer(live, store) { other }.render(unit(0, 0))
+        StudioSentenceRenderer(live, store) { null }.render(unit(0, 0))
+        StudioSentenceRenderer(live, store) { key }.render(unit(0, 0).copy(text = "Changed."))
         assertEquals(4, liveCalls)
     }
 }

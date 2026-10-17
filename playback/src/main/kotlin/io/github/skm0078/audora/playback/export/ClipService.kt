@@ -1,0 +1,200 @@
+// File: playback/src/main/kotlin/io/github/skm0078/audora/playback/export/ClipService.kt
+// Purpose: Short foreground service that renders a passage into an .m4a clip and offers it to share (plan item 41).
+
+package io.github.skm0078.audora.playback.export
+
+import android.app.Service
+import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.os.Build
+import android.os.IBinder
+import dagger.hilt.android.AndroidEntryPoint
+import io.github.skm0078.audora.core.config.AudiobookConfig
+import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.library.BookTitles
+import io.github.skm0078.audora.core.library.Library
+import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.notes.BookSettingsStore
+import io.github.skm0078.audora.core.notes.PronunciationStore
+import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.result.getOrNull
+import io.github.skm0078.audora.pdf.document.PdfPageError
+import io.github.skm0078.audora.playback.R
+import io.github.skm0078.audora.playback.book.LibraryBookSource
+import io.github.skm0078.audora.playback.book.OpenedBook
+import io.github.skm0078.audora.playback.queue.UnitKey
+import io.github.skm0078.audora.playback.studio.BookRendering
+import io.github.skm0078.audora.playback.studio.StudioMode
+import io.github.skm0078.audora.playback.studio.StudioSentenceRenderer
+import io.github.skm0078.audora.playback.voice.SpeechVoices
+import io.github.skm0078.audora.playback.voice.VoiceEngines
+import java.io.File
+import javax.inject.Inject
+import kotlinx.coroutines.runBlocking
+
+/**
+ * One clip at a time, on its own thread; a request while one renders is dropped (logged). The clip is rendered
+ * exactly as playback renders the book (its voices, speed, fixes and reading modes; studio audio first when ready),
+ * encoded as AAC in `cacheDir/shared-clips/` and handed to the share sheet through [ClipFileProvider] with a one-off
+ * read grant. The previous clip is deleted when a new one is made, not after sharing: the receiving app may read it
+ * later.
+ */
+@AndroidEntryPoint
+class ClipService : Service() {
+    @Inject
+    lateinit var library: Library
+
+    @Inject
+    lateinit var bookSettings: BookSettingsStore
+
+    @Inject
+    lateinit var pronunciations: PronunciationStore
+
+    private val config = AudiobookConfig()
+    private lateinit var notices: ClipNotices
+
+    @Volatile
+    private var worker: Thread? = null
+
+    override fun onCreate() {
+        super.onCreate() // Hilt injects fields here.
+        notices = ClipNotices(this).apply { createChannel() }
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForeground(ClipNotices.RUNNING_ID, notices.making(), foregroundType())
+        val id = intent?.getStringExtra(AudioClips.EXTRA_BOOK)?.let(::BookId)
+        val page = intent?.getIntExtra(AudioClips.EXTRA_PAGE, 0) ?: 0
+        val start = UnitKey(page, intent?.getIntExtra(AudioClips.EXTRA_INDEX, 0) ?: 0)
+        when {
+            intent?.action != AudioClips.ACTION_MAKE || id == null -> AudoraLog.w(
+                TAG,
+                "Bad clip request ${intent?.action}",
+            )
+
+            worker != null -> AudoraLog.w(TAG, "A clip is already being made; book=${id.logLabel} dropped")
+
+            else -> worker = Thread({ makeClip(id, start) }, THREAD_NAME).apply { start() }
+        }
+        if (worker == null) stopSelf(startId)
+        return START_NOT_STICKY
+    }
+
+    override fun onTimeout(startId: Int, fgsType: Int) {
+        worker?.interrupt()
+    }
+
+    override fun onDestroy() {
+        worker?.interrupt()
+        super.onDestroy()
+    }
+
+    /** On the worker thread. */
+    private fun makeClip(id: BookId, start: UnitKey) {
+        try {
+            when (val opened = runBlocking { LibraryBookSource(this, library).open(id, password = null) }) {
+                is Outcome.Success -> opened.value.text.use { clipOf(opened.value, start) }
+                is Outcome.Failure -> notices.showFailed(opened.error.message)
+            }
+        } catch (interrupted: InterruptedException) {
+            AudoraLog.i(TAG, "Clip cancelled, book=${id.logLabel}")
+        } finally {
+            worker = null
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
+    }
+
+    private fun clipOf(book: OpenedBook, start: UnitKey) {
+        val voices = SpeechVoices(VoiceEngines(this))
+        try {
+            val text = book.text
+            val rendering = runBlocking {
+                BookRendering.Factory(
+                    this@ClipService,
+                    bookSettings,
+                    pronunciations,
+                ).prepare(book.book.id, text, voices)
+            }
+            val renderer = StudioSentenceRenderer(rendering.live, StudioMode.store(this)) { rendering.key }
+            val made = ClipMaker(renderer).make(
+                start = start,
+                pageCount = text.pageCount,
+                pageUnits = { page ->
+                    when (val units = text.units(page)) {
+                        is Outcome.Success -> units.value
+                        is Outcome.Failure -> emptyList<ReadingUnit>().takeIf { units.error.isPageOnly() }
+                    }
+                },
+                plays = rendering.reading::plays,
+            )
+            when (made) {
+                is Outcome.Success -> share(book, start, made.value)
+                is Outcome.Failure -> notices.showFailed(getString(R.string.clip_failed_text))
+            }
+        } finally {
+            voices.release()
+        }
+    }
+
+    private fun share(book: OpenedBook, start: UnitKey, clip: Clip) {
+        val title = book.book.title.takeUnless { it == BookTitles.UNTITLED } ?: getString(R.string.export_untitled)
+        val folder = File(cacheDir, AudioClips.FOLDER).apply { mkdirs() }
+        folder.listFiles()?.forEach { old ->
+            if (!old.delete()) AudoraLog.w(TAG, "Could not delete old clip ${old.name}")
+        }
+        val name =
+            getString(R.string.clip_file_name, AudiobookFolder.folderName(title, config), start.page + 1) + ".m4a"
+        val file = encode(folder, name, start, clip) ?: return notices.showFailed(getString(R.string.clip_failed_text))
+        val uri = AudioClips.uriFor(this, file)
+        val quote = clip.units.joinToString(" ") { it.text }
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = MIME_TYPE
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_TEXT, getString(R.string.clip_share_text, quote, title, start.page + 1))
+            // ClipData carries the grant through the chooser to the app the user picks.
+            clipData = ClipData.newRawUri(file.name, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        val chooser = Intent.createChooser(send, getString(R.string.clip_chooser_title))
+        AudoraLog.i(TAG, "Clip ready, book=${book.book.id.logLabel} page=${start.page}, ${clip.audio.durationMs} ms")
+        notices.showReady(chooser)
+        try {
+            // Opens at once while Audora is on screen; Android blocks it from the background, then the notice is there.
+            startActivity(Intent(chooser).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (e: ActivityNotFoundException) {
+            AudoraLog.w(TAG, "No app to share the clip with", e)
+        }
+    }
+
+    /** The clip as one .m4a file; null when the encoder or storage failed (logged where it failed). */
+    private fun encode(folder: File, name: String, start: UnitKey, clip: Clip): File? {
+        val chapter = AudioChapter(number = 1, firstPage = start.page, lastPage = start.page)
+        val writer = LocalChapterFiles(folder).create(name).getOrNull()
+            ?.let { target -> AacChapterWriter.create(chapter, target, clip.audio.sampleRate, config).getOrNull() }
+        val done = writer != null && writer.write(clip.audio) is Outcome.Success && writer.finish() is Outcome.Success
+        if (!done) writer?.abort()
+        return File(folder, name).takeIf { done }
+    }
+
+    private companion object {
+        const val TAG = "Clip.Service"
+        const val THREAD_NAME = "audio-clip"
+        const val MIME_TYPE = "audio/mp4"
+
+        /** A page with no text is skipped (as playback skips it); a book that cannot be read stops the clip. */
+        fun PdfPageError.isPageOnly(): Boolean =
+            this is PdfPageError.ExtractionFailed || this is PdfPageError.PageOutOfRange
+
+        fun foregroundType(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
+        } else {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+        }
+    }
+}

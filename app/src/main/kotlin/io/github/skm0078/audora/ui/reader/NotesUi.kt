@@ -61,6 +61,10 @@ fun NotesOverlays(notes: NotesState, actions: BookNotesActions, reader: ReaderAc
                 reader.onReportSentence(unit)
             },
             onDismiss = actions::dismissMenu,
+            onShareClip = {
+                actions.dismissMenu()
+                reader.onShareClip(unit)
+            },
         )
     }
     if (notes.listOpen) BookmarksSheet(notes.bookmarks, actions, reader)
@@ -76,7 +80,13 @@ fun NotesOverlays(notes: NotesState, actions: BookNotesActions, reader: ReaderAc
 }
 
 @Composable
-private fun SentenceMenuDialog(onBookmark: () -> Unit, onFix: () -> Unit, onReport: () -> Unit, onDismiss: () -> Unit) {
+private fun SentenceMenuDialog(
+    onBookmark: () -> Unit,
+    onFix: () -> Unit,
+    onReport: () -> Unit,
+    onDismiss: () -> Unit,
+    onShareClip: () -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.sentence_menu_title)) },
@@ -85,6 +95,7 @@ private fun SentenceMenuDialog(onBookmark: () -> Unit, onFix: () -> Unit, onRepo
                 MenuRow(stringResource(R.string.sentence_menu_bookmark), onBookmark)
                 MenuRow(stringResource(R.string.sentence_menu_fix), onFix)
                 MenuRow(stringResource(R.string.report_title), onReport)
+                MenuRow(stringResource(R.string.sentence_menu_share_clip), onShareClip)
             }
         },
         confirmButton = {},

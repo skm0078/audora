@@ -53,6 +53,7 @@ import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
+import io.github.skm0078.audora.playback.export.AudioClips
 import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.studio.StudioMode
@@ -691,6 +692,11 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun onReportSentence(unit: ReadingUnit) = model.askReport(unit)
+
+        // The clip's progress and its Share button are in a notification, so it asks for that permission first.
+        override fun onShareClip(unit: ReadingUnit) = playWithPermission {
+            AudioClips.share(applicationContext, model.state.value.bookId, unit.page, unit.index)
+        }
 
         override fun onBookmark(bookmark: Bookmark) = model.goToBookmark(bookmark)
 
