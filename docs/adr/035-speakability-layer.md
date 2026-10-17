@@ -227,4 +227,16 @@ and highlight need a unit to land on.
   `splitShare`); a total row to one side does not count. Of the 30 tables in the table corpora (18 text-layer, 12 scanned), the one that ran its
   serial numbers into the state names now reads them as two columns and nothing else changed; the 145 labelled cells
   and the scanned tables are unchanged.
+- Note markers on scanned pages (`OcrNoteMarkers`, RI-5a). OCR gives no font sizes, so `NoteMarkers` cannot run, and
+  Tesseract reads a superscript marker as a sign glued to the word ("Vaswani*", "Eich*,", "Haghighat®,", "Smith#,",
+  "double.!") or drops it. A run of note signs (stars, daggers, "#", "®", "™", "§", "¶", superscript digits) after a
+  word of at least two letters is left out, with any punctuation after it kept, and so is a "!" glued after a full
+  stop; a sign set as its own word right against the word before, small and raised (the text layer's
+  `markerSizeRatio` and `markerRaiseEm`) is left out too. Plain digits glued to a word ("Fig.1") and raised numbers on
+  their own are kept: on 364 scanned test pages every raised number was a table figure or chart label. **Measured**
+  on 130 footnoted text-layer pages rendered at 300 dpi and OCR'd, plus the 234 scanned pages of the other
+  measurements: 51 lines changed, every change a marker or a form's required-field star; the title blocks of two
+  papers now read their 23 author names without "star", "hash" or "registered"; no figure or word was dropped. Two
+  markers stay: one OCR read as a letter ("Bebenitat") and one read as "™#," with its comma. Most in-text numeric
+  markers are dropped by Tesseract itself.
 - Logs carry kinds, scores, page and unit index, never the page's text (AGENTS.md).

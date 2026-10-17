@@ -40,6 +40,8 @@ internal class OcrPage(val text: PageText, val layout: PageLayout, val hyphenate
  * per row, put where the table's first word was read; their words leave the lines they were read in.
  */
 internal class OcrPageText(private val tableFinder: OcrTables, private val layoutConfig: LayoutConfig) {
+    private val noteMarkers = OcrNoteMarkers(layoutConfig.notes)
+
     fun build(
         pageIndex: Int,
         ocr: OcrText,
@@ -206,8 +208,8 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
     }
 
     /**
-     * Paragraphs of lines of NFC words, [dropped] lines and empty words left out and misread bullets restored
-     * ([OcrBullets]), and each line's size
+     * Paragraphs of lines of NFC words, [dropped] lines, empty words and note markers ([OcrNoteMarkers]) left out and
+     * misread bullets restored ([OcrBullets]), and each line's size
      * (`OcrLine.size`) in the same shape.
      */
     private fun paragraphsOf(
@@ -222,13 +224,11 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
         var paragraph = -1
         ocr.lines.forEachIndexed { i, line ->
             if (i in dropped) return@forEachIndexed
-            val words = OcrBullets.restore(
-                isBulletGap,
-                line.words.mapNotNull { word ->
-                    val text = Normalizer.normalize(word.text, Normalizer.Form.NFC).trim()
-                    if (text.isEmpty()) null else OcrWord(text, word.box, word.confidence)
-                },
-            )
+            val read = line.words.mapNotNull { word ->
+                val text = Normalizer.normalize(word.text, Normalizer.Form.NFC).trim()
+                if (text.isEmpty()) null else OcrWord(text, word.box, word.confidence)
+            }
+            val words = OcrBullets.restore(isBulletGap, noteMarkers.silence(read, ocr::readingFrame))
             if (words.isEmpty()) return@forEachIndexed
             if (line.paragraph != paragraph && current.isNotEmpty()) {
                 paragraphs.add(current)
