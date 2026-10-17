@@ -7,6 +7,7 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.core.library.BookProgress
 import io.github.skm0078.audora.core.library.LibraryError
+import io.github.skm0078.audora.core.library.LibraryQuery
 
 /**
  * [availability] is null until the file has been checked; the row then shows no warning. [progress] is null for a
@@ -20,8 +21,17 @@ data class LibraryItem(val book: Book, val availability: BookAvailability?, val 
 sealed interface LibraryListState {
     data object Loading : LibraryListState
 
-    /** [continueReading]: the book read most recently, offered on top; null when none was read yet. */
-    data class Loaded(val items: List<LibraryItem>, val continueReading: LibraryItem? = null) : LibraryListState
+    /**
+     * [items]: the books [query] keeps, in its order. [continueReading]: the book read most recently, offered on top
+     * while nothing is searched or filtered; null when none was read yet. [all]: every book in the library, so "no
+     * book matches" and "the library is empty" can be told apart, and the mini player finds a filtered-out book.
+     */
+    data class Loaded(
+        val items: List<LibraryItem>,
+        val continueReading: LibraryItem? = null,
+        val all: List<LibraryItem> = items,
+        val query: LibraryQuery = LibraryQuery(),
+    ) : LibraryListState
 
     /** The database could not be read; the log has the cause. */
     data object Failed : LibraryListState

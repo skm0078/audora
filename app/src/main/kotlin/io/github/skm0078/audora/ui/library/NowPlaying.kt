@@ -135,7 +135,7 @@ private val BUFFERING_SIZE = 24.dp
 /** The mini player's content from the player and the library; null when nothing is loaded in the player. */
 fun nowPlaying(playback: PlaybackSnapshot, list: LibraryListState): NowPlaying? {
     val position = playback.position ?: return null
-    val book = (list as? LibraryListState.Loaded)?.items?.firstOrNull { it.book.id == position.bookId }?.book
+    val book = (list as? LibraryListState.Loaded)?.all?.firstOrNull { it.book.id == position.bookId }?.book
     return NowPlaying(
         bookId = position.bookId,
         title = book?.title?.takeUnless { it == BookTitles.UNTITLED },
