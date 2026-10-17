@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/MainActivity.kt
-// Purpose: Single activity hosting the Compose UI, edge-to-edge from day one (Build Spec §4).
+// Purpose: Single activity hosting the Compose UI, edge-to-edge from day one (Build Spec §4), and its routes.
 
 package io.github.skm0078.audora
 
@@ -14,6 +14,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +60,7 @@ import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.punct.PunctuationModels
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.ui.AppDestination
+import io.github.skm0078.audora.ui.AppTab
 import io.github.skm0078.audora.ui.battery.BatterySetupCard
 import io.github.skm0078.audora.ui.battery.BatterySetupController
 import io.github.skm0078.audora.ui.battery.BatterySetupScreen
@@ -68,20 +71,29 @@ import io.github.skm0078.audora.ui.library.LibraryActions
 import io.github.skm0078.audora.ui.library.LibraryController
 import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.LibraryScreen
+import io.github.skm0078.audora.ui.library.MiniPlayer
 import io.github.skm0078.audora.ui.library.nowPlaying
 import io.github.skm0078.audora.ui.licences.LicenceSource
 import io.github.skm0078.audora.ui.licences.LicencesController
 import io.github.skm0078.audora.ui.licences.LicencesScreen
+import io.github.skm0078.audora.ui.notes.NotesScreen
+import io.github.skm0078.audora.ui.notes.bookNotes
 import io.github.skm0078.audora.ui.reader.BookNotesModel
+import io.github.skm0078.audora.ui.reader.DocumentState
 import io.github.skm0078.audora.ui.reader.KeepScreenOn
 import io.github.skm0078.audora.ui.reader.LibraryReaderBooks
 import io.github.skm0078.audora.ui.reader.LocatorReaderResume
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
+import io.github.skm0078.audora.ui.reader.NotesState
+import io.github.skm0078.audora.ui.reader.PlayerScreen
 import io.github.skm0078.audora.ui.reader.ReaderActions
 import io.github.skm0078.audora.ui.reader.ReaderDocumentOpener
 import io.github.skm0078.audora.ui.reader.ReaderModel
 import io.github.skm0078.audora.ui.reader.ReaderScreen
+import io.github.skm0078.audora.ui.reader.ReaderState
 import io.github.skm0078.audora.ui.reader.ReaderView
+import io.github.skm0078.audora.ui.reader.ReadingLook
+import io.github.skm0078.audora.ui.reader.ReadingLookPreferences
 import io.github.skm0078.audora.ui.reader.ScreenPreference
 import io.github.skm0078.audora.ui.reader.SleepTimerSetting
 import io.github.skm0078.audora.ui.reader.SpeedPreference
@@ -91,7 +103,13 @@ import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.settings.OcrModelsAction
 import io.github.skm0078.audora.ui.settings.SettingsScreen
 import io.github.skm0078.audora.ui.settings.runModelAction
+import io.github.skm0078.audora.ui.shell.AppShell
+import io.github.skm0078.audora.ui.theme.Appearance
+import io.github.skm0078.audora.ui.theme.AppearancePreferences
 import io.github.skm0078.audora.ui.theme.AudoraTheme
+import io.github.skm0078.audora.ui.upnext.UpNextPort
+import io.github.skm0078.audora.ui.upnext.UpNextSheet
+import io.github.skm0078.audora.ui.upnext.libraryBooks
 import io.github.skm0078.audora.ui.voices.VoiceManager
 import io.github.skm0078.audora.ui.voices.VoicesActions
 import io.github.skm0078.audora.ui.voices.VoicesController
@@ -103,6 +121,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
+@Suppress("TooManyFunctions") // One route per screen.
 class MainActivity : ComponentActivity() {
     @Inject
     lateinit var readingSessionTracker: ReadingSessionTracker
@@ -159,73 +178,145 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var licenceSource: LicenceSource
 
+    @Inject
+    lateinit var upNext: UpNextPort
+
+    private val appearancePreferences: AppearancePreferences by lazy { AppearancePreferences(applicationContext) }
+
+    private val readingLookPreferences: ReadingLookPreferences by lazy { ReadingLookPreferences(applicationContext) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) sharedPdf = SharedPdfIntent.uriOf(intent)
         setContent {
-            AudoraTheme {
-                val scope = rememberCoroutineScope()
-                val diagnostics = remember { DiagnosticsController(readingSessionTracker, logSharer, scope) }
-                // Activity-wide, so an add still running when the user opens Settings is not cancelled.
-                val libraryController = remember {
-                    LibraryController(library, scope, resumeAnchors.observeAll(), sharedCopies::copy).apply { start() }
-                }
-                val battery = rememberBatterySetup(scope)
-                // Activity-wide too, so an import keeps going when the user leaves the screen; created on first visit.
-                val voicesController = remember { lazy { VoicesController(voiceManager, scope).also { it.start() } } }
-                var route by rememberSaveable { mutableStateOf(AppDestination.Library.toRoute()) }
-                val destination = AppDestination.fromRoute(route)
-                val navigate = { next: AppDestination -> route = next.toRoute() }
-                // Not saveable on purpose: a restored activity must never start reading by itself (C7).
-                var autoResumeBook by remember { mutableStateOf<BookId?>(null) }
-                BackHandler(enabled = destination.parent != null) {
-                    navigate(destination.parent ?: AppDestination.Library)
-                }
-                LaunchedEffect(Unit) { diagnostics.checkUnfinishedSession() }
-                SharedPdfEffect(sharedPdf, { sharedPdf = null }, libraryController::addShared, navigate)
+            val appearance by remember {
+                appearancePreferences.appearance
+            }.collectAsStateWithLifecycle(initialValue = Appearance())
+            AudoraTheme(appearance) { AppContent(appearance) }
+        }
+    }
 
-                when (destination) {
-                    AppDestination.Library -> LibraryRoute(
-                        libraryController,
-                        navigate,
-                        onContinue = { id ->
-                            autoResumeBook = id
-                            navigate(AppDestination.Reader(id))
-                        },
-                    ) {
+    /** The screens and the routing between them (ADR-036: three tabs, the reader and the player over them). */
+    @Composable
+    private fun AppContent(appearance: Appearance) {
+        val scope = rememberCoroutineScope()
+        val diagnostics = remember { DiagnosticsController(readingSessionTracker, logSharer, scope) }
+        // Activity-wide, so an add still running when the user opens Settings is not cancelled.
+        val libraryController = remember {
+            LibraryController(library, scope, resumeAnchors.observeAll(), sharedCopies::copy).apply { start() }
+        }
+        val battery = rememberBatterySetup(scope)
+        // Activity-wide too, so an import keeps going when the user leaves the screen; created on first visit.
+        val voicesController = remember { lazy { VoicesController(voiceManager, scope).also { it.start() } } }
+        val nav = rememberAppNavigation()
+        val destination = nav.destination
+        BackHandler(enabled = destination.parent != null) {
+            nav.navigate(destination.parent ?: AppDestination.Library)
+        }
+        LaunchedEffect(Unit) { diagnostics.checkUnfinishedSession() }
+        SharedPdfEffect(sharedPdf, { sharedPdf = null }, libraryController::addShared, nav::navigate)
+        val books = libraryBooks(libraryController.listState)
+
+        destination.tab?.let { tab ->
+            TabsRoute(tab, libraryController, nav::navigate) {
+                when (tab) {
+                    AppTab.LIBRARY -> LibraryRoute(libraryController, nav::navigate, nav::continueReading) {
                         if (battery.showCard) {
                             BatterySetupCard(
-                                onSetUp = { navigate(AppDestination.BatterySetup(fromSettings = false)) },
+                                onSetUp = { nav.navigate(AppDestination.BatterySetup(fromSettings = false)) },
                                 onNotNow = battery::dismissCard,
                             )
                         }
                     }
 
-                    AppDestination.Settings -> SettingsRoute(diagnostics, battery, navigate)
+                    AppTab.NOTES -> NotesRoute(books, nav::openBookmark)
 
-                    AppDestination.Voices -> VoicesRoute(voicesController.value) { navigate(AppDestination.Settings) }
-
-                    AppDestination.Licences -> LicencesRoute { navigate(AppDestination.Settings) }
-
-                    is AppDestination.BatterySetup -> BatterySetupRoute(battery) {
-                        navigate(destination.parent ?: AppDestination.Library)
-                    }
-
-                    is AppDestination.Reader -> {
-                        ReaderRoute(destination.id, autoResume = autoResumeBook == destination.id) {
-                            navigate(AppDestination.Library)
-                        }
-                        // The reader took the flag when it was created; opening the book later must not replay it.
-                        LaunchedEffect(destination.id) { autoResumeBook = null }
-                    }
-                }
-                UnfinishedSessionPrompt(diagnostics) { id ->
-                    autoResumeBook = id
-                    navigate(AppDestination.Reader(id))
+                    AppTab.SETTINGS -> SettingsRoute(diagnostics, battery, nav::navigate, appearance)
                 }
             }
         }
+        ScreenRoute(destination, nav, voicesController, battery, books)
+        UnfinishedSessionPrompt(diagnostics, nav::continueReading)
+    }
+
+    /** The screens drawn over the tabs: sub-pages of Settings, the reader and the full player. */
+    @Composable
+    private fun ScreenRoute(
+        destination: AppDestination,
+        nav: AppNavigation,
+        voicesController: Lazy<VoicesController>,
+        battery: BatterySetupController,
+        books: List<Book>,
+    ) {
+        when (destination) {
+            AppDestination.Library, AppDestination.Notes, AppDestination.Settings -> Unit
+
+            AppDestination.Voices -> VoicesRoute(voicesController.value) { nav.navigate(AppDestination.Settings) }
+
+            AppDestination.Licences -> LicencesRoute { nav.navigate(AppDestination.Settings) }
+
+            is AppDestination.BatterySetup -> BatterySetupRoute(battery) {
+                nav.navigate(destination.parent ?: AppDestination.Library)
+            }
+
+            is AppDestination.Reader -> {
+                ReaderRoute(
+                    ReaderTarget(destination.id, autoResume = nav.autoResumeBook == destination.id),
+                    books,
+                    onBack = { nav.navigate(AppDestination.Library) },
+                    openBookmark = nav.pendingBookmark?.takeIf { it.bookId == destination.id },
+                    onBookmarkOpened = { nav.pendingBookmark = null },
+                )
+                // The reader took the flag when it was created; opening the book later must not replay it.
+                LaunchedEffect(destination.id) { nav.autoResumeBook = null }
+            }
+
+            is AppDestination.Player -> ReaderRoute(
+                ReaderTarget(destination.id, autoResume = false, asPlayer = true),
+                books,
+                onBack = { nav.navigate(AppDestination.Library) },
+                onShowPage = { nav.navigate(AppDestination.Reader(destination.id)) },
+            )
+        }
+    }
+
+    /** The tabs' frame with the mini player, which follows whatever the player holds (ADR-036). */
+    @Composable
+    private fun TabsRoute(
+        tab: AppTab,
+        library: LibraryController,
+        navigate: (AppDestination) -> Unit,
+        content: @Composable () -> Unit,
+    ) {
+        val port = rememberConnectedPlaybackPort()
+        val playback by port.state.collectAsStateWithLifecycle()
+        val playWithPermission = rememberPlayWithNotificationPermission()
+        val playing = nowPlaying(playback, library.listState)
+        AppShell(
+            selected = tab,
+            onSelect = { navigate(it.destination) },
+            miniPlayer = {
+                playing?.let { now ->
+                    MiniPlayer(
+                        playing = now,
+                        onOpen = { navigate(AppDestination.Player(now.bookId)) },
+                        onPlayPause = {
+                            if (port.state.value.wantsToPlay) port.pause() else playWithPermission(port::play)
+                        },
+                        covers = bookCovers,
+                    )
+                }
+            },
+            content = content,
+        )
+    }
+
+    @Composable
+    private fun NotesRoute(books: List<Book>, onOpen: (Bookmark) -> Unit) {
+        val groups by remember(books) { bookNotes(bookmarkStore, books) }
+            .collectAsStateWithLifecycle(initialValue = emptyList())
+        NotesScreen(groups, onOpen)
     }
 
     /** Re-checks the exemption on every resume: the user comes back from the system prompt or Settings. */
@@ -262,6 +353,7 @@ class MainActivity : ComponentActivity() {
         diagnostics: DiagnosticsController,
         battery: BatterySetupController,
         navigate: (AppDestination) -> Unit,
+        appearance: Appearance,
     ) {
         val ocrState by remember { ocrModels.state() }.collectAsStateWithLifecycle(initialValue = null)
         val punctState by remember { punctuationModels.state() }.collectAsStateWithLifecycle(initialValue = null)
@@ -280,7 +372,6 @@ class MainActivity : ComponentActivity() {
             batteryExempt = battery.exempt,
             versionName = BuildConfig.VERSION_NAME,
             showDebugTools = BuildConfig.DEBUG,
-            onBack = { navigate(AppDestination.Library) },
             onOpenBatterySetup = { navigate(AppDestination.BatterySetup(fromSettings = true)) },
             onOpenVoices = { navigate(AppDestination.Voices) },
             onOpenLicences = { navigate(AppDestination.Licences) },
@@ -315,6 +406,8 @@ class MainActivity : ComponentActivity() {
                     punctuationModels.delete()
                 }
             },
+            appearance = appearance,
+            onAppearanceChange = { changed -> scope.launch { appearancePreferences.save(changed) } },
         )
     }
 
@@ -331,13 +424,6 @@ class MainActivity : ComponentActivity() {
         banner: @Composable () -> Unit,
     ) {
         val context = LocalContext.current.applicationContext
-        val port = remember { MediaControllerPlaybackPort(context) }
-        // Connected only while visible, like the reader's: a connected controller keeps the service bound.
-        LifecycleStartEffect(port) {
-            port.connect()
-            onStopOrDispose { port.release() }
-        }
-        val playback by port.state.collectAsStateWithLifecycle()
         val playWithPermission = rememberPlayWithNotificationPermission()
         val actions = remember(controller) {
             object : LibraryActions {
@@ -348,12 +434,6 @@ class MainActivity : ComponentActivity() {
                 override fun onOpenBook(book: Book) = navigate(AppDestination.Reader(book.id))
 
                 override fun onContinue(book: Book) = playWithPermission { onContinue(book.id) }
-
-                override fun onOpenPlaying(id: BookId) = navigate(AppDestination.Reader(id))
-
-                override fun onPlayPause() {
-                    if (port.state.value.wantsToPlay) port.pause() else playWithPermission(port::play)
-                }
 
                 override fun onRequestRemoval(book: Book) = controller.proposeRemoval(book)
 
@@ -368,18 +448,17 @@ class MainActivity : ComponentActivity() {
 
                 override fun onMessageShown() = controller.messageShown()
 
-                override fun onOpenSettings() = navigate(AppDestination.Settings)
-
                 override fun onScreenResumed() = controller.refreshAvailability()
 
                 override fun onQuery(query: LibraryQuery) = controller.setQuery(query)
+
+                override fun onAddToUpNext(book: Book) = upNext.add(book.id)
             }
         }
         val books = (controller.listState as? LibraryListState.Loaded)?.all?.mapTo(HashSet()) { it.book.id }
         // Covers of removed books go once the list has loaded; never while it is loading or failed.
         LaunchedEffect(books) { books?.let { bookCovers.prune(it) } }
         LibraryScreen(
-            nowPlaying = nowPlaying(playback, controller.listState),
             listState = controller.listState,
             busy = controller.busy,
             message = controller.message,
@@ -435,7 +514,15 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun ReaderRoute(id: BookId, autoResume: Boolean, onBack: () -> Unit) {
+    private fun ReaderRoute(
+        target: ReaderTarget,
+        books: List<Book>,
+        onBack: () -> Unit,
+        onShowPage: () -> Unit = {},
+        openBookmark: Bookmark? = null,
+        onBookmarkOpened: () -> Unit = {},
+    ) {
+        val id = target.id
         val context = LocalContext.current.applicationContext
         val scope = rememberCoroutineScope()
         val port = remember(id) { MediaControllerPlaybackPort(context) }
@@ -449,7 +536,7 @@ class MainActivity : ComponentActivity() {
                 config = readerConfig,
                 scope = scope,
                 resume = LocatorReaderResume(resumeLocator),
-                autoResume = autoResume,
+                autoResume = target.autoResume,
                 views = viewPreference,
             ).also { it.start() }
         }
@@ -478,15 +565,66 @@ class MainActivity : ComponentActivity() {
         KeepScreenOn(keepScreenOn && state.playback.wantsToPlay)
         val volumeKeys by remember { screenPreference.volumeKeysSkip() }.collectAsStateWithLifecycle(false)
         VolumeKeySkips(volumeKeys && state.playback.wantsToPlay, model::skipForward, model::skipBack)
-        ReaderScreen(
-            state = state,
-            config = readerConfig,
-            actions = actions,
-            ocrModels = ocrState,
-            notes = notesState,
-            notesActions = notes,
-            voices = voiceRows,
-        )
+        val opened = state.document is DocumentState.Open
+        LaunchedEffect(model, opened, openBookmark) {
+            if (opened && openBookmark != null) {
+                model.goToBookmark(openBookmark)
+                onBookmarkOpened()
+            }
+        }
+        ReaderContent(target, books, state, actions, ocrState, notesState, notes, voiceRows, onShowPage)
+    }
+
+    /** The reader, or the full player on the same model; both open the Up next sheet (plan item 25). */
+    @Composable
+    private fun ReaderContent(
+        target: ReaderTarget,
+        books: List<Book>,
+        state: ReaderState,
+        actions: ReaderActions,
+        ocrState: OcrModelsState?,
+        notesState: NotesState,
+        notes: BookNotesModel,
+        voiceRows: List<VoiceRow>,
+        onShowPage: () -> Unit,
+    ) {
+        val scope = rememberCoroutineScope()
+        var upNextOpen by rememberSaveable { mutableStateOf(false) }
+        val document = state.document
+        // Errors fall back to the reader, which explains them and offers a retry or the password prompt.
+        if (target.asPlayer && (document is DocumentState.Open || document == DocumentState.Loading)) {
+            PlayerScreen(
+                state = state,
+                config = readerConfig,
+                actions = actions,
+                onShowPage = onShowPage,
+                onOpenUpNext = { upNextOpen = true },
+                book = books.firstOrNull { it.id == target.id },
+                covers = bookCovers,
+                voices = voiceRows,
+            )
+        } else {
+            val look by remember { readingLookPreferences.look }.collectAsStateWithLifecycle(ReadingLook())
+            ReaderScreen(
+                state = state,
+                config = readerConfig,
+                actions = actions,
+                ocrModels = ocrState,
+                notes = notesState,
+                notesActions = notes,
+                voices = voiceRows,
+                look = look,
+                onLookChange = { changed -> scope.launch { readingLookPreferences.save(changed) } },
+                onOpenUpNext = { upNextOpen = true },
+            )
+        }
+        if (upNextOpen) UpNextRoute(books, playing = target.id) { upNextOpen = false }
+    }
+
+    @Composable
+    private fun UpNextRoute(books: List<Book>, playing: BookId, onDismiss: () -> Unit) {
+        val state by upNext.state.collectAsStateWithLifecycle()
+        UpNextSheet(state, books, playing, upNext, onDismiss, bookCovers)
     }
 
     private fun readerActions(
@@ -587,6 +725,57 @@ class MainActivity : ComponentActivity() {
 
         override fun onDownloadOcrModels() = ocrModels.download()
     }
+}
+
+/**
+ * Where the app is (a saveable route) and two one-shot hand-offs to the reader, which are not saveable on purpose: a
+ * restored activity must never start reading by itself (C7), nor jump to a bookmark tapped before.
+ */
+@Stable
+internal class AppNavigation(routeState: MutableState<String>) {
+    private var route by routeState
+    val destination: AppDestination get() = AppDestination.fromRoute(route)
+
+    /** "Continue" was pressed: the reader opened next reads on from where the book was left. */
+    var autoResumeBook by mutableStateOf<BookId?>(null)
+
+    /** A bookmark tapped in the Notes tab, opened once its book's reader has the PDF open. */
+    var pendingBookmark by mutableStateOf<Bookmark?>(null)
+
+    fun navigate(next: AppDestination) {
+        route = next.toRoute()
+    }
+
+    fun continueReading(id: BookId) {
+        autoResumeBook = id
+        navigate(AppDestination.Reader(id))
+    }
+
+    fun openBookmark(bookmark: Bookmark) {
+        pendingBookmark = bookmark
+        navigate(AppDestination.Reader(bookmark.bookId))
+    }
+}
+
+@Composable
+private fun rememberAppNavigation(): AppNavigation {
+    val route = rememberSaveable { mutableStateOf(AppDestination.Library.toRoute()) }
+    return remember { AppNavigation(route) }
+}
+
+/** Which book the reader route opens, and whether as the full player (ADR-036). */
+internal data class ReaderTarget(val id: BookId, val autoResume: Boolean, val asPlayer: Boolean = false)
+
+/** A player controller connected only while visible: a connected one keeps the playback service bound. */
+@Composable
+private fun rememberConnectedPlaybackPort(): MediaControllerPlaybackPort {
+    val context = LocalContext.current.applicationContext
+    val port = remember { MediaControllerPlaybackPort(context) }
+    LifecycleStartEffect(port) {
+        port.connect()
+        onStopOrDispose { port.release() }
+    }
+    return port
 }
 
 @Composable

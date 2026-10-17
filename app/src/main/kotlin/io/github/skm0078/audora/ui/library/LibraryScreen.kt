@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/LibraryScreen.kt
-// Purpose: Home screen: Continue reading, the books with their progress, Add PDF, the mini player (P1-01, ADR-033).
+// Purpose: Library tab: Continue reading, a cover grid (a list at large text), Add PDF, the duplicate check (ADR-036).
 
 package io.github.skm0078.audora.ui.library
 
@@ -10,10 +10,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -24,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -37,6 +45,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -48,6 +57,7 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.ui.theme.AudoraTheme
+import io.github.skm0078.audora.ui.theme.Dimens
 
 @Composable
 fun LibraryScreen(
@@ -57,7 +67,6 @@ fun LibraryScreen(
     pendingRemoval: Book?,
     actions: LibraryActions,
     modifier: Modifier = Modifier,
-    nowPlaying: NowPlaying? = null,
     banner: @Composable () -> Unit = {},
     covers: CoverSource = CoverSource.None,
 ) {
@@ -78,10 +87,12 @@ fun LibraryScreen(
         actions.onScreenResumed()
         onPauseOrDispose {}
     }
-    MessageEffect(message, snackbar, actions::onMessageShown)
+    val duplicate = message?.let(::duplicateOf)
+    MessageEffect(message.takeIf { duplicate == null }, snackbar, actions::onMessageShown)
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        contentWindowInsets = TAB_INSETS,
         topBar = { LibraryTopBar(listState, actions) },
         floatingActionButton = {
             if (listState is LibraryListState.Loaded && listState.all.isNotEmpty()) {
@@ -93,7 +104,6 @@ fun LibraryScreen(
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },
-        bottomBar = { nowPlaying?.let { MiniPlayer(it, actions) } },
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             if (busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
@@ -114,10 +124,12 @@ fun LibraryScreen(
                 onExport = actions::onExportAudiobook,
                 onContinue = actions::onContinue,
                 covers = covers,
+                onAddToUpNext = actions::onAddToUpNext,
             )
         }
     }
     pendingRemoval?.let { RemovalDialog(it, actions) }
+    duplicate?.let { DuplicateDialog(it, listState, actions) }
 }
 
 @Composable
@@ -130,6 +142,7 @@ private fun LibraryContent(
     onExport: (Book) -> Unit,
     onContinue: (Book) -> Unit,
     covers: CoverSource,
+    onAddToUpNext: (Book) -> Unit,
 ) {
     when (listState) {
         LibraryListState.Loading -> Centered { CircularProgressIndicator() }
@@ -153,14 +166,15 @@ private fun LibraryContent(
                 )
             }
 
-            else -> BookList(
-                listState,
-                onTap = onTap,
-                onRemove = onRemove,
-                onExport = onExport,
-                onContinue = onContinue,
-                covers = covers,
-            )
+            else -> {
+                val books = BookCallbacks(onTap, onRemove, onExport, onContinue, onAddToUpNext)
+                // At 150 % text and above, two lines of title no longer fit under a cover: a list instead (item 39).
+                if (LocalDensity.current.fontScale >= LARGE_TEXT_SCALE) {
+                    BookList(listState, books, covers)
+                } else {
+                    BookGrid(listState, books, covers)
+                }
+            }
         }
     }
 }
@@ -180,32 +194,104 @@ private fun RemovalDialog(book: Book, actions: LibraryActions) {
     )
 }
 
+/** What a tap on a book, its menu or the Continue button does. */
+private class BookCallbacks(
+    val onTap: (LibraryItem) -> Unit,
+    val onRemove: (Book) -> Unit,
+    val onExport: (Book) -> Unit,
+    val onContinue: (Book) -> Unit,
+    val onAddToUpNext: (Book) -> Unit,
+)
+
 @Composable
-private fun BookList(
-    list: LibraryListState.Loaded,
-    onTap: (LibraryItem) -> Unit,
-    onRemove: (Book) -> Unit,
-    onExport: (Book) -> Unit,
-    onContinue: (Book) -> Unit,
-    covers: CoverSource,
-) {
+private fun BookGrid(list: LibraryListState.Loaded, books: BookCallbacks, covers: CoverSource) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(Dimens.CoverGridMin),
+        contentPadding = PaddingValues(
+            start = Dimens.ScreenPadding,
+            end = Dimens.ScreenPadding,
+            top = Dimens.SpaceS,
+            bottom = FAB_CLEARANCE,
+        ),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXl),
+    ) {
+        list.continueReading?.let { latest ->
+            item(key = CONTINUE_KEY, span = { GridItemSpan(maxLineSpan) }) {
+                ContinueReadingCard(
+                    latest,
+                    onContinue = { books.onContinue(latest.book) },
+                    onOpen = { books.onTap(latest) },
+                    covers = covers,
+                )
+            }
+        }
+        items(list.items, key = { it.book.id.value }) { item ->
+            BookTile(
+                item = item,
+                onTap = { books.onTap(item) },
+                onRemove = { books.onRemove(item.book) },
+                onExport = { books.onExport(item.book) },
+                covers = covers,
+                onAddToUpNext = { books.onAddToUpNext(item.book) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun BookList(list: LibraryListState.Loaded, books: BookCallbacks, covers: CoverSource) {
     LazyColumn(contentPadding = PaddingValues(bottom = FAB_CLEARANCE)) {
         list.continueReading?.let { latest ->
             item(key = CONTINUE_KEY) {
-                ContinueReadingCard(latest, onContinue = { onContinue(latest.book) }, onOpen = { onTap(latest) })
+                Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS)) {
+                    ContinueReadingCard(
+                        latest,
+                        onContinue = { books.onContinue(latest.book) },
+                        onOpen = { books.onTap(latest) },
+                        covers = covers,
+                    )
+                }
             }
         }
         items(list.items, key = { it.book.id.value }) { item ->
             BookRow(
                 item = item,
-                onTap = { onTap(item) },
-                onRemove = { onRemove(item.book) },
-                onExport = { onExport(item.book) },
+                onTap = { books.onTap(item) },
+                onRemove = { books.onRemove(item.book) },
+                onExport = { books.onExport(item.book) },
                 covers = covers,
+                onAddToUpNext = { books.onAddToUpNext(item.book) },
             )
             HorizontalDivider()
         }
     }
+}
+
+/**
+ * Plan item 27: a picked PDF the library already has. Audora keeps one copy, never a second: the fingerprint keys the
+ * book's place, so two copies would fight over it (ADR-036). The dialog says so and offers the book.
+ */
+@Composable
+private fun DuplicateDialog(notice: DuplicateNotice, listState: LibraryListState, actions: LibraryActions) {
+    val title = titleOrUntitled(notice.title)
+    val onDismiss = actions::onMessageShown
+    val onOpen: () -> Unit = {
+        actions.onMessageShown()
+        bookIn(listState, notice.id)?.let(actions::onOpenBook)
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.library_duplicate_title)) },
+        text = {
+            val body = if (notice.moved) R.string.library_duplicate_moved else R.string.library_duplicate_same
+            Text(stringResource(body, title))
+        },
+        confirmButton = { TextButton(onClick = onOpen) { Text(stringResource(R.string.library_duplicate_open)) } },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.library_duplicate_close)) }
+        },
+    )
 }
 
 @Composable
@@ -232,6 +318,13 @@ private fun Centered(content: @Composable () -> Unit) {
 }
 
 private val FAB_CLEARANCE = 88.dp
+
+/** The app shell's bottom bar takes the bottom inset (ADR-036). */
+private val TAB_INSETS: WindowInsets
+    @Composable get() = ScaffoldDefaults.contentWindowInsets.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+
+/** Font scale from which the grid becomes a list (item 39). */
+private const val LARGE_TEXT_SCALE = 1.5f
 
 /** Book ids are UUIDs, so this key never clashes with a row's. */
 private const val CONTINUE_KEY = "continue-reading"
@@ -280,10 +373,6 @@ private object PreviewActions : LibraryActions {
 
     override fun onContinue(book: Book) = Unit
 
-    override fun onOpenPlaying(id: BookId) = Unit
-
-    override fun onPlayPause() = Unit
-
     override fun onRequestRemoval(book: Book) = Unit
 
     override fun onExportAudiobook(book: Book) = Unit
@@ -293,8 +382,6 @@ private object PreviewActions : LibraryActions {
     override fun onCancelRemoval() = Unit
 
     override fun onMessageShown() = Unit
-
-    override fun onOpenSettings() = Unit
 
     override fun onScreenResumed() = Unit
 }
