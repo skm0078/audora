@@ -3,14 +3,13 @@
 
 package io.github.skm0078.audora.ui.reader
 
-import android.app.Activity
 import android.view.KeyEvent
 import android.view.Window
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.platform.LocalContext
 
 /**
  * Volume down skips to the next sentence and volume up goes back one, only while [active] (the reader is shown and
@@ -20,7 +19,7 @@ import androidx.compose.ui.platform.LocalContext
  */
 @Composable
 fun VolumeKeySkips(active: Boolean, onNext: () -> Unit, onPrevious: () -> Unit) {
-    val window = (LocalContext.current as? Activity)?.window ?: return
+    val window = LocalActivity.current?.window ?: return
     val next by rememberUpdatedState(onNext)
     val previous by rememberUpdatedState(onPrevious)
     DisposableEffect(window, active) {

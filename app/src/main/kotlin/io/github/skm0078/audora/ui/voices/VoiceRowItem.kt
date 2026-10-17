@@ -25,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
@@ -32,7 +33,6 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.speech.voices.VoiceStatus
-import java.util.Locale
 
 /**
  * The radio picks the reading voice; it is enabled only for voices that can speak now and were not measured too slow
@@ -99,15 +99,17 @@ private fun StatusLine(row: VoiceRow) {
 @Composable
 private fun SpeedLine(row: VoiceRow) {
     val speed = row.speed ?: return
+    // The screen's locale, read so a language change recomposes this line.
+    val locale = LocalConfiguration.current.locales[0]
     if (row.tooSlow) {
         Text(
-            stringResource(R.string.voices_speed_slow, String.format(Locale.getDefault(), ONE_DECIMAL, speed.rtf)),
+            stringResource(R.string.voices_speed_slow, String.format(locale, ONE_DECIMAL, speed.rtf)),
             color = MaterialTheme.colorScheme.error,
             style = MaterialTheme.typography.bodySmall,
         )
     } else if (speed.rtf > 0) {
         Text(
-            stringResource(R.string.voices_speed_ok, String.format(Locale.getDefault(), ONE_DECIMAL, 1 / speed.rtf)),
+            stringResource(R.string.voices_speed_ok, String.format(locale, ONE_DECIMAL, 1 / speed.rtf)),
             style = MaterialTheme.typography.bodySmall,
         )
     }

@@ -11,6 +11,7 @@ import androidx.media3.session.MediaLibraryService.LibraryParams
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession.ControllerInfo
 import androidx.media3.session.MediaSession.MediaItemsWithStartPosition
+import androidx.media3.session.SessionError
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -45,7 +46,7 @@ class LibraryBrowser(
         val entries = BrowseNode.parse(parentId)?.let { lookup.children(it) }
         if (entries == null) {
             AudoraLog.w(TAG, "Browse of something that is not a folder")
-            LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE)
+            LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
         } else {
             LibraryResult.ofItemList(BrowsePages.of(entries, page, pageSize).map(BrowseItems::of), params)
         }
@@ -53,7 +54,7 @@ class LibraryBrowser(
 
     fun item(mediaId: String): ListenableFuture<LibraryResult<MediaItem>> = later {
         when (val entry = BrowseNode.parse(mediaId)?.let { lookup.entry(it) }) {
-            null -> LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE)
+            null -> LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
             else -> LibraryResult.ofItem(BrowseItems.of(entry), null)
         }
     }

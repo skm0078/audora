@@ -118,7 +118,7 @@ class SessionCallback(
         PlaybackContract.ACTION_STUDY -> study(args)
         PlaybackContract.ACTION_SET_FOCUS_SOUND -> Futures.immediateFuture(setFocusSound(args))
         PlaybackContract.ACTION_SKIP_PARAGRAPH -> later { skipParagraph(args) }
-        else -> Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
+        else -> Futures.immediateFuture(SessionResult(SessionError.ERROR_NOT_SUPPORTED))
     }
 
     override fun onMediaButtonEvent(
@@ -383,9 +383,9 @@ class SessionCallback(
 
     private fun failure(code: PlaybackErrorCode): SessionResult {
         val resultCode = if (code == PlaybackErrorCode.BAD_REQUEST) {
-            SessionResult.RESULT_ERROR_BAD_VALUE
+            SessionError.ERROR_BAD_VALUE
         } else {
-            SessionResult.RESULT_ERROR_UNKNOWN
+            SessionError.ERROR_UNKNOWN
         }
         return SessionResult(resultCode, Bundle().apply { putString(PlaybackContract.RESULT_ERROR, code.name) })
     }
