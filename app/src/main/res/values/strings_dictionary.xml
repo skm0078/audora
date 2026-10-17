@@ -5,12 +5,13 @@
     <string name="dictionary_title">Look up a word</string>
     <!-- %1$s the download size, %2$s the size on the phone, e.g. "5.4 MB" and "16 MB". -->
     <string name="dictionary_offer">Look words up offline in the English dictionary (Open English Wordnet). It is a %1$s download and takes %2$s on the phone.</string>
+    <string name="dictionary_offer_hi">Look Hindi words up offline, with meanings in English, from Wiktionary. It is a %1$s download and takes %2$s on the phone.</string>
+    <string name="dictionary_offer_bn">Look Bengali words up offline, with meanings in English, from Wiktionary. It is a %1$s download and takes %2$s on the phone.</string>
     <string name="dictionary_download">Download the dictionary</string>
     <string name="dictionary_cancel">Cancel</string>
     <string name="dictionary_waiting">Waiting for a connection…</string>
     <!-- %1$s is the reason. -->
     <string name="dictionary_failed">The download failed: %1$s</string>
-    <string name="dictionary_english_only">The dictionary is English only for now, so words of this sentence may not be found.</string>
     <string name="dictionary_type">Or type a word</string>
     <string name="dictionary_look_up">Look up</string>
     <string name="dictionary_not_found">No entry for this word.</string>
@@ -22,8 +23,15 @@
     <string name="dictionary_verb">verb</string>
     <string name="dictionary_adjective">adjective</string>
     <string name="dictionary_adverb">adverb</string>
+    <string name="dictionary_pronoun">pronoun</string>
+    <string name="dictionary_postposition">postposition</string>
+    <string name="dictionary_conjunction">conjunction</string>
+    <string name="dictionary_interjection">interjection</string>
+    <string name="dictionary_number">number</string>
+    <string name="dictionary_other">word</string>
     <string name="dictionary_back">Back</string>
     <string name="dictionary_close">Close</string>
     <!-- Licences screen: the dictionary's terms. -->
     <string name="licences_cc_by_wordnet">Creative Commons Attribution 4.0, and the WordNet License: WordNet 3.1 Copyright 2011 by Princeton University. All rights reserved. Provided as is, without warranties; the full notice comes with the download.</string>
+    <string name="licences_cc_by_sa_wiktionary">Creative Commons Attribution-ShareAlike 4.0, by Wiktionary contributors; extracted by Wiktextract (kaikki.org). The dictionary file is shared under the same licence; the full text comes with the download.</string>
 </resources>

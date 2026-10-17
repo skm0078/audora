@@ -48,7 +48,8 @@ is where sentence actions live.
   compatible licence.
 
 ## Consequences
-- The dictionary is English only until a Wiktionary build lands; on a Hindi or Bengali sentence the dialog says so.
+- Hindi and Bengali dictionaries followed from Wiktionary (ADR-047); the dialog offers the one for the tapped word's
+  script.
 - The licence screen credits Open English Wordnet and carries Princeton's copyright line; the zip carries both
   licence texts in full.
 - The download works once the branch is on `dev` and the mirror workflow has published the zip.

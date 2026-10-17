@@ -1,6 +1,6 @@
 # File: .github/workflows/voice-mirror.yml
 # Purpose: Publishes the downloadable voices, models and dictionaries of speech/models.json to the "voices" release
-#          (P4-01, ADR-022; the dictionary, ADR-045).
+#          (P4-01, ADR-022; the dictionaries, ADR-045, ADR-047).
 #
 # scripts/build_voice_mirror.py rebuilds each zip from its SHA-pinned upstream archive and fails unless the bytes
 # match the catalog's pin, so what lands on the release is exactly what the app checks for. Assets are only ever
@@ -51,7 +51,10 @@ jobs:
         run: python3 scripts/build_voice_mirror.py --out dist
 
       - name: Build and check the dictionaries against their pins
-        run: python3 scripts/build_dictionary.py --out dist
+        # A dictionary already on the release is kept as published: Wiktionary snapshots are replaced upstream.
+        run: >-
+          python3 scripts/build_dictionary.py --out dist
+          --published "https://github.com/${{ github.repository }}/releases/download/voices/"
 
       - name: Publish new assets to the voices release
         if: github.ref == 'refs/heads/dev'

@@ -19,6 +19,8 @@
 #
 #   python3 scripts/build_dictionary.py --out dist               # build and verify against the pin
 #   python3 scripts/build_dictionary.py --out dist --print-pin   # build and print file/sha256/sizeBytes
+#   python3 scripts/build_dictionary.py --out dist --published https://github.com/<repo>/releases/download/voices/
+#                                                                # keep zips already published, build the rest
 #
 # Wiktionary sources ("format": "kaikki") are kaikki.org's per-language JSONL files, which are regenerated about
 # weekly under the same name. A spec marked "measure": true is fetched without a source pin and only printed (source
@@ -33,6 +35,7 @@ import hashlib
 import json
 import sys
 import unicodedata
+import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ElementTree
 import zipfile
@@ -44,6 +47,7 @@ SHA_PREFIX_CHARS = 12
 MAX_SYNONYMS = 5
 DEFLATE_LEVEL = 9
 CHUNK_BYTES = 1 << 20
+HTTP_NOT_FOUND = 404
 # Wordnet parts of speech as the app shows them; "s" (adjective satellite) reads as an adjective.
 POS = {"n": "n", "v": "v", "a": "a", "s": "a", "r": "r"}
 FIELD_SEPARATORS = str.maketrans({"\t": " ", "|": "/", "\n": " ", "\r": " "})
@@ -57,6 +61,8 @@ SKIPPED_FORM_TAGS = {"romanization", "transliteration", "table-tags", "inflectio
 # Joiners change only how a word is drawn; the app drops them from keys too (WordKey).
 JOINERS = str.maketrans({"\u200c": None, "\u200d": None})
 MAX_GLOSS_CHARS = 300
+# The app reads a line of at most 64 KiB (DictionaryConfig.maxLineBytes); a word's later senses go past this.
+MAX_LINE_BYTES = 60_000
 
 
 def clean(text: str) -> str:
@@ -195,9 +201,11 @@ def kaikki_lines(senses: dict[str, list[str]], forms: dict[str, set[str]]) -> li
     for key in sorted(set(senses) | set(forms)):
         headwords = sorted(word for word in forms.get(key, ()) if word in senses and word != key)
         redirect = [f"={','.join(headwords)}"] if headwords else []
-        fields = senses.get(key, []) + redirect
-        if fields:
-            lines.append(key + "\t" + "\t".join(fields))
+        kept = list(senses.get(key, []))
+        while kept and len("\t".join([key, *kept, *redirect]).encode("utf-8")) > MAX_LINE_BYTES:
+            kept.pop()
+        if kept or redirect:
+            lines.append("\t".join([key, *kept, *redirect]))
     return lines
 
 
@@ -235,6 +243,26 @@ def build(spec: dict, cache: Path, out: Path) -> Path:
     return final
 
 
+def is_published(spec: dict, prefix: str, out: Path) -> bool:
+    """True if the release already holds the pinned zip, byte for byte. A Wiktionary source is renamed in place about
+    weekly, so once its zip is published the mirror never needs that snapshot again (ADR-047)."""
+    out.mkdir(parents=True, exist_ok=True)
+    target = out / spec["zip"]
+    try:
+        with urllib.request.urlopen(prefix + spec["zip"]) as response, target.open("wb") as stream:
+            while chunk := response.read(CHUNK_BYTES):
+                stream.write(chunk)
+    except urllib.error.HTTPError as error:
+        target.unlink(missing_ok=True)
+        if error.code == HTTP_NOT_FOUND:
+            return False
+        raise
+    if sha256_of(target) == spec["sha256"]:
+        return True
+    target.unlink()
+    raise SystemExit(f"{spec['id']}: the published {spec['zip']} does not match its pin")
+
+
 def text_lines(built: Path, name: str) -> int:
     with zipfile.ZipFile(built) as archive:
         return archive.read(name).count(b"\n")
@@ -247,9 +275,13 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--cache", type=Path, default=repo / "build" / "dictionary-sources")
     parser.add_argument("--print-pin", action="store_true")
+    parser.add_argument("--published", help="the release download URL prefix; a pinned zip already there is kept")
     args = parser.parse_args(argv)
     problems = []
     for spec in json.loads(args.catalog.read_text(encoding="utf-8")).get("dictionaries", []):
+        if args.published and not spec.get("measure") and is_published(spec, args.published, args.out):
+            print(f"{spec['id']}: {spec['zip']} already published with its pin; not rebuilt")
+            continue
         built = build(spec, args.cache, args.out)
         sha, size = sha256_of(built), built.stat().st_size
         if args.print_pin or spec.get("measure"):

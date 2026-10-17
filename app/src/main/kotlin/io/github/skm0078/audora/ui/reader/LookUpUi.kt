@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.dictionary.DictionaryEntry
 import io.github.skm0078.audora.core.dictionary.PartOfSpeech
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.speech.dictionary.Dictionaries
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 
@@ -47,7 +48,7 @@ fun LookUpOverlay(binding: LookUpBinding) {
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 when {
-                    !ready -> DownloadOffer(binding.download, actions)
+                    !ready -> DownloadOffer(state.dictionaryLang, binding.download, actions)
                     state.word == null -> WordPicker(state, actions)
                     else -> Entries(state.entries)
                 }
@@ -67,11 +68,16 @@ fun LookUpOverlay(binding: LookUpBinding) {
 }
 
 @Composable
-private fun DownloadOffer(download: OcrModelsState?, actions: LookUpActions) {
+private fun DownloadOffer(lang: Lang, download: OcrModelsState?, actions: LookUpActions) {
     val context = LocalContext.current
-    val size = Formatter.formatShortFileSize(context, Dictionaries.downloadBytes)
-    val onPhone = Formatter.formatShortFileSize(context, Dictionaries.unpackedBytes)
-    Text(stringResource(R.string.dictionary_offer, size, onPhone), style = MaterialTheme.typography.bodyMedium)
+    val size = Formatter.formatShortFileSize(context, Dictionaries.downloadBytes(lang))
+    val onPhone = Formatter.formatShortFileSize(context, Dictionaries.unpackedBytes(lang))
+    val offer = when (lang) {
+        Lang.EN -> R.string.dictionary_offer
+        Lang.HI -> R.string.dictionary_offer_hi
+        Lang.BN -> R.string.dictionary_offer_bn
+    }
+    Text(stringResource(offer, size, onPhone), style = MaterialTheme.typography.bodyMedium)
     when (download) {
         is OcrModelsState.Downloading -> {
             val fraction = if (download.total > 0) download.bytes.toFloat() / download.total else 0f
@@ -93,9 +99,6 @@ private fun DownloadOffer(download: OcrModelsState?, actions: LookUpActions) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun WordPicker(state: LookUpState, actions: LookUpActions) {
-    if (!state.english) {
-        Text(stringResource(R.string.dictionary_english_only), style = MaterialTheme.typography.bodyMedium)
-    }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         state.words.forEach { word -> OutlinedButton(onClick = { actions.pick(word) }) { Text(word) } }
     }
@@ -149,5 +152,11 @@ private fun partOfSpeech(part: PartOfSpeech): String = stringResource(
         PartOfSpeech.VERB -> R.string.dictionary_verb
         PartOfSpeech.ADJECTIVE -> R.string.dictionary_adjective
         PartOfSpeech.ADVERB -> R.string.dictionary_adverb
+        PartOfSpeech.PRONOUN -> R.string.dictionary_pronoun
+        PartOfSpeech.POSTPOSITION -> R.string.dictionary_postposition
+        PartOfSpeech.CONJUNCTION -> R.string.dictionary_conjunction
+        PartOfSpeech.INTERJECTION -> R.string.dictionary_interjection
+        PartOfSpeech.NUMBER -> R.string.dictionary_number
+        PartOfSpeech.OTHER -> R.string.dictionary_other
     },
 )

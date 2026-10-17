@@ -1,5 +1,5 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/dictionary/Dictionaries.kt
-// Purpose: The dictionary's Android entry point (item 33): download, cancel, delete, state and the open dictionary.
+// Purpose: The dictionaries' Android entry point (33, ADR-047): download, cancel, delete, state and the open ones.
 
 package io.github.skm0078.audora.speech.dictionary
 
@@ -17,11 +17,13 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import io.github.skm0078.audora.core.config.DictionaryConfig
 import io.github.skm0078.audora.core.config.VoiceDownloadConfig
+import io.github.skm0078.audora.core.dictionary.BaseForms
 import io.github.skm0078.audora.core.dictionary.Dictionary
 import io.github.skm0078.audora.core.dictionary.EnglishBaseForms
 import io.github.skm0078.audora.core.dictionary.FileByteSource
 import io.github.skm0078.audora.core.dictionary.SortedLines
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.voices.JobResult
@@ -40,10 +42,10 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 
 /**
- * One per process, shared by the reader and the download worker, like the punctuation model (RI-11): downloading is
- * the opt-in, through WorkManager (AGENTS.md keeps it for downloads), for the URL pinned in [DictionaryPin]. The
- * state reuses the OCR models' type (missing, queued, downloading, ready, failed). The open dictionary keeps one file
- * handle and no table in memory.
+ * One per process, shared by the reader and the download worker, like the punctuation model (RI-11): one dictionary
+ * per language (English, Hindi, Bengali), each downloaded on its own as the opt-in, through WorkManager (AGENTS.md
+ * keeps it for downloads), for the URL pinned in [DictionaryPin]. The state reuses the OCR models' type (missing,
+ * queued, downloading, ready, failed). An open dictionary keeps one file handle and no table in memory.
  */
 class Dictionaries private constructor(
     context: Context,
@@ -51,51 +53,85 @@ class Dictionaries private constructor(
     private val downloads: VoiceDownloadConfig,
 ) {
     private val appContext = context.applicationContext
-    private val pin = DictionaryPin.ENGLISH
-    private val files = DictionaryFiles(
-        File(appContext.noBackupFilesDir, ROOT_DIR),
-        pin,
-        downloads.maxUnpackedBytes,
-        downloads.bufferBytes,
-    )
-    private val installedState = MutableStateFlow<Boolean?>(null)
-    private val lock = Any()
-    private var source: FileByteSource? = null
-    private var opened: Dictionary? = null
+    private val slots: Map<Lang, Slot> = Lang.entries.associateWith { Slot(it) }
 
-    /** The English dictionary, opened on first use; null while it is not installed or cannot be opened (logged). */
-    fun english(): Dictionary? = synchronized(lock) {
-        if (opened == null && isInstalled()) {
-            try {
-                val file = FileByteSource(files.text)
-                source = file
-                opened = Dictionary(SortedLines(file, config), EnglishBaseForms(), config)
-            } catch (e: IOException) {
-                AudoraLog.w(TAG, "Dictionary could not be opened: ${e.javaClass.simpleName}")
-            }
-        }
-        opened
-    }
+    /** [lang]'s dictionary, opened on first use; null while it is not installed or cannot be opened (logged). */
+    fun forLanguage(lang: Lang): Dictionary? = slots.getValue(lang).open()
 
-    fun download() {
+    fun english(): Dictionary? = forLanguage(Lang.EN)
+
+    fun download(lang: Lang = Lang.EN) {
         val request = OneTimeWorkRequestBuilder<DictionaryDownloadWorker>()
+            .setInputData(workDataOf(DictionaryDownloadWorker.KEY_LANGUAGE to lang.bcp47Tag))
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, downloads.retryBackoffMs, TimeUnit.MILLISECONDS)
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .build()
-        workManager().enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.KEEP, request)
-        AudoraLog.i(TAG, "Dictionary download requested")
+        workManager().enqueueUniqueWork(workName(lang), ExistingWorkPolicy.KEEP, request)
+        AudoraLog.i(TAG, "Dictionary download requested, lang=${lang.bcp47Tag}")
     }
 
     /** Stops a download; the partial file is kept for a later resume. */
-    fun cancel() {
-        workManager().cancelUniqueWork(WORK_NAME)
-        AudoraLog.i(TAG, "Dictionary download cancelled")
+    fun cancel(lang: Lang = Lang.EN) {
+        workManager().cancelUniqueWork(workName(lang))
+        AudoraLog.i(TAG, "Dictionary download cancelled, lang=${lang.bcp47Tag}")
     }
 
-    suspend fun delete(): Outcome<Unit, String> = withContext(Dispatchers.IO) {
-        workManager().cancelUniqueWork(WORK_NAME)
-        synchronized(lock) {
+    suspend fun delete(lang: Lang = Lang.EN): Outcome<Unit, String> = withContext(Dispatchers.IO) {
+        workManager().cancelUniqueWork(workName(lang))
+        slots.getValue(lang).deleteFiles()
+    }
+
+    fun state(lang: Lang = Lang.EN): Flow<OcrModelsState> {
+        val slot = slots.getValue(lang)
+        val work = workManager().getWorkInfosForUniqueWorkFlow(workName(lang)).map { it.lastOrNull() }
+        return combine(slot.installed, work) { installed, info -> slot.stateOf(installed == true, info) }
+            .onStart { slot.isInstalled() }
+            .flowOn(Dispatchers.IO)
+    }
+
+    internal fun downloadJob(lang: Lang): DictionaryDownloadJob = slots.getValue(lang).let { slot ->
+        DictionaryDownloadJob(
+            pin = slot.pin,
+            files = slot.files,
+            downloader = ResumableDownloader(UrlConnectionHttpSource(downloads, USER_AGENT), downloads),
+            config = downloads,
+            onInstalled = { slot.refresh() },
+        )
+    }
+
+    fun isInstalled(lang: Lang = Lang.EN): Boolean = slots.getValue(lang).isInstalled()
+
+    private fun workManager(): WorkManager = WorkManager.getInstance(appContext)
+
+    /** One language's pin, files and open dictionary. */
+    private inner class Slot(private val lang: Lang) {
+        val pin = DictionaryPin.of(lang)
+        val files = DictionaryFiles(
+            File(appContext.noBackupFilesDir, rootDir(lang)),
+            pin,
+            downloads.maxUnpackedBytes,
+            downloads.bufferBytes,
+        )
+        val installed = MutableStateFlow<Boolean?>(null)
+        private var source: FileByteSource? = null
+        private var opened: Dictionary? = null
+
+        fun open(): Dictionary? = synchronized(this) {
+            if (opened == null && isInstalled()) {
+                try {
+                    val file = FileByteSource(files.text)
+                    source = file
+                    val forms = if (lang == Lang.EN) EnglishBaseForms() else BaseForms.AsWritten
+                    opened = Dictionary(SortedLines(file, config), forms, config)
+                } catch (e: IOException) {
+                    AudoraLog.w(TAG, "Dictionary not opened, lang=${lang.bcp47Tag}: ${e.javaClass.simpleName}")
+                }
+            }
+            opened
+        }
+
+        fun deleteFiles(): Outcome<Unit, String> = synchronized(this) {
             try {
                 source?.close()
             } catch (e: IOException) {
@@ -103,57 +139,45 @@ class Dictionaries private constructor(
             }
             source = null
             opened = null
-            files.deleteAll().also { refreshLocked() }
+            files.deleteAll().also { refresh() }
+        }
+
+        fun isInstalled(): Boolean = installed.value ?: refresh()
+
+        fun refresh(): Boolean = synchronized(this) { files.isInstalled().also { installed.value = it } }
+
+        fun stateOf(installed: Boolean, info: WorkInfo?): OcrModelsState = when {
+            installed -> OcrModelsState.Ready(pin.unpackedBytes)
+
+            info?.state == WorkInfo.State.ENQUEUED || info?.state == WorkInfo.State.BLOCKED -> OcrModelsState.Queued
+
+            info?.state == WorkInfo.State.RUNNING -> OcrModelsState.Downloading(
+                info.progress.getLong(DictionaryDownloadWorker.KEY_BYTES, 0L),
+                pin.sizeBytes,
+            )
+
+            info?.state == WorkInfo.State.FAILED -> OcrModelsState.Failed(
+                info.outputData.getString(DictionaryDownloadWorker.KEY_MESSAGE) ?: "download failed",
+            )
+
+            else -> OcrModelsState.NotDownloaded(pin.sizeBytes)
         }
     }
 
-    fun state(): Flow<OcrModelsState> {
-        val work = workManager().getWorkInfosForUniqueWorkFlow(WORK_NAME).map { it.lastOrNull() }
-        return combine(installedState, work) { installed, info -> stateOf(installed == true, info) }
-            .onStart { isInstalled() }
-            .flowOn(Dispatchers.IO)
-    }
-
-    internal fun downloadJob(): DictionaryDownloadJob = DictionaryDownloadJob(
-        pin = pin,
-        files = files,
-        downloader = ResumableDownloader(UrlConnectionHttpSource(downloads, USER_AGENT), downloads),
-        config = downloads,
-        onInstalled = { synchronized(lock) { refreshLocked() } },
-    )
-
-    fun isInstalled(): Boolean = installedState.value ?: synchronized(lock) { refreshLocked() }
-
-    private fun refreshLocked(): Boolean = files.isInstalled().also { installedState.value = it }
-
-    private fun stateOf(installed: Boolean, info: WorkInfo?): OcrModelsState = when {
-        installed -> OcrModelsState.Ready(pin.unpackedBytes)
-
-        info?.state == WorkInfo.State.ENQUEUED || info?.state == WorkInfo.State.BLOCKED -> OcrModelsState.Queued
-
-        info?.state == WorkInfo.State.RUNNING -> OcrModelsState.Downloading(
-            info.progress.getLong(DictionaryDownloadWorker.KEY_BYTES, 0L),
-            pin.sizeBytes,
-        )
-
-        info?.state == WorkInfo.State.FAILED -> OcrModelsState.Failed(
-            info.outputData.getString(DictionaryDownloadWorker.KEY_MESSAGE) ?: "download failed",
-        )
-
-        else -> OcrModelsState.NotDownloaded(pin.sizeBytes)
-    }
-
-    private fun workManager(): WorkManager = WorkManager.getInstance(appContext)
-
     companion object {
         private const val TAG = "Speech.Dictionaries"
-        private const val ROOT_DIR = "dictionary"
-        private const val WORK_NAME = "dictionary-download"
         private const val USER_AGENT = "Audora (dictionary download)"
 
-        /** What the download costs, shown before it starts. */
-        val downloadBytes: Long get() = DictionaryPin.ENGLISH.sizeBytes
-        val unpackedBytes: Long get() = DictionaryPin.ENGLISH.unpackedBytes
+        /** English keeps the folder and work name it had before Hindi and Bengali joined. */
+        private fun rootDir(lang: Lang) = if (lang == Lang.EN) "dictionary" else "dictionary-${lang.bcp47Tag}"
+
+        private fun workName(lang: Lang) =
+            if (lang == Lang.EN) "dictionary-download" else "dictionary-download-${lang.bcp47Tag}"
+
+        /** What a language's dictionary costs, shown before it is downloaded. */
+        fun downloadBytes(lang: Lang = Lang.EN): Long = DictionaryPin.of(lang).sizeBytes
+
+        fun unpackedBytes(lang: Lang = Lang.EN): Long = DictionaryPin.of(lang).unpackedBytes
 
         @Volatile
         private var instance: Dictionaries? = null
@@ -171,7 +195,9 @@ class Dictionaries private constructor(
 /** Runs one [DictionaryDownloadJob] attempt; every run resumes from the bytes on disk. */
 class DictionaryDownloadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val result = Dictionaries.get(applicationContext).downloadJob().run(
+        val tag = inputData.getString(KEY_LANGUAGE)
+        val lang = Lang.entries.firstOrNull { it.bcp47Tag == tag } ?: Lang.EN
+        val result = Dictionaries.get(applicationContext).downloadJob(lang).run(
             attempt = runAttemptCount,
             onProgress = { bytes, total -> setProgressAsync(workDataOf(KEY_BYTES to bytes, KEY_TOTAL to total)) },
             keepGoing = { !isStopped },
@@ -184,6 +210,7 @@ class DictionaryDownloadWorker(context: Context, params: WorkerParameters) : Cor
     }
 
     companion object {
+        const val KEY_LANGUAGE = "language"
         const val KEY_BYTES = "bytes"
         const val KEY_TOTAL = "total"
         const val KEY_MESSAGE = "message"

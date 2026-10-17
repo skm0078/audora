@@ -95,5 +95,12 @@ class KaikkiTest(unittest.TestCase):
         self.assertEqual(["বই\tn|book|"], self.lines("bn"))
 
 
+    def test_a_word_with_too_many_senses_keeps_the_first_within_the_line_limit(self):
+        senses = {"क": [f"n|{'x' * 250} {i}|" for i in range(400)]}
+        line = dictionary.kaikki_lines(senses, {})[0]
+        self.assertLessEqual(len(line.encode("utf-8")), dictionary.MAX_LINE_BYTES)
+        self.assertTrue(line.startswith("क\tn|" + "x" * 250 + " 0|"))
+
+
 if __name__ == "__main__":
     unittest.main()

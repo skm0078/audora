@@ -213,6 +213,12 @@ private val SPEECH_SOFTWARE = listOf(
         R.string.licences_cc_by_wordnet,
         "https://en-word.net/",
     ),
+    Software(
+        "Wiktionary (Wiktionary contributors, via Wiktextract and kaikki.org), Hindi and Bengali dictionaries, " +
+            "if downloaded",
+        R.string.licences_cc_by_sa_wiktionary,
+        "https://kaikki.org/",
+    ),
     Software("Audora", R.string.licences_gpl3, "https://github.com/skm0078/audora"),
 )
 

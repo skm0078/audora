@@ -794,16 +794,26 @@ class MainActivity : ComponentActivity() {
         voiceNoteAudio.dropFilesNotIn(voiceNoteStore.observeAll().first().mapTo(HashSet()) { it.fileName })
     }
 
-    /** The dictionary on tap (plan item 33): the sentence menu's "Look up a word". */
+    /**
+     * The dictionary on tap (plan item 33, ADR-047): the sentence menu's "Look up a word". The download state follows
+     * the dictionary in use (the picked word's script, else the sentence's language); a word looked up while its
+     * dictionary was missing is looked up again once it is installed.
+     */
     @Composable
     private fun rememberLookUp(id: BookId): LookUpBinding {
         val dictionaries = remember { Dictionaries.get(applicationContext) }
         val scope = rememberCoroutineScope()
         val model = remember(id) {
-            LookUpModel(dictionaries::english, scope, dictionaries::download, dictionaries::cancel)
+            LookUpModel(dictionaries::forLanguage, scope, dictionaries::download, dictionaries::cancel)
         }
         val state by model.state.collectAsStateWithLifecycle()
-        val download by remember { dictionaries.state() }.collectAsStateWithLifecycle(initialValue = null)
+        val lang = state?.dictionaryLang ?: Lang.EN
+        val download by remember(lang) { dictionaries.state(lang) }.collectAsStateWithLifecycle(initialValue = null)
+        val ready = download is OcrModelsState.Ready
+        LaunchedEffect(ready, state?.missing) {
+            val word = state?.word
+            if (ready && state?.missing == true && word != null) model.pick(word)
+        }
         return LookUpBinding(state, download, model)
     }
 

@@ -7,6 +7,7 @@ import io.github.skm0078.audora.core.config.VoiceDownloadConfig
 import io.github.skm0078.audora.core.dictionary.Dictionary
 import io.github.skm0078.audora.core.dictionary.FileByteSource
 import io.github.skm0078.audora.core.dictionary.SortedLines
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.voices.sha256Hex
 import java.io.ByteArrayOutputStream
@@ -51,17 +52,19 @@ class DictionaryDownloadTest {
     fun `the pins repeat speech models json`() {
         val catalog = File("models.json").takeIf { it.isFile } ?: File("speech/models.json")
         val text = catalog.readText()
-        val english = DictionaryPin.ENGLISH
-        val entry = text.substringAfter("\"id\": \"${english.id}\"").substringBefore("\"id\":")
-        listOf(
-            "\"zip\": \"${english.fileName}\"",
-            "\"sha256\": \"${english.sha256}\"",
-            "\"sizeBytes\": ${english.sizeBytes}",
-            "\"unpackedBytes\": ${english.unpackedBytes}",
-            "\"file\": \"${english.entryName}\"",
-        ).forEach { assertTrue("models.json lacks $it", it in entry) }
-        assertTrue("\"baseUrl\": \"${english.baseUrl}\"" in text)
-        assertEquals("${english.id}-${english.sha256.take(12)}.zip", english.fileName)
+        Lang.entries.map(DictionaryPin::of).forEach { pin ->
+            val entry = text.substringAfter("\"id\": \"${pin.id}\"").substringBefore("\"id\":")
+            listOf(
+                "\"zip\": \"${pin.fileName}\"",
+                "\"sha256\": \"${pin.sha256}\"",
+                "\"sizeBytes\": ${pin.sizeBytes}",
+                "\"unpackedBytes\": ${pin.unpackedBytes}",
+                "\"file\": \"${pin.entryName}\"",
+            ).forEach { assertTrue("models.json lacks $it for ${pin.id}", it in entry) }
+            assertFalse("${pin.id} is still measuring", "\"measure\"" in entry)
+            assertTrue("\"baseUrl\": \"${pin.baseUrl}\"" in text)
+            assertEquals("${pin.id}-${pin.sha256.take(12)}.zip", pin.fileName)
+        }
     }
 
     @Test

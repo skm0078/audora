@@ -1,10 +1,11 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/LookUpModel.kt
-// Purpose: The dictionary on tap (plan item 33): a sentence's words, the word picked and its entries.
+// Purpose: The dictionary on tap (item 33, ADR-047): a sentence's words, the word picked and its entries.
 
 package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.dictionary.Dictionary
 import io.github.skm0078.audora.core.dictionary.DictionaryEntry
+import io.github.skm0078.audora.core.dictionary.DictionaryLanguage
 import io.github.skm0078.audora.core.dictionary.WordKey
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
@@ -22,16 +23,21 @@ import kotlinx.coroutines.withContext
 
 /**
  * @property words the sentence's words, to tap one.
- * @property english the sentence is English; the dictionary is English only (ADR-045).
+ * @property lang the sentence's language: its dictionary is offered first.
  * @property word the word picked or typed, while its entries show.
  * @property entries its entries; null while they are looked up.
+ * @property missing the word's dictionary was not installed when it was looked up.
  */
 data class LookUpState(
     val words: List<String> = emptyList(),
-    val english: Boolean = true,
+    val lang: Lang = Lang.EN,
     val word: String? = null,
     val entries: List<DictionaryEntry>? = null,
-)
+    val missing: Boolean = false,
+) {
+    /** The dictionary in use: the picked word's, by its script, else the sentence's. */
+    val dictionaryLang: Lang get() = word?.let(DictionaryLanguage::of) ?: lang
+}
 
 interface LookUpActions {
     fun open(unit: ReadingUnit) = Unit
@@ -51,7 +57,7 @@ interface LookUpActions {
     }
 }
 
-/** What the reader needs: [state] null while closed, the dictionary's [download] state, and the actions. */
+/** What the reader needs: [state] null while closed, [download] of the dictionary in use, and the actions. */
 class LookUpBinding(val state: LookUpState?, val download: OcrModelsState?, val actions: LookUpActions) {
     val enabled: Boolean get() = this !== None
 
@@ -61,14 +67,15 @@ class LookUpBinding(val state: LookUpState?, val download: OcrModelsState?, val 
 }
 
 /**
- * Plain state holder, one per open book. Words looked up are the book's text: never logged. [dictionary] opens the
- * downloaded dictionary (null while it is not installed); look-ups read the file on [io].
+ * Plain state holder, one per open book. Words looked up are the book's text: never logged. [dictionary] opens a
+ * language's downloaded dictionary (null while it is not installed); look-ups read the file on [io]. Downloads act on
+ * the dictionary in use ([LookUpState.dictionaryLang]).
  */
 class LookUpModel(
-    private val dictionary: () -> Dictionary?,
+    private val dictionary: (Lang) -> Dictionary?,
     private val scope: CoroutineScope,
-    private val onDownload: () -> Unit,
-    private val onCancelDownload: () -> Unit,
+    private val onDownload: (Lang) -> Unit,
+    private val onCancelDownload: (Lang) -> Unit,
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) : LookUpActions {
     private val mutableState = MutableStateFlow<LookUpState?>(null)
@@ -76,15 +83,17 @@ class LookUpModel(
     private var lookUp: Job? = null
 
     override fun open(unit: ReadingUnit) {
-        mutableState.value = LookUpState(WordKey.wordsOf(unit.text), english = unit.lang == Lang.EN)
+        mutableState.value = LookUpState(WordKey.wordsOf(unit.text), lang = unit.lang)
     }
 
+    /** Looks [word] up in its script's dictionary; called again once a missing dictionary is installed. */
     override fun pick(word: String) {
-        mutableState.update { it?.copy(word = word, entries = null) }
+        mutableState.update { it?.copy(word = word, entries = null, missing = false) }
         lookUp?.cancel()
         lookUp = scope.launch {
-            val entries = withContext(io) { dictionary()?.lookUp(word).orEmpty() }
-            mutableState.update { if (it?.word == word) it.copy(entries = entries) else it }
+            val opened = withContext(io) { dictionary(DictionaryLanguage.of(word)) }
+            val entries = withContext(io) { opened?.lookUp(word).orEmpty() }
+            mutableState.update { if (it?.word == word) it.copy(entries = entries, missing = opened == null) else it }
         }
     }
 
@@ -98,7 +107,9 @@ class LookUpModel(
         mutableState.value = null
     }
 
-    override fun download() = onDownload()
+    override fun download() = onDownload(currentLang())
 
-    override fun cancelDownload() = onCancelDownload()
+    override fun cancelDownload() = onCancelDownload(currentLang())
+
+    private fun currentLang(): Lang = mutableState.value?.dictionaryLang ?: Lang.EN
 }

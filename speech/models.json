@@ -237,13 +237,14 @@
       "source": {
         "format": "kaikki",
         "url": "https://kaikki.org/dictionary/Hindi/kaikki.org-dictionary-Hindi.jsonl",
-        "sha256": ""
+        "sha256": "be3d671a9f2335b64eaf6fd938e41b9790484daf3d330d0f5c3941cfe82a79dd",
+        "sizeBytes": 165746593,
+        "extracted": "2026-10-03 from the enwiktionary dump of 2026-09-02"
       },
-      "measure": true,
-      "zip": "",
-      "sha256": "",
-      "sizeBytes": 0,
-      "unpackedBytes": 0,
+      "zip": "dict-hi-wiktionary-c2f5e6ff1696.zip",
+      "sha256": "c2f5e6ff1696fe4b24cb37df7127387ff51a96cd0ab3cbd9b38612730352a904",
+      "sizeBytes": 1822960,
+      "unpackedBytes": 15563759,
       "licenceFiles": [
         "speech/licences/wiktionary-CC-BY-SA-4.0.txt"
       ]
@@ -260,13 +261,14 @@
       "source": {
         "format": "kaikki",
         "url": "https://kaikki.org/dictionary/Bengali/kaikki.org-dictionary-Bengali.jsonl",
-        "sha256": ""
+        "sha256": "9d84efb81b17de254db0d8f33ecac6f50f19efba105b8b6c01cd7a7211e6caae",
+        "sizeBytes": 39482695,
+        "extracted": "2026-10-03 from the enwiktionary dump of 2026-09-02"
       },
-      "measure": true,
-      "zip": "",
-      "sha256": "",
-      "sizeBytes": 0,
-      "unpackedBytes": 0,
+      "zip": "dict-bn-wiktionary-7d37e76f7fd3.zip",
+      "sha256": "7d37e76f7fd3a966d55a8458b0e58c9f21b0b194e87fc0234e1e5743d313788d",
+      "sizeBytes": 567256,
+      "unpackedBytes": 3341276,
       "licenceFiles": [
         "speech/licences/wiktionary-CC-BY-SA-4.0.txt"
       ]

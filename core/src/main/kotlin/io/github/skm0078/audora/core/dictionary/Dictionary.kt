@@ -1,21 +1,30 @@
 // File: core/src/main/kotlin/io/github/skm0078/audora/core/dictionary/Dictionary.kt
-// Purpose: Looks a word up in the downloaded dictionary: the word, its listed forms and its base forms (item 33).
+// Purpose: Looks a word up in a downloaded dictionary: the word, its listed forms and its base forms (33, ADR-047).
 
 package io.github.skm0078.audora.core.dictionary
 
 import io.github.skm0078.audora.core.config.DictionaryConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.Lang
 import java.io.IOException
+import java.text.Normalizer
 
+/** The parts of speech the dictionaries label; Wiktionary's others (particles, phrases) read as [OTHER]. */
 enum class PartOfSpeech(val code: String) {
     NOUN("n"),
     VERB("v"),
     ADJECTIVE("a"),
     ADVERB("r"),
+    PRONOUN("p"),
+    POSTPOSITION("o"),
+    CONJUNCTION("c"),
+    INTERJECTION("i"),
+    NUMBER("u"),
+    OTHER("x"),
     ;
 
     companion object {
-        fun of(code: String): PartOfSpeech = entries.firstOrNull { it.code == code } ?: NOUN
+        fun of(code: String): PartOfSpeech = entries.firstOrNull { it.code == code } ?: OTHER
     }
 }
 
@@ -23,15 +32,26 @@ data class DictionarySense(val partOfSpeech: PartOfSpeech, val definition: Strin
 
 data class DictionaryEntry(val headword: String, val senses: List<DictionarySense>)
 
+/** The forms a word is tried in, the word itself first. */
+fun interface BaseForms {
+    fun of(word: String): List<String>
+
+    companion object {
+        /** Only the word: for dictionaries whose own form lines list the inflections (Hindi, Bengali). */
+        val AsWritten = BaseForms { listOf(it) }
+    }
+}
+
 /**
  * Over the dictionary's sorted lines (see scripts/build_dictionary.py): `headword TAB pos|definition|syn,syn ...`, or
- * `form TAB =headword,...` for an inflected form the wordnet lists ("mice", "went"). A word not found as it is is
- * tried in its base forms ([EnglishBaseForms]: "leaves" as "leave" and "leaf"). Blocking file reads: call off the
- * main thread. Words looked up are never logged.
+ * `form TAB =headword,...` for an inflected form the source lists ("mice", "went"); a word that has senses and is
+ * also a form of others ends with that `=` field. A word not found as it is is tried in its [baseForms]
+ * ([EnglishBaseForms]: "leaves" as "leave" and "leaf"). Blocking file reads: call off the main thread. Words looked
+ * up are never logged.
  */
 class Dictionary(
     private val lines: SortedLines,
-    private val baseForms: EnglishBaseForms = EnglishBaseForms(),
+    private val baseForms: BaseForms = EnglishBaseForms(),
     private val config: DictionaryConfig = DictionaryConfig(),
 ) {
     /** Entries for [word] (any case, surrounding punctuation ignored), best first; empty when there are none. */
@@ -47,13 +67,10 @@ class Dictionary(
 
     private fun entriesFor(key: String): List<DictionaryEntry> {
         val line = lineOf(key) ?: return emptyList()
-        val fields = line.split('\t')
-        val first = fields.getOrNull(1).orEmpty()
-        return if (first.startsWith(REDIRECT)) {
-            first.removePrefix(REDIRECT).split(',').mapNotNull { headword -> lineOf(headword)?.let(::entryOf) }
-        } else {
-            listOfNotNull(entryOf(line))
-        }
+        val redirects = line.split('\t').drop(1).filter { it.startsWith(REDIRECT) }
+            .flatMap { it.removePrefix(REDIRECT).split(',') }
+            .filter { it.isNotEmpty() && it != key }
+        return listOfNotNull(entryOf(line)) + redirects.mapNotNull { headword -> lineOf(headword)?.let(::entryOf) }
     }
 
     private fun lineOf(key: String): String? = try {
@@ -85,12 +102,18 @@ class Dictionary(
 
 /** A tapped word as the dictionary keys it. */
 object WordKey {
-    private val edges = Regex("^[^\\p{L}\\p{N}]+|[^\\p{L}\\p{N}]+$")
+    // Edges keep combining marks: a Hindi or Bengali word can end in one (a vowel sign, virama or nukta).
+    private val edges = Regex("^[^\\p{L}\\p{N}]+|[^\\p{L}\\p{M}\\p{N}]+$")
     private val possessive = Regex("['’]s$")
+    private val joiners = Regex("[\\u200C\\u200D]")
 
-    /** Lower case, without edge punctuation or a possessive "'s"; null when nothing is left or it is too long. */
+    /**
+     * NFC, without zero-width joiners (they change only how a word is drawn), edge punctuation or a possessive "'s",
+     * lower case; null when nothing is left or it is too long. The build script keys headwords the same way.
+     */
     fun of(word: String, maxChars: Int): String? {
-        val trimmed = word.trim().replace(edges, "").replace(possessive, "").replace('’', '\'').lowercase()
+        val normal = Normalizer.normalize(word.trim(), Normalizer.Form.NFC).replace(joiners, "")
+        val trimmed = normal.replace(edges, "").replace(possessive, "").replace('’', '\'').lowercase()
         return trimmed.takeIf { it.isNotEmpty() && it.length <= maxChars }
     }
 
@@ -103,13 +126,31 @@ object WordKey {
         .toList()
 }
 
+/** Which language's dictionary a word belongs in, by its script: Devanagari is Hindi, Bengali script Bengali. */
+object DictionaryLanguage {
+    private const val DEVANAGARI_FIRST = 0x0900
+    private const val DEVANAGARI_LAST = 0x097F
+    private const val BENGALI_FIRST = 0x0980
+    private const val BENGALI_LAST = 0x09FF
+
+    /** The script of [word]'s first letter decides; a word with no Indic letter is English. */
+    fun of(word: String): Lang {
+        val letter = word.firstOrNull { Character.isLetter(it) } ?: return Lang.EN
+        return when (letter.code) {
+            in DEVANAGARI_FIRST..DEVANAGARI_LAST -> Lang.HI
+            in BENGALI_FIRST..BENGALI_LAST -> Lang.BN
+            else -> Lang.EN
+        }
+    }
+}
+
 /**
  * English base forms by WordNet's "morphy" suffix rules: the word itself first, then what plural, verb and comparative
  * endings come off to ("boxes" -> "box", "studied" -> "study", "running" -> "run", "bigger" -> "big"). Irregular forms
  * come from the dictionary's own form lines instead.
  */
-class EnglishBaseForms {
-    fun of(word: String): List<String> {
+class EnglishBaseForms : BaseForms {
+    override fun of(word: String): List<String> {
         val forms = LinkedHashSet<String>()
         forms += word
         for ((suffix, replacement) in RULES) {
