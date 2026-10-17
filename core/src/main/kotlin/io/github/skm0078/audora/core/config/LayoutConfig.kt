@@ -36,6 +36,8 @@ package io.github.skm0078.audora.core.config
  *   from line to line of the same type.
  * @property ocrHeadingMinConfidence and its words were read with at least this mean OCR confidence (0–100): large
  *   text is crisp, while a screenshot, stamp or noise that Tesseract sizes large is read badly.
+ * @property ocrBulletMaxGapEm on a scanned page, a line's first word read as "o", "०" or "*" is a bullet only when the
+ *   next word starts at most this many times its height after it; farther, it is a symbol in a table's first column.
  * @property maxHeadingLines a heading has at most this many lines; a longer run of large text is body text.
  * @property maxHeadingChars a heading has at most this many characters.
  * @property boldFontMarkers lower-case fragments of a font name that mean bold. Font weight is unreliable in
@@ -67,6 +69,7 @@ data class LayoutConfig(
     val headingSizeRatio: Float = 1.15f,
     val ocrHeadingSizeRatio: Float = 1.3f,
     val ocrHeadingMinConfidence: Int = 80,
+    val ocrBulletMaxGapEm: Float = 2.2f,
     val maxHeadingLines: Int = 3,
     val maxHeadingChars: Int = 200,
     val boldFontMarkers: List<String> = DEFAULT_BOLD_MARKERS,
@@ -91,6 +94,7 @@ data class LayoutConfig(
         require(headingSizeRatio > 1f) { "headingSizeRatio must be > 1, was $headingSizeRatio" }
         require(ocrHeadingSizeRatio > 1f) { "ocrHeadingSizeRatio must be > 1, was $ocrHeadingSizeRatio" }
         require(ocrHeadingMinConfidence in 0..OcrConfig.MAX_CONFIDENCE) { "ocrHeadingMinConfidence must be in 0..100" }
+        require(ocrBulletMaxGapEm > 0f) { "ocrBulletMaxGapEm must be > 0, was $ocrBulletMaxGapEm" }
         require(maxHeadingLines > 0 && maxHeadingChars > 0) { "heading limits must be > 0" }
         require(boldFontMarkers.all { it.isNotEmpty() && it == it.lowercase() }) { "bold markers must be lower case" }
         require(minBoxedShare in 0f..1f && minRunShare in 0f..1f) { "shares must be in 0..1" }

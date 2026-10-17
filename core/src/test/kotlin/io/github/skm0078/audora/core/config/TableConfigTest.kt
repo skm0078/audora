@@ -31,6 +31,10 @@ class TableConfigTest {
             { TableConfig(minProseLines = 0) },
             { TableConfig(minProseWords = 1) },
             { TableConfig(maxRowGapEm = 0f) },
+            { TableConfig(splitGapEm = 0f) },
+            { TableConfig(splitGapEm = 1.5f) },
+            { TableConfig(minSplitRows = 1) },
+            { TableConfig(splitShare = 1.2f) },
         )
         for (make in bad) assertThrows(IllegalArgumentException::class.java) { make() }
     }

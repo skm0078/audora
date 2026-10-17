@@ -39,6 +39,10 @@ package io.github.skm0078.audora.core.config
  *   width alone misses narrow prose columns.
  * @property maxRowGapEm on a scanned page, a borderless table's rows are at most this far apart (a double-spaced
  *   table's are about 1 em apart); a wider gap ends it, so a heading below it is not read as its last row.
+ * @property splitGapEm two columns printed closer than [cellGapEm] ("1 Assam", serial number and state) are split
+ *   where a gap at least this wide (wider than a word space) runs down the column at the same place
+ * @property minSplitRows in at least this many of its cells
+ * @property splitShare and in at least this share of the cells reaching that place (a header across both may not).
  */
 data class TableConfig(
     val cellGapEm: Float = 1f,
@@ -57,6 +61,9 @@ data class TableConfig(
     val minProseLines: Int = 2,
     val minProseWords: Int = 5,
     val maxRowGapEm: Float = 2f,
+    val splitGapEm: Float = 0.5f,
+    val minSplitRows: Int = 3,
+    val splitShare: Float = 0.8f,
 ) {
     init {
         require(cellGapEm > 0f && edgeRowGapRatio > 0f && maxColumnCellEm > 0f) { "table distances must be > 0" }
@@ -71,5 +78,7 @@ data class TableConfig(
         require(minProseWords >= 2) { "minProseWords must be >= 2, was $minProseWords" }
         require(minProseLines >= 1) { "minProseLines must be >= 1, was $minProseLines" }
         require(maxRowGapEm > 0f) { "maxRowGapEm must be > 0, was $maxRowGapEm" }
+        require(splitGapEm in 0f..cellGapEm && splitGapEm > 0f) { "splitGapEm must be in (0, cellGapEm]" }
+        require(minSplitRows >= 2 && splitShare in 0f..1f) { "minSplitRows must be >= 2, splitShare in 0..1" }
     }
 }
