@@ -9,8 +9,10 @@ import org.junit.Test
 class OcrDandasTest {
     private val dandas = OcrDandas(minIndicWords = 2)
 
-    private fun restored(line: String) =
-        dandas.restore(line.split(' ').map { OcrWord(it, null, CONFIDENT) }).joinToString(" ") { it.text }
+    private fun words(line: String) = line.split(' ').filter { it.isNotEmpty() }.map { OcrWord(it, null, CONFIDENT) }
+
+    private fun restored(line: String, next: String = "") =
+        dandas.restore(words(line), words(next)).joinToString(" ") { it.text }
 
     @Test
     fun `line-end danda misreads are restored, doubled vowel bars dropped`() {
@@ -46,6 +48,22 @@ class OcrDandasTest {
             "যাবে না।",
         )
         for (line in lines) assertEquals(line, line, restored(line))
+    }
+
+    @Test
+    fun `a line-end pipe is a separator between non-Indic words, and an opening bracket closed on the next line`() {
+        // Digits or Latin on both sides: a table rule or a separator ("28400 | 988"), never a danda.
+        assertEquals("प्रदीप कुमार मजदूर 28400 |", restored("प्रदीप कुमार मजदूर 28400 |", next = "988 2320"))
+        assertEquals("রাত সময় ৮:১৫ JPG |", restored("রাত সময় ৮:১৫ JPG |", next = "PNG ফাইল"))
+        // The next line closes a bracket it never opened, at its end: the pipe was "(" ("JPG (সাইজ ... মধ্যে)").
+        assertEquals(
+            "তথ্য আপনাকে আপলোড করতে হবে JPEG / JPG (",
+            restored("তথ্য আপনাকে আপলোড করতে হবে JPEG / JPG |", next = "সাইজ 2০০ কেবির মধ্যে)"),
+        )
+        // Still a danda: a Bengali word after it, or a bracket the next line opens itself, or one closed mid-line.
+        assertEquals("কাজ করা যাবে Al ।", restored("কাজ করা যাবে Al |", next = "ধারা ২১"))
+        assertEquals("কাজ করা যাবে Al ।", restored("কাজ করা যাবে Al |", next = "ধারা (২১)"))
+        assertEquals("उत्तर प्रदेश ।", restored("उत्तर प्रदेश |", next = "संख्या: NW) 7-062"))
     }
 
     @Test

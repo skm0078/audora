@@ -253,7 +253,10 @@ and highlight need a unit to land on.
   itself (the bar read twice; "৷" after the sign is dropped anywhere), completes the sign o after the sign e when that
   word is clearly commoner and is otherwise the danda. Result: running on 4 → 2 (one danda Tesseract dropped
   mid-line, one "= |" mid-line), false stops 14 → 0, Bengali character errors 1.12% → 0.91%. Across the 221 pages of
-  the book-kind corpus, 47 units changed (into 23, as false stops no longer split sentences), all of them those repairs, except a "|" separator inside a bracket after
-  "JPG" now read as a danda, and in a scanned table a "!" after "আলোচনা" (perhaps a danda) dropped. The listening
+  the book-kind corpus, 47 units changed (into 23, as false stops no longer split sentences), all of them those repairs, except in a scanned table a "!" after "আলোচনা"
+  (perhaps a danda) dropped. A lone "|" stays a pipe with Latin letters or digits on both sides (the word before and
+  the next line's first word: a table rule or separator, "28400 | 988"), and becomes "(" when the next line closes a
+  bracket at its end that it never opened ("JPG |" over "সাইজ ২০০ কেবির মধ্যে)", 1 of 151 line-end pipes on the test
+  pages, the only change). The listening
   corpus has no Bengali scan and its Hindi scan pages had no lost sentence end, so the listening score is unchanged.
 - Logs carry kinds, scores, page and unit index, never the page's text (AGENTS.md).
