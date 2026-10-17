@@ -13,6 +13,7 @@ import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.playback.book.BookText
 import io.github.skm0078.audora.playback.queue.SentenceRenderer
 import io.github.skm0078.audora.playback.queue.UnitKey
+import io.github.skm0078.audora.playback.voice.TablePlaceholder
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.audio.PcmAudio
 
@@ -86,8 +87,10 @@ class AudiobookExporter(
         }
 
         private fun page(chapter: AudioChapter, page: Int): ExportError? {
+            fun sentenceOf(unit: ReadingUnit) = sentence(chapter, unit)
+            // The units playback reads: table rows skipped until RI-4b's setting.
             val stop = when (val loaded = text.units(page)) {
-                is Outcome.Success -> loaded.value.firstNotNullOfOrNull { unit -> sentence(chapter, unit) }
+                is Outcome.Success -> TablePlaceholder.spokenUnits(loaded.value).firstNotNullOfOrNull(::sentenceOf)
                 is Outcome.Failure -> pageFailed(page, loaded.error)
             }
             if (stop == null) listener.onPageDone(chapter, page)

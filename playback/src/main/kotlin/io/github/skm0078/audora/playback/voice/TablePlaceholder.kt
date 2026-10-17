@@ -13,7 +13,7 @@ import io.github.skm0078.audora.core.model.UnitKind
  * dropped, so skipping the rows keeps playback as it was, and the summary unit (the header row) is read as the
  * table's size: "4 rows, 5 columns."
  */
-// TODO(RI-4b): replace with the Tables setting and TableSpeech; keep the playlist and renderer call sites.
+// TODO(RI-4b): replace with the Tables setting and TableSpeech; keep the playlist, renderer and export call sites.
 object TablePlaceholder {
     /** The units playback reads: all but table rows. */
     fun spokenUnits(units: List<ReadingUnit>): List<ReadingUnit> = units.filterNot { it.kind == UnitKind.TABLE_ROW }
