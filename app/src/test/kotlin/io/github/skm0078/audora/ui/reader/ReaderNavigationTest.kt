@@ -80,6 +80,19 @@ class ReaderNavigationTest {
     }
 
     @Test
+    fun `what did it say asks the service for a one-shot slower replay, never a saved speed`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val model = model()
+            model.replayPrevious()
+            assertTrue("not before the player is there", port.calls.isEmpty())
+
+            port.connect()
+            model.replayPrevious()
+
+            assertEquals(listOf("replay ${ReaderConfig().replayFactor}"), port.calls)
+        }
+
+    @Test
     fun `a book without an outline has no chapters and no chapter time`() = runTest(UnconfinedTestDispatcher()) {
         val model = model(FakeDocument(pageCount = 10))
         assertTrue(model.state.value.chapters.isEmpty())

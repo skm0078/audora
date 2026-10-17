@@ -28,6 +28,7 @@ import io.github.skm0078.audora.playback.playlist.PlaylistFeeder
 import io.github.skm0078.audora.playback.queue.RenderAheadPolicy
 import io.github.skm0078.audora.playback.queue.RenderAheadQueue
 import io.github.skm0078.audora.playback.queue.SentenceRenderer
+import io.github.skm0078.audora.playback.queue.UnitKey
 import io.github.skm0078.audora.playback.reading.ReadingSource
 import io.github.skm0078.audora.playback.recovery.PlaybackRecovery
 import io.github.skm0078.audora.playback.recovery.PlayerFault
@@ -104,8 +105,11 @@ class BookSession(
     private val playerListener = PlayerListener()
     private val jumps = JumpHistory(config.jumps)
 
-    /** The item a resume rewind seeks to: that seek is not the listener's jump. */
-    private var rewindTarget: Int? = null
+    /** The item a seek the session makes itself goes to (resume rewind, replay): not the listener's jump. */
+    private var ownSeekTarget: Int? = null
+
+    /** "What did it say?": one sentence replayed slower, nothing saved. */
+    private val replay = ReplaySpeed()
 
     private var book: OpenedBook? = null
 
@@ -213,10 +217,30 @@ class BookSession(
      * were spoken at the old rate. With nothing loaded, only the session extras change.
      */
     fun onSpeechStyleChanged(playerSpeed: Float) {
+        replay.forget()
         player.setPlaybackSpeed(playerSpeed)
         val (page, char) = resumePoint() ?: return publishState()
         AudoraLog.i(TAG, "Speech style changed, restart book=${bookId?.logLabel} page=$page char=$char")
         rebuild(page, char, play = player.playWhenReady)
+    }
+
+    /**
+     * "What did it say?": plays the sentence before the current one again, [factor] times the listener's speed (a
+     * little slower), then goes on at their speed from the next sentence. Only the player's speed changes, so nothing
+     * is saved: leaving the reader, rotating or locking the phone mid-replay cannot keep the slower speed. The sentence
+     * is one the reading modes play (the playlist holds no other), from the recent-audio cache when it is still there.
+     * False when no sentence was played before this one.
+     */
+    fun replayPrevious(factor: Float): Boolean {
+        val current = player.currentMediaItemIndex
+        val target = (current - 1 downTo 0).firstOrNull { playlist.itemAt(it) is PlaybackItem.Sentence }
+        val unit = target?.let { (playlist.itemAt(it) as? PlaybackItem.Sentence)?.unit } ?: return false
+        player.setPlaybackSpeed(replay.start(UnitKey.of(unit), player.playbackParameters.speed, factor))
+        AudoraLog.i(TAG, "Replay page=${unit.page} unit=${unit.index} factor=$factor, book=${bookId?.logLabel}")
+        ownSeekTarget = target
+        player.seekTo(target, 0L)
+        player.play()
+        return true
     }
 
     /**
@@ -257,6 +281,8 @@ class BookSession(
         bookPassword = password
         lastSentence = null
         jumps.clear()
+        // The new book's speed is set next (onBook); a replay of the old book must not restore over it.
+        replay.forget()
         // On the extraction thread, after any page read still running there.
         val chapters = withContext(env.extraction) {
             old?.text?.close()
@@ -275,6 +301,7 @@ class BookSession(
     private fun rebuild(page: Int, charStart: Int, play: Boolean) {
         val opened = book ?: return
         playlistBook = opened.book.id
+        replay.finish()?.let(player::setPlaybackSpeed)
         loader.cancel()
         // A new position: a pause before it says nothing about where the listener lost the thread.
         rewind.forget()
@@ -344,7 +371,7 @@ class BookSession(
                 index
             }
         AudoraLog.i(TAG, "Resume rewind $step to item $target, book=${bookId?.logLabel}")
-        rewindTarget = target
+        ownSeekTarget = target
         player.seekTo(target, 0L)
     }
 
@@ -354,8 +381,8 @@ class BookSession(
 
     /** A seek to another sentence (skip buttons, headset, notification, car) is a jump, unless it is the rewind. */
     private fun noteSeek(reason: Int, now: ReadingUnit?) {
-        val rewound = rewindTarget != null && rewindTarget == player.currentMediaItemIndex
-        rewindTarget = null
+        val rewound = ownSeekTarget != null && ownSeekTarget == player.currentMediaItemIndex
+        ownSeekTarget = null
         if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_SEEK || rewound) return
         val from = lastSentence
         if (from != null && now != null) {
@@ -603,7 +630,9 @@ class BookSession(
     private inner class PlayerListener : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) faults.onSentenceCompleted()
-            noteSeek(reason, (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.unit)
+            val started = (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.unit
+            noteSeek(reason, started)
+            replay.onSentence(started?.let(UnitKey::of))?.let(player::setPlaybackSpeed)
             (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.let { sentence ->
                 lastSentence = sentence.unit
                 bookId?.let { events.onSentenceStarted(it, sentence.unit) }
