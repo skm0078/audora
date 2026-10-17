@@ -223,13 +223,19 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
         var current = ArrayList<List<OcrWord>>()
         var currentSizes = ArrayList<Float>()
         var paragraph = -1
-        ocr.lines.forEachIndexed { i, line ->
-            if (i in dropped) return@forEachIndexed
-            val read = line.words.mapNotNull { word ->
+        val read = ocr.lines.map { line ->
+            line.words.mapNotNull { word ->
                 val text = Normalizer.normalize(word.text, Normalizer.Form.NFC).trim()
                 if (text.isEmpty()) null else OcrWord(text, word.box, word.confidence)
             }
-            val words = OcrBullets.restore(isBulletGap, dandas.restore(noteMarkers.silence(read, ocr::readingFrame)))
+        }
+        ocr.lines.forEachIndexed { i, line ->
+            if (i in dropped) return@forEachIndexed
+            val restored = dandas.restore(
+                noteMarkers.silence(read[i], ocr::readingFrame),
+                read.getOrNull(i + 1).orEmpty(),
+            )
+            val words = OcrBullets.restore(isBulletGap, restored)
             if (words.isEmpty()) return@forEachIndexed
             if (line.paragraph != paragraph && current.isNotEmpty()) {
                 paragraphs.add(current)
