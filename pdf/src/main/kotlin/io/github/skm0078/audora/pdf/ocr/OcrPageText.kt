@@ -43,6 +43,7 @@ internal class OcrPage(val text: PageText, val layout: PageLayout, val hyphenate
 internal class OcrPageText(private val tableFinder: OcrTables, private val layoutConfig: LayoutConfig) {
     private val noteMarkers = OcrNoteMarkers(layoutConfig.notes)
     private val dandas = OcrDandas(layoutConfig.ocrDandaMinIndicWords)
+    private val footnotes = OcrFootnotes(layoutConfig.notes)
 
     fun build(
         pageIndex: Int,
@@ -95,10 +96,25 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
         val taken = found.flatMapTo(HashSet()) { it.words }
         val folios = folios(paragraphs).filterTo(HashSet()) { p -> spans[p].none { line -> line.any { it in taken } } }
         val keep = paragraphs.indices.filter { it !in folios }
-        val kinds = OcrParagraphKinds(page, layoutConfig, bodySizeOf(sizes))
-        val kept = layoutParagraphs(keep.map { spans[it] }, keep.map { sizes[it] }, found, kinds)
+        val bodySize = bodySizeOf(sizes)
+        val kinds = OcrParagraphKinds(page, layoutConfig, bodySize)
+        val laidOut = layoutParagraphs(keep.map { spans[it] }, keep.map { sizes[it] }, found, kinds)
+        val notes = if (toPage == null) {
+            OcrFootnotes.Tagged(laidOut, emptyList())
+        } else {
+            val turn = ocr.uprightTurn(toPage)
+            val sheet = turn.apply(toPage(WHOLE_VIEW))
+            footnotes.tag(page.withBoxes(turn::apply), sheet, laidOut, taken, bodySize)
+        }
+        val kept = notes.paragraphs
         val blocks = if (kept.isEmpty()) emptyList() else listOf(TextBlock(kept, box = null))
-        val layout = PageLayout(pageIndex, blocks, bodySize = 0f, mode = LayoutMode.EXTRACTION_ORDER)
+        val layout = PageLayout(
+            pageIndex,
+            blocks,
+            bodySize = 0f,
+            mode = LayoutMode.EXTRACTION_ORDER,
+            noteMarkers = notes.markers,
+        )
         return OcrPage(page, layout, hyphenatedPairs(flat), found.size)
     }
 
@@ -284,6 +300,9 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
         const val HYPHEN_MARKER = '\u0002'
         const val MAX_FOLIO_DIGITS = 4
         const val NO_CONFIDENCE = -1
+
+        /** The whole page as displayed, in view fractions. */
+        val WHOLE_VIEW = ViewRect(0f, 0f, 1f, 1f)
 
         /** Not the index of a word, nor one before any (so the first word kept always starts a run). */
         const val NO_WORD = -2
