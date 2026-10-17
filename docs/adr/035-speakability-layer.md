@@ -128,4 +128,20 @@ and highlight need a unit to land on.
   yet). Checked by pdf/golden/notes/labels.tsv and by a count on 4 test PDFs kept outside the repository (an arXiv
   compiler paper, the LIGO detection paper with its author list of about 1,000 names, a Hindi–English gazette, a logic
   textbook): all 1,172 markers silenced, none of the 18 exponents and fractions taken for one.
+- RI-10 (document kind) is `DocumentKindClassifier` in `:pdf/document`, run by `PdfBook.documentKind` on a dozen
+  pages spread over the book (`DocumentKindConfig`), each read as playback reads it, OCR included. It is a decision
+  list, first match wins: too little readable text (units below `SpeakabilityConfig.skipBelow` do not count) is
+  GENERAL; then FORM (table rows a third of the units, or a fifth of the characters digits); PAPER (at most 50
+  pages, with "[4]", "(Kot and Schaffer, 1986)" or "Murray (1989)" citations, or figures and equations); GAZETTE
+  (official vocabulary in English, Hindi and Bengali); TEXTBOOK (12 pages or more with headings and list items,
+  list labels like "(২)" or "•" counted in OCR'd text, which has no layout); NOVEL (20 pages or more of long
+  sentences with almost no structure); else GENERAL. A decision list over counted signals, not a trained model: no
+  new dependency, every rule readable, and a wrong call is traced to one threshold. No PIPELINE_VERSION change: units
+  are unchanged. Measured on the 57 test PDFs (pdf/golden/kinds.tsv): 50 right (88%); 34 of 41 (83%) without the 16
+  generated UDHR files. The ticket's 90% is not met. Misses: OCR'd books lose the headings and lists that tell a
+  textbook (the NCERT curriculum reads as a novel, the Bengali fair-lending guide as general), a magazine about
+  government schemes reads as a gazette, a scanned table reads as a gazette (OCR gives no table), a Hindi exam paper
+  set in a table reads as a form, a merged notice of mostly school assignments reads as a textbook, and the RTI scan
+  whose hidden OCR layer is Latin junk is too unreadable to tell (GENERAL). The next lever is headings and tables
+  from OCR boxes, which changes OCR'd units and so bumps PIPELINE_VERSION.
 - Logs carry kinds, scores, page and unit index, never the page's text (AGENTS.md).

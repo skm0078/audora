@@ -2,6 +2,15 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Reading intelligence, step 5 — what kind of book it is (RI-10; 2026-10-17, ADR-035)
+- **`PdfBook.documentKind`** reads a dozen pages spread over a book (OCR'd where the app would OCR them) and names it a novel, paper, textbook, gazette, form or general, so playback can pick reading defaults per kind (RI-11, app basics). The listener's choice always wins. Call it once per book off the main thread: it costs up to 12 page reads.
+- **How it decides** (`DocumentKindClassifier`, thresholds in `DocumentKindConfig`): table rows or digits → form; citations, figures and equations in a short document → paper; official words in English, Hindi and Bengali → gazette; headings and lists in a longer book → textbook; long sentences with no structure → novel; else general. Junk text (below the gibberish gate's threshold) is not counted.
+- **Accuracy on the 57 test PDFs** (`pdf/golden/kinds.tsv`): 50 right (88%), 34 of 41 (83%) without the 16 generated UDHR copies. **Short of the ticket's 90%.** The misses and why are in ADR-035; the main one is that OCR'd pages have no headings or lists, so scanned and broken-font textbooks are not recognised. Fixing that means reading headings and tables from OCR word boxes, which changes OCR'd units (PIPELINE_VERSION bump).
+- `PIPELINE_VERSION` unchanged (units are unchanged). Golden 0.9268 and listening 0.9783 unchanged. No new dependency.
+- Tests: `DocumentKindClassifierTest` (every kind, rates over all pages, signals counted from units and raw text, junk left out, sample spread), `DocumentKindConfigTest`, `KindLabelsTest` (the golden excerpts classified as labelled, with each book's real page count).
+
+**Real-device checks:** none yet (nothing in the app calls it until RI-11).
+
 ## Reading intelligence, step 4 — footnotes and note markers (RI-5a; 2026-10-17, ADR-035)
 - **Note markers fall silent:** small raised numbers and symbols after a word or punctuation ("both.¹", "Abbott,³", "Gal∗") are left out of what the voice is given, the way "[4]" citations already were. Exponents are read: "x²", "10⁻²¹", "χ²", "600 deg²", "(x+1)²", and subscripts ("B₁"). A switch in `NoteConfig` keeps markers if a reading mode ever wants them.
 - **Footnotes tagged** (`FOOTNOTE`, with the note's number in `noteRef`): the small lines at the foot of a column, split into one note per number; a note carried over from the previous page is tagged without a number. They stay where they are printed, so playback reads them at the end of the page as now; RI-5b (app basics) adds "Footnotes: read / skip".

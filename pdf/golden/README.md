@@ -47,6 +47,14 @@ How well the gibberish gate tells junk from real sentences is checked on the lab
 on the labelled units in [furniture/README.md](furniture/README.md) (RI-7a), and which markers fall silent and which
 units are footnotes in [notes/README.md](notes/README.md) (RI-5a).
 
+`kinds.tsv` labels every document of the test-pdfs corpus (and the two legacy-font UDHR files generated here) with
+its page count and kind: NOVEL, PAPER, TEXTBOOK, GAZETTE, FORM or GENERAL (RI-10, `DocumentKind`). Only file names
+and kinds: the local-only PDFs stay outside the repository. The label is what the book is for a listener (a
+statistics press release of mostly tables is a FORM; a manual or guide is a TEXTBOOK; a magazine, a leaflet or an
+exam paper is GENERAL). `KindLabelsTest` checks the golden excerpts against it with each book's real page count;
+the full measure (a dozen pages of each of the 57 books, scanned and broken-font pages OCR'd as the app would) runs
+locally and its result is in ADR-035.
+
 `GoldenRoutingTest` reads the same documents through `PdfBook.readPage` and checks page routing (P3-03): Unicode
 Indic documents keep their text layer and pass the OCR sample, broken-map documents go to OCR.
 
