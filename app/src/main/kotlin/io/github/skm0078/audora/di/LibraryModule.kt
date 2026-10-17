@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/di/LibraryModule.kt
-// Purpose: Provides the app database, Storage Access Framework access and the Library as app singletons (P1-01).
+// Purpose: Provides the app database, Storage Access Framework access, the Library and covers as app singletons.
 
 package io.github.skm0078.audora.di
 
@@ -15,7 +15,9 @@ import io.github.skm0078.audora.core.library.DocumentAccess
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.playback.documents.SafDocumentAccess
 import io.github.skm0078.audora.playback.storage.AudoraStorage
+import io.github.skm0078.audora.ui.library.BookCovers
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -36,4 +38,8 @@ object LibraryModule {
         fingerprinter = BookFingerprinter(LibraryConfig()),
         clock = System::currentTimeMillis,
     )
+
+    @Provides
+    @Singleton
+    fun bookCovers(@ApplicationContext context: Context): BookCovers = BookCovers(context, Dispatchers.IO)
 }
