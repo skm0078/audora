@@ -3,10 +3,12 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.flow.StateFlow
@@ -47,6 +49,12 @@ interface PlaybackPort {
     /** Shake to extend, fade-out and bedtime auto-on (plan item 37); the service keeps them. */
     fun setSleepOptions(options: SleepOptions)
 
+    /** The open book keeps its own speed, pace and voices (plan item 4), or follows the global ones again. */
+    fun setOwnSettings(on: Boolean)
+
+    /** The voice reading [lang] in the open book, while it has its own settings (plan item 4). */
+    fun setBookVoice(lang: Lang, voice: VoiceId)
+
     /** Back to where reading was before the last jump (plan item 78), playing or paused as now. */
     fun undoJump()
 
@@ -62,6 +70,8 @@ interface PlaybackPort {
  * @property wantsToPlay play was pressed and not paused since: true while buffering the next sentence too.
  * @property hasChapters the book being read has chapters, so [SleepTimerSetting.EndOfChapter] can be offered.
  * @property sleepOptions the sleep timer extras the service has saved.
+ * @property ownSettings the book being read has its own speed, pace and voices; changes to them are its own.
+ * @property bookVoices the voices the book being read keeps for itself, by language, while [ownSettings].
  * @property undoJumpTo where "Undo jump" goes back to in the book being read (plan item 78); null with nothing to undo.
  * @property errorCode Media3's error code name of the last playback error, for the log and a generic message.
  */
@@ -80,6 +90,8 @@ data class PlaybackSnapshot(
     val sleepTimer: SleepTimerState = SleepTimerState.Off,
     val hasChapters: Boolean = false,
     val sleepOptions: SleepOptions = SleepOptions(),
+    val ownSettings: Boolean = false,
+    val bookVoices: Map<Lang, VoiceId> = emptyMap(),
     val undoJumpTo: ReadingPosition? = null,
     val errorCode: String? = null,
 ) {

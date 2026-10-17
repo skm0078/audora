@@ -11,6 +11,7 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.notes.BookSettings
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
@@ -27,6 +28,7 @@ class SessionPublisher(
     private val resume: ResumeBridge,
     private val style: () -> SpeechStyle,
     private val sleepOptions: () -> SleepOptions = { SleepOptions() },
+    private val bookSettings: () -> BookSettings? = { null },
 ) : SessionEvents {
     override fun onReading(bookId: String, page: Int) = diagnostics.reading(bookId, page)
 
@@ -50,6 +52,10 @@ class SessionPublisher(
                 if (state.hasChapters) putBoolean(PlaybackContract.SESSION_HAS_CHAPTERS, true)
                 if (state.sleepChapters > 1) putInt(PlaybackContract.SESSION_SLEEP_CHAPTERS, state.sleepChapters)
                 putString(PlaybackContract.SESSION_SLEEP_OPTIONS, sleepOptions().encode())
+                bookSettings()?.let {
+                    putBoolean(PlaybackContract.SESSION_OWN_SETTINGS, true)
+                    putString(PlaybackContract.SESSION_BOOK_VOICES, BookSettings.encodeVoices(it.voices))
+                }
                 state.undoTo?.let {
                     putInt(PlaybackContract.SESSION_UNDO_PAGE, it.page)
                     putInt(PlaybackContract.SESSION_UNDO_CHAR, it.charStart)

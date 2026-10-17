@@ -28,7 +28,8 @@ import java.util.concurrent.ConcurrentHashMap
  * voice) never outlive playback. Engines are created lazily: the bundled model loads on its first render, the phone's
  * TTS binds on first use.
  *
- * Which voice reads a language, first match wins: [select] (the SET_VOICE command, for this service's life), the
+ * Which voice reads a language, first match wins: the open book's own voice ([bookVoice], plan item 4),
+ * [select] (the SET_VOICE command, for this service's life), the
  * voice picked in Settings → Voices (P4-01; read per sentence, so a change applies from the next sentence rendered),
  * then the default (Build Spec §3): English = the bundled neural voice; Hindi and Bengali = the phone's best offline
  * voice for the language. Thread-safe: the render worker resolves voices while the main thread may change them.
@@ -36,6 +37,10 @@ import java.util.concurrent.ConcurrentHashMap
 class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
     private val chosen = ConcurrentHashMap<Lang, VoiceId>()
     private val defaults = ConcurrentHashMap<Lang, VoiceId>()
+
+    /** The open book's own voice for a language (plan item 4), ahead of every other choice; null = none. */
+    @Volatile
+    var bookVoice: (Lang) -> VoiceId? = { null }
 
     fun select(lang: Lang, voice: VoiceId) {
         chosen[lang] = voice
@@ -46,7 +51,7 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
      * The voice that reads [lang] now if it is already known, without binding the phone's TTS: what the render-ahead
      * window sizes for. Null before the language's default was first resolved.
      */
-    fun knownVoice(lang: Lang): VoiceId? = chosen[lang] ?: engines.preferred(lang) ?: defaults[lang]
+    fun knownVoice(lang: Lang): VoiceId? = bookVoice(lang) ?: chosen[lang] ?: engines.preferred(lang) ?: defaults[lang]
 
     /** How fast the voice reading [lang] renders on this phone; null if unknown or not measured yet (P4-02). */
     fun speedOf(lang: Lang): VoiceSpeed? = knownVoice(lang)?.let { engines.speeds().get(it) }

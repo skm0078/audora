@@ -14,11 +14,15 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.SleepOptions
+import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
+import io.github.skm0078.audora.playback.notes.BookContext
 import io.github.skm0078.audora.playback.session.BookSession
 import io.github.skm0078.audora.playback.session.SleepOptionsStore
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
@@ -57,6 +61,7 @@ class SessionCallback(
                     .add(PlaybackContract.REPORT_SOUNDED_WRONG)
                     .add(PlaybackContract.UNDO_JUMP)
                     .add(PlaybackContract.SET_SLEEP_OPTIONS)
+                    .add(PlaybackContract.SET_OWN_SETTINGS)
                     .build(),
             )
         }
@@ -70,12 +75,13 @@ class SessionCallback(
         args: Bundle,
     ): ListenableFuture<SessionResult> = when (customCommand.customAction) {
         PlaybackContract.ACTION_PLAY_FROM -> playFrom(args)
-        PlaybackContract.ACTION_SET_VOICE -> Futures.immediateFuture(setVoice(args))
+        PlaybackContract.ACTION_SET_VOICE -> later { setVoice(args) }
         PlaybackContract.ACTION_SET_SLEEP_TIMER -> Futures.immediateFuture(setSleepTimer(args))
-        PlaybackContract.ACTION_SET_SPEECH_STYLE -> Futures.immediateFuture(setSpeechStyle(args))
+        PlaybackContract.ACTION_SET_SPEECH_STYLE -> later { setSpeechStyle(args) }
         PlaybackContract.ACTION_REPORT_SOUNDED_WRONG -> Futures.immediateFuture(report(args))
         PlaybackContract.ACTION_UNDO_JUMP -> Futures.immediateFuture(undoJump())
         PlaybackContract.ACTION_SET_SLEEP_OPTIONS -> Futures.immediateFuture(setSleepOptions(args))
+        PlaybackContract.ACTION_SET_OWN_SETTINGS -> later { setOwnSettings(args) }
         else -> Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
     }
 
@@ -110,20 +116,72 @@ class SessionCallback(
         return result
     }
 
-    private fun setVoice(args: Bundle): SessionResult {
-        val (voice, lang) = PlaybackContract.voiceFrom(args) ?: return failure(PlaybackErrorCode.BAD_REQUEST)
-        voices.select(lang, voice)
-        bookSession().restartRendering()
+    private suspend fun setVoice(args: Bundle): SessionResult =
+        PlaybackContract.voiceFrom(args)?.let { (voice, lang) -> setVoice(voice, lang) } ?: badRequest()
+
+    private suspend fun setSpeechStyle(args: Bundle): SessionResult =
+        PlaybackContract.speechStyleFrom(args)?.let { setSpeechStyle(it) } ?: badRequest()
+
+    private suspend fun setOwnSettings(args: Bundle): SessionResult =
+        if (args.containsKey(PlaybackContract.ARG_OWN_SETTINGS)) {
+            setOwnSettings(args.getBoolean(PlaybackContract.ARG_OWN_SETTINGS))
+        } else {
+            badRequest()
+        }
+
+    /** A book with its own settings keeps the voice for itself (plan item 4); otherwise it is the global choice. */
+    private suspend fun setVoice(voice: VoiceId, lang: Lang): SessionResult =
+        when (val own = stores.book.updateIfOwn { it.copy(voices = it.voices + (lang to voice)) }) {
+            is Outcome.Failure -> failure(PlaybackErrorCode.BAD_REQUEST)
+
+            is Outcome.Success -> {
+                if (!own.value) voices.select(lang, voice)
+                bookSession().restartRendering()
+                SessionResult(SessionResult.RESULT_SUCCESS)
+            }
+        }
+
+    /**
+     * Speed and pace go to the open book when it has its own settings (plan item 4), everything else (clause pauses,
+     * reading modes, sound) to the global style. The sentence restarts only when what is heard changed.
+     */
+    private suspend fun setSpeechStyle(requested: SpeechStyle): SessionResult {
+        val style = stores.style
+        val book = stores.book
+        val before = book.style(style.current)
+        val rate = style.config.clampRate(requested.rate)
+        val own = book.updateIfOwn { it.copy(rate = rate, pace = requested.pace) }
+        if (own is Outcome.Failure) return failure(PlaybackErrorCode.BAD_REQUEST)
+        val global = style.current
+        val bookOwnsSpeed = own == Outcome.Success(true)
+        style.set(if (bookOwnsSpeed) requested.copy(rate = global.rate, pace = global.pace) else requested)
+        val after = book.style(style.current)
+        if (after != before) bookSession().onSpeechStyleChanged(style.config.playerSpeed(after.rate))
         return SessionResult(SessionResult.RESULT_SUCCESS)
     }
 
-    private fun setSpeechStyle(args: Bundle): SessionResult {
-        val requested = PlaybackContract.speechStyleFrom(args) ?: return failure(PlaybackErrorCode.BAD_REQUEST)
+    /** On: the open book keeps the current speed, pace and voices as its own; off: it follows the global ones. */
+    private suspend fun setOwnSettings(on: Boolean): SessionResult {
         val style = stores.style
-        val before = style.current
-        val applied = style.set(requested)
-        if (applied != before) bookSession().onSpeechStyleChanged(style.config.playerSpeed(applied.rate))
+        val book = stores.book
+        val before = book.style(style.current)
+        val saved = book.setOwnSettings(on, before)
+        if (saved !is Outcome.Success || !saved.value) return failure(PlaybackErrorCode.BAD_REQUEST)
+        val after = book.style(style.current)
+        // Turning it off may change the speed or the voices back; either way the sentences ahead are redone.
+        if (after != before) {
+            bookSession().onSpeechStyleChanged(style.config.playerSpeed(after.rate))
+        } else {
+            bookSession().restartRendering()
+        }
         return SessionResult(SessionResult.RESULT_SUCCESS)
+    }
+
+    /** Runs [block] on the service's main-thread scope, for commands that read or write the database. */
+    private fun later(block: suspend () -> SessionResult): ListenableFuture<SessionResult> {
+        val result = SettableFuture.create<SessionResult>()
+        scope.launch { result.set(block()) }
+        return result
     }
 
     /** Logs a "This sounded wrong" report (RI-8b) with the voice reading its language; never the sentence's text. */
@@ -157,6 +215,8 @@ class SessionCallback(
         return SessionResult(SessionResult.RESULT_SUCCESS)
     }
 
+    private fun badRequest(): SessionResult = failure(PlaybackErrorCode.BAD_REQUEST)
+
     private fun failure(code: PlaybackErrorCode): SessionResult {
         val resultCode = if (code == PlaybackErrorCode.BAD_REQUEST) {
             SessionResult.RESULT_ERROR_BAD_VALUE
@@ -174,5 +234,5 @@ class SessionCallback(
     }
 }
 
-/** The listener's saved settings the custom commands change: speech style and the sleep timer extras. */
-class SessionStores(val style: SpeechStyleStore, val sleepOptions: SleepOptionsStore)
+/** The listener's saved settings the custom commands change: style, sleep timer extras, the open book's own. */
+class SessionStores(val style: SpeechStyleStore, val sleepOptions: SleepOptionsStore, val book: BookContext)

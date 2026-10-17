@@ -3,11 +3,14 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SleepOptions
+import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
+import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
@@ -75,6 +78,21 @@ interface ReaderActions {
     fun onSleepOptions(options: SleepOptions) = Unit
 
     fun onUndoJump() = Unit
+
+    /** "This sounded wrong" from the sentence menu (RI-8b): its reasons show. */
+    fun onReportSentence(unit: ReadingUnit) = Unit
+
+    /** A bookmark picked in the bookmarks sheet (plan item 29). */
+    fun onBookmark(bookmark: Bookmark) = Unit
+
+    /** "Bookmark here": the sentence being read on the shown page, else its first. */
+    fun onBookmarkHere() = Unit
+
+    /** "Use for this book only" in the speech sheet (plan item 4). */
+    fun onOwnSettings(on: Boolean) = Unit
+
+    /** A voice picked for this book in the speech sheet (plan item 4). */
+    fun onBookVoice(lang: Lang, voice: VoiceId) = Unit
 
     fun onPasswordSubmitted(password: String)
 

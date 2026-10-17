@@ -34,10 +34,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
+import io.github.skm0078.audora.speech.voices.VoiceRow
 import kotlinx.coroutines.delay
 
 @Composable
-fun ReaderControls(state: ReaderState, config: ReaderConfig, actions: ReaderActions, modifier: Modifier = Modifier) {
+fun ReaderControls(
+    state: ReaderState,
+    config: ReaderConfig,
+    actions: ReaderActions,
+    modifier: Modifier = Modifier,
+    voices: List<VoiceRow> = emptyList(),
+) {
     val enabled = state.playerReady
     val loaded = state.readingPosition != null
     Surface(tonalElevation = 3.dp, modifier = modifier.fillMaxWidth()) {
@@ -46,7 +53,7 @@ fun ReaderControls(state: ReaderState, config: ReaderConfig, actions: ReaderActi
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            SpeedButton(state.playback, config, enabled, actions)
+            SpeedButton(state.playback, config, enabled, actions, voices)
             IconButton(onClick = actions::onSkipBack, enabled = enabled && loaded && state.playback.canSkipBack) {
                 Icon(painterResource(R.drawable.ic_skip_previous), stringResource(R.string.reader_skip_back))
             }
@@ -79,7 +86,13 @@ private fun PlayPauseButton(reading: Boolean, buffering: Boolean, enabled: Boole
 }
 
 @Composable
-private fun SpeedButton(playback: PlaybackSnapshot, config: ReaderConfig, enabled: Boolean, actions: ReaderActions) {
+private fun SpeedButton(
+    playback: PlaybackSnapshot,
+    config: ReaderConfig,
+    enabled: Boolean,
+    actions: ReaderActions,
+    voices: List<VoiceRow>,
+) {
     var open by remember { mutableStateOf(false) }
     TextButton(onClick = { open = true }, enabled = enabled) {
         Text(stringResource(R.string.reader_speed, speedLabel(playback.speed)))
@@ -97,6 +110,9 @@ private fun SpeedButton(playback: PlaybackSnapshot, config: ReaderConfig, enable
             onReadingModes = actions::onReadingModes,
             voiceShaping = playback.voiceShaping,
             onVoiceShaping = actions::onVoiceShaping,
+            ownSettings = playback.ownSettings,
+            onOwnSettings = actions::onOwnSettings,
+            voices = BookVoices(voices, playback.bookVoices, actions::onBookVoice),
             onDismiss = { open = false },
         )
     }

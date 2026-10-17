@@ -17,12 +17,16 @@ import io.github.skm0078.audora.core.config.QueueConfig
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.notes.BookSettingsStore
+import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.core.resume.ResumeRecorder
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.book.LibraryBookSource
+import io.github.skm0078.audora.playback.notes.BookContext
 import io.github.skm0078.audora.playback.queue.MeasuredRenderAhead
 import io.github.skm0078.audora.playback.reading.ReadingSource
 import io.github.skm0078.audora.playback.session.BookSession
@@ -65,6 +69,12 @@ class AudoraPlaybackService : MediaSessionService() {
     @Inject
     lateinit var resumeAnchors: ResumeAnchorStore
 
+    @Inject
+    lateinit var bookSettings: BookSettingsStore
+
+    @Inject
+    lateinit var pronunciations: PronunciationStore
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     // Resume anchor writes (P1-06). Never cancelled: the flush sent while the service is destroyed must land;
@@ -85,13 +95,17 @@ class AudoraPlaybackService : MediaSessionService() {
         voices = SpeechVoices(engines)
         val style = SpeechStyleStore.forContext(this)
         val sleepOptions = SleepOptionsStore.forContext(this)
+        val book = BookContext(bookSettings, pronunciations, scope) { bookSession.restartRendering() }
+        voices.bookVoice = book::voice
+        // What is heard: the global style with the open book's own speed and pace on top (plan item 4).
+        val heard = { book.style(style.current) }
         player = SpeechPlayer.build(this, registry, config)
         // The player's share of the listener's speed (ADR-033); the voice model speaks the rest.
         player.setPlaybackSpeed(style.config.playerSpeed(style.current.rate))
         speed = LivePlaybackSpeed(player)
         // The reading modes travel with the speech style; a change restarts the sentence playing (ADR-035).
         val reading = ReadingSource(modes = { style.current.modes })
-        val stores = SessionStores(style, sleepOptions)
+        val stores = SessionStores(style, sleepOptions, book)
         val callback = SessionCallback(packageName, scope, voices, stores, { bookSession }, { resumption })
         val mediaSession = MediaSession.Builder(this, player)
             .setCallback(callback)
@@ -102,24 +116,22 @@ class AudoraPlaybackService : MediaSessionService() {
             player = player,
             registry = registry,
             sources = SessionSources(
-                renderer = EngineRenderer(
-                    voices,
-                    speed = RenderSpeedTracker(engines::speeds),
-                    style = style::current,
-                    styleConfig = style.config,
-                    reading = ReadingSetup(reading.speakability, chapterPages = { reading.chapterPages }),
-                ),
+                renderer = renderer(engines, stores, reading, heard),
                 books = LibraryBookSource(this, library),
                 texts = ResourceTexts(),
                 // The model's share of the speed drains the queue like the player's share does (ADR-033).
                 renderAhead = MeasuredRenderAhead(voices::speedOf) {
-                    speed.value * style.config.modelRate(style.current.rate)
+                    speed.value * style.config.modelRate(heard().rate)
                 },
                 reading = reading,
                 sleepOptions = sleepOptions::current,
+                onBook = { id ->
+                    book.open(id)
+                    player.setPlaybackSpeed(style.config.playerSpeed(heard().rate))
+                },
             ),
             config = config,
-            events = publisher(mediaSession, stores),
+            events = publisher(mediaSession, stores, heard),
             env = SessionEnvironment(
                 scope = scope,
                 extraction = Dispatchers.IO.limitedParallelism(1),
@@ -138,14 +150,36 @@ class AudoraPlaybackService : MediaSessionService() {
         AudoraLog.i(TAG, "Service created")
     }
 
-    private fun publisher(mediaSession: MediaSession, stores: SessionStores): SessionPublisher {
+    private fun renderer(
+        engines: VoiceEngines,
+        stores: SessionStores,
+        reading: ReadingSource,
+        heard: () -> SpeechStyle,
+    ) = EngineRenderer(
+        voices,
+        speed = RenderSpeedTracker(engines::speeds),
+        style = heard,
+        styleConfig = stores.style.config,
+        reading = ReadingSetup(
+            reading.speakability,
+            chapterPages = { reading.chapterPages },
+            fixer = { stores.book.fixer },
+        ),
+    )
+
+    private fun publisher(
+        mediaSession: MediaSession,
+        stores: SessionStores,
+        heard: () -> SpeechStyle,
+    ): SessionPublisher {
         val recorder = ResumeRecorder(resumeAnchors, resumeScope, PIPELINE_VERSION, System::currentTimeMillis)
         return SessionPublisher(
             mediaSession,
             DiagnosticsBridge(tracker, scope),
             ResumeBridge(recorder, resumeScope),
-            stores.style::current,
+            heard,
             stores.sleepOptions::current,
+            bookSettings = { stores.book.settings },
         )
     }
 
