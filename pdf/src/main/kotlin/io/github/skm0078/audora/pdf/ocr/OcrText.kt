@@ -32,8 +32,10 @@ class OcrLine(val words: List<OcrWord>, val paragraph: Int) {
  *
  * @property quarterTurns how many quarter turns clockwise the page image was turned before it read upright (a
  *   sideways scan): 0 to 3. Word boxes are always on the page as displayed, never in the turned image.
+ * @property rules the lines ruled on the page (a ruled table's grid, [RuleFinder]), each the box of its ink, on the
+ *   page as displayed like the words.
  */
-class OcrText(val lines: List<OcrLine>, val quarterTurns: Int = 0) {
+class OcrText(val lines: List<OcrLine>, val quarterTurns: Int = 0, val rules: List<ViewRect> = emptyList()) {
     init {
         require(quarterTurns in 0 until FULL_TURN) { "quarterTurns must be in 0..3, was $quarterTurns" }
     }

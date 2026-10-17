@@ -2,6 +2,17 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Reading intelligence, step 7 — tables on scanned pages (RI-4a part 2; 2026-10-17, ADR-035)
+- **Ruled tables rebuilt from their rules:** the lines ruled on a scanned page are found in the page image (`RuleFinder`), and the table's rows and columns come from them (`RuledTables`), so a government list or form that Tesseract read cell by cell, a column at a time, is read row by row like a text-layer table. A "|" read from a rule is left out; a footer or title across the grid stays text; a heading inside a page frame is not taken for a cell.
+- **Borderless tables from OCR's rows:** lines read side by side are joined back into rows (Tesseract often splits a table into blocks of columns) and built by the same code as text-layer tables; prose paragraphs and two-column prose are kept out.
+- **Measured** on the four labelled tables of the corpora OCR'd from 300 dpi renders: 145 of 145 cells in the right row and column, 106 exactly as printed (the rest are OCR misreads of ×, −, superscripts). The six UDHR scans are unchanged.
+- `PIPELINE_VERSION` stays 10 (not on `dev` yet; only OCR'd pages change). Golden 0.9268 and listening 0.9783 unchanged (no ruled scan in either). OCR cache format v3 (rules), older entries still decode. No new dependency.
+- Tests: `RuleFinderTest` (a grid, text, a filled bar and short strokes, a faint rule, a double rule, a broken rule, the switch), `RuleConfigTest`, `TableConfigTest`, `OcrTablesTest` (a ruled table read cell by cell with a rule glyph, a footer row across the grid, one tall row of ruled columns, a borderless table read as two blocks, two-column prose), `HocrTest`, `OcrTextCodecTest`.
+
+**Known limits:** a cell Tesseract never read stays empty (serial numbers in thick-ruled forms); a table continued from the previous page takes its first row as its header; a letterhead set as two aligned blocks reads as a small table; two prose columns run together by Tesseract stay run together.
+
+**Real-device checks:** open a scanned government list or form with ruled cells and check that rows are read as rows; note the first-read time of a scanned page (rules add well under a second).
+
 ## Reading intelligence, step 6 — cleaner scanned pages (RI-3 offline; 2026-10-17, ADR-035)
 - **Lines in another script read again:** a scanned page is OCR'd in its book's languages, so an English header or form on a Hindi page came out as Devanagari noise. Unsure lines are now cut out and read alone with the other installed models; the clean read replaces the noise (at most 8 lines and 2 s per page, `OcrConfig`).
 - **OCR near-misses corrected** against the bundled word lists (`OcrRepair`, `OcrRepairConfig`): "rnodern" → "modern", "govern ment" → "government", "सद्धावना" → "सद्भावना", "विशेषत:" → "विशेषतः", "নিরাপত্ত!" → "নিরাপত্তা". Only unsure, unknown words with exactly one common fix change; Hindi and Bengali change only through known look-alike letters and signs, since free edits broke more real words than they fixed.

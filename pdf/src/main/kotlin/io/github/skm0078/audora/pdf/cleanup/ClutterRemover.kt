@@ -60,21 +60,9 @@ internal class ClutterRemover(config: CleanupConfig, layoutConfig: LayoutConfig)
         return without(layout, margin.keys + tableLines, inserted)
     }
 
-    /** The table as paragraphs: its header, then its rows, each one line of its cells' spans. */
-    private fun paragraphsOf(grid: Grid, tableIndex: Int): List<Paragraph> {
-        val box = grid.lines.mapNotNull { it.box }.reduceOrNull(TextBox::union)
-        val size = grid.lines.maxOf { it.size }
-        fun paragraph(cells: List<List<TextSpan>>, row: Int?): Paragraph {
-            val kind = if (row == null) ParagraphKind.TABLE_HEADER else ParagraphKind.TABLE_ROW
-            val line = TextLine(cells.flatten(), box, size, bold = false)
-            return Paragraph(
-                listOf(line),
-                kind,
-                table = TableCells(tableIndex, row, grid.rows.size, grid.columnCount, cells),
-            )
-        }
-        return listOf(paragraph(grid.header, null)) + grid.rows.mapIndexed { i, cells -> paragraph(cells, i) }
-    }
+    /** The table as paragraphs ([tableParagraphs]) in the frame of its lines. */
+    private fun paragraphsOf(grid: Grid, tableIndex: Int): List<Paragraph> =
+        tableParagraphs(grid.header, grid.rows, tableIndex, grid.lines.unionBox(), grid.lines.maxOf { it.size })
 
     /**
      * The layout minus [dropped], with [inserted] paragraphs put before the paragraph holding their key line. A
