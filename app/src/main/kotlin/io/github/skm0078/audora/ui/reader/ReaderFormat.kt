@@ -22,9 +22,19 @@ fun remainingLabel(remainingMs: Long): String {
     }
 }
 
+/** A time left as whole hours and minutes, the minutes rounded up so "under a minute" only shows at the very end. */
+data class HoursMinutes(val hours: Long, val minutes: Long)
+
+fun hoursMinutes(ms: Long): HoursMinutes {
+    val totalMinutes = (ms.coerceAtLeast(0) + MILLIS_PER_MINUTE - 1) / MILLIS_PER_MINUTE
+    return HoursMinutes(totalMinutes / MINUTES_PER_HOUR, totalMinutes % MINUTES_PER_HOUR)
+}
+
 /** The typed 1-based page if it exists in the book, else null. */
 fun parsePageNumber(text: String, pageCount: Int): Int? = text.toIntOrNull()?.takeIf { it in 1..pageCount }
 
 private const val MILLIS_PER_SECOND = 1_000L
 private const val SECONDS_PER_MINUTE = 60L
 private const val SECONDS_PER_HOUR = 3_600L
+private const val MILLIS_PER_MINUTE = 60_000L
+private const val MINUTES_PER_HOUR = 60L

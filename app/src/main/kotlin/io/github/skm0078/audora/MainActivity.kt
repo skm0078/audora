@@ -39,6 +39,7 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.diagnostics.LogSharer
+import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
@@ -463,6 +464,8 @@ class MainActivity : ComponentActivity() {
         override fun onReadUnreadable() = playWithPermission(model::readUnreadable)
 
         override fun onUnreadableDismissed() = model.dismissUnreadable()
+
+        override fun onChapter(chapter: ChapterEntry) = model.goToChapter(chapter)
 
         override fun onViewChanged(view: ReaderView) = model.setView(view)
 
