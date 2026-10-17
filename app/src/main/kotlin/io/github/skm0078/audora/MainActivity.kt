@@ -63,6 +63,7 @@ import io.github.skm0078.audora.playback.export.AudioClips
 import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.playback.export.MarkStores
 import io.github.skm0078.audora.playback.export.NotesExport
+import io.github.skm0078.audora.playback.notes.VoiceNoteAudio
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.search.SearchIndexes
 import io.github.skm0078.audora.playback.studio.StudioMode
@@ -115,8 +116,11 @@ import io.github.skm0078.audora.ui.reader.SearchSource
 import io.github.skm0078.audora.ui.reader.SleepTimerSetting
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
+import io.github.skm0078.audora.ui.reader.VoiceNotesBinding
+import io.github.skm0078.audora.ui.reader.VoiceNotesModel
 import io.github.skm0078.audora.ui.reader.VolumeKeySkips
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
+import io.github.skm0078.audora.ui.reader.rememberRecordWithPermission
 import io.github.skm0078.audora.ui.reader.rememberSpokenWord
 import io.github.skm0078.audora.ui.settings.OcrModelsAction
 import io.github.skm0078.audora.ui.settings.SettingsScreen
@@ -191,8 +195,8 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var voiceNoteStore: VoiceNoteStore
 
-    /** Short jobs started from a menu (the notes export); cancelled with the activity. */
-    private val exportScope = MainScope()
+    /** Short jobs that must outlive a screen (the notes export, saving a voice note); cancelled with the activity. */
+    private val activityScope = MainScope()
 
     /** Audora's own copies of PDFs another app only lends for a moment ("Open with Audora", ADR-033). */
     private val sharedCopies: SharedPdfCopies by lazy { SharedPdfCopies(applicationContext) }
@@ -221,6 +225,8 @@ class MainActivity : ComponentActivity() {
     private val readingLookPreferences: ReadingLookPreferences by lazy { ReadingLookPreferences(applicationContext) }
 
     private val searchIndexes: SearchIndexes by lazy { SearchIndexes(applicationContext) }
+
+    private val voiceNoteAudio: VoiceNoteAudio by lazy { VoiceNoteAudio(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -255,7 +261,7 @@ class MainActivity : ComponentActivity() {
             nav.navigate(destination.parent ?: AppDestination.Library)
         }
         LaunchedEffect(Unit) { diagnostics.checkUnfinishedSession() }
-        LaunchedEffect(Unit) { dropStaleSearchIndexes() }
+        LaunchedEffect(Unit) { dropStaleBookFiles() }
         SharedPdfEffect(sharedPdf, { sharedPdf = null }, libraryController::addShared, nav::navigate)
         ResumeWidgetEffect(libraryController.listState, widgetResume, { widgetResume = null }, nav::continueReading)
         val books = libraryBooks(libraryController.listState)
@@ -454,14 +460,14 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        exportScope.cancel()
+        activityScope.cancel()
         super.onDestroy()
     }
 
     /** Plan item 30: the book's highlights, bookmarks and voice notes to Documents/Audora; a toast says where. */
     private fun exportNotes(book: Book) {
         val stores = MarkStores(highlightStore, bookmarkStore, voiceNoteStore)
-        exportScope.launch {
+        activityScope.launch {
             val saved = NotesExport.export(applicationContext, book.id, book.title, stores)
             val message = when (saved) {
                 is Outcome.Success -> getString(R.string.notes_export_done, saved.value.joinToString(", "))
@@ -642,6 +648,7 @@ class MainActivity : ComponentActivity() {
         }
         val notesState by notes.state.collectAsStateWithLifecycle()
         val search = rememberSearch(id, model, scope)
+        val voiceNotes = rememberVoiceNotes(id, notes, port)
         val voiceRows by remember { voiceManager.rows() }.collectAsStateWithLifecycle(initialValue = emptyList())
         val actions = remember(model) { readerActions(model, notes, playWithPermission, onBack) }
         val keepScreenOn by remember {
@@ -657,7 +664,9 @@ class MainActivity : ComponentActivity() {
                 onBookmarkOpened()
             }
         }
-        ReaderContent(target, books, state, actions, ocrState, notesState, notes, voiceRows, onShowPage, port, search)
+        ReaderContent(
+            target, books, state, actions, ocrState, notesState, notes, voiceRows, onShowPage, port, search, voiceNotes,
+        )
     }
 
     /** Search in the book (plan item 16): its index is built from the reader's own document while search is open. */
@@ -673,8 +682,24 @@ class MainActivity : ComponentActivity() {
         return search
     }
 
-    private suspend fun dropStaleSearchIndexes() = withContext(Dispatchers.IO) {
+    /** Search indexes of removed books, and voice-note files whose note went with its book. */
+    private suspend fun dropStaleBookFiles() = withContext(Dispatchers.IO) {
         searchIndexes.dropBooksNotIn(library.books().first().mapTo(HashSet()) { it.id })
+        voiceNoteAudio.dropFilesNotIn(voiceNoteStore.observeAll().first().mapTo(HashSet()) { it.fileName })
+    }
+
+    /** Voice notes on sentences (plan item 32); reading pauses while one is recorded or played. */
+    @Composable
+    private fun rememberVoiceNotes(id: BookId, notes: BookNotesModel, port: PlaybackPort): VoiceNotesBinding {
+        val model = remember(id) {
+            // Activity-wide scope: a recording saved as the reader closes must still be written.
+            VoiceNotesModel(id, voiceNoteStore, voiceNoteAudio, activityScope, notes::anchorOf, port::pause)
+                .also { it.start() }
+        }
+        DisposableEffect(model) { onDispose { model.close() } }
+        val state by model.state.collectAsStateWithLifecycle()
+        val record = rememberRecordWithPermission(model)
+        return VoiceNotesBinding(state, model, record)
     }
 
     /** The reader, or the full player on the same model; both open the Up next sheet (plan item 25). */
@@ -691,6 +716,7 @@ class MainActivity : ComponentActivity() {
         onShowPage: () -> Unit,
         port: PlaybackPort,
         search: SearchModel,
+        voiceNotes: VoiceNotesBinding,
     ) {
         val scope = rememberCoroutineScope()
         var upNextOpen by rememberSaveable { mutableStateOf(false) }
@@ -725,6 +751,7 @@ class MainActivity : ComponentActivity() {
                 spokenWord = spokenWord,
                 onOpenUpNext = { upNextOpen = true },
                 onSearch = { searchOpen = true },
+                voiceNotes = voiceNotes,
             )
         }
         if (upNextOpen) UpNextRoute(books, playing = target.id) { upNextOpen = false }

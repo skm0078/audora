@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/NotesUi.kt
-// Purpose: The sentence menu, bookmarks sheet, bookmark note and pronunciation fix dialogs (plan items 29, 1).
+// Purpose: The sentence menu, bookmarks sheet, bookmark note and pronunciation fix dialogs (plan items 29, 1, 30, 32).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -52,14 +52,23 @@ fun BookmarksButton(notes: NotesState, actions: BookNotesActions) {
 
 /** Everything the notes put over the reader, each shown while its state is set. */
 @Composable
-fun NotesOverlays(notes: NotesState, actions: BookNotesActions, reader: ReaderActions) {
+fun NotesOverlays(
+    notes: NotesState,
+    actions: BookNotesActions,
+    reader: ReaderActions,
+    voice: VoiceNotesBinding = VoiceNotesBinding.None,
+) {
     notes.menuFor?.let { unit ->
         val highlighted = notes.highlightOf(unit) != null
-        val rows = listOf(
+        val rows = listOfNotNull(
             MenuEntry(R.string.sentence_menu_bookmark) { actions.bookmark(unit) },
             MenuEntry(if (highlighted) R.string.sentence_menu_unhighlight else R.string.sentence_menu_highlight) {
                 actions.toggleHighlight(unit)
             },
+            MenuEntry(R.string.sentence_menu_voice_note) {
+                actions.dismissMenu()
+                voice.askToRecord(unit)
+            }.takeIf { voice.enabled },
             MenuEntry(R.string.sentence_menu_fix) { actions.fix(unit) },
             MenuEntry(R.string.report_title) {
                 actions.dismissMenu()
@@ -72,7 +81,8 @@ fun NotesOverlays(notes: NotesState, actions: BookNotesActions, reader: ReaderAc
         )
         SentenceMenuDialog(rows, onDismiss = actions::dismissMenu)
     }
-    if (notes.listOpen) BookmarksSheet(notes.bookmarks, actions, reader)
+    if (notes.listOpen) BookmarksSheet(notes.bookmarks, actions, reader, voice)
+    VoiceNotesOverlays(voice)
     notes.editing?.let { BookmarkNoteDialog(it, actions::saveNote, actions::dismissNote) }
     notes.fixing?.let { PronunciationDialog(it, notes.rules, actions) }
     if (notes.failed) {
@@ -111,7 +121,12 @@ private fun MenuRow(label: String, onClick: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BookmarksSheet(bookmarks: List<Bookmark>, actions: BookNotesActions, reader: ReaderActions) {
+private fun BookmarksSheet(
+    bookmarks: List<Bookmark>,
+    actions: BookNotesActions,
+    reader: ReaderActions,
+    voice: VoiceNotesBinding,
+) {
     ModalBottomSheet(onDismissRequest = actions::hideList) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
             Row(
@@ -145,6 +160,11 @@ private fun BookmarksSheet(bookmarks: List<Bookmark>, actions: BookNotesActions,
                         onDelete = { actions.delete(bookmark) },
                     )
                     HorizontalDivider()
+                }
+                // A voice note opens where it was recorded, found again the way a bookmark is.
+                voiceNoteItems(voice) { note ->
+                    actions.hideList()
+                    reader.onBookmark(Bookmark(0, note.anchor))
                 }
             }
         }

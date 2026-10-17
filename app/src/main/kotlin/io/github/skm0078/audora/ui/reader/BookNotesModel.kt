@@ -232,8 +232,8 @@ class BookNotesModel(
 
     override fun clearFailure() = mutableState.update { it.copy(failed = false) }
 
-    /** [unit] as a resume-style anchor: offsets and hashes, never its text. */
-    private fun anchorOf(unit: ReadingUnit) = ResumeAnchor(
+    /** Where [unit] is, as a resume anchor: offsets and hashes, never its text. Voice notes anchor the same way. */
+    fun anchorOf(unit: ReadingUnit) = ResumeAnchor(
         bookId = bookId,
         page = unit.page,
         charStart = unit.charStart,
