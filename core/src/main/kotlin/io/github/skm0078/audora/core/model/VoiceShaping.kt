@@ -1,7 +1,10 @@
 // File: core/src/main/kotlin/io/github/skm0078/audora/core/model/VoiceShaping.kt
-// Purpose: How the voice sounds: even loudness, voice boost, pause trim (items 9, 10) and expressiveness (item 8).
+// Purpose: How the voice sounds: loudness, boost, pause trim (items 9, 10), expressiveness (8) and cast voices (7).
 
 package io.github.skm0078.audora.core.model
+
+import java.net.URLDecoder
+import java.net.URLEncoder
 
 /**
  * @property evenLoudness every sentence is brought to one loudness, so voices (a Hindi Piper voice beside English
@@ -13,21 +16,30 @@ package io.github.skm0078.audora.core.model
  * @property expressiveness from 0, a newsreader's even delivery, up to `VoiceShapingConfig.maxExpression`, a
  *   storyteller's livelier one. Unlike the rest, set when the voice is synthesized (Piper and MMS voices' noise
  *   values), so a change reloads the voice, about a second.
+ * @property dialogueVoices plan item 7: the voice that reads quoted speech, per language; a language missing here
+ *   (or an empty map, the default) keeps the narrator's voice for quotes.
+ * @property headingVoices the voice that reads headings, per language, the same way.
  */
 data class VoiceShaping(
     val evenLoudness: Boolean = true,
     val boostDb: Int = 0,
     val trimPauses: Boolean = false,
     val expressiveness: Int = DEFAULT_EXPRESSION,
+    val dialogueVoices: Map<Lang, VoiceId> = emptyMap(),
+    val headingVoices: Map<Lang, VoiceId> = emptyMap(),
 ) {
     init {
         require(boostDb >= 0) { "boostDb must be >= 0, was $boostDb" }
         require(expressiveness >= 0) { "expressiveness must be >= 0, was $expressiveness" }
     }
 
-    /** One line, `key=value` pairs separated by `;`, like [ReadingModes.encode]; [decode] reads it back. */
+    /**
+     * One line, `key=value` pairs separated by `;`, like [ReadingModes.encode]; [decode] reads it back. The voice
+     * maps are percent-encoded, since their own form ([VoiceMaps]) uses `=` and `;`.
+     */
     fun encode(): String =
-        "$KEY_EVEN=$evenLoudness;$KEY_BOOST=$boostDb;$KEY_TRIM=$trimPauses;$KEY_EXPRESSION=$expressiveness"
+        "$KEY_EVEN=$evenLoudness;$KEY_BOOST=$boostDb;$KEY_TRIM=$trimPauses;$KEY_EXPRESSION=$expressiveness;" +
+            "$KEY_DIALOGUE=${encoded(dialogueVoices)};$KEY_HEADING=${encoded(headingVoices)}"
 
     companion object {
         /** The middle step: the voices' own noise values, as before the setting existed. */
@@ -37,6 +49,8 @@ data class VoiceShaping(
         private const val KEY_BOOST = "boost"
         private const val KEY_TRIM = "trim"
         private const val KEY_EXPRESSION = "expression"
+        private const val KEY_DIALOGUE = "dialogue"
+        private const val KEY_HEADING = "heading"
 
         /** Reads [encode]'s line; a missing or bad value takes its default, so this never fails. */
         fun decode(line: String?): VoiceShaping {
@@ -49,7 +63,15 @@ data class VoiceShaping(
                 boostDb = values[KEY_BOOST]?.toIntOrNull()?.takeIf { it >= 0 } ?: defaults.boostDb,
                 trimPauses = values[KEY_TRIM]?.toBooleanStrictOrNull() ?: defaults.trimPauses,
                 expressiveness = values[KEY_EXPRESSION]?.toIntOrNull()?.takeIf { it >= 0 } ?: defaults.expressiveness,
+                dialogueVoices = decoded(values[KEY_DIALOGUE]),
+                headingVoices = decoded(values[KEY_HEADING]),
             )
         }
+
+        private fun encoded(voices: Map<Lang, VoiceId>): String =
+            URLEncoder.encode(VoiceMaps.encode(voices), Charsets.UTF_8)
+
+        private fun decoded(value: String?): Map<Lang, VoiceId> =
+            VoiceMaps.decode(value?.let { runCatching { URLDecoder.decode(it, Charsets.UTF_8) }.getOrNull() })
     }
 }

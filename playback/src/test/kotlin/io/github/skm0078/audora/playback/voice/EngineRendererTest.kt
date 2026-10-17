@@ -12,6 +12,7 @@ import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.core.model.VoiceId
+import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.TEST_SAMPLE_RATE
 import io.github.skm0078.audora.playback.contract.SentenceTiming
@@ -37,6 +38,7 @@ class EngineRendererTest {
         SpeechEngine {
         val spoken = ArrayList<String>()
         val rates = ArrayList<Float>()
+        val readBy = ArrayList<VoiceId>()
         override val id = EngineId.SHERPA
 
         override suspend fun voiceFor(lang: Lang): Outcome<VoiceId, SpeechError> = Outcome.Success(VOICE)
@@ -50,6 +52,7 @@ class EngineRendererTest {
         override suspend fun render(text: String, voice: VoiceId, rate: Float): RenderResult {
             spoken.add(text)
             rates.add(rate)
+            readBy.add(voice)
             return Outcome.Success(PcmAudio(ShortArray(text.length) { SAMPLE }, TEST_SAMPLE_RATE))
         }
 
@@ -81,6 +84,21 @@ class EngineRendererTest {
         assertEquals(20 + 400, audio.samples.size)
         assertEquals(20, audio.samples.count { it == SAMPLE })
         assertEquals(0, audio.samples.drop(20).count { it != 0.toShort() })
+    }
+
+    @Test
+    fun `quotes and headings go to the style's cast voices`() {
+        val voices = RecordingVoices()
+        val dialogue = VoiceId(EngineId.SHERPA, "dialogue")
+        val heading = VoiceId(EngineId.SHERPA, "heading")
+        val shaping =
+            VoiceShaping(dialogueVoices = mapOf(Lang.EN to dialogue), headingVoices = mapOf(Lang.EN to heading))
+        val renderer = EngineRenderer(voices, style = { SpeechStyle(shaping = shaping) }, styleConfig = flatPaces)
+
+        renderer.render(unit(0, 0).copy(text = "“Come here at once,” she said."))
+        renderer.render(unit(0, 1).copy(text = "The Long Road", kind = UnitKind.HEADING))
+
+        assertEquals(listOf(dialogue, VOICE, heading), voices.readBy)
     }
 
     @Test

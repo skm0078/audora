@@ -26,4 +26,22 @@ class VoiceShapingTest {
         val old = VoiceShaping.decode("even=true;boost=0;trim=false")
         assertEquals(VoiceShaping.DEFAULT_EXPRESSION, old.expressiveness)
     }
+
+    @Test
+    fun `cast voices round trip, names with equals signs and colons included`() {
+        val shaping = VoiceShaping(
+            dialogueVoices = mapOf(Lang.EN to VoiceId(EngineId.SHERPA, "kokoro=en:af"), Lang.HI to HINDI),
+            headingVoices = mapOf(Lang.BN to VoiceId(EngineId.SYSTEM, "bn-in-x-bnm-local")),
+        )
+        assertEquals(shaping, VoiceShaping.decode(shaping.encode()))
+    }
+
+    @Test
+    fun `a bad cast value means no cast voice, the rest kept`() {
+        assertEquals(VoiceShaping(boostDb = 3), VoiceShaping.decode("boost=3;dialogue=%ZZ;heading=EN%3DNOPE%2Fx"))
+    }
+
+    private companion object {
+        val HINDI = VoiceId(EngineId.SYSTEM, "hi-in-x-hia-local")
+    }
 }
