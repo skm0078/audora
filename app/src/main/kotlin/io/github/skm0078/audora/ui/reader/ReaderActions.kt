@@ -41,6 +41,8 @@ interface ReaderActions {
 
     fun onPace(pace: Pace) = Unit
 
+    fun onClausePauses(on: Boolean) = Unit
+
     fun onSleepTimer(setting: SleepTimerSetting)
 
     fun onPasswordSubmitted(password: String)

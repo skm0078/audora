@@ -26,6 +26,7 @@ class EnglishNormalizer(config: NormalizerConfig = NormalizerConfig()) : TextNor
         SignRule(),
         SymbolRule(),
         QuantityRule(numbers),
+        PunctuationRule(),
         RomanNumeralRule(),
         NumberRule(numbers),
     )

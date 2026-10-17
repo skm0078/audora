@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.core.config
 
+import io.github.skm0078.audora.core.model.ClauseMark
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.SpeechStyle
 import org.junit.Assert.assertEquals
@@ -66,12 +67,29 @@ class SpeechStyleConfigTest {
     }
 
     @Test
+    fun `clause pauses follow the pace and the speed`() {
+        val cases = listOf(
+            SpeechStyle(pace = Pace.NORMAL) to (ClauseMark.DASH to 250),
+            SpeechStyle(pace = Pace.TIGHT) to (ClauseMark.COLON to 144),
+            SpeechStyle(pace = Pace.RELAXED) to (ClauseMark.ELLIPSIS to 720),
+            // 250 ms / sqrt(2), lengthened by the player's 2 / 1.5 stretch.
+            SpeechStyle(rate = 2f) to (ClauseMark.DASH to 236),
+        )
+        cases.forEach { (style, expected) ->
+            val (mark, ms) = expected
+            assertEquals("$mark at $style", ms, config.clauseSilenceMs(mark, style))
+        }
+    }
+
+    @Test
     fun `bad ranges are rejected`() {
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(minRate = 0f) }
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(minRate = 2f, maxRate = 1f) }
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(rateStep = 0f) }
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(paces = emptyMap()) }
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(maxModelRate = 0.8f) }
+        assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(clausePausesMs = emptyMap()) }
+        assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(asideGainDb = 3f) }
     }
 
     private companion object {

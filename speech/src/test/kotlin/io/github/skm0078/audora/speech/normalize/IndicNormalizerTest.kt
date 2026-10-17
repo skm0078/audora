@@ -47,6 +47,11 @@ class IndicNormalizerTest {
         Case("too long", "खाता 1234567890123456", "खाता एक दो तीन चार पाँच छह सात आठ नौ शून्य एक दो तीन चार पाँच छह"),
         Case("list", "1,2,3", "एक,दो,तीन"),
         Case("no digits", "कोई अंक नहीं।", "कोई अंक नहीं।"),
+        Case("slash", "हाँ/नहीं चुनें।", "हाँ या नहीं चुनें।"),
+        Case("ampersand", "राम & श्याम", "राम और श्याम"),
+        Case("short slash stays", "क/ख", "क/ख"),
+        Case("question kept", "क्या आप आएँगे? हाँ!", "क्या आप आएँगे? हाँ!"),
+        Case("range and slash", "पृष्ठ 10–12 देखें/पढ़ें", "पृष्ठ दस से बारह देखें या पढ़ें"),
     )
 
     private val bengaliCases = listOf(
@@ -68,6 +73,9 @@ class IndicNormalizerTest {
         Case("range", "পৃষ্ঠা ১০-১২", "পৃষ্ঠা দশ থেকে বারো"),
         Case("leading zero", "০০৭", "শূন্য শূন্য সাত"),
         Case("no digits", "কোনো সংখ্যা নেই।", "কোনো সংখ্যা নেই।"),
+        Case("slash", "হ্যাঁ/না বলুন।", "হ্যাঁ বা না বলুন।"),
+        Case("ampersand", "রাম & শ্যাম", "রাম এবং শ্যাম"),
+        Case("question kept", "আপনি আসবেন? হ্যাঁ!", "আপনি আসবেন? হ্যাঁ!"),
     )
 
     private fun check(normalizer: IndicNormalizer, cases: List<Case>) = cases.forEach { case ->

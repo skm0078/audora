@@ -97,6 +97,8 @@ private fun SpeedButton(playback: PlaybackSnapshot, config: ReaderConfig, enable
             config = config,
             onSpeed = actions::onSpeed,
             onPace = actions::onPace,
+            clausePauses = playback.clausePauses,
+            onClausePauses = actions::onClausePauses,
             onDismiss = { open = false },
         )
     }

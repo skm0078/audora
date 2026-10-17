@@ -18,6 +18,7 @@ import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.normalize.TextNormalizer
 import io.github.skm0078.audora.speech.normalize.TextRole
+import io.github.skm0078.audora.speech.route.ClauseProsody
 import io.github.skm0078.audora.speech.route.RoutedAudio
 import io.github.skm0078.audora.speech.route.RoutedSpeech
 import io.github.skm0078.audora.speech.route.ScriptRouter
@@ -36,7 +37,8 @@ import kotlinx.coroutines.runBlocking
  * Each render is timed for [speed], which sizes the render-ahead window (P4-02).
  *
  * Every sentence is spoken by the voice itself at the [style]'s rate, up to the model's cap (the player stretches any
- * speed above it, ADR-033), and the style's pace sets the silences.
+ * speed above it, ADR-033), and the style's pace sets the silences. With the style's clause pauses on, strong marks
+ * inside the sentence get their own pause, scaled the same way (RI-6).
  *
  * The sentence's pause ([ReadingUnit.pauseAfterMs]: after headings, paragraphs and list items), scaled by the pace,
  * plus the pace's gap after every sentence, is rendered as silence at the end of its clip (ADR-029), so the player,
@@ -57,7 +59,12 @@ class EngineRenderer(
         val started = System.nanoTime()
         val now = style()
         val rate = styleConfig.modelRate(now.rate)
-        return runBlocking { speech.render(unit.text, unit.lang, roleOf(unit.kind), rate) }.map { routed ->
+        val prosody = if (now.clausePauses) {
+            ClauseProsody({ mark -> styleConfig.clauseSilenceMs(mark, now) }, styleConfig.asideGainDb)
+        } else {
+            null
+        }
+        return runBlocking { speech.render(unit.text, unit.lang, roleOf(unit.kind), rate, prosody) }.map { routed ->
             speed?.onRendered(unit.text.trim().length, routed, System.nanoTime() - started, rate)
             log(unit, routed)
             routed.audio.withSilenceAfter(styleConfig.silenceAfterMs(unit.pauseAfterMs, now))

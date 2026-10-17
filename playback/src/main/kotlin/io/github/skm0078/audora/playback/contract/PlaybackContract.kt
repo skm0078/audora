@@ -82,6 +82,9 @@ object PlaybackContract {
     /** A [Pace] name. */
     const val ARG_PACE = "pace"
 
+    /** Boolean: pauses at dashes, colons, brackets and the like inside a sentence (RI-6); absent = on. */
+    const val ARG_CLAUSE_PAUSES = "clause_pauses"
+
     // Error result of a custom command: SessionResult.extras[RESULT_ERROR] is a [PlaybackErrorCode] name.
     const val RESULT_ERROR = "error"
 
@@ -121,6 +124,9 @@ object PlaybackContract {
     /** The [Pace] name in effect, always present. */
     const val SESSION_PACE = "pace"
 
+    /** Whether clause pauses are on (Boolean), always present. */
+    const val SESSION_CLAUSE_PAUSES = "clause_pauses"
+
     /** Token for `MediaController.Builder(context, PlaybackContract.sessionToken(context))`. */
     fun sessionToken(context: Context): SessionToken =
         SessionToken(context, ComponentName(context, AudoraPlaybackService::class.java))
@@ -146,13 +152,15 @@ object PlaybackContract {
     fun speechStyleArgs(style: SpeechStyle): Bundle = Bundle().apply {
         putFloat(ARG_SPEECH_RATE, style.rate)
         putString(ARG_PACE, style.pace.name)
+        putBoolean(ARG_CLAUSE_PAUSES, style.clausePauses)
     }
 
     /** Parses [speechStyleArgs]; null when a field is missing, unknown or not a positive number. */
     fun speechStyleFrom(args: Bundle): SpeechStyle? {
         val rate = args.getFloat(ARG_SPEECH_RATE, Float.NaN).takeIf { it > 0f && it.isFinite() }
         val pace = enumOrNull<Pace>(args.getString(ARG_PACE))
-        return if (rate == null || pace == null) null else SpeechStyle(rate, pace)
+        val clausePauses = args.getBoolean(ARG_CLAUSE_PAUSES, true)
+        return if (rate == null || pace == null) null else SpeechStyle(rate, pace, clausePauses)
     }
 
     /** Parses [setVoiceArgs]; null when a field is missing or unknown. */

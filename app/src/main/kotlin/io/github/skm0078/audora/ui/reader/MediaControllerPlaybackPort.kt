@@ -74,12 +74,16 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
 
     override fun skipToPreviousSentence() = withPlayer("skip back") { it.seekToPreviousMediaItem() }
 
-    override fun setSpeed(speed: Float) = setStyle(SpeechStyle(speed, mutableState.value.pace))
+    override fun setSpeed(speed: Float) = setStyle(currentStyle().copy(rate = speed))
 
-    override fun setPace(pace: Pace) = setStyle(SpeechStyle(mutableState.value.speed, pace))
+    override fun setPace(pace: Pace) = setStyle(currentStyle().copy(pace = pace))
+
+    override fun setClausePauses(on: Boolean) = setStyle(currentStyle().copy(clausePauses = on))
+
+    private fun currentStyle(): SpeechStyle = mutableState.value.let { SpeechStyle(it.speed, it.pace, it.clausePauses) }
 
     private fun setStyle(style: SpeechStyle) = withPlayer("speech style") { player ->
-        AudoraLog.i(TAG, "Speech style rate=${style.rate} pace=${style.pace}")
+        AudoraLog.i(TAG, "Speech style rate=${style.rate} pace=${style.pace} clauses=${style.clausePauses}")
         send(player, PlaybackContract.SET_SPEECH_STYLE, PlaybackContract.speechStyleArgs(style), "speech style")
     }
 
@@ -138,6 +142,7 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             speed = extras.getFloat(PlaybackContract.SESSION_SPEECH_RATE, SpeechStyle.NORMAL_RATE),
             pace = Pace.entries.firstOrNull { it.name == extras.getString(PlaybackContract.SESSION_PACE) }
                 ?: Pace.NORMAL,
+            clausePauses = extras.getBoolean(PlaybackContract.SESSION_CLAUSE_PAUSES, true),
             canSkipBack = player.currentMediaItem != null && player.isCommandAvailable(Player.COMMAND_SEEK_TO_PREVIOUS),
             canSkipForward = player.hasNextMediaItem(),
             sleepTimer = sleepTimerOf(extras),
