@@ -22,7 +22,7 @@ No library may be added before the user's call 3, and nothing may leave the phon
 2. **EPUB 3 written by hand.** `EpubWriter` writes the container with `java.util.zip` (the `mimetype` entry first and
    stored), XHTML chapters, a navigation document with a table of contents and a page list, a small stylesheet and a
    package document with the EPUB Accessibility metadata (access modes, features, hazards, summary). Every sentence
-   is one element with an id; every printed page gets a `doc-pagebreak` marker; every sentence in another language
+   is one element with an id; every page gets a `doc-pagebreak` marker (numbered by PDF position until `:pdf` reads printed page labels); every sentence in another language
    than the book's carries `lang`; tables have `th` header cells; notes are `doc-footnote` asides.
 3. **Accessible copy (69):** *Save an accessible copy (EPUB and text)* in a book's menu starts `BookCopyService`, which
    reads every page (OCR on scanned pages), then saves `<title>.epub` and `<title>.txt` (`PlainTextCopy`: underlined
@@ -50,8 +50,13 @@ No library may be added before the user's call 3, and nothing may leave the phon
 - An accessible copy of a scanned book takes about 3–6 s a page on the Moto (OCR), less when the OCR cache has the
   page; a text PDF takes seconds. Its files are about the size of the text (an EPUB of 300 pages is well under 1 MB).
 - A talking book takes as long as an audiobook export (the live voice's render speed) and is about 29 MB per hour of
-  audio (AAC 64 kbps mono), staged in the cache folder during the run. RAM: a second copy of the voice model while
-  playback also runs.
+  audio (AAC 64 kbps mono), staged in the cache folder per book and rendering signature (`StagedChapters`). Finished
+  chapters and their timings stay staged when a run stops early: Android 15+ stops this kind of job after 6 hours a
+  day (more than about 2 hours of Kokoro audio), and its notification then offers Continue, which opens Audora (that
+  resets the limit) and renders only the missing chapters; a full disk or a failed voice keeps them too. Cancel,
+  another book's talking book and a saved copy delete them, so at most one book is staged. The wake lock is renewed
+  at every progress step and chapter (30 min each) instead of one 6-hour hold. RAM: a second copy of the voice model
+  while playback also runs.
 - Sentence highlighting may lead the audio by about one AAC frame (the encoder's priming delay, about 46 ms), which no
   reader notices.
 - The copy is only as good as the pipeline: OCR errors stay in the text. The accessibility summary says so.

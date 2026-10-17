@@ -22,6 +22,8 @@ object BookCopies {
     internal const val ACTION_CANCEL = "io.github.skm0078.audora.copy.CANCEL"
     internal const val EXTRA_BOOK = "book"
     internal const val EXTRA_KIND = "kind"
+    internal const val EXTRA_CONTINUE_BOOK = "io.github.skm0078.audora.copy.CONTINUE_BOOK"
+    internal const val EXTRA_CONTINUE_KIND = "io.github.skm0078.audora.copy.CONTINUE_KIND"
     private const val TAG = "Copy.Start"
 
     /**
@@ -35,5 +37,20 @@ object BookCopies {
             .putExtra(EXTRA_BOOK, id.value)
             .putExtra(EXTRA_KIND, kind.name)
         context.startForegroundService(intent)
+    }
+
+    /**
+     * The "stopped by Android's time limit" notification's Continue opens Audora with the copy to go on with; call
+     * this from the activity's onCreate and onNewIntent. Opening the app reset Android's limit, so the copy starts
+     * again and renders only what was not staged. True when [intent] carried such a copy.
+     */
+    fun continueFrom(context: Context, intent: Intent?): Boolean {
+        val id = intent?.getStringExtra(EXTRA_CONTINUE_BOOK)?.let(::BookId)
+        val kind = intent?.getStringExtra(EXTRA_CONTINUE_KIND)?.let { name ->
+            CopyKind.entries.find { it.name == name }
+        }
+        intent?.removeExtra(EXTRA_CONTINUE_BOOK) // Once: a later recreation of the activity must not start it again.
+        if (id != null && kind != null) start(context, id, kind)
+        return id != null && kind != null
     }
 }

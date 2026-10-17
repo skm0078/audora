@@ -32,6 +32,10 @@ internal class StudioNotifications(private val context: Context) {
         .addAction(action(R.string.studio_stop, StudioMode.ACTION_STOP))
         .build()
 
+    /** The running notification last shown, so a second "Prepare" tap re-posts it (keeping "Start now"). */
+    var lastRunning: Notification? = null
+        private set
+
     fun showRunning(title: String, readyMs: Long, aheadMs: Long, waiting: ChargingGate.Wait?) {
         val ready = context.getString(
             R.string.studio_running_text,
@@ -57,6 +61,7 @@ internal class StudioNotifications(private val context: Context) {
             }
             .addAction(action(R.string.studio_stop, StudioMode.ACTION_STOP))
             .build()
+        lastRunning = notification
         manager.notify(RUNNING_ID, notification)
     }
 

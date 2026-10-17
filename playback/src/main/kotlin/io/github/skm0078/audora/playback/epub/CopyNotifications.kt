@@ -9,6 +9,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.playback.R
 
 /** Platform notifications, like the audiobook export's. */
@@ -61,6 +62,38 @@ internal class CopyNotifications(private val context: Context) {
 
     fun showCancelled() =
         showResult(context.getString(R.string.copy_cancelled_title), context.getString(R.string.copy_cancelled_text))
+
+    /**
+     * Android's daily time limit stopped the copy; finished chapters are kept. Continue opens Audora (which resets
+     * the limit) and starts the copy again ([BookCopies.continueFrom]).
+     */
+    fun showTimedOut(id: BookId, kind: CopyKind) {
+        val text = context.getString(R.string.copy_timed_out_text)
+        val open = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            ?.putExtra(BookCopies.EXTRA_CONTINUE_BOOK, id.value)
+            ?.putExtra(BookCopies.EXTRA_CONTINUE_KIND, kind.name)
+            ?.let {
+                PendingIntent.getActivity(
+                    context,
+                    0,
+                    it,
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                )
+            }
+        val notification = builder()
+            .setContentTitle(context.getString(R.string.copy_timed_out_title))
+            .setContentText(text)
+            .setStyle(Notification.BigTextStyle().bigText(text))
+            .setAutoCancel(true)
+            .apply {
+                open?.let {
+                    setContentIntent(it)
+                    addAction(Notification.Action.Builder(null, context.getString(R.string.copy_continue), it).build())
+                }
+            }
+            .build()
+        manager.notify(RESULT_ID, notification)
+    }
 
     fun showResult(title: String, text: String) {
         val notification = builder()

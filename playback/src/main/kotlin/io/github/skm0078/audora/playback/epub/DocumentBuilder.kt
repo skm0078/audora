@@ -53,18 +53,23 @@ class DocumentBuilder(
         private val blocks = ArrayList<DocBlock>()
         private val notes = ArrayList<DocBlock.Note>()
         private var open: DocBlock? = null
-        private var last: ReadingUnit? = null
+
+        // Kept apart, so footnotes between two halves of a paragraph (a page or column turn) do not split it, and a
+        // footnote that spills onto the next page joins its start.
+        private var lastBody: ReadingUnit? = null
+        private var lastNote: ReadingUnit? = null
         private var markedPage = -1
 
         fun add(unit: ReadingUnit) {
             if (unit.kind == UnitKind.FOOTNOTE) {
                 addNote(DocSentence(unit))
+                lastNote = unit
             } else {
                 val sentence = DocSentence(unit, pageBreak = unit.page != markedPage)
                 markedPage = unit.page
                 open = grow(open, sentence) ?: start(sentence)
+                lastBody = unit
             }
-            last = unit
         }
 
         fun build(): DocChapter? {
@@ -78,7 +83,7 @@ class DocumentBuilder(
         /** The open block with [sentence] added, or null when [sentence] starts a new block. */
         private fun grow(block: DocBlock?, sentence: DocSentence): DocBlock? {
             val unit = sentence.unit
-            val goesOn = last?.let { it.kind == unit.kind && !endsParagraph(it) } == true
+            val goesOn = lastBody?.let { it.kind == unit.kind && !endsParagraph(it) } == true
             return when (block) {
                 is DocBlock.Table -> block.takeIf { unit.kind == UnitKind.TABLE_ROW && sameTable(it, unit) }
                     ?.let { it.copy(rows = it.rows + sentence) }
@@ -127,8 +132,7 @@ class DocumentBuilder(
         /** A note starts at its number, or after the previous note's last sentence ended its paragraph. */
         private fun addNote(sentence: DocSentence) {
             val previous = notes.lastOrNull()
-            val goesOn = sentence.unit.noteRef == null &&
-                last?.let { it.kind == UnitKind.FOOTNOTE && !endsParagraph(it) } == true
+            val goesOn = sentence.unit.noteRef == null && lastNote?.let { !endsParagraph(it) } == true
             if (previous != null && goesOn) {
                 notes[notes.lastIndex] = DocBlock.Note(previous.sentences + sentence)
             } else {

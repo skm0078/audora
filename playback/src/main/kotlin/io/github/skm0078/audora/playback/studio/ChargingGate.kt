@@ -17,10 +17,13 @@ import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
 /**
- * Called on the studio thread before each sentence. While it waits for the charger the wake lock is released, so the
- * phone sleeps and the wait costs no battery; plugging in wakes the wait at once (a receiver registered for the run's
- * life). While other audio plays (Audora itself, or any app) it waits with the wake lock kept, checking every
- * [StudioConfig.waitPollMs], so studio mode never competes with listening for the CPU.
+ * Called on the studio thread before each sentence. "Charging" means plugged in (the sticky battery status's
+ * `EXTRA_PLUGGED`), not `BatteryManager.isCharging`: Android 14+ reports that only after the level has risen for a
+ * while, and never while a charge limit holds the level flat. While it waits for the charger the wake lock is
+ * released, so the phone sleeps and the wait costs no battery; plugging in takes the lock and wakes the wait at once
+ * (a receiver registered for the run's life). While other audio plays (Audora itself, or any app) it waits with the
+ * wake lock held, checking every [StudioConfig.waitPollMs], so studio mode never competes with listening for the CPU
+ * and goes on as soon as playback stops, screen off or not. The wake lock must not be reference counted.
  *
  * [onWaiting] gets the reason when a wait starts and null when rendering goes on; it updates the notification.
  */
@@ -33,7 +36,6 @@ class ChargingGate(
     enum class Wait { CHARGER, AUDIO }
 
     private val appContext = context.applicationContext
-    private val battery = appContext.getSystemService(BatteryManager::class.java)
     private val audio = appContext.getSystemService(AudioManager::class.java)
     private val wakeUps = Semaphore(0)
     private var shown: Wait? = null
@@ -42,7 +44,11 @@ class ChargingGate(
     private var onBattery = false
 
     private val power = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) = wake()
+        override fun onReceive(context: Context, intent: Intent) {
+            // Keeps the CPU up until the studio thread has seen the plug-in; it releases the lock if still blocked.
+            if (intent.action == Intent.ACTION_POWER_CONNECTED) holdAwake()
+            wake()
+        }
     }
 
     init {
@@ -63,11 +69,15 @@ class ChargingGate(
             wakeUps.drainPermits() // Before checking, so a plug-in after the check still ends the wait.
             val wait = blockedBy()
             if (wait == null) {
-                if (!wakeLock.isHeld) wakeLock.acquire(config.maxRunMs)
+                holdAwake()
                 report(null)
                 return
             }
-            if (wait == Wait.CHARGER && wakeLock.isHeld) wakeLock.release()
+            if (wait == Wait.CHARGER) {
+                if (wakeLock.isHeld) wakeLock.release()
+            } else {
+                holdAwake()
+            }
             report(wait)
             wakeUps.tryAcquire(config.waitPollMs, TimeUnit.MILLISECONDS) // Throws InterruptedException on Stop.
         }
@@ -89,9 +99,19 @@ class ChargingGate(
     }
 
     private fun blockedBy(): Wait? = when {
-        !onBattery && !battery.isCharging -> Wait.CHARGER
+        !onBattery && !isPluggedIn() -> Wait.CHARGER
         audio.isMusicActive -> Wait.AUDIO
         else -> null
+    }
+
+    /** The sticky battery status needs no receiver; a missing one (never seen on a phone) counts as unplugged. */
+    private fun isPluggedIn(): Boolean {
+        val status = appContext.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        return (status?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0) != 0
+    }
+
+    private fun holdAwake() {
+        if (!wakeLock.isHeld) wakeLock.acquire(config.maxRunMs)
     }
 
     private fun report(wait: Wait?) {

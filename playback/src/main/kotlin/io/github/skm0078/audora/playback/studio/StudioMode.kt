@@ -37,6 +37,16 @@ object StudioMode {
     /** Where studio audio is kept: app-private, never backed up (it is re-creatable). */
     fun store(context: Context): StudioStore = StudioStore(File(context.applicationContext.noBackupFilesDir, FOLDER))
 
+    /**
+     * Frees studio audio that can never play again: removed books' and every folder written before this build was
+     * installed (ADR-039 §6). Blocking file work: call it off the main thread, when the app opens.
+     */
+    fun reclaim(context: Context, library: Set<BookId>) {
+        val store = store(context)
+        store.dropBooksNotIn(library)
+        store.dropWrittenBefore(appStamp(context))
+    }
+
     /** The audio key for a book read with [style], [voices] and pronunciation [fixes] (ADR-039). */
     fun signature(context: Context, style: SpeechStyle, voices: (Lang) -> VoiceId?, fixes: String): StudioSignature =
         StudioSignature(

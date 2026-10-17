@@ -37,6 +37,9 @@
     <string name="copy_failed_storage">Could not save the file: %1$s</string>
     <string name="copy_cancelled_title">Copy cancelled</string>
     <string name="copy_cancelled_text">Nothing was saved</string>
+    <string name="copy_timed_out_title">Copy paused by Android\'s time limit</string>
+    <string name="copy_timed_out_text">Android stops long jobs after 6 hours. Tap Continue to open Audora and go on; a talking book keeps its finished chapters and renders only the rest.</string>
+    <string name="copy_continue">Continue</string>
     <!-- File name of a talking book: %1$s the title, e.g. "Moby Dick - talking book". -->
     <string name="copy_talking_book_file">%1$s - talking book</string>
     <!-- Title of a chapter with no heading: %1$d and %2$d are pages. -->
@@ -45,8 +48,8 @@
     <string name="copy_contents">Contents</string>
     <string name="copy_page_list">Pages</string>
     <string name="copy_notes">Notes</string>
-    <string name="copy_summary_text">Text from the PDF with its headings, lists, tables, notes and printed page numbers. Scanned pages were read with text recognition and may contain recognition errors.</string>
-    <string name="copy_summary_audio">Text from the PDF with its headings, lists, tables, notes and printed page numbers, narrated by a synthetic voice with each sentence highlighted as it is read. Scanned pages were read with text recognition and may contain recognition errors.</string>
+    <string name="copy_summary_text">Text from the book with its headings, lists, tables, notes and page numbers (the PDF\'s page positions, which may differ from the numbers printed on its pages). Scanned pages were read with text recognition and may contain recognition errors.</string>
+    <string name="copy_summary_audio">Text from the book with its headings, lists, tables, notes and page numbers (the PDF\'s page positions, which may differ from the numbers printed on its pages), narrated by a synthetic voice with each sentence highlighted as it is read. Scanned pages were read with text recognition and may contain recognition errors.</string>
     <!-- Highlights and notes export (plan item 30). %1$s is the book's title. -->
     <string name="notes_file">%1$s - notes</string>
     <string name="notes_highlights">Highlights</string>

@@ -250,6 +250,7 @@ class MainActivity : ComponentActivity() {
             sharedPdf = SharedPdfIntent.uriOf(intent)
             sharedText = SharedPdfIntent.textOf(intent)
             widgetResume = ResumeWidgetProvider.bookIdOf(intent)
+            BookCopies.continueFrom(this, intent)
         }
         setContent {
             val appearance by remember {
@@ -550,6 +551,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         SharedPdfIntent.uriOf(intent)?.let { sharedPdf = it }
         SharedPdfIntent.textOf(intent)?.let { sharedText = it }
+        BookCopies.continueFrom(this, intent)
         ResumeWidgetProvider.bookIdOf(intent)?.let { widgetResume = it }
     }
 
@@ -750,9 +752,11 @@ class MainActivity : ComponentActivity() {
         return search
     }
 
-    /** Search indexes of removed books, and voice-note files whose note went with its book. */
+    /** Search indexes and studio audio of removed books (and of older builds), and voice notes whose note is gone. */
     private suspend fun dropStaleBookFiles() = withContext(Dispatchers.IO) {
-        searchIndexes.dropBooksNotIn(library.books().first().mapTo(HashSet()) { it.id })
+        val books = library.books().first().mapTo(HashSet()) { it.id }
+        searchIndexes.dropBooksNotIn(books)
+        StudioMode.reclaim(applicationContext, books)
         voiceNoteAudio.dropFilesNotIn(voiceNoteStore.observeAll().first().mapTo(HashSet()) { it.fileName })
     }
 
@@ -887,7 +891,7 @@ class MainActivity : ComponentActivity() {
 
         // The clip's progress and its Share button are in a notification, so it asks for that permission first.
         override fun onShareClip(unit: ReadingUnit) = playWithPermission {
-            AudioClips.share(applicationContext, model.state.value.bookId, unit.page, unit.index)
+            AudioClips.share(applicationContext, model.state.value.bookId, unit.page, unit.index, model.openPassword)
         }
 
         override fun onBookmark(bookmark: Bookmark) = model.goToBookmark(bookmark)

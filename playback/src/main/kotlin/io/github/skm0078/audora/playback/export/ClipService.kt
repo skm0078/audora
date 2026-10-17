@@ -10,8 +10,10 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.core.config.AudiobookConfig
+import io.github.skm0078.audora.core.config.ClipConfig
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.library.Library
@@ -25,6 +27,7 @@ import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
+import io.github.skm0078.audora.playback.book.PasswordHandoff
 import io.github.skm0078.audora.playback.queue.UnitKey
 import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.studio.StudioMode
@@ -54,6 +57,7 @@ class ClipService : Service() {
     lateinit var pronunciations: PronunciationStore
 
     private val config = AudiobookConfig()
+    private val clipConfig = ClipConfig()
     private lateinit var notices: ClipNotices
 
     @Volatile
@@ -96,15 +100,20 @@ class ClipService : Service() {
 
     /** On the worker thread. */
     private fun makeClip(id: BookId, start: UnitKey) {
+        // A long Kokoro clip renders for minutes: the CPU must not sleep when the screen times out.
+        val wakeLock = getSystemService(PowerManager::class.java)
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)
+            .apply { acquire(clipConfig.wakeLockMs) }
         try {
             val books = LibraryBookSource(this, library)
-            when (val opened = runBlocking { books.open(id, password = null) }) {
+            when (val opened = runBlocking { books.open(id, PasswordHandoff.take(id)) }) {
                 is Outcome.Success -> opened.value.text.use { clipOf(opened.value, start) }
                 is Outcome.Failure -> notices.showFailed(opened.error.message)
             }
         } catch (interrupted: InterruptedException) {
             AudoraLog.i(TAG, "Clip cancelled, book=${id.logLabel}")
         } finally {
+            if (wakeLock.isHeld) wakeLock.release()
             worker = null
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
@@ -186,6 +195,7 @@ class ClipService : Service() {
     private companion object {
         const val TAG = "Clip.Service"
         const val THREAD_NAME = "audio-clip"
+        const val WAKE_LOCK_TAG = "Audora:AudioClip"
         const val MIME_TYPE = "audio/mp4"
 
         /** A page with no text is skipped (as playback skips it); a book that cannot be read stops the clip. */

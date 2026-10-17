@@ -64,8 +64,11 @@ object NotesExport {
         val markdown = "$stem.md"
         val text = "$stem.txt"
         files.save(markdown, MARKDOWN_MIME) { it.write(export.markdown(marks).toByteArray()) }
-            .flatMap { files.save(text, TEXT_MIME) { it.write(export.text(marks).toByteArray()) } }
-            .map { listOf(markdown, text) }
+            .flatMap { savedMarkdown ->
+                files.save(text, TEXT_MIME) {
+                    it.write(export.text(marks).toByteArray())
+                }.map { listOf(savedMarkdown, it) }
+            }
             .also {
                 AudoraLog.i(
                     TAG,

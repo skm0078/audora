@@ -19,9 +19,10 @@ import java.io.OutputStream
 internal class SharedDocuments(private val resolver: ContentResolver, private val relativePath: String) {
     /**
      * Writes [name] through [write]; the file appears only when [write] returns normally. On any failure, and on
-     * cancel (the [InterruptedException] is rethrown), the partial file is deleted.
+     * cancel (the [InterruptedException] is rethrown), the partial file is deleted. Returns the name the file got,
+     * which is "[name] (1)…" when an older copy has the name.
      */
-    fun save(name: String, mimeType: String, write: (OutputStream) -> Unit): Outcome<Unit, CopyError> {
+    fun save(name: String, mimeType: String, write: (OutputStream) -> Unit): Outcome<String, CopyError> {
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, name)
             put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
@@ -35,7 +36,7 @@ internal class SharedDocuments(private val resolver: ContentResolver, private va
             stream.use(write)
             resolver.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
             done = true
-            Outcome.Success(Unit)
+            Outcome.Success(displayName(uri) ?: name)
         } catch (e: IOException) {
             AudoraLog.e(TAG, "Could not write $name", e)
             Outcome.Failure(CopyError.Storage("could not write the file"))
@@ -48,6 +49,16 @@ internal class SharedDocuments(private val resolver: ContentResolver, private va
         resolver.insert(MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY), values)
     } catch (e: IllegalArgumentException) {
         AudoraLog.e(TAG, "MediaStore refused $name in $relativePath", e)
+        null
+    }
+
+    /** The name MediaStore gave the file; null (the asked-for name is shown) if it cannot be read back. */
+    private fun displayName(uri: Uri): String? = try {
+        resolver.query(uri, arrayOf(MediaStore.MediaColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            cursor.takeIf { it.moveToFirst() }?.getString(0)
+        }
+    } catch (e: SecurityException) {
+        AudoraLog.w(TAG, "Saved file's name unreadable: ${e.javaClass.simpleName}")
         null
     }
 

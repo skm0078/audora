@@ -65,6 +65,10 @@ class ReaderModel(
     private var book: Book? = null
     private var document: ReaderDocument? = null
     private var password: String? = null
+
+    /** The password the book was opened with, for a job that reopens it (a clip, plan item 41); never stored. */
+    val openPassword: String? get() = password
+
     private var openJob: Job? = null
     private var pageJob: Job? = null
     private var renderJob: Job? = null

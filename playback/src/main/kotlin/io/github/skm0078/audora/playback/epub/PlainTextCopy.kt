@@ -5,8 +5,8 @@ package io.github.skm0078.audora.playback.epub
 
 /**
  * Paragraphs separated by a blank line, headings underlined, list items bulleted, table rows as cells joined by
- * " | " (header first), notes at the end of their chapter. "[Page 12]" lines mark printed pages; a page that starts
- * inside a paragraph is marked before that paragraph.
+ * " | " (header first), notes at the end of their chapter. "[Page 12]" lines mark pages (PDF positions); a page that
+ * starts inside a paragraph is marked before that paragraph.
  */
 internal class PlainTextCopy(private val labels: CopyLabels = CopyLabels()) {
     fun write(doc: BookDocument): String = buildString {

@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.playback.epub
 
+import android.app.Notification
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -30,9 +31,11 @@ import kotlinx.coroutines.runBlocking
 
 /**
  * One copy at a time, on its own thread (PDFium is thread-confined). Cancel, Android 15's 6-hour limit for this kind
- * of job and the service being destroyed all interrupt that thread. A partial wake lock keeps OCR and the voice
- * working with the screen off. The talking book uses its own voices, like the audiobook export (a second copy of the
- * voice model in memory while playback also runs).
+ * of job and the service being destroyed all interrupt that thread. Cancel deletes a talking book's staged chapters;
+ * the time limit keeps them and its notification offers Continue, which opens Audora (that resets Android's budget)
+ * and starts the copy again from the missing chapters. A partial wake lock, renewed at every step, keeps OCR and
+ * the voice working with the screen off. The talking book uses its own voices, like the audiobook export (a second
+ * copy of the voice model in memory while playback also runs).
  */
 @AndroidEntryPoint
 class BookCopyService : Service() {
@@ -50,6 +53,14 @@ class BookCopyService : Service() {
 
     @Volatile
     private var worker: Thread? = null
+
+    /** Set before the time limit interrupts the worker, so the stop is reported as that, not as Cancel. */
+    @Volatile
+    private var timedOut = false
+
+    /** The running notification last shown, so a second request while busy re-posts it. */
+    @Volatile
+    private var lastRunning: Notification? = null
 
     override fun onCreate() {
         super.onCreate() // Hilt injects fields here.
@@ -76,6 +87,8 @@ class BookCopyService : Service() {
 
     /** Android 15+: this kind of foreground job used up its daily 6 hours. */
     override fun onTimeout(startId: Int, fgsType: Int) {
+        AudoraLog.w(TAG, "Android's time limit for long jobs reached; stopping the copy")
+        timedOut = true
         worker?.interrupt()
     }
 
@@ -87,12 +100,18 @@ class BookCopyService : Service() {
     private fun start(id: BookId?, kind: CopyKind?) {
         // Foreground first, always: Android requires it within seconds of startForegroundService.
         val preparing = getString(R.string.copy_preparing)
-        val notice = notifications.running(preparing, preparing, percent = null)
+        val notice =
+            lastRunning?.takeIf { worker != null } ?: notifications.running(preparing, preparing, percent = null)
         startForeground(CopyNotifications.RUNNING_ID, notice, foregroundType())
         when {
             id == null || kind == null -> AudoraLog.w(TAG, "Copy request without a book or kind")
+
             worker != null -> notifications.showResult(preparing, getString(R.string.copy_busy))
-            else -> worker = Thread({ runCopy(id, kind) }, THREAD_NAME).apply { start() }
+
+            else -> {
+                timedOut = false
+                worker = Thread({ runCopy(id, kind) }, THREAD_NAME).apply { start() }
+            }
         }
     }
 
@@ -100,35 +119,49 @@ class BookCopyService : Service() {
     private fun runCopy(id: BookId, kind: CopyKind) {
         val wakeLock = getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)
-            .apply { acquire(config.maxRunMs) }
+            .apply {
+                setReferenceCounted(false) // Each renewal replaces the last timeout instead of stacking holds.
+                acquire(config.wakeLockMs)
+            }
+        val keepAwake = { wakeLock.acquire(config.wakeLockMs) }
         try {
             val books = LibraryBookSource(this, library)
             when (val opened = runBlocking { books.open(id, password = null) }) {
-                is Outcome.Success -> opened.value.text.use { copy(opened.value, kind) }
+                is Outcome.Success -> opened.value.text.use { copy(opened.value, kind, keepAwake) }
                 is Outcome.Failure -> notifications.showFailed(CopyError.NotOpened(opened.error.message))
             }
         } catch (interrupted: InterruptedException) {
-            AudoraLog.i(TAG, "Copy cancelled, book=${id.logLabel}")
-            notifications.showCancelled()
+            if (timedOut) {
+                AudoraLog.i(TAG, "Copy stopped by the time limit, book=${id.logLabel}; staged chapters kept")
+                notifications.showTimedOut(id, kind)
+            } else {
+                AudoraLog.i(TAG, "Copy cancelled, book=${id.logLabel}")
+                CopyJob.dropStaging(this)
+                notifications.showCancelled()
+            }
         } finally {
             if (wakeLock.isHeld) wakeLock.release()
+            lastRunning = null
             worker = null
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
         }
     }
 
-    private fun copy(book: OpenedBook, kind: CopyKind) {
+    private fun copy(book: OpenedBook, kind: CopyKind, keepAwake: () -> Unit) {
         val title = book.book.title.takeUnless { it == BookTitles.UNTITLED } ?: getString(R.string.export_untitled)
         val running = if (kind == CopyKind.ACCESSIBLE) R.string.copy_running else R.string.copy_talking_running
         val heading = getString(running, title)
         AudoraLog.i(TAG, "Copy started, book=${book.book.id.logLabel} kind=$kind pages=${book.text.pageCount}")
         val job = CopyJob(this, book, title, config) { step, percent ->
-            notifications.showRunning(notifications.running(heading, step, percent))
+            keepAwake()
+            val running = notifications.running(heading, step, percent)
+            lastRunning = running
+            notifications.showRunning(running)
         }
         val result = when (kind) {
             CopyKind.ACCESSIBLE -> job.accessibleCopy()
-            CopyKind.TALKING_BOOK -> talkingBook(book, job)
+            CopyKind.TALKING_BOOK -> talkingBook(book, job, keepAwake)
         }
         when (result) {
             is Outcome.Success -> {
@@ -143,12 +176,12 @@ class BookCopyService : Service() {
         }
     }
 
-    private fun talkingBook(book: OpenedBook, job: CopyJob): Outcome<SavedCopy, CopyError> {
+    private fun talkingBook(book: OpenedBook, job: CopyJob, keepAwake: () -> Unit): Outcome<SavedCopy, CopyError> {
         val voices = SpeechVoices(VoiceEngines(this))
         try {
             val factory = BookRendering.Factory(this, bookSettings, pronunciations)
             val rendering = runBlocking { factory.prepare(book.book.id, book.text, voices, normalRate = true) }
-            return job.talkingBook(rendering, StudioMode.store(this))
+            return job.talkingBook(rendering, StudioMode.store(this), onChapter = keepAwake)
         } finally {
             voices.release()
         }

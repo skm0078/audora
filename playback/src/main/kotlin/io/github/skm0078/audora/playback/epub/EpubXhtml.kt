@@ -11,7 +11,7 @@ data class CopyLabels(val contents: String = "Contents", val pages: String = "Pa
 
 /**
  * Accessible by construction (EPUB Accessibility 1.1): real headings, lists and tables with header cells, the language
- * of every sentence that differs from the book's, a page-break marker per printed page and a page list, notes as
+ * of every sentence that differs from the book's, a page-break marker per page (PDF position) and a page list, notes as
  * `doc-footnote` asides. Each sentence is one element with an [DocSentence.id], so a talking book can highlight it.
  */
 internal class EpubXhtml(private val doc: BookDocument, private val labels: CopyLabels = CopyLabels()) {

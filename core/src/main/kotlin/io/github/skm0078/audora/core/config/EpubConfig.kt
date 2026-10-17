@@ -12,7 +12,8 @@ package io.github.skm0078.audora.core.config
  * @property fileNameMaxChars the book title's share of a file name.
  * @property folder where copies go on shared storage, under Documents (ebook and screen-reader apps look there).
  * @property progressStepPercent the notification moves on in steps of at least this much.
- * @property maxRunMs the wake lock's safety limit; Android 15 stops this kind of job after 6 hours a day anyway.
+ * @property wakeLockMs the wake lock is taken for this long and renewed at every progress step and chapter, so a stuck
+ *   job lets the phone sleep within this time; no page or chapter step takes nearly this long.
  */
 data class EpubConfig(
     val paragraphPauseMs: Int = ReadingUnitConfig().paragraphPauseMs,
@@ -21,7 +22,7 @@ data class EpubConfig(
     val fileNameMaxChars: Int = AudiobookConfig().folderNameMaxChars,
     val folder: String = "Documents/Audora/",
     val progressStepPercent: Int = 1,
-    val maxRunMs: Long = AudiobookConfig().maxExportMs,
+    val wakeLockMs: Long = 1_800_000L, // 30 min
 ) {
     init {
         require(paragraphPauseMs >= 0) { "paragraphPauseMs must be >= 0, was $paragraphPauseMs" }
@@ -30,6 +31,7 @@ data class EpubConfig(
         require(fileNameMaxChars > 0) { "fileNameMaxChars must be > 0, was $fileNameMaxChars" }
         require(folder.endsWith('/')) { "folder must end with '/', was $folder" }
         require(progressStepPercent in 1..PERCENT) { "progressStepPercent must be in 1..100" }
+        require(wakeLockMs > 0) { "wakeLockMs must be > 0, was $wakeLockMs" }
     }
 
     private companion object {

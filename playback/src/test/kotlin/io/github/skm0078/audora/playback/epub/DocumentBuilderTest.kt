@@ -33,6 +33,26 @@ class DocumentBuilderTest {
     }
 
     @Test
+    fun `footnotes between its halves neither split a paragraph nor their own text`() {
+        val units = mapOf(
+            0 to listOf(sentence(0, 0, "A paragraph runs"), sentence(0, 1, "A note runs", UnitKind.FOOTNOTE)),
+            1 to listOf(
+                sentence(1, 0, "on to the next page.", pause = PARAGRAPH_END),
+                sentence(1, 1, "on too.", UnitKind.FOOTNOTE, PARAGRAPH_END),
+            ),
+        )
+        val chapter = builder.build("Book", oneChapter, units)!!.chapters.single()
+
+        assertEquals(
+            listOf("A paragraph runs", "on to the next page."),
+            chapter.blocks.single().sentences.map {
+                it.unit.text
+            },
+        )
+        assertEquals(listOf("A note runs", "on too."), chapter.notes.single().sentences.map { it.unit.text })
+    }
+
+    @Test
     fun `list items split at paragraph pauses and tables group their rows`() {
         val units = mapOf(
             0 to listOf(

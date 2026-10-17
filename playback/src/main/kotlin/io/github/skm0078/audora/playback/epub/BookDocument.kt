@@ -9,8 +9,8 @@ import io.github.skm0078.audora.core.model.UnitKind
 
 /**
  * One sentence of a copy.
- * @property pageBreak the printed page [ReadingUnit.page] starts here: the copy marks it, so a reader can go to a page
- *   number as in the printed book.
+ * @property pageBreak page [ReadingUnit.page] starts here: the copy marks it, so a reader can go to a page. The number
+ *   is the PDF's page position, not the label printed on the page (that needs PDFium's page labels in `:pdf`).
  */
 data class DocSentence(val unit: ReadingUnit, val pageBreak: Boolean = false) {
     /** Unique in the book; the talking book's audio points at it. */
@@ -52,7 +52,7 @@ data class DocChapter(
 ) {
     val sentences: List<DocSentence> get() = (blocks + notes).flatMap { it.sentences }
 
-    /** The printed pages that start in this chapter, in order (one-based, as the reader shows them). */
+    /** The pages (PDF positions) that start in this chapter, in order (one-based, as the reader shows them). */
     val pageStarts: List<Int> get() = sentences.filter { it.pageBreak }.map { it.unit.page + 1 }
 }
 

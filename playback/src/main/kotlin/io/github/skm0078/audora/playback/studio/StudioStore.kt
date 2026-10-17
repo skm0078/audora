@@ -17,6 +17,7 @@ import java.io.IOException
  * Thread-safe for one writer (the studio run) and any number of readers (the playback render thread): readers only
  * read files, and a file that vanishes under them reads as missing.
  */
+@Suppress("TooManyFunctions") // Reads, writes and the four ways old audio is dropped, all on one folder tree.
 class StudioStore(private val root: File) {
     /** The page's studio audio for [key]; null when there is none or it is unreadable (logged, then deleted). */
     fun page(key: StudioKey, page: Int): StudioPage? {
@@ -81,6 +82,21 @@ class StudioStore(private val root: File) {
         root.listFiles { file -> file.isDirectory && file.name !in keep }.orEmpty().forEach { folder ->
             AudoraLog.i(TAG, "Studio audio of a removed book deleted (${folder.name})")
             folder.deleteRecursively()
+        }
+    }
+
+    /**
+     * Deletes every signature folder last written before [stamp], the app's install or update time: each signature
+     * carries that time ([StudioSignature.appStamp]), so audio written before an update can never play again.
+     */
+    fun dropWrittenBefore(stamp: Long) {
+        root.listFiles { file -> file.isDirectory }.orEmpty().forEach { book ->
+            book.listFiles { file -> file.isDirectory }.orEmpty()
+                .filter { newestWrite(it) < stamp }
+                .forEach { folder ->
+                    AudoraLog.i(TAG, "Studio audio of an older build deleted (${book.name}/${folder.name})")
+                    folder.deleteRecursively()
+                }
         }
     }
 

@@ -26,10 +26,14 @@ data class ChapterAudio(val chapter: Int, val file: File, val sampleRate: Int, v
 /**
  * Listens to the audiobook exporter and records each sentence's place in its chapter's file, in samples at the
  * file's rate (the exporter resamples every sentence to it), so timings never drift over a long chapter. Feed it on
- * the exporter's thread only.
+ * the exporter's thread only. [onChapter] gets each finished chapter (to stage it, [StagedChapters]); [restore] puts
+ * back chapters staged by an earlier run, which this run does not render again.
  */
-class OverlayRecorder(private val folder: File, private val onPage: (AudioChapter, Int) -> Unit = { _, _ -> }) :
-    ExportListener {
+class OverlayRecorder(
+    private val folder: File,
+    private val onPage: (AudioChapter, Int) -> Unit = { _, _ -> },
+    private val onChapter: (StagedChapter) -> Unit = {},
+) : ExportListener {
     private val open = ArrayList<SentenceClip>()
     private val openKeys = ArrayList<UnitKey>()
     private var openRate = 0
@@ -45,6 +49,13 @@ class OverlayRecorder(private val folder: File, private val onPage: (AudioChapte
 
     override fun onPageDone(chapter: AudioChapter, page: Int) = onPage(chapter, page)
 
+    fun restore(staged: Collection<StagedChapter>) {
+        staged.sortedBy { it.audio.chapter }.forEach { chapter ->
+            done[chapter.audio.chapter] = chapter.audio
+            read.addAll(chapter.voiced)
+        }
+    }
+
     override fun onSentenceWritten(chapter: AudioChapter, unit: ReadingUnit, audio: PcmAudio) {
         val end = position + audio.samples.size
         open.add(SentenceClip(DocSentence(unit).id, position, end))
@@ -55,8 +66,10 @@ class OverlayRecorder(private val folder: File, private val onPage: (AudioChapte
 
     override fun onChapterDone(chapter: ExportedChapter) {
         val number = chapter.chapter.number
-        done[number] = ChapterAudio(number, File(folder, chapter.name), openRate, open.toList())
+        val audio = ChapterAudio(number, File(folder, chapter.name), openRate, open.toList())
+        done[number] = audio
         read.addAll(openKeys)
+        onChapter(StagedChapter(audio, openKeys.toList()))
         open.clear()
         openKeys.clear()
         position = 0L

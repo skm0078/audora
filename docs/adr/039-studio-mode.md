@@ -18,11 +18,13 @@ rendering on its own when the charger is plugged in.
    (`:playback`, `playback.studio`; mediaProcessing on Android 15+, dataSync before, like the export). It renders
    from the book's resume page until `StudioConfig.hoursAhead` (6 h) of audio is ready or the book ends, then stops.
    Its notification shows progress and offers **Stop**.
-2. **Charging only, unless the listener says otherwise.** Before each sentence `ChargingGate` checks the charger.
-   Unplugged, it releases the wake lock and waits (the phone sleeps; the wait costs no battery) until a
-   `POWER_CONNECTED` broadcast or the next poll. The notification then offers **Start now**, which renders on
-   battery for the rest of the run. While any audio plays (Audora or another app) it waits with the wake lock kept,
-   so studio mode never competes with listening for the CPU.
+2. **Charging only, unless the listener says otherwise.** Before each sentence `ChargingGate` checks the charger:
+   plugged in by the sticky battery status (`EXTRA_PLUGGED`), not `BatteryManager.isCharging`, which Android 14+
+   turns true only after the level has risen for a while and never under a charge limit. Unplugged, it releases the
+   wake lock and waits (the phone sleeps; the wait costs no battery) until a `POWER_CONNECTED` broadcast, which takes
+   the lock again, or the next poll. The notification then offers **Start now**, which renders on
+   battery for the rest of the run. While any audio plays (Audora or another app) it waits with the wake lock held,
+   so studio mode never competes with listening for the CPU and goes on once playback stops, even screen off.
 3. **Exactly the live renderer.** The service builds the same `EngineRenderer` as playback: the listener's style with
    the book's own speed, pace and voices on top, the book's pronunciation fixes, the reading modes and chapter cues,
    and the same `UnitReading.plays` selection of units. Audio is stored under a `StudioSignature`: pipeline version,
@@ -40,7 +42,9 @@ rendering on its own when the charger is plugged in.
    temp file and rename, under `noBackupFilesDir/studio/<book hash>/<signature hash>/`.
 6. **Bounded.** Pages more than `keepBehindPages` behind the listener and folders of old signatures are deleted when
    a run starts; all books' studio audio stays under `StudioConfig.maxBytes` (2 GiB), dropping the books written
-   longest ago first; books removed from the library lose their audio; a run stops when free storage falls below
+   longest ago first; when the app opens, books removed from the library lose their audio and so does every folder
+   written before the installed build (each signature carries the build's install time, so that audio can never play
+   again); a run stops when free storage falls below
    `minFreeBytes` (512 MiB). `renderRetryLimit` failures in a row stop the run; one failed sentence is left to live
    rendering.
 
@@ -60,6 +64,10 @@ rendering on its own when the charger is plugged in.
 - An hour of Kokoro audio needs about three hours on the charger (estimate until the final Moto session measures it);
   a night fills two to three hours and the next charge carries on from the new resume page.
 - Storage: about 60–80 MB per ready listening hour at 22–24 kHz; at most 2 GiB in all.
+- Every app update discards studio audio, because the signature keys on the build's install time. Keying it on a
+  renderer version instead would keep hours of rendering across routine updates, but every change to the normalizer,
+  the voices or sherpa-onnx would then need a manual bump, and a missed bump plays stale audio; the build time is
+  kept until a renderer version is worth that risk.
 - RAM: while studio mode runs next to playback, a second copy of the voice model is loaded (about 150 MB for Kokoro);
   rendering itself pauses while audio plays.
 - Studio mode does not restart itself after the listener moves on; the listener starts it again (one tap), because

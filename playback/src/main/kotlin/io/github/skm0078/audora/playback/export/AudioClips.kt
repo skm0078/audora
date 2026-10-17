@@ -8,6 +8,7 @@ import android.content.Intent
 import androidx.core.content.FileProvider
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.playback.book.PasswordHandoff
 
 object AudioClips {
     internal const val ACTION_MAKE = "io.github.skm0078.audora.clip.MAKE"
@@ -24,10 +25,11 @@ object AudioClips {
      * Renders the passage from sentence [index] of [page] (zero-based) to the end of its paragraph, then opens the
      * share sheet. Call it from a user action while Audora is on screen: the work runs in a short foreground service
      * (Android allows starting one only then), and its notification carries a Share button in case the sheet cannot
-     * open by itself.
+     * open by itself. [password]: the one the reader opened the book with, handed over in memory ([PasswordHandoff]).
      */
-    fun share(context: Context, id: BookId, page: Int, index: Int) {
+    fun share(context: Context, id: BookId, page: Int, index: Int, password: String? = null) {
         AudoraLog.i(TAG, "Clip requested, book=${id.logLabel} page=$page sentence=$index")
+        PasswordHandoff.put(id, password)
         val intent = Intent(context, ClipService::class.java)
             .setAction(ACTION_MAKE)
             .putExtra(EXTRA_BOOK, id.value)

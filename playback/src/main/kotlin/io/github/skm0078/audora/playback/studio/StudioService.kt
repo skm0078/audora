@@ -96,8 +96,10 @@ class StudioService : Service() {
     }
 
     private fun start(id: BookId?) {
-        // Foreground first, always: Android requires it within seconds of startForegroundService.
-        startForeground(StudioNotifications.RUNNING_ID, notifications.preparing(), foregroundType())
+        // Foreground first, always: Android requires it within seconds of startForegroundService. While a run is going
+        // its own notification is re-posted, so a second tap does not drop "Start now".
+        val shown = notifications.lastRunning?.takeIf { worker != null } ?: notifications.preparing()
+        startForeground(StudioNotifications.RUNNING_ID, shown, foregroundType())
         if (id == null) {
             AudoraLog.w(TAG, "Studio request without a book")
             return
@@ -121,6 +123,7 @@ class StudioService : Service() {
     private fun runStudio(id: BookId) {
         val wakeLock = getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)
+            .apply { setReferenceCounted(false) } // The gate's receiver and the worker both take it (ChargingGate).
         try {
             val books = LibraryBookSource(this, library)
             when (val opened = runBlocking { books.open(id, password = null) }) {

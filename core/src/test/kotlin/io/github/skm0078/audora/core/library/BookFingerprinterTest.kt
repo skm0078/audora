@@ -31,6 +31,17 @@ class BookFingerprinterTest {
         assertTrue(requireNotNull(first).startsWith("v1:"))
     }
 
+    /** Books, positions, notes and studio audio are keyed by it: a PDF's fingerprint must never change (ADR-042). */
+    @Test
+    fun `a PDF's fingerprint is pinned`() {
+        val pdf = "%PDF-1.7\n1 0 obj << /Type /Catalog >> endobj\n".toByteArray(Charsets.US_ASCII)
+
+        assertEquals(
+            "v1:cfda1a0d5f6170130e27093b39f543566670a9d9598840649914a727f9327614",
+            fingerprintOf(pdf).getOrNull(),
+        )
+    }
+
     @Test
     fun `different head bytes give different fingerprints`() {
         assertNotEquals(fingerprintOf(pdfBytes("a")).getOrNull(), fingerprintOf(pdfBytes("b")).getOrNull())
