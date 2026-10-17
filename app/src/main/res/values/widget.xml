@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/widget.xml
+  Purpose: The home-screen widget's sizes and wallpaper colours (plan item 35); values-night has the dark set.
+-->
+<resources>
+    <color name="widget_surface">@android:color/system_neutral1_50</color>
+    <color name="widget_on_surface">@android:color/system_neutral1_900</color>
+    <color name="widget_on_surface_variant">@android:color/system_neutral2_700</color>
+    <color name="widget_accent">@android:color/system_accent1_600</color>
+    <color name="widget_on_accent">@android:color/system_accent1_0</color>
+    <color name="widget_track">@android:color/system_accent1_100</color>
+
+    <dimen name="widget_padding">16dp</dimen>
+    <dimen name="widget_padding_vertical">10dp</dimen>
+    <dimen name="widget_gap">6dp</dimen>
+    <dimen name="widget_button">48dp</dimen>
+</resources>

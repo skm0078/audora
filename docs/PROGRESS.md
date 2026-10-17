@@ -2,6 +2,15 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## UI wave 2 — follow-along, "What did it say?", word highlight, home-screen widget (plan items 13, 5, 14, 35; 2026-10-17, ADR-036 §10-13)
+- **Follow-along (13):** the text view keeps the spoken sentence centred; *Follow along* turns it off, and the highlight is a band, an underline or bold (reader ⋮ menu, saved with the reading look).
+- **What did it say? (5):** a button in the full player replays the sentence just heard at 0.85× the listener's speed, shows it in a card, and carries on at the listener's speed.
+- **Word highlight (14), version one:** `spokenWord()` spreads the sentence's time over its letters (about ±150 ms) and the reader marks the word; it lights up once playback reports each sentence's position and length (asked of the playback owner). *Highlight each word* turns it off.
+- **Home-screen widget (35):** a plain `AppWidgetProvider` with RemoteViews and wallpaper colours: the book read last, page progress, and *Resume*, which opens Audora reading it. The app redraws it when the latest book or its progress changes; no timer, no service change.
+- Tests: `WhatDidItSayTest`, `SpokenWordTest`, `ResumeWidgetBookTest`. No new dependency; no `:pdf` change.
+
+**Real-device checks (final phone session):** follow-along on and off while scrolling; each highlight style; *What did it say?* mid-chapter and on a page's first sentence (speed comes back); place the widget, read a few pages, check it updates, tap Resume with the app closed and open.
+
 ## First UI pass — tabs, theme, cover grid, full player, Focus view, Up next, duplicate check (wave 1b, plan items 25, 27, 39, 77; 2026-10-17, ADR-036)
 - **Shell:** Library, Notes and Settings tabs with the mini player above the bar on every tab (cover, page, progress, play/pause); tapping it opens the full player. Settings left the library's top bar.
 - **Theme:** wallpaper colours by default, or Audora's warm lamp palette; System/Light/Dark and True black at night in Settings → Appearance (`AudoraTheme`, `Appearance`, `Dimens`). Bolder headings, rounder shapes, serif book text with taller lines for Indic marks. No font files added.

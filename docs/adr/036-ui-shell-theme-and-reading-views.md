@@ -1,6 +1,7 @@
 # ADR-036: The app shell, theme and reading views (first UI pass)
 
-**Status:** Accepted (2026-10-17). Wave 1b of the premium plan: the shell plus plan items 25, 27, 39 and 77.
+**Status:** Accepted (2026-10-17). Wave 1b of the premium plan: the shell plus plan items 25, 27, 39 and 77; wave 2
+adds items 13, 5, 14 and 35 (§10-13).
 
 ## Context
 Every feature so far added its own screen piece: the library grew a mini player under its list and a settings icon,
@@ -44,6 +45,29 @@ warm "reading lamp" look; this ADR records what was built from them and why.
    Built from one bookmark query per book until the store has a cross-book query.
 9. **Accessibility (item 39).** Every icon button has a label, tiles read as one item ("title, status") with the menu
    as its own button, switches toggle with their whole row, headings are marked, and controls keep 48 dp targets.
+10. **Follow-along (item 13).** While reading, the text view scrolls the spoken sentence to the middle of the screen
+    (a far one is jumped to, a near one glides). *Follow along* off leaves the text where the listener put it. The
+    spoken sentence is marked by a tinted band, an underline or bold type; all three are per listener, in the
+    reading look.
+11. **What did it say? (item 5).** In the full player. The sentence just heard (the one before the spoken one, or
+    the spoken one at a page's top) plays again at 0.85× the listener's speed, snapped to a slider step, and its
+    text shows in a card TalkBack announces; reading then carries on into the next sentence. Built on the reader's
+    own actions (speed, read from a sentence), so playback is untouched. The speed comes back when the player moves
+    past the sentence, when the replay is cancelled by a jump elsewhere, or when the player closes, and is left
+    alone if the listener changed it meanwhile. Known gap: the slower speed is saved like any speed change, so if
+    Android kills Audora mid-replay it comes back slower; a speed change that is not saved needs a playback hook.
+12. **Word highlight, version one (item 14).** The word being said is picked by spreading the sentence's time evenly
+    over its non-space characters (`spokenWord`), about ±150 ms off where the voice pauses at commas. Words are what
+    spaces separate, so a Hindi or Bengali word is never split inside a conjunct. Needs each sentence's position
+    and length from playback, asked of its owner; until then the word is simply not marked. Version two would use
+    the voice's own timings where the engine reports them.
+13. **Home-screen widget (item 35).** A plain `AppWidgetProvider` with RemoteViews (Glance would be a new library):
+    the book read last, page progress, and Resume. Resume opens MainActivity with a CONTINUE action and the book id,
+    which runs the library's Continue (open the reader, start reading): a tap is the user's own action, so the
+    "playback starts only from a user action" invariant holds, and the playback service is untouched. The app
+    writes the widget's book to a small preferences file and redraws it only when it changes (SharedPreferences,
+    read synchronously inside the widget's broadcast); `updatePeriodMillis` is 0, so the widget never wakes the
+    phone. Known gap: progress made with the app closed (screen-off listening) shows when the app next opens.
 
 ## Alternatives considered
 - **Navigation Compose:** a new dependency for six routes; the saveable route string already survives process
@@ -51,6 +75,8 @@ warm "reading lamp" look; this ADR records what was built from them and why.
 - **Bundled Noto fonts:** about 1 MB per script for a look the phone already draws.
 - **A second copy for duplicates:** see 4.
 - **A separate player model:** two sources of truth for the reading position.
+- **A widget that binds the media session** for live play and pause: needs a controller connection from a broadcast
+  receiver and still shows nothing once the service stops; the saved book plus Resume covers the main use.
 
 ## Consequences
 - Settings rows go in groups (`SettingsGroup`), so a new setting is one row in its group.
