@@ -152,6 +152,8 @@ class ReaderModel(
 
     fun setPace(pace: Pace) = player.setPace(pace)
 
+    fun setClausePauses(on: Boolean) = player.setClausePauses(on)
+
     fun setSleepTimer(setting: SleepTimerSetting) = player.setSleepTimer(setting)
 
     /** Releases the PDF. Reading continues: the service has its own copy. */

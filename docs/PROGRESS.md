@@ -2,6 +2,17 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## RI-6 — Punctuation you can hear, and a separate dev app (2026-10-17, ADR-033 §9)
+- **Pauses at strong punctuation:** dashes, colons, semicolons, brackets, quotes, ellipses and a danda inside the text now get a real pause (about 250 ms for a dash at Normal pace, scaled by pace and speed). The sentence is cut only there, never at commas, and after script routing, so mixed English/Hindi sentences keep their voices. Bracketed words are read 3 dB quieter. Speed sheet → "Pause at punctuation" turns it off to compare.
+- **Spoken symbols:** "and/or", "yes/no" read "or"; "24/7" and other number slashes read "slash"; a bare "°C"/"°F" is spoken; in Hindi and Bengali "/" between words reads "या"/"বা" and "&" reads "और"/"এবং". Ranges ("10–20") and "?"/"!" already worked and are now covered by tests.
+- **Dev build looks different:** it is "Audora Dev" with an orange icon and an underline bar (also visible in themed icons), so it can't be mistaken for the release app.
+- No `:pdf` change, so `PIPELINE_VERSION` is unchanged. No new dependency.
+- Tests: `ClauseSplitter` table (every mark in en/hi/bn, the non-cuts, mixed-script routing), `RoutedSpeech` pause and gain in PCM plus the uncut fallback, `EngineRenderer` silence runs measured in the clip and render speed without pauses, clause-pause timings, the normalizer tables. Locally: core, speech, pdf and the pure playback tests in the JVM harness, ktlint and detekt clean; the Android build in CI.
+
+**Known limits:** the pause lengths are first guesses, untuned by ear. Each piece ends with the voice's own short silence, so a sentence with many marks runs a little longer. Some voices may sound slightly different at a cut than mid-sentence; that is what the switch is for.
+
+**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the other phone checks):** (1) The launcher shows "Audora Dev" with an orange icon next to the release "Audora". (2) Play a paragraph with a dash, a colon and a bracket at 1× and 2×, with "Pause at punctuation" on and then off: the marks are audible as pauses when on, the bracket a little quieter, and on sounds better (if not, say so and it goes). (3) Play a Hindi sentence with "हाँ/नहीं" and a bilingual sentence with "(UN रिपोर्ट)": the slash reads "या", and the bracket keeps the Hindi voice.
+
 ## App basics — speed, pace, library progress, Open with Audora, rewind on resume (2026-10-16, ADR-033)
 - **Speed without smeared words:** the voice model now speaks at the chosen rate itself (Piper/VITS, Kokoro, Kitten, Supertonic, and the phone's engine through `setSpeechRate`) up to 1.5×; only the rest above that is time-stretched. 0.5×–3× in 0.05 steps.
 - **Natural pauses:** sherpa-onnx renders now keep the voice's own pauses inside a sentence (`silenceScale` 1.0; the library default 0.2 cut every comma pause to a fifth).

@@ -74,6 +74,8 @@
     <string name="speech_pace_tight">Short</string>
     <string name="speech_pace_normal">Normal</string>
     <string name="speech_pace_relaxed">Long</string>
+    <string name="speech_clause_pauses">Pause at punctuation</string>
+    <string name="speech_clause_pauses_detail">Short pauses at dashes, colons, brackets and quotes; brackets a little quieter</string>
     <string name="speech_sheet_hint">The voice itself speaks faster or slower, so words stay clear. The sentence playing restarts at the new setting.</string>
     <string name="reader_sleep_timer">Sleep timer</string>
     <string name="reader_sleep_off">Off</string>

@@ -29,7 +29,7 @@ class RenderSpeedTracker(private val speeds: () -> MeasuredSpeeds) {
     fun onRendered(chars: Int, routed: RoutedAudio, renderNanos: Long, rate: Float = SpeechStyle.NORMAL_RATE) {
         val voice = routed.voices.distinct().singleOrNull()?.takeIf { it == lastVoice }
         lastVoice = routed.voices.lastOrNull()
-        val audioMs = routed.audio.durationMs
+        val audioMs = routed.audio.durationMs - routed.pausesMs // the voice's audio, not the clause pauses
         val measurable = chars > 0 && audioMs > 0 && renderNanos >= 0 && rate > 0f && rate.isFinite()
         if (voice == null || !measurable) return
         speeds().record(

@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.speech.route
 
+import io.github.skm0078.audora.core.model.ClauseMark
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
@@ -85,6 +86,38 @@ class RoutedSpeechTest {
 
         assertEquals(listOf(1.5f), voices.sherpa.rates)
         assertEquals(listOf(1.5f), voices.system.rates)
+    }
+
+    @Test
+    fun `with clause prosody each piece is voiced alone, with the mark's silence between`() = runTest {
+        val voices = FakeVoices()
+        val prosody = ClauseProsody({ mark -> if (mark == ClauseMark.DASH) 100 else 40 }, asideGainDb = -6f)
+
+        val routed = (
+            RoutedSpeech(voices, ScriptRouter()).render("Read — the (whole) world.", Lang.EN, prosody = prosody)
+                as Outcome.Success
+            ).value
+
+        assertEquals(listOf("Read", "the", "whole", "world.").map { EN_VOICE to it }, voices.sherpa.calls)
+        assertEquals(listOf(Lang.EN), routed.langs)
+        assertEquals(180L, routed.pausesMs)
+        val samples = routed.audio.samples
+        assertEquals((100 + 40 + 40) * EN_RATE / 1_000, samples.count { it == 0.toShort() })
+        assertEquals("whole".length, samples.count { it == (SAMPLE / 2).toShort() })
+        assertEquals("Readtheworld.".length, samples.count { it == SAMPLE })
+    }
+
+    @Test
+    fun `the fallback reads the whole sentence uncut`() = runTest {
+        val voices = FakeVoices(missing = setOf(Lang.HI))
+        val prosody = ClauseProsody({ 100 }, asideGainDb = 0f)
+        val text = "The word (नमस्ते) means hello."
+
+        val routed = (RoutedSpeech(voices, ScriptRouter()).render(text, Lang.EN, prosody = prosody) as Outcome.Success)
+            .value
+
+        assertEquals(EN_VOICE to text, voices.sherpa.calls.last())
+        assertEquals(0L, routed.pausesMs)
     }
 
     @Test

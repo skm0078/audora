@@ -450,6 +450,8 @@ class MainActivity : ComponentActivity() {
 
         override fun onPace(pace: Pace) = model.setPace(pace)
 
+        override fun onClausePauses(on: Boolean) = model.setClausePauses(on)
+
         override fun onSleepTimer(setting: SleepTimerSetting) = model.setSleepTimer(setting)
 
         override fun onPasswordSubmitted(password: String) = model.submitPassword(password)
