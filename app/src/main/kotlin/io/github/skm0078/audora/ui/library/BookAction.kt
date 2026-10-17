@@ -10,4 +10,10 @@ import io.github.skm0078.audora.R
 enum class BookAction(@StringRes val label: Int) {
     /** Renders the book ahead while the phone charges (plan item 6, ADR-039). */
     STUDIO(R.string.library_studio_mode),
+
+    /** Clean text as EPUB 3 and plain text for screen readers and other apps (plan item 69, ADR-040). */
+    ACCESSIBLE_COPY(R.string.library_accessible_copy),
+
+    /** EPUB 3 with every sentence's audio synced to its text (plan item 76, ADR-040). */
+    TALKING_BOOK(R.string.library_talking_book),
 }

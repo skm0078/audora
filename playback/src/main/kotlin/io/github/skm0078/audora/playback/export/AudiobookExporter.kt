@@ -115,7 +115,7 @@ class AudiobookExporter(
             return when (val rendered = renderer.render(unit)) {
                 is Outcome.Success -> {
                     failuresInARow = 0
-                    write(chapter, rendered.value)
+                    write(chapter, unit, rendered.value)
                 }
 
                 is Outcome.Failure -> renderFailed(unit, rendered.error)
@@ -129,11 +129,17 @@ class AudiobookExporter(
             return if (failuresInARow >= config.renderRetryLimit) ExportError.VoiceFailed(error) else null
         }
 
-        private fun write(chapter: AudioChapter, audio: PcmAudio): ExportError? {
+        private fun write(chapter: AudioChapter, unit: ReadingUnit, audio: PcmAudio): ExportError? {
             if (audio.samples.isEmpty()) return null
             // Voices differ in rate (Piper 22.05 kHz, Kokoro 24 kHz); a file has one, set by its first sentence.
             return when (val open = writerFor(chapter, audio.sampleRate)) {
-                is Outcome.Success -> open.value.write(audio.resampled(open.value.sampleRate)).errorOrNull()
+                is Outcome.Success -> {
+                    val written = audio.resampled(open.value.sampleRate)
+                    val error = open.value.write(written).errorOrNull()
+                    if (error == null) listener.onSentenceWritten(chapter, unit, written)
+                    error
+                }
+
                 is Outcome.Failure -> open.error
             }
         }

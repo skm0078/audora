@@ -33,6 +33,9 @@
     <string name="library_export_audiobook">Save as audiobook</string>
     <!-- Studio mode (plan item 6, ADR-039): renders the book ahead while the phone charges. -->
     <string name="library_studio_mode">Prepare in studio mode</string>
+    <!-- Plan items 69 and 76 (ADR-040): saved to Documents/Audora. -->
+    <string name="library_accessible_copy">Save an accessible copy (EPUB and text)</string>
+    <string name="library_talking_book">Save as a talking book (EPUB 3)</string>
     <string name="library_remove_title">Remove “%1$s”?</string>
     <string name="library_remove_body">The PDF stays on your phone. You can add it again later.</string>
     <string name="library_cancel">Cancel</string>

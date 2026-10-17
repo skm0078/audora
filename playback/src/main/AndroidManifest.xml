@@ -47,6 +47,12 @@
             android:exported="false"
             android:foregroundServiceType="dataSync|mediaProcessing" />
 
+        <!-- Accessible copy and talking book (plan items 69, 76, ADR-040): started only from the library (C7). -->
+        <service
+            android:name=".epub.BookCopyService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|mediaProcessing" />
+
         <!-- Share as audio (plan item 41): renders one passage into a clip; started only from the reader (C7). -->
         <service
             android:name=".export.ClipService"

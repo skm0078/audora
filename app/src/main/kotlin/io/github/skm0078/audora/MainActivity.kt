@@ -53,6 +53,8 @@ import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
+import io.github.skm0078.audora.playback.epub.BookCopies
+import io.github.skm0078.audora.playback.epub.CopyKind
 import io.github.skm0078.audora.playback.export.AudioClips
 import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
@@ -473,6 +475,8 @@ class MainActivity : ComponentActivity() {
                 override fun onBookAction(book: Book, action: BookAction) = playWithPermission {
                     when (action) {
                         BookAction.STUDIO -> StudioMode.start(context, book.id)
+                        BookAction.ACCESSIBLE_COPY -> BookCopies.start(context, book.id, CopyKind.ACCESSIBLE)
+                        BookAction.TALKING_BOOK -> BookCopies.start(context, book.id, CopyKind.TALKING_BOOK)
                     }
                 }
             }
