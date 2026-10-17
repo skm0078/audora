@@ -232,23 +232,42 @@ object PlaybackContract {
     fun sleepOptionsArgs(options: SleepOptions): Bundle =
         Bundle().apply { putString(ARG_SLEEP_OPTIONS, options.encode()) }
 
-    fun speechStyleArgs(style: SpeechStyle): Bundle = Bundle().apply {
-        putFloat(ARG_SPEECH_RATE, style.rate)
-        putString(ARG_PACE, style.pace.name)
-        putBoolean(ARG_CLAUSE_PAUSES, style.clausePauses)
-        putString(ARG_READING_MODES, style.modes.encode())
-        putString(ARG_VOICE_SHAPING, style.shaping.encode())
+    /**
+     * Only the fields given are sent; the service puts them on top of the style it has saved
+     * ([SpeechStyleChange.over]), so a controller that doesn't know the saved style yet can never reset the rest, and
+     * two quick changes to different fields can't undo each other.
+     */
+    fun speechStyleArgs(change: SpeechStyleChange): Bundle = Bundle().apply {
+        change.rate?.let { putFloat(ARG_SPEECH_RATE, it) }
+        change.pace?.let { putString(ARG_PACE, it.name) }
+        change.clausePauses?.let { putBoolean(ARG_CLAUSE_PAUSES, it) }
+        change.modes?.let { putString(ARG_READING_MODES, it.encode()) }
+        change.shaping?.let { putString(ARG_VOICE_SHAPING, it.encode()) }
     }
 
-    /** Parses [speechStyleArgs]; null when a field is missing, unknown or not a positive number. */
-    fun speechStyleFrom(args: Bundle): SpeechStyle? {
-        val rate = args.getFloat(ARG_SPEECH_RATE, Float.NaN).takeIf { it > 0f && it.isFinite() }
-        val pace = enumOrNull<Pace>(args.getString(ARG_PACE))
-        val clausePauses = args.getBoolean(ARG_CLAUSE_PAUSES, true)
-        val modes = ReadingModes.decode(args.getString(ARG_READING_MODES))
-        val shaping = VoiceShaping.decode(args.getString(ARG_VOICE_SHAPING))
-        return if (rate == null || pace == null) null else SpeechStyle(rate, pace, clausePauses, modes, shaping)
+    /**
+     * Parses [speechStyleArgs]; null when no field was sent or one is unreadable (a rate that is not a positive
+     * number, an unknown pace), so a bad request changes nothing. Unreadable modes or shaping take their defaults.
+     */
+    fun speechStyleChangeFrom(args: Bundle): SpeechStyleChange? {
+        val rate = if (args.containsKey(ARG_SPEECH_RATE)) args.getFloat(ARG_SPEECH_RATE, Float.NaN) else null
+        val paceName = args.getString(ARG_PACE)
+        val pace = paceName?.let { enumOrNull<Pace>(it) }
+        val unreadable = (rate != null && !(rate > 0f && rate.isFinite())) || (paceName != null && pace == null)
+        return if (unreadable || STYLE_KEYS.none(args::containsKey)) {
+            null
+        } else {
+            SpeechStyleChange(
+                rate = rate,
+                pace = pace,
+                clausePauses = if (args.containsKey(ARG_CLAUSE_PAUSES)) args.getBoolean(ARG_CLAUSE_PAUSES) else null,
+                modes = args.getString(ARG_READING_MODES)?.let(ReadingModes::decode),
+                shaping = args.getString(ARG_VOICE_SHAPING)?.let(VoiceShaping::decode),
+            )
+        }
     }
+
+    private val STYLE_KEYS = listOf(ARG_SPEECH_RATE, ARG_PACE, ARG_CLAUSE_PAUSES, ARG_READING_MODES, ARG_VOICE_SHAPING)
 
     /** Parses [setVoiceArgs]; null when a field is missing or unknown. */
     fun voiceFrom(args: Bundle): Pair<VoiceId, Lang>? {

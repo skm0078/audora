@@ -25,7 +25,9 @@ data class Clause(val text: String, val lang: Lang, val pauseBefore: ClauseMark?
  * which reads "(iv)" as "four".
  * The marks themselves are dropped: the pause replaces them. "?" and "!" are never touched.
  *
- * Pure and deterministic; pieces are trimmed and hold at least one letter or digit.
+ * Pure and deterministic; pieces are trimmed and hold at least one letter or digit. A symbol standing alone between
+ * two marks ("(a + b) = (c + d)", "¬(P)") is never dropped: it is read with the next piece, so only the pause is
+ * placed, not the text lost.
  */
 object ClauseSplitter {
     /** Strongest first: where two marks meet ("—(") the pause is the stronger one's. */
@@ -59,6 +61,7 @@ object ClauseSplitter {
             scan(segment.text, state)
             state.flush() // a voice change alone adds no pause; a mark at the segment's end carries over
         }
+        state.finish()
         return state.clauses
     }
 
@@ -75,12 +78,32 @@ object ClauseSplitter {
             pending = if (current == null || STRENGTH.indexOf(mark) < STRENGTH.indexOf(current)) mark else current
         }
 
+        /** A piece with no letter or digit but a maths or other symbol ("=", "¬"): read with the next piece. */
+        var carried = ""
+
         fun flush() {
             val text = buffer.trim().toString()
             buffer.setLength(0)
-            if (text.none(Char::isLetterOrDigit)) return
-            clauses.add(Clause(text, lang, pending.takeIf { clauses.isNotEmpty() }, aside = depth > 0))
+            if (text.none(Char::isLetterOrDigit)) {
+                if (text.any(::isSymbol)) carried = "$carried $text".trim()
+                return
+            }
+            val spoken = if (carried.isEmpty()) text else "$carried $text"
+            carried = ""
+            clauses.add(Clause(spoken, lang, pending.takeIf { clauses.isNotEmpty() }, aside = depth > 0))
             pending = null
+        }
+
+        /** Unicode maths and other symbols: "=", "+", "¬", "→", "§". */
+        private fun isSymbol(c: Char): Boolean =
+            Character.getType(c).let { it == Character.MATH_SYMBOL.toInt() || it == Character.OTHER_SYMBOL.toInt() }
+
+        /** A symbol left after the last piece goes on the end of it, never dropped. */
+        fun finish() {
+            if (carried.isEmpty()) return
+            val last = clauses.removeLastOrNull()
+            clauses.add(last?.copy(text = "${last.text} $carried") ?: Clause(carried, lang, null, aside = false))
+            carried = ""
         }
     }
 
@@ -109,7 +132,15 @@ object ClauseSplitter {
     }
 
     private fun bracketAt(text: String, i: Int, state: State): Int? = when {
-        text[i] in OPENING && !opensLabel(text, i) -> {
+        // A label is kept whole, brackets and all, so its ")" never closes an outer bracket ("(see Eq. (3) below)").
+        text[i] in OPENING && opensLabel(text, i) -> {
+            // The label's content and both brackets.
+            val label = text.substring(i, i + text.drop(i + 1).takeWhile { it !in CLOSING }.length + 2)
+            state.buffer.append(label)
+            label.length
+        }
+
+        text[i] in OPENING -> {
             state.mark(ClauseMark.BRACKET)
             state.depth++
             1
@@ -128,6 +159,7 @@ object ClauseSplitter {
      * A label, not an aside: a number ("(2)", "(2.14)", "(4a)"), one letter ("(a)", "(क)"), a roman numeral up to
      * thirty-nine ("(iv)", "(XII)"), or a short ending glued to a word ("word(s)").
      */
+
     private fun opensLabel(text: String, i: Int): Boolean {
         val content = text.drop(i + 1).takeWhile { it !in CLOSING && it !in OPENING }
         if (text.getOrNull(i + 1 + content.length) !in CLOSING || content.length !in 1..LABEL_MAX_CHARS) return false

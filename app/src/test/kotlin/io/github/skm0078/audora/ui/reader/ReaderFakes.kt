@@ -59,8 +59,9 @@ class FakePlaybackPort : PlaybackPort {
     val starts = mutableListOf<Pair<ReadingPosition, String?>>()
     val reports = mutableListOf<SoundedWrongReport>()
 
-    fun connect(speed: Float = 1f) {
-        state.value = PlaybackSnapshot(PlaybackSnapshot.Connection.CONNECTED, speed = speed)
+    /** [styleKnown] false: connected, but the service hasn't published its speech style yet. */
+    fun connect(speed: Float = 1f, styleKnown: Boolean = true) {
+        state.value = PlaybackSnapshot(PlaybackSnapshot.Connection.CONNECTED, styleKnown = styleKnown, speed = speed)
     }
 
     fun readingAt(position: ReadingPosition, playing: Boolean = true) {

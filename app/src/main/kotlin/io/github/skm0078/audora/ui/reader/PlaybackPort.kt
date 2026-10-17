@@ -90,6 +90,7 @@ data class PlaybackSnapshot(
     val position: ReadingPosition? = null,
     val wantsToPlay: Boolean = false,
     val buffering: Boolean = false,
+    val styleKnown: Boolean = false,
     val speed: Float = SpeechStyle.NORMAL_RATE,
     val pace: Pace = Pace.NORMAL,
     val clausePauses: Boolean = true,

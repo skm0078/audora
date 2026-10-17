@@ -134,9 +134,12 @@ internal object MathStructure {
     private val VULGAR = Regex("[½⅓⅔¼¾]")
     private val LETTER_RUN = Regex("""(?<![A-Za-z])[a-z]{2,3}(?![A-Za-z])""")
 
-    /** Lowercase words an equation may hold that are read as words, not letters. */
+    /**
+     * Lowercase words an equation may hold that are read as words, not letters. Not "at", "is", "as", "to", "by" or
+     * "on": in an equation those are nearly always two variables ("v = u + at").
+     */
     private val KNOWN_WORDS = setOf(
-        "and", "or", "of", "in", "is", "to", "the", "for", "all", "not", "mod", "if", "by", "as", "on", "at", "iff",
+        "and", "or", "of", "in", "the", "for", "all", "not", "mod", "if", "iff",
         "max", "min", "log", "ln", "sin", "cos", "tan", "sec", "cot", "csc", "exp", "lim", "det", "gcd", "lcm", "arg",
         "dim", "ker", "sup", "inf",
     )

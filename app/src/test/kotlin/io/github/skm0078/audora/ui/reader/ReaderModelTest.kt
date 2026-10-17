@@ -212,6 +212,18 @@ class ReaderModelTest {
     }
 
     @Test
+    fun `the saved speed waits for the service's own style, so a default is never taken for it`() =
+        runTest(UnconfinedTestDispatcher()) {
+            speeds.saved = 1.5f
+            model()
+            port.connect(speed = 1f, styleKnown = false)
+            assertTrue(port.calls.isEmpty())
+
+            port.connect(speed = 1.5f)
+            assertTrue("the service already reads at the saved speed", port.calls.isEmpty())
+        }
+
+    @Test
     fun `no speed call when the player already has it`() = runTest(UnconfinedTestDispatcher()) {
         speeds.saved = 1.5f
         model()

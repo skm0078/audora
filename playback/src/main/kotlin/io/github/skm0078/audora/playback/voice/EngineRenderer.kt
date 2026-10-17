@@ -25,6 +25,7 @@ import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.audio.VoiceShaper
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
 import io.github.skm0078.audora.speech.normalize.TextNormalizer
+import io.github.skm0078.audora.speech.normalize.TextRole
 import io.github.skm0078.audora.speech.punct.RunOnPunctuation
 import io.github.skm0078.audora.speech.route.Cast
 import io.github.skm0078.audora.speech.route.CastSpeech
@@ -116,7 +117,8 @@ class EngineRenderer(
     private fun speak(unit: ReadingUnit, speech: Speech.Text, now: SpeechStyle): Outcome<PcmAudio, SpeechError> {
         val started = System.nanoTime()
         val rate = styleConfig.modelRate(now.rate)
-        val prosody = if (now.clausePauses) {
+        // An equation is never cut at its marks: its "-", "|" and brackets are operators for MathSymbols, not pauses.
+        val prosody = if (now.clausePauses && speech.role != TextRole.EQUATION) {
             ClauseProsody({ mark -> styleConfig.clauseSilenceMs(mark, now) }, styleConfig.asideGainDb)
         } else {
             null

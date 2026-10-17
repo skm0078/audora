@@ -7,8 +7,10 @@ package io.github.skm0078.audora.playback.voice
 import io.github.skm0078.audora.core.config.PaceTiming
 import io.github.skm0078.audora.core.config.SpeechStyleConfig
 import io.github.skm0078.audora.core.model.EngineId
+import io.github.skm0078.audora.core.model.EquationMode
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.core.model.VoiceId
@@ -84,6 +86,21 @@ class EngineRendererTest {
         assertEquals(20 + 400, audio.samples.size)
         assertEquals(20, audio.samples.count { it == SAMPLE })
         assertEquals(0, audio.samples.drop(20).count { it != 0.toShort() })
+    }
+
+    @Test
+    fun `an equation read as written is never cut at its operators`() {
+        val voices = RecordingVoices()
+        val modes = ReadingModes(equations = EquationMode.AS_WRITTEN)
+        val renderer = EngineRenderer(voices, style = { SpeechStyle(modes = modes) }, styleConfig = flatPaces)
+
+        renderer.render(unit(0, 0).copy(text = "v = u - at", kind = UnitKind.EQUATION))
+        renderer.render(unit(0, 1).copy(text = "¬(P ∧ Q) ↔ (¬P ∨ ¬Q)", kind = UnitKind.EQUATION))
+
+        assertEquals(
+            listOf("v equals u minus a t", "not (P and Q) if and only if ( not P or not Q)"),
+            voices.spoken.map { it.replace(Regex("""\s+"""), " ").trim() },
+        )
     }
 
     @Test
