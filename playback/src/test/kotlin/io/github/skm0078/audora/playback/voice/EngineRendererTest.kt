@@ -1,5 +1,6 @@
 // File: playback/src/test/kotlin/io/github/skm0078/audora/playback/voice/EngineRendererTest.kt
-// Purpose: The renderer hands the voice normalized text, reads headings as headings and ends each clip with its pause.
+// Purpose: The renderer hands the voice normalized text, reads headings as headings, ends each clip with its pause
+//          and records each clip's layout.
 
 package io.github.skm0078.audora.playback.voice
 
@@ -13,6 +14,9 @@ import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.TEST_SAMPLE_RATE
+import io.github.skm0078.audora.playback.contract.SentenceTiming
+import io.github.skm0078.audora.playback.queue.UnitKey
+import io.github.skm0078.audora.playback.session.SentenceTimings
 import io.github.skm0078.audora.playback.unit
 import io.github.skm0078.audora.speech.RenderResult
 import io.github.skm0078.audora.speech.SpeechEngine
@@ -77,6 +81,32 @@ class EngineRendererTest {
         assertEquals(20 + 400, audio.samples.size)
         assertEquals(20, audio.samples.count { it == SAMPLE })
         assertEquals(0, audio.samples.drop(20).count { it != 0.toShort() })
+    }
+
+    @Test
+    fun `each clip's layout is recorded for the word highlight`() {
+        val timings = SentenceTimings()
+        val renderer = EngineRenderer(RecordingVoices(), styleConfig = flatPaces, timings = timings)
+        val sentence = unit(2, 5).copy(text = "Pay ₹5 now.", charStart = 30, pauseAfterMs = 400)
+
+        renderer.render(sentence)
+
+        // No cue, 20 ms of voice ("Pay five rupees now." at 1 kHz), then the 400 ms pause.
+        assertEquals(SentenceTiming(2, 30, 0, 20, 420), timings.of(UnitKey(2, 5)))
+    }
+
+    @Test
+    fun `an unreadable line's cue is recorded as a lead with no speech`() {
+        val timings = SentenceTimings()
+        val renderer = EngineRenderer(RecordingVoices(), styleConfig = flatPaces, timings = timings)
+        val junk = unit(0, 0).copy(text = "#&%@", speakScore = 0f, pauseAfterMs = 250)
+
+        val clip = (renderer.render(junk) as Outcome.Success).value
+
+        val timing = requireNotNull(timings.of(UnitKey(0, 0)))
+        assertEquals(0, timing.speechMs)
+        assertEquals(clip.durationMs, timing.totalMs)
+        assertEquals(timing.totalMs - 250, timing.leadMs)
     }
 
     @Test

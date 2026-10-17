@@ -12,10 +12,12 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.map
+import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.queue.SentenceRenderer
 import io.github.skm0078.audora.playback.queue.UnitKey
 import io.github.skm0078.audora.playback.reading.Speech
 import io.github.skm0078.audora.playback.reading.UnitReading
+import io.github.skm0078.audora.playback.session.SentenceTimings
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.audio.Earcon
 import io.github.skm0078.audora.speech.audio.PcmAudio
@@ -59,8 +61,10 @@ import kotlinx.coroutines.runBlocking
  *
  * What the voice is given follows the style's reading modes ([UnitReading], ADR-035): a table's size or a row with its
  * column names, "Equation 3", a cue in place of unreadable text, a cue before a caption or a chapter's heading.
+ *
+ * Each clip's layout (cue, voice, silence after) goes to [timings] for the reader's word highlight (plan item 14).
  */
-@Suppress("LongParameterList") // All optional: the app passes the speed tracker, the style and the reading setup.
+@Suppress("LongParameterList") // All optional: the app passes the speed tracker, style, reading setup and timings.
 class EngineRenderer(
     voices: VoiceSource,
     config: ScriptRoutingConfig = ScriptRoutingConfig(),
@@ -69,6 +73,7 @@ class EngineRenderer(
     private val style: () -> SpeechStyle = { SpeechStyle() },
     private val styleConfig: SpeechStyleConfig = SpeechStyleConfig(),
     private val reading: ReadingSetup = ReadingSetup(),
+    private val timings: SentenceTimings? = null,
 ) : SentenceRenderer {
     private val routedSpeech = RoutedSpeech(voices, ScriptRouter(config), normalizers)
 
@@ -78,13 +83,28 @@ class EngineRenderer(
         return when (val speech = UnitReading(now.modes, reading.speakability, reading.chapterPages()).speechOf(unit)) {
             Speech.Cue -> {
                 AudoraLog.d(TAG, "${UnitKey.of(unit)}: unreadable, cue instead")
-                Outcome.Success(reading.earcon.cue().withSilenceAfter(pauseAfterMs))
+                val cue = reading.earcon.cue()
+                val clip = cue.withSilenceAfter(pauseAfterMs)
+                record(unit, leadMs = cue.durationMs, speechMs = 0, clip)
+                Outcome.Success(clip)
             }
 
-            is Speech.Text -> speak(unit, speech, now).map { audio ->
-                (if (speech.cueBefore) reading.earcon.before(audio) else audio).withSilenceAfter(pauseAfterMs)
+            is Speech.Text -> speak(unit, speech, now).map { voice ->
+                val cued = if (speech.cueBefore) reading.earcon.before(voice) else voice
+                val clip = cued.withSilenceAfter(pauseAfterMs)
+                record(unit, leadMs = cued.durationMs - voice.durationMs, speechMs = voice.durationMs, clip)
+                clip
             }
         }
+    }
+
+    /** Where the voice speaks in [clip] (plan item 14); millisecond rounding is kept inside the clip. */
+    private fun record(unit: ReadingUnit, leadMs: Long, speechMs: Long, clip: PcmAudio) {
+        val timings = timings ?: return
+        val total = clip.durationMs
+        val lead = leadMs.coerceIn(0, total)
+        val timing = SentenceTiming(unit.page, unit.charStart, lead, speechMs.coerceIn(0, total - lead), total)
+        timings.record(UnitKey.of(unit), timing)
     }
 
     private fun speak(unit: ReadingUnit, speech: Speech.Text, now: SpeechStyle): Outcome<PcmAudio, SpeechError> {

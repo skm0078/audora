@@ -4,6 +4,8 @@
 package io.github.skm0078.audora.playback.service
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.media3.session.MediaSession
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.BookId
@@ -14,7 +16,10 @@ import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.notes.BookSettings
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.contract.PlaybackContract
+import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
+import io.github.skm0078.audora.playback.queue.UnitKey
+import io.github.skm0078.audora.playback.session.SentenceTimings
 import io.github.skm0078.audora.playback.session.SessionEvents
 import io.github.skm0078.audora.playback.session.SessionState
 import kotlinx.coroutines.CoroutineDispatcher
@@ -22,6 +27,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+/**
+ * Main thread. The sentence playing's timing ([timings], plan item 14) joins the extras when it starts, or when its
+ * render finishes if it started first (the player waits for it then).
+ */
+@Suppress("LongParameterList") // The session, two bridges and what the extras show; the last three are optional.
 class SessionPublisher(
     private val session: MediaSession,
     private val diagnostics: DiagnosticsBridge,
@@ -29,7 +39,17 @@ class SessionPublisher(
     private val style: () -> SpeechStyle,
     private val sleepOptions: () -> SleepOptions = { SleepOptions() },
     private val bookSettings: () -> BookSettings? = { null },
+    private val timings: SentenceTimings? = null,
 ) : SessionEvents {
+    private val main = Handler(Looper.getMainLooper())
+    private var lastState: SessionState? = null
+    private var playing: UnitKey? = null
+    private var timing: SentenceTiming? = null
+
+    init {
+        timings?.onRecorded = { key -> main.post { if (key == playing) showTiming(key) } }
+    }
+
     override fun onReading(bookId: String, page: Int) = diagnostics.reading(bookId, page)
 
     override fun onNotReading() {
@@ -37,9 +57,26 @@ class SessionPublisher(
         resume.flush()
     }
 
-    override fun onSentenceStarted(bookId: BookId, unit: ReadingUnit) = resume.sentenceStarted(bookId, unit)
+    override fun onSentenceStarted(bookId: BookId, unit: ReadingUnit) {
+        resume.sentenceStarted(bookId, unit)
+        val key = UnitKey.of(unit)
+        playing = key
+        showTiming(key)
+    }
 
     override fun onStateChanged(state: SessionState) {
+        lastState = state
+        publish(state)
+    }
+
+    private fun showTiming(key: UnitKey) {
+        val now = timings?.of(key)
+        if (now == timing) return
+        timing = now
+        lastState?.let(::publish)
+    }
+
+    private fun publish(state: SessionState) {
         session.setSessionExtras(
             Bundle().apply {
                 state.bookId?.let { putString(PlaybackContract.SESSION_BOOK_ID, it) }
@@ -70,6 +107,7 @@ class SessionPublisher(
                 putBoolean(PlaybackContract.SESSION_CLAUSE_PAUSES, speech.clausePauses)
                 putString(PlaybackContract.SESSION_READING_MODES, speech.modes.encode())
                 putString(PlaybackContract.SESSION_VOICE_SHAPING, speech.shaping.encode())
+                timing?.let { putString(PlaybackContract.SESSION_SENTENCE_TIMING, it.encode()) }
             },
         )
     }

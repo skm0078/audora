@@ -34,6 +34,7 @@ import io.github.skm0078.audora.playback.session.BookSession
 import io.github.skm0078.audora.playback.session.ItemTexts
 import io.github.skm0078.audora.playback.session.LivePlaybackSpeed
 import io.github.skm0078.audora.playback.session.QueueRegistry
+import io.github.skm0078.audora.playback.session.SentenceTimings
 import io.github.skm0078.audora.playback.session.SessionEnvironment
 import io.github.skm0078.audora.playback.session.SessionSources
 import io.github.skm0078.audora.playback.session.SleepOptionsStore
@@ -101,6 +102,9 @@ class AudoraPlaybackService : MediaSessionService() {
     private lateinit var bookSession: BookSession
     private var session: MediaSession? = null
 
+    // Where the voice speaks in each clip, for the reader's word highlight (plan item 14).
+    private val timings = SentenceTimings()
+
     override fun onCreate() {
         super.onCreate() // Hilt injects fields here.
         val style = SpeechStyleStore.forContext(this)
@@ -119,13 +123,7 @@ class AudoraPlaybackService : MediaSessionService() {
         // The reading modes travel with the speech style; a change restarts the sentence playing (ADR-035).
         val reading = ReadingSource(modes = { style.current.modes })
         val stores = SessionStores(style, sleepOptions, book)
-        val callback =
-            SessionCallback(packageName, scope, voices, stores, { bookSession }, { resumption }, mediaButtons())
-        val mediaSession = MediaSession.Builder(this, player)
-            .setCallback(callback)
-            .apply { sessionActivity()?.let { setSessionActivity(it) } }
-            .build()
-        session = mediaSession
+        val mediaSession = mediaSession(stores).also { session = it }
         bookSession = BookSession(
             player = player,
             registry = registry,
@@ -164,6 +162,15 @@ class AudoraPlaybackService : MediaSessionService() {
             player = player,
         ) { bookSession }
         AudoraLog.i(TAG, "Service created")
+    }
+
+    private fun mediaSession(stores: SessionStores): MediaSession {
+        val callback =
+            SessionCallback(packageName, scope, voices, stores, { bookSession }, { resumption }, mediaButtons())
+        return MediaSession.Builder(this, player)
+            .setCallback(callback)
+            .apply { sessionActivity()?.let { setSessionActivity(it) } }
+            .build()
     }
 
     /** A headset's play/pause button (plan item 20); a double press bookmarks and buzzes to confirm. */
@@ -206,6 +213,7 @@ class AudoraPlaybackService : MediaSessionService() {
             scanned = { page -> reading.scanned(page) },
             runOn = RunOnPunctuation(punctuator = PunctuationModels.get(this)::punctuator),
         ),
+        timings = timings,
     )
 
     private fun publisher(
@@ -221,6 +229,7 @@ class AudoraPlaybackService : MediaSessionService() {
             heard,
             stores.sleepOptions::current,
             bookSettings = { stores.book.settings },
+            timings = timings,
         )
     }
 
