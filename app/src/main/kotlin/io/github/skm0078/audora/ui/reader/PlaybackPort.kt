@@ -59,6 +59,12 @@ interface PlaybackPort {
     /** Back to where reading was before the last jump (plan item 78), playing or paused as now. */
     fun undoJump()
 
+    /**
+     * "What did it say?": the last sentence heard again at [factor] times the listener's speed, then reading goes on at
+     * their speed. One shot: nothing is saved.
+     */
+    fun replayPrevious(factor: Float)
+
     /** "This sounded wrong" (RI-8b): the service logs it with the voice that reads its language. */
     fun reportSoundedWrong(report: SoundedWrongReport)
 

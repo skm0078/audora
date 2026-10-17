@@ -273,6 +273,17 @@ class ReaderModel(
     }
 
     /**
+     * "What did it say?": the service replays the sentence before the one playing a little slower
+     * ([ReaderConfig.replayFactor]), then reads on at the listener's speed. The saved speed is never touched, so
+     * leaving the reader mid-replay changes nothing.
+     */
+    fun replayPrevious() {
+        if (!state.value.playerReady) return
+        mutableState.update { it.copy(following = true) }
+        player.replayPrevious(config.replayFactor)
+    }
+
+    /**
      * A user action outside this screen asked to resume this book (the widget's Resume, plan item 35) while its reader
      * is already open: reading starts once the book is open and the player connected, exactly once, as a "Resume" in
      * the unexpected-stop prompt does (C7).

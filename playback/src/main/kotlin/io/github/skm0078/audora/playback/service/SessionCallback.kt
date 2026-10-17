@@ -86,6 +86,7 @@ class SessionCallback(
                     .add(PlaybackContract.UNDO_JUMP)
                     .add(PlaybackContract.SET_SLEEP_OPTIONS)
                     .add(PlaybackContract.SET_OWN_SETTINGS)
+                    .add(PlaybackContract.REPLAY_PREVIOUS)
                     .build(),
             )
         }
@@ -106,6 +107,7 @@ class SessionCallback(
         PlaybackContract.ACTION_UNDO_JUMP -> Futures.immediateFuture(undoJump())
         PlaybackContract.ACTION_SET_SLEEP_OPTIONS -> Futures.immediateFuture(setSleepOptions(args))
         PlaybackContract.ACTION_SET_OWN_SETTINGS -> later { setOwnSettings(args) }
+        PlaybackContract.ACTION_REPLAY_PREVIOUS -> Futures.immediateFuture(replayPrevious(args))
         else -> Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
     }
 
@@ -294,6 +296,12 @@ class SessionCallback(
         val report = PlaybackContract.reportFrom(args) ?: return failure(PlaybackErrorCode.BAD_REQUEST)
         AudoraLog.i(TAG, report.logLine(voices.knownVoice(report.lang), stores.style.current.modes))
         return SessionResult(SessionResult.RESULT_SUCCESS)
+    }
+
+    private fun replayPrevious(args: Bundle): SessionResult {
+        val factor = PlaybackContract.replayFactorFrom(args) ?: return failure(PlaybackErrorCode.BAD_REQUEST)
+        val replayed = bookSession().replayPrevious(factor)
+        return if (replayed) SessionResult(SessionResult.RESULT_SUCCESS) else failure(PlaybackErrorCode.BAD_REQUEST)
     }
 
     private fun undoJump(): SessionResult = if (bookSession().undoJump()) {

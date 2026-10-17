@@ -23,6 +23,8 @@ package io.github.skm0078.audora.core.config
  *   subsections; deeper entries are usually figure lists that would bury the chapters.
  * @property timeLeft how "time left at your speed" is estimated (plan item 24).
  * @property voiceShaping the voice boost steps the speech sheet offers (plan item 9); the service shapes with the same.
+ * @property replayFactor "What did it say?" replays the last sentence at this times the listener's speed: slower enough
+ *   to catch a word, not so slow that the stretched audio smears it.
  */
 data class ReaderConfig(
     val speeds: List<Float> = DEFAULT_SPEEDS,
@@ -38,6 +40,7 @@ data class ReaderConfig(
     val chapterListDepth: Int = DEFAULT_CHAPTER_LIST_DEPTH,
     val timeLeft: TimeLeftConfig = TimeLeftConfig(),
     val voiceShaping: VoiceShapingConfig = VoiceShapingConfig(),
+    val replayFactor: Float = DEFAULT_REPLAY_FACTOR,
 ) {
     init {
         require(speeds.isNotEmpty() && speeds == speeds.sorted()) { "speeds must be non-empty and ascending" }
@@ -48,6 +51,7 @@ data class ReaderConfig(
         require(bedtimeStepMinutes > 0) { "bedtimeStepMinutes must be positive" }
         require(pageMaxPixels > 0) { "pageMaxPixels must be positive" }
         require(pageTapSlopPoints >= 0f) { "pageTapSlopPoints must not be negative" }
+        require(replayFactor in MIN_REPLAY_FACTOR..1f) { "replayFactor must be in 0.5..1, was $replayFactor" }
         require(chapterListDepth > 0) { "chapterListDepth must be > 0, was $chapterListDepth" }
         require(ocrFairFrom in 0..ocrGoodFrom && ocrGoodFrom <= MAX_OCR_CONFIDENCE) {
             "OCR bands must satisfy 0 <= ocrFairFrom <= ocrGoodFrom <= 100, were $ocrFairFrom and $ocrGoodFrom"
@@ -69,5 +73,7 @@ data class ReaderConfig(
         private const val DEFAULT_OCR_FAIR_FROM = 70
         private const val MAX_OCR_CONFIDENCE = 100
         private const val DEFAULT_CHAPTER_LIST_DEPTH = 3
+        private const val DEFAULT_REPLAY_FACTOR = 0.85f
+        private const val MIN_REPLAY_FACTOR = 0.5f
     }
 }

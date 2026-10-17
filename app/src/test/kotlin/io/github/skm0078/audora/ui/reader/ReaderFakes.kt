@@ -128,6 +128,10 @@ class FakePlaybackPort : PlaybackPort {
         calls += "undo jump"
     }
 
+    override fun replayPrevious(factor: Float) {
+        calls += "replay $factor"
+    }
+
     override fun reportSoundedWrong(report: SoundedWrongReport) {
         reports += report
     }

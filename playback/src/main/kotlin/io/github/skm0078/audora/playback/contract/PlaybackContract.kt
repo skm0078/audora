@@ -48,6 +48,7 @@ object PlaybackContract {
     const val ACTION_UNDO_JUMP = "$PREFIX.UNDO_JUMP"
     const val ACTION_SET_SLEEP_OPTIONS = "$PREFIX.SET_SLEEP_OPTIONS"
     const val ACTION_SET_OWN_SETTINGS = "$PREFIX.SET_OWN_SETTINGS"
+    const val ACTION_REPLAY_PREVIOUS = "$PREFIX.REPLAY_PREVIOUS"
 
     /** Starts reading [ARG_BOOK_ID] at [ARG_PAGE] / [ARG_CHAR_START]. Only ever send it from a user action (C7). */
     val PLAY_FROM = SessionCommand(ACTION_PLAY_FROM, Bundle.EMPTY)
@@ -75,6 +76,13 @@ object PlaybackContract {
      * or puts it back on the global ones (plan item 4). While on, speed, pace and voice changes are the book's.
      */
     val SET_OWN_SETTINGS = SessionCommand(ACTION_SET_OWN_SETTINGS, Bundle.EMPTY)
+
+    /**
+     * "What did it say?": replays the sentence before the current one at [ARG_REPLAY_FACTOR] times the listener's
+     * speed, then reading goes on at their speed. One shot: nothing is saved, unlike SET_SPEECH_STYLE. Refused when no
+     * sentence was played before the current one.
+     */
+    val REPLAY_PREVIOUS = SessionCommand(ACTION_REPLAY_PREVIOUS, Bundle.EMPTY)
 
     // Arguments of PLAY_FROM.
     const val ARG_BOOK_ID = "book_id"
@@ -126,6 +134,13 @@ object PlaybackContract {
 
     /** String: [VoiceShaping.encode]; absent or unreadable = the defaults (plan items 9, 10). */
     const val ARG_VOICE_SHAPING = "voice_shaping"
+
+    /** Float in [REPLAY_FACTOR_RANGE], the argument of REPLAY_PREVIOUS: relative to the speed the listener hears. */
+    const val ARG_REPLAY_FACTOR = "replay_factor"
+
+    /** Half speed at the slowest (slower smears the words); 1 = the listener's own speed. */
+    val REPLAY_FACTOR_RANGE = MIN_REPLAY_FACTOR..1f
+    private const val MIN_REPLAY_FACTOR = 0.5f
 
     // Arguments of REPORT_SOUNDED_WRONG (and ARG_BOOK_ID, ARG_PAGE): where the sentence is and how it was judged.
     const val ARG_UNIT_INDEX = "unit_index"
@@ -228,6 +243,12 @@ object PlaybackContract {
         putInt(ARG_SLEEP_MINUTES, minutes)
         putInt(ARG_SLEEP_CHAPTERS, chapters)
     }
+
+    fun replayPreviousArgs(factor: Float): Bundle = Bundle().apply { putFloat(ARG_REPLAY_FACTOR, factor) }
+
+    /** Parses [replayPreviousArgs]; null when absent or outside [REPLAY_FACTOR_RANGE]. */
+    fun replayFactorFrom(args: Bundle): Float? =
+        args.getFloat(ARG_REPLAY_FACTOR, Float.NaN).takeIf { it in REPLAY_FACTOR_RANGE }
 
     fun sleepOptionsArgs(options: SleepOptions): Bundle =
         Bundle().apply { putString(ARG_SLEEP_OPTIONS, options.encode()) }
