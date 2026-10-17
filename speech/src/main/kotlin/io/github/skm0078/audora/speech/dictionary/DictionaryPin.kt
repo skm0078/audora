@@ -32,10 +32,10 @@ data class DictionaryPin(
         /** Open English Wordnet 2025 (CC BY 4.0, from Princeton WordNet): definitions and synonyms. */
         val ENGLISH = DictionaryPin(
             id = "dict-en-oewn-2025",
-            fileName = "dict-en-oewn-2025-ea38f365dd95.zip",
-            sha256 = "ea38f365dd95bcc582fc2a693822f93fbe45addfe50d5a0dde5bc79d99d343b7",
-            sizeBytes = 5_364_971,
-            unpackedBytes = 16_202_235,
+            fileName = "dict-en-oewn-2025-12568d7b873e.zip",
+            sha256 = "12568d7b873ed3af24f00eb6b04bb14bedfa0680253c186a62aec7e5a522d8bd",
+            sizeBytes = 5_352_460,
+            unpackedBytes = 16_206_552,
             entryName = "dictionary.tsv",
             licenceName = "LICENSE",
             baseUrl = MIRROR,

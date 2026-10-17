@@ -105,14 +105,15 @@ object WordKey {
     // Edges keep combining marks: a Hindi or Bengali word can end in one (a vowel sign, virama or nukta).
     private val edges = Regex("^[^\\p{L}\\p{N}]+|[^\\p{L}\\p{M}\\p{N}]+$")
     private val possessive = Regex("['’]s$")
-    private val joiners = Regex("[\\u200C\\u200D]")
+    private val invisible = Regex("[\\u200C\\u200D\\u00AD]")
 
     /**
-     * NFC, without zero-width joiners (they change only how a word is drawn), edge punctuation or a possessive "'s",
-     * lower case; null when nothing is left or it is too long. The build script keys headwords the same way.
+     * NFKC (a PDF's "ﬁ" ligature becomes "fi"), without zero-width joiners or soft hyphens (they change only how a
+     * word is drawn), edge punctuation or a possessive "'s", lower case; null when nothing is left or it is too long.
+     * The build script keys headwords the same way.
      */
     fun of(word: String, maxChars: Int): String? {
-        val normal = Normalizer.normalize(word.trim(), Normalizer.Form.NFC).replace(joiners, "")
+        val normal = Normalizer.normalize(word.trim(), Normalizer.Form.NFKC).replace(invisible, "")
         val trimmed = normal.replace(edges, "").replace(possessive, "").replace('’', '\'').lowercase()
         return trimmed.takeIf { it.isNotEmpty() && it.length <= maxChars }
     }

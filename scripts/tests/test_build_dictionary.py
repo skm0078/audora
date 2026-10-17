@@ -20,9 +20,15 @@ WORDNET = b"""<?xml version="1.0" encoding="UTF-8"?>
     <Sense id="s1" synset="y1"/><Sense id="s2" synset="y2"/></LexicalEntry>
   <LexicalEntry id="e2"><Lemma writtenForm="computer mouse" partOfSpeech="n"/><Sense id="s3" synset="y2"/></LexicalEntry>
   <LexicalEntry id="e3"><Lemma writtenForm="blue" partOfSpeech="s"/><Sense id="s4" synset="y3"/></LexicalEntry>
+  <LexicalEntry id="e4"><Lemma writtenForm="see" partOfSpeech="v"/><Form writtenForm="saw"/><Sense id="s5" synset="y4"/></LexicalEntry>
+  <LexicalEntry id="e5"><Lemma writtenForm="saw" partOfSpeech="n"/><Sense id="s6" synset="y5"/></LexicalEntry>
+  <LexicalEntry id="e6"><Lemma writtenForm="&#xFB01;x" partOfSpeech="v"/><Sense id="s7" synset="y6"/></LexicalEntry>
   <Synset id="y1" partOfSpeech="n"><Definition>a small	rodent | with a tail</Definition></Synset>
   <Synset id="y2" partOfSpeech="n"><Definition>a pointing device</Definition></Synset>
   <Synset id="y3" partOfSpeech="s"><Definition>of the colour of the sky</Definition></Synset>
+  <Synset id="y4" partOfSpeech="v"><Definition>perceive by sight</Definition></Synset>
+  <Synset id="y5" partOfSpeech="n"><Definition>a cutting tool</Definition></Synset>
+  <Synset id="y6" partOfSpeech="v"><Definition>repair</Definition></Synset>
 </Lexicon></LexicalResource>
 """
 
@@ -37,7 +43,9 @@ class BuildDictionaryTest(unittest.TestCase):
     def test_lines_are_sorted_by_code_point(self):
         lines = self.lines()
         self.assertEqual(sorted(lines), lines)
-        self.assertEqual(["blue", "computer mouse", "mice", "mouse"], [line.split("\t")[0] for line in lines])
+        self.assertEqual(
+            ["blue", "computer mouse", "fix", "mice", "mouse", "saw", "see"], [line.split("\t")[0] for line in lines]
+        )
 
     def test_senses_keep_order_synonyms_and_clean_fields(self):
         mouse = next(line for line in self.lines() if line.startswith("mouse\t"))
@@ -50,6 +58,11 @@ class BuildDictionaryTest(unittest.TestCase):
         lines = self.lines()
         self.assertIn("blue\ta|of the colour of the sky|", lines)
         self.assertIn("mice\t=mouse", lines)
+
+    def test_a_form_that_is_also_a_headword_keeps_its_link_and_keys_are_nfkc(self):
+        lines = self.lines()
+        self.assertIn("saw\tn|a cutting tool|\t=see", lines)
+        self.assertIn("fix\tv|repair|", lines)
 
 
 KAIKKI = [
@@ -89,8 +102,8 @@ class KaikkiTest(unittest.TestCase):
         self.assertIn("कुत्ते\t=कुत्ता", lines)
         self.assertFalse(any(line.startswith(("kutta", "no-table-tags")) for line in lines))
 
-    def test_keys_are_nfc_without_joiners(self):
-        # क़ (U+0915 U+093C) stays decomposed under NFC; the app normalizes the same way.
+    def test_keys_are_nfkc_without_joiners(self):
+        # क़ (U+0915 U+093C) stays decomposed under NFKC; the app normalizes the same way.
         self.assertIn("\u0915\u093c\u093f\u0924\u093e\u092c\tn|book|", self.lines("hi"))
         self.assertEqual(["বই\tn|book|"], self.lines("bn"))
 

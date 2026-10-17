@@ -216,10 +216,10 @@
         "url": "https://github.com/globalwordnet/english-wordnet/releases/download/2025-edition/english-wordnet-2025.xml.gz",
         "sha256": "9ca6d1dcb75f822fdd66617f7d9da48142ace38dd544d6ad5e2feca1674ad3fe"
       },
-      "zip": "dict-en-oewn-2025-ea38f365dd95.zip",
-      "sha256": "ea38f365dd95bcc582fc2a693822f93fbe45addfe50d5a0dde5bc79d99d343b7",
-      "sizeBytes": 5364971,
-      "unpackedBytes": 16202235,
+      "zip": "dict-en-oewn-2025-12568d7b873e.zip",
+      "sha256": "12568d7b873ed3af24f00eb6b04bb14bedfa0680253c186a62aec7e5a522d8bd",
+      "sizeBytes": 5352460,
+      "unpackedBytes": 16206552,
       "licenceFiles": [
         "speech/licences/open-english-wordnet-LICENSE.md",
         "speech/licences/princeton-wordnet-LICENSE.txt"
@@ -247,7 +247,8 @@
       "unpackedBytes": 15563759,
       "licenceFiles": [
         "speech/licences/wiktionary-CC-BY-SA-4.0.txt"
-      ]
+      ],
+      "measure": true
     },
     {
       "id": "dict-bn-wiktionary",
@@ -271,7 +272,8 @@
       "unpackedBytes": 3341276,
       "licenceFiles": [
         "speech/licences/wiktionary-CC-BY-SA-4.0.txt"
-      ]
+      ],
+      "measure": true
     }
   ]
 }

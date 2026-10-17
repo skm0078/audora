@@ -25,6 +25,7 @@ class DictionaryDownloadJob(
     fun run(attempt: Int, onProgress: (Long, Long) -> Unit, keepGoing: () -> Boolean): JobResult {
         if (files.isInstalled()) return JobResult.Installed
         AudoraLog.i(TAG, "Download dictionary=${pin.id} attempt=${attempt + 1}/${config.maxAttempts}")
+        files.dropOtherPartials()
         return when (val downloaded = downloader.download(pin, files.partialDownload(), onProgress, keepGoing)) {
             is Outcome.Failure -> failed(attempt, downloaded.error)
 
@@ -38,6 +39,9 @@ class DictionaryDownloadJob(
     private fun failed(attempt: Int, error: DownloadError): JobResult {
         val result = when {
             error == DownloadError.Stopped -> JobResult.Retry(error.message)
+
+            // A build's dictionary is published when that build reaches dev; before that the mirror has no file.
+            error is DownloadError.Http && error.code == HTTP_NOT_FOUND -> JobResult.Failed(NOT_PUBLISHED)
 
             !error.retryable -> JobResult.Failed(error.message)
 
@@ -56,5 +60,7 @@ class DictionaryDownloadJob(
 
     private companion object {
         const val TAG = "Speech.DictJob"
+        const val HTTP_NOT_FOUND = 404
+        const val NOT_PUBLISHED = "this dictionary is not available for download yet; it comes with a later update"
     }
 }

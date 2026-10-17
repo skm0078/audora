@@ -33,6 +33,7 @@ import argparse
 import gzip
 import hashlib
 import json
+import os
 import sys
 import unicodedata
 import urllib.error
@@ -48,6 +49,7 @@ MAX_SYNONYMS = 5
 DEFLATE_LEVEL = 9
 CHUNK_BYTES = 1 << 20
 HTTP_NOT_FOUND = 404
+PUBLISHING_REF = "refs/heads/dev"
 # Wordnet parts of speech as the app shows them; "s" (adjective satellite) reads as an adjective.
 POS = {"n": "n", "v": "v", "a": "a", "s": "a", "r": "r"}
 FIELD_SEPARATORS = str.maketrans({"\t": " ", "|": "/", "\n": " ", "\r": " "})
@@ -58,8 +60,8 @@ KAIKKI_POS = {
 }
 # Form tags that are not another spelling of the word in its own script.
 SKIPPED_FORM_TAGS = {"romanization", "transliteration", "table-tags", "inflection-template", "class", "canonical"}
-# Joiners change only how a word is drawn; the app drops them from keys too (WordKey).
-JOINERS = str.maketrans({"\u200c": None, "\u200d": None})
+# Joiners and soft hyphens change only how a word is drawn; the app drops them from keys too (WordKey).
+INVISIBLE = str.maketrans({"\u200c": None, "\u200d": None, "\u00ad": None})
 MAX_GLOSS_CHARS = 300
 # The app reads a line of at most 64 KiB (DictionaryConfig.maxLineBytes); a word's later senses go past this.
 MAX_LINE_BYTES = 60_000
@@ -70,8 +72,9 @@ def clean(text: str) -> str:
 
 
 def key_of(word: str) -> str:
-    """A word as the app keys it: NFC, joiners removed, lower case (WordKey.of)."""
-    return unicodedata.normalize("NFC", clean(word)).translate(JOINERS).lower()
+    """A word as the app keys it: NFKC (PDF ligatures such as "ﬁ" become "fi"), joiners and soft hyphens removed,
+    lower case (WordKey.of)."""
+    return unicodedata.normalize("NFKC", clean(word)).translate(INVISIBLE).lower()
 
 
 def fetch(url: str, sha256: str | None, cache: Path) -> Path:
@@ -113,13 +116,13 @@ def read_wordnet(source: Path) -> tuple[dict[str, list[str]], dict[str, tuple[st
                 lemma = element.find("Lemma")
                 if lemma is not None:
                     word = clean(lemma.get("writtenForm", ""))
-                    key = word.lower()
+                    key = key_of(word)
                     for sense in element.findall("Sense"):
                         synset = sense.get("synset", "")
                         senses.setdefault(key, []).append(synset)
                         members.setdefault(synset, []).append(word)
                     for form in element.findall("Form"):
-                        written = clean(form.get("writtenForm", "")).lower()
+                        written = key_of(form.get("writtenForm", ""))
                         if written and written != key:
                             forms.setdefault(written, set()).add(key)
                 element.clear()
@@ -133,21 +136,21 @@ def read_wordnet(source: Path) -> tuple[dict[str, list[str]], dict[str, tuple[st
 
 
 def lines_of(senses, synsets, forms) -> list[str]:
+    """A headword's senses; a listed form's link to its headwords, as a last field when it is a headword too ("saw")."""
     lines = []
     for key in sorted(set(senses) | set(forms)):
-        if key in senses:
-            parts = []
-            for synset in dict.fromkeys(senses[key]):  # Sense order, each synset once.
-                pos, text, words = synsets.get(synset, ("n", "", []))
-                if not text:
-                    continue
-                synonyms = [w for w in dict.fromkeys(words) if w.lower() != key][:MAX_SYNONYMS]
-                parts.append(f"{pos}|{text}|{','.join(synonyms)}")
-            if parts:
-                lines.append(key + "\t" + "\t".join(parts))
+        parts = []
+        for synset in dict.fromkeys(senses.get(key, [])):  # Sense order, each synset once.
+            pos, text, words = synsets.get(synset, ("n", "", []))
+            if not text:
                 continue
-        if key in forms:
-            lines.append(f"{key}\t={','.join(sorted(forms[key]))}")
+            synonyms = [w for w in dict.fromkeys(words) if key_of(w) != key][:MAX_SYNONYMS]
+            parts.append(f"{pos}|{text}|{','.join(synonyms)}")
+        heads = sorted(head for head in forms.get(key, ()) if head != key)
+        if heads:
+            parts.append(f"={','.join(heads)}")
+        if parts:
+            lines.append(key + "\t" + "\t".join(parts))
     return lines
 
 
@@ -235,8 +238,9 @@ def build(spec: dict, cache: Path, out: Path) -> Path:
     staging = out / f"{spec['id']}.zip.partial"
     with zipfile.ZipFile(staging, "w", compresslevel=DEFLATE_LEVEL) as archive:
         licence = b"\n\n".join((repo_root() / name).read_bytes().rstrip() for name in spec["licenceFiles"]) + b"\n"
-        archive.writestr(entry("LICENSE"), licence)
-        archive.writestr(entry(spec["file"]), text.encode("utf-8"))
+        # writestr with a ZipInfo ignores the archive's level, so it is passed for each entry.
+        archive.writestr(entry("LICENSE"), licence, compresslevel=DEFLATE_LEVEL)
+        archive.writestr(entry(spec["file"]), text.encode("utf-8"), compresslevel=DEFLATE_LEVEL)
     sha = sha256_of(staging)
     final = out / f"{spec['id']}-{sha[:SHA_PREFIX_CHARS]}.zip"
     staging.rename(final)
@@ -279,6 +283,9 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
     problems = []
     for spec in json.loads(args.catalog.read_text(encoding="utf-8")).get("dictionaries", []):
+        if spec.get("measure") and os.environ.get("GITHUB_REF") == PUBLISHING_REF:
+            problems.append(f"{spec['id']}: still marked measure; pin it before it reaches dev")
+            continue
         if args.published and not spec.get("measure") and is_published(spec, args.published, args.out):
             print(f"{spec['id']}: {spec['zip']} already published with its pin; not rebuilt")
             continue

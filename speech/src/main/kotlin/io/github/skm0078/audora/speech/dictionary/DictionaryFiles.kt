@@ -33,6 +33,14 @@ class DictionaryFiles(
     fun partialDownload(): File =
         File(File(root, DOWNLOADS), "${pin.id}-${pin.sha256.take(PIN_PREFIX_CHARS)}$PARTIAL_SUFFIX")
 
+    /** Deletes partial downloads of other pins (an older build's dictionary), which would never be resumed. */
+    fun dropOtherPartials() {
+        val current = partialDownload()
+        File(root, DOWNLOADS).listFiles().orEmpty()
+            .filter { it != current }
+            .forEach { if (!it.delete()) AudoraLog.w(TAG, "Stale partial dictionary not deleted") }
+    }
+
     fun isInstalled(): Boolean = marker.isFile && text.isFile && File(dir, pin.licenceName).isFile
 
     /** Unpacks a verified zip into place and deletes it, whatever the outcome; older pins are removed on success. */

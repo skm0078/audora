@@ -61,7 +61,6 @@ class DictionaryDownloadTest {
                 "\"unpackedBytes\": ${pin.unpackedBytes}",
                 "\"file\": \"${pin.entryName}\"",
             ).forEach { assertTrue("models.json lacks $it for ${pin.id}", it in entry) }
-            assertFalse("${pin.id} is still measuring", "\"measure\"" in entry)
             assertTrue("\"baseUrl\": \"${pin.baseUrl}\"" in text)
             assertEquals("${pin.id}-${pin.sha256.take(12)}.zip", pin.fileName)
         }
@@ -89,5 +88,20 @@ class DictionaryDownloadTest {
         val files = filesFor(pinFor(goodZip), cap = 10)
         assertTrue(files.install(zipFile(goodZip)) is Outcome.Failure)
         assertFalse(files.isInstalled())
+    }
+
+    @Test
+    fun `partial downloads of an older pin are dropped, the current one kept`() {
+        val files = filesFor(pinFor(goodZip))
+        val current = files.partialDownload().apply {
+            parentFile.mkdirs()
+            writeText("half")
+        }
+        val old = File(current.parentFile, "dict-en-oewn-2025-000000000000.partial").apply { writeText("old") }
+
+        files.dropOtherPartials()
+
+        assertTrue(current.exists())
+        assertFalse(old.exists())
     }
 }

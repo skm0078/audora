@@ -32,6 +32,12 @@ class IndicDictionaryTest {
     }
 
     @Test
+    fun `ligatures and soft hyphens from a PDF are keyed like the plain word`() {
+        assertEquals("fix", WordKey.of("\uFB01x", DictionaryConfig().maxWordChars))
+        assertEquals("reading", WordKey.of("read\u00ADing,", DictionaryConfig().maxWordChars))
+    }
+
+    @Test
     fun `a word ending in a vowel sign keeps it, and a redirect to nothing finds nothing`() {
         assertEquals(listOf("कुत्ता"), dictionary.lookUp("कुत्ता").map { it.headword })
         assertEquals(emptyList<DictionaryEntry>(), dictionary.lookUp("बई"))
