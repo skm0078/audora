@@ -62,6 +62,7 @@ import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
+import io.github.skm0078.audora.playback.documents.WatchedFolders
 import io.github.skm0078.audora.playback.epub.BookCopies
 import io.github.skm0078.audora.playback.epub.CopyError
 import io.github.skm0078.audora.playback.epub.CopyKind
@@ -93,6 +94,7 @@ import io.github.skm0078.audora.ui.library.LibraryController
 import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.LibraryScreen
 import io.github.skm0078.audora.ui.library.MiniPlayer
+import io.github.skm0078.audora.ui.library.WatchedFoldersRoute
 import io.github.skm0078.audora.ui.library.nowPlaying
 import io.github.skm0078.audora.ui.licences.LicenceSource
 import io.github.skm0078.audora.ui.licences.LicencesController
@@ -242,6 +244,7 @@ class MainActivity : ComponentActivity() {
     private val voiceNoteAudio: VoiceNoteAudio by lazy { VoiceNoteAudio(applicationContext) }
 
     private val photoBooks: PhotoBooks by lazy { PhotoBooks(applicationContext, sharedCopies) }
+    private val watchedFolders: WatchedFolders by lazy { WatchedFolders(applicationContext, library) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -569,6 +572,7 @@ class MainActivity : ComponentActivity() {
         val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
             if (taken) makePhotoBook()
         }
+        var watchedOpen by rememberSaveable { mutableStateOf(false) }
         val actions = remember(controller) {
             object : LibraryActions {
                 override fun onAddPdf(documentUri: Uri) = controller.add(documentUri.toString())
@@ -613,6 +617,7 @@ class MainActivity : ComponentActivity() {
 
                 override fun onLibraryAction(action: LibraryAction) = when (action) {
                     LibraryAction.POINT_AND_READ -> pointAndRead(takePhoto)
+                    LibraryAction.WATCHED_FOLDERS -> watchedOpen = true
                 }
             }
         }
@@ -628,6 +633,7 @@ class MainActivity : ComponentActivity() {
             banner = banner,
             covers = bookCovers,
         )
+        WatchedFoldersRoute(watchedFolders, open = watchedOpen) { watchedOpen = false }
     }
 
     @Composable

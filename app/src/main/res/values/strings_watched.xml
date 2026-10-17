@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Watched folders: new books in chosen folders join the library (plan item 26, ADR-044). -->
+<resources>
+    <string name="library_watched_folders">Watched folders</string>
+    <string name="watched_explain">New PDF and EPUB files in these folders and their sub-folders join your library each time it opens. Removing a folder keeps the books already added.</string>
+    <string name="watched_empty">No folder is watched yet.</string>
+    <string name="watched_add">Add a folder</string>
+    <string name="watched_remove">Remove</string>
+    <string name="watched_done">Done</string>
+    <string name="watched_unnamed">Folder</string>
+    <string name="watched_no_grant">That folder can\'t be watched: the app it belongs to doesn\'t allow lasting access.</string>
+    <plurals name="watched_added">
+        <item quantity="one">%d book added from your watched folders</item>
+        <item quantity="other">%d books added from your watched folders</item>
+    </plurals>
+</resources>
