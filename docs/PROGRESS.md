@@ -2,6 +2,14 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Hindi and Bengali text pack (plan item 3; 2026-10-17)
+- Hindi and Bengali now read **dates** day first as India writes them ("15/08/1947", "15-8-47", "15.08.1947" become "पंद्रह अगस्त उन्नीस सौ सैंतालीस", and in Bengali the day takes its date ending: পয়লা, দোসরা, পাঁচই, উনিশে), **ordinals** ("1ला, 2री, 6ठे, 21वीं"; "১ম, ২য়, ৪র্থ, ১১শ, ২১তম", "১লা, ১৯শে"), **units** written as Latin symbols after a number ("5 km", "10kg", "37°C") and the languages' own **abbreviations** ("डॉ.", "प्रो.", "कि.मी.", "पृ.", "1947 ई.", "ई.पू."; "ডঃ", "পৃঃ", "কিমি", "খ্রিঃ"). "रु." and "টা." join ₹ and Rs. as money.
+- Rules live in `IndicTextPack` with the words in `IndicTextTable`, run by `IndicNormalizer` before its number rules; anything not recognised (month 13, an ordinal past 999) is left for the number rules as before. Both encodings of Bengali য় match. No `:pdf` change; golden unchanged.
+- Tests: `IndicTextPackTest` (table-driven, Hindi and Bengali).
+- **Gap:** month-first dates (US style) read as day first; a two-digit year is read as written ("47"), not as a century guess.
+
+**Real-device checks (final phone session):** listen to a Hindi and a Bengali page with a date, "1ला"/"১লা", "5 km" and "डॉ."/"ডঃ".
+
 ## Skip switches (plan item 2; 2026-10-17)
 - The speech sheet's "What to read" gains four switches, all off by default: **Skip (asides)** leaves out text in parentheses that open a word, from the inside out, so "f(x)" and "2(a)" stay; **Skip [notes]** leaves out square-bracketed text such as "[sic]" or "[3]"; **Skip links** leaves out web and e-mail addresses (otherwise read as "link"); **Say page numbers** says "Page 12" (Hindi "पृष्ठ", Bengali "পৃষ্ঠা") before a page's first sentence. Tables, footnotes, captions and equations already had their own modes (ADR-035), which completes the item.
 - Applied at render time to the written text (`TextSkips`, `UnitReading`), so the page still shows everything; tables and equations are never trimmed, and a sentence left empty (a caption that was all aside) is not played. Saved with the other reading modes; older saved values read as off. Golden and listening scores unchanged (defaults unchanged, no `:pdf` change).

@@ -169,9 +169,13 @@ class AudoraPlaybackService : MediaSessionService() {
     private fun mediaButtons() = MediaButtons(
         player = { player },
         bookSession = { bookSession },
-        bookmarks = HeadsetBookmarks(bookmarks, scope, PIPELINE_VERSION, System::currentTimeMillis) {
-            buzz(config.sleep.buzzMs)
-        },
+        bookmarks = HeadsetBookmarks(
+            store = bookmarks,
+            scope = scope,
+            pipelineVersion = PIPELINE_VERSION,
+            clock = System::currentTimeMillis,
+            onSaved = { buzz(config.sleep.buzzMs) },
+        ),
     )
 
     /** Up next (plan item 25): a queued chapter starts on its page, a queued book where it was left. */
