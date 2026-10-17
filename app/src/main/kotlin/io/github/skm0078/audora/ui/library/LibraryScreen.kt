@@ -59,6 +59,7 @@ fun LibraryScreen(
     modifier: Modifier = Modifier,
     nowPlaying: NowPlaying? = null,
     banner: @Composable () -> Unit = {},
+    covers: CoverSource = CoverSource.None,
 ) {
     val snackbar = remember { SnackbarHostState() }
     // Saveable: the picker can outlive this process, and its result must still reach the right book.
@@ -112,6 +113,7 @@ fun LibraryScreen(
                 onRemove = actions::onRequestRemoval,
                 onExport = actions::onExportAudiobook,
                 onContinue = actions::onContinue,
+                covers = covers,
             )
         }
     }
@@ -127,6 +129,7 @@ private fun LibraryContent(
     onRemove: (Book) -> Unit,
     onExport: (Book) -> Unit,
     onContinue: (Book) -> Unit,
+    covers: CoverSource,
 ) {
     when (listState) {
         LibraryListState.Loading -> Centered { CircularProgressIndicator() }
@@ -156,6 +159,7 @@ private fun LibraryContent(
                 onRemove = onRemove,
                 onExport = onExport,
                 onContinue = onContinue,
+                covers = covers,
             )
         }
     }
@@ -183,6 +187,7 @@ private fun BookList(
     onRemove: (Book) -> Unit,
     onExport: (Book) -> Unit,
     onContinue: (Book) -> Unit,
+    covers: CoverSource,
 ) {
     LazyColumn(contentPadding = PaddingValues(bottom = FAB_CLEARANCE)) {
         list.continueReading?.let { latest ->
@@ -196,6 +201,7 @@ private fun BookList(
                 onTap = { onTap(item) },
                 onRemove = { onRemove(item.book) },
                 onExport = { onExport(item.book) },
+                covers = covers,
             )
             HorizontalDivider()
         }

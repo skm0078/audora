@@ -62,8 +62,10 @@ import io.github.skm0078.audora.ui.battery.BatterySetupController
 import io.github.skm0078.audora.ui.battery.BatterySetupScreen
 import io.github.skm0078.audora.ui.diagnostics.DiagnosticsController
 import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
+import io.github.skm0078.audora.ui.library.BookCovers
 import io.github.skm0078.audora.ui.library.LibraryActions
 import io.github.skm0078.audora.ui.library.LibraryController
+import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.LibraryScreen
 import io.github.skm0078.audora.ui.library.nowPlaying
 import io.github.skm0078.audora.ui.licences.LicenceSource
@@ -107,6 +109,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var library: Library
+
+    @Inject
+    lateinit var bookCovers: BookCovers
 
     @Inject
     lateinit var readerConfig: ReaderConfig
@@ -356,6 +361,9 @@ class MainActivity : ComponentActivity() {
                 override fun onQuery(query: LibraryQuery) = controller.setQuery(query)
             }
         }
+        val books = (controller.listState as? LibraryListState.Loaded)?.all?.mapTo(HashSet()) { it.book.id }
+        // Covers of removed books go once the list has loaded; never while it is loading or failed.
+        LaunchedEffect(books) { books?.let { bookCovers.prune(it) } }
         LibraryScreen(
             nowPlaying = nowPlaying(playback, controller.listState),
             listState = controller.listState,
@@ -364,6 +372,7 @@ class MainActivity : ComponentActivity() {
             pendingRemoval = controller.pendingRemoval,
             actions = actions,
             banner = banner,
+            covers = bookCovers,
         )
     }
 
