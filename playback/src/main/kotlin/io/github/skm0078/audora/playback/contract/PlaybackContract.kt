@@ -21,6 +21,10 @@ import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import io.github.skm0078.audora.playback.service.AudoraPlaybackService
+import io.github.skm0078.audora.playback.session.Spot
+import io.github.skm0078.audora.playback.session.StudyMarks
+import io.github.skm0078.audora.playback.session.StudyRange
+import io.github.skm0078.audora.playback.session.isAfter
 
 /**
  * Everything the UI needs to drive playback, through a Media3 `MediaController` and nothing else.
@@ -49,6 +53,7 @@ object PlaybackContract {
     const val ACTION_SET_SLEEP_OPTIONS = "$PREFIX.SET_SLEEP_OPTIONS"
     const val ACTION_SET_OWN_SETTINGS = "$PREFIX.SET_OWN_SETTINGS"
     const val ACTION_REPLAY_PREVIOUS = "$PREFIX.REPLAY_PREVIOUS"
+    const val ACTION_STUDY = "$PREFIX.STUDY"
 
     /** Starts reading [ARG_BOOK_ID] at [ARG_PAGE] / [ARG_CHAR_START]. Only ever send it from a user action (C7). */
     val PLAY_FROM = SessionCommand(ACTION_PLAY_FROM, Bundle.EMPTY)
@@ -83,6 +88,14 @@ object PlaybackContract {
      * sentence was played before the current one.
      */
     val REPLAY_PREVIOUS = SessionCommand(ACTION_REPLAY_PREVIOUS, Bundle.EMPTY)
+
+    /**
+     * Study loops (plan item 31): [ARG_STUDY_ACTION] marks A or B at the sentence playing, turns looping on or off
+     * ([ARG_STUDY_LOOP]), clears the range, or plays an exact range of a book ([StudyAction.RANGE]: PLAY_FROM's
+     * arguments for its start plus [ARG_END_PAGE] / [ARG_END_CHAR], the last character, inclusive). The range is
+     * published in the `SESSION_STUDY_*` extras. Repeats and pauses after each sentence are reading modes instead.
+     */
+    val STUDY = SessionCommand(ACTION_STUDY, Bundle.EMPTY)
 
     // Arguments of PLAY_FROM.
     const val ARG_BOOK_ID = "book_id"
@@ -134,6 +147,16 @@ object PlaybackContract {
 
     /** String: [VoiceShaping.encode]; absent or unreadable = the defaults (plan items 9, 10). */
     const val ARG_VOICE_SHAPING = "voice_shaping"
+
+    // Arguments of STUDY (and PLAY_FROM's for a range's start).
+
+    /** A [StudyAction] name. */
+    const val ARG_STUDY_ACTION = "study_action"
+
+    /** Boolean: the range loops; absent = true. */
+    const val ARG_STUDY_LOOP = "study_loop"
+    const val ARG_END_PAGE = "end_page"
+    const val ARG_END_CHAR = "end_char"
 
     /** Float in [REPLAY_FACTOR_RANGE], the argument of REPLAY_PREVIOUS: relative to the speed the listener hears. */
     const val ARG_REPLAY_FACTOR = "replay_factor"
@@ -217,6 +240,17 @@ object PlaybackContract {
      */
     const val SESSION_SENTENCE_TIMING = "sentence_timing"
 
+    /** Int pair: the study range's A (plan item 31); absent with no A. */
+    const val SESSION_STUDY_START_PAGE = "study_start_page"
+    const val SESSION_STUDY_START_CHAR = "study_start_char"
+
+    /** Int pair: the study range's B; absent until B is set. */
+    const val SESSION_STUDY_END_PAGE = "study_end_page"
+    const val SESSION_STUDY_END_CHAR = "study_end_char"
+
+    /** Boolean: whether the range loops; present with A. */
+    const val SESSION_STUDY_LOOP = "study_loop"
+
     /** Int pair: where "Undo jump" goes back to in the book being read (plan item 78); absent with nothing to undo. */
     const val SESSION_UNDO_PAGE = "undo_page"
     const val SESSION_UNDO_CHAR = "undo_char"
@@ -242,6 +276,53 @@ object PlaybackContract {
         putString(ARG_SLEEP_MODE, mode.name)
         putInt(ARG_SLEEP_MINUTES, minutes)
         putInt(ARG_SLEEP_CHAPTERS, chapters)
+    }
+
+    fun studyArgs(action: StudyAction, loop: Boolean = true): Bundle = Bundle().apply {
+        putString(ARG_STUDY_ACTION, action.name)
+        putBoolean(ARG_STUDY_LOOP, loop)
+    }
+
+    /** A [StudyAction.RANGE] request: [bookId] from [start] through [end] (inclusive). */
+    fun studyRangeArgs(bookId: String, start: Spot, end: Spot, loop: Boolean, password: String? = null): Bundle =
+        playFromArgs(bookId, start.page, start.charStart, password).apply {
+            putAll(studyArgs(StudyAction.RANGE, loop))
+            putInt(ARG_END_PAGE, end.page)
+            putInt(ARG_END_CHAR, end.charStart)
+        }
+
+    /** Parses [studyArgs]; null when the action is missing or unknown. */
+    fun studyActionFrom(args: Bundle): StudyAction? = enumOrNull<StudyAction>(args.getString(ARG_STUDY_ACTION))
+
+    /** The range of a [StudyAction.RANGE] request; null when a position is missing, negative or backwards. */
+    fun studyRangeFrom(args: Bundle): StudyRange? {
+        val start = Spot(args.getInt(ARG_PAGE, -1), args.getInt(ARG_CHAR_START, -1))
+        val end = Spot(args.getInt(ARG_END_PAGE, -1), args.getInt(ARG_END_CHAR, -1))
+        val placed = listOf(start.page, start.charStart, end.page, end.charStart).all { it >= 0 }
+        val valid = placed && !start.isAfter(end)
+        return if (valid) StudyRange(start, end, args.getBoolean(ARG_STUDY_LOOP, true)) else null
+    }
+
+    fun studyExtras(marks: StudyMarks): Bundle = Bundle().apply {
+        putInt(SESSION_STUDY_START_PAGE, marks.start.page)
+        putInt(SESSION_STUDY_START_CHAR, marks.start.charStart)
+        marks.end?.let {
+            putInt(SESSION_STUDY_END_PAGE, it.page)
+            putInt(SESSION_STUDY_END_CHAR, it.charStart)
+        }
+        putBoolean(SESSION_STUDY_LOOP, marks.loop)
+    }
+
+    /** Reads [studyExtras] back; null with no A. */
+    fun studyMarksFrom(extras: Bundle): StudyMarks? {
+        if (!extras.containsKey(SESSION_STUDY_START_PAGE)) return null
+        val start = Spot(extras.getInt(SESSION_STUDY_START_PAGE), extras.getInt(SESSION_STUDY_START_CHAR))
+        val end = if (extras.containsKey(SESSION_STUDY_END_PAGE)) {
+            Spot(extras.getInt(SESSION_STUDY_END_PAGE), extras.getInt(SESSION_STUDY_END_CHAR))
+        } else {
+            null
+        }
+        return StudyMarks(start, end, extras.getBoolean(SESSION_STUDY_LOOP, true))
     }
 
     fun replayPreviousArgs(factor: Float): Bundle = Bundle().apply { putFloat(ARG_REPLAY_FACTOR, factor) }

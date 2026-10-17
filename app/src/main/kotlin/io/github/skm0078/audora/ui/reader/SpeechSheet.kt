@@ -66,6 +66,7 @@ fun SpeechSheet(
     ownSettings: Boolean = false,
     onOwnSettings: (Boolean) -> Unit = {},
     voices: BookVoices = BookVoices(),
+    study: StudyControls = StudyControls(),
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -83,6 +84,7 @@ fun SpeechSheet(
             VoiceShapingSection(voiceShaping, config.voiceShaping, onVoiceShaping)
             CastVoicesSection(voices.rows, voiceShaping, onVoiceShaping)
             ReadingModesSection(readingModes, onReadingModes)
+            StudySection(readingModes, study, onReadingModes)
             Text(
                 stringResource(R.string.speech_sheet_hint),
                 style = MaterialTheme.typography.bodySmall,

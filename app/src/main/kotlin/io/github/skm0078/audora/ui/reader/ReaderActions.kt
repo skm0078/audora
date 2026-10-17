@@ -13,6 +13,7 @@ import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
+import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 
 /** One interface instead of many lambdas keeps [ReaderScreen]'s signature readable. */
@@ -78,6 +79,9 @@ interface ReaderActions {
     fun onSleepOptions(options: SleepOptions) = Unit
 
     fun onUndoJump() = Unit
+
+    /** Study loops (plan item 31): A, B, loop on or off, clear. */
+    fun onStudy(action: StudyAction, loop: Boolean) = Unit
 
     /** "This sounded wrong" from the sentence menu (RI-8b): its reasons show. */
     fun onReportSentence(unit: ReadingUnit) = Unit

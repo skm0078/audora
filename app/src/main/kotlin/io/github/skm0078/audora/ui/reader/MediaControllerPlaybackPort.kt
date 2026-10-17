@@ -25,7 +25,9 @@ import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.contract.SpeechStyleChange
+import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
+import io.github.skm0078.audora.playback.session.Spot
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -149,6 +151,27 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
         send(player, PlaybackContract.REPLAY_PREVIOUS, PlaybackContract.replayPreviousArgs(factor), "replay")
     }
 
+    override fun study(action: StudyAction, loop: Boolean) = withPlayer("study") { player ->
+        AudoraLog.i(TAG, "Study $action loop=$loop")
+        send(player, PlaybackContract.STUDY, PlaybackContract.studyArgs(action, loop), "study")
+    }
+
+    override fun playRange(start: ReadingPosition, end: ReadingPosition, loop: Boolean, password: String?) =
+        withPlayer("play range") { player ->
+            AudoraLog.i(
+                TAG,
+                "Play range book=${start.bookId.logLabel} page=${start.page}..${end.page} loop=$loop",
+            )
+            val args = PlaybackContract.studyRangeArgs(
+                start.bookId.value,
+                Spot(start.page, start.charStart),
+                Spot(end.page, end.charStart),
+                loop,
+                password,
+            )
+            send(player, PlaybackContract.STUDY, args, "play range")
+        }
+
     override fun reportSoundedWrong(report: SoundedWrongReport) = withPlayer("report") { player ->
         send(player, PlaybackContract.REPORT_SOUNDED_WRONG, PlaybackContract.reportArgs(report), "report")
     }
@@ -206,6 +229,7 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             ownSettings = extras.getBoolean(PlaybackContract.SESSION_OWN_SETTINGS, false),
             bookVoices = BookSettings.decodeVoices(extras.getString(PlaybackContract.SESSION_BOOK_VOICES)),
             undoJumpTo = undoOf(extras),
+            study = studyOf(extras),
             sentenceTiming = SentenceTiming.decode(extras.getString(PlaybackContract.SESSION_SENTENCE_TIMING)),
             // A skipped sentence is reported in the extras while reading goes on; only a stop is an error.
             errorCode = player.playerError?.errorCodeName
@@ -235,6 +259,20 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
                 BookId(bookId),
                 extras.getInt(PlaybackContract.SESSION_UNDO_PAGE),
                 extras.getInt(PlaybackContract.SESSION_UNDO_CHAR),
+            )
+        }
+    }
+
+    private fun studyOf(extras: Bundle): StudyRangeState? {
+        val bookId = extras.getString(PlaybackContract.SESSION_BOOK_ID)?.takeIf { it.isNotBlank() }?.let(::BookId)
+        val marks = PlaybackContract.studyMarksFrom(extras)
+        return if (bookId == null || marks == null) {
+            null
+        } else {
+            StudyRangeState(
+                ReadingPosition(bookId, marks.start.page, marks.start.charStart),
+                marks.end?.let { ReadingPosition(bookId, it.page, it.charStart) },
+                marks.loop,
             )
         }
     }

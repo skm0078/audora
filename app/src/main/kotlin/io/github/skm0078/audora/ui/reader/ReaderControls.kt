@@ -53,7 +53,8 @@ fun ReaderControls(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            SpeedButton(state.playback, config, enabled, actions, voices)
+            val study = StudyControls(state.study, canMark = state.readingPosition != null, onStudy = actions::onStudy)
+            SpeedButton(state.playback, config, enabled, actions, voices, study)
             IconButton(onClick = actions::onSkipBack, enabled = enabled && loaded && state.playback.canSkipBack) {
                 Icon(painterResource(R.drawable.ic_skip_previous), stringResource(R.string.reader_skip_back))
             }
@@ -92,6 +93,7 @@ private fun SpeedButton(
     enabled: Boolean,
     actions: ReaderActions,
     voices: List<VoiceRow>,
+    study: StudyControls,
 ) {
     var open by remember { mutableStateOf(false) }
     TextButton(onClick = { open = true }, enabled = enabled) {
@@ -113,6 +115,7 @@ private fun SpeedButton(
             ownSettings = playback.ownSettings,
             onOwnSettings = actions::onOwnSettings,
             voices = BookVoices(voices, playback.bookVoices, actions::onBookVoice),
+            study = study,
             onDismiss = { open = false },
         )
     }

@@ -32,9 +32,11 @@ import io.github.skm0078.audora.playback.browse.LibraryBrowser
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
+import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.notes.BookContext
 import io.github.skm0078.audora.playback.session.BookSession
 import io.github.skm0078.audora.playback.session.SleepOptionsStore
+import io.github.skm0078.audora.playback.session.StudyMark
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import kotlinx.coroutines.CoroutineScope
@@ -87,6 +89,7 @@ class SessionCallback(
                     .add(PlaybackContract.SET_SLEEP_OPTIONS)
                     .add(PlaybackContract.SET_OWN_SETTINGS)
                     .add(PlaybackContract.REPLAY_PREVIOUS)
+                    .add(PlaybackContract.STUDY)
                     .build(),
             )
         }
@@ -108,6 +111,7 @@ class SessionCallback(
         PlaybackContract.ACTION_SET_SLEEP_OPTIONS -> Futures.immediateFuture(setSleepOptions(args))
         PlaybackContract.ACTION_SET_OWN_SETTINGS -> later { setOwnSettings(args) }
         PlaybackContract.ACTION_REPLAY_PREVIOUS -> Futures.immediateFuture(replayPrevious(args))
+        PlaybackContract.ACTION_STUDY -> study(args)
         else -> Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
     }
 
@@ -302,6 +306,34 @@ class SessionCallback(
         val factor = PlaybackContract.replayFactorFrom(args) ?: return failure(PlaybackErrorCode.BAD_REQUEST)
         val replayed = bookSession().replayPrevious(factor)
         return if (replayed) SessionResult(SessionResult.RESULT_SUCCESS) else failure(PlaybackErrorCode.BAD_REQUEST)
+    }
+
+    /** The A–B study range (plan item 31); a range of a book plays it, like PLAY_FROM. */
+    private fun study(args: Bundle): ListenableFuture<SessionResult> {
+        val loop = args.getBoolean(PlaybackContract.ARG_STUDY_LOOP, true)
+        val session = bookSession()
+        val done = when (PlaybackContract.studyActionFrom(args)) {
+            StudyAction.MARK_START -> session.markStudy(StudyMark.START, loop)
+            StudyAction.MARK_END -> session.markStudy(StudyMark.END, loop)
+            StudyAction.SET_LOOP -> true.also { session.setStudyLoop(loop) }
+            StudyAction.CLEAR -> true.also { session.clearStudy() }
+            StudyAction.RANGE -> return playRange(args)
+            null -> false
+        }
+        return Futures.immediateFuture(if (done) SessionResult(SessionResult.RESULT_SUCCESS) else badRequest())
+    }
+
+    private fun playRange(args: Bundle): ListenableFuture<SessionResult> {
+        val bookId = args.getString(PlaybackContract.ARG_BOOK_ID)?.takeIf { it.isNotBlank() }
+        val range = PlaybackContract.studyRangeFrom(args)
+        if (bookId == null || range == null) return Futures.immediateFuture(badRequest())
+        val password = args.getString(PlaybackContract.ARG_PASSWORD)
+        return later {
+            when (val outcome = bookSession().playRange(BookId(bookId), range, password)) {
+                is Outcome.Success -> SessionResult(SessionResult.RESULT_SUCCESS)
+                is Outcome.Failure -> failure(outcome.error.code)
+            }
+        }
     }
 
     private fun undoJump(): SessionResult = if (bookSession().undoJump()) {

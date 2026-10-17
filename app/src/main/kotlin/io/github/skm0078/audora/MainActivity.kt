@@ -50,6 +50,7 @@ import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
+import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
@@ -576,6 +577,8 @@ class MainActivity : ComponentActivity() {
         override fun onVoiceShaping(shaping: VoiceShaping) = model.setVoiceShaping(shaping)
 
         override fun onUndoJump() = model.undoJump()
+
+        override fun onStudy(action: StudyAction, loop: Boolean) = model.study(action, loop)
 
         override fun onPasswordSubmitted(password: String) = model.submitPassword(password)
 
