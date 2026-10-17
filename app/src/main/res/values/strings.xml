@@ -29,6 +29,8 @@
     <string name="library_found_again">Found “%1$s” again</string>
     <string name="library_removed">Removed “%1$s”</string>
     <string name="library_remove">Remove from library</string>
+    <!-- Book menu (ADR-034): reads the whole book into audio files in Audiobooks/<title>. -->
+    <string name="library_export_audiobook">Save as audiobook</string>
     <string name="library_remove_title">Remove “%1$s”?</string>
     <string name="library_remove_body">The PDF stays on your phone. You can add it again later.</string>
     <string name="library_cancel">Cancel</string>
