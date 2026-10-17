@@ -28,6 +28,9 @@ interface PlaybackPort {
     /** The silences between sentences (ADR-033). */
     fun setPace(pace: Pace)
 
+    /** Pauses at dashes, colons, brackets and the like inside a sentence (RI-6). */
+    fun setClausePauses(on: Boolean)
+
     fun setSleepTimer(setting: SleepTimerSetting)
 }
 
@@ -47,6 +50,7 @@ data class PlaybackSnapshot(
     val buffering: Boolean = false,
     val speed: Float = SpeechStyle.NORMAL_RATE,
     val pace: Pace = Pace.NORMAL,
+    val clausePauses: Boolean = true,
     val canSkipBack: Boolean = false,
     val canSkipForward: Boolean = false,
     val sleepTimer: SleepTimerState = SleepTimerState.Off,

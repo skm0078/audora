@@ -139,6 +139,53 @@ class EngineRendererTest {
         assertEquals(0.013, recorded.single().audioSeconds, EPS)
     }
 
+    @Test
+    fun `strong marks get the pace's silence in the clip, and the switch turns them off`() {
+        val voices = RecordingVoices()
+        var style = SpeechStyle(pace = Pace.NORMAL)
+        val renderer = EngineRenderer(voices, style = { style }, styleConfig = flatPaces)
+        val sentence = unit(0, 0).copy(text = "Wait — this (and that): done.")
+
+        val cut = (renderer.render(sentence) as Outcome.Success).value
+        style = SpeechStyle(pace = Pace.NORMAL, clausePauses = false)
+        val whole = (renderer.render(sentence) as Outcome.Success).value
+
+        assertEquals(listOf("Wait", "this", "and that", "done.", "Wait — this (and that): done."), voices.spoken)
+        // Voice samples are 100, quieter in brackets; silences are zero: dash 200, bracket 120, colon 240 (flat pace).
+        val runs = silentRuns(cut.samples)
+        assertEquals(listOf(200, 120, 240), runs)
+        assertEquals("Wait".length + "this".length + "done.".length, cut.samples.count { it == SAMPLE })
+        assertEquals("and that".length, cut.samples.count { it in 1 until SAMPLE })
+        assertEquals("Wait — this (and that): done.".length, whole.samples.size)
+    }
+
+    @Test
+    fun `render speed leaves out the clause pauses`() {
+        val renderer = EngineRenderer(RecordingVoices(), speed = RenderSpeedTracker { speeds }, styleConfig = flatPaces)
+        val sentence = unit(0, 0).copy(text = "One; two.")
+
+        renderer.render(sentence)
+        renderer.render(sentence.copy(index = 1))
+
+        // "One" and "two." are 7 ms of voice; the 240 ms semicolon pause is not the voice's.
+        assertEquals(0.007, recorded.single().audioSeconds, EPS)
+    }
+
+    /** Lengths of the runs of silence between voiced samples. */
+    private fun silentRuns(samples: ShortArray): List<Int> {
+        val runs = ArrayList<Int>()
+        var run = 0
+        for (sample in samples) {
+            if (sample == 0.toShort()) {
+                run++
+            } else if (run > 0) {
+                runs.add(run)
+                run = 0
+            }
+        }
+        return runs
+    }
+
     /** Normal pace adds nothing, so a clip's silence is exactly the sentence's own pause. */
     private val flatPaces = SpeechStyleConfig(
         paces = Pace.entries.associateWith { PaceTiming(sentenceGapMs = 0, pauseScale = 1f) },

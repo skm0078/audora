@@ -53,6 +53,7 @@ class SessionPublisher(
                 val speech = style()
                 putFloat(PlaybackContract.SESSION_SPEECH_RATE, speech.rate)
                 putString(PlaybackContract.SESSION_PACE, speech.pace.name)
+                putBoolean(PlaybackContract.SESSION_CLAUSE_PAUSES, speech.clausePauses)
             },
         )
     }

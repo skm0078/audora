@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.core.config
 
+import io.github.skm0078.audora.core.model.ClauseMark
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.SpeechStyle
 import kotlin.math.roundToInt
@@ -33,6 +34,9 @@ data class PaceTiming(val sentenceGapMs: Int, val pauseScale: Float) {
  *   to be tuned per voice by ear on the phone.
  * @property rateStep the slider's step; a saved rate is snapped to it.
  * @property paces the silences of each pace at normal speed; tune by ear on the phone.
+ * @property clausePausesMs the pause at each strong mark inside a sentence at normal speed, before the pace's
+ *   scale (RI-6); tune by ear on the phone.
+ * @property asideGainDb the loudness of bracketed words against the rest of the sentence, in decibels.
  */
 data class SpeechStyleConfig(
     val minRate: Float = 0.5f,
@@ -40,6 +44,8 @@ data class SpeechStyleConfig(
     val maxModelRate: Float = 1.5f,
     val rateStep: Float = 0.05f,
     val paces: Map<Pace, PaceTiming> = DEFAULT_PACES,
+    val clausePausesMs: Map<ClauseMark, Int> = DEFAULT_CLAUSE_PAUSES,
+    val asideGainDb: Float = DEFAULT_ASIDE_GAIN_DB,
 ) {
     init {
         require(minRate > 0f && maxRate > minRate) { "rates must satisfy 0 < minRate < maxRate" }
@@ -47,6 +53,9 @@ data class SpeechStyleConfig(
         require(maxModelRate in SpeechStyle.NORMAL_RATE..maxRate) { "maxModelRate must be in 1..maxRate" }
         require(rateStep > 0f) { "rateStep must be > 0, was $rateStep" }
         require(paces.keys == Pace.entries.toSet()) { "every pace needs its timing" }
+        require(clausePausesMs.keys == ClauseMark.entries.toSet()) { "every clause mark needs its pause" }
+        require(clausePausesMs.values.all { it >= 0 }) { "clause pauses must be >= 0" }
+        require(asideGainDb <= 0f && asideGainDb.isFinite()) { "asideGainDb must be <= 0, was $asideGainDb" }
     }
 
     /** [rate] within the range and on a step, 2 decimals; a non-finite value (a corrupt file) is normal speed. */
@@ -75,14 +84,35 @@ data class SpeechStyleConfig(
         return (atNormal / sqrt(rate) * playerSpeed(rate)).roundToInt()
     }
 
+    /** Milliseconds of silence at [mark] inside a sentence: scaled by the pace and the speed like [silenceAfterMs]. */
+    fun clauseSilenceMs(mark: ClauseMark, style: SpeechStyle): Int {
+        val atNormal = clausePausesMs.getValue(mark) * paces.getValue(style.pace).pauseScale
+        val rate = clampRate(style.rate)
+        return (atNormal / sqrt(rate) * playerSpeed(rate)).roundToInt()
+    }
+
     private companion object {
         const val HUNDREDTHS = 100f
+
+        /** About 70 % of the loudness: heard as an aside, still clear. */
+        const val DEFAULT_ASIDE_GAIN_DB = -3f
 
         val DEFAULT_PACES = mapOf(
             // Normal: about 650 ms after a paragraph, 900 after a heading (on ReadingUnitConfig's 400 and 600).
             Pace.TIGHT to PaceTiming(sentenceGapMs = 0, pauseScale = 0.6f),
             Pace.NORMAL to PaceTiming(sentenceGapMs = 150, pauseScale = 1.25f),
             Pace.RELAXED to PaceTiming(sentenceGapMs = 400, pauseScale = 1.8f),
+        )
+
+        // At Normal pace (x1.25): a dash about 250 ms, a colon 300, an ellipsis 500; a bracket or quote is a breath.
+        val DEFAULT_CLAUSE_PAUSES = mapOf(
+            ClauseMark.DASH to 200,
+            ClauseMark.COLON to 240,
+            ClauseMark.SEMICOLON to 240,
+            ClauseMark.BRACKET to 120,
+            ClauseMark.QUOTE to 80,
+            ClauseMark.ELLIPSIS to 400,
+            ClauseMark.DANDA to 280,
         )
     }
 }
