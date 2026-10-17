@@ -1,5 +1,5 @@
 // File: speech/src/test/kotlin/io/github/skm0078/audora/speech/normalize/TableSpeechTest.kt
-// Purpose: A table's size and its rows as spoken, in English, Hindi and Bengali (RI-4b).
+// Purpose: A table's size and its rows as spoken, in English, Hindi and Bengali (RI-4b), continued tables included.
 
 package io.github.skm0078.audora.speech.normalize
 
@@ -57,5 +57,22 @@ class TableSpeechTest {
     fun `the header unit reads as the size`() {
         val (table, text) = row("Name | Age", listOf("Name", "Age"), row = null, rows = 2)
         assertEquals("2 rows, 2 columns.", TableSpeech.row(table, text, Lang.EN))
+    }
+
+    @Test
+    fun `a table carried over from the page before says it continues and numbers its rows on`() {
+        val cases = listOf(
+            Lang.EN to "Table continues, 7 more rows.",
+            Lang.HI to "तालिका जारी है, और 7 पंक्तियाँ।",
+            Lang.BN to "সারণি চলছে, আরও 7 সারি।",
+        )
+        for ((lang, spoken) in cases) {
+            val table =
+                TableRowInfo(0, null, 7, 2, listOf("Name", "Age"), emptyList(), continued = true, rowsBefore = 12)
+            assertEquals(spoken, TableSpeech.summary(table, lang))
+        }
+        val (first, text) = row("Ram | 34", listOf("Name", "Age"))
+        val carried = first.copy(continued = true, rowsBefore = 12)
+        assertEquals("Row 13. Name: Ram. Age: 34.", TableSpeech.row(carried, text, Lang.EN))
     }
 }

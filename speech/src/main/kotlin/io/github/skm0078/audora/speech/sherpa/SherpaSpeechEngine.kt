@@ -46,7 +46,7 @@ import kotlinx.coroutines.withContext
  * @param maxLoadedVoices models kept loaded at once ([SpeechConfig.maxLoadedVoices]).
  */
 class SherpaSpeechEngine(
-    private val source: SherpaVoiceSource,
+    internal val source: SherpaVoiceSource,
     private val factory: SherpaSynthesizerFactory,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(1),
     private val maxLoadedVoices: Int = SpeechConfig().maxLoadedVoices,
@@ -283,4 +283,13 @@ fun interface SherpaVoiceSource {
 /** The first voice with an id wins, so the bundled voice shadows a download that later shares its id. */
 private fun SherpaVoiceSource.byId(): Map<VoiceId, SherpaVoiceSpec> = buildMap {
     voices().forEach { if (it.voiceId !in this) put(it.voiceId, it) }
+}
+
+/**
+ * The other speakers [voice]'s model holds, its own speaker left out, for character voices (plan item 63); empty for
+ * a one-speaker model or a voice not installed. Cheap: reads the voice list, never loads a model.
+ */
+fun SherpaSpeechEngine.castSpeakers(voice: VoiceId): List<CastSpeaker> {
+    val spec = source.byId()[CastSpeakers.parse(voice).first] ?: return emptyList()
+    return CastSpeakers.of(spec).filter { it.speakerId != spec.speakerId }
 }

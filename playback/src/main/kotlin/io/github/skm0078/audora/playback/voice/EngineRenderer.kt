@@ -29,9 +29,11 @@ import io.github.skm0078.audora.speech.normalize.TextRole
 import io.github.skm0078.audora.speech.punct.RunOnPunctuation
 import io.github.skm0078.audora.speech.route.Cast
 import io.github.skm0078.audora.speech.route.CastSpeech
+import io.github.skm0078.audora.speech.route.CharacterVoices
 import io.github.skm0078.audora.speech.route.ClauseProsody
 import io.github.skm0078.audora.speech.route.RoutedAudio
 import io.github.skm0078.audora.speech.route.ScriptRouter
+import io.github.skm0078.audora.speech.route.Speaker
 import io.github.skm0078.audora.speech.route.SpeechRequest
 import io.github.skm0078.audora.speech.route.VoiceSource
 import io.github.skm0078.audora.speech.route.speechNormalizers
@@ -127,10 +129,12 @@ class EngineRenderer(
         val shaping = now.shaping
         val shaper = reading.shaper
         val trim: (PcmAudio) -> PcmAudio = if (shaping.trimPauses) shaper::trimPauses else { audio -> audio }
-        val cast = Cast(shaping.dialogueVoices, shaping.headingVoices)
+        val characters = reading.characters?.takeIf { shaping.characterVoices }
+        val cast = Cast(shaping.dialogueVoices, shaping.headingVoices, characters)
         val quotePauseMs = if (now.clausePauses) styleConfig.clauseSilenceMs(ClauseMark.QUOTE, now) else 0
         val level: (PcmAudio) -> PcmAudio = { shaper.level(it, shaping.evenLoudness, boostDb = 0) }
-        val request = SpeechRequest(speech.role, rate, prosody, trim, reading.startsInQuote(unit))
+        val speaker = characters?.let { reading.speakerOf(unit) }
+        val request = SpeechRequest(speech.role, rate, prosody, trim, reading.startsInQuote(unit), speaker)
         return runBlocking { castSpeech.render(text, unit.lang, request, cast, quotePauseMs, level) }.map { routed ->
             speed?.onRendered(text.trim().length, routed, System.nanoTime() - started, rate)
             log(unit, routed)
@@ -164,6 +168,8 @@ class EngineRenderer(
  * @property runOn the punctuation model's guard (RI-11); null leaves every sentence as written.
  * @property startsInQuote whether a sentence starts inside a quote an earlier sentence of its paragraph opened
  *   ([io.github.skm0078.audora.playback.reading.QuoteCarry], plan item 7).
+ * @property speakerOf who says a sentence's quotes, from the same carry (plan item 63); null when unknown.
+ * @property characters the open book's character voices, used when the style's shaping turns them on.
  */
 @Suppress("LongParameterList") // All optional: each caller sets the few it has.
 class ReadingSetup(
@@ -175,6 +181,8 @@ class ReadingSetup(
     val scanned: (Int) -> Boolean = { false },
     val runOn: RunOnPunctuation? = null,
     val startsInQuote: (ReadingUnit) -> Boolean = { false },
+    val speakerOf: (ReadingUnit) -> Speaker? = { null },
+    val characters: CharacterVoices? = null,
 ) {
     /** [text] with the model's pauses when it is a run-on on a scanned page, else [text]. */
     fun punctuated(text: String, unit: ReadingUnit): String = when {

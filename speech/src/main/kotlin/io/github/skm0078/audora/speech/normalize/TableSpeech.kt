@@ -1,5 +1,6 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/normalize/TableSpeech.kt
-// Purpose: The words a table is read with: its size, and each row as "Row 3. Name: Ram. Age: 34." (RI-4b).
+// Purpose: The words a table is read with: its size, and each row as "Row 3. Name: Ram. Age: 34." (RI-4b); a
+// table carried over from the page before says it continues and numbers its rows on.
 
 package io.github.skm0078.audora.speech.normalize
 
@@ -14,10 +15,17 @@ import io.github.skm0078.audora.core.model.TableRowInfo
  * cells in order, separated by commas. Rows are numbered from 1, as a person counts them.
  */
 object TableSpeech {
-    /** "4 rows, 5 columns." counting data rows only (the header row is not a row the listener counts). */
+    /**
+     * "4 rows, 5 columns." counting data rows only (the header row is not a row the listener counts); a table carried
+     * over from the page before is "Table continues, 7 more rows." instead, its columns already announced.
+     */
     fun summary(table: TableRowInfo, lang: Lang): String {
         val words = WORDS.getValue(lang)
-        return "${words.rows(table.rowCount)}, ${words.columns(table.columnCount)}${words.stop}"
+        return if (table.continued) {
+            "${words.continues}, ${words.moreRows(table.rowCount)}${words.stop}"
+        } else {
+            "${words.rows(table.rowCount)}, ${words.columns(table.columnCount)}${words.stop}"
+        }
     }
 
     /** One data row of [table] whose cells are spans of [text]; [summary] for the header unit (row null). */
@@ -37,10 +45,12 @@ object TableSpeech {
                 }
             }
         }
-        return (listOf("${words.row} ${row + 1}") + spokenCells).joinToString(words.stop + " ") + words.stop
+        return (listOf("${words.row} ${table.rowsBefore + row + 1}") + spokenCells).joinToString(words.stop + " ") +
+            words.stop
     }
 
     /** A language's words for tables; Hindi and Bengali end sentences with a danda. */
+    @Suppress("LongParameterList") // One word list per language, each word a parameter.
     private class TableWords(
         val row: String,
         val stop: String,
@@ -48,15 +58,21 @@ object TableSpeech {
         private val rowMany: String,
         private val columnOne: String,
         private val columnMany: String,
+        val continues: String,
+        private val more: (String) -> String,
     ) {
         fun rows(count: Int): String = "$count ${if (count == 1) rowOne else rowMany}"
 
         fun columns(count: Int): String = "$count ${if (count == 1) columnOne else columnMany}"
+
+        fun moreRows(count: Int): String = more(rows(count))
     }
 
     private val WORDS = mapOf(
-        Lang.EN to TableWords("Row", ".", "row", "rows", "column", "columns"),
-        Lang.HI to TableWords("पंक्ति", "।", "पंक्ति", "पंक्तियाँ", "स्तंभ", "स्तंभ"),
-        Lang.BN to TableWords("সারি", "।", "সারি", "সারি", "কলাম", "কলাম"),
+        Lang.EN to TableWords("Row", ".", "row", "rows", "column", "columns", "Table continues") { rows ->
+            rows.replaceFirst(" ", " more ")
+        },
+        Lang.HI to TableWords("पंक्ति", "।", "पंक्ति", "पंक्तियाँ", "स्तंभ", "स्तंभ", "तालिका जारी है") { "और $it" },
+        Lang.BN to TableWords("সারি", "।", "সারি", "সারি", "কলাম", "কলাম", "সারণি চলছে") { "আরও $it" },
     )
 }

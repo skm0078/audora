@@ -100,6 +100,9 @@ enum class UnitKind {
  * @property headers the header row's cell texts, one per column; empty when the table has no header row.
  * @property cells this row's cells as spans of the unit's text, one per column in order (an empty cell is an empty
  *   span); on the summary unit, the header row's cells.
+ * @property continued the table carries over from the page before (its header row printed there): the summary is
+ *   read as "Table continues", not as a new table.
+ * @property rowsBefore data rows of this table on earlier pages, so its rows are numbered on from them.
  */
 data class TableRowInfo(
     val tableIndex: Int,
@@ -108,8 +111,11 @@ data class TableRowInfo(
     val columnCount: Int,
     val headers: List<String>,
     val cells: List<CellSpan>,
+    val continued: Boolean = false,
+    val rowsBefore: Int = 0,
 ) {
     init {
+        require(rowsBefore >= 0) { "rowsBefore must be >= 0, was $rowsBefore" }
         require(tableIndex >= 0) { "tableIndex must be >= 0, was $tableIndex" }
         require(rowCount > 0 && columnCount > 0) { "a table has rows and columns, was $rowCount × $columnCount" }
         require(row == null || row in 0 until rowCount) { "row ($row) must be in 0 until $rowCount" }

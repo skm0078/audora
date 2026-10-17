@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/CastVoicesSection.kt
-// Purpose: The speech sheet's cast: a second voice for quoted speech and a third for headings (plan item 7).
+// Purpose: The speech sheet's cast: a second voice for quoted speech, a third for headings (plan item 7) and a voice
+// per character (item 63).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -49,6 +50,23 @@ fun CastVoicesSection(rows: List<VoiceRow>, shaping: VoiceShaping, onChange: (Vo
         choices,
         shaping.headingVoices,
     ) { onChange(shaping.copy(headingVoices = it)) }
+    CharacterVoicesRow(shaping.characterVoices) { onChange(shaping.copy(characterVoices = it)) }
+}
+
+/** Always offered: the narrator's own model supplies the voices, so no voice needs adding first. */
+@Composable
+private fun CharacterVoicesRow(on: Boolean, onChange: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.speech_cast_characters), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                stringResource(R.string.speech_cast_characters_detail),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = on, onCheckedChange = onChange)
+    }
 }
 
 @Composable

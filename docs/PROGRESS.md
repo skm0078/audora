@@ -2,6 +2,35 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## A voice for each character (plan item 63; 2026-10-17)
+- The speech sheet's cast has the **A voice for each character** switch, off by default. When it's on, a quote whose speaker is clear is read in that character's own voice, and the voice stays with the character for the book. The speaker comes from:
+  - the line's tag ("said Tom", "Mrs Gupta asked", "राम ने कहा", "রহিম বলল");
+  - its paragraph, for a speech that runs on;
+  - or turn-taking: an untagged line in a two-way conversation is the other speaker.
+  "She said" points to the latest woman who spoke and records that character as female. A character whose gender is still unknown, and every line nobody can be sure of, keeps the voice for quotes.
+- How:
+  - `SpeakerTags` (:speech) reads the tag.
+  - `SpeakerTurns` (:playback) carries speakers through a page and on to the next page, beside `QuoteCarry`.
+  - `CharacterCast` picks the voice, and `CharacterFileStore` keeps it (filesDir/characters, one file per book).
+  - The voices are the other speakers inside the narrator's own model (`CastSpeakers`: 26 in Kokoro English, 7 in Kitten), addressed as `voice#speaker`. A full cast costs no extra memory and no model switch. The quote and heading voices are never handed out.
+  - The Hindi and Bengali voices hold one speaker each, so their quotes keep the dialogue voice for now. Giving them characters needs a second model per character, about 60 MB of RAM each.
+  - Also fixed: a sentence inside a quote opened earlier was not split by voice, because `startsInQuote` was ignored.
+- Tests: `SpeakerTagsTest`, `QuoteCarryTest`, `CharacterCastTest`, `CastSpeechTest`, `VoiceShapingTest`.
+- Phone check: K12.
+
+## Continued tables (with RI's multi-page tables; 2026-10-17)
+- A table carried over from the page before now reads "Table continues, 7 more rows." (en, hi, bn) instead of its size again, and its rows are numbered on ("Row 13"). :pdf sets `TableRowInfo.continued` and `rowsBefore` in RI's follow-up; until then, both default to a new table.
+- Tests: `TableSpeechTest`.
+
+## Focus sounds, paragraph skip, storage sizes, lint (plan item 72 and UI-pass asks; 2026-10-17)
+- **Focus sound** in the speech sheet: Rain, Café or Brown noise under the voice, with a level slider. It ducks while the voice speaks and comes back up in the gaps (`FocusMixer`, `FocusSoundConfig`). It is mixed into the voice's own audio (`FocusSoundProcessor`), so it pauses with playback. It is also silent while the voice waits for the next sentence; K10 measures how often that happens.
+- **Skip paragraph** (`SKIP_PARAGRAPH`): next jumps to the next paragraph. Previous restarts this paragraph, or goes to the one before when already at its start. "Undo jump" goes back (`ParagraphSkip`).
+- **Storage**: size and clear calls for the OCR text cache and the book covers, for the UI pass's storage screen.
+- **PendingIntent codes** live in one place (`PendingIntentCodes`, one block per owner). A test checks they are distinct.
+- **Lint** runs in CI on every module (`./gradlew :app:lintDebug`). It found and fixed deprecated session result codes, a locale call and a window lookup. Gap: lint can't check API levels in the pure-JVM :core, so :core sticks to Kotlin stdlib calls wherever a java.* call is newer than minSdk.
+- Tests: `FocusNoiseTest`, `FocusMixerTest`, `FocusSoundOptionsTest`, `ParagraphSkipTest`, `PendingIntentCodesTest`, `BookSessionTest` (device).
+- Phone checks: K9, K10, K11.
+
 ## Study modes (plan item 31; 2026-10-17)
 - The speech sheet has a **Study** section. **Read each sentence** 1× to 5×; **After each sentence**: keep reading, **gap to repeat** (a silence about as long as the sentence, at least 1.5 s and at most 20 s, to say it back) or **pause** (play goes on with the next sentence). **Repeat a stretch (A–B)**: while reading, **Set A** at the first sentence and **Set B** at the last; with **Loop** on, reading goes back to A at the end of B, and off, it reads the stretch once and stops. **Clear** removes it; opening another book does too.
 - How: repeats and "after each sentence" are reading modes (`ReadingModes.sentenceRepeats`, `afterSentence`), saved and sent like the rest. A repeat or pause uses the player's pause at the end of a sentence (`StudyLoop` decides: repeat, go on, stop or loop back), so it works with the screen off; the sleep timer and "Keep going to the next chapter" keep their own stops, and a study pause no longer ends an end-of-page timer. The gap is silence added to the sentence's audio in live playback only (`StudyGapRenderer`, `StudyConfig`), never in an exported audiobook. A loop goes back by a seek when A is still in the playlist, else by a restart at A. The range is the session's (`STUDY` command, `SESSION_STUDY_*` extras); `ReaderModel.readRange(start, end, loop)` reads an exact selection, for the reader's text selection to call.
