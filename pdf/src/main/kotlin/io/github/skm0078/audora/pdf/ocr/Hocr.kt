@@ -32,7 +32,11 @@ class RecognizedPage(val lines: List<RecognizedLine>, val width: Int, val height
                         right = word.right.toFloat() / width,
                         bottom = word.bottom.toFloat() / height,
                     )
-                    OcrWord(word.text, turnView(rect, OcrText.FULL_TURN - quarterTurns))
+                    OcrWord(
+                        text = word.text,
+                        box = turnView(rect, OcrText.FULL_TURN - quarterTurns),
+                        confidence = word.conf.coerceIn(0, OcrWord.MAX_CONFIDENCE),
+                    )
                 },
                 paragraph = line.paragraph,
             )

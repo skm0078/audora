@@ -29,6 +29,7 @@ import io.github.skm0078.audora.pdf.ocr.OcrText
 import io.github.skm0078.audora.pdf.quality.IndicOrder
 import io.github.skm0078.audora.pdf.quality.PageQuality
 import io.github.skm0078.audora.pdf.quality.PageQualityScorer
+import io.github.skm0078.audora.pdf.quality.SpeakabilityScorer
 import io.github.skm0078.audora.pdf.quality.indicOrderOf
 import io.github.skm0078.audora.pdf.render.ViewRect
 
@@ -38,7 +39,8 @@ import io.github.skm0078.audora.pdf.render.ViewRect
  * repairs the text, after legacy-font conversion (P3-04) and the Indic repair and reorder pass (P3-03); sentences
  * are then split within each paragraph, so a heading without a full stop never runs into the paragraph below it.
  * `charStart`/`charEnd` index [ReadingText.text] (ADR-018, ADR-020). Number and date normalization is P2-04. Units
- * without a letter or digit are skipped.
+ * without a letter or digit are skipped. Every unit gets a speakability score (RI-2a, ADR-035), with the OCR
+ * engine's confidence in its words on a scanned page.
  *
  * Header and footer removal compares a page with its neighbours ([PageProfile]). `PdfBook.readingUnits` supplies
  * them; [build] with a page alone applies every rule that needs no neighbour.
@@ -50,6 +52,7 @@ class ReadingUnitBuilder(
     layoutConfig: LayoutConfig = LayoutConfig(),
     val cleanupConfig: CleanupConfig = CleanupConfig(),
     val qualityConfig: QualityConfig = QualityConfig(),
+    private val speakability: SpeakabilityScorer = SpeakabilityScorer(),
 ) {
     private val lineBoxes = LineBoxes(config.lineOverlapRatio)
     private val analyzer = PageLayoutAnalyzer(layoutConfig)
@@ -124,17 +127,20 @@ class ReadingUnitBuilder(
             pieces.forEachIndexed { i, piece ->
                 val raw = text.substring(piece.first, piece.last + 1)
                 if (raw.none { it.isLetterOrDigit() }) return@forEachIndexed
+                val unitText = raw.split(WHITESPACE).filter { it.isNotEmpty() }.joinToString(" ")
+                val ocrConfidence = reading.ocrConfidence(piece.first, piece.last + 1)
                 units.add(
                     ReadingUnit(
                         page = reading.pageIndex,
                         index = units.size,
                         charStart = piece.first,
                         charEnd = piece.last + 1,
-                        text = raw.split(WHITESPACE).filter { it.isNotEmpty() }.joinToString(" "),
+                        text = unitText,
                         lang = ScriptDetector.dominantLang(raw) ?: pageLang,
                         pauseAfterMs = pauseAfter(paragraph.kind, last = i == pieces.lastIndex),
                         bounds = lineBoxes.of(reading, piece.first, piece.last + 1),
                         kind = paragraph.kind.unitKind(),
+                        speakScore = speakability.score(unitText, ocrConfidence),
                     ),
                 )
             }

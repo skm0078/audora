@@ -9,15 +9,18 @@ import java.util.Locale
 /**
  * A small text format, so a cached page stays a few kilobytes and readable in a debugger:
  * ```
- * audora-ocr 1 <quarterTurns>
- * <paragraph>\t<left,top,right,bottom or ->\t<word>\t<box>\t<word>…
+ * audora-ocr 2 <quarterTurns>
+ * <paragraph>\t<left,top,right,bottom or ->[@confidence]\t<word>\t<box>\t<word>…
  * ```
- * Words never hold a tab or line break (they are split on whitespace). Anything else is a decoding failure, which
- * the cache treats as a miss: the page is recognised again.
+ * Version 1 (before RI-2a) had no confidence and still decodes, with confidences null. Words never hold a tab or
+ * line break (they are split on whitespace). Anything else is a decoding failure, which the cache treats as a miss:
+ * the page is recognised again.
  */
 internal object OcrTextCodec {
     private const val MAGIC = "audora-ocr"
-    private const val VERSION = "1"
+    private const val VERSION = "2"
+    private val READABLE = setOf("1", VERSION)
+    private const val CONFIDENCE = '@'
     private const val SEPARATOR = '\t'
     private const val NO_BOX = "-"
     private const val BOX_PARTS = 4
@@ -31,7 +34,9 @@ internal object OcrTextCodec {
         for (line in text.lines) {
             out.append(line.paragraph)
             for (word in line.words) {
-                out.append(SEPARATOR).append(box(word.box)).append(SEPARATOR).append(word.text.replace(CONTROL, " "))
+                out.append(SEPARATOR).append(box(word.box))
+                word.confidence?.let { out.append(CONFIDENCE).append(it) }
+                out.append(SEPARATOR).append(word.text.replace(CONTROL, " "))
             }
             out.append('\n')
         }
@@ -48,7 +53,7 @@ internal object OcrTextCodec {
 
     private fun turnsOf(header: String): Int? {
         val parts = header.split(' ')
-        val valid = parts.size == HEADER_PARTS && parts[0] == MAGIC && parts[1] == VERSION
+        val valid = parts.size == HEADER_PARTS && parts[0] == MAGIC && parts[1] in READABLE
         return parts.last().toIntOrNull()?.takeIf { valid && it in 0 until OcrText.FULL_TURN }
     }
 
@@ -60,8 +65,16 @@ internal object OcrTextCodec {
         return if (valid) OcrLine(words.filterNotNull(), requireNotNull(paragraph)) else null
     }
 
-    private fun wordOf(box: String, text: String): OcrWord? =
-        if (box == NO_BOX) OcrWord(text, null) else rect(box)?.let { OcrWord(text, it) }
+    private fun wordOf(field: String, text: String): OcrWord? {
+        val box = field.substringBefore(CONFIDENCE)
+        val confidence = if (CONFIDENCE in field) field.substringAfter(CONFIDENCE).toIntOrNull() else null
+        val validConfidence = CONFIDENCE !in field || (confidence != null && confidence in 0..OcrWord.MAX_CONFIDENCE)
+        return when {
+            !validConfidence -> null
+            box == NO_BOX -> OcrWord(text, null, confidence)
+            else -> rect(box)?.let { OcrWord(text, it, confidence) }
+        }
+    }
 
     private fun box(rect: ViewRect?): String = rect?.let {
         String.format(Locale.ROOT, "%.5f,%.5f,%.5f,%.5f", it.left, it.top, it.right, it.bottom)

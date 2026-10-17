@@ -2,6 +2,17 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Reading intelligence, step 2 — gibberish scoring (RI-2a; 2026-10-17, ADR-035)
+- **Every sentence gets a `speakScore`** (0–1) from `SpeakabilityScorer`: OCR word confidence, the share of words in the language's word list, how word-like the letters are (a letter-trigram model trained from the list), clean tokens (no symbol soup, no "PTfuqT", no Devanagari glued to Latin digits) and words in one script. Nothing is skipped yet: RI-2b (app basics) adds "Skip unreadable text" in playback.
+- **Word lists bundled, not downloaded:** `scripts/speakability/build_models.py` builds them from wordfreq 3.1.1 (data CC BY-SA 4.0): English 78k, Hindi 24k, Bengali 93k words, 0.9 MB in `:pdf`'s resources. Loaded per language on first use; a missing list is logged once and that language scores without them.
+- **OCR confidence kept per word** (`OcrWord.confidence` from Tesseract's hOCR, OCR cache format 2; format 1 pages still decode, without confidences).
+- **Tuned on 1,234 labelled lines** (`pdf/golden/speakability/labels.tsv`: bad OCR layers, wrong-language and upside-down OCR, a 60 dpi scan, a broken Bengali font map, against clean books, scans and table cells): 91.0% of junk lines caught, 1.4% of real lines flagged (done-when: 90% and 2%); 84% / 1.8% with each document held out. Under 5 ms a sentence (`SpeakabilityLabelsTest`).
+- `PIPELINE_VERSION` unchanged (9): scores only. Golden (0.9268) and listening (0.9775) unchanged. No new dependency (wordfreq is a build-time source of data, like Tesseract for the recordings).
+
+**Known limits:** visual-order Bengali whose common words come out right still scores above the gate on about a quarter of its lines (OCR repair, RI-3, and the confidence badge, RI-9). Labels are this thread's reading, not the maintainer's. The wordfreq CC BY-SA credit still has to go on the "Voices & licences" screen (app basics' file).
+
+**Real-device checks:** open a scanned Hindi book twice and check the log line "word list loaded, lang=HI" appears once, and that the first page takes no more than about half a second longer than before.
+
 ## Reading intelligence, step 1 — speakability contract and listening score (RI-1, RI-8a; 2026-10-17, ADR-035)
 - **Contract (RI-1):** `ReadingUnit` gains six kinds (`TABLE_SUMMARY`, `TABLE_ROW`, `FOOTNOTE`, `CAPTION`, `EQUATION`, `ASIDE`), a `speakScore` (0–1, null = not scored), `TableRowInfo` (table, row, size, header texts, cell spans) and `noteRef`, all defaulted, with invariants (table info exactly on table units, note refs only on footnotes, cells inside the text). New `SpeakabilityConfig` holds the skip threshold and signal weights for RI-2a. ADR-035 records the layer: `:pdf` tags and scores and never drops, `:playback` decides by setting, `:speech` voices.
 - **Golden filter:** `GoldenPipeline` leaves out `TABLE_ROW` units (table interiors were never in the expected texts); every other kind stays scored. Golden 0.9268, unchanged per document.

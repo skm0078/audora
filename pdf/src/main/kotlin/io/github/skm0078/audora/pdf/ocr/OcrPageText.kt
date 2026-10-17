@@ -42,6 +42,7 @@ internal object OcrPageText {
     /** PDFium's line-end hyphen mark, which the reading-text builder and TextRepair already resolve. */
     private const val HYPHEN_MARKER = '\u0002'
     private const val MAX_FOLIO_DIGITS = 4
+    private const val NO_CONFIDENCE = -1
     private val FOLIO = Regex("""[\s\-–—.|()\[\]]*\p{Nd}{1,$MAX_FOLIO_DIGITS}[\s\-–—.|()\[\]]*""")
 
     fun build(
@@ -53,10 +54,14 @@ internal object OcrPageText {
         val paragraphs = paragraphsOf(ocr, dropped).dropFolios()
         val text = StringBuilder()
         val boxes = ArrayList<TextBox?>()
+        val confidences = ArrayList<Byte>()
         val layoutParagraphs = ArrayList<Paragraph>(paragraphs.size)
-        fun append(chars: String, box: TextBox?) {
+        fun append(chars: String, box: TextBox?, confidence: Int? = null) {
             text.append(chars)
-            repeat(chars.length) { boxes.add(box) }
+            repeat(chars.length) {
+                boxes.add(box)
+                confidences.add((confidence ?: NO_CONFIDENCE).toByte())
+            }
         }
         for (lines in paragraphs) {
             if (text.isNotEmpty()) append(PARAGRAPH_BREAK, null)
@@ -75,7 +80,7 @@ internal object OcrPageText {
                     } else {
                         word.text
                     }
-                    append(chars, box)
+                    append(chars, box, word.confidence)
                 }
                 spans.add(TextLine(listOf(TextSpan(start, text.length)), box = null, size = 0f, bold = false))
             }
@@ -88,6 +93,7 @@ internal object OcrPageText {
             boxes = boxArray(boxes),
             fontRuns = emptyList(),
             stats = PageTextStats(0, 0, 0, 0, 0, ActualTextRebuild.NOT_NEEDED),
+            ocrConfidences = confidences.toByteArray(),
         )
         val blocks = if (layoutParagraphs.isEmpty()) emptyList() else listOf(TextBlock(layoutParagraphs, box = null))
         val layout = PageLayout(pageIndex, blocks, bodySize = 0f, mode = LayoutMode.EXTRACTION_ORDER)
@@ -109,7 +115,7 @@ internal object OcrPageText {
             if (i in dropped) return@forEachIndexed
             val words = line.words.mapNotNull { word ->
                 val text = Normalizer.normalize(word.text, Normalizer.Form.NFC).trim()
-                if (text.isEmpty()) null else OcrWord(text, word.box)
+                if (text.isEmpty()) null else OcrWord(text, word.box, word.confidence)
             }
             if (words.isEmpty()) return@forEachIndexed
             if (line.paragraph != paragraph && current.isNotEmpty()) {

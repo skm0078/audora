@@ -10,6 +10,7 @@ import io.github.skm0078.audora.pdf.extract.IntArrayBuilder
 import io.github.skm0078.audora.pdf.extract.PageText
 import io.github.skm0078.audora.pdf.legacy.LegacyConverter
 import io.github.skm0078.audora.pdf.legacy.LegacyRuns
+import io.github.skm0078.audora.pdf.ocr.OcrWord
 import io.github.skm0078.audora.pdf.quality.IndicOrder
 import io.github.skm0078.audora.pdf.quality.IndicReorder
 
@@ -30,6 +31,24 @@ class ReadingText internal constructor(
 
     /** The glyph box behind [offset], or null for separators and glyphs without a box. */
     fun boxAt(offset: Int): TextBox? = sources[offset].takeIf { it != INSERTED }?.let(page::boxAt)
+
+    /**
+     * The OCR engine's mean confidence in [start] until [end], 0–1, weighted by characters; null on a text layer or
+     * when no character in the range has one (ADR-035).
+     */
+    fun ocrConfidence(start: Int, end: Int): Float? {
+        var sum = 0L
+        var count = 0
+        for (offset in start until end) {
+            val source = sources[offset]
+            val confidence = if (source == INSERTED) null else page.ocrConfidenceAt(source)
+            if (confidence != null) {
+                sum += confidence
+                count++
+            }
+        }
+        return if (count == 0) null else sum.toFloat() / count / OcrWord.MAX_CONFIDENCE
+    }
 
     companion object {
         const val INSERTED = -1

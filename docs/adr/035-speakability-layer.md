@@ -41,9 +41,10 @@ and highlight need a unit to land on.
    texts); captions, footnote text and equations stay scored. A listening corpus (RI-8a) scores what the voice is
    given, after playback's default modes and the normalizers, against scripts written as a careful human reader would
    speak them, and CI fails if it drops against `dev`.
-7. **Offline, no new library.** Word lists and letter models are data files built by our own script from openly
-   licensed text and downloaded like the OCR models, not shipped in the APK. Spell lookup and trigram scoring are our
-   own Kotlin. Online help (OpenRouter) is a separate, opt-in decision (ADR-037), never required.
+7. **Offline, no new library.** Word lists are data files built by our own script from openly licensed text and
+   bundled with `:pdf` (0.9 MB for English, Hindi and Bengali; RI-2a), so the gate works on first launch with no
+   download. Letter models are trained from the same lists on the phone. Spell lookup and trigram scoring are our own
+   Kotlin. Online help (OpenRouter) is a separate, opt-in decision (ADR-037), never required.
 
 ## Alternatives considered
 - **Keep dropping, add more drop rules.** Simplest, but a dropped table cannot be read on request, and every wrong
@@ -62,6 +63,21 @@ and highlight need a unit to land on.
   and RI-7b give them their own readings.
 - Tickets that start emitting new kinds or change unit text (RI-3, RI-4a, RI-5a, RI-7a) bump PIPELINE_VERSION once
   each and regenerate `docs/QUALITY.md`. RI-2a only adds scores and does not bump it.
-- A download pack (word lists and letter models, about 5–15 MB for English, Hindi and Bengali) joins the OCR models;
-  without it, scoring falls back to the signals that need no data and logs that once.
+- RI-2a (gibberish scoring) ships the word lists inside the APK instead of the planned 5–15 MB download pack: the
+  lists are 0.9 MB (wordfreq 3.1.1, data CC BY-SA 4.0: English 78k words, Hindi 24k, Bengali 93k), smaller than one
+  voice, and a gate that needs a download would be off for exactly the people with the worst scans. A list that
+  fails to load is logged once and that language scores without the dictionary and letter signals. A language's
+  list is loaded and its trigram model trained the first time a page in it is scored (a few hundred ms and about
+  10 MB of heap per language, once per process). The CC BY-SA credit belongs on the "Voices & licences" screen.
+- RI-2a signals and tuning. Five signals, each mapped by a `SignalRange` and blended by weight: OCR word confidence
+  (0.3; abstains on a short unit without words, since list numbers read with a low confidence), the share of
+  in-list words weighted by length (0.1; "a", "or" and "at" turn up in any noise), letter-trigram likelihood
+  calibrated per language against the list's own words (0.4), clean tokens, i.e. no symbols, no capital after a
+  small letter, no Indic letters next to Latin or ASCII digits (0.15), and words in one script (0.05). Threshold
+  0.55. Tuned on 1,234 labelled lines (442 junk, 792 real) in pdf/golden/speakability/: 91.0% of junk caught, 1.4%
+  of real lines flagged. With each document held out of the tuning in turn the same search gives 84% and 1.8%, so
+  expect somewhat less on unseen kinds of noise; most misses are visual-order Bengali whose common words still
+  look right. OCR confidence now travels with each word (`OcrWord.confidence`, OCR cache format 2; pages cached
+  before it score without that signal). Scores only, no text change: PIPELINE_VERSION stays 9, golden and
+  listening scores are unchanged.
 - Logs carry kinds, scores, page and unit index, never the page's text (AGENTS.md).
