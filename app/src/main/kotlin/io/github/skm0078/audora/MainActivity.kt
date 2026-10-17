@@ -85,6 +85,7 @@ import io.github.skm0078.audora.ui.reader.LibraryReaderBooks
 import io.github.skm0078.audora.ui.reader.LocatorReaderResume
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.NotesState
+import io.github.skm0078.audora.ui.reader.PlaybackPort
 import io.github.skm0078.audora.ui.reader.PlayerScreen
 import io.github.skm0078.audora.ui.reader.ReaderActions
 import io.github.skm0078.audora.ui.reader.ReaderDocumentOpener
@@ -100,6 +101,7 @@ import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
 import io.github.skm0078.audora.ui.reader.VolumeKeySkips
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
+import io.github.skm0078.audora.ui.reader.rememberSpokenWord
 import io.github.skm0078.audora.ui.settings.OcrModelsAction
 import io.github.skm0078.audora.ui.settings.SettingsScreen
 import io.github.skm0078.audora.ui.settings.runModelAction
@@ -582,7 +584,7 @@ class MainActivity : ComponentActivity() {
                 onBookmarkOpened()
             }
         }
-        ReaderContent(target, books, state, actions, ocrState, notesState, notes, voiceRows, onShowPage)
+        ReaderContent(target, books, state, actions, ocrState, notesState, notes, voiceRows, onShowPage, port)
     }
 
     /** The reader, or the full player on the same model; both open the Up next sheet (plan item 25). */
@@ -597,10 +599,13 @@ class MainActivity : ComponentActivity() {
         notes: BookNotesModel,
         voiceRows: List<VoiceRow>,
         onShowPage: () -> Unit,
+        port: PlaybackPort,
     ) {
         val scope = rememberCoroutineScope()
         var upNextOpen by rememberSaveable { mutableStateOf(false) }
         val document = state.document
+        val look by remember { readingLookPreferences.look }.collectAsStateWithLifecycle(ReadingLook())
+        val spokenWord = rememberSpokenWord(state, port, look.wordHighlight)
         // Errors fall back to the reader, which explains them and offers a retry or the password prompt.
         if (target.asPlayer && (document is DocumentState.Open || document == DocumentState.Loading)) {
             PlayerScreen(
@@ -612,9 +617,9 @@ class MainActivity : ComponentActivity() {
                 book = books.firstOrNull { it.id == target.id },
                 covers = bookCovers,
                 voices = voiceRows,
+                spokenWord = spokenWord,
             )
         } else {
-            val look by remember { readingLookPreferences.look }.collectAsStateWithLifecycle(ReadingLook())
             ReaderScreen(
                 state = state,
                 config = readerConfig,
@@ -625,6 +630,7 @@ class MainActivity : ComponentActivity() {
                 voices = voiceRows,
                 look = look,
                 onLookChange = { changed -> scope.launch { readingLookPreferences.save(changed) } },
+                spokenWord = spokenWord,
                 onOpenUpNext = { upNextOpen = true },
             )
         }

@@ -56,11 +56,14 @@ warm "reading lamp" look; this ADR records what was built from them and why.
     past the sentence, when the replay is cancelled by a jump elsewhere, or when the player closes, and is left
     alone if the listener changed it meanwhile. Known gap: the slower speed is saved like any speed change, so if
     Android kills Audora mid-replay it comes back slower; a speed change that is not saved needs a playback hook.
-12. **Word highlight, version one (item 14).** The word being said is picked by spreading the sentence's time evenly
-    over its non-space characters (`spokenWord`), about ±150 ms off where the voice pauses at commas. Words are what
-    spaces separate, so a Hindi or Bengali word is never split inside a conjunct. Needs each sentence's position
-    and length from playback, asked of its owner; until then the word is simply not marked. Version two would use
-    the voice's own timings where the engine reports them.
+12. **Word highlight, version one (item 14).** Playback publishes each sentence's timing (`SentenceTiming`: cue,
+    speech and trailing silence, in the clip's time) and the controller's position in the clip. The reader polls
+    that position once a frame while the voice plays, turns it into a share of the speech (`speechFraction`; nothing
+    during a cue, and only for the sentence the timing names), and spreads that share evenly over the sentence's
+    non-space characters (`spokenWord`), about ±150 ms off where the voice pauses at commas. Words are what spaces
+    separate, so a Hindi or Bengali word is never split inside a conjunct. The reader and the full player both mark
+    the word; *Highlight each word* turns it off. Version two would use per-clause timings or the voice's own word
+    timings where an engine reports them.
 13. **Home-screen widget (item 35).** A plain `AppWidgetProvider` with RemoteViews (Glance would be a new library):
     the book read last, page progress, and Resume. Resume opens MainActivity with a CONTINUE action and the book id,
     which runs the library's Continue (open the reader, start reading): a tap is the user's own action, so the

@@ -35,6 +35,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
@@ -53,6 +56,7 @@ import io.github.skm0078.audora.ui.theme.Dimens
  * @param onShowPage opens the reader at this book, to see the page or tap a sentence.
  * @param onOpenUpNext shows the Up next sheet (plan item 25).
  * @param book the library's book, for its cover.
+ * @param spokenWord the word being said in the spoken sentence (plan item 14), marked like the reader marks it.
  */
 @Composable
 fun PlayerScreen(
@@ -65,6 +69,7 @@ fun PlayerScreen(
     book: Book? = null,
     covers: CoverSource = CoverSource.None,
     voices: List<VoiceRow> = emptyList(),
+    spokenWord: IntRange? = null,
 ) {
     val title = state.title.orEmpty()
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
@@ -78,7 +83,7 @@ fun PlayerScreen(
             ) {
                 PlayerTopBar(state, actions, onShowPage, onOpenUpNext)
                 BookLine(title, book, covers)
-                SentencesAround(state, Modifier.weight(1f))
+                SentencesAround(state, spokenWord, Modifier.weight(1f))
                 if (state.document is DocumentState.Open) WhatDidItSay(rememberWhatDidItSay(state, config, actions))
                 state.undoJumpTo?.let { target ->
                     TextButton(onClick = actions::onUndoJump) {
@@ -141,7 +146,7 @@ private fun BookLine(title: String, book: Book?, covers: CoverSource) {
  * Scrolls when a long sentence at a large font scale needs more room than the screen has (item 39).
  */
 @Composable
-private fun SentencesAround(state: ReaderState, modifier: Modifier = Modifier) {
+private fun SentencesAround(state: ReaderState, spokenWord: IntRange?, modifier: Modifier = Modifier) {
     val units = (state.content as? PageContent.Ready)?.units.orEmpty()
     val spoken = state.spokenUnitIndex
     Column(
@@ -161,13 +166,28 @@ private fun SentencesAround(state: ReaderState, modifier: Modifier = Modifier) {
             else -> {
                 units.getOrNull(spoken - 1)?.let { NeighbourSentence(it) }
                 Text(
-                    units[spoken].text,
+                    markedWord(units[spoken].text, spokenWord),
                     style = ReadingTextStyles.spoken(),
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 units.getOrNull(spoken + 1)?.let { NeighbourSentence(it) }
             }
         }
+    }
+}
+
+/** [text] with the [word] being said on the accent band (plan item 14). */
+@Composable
+private fun markedWord(text: String, word: IntRange?): AnnotatedString {
+    val range = word?.takeIf { it.first >= 0 && it.last < text.length } ?: return AnnotatedString(text)
+    val colors = MaterialTheme.colorScheme
+    return buildAnnotatedString {
+        append(text)
+        addStyle(
+            SpanStyle(color = colors.onPrimaryContainer, background = colors.primaryContainer),
+            range.first,
+            range.last + 1,
+        )
     }
 }
 
