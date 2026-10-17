@@ -64,6 +64,7 @@ import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.playback.export.MarkStores
 import io.github.skm0078.audora.playback.export.NotesExport
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
+import io.github.skm0078.audora.playback.search.SearchIndexes
 import io.github.skm0078.audora.playback.studio.StudioMode
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
@@ -108,6 +109,9 @@ import io.github.skm0078.audora.ui.reader.ReaderView
 import io.github.skm0078.audora.ui.reader.ReadingLook
 import io.github.skm0078.audora.ui.reader.ReadingLookPreferences
 import io.github.skm0078.audora.ui.reader.ScreenPreference
+import io.github.skm0078.audora.ui.reader.SearchModel
+import io.github.skm0078.audora.ui.reader.SearchScreen
+import io.github.skm0078.audora.ui.reader.SearchSource
 import io.github.skm0078.audora.ui.reader.SleepTimerSetting
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
@@ -135,6 +139,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -215,6 +220,8 @@ class MainActivity : ComponentActivity() {
 
     private val readingLookPreferences: ReadingLookPreferences by lazy { ReadingLookPreferences(applicationContext) }
 
+    private val searchIndexes: SearchIndexes by lazy { SearchIndexes(applicationContext) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -248,6 +255,7 @@ class MainActivity : ComponentActivity() {
             nav.navigate(destination.parent ?: AppDestination.Library)
         }
         LaunchedEffect(Unit) { diagnostics.checkUnfinishedSession() }
+        LaunchedEffect(Unit) { dropStaleSearchIndexes() }
         SharedPdfEffect(sharedPdf, { sharedPdf = null }, libraryController::addShared, nav::navigate)
         ResumeWidgetEffect(libraryController.listState, widgetResume, { widgetResume = null }, nav::continueReading)
         val books = libraryBooks(libraryController.listState)
@@ -633,6 +641,7 @@ class MainActivity : ComponentActivity() {
                 .also { it.start() }
         }
         val notesState by notes.state.collectAsStateWithLifecycle()
+        val search = rememberSearch(id, model, scope)
         val voiceRows by remember { voiceManager.rows() }.collectAsStateWithLifecycle(initialValue = emptyList())
         val actions = remember(model) { readerActions(model, notes, playWithPermission, onBack) }
         val keepScreenOn by remember {
@@ -648,7 +657,24 @@ class MainActivity : ComponentActivity() {
                 onBookmarkOpened()
             }
         }
-        ReaderContent(target, books, state, actions, ocrState, notesState, notes, voiceRows, onShowPage, port)
+        ReaderContent(target, books, state, actions, ocrState, notesState, notes, voiceRows, onShowPage, port, search)
+    }
+
+    /** Search in the book (plan item 16): its index is built from the reader's own document while search is open. */
+    @Composable
+    private fun rememberSearch(id: BookId, model: ReaderModel, scope: CoroutineScope): SearchModel {
+        val indexThread = remember { Dispatchers.IO.limitedParallelism(1) }
+        val search = remember(model) {
+            val source =
+                SearchSource({ model.state.value.pageCount }, model::sentencesForSearch) { searchIndexes.open(id) }
+            SearchModel(id, source, scope, indexThread, PIPELINE_VERSION)
+        }
+        DisposableEffect(search) { onDispose { search.close() } }
+        return search
+    }
+
+    private suspend fun dropStaleSearchIndexes() = withContext(Dispatchers.IO) {
+        searchIndexes.dropBooksNotIn(library.books().first().mapTo(HashSet()) { it.id })
     }
 
     /** The reader, or the full player on the same model; both open the Up next sheet (plan item 25). */
@@ -664,9 +690,11 @@ class MainActivity : ComponentActivity() {
         voiceRows: List<VoiceRow>,
         onShowPage: () -> Unit,
         port: PlaybackPort,
+        search: SearchModel,
     ) {
         val scope = rememberCoroutineScope()
         var upNextOpen by rememberSaveable { mutableStateOf(false) }
+        var searchOpen by rememberSaveable { mutableStateOf(false) }
         val document = state.document
         val look by remember { readingLookPreferences.look }.collectAsStateWithLifecycle(ReadingLook())
         val spokenWord = rememberSpokenWord(state, port, look.wordHighlight)
@@ -696,9 +724,24 @@ class MainActivity : ComponentActivity() {
                 onLookChange = { changed -> scope.launch { readingLookPreferences.save(changed) } },
                 spokenWord = spokenWord,
                 onOpenUpNext = { upNextOpen = true },
+                onSearch = { searchOpen = true },
             )
         }
         if (upNextOpen) UpNextRoute(books, playing = target.id) { upNextOpen = false }
+        if (searchOpen) SearchRoute(search, onGoToPage = actions::onGoToPage) { searchOpen = false }
+    }
+
+    @Composable
+    private fun SearchRoute(search: SearchModel, onGoToPage: (Int) -> Unit, onClose: () -> Unit) {
+        DisposableEffect(search) {
+            search.open()
+            onDispose { search.close() }
+        }
+        val state by search.state.collectAsStateWithLifecycle()
+        SearchScreen(state, search::setQuery, onHit = { hit ->
+            onGoToPage(hit.page)
+            onClose()
+        }, onDismiss = onClose)
     }
 
     @Composable

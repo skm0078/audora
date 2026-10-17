@@ -59,6 +59,7 @@ fun ReaderScreen(
     onLookChange: (ReadingLook) -> Unit = {},
     onOpenUpNext: (() -> Unit)? = null,
     spokenWord: IntRange? = null,
+    onSearch: (() -> Unit)? = null,
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -82,7 +83,7 @@ fun ReaderScreen(
                         BookmarksButton(notes, notesActions)
                         ChaptersButton(state, actions)
                         ViewToggle(state.view, actions)
-                        MoreMenu(textView = state.view == ReaderView.TEXT, look, onLookChange, onOpenUpNext)
+                        MoreMenu(textView = state.view == ReaderView.TEXT, look, onLookChange, onOpenUpNext, onSearch)
                     }
                 },
             )

@@ -188,6 +188,16 @@ class ReaderModel(
         }
     }
 
+    /**
+     * A page's sentences for the search index (plan item 16), from the reader's own document so scanned pages come
+     * from the OCR cache; null when the page cannot be read now (no document, OCR models missing or OCR failed).
+     */
+    suspend fun sentencesForSearch(page: Int): List<ReadingUnit>? {
+        val opened = document ?: return null
+        val read = (opened.page(page) as? Outcome.Success)?.value
+        return read?.units?.takeIf { read.origin == PageOrigin.TEXT || read.origin == PageOrigin.OCR }
+    }
+
     /** What "Bookmark here" marks: the sentence being read on the shown page, else the page's first sentence. */
     fun sentenceHere(): ReadingUnit? {
         val current = state.value

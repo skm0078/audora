@@ -50,8 +50,9 @@ internal fun MoreMenu(
     look: ReadingLook,
     onLookChange: (ReadingLook) -> Unit,
     onOpenUpNext: (() -> Unit)?,
+    onSearch: (() -> Unit)? = null,
 ) {
-    if (!textView && onOpenUpNext == null) return
+    if (!textView && onOpenUpNext == null && onSearch == null) return
     var open by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { open = true }) {
@@ -66,6 +67,16 @@ internal fun MoreMenu(
                     onClick = {
                         open = false
                         openUpNext()
+                    },
+                )
+            }
+            onSearch?.let { search ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.search_action)) },
+                    leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null) },
+                    onClick = {
+                        open = false
+                        search()
                     },
                 )
             }
