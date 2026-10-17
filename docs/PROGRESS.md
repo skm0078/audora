@@ -2,6 +2,14 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Sentence timing for the word highlight (plan item 14, playback side; 2026-10-17)
+- Each rendered sentence's clip layout is recorded (`SentenceTimings`, filled by `EngineRenderer`): the cue before it (a chapter's or caption's sound), how long the voice speaks (with its pauses at punctuation inside), and the clip's full length with the silence after. The service publishes the playing sentence's timing in the session extras (`PlaybackContract.SESSION_SENTENCE_TIMING`, `SentenceTiming.encode`) when it starts, or when its render finishes if it started first.
+- The reader gets it as `PlaybackSnapshot.sentenceTiming` (matched to the sentence by page and char start) plus `PlaybackPort.positionInSentenceMs()`, the controller's own clock, cheap enough to poll every frame; `SentenceTiming.speechFraction(position)` says how far through the speech the voice is. The highlight itself is the UI pass's (item 14).
+- Tests: `SentenceTimingTest`, `SentenceTimingsTest`, `EngineRendererTest`.
+- **Gap:** the timing is per sentence, not per word: inside a sentence words are placed by their share of the text, so a long pause at a dash or a mixed-language sentence moves the highlight ahead or behind for a moment.
+
+**Real-device checks (final phone session):** the highlight keeps up with the voice through a page, at 1x and 2x, across a chapter cue.
+
 ## Expressiveness slider (plan item 8; 2026-10-17)
 - The speech sheet's sound section gains **Expressiveness**, a five-step slider from **Newsreader** (flat, even delivery) to **Storyteller** (livelier pitch, energy and timing). The middle step, the default, is the voices' own delivery, so nothing changes until it is moved.
 - How: Piper's `noise_scale` and `noise_w`, the two values calibre's Piper settings tune, set when a Piper or MMS voice loads (0.33/0.4 up to 0.9/1.05; the middle is the voices' 0.667/0.8; `VoiceShapingConfig`). Saved with the voice shaping, so it reaches playback and audiobook export alike; the change applies when the thumb is let go and restarts the sentence playing, which reloads the voice once (about a second on the Moto). Kokoro, Kitten, Supertonic and the phone's own voices have no such values and sound the same at every step.

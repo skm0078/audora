@@ -196,6 +196,12 @@ object PlaybackContract {
     /** The voice shaping in effect ([VoiceShaping.encode]), always present. */
     const val SESSION_VOICE_SHAPING = "voice_shaping"
 
+    /**
+     * String: [SentenceTiming.encode] for the sentence playing, once it is rendered; absent before (plan item 14).
+     * Match its page and char start against the current item's before using it.
+     */
+    const val SESSION_SENTENCE_TIMING = "sentence_timing"
+
     /** Int pair: where "Undo jump" goes back to in the book being read (plan item 78); absent with nothing to undo. */
     const val SESSION_UNDO_PAGE = "undo_page"
     const val SESSION_UNDO_CHAR = "undo_char"

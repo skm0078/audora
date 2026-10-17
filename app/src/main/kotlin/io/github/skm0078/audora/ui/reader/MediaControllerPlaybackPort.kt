@@ -22,6 +22,7 @@ import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.notes.BookSettings
 import io.github.skm0078.audora.playback.contract.PlaybackContract
+import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -148,6 +149,8 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
         send(player, PlaybackContract.REPORT_SOUNDED_WRONG, PlaybackContract.reportArgs(report), "report")
     }
 
+    override fun positionInSentenceMs(): Long? = controller?.takeIf { it.currentMediaItem != null }?.currentPosition
+
     private fun send(player: MediaController, command: SessionCommand, args: Bundle, what: String) {
         val result = player.sendCustomCommand(command, args)
         result.addListener(
@@ -198,6 +201,7 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             ownSettings = extras.getBoolean(PlaybackContract.SESSION_OWN_SETTINGS, false),
             bookVoices = BookSettings.decodeVoices(extras.getString(PlaybackContract.SESSION_BOOK_VOICES)),
             undoJumpTo = undoOf(extras),
+            sentenceTiming = SentenceTiming.decode(extras.getString(PlaybackContract.SESSION_SENTENCE_TIMING)),
             // A skipped sentence is reported in the extras while reading goes on; only a stop is an error.
             errorCode = player.playerError?.errorCodeName
                 ?: extras.getString(PlaybackContract.SESSION_ERROR)?.takeUnless { player.playWhenReady },
