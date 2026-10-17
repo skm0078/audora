@@ -156,6 +156,33 @@ class ZipSourceTest(unittest.TestCase):
         self.assertEqual(voice(source_url=own).source(base), own)
 
 
+class TarballSourceTest(unittest.TestCase):
+    def test_members_named_with_a_leading_dot_slash_are_found(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            archive = Path(tmp) / "punct.tar.bz2"
+            make_archive(
+                archive,
+                {
+                    "./punct-en/model.int8.onnx": b"int8",
+                    "./punct-en/model.onnx": b"fp32",
+                    "./punct-en/bpe.vocab": b"vocab",
+                    "./punct-en/README.md": b"readme",
+                },
+                mtime=1,
+            )
+            punct = voice(
+                id="punct-en", family="punct-cnn-bilstm", model="model.int8.onnx", tokens="bpe.vocab",
+                data_dir=None, archive="punct-en",
+            )
+            built = mirror.build_zip(punct, archive, Path(tmp) / "out", [])
+            with zipfile.ZipFile(built.path) as zf:
+                self.assertEqual(zf.namelist(), ["README.md", "bpe.vocab", "model.int8.onnx"])
+
+    def test_a_tarball_source_url_is_accepted(self):
+        own = "https://example.test/punctuation-models/x.tar.bz2"
+        self.assertEqual(voice(source_url=own).source("https://example.test/tts-models/"), own)
+
+
 class CatalogTest(unittest.TestCase):
     def test_repo_catalog_parses_and_pins_look_valid(self):
         root, voices = mirror.load_catalog(Path(__file__).resolve().parents[2] / "speech" / "models.json")
@@ -164,6 +191,12 @@ class CatalogTest(unittest.TestCase):
             self.assertEqual(len(v.sha256), 64, v.id)
             self.assertEqual(v.file, f"{v.id}-{v.sha256[:12]}.zip")
             self.assertGreater(v.size_bytes, 0)
+
+    def test_models_are_loaded_after_the_voices_and_pinned_like_them(self):
+        root, voices = mirror.load_catalog(Path(__file__).resolve().parents[2] / "speech" / "models.json")
+        models = [v for v in voices if v.id in {entry["id"] for entry in root.get("models", [])}]
+        self.assertEqual([v.id for v in models], ["punct-en-cnn-bilstm"])
+        self.assertEqual(models[0].required_files(), ["model.int8.onnx", "bpe.vocab"])
 
     def test_every_voice_is_credited_and_recommendations_name_a_voice_of_their_language(self):
         root, _ = mirror.load_catalog(Path(__file__).resolve().parents[2] / "speech" / "models.json")

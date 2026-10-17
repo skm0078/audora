@@ -55,6 +55,8 @@ fun SettingsScreen(
     onSkipCitationsChange: (Boolean) -> Unit = {},
     keepScreenOn: Boolean = false,
     onKeepScreenOnChange: (Boolean) -> Unit = {},
+    punctuationModel: OcrModelsState? = null,
+    onPunctuationModel: (OcrModelsAction) -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -73,10 +75,8 @@ fun SettingsScreen(
                 modifier = Modifier.clickable(onClick = onOpenLicences),
             )
             HorizontalDivider()
-            ocrModels?.let {
-                OcrModelsItem(it, onOcrModels)
-                HorizontalDivider()
-            }
+            ModelPackRow(ocrModels, onOcrModels, ModelPackTexts.OCR)
+            ModelPackRow(punctuationModel, onPunctuationModel, ModelPackTexts.PUNCTUATION)
             SwitchItem(
                 R.string.settings_skip_citations_title,
                 R.string.settings_skip_citations_body,
@@ -109,6 +109,15 @@ fun SettingsScreen(
                 )
             }
         }
+    }
+}
+
+/** A downloadable model pack's row and its divider; nothing while its state is still loading. */
+@Composable
+private fun ModelPackRow(state: OcrModelsState?, onAction: (OcrModelsAction) -> Unit, texts: ModelPackTexts) {
+    state?.let {
+        OcrModelsItem(it, onAction, texts)
+        HorizontalDivider()
     }
 }
 

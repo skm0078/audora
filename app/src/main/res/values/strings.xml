@@ -312,6 +312,9 @@
     <string name="settings_ocr_title">Scanned pages (OCR)</string>
     <string name="settings_ocr_missing">Reads scanned and garbled pages aloud. Needs %1$d MB of text recognition files.</string>
     <string name="settings_ocr_ready">Ready for English, Hindi and Bengali · %1$d MB</string>
+    <string name="settings_punct_title">Pauses in unpunctuated scans (English)</string>
+    <string name="settings_punct_missing">Some scanned pages lose their full stops, so a long passage runs together. This adds pauses there, only in English sentences of 40 words or more with no full stop. Text that has its punctuation is never changed. Needs %1$d MB.</string>
+    <string name="settings_punct_ready">On for long English scanned sentences with no full stop · %1$d MB</string>
     <string name="settings_ocr_unavailable">Not available in this build.</string>
 
     <!-- Reading text (P2-03) -->

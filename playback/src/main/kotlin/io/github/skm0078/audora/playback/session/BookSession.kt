@@ -254,6 +254,7 @@ class BookSession(
         sleep.onBookChanged(chapters)
         chapterStop.chapterStarts = chapters
         sources.reading.chapterPages = chapters.toSet()
+        sources.reading.scanned = opened.text::isScanned
         // The book's own speed, voices and pronunciation fixes, before its first sentence is rendered.
         sources.onBook(opened.book.id)
         AudoraLog.i(TAG, "Opened book=${opened.book.id.logLabel} chapters=${chapters.size}")

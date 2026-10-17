@@ -26,6 +26,8 @@ import io.github.skm0078.audora.playback.voice.ReadingSetup
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
+import io.github.skm0078.audora.speech.punct.PunctuationModels
+import io.github.skm0078.audora.speech.punct.RunOnPunctuation
 import javax.inject.Inject
 import kotlinx.coroutines.runBlocking
 
@@ -143,7 +145,11 @@ class AudiobookExportService : Service() {
                 voices,
                 style = { style.current.copy(rate = SpeechStyle.NORMAL_RATE) },
                 styleConfig = style.config,
-                reading = ReadingSetup(chapterPages = { chapterPages }),
+                reading = ReadingSetup(
+                    chapterPages = { chapterPages },
+                    scanned = book.text::isScanned,
+                    runOn = RunOnPunctuation(punctuator = PunctuationModels.get(this)::punctuator),
+                ),
             )
             val sink = AacAudioSink(MediaStoreChapterFiles(contentResolver, folder), chapters.size, config)
             val listener = ProgressListener(title, chapters)
