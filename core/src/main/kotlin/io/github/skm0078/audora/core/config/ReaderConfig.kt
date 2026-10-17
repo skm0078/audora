@@ -1,5 +1,5 @@
 // File: core/src/main/kotlin/io/github/skm0078/audora/core/config/ReaderConfig.kt
-// Purpose: Tunables for the reader screen: speed presets, sleep-timer choices, page view (Build Spec §2, P1-05, P4-03).
+// Purpose: Tunables for the reader screen: speed presets, sleep timer, page view, OCR quality (Build Spec §2, RI-9).
 
 package io.github.skm0078.audora.core.config
 
@@ -13,6 +13,10 @@ package io.github.skm0078.audora.core.config
  *   A4 page is about 1.7 million pixels.
  * @property pageTapSlopPoints how far from a line of text, in PDF points, a tap on the page still picks its
  *   sentence: about the gap between two lines of body text.
+ * @property ocrGoodFrom a scanned page whose OCR confidence (0–100, Tesseract's, weighted by word length) is at least
+ *   this reads "OCR quality good" (RI-9). Clean scans land in the 90s; a few misread words pull a page into the 80s.
+ * @property ocrFairFrom at least this and below [ocrGoodFrom] reads "fair"; below it, "poor": by then whole lines are
+ *   noise and "Skip unreadable text" is doing real work.
  */
 data class ReaderConfig(
     val speeds: List<Float> = DEFAULT_SPEEDS,
@@ -21,6 +25,8 @@ data class ReaderConfig(
     val pageMaxPixels: Int = DEFAULT_PAGE_MAX_PIXELS,
     val pageTapSlopPoints: Float = DEFAULT_PAGE_TAP_SLOP_POINTS,
     val speech: SpeechStyleConfig = SpeechStyleConfig(),
+    val ocrGoodFrom: Int = DEFAULT_OCR_GOOD_FROM,
+    val ocrFairFrom: Int = DEFAULT_OCR_FAIR_FROM,
 ) {
     init {
         require(speeds.isNotEmpty() && speeds == speeds.sorted()) { "speeds must be non-empty and ascending" }
@@ -29,6 +35,9 @@ data class ReaderConfig(
         require(sleepMinutes.all { it > 0 }) { "sleepMinutes must be positive" }
         require(pageMaxPixels > 0) { "pageMaxPixels must be positive" }
         require(pageTapSlopPoints >= 0f) { "pageTapSlopPoints must not be negative" }
+        require(ocrFairFrom in 0..ocrGoodFrom && ocrGoodFrom <= MAX_OCR_CONFIDENCE) {
+            "OCR bands must satisfy 0 <= ocrFairFrom <= ocrGoodFrom <= 100, were $ocrFairFrom and $ocrGoodFrom"
+        }
     }
 
     /** [speed] on the slider: within range and on a step, e.g. for a speed saved by an older version. */
@@ -40,5 +49,8 @@ data class ReaderConfig(
         private val DEFAULT_SLEEP_MINUTES = listOf(15, 30, 60)
         private const val DEFAULT_PAGE_MAX_PIXELS = 4_000_000
         private const val DEFAULT_PAGE_TAP_SLOP_POINTS = 8f
+        private const val DEFAULT_OCR_GOOD_FROM = 85
+        private const val DEFAULT_OCR_FAIR_FROM = 70
+        private const val MAX_OCR_CONFIDENCE = 100
     }
 }

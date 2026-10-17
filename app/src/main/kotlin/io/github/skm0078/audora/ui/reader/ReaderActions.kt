@@ -7,6 +7,7 @@ import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.pdf.render.ViewPoint
+import io.github.skm0078.audora.playback.report.SoundedWrongReason
 
 /** One interface instead of many lambdas keeps [ReaderScreen]'s signature readable. */
 @Suppress("TooManyFunctions") // One per control on the screen.
@@ -26,6 +27,21 @@ interface ReaderActions {
 
     /** A tap on the page image, in fractions of its size: reads from the sentence there, if any. */
     fun onPageTapped(point: ViewPoint)
+
+    /** "This sounded wrong" (RI-8b): a long-press on a sentence offers the reasons. */
+    fun onSentenceLongPressed(unit: ReadingUnit) = Unit
+
+    /** A long-press on the page image, as [onPageTapped]: reports the sentence there, if any. */
+    fun onPageLongPressed(point: ViewPoint) = Unit
+
+    fun onReport(reason: SoundedWrongReason) = Unit
+
+    fun onReportDismissed() = Unit
+
+    /** "Read it anyway" on a greyed sentence (RI-9). */
+    fun onReadUnreadable() = Unit
+
+    fun onUnreadableDismissed() = Unit
 
     fun onViewChanged(view: ReaderView)
 

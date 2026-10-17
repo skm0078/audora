@@ -43,6 +43,7 @@ import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.export.AudiobookExport
+import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.voices.VoiceRow
@@ -433,13 +434,35 @@ class MainActivity : ComponentActivity() {
 
         override fun onShowReadingPosition() = model.showReadingPosition()
 
-        override fun onSentenceTapped(unit: ReadingUnit) = playWithPermission { model.readFrom(unit) }
+        override fun onSentenceTapped(unit: ReadingUnit) = readFrom(unit)
 
         // Asks for the notification permission only when the tap is on a sentence.
         override fun onPageTapped(point: ViewPoint) {
-            val unit = model.sentenceAt(point) ?: return
-            playWithPermission { model.readFrom(unit) }
+            model.sentenceAt(point)?.let { readFrom(it) }
         }
+
+        // A greyed sentence first explains why it is skipped (RI-9); the permission is asked if it is read anyway.
+        private fun readFrom(unit: ReadingUnit) {
+            if (model.state.value.isUnreadable(unit)) {
+                model.readFrom(unit)
+            } else {
+                playWithPermission { model.readFrom(unit) }
+            }
+        }
+
+        override fun onSentenceLongPressed(unit: ReadingUnit) = model.askReport(unit)
+
+        override fun onPageLongPressed(point: ViewPoint) {
+            model.sentenceAt(point)?.let(model::askReport)
+        }
+
+        override fun onReport(reason: SoundedWrongReason) = model.report(reason)
+
+        override fun onReportDismissed() = model.dismissReport()
+
+        override fun onReadUnreadable() = playWithPermission(model::readUnreadable)
+
+        override fun onUnreadableDismissed() = model.dismissUnreadable()
 
         override fun onViewChanged(view: ReaderView) = model.setView(view)
 

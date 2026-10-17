@@ -175,7 +175,7 @@ class PdfBook private constructor(
                 val transform = handle?.pageTransform(pageIndex)
                 val toPage = transform?.let { t -> { rect: ViewRect -> t.toPage(rect) } }
                 val reading = builder.ocrReadingText(pageIndex, text, dropped, toPage)
-                PageReading(builder.build(reading), routing, PageSource.Ocr(langs))
+                PageReading(builder.build(reading), routing, PageSource.Ocr(langs), text.meanConfidence)
             }
 
             is Outcome.Failure -> {
@@ -327,8 +327,16 @@ private fun describe(quality: PageQuality): String = with(quality.signals) {
         "legacyUnknown=$legacyUnknownRate"
 }
 
-/** A page's units, its route and where its words actually came from. */
-class PageReading(val units: List<ReadingUnit>, val routing: PageRouting, val source: PageSource)
+/**
+ * A page's units, its route and where its words actually came from. [ocrConfidence] is `OcrText.meanConfidence` for a
+ * page read by OCR, else null: the reader's quality badge (RI-9).
+ */
+class PageReading(
+    val units: List<ReadingUnit>,
+    val routing: PageRouting,
+    val source: PageSource,
+    val ocrConfidence: Int? = null,
+)
 
 /** Where a page's words came from: what the reader's "OCR" badge shows (P3-05). */
 sealed interface PageSource {

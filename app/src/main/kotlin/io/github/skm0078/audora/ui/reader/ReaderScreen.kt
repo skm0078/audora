@@ -1,10 +1,11 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReaderScreen.kt
-// Purpose: The reader: a page drawn or as sentences (tap to read from there), page picker, playback controls.
+// Purpose: The reader: a page drawn or as sentences (tap to read, long-press to report), page picker, controls.
 
 package io.github.skm0078.audora.ui.reader
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -97,14 +99,20 @@ fun ReaderScreen(
                     Button(onClick = actions::onRetry) { Text(stringResource(R.string.reader_retry)) }
                 }
 
-                is DocumentState.Open -> OpenBook(state, document.pageCount, actions, ocrModels)
+                is DocumentState.Open -> OpenBook(state, document.pageCount, config, actions, ocrModels)
             }
         }
     }
 }
 
 @Composable
-private fun OpenBook(state: ReaderState, pageCount: Int, actions: ReaderActions, ocrModels: OcrModelsState?) {
+private fun OpenBook(
+    state: ReaderState,
+    pageCount: Int,
+    config: ReaderConfig,
+    actions: ReaderActions,
+    ocrModels: OcrModelsState?,
+) {
     var picking by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
         PageBar(state.page, pageCount, actions, onPick = { picking = true })
@@ -125,7 +133,8 @@ private fun OpenBook(state: ReaderState, pageCount: Int, actions: ReaderActions,
             PageContent.Failed -> Message(stringResource(R.string.reader_page_failed))
 
             is PageContent.Ready -> {
-                PageOriginNotice(content.origin, ocrModels, actions::onDownloadOcrModels)
+                val badge = ocrBadgeText(content.origin, content.ocrConfidence, config)
+                PageOriginNotice(content.origin, ocrModels, badge, actions::onDownloadOcrModels)
                 when {
                     state.view == ReaderView.PAGE -> PageView(state, content.units, actions)
                     content.units.isNotEmpty() -> Sentences(state, content.units, actions)
@@ -134,6 +143,8 @@ private fun OpenBook(state: ReaderState, pageCount: Int, actions: ReaderActions,
             }
         }
     }
+    if (state.reporting != null) SoundedWrongDialog(actions::onReport, actions::onReportDismissed)
+    if (state.unreadableTapped != null) UnreadableLineDialog(actions::onReadUnreadable, actions::onUnreadableDismissed)
     if (picking) {
         PagePickerDialog(
             pageCount = pageCount,
@@ -202,24 +213,50 @@ private fun Sentences(state: ReaderState, units: List<ReadingUnit>, actions: Rea
             )
         }
         itemsIndexed(units, key = { _, unit -> unit.charStart }) { index, unit ->
-            Sentence(unit, spoken = index == spoken, enabled = state.playerReady, onTap = actions::onSentenceTapped)
+            Sentence(
+                unit,
+                SentenceLook(spoken = index == spoken, unreadable = state.isUnreadable(unit)),
+                enabled = state.playerReady,
+                onTap = actions::onSentenceTapped,
+                onLongPress = actions::onSentenceLongPressed,
+            )
         }
     }
 }
 
+/** [unreadable]: playback skips it as junk (RI-2b), so it is greyed (RI-9). */
+private data class SentenceLook(val spoken: Boolean, val unreadable: Boolean)
+
+/** Tap reads from the sentence (once the player is ready); a long-press reports it (RI-8b). */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun Sentence(unit: ReadingUnit, spoken: Boolean, enabled: Boolean, onTap: (ReadingUnit) -> Unit) {
-    val background = if (spoken) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
-    val color = if (spoken) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+private fun Sentence(
+    unit: ReadingUnit,
+    look: SentenceLook,
+    enabled: Boolean,
+    onTap: (ReadingUnit) -> Unit,
+    onLongPress: (ReadingUnit) -> Unit,
+) {
+    val colors = MaterialTheme.colorScheme
+    val background = if (look.spoken) colors.primaryContainer else Color.Transparent
+    val color = when {
+        look.spoken -> colors.onPrimaryContainer
+        look.unreadable -> colors.onSurface.copy(alpha = UNREADABLE_ALPHA)
+        else -> colors.onSurface
+    }
     Text(
         text = unit.text,
         style = MaterialTheme.typography.bodyLarge,
         color = color,
+        fontStyle = if (look.unreadable) FontStyle.Italic else null,
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(background)
-            .clickable(enabled = enabled) { onTap(unit) }
+            .combinedClickable(
+                onClick = { if (enabled) onTap(unit) },
+                onLongClick = { onLongPress(unit) },
+            )
             .padding(horizontal = 8.dp, vertical = 6.dp),
     )
 }
@@ -250,6 +287,9 @@ private fun LazyListState.isFullyVisible(index: Int): Boolean {
 
 /** The hint above the sentences. */
 private const val HEADER_ITEMS = 1
+
+/** A greyed (unreadable) sentence's text: Material's disabled-content opacity. */
+private const val UNREADABLE_ALPHA = 0.38f
 
 @Preview(showBackground = true)
 @Composable
