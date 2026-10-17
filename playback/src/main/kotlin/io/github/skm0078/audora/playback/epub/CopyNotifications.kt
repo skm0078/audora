@@ -72,10 +72,12 @@ internal class CopyNotifications(private val context: Context) {
         val open = context.packageManager.getLaunchIntentForPackage(context.packageName)
             ?.putExtra(BookCopies.EXTRA_CONTINUE_BOOK, id.value)
             ?.putExtra(BookCopies.EXTRA_CONTINUE_KIND, kind.name)
+            // Its own request code: launch intents differ only in extras, which PendingIntent matching ignores, so
+            // with the app's usual code 0 this would rewrite (and be rewritten by) every "open Audora" tap in the app.
             ?.let {
                 PendingIntent.getActivity(
                     context,
-                    0,
+                    CONTINUE_REQUEST,
                     it,
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                 )
@@ -112,6 +114,7 @@ internal class CopyNotifications(private val context: Context) {
     companion object {
         const val RUNNING_ID = 0x0A3D
         private const val RESULT_ID = 0x0A3E
+        private const val CONTINUE_REQUEST = 0x0A3F
         private const val CHANNEL = "book_copies"
         private const val PERCENT = 100
     }

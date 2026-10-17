@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   File: playback/src/main/res/values/strings_export.xml
-  Purpose: Clip, accessible copy and talking-book strings (plan items 41, 69, 76, ADR-040).
+  Purpose: Clip, accessible copy, talking-book and audiobook resume strings (plan items 41, 69, 76, ADR-040, ADR-034).
 -->
 <resources>
     <!-- Share as audio (plan item 41). -->
@@ -58,4 +58,10 @@
     <!-- %d is a page number; keep exactly one %d. -->
     <string name="notes_page" formatted="false">Page %d</string>
     <string name="notes_note">Note</string>
+    <!-- Save as audiobook goes on where it stopped (ADR-034). %1$s is the book's title. -->
+    <string name="export_timed_out_title">Saving “%1$s” paused by Android\'s time limit</string>
+    <string name="export_timed_out_text">Android stops long jobs after 6 hours. Tap Continue to open Audora and go on; chapters already saved are kept.</string>
+    <string name="export_continue">Continue</string>
+    <!-- %1$s is the folder, e.g. "Audiobooks/Moby Dick". -->
+    <string name="export_cancelled_resume">Chapters already saved are kept in %1$s. Save the book as an audiobook again to go on from there.</string>
 </resources>

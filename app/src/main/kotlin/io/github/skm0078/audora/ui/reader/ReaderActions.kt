@@ -85,6 +85,9 @@ interface ReaderActions {
     /** "Share as audio" from the sentence menu (plan item 41): this sentence to the end of its paragraph, as a clip. */
     fun onShareClip(unit: ReadingUnit) = Unit
 
+    /** Saves this book as audiobook files, with the password it was opened with (ADR-034). */
+    fun onSaveAudiobook() = Unit
+
     /** A bookmark picked in the bookmarks sheet (plan item 29). */
     fun onBookmark(bookmark: Bookmark) = Unit
 

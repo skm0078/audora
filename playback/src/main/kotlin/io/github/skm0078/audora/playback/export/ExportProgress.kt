@@ -14,6 +14,12 @@ class ExportProgress(chapters: List<AudioChapter>, private val stepPercent: Int)
 
     val percent: Int get() = if (totalPages == 0) PERCENT else pagesDone * PERCENT / totalPages
 
+    /** Counts [pages] an earlier run finished (a resumed export) as done, without reporting. */
+    fun skip(pages: Int) {
+        pagesDone += pages
+        reported = percent
+    }
+
     fun onPageDone(): Int? {
         pagesDone++
         val now = percent

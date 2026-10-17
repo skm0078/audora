@@ -251,6 +251,7 @@ class MainActivity : ComponentActivity() {
             sharedText = SharedPdfIntent.textOf(intent)
             widgetResume = ResumeWidgetProvider.bookIdOf(intent)
             BookCopies.continueFrom(this, intent)
+            AudiobookExport.continueFrom(this, intent)
         }
         setContent {
             val appearance by remember {
@@ -552,6 +553,7 @@ class MainActivity : ComponentActivity() {
         SharedPdfIntent.uriOf(intent)?.let { sharedPdf = it }
         SharedPdfIntent.textOf(intent)?.let { sharedText = it }
         BookCopies.continueFrom(this, intent)
+        AudiobookExport.continueFrom(this, intent)
         ResumeWidgetProvider.bookIdOf(intent)?.let { widgetResume = it }
     }
 
@@ -892,6 +894,11 @@ class MainActivity : ComponentActivity() {
         // The clip's progress and its Share button are in a notification, so it asks for that permission first.
         override fun onShareClip(unit: ReadingUnit) = playWithPermission {
             AudioClips.share(applicationContext, model.state.value.bookId, unit.page, unit.index, model.openPassword)
+        }
+
+        // From the reader, a password-protected PDF can be saved too: its password goes along in memory (ADR-034).
+        override fun onSaveAudiobook() = playWithPermission {
+            AudiobookExport.start(applicationContext, model.state.value.bookId, model.openPassword)
         }
 
         override fun onBookmark(bookmark: Bookmark) = model.goToBookmark(bookmark)

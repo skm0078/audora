@@ -41,8 +41,8 @@ internal fun boldWordStarts(text: String): AnnotatedString = buildAnnotatedStrin
 
 /**
  * The reader's overflow. Text view only: follow-along, word highlight and the highlight style (plan items 13 and 14),
- * Focus view and bold word starts (plan item 77). Always: the Up next sheet (plan item 25). The look items are
- * checkboxes and radio buttons, so TalkBack reads their state.
+ * Focus view and bold word starts (plan item 77). Always: the Up next sheet (plan item 25), Save as audiobook
+ * (ADR-034) and search (plan item 16). The look items are checkboxes and radio buttons, so TalkBack reads their state.
  */
 @Composable
 internal fun MoreMenu(
@@ -51,8 +51,9 @@ internal fun MoreMenu(
     onLookChange: (ReadingLook) -> Unit,
     onOpenUpNext: (() -> Unit)?,
     onSearch: (() -> Unit)? = null,
+    onSaveAudiobook: (() -> Unit)? = null,
 ) {
-    if (!textView && onOpenUpNext == null && onSearch == null) return
+    if (!textView && listOfNotNull(onOpenUpNext, onSearch, onSaveAudiobook).isEmpty()) return
     var open by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { open = true }) {
@@ -67,6 +68,15 @@ internal fun MoreMenu(
                     onClick = {
                         open = false
                         openUpNext()
+                    },
+                )
+            }
+            onSaveAudiobook?.let { save ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.library_export_audiobook)) },
+                    onClick = {
+                        open = false
+                        save()
                     },
                 )
             }

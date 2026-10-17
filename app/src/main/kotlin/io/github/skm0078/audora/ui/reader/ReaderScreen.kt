@@ -84,7 +84,8 @@ fun ReaderScreen(
                         BookmarksButton(notes, notesActions)
                         ChaptersButton(state, actions)
                         ViewToggle(state.view, actions)
-                        MoreMenu(textView = state.view == ReaderView.TEXT, look, onLookChange, onOpenUpNext, onSearch)
+                        val textView = state.view == ReaderView.TEXT
+                        MoreMenu(textView, look, onLookChange, onOpenUpNext, onSearch, actions::onSaveAudiobook)
                     }
                 },
             )

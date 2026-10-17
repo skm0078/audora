@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/export/ExportNotifications.kt
-// Purpose: The audiobook export's notifications: progress with Cancel while it runs, then done, stopped or failed.
+// Purpose: The audiobook export's notifications: progress with Cancel, then done, stopped, paused or failed.
 
 package io.github.skm0078.audora.playback.export
 
@@ -9,6 +9,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.playback.R
 
 /** Platform notifications: no androidx dependency for four plain notifications. */
@@ -67,15 +68,33 @@ internal class ExportNotifications(private val context: Context) {
 
     fun showCancelled(title: String, folder: String) = showResult(
         context.getString(R.string.export_cancelled_title, title),
-        context.getString(R.string.export_cancelled_text, folder),
+        context.getString(R.string.export_cancelled_resume, folder),
     )
 
-    private fun showResult(title: String, text: String) {
+    /** Android's 6-hour limit stopped it: Continue opens Audora, which starts the export again where it stopped. */
+    fun showTimedOut(id: BookId, title: String) {
+        // Its own request code: launch intents differ only in extras, which PendingIntent matching ignores, so with
+        // the app's usual code 0 this would rewrite (and be rewritten by) every "open Audora" tap in the app.
+        val open = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            ?.putExtra(AudiobookExport.EXTRA_CONTINUE_BOOK, id.value)
+            ?.let { PendingIntent.getActivity(context, CONTINUE_REQUEST, it, IMMUTABLE_UPDATE) }
+        val action = open?.let {
+            Notification.Action.Builder(null, context.getString(R.string.export_continue), it).build()
+        }
+        showResult(
+            context.getString(R.string.export_timed_out_title, title),
+            context.getString(R.string.export_timed_out_text),
+            action,
+        )
+    }
+
+    private fun showResult(title: String, text: String, action: Notification.Action? = null) {
         val notification = builder()
             .setContentTitle(title)
             .setContentText(text)
             .setStyle(Notification.BigTextStyle().bigText(text))
             .setAutoCancel(true)
+            .apply { action?.let(::addAction) }
             .build()
         manager.notify(RESULT_ID, notification)
     }
@@ -99,6 +118,8 @@ internal class ExportNotifications(private val context: Context) {
     companion object {
         const val RUNNING_ID = 0x0A0D
         private const val RESULT_ID = 0x0A0E
+        private const val CONTINUE_REQUEST = 0x0A0F
+        private const val IMMUTABLE_UPDATE = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         private const val CHANNEL = "audiobook_export"
         private const val PERCENT = 100
         private const val MS_PER_MINUTE = 60_000L

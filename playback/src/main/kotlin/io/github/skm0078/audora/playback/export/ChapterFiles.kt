@@ -16,8 +16,14 @@ import java.io.IOException
 
 /** One chapter's file while it is written: a seekable descriptor (MediaMuxer rewrites the header at the end). */
 interface ChapterFile {
-    /** The file's name, safe to show and log (it is built from page numbers, never the PDF's text). */
+    /**
+     * The file's name, safe to show and log (it is built from page numbers, never the PDF's text). After [publish],
+     * the name it was saved under.
+     */
     val name: String
+
+    /** Where the file can be found again after [publish] (a MediaStore URI), or null; never logged. */
+    val location: String? get() = null
 
     val descriptor: ParcelFileDescriptor
 
@@ -72,18 +78,31 @@ class MediaStoreChapterFiles(private val resolver: ContentResolver, private val 
     }
 
     private inner class Entry(
-        override val name: String,
+        override var name: String,
         private val uri: Uri,
         override val descriptor: ParcelFileDescriptor,
     ) : ChapterFile {
+        override val location: String get() = uri.toString()
+
         override fun publish(): Outcome<Unit, ExportError.Storage> = try {
             descriptor.close()
             val done = ContentValues().apply { put(MediaStore.Audio.Media.IS_PENDING, 0) }
             resolver.update(uri, done, null, null)
+            savedName()?.let { name = it }
             Outcome.Success(Unit)
         } catch (e: IOException) {
             AudoraLog.e(TAG, "Could not finish $name", e)
             Outcome.Failure(ExportError.Storage("could not finish the file"))
+        }
+
+        /** The name shared storage gave the file, which differs from the one asked for when that was taken. */
+        private fun savedName(): String? = try {
+            resolver.query(uri, arrayOf(MediaStore.Audio.Media.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                cursor.takeIf { it.moveToFirst() }?.getString(0)
+            }
+        } catch (e: SecurityException) {
+            AudoraLog.w(TAG, "Saved name of $name unreadable: ${e.javaClass.simpleName}")
+            null
         }
 
         override fun discard() {
@@ -100,6 +119,32 @@ class MediaStoreChapterFiles(private val resolver: ContentResolver, private val 
         const val TAG = "Export.Files"
         const val MIME_TYPE = "audio/mp4"
         const val MODE = "rw"
+    }
+}
+
+/**
+ * An earlier export's files in shared storage, by their MediaStore URIs. The app may delete files it created itself;
+ * files left by an earlier install of Audora belong to no app it can speak for, so their deletion fails (logged) and
+ * they stay beside the new ones.
+ */
+class MediaStoreSavedFiles(private val resolver: ContentResolver) : SavedFiles {
+    override fun exists(location: String): Boolean = try {
+        resolver.query(Uri.parse(location), arrayOf(MediaStore.Audio.Media._ID), null, null, null)
+            ?.use { it.count > 0 } ?: false
+    } catch (e: SecurityException) {
+        AudoraLog.w(TAG, "Earlier chapter file unreadable: ${e.javaClass.simpleName}")
+        false
+    }
+
+    override fun delete(location: String): Boolean = try {
+        resolver.delete(Uri.parse(location), null, null) > 0 || !exists(location)
+    } catch (e: SecurityException) {
+        AudoraLog.w(TAG, "Earlier chapter file not deleted: ${e.javaClass.simpleName}")
+        false
+    }
+
+    private companion object {
+        const val TAG = "Export.Files"
     }
 }
 

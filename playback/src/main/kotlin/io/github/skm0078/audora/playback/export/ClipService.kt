@@ -27,7 +27,6 @@ import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
-import io.github.skm0078.audora.playback.book.PasswordHandoff
 import io.github.skm0078.audora.playback.queue.UnitKey
 import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.studio.StudioMode
@@ -106,7 +105,7 @@ class ClipService : Service() {
             .apply { acquire(clipConfig.wakeLockMs) }
         try {
             val books = LibraryBookSource(this, library)
-            when (val opened = runBlocking { books.open(id, PasswordHandoff.take(id)) }) {
+            when (val opened = runBlocking { books.open(id, PasswordHandoff.shared.take(id)) }) {
                 is Outcome.Success -> opened.value.text.use { clipOf(opened.value, start) }
                 is Outcome.Failure -> notices.showFailed(opened.error.message)
             }

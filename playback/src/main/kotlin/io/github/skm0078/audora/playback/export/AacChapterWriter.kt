@@ -59,7 +59,8 @@ class AacChapterWriter private constructor(
         release()
         val published = target.publish()
         if (published is Outcome.Failure) throw IOException(published.error.detail)
-        ExportedChapter(chapter, name = target.name, durationMs = samplesQueued * MS_PER_S / sampleRate)
+        val durationMs = samplesQueued * MS_PER_S / sampleRate
+        ExportedChapter(chapter, name = target.name, durationMs = durationMs, location = target.location)
     }
 
     override fun abort() {

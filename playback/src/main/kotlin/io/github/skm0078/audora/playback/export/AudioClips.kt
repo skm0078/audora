@@ -8,7 +8,6 @@ import android.content.Intent
 import androidx.core.content.FileProvider
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
-import io.github.skm0078.audora.playback.book.PasswordHandoff
 
 object AudioClips {
     internal const val ACTION_MAKE = "io.github.skm0078.audora.clip.MAKE"
@@ -29,13 +28,12 @@ object AudioClips {
      */
     fun share(context: Context, id: BookId, page: Int, index: Int, password: String? = null) {
         AudoraLog.i(TAG, "Clip requested, book=${id.logLabel} page=$page sentence=$index")
-        PasswordHandoff.put(id, password)
         val intent = Intent(context, ClipService::class.java)
             .setAction(ACTION_MAKE)
             .putExtra(EXTRA_BOOK, id.value)
             .putExtra(EXTRA_PAGE, page)
             .putExtra(EXTRA_INDEX, index)
-        context.startForegroundService(intent)
+        PasswordHandoff.shared.handOver(id, password) { context.startForegroundService(intent) }
     }
 
     internal fun uriFor(context: Context, file: java.io.File) =
