@@ -6,4 +6,26 @@
     <string name="playback_page_of">Page %1$d of %2$d</string>
     <!-- Shown while the next page is still being prepared. -->
     <string name="playback_loading_next_page">Preparing the next page…</string>
+
+    <!-- Audiobook export (ADR-034): the notification channel and its notifications. -->
+    <string name="export_channel">Audiobook export</string>
+    <string name="export_channel_description">Progress while a book is saved as audio files</string>
+    <!-- %1$s is the book's title. -->
+    <string name="export_running_title">Saving “%1$s” as an audiobook</string>
+    <!-- e.g. "Chapter 3 of 12 · 41%". -->
+    <string name="export_running_text">Chapter %1$d of %2$d · %3$d%%</string>
+    <string name="export_preparing">Preparing…</string>
+    <string name="export_cancel">Cancel</string>
+    <string name="export_done_title">Audiobook ready: “%1$s”</string>
+    <!-- %1$d files, %2$s a duration like "2 h 05 min", %3$s the folder, e.g. "Audiobooks/Moby Dick". -->
+    <plurals name="export_done_text">
+        <item quantity="one">%1$d file, %2$s, in %3$s</item>
+        <item quantity="other">%1$d files, %2$s, in %3$s</item>
+    </plurals>
+    <string name="export_duration">%1$d h %2$02d min</string>
+    <string name="export_failed_title">Could not save “%1$s” as an audiobook</string>
+    <string name="export_cancelled_title">Stopped saving “%1$s”</string>
+    <string name="export_cancelled_text">Chapters already saved are kept in %1$s</string>
+    <string name="export_busy">Another book is being saved as an audiobook; try again when it finishes</string>
+    <string name="export_untitled">Audiobook</string>
 </resources>

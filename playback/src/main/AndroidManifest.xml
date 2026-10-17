@@ -8,6 +8,9 @@
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Audiobook export (ADR-034): a long user-started render; mediaProcessing on Android 15+, dataSync before. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
     <!-- The playback notification on Android 13+; the UI asks for it on first play. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- ExoPlayer's WAKE_MODE_LOCAL keeps the CPU awake while a sentence is synthesized with the screen off. -->
@@ -29,6 +32,12 @@
                 <action android:name="androidx.media3.session.MediaSessionService" />
             </intent-filter>
         </service>
+
+        <!-- Audiobook export (ADR-034): started only from the library's "Save as audiobook" (C7). -->
+        <service
+            android:name=".export.AudiobookExportService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|mediaProcessing" />
 
         <!-- Playback resumption (P1-06): a headset's play button after Audora was closed resumes the last book.
              A media button press is a user action (C7); nothing here runs on boot. -->

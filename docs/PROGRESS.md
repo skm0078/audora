@@ -47,6 +47,17 @@ One entry per merged ticket, newest first. Each entry: what changed, what was ve
 
 **Real-device checks:** none (no app behaviour changed).
 
+## Audiobook export — "Save as audiobook", one AAC file per chapter (2026-10-17, ADR-034)
+- **Save as audiobook** in a book's menu in the library renders the whole book offline into `Audiobooks/<title>/NN Pages a-b.m4a`, one file per outline chapter (front matter kept as its own file; 10-page parts when the PDF has no outline). Any audiobook app (Voice, Smart AudioBook Player) or the phone's music app plays the folder as a book with chapters.
+- Same voices, normalizers and pace as listening in the app, at the voice's own rate (audiobook apps have their own speed control). AAC-LC 64 kbit/s mono through the phone's own encoder: about 29 MB per hour; no new dependency.
+- Runs in a foreground service with a progress notification (chapter, percent, Cancel) and a partial wake lock, so it keeps going with the screen off. Cancel keeps the chapters already saved; a failing voice stops it after 3 sentences in a row; the result (files, total length, folder) is a notification.
+- `PIPELINE_VERSION` unchanged. Room unchanged. New permissions: foreground service types dataSync (Android 12-14) and mediaProcessing (15+) only.
+- Tests: chapter plan, folder names, exporter failure and cancel rules, progress steps (JVM); on the CI emulator, the platform encoder writes AAC at the voice's rate and length, an aborted chapter leaves no file, and the bilingual PDF becomes one playable file per chapter.
+
+**Known limits:** password-protected PDFs are not exported yet. Saving the same book again adds a second set of files beside the first (Android numbers them); delete the old folder first. File names use page numbers, not chapter titles. Exporting while listening loads a second copy of the voice. Android 15+ stops this kind of job after 6 hours a day, which is long enough for most books with Piper voices, but not with Kokoro on the Moto.
+
+**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the other phone checks):** (1) Library → a book's ⋮ → Save as audiobook: a notification shows the chapter and percent; turn the screen off for 5 min, and the percent has moved on. (2) When it finishes, open Files → Audiobooks → the book's folder: the files are in reading order and play in the phone's music or audiobook app with the app's voice and pauses. (3) Start another export and tap Cancel: the notification says it stopped, and the finished chapters remain. (4) Start an export while a book is playing: playback keeps going without stutter (watch memory with the Kokoro voice).
+
 ## App basics — speed, pace, library progress, Open with Audora, rewind on resume (2026-10-16, ADR-033)
 - **Speed without smeared words:** the voice model now speaks at the chosen rate itself (Piper/VITS, Kokoro, Kitten, Supertonic, and the phone's engine through `setSpeechRate`) up to 1.5×; only the rest above that is time-stretched. 0.5×–3× in 0.05 steps.
 - **Natural pauses:** sherpa-onnx renders now keep the voice's own pauses inside a sentence (`silenceScale` 1.0; the library default 0.2 cut every comma pause to a fifth).
