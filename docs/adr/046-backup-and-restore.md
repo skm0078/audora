@@ -20,7 +20,8 @@ small settings files.
    - `databases/audora.db`: a consistent snapshot of every table (books, resume anchors, bookmarks, book settings,
      pronunciations, highlights, voice notes) taken with SQLite's `VACUUM INTO` while the app runs
      (`AudoraStorage.snapshotTo`), WAL contents included;
-   - the reading-text, Up next, speech-style, sleep-option and watched-folder files, the reader, reading-look and appearance
+   - the reading-text, Up next, speech-style, sleep-option, watched-folder and focus-sound files, per-book character
+     names (character voices), the reader, reading-look and appearance
      preferences, each voice's speed, the voice-note recordings and the books shared into the app.
    Left out: voices, OCR models and the dictionary (large, downloaded again), which voice each language uses (it may
    name a voice the new phone lacks), covers and search indexes (rebuilt), logs, export records and studio audio

@@ -214,10 +214,10 @@ private val SPEECH_SOFTWARE = listOf(
         "https://en-word.net/",
     ),
     Software(
-        "Wiktionary (Wiktionary contributors, via Wiktextract and kaikki.org), Hindi and Bengali dictionaries, " +
-            "if downloaded",
+        "Wiktionary (Wiktionary contributors), Hindi and Bengali entries converted via Wiktextract (kaikki.org), " +
+            "dictionaries, if downloaded",
         R.string.licences_cc_by_sa_wiktionary,
-        "https://kaikki.org/",
+        "https://en.wiktionary.org/",
     ),
     Software("Audora", R.string.licences_gpl3, "https://github.com/skm0078/audora"),
 )

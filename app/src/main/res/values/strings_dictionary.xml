@@ -33,5 +33,5 @@
     <string name="dictionary_close">Close</string>
     <!-- Licences screen: the dictionary's terms. -->
     <string name="licences_cc_by_wordnet">Creative Commons Attribution 4.0, and the WordNet License: WordNet 3.1 Copyright 2011 by Princeton University. All rights reserved. Provided as is, without warranties; the full notice comes with the download.</string>
-    <string name="licences_cc_by_sa_wiktionary">Creative Commons Attribution-ShareAlike 4.0, by Wiktionary contributors; extracted by Wiktextract (kaikki.org). The dictionary file is shared under the same licence; the full text comes with the download.</string>
+    <string name="licences_cc_by_sa_wiktionary">Creative Commons Attribution-ShareAlike 4.0, by Wiktionary contributors (en.wiktionary.org). Changed: entries were converted by Wiktextract (kaikki.org) and Audora into dictionary lines (meanings shortened, forms indexed, examples left out). The dictionary files are shared under the same licence; the full text comes with each download.</string>
 </resources>

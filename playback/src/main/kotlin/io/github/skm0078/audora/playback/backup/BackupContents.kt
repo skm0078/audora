@@ -61,12 +61,14 @@ data class BackupContents(val files: List<String>, val folders: List<String>) {
                 "files/speech-style.properties",
                 "files/sleep-options.txt",
                 "files/watched-folders.txt",
+                "files/focus-sound.txt",
                 "files/datastore/reader.preferences_pb",
                 "files/datastore/reading_look.preferences_pb",
                 "files/datastore/appearance.preferences_pb",
                 "no_backup/voices/managed/voice-speeds.properties",
             ),
-            folders = listOf("files/voice-notes", "files/shared-pdfs"),
+            // characters/: per-book character names for character voices (item 63), the listener's own content.
+            folders = listOf("files/voice-notes", "files/shared-pdfs", "files/characters"),
         )
     }
 }
