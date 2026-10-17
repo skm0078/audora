@@ -24,6 +24,7 @@ import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.queue.MeasuredRenderAhead
+import io.github.skm0078.audora.playback.reading.ReadingSource
 import io.github.skm0078.audora.playback.session.BookSession
 import io.github.skm0078.audora.playback.session.ItemTexts
 import io.github.skm0078.audora.playback.session.LivePlaybackSpeed
@@ -32,6 +33,7 @@ import io.github.skm0078.audora.playback.session.SessionEnvironment
 import io.github.skm0078.audora.playback.session.SessionSources
 import io.github.skm0078.audora.playback.session.SpeechPlayer
 import io.github.skm0078.audora.playback.voice.EngineRenderer
+import io.github.skm0078.audora.playback.voice.ReadingSetup
 import io.github.skm0078.audora.playback.voice.RenderSpeedTracker
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
@@ -87,6 +89,8 @@ class AudoraPlaybackService : MediaSessionService() {
         speed = LivePlaybackSpeed(player)
         val diagnostics = DiagnosticsBridge(tracker, scope)
         val recorder = ResumeRecorder(resumeAnchors, resumeScope, PIPELINE_VERSION, System::currentTimeMillis)
+        // The reading modes travel with the speech style; a change restarts the sentence playing (ADR-035).
+        val reading = ReadingSource(modes = { style.current.modes })
         val callback = SessionCallback(packageName, scope, voices, style, { bookSession }, { resumption })
         val mediaSession = MediaSession.Builder(this, player)
             .setCallback(callback)
@@ -102,6 +106,7 @@ class AudoraPlaybackService : MediaSessionService() {
                     speed = RenderSpeedTracker(engines::speeds),
                     style = style::current,
                     styleConfig = style.config,
+                    reading = ReadingSetup(reading.speakability, chapterPages = { reading.chapterPages }),
                 ),
                 books = LibraryBookSource(this, library),
                 texts = ResourceTexts(),
@@ -109,6 +114,7 @@ class AudoraPlaybackService : MediaSessionService() {
                 renderAhead = MeasuredRenderAhead(voices::speedOf) {
                     speed.value * style.config.modelRate(style.current.rate)
                 },
+                reading = reading,
             ),
             config = config,
             events = SessionPublisher(mediaSession, diagnostics, ResumeBridge(recorder, resumeScope), style::current),

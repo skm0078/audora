@@ -20,7 +20,9 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
+import io.github.skm0078.audora.playback.reading.UnitReading
 import io.github.skm0078.audora.playback.voice.EngineRenderer
+import io.github.skm0078.audora.playback.voice.ReadingSetup
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
@@ -136,14 +138,17 @@ class AudiobookExportService : Service() {
         val voices = SpeechVoices(VoiceEngines(this))
         try {
             val style = SpeechStyleStore.forContext(this)
+            val chapterPages = book.text.chapterStarts().toSet()
             val renderer = EngineRenderer(
                 voices,
                 style = { style.current.copy(rate = SpeechStyle.NORMAL_RATE) },
                 styleConfig = style.config,
+                reading = ReadingSetup(chapterPages = { chapterPages }),
             )
             val sink = AacAudioSink(MediaStoreChapterFiles(contentResolver, folder), chapters.size, config)
             val listener = ProgressListener(title, chapters)
-            val exporter = AudiobookExporter(renderer, config)
+            val exporter =
+                AudiobookExporter(renderer, config, UnitReading(style.current.modes, chapterPages = chapterPages))
             when (val result = exporter.export(book.text, chapters, sink, listener, logContext)) {
                 is Outcome.Success -> notifications.showDone(title, result.value, shownFolder)
                 is Outcome.Failure -> notifications.showFailed(title, result.error.message)

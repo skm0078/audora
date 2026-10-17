@@ -27,6 +27,7 @@ import io.github.skm0078.audora.playback.playlist.PlaylistFeeder
 import io.github.skm0078.audora.playback.queue.RenderAheadPolicy
 import io.github.skm0078.audora.playback.queue.RenderAheadQueue
 import io.github.skm0078.audora.playback.queue.SentenceRenderer
+import io.github.skm0078.audora.playback.reading.ReadingSource
 import io.github.skm0078.audora.playback.recovery.PlaybackRecovery
 import io.github.skm0078.audora.playback.recovery.PlayerFault
 import io.github.skm0078.audora.playback.recovery.RecoveryAction
@@ -45,6 +46,7 @@ class SessionSources(
     val books: BookSource,
     val texts: ItemTexts,
     val renderAhead: RenderAheadPolicy = RenderAheadPolicy.FIXED,
+    val reading: ReadingSource = ReadingSource(),
 )
 
 /**
@@ -206,6 +208,7 @@ class BookSession(
             opened.text.chapterStarts()
         }
         sleep.onBookChanged(chapters)
+        sources.reading.chapterPages = chapters.toSet()
         AudoraLog.i(TAG, "Opened book=${opened.book.id.logLabel} chapters=${chapters.size}")
     }
 
@@ -221,7 +224,7 @@ class BookSession(
         queue = newQueue
         registry.publish(epoch, newQueue)
         val items = PlaylistItems(opened.book.id.value, epoch, opened.book.title, opened.text.pageCount, sources.texts)
-        val newFeeder = PlaylistFeeder(PlayerPlaylist(player, items), config)
+        val newFeeder = PlaylistFeeder(PlayerPlaylist(player, items), config, sources.reading.current())
         feeder = newFeeder
         cursor = PageCursor(opened.text.pageCount, page, charStart)
         player.setMediaItems(newFeeder.initialItems().map(items::toMediaItem), 0, 0L)

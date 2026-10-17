@@ -5,9 +5,10 @@ package io.github.skm0078.audora.speech.normalize
 
 /**
  * What a piece of text is on the page. Some readings depend on it: "IV. Results" is "four" only in a heading.
- * Playback passes [HEADING] for sentences layout found in a heading (`UnitKind.HEADING`), [BODY] for the rest.
+ * Playback passes [HEADING] for sentences layout found in a heading (`UnitKind.HEADING`), [EQUATION] for a display
+ * equation read as written (its maths and logic symbols become words, RI-7b), [BODY] for the rest.
  */
-enum class TextRole { BODY, HEADING }
+enum class TextRole { BODY, HEADING, EQUATION }
 
 /**
  * Rewrites written text into speakable words (numbers, dates, currency, abbreviations, links). Runs at render time,

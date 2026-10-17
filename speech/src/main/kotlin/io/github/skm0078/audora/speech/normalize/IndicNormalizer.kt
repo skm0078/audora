@@ -20,11 +20,14 @@ import io.github.skm0078.audora.core.model.Lang
  * सैंतालीस". A slash between words reads "या"/"বা" and "&" reads "और"/"এবং" (RI-6). Text with none of these is
  * returned unchanged.
  */
-class IndicNormalizer internal constructor(private val words: IndicNumberWords, private val config: NormalizerConfig) :
-    TextNormalizer {
+class IndicNormalizer internal constructor(
+    private val words: IndicNumberWords,
+    private val config: NormalizerConfig,
+    private val lang: Lang,
+) : TextNormalizer {
 
     override fun normalize(text: String, role: TextRole): String {
-        val spoken = speakSymbols(text)
+        val spoken = speakSymbols(if (role == TextRole.EQUATION) MathSymbols.speak(text, lang) else text)
         val ascii = asciiDigits(spoken)
         if (ascii.none(Char::isAsciiDigit)) return if (spoken === text) text else tidy(spoken)
         var result = CURRENCY.replace(ascii) { match -> money(match.groupValues[1]) }
@@ -102,8 +105,8 @@ class IndicNormalizer internal constructor(private val words: IndicNumberWords, 
 
         /** The normalizer for [lang]'s parts, or null for a language the Indic rules do not cover. */
         fun forLang(lang: Lang, config: NormalizerConfig = NormalizerConfig()): IndicNormalizer? = when (lang) {
-            Lang.HI -> IndicNormalizer(IndicNumberWords.HINDI, config)
-            Lang.BN -> IndicNormalizer(IndicNumberWords.BENGALI, config)
+            Lang.HI -> IndicNormalizer(IndicNumberWords.HINDI, config, Lang.HI)
+            Lang.BN -> IndicNormalizer(IndicNumberWords.BENGALI, config, Lang.BN)
             Lang.EN -> null
         }
 

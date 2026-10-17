@@ -1,0 +1,24 @@
+// File: playback/src/main/kotlin/io/github/skm0078/audora/playback/reading/ReadingSource.kt
+// Purpose: Where the session gets its reading modes and the open book's chapter pages, for playlist and renderer alike.
+
+package io.github.skm0078.audora.playback.reading
+
+import io.github.skm0078.audora.core.config.SpeakabilityConfig
+import io.github.skm0078.audora.core.model.ReadingModes
+
+/**
+ * One per playback service. [modes] is read when a render epoch starts (a mode change restarts the sentence playing,
+ * like any style change) and [chapterPages] is set when a book opens; both are read on the render thread too, so
+ * [chapterPages] is volatile and [modes] must be thread-safe.
+ */
+class ReadingSource(
+    val modes: () -> ReadingModes = { ReadingModes() },
+    val speakability: SpeakabilityConfig = SpeakabilityConfig(),
+) {
+    /** The open book's chapter start pages (PDF outline); empty with no book or no outline. */
+    @Volatile
+    var chapterPages: Set<Int> = emptySet()
+
+    /** The modes as they are now, for one render epoch's playlist. */
+    fun current(): UnitReading = UnitReading(modes(), speakability, chapterPages)
+}

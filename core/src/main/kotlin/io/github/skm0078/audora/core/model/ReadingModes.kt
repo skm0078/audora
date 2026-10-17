@@ -1,0 +1,95 @@
+// File: core/src/main/kotlin/io/github/skm0078/audora/core/model/ReadingModes.kt
+// Purpose: What playback reads, announces or skips: unreadable text, tables, notes, equations, captions (ADR-035).
+
+package io.github.skm0078.audora.core.model
+
+/** How a table is read (RI-4b). */
+enum class TableMode {
+    /** The caption, then the table's size ("4 rows, 5 columns."); cells are not read. */
+    SUMMARY,
+
+    /** The size, then every row with its column names: "Row 1. Name: Ram. Age: 34." */
+    ROWS,
+
+    /** Nothing of the table is read; its caption still is. */
+    SKIP,
+}
+
+/** How footnotes are read (RI-5b). */
+enum class FootnoteMode {
+    /** Where they are printed: after the page's text. */
+    READ,
+    SKIP,
+}
+
+/** How a display equation is read (RI-7b). A run of consecutive equation lines is one equation. */
+enum class EquationMode {
+    /** "Equation 3", with the number printed beside it, or just "Equation". */
+    ANNOUNCE,
+
+    /** Every line read out, maths and logic symbols as words. */
+    AS_WRITTEN,
+    SKIP,
+}
+
+/** How figure and table captions are read (RI-7b). */
+enum class CaptionMode {
+    /** A short sound before the caption's label, then the caption. */
+    ANNOUNCE,
+    SKIP,
+}
+
+/**
+ * What playback does with each kind of unit `:pdf` tags (ADR-035). `:pdf` never drops a unit; these decide whether it
+ * is read, announced or skipped. A skipped unit is still a resume point: resuming on it starts at the next unit read.
+ *
+ * @property skipUnreadable units scoring below SpeakabilityConfig.skipBelow (OCR noise, broken fonts, symbol soup)
+ *   play a short sound instead of being read (RI-2b).
+ */
+data class ReadingModes(
+    val skipUnreadable: Boolean = true,
+    val tables: TableMode = TableMode.SUMMARY,
+    val footnotes: FootnoteMode = FootnoteMode.READ,
+    val equations: EquationMode = EquationMode.ANNOUNCE,
+    val captions: CaptionMode = CaptionMode.ANNOUNCE,
+) {
+    /**
+     * One line for a settings file or a media session extra: `key=VALUE` pairs separated by `;`. [decode] reads it
+     * back, so adding a mode later keeps older saved values readable.
+     */
+    fun encode(): String = listOf(
+        KEY_SKIP_UNREADABLE to skipUnreadable.toString(),
+        KEY_TABLES to tables.name,
+        KEY_FOOTNOTES to footnotes.name,
+        KEY_EQUATIONS to equations.name,
+        KEY_CAPTIONS to captions.name,
+    ).joinToString(PAIR_SEPARATOR) { (key, value) -> "$key$VALUE_SEPARATOR$value" }
+
+    companion object {
+        private const val PAIR_SEPARATOR = ";"
+        private const val VALUE_SEPARATOR = "="
+        private const val KEY_SKIP_UNREADABLE = "skipUnreadable"
+        private const val KEY_TABLES = "tables"
+        private const val KEY_FOOTNOTES = "footnotes"
+        private const val KEY_EQUATIONS = "equations"
+        private const val KEY_CAPTIONS = "captions"
+
+        /** Reads [encode]'s line; a missing, unknown or malformed value takes its default, so this never fails. */
+        fun decode(line: String?): ReadingModes {
+            val values = line.orEmpty().split(PAIR_SEPARATOR).mapNotNull { pair ->
+                pair.split(VALUE_SEPARATOR, limit = 2).takeIf { it.size == 2 }?.let { it[0].trim() to it[1].trim() }
+            }.toMap()
+            val defaults = ReadingModes()
+            return ReadingModes(
+                skipUnreadable = values[KEY_SKIP_UNREADABLE]?.toBooleanStrictOrNull() ?: defaults.skipUnreadable,
+                tables = enumOrNull<TableMode>(values[KEY_TABLES]) ?: defaults.tables,
+                footnotes = enumOrNull<FootnoteMode>(values[KEY_FOOTNOTES]) ?: defaults.footnotes,
+                equations = enumOrNull<EquationMode>(values[KEY_EQUATIONS]) ?: defaults.equations,
+                captions = enumOrNull<CaptionMode>(values[KEY_CAPTIONS]) ?: defaults.captions,
+            )
+        }
+
+        private inline fun <reified E : Enum<E>> enumOrNull(name: String?): E? =
+            enumValues<E>().firstOrNull { it.name == name }
+    }
+}

@@ -4,20 +4,22 @@
 package io.github.skm0078.audora.playback.voice
 
 import io.github.skm0078.audora.core.config.ScriptRoutingConfig
+import io.github.skm0078.audora.core.config.SpeakabilityConfig
 import io.github.skm0078.audora.core.config.SpeechStyleConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SpeechStyle
-import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.map
 import io.github.skm0078.audora.playback.queue.SentenceRenderer
 import io.github.skm0078.audora.playback.queue.UnitKey
+import io.github.skm0078.audora.playback.reading.Speech
+import io.github.skm0078.audora.playback.reading.UnitReading
 import io.github.skm0078.audora.speech.SpeechError
+import io.github.skm0078.audora.speech.audio.Earcon
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.normalize.TextNormalizer
-import io.github.skm0078.audora.speech.normalize.TextRole
 import io.github.skm0078.audora.speech.route.ClauseProsody
 import io.github.skm0078.audora.speech.route.RoutedAudio
 import io.github.skm0078.audora.speech.route.RoutedSpeech
@@ -44,7 +46,11 @@ import kotlinx.coroutines.runBlocking
  * plus the pace's gap after every sentence, is rendered as silence at the end of its clip (ADR-029), so the player,
  * highlight and sleep timer need no notion of pauses. The speed is measured on the voice's audio alone: silence
  * costs no render time and would make a voice look faster.
+ *
+ * What the voice is given follows the style's reading modes ([UnitReading], ADR-035): a table's size or a row with its
+ * column names, "Equation 3", a cue in place of unreadable text, a cue before a caption or a chapter's heading.
  */
+@Suppress("LongParameterList") // All optional: the app passes the speed tracker, the style and the reading setup.
 class EngineRenderer(
     voices: VoiceSource,
     config: ScriptRoutingConfig = ScriptRoutingConfig(),
@@ -52,32 +58,39 @@ class EngineRenderer(
     private val speed: RenderSpeedTracker? = null,
     private val style: () -> SpeechStyle = { SpeechStyle() },
     private val styleConfig: SpeechStyleConfig = SpeechStyleConfig(),
+    private val reading: ReadingSetup = ReadingSetup(),
 ) : SentenceRenderer {
-    private val speech = RoutedSpeech(voices, ScriptRouter(config), normalizers)
+    private val routedSpeech = RoutedSpeech(voices, ScriptRouter(config), normalizers)
 
     override fun render(unit: ReadingUnit): Outcome<PcmAudio, SpeechError> {
-        val started = System.nanoTime()
         val now = style()
+        val pauseAfterMs = styleConfig.silenceAfterMs(unit.pauseAfterMs, now)
+        return when (val speech = UnitReading(now.modes, reading.speakability, reading.chapterPages()).speechOf(unit)) {
+            Speech.Cue -> {
+                AudoraLog.d(TAG, "${UnitKey.of(unit)}: unreadable, cue instead")
+                Outcome.Success(reading.earcon.cue().withSilenceAfter(pauseAfterMs))
+            }
+
+            is Speech.Text -> speak(unit, speech, now).map { audio ->
+                (if (speech.cueBefore) reading.earcon.before(audio) else audio).withSilenceAfter(pauseAfterMs)
+            }
+        }
+    }
+
+    private fun speak(unit: ReadingUnit, speech: Speech.Text, now: SpeechStyle): Outcome<PcmAudio, SpeechError> {
+        val started = System.nanoTime()
         val rate = styleConfig.modelRate(now.rate)
-        val text = TablePlaceholder.spokenText(unit)
         val prosody = if (now.clausePauses) {
             ClauseProsody({ mark -> styleConfig.clauseSilenceMs(mark, now) }, styleConfig.asideGainDb)
         } else {
             null
         }
-        return runBlocking { speech.render(text, unit.lang, roleOf(unit.kind), rate, prosody) }.map { routed ->
+        val text = speech.text
+        return runBlocking { routedSpeech.render(text, unit.lang, speech.role, rate, prosody) }.map { routed ->
             speed?.onRendered(text.trim().length, routed, System.nanoTime() - started, rate)
             log(unit, routed)
-            routed.audio.withSilenceAfter(styleConfig.silenceAfterMs(unit.pauseAfterMs, now))
+            routed.audio
         }
-    }
-
-    private fun roleOf(kind: UnitKind): TextRole = when (kind) {
-        UnitKind.HEADING -> TextRole.HEADING
-
-        UnitKind.BODY, UnitKind.LIST_ITEM, UnitKind.TABLE_SUMMARY, UnitKind.TABLE_ROW, UnitKind.FOOTNOTE,
-        UnitKind.CAPTION, UnitKind.EQUATION, UnitKind.ASIDE,
-        -> TextRole.BODY
     }
 
     /** Context only (page, sentence, languages), never the sentence's text. */
@@ -95,3 +108,15 @@ class EngineRenderer(
         const val TAG = "Playback.Render"
     }
 }
+
+/**
+ * What the renderer needs beyond the voice and the style to apply the reading modes.
+ *
+ * @property chapterPages the open book's chapter start pages (PDF outline), for the cue before a chapter's heading;
+ *   read on the render thread, so it must be thread-safe.
+ */
+class ReadingSetup(
+    val speakability: SpeakabilityConfig = SpeakabilityConfig(),
+    val earcon: Earcon = Earcon(),
+    val chapterPages: () -> Set<Int> = { emptySet() },
+)
