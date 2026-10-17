@@ -42,4 +42,21 @@ class AudioChaptersTest {
         assertEquals("003 Page 9", AudioChapter(3, 8, 8).fileStem(total = 120))
         assertEquals("1 Pages 1-4", AudioChapter(1, 0, 3).fileStem(total = 9))
     }
+
+    @Test
+    fun `book folders are safe names under Audiobooks`() {
+        data class Case(val title: String, val expected: String)
+        val cases = listOf(
+            Case("Moby Dick", "Audiobooks/Moby Dick/"),
+            Case("Report: 2024/25 <final>?", "Audiobooks/Report 2024 25 final/"),
+            Case("..hidden", "Audiobooks/hidden/"),
+            Case("  line\nbreak\ttab  ", "Audiobooks/line break tab/"),
+            Case("भारत का संविधान", "Audiobooks/भारत का संविधान/"),
+            Case("///", "Audiobooks/Audiobook/"),
+            Case("x".repeat(200), "Audiobooks/${"x".repeat(80)}/"),
+        )
+        for (case in cases) {
+            assertEquals(case.title, case.expected, AudiobookFolder.relativePath(case.title, fallback = "Audiobook"))
+        }
+    }
 }

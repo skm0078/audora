@@ -48,7 +48,7 @@ class AudiobookExportDeviceTest {
     @Test
     fun aWrittenChapterIsAacAtTheVoicesRateAndLength() {
         val chapter = AudioChapter(1, 0, 0)
-        val writer = requireNotNull(AacChapterWriter.create(chapter, File(folder, "one.m4a"), RATE).getOrNull())
+        val writer = requireNotNull(AacChapterWriter.create(chapter, newFile("one.m4a"), RATE).getOrNull())
         repeat(3) { assertTrue(writer.write(tone(RATE, HALF_SECOND_MS)) is Outcome.Success) }
 
         val exported = (writer.finish() as Outcome.Success).value
@@ -63,7 +63,8 @@ class AudiobookExportDeviceTest {
     @Test
     fun anAbortedChapterLeavesNoFile() {
         val file = File(folder, "partial.m4a")
-        val writer = requireNotNull(AacChapterWriter.create(AudioChapter(1, 0, 0), file, RATE).getOrNull())
+        val writer =
+            requireNotNull(AacChapterWriter.create(AudioChapter(1, 0, 0), newFile(file.name), RATE).getOrNull())
         writer.write(tone(RATE, HALF_SECOND_MS))
 
         writer.abort()
@@ -82,7 +83,9 @@ class AudiobookExportDeviceTest {
                 Outcome.Success(tone(if (sentence++ % 2 == 0) RATE else OTHER_RATE, SENTENCE_MS))
             }
 
-            val result = AudiobookExporter(renderer).export(text, chapters, FolderAudioSink(folder, chapters.size))
+            val result = AudiobookExporter(
+                renderer,
+            ).export(text, chapters, AacAudioSink(LocalChapterFiles(folder), chapters.size))
 
             val summary = (result as Outcome.Success).value
             assertTrue("nothing exported", summary.chapters.isNotEmpty())
@@ -94,6 +97,8 @@ class AudiobookExportDeviceTest {
             }
         }
     }
+
+    private fun newFile(name: String): ChapterFile = requireNotNull(LocalChapterFiles(folder).create(name).getOrNull())
 
     private fun trackFormat(file: File): MediaFormat {
         val extractor = MediaExtractor()

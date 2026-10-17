@@ -113,6 +113,7 @@ fun LibraryScreen(
                     }
                 },
                 onRemove = actions::onRequestRemoval,
+                onExport = actions::onExportAudiobook,
                 onContinue = actions::onContinue,
             )
         }
@@ -140,6 +141,7 @@ private fun LibraryContent(
     onAddPdf: () -> Unit,
     onTap: (LibraryItem) -> Unit,
     onRemove: (Book) -> Unit,
+    onExport: (Book) -> Unit,
     onContinue: (Book) -> Unit,
 ) {
     when (listState) {
@@ -156,7 +158,7 @@ private fun LibraryContent(
         is LibraryListState.Loaded -> if (listState.items.isEmpty()) {
             EmptyLibrary(enabled = !busy, onAddPdf = onAddPdf)
         } else {
-            BookList(listState, onTap = onTap, onRemove = onRemove, onContinue = onContinue)
+            BookList(listState, onTap = onTap, onRemove = onRemove, onExport = onExport, onContinue = onContinue)
         }
     }
 }
@@ -181,6 +183,7 @@ private fun BookList(
     list: LibraryListState.Loaded,
     onTap: (LibraryItem) -> Unit,
     onRemove: (Book) -> Unit,
+    onExport: (Book) -> Unit,
     onContinue: (Book) -> Unit,
 ) {
     LazyColumn(contentPadding = PaddingValues(bottom = FAB_CLEARANCE)) {
@@ -190,7 +193,12 @@ private fun BookList(
             }
         }
         items(list.items, key = { it.book.id.value }) { item ->
-            BookRow(item = item, onTap = { onTap(item) }, onRemove = { onRemove(item.book) })
+            BookRow(
+                item = item,
+                onTap = { onTap(item) },
+                onRemove = { onRemove(item.book) },
+                onExport = { onExport(item.book) },
+            )
             HorizontalDivider()
         }
     }
@@ -273,6 +281,8 @@ private object PreviewActions : LibraryActions {
     override fun onPlayPause() = Unit
 
     override fun onRequestRemoval(book: Book) = Unit
+
+    override fun onExportAudiobook(book: Book) = Unit
 
     override fun onConfirmRemoval() = Unit
 

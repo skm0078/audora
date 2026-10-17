@@ -52,3 +52,25 @@ object AudioChapters {
         }
     }
 }
+
+/** Where a book's audiobook goes on shared storage: `Audiobooks/<title>/`, the folder audiobook players scan. */
+object AudiobookFolder {
+    /** Android's `Environment.DIRECTORY_AUDIOBOOKS`, kept here so this stays plain Kotlin. */
+    const val ROOT = "Audiobooks"
+
+    /** Characters no Android file system or FAT-formatted card accepts in a name. */
+    private val UNSAFE = Regex("[\\\\/:*?\"<>|\\p{Cntrl}]")
+    private val SPACES = Regex("\\s+")
+
+    fun relativePath(title: String, fallback: String, config: AudiobookConfig = AudiobookConfig()): String =
+        "$ROOT/${folderName(title, config).ifEmpty { folderName(fallback, config) }}/"
+
+    /** The title with unsafe characters and leading dots removed, spaces collapsed, cut to the configured length. */
+    fun folderName(title: String, config: AudiobookConfig = AudiobookConfig()): String = title
+        .replace(UNSAFE, " ")
+        .replace(SPACES, " ")
+        .trim()
+        .trimStart('.')
+        .take(config.folderNameMaxChars)
+        .trim()
+}

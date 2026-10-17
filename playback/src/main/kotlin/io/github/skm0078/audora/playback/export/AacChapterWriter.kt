@@ -11,7 +11,6 @@ import io.github.skm0078.audora.core.config.AudiobookConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.audio.PcmAudio
-import java.io.File
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -25,7 +24,7 @@ import java.nio.ByteOrder
  */
 class AacChapterWriter private constructor(
     private val chapter: AudioChapter,
-    private val file: File,
+    private val target: ChapterFile,
     private val codec: MediaCodec,
     private val muxer: MediaMuxer,
     override val sampleRate: Int,
@@ -58,16 +57,18 @@ class AacChapterWriter private constructor(
         codec.queueInputBuffer(index, 0, 0, presentationUs(), MediaCodec.BUFFER_FLAG_END_OF_STREAM)
         drain(endOfStream = true)
         release()
-        ExportedChapter(chapter, name = file.name, durationMs = samplesQueued * MS_PER_S / sampleRate)
+        val published = target.publish()
+        if (published is Outcome.Failure) throw IOException(published.error.detail)
+        ExportedChapter(chapter, name = target.name, durationMs = samplesQueued * MS_PER_S / sampleRate)
     }
 
     override fun abort() {
         try {
             release()
         } catch (e: IllegalStateException) {
-            AudoraLog.w(TAG, "Encoder release failed while aborting ${file.name}", e)
+            AudoraLog.w(TAG, "Encoder release failed while aborting ${target.name}", e)
         }
-        if (file.exists() && !file.delete()) AudoraLog.w(TAG, "Could not delete the partial ${file.name}")
+        target.discard()
     }
 
     private fun queue(index: Int, bytes: ByteBuffer) {
@@ -145,7 +146,7 @@ class AacChapterWriter private constructor(
     }
 
     private fun failed(step: String, e: Exception): Outcome.Failure<ExportError.Storage> {
-        AudoraLog.e(TAG, "Encoder $step failed for ${file.name} at $sampleRate Hz", e)
+        AudoraLog.e(TAG, "Encoder $step failed for ${target.name} at $sampleRate Hz", e)
         return Outcome.Failure(ExportError.Storage("the audio encoder failed (${e.javaClass.simpleName})"))
     }
 
@@ -158,10 +159,10 @@ class AacChapterWriter private constructor(
         private const val MS_PER_S = 1_000L
         private const val US_PER_S = 1_000_000L
 
-        /** Creates [file] and starts the encoder. The caller owns the result and must finish or abort it. */
+        /** Starts the encoder into [target]. The caller owns the result and must finish or abort it. */
         fun create(
             chapter: AudioChapter,
-            file: File,
+            target: ChapterFile,
             sampleRate: Int,
             config: AudiobookConfig = AudiobookConfig(),
         ): Outcome<ChapterAudioWriter, ExportError.Storage> {
@@ -174,26 +175,26 @@ class AacChapterWriter private constructor(
                 codec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_AAC)
                 codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
                 codec.start()
-                val muxer = MediaMuxer(file.path, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
-                Outcome.Success(AacChapterWriter(chapter, file, codec, muxer, sampleRate, config))
+                val muxer = MediaMuxer(target.descriptor.fileDescriptor, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+                Outcome.Success(AacChapterWriter(chapter, target, codec, muxer, sampleRate, config))
             } catch (e: IOException) {
-                createFailed(file, sampleRate, codec, e)
+                createFailed(target, sampleRate, codec, e)
             } catch (e: IllegalStateException) {
-                createFailed(file, sampleRate, codec, e)
+                createFailed(target, sampleRate, codec, e)
             } catch (e: IllegalArgumentException) {
-                createFailed(file, sampleRate, codec, e)
+                createFailed(target, sampleRate, codec, e)
             }
         }
 
         private fun createFailed(
-            file: File,
+            target: ChapterFile,
             sampleRate: Int,
             codec: MediaCodec?,
             e: Exception,
         ): Outcome.Failure<ExportError.Storage> {
-            AudoraLog.e(TAG, "Could not start the AAC encoder for ${file.name} at $sampleRate Hz", e)
+            AudoraLog.e(TAG, "Could not start the AAC encoder for ${target.name} at $sampleRate Hz", e)
             codec?.release()
-            file.delete()
+            target.discard()
             return Outcome.Failure(ExportError.Storage("the audio encoder could not start (${e.javaClass.simpleName})"))
         }
     }

@@ -1,7 +1,6 @@
 # ADR-034: Offline audiobook export, one AAC file per chapter
 
-**Status:** Proposed (2026-10-16). The export engine and its tests are in; the Reader/Library entry point and the
-foreground service that runs it are the next step, and the status moves to Accepted when they ship.
+**Status:** Accepted (2026-10-17). Engine 2026-10-16; entry point, service and notifications 2026-10-17.
 
 ## Context
 Paid PDF readers (Speechify, ElevenReader, Voice Dream) sell "download as audio" in their premium tiers. Audora
@@ -30,6 +29,15 @@ which is how this feature was scoped. Nothing in this ADR was taken from another
    stay. A chapter with nothing to read writes no file.
 5. **One sample rate per file**, set by its first sentence; later sentences are resampled to it with
    `PcmAudio.resampled` (linear). Mixed-rate chapters are rare (a second language's voice) and short.
+6. **Entry point and runtime.** "Save as audiobook" in a library book's menu starts `AudiobookExportService`, a
+   foreground service (type mediaProcessing on Android 15+, dataSync before) with its own thread, its own voice
+   engines, a partial wake lock capped at 6 hours, and a notification with progress and Cancel. One export at a time;
+   never restarted by the system (C7). Android 15's daily 6-hour limit for these jobs cancels it like Cancel does.
+7. **Where files go.** MediaStore `Audiobooks/<title>/` on shared storage, so other apps can play them, with no
+   storage permission (API 29+ lets an app create its own media). Each file stays pending, hidden from other apps,
+   until it is complete. The title is cleaned for file systems (unsafe characters, leading dots, 80 characters).
+8. **Rate and pace.** Files use the listener's pace (ADR-033) at the voice's own rate: audiobook players have their
+   own speed control, and a faster model rate costs clarity.
 
 ## Alternatives considered
 - **One .m4b with chapter marks:** the single-file audiobook format, but `MediaMuxer` cannot write chapter atoms;
@@ -44,7 +52,8 @@ which is how this feature was scoped. Nothing in this ADR was taken from another
 ## Consequences
 - Rendering a book takes about as long as the voice's render speed allows (Piper is several times faster than
   real time on the Moto; Kokoro is not, and should be warned about before a long export).
-- Exporting while listening would share the engines with playback; the entry point will pause playback or refuse
-  until that is measured.
-- Open: the output folder (app-specific Music folder first, a user-picked SAF folder later), a progress
-  notification, and chapter titles from the outline in file names and MP4 metadata.
+- Exporting while listening loads a second copy of the voice model (separate engines, no shared state); fine for
+  Piper, to be watched with Kokoro on the Moto.
+- Opening the book for export marks it opened in the library, like opening it in the reader.
+- Open: password-protected PDFs (the service has no password), chapter titles from the outline in file names and
+  MP4 metadata, and a single .m4b.
