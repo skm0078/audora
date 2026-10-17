@@ -31,6 +31,7 @@ import io.github.skm0078.audora.playback.session.LivePlaybackSpeed
 import io.github.skm0078.audora.playback.session.QueueRegistry
 import io.github.skm0078.audora.playback.session.SessionEnvironment
 import io.github.skm0078.audora.playback.session.SessionSources
+import io.github.skm0078.audora.playback.session.SleepOptionsStore
 import io.github.skm0078.audora.playback.session.SpeechPlayer
 import io.github.skm0078.audora.playback.voice.EngineRenderer
 import io.github.skm0078.audora.playback.voice.ReadingSetup
@@ -83,15 +84,15 @@ class AudoraPlaybackService : MediaSessionService() {
         val engines = VoiceEngines(this)
         voices = SpeechVoices(engines)
         val style = SpeechStyleStore.forContext(this)
+        val sleepOptions = SleepOptionsStore.forContext(this)
         player = SpeechPlayer.build(this, registry, config)
         // The player's share of the listener's speed (ADR-033); the voice model speaks the rest.
         player.setPlaybackSpeed(style.config.playerSpeed(style.current.rate))
         speed = LivePlaybackSpeed(player)
-        val diagnostics = DiagnosticsBridge(tracker, scope)
-        val recorder = ResumeRecorder(resumeAnchors, resumeScope, PIPELINE_VERSION, System::currentTimeMillis)
         // The reading modes travel with the speech style; a change restarts the sentence playing (ADR-035).
         val reading = ReadingSource(modes = { style.current.modes })
-        val callback = SessionCallback(packageName, scope, voices, style, { bookSession }, { resumption })
+        val stores = SessionStores(style, sleepOptions)
+        val callback = SessionCallback(packageName, scope, voices, stores, { bookSession }, { resumption })
         val mediaSession = MediaSession.Builder(this, player)
             .setCallback(callback)
             .apply { sessionActivity()?.let { setSessionActivity(it) } }
@@ -115,14 +116,16 @@ class AudoraPlaybackService : MediaSessionService() {
                     speed.value * style.config.modelRate(style.current.rate)
                 },
                 reading = reading,
+                sleepOptions = sleepOptions::current,
             ),
             config = config,
-            events = SessionPublisher(mediaSession, diagnostics, ResumeBridge(recorder, resumeScope), style::current),
+            events = publisher(mediaSession, stores),
             env = SessionEnvironment(
                 scope = scope,
                 extraction = Dispatchers.IO.limitedParallelism(1),
                 elapsedRealtime = SystemClock::elapsedRealtime,
                 wallClock = System::currentTimeMillis,
+                shakes = AccelerometerShakes(this, config.sleep),
             ),
         )
         resumption = PlaybackResumption(
@@ -133,6 +136,17 @@ class AudoraPlaybackService : MediaSessionService() {
             player = player,
         ) { bookSession }
         AudoraLog.i(TAG, "Service created")
+    }
+
+    private fun publisher(mediaSession: MediaSession, stores: SessionStores): SessionPublisher {
+        val recorder = ResumeRecorder(resumeAnchors, resumeScope, PIPELINE_VERSION, System::currentTimeMillis)
+        return SessionPublisher(
+            mediaSession,
+            DiagnosticsBridge(tracker, scope),
+            ResumeBridge(recorder, resumeScope),
+            stores.style::current,
+            stores.sleepOptions::current,
+        )
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session

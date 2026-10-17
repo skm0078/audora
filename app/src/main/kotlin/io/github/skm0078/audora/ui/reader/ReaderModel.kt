@@ -10,6 +10,7 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.progress.TimeLeft
 import io.github.skm0078.audora.core.result.Outcome
@@ -214,6 +215,8 @@ class ReaderModel(
     fun setReadingModes(modes: ReadingModes) = player.setReadingModes(modes)
 
     fun setSleepTimer(setting: SleepTimerSetting) = player.setSleepTimer(setting)
+
+    fun setSleepOptions(options: SleepOptions) = player.setSleepOptions(options)
 
     /** "Undo jump" (plan item 78); the screen follows reading back to where it was. */
     fun undoJump() {

@@ -15,6 +15,7 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
+import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
@@ -107,8 +108,18 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             SleepTimerSetting.EndOfPage -> PlaybackContract.sleepTimerArgs(SleepTimerMode.END_OF_PAGE)
 
             SleepTimerSetting.EndOfChapter -> PlaybackContract.sleepTimerArgs(SleepTimerMode.END_OF_CHAPTER)
+
+            is SleepTimerSetting.AfterChapters -> PlaybackContract.sleepTimerArgs(
+                SleepTimerMode.END_OF_CHAPTER,
+                chapters = setting.count,
+            )
         }
         send(player, PlaybackContract.SET_SLEEP_TIMER, args, "sleep timer $setting")
+    }
+
+    override fun setSleepOptions(options: SleepOptions) = withPlayer("sleep options") { player ->
+        AudoraLog.i(TAG, "Sleep options ${options.encode()}")
+        send(player, PlaybackContract.SET_SLEEP_OPTIONS, PlaybackContract.sleepOptionsArgs(options), "sleep options")
     }
 
     override fun undoJump() = withPlayer("undo jump") { player ->
@@ -164,6 +175,7 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             canSkipForward = player.hasNextMediaItem(),
             sleepTimer = sleepTimerOf(extras),
             hasChapters = extras.getBoolean(PlaybackContract.SESSION_HAS_CHAPTERS, false),
+            sleepOptions = SleepOptions.decode(extras.getString(PlaybackContract.SESSION_SLEEP_OPTIONS)),
             undoJumpTo = undoOf(extras),
             // A skipped sentence is reported in the extras while reading goes on; only a stop is an error.
             errorCode = player.playerError?.errorCodeName
@@ -204,7 +216,9 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
 
             SleepTimerMode.END_OF_PAGE.name -> SleepTimerState.EndOfPage
 
-            SleepTimerMode.END_OF_CHAPTER.name -> SleepTimerState.EndOfChapter
+            SleepTimerMode.END_OF_CHAPTER.name ->
+                extras.getInt(PlaybackContract.SESSION_SLEEP_CHAPTERS, 1)
+                    .let { if (it > 1) SleepTimerState.AfterChapters(it) else SleepTimerState.EndOfChapter }
 
             else -> SleepTimerState.Off
         }

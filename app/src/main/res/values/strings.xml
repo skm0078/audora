@@ -119,6 +119,16 @@
     <string name="reader_sleep_minutes">%1$d minutes</string>
     <string name="reader_sleep_end_of_page">End of page</string>
     <string name="reader_sleep_end_of_chapter">End of chapter</string>
+    <string name="reader_sleep_chapters">After %1$d chapters</string>
+    <string name="sleep_options_menu">Sleep options…</string>
+    <string name="sleep_options_title">Sleep options</string>
+    <string name="sleep_options_shake">Shake the phone to restart the timer</string>
+    <string name="sleep_options_fade">Fade the voice out at the end</string>
+    <string name="sleep_options_bedtime">Set a timer by itself at bedtime</string>
+    <string name="sleep_options_from">Bedtime starts</string>
+    <string name="sleep_options_to">Bedtime ends</string>
+    <string name="sleep_options_bedtime_timer">Timer at bedtime</string>
+    <string name="sleep_options_save">Save</string>
     <string name="reader_player_connecting">Connecting to the player…</string>
     <string name="reader_player_unavailable">The player is not available. Please share the logs.</string>
     <string name="reader_player_error">Reading stopped because of an error. Tap play to try again, or share the logs.</string>

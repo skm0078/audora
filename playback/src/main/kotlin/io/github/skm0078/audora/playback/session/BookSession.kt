@@ -13,6 +13,7 @@ import io.github.skm0078.audora.core.config.QueueConfig
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.pdf.document.PdfPageError
@@ -31,6 +32,7 @@ import io.github.skm0078.audora.playback.reading.ReadingSource
 import io.github.skm0078.audora.playback.recovery.PlaybackRecovery
 import io.github.skm0078.audora.playback.recovery.PlayerFault
 import io.github.skm0078.audora.playback.recovery.RecoveryAction
+import java.time.LocalTime
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -47,18 +49,24 @@ class SessionSources(
     val texts: ItemTexts,
     val renderAhead: RenderAheadPolicy = RenderAheadPolicy.FIXED,
     val reading: ReadingSource = ReadingSource(),
+    val sleepOptions: () -> SleepOptions = { SleepOptions() },
 )
 
 /**
  * Where the session runs. [scope] is main-thread; [extraction] is one thread (PDFium, P1-02);
- * [elapsedRealtime] keeps counting in deep sleep (sleep timer); [wallClock] is for what the UI shows.
+ * [elapsedRealtime] keeps counting in deep sleep (sleep timer); [wallClock] is for what the UI shows;
+ * [minuteOfDay] is the local time (0 = midnight) for bedtime auto-on; [shakes] feeds "shake to extend".
  */
 class SessionEnvironment(
     val scope: CoroutineScope,
     val extraction: CoroutineDispatcher,
     val elapsedRealtime: () -> Long,
     val wallClock: () -> Long,
+    val minuteOfDay: () -> Int = { LocalTime.now().let { it.hour * MINUTES_PER_HOUR + it.minute } },
+    val shakes: ShakeSource = ShakeSource.NONE,
 )
+
+private const val MINUTES_PER_HOUR = 60
 
 /**
  * Owns the playback of one book at a time on the service's [player] (main thread only).
@@ -136,6 +144,7 @@ class BookSession(
             AudoraLog.i(TAG, "Play book=${id.logLabel} page=$page char=$charStart pages=$pageCount")
             currentSpot()?.let { from -> recordJump(from, Spot(page, charStart), JumpOrigin.START) }
             rebuild(page, charStart, play = true)
+            sleep.onStarted()
             Outcome.Success(Unit)
         }
 
@@ -192,13 +201,24 @@ class BookSession(
         rebuild(page, char, play = player.playWhenReady)
     }
 
-    /** False when [mode] cannot apply to the open book: end of chapter in a book without chapters. */
-    fun setSleepTimer(mode: SleepTimerMode, minutes: Int): Boolean = sleep.set(mode, minutes)
+    /**
+     * False when [mode] cannot apply to the open book: end of chapter in a book without chapters. [chapters] is how
+     * many chapter ends an end-of-chapter timer waits for.
+     */
+    fun setSleepTimer(mode: SleepTimerMode, minutes: Int, chapters: Int = 1): Boolean =
+        sleep.set(mode, minutes, chapters)
+
+    /** The sleep options changed: shake listening follows at once; bedtime and fade apply from the next timer. */
+    fun onSleepOptionsChanged() {
+        sleep.updateShakes()
+        publishState()
+    }
 
     fun release() {
         player.removeListener(playerListener)
         loader.cancel()
         sleep.cancel()
+        env.shakes.stop()
         queue?.close()
         queue = null
         registry.clear()
@@ -324,7 +344,15 @@ class BookSession(
 
     private fun publishState() {
         events.onStateChanged(
-            SessionState(bookId?.value, error, sleep.mode, sleep.endsAtWall, sleep.hasChapters, jumps.last?.from),
+            SessionState(
+                bookId?.value,
+                error,
+                sleep.mode,
+                sleep.endsAtWall,
+                sleep.hasChapters,
+                jumps.last?.from,
+                sleep.chapters,
+            ),
         )
     }
 
@@ -382,7 +410,10 @@ class BookSession(
         }
     }
 
-    /** Sleep timer: minutes on a coroutine, end of page or chapter through the player's pause-at-end-of-item. */
+    /**
+     * Sleep timer: minutes on a coroutine, end of page or chapter through the player's pause-at-end-of-item. Extras
+     * (plan item 37): the minutes fade out, a shake starts the timer again, and starting to read at bedtime sets one.
+     */
     private inner class SleepControl {
         private val timer = SleepTimer(env.elapsedRealtime)
         private var job: Job? = null
@@ -390,25 +421,60 @@ class BookSession(
         /** The minutes ran out: reading stops at the end of the sentence playing, not mid-word. */
         private var finishingSentence = false
 
+        /** The last timer set, which a shake starts again. */
+        private var lastSet: Triple<SleepTimerMode, Int, Int>? = null
+
         val mode: SleepTimerMode get() = timer.mode
         var endsAtWall: Long? = null
             private set
 
+        /** Chapter ends an end-of-chapter timer waits for (1 for any other mode). */
+        var chapters: Int = 1
+            private set
+
         val hasChapters: Boolean get() = timer.chapterStarts.isNotEmpty()
 
-        fun set(mode: SleepTimerMode, minutes: Int): Boolean {
+        fun set(mode: SleepTimerMode, minutes: Int, chapters: Int = 1): Boolean {
             if (mode == SleepTimerMode.END_OF_CHAPTER && !hasChapters) {
                 AudoraLog.w(TAG, "Sleep timer $mode refused: no chapters, book=${bookId?.logLabel}")
                 return false
             }
             cancel()
-            timer.set(mode, minutes)
+            val page = (playlist.current() as? PlaybackItem.Sentence)?.unit?.page ?: lastSentence?.page
+            timer.set(mode, minutes, chapters, page)
+            this.chapters = if (mode == SleepTimerMode.END_OF_CHAPTER) chapters else 1
+            lastSet = Triple(mode, minutes, chapters).takeIf { mode != SleepTimerMode.OFF }
             endsAtWall = timer.remainingMs()?.let { env.wallClock() + it }
             if (mode == SleepTimerMode.MINUTES) job = env.scope.launch { runMinutes() }
-            AudoraLog.i(TAG, "Sleep timer $mode minutes=$minutes book=${bookId?.logLabel}")
+            AudoraLog.i(TAG, "Sleep timer $mode minutes=$minutes chapters=$chapters book=${bookId?.logLabel}")
+            updateShakes()
             updateWindow()
             publishState()
             return true
+        }
+
+        /** Reading started: at bedtime with no timer set, the bedtime timer starts (plan item 37). */
+        fun onStarted() {
+            val options = sources.sleepOptions()
+            if (!options.bedtime || timer.mode != SleepTimerMode.OFF || !options.inBedtime(env.minuteOfDay())) return
+            AudoraLog.i(TAG, "Bedtime: sleep timer on for ${options.bedtimeMinutes} min, book=${bookId?.logLabel}")
+            set(SleepTimerMode.MINUTES, options.bedtimeMinutes)
+        }
+
+        /** Listens for shakes while a timer runs with "shake to extend" on. */
+        fun updateShakes() {
+            if (timer.mode != SleepTimerMode.OFF && sources.sleepOptions().shakeToExtend) {
+                env.shakes.start(::onShake)
+            } else {
+                env.shakes.stop()
+            }
+        }
+
+        private fun onShake() {
+            val (mode, minutes, chapterCount) = lastSet ?: return
+            if (timer.mode == SleepTimerMode.OFF) return
+            AudoraLog.i(TAG, "Shake: sleep timer $mode started again, book=${bookId?.logLabel}")
+            set(mode, minutes, chapterCount)
         }
 
         /** A new book: its chapters replace the old ones, and an end-of-chapter timer without any is dropped. */
@@ -424,6 +490,7 @@ class BookSession(
             job?.cancel()
             job = null
             finishingSentence = false
+            player.volume = FULL_VOLUME
         }
 
         fun pauseAfter(current: PlaybackItem?, next: PlaybackItem?): Boolean =
@@ -444,12 +511,15 @@ class BookSession(
         }
 
         private suspend fun runMinutes() {
+            val fadeMs = if (sources.sleepOptions().fadeOut) config.sleep.fadeOutMs else 0L
             var remaining = timer.remainingMs() ?: return
-            while (remaining > 0) {
-                delay(remaining)
+            while (remaining > fadeMs) {
+                delay(remaining - fadeMs)
                 remaining = timer.remainingMs() ?: return
             }
-            if (player.isPlaying && playlist.current() is PlaybackItem.Sentence) {
+            if (fadeMs > 0 && player.isPlaying) {
+                fadeOut(fadeMs)
+            } else if (player.isPlaying && playlist.current() is PlaybackItem.Sentence) {
                 AudoraLog.i(TAG, "Sleep timer ended, finishing the sentence, book=${bookId?.logLabel}")
                 finishingSentence = true
                 updateWindow()
@@ -460,9 +530,29 @@ class BookSession(
             }
         }
 
+        /** Fades the voice to silence over the timer's last [fadeMs], then pauses and restores the volume. */
+        private suspend fun fadeOut(fadeMs: Long) {
+            AudoraLog.i(TAG, "Sleep timer fading out, book=${bookId?.logLabel}")
+            try {
+                var remaining = timer.remainingMs() ?: 0L
+                while (remaining > 0) {
+                    player.volume = (remaining.toFloat() / fadeMs).coerceIn(0f, FULL_VOLUME)
+                    delay(config.sleep.fadeStepMs.coerceAtMost(remaining))
+                    remaining = timer.remainingMs() ?: 0L
+                }
+                AudoraLog.i(TAG, "Sleep timer ended after the fade, pausing book=${bookId?.logLabel}")
+                player.pause()
+                clearAndPublish()
+            } finally {
+                player.volume = FULL_VOLUME
+            }
+        }
+
         private fun clearAndPublish() {
             timer.clear()
             endsAtWall = null
+            chapters = 1
+            updateShakes()
             publishState()
         }
     }
@@ -493,6 +583,7 @@ class BookSession(
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
             if (playWhenReady) {
                 rewindOnResume()
+                sleep.onStarted()
                 return
             }
             val atItemEnd = reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM
@@ -539,5 +630,6 @@ class BookSession(
 
         /** Timer modes that end by pausing at the end of a sentence (pause-at-end-of-item). */
         val ITEM_END_MODES = setOf(SleepTimerMode.END_OF_PAGE, SleepTimerMode.END_OF_CHAPTER)
+        const val FULL_VOLUME = 1f
     }
 }
