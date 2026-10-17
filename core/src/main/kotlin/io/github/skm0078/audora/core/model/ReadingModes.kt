@@ -45,6 +45,9 @@ enum class CaptionMode {
  *
  * @property skipUnreadable units scoring below SpeakabilityConfig.skipBelow (OCR noise, broken fonts, symbol soup)
  *   play a short sound instead of being read (RI-2b).
+ * @property skipParentheses, [skipBrackets] and [skipLinks] leave out (asides), [notes] and web or e-mail addresses
+ *   from the text read (plan item 2); a sentence left empty is not played.
+ * @property announcePages says "Page 12" before a page's first sentence (plan item 2).
  */
 data class ReadingModes(
     val skipUnreadable: Boolean = true,
@@ -52,6 +55,10 @@ data class ReadingModes(
     val footnotes: FootnoteMode = FootnoteMode.READ,
     val equations: EquationMode = EquationMode.ANNOUNCE,
     val captions: CaptionMode = CaptionMode.ANNOUNCE,
+    val skipParentheses: Boolean = false,
+    val skipBrackets: Boolean = false,
+    val skipLinks: Boolean = false,
+    val announcePages: Boolean = false,
 ) {
     /**
      * One line for a settings file or a media session extra: `key=VALUE` pairs separated by `;`. [decode] reads it
@@ -63,6 +70,10 @@ data class ReadingModes(
         KEY_FOOTNOTES to footnotes.name,
         KEY_EQUATIONS to equations.name,
         KEY_CAPTIONS to captions.name,
+        KEY_PARENTHESES to skipParentheses.toString(),
+        KEY_BRACKETS to skipBrackets.toString(),
+        KEY_LINKS to skipLinks.toString(),
+        KEY_PAGES to announcePages.toString(),
     ).joinToString(PAIR_SEPARATOR) { (key, value) -> "$key$VALUE_SEPARATOR$value" }
 
     companion object {
@@ -73,6 +84,10 @@ data class ReadingModes(
         private const val KEY_FOOTNOTES = "footnotes"
         private const val KEY_EQUATIONS = "equations"
         private const val KEY_CAPTIONS = "captions"
+        private const val KEY_PARENTHESES = "skipParentheses"
+        private const val KEY_BRACKETS = "skipBrackets"
+        private const val KEY_LINKS = "skipLinks"
+        private const val KEY_PAGES = "announcePages"
 
         /** Reads [encode]'s line; a missing, unknown or malformed value takes its default, so this never fails. */
         fun decode(line: String?): ReadingModes {
@@ -86,6 +101,10 @@ data class ReadingModes(
                 footnotes = enumOrNull<FootnoteMode>(values[KEY_FOOTNOTES]) ?: defaults.footnotes,
                 equations = enumOrNull<EquationMode>(values[KEY_EQUATIONS]) ?: defaults.equations,
                 captions = enumOrNull<CaptionMode>(values[KEY_CAPTIONS]) ?: defaults.captions,
+                skipParentheses = values[KEY_PARENTHESES]?.toBooleanStrictOrNull() ?: defaults.skipParentheses,
+                skipBrackets = values[KEY_BRACKETS]?.toBooleanStrictOrNull() ?: defaults.skipBrackets,
+                skipLinks = values[KEY_LINKS]?.toBooleanStrictOrNull() ?: defaults.skipLinks,
+                announcePages = values[KEY_PAGES]?.toBooleanStrictOrNull() ?: defaults.announcePages,
             )
         }
 

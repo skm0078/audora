@@ -104,6 +104,14 @@
     <string name="reading_equations">Equations</string>
     <string name="reading_equations_as_written">As written</string>
     <string name="reading_captions">Figure captions</string>
+    <string name="reading_skip_parentheses">Skip (asides)</string>
+    <string name="reading_skip_parentheses_detail">Leaves out text in parentheses; f(x) and 2(a) are kept</string>
+    <string name="reading_skip_brackets">Skip [notes]</string>
+    <string name="reading_skip_brackets_detail">Leaves out text in square brackets, such as [sic] or [3]</string>
+    <string name="reading_skip_links">Skip links</string>
+    <string name="reading_skip_links_detail">Leaves out web and e-mail addresses instead of saying “link”</string>
+    <string name="reading_announce_pages">Say page numbers</string>
+    <string name="reading_announce_pages_detail">Says “Page 12” as each page starts</string>
     <string name="reading_announce">Announce</string>
     <string name="reading_skip">Skip</string>
     <string name="reader_ocr_quality_good">Scanned page, OCR quality good.</string>
