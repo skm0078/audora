@@ -45,6 +45,8 @@ import io.github.skm0078.audora.playback.voice.RenderSpeedTracker
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
+import io.github.skm0078.audora.speech.punct.PunctuationModels
+import io.github.skm0078.audora.speech.punct.RunOnPunctuation
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -182,6 +184,8 @@ class AudoraPlaybackService : MediaSessionService() {
             reading.speakability,
             chapterPages = { reading.chapterPages },
             fixer = { stores.book.fixer },
+            scanned = { page -> reading.scanned(page) },
+            runOn = RunOnPunctuation(punctuator = PunctuationModels.get(this)::punctuator),
         ),
     )
 

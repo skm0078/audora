@@ -55,6 +55,7 @@ import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
+import io.github.skm0078.audora.speech.punct.PunctuationModels
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.ui.AppDestination
 import io.github.skm0078.audora.ui.battery.BatterySetupCard
@@ -88,6 +89,7 @@ import io.github.skm0078.audora.ui.reader.ViewPreference
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.settings.OcrModelsAction
 import io.github.skm0078.audora.ui.settings.SettingsScreen
+import io.github.skm0078.audora.ui.settings.runModelAction
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import io.github.skm0078.audora.ui.voices.VoiceManager
 import io.github.skm0078.audora.ui.voices.VoicesActions
@@ -151,6 +153,7 @@ class MainActivity : ComponentActivity() {
 
     /** The OCR model manager (P3-05); one per process, shared with the playback service's OCR. */
     private val ocrModels: OcrModels by lazy { OcrModels.get(applicationContext) }
+    private val punctuationModels: PunctuationModels by lazy { PunctuationModels.get(applicationContext) }
 
     @Inject
     lateinit var licenceSource: LicenceSource
@@ -260,6 +263,7 @@ class MainActivity : ComponentActivity() {
         navigate: (AppDestination) -> Unit,
     ) {
         val ocrState by remember { ocrModels.state() }.collectAsStateWithLifecycle(initialValue = null)
+        val punctState by remember { punctuationModels.state() }.collectAsStateWithLifecycle(initialValue = null)
         val scope = rememberCoroutineScope()
         val textPreferences = remember { ReadingTextPreferences.forContext(applicationContext) }
         // A one-line properties file, read once when Settings opens (like the onboarding flags). Saved off the main
@@ -301,6 +305,12 @@ class MainActivity : ComponentActivity() {
             },
             keepScreenOn = keepScreenOn,
             onKeepScreenOnChange = { on -> scope.launch { screenPreference.saveKeepScreenOn(on) } },
+            punctuationModel = punctState,
+            onPunctuationModel = { action ->
+                scope.runModelAction(action, punctuationModels::download, punctuationModels::cancel) {
+                    punctuationModels.delete()
+                }
+            },
         )
     }
 

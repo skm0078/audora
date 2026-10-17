@@ -6,11 +6,14 @@ package io.github.skm0078.audora.playback.book
 import io.github.skm0078.audora.core.config.ExtractionConfig
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.result.map
+import io.github.skm0078.audora.pdf.document.PageSource
 import io.github.skm0078.audora.pdf.document.PdfBook
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.pdf.outline.ChapterStarts
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import java.io.Closeable
+import java.util.concurrent.ConcurrentHashMap
 
 /** Blocking and thread-confined to the caller's extraction thread. Fakes implement it in tests. */
 interface BookText : Closeable {
@@ -24,6 +27,12 @@ interface BookText : Closeable {
      * pipeline finds them (P2-02).
      */
     fun chapterStarts(): List<Int> = emptyList()
+
+    /**
+     * Whether [page]'s words came from OCR, once [units] has read it: the punctuation model only touches scanned
+     * pages (RI-11). Read on the render thread, so implementations must be thread-safe.
+     */
+    fun isScanned(page: Int): Boolean = false
 }
 
 /** :pdf's page-at-a-time extraction (P1-02): PDFium text, `/ActualText` rebuild, sentence split. */
@@ -34,7 +43,14 @@ class PdfBookText(
 ) : BookText {
     override val pageCount: Int get() = book.pageCount
 
-    override fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError> = book.readingUnits(page, builder)
+    private val scannedPages: MutableSet<Int> = ConcurrentHashMap.newKeySet()
+
+    override fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError> = book.readPage(page, builder).map {
+        if (it.source is PageSource.Ocr) scannedPages += page else scannedPages -= page
+        it.units
+    }
+
+    override fun isScanned(page: Int): Boolean = page in scannedPages
 
     override fun chapterStarts(): List<Int> = when (val outline = book.outline()) {
         is Outcome.Success -> ChapterStarts.from(outline.value, book.pageCount, config.outlineChapterDepth)

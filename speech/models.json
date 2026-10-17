@@ -1,5 +1,5 @@
 {
-  "comment": "File: speech/models.json. Purpose: the voices Audora can download (P4-01, ADR-022). Each voice is a flat, uncompressed zip on this repo's 'voices' release, built from the SHA-pinned upstream archive by scripts/build_voice_mirror.py (same bytes every run) and published by .github/workflows/voice-mirror.yml, which never replaces an asset. The app checks every download against sha256 and sizeBytes. A voice whose id matches the bundled voice (bundled-voices.json) is left out of the APK's catalog. To add or change a voice: edit its entry, run the script with --print-pins, paste file/sha256/sizeBytes. Never add Lessac/Blizzard-derived voices (lessac, amy, hfc_*, hi_IN rohan).",
+  "comment": "File: speech/models.json. Purpose: the voices Audora can download (P4-01, ADR-022). Each voice is a flat, uncompressed zip on this repo's 'voices' release, built from the SHA-pinned upstream archive by scripts/build_voice_mirror.py (same bytes every run) and published by .github/workflows/voice-mirror.yml, which never replaces an asset. The app checks every download against sha256 and sizeBytes. A voice whose id matches the bundled voice (bundled-voices.json) is left out of the APK's catalog. To add or change a voice: edit its entry, run the script with --print-pins, paste file/sha256/sizeBytes. 'models' holds the other downloadable models, built the same way but not voices: the opt-in English punctuation model (RI-11), whose pins speech/src/.../punct/PunctuationModelSpec.kt repeats (a test checks they match). Never add Lessac/Blizzard-derived voices (lessac, amy, hfc_*, hi_IN rohan).",
   "baseUrl": "https://github.com/skm0078/audora/releases/download/voices/",
   "sourceBaseUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/",
   "espeakDictionaries": [
@@ -178,6 +178,28 @@
       "file": "mms-bn-43bfe7db9d7a.zip",
       "sha256": "43bfe7db9d7a92b2985c3d2d673db1262b399b68330e18ed81fe97dc435241bd",
       "sizeBytes": 114392967
+    }
+  ],
+  "models": [
+    {
+      "id": "punct-en-cnn-bilstm",
+      "label": "English punctuation for run-on sentences",
+      "lang": "en",
+      "family": "punct-cnn-bilstm",
+      "model": "model.int8.onnx",
+      "tokens": "bpe.vocab",
+      "licence": "Apache-2.0",
+      "credit": "Edge-Punct-Casing CNN-BiLSTM punctuation and casing model by frankyoujian (Apache-2.0). Converted for sherpa-onnx by k2-fsa; only the int8 model and its vocabulary are kept, unchanged.",
+      "licenceUrl": "https://github.com/frankyoujian/Edge-Punct-Casing/blob/main/LICENSE",
+      "sourceUrl": "https://github.com/frankyoujian/Edge-Punct-Casing",
+      "source": {
+        "archive": "sherpa-onnx-online-punct-en-2024-08-06",
+        "sha256": "9f5e5a72c7d2829635bd074fce92b6bbd5b78da8a52e7ad8ed1be933f366b99d",
+        "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/punctuation-models/sherpa-onnx-online-punct-en-2024-08-06.tar.bz2"
+      },
+      "file": "punct-en-cnn-bilstm-a8fac296fa09.zip",
+      "sha256": "a8fac296fa09911b974292efc845e028cd38d99809dad0186529d3aa4eb6e332",
+      "sizeBytes": 7640490
     }
   ]
 }

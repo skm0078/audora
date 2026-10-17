@@ -22,6 +22,7 @@ import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.audio.VoiceShaper
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
 import io.github.skm0078.audora.speech.normalize.TextNormalizer
+import io.github.skm0078.audora.speech.punct.RunOnPunctuation
 import io.github.skm0078.audora.speech.route.ClauseProsody
 import io.github.skm0078.audora.speech.route.RoutedAudio
 import io.github.skm0078.audora.speech.route.RoutedSpeech
@@ -53,7 +54,8 @@ import kotlinx.coroutines.runBlocking
  * voiced piece's own long silences are cut before the clause pauses go in, so only the voice's are trimmed; then the
  * whole sentence is evened to one loudness and boosted, before any cue and the silence after.
  *
- * The open book's pronunciation fixes ([ReadingSetup.fixer], plan item 1) are applied first, before normalization.
+ * The open book's pronunciation fixes ([ReadingSetup.fixer], plan item 1) are applied first, before normalization;
+ * then, on a scanned page, a run-on sentence gets the punctuation model's pauses when it is downloaded (RI-11).
  *
  * What the voice is given follows the style's reading modes ([UnitReading], ADR-035): a table's size or a row with its
  * column names, "Equation 3", a cue in place of unreadable text, a cue before a caption or a chapter's heading.
@@ -93,7 +95,7 @@ class EngineRenderer(
         } else {
             null
         }
-        val text = reading.fixer().apply(speech.text)
+        val text = reading.punctuated(reading.fixer().apply(speech.text), unit)
         val shaping = now.shaping
         val shaper = reading.shaper
         val trim: (PcmAudio) -> PcmAudio = if (shaping.trimPauses) shaper::trimPauses else { audio -> audio }
@@ -126,13 +128,24 @@ class EngineRenderer(
  * @property chapterPages the open book's chapter start pages (PDF outline), for the cue before a chapter's heading;
  *   read on the render thread, so it must be thread-safe.
  * @property fixer the open book's pronunciation fixes, read on the render thread for each sentence.
+ * @property scanned whether a page was read by OCR; only those pages' run-ons reach [runOn].
+ * @property runOn the punctuation model's guard (RI-11); null leaves every sentence as written.
  */
+@Suppress("LongParameterList") // All optional: each caller sets the few it has.
 class ReadingSetup(
     val speakability: SpeakabilityConfig = SpeakabilityConfig(),
     val earcon: Earcon = Earcon(),
     val chapterPages: () -> Set<Int> = { emptySet() },
     val shaper: VoiceShaper = VoiceShaper(),
     val fixer: () -> PronunciationFixer = { NO_FIXES },
-)
+    val scanned: (Int) -> Boolean = { false },
+    val runOn: RunOnPunctuation? = null,
+) {
+    /** [text] with the model's pauses when it is a run-on on a scanned page, else [text]. */
+    fun punctuated(text: String, unit: ReadingUnit): String = when {
+        runOn == null || !scanned(unit.page) -> text
+        else -> runOn.apply(text, unit.lang, UnitKey.of(unit).toString())
+    }
+}
 
 private val NO_FIXES = PronunciationFixer(emptyList())
