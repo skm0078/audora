@@ -204,7 +204,7 @@ class SessionCallback(
         controller.packageName == ownPackage || controller.isTrusted ||
             session.isAutoCompanionController(controller) || session.isAutomotiveController(controller)
 
-    private fun <V> denied(): ListenableFuture<LibraryResult<V>> =
+    private fun <V : Any> denied(): ListenableFuture<LibraryResult<V>> =
         Futures.immediateFuture(LibraryResult.ofError<V>(SessionError.ERROR_PERMISSION_DENIED))
 
     private fun playFrom(args: Bundle): ListenableFuture<SessionResult> {
