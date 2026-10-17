@@ -11,6 +11,7 @@ import io.github.skm0078.audora.pdf.layout.PageLayout
 import io.github.skm0078.audora.pdf.layout.Paragraph
 import io.github.skm0078.audora.pdf.layout.TextBlock
 import io.github.skm0078.audora.pdf.layout.TextLine
+import io.github.skm0078.audora.pdf.layout.TextTurn
 
 /**
  * Spec §5 step 5, ADR-020. Works on whole lines of the layout, so the reading text built from the result still
@@ -22,7 +23,9 @@ internal class ClutterRemover(config: CleanupConfig, layoutConfig: LayoutConfig)
 
     fun clean(page: PageText, layout: PageLayout, profile: PageProfile, neighbours: List<PageProfile>): PageLayout {
         val margin = margins.find(profile, neighbours)
-        val table = tables.find(page, layout) - margin.keys
+        // Table rows compare glyph boxes with line boxes, so both must be in the layout's (possibly turned) frame.
+        val framed = if (layout.turn == TextTurn.NONE) page else page.withBoxes(layout.turn::apply)
+        val table = tables.find(framed, layout) - margin.keys
         if (margin.isEmpty() && table.isEmpty()) return layout
         val counts = margin.values.groupingBy { it }.eachCount()
         AudoraLog.d(

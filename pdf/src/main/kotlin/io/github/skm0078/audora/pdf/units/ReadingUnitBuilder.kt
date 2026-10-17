@@ -9,6 +9,7 @@ import io.github.skm0078.audora.core.config.QualityConfig
 import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.pdf.cleanup.ClutterRemover
 import io.github.skm0078.audora.pdf.cleanup.PageProfile
@@ -22,11 +23,14 @@ import io.github.skm0078.audora.pdf.layout.ParagraphKind
 import io.github.skm0078.audora.pdf.layout.ReadingParagraph
 import io.github.skm0078.audora.pdf.layout.ReadingText
 import io.github.skm0078.audora.pdf.layout.ReadingTextBuilder
+import io.github.skm0078.audora.pdf.ocr.OcrClutter
 import io.github.skm0078.audora.pdf.ocr.OcrPageText
+import io.github.skm0078.audora.pdf.ocr.OcrText
 import io.github.skm0078.audora.pdf.quality.IndicOrder
 import io.github.skm0078.audora.pdf.quality.PageQuality
 import io.github.skm0078.audora.pdf.quality.PageQualityScorer
 import io.github.skm0078.audora.pdf.quality.indicOrderOf
+import io.github.skm0078.audora.pdf.render.ViewRect
 
 /**
  * The quality scorer (P3-03) routes the page and measures whether its Indic text is in visual order; layout (P2-02)
@@ -51,6 +55,9 @@ class ReadingUnitBuilder(
     private val analyzer = PageLayoutAnalyzer(layoutConfig)
     private val profiler = PageProfiler(cleanupConfig)
     private val clutter = ClutterRemover(cleanupConfig, layoutConfig)
+
+    /** Running headers and page numbers on scanned pages (ADR-032); `PdfBook` feeds it the neighbours' strips. */
+    internal val ocrClutter = OcrClutter(cleanupConfig)
     private val textBuilder = ReadingTextBuilder(TextRepair(cleanupConfig))
     private val scorer = PageQualityScorer(qualityConfig)
 
@@ -81,13 +88,22 @@ class ReadingUnitBuilder(
         textOf(page, neighbours, page.layout).text
 
     /**
-     * The reading text of a page read by OCR (P3-05): Tesseract's text with the same repair as a text layer
-     * (Tesseract writes Indic text in logical order). [build] splits it into units without glyph boxes.
+     * The reading text of a page read by OCR (P3-05): the OCR'd words with the same repair as a text layer
+     * (Tesseract writes Indic text in logical order), [dropped] lines (running headers, ADR-032) left out. With
+     * [toPage] the words keep their boxes, so [build] gives units a highlight; without it bounds stay null.
      */
-    fun ocrReadingText(pageIndex: Int, ocrText: String): ReadingText {
-        val page = OcrPageText.build(pageIndex, ocrText)
+    fun ocrReadingText(
+        pageIndex: Int,
+        ocr: OcrText,
+        dropped: Set<Int> = emptySet(),
+        toPage: ((ViewRect) -> TextBox)? = null,
+    ): ReadingText {
+        val page = OcrPageText.build(pageIndex, ocr, dropped, toPage)
         return textBuilder.build(page.text, page.layout, page.hyphenated, IndicOrder.LOGICAL)
     }
+
+    /** Text without positions (tests, and engines without boxes): blank lines start paragraphs. */
+    fun ocrReadingText(pageIndex: Int, ocrText: String): ReadingText = ocrReadingText(pageIndex, OcrText.plain(ocrText))
 
     private fun textOf(page: AnalyzedPage, neighbours: List<PageProfile>, layout: PageLayout): ReadingText {
         val lexicon = neighbours.fold(page.profile.hyphenated) { words, other -> words + other.hyphenated }

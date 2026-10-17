@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.pdf.document
 
+import io.github.skm0078.audora.core.config.CleanupConfig
 import io.github.skm0078.audora.core.config.ExtractionConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
@@ -14,6 +15,7 @@ import io.github.skm0078.audora.pdf.cleanup.PageProfile
 import io.github.skm0078.audora.pdf.extract.PageText
 import io.github.skm0078.audora.pdf.extract.PageTextAssembler
 import io.github.skm0078.audora.pdf.ocr.OcrLanguages
+import io.github.skm0078.audora.pdf.ocr.OcrMargins
 import io.github.skm0078.audora.pdf.quality.OcrError
 import io.github.skm0078.audora.pdf.quality.PageOcr
 import io.github.skm0078.audora.pdf.quality.PageOcrFactory
@@ -24,6 +26,7 @@ import io.github.skm0078.audora.pdf.quality.PageRouting
 import io.github.skm0078.audora.pdf.quality.RouteReason
 import io.github.skm0078.audora.pdf.quality.TextLayerCheck
 import io.github.skm0078.audora.pdf.quality.TextLayerVerdict
+import io.github.skm0078.audora.pdf.render.ViewRect
 import io.github.skm0078.audora.pdf.units.AnalyzedPage
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import java.io.Closeable
@@ -165,8 +168,14 @@ class PdfBook private constructor(
         return when (recognized) {
             is Outcome.Success -> {
                 val (langs, text) = recognized.value
-                languages.learnFrom(text)
-                PageReading(builder.build(builder.ocrReadingText(pageIndex, text)), routing, PageSource.Ocr(langs))
+                languages.learnFrom(text.text)
+                val dropped = builder.ocrClutter.droppedLines(text) {
+                    ocrMargins(pageIndex, langs, text.quarterTurns, ocr, builder.cleanupConfig)
+                }
+                val transform = handle?.pageTransform(pageIndex)
+                val toPage = transform?.let { t -> { rect: ViewRect -> t.toPage(rect) } }
+                val reading = builder.ocrReadingText(pageIndex, text, dropped, toPage)
+                PageReading(builder.build(reading), routing, PageSource.Ocr(langs))
             }
 
             is Outcome.Failure -> {
@@ -178,6 +187,30 @@ class PdfBook private constructor(
             }
         }
     }
+
+    /**
+     * The top and bottom strips of the scanned pages around [pageIndex], by page offset, for running-header removal
+     * (ADR-032). A neighbour that cannot be read is left out (logged): the page keeps a header it would have confirmed.
+     */
+    private fun ocrMargins(
+        pageIndex: Int,
+        langs: Set<Lang>,
+        quarterTurns: Int,
+        ocr: PageOcr,
+        config: CleanupConfig,
+    ): Map<Int, OcrMargins> = window(pageIndex, config.ocrNeighbourPages)
+        .filter { it != pageIndex }
+        .mapNotNull { other ->
+            when (val strips = ocr.margins(other, langs, quarterTurns, config.ocrMarginShare)) {
+                is Outcome.Success -> other - pageIndex to strips.value
+
+                is Outcome.Failure -> {
+                    AudoraLog.w(TAG, "Margin strips skipped, $logContext page=$other error=${strips.error}")
+                    null
+                }
+            }
+        }
+        .toMap()
 
     @Synchronized
     override fun close() {

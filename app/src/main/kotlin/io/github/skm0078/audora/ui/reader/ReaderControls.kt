@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReaderControls.kt
-// Purpose: The reader's bottom bar: speed, previous/next sentence, play/pause and the sleep timer.
+// Purpose: The reader's bottom bar: speed and pace, previous/next sentence, play/pause and the sleep timer.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -18,7 +18,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -30,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -48,7 +46,7 @@ fun ReaderControls(state: ReaderState, config: ReaderConfig, actions: ReaderActi
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            SpeedButton(state.playback.speed, config, enabled, actions::onSpeed)
+            SpeedButton(state.playback, config, enabled, actions)
             IconButton(onClick = actions::onSkipBack, enabled = enabled && loaded && state.playback.canSkipBack) {
                 Icon(painterResource(R.drawable.ic_skip_previous), stringResource(R.string.reader_skip_back))
             }
@@ -87,26 +85,20 @@ private fun PlayPauseButton(reading: Boolean, buffering: Boolean, enabled: Boole
 }
 
 @Composable
-private fun SpeedButton(speed: Float, config: ReaderConfig, enabled: Boolean, onSpeed: (Float) -> Unit) {
+private fun SpeedButton(playback: PlaybackSnapshot, config: ReaderConfig, enabled: Boolean, actions: ReaderActions) {
     var open by remember { mutableStateOf(false) }
-    Box {
-        TextButton(onClick = { open = true }, enabled = enabled) {
-            Text(stringResource(R.string.reader_speed, speedLabel(speed)))
-        }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            config.speeds.forEach { option ->
-                DropdownMenuItem(
-                    text = {
-                        val color = if (option == speed) MaterialTheme.colorScheme.primary else Color.Unspecified
-                        Text("${speedLabel(option)}×", color = color)
-                    },
-                    onClick = {
-                        open = false
-                        onSpeed(option)
-                    },
-                )
-            }
-        }
+    TextButton(onClick = { open = true }, enabled = enabled) {
+        Text(stringResource(R.string.reader_speed, speedLabel(playback.speed)))
+    }
+    if (open) {
+        SpeechSheet(
+            speed = playback.speed,
+            pace = playback.pace,
+            config = config,
+            onSpeed = actions::onSpeed,
+            onPace = actions::onPace,
+            onDismiss = { open = false },
+        )
     }
 }
 

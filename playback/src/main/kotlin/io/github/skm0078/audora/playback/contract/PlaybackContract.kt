@@ -10,6 +10,8 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionToken
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.playback.service.AudoraPlaybackService
 
@@ -17,8 +19,12 @@ import io.github.skm0078.audora.playback.service.AudoraPlaybackService
  * Everything the UI needs to drive playback, through a Media3 `MediaController` and nothing else.
  *
  * Standard player commands work as usual: play, pause, `seekToNextMediaItem` / `seekToPreviousMediaItem`
- * (skip a sentence), `setPlaybackSpeed` (Sonic, Build Spec C6), stop. Each playlist item is one sentence;
+ * (skip a sentence), stop. Each playlist item is one sentence;
  * its `mediaMetadata.extras` carry where it is in the book (see the `ITEM_*` keys).
+ *
+ * Speed is the exception: `setPlaybackSpeed` stretches finished audio and smears words, so the reader sends
+ * [SET_SPEECH_STYLE] instead. The voice itself speaks faster or slower, up to its model's cap, and the service sets
+ * the player's speed to stretch only what is above that cap (ADR-033).
  *
  * What the player API cannot say goes through custom commands ([playFrom], [setVoice], [setSleepTimer]) and
  * the session extras (`controller.sessionExtras`, `Listener.onExtrasChanged`), keys `SESSION_*`.
@@ -29,6 +35,7 @@ object PlaybackContract {
     const val ACTION_PLAY_FROM = "$PREFIX.PLAY_FROM"
     const val ACTION_SET_VOICE = "$PREFIX.SET_VOICE"
     const val ACTION_SET_SLEEP_TIMER = "$PREFIX.SET_SLEEP_TIMER"
+    const val ACTION_SET_SPEECH_STYLE = "$PREFIX.SET_SPEECH_STYLE"
 
     /** Starts reading [ARG_BOOK_ID] at [ARG_PAGE] / [ARG_CHAR_START]. Only ever send it from a user action (C7). */
     val PLAY_FROM = SessionCommand(ACTION_PLAY_FROM, Bundle.EMPTY)
@@ -38,6 +45,9 @@ object PlaybackContract {
 
     /** Sets or clears the sleep timer. */
     val SET_SLEEP_TIMER = SessionCommand(ACTION_SET_SLEEP_TIMER, Bundle.EMPTY)
+
+    /** Sets the speaking rate and pace; the current sentence restarts with them, like a voice change. */
+    val SET_SPEECH_STYLE = SessionCommand(ACTION_SET_SPEECH_STYLE, Bundle.EMPTY)
 
     // Arguments of PLAY_FROM.
     const val ARG_BOOK_ID = "book_id"
@@ -63,6 +73,14 @@ object PlaybackContract {
     /** A [SleepTimerMode] name. */
     const val ARG_SLEEP_MODE = "sleep_mode"
     const val ARG_SLEEP_MINUTES = "sleep_minutes"
+
+    // Arguments of SET_SPEECH_STYLE.
+
+    /** Float, 1.0 = the voice's own speed; clamped to the offered range. */
+    const val ARG_SPEECH_RATE = "speech_rate"
+
+    /** A [Pace] name. */
+    const val ARG_PACE = "pace"
 
     // Error result of a custom command: SessionResult.extras[RESULT_ERROR] is a [PlaybackErrorCode] name.
     const val RESULT_ERROR = "error"
@@ -97,6 +115,12 @@ object PlaybackContract {
     /** Human-readable detail for [SESSION_ERROR], safe to show (never the PDF's text). */
     const val SESSION_ERROR_MESSAGE = "error_message"
 
+    /** The speaking rate in effect (Float), always present. */
+    const val SESSION_SPEECH_RATE = "speech_rate"
+
+    /** The [Pace] name in effect, always present. */
+    const val SESSION_PACE = "pace"
+
     /** Token for `MediaController.Builder(context, PlaybackContract.sessionToken(context))`. */
     fun sessionToken(context: Context): SessionToken =
         SessionToken(context, ComponentName(context, AudoraPlaybackService::class.java))
@@ -117,6 +141,18 @@ object PlaybackContract {
     fun sleepTimerArgs(mode: SleepTimerMode, minutes: Int = 0): Bundle = Bundle().apply {
         putString(ARG_SLEEP_MODE, mode.name)
         putInt(ARG_SLEEP_MINUTES, minutes)
+    }
+
+    fun speechStyleArgs(style: SpeechStyle): Bundle = Bundle().apply {
+        putFloat(ARG_SPEECH_RATE, style.rate)
+        putString(ARG_PACE, style.pace.name)
+    }
+
+    /** Parses [speechStyleArgs]; null when a field is missing, unknown or not a positive number. */
+    fun speechStyleFrom(args: Bundle): SpeechStyle? {
+        val rate = args.getFloat(ARG_SPEECH_RATE, Float.NaN).takeIf { it > 0f && it.isFinite() }
+        val pace = enumOrNull<Pace>(args.getString(ARG_PACE))
+        return if (rate == null || pace == null) null else SpeechStyle(rate, pace)
     }
 
     /** Parses [setVoiceArgs]; null when a field is missing or unknown. */

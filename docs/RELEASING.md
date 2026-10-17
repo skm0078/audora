@@ -136,6 +136,31 @@ The release certificate's SHA-256 is pinned as `EXPECTED_CERT_SHA256` in `.githu
 `audora-release-passwords.txt`). A build signed with any other key fails before it is published, instead of
 reaching phones as an APK that cannot update the installed app. Only a deliberate key change updates the pin.
 
+## Developer verification (Android Developer Console)
+
+Audora's package `io.github.skm0078.audora` is registered with the release certificate above (status
+*Registered*, key *Verified*, 2026-10-16) on a free **limited distribution** account in the Android Developer
+Console (https://android.google.com/developerconsole). That account lets Audora install on up to **20 authorized
+devices** once Google enforces developer verification where the phone is (India: 2027, no date yet). Full
+distribution would cost a one-time $25 plus ID, so it is not used. A limited account cannot be upgraded in place.
+
+**Add a friend's phone** (when you give them Audora):
+1. Console → **Devices** → add a device and type a name you will recognize (e.g. "Riya, Pixel 8").
+2. Your own phone: scan the QR code with it. A friend's phone: send them the link shown. Links expire after 7 days.
+3. They open the link on that phone, confirm they know you, and send back the code the phone shows.
+4. Enter the code and tap **Add device**.
+
+At 20 devices, remove one before adding another. Removing is permanent for that device: it can no longer install or
+update Audora until it is added again.
+
+**Key changes:** a new release key must be added to the package (**Add key**, then the console's ownership
+check: a release APK signed with that key and carrying the console's snippet in `assets/adi-registration.properties`)
+before phones can install builds signed with it. Without the old key there is no way back, which is one more reason
+to keep the backups in step 4.
+
+The dev build (`io.github.skm0078.audora.debug`) is not registered. On a phone where verification is enforced it
+installs with `adb install` or after Android's one-time "advanced flow" (Developer options, a one-day wait).
+
 ## When something fails
 
 | Error in the Release run | Meaning | Fix |

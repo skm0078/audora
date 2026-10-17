@@ -29,28 +29,42 @@ class RenderedPageOcrTest {
         if (renderFails) {
             Outcome.Failure(PdfPageError.ExtractionFailed(page, "broken"))
         } else {
-            Outcome.Success(PageImage(page, 2, 1, dpi, ByteArray(2)))
+            Outcome.Success(PageImage(page, 4, 2, dpi, ByteArray(8) { it.toByte() }))
         }
     }
 
     private class FakeEngine(var text: String = "Some text.", var installed: Set<Lang> = Lang.entries.toSet()) :
         OcrEngine {
         val calls = ArrayList<Set<Lang>>()
+        val images = ArrayList<PageImage>()
         var fail = false
+        var confidence: (PageImage) -> Int = { CONFIDENT }
         override var cacheTag = "fake-1"
 
         override fun installedLangs() = installed
 
-        override fun recognize(image: PageImage, langs: Set<Lang>): Outcome<String, OcrError> {
+        override fun recognize(image: PageImage, langs: Set<Lang>): Outcome<RecognizedPage, OcrError> {
             calls.add(langs)
-            return if (fail) Outcome.Failure(OcrError.Failed("engine broke")) else Outcome.Success(text)
+            images.add(image)
+            if (fail) return Outcome.Failure(OcrError.Failed("engine broke"))
+            val conf = confidence(image)
+            val lines = text.lines().filter { it.isNotBlank() }.mapIndexed { i, line ->
+                RecognizedLine(
+                    line.split(" ").map { RecognizedWord(it, 0, i, image.width, i + 1, conf) },
+                    paragraph = 0,
+                )
+            }
+            return Outcome.Success(RecognizedPage(lines, image.width, image.height))
         }
     }
 
     private val engine = FakeEngine()
 
-    private fun ocr(cache: OcrCache? = OcrCache(dir, 1_000_000)) =
-        RenderedPageOcr(pages, engine, cache, "book", "book=test", OcrConfig())
+    private fun ocr(cache: OcrCache? = OcrCache(dir, 1_000_000), config: OcrConfig = OcrConfig()) =
+        RenderedPageOcr(pages, engine, cache, "book", "book=test", config)
+
+    private fun RenderedPageOcr.text(page: Int, langs: Set<Lang> = setOf(Lang.EN)) =
+        recognize(page, langs).getOrNull()?.text
 
     @After
     fun cleanUp() {
@@ -59,9 +73,9 @@ class RenderedPageOcrTest {
 
     @Test
     fun `a page is drawn at the OCR resolution, recognised once and then read from the cache`() {
-        assertEquals("Some text.", ocr().recognize(3, setOf(Lang.EN)).getOrNull())
+        assertEquals("Some text.", ocr().text(3))
         // A second book object (the player opens its own) reads the first one's result.
-        assertEquals("Some text.", ocr().recognize(3, setOf(Lang.EN)).getOrNull())
+        assertEquals("Some text.", ocr().text(3))
         assertEquals(listOf(3 to OcrConfig().renderDpi), renders)
         assertEquals(listOf(setOf(Lang.EN)), engine.calls)
     }
@@ -80,7 +94,7 @@ class RenderedPageOcrTest {
         engine.fail = true
         assertEquals(OcrError.Failed("engine broke"), ocr().recognize(0, setOf(Lang.EN)).errorOrNull())
         engine.fail = false
-        assertEquals("Some text.", ocr().recognize(0, setOf(Lang.EN)).getOrNull())
+        assertEquals("Some text.", ocr().text(0))
         renderFails = true
         val drawn = ocr().recognize(1, setOf(Lang.EN)).errorOrNull()
         assertTrue("$drawn", drawn is OcrError.Failed && drawn.detail.startsWith("could not draw the page"))
@@ -107,5 +121,54 @@ class RenderedPageOcrTest {
         engine.installed = emptySet()
         assertEquals(OcrError.NoModels, ocr().detectLangs(0).errorOrNull())
         assertTrue(renders.isEmpty())
+    }
+
+    @Test
+    fun `a sideways scan is turned upright before it is read, and its boxes stay on the page as displayed`() {
+        // The 4 × 2 test image holds 0..7 row by row; turned a quarter clockwise its top-left pixel is 4.
+        engine.confidence = { image -> if (image.gray[0] == 4.toByte()) CONFIDENT else SIDEWAYS }
+        val config = OcrConfig(orientationDpi = OcrConfig().renderDpi)
+        val text = requireNotNull(ocr(config = config).recognize(0, setOf(Lang.EN)).getOrNull())
+        assertEquals(1, text.quarterTurns)
+        assertEquals("Some text.", text.text)
+        // As drawn, the four turns of the orientation check, then the page turned.
+        assertEquals(6, engine.calls.size)
+        assertEquals(2 to 4, engine.images.last().let { it.width to it.height })
+        // Cached with its turn and boxes.
+        val again = requireNotNull(ocr(config = config).recognize(0, setOf(Lang.EN)).getOrNull())
+        assertEquals(1, again.quarterTurns)
+        assertEquals(6, engine.calls.size)
+        assertTrue(again.lines.all { line -> line.words.all { it.box != null } })
+    }
+
+    @Test
+    fun `a page that reads well is never turned`() {
+        ocr().recognize(0, setOf(Lang.EN))
+        assertEquals(1, engine.calls.size)
+    }
+
+    @Test
+    fun `a poor scan no turn helps stays as drawn`() {
+        engine.confidence = { SIDEWAYS }
+        val text = requireNotNull(ocr().recognize(0, setOf(Lang.EN)).getOrNull())
+        assertEquals(0, text.quarterTurns)
+        assertEquals(1 + OcrText.FULL_TURN, engine.calls.size)
+    }
+
+    @Test
+    fun `margin strips are drawn small, read top and bottom, and cached`() {
+        engine.text = "Header line"
+        val margins = requireNotNull(ocr().margins(2, setOf(Lang.EN), 0, 0.5f).getOrNull())
+        assertEquals(listOf("Header line"), margins.top)
+        assertEquals(listOf("Header line"), margins.bottom)
+        assertEquals(listOf(2 to OcrConfig().marginDpi), renders)
+        assertEquals(listOf(4 to 1, 4 to 1), engine.images.map { it.width to it.height })
+        ocr().margins(2, setOf(Lang.EN), 0, 0.5f)
+        assertEquals(2, engine.calls.size)
+    }
+
+    private companion object {
+        const val CONFIDENT = 90
+        const val SIDEWAYS = 20
     }
 }

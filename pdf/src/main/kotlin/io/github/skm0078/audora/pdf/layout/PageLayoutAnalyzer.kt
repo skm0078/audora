@@ -21,11 +21,26 @@ class PageLayoutAnalyzer(private val config: LayoutConfig = LayoutConfig()) {
     fun analyze(page: PageText): PageLayout {
         val styles = GlyphStyles(page, config)
         val split = runSplitter.split(page, styles)
+        if (split.glyphs == 0) return PageLayout(page.pageIndex, emptyList(), styles.bodySize, LayoutMode.GEOMETRIC)
+        val turn = TextDirection.of(page, config)
         return when {
-            split.glyphs == 0 -> PageLayout(page.pageIndex, emptyList(), styles.bodySize, LayoutMode.GEOMETRIC)
+            turn != TextTurn.NONE -> turned(page, styles, turn)
             !hasUsableGeometry(page, split) -> extractionOrder(page, styles)
             else -> geometric(page, styles, split.runs)
         }
+    }
+
+    /**
+     * Text set sideways splits into one glyph per run, and upside-down text runs backwards. The page is laid out
+     * turned upright instead (ADR-032), or in extraction order if even that leaves no usable geometry.
+     */
+    private fun turned(page: PageText, styles: GlyphStyles, turn: TextTurn): PageLayout {
+        val upright = page.withBoxes(turn::apply)
+        val uprightStyles = GlyphStyles(upright, config)
+        val split = runSplitter.split(upright, uprightStyles)
+        if (!hasUsableGeometry(upright, split)) return extractionOrder(page, styles)
+        AudoraLog.d(TAG, "Page laid out turned $turn, page=${page.pageIndex}")
+        return geometric(upright, uprightStyles, split.runs).copy(turn = turn)
     }
 
     /** Enough glyph boxes, and enough of them in runs (not one glyph per run, as vertical text gives). */

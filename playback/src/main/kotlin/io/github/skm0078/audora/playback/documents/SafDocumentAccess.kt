@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/documents/SafDocumentAccess.kt
-// Purpose: DocumentAccess over the Storage Access Framework: lasting read grants, name and size, availability.
+// Purpose: DocumentAccess over the Storage Access Framework (lasting grants, name, size, availability) and own copies.
 
 package io.github.skm0078.audora.playback.documents
 
@@ -22,11 +22,13 @@ import java.io.InputStream
  * Error details name the exception type and the provider's authority only: a document URI usually spells out
  * the file's path and name, which must not reach the log (AGENTS.md: no PDF text, no titles).
  */
-class SafDocumentAccess(context: Context) : DocumentAccess {
+class SafDocumentAccess(context: Context, private val copies: SharedPdfCopies = SharedPdfCopies(context)) :
+    DocumentAccess {
     private val resolver: ContentResolver = context.applicationContext.contentResolver
 
     override fun keepAccess(documentUri: String): Outcome<Unit, DocumentError> {
         val uri = Uri.parse(documentUri)
+        if (copies.owns(uri)) return Outcome.Success(Unit) // Audora's own file: nothing to keep.
         return try {
             resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             Outcome.Success(Unit)
@@ -37,6 +39,7 @@ class SafDocumentAccess(context: Context) : DocumentAccess {
 
     override fun releaseAccess(documentUri: String) {
         val uri = Uri.parse(documentUri)
+        if (copies.owns(uri)) return copies.delete(uri)
         try {
             resolver.releasePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         } catch (e: SecurityException) {
@@ -47,6 +50,13 @@ class SafDocumentAccess(context: Context) : DocumentAccess {
 
     override fun describe(documentUri: String): Outcome<DocumentInfo, DocumentError> {
         val uri = Uri.parse(documentUri)
+        if (copies.owns(uri)) {
+            val file = copies.fileOf(uri)
+            return guarded(uri) {
+                if (!file.isFile) throw FileNotFoundException("copy is gone")
+                DocumentInfo(displayName = file.name, sizeBytes = file.length())
+            }
+        }
         return guarded(uri) {
             val queried = queryNameAndSize(uri)
             DocumentInfo(displayName = queried.displayName, sizeBytes = queried.sizeBytes ?: statSize(uri))
@@ -60,10 +70,18 @@ class SafDocumentAccess(context: Context) : DocumentAccess {
 
     override fun availability(documentUri: String): BookAvailability {
         val uri = Uri.parse(documentUri)
-        if (resolver.persistedUriPermissions.none { it.uri == uri && it.isReadPermission }) {
-            return BookAvailability.ACCESS_LOST
+        return when {
+            copies.owns(uri) -> if (copies.fileOf(uri).isFile) BookAvailability.AVAILABLE else BookAvailability.MISSING
+
+            resolver.persistedUriPermissions.none { it.uri == uri && it.isReadPermission } ->
+                BookAvailability.ACCESS_LOST
+
+            else -> providerAvailability(uri)
         }
-        return when (val opened = guarded(uri) { resolver.openFileDescriptor(uri, READ_MODE)?.close() != null }) {
+    }
+
+    private fun providerAvailability(uri: Uri): BookAvailability =
+        when (val opened = guarded(uri) { resolver.openFileDescriptor(uri, READ_MODE)?.close() != null }) {
             is Outcome.Success -> if (opened.value) BookAvailability.AVAILABLE else BookAvailability.MISSING
 
             is Outcome.Failure -> if (opened.error is DocumentError.AccessDenied) {
@@ -72,7 +90,6 @@ class SafDocumentAccess(context: Context) : DocumentAccess {
                 BookAvailability.MISSING
             }
         }
-    }
 
     private fun queryNameAndSize(uri: Uri): DocumentInfo {
         val columns = arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE)

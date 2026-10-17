@@ -8,6 +8,8 @@ import io.github.skm0078.audora.core.library.StorageError
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 class FakeResumeAnchorStore : ResumeAnchorStore {
     val anchors = mutableMapOf<BookId, ResumeAnchor>()
@@ -15,6 +17,8 @@ class FakeResumeAnchorStore : ResumeAnchorStore {
     var failWrites = false
 
     override suspend fun get(bookId: BookId): ResumeAnchor? = anchors[bookId]
+
+    override fun observeAll(): Flow<List<ResumeAnchor>> = flowOf(anchors.values.toList())
 
     override suspend fun latest(): ResumeAnchor? = anchors.values.maxByOrNull { it.savedAtMillis }
 

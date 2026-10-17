@@ -19,6 +19,7 @@ import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.session.BookSession
+import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -32,6 +33,7 @@ class SessionCallback(
     private val ownPackage: String,
     private val scope: CoroutineScope,
     private val voices: SpeechVoices,
+    private val style: SpeechStyleStore,
     private val bookSession: () -> BookSession,
     private val resumption: () -> PlaybackResumption?,
 ) : MediaSession.Callback {
@@ -48,6 +50,7 @@ class SessionCallback(
                     .add(PlaybackContract.PLAY_FROM)
                     .add(PlaybackContract.SET_VOICE)
                     .add(PlaybackContract.SET_SLEEP_TIMER)
+                    .add(PlaybackContract.SET_SPEECH_STYLE)
                     .build(),
             )
         }
@@ -63,6 +66,7 @@ class SessionCallback(
         PlaybackContract.ACTION_PLAY_FROM -> playFrom(args)
         PlaybackContract.ACTION_SET_VOICE -> Futures.immediateFuture(setVoice(args))
         PlaybackContract.ACTION_SET_SLEEP_TIMER -> Futures.immediateFuture(setSleepTimer(args))
+        PlaybackContract.ACTION_SET_SPEECH_STYLE -> Futures.immediateFuture(setSpeechStyle(args))
         else -> Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
     }
 
@@ -101,6 +105,14 @@ class SessionCallback(
         val (voice, lang) = PlaybackContract.voiceFrom(args) ?: return failure(PlaybackErrorCode.BAD_REQUEST)
         voices.select(lang, voice)
         bookSession().restartRendering()
+        return SessionResult(SessionResult.RESULT_SUCCESS)
+    }
+
+    private fun setSpeechStyle(args: Bundle): SessionResult {
+        val requested = PlaybackContract.speechStyleFrom(args) ?: return failure(PlaybackErrorCode.BAD_REQUEST)
+        val before = style.current
+        val applied = style.set(requested)
+        if (applied != before) bookSession().onSpeechStyleChanged(style.config.playerSpeed(applied.rate))
         return SessionResult(SessionResult.RESULT_SUCCESS)
     }
 

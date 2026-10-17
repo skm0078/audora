@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.playback.voice
 
+import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.speech.route.RoutedAudio
 import io.github.skm0078.audora.speech.voices.MeasuredSpeeds
@@ -21,18 +22,22 @@ class RenderSpeedTracker(private val speeds: () -> MeasuredSpeeds) {
     @Volatile
     private var lastVoice: VoiceId? = null
 
-    fun onRendered(chars: Int, routed: RoutedAudio, renderNanos: Long) {
+    /**
+     * [rate] is the speaking rate the sentence was rendered at: the sample is scaled back to the voice's own speed
+     * (rate 1.0), so changing the rate does not skew the voice's measured speed (ADR-033).
+     */
+    fun onRendered(chars: Int, routed: RoutedAudio, renderNanos: Long, rate: Float = SpeechStyle.NORMAL_RATE) {
         val voice = routed.voices.distinct().singleOrNull()?.takeIf { it == lastVoice }
         lastVoice = routed.voices.lastOrNull()
         val audioMs = routed.audio.durationMs
-        val measurable = chars > 0 && audioMs > 0 && renderNanos >= 0
+        val measurable = chars > 0 && audioMs > 0 && renderNanos >= 0 && rate > 0f && rate.isFinite()
         if (voice == null || !measurable) return
         speeds().record(
             voice,
             SpeedSample(
                 chars = chars,
                 renderSeconds = renderNanos.toDouble() / TimeUnit.SECONDS.toNanos(1),
-                audioSeconds = audioMs.toDouble() / TimeUnit.SECONDS.toMillis(1),
+                audioSeconds = audioMs.toDouble() * rate / TimeUnit.SECONDS.toMillis(1),
             ),
         )
     }

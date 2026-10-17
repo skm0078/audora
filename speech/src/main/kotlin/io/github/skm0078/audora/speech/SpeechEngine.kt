@@ -5,6 +5,7 @@ package io.github.skm0078.audora.speech
 
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.audio.PcmAudio
@@ -22,7 +23,8 @@ typealias RenderResult = Outcome<PcmAudio, SpeechError>
  *   and the engine stays usable. How quickly the work stops depends on the engine (see each implementation).
  * - Expected failures (missing voice, engine not installed, synthesis error) come back as [Outcome.Failure];
  *   exceptions other than cancellation never escape.
- * - Speed is not an engine concern: the player applies it (Build Spec C6).
+ * - [render]'s rate is applied by the voice itself (the model speaks faster or slower), never by stretching the
+ *   audio afterwards, which smears words (ADR-033, replacing Build Spec C6's player-side speed).
  */
 interface SpeechEngine {
     val id: EngineId
@@ -33,8 +35,11 @@ interface SpeechEngine {
     /** Voices that can render right now, offline. */
     suspend fun voices(): Outcome<List<VoiceInfo>, SpeechError>
 
-    /** Renders [text] (one sentence-sized reading unit) with [voice] to 16-bit mono PCM. Blank text renders silence. */
-    suspend fun render(text: String, voice: VoiceId): RenderResult
+    /**
+     * Renders [text] (one sentence-sized reading unit) with [voice] to 16-bit mono PCM, spoken at [rate] (1.0 = the
+     * voice's own speed). Blank text renders silence.
+     */
+    suspend fun render(text: String, voice: VoiceId, rate: Float = SpeechStyle.NORMAL_RATE): RenderResult
 
     /** Frees native models and engine connections. Later renders fail with [SpeechError.EngineUnavailable]. */
     fun release()

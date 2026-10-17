@@ -64,13 +64,24 @@ class SherpaModelConfigTest {
 
     @Test
     fun `only supertonic is told its language and step count per render`() {
-        val forSupertonic = sherpaGenerationConfig(supertonic, speakerId = 2)
-        val forKokoro = sherpaGenerationConfig(kokoro, speakerId = 3)
+        val forSupertonic = sherpaGenerationConfig(supertonic, speakerId = 2, rate = 1f)
+        val forKokoro = sherpaGenerationConfig(kokoro, speakerId = 3, rate = 1f)
 
         assertEquals(mapOf("lang" to "hi"), forSupertonic.extra)
         assertEquals(5, forSupertonic.numSteps)
         assertEquals(2, forSupertonic.sid)
         assertEquals(3, forKokoro.sid)
         assertTrue(forKokoro.extra.isNullOrEmpty())
+    }
+
+    @Test
+    fun `every family gets the speaking rate and keeps the voice's own pauses`() {
+        val supertonicConfig = sherpaGenerationConfig(supertonic, speakerId = 0, rate = 1.5f)
+        val kokoroConfig = sherpaGenerationConfig(kokoro, speakerId = 0, rate = 0.75f)
+
+        assertEquals(1.5f, supertonicConfig.speed)
+        assertEquals(0.75f, kokoroConfig.speed)
+        assertEquals(1f, supertonicConfig.silenceScale)
+        assertEquals(1f, kokoroConfig.silenceScale)
     }
 }

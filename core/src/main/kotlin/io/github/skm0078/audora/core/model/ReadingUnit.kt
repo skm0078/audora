@@ -13,7 +13,8 @@ package io.github.skm0078.audora.core.model
  *   voice gets it normalized at render time (ADR-019).
  * @property pauseAfterMs silence played after the sentence: longer after headings, paragraphs and list items
  *   (prosody, P2-04, ADR-029).
- * @property bounds one box per line the sentence covers; null for OCR'd or converted text.
+ * @property bounds one box per line the sentence covers, in page space; null when no glyph has a position (OCR without
+ *   word boxes, generated text).
  * @property kind what the sentence is part of on the page; some readings depend on it ("IV." in a heading).
  */
 data class ReadingUnit(

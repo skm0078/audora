@@ -11,6 +11,7 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PdfBook
 import io.github.skm0078.audora.pdf.extract.PageTextAssembler
 import io.github.skm0078.audora.pdf.extract.RawPage
+import io.github.skm0078.audora.pdf.ocr.OcrText
 import io.github.skm0078.audora.pdf.quality.CharacterErrorRate
 import io.github.skm0078.audora.pdf.quality.OcrError
 import io.github.skm0078.audora.pdf.quality.PageOcr
@@ -117,9 +118,9 @@ class GoldenRoutingTest {
     private class ExpectedTextOcr(private val pages: List<RawPage>, expected: String) : PageOcr {
         private val reference = CharacterErrorRate.fold(expected)
 
-        override fun recognize(pageIndex: Int, langs: Set<Lang>): Outcome<String, OcrError> {
+        override fun recognize(pageIndex: Int, langs: Set<Lang>): Outcome<OcrText, OcrError> {
             val raw = CharacterErrorRate.fold(PageTextAssembler().assemble(pages[pageIndex]).text)
-            return Outcome.Success(bestWindow(raw))
+            return Outcome.Success(OcrText.plain(bestWindow(raw)))
         }
 
         private fun bestWindow(page: String): String {

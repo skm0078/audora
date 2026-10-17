@@ -4,7 +4,10 @@
 package io.github.skm0078.audora.pdf.legacy
 
 import io.github.skm0078.audora.core.config.LegacyEncoding
+import io.github.skm0078.audora.core.config.QualityConfig
 import io.github.skm0078.audora.pdf.cleanup.MappedText
+import io.github.skm0078.audora.pdf.extract.PageTextAssembler
+import io.github.skm0078.audora.pdf.extract.RawPageFixture
 import java.text.Normalizer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -124,6 +127,31 @@ class LegacyConverterTest {
             0,
         )
         assertEquals("स्थिति", LegacyConverter.convert(MappedText.plain(text), runs).text.text)
+    }
+
+    /** [text] as PDFium extracts it: the characters in [chanakya] set in a Chanakya font, the rest in DevLys. */
+    private fun mixedFonts(text: String, chanakya: Set<Int>): LegacyConversion {
+        val chars = RawPageFixture.chars(text).mapIndexed { i, c -> c.copy(fontId = if (i in chanakya) 1 else 0) }
+        val page = PageTextAssembler().assemble(
+            RawPageFixture.page(chars, fontNames = listOf("WSUMMA+DevLys010", "IKWZYE+Chanakya")),
+        )
+        return LegacyConverter.convert(MappedText.plain(page.text), LegacyRuns.of(page, QualityConfig()))
+    }
+
+    @Test
+    fun `a Chanakya glyph inside a DevLys word is a supplement conjunct, not Gazette Chanakya`() {
+        // The Rajasthan Board paper (ADR-032): "f" and "V" set alone in Chanakya draw द्ध and ङ्क.
+        val siddhi = mixedFonts("flffdk;aZ", chanakya = setOf(3))
+        assertEquals(nfc("सिद्धिकार्यं"), nfc(siddhi.text.text))
+        assertEquals(0, siddhi.unknown)
+        assertEquals(nfc("निम्नांङ्कितेषु"), nfc(mixedFonts("fuEukafVrs\"kq", chanakya = setOf(7)).text.text))
+    }
+
+    @Test
+    fun `whole words in Chanakya keep the Gazette table`() {
+        // Gazette pages switch between Chanakya fonts and set whole words in them: "f" stays the pre-base ि.
+        assertEquals("स्थिति", mixedFonts("fLFkfr", chanakya = setOf(1, 2, 3, 4, 5)).text.text)
+        assertEquals("प्राधिकार", mixedFonts("izkf/dkj", chanakya = (0 until 8).toSet()).text.text)
     }
 
     @Test

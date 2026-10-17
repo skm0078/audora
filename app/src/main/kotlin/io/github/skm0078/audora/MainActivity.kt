@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -32,10 +33,14 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.diagnostics.LogSharer
 import io.github.skm0078.audora.pdf.render.ViewPoint
+import io.github.skm0078.audora.playback.book.ReadingTextPreferences
+import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.voices.VoiceRow
@@ -48,6 +53,7 @@ import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
 import io.github.skm0078.audora.ui.library.LibraryActions
 import io.github.skm0078.audora.ui.library.LibraryController
 import io.github.skm0078.audora.ui.library.LibraryScreen
+import io.github.skm0078.audora.ui.library.nowPlaying
 import io.github.skm0078.audora.ui.licences.LicenceSource
 import io.github.skm0078.audora.ui.licences.LicencesController
 import io.github.skm0078.audora.ui.licences.LicencesScreen
@@ -72,7 +78,9 @@ import io.github.skm0078.audora.ui.voices.VoicesController
 import io.github.skm0078.audora.ui.voices.VoicesScreen
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -101,6 +109,15 @@ class MainActivity : ComponentActivity() {
     lateinit var resumeLocator: ResumeLocator
 
     @Inject
+    lateinit var resumeAnchors: ResumeAnchorStore
+
+    /** Audora's own copies of PDFs another app only lends for a moment ("Open with Audora", ADR-033). */
+    private val sharedCopies: SharedPdfCopies by lazy { SharedPdfCopies(applicationContext) }
+
+    /** A PDF opened or shared from another app, waiting to be added. Never set on a restore: it was handled then. */
+    private var sharedPdf by mutableStateOf<String?>(null)
+
+    @Inject
     lateinit var voiceManager: VoiceManager
 
     /** The OCR model manager (P3-05); one per process, shared with the playback service's OCR. */
@@ -112,12 +129,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) sharedPdf = SharedPdfIntent.uriOf(intent)
         setContent {
             AudoraTheme {
                 val scope = rememberCoroutineScope()
                 val diagnostics = remember { DiagnosticsController(readingSessionTracker, logSharer, scope) }
                 // Activity-wide, so an add still running when the user opens Settings is not cancelled.
-                val libraryController = remember { LibraryController(library, scope).also { it.start() } }
+                val libraryController = remember {
+                    LibraryController(library, scope, resumeAnchors.observeAll(), sharedCopies::copy).apply { start() }
+                }
                 val battery = rememberBatterySetup(scope)
                 // Activity-wide too, so an import keeps going when the user leaves the screen; created on first visit.
                 val voicesController = remember { lazy { VoicesController(voiceManager, scope).also { it.start() } } }
@@ -130,9 +150,17 @@ class MainActivity : ComponentActivity() {
                     navigate(destination.parent ?: AppDestination.Library)
                 }
                 LaunchedEffect(Unit) { diagnostics.checkUnfinishedSession() }
+                SharedPdfEffect(sharedPdf, { sharedPdf = null }, libraryController::addShared, navigate)
 
                 when (destination) {
-                    AppDestination.Library -> LibraryRoute(libraryController, navigate) {
+                    AppDestination.Library -> LibraryRoute(
+                        libraryController,
+                        navigate,
+                        onContinue = { id ->
+                            autoResumeBook = id
+                            navigate(AppDestination.Reader(id))
+                        },
+                    ) {
                         if (battery.showCard) {
                             BatterySetupCard(
                                 onSetUp = { navigate(AppDestination.BatterySetup(fromSettings = false)) },
@@ -159,17 +187,9 @@ class MainActivity : ComponentActivity() {
                         LaunchedEffect(destination.id) { autoResumeBook = null }
                     }
                 }
-                diagnostics.unfinishedSession?.let { session ->
-                    UnfinishedSessionDialog(
-                        session = session,
-                        onResume = {
-                            diagnostics.resumeUnfinished { id ->
-                                autoResumeBook = id
-                                navigate(AppDestination.Reader(id))
-                            }
-                        },
-                        onDismiss = diagnostics::dismissUnfinished,
-                    )
+                UnfinishedSessionPrompt(diagnostics) { id ->
+                    autoResumeBook = id
+                    navigate(AppDestination.Reader(id))
                 }
             }
         }
@@ -212,6 +232,11 @@ class MainActivity : ComponentActivity() {
     ) {
         val ocrState by remember { ocrModels.state() }.collectAsStateWithLifecycle(initialValue = null)
         val scope = rememberCoroutineScope()
+        val textPreferences = remember { ReadingTextPreferences.forContext(applicationContext) }
+        // A one-line properties file, read once when Settings opens (like the onboarding flags). Saved off the main
+        // thread, one write at a time and in order, so quick taps leave the file as the switch shows.
+        var skipCitations by remember { mutableStateOf(textPreferences.skipCitationMarkers()) }
+        val textWrites = remember { Dispatchers.IO.limitedParallelism(1) }
         SettingsScreen(
             shareState = diagnostics.shareState,
             batteryExempt = battery.exempt,
@@ -234,15 +259,38 @@ class MainActivity : ComponentActivity() {
                     OcrModelsAction.DELETE -> scope.launch { ocrModels.delete() }
                 }
             },
+            skipCitations = skipCitations,
+            onSkipCitationsChange = { skip ->
+                skipCitations = skip
+                scope.launch {
+                    val saved = withContext(textWrites) { textPreferences.setSkipCitationMarkers(skip) }
+                    if (!saved) skipCitations = !skip // logged; the switch shows what books will use
+                }
+            },
         )
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        SharedPdfIntent.uriOf(intent)?.let { sharedPdf = it }
     }
 
     @Composable
     private fun LibraryRoute(
         controller: LibraryController,
         navigate: (AppDestination) -> Unit,
+        onContinue: (BookId) -> Unit,
         banner: @Composable () -> Unit,
     ) {
+        val context = LocalContext.current.applicationContext
+        val port = remember { MediaControllerPlaybackPort(context) }
+        // Connected only while visible, like the reader's: a connected controller keeps the service bound.
+        LifecycleStartEffect(port) {
+            port.connect()
+            onStopOrDispose { port.release() }
+        }
+        val playback by port.state.collectAsStateWithLifecycle()
+        val playWithPermission = rememberPlayWithNotificationPermission()
         val actions = remember(controller) {
             object : LibraryActions {
                 override fun onAddPdf(documentUri: Uri) = controller.add(documentUri.toString())
@@ -250,6 +298,14 @@ class MainActivity : ComponentActivity() {
                 override fun onLocate(id: BookId, documentUri: Uri) = controller.locate(id, documentUri.toString())
 
                 override fun onOpenBook(book: Book) = navigate(AppDestination.Reader(book.id))
+
+                override fun onContinue(book: Book) = playWithPermission { onContinue(book.id) }
+
+                override fun onOpenPlaying(id: BookId) = navigate(AppDestination.Reader(id))
+
+                override fun onPlayPause() {
+                    if (port.state.value.wantsToPlay) port.pause() else playWithPermission(port::play)
+                }
 
                 override fun onRequestRemoval(book: Book) = controller.proposeRemoval(book)
 
@@ -265,6 +321,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         LibraryScreen(
+            nowPlaying = nowPlaying(playback, controller.listState),
             listState = controller.listState,
             busy = controller.busy,
             message = controller.message,
@@ -391,6 +448,8 @@ class MainActivity : ComponentActivity() {
 
         override fun onSpeed(speed: Float) = model.setSpeed(speed)
 
+        override fun onPace(pace: Pace) = model.setPace(pace)
+
         override fun onSleepTimer(setting: SleepTimerSetting) = model.setSleepTimer(setting)
 
         override fun onPasswordSubmitted(password: String) = model.submitPassword(password)
@@ -402,5 +461,33 @@ class MainActivity : ComponentActivity() {
         override fun onRetry() = model.retry()
 
         override fun onDownloadOcrModels() = ocrModels.download()
+    }
+}
+
+@Composable
+private fun UnfinishedSessionPrompt(diagnostics: DiagnosticsController, resume: (BookId) -> Unit) {
+    val session = diagnostics.unfinishedSession ?: return
+    UnfinishedSessionDialog(
+        session = session,
+        onResume = { diagnostics.resumeUnfinished(resume) },
+        onDismiss = diagnostics::dismissUnfinished,
+    )
+}
+
+/**
+ * Adds a PDF shared by another app while its grant lasts ([add] keeps the grant or a copy), then opens it.
+ * [add] runs on the library's own scope, so clearing [shared] here does not cancel it.
+ */
+@Composable
+private fun SharedPdfEffect(
+    shared: String?,
+    onTaken: () -> Unit,
+    add: (String, (BookId) -> Unit) -> Unit,
+    navigate: (AppDestination) -> Unit,
+) {
+    LaunchedEffect(shared) {
+        if (shared == null) return@LaunchedEffect
+        onTaken()
+        add(shared) { id -> navigate(AppDestination.Reader(id)) }
     }
 }

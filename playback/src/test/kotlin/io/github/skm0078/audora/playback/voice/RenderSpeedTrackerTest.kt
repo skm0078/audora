@@ -32,6 +32,18 @@ class RenderSpeedTrackerTest {
         RoutedAudio(pcm(2_000), voices.map { if (it == hindi) Lang.HI else Lang.EN }, voices.toList(), null)
 
     @Test
+    fun `a render at another rate is measured as if at the voice's own speed`() {
+        tracker.onRendered(30, routed(kokoro), renderNanos = 1)
+        // 2 s of audio spoken at 2x: 4 s at the voice's own speed.
+        tracker.onRendered(30, routed(kokoro), renderNanos = 2_000_000_000, rate = 2f)
+
+        val sample = recorded.single().second
+        assertEquals(4.0, sample.audioSeconds, EPS)
+        assertEquals(0.5, sample.rtf, EPS)
+        assertEquals(7.5, sample.charsPerSecond, EPS)
+    }
+
+    @Test
     fun `the first render of a voice includes its load and is not measured`() {
         tracker.onRendered(30, routed(kokoro), renderNanos = 9_000_000_000)
         tracker.onRendered(30, routed(kokoro), renderNanos = 3_000_000_000)

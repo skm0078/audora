@@ -6,6 +6,7 @@ package io.github.skm0078.audora.speech.route
 import io.github.skm0078.audora.core.config.NormalizerConfig
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.flatMap
@@ -52,13 +53,18 @@ class RoutedSpeech(
     private val router: ScriptRouter,
     private val normalizers: Map<Lang, TextNormalizer> = speechNormalizers(),
 ) {
-    suspend fun render(text: String, lang: Lang, role: TextRole = TextRole.BODY): Outcome<RoutedAudio, SpeechError> {
+    suspend fun render(
+        text: String,
+        lang: Lang,
+        role: TextRole = TextRole.BODY,
+        rate: Float = SpeechStyle.NORMAL_RATE,
+    ): Outcome<RoutedAudio, SpeechError> {
         val segments = router.route(text, lang).ifEmpty { listOf(ScriptSegment(text, lang)) }
         val parts = ArrayList<Voiced>(segments.size)
         for (segment in segments) {
-            when (val part = renderWith(segment.text, segment.lang, role)) {
+            when (val part = renderWith(segment.text, segment.lang, role, rate)) {
                 is Outcome.Success -> parts.add(part.value)
-                is Outcome.Failure -> return fallBack(text, lang, role, segment.lang, part.error)
+                is Outcome.Failure -> return fallBack(Part(text, lang, role, rate), segment.lang, part.error)
             }
         }
         val rate = parts.maxOf { it.audio.sampleRate }
@@ -68,24 +74,32 @@ class RoutedSpeech(
 
     /** A part in [failedLang] could not be voiced: read the whole sentence with [lang]'s voice, unless that failed. */
     private suspend fun fallBack(
+        sentence: Part,
+        failedLang: Lang,
+        error: SpeechError,
+    ): Outcome<RoutedAudio, SpeechError> = if (failedLang == sentence.lang) {
+        Outcome.Failure(error)
+    } else {
+        renderWith(sentence.text, sentence.lang, sentence.role, sentence.rate)
+            .map { RoutedAudio(it.audio, listOf(sentence.lang), listOf(it.voice), error) }
+    }
+
+    private suspend fun renderWith(
         text: String,
         lang: Lang,
         role: TextRole,
-        failedLang: Lang,
-        error: SpeechError,
-    ): Outcome<RoutedAudio, SpeechError> = if (failedLang == lang) {
-        Outcome.Failure(error)
-    } else {
-        renderWith(text, lang, role).map { RoutedAudio(it.audio, listOf(lang), listOf(it.voice), error) }
+        rate: Float,
+    ): Outcome<Voiced, SpeechError> = voices.voiceFor(lang).flatMap { voice ->
+        when (val engine = voices.engine(voice.engine)) {
+            is Outcome.Success ->
+                engine.value.render(spoken(text, lang, role), voice, rate).map { Voiced(it, voice) }
+
+            is Outcome.Failure -> engine
+        }
     }
 
-    private suspend fun renderWith(text: String, lang: Lang, role: TextRole): Outcome<Voiced, SpeechError> =
-        voices.voiceFor(lang).flatMap { voice ->
-            when (val engine = voices.engine(voice.engine)) {
-                is Outcome.Success -> engine.value.render(spoken(text, lang, role), voice).map { Voiced(it, voice) }
-                is Outcome.Failure -> engine
-            }
-        }
+    /** The whole sentence as asked for, for the fallback. */
+    private class Part(val text: String, val lang: Lang, val role: TextRole, val rate: Float)
 
     private class Voiced(val audio: PcmAudio, val voice: VoiceId)
 

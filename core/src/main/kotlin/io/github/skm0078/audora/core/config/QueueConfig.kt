@@ -24,6 +24,7 @@ package io.github.skm0078.audora.core.config
  *   player would sit in BUFFERING for good.
  * @property renderAhead how far ahead to render for a voice of a given speed; its `maxAheadUnits` also caps the
  *   window the render queue accepts.
+ * @property resumeRewind how far reading steps back when it resumes after a pause (ADR-033).
  */
 data class QueueConfig(
     val prefetchUnits: Int = 3,
@@ -35,6 +36,7 @@ data class QueueConfig(
     val stuckBufferingTimeoutMs: Int = 600_000,
     val playbackStartBufferMs: Int = 0,
     val renderAhead: RenderAheadConfig = RenderAheadConfig(),
+    val resumeRewind: ResumeRewindConfig = ResumeRewindConfig(),
 ) {
     init {
         require(prefetchUnits >= 1) { "prefetchUnits must be >= 1, was $prefetchUnits" }
