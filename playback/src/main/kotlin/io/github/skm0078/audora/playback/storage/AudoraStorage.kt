@@ -6,6 +6,9 @@ package io.github.skm0078.audora.playback.storage
 import android.content.Context
 import androidx.room.Room
 import io.github.skm0078.audora.core.library.BookStore
+import io.github.skm0078.audora.core.notes.BookSettingsStore
+import io.github.skm0078.audora.core.notes.BookmarkStore
+import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import java.io.Closeable
 
@@ -13,6 +16,9 @@ import java.io.Closeable
 class AudoraStorage private constructor(private val database: AudoraDatabase) : Closeable {
     val books: BookStore = RoomBookStore(database.books())
     val resumeAnchors: ResumeAnchorStore = RoomResumeAnchorStore(database.resumeAnchors())
+    val bookmarks: BookmarkStore = RoomBookmarkStore(database.notes())
+    val bookSettings: BookSettingsStore = RoomBookSettingsStore(database.notes())
+    val pronunciations: PronunciationStore = RoomPronunciationStore(database.notes())
 
     override fun close() = database.close()
 
