@@ -1,12 +1,15 @@
 // File: playback/src/test/kotlin/io/github/skm0078/audora/playback/reading/QuoteCarryTest.kt
-// Purpose: An open quote carries to the next sentences of its paragraph, and no further (plan item 7).
+// Purpose: An open quote carries to the next sentences of its paragraph, and no further (plan item 7); who speaks each
+// quoted sentence follows tags, paragraphs, turns and pronouns (plan item 63).
 
 package io.github.skm0078.audora.playback.reading
 
 import io.github.skm0078.audora.core.config.DialogueConfig
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.playback.unit
+import io.github.skm0078.audora.speech.sherpa.SpeakerGender
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class QuoteCarryTest {
@@ -62,5 +65,74 @@ class QuoteCarryTest {
 
         carry.clear()
         assertEquals(false, carry.startsInQuote(page1[1]))
+    }
+
+    @Test
+    fun `a tagged speech carries its speaker through the paragraph, and lines alternate after`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "“Where were you?” Ann asked.", pause = paragraphPauseMs),
+            sentence(1, "“Out,” said Tom.", pause = paragraphPauseMs),
+            sentence(2, "“Out where?", pause = 0),
+            sentence(3, "Tell me.”", pause = paragraphPauseMs),
+            sentence(4, "“Just out.”", pause = paragraphPauseMs),
+            sentence(5, "The clock struck nine.", pause = paragraphPauseMs),
+            sentence(6, "“Fine.”", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        val names = units.map { carry.speakerOf(it)?.name }
+        assertEquals(listOf("Ann", "Tom", "Ann", "Ann", "Tom", null, null), names)
+    }
+
+    @Test
+    fun `a pronoun points to the speaker of its gender and teaches it`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "“Come in,” said Mrs Gupta.", pause = paragraphPauseMs),
+            sentence(1, "“Thank you,” said Ravi.", pause = paragraphPauseMs),
+            sentence(2, "“Sit down,” she said.", pause = paragraphPauseMs),
+            sentence(3, "“I will stand,” he said.", pause = paragraphPauseMs),
+            sentence(4, "The room went quiet.", pause = paragraphPauseMs),
+            sentence(5, "“Who is there?” he asked.", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertEquals("Mrs Gupta", carry.speakerOf(units[2])?.name)
+        assertEquals("Ravi", carry.speakerOf(units[3])?.name)
+        assertEquals(SpeakerGender.MALE, carry.speakerOf(units[3])?.gender)
+        assertEquals("Ravi", carry.speakerOf(units[5])?.name)
+    }
+
+    @Test
+    fun `a pronoun with no one to point to stays a generic speaker, and narration has none`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "“Halt,” she said.", pause = paragraphPauseMs),
+            sentence(1, "Nobody spoke.", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertEquals(null, carry.speakerOf(units[0])?.name)
+        assertEquals(SpeakerGender.FEMALE, carry.speakerOf(units[0])?.gender)
+        assertNull(carry.speakerOf(units[1]))
+    }
+
+    @Test
+    fun `a conversation carries over to the next page`() {
+        val carry = QuoteCarry()
+        val first = listOf(
+            sentence(0, "“Ready?” asked Mira.", pause = paragraphPauseMs),
+            sentence(1, "“Yes,” said Arjun.", pause = paragraphPauseMs),
+        )
+        val next = listOf(sentence(0, "“Then go.”", page = 1, pause = paragraphPauseMs))
+
+        carry.page(first)
+        carry.page(next)
+
+        assertEquals("Mira", carry.speakerOf(next.single())?.name)
     }
 }

@@ -9,7 +9,13 @@ import org.junit.Test
 class VoiceShapingTest {
     @Test
     fun `round trips`() {
-        val shaping = VoiceShaping(evenLoudness = false, boostDb = 6, trimPauses = true, expressiveness = 4)
+        val shaping = VoiceShaping(
+            evenLoudness = false,
+            boostDb = 6,
+            trimPauses = true,
+            expressiveness = 4,
+            characterVoices = true,
+        )
         assertEquals(shaping, VoiceShaping.decode(shaping.encode()))
     }
 
@@ -25,6 +31,7 @@ class VoiceShapingTest {
     fun `a line saved before expressiveness existed keeps the voices' own delivery`() {
         val old = VoiceShaping.decode("even=true;boost=0;trim=false")
         assertEquals(VoiceShaping.DEFAULT_EXPRESSION, old.expressiveness)
+        assertEquals(false, old.characterVoices)
     }
 
     @Test

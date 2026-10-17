@@ -5,6 +5,7 @@ package io.github.skm0078.audora.playback.service
 
 import android.app.PendingIntent
 import android.content.ComponentCallbacks2
+import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
 import androidx.annotation.OptIn
@@ -23,6 +24,7 @@ import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.BookmarkStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
+import io.github.skm0078.audora.core.result.getOrNull
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.core.resume.ResumeRecorder
@@ -54,11 +56,14 @@ import io.github.skm0078.audora.playback.session.SpeechPlayer
 import io.github.skm0078.audora.playback.upnext.QueueAdvance
 import io.github.skm0078.audora.playback.upnext.UpNextStore
 import io.github.skm0078.audora.playback.voice.BookRenderers
+import io.github.skm0078.audora.playback.voice.CharacterCast
+import io.github.skm0078.audora.playback.voice.CharacterFileStore
 import io.github.skm0078.audora.playback.voice.RenderSpeedTracker
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.StudyGapRenderer
 import io.github.skm0078.audora.playback.voice.VoiceEngines
+import io.github.skm0078.audora.speech.sherpa.castSpeakers
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -138,12 +143,13 @@ class AudoraPlaybackService : MediaLibraryService() {
         // The reading modes travel with the speech style; a change restarts the sentence playing (ADR-035).
         val reading = ReadingSource(modes = { style.current.modes })
         val stores = SessionStores(style, sleepOptions, book, focusSound)
+        val characters = characterCast(this, engines, { voices }, heard)
         val mediaSession = mediaSession(stores).also { session = it }
         bookSession = BookSession(
             player = player,
             registry = registry,
             sources = SessionSources(
-                renderer = renderer(engines, stores, reading, heard),
+                renderer = renderer(engines, stores, reading, heard, characters),
                 books = LibraryBookSource(this, library),
                 texts = ResourceTexts(),
                 // The model's share of the speed drains the queue like the player's share does (ADR-033).
@@ -154,6 +160,7 @@ class AudoraPlaybackService : MediaLibraryService() {
                 sleepOptions = sleepOptions::current,
                 onBook = { id ->
                     book.open(id)
+                    characters.open(id)
                     player.setPlaybackSpeed(style.config.playerSpeed(heard().rate))
                 },
                 keepGoingToNextChapter = { upNext.queue.value.keepGoingToNextChapter },
@@ -234,13 +241,14 @@ class AudoraPlaybackService : MediaLibraryService() {
         stores: SessionStores,
         reading: ReadingSource,
         heard: () -> SpeechStyle,
+        characters: CharacterCast,
     ) = StudyGapRenderer(
         BookRenderers.create(
             this,
             voices,
             style = heard,
             styleConfig = stores.style.config,
-            book = reading.book(fixer = { stores.book.fixer }),
+            book = reading.book(fixer = { stores.book.fixer }, characters = characters),
             speakability = reading.speakability,
             speed = RenderSpeedTracker(engines::speeds),
             timings = timings,
@@ -316,3 +324,16 @@ class AudoraPlaybackService : MediaLibraryService() {
         const val TAG = "Playback.Service"
     }
 }
+
+/** Character voices (plan item 63): other speakers of the narrator's model, never the quote or heading voice. */
+private fun characterCast(
+    context: Context,
+    engines: VoiceEngines,
+    voices: () -> SpeechVoices,
+    heard: () -> SpeechStyle,
+) = CharacterCast(
+    narrator = { lang -> voices().knownVoice(lang) },
+    speakers = { voice -> engines.bundled().getOrNull()?.engine?.castSpeakers(voice).orEmpty() },
+    taken = { lang -> heard().shaping.let { setOfNotNull(it.dialogueVoices[lang], it.headingVoices[lang]) } },
+    files = CharacterFileStore.forContext(context),
+)

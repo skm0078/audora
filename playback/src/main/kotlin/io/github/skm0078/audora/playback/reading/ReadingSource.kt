@@ -7,6 +7,7 @@ import io.github.skm0078.audora.core.config.SpeakabilityConfig
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.playback.voice.RenderBook
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
+import io.github.skm0078.audora.speech.route.CharacterVoices
 
 /**
  * One per playback service. [modes] is read when a render epoch starts (a mode change restarts the sentence playing,
@@ -29,8 +30,9 @@ class ReadingSource(
     val quotes: QuoteCarry = QuoteCarry()
 
     /** What the renderer reads about the open book, live: set again each time a book opens. */
-    fun book(fixer: () -> PronunciationFixer): RenderBook =
-        RenderBook({ chapterPages }, { page -> scanned(page) }, fixer, quotes::startsInQuote)
+    fun book(fixer: () -> PronunciationFixer, characters: CharacterVoices? = null): RenderBook = RenderBook({
+        chapterPages
+    }, { page -> scanned(page) }, fixer, quotes::startsInQuote, quotes::speakerOf, characters)
 
     /** The modes as they are now, for one render epoch's playlist. */
     fun current(): UnitReading = UnitReading(modes(), speakability, chapterPages)
