@@ -99,15 +99,20 @@ jobs:
           git show FETCH_HEAD:pdf/golden/listening/scores.tsv > "$listening" 2>/dev/null || : > "$listening"
           echo "LISTENING_BASELINE=$listening" >> "$GITHUB_ENV"
 
-      - name: ktlint, detekt, unit tests, golden and listening scores, debug APKs, unsigned release APK
+      - name: ktlint, detekt, unit tests, golden and listening scores, debug APKs, unsigned release APK, lint
         # assembleDebugAndroidTest only compiles the instrumented tests; the device-tests job runs them.
         # :pdf:goldenTest rewrites docs/QUALITY.md and pdf/golden/scores.tsv, :playback:listeningTest docs/LISTENING.md
         # and pdf/golden/listening/scores.tsv; the next step checks they were committed.
         run: >-
           ./gradlew ktlintCheck detekt test :pdf:goldenTest -Pgolden.baseline="$GOLDEN_BASELINE"
           :playback:listeningTest -Plistening.baseline="$LISTENING_BASELINE"
-          assembleDebug :app:assembleRelease
+          assembleDebug :app:assembleRelease :app:lintDebug
           :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest --stacktrace
+
+      - name: Lint report
+        # Android lint over the app and every module it depends on (API levels above minSdk among them).
+        if: failure()
+        run: cat app/build/reports/lint-results.txt 2>/dev/null || echo "No lint report (lint did not run)."
 
       - name: Golden scores are committed
         # docs/QUALITY.md and scores.tsv depend only on the code and the corpus, so a difference means the commit

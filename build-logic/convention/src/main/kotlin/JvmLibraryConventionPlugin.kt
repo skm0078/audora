@@ -11,6 +11,8 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 class JvmLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
         pluginManager.apply("org.jetbrains.kotlin.jvm")
+        // Android lint on plain Kotlin too, so :app's lint (checkDependencies) flags API calls above minSdk here.
+        pluginManager.apply("com.android.lint")
 
         extensions.configure<JavaPluginExtension> {
             sourceCompatibility = javaVersion
