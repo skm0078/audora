@@ -16,12 +16,12 @@ reachable from the build threads' containers (GitHub Actions reaches it).
    enwiktionary dump of 2026-09-02): Hindi 165,746,593 bytes, Bengali 39,482,695 bytes.
 2. **Build:** `scripts/build_dictionary.py` (standard library only) keeps entries of the language, a sense's own gloss
    (Wiktextract repeats the parent gloss first), up to 5 synonyms, and turns "form of" senses and inflection-table
-   forms into redirect lines (romanizations and table metadata left out). Keys are NFC without zero-width joiners,
+   forms into redirect lines (romanizations and table metadata left out). Keys are NFKC without zero-width joiners or soft hyphens,
    as the app's `WordKey` keys a tapped word; a word that has senses and is also a form of another word lists both.
    A line stays under 60,000 bytes (the app reads up to 64 KiB) by dropping a word's last senses. Same reproducible
    zip as English (deflate 9, fixed dates and permissions), with the CC BY-SA 4.0 text as `LICENSE`.
-3. **Measured sizes:** Hindi 1,822,960 bytes to download, 15,563,759 on the phone (279,064 lines with the forms; kaikki.org
-   lists 35,881 Hindi words); Bengali 567,256 to download, 3,341,276 on the phone (58,102 lines).
+3. **Measured sizes:** Hindi 1,792,646 bytes to download, 15,563,758 on the phone (279,064 lines with the forms; kaikki.org
+   lists 35,881 Hindi words); Bengali 556,861 to download, 3,341,270 on the phone (58,102 lines).
 4. **Measuring and keeping the snapshot:** a spec marked `"measure": true` is fetched unpinned and only printed in the
    voice-mirror log (source and zip pins), so a thread can pin a snapshot it cannot download. Because the upstream
    file is replaced in place, the mirror workflow keeps any dictionary whose pinned zip is already on the "voices"

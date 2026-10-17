@@ -34,6 +34,11 @@ class AudoraStorage private constructor(private val database: AudoraDatabase) : 
         database.openHelper.writableDatabase.execSQL("VACUUM INTO ?", arrayOf(target.absolutePath))
     }
 
+    /** Room's hash of the schema this build expects, as stored in the live database; null before Room created it. */
+    fun identityHash(): String? = database.openHelper.readableDatabase.query(IDENTITY_HASH_QUERY).use { cursor ->
+        if (cursor.moveToFirst()) cursor.getString(0) else null
+    }
+
     override fun close() = database.close()
 
     companion object {
@@ -41,6 +46,9 @@ class AudoraStorage private constructor(private val database: AudoraDatabase) : 
 
         /** The database schema version this build writes. */
         const val SCHEMA_VERSION = DATABASE_VERSION
+
+        /** Where Room records the schema's identity hash (its fixed row id 42), in any Room database. */
+        const val IDENTITY_HASH_QUERY = "SELECT identity_hash FROM room_master_table WHERE id = 42"
 
         /** [name] other than the default is for tests that reopen a database file, as after a process death. */
         fun open(context: Context, name: String = DATABASE_NAME): AudoraStorage = AudoraStorage(

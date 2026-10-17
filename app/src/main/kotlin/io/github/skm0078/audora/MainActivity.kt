@@ -75,7 +75,6 @@ import io.github.skm0078.audora.playback.notes.VoiceNoteAudio
 import io.github.skm0078.audora.playback.photo.PhotoBooks
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.search.SearchIndexes
-import io.github.skm0078.audora.playback.storage.AudoraStorage
 import io.github.skm0078.audora.playback.studio.StudioMode
 import io.github.skm0078.audora.speech.dictionary.Dictionaries
 import io.github.skm0078.audora.speech.ocr.OcrModels
@@ -100,6 +99,7 @@ import io.github.skm0078.audora.ui.library.LibraryScreen
 import io.github.skm0078.audora.ui.library.MiniPlayer
 import io.github.skm0078.audora.ui.library.WatchedFoldersRoute
 import io.github.skm0078.audora.ui.library.nowPlaying
+import io.github.skm0078.audora.ui.library.restoreMessageOf
 import io.github.skm0078.audora.ui.licences.LicenceSource
 import io.github.skm0078.audora.ui.licences.LicencesController
 import io.github.skm0078.audora.ui.licences.LicencesScreen
@@ -242,7 +242,7 @@ class MainActivity : ComponentActivity() {
     lateinit var upNext: UpNextPort
 
     @Inject
-    lateinit var storage: AudoraStorage
+    lateinit var backups: Backups
 
     private val appearancePreferences: AppearancePreferences by lazy { AppearancePreferences(applicationContext) }
 
@@ -254,7 +254,6 @@ class MainActivity : ComponentActivity() {
 
     private val photoBooks: PhotoBooks by lazy { PhotoBooks(applicationContext, sharedCopies) }
     private val watchedFolders: WatchedFolders by lazy { WatchedFolders(applicationContext, library) }
-    private val backups: Backups by lazy { Backups(applicationContext, storage) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -265,6 +264,7 @@ class MainActivity : ComponentActivity() {
             widgetResume = ResumeWidgetProvider.bookIdOf(intent)
             BookCopies.continueFrom(this, intent)
             AudiobookExport.continueFrom(this, intent)
+            Backups.takeStartResult()?.let { Toast.makeText(this, restoreMessageOf(it), Toast.LENGTH_LONG).show() }
         }
         setContent {
             val appearance by remember {

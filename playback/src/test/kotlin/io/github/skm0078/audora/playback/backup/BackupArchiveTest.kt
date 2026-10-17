@@ -127,6 +127,42 @@ class BackupArchiveTest {
         assertFalse(staging.exists())
     }
 
+    @Test
+    fun `a malformed entry name or manifest escape is not a backup, and too little space is said so`() {
+        val badName = ByteArrayOutputStream().also { out ->
+            ZipOutputStream(out, Charsets.ISO_8859_1).use { zip ->
+                zip.putNextEntry(ZipEntry(BackupManifest.ENTRY))
+                zip.write(manifest.encode())
+                zip.closeEntry()
+                entry(zip, "files/voice-notes/\u00e9.m4a", "x")
+            }
+        }.toByteArray()
+        val badManifest = ByteArrayOutputStream().also { out ->
+            ZipOutputStream(out).use { zip -> entry(zip, BackupManifest.ENTRY, "format=\\uZZZZ\n") }
+        }.toByteArray()
+        val full = BackupArchive(config = BackupConfig(minFreeBytes = Long.MAX_VALUE / 2))
+        val valid = zipOf(manifest, "databases/audora.db" to "db")
+
+        assertEquals(
+            Outcome.Failure(BackupError.NOT_A_BACKUP),
+            archive.stage(badName.inputStream(), staging, DB_VERSION),
+        )
+        assertEquals(
+            Outcome.Failure(BackupError.NOT_A_BACKUP),
+            archive.stage(badManifest.inputStream(), staging, DB_VERSION),
+        )
+        assertEquals(Outcome.Failure(BackupError.NO_SPACE), full.stage(valid.inputStream(), staging, DB_VERSION))
+        assertFalse(staging.exists())
+    }
+
+    @Test
+    fun `the writer's list of units travels in the manifest`() {
+        val listed = manifest.copy(units = BackupContents.DEFAULT.units())
+        val bytes = ByteArrayOutputStream().also { archive.write(it, listed, snapshot, root) }.toByteArray()
+
+        assertEquals(Outcome.Success(listed), archive.stage(bytes.inputStream(), staging, DB_VERSION))
+    }
+
     private fun put(path: String, text: String) = File(root, path).apply {
         parentFile.mkdirs()
         writeText(text)

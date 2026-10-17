@@ -16,7 +16,8 @@ small settings files.
    *Restore* picks one (`OpenDocument`) after a warning that it replaces this phone's library, notes and settings.
 2. **What it holds** (`BackupContents.DEFAULT`, paths relative to the app's data folder, so an entry's name is also
    where it is restored):
-   - `manifest.properties` first: format 1, the database's schema version, the date;
+   - `manifest.properties` first: format 1, the database's schema version, the date and the writer's list of units
+     (each file or folder it backs up);
    - `databases/audora.db`: a consistent snapshot of every table (books, resume anchors, bookmarks, book settings,
      pronunciations, highlights, voice notes) taken with SQLite's `VACUUM INTO` while the app runs
      (`AudoraStorage.snapshotTo`), WAL contents included;
@@ -27,12 +28,21 @@ small settings files.
    name a voice the new phone lacks), covers and search indexes (rebuilt), logs, export records and studio audio
    (they point at files on the old phone), the widget, and the first-run flag, so a restored phone still goes
    through first run (voice download, battery setup).
-3. **Restore is staged, then applied at the next start.** The picked file is unpacked into
-   `no_backup/restore-pending/` and marked ready; the app restarts itself, and `AudoraApplication.onCreate` applies it
-   (`Backups.applyPending`, `PendingRestore`) before Hilt builds anything that opens the database or preferences.
-   Applying deletes every allowed path (and the database's `-wal`, `-shm` and `-journal`, which would otherwise be
-   replayed over the restored file), copies the staged files in, and only then removes the marker, so a crash
-   part-way applies the whole backup again at the next start. A staging without a database is never applied.
+3. **Restore is staged, checked, then applied at the next start by renames.** The picked file is unpacked into
+   `no_backup/restore-pending/` (refused if it would leave less than 128 MiB free), its database is opened
+   read-only and checked (schema version no newer than this build, `PRAGMA quick_check`, and at the same version
+   Room's identity hash equal to the live database's), and it is marked ready with the units to replace. The app
+   restarts itself, and `AudoraApplication.onCreate` applies it (`Backups.applyPending`, `PendingRestore`) before
+   Hilt builds anything that opens the database or preferences. Applying is renames only, inside one volume: each
+   unit (a file, a whole folder, the database with its `-wal`, `-shm` and `-journal`, which would otherwise be
+   replayed over the restored file) moves to `no_backup/restore-aside/`, or leaves a `.none` note if absent, and the
+   staged one moves in. Removing the marker commits. On any failure, and at a start that finds an apply cut short by
+   a crash, every unit moves back and the restore is dropped, so a bad restore is tried once, never at every start;
+   the library then says the library is as it was. What was moved aside is deleted later, off the start path.
+   A unit the writer knew but did not hold goes back to its default; a unit it did not know (added in a later app
+   version) is left as it is. A staging without a database is never applied. A restore is refused while an export,
+   copy, clip or studio run is going, since the restart would cut it off; the job itself runs in a process-wide
+   scope (`Backups`), so turning the phone keeps it.
 4. **A picked file is untrusted.** The manifest must be the first entry, so a foreign or newer file is refused before
    anything is unpacked. A newer format or schema version is refused ("update the app first"); an older schema is
    accepted and Room's migrations bring it up to date. Only allow-listed names are unpacked (no `..`, `.`, empty or
@@ -62,8 +72,8 @@ small settings files.
   new phone lacks would leave a language silent. Rejected; speeds are kept.
 
 ## Consequences
-- A restore needs up to twice the backup's size free for a moment (staging plus the copied files); the staging is
-  deleted after.
+- A restore needs the backup's unpacked size free (plus 128 MiB) while staged; applying moves files and needs no
+  more space. The replaced files are deleted after the restart.
 - Books shared into the app make a backup large (each is kept whole). Restored shared books keep their file paths,
   so a backup from the debug build ("Audora Dev", package suffix `.debug`) restored into the release build shows
   those books as missing; positions and notes are kept and relink when the same file is added again.

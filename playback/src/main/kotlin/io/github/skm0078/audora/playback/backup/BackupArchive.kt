@@ -17,12 +17,22 @@ import java.util.zip.ZipException
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
-/** The first entry of every backup: which format and database version wrote it. */
-data class BackupManifest(val format: Int, val databaseVersion: Int, val createdAtMs: Long) {
+/**
+ * The first entry of every backup: which format and database version wrote it, and [units], the allow-list of the
+ * app that wrote it ([BackupContents.units]; null if not recorded), so a restore can tell a file the writer had not
+ * got (reset) from one it did not know about (kept).
+ */
+data class BackupManifest(
+    val format: Int,
+    val databaseVersion: Int,
+    val createdAtMs: Long,
+    val units: List<String>? = null,
+) {
     fun encode(): ByteArray = Properties().apply {
         setProperty(FORMAT, format.toString())
         setProperty(DATABASE_VERSION, databaseVersion.toString())
         setProperty(CREATED_AT, createdAtMs.toString())
+        units?.let { setProperty(UNITS, it.joinToString(UNIT_SEPARATOR)) }
     }.let { properties ->
         ByteArrayOutputStream().also { properties.store(it, null) }.toByteArray()
     }
@@ -34,15 +44,18 @@ data class BackupManifest(val format: Int, val databaseVersion: Int, val created
         private const val FORMAT = "format"
         private const val DATABASE_VERSION = "databaseVersion"
         private const val CREATED_AT = "createdAtMs"
+        private const val UNITS = "units"
+        private const val UNIT_SEPARATOR = ","
 
-        /** Null unless all three fields are there and numeric. */
+        /** Null unless all three numeric fields are there and numeric; throws IllegalArgumentException if malformed. */
         fun decode(bytes: ByteArray): BackupManifest? {
             val properties = Properties().apply { load(bytes.inputStream()) }
             val format = properties.getProperty(FORMAT)?.toIntOrNull()
             val version = properties.getProperty(DATABASE_VERSION)?.toIntOrNull()
             val created = properties.getProperty(CREATED_AT)?.toLongOrNull()
             return if (format != null && version != null && created != null) {
-                BackupManifest(format, version, created)
+                val units = properties.getProperty(UNITS)?.split(UNIT_SEPARATOR)?.filter { it.isNotEmpty() }
+                BackupManifest(format, version, created, units)
             } else {
                 null
             }
@@ -60,6 +73,12 @@ enum class BackupError {
 
     /** Unpacks to more than the limits allow. */
     TOO_LARGE,
+
+    /** The phone has too little free space to unpack it. */
+    NO_SPACE,
+
+    /** An export, copy, clip or studio run is going; restoring would restart the app under it. */
+    BUSY,
 
     /** Reading or writing failed (the file went away, storage full, a damaged zip). */
     IO_FAILED,
@@ -104,6 +123,13 @@ class BackupArchive(
         } catch (e: ZipException) {
             AudoraLog.w(TAG, "Backup unreadable: ${e.javaClass.simpleName}")
             Outcome.Failure(BackupError.NOT_A_BACKUP)
+        } catch (e: IllegalArgumentException) {
+            // A malformed entry name (ZipInputStream) or a bad escape in the manifest (Properties).
+            AudoraLog.w(TAG, "Backup malformed: ${e.javaClass.simpleName}")
+            Outcome.Failure(BackupError.NOT_A_BACKUP)
+        } catch (e: SecurityException) {
+            AudoraLog.w(TAG, "Backup not unpacked: ${e.javaClass.simpleName}")
+            Outcome.Failure(BackupError.IO_FAILED)
         } catch (e: IOException) {
             AudoraLog.w(TAG, "Backup not unpacked: ${e.javaClass.simpleName}")
             Outcome.Failure(BackupError.IO_FAILED)
@@ -112,7 +138,7 @@ class BackupArchive(
         return result
     }
 
-    /** One unpacking pass; throws IOException for a read or write failure. */
+    /** One unpacking pass; throws IOException for a read or write failure, IllegalArgumentException if malformed. */
     private inner class Unpack(
         private val zip: ZipInputStream,
         private val staging: File,
@@ -166,12 +192,20 @@ class BackupArchive(
                 return null
             }
             count++
-            val written = count <= config.maxEntries && File(staging, entry.name).let { target ->
-                target.parentFile?.mkdirs()
-                val limit = minOf(config.maxEntryBytes, config.maxTotalBytes - total)
-                target.outputStream().use { out -> readBounded(out, limit) } != null
+            val target = File(staging, entry.name)
+            val folder = target.parentFile ?: staging
+            folder.mkdirs()
+            val limit = minOf(config.maxEntryBytes, config.maxTotalBytes - total)
+            return when {
+                count > config.maxEntries -> BackupError.TOO_LARGE
+
+                // The claimed size only refuses early; the bytes actually written are bounded by the limit.
+                folder.usableSpace - entry.size.coerceAtLeast(0) < config.minFreeBytes -> BackupError.NO_SPACE
+
+                target.outputStream().use { out -> readBounded(out, limit) } == null -> BackupError.TOO_LARGE
+
+                else -> null
             }
-            return if (written) null else BackupError.TOO_LARGE
         }
 
         /** Copies the current entry to [out]; null (and [out] left partial) if it passes [limit] bytes. */

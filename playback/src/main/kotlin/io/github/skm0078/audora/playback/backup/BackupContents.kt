@@ -38,9 +38,8 @@ data class BackupContents(val files: List<String>, val folders: List<String>) {
         return (single + below).filter { allows(it.first) }
     }
 
-    /** Everything a restore replaces under [root]: the listed files, the database's side files and the folders. */
-    fun targets(root: File): List<File> =
-        (files + DATABASE_SIDE_FILES.map { DATABASE + it } + folders).map { File(root, it) }
+    /** What a restore replaces, each whole: the listed files and folders (the database's journals go with it). */
+    fun units(): List<String> = files + folders
 
     companion object {
         /** The database's entry: written from a snapshot, never copied from the live file. */

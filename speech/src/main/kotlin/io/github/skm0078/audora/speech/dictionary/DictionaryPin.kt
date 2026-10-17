@@ -44,10 +44,10 @@ data class DictionaryPin(
         /** Hindi entries of Wiktionary (CC BY-SA 4.0, via kaikki.org): English glosses and inflected forms. */
         val HINDI = DictionaryPin(
             id = "dict-hi-wiktionary",
-            fileName = "dict-hi-wiktionary-c2f5e6ff1696.zip",
-            sha256 = "c2f5e6ff1696fe4b24cb37df7127387ff51a96cd0ab3cbd9b38612730352a904",
-            sizeBytes = 1_822_960,
-            unpackedBytes = 15_563_759,
+            fileName = "dict-hi-wiktionary-b2bc32c39cfd.zip",
+            sha256 = "b2bc32c39cfdca09acb81c0468e04022eafe084a554f3699581b7e9e8946f469",
+            sizeBytes = 1_792_646,
+            unpackedBytes = 15_563_758,
             entryName = "dictionary.tsv",
             licenceName = "LICENSE",
             baseUrl = MIRROR,
@@ -56,10 +56,10 @@ data class DictionaryPin(
         /** Bengali entries of Wiktionary (CC BY-SA 4.0, via kaikki.org): English glosses and inflected forms. */
         val BENGALI = DictionaryPin(
             id = "dict-bn-wiktionary",
-            fileName = "dict-bn-wiktionary-7d37e76f7fd3.zip",
-            sha256 = "7d37e76f7fd3a966d55a8458b0e58c9f21b0b194e87fc0234e1e5743d313788d",
-            sizeBytes = 567_256,
-            unpackedBytes = 3_341_276,
+            fileName = "dict-bn-wiktionary-a50babce19ad.zip",
+            sha256 = "a50babce19ad1123f715b43199f2312117762d4aef63091bd6fe16c014e8019b",
+            sizeBytes = 556_861,
+            unpackedBytes = 3_341_270,
             entryName = "dictionary.tsv",
             licenceName = "LICENSE",
             baseUrl = MIRROR,

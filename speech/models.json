@@ -241,14 +241,13 @@
         "sizeBytes": 165746593,
         "extracted": "2026-10-03 from the enwiktionary dump of 2026-09-02"
       },
-      "zip": "dict-hi-wiktionary-c2f5e6ff1696.zip",
-      "sha256": "c2f5e6ff1696fe4b24cb37df7127387ff51a96cd0ab3cbd9b38612730352a904",
-      "sizeBytes": 1822960,
-      "unpackedBytes": 15563759,
+      "zip": "dict-hi-wiktionary-b2bc32c39cfd.zip",
+      "sha256": "b2bc32c39cfdca09acb81c0468e04022eafe084a554f3699581b7e9e8946f469",
+      "sizeBytes": 1792646,
+      "unpackedBytes": 15563758,
       "licenceFiles": [
         "speech/licences/wiktionary-CC-BY-SA-4.0.txt"
-      ],
-      "measure": true
+      ]
     },
     {
       "id": "dict-bn-wiktionary",
@@ -266,14 +265,13 @@
         "sizeBytes": 39482695,
         "extracted": "2026-10-03 from the enwiktionary dump of 2026-09-02"
       },
-      "zip": "dict-bn-wiktionary-7d37e76f7fd3.zip",
-      "sha256": "7d37e76f7fd3a966d55a8458b0e58c9f21b0b194e87fc0234e1e5743d313788d",
-      "sizeBytes": 567256,
-      "unpackedBytes": 3341276,
+      "zip": "dict-bn-wiktionary-a50babce19ad.zip",
+      "sha256": "a50babce19ad1123f715b43199f2312117762d4aef63091bd6fe16c014e8019b",
+      "sizeBytes": 556861,
+      "unpackedBytes": 3341270,
       "licenceFiles": [
         "speech/licences/wiktionary-CC-BY-SA-4.0.txt"
-      ],
-      "measure": true
+      ]
     }
   ]
 }

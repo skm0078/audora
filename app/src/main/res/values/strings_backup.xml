@@ -16,4 +16,9 @@
     <string name="backup_from_newer_app">That backup is from a newer Audora. Update the app, then restore it.</string>
     <string name="backup_too_large">That backup is larger than Audora can restore.</string>
     <string name="backup_restore_failed">The backup couldn\'t be read. Check there is free space on the phone and try again.</string>
+    <string name="backup_size">This backup will be about %1$s before compression.</string>
+    <string name="backup_no_space">There isn\'t enough free space on the phone to restore that backup. Free some space and try again.</string>
+    <string name="backup_busy">Audora is saving an audiobook, a copy or a clip, or running studio mode. Let it finish or stop it, then restore.</string>
+    <string name="backup_restored">Backup restored.</string>
+    <string name="backup_restore_rolled_back">The backup couldn\'t be put in place, so your library is as it was. Try restoring it again.</string>
 </resources>
