@@ -65,9 +65,23 @@ class TableFinderTest {
     }
 
     @Test
-    fun `two tables side by side over the same rows, a gutter wider than their columns apart, stay two`() {
+    fun `two tables side by side, a gutter wider than their columns apart, stay two when they show it`() {
+        // Different lengths: the right table's last rows have nothing beside them.
+        val (page, layout) = layout(table(LEFT, PITCH, "P", rows = 2), table(LEFT + 6 * COLUMN, PITCH, "W"))
+        assertEquals(listOf(3, 5), finder.find(page, layout).map { it.size })
+        // A list in two halves: the same header on both.
+        val header = listOf(Cell("No.", LEFT, TOP), Cell("Name", LEFT + COLUMN, TOP))
+        val halves = listOf(LEFT, LEFT + 6 * COLUMN).map { left ->
+            listOf(header.map { Cell(it.text, it.left - LEFT + left, it.top) }) + table(left, PITCH, "P").drop(1)
+        }
+        val (page2, layout2) = layout(halves[0], halves[1])
+        assertEquals(listOf(5, 5), finder.find(page2, layout2).map { it.size })
+    }
+
+    @Test
+    fun `one table with a wide gap before its figures, cut by XY-cut, is one table`() {
         val (page, layout) = layout(table(LEFT, PITCH, "P"), table(LEFT + 6 * COLUMN, PITCH, "W"))
-        assertEquals(listOf(5, 5), finder.find(page, layout).map { it.size })
+        assertEquals(listOf(10), finder.find(page, layout).map { it.size })
     }
 
     @Test

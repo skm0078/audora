@@ -183,6 +183,55 @@ class ClutterRemoverTest {
         assertEquals(6, units.count { it.kind == UnitKind.TABLE_ROW })
     }
 
+    /** The headers of the page's tables and its row count, from a sketch of two blocks of columns on shared rows. */
+    private fun tablesOf(sketch: PageSketch): Pair<List<List<String>?>, Int> {
+        val units = builder.build(sketch.build())
+        return units.filter { it.kind == UnitKind.TABLE_SUMMARY }.map { it.table?.headers } to
+            units.count { it.kind == UnitKind.TABLE_ROW }
+    }
+
+    @Test
+    fun `a list set in two halves side by side on shared rows reads as two tables`() {
+        val sketch = PageSketch()
+        sketch.line("No.", LEFT, 700f).line("Name", 110f, 700f).line("No.", 380f, 700f).line("Name", 440f, 700f)
+        for (row in 1..4) {
+            val top = 700f - row * 12f
+            sketch.line("$row", LEFT, top).line("Asha$row", 110f, top)
+            sketch.line("${row + 4}", 380f, top).line("Ravi$row", 440f, top)
+        }
+        val (headers, rows) = tablesOf(sketch)
+        assertEquals(listOf(listOf("No.", "Name"), listOf("No.", "Name")), headers)
+        assertEquals(8, rows)
+    }
+
+    @Test
+    fun `two different tables side by side, one longer, read as two tables`() {
+        val sketch = PageSketch()
+        sketch.line("Pat.", LEFT, 700f).line("Age", 110f, 700f).line("Site", 380f, 700f).line("Beds", 440f, 700f)
+        for (row in 1..4) {
+            val top = 700f - row * 12f
+            sketch.line("P$row", LEFT, top).line("${50 + row}", 110f, top)
+            if (row <= 2) sketch.line("W$row", 380f, top).line("${10 * row}", 440f, top)
+        }
+        val (headers, rows) = tablesOf(sketch)
+        assertEquals(listOf(listOf("Pat.", "Age"), listOf("Site", "Beds")), headers)
+        assertEquals(6, rows)
+    }
+
+    @Test
+    fun `one table with a wide gap before its figures stays one table`() {
+        val sketch = PageSketch()
+        sketch.line("No.", LEFT, 700f).line("Item", 110f, 700f).line("2019", 380f, 700f).line("2020", 440f, 700f)
+        for (row in 1..4) {
+            val top = 700f - row * 12f
+            sketch.line("$row", LEFT, top).line("Pens$row", 110f, top)
+            sketch.line("${10 * row}", 380f, top).line("${12 * row}", 440f, top)
+        }
+        val (headers, rows) = tablesOf(sketch)
+        assertEquals(listOf(listOf("No.", "Item", "2019", "2020")), headers)
+        assertEquals(4, rows)
+    }
+
     @Test
     fun `text with wide gaps that do not line up is not a table`() {
         val sketch = PageSketch()

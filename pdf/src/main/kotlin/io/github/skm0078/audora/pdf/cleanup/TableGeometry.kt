@@ -20,6 +20,11 @@ internal fun pairedRow(line: TextLine, rows: List<TextLine>, ratio: Float): Int?
     rows.indices.singleOrNull { rows[it].box?.let { row -> overlapsVertically(box, row, ratio) } == true }
 }
 
+/** Whether [line] sits beside any of [others] on one row ([overlapsVertically] by [ratio]). */
+internal fun besideAny(line: TextLine, others: Collection<TextLine>, ratio: Float): Boolean = line.box?.let { box ->
+    others.any { other -> other.box?.let { overlapsVertically(box, it, ratio) } == true }
+} == true
+
 /** The median distance between the tops of consecutive rows (boxes side by side are one row); null under two rows. */
 internal fun typicalPitch(boxes: List<TextBox>, ratio: Float): Float? {
     val rows = ArrayList<TextBox>()

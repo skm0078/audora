@@ -64,9 +64,9 @@ internal class OcrTables(private val config: CleanupConfig, private val rowOverl
         close()
         val layout = PageLayout(page.pageIndex, blocks, bodySize = em, mode = LayoutMode.EXTRACTION_ORDER)
         val boxes = lines.flatMap { it.words }.associate { it.span to it.box }
-        return finder.find(page, layout).mapNotNull { region -> grids.build(page, region, em) }
+        return finder.find(page, layout).flatMap { region -> grids.build(page, region, em) }
             .filterNot { grid -> isProse(listOf(grid.header) + grid.rows, boxes, em) }
-            .map { grid -> OcrTable(grid.header, grid.rows, grid.lines.flatMapTo(HashSet()) { it.spans }) }
+            .map { grid -> OcrTable(grid.header, grid.rows, grid.spans) }
     }
 
     /**

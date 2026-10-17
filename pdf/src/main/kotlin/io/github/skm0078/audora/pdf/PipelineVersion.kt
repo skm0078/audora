@@ -34,7 +34,7 @@ package io.github.skm0078.audora.pdf
  *     zeros or signs, which are no longer read aloud (ADR-035). RI-5a: note signs OCR glued to words left out
  *     (same version). RI-4a: two table columns set close together split (same version). RI-3: Bengali dandas and
  *     vowel signs OCR misread as "৷", "|" or "!" restored (same version). Review fixes: tables split at their intro
- *     line, side-by-side tables kept apart, one-character cells by a rule kept, `/Rotate` on scanned pages, exponents
- *     beside operators kept, retried margin strips (same version).
+ *     line, side-by-side tables kept apart (also when layout joins their rows), one-character cells by a rule
+ *     kept, `/Rotate` on scanned pages, exponents beside operators kept, retried margin strips (same version).
  */
 const val PIPELINE_VERSION: Int = 11
