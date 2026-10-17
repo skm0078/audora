@@ -81,6 +81,18 @@ class OcrParagraphKindsTest {
     }
 
     @Test
+    fun `a symbol far from the next word is a table's first cell, not a bullet`() {
+        val symbol = OcrWord("©", ViewRect(LEFT, TOP, LEFT + 0.02f, TOP + BODY), CONFIDENT)
+        val far = OcrWord("biconditional", ViewRect(LEFT + 0.2f, TOP, LEFT + 0.35f, TOP + BODY), CONFIDENT)
+        val units = builder.build(
+            builder.ocrReadingText(PAGE, OcrText(listOf(OcrLine(listOf(symbol, far), 0)))) {
+                transform.toPage(it)
+            },
+        )
+        assertEquals(listOf("© biconditional"), units.map { it.text })
+    }
+
+    @Test
     fun `a lone sign before a number or a word that is not a bullet is kept`() {
         val lines = listOf(line("Add the two numbers.", 0, 0), line("+ 5 more", 1, 1), line("only one", 2, 2))
         val units = builder.build(builder.ocrReadingText(PAGE, OcrText(lines)) { transform.toPage(it) })

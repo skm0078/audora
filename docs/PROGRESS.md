@@ -2,12 +2,13 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
-## Reading intelligence, step 8 — headings and lists on scanned pages (RI-10; 2026-10-17, ADR-035)
+## Reading intelligence, step 8 — headings and lists on scanned pages, close table columns (RI-10, RI-4a; 2026-10-17, ADR-035)
 - **Headings from type size:** Tesseract's estimate of each line's type size is kept with the OCR text, and a clearly read line well above the page's body size (1.3×, `LayoutConfig.ocrHeadingSizeRatio`) becomes a heading, split from the paragraph under it. Large lines read badly, starting with a pointer ("> click here"), holding a table bar or ending a sentence stay body text (screenshots, stamps, noise).
 - **Bullets OCR misread restored:** the Hindi and Bengali models have no bullet, so "•" came out as "o", "०", "০", "*", "+", "°" or "©" and was read aloud ("zero") before every item. A line starting with one of those, then a word, now starts a list item and the bullet is silent (`OcrBullets`).
+- **Table columns set close together are split:** two columns closer than a cell gap, or under one header cell, read as one ("1 Assam"). Where a gap wider than a word space runs down the column, it is split (`ColumnChannels`); the Jal Shakti report's serial numbers and states are now two columns, and no other table changed.
 - **Book kinds** on the 57 test PDFs: 51 right (89.5%), from 49; both scanned textbooks are now textbooks and no right answer changed. Still one PDF short of the ticket's 90%; the six misses are not about structure (listed in ADR-035).
 - `PIPELINE_VERSION` 11 (OCR'd pages change: headings, list items, silent bullets). OCR cache format v4 (line sizes), older entries still decode. Golden 0.9268, listening 0.9783 and the UDHR character error rates unchanged. No new dependency.
-- Tests: `OcrParagraphKindsTest` (a heading, large lines that are not headings, a heading split from its paragraph, nine misread bullets, signs that are not bullets, no sizes), `HocrTest` (type size), `OcrTextCodecTest` (v4 sizes, v3 decode), `OcrLineRetryTest` (a retried line keeps its size), `LayoutConfigTest`.
+- Tests: `OcrParagraphKindsTest` (a heading, large lines that are not headings, a heading split from its paragraph, nine misread bullets, signs that are not bullets, no sizes), `HocrTest` (type size), `OcrTextCodecTest` (v4 sizes, v3 decode), `OcrLineRetryTest` (a retried line keeps its size), `LayoutConfigTest`, `ColumnChannelsTest`, `TableGridTest` (two close columns), `TableConfigTest`.
 
 **Real-device checks:** open a scanned textbook and check that chapter and section headings pause like headings and bulleted items are read without "zero" or "o" before them.
 

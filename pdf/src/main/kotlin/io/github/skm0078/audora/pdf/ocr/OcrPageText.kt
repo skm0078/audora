@@ -46,7 +46,7 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
         dropped: Set<Int> = emptySet(),
         toPage: ((ViewRect) -> TextBox)? = null,
     ): OcrPage {
-        val (paragraphs, sizes) = paragraphsOf(ocr, dropped)
+        val (paragraphs, sizes) = paragraphsOf(ocr, dropped, bulletGap(ocr, toPage))
         val text = StringBuilder()
         val boxes = ArrayList<TextBox?>()
         val confidences = ArrayList<Byte>()
@@ -153,6 +153,26 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
         return out
     }
 
+    /**
+     * Whether a word and the next are as close as a bullet and its text: at most `LayoutConfig.ocrBulletMaxGapEm` of
+     * the text's height apart in the upright page. Farther apart, the "©" is a symbol in a table's first column.
+     * Without boxes, any distance passes.
+     */
+    private fun bulletGap(ocr: OcrText, toPage: ((ViewRect) -> TextBox)?): (OcrWord, OcrWord) -> Boolean {
+        val turn = TURNS[ocr.quarterTurns]
+        return { bullet, text ->
+            val a = bullet.box
+            val b = text.box
+            if (toPage == null || a == null || b == null) {
+                true
+            } else {
+                val first = turn.apply(toPage(a))
+                val next = turn.apply(toPage(b))
+                next.left - first.right <= layoutConfig.ocrBulletMaxGapEm * next.height
+            }
+        }
+    }
+
     /** The page's body text size: the median size of its lines that have one, 0 when none has. */
     private fun bodySizeOf(sizes: List<List<Float>>): Float {
         val known = sizes.flatten().filter { it > 0f }.sorted()
@@ -190,7 +210,11 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
      * ([OcrBullets]), and each line's size
      * (`OcrLine.size`) in the same shape.
      */
-    private fun paragraphsOf(ocr: OcrText, dropped: Set<Int>): Pair<List<List<List<OcrWord>>>, List<List<Float>>> {
+    private fun paragraphsOf(
+        ocr: OcrText,
+        dropped: Set<Int>,
+        isBulletGap: (OcrWord, OcrWord) -> Boolean,
+    ): Pair<List<List<List<OcrWord>>>, List<List<Float>>> {
         val paragraphs = ArrayList<List<List<OcrWord>>>()
         val sizes = ArrayList<List<Float>>()
         var current = ArrayList<List<OcrWord>>()
@@ -199,6 +223,7 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
         ocr.lines.forEachIndexed { i, line ->
             if (i in dropped) return@forEachIndexed
             val words = OcrBullets.restore(
+                isBulletGap,
                 line.words.mapNotNull { word ->
                     val text = Normalizer.normalize(word.text, Normalizer.Form.NFC).trim()
                     if (text.isEmpty()) null else OcrWord(text, word.box, word.confidence)

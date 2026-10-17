@@ -210,7 +210,8 @@ and highlight need a unit to land on.
   screenshots of a web form: large text there is noise, pointers ("> click here") or table rows read badly. **Misread
   bullets:** Tesseract's Hindi and Bengali models have no bullet, so "•" and "○" come out as "o", "०", "০", "*", "+",
   "°" or "©" (66 lines of "*" and 19 of "o" in one NCERT book); a line's first word that is one of those, followed by
-  a word starting with a letter, becomes "•", so the item is a list item and is no longer read as "zero" or "star".
+  a word starting with a letter at most 2.2 times its height away (`ocrBulletMaxGapEm`; farther, the "©" is "↔" in
+  a table's first column), becomes "•", so the item is a list item and is no longer read as "zero" or "star".
   List labels after a clause end start items as on a text layer. **Measured** on the 57 test PDFs: 51 right (89.5%),
   from 49; 35 of 41 without the UDHR copies. The two scanned textbooks now classify (the Bengali fair-lending guide,
   the NCERT preschool curriculum); no right answer changed. Still short of 90% by one PDF; the six misses are not
@@ -218,4 +219,12 @@ and highlight need a unit to land on.
   a DevLys exam paper and a Bengali notice as forms, an RTI reply so badly scanned it has 101 words. Golden,
   listening and the UDHR character error rates are unchanged (no scanned headings or bullets in them).
   PIPELINE_VERSION 11.
+- Close table columns (`ColumnChannels`, in `TableGrid`, text-layer and scanned tables alike). Two columns become one
+  when set closer than `cellGapEm` or when a header cell reaches across both (the Jal Shakti report's serial number
+  and state, under one "क्र.सं. राज्य/केंद्र शासित प्रदेश" header). The gap between them still runs down the column at one
+  place, while a cell's word spaces fall anywhere and are narrower: a column splits where at least 3 line rows, and
+  80% of those reaching across that place, have a gap of at least 0.5 em there (`splitGapEm`, `minSplitRows`,
+  `splitShare`); a total row to one side does not count. Of the 30 tables in the table corpora (18 text-layer, 12 scanned), the one that ran its
+  serial numbers into the state names now reads them as two columns and nothing else changed; the 145 labelled cells
+  and the scanned tables are unchanged.
 - Logs carry kinds, scores, page and unit index, never the page's text (AGENTS.md).

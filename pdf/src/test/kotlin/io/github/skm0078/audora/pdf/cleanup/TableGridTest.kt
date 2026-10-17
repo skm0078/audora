@@ -65,6 +65,23 @@ class TableGridTest {
             ),
         ),
         Case(
+            "two columns set closer than a cell gap are split where the gap runs down them",
+            {
+                row(TOP, "#" to COL_A, "State" to CLOSE, "Funds" to COL_B, "Spent" to COL_C)
+                row(TOP - PITCH, "1" to COL_A, "Assam" to CLOSE, "45.99" to COL_B, "51.31" to COL_C)
+                row(TOP - 2 * PITCH, "2" to COL_A, "Goa" to CLOSE, "53.52" to COL_B, "75.06" to COL_C)
+                row(TOP - 3 * PITCH, "3" to COL_A, "Bihar" to CLOSE, "134.52" to COL_B, "0.00" to COL_C)
+                row(TOP - 4 * PITCH, "Total" to CLOSE, "233.03" to COL_B, "126.37" to COL_C)
+            },
+            listOf(
+                listOf("#", "State", "Funds", "Spent"),
+                listOf("1", "Assam", "45.99", "51.31"),
+                listOf("2", "Goa", "53.52", "75.06"),
+                listOf("3", "Bihar", "134.52", "0.00"),
+                listOf("", "Total", "233.03", "126.37"),
+            ),
+        ),
+        Case(
             "a chart's rotated axis title, set letter by letter, is not a table",
             {
                 for ((i, letters) in listOf("n 2 a", "a 1 e", "e 0 M", "M -1 n").withIndex()) {
@@ -101,6 +118,9 @@ class TableGridTest {
         const val TOP = 600f
         const val PITCH = 12f
         const val COL_A = 72f
+
+        /** 0.7 em right of a one-character cell at [COL_A]: closer than a cell gap, wider than a word space. */
+        const val CLOSE = 84f
         const val COL_B = 160f
         const val COL_C = 250f
         const val COL_D = 340f

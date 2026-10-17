@@ -25,6 +25,7 @@ internal class Grid(val header: List<List<TextSpan>>, val rows: List<List<List<T
  *
  * 1. **Cells of a line.** A line's runs closer than `TableConfig.cellGapEm` are one cell ("R1 (s" and "−1").
  * 2. **Lines into line rows.** Lines that overlap vertically (cut into blocks by XY-cut) are one line row.
+ *    Cells holding two columns printed closer than `cellGapEm` are split where a gap runs down them ([ColumnChannels]).
  * 3. **Columns.** The horizontal extents of the cells of the fullest line rows, merged where they overlap. Each cell
  *    goes to the column it overlaps most (a header spanning two columns goes to one of them), or the nearest. A
  *    single cell across two or more columns at the table's top or bottom edge is a title or the next heading, left
@@ -41,9 +42,12 @@ internal class Grid(val header: List<List<TextSpan>>, val rows: List<List<List<T
  *    a number (a truth table) or every row does.
  */
 internal class TableGrid(private val config: TableConfig, private val rowOverlapRatio: Float) {
+    private val closeColumns = CloseColumns(ColumnChannels(config))
+
     /** The grid of a table covering [lines]; null when they do not make at least two columns and two rows. */
     fun build(page: PageText, lines: Collection<TextLine>, bodySize: Float): Grid? {
-        val all = lineRows(lines.mapNotNull { cellsOf(page, it, bodySize) }.filter { it.isNotEmpty() })
+        val cells = lines.mapNotNull { cellsOf(page, it, bodySize) }.filter { it.isNotEmpty() }
+        val all = closeColumns.split(page, lineRows(cells))
         val fits = all.size in 2..config.maxRowsPerTable && !isChart(page, lines)
         val columns = Columns.of(all).takeIf { fits && it.size >= 2 } ?: return null
         val lineRows = withoutEdgeTitles(all, columns)
@@ -168,6 +172,52 @@ internal class TableGrid(private val config: TableConfig, private val rowOverlap
         val runs = lines.flatMap { line -> line.spans.map { page.text.substring(it.start, it.end).trim() } }
         val singleLetters = runs.count { it.codePointCount(0, it.length) == 1 && Character.isLetter(it.codePointAt(0)) }
         return runs.isNotEmpty() && singleLetters > runs.size * config.maxSingleLetterRunShare
+    }
+}
+
+/** Splits the columns of a table that hold two columns each ([ColumnChannels]). */
+private class CloseColumns(private val channels: ColumnChannels) {
+    /** [rows] with each column that holds two split, one split at a time until none is left. */
+    fun split(page: PageText, rows: List<LineRow>): List<LineRow> {
+        var current = rows
+        while (true) {
+            val columns = Columns.of(current)
+            val placed = current.map(columns::place)
+            val words = current.flatMap { it.cells }.associateWith { wordsOf(page, it) }
+            val split = (0 until columns.size).firstNotNullOfOrNull { c ->
+                val cells = placed.flatMap { it[c] }
+                val ems = cells.map { it.em }.sorted()
+                val rowWords = placed.map { row ->
+                    row[c].flatMap { words.getValue(it) }.map { it.second.left..it.second.right }.sortedBy { it.start }
+                }
+                channels.find(rowWords, ems[ems.size / 2])
+                    ?.let { x -> cells.associateWith { splitAt(it, words.getValue(it), x) } }
+                    ?.takeIf { cut -> cut.values.any { it.size > 1 } }
+            } ?: return current
+            current =
+                current.map { row -> LineRow(row.cells.flatMap { split[it] ?: listOf(it) }.sortedBy { it.box.left }) }
+        }
+    }
+
+    /** [cell] cut at [x] into the words left of it and those right of it, or kept whole when all fall on one side. */
+    private fun splitAt(cell: Cell, words: List<Pair<TextSpan, TextBox>>, x: Float): List<Cell> {
+        val (left, right) = words.partition { (it.second.left + it.second.right) / 2 < x }
+        if (left.isEmpty() || right.isEmpty()) return listOf(cell)
+        return listOf(left, right).map { part ->
+            Cell(part.map { it.first }, part.map { it.second }.reduce(TextBox::union), cell.em, cell.line)
+        }
+    }
+
+    /** [cell]'s words, each its span and box: its runs cut at spaces. Words without a glyph box are left out. */
+    private fun wordsOf(page: PageText, cell: Cell): List<Pair<TextSpan, TextBox>> = cell.spans.flatMap { span ->
+        WORD.findAll(page.text.substring(span.start, span.end)).mapNotNull { match ->
+            val word = TextSpan(span.start + match.range.first, span.start + match.range.last + 1)
+            (word.start until word.end).mapNotNull(page::boxAt).reduceOrNull(TextBox::union)?.let { word to it }
+        }.toList()
+    }
+
+    private companion object {
+        val WORD = Regex("\\S+")
     }
 }
 
