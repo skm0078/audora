@@ -106,20 +106,25 @@ class LibraryController(
         } else {
             kept
         }
-        report(added)
+        report(added, picked = false)
         (added as? Outcome.Success)?.let { open(it.value.book.id) }
     }
 
     private suspend fun addNow(documentUri: String) = report(library.add(documentUri))
 
-    private fun report(added: Outcome<AddResult, LibraryError>) {
+    /**
+     * [picked]: the user chose the file in the picker, so a duplicate offers to open the book (plan item 27). A shared
+     * file opens by itself, so its duplicate only gets the snackbar.
+     */
+    private fun report(added: Outcome<AddResult, LibraryError>, picked: Boolean = true) {
+        val id = { book: Book -> book.id.takeIf { picked } }
         message = when (added) {
             is Outcome.Failure -> LibraryMessage.Failed(added.error)
 
             is Outcome.Success -> when (val result = added.value) {
                 is AddResult.Added -> LibraryMessage.Added(result.book.title)
-                is AddResult.AlreadyInLibrary -> LibraryMessage.AlreadyInLibrary(result.book.title)
-                is AddResult.FoundAgain -> LibraryMessage.FoundAgain(result.book.title)
+                is AddResult.AlreadyInLibrary -> LibraryMessage.AlreadyInLibrary(result.book.title, id(result.book))
+                is AddResult.FoundAgain -> LibraryMessage.FoundAgain(result.book.title, id(result.book))
             }
         }
     }

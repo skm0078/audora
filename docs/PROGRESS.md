@@ -2,6 +2,21 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## First UI pass — tabs, theme, cover grid, full player, Focus view, Up next, duplicate check (wave 1b, plan items 25, 27, 39, 77; 2026-10-17, ADR-036)
+- **Shell:** Library, Notes and Settings tabs with the mini player above the bar on every tab (cover, page, progress, play/pause); tapping it opens the full player. Settings left the library's top bar.
+- **Theme:** wallpaper colours by default, or Audora's warm lamp palette; System/Light/Dark and True black at night in Settings → Appearance (`AudoraTheme`, `Appearance`, `Dimens`). Bolder headings, rounder shapes, serif book text with taller lines for Indic marks. No font files added.
+- **Library:** cover grid with title and status per book and Continue reading across the top; a list at 150 % font scale and above. Book menu gains *Add to Up next*.
+- **Duplicate check (27):** picking a PDF already in the library opens a dialog with *Open it*; one copy only, since the fingerprint keys the book's place (ADR-036). Shared PDFs keep the snackbar.
+- **Full player:** the spoken sentence large between its neighbours, cover, chapters, Up next, undo jump, progress and time left, the reader's controls; *Show the page* opens the reader.
+- **Focus view and bold word starts (77):** in the text view's overflow menu; Focus view fades all but the spoken sentence, bold word starts bolds the first half of English words only (`boldWordStartRanges`).
+- **Up next (25):** a sheet over `UpNextPort`: reorder, remove, clear, add from the library, and the two switches.
+- **Notes tab:** every book's bookmarks and notes, grouped by book; a tap opens the bookmark.
+- **Settings:** grouped cards (Listening, Reading, Appearance, App, Debug).
+- **Accessibility (39):** labels on every icon, tiles as one TalkBack item, whole-row switches, headings marked, 48 dp targets.
+- Tests: `ReadingLookTest`, `DuplicateNoticeTest`, `AppDestinationTest`. No new dependency; no `:pdf` change.
+
+**Real-device checks (final phone session):** TalkBack through library, reader and player; 200 % font with Hindi and Bengali titles (grid becomes a list); wallpaper colours off, dark, true black; pick a PDF that is already in the library; mini player on all three tabs, then the full player; Focus view while reading; queue two books and reorder them; open a bookmark from the Notes tab.
+
 ## Pauses in unpunctuated scans — the opt-in punctuation model (RI-11; 2026-10-17, ADR-035)
 - **What it does:** Settings → "Pauses in unpunctuated scans (English)" downloads a 7.5 MB model (Edge-Punct-Casing's English CNN-BiLSTM, int8, Apache-2.0, run by sherpa-onnx's online punctuation API); downloading is the opt-in and delete removes it. While it is installed, a sentence from an OCR page that is English, 40 words or longer and has no `. ? ! । ॥` inside gets the model's commas and question marks, so the voice pauses there (RI-6's clause pauses). Everything else, including every text-layer page and any sentence that already has a full stop, is never sent to it (`RunOnPunctuation`, `PunctuationConfig`).
 - **Why so narrow:** measured on our English texts with punctuation stripped (the eval notes are kept with the project research, outside the repo), sentence ends scored F1 0.33 for this model and 0.27 for the 75 MB CT-Transformer, against the ticket's 0.85; about two of every three full stops land mid-sentence. So its full stops (and `! ; :`) are read as commas: a wrong one costs a short pause, not a broken sentence. The user's card offered "long runs only" (built), "all scanned text" and "rules only".

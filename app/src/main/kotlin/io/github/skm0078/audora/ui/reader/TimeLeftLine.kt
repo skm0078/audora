@@ -31,7 +31,7 @@ internal fun TimeLeftLine(timeLeft: TimeLeftEstimate, speed: Float) {
 }
 
 @Composable
-private fun durationText(ms: Long): String {
+internal fun durationText(ms: Long): String {
     val (hours, minutes) = hoursMinutes(ms)
     return when {
         hours > 0 -> stringResource(R.string.duration_hours_minutes, hours, minutes)

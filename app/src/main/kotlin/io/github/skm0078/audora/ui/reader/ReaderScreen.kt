@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReaderScreen.kt
-// Purpose: The reader: a page drawn or as sentences (tap to read, long-press for the sentence menu), controls.
+// Purpose: The reader: a page drawn or as sentences (tap to read, long-press for the sentence menu), controls;
+//          Focus view and bold word starts in the text view (plan item 77).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -41,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,12 +69,22 @@ fun ReaderScreen(
     notes: NotesState = NotesState(),
     notesActions: BookNotesActions = BookNotesActions.None,
     voices: List<VoiceRow> = emptyList(),
+    look: ReadingLook = ReadingLook(),
+    onLookChange: (ReadingLook) -> Unit = {},
+    onOpenUpNext: (() -> Unit)? = null,
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(state.title.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = {
+                    Text(
+                        state.title.orEmpty(),
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = actions::onBack) {
                         Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.navigate_back))
@@ -83,6 +95,7 @@ fun ReaderScreen(
                         BookmarksButton(notes, notesActions)
                         ChaptersButton(state, actions)
                         ViewToggle(state.view, actions)
+                        MoreMenu(textView = state.view == ReaderView.TEXT, look, onLookChange, onOpenUpNext)
                     }
                 },
             )
@@ -112,7 +125,7 @@ fun ReaderScreen(
                 }
 
                 is DocumentState.Open -> {
-                    OpenBook(state, document.pageCount, config, actions, ocrModels)
+                    OpenBook(state, document.pageCount, config, actions, ocrModels, look)
                     NotesOverlays(notes, notesActions, actions)
                 }
             }
@@ -127,6 +140,7 @@ private fun OpenBook(
     config: ReaderConfig,
     actions: ReaderActions,
     ocrModels: OcrModelsState?,
+    look: ReadingLook,
 ) {
     var picking by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
@@ -158,7 +172,7 @@ private fun OpenBook(
                 PageOriginNotice(content.origin, ocrModels, badge, actions::onDownloadOcrModels)
                 when {
                     state.view == ReaderView.PAGE -> PageView(state, content.units, actions)
-                    content.units.isNotEmpty() -> Sentences(state, content.units, actions)
+                    content.units.isNotEmpty() -> Sentences(state, content.units, actions, look)
                     content.origin == PageOrigin.TEXT -> Message(stringResource(R.string.reader_page_no_text))
                 }
             }
@@ -211,7 +225,7 @@ private fun PlayerStatus(playback: PlaybackSnapshot) {
 }
 
 @Composable
-private fun Sentences(state: ReaderState, units: List<ReadingUnit>, actions: ReaderActions) {
+private fun Sentences(state: ReaderState, units: List<ReadingUnit>, actions: ReaderActions, look: ReadingLook) {
     // A new list state per page, so every page opens at its top.
     val listState = remember(state.page) { LazyListState() }
     val spoken = state.spokenUnitIndex
@@ -236,7 +250,13 @@ private fun Sentences(state: ReaderState, units: List<ReadingUnit>, actions: Rea
         itemsIndexed(units, key = { _, unit -> unit.charStart }) { index, unit ->
             Sentence(
                 unit,
-                SentenceLook(spoken = index == spoken, unreadable = state.isUnreadable(unit)),
+                SentenceLook(
+                    spoken = index == spoken,
+                    unreadable = state.isUnreadable(unit),
+                    dimmed = look.focus && spoken != null && index != spoken,
+                    focus = look.focus,
+                    boldStarts = look.boldWordStarts,
+                ),
                 enabled = state.playerReady,
                 onTap = actions::onSentenceTapped,
                 onLongPress = actions::onSentenceLongPressed,
@@ -245,8 +265,17 @@ private fun Sentences(state: ReaderState, units: List<ReadingUnit>, actions: Rea
     }
 }
 
-/** [unreadable]: playback skips it as junk (RI-2b), so it is greyed (RI-9). */
-private data class SentenceLook(val spoken: Boolean, val unreadable: Boolean)
+/**
+ * [unreadable]: playback skips it as junk (RI-2b), so it is greyed (RI-9). [dimmed]: Focus view fades every sentence
+ * but the one being read; [focus] sets them in larger reading type. [boldStarts]: bold word starts (plan item 77).
+ */
+private data class SentenceLook(
+    val spoken: Boolean,
+    val unreadable: Boolean,
+    val dimmed: Boolean = false,
+    val focus: Boolean = false,
+    val boldStarts: Boolean = false,
+)
 
 /** Tap reads from the sentence (once the player is ready); a long-press reports it (RI-8b). */
 @OptIn(ExperimentalFoundationApi::class)
@@ -263,11 +292,12 @@ private fun Sentence(
     val color = when {
         look.spoken -> colors.onPrimaryContainer
         look.unreadable -> colors.onSurface.copy(alpha = UNREADABLE_ALPHA)
+        look.dimmed -> colors.onSurface.copy(alpha = FOCUS_DIM_ALPHA)
         else -> colors.onSurface
     }
     Text(
-        text = unit.text,
-        style = MaterialTheme.typography.bodyLarge,
+        text = if (look.boldStarts) boldWordStarts(unit.text) else AnnotatedString(unit.text),
+        style = if (look.focus) ReadingTextStyles.focus() else ReadingTextStyles.body(),
         color = color,
         fontStyle = if (look.unreadable) FontStyle.Italic else null,
         modifier = Modifier
@@ -311,6 +341,9 @@ private const val HEADER_ITEMS = 1
 
 /** A greyed (unreadable) sentence's text: Material's disabled-content opacity. */
 private const val UNREADABLE_ALPHA = 0.38f
+
+/** Focus view's faded sentences: still readable to find a place, clearly behind the spoken one. */
+private const val FOCUS_DIM_ALPHA = 0.3f
 
 @Preview(showBackground = true)
 @Composable
