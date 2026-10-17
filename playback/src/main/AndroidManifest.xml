@@ -30,10 +30,19 @@
             android:name=".service.AudoraPlaybackService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">
+            <!-- A MediaLibraryService (plan item 34): media browsers such as Android Auto list the library and
+                 play from it; the legacy browser action is how Android Auto finds media apps. -->
             <intent-filter>
+                <action android:name="androidx.media3.session.MediaLibraryService" />
                 <action android:name="androidx.media3.session.MediaSessionService" />
+                <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
+
+        <!-- Android Auto shows Audora as a media app (plan item 34); no other car features are used. -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
 
         <!-- Audiobook export (ADR-034): started only from the library's "Save as audiobook" (C7). -->
         <service

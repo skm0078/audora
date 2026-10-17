@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: playback/src/main/res/xml/automotive_app_desc.xml
+     Purpose: Tells Android Auto that Audora is a media app (plan item 34). -->
+<automotiveApp>
+    <uses name="media" />
+</automotiveApp>

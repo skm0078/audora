@@ -6,11 +6,16 @@ package io.github.skm0078.audora.playback.service
 import android.content.Intent
 import android.os.Bundle
 import androidx.annotation.OptIn
+import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.LibraryResult
+import androidx.media3.session.MediaLibraryService.LibraryParams
+import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
+import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
@@ -21,6 +26,7 @@ import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.playback.browse.LibraryBrowser
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
@@ -35,12 +41,13 @@ import kotlinx.coroutines.launch
 /**
  * Only controllers from Audora itself get the custom commands; the system UI, Bluetooth and other apps get
  * the standard transport controls (play, pause, skip), which is all a lock screen or headset needs. The lock screen's
- * slider is locked (item 79), and a headset's play/pause button gets [buttons]' presses (item 20).
+ * slider is locked (item 79), and a headset's play/pause button gets [buttons]' presses (item 20). Media browsers
+ * (Android Auto, item 34) browse and search the library through [library] and play what the driver picks.
  */
 @OptIn(UnstableApi::class)
 @Suppress(
     "TooManyFunctions", // One handler per custom command, plus the Media3 callbacks.
-    "LongParameterList", // The service parts the commands reach; the buttons are optional for tests.
+    "LongParameterList", // The service parts the commands reach; the buttons and library are optional for tests.
 )
 class SessionCallback(
     private val ownPackage: String,
@@ -50,7 +57,8 @@ class SessionCallback(
     private val bookSession: () -> BookSession,
     private val resumption: () -> PlaybackResumption?,
     private val buttons: MediaButtons? = null,
-) : MediaSession.Callback {
+    private val library: LibraryBrowser? = null,
+) : MediaLibrarySession.Callback {
     override fun onConnect(
         session: MediaSession,
         controller: MediaSession.ControllerInfo,
@@ -98,6 +106,62 @@ class SessionCallback(
         controllerInfo: MediaSession.ControllerInfo,
         intent: Intent,
     ): Boolean = buttons?.handle(controllerInfo, intent) == true
+
+    override fun onGetLibraryRoot(
+        session: MediaLibrarySession,
+        browser: MediaSession.ControllerInfo,
+        params: LibraryParams?,
+    ): ListenableFuture<LibraryResult<MediaItem>> {
+        AudoraLog.i(TAG, "Library root asked by ${browser.packageName}")
+        return library?.root(params) ?: super.onGetLibraryRoot(session, browser, params)
+    }
+
+    override fun onGetChildren(
+        session: MediaLibrarySession,
+        browser: MediaSession.ControllerInfo,
+        parentId: String,
+        page: Int,
+        pageSize: Int,
+        params: LibraryParams?,
+    ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> = library?.children(parentId, page, pageSize, params)
+        ?: super.onGetChildren(session, browser, parentId, page, pageSize, params)
+
+    override fun onGetItem(
+        session: MediaLibrarySession,
+        browser: MediaSession.ControllerInfo,
+        mediaId: String,
+    ): ListenableFuture<LibraryResult<MediaItem>> = library?.item(mediaId) ?: super.onGetItem(session, browser, mediaId)
+
+    override fun onSearch(
+        session: MediaLibrarySession,
+        browser: MediaSession.ControllerInfo,
+        query: String,
+        params: LibraryParams?,
+    ): ListenableFuture<LibraryResult<Void>> =
+        library?.search(session, browser, query, params) ?: super.onSearch(session, browser, query, params)
+
+    override fun onGetSearchResult(
+        session: MediaLibrarySession,
+        browser: MediaSession.ControllerInfo,
+        query: String,
+        page: Int,
+        pageSize: Int,
+        params: LibraryParams?,
+    ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> = library?.searchResult(query, page, pageSize, params)
+        ?: super.onGetSearchResult(session, browser, query, page, pageSize, params)
+
+    /** A browsed row or a spoken search (item 34); anything else keeps Media3's handling. */
+    override fun onSetMediaItems(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        mediaItems: MutableList<MediaItem>,
+        startIndex: Int,
+        startPositionMs: Long,
+    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+        AudoraLog.i(TAG, "Play request from ${controller.packageName}, items=${mediaItems.size}")
+        return library?.play(mediaItems)
+            ?: super.onSetMediaItems(mediaSession, controller, mediaItems, startIndex, startPositionMs)
+    }
 
     override fun onPlaybackResumption(
         mediaSession: MediaSession,

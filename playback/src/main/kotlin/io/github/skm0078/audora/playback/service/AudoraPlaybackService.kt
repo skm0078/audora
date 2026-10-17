@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/service/AudoraPlaybackService.kt
-// Purpose: The Media3 MediaSessionService: foreground media service, notification, lock-screen and headset controls.
+// Purpose: The Media3 MediaLibraryService: foreground media service, notification, lock screen, headset, Android Auto.
 
 package io.github.skm0078.audora.playback.service
 
@@ -10,8 +10,9 @@ import android.os.SystemClock
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaLibraryService
+import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.MediaSession
-import androidx.media3.session.MediaSessionService
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.core.config.QueueConfig
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
@@ -27,6 +28,12 @@ import io.github.skm0078.audora.core.resume.ResumeRecorder
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.book.LibraryBookSource
+import io.github.skm0078.audora.playback.browse.BrowseLookup
+import io.github.skm0078.audora.playback.browse.BrowseSources
+import io.github.skm0078.audora.playback.browse.BrowseTree
+import io.github.skm0078.audora.playback.browse.LibraryBrowser
+import io.github.skm0078.audora.playback.browse.OutlineChapters
+import io.github.skm0078.audora.playback.browse.ResourceBrowseTexts
 import io.github.skm0078.audora.playback.notes.BookContext
 import io.github.skm0078.audora.playback.queue.MeasuredRenderAhead
 import io.github.skm0078.audora.playback.reading.ReadingSource
@@ -54,6 +61,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 
 /**
  * Synthesis and playback run here only (Build Spec C9). One player for the service's life; [BookSession]
@@ -61,11 +69,12 @@ import kotlinx.coroutines.cancel
  * player plays or buffers with playWhenReady, which is exactly when a sentence is being synthesized (C5).
  *
  * Playback starts only from a user action (C7): PLAY_FROM from the UI, or play on the notification, lock
- * screen or a headset (playback resumption after Audora was closed, P1-06). Nothing starts it on boot.
+ * screen or a headset (playback resumption after Audora was closed, P1-06), or a book picked or asked for by voice
+ * in Android Auto (plan item 34). Nothing starts it on boot.
  */
 @OptIn(UnstableApi::class)
 @AndroidEntryPoint
-class AudoraPlaybackService : MediaSessionService() {
+class AudoraPlaybackService : MediaLibraryService() {
     @Inject
     lateinit var library: Library
 
@@ -100,7 +109,7 @@ class AudoraPlaybackService : MediaSessionService() {
     private lateinit var player: ExoPlayer
     private lateinit var speed: LivePlaybackSpeed
     private lateinit var bookSession: BookSession
-    private var session: MediaSession? = null
+    private var session: MediaLibrarySession? = null
 
     // Where the voice speaks in each clip, for the reader's word highlight (plan item 14).
     private val timings = SentenceTimings()
@@ -164,11 +173,29 @@ class AudoraPlaybackService : MediaSessionService() {
         AudoraLog.i(TAG, "Service created")
     }
 
-    private fun mediaSession(stores: SessionStores): MediaSession {
-        val callback =
-            SessionCallback(packageName, scope, voices, stores, { bookSession }, { resumption }, mediaButtons())
-        return MediaSession.Builder(this, player)
-            .setCallback(callback)
+    private fun mediaSession(stores: SessionStores): MediaLibrarySession {
+        // Android Auto and other media browsers (plan item 34): the library, Up next and each book's chapters.
+        val chapters = OutlineChapters(this)
+        val browse = BrowseSources(
+            books = { library.books().first() },
+            upNext = { upNext.queue.value },
+            chapters = chapters::of,
+            resume = { id -> bookSession.resume(id, locator) },
+            playFrom = { id, page -> bookSession.playFrom(id, page, charStart = 0, password = null) },
+        )
+        val callback = SessionCallback(
+            packageName,
+            scope,
+            voices,
+            stores,
+            { bookSession },
+            { resumption },
+            mediaButtons(),
+            LibraryBrowser(BrowseLookup(BrowseTree(ResourceBrowseTexts(this)), browse), scope) {
+                PlaybackResumption.playlistOf(player)
+            },
+        )
+        return MediaLibrarySession.Builder(this, player, callback)
             .apply { sessionActivity()?.let { setSessionActivity(it) } }
             .build()
     }
@@ -233,7 +260,7 @@ class AudoraPlaybackService : MediaSessionService() {
         )
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = session
 
     /**
      * Gives back the neural models not in use (P4-02). Since API 34 Android delivers only UI_HIDDEN and BACKGROUND

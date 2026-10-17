@@ -2,6 +2,14 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Android Auto (plan item 34; 2026-10-17)
+- Audora shows up in Android Auto as a media app. The car's screen has three tabs: **Recent** (the last 10 books; a tap resumes where it was left), **Up next** (the queue; a queued chapter plays from its page, a queued book from where it was left) and **Library** (every book by title; a book opens to **Resume** and its chapters, titled from the PDF's outline, numbered when the outline has no title). "Hey Google, play *Gita* on Audora" finds the book by its title words and resumes it; a bare "play Audora" resumes the most recent book. Search from the car's keyboard lists the matches.
+- How: the playback service is now a Media3 `MediaLibraryService`; `SessionCallback` passes the library calls to `LibraryBrowser`, over a pure `BrowseTree` and `BrowseLookup` (ids in `BrowseNode`). Playing a row opens the book exactly as the app or a headset does (a user action, C7) and hands Media3 the playlist the book session set, as playback resumption does. A book's chapters are read from its outline the first time its folder opens (`OutlineChapters`; the PDF is opened for the outline only, the last 8 books are remembered). Rows are lists, not tiles (there are no covers). Watches (Wear OS) already mirror the phone's media controls. Logs never hold a title or the words searched.
+- Tests: `BrowseNodeTest`, `BrowseTreeTest`, `BrowseLookupTest`, `BookChaptersTest`.
+- **Gaps:** a password-protected book cannot be played from the car (its password is never stored), and its folder holds only "Resume"; no cover art.
+
+**Real-device checks (final phone session):** with Android Auto (car or the Desktop Head Unit), each tab lists books; a recent book, an Up next chapter and a library chapter each start in the right place; voice "play … on Audora"; the phone's notification and lock screen still work as before; a headset still resumes the last book.
+
 ## Sentence timing for the word highlight (plan item 14, playback side; 2026-10-17)
 - Each rendered sentence's clip layout is recorded (`SentenceTimings`, filled by `EngineRenderer`): the cue before it (a chapter's or caption's sound), how long the voice speaks (with its pauses at punctuation inside), and the clip's full length with the silence after. The service publishes the playing sentence's timing in the session extras (`PlaybackContract.SESSION_SENTENCE_TIMING`, `SentenceTiming.encode`) when it starts, or when its render finishes if it started first.
 - The reader gets it as `PlaybackSnapshot.sentenceTiming` (matched to the sentence by page and char start) plus `PlaybackPort.positionInSentenceMs()`, the controller's own clock, cheap enough to poll every frame; `SentenceTiming.speechFraction(position)` says how far through the speech the voice is. The highlight itself is the UI pass's (item 14).
