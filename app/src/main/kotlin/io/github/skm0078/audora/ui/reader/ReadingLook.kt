@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReadingLook.kt
-// Purpose: How the text view looks while reading (Focus view, bold word starts; plan item 77), kept across launches.
+// Purpose: How the text view looks while reading (Focus view, bold word starts, follow-along, highlight; plan items
+//          77, 13, 14), kept across launches.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -9,6 +10,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import io.github.skm0078.audora.core.logging.AudoraLog
 import java.io.IOException
@@ -20,8 +22,21 @@ import kotlinx.coroutines.flow.map
  * @property focus dims every sentence but the one being read, in larger reading type, for ADHD and dyslexia.
  * @property boldWordStarts bolds the first half of each English word so the eye finds words faster. Hindi and
  *   Bengali words stay whole: bolding half a word there would split its letters apart.
+ * @property followAlong keeps the spoken sentence in the middle of the text view (plan item 13); off, the text stays
+ *   where the listener scrolled it.
+ * @property highlight how the spoken sentence is marked.
+ * @property wordHighlight also marks the word being spoken (plan item 14), where the sentence's timing is known.
  */
-data class ReadingLook(val focus: Boolean = false, val boldWordStarts: Boolean = false)
+data class ReadingLook(
+    val focus: Boolean = false,
+    val boldWordStarts: Boolean = false,
+    val followAlong: Boolean = true,
+    val highlight: HighlightStyle = HighlightStyle.FILL,
+    val wordHighlight: Boolean = true,
+)
+
+/** How the spoken sentence stands out: a tinted band, an underline, or bold type alone. */
+enum class HighlightStyle { FILL, UNDERLINE, BOLD }
 
 private val Context.readingLookStore: DataStore<Preferences> by preferencesDataStore(name = "reading_look")
 
@@ -35,13 +50,25 @@ class ReadingLookPreferences(context: Context) {
             AudoraLog.w(TAG, "Could not read the reading look; using the default", e)
             emit(emptyPreferences())
         }
-        .map { prefs -> ReadingLook(focus = prefs[FOCUS] ?: false, boldWordStarts = prefs[BOLD_STARTS] ?: false) }
+        .map { prefs ->
+            val defaults = ReadingLook()
+            ReadingLook(
+                focus = prefs[FOCUS] ?: defaults.focus,
+                boldWordStarts = prefs[BOLD_STARTS] ?: defaults.boldWordStarts,
+                followAlong = prefs[FOLLOW] ?: defaults.followAlong,
+                highlight = HighlightStyle.entries.firstOrNull { it.name == prefs[HIGHLIGHT] } ?: defaults.highlight,
+                wordHighlight = prefs[WORD_HIGHLIGHT] ?: defaults.wordHighlight,
+            )
+        }
 
     suspend fun save(look: ReadingLook) {
         try {
             store.edit {
                 it[FOCUS] = look.focus
                 it[BOLD_STARTS] = look.boldWordStarts
+                it[FOLLOW] = look.followAlong
+                it[HIGHLIGHT] = look.highlight.name
+                it[WORD_HIGHLIGHT] = look.wordHighlight
             }
         } catch (e: IOException) {
             AudoraLog.w(TAG, "Could not save the reading look", e)
@@ -52,6 +79,9 @@ class ReadingLookPreferences(context: Context) {
         const val TAG = "Audora.ReadingLook"
         val FOCUS = booleanPreferencesKey("focus")
         val BOLD_STARTS = booleanPreferencesKey("bold_word_starts")
+        val FOLLOW = booleanPreferencesKey("follow_along")
+        val HIGHLIGHT = stringPreferencesKey("highlight")
+        val WORD_HIGHLIGHT = booleanPreferencesKey("word_highlight")
     }
 }
 
