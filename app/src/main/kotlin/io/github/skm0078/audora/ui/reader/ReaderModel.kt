@@ -7,14 +7,19 @@ import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
+import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.progress.TimeLeft
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.resume.ReAnchoring
+import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.outline.ChapterList
@@ -51,6 +56,7 @@ class ReaderModel(
     private val resume: ReaderResume = ReaderResume.None,
     autoResume: Boolean = false,
     private val views: ViewPreference = ViewPreference.None,
+    private val pipelineVersion: Int = PIPELINE_VERSION,
 ) {
     private val mutableState = MutableStateFlow(ReaderState(bookId))
     val state: StateFlow<ReaderState> = mutableState.asStateFlow()
@@ -77,6 +83,7 @@ class ReaderModel(
     private var pendingAutoResume = autoResume
 
     private val timeLeft = TimeLeft(config.timeLeft, config.speech)
+    private val reAnchoring = ReAnchoring()
 
     /** The pages shown so far, for the time-left estimate; the first shown are forgotten first. */
     private val samples = object : LinkedHashMap<Int, List<ReadingUnit>>(INITIAL_SAMPLES, LOAD_FACTOR, false) {
@@ -162,6 +169,37 @@ class ReaderModel(
         return SentenceHitTest.unitAt(units, image.transform.toPage(point), config.pageTapSlopPoints)
     }
 
+    /**
+     * A bookmark (plan item 29), found again on the current pages the way resume is: reads from its sentence while
+     * this book is being read, else shows its page.
+     */
+    fun goToBookmark(bookmark: Bookmark) {
+        val opened = document ?: return
+        val anchor = bookmark.anchor
+        scope.launch {
+            val units = (opened.units(anchor.page) as? Outcome.Success)?.value.orEmpty()
+            val point = reAnchoring.locate(anchor, pipelineVersion, units)
+            AudoraLog.i(TAG, "Bookmark, $logContext page=${anchor.page} match=${point.match}")
+            if (state.value.isReading) {
+                startReading(ReadingPosition(bookId, point.page, point.charStart))
+            } else {
+                showPage(point.page)
+            }
+        }
+    }
+
+    /** What "Bookmark here" marks: the sentence being read on the shown page, else the page's first sentence. */
+    fun sentenceHere(): ReadingUnit? {
+        val current = state.value
+        val units = (current.content as? PageContent.Ready)?.units ?: return null
+        return current.spokenUnitIndex?.let(units::getOrNull) ?: units.firstOrNull()
+    }
+
+    /** "Use for this book only" (plan item 4): the book keeps its own speed, pace and voices, or goes back to all. */
+    fun setOwnSettings(on: Boolean) = player.setOwnSettings(on)
+
+    fun setBookVoice(lang: Lang, voice: VoiceId) = player.setBookVoice(lang, voice)
+
     /** A row of the chapter list: reads from its page while this book is being read, else shows it. */
     fun goToChapter(chapter: ChapterEntry) {
         if (state.value.isReading) {
@@ -203,10 +241,11 @@ class ReaderModel(
 
     fun skipBack() = player.skipToPreviousSentence()
 
+    /** A book with its own settings keeps its speed itself (in the service); only the global one is saved here. */
     fun setSpeed(speed: Float) {
         val offered = config.nearestSpeed(speed)
         player.setSpeed(offered)
-        scope.launch { speeds.save(offered) }
+        if (!state.value.playback.ownSettings) scope.launch { speeds.save(offered) }
     }
 
     fun setPace(pace: Pace) = player.setPace(pace)
@@ -302,7 +341,8 @@ class ReaderModel(
         if (snapshot.connection == PlaybackSnapshot.Connection.CONNECTED &&
             previous.connection != PlaybackSnapshot.Connection.CONNECTED
         ) {
-            applySavedSpeed(snapshot.speed)
+            // A book with its own speed (plan item 4) already reads at it.
+            if (!snapshot.ownSettings) applySavedSpeed(snapshot.speed)
         }
         autoResumeIfDue()
         if (snapshot.errorCode != null && snapshot.errorCode != previous.errorCode) {

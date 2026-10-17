@@ -13,11 +13,14 @@ import androidx.media3.session.SessionResult
 import com.google.common.util.concurrent.ListenableFuture
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
+import io.github.skm0078.audora.core.notes.BookSettings
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
@@ -126,6 +129,17 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
         send(player, PlaybackContract.SET_SLEEP_OPTIONS, PlaybackContract.sleepOptionsArgs(options), "sleep options")
     }
 
+    override fun setOwnSettings(on: Boolean) = withPlayer("own settings") { player ->
+        AudoraLog.i(TAG, "Own settings for this book: $on")
+        val args = Bundle().apply { putBoolean(PlaybackContract.ARG_OWN_SETTINGS, on) }
+        send(player, PlaybackContract.SET_OWN_SETTINGS, args, "own settings")
+    }
+
+    override fun setBookVoice(lang: Lang, voice: VoiceId) = withPlayer("book voice") { player ->
+        AudoraLog.i(TAG, "Book voice ${lang.name} = $voice")
+        send(player, PlaybackContract.SET_VOICE, PlaybackContract.setVoiceArgs(voice, lang), "book voice")
+    }
+
     override fun undoJump() = withPlayer("undo jump") { player ->
         send(player, PlaybackContract.UNDO_JUMP, Bundle.EMPTY, "undo jump")
     }
@@ -181,6 +195,8 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             sleepTimer = sleepTimerOf(extras),
             hasChapters = extras.getBoolean(PlaybackContract.SESSION_HAS_CHAPTERS, false),
             sleepOptions = SleepOptions.decode(extras.getString(PlaybackContract.SESSION_SLEEP_OPTIONS)),
+            ownSettings = extras.getBoolean(PlaybackContract.SESSION_OWN_SETTINGS, false),
+            bookVoices = BookSettings.decodeVoices(extras.getString(PlaybackContract.SESSION_BOOK_VOICES)),
             undoJumpTo = undoOf(extras),
             // A skipped sentence is reported in the extras while reading goes on; only a stop is an error.
             errorCode = player.playerError?.errorCodeName

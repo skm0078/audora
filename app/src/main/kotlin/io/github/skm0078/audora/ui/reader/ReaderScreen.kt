@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReaderScreen.kt
-// Purpose: The reader: a page drawn or as sentences (tap to read, long-press to report), page picker, controls.
+// Purpose: The reader: a page drawn or as sentences (tap to read, long-press for the sentence menu), controls.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -53,6 +53,7 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
+import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,6 +64,9 @@ fun ReaderScreen(
     actions: ReaderActions,
     modifier: Modifier = Modifier,
     ocrModels: OcrModelsState? = null,
+    notes: NotesState = NotesState(),
+    notesActions: BookNotesActions = BookNotesActions.None,
+    voices: List<VoiceRow> = emptyList(),
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -76,13 +80,16 @@ fun ReaderScreen(
                 },
                 actions = {
                     if (state.document is DocumentState.Open) {
+                        BookmarksButton(notes, notesActions)
                         ChaptersButton(state, actions)
                         ViewToggle(state.view, actions)
                     }
                 },
             )
         },
-        bottomBar = { if (state.document is DocumentState.Open) ReaderControls(state, config, actions) },
+        bottomBar = {
+            if (state.document is DocumentState.Open) ReaderControls(state, config, actions, voices = voices)
+        },
     ) { innerPadding ->
         Box(Modifier.padding(innerPadding).fillMaxSize()) {
             when (val document = state.document) {
@@ -104,7 +111,10 @@ fun ReaderScreen(
                     Button(onClick = actions::onRetry) { Text(stringResource(R.string.reader_retry)) }
                 }
 
-                is DocumentState.Open -> OpenBook(state, document.pageCount, config, actions, ocrModels)
+                is DocumentState.Open -> {
+                    OpenBook(state, document.pageCount, config, actions, ocrModels)
+                    NotesOverlays(notes, notesActions, actions)
+                }
             }
         }
     }

@@ -43,6 +43,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /** What the session reads, how it speaks, and how far ahead it renders (P4-02: from each voice's measured speed). */
+@Suppress("LongParameterList") // All but the first three optional, with the defaults tests need.
 class SessionSources(
     val renderer: SentenceRenderer,
     val books: BookSource,
@@ -50,6 +51,7 @@ class SessionSources(
     val renderAhead: RenderAheadPolicy = RenderAheadPolicy.FIXED,
     val reading: ReadingSource = ReadingSource(),
     val sleepOptions: () -> SleepOptions = { SleepOptions() },
+    val onBook: suspend (BookId) -> Unit = {},
 )
 
 /**
@@ -246,6 +248,8 @@ class BookSession(
         }
         sleep.onBookChanged(chapters)
         sources.reading.chapterPages = chapters.toSet()
+        // The book's own speed, voices and pronunciation fixes, before its first sentence is rendered.
+        sources.onBook(opened.book.id)
         AudoraLog.i(TAG, "Opened book=${opened.book.id.logLabel} chapters=${chapters.size}")
     }
 

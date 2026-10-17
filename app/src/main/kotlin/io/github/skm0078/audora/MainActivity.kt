@@ -37,10 +37,15 @@ import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SleepOptions
+import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
+import io.github.skm0078.audora.core.notes.Bookmark
+import io.github.skm0078.audora.core.notes.BookmarkStore
+import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.diagnostics.LogSharer
+import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
@@ -63,6 +68,7 @@ import io.github.skm0078.audora.ui.library.nowPlaying
 import io.github.skm0078.audora.ui.licences.LicenceSource
 import io.github.skm0078.audora.ui.licences.LicencesController
 import io.github.skm0078.audora.ui.licences.LicencesScreen
+import io.github.skm0078.audora.ui.reader.BookNotesModel
 import io.github.skm0078.audora.ui.reader.LibraryReaderBooks
 import io.github.skm0078.audora.ui.reader.LocatorReaderResume
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
@@ -116,6 +122,12 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var resumeAnchors: ResumeAnchorStore
+
+    @Inject
+    lateinit var bookmarkStore: BookmarkStore
+
+    @Inject
+    lateinit var pronunciationStore: PronunciationStore
 
     /** Audora's own copies of PDFs another app only lends for a moment ("Open with Audora", ADR-033). */
     private val sharedCopies: SharedPdfCopies by lazy { SharedPdfCopies(applicationContext) }
@@ -418,12 +430,26 @@ class MainActivity : ComponentActivity() {
             if (ocrState is OcrModelsState.Ready) model.reloadIfWaitingForOcr()
         }
         val playWithPermission = rememberPlayWithNotificationPermission()
-        val actions = remember(model) { readerActions(model, playWithPermission, onBack) }
-        ReaderScreen(state = state, config = readerConfig, actions = actions, ocrModels = ocrState)
+        val notes = remember(id) {
+            BookNotesModel(id, bookmarkStore, pronunciationStore, scope, PIPELINE_VERSION).also { it.start() }
+        }
+        val notesState by notes.state.collectAsStateWithLifecycle()
+        val voiceRows by remember { voiceManager.rows() }.collectAsStateWithLifecycle(initialValue = emptyList())
+        val actions = remember(model) { readerActions(model, notes, playWithPermission, onBack) }
+        ReaderScreen(
+            state = state,
+            config = readerConfig,
+            actions = actions,
+            ocrModels = ocrState,
+            notes = notesState,
+            notesActions = notes,
+            voices = voiceRows,
+        )
     }
 
     private fun readerActions(
         model: ReaderModel,
+        notes: BookNotesModel,
         playWithPermission: (() -> Unit) -> Unit,
         navigateBack: () -> Unit,
     ): ReaderActions = object : ReaderActions {
@@ -453,11 +479,23 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        override fun onSentenceLongPressed(unit: ReadingUnit) = model.askReport(unit)
+        override fun onSentenceLongPressed(unit: ReadingUnit) = notes.openMenu(unit)
 
         override fun onPageLongPressed(point: ViewPoint) {
-            model.sentenceAt(point)?.let(model::askReport)
+            model.sentenceAt(point)?.let(notes::openMenu)
         }
+
+        override fun onReportSentence(unit: ReadingUnit) = model.askReport(unit)
+
+        override fun onBookmark(bookmark: Bookmark) = model.goToBookmark(bookmark)
+
+        override fun onBookmarkHere() {
+            model.sentenceHere()?.let(notes::bookmark)
+        }
+
+        override fun onOwnSettings(on: Boolean) = model.setOwnSettings(on)
+
+        override fun onBookVoice(lang: Lang, voice: VoiceId) = model.setBookVoice(lang, voice)
 
         override fun onReport(reason: SoundedWrongReason) = model.report(reason)
 

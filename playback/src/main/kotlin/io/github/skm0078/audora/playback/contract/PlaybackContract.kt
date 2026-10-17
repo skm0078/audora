@@ -47,6 +47,7 @@ object PlaybackContract {
     const val ACTION_REPORT_SOUNDED_WRONG = "$PREFIX.REPORT_SOUNDED_WRONG"
     const val ACTION_UNDO_JUMP = "$PREFIX.UNDO_JUMP"
     const val ACTION_SET_SLEEP_OPTIONS = "$PREFIX.SET_SLEEP_OPTIONS"
+    const val ACTION_SET_OWN_SETTINGS = "$PREFIX.SET_OWN_SETTINGS"
 
     /** Starts reading [ARG_BOOK_ID] at [ARG_PAGE] / [ARG_CHAR_START]. Only ever send it from a user action (C7). */
     val PLAY_FROM = SessionCommand(ACTION_PLAY_FROM, Bundle.EMPTY)
@@ -68,6 +69,12 @@ object PlaybackContract {
 
     /** Saves the sleep timer extras ([ARG_SLEEP_OPTIONS]): shake to extend, fade-out, bedtime (plan item 37). */
     val SET_SLEEP_OPTIONS = SessionCommand(ACTION_SET_SLEEP_OPTIONS, Bundle.EMPTY)
+
+    /**
+     * Gives the open book its own speed, pace and voices ([ARG_OWN_SETTINGS] true), starting from the current ones,
+     * or puts it back on the global ones (plan item 4). While on, speed, pace and voice changes are the book's.
+     */
+    val SET_OWN_SETTINGS = SessionCommand(ACTION_SET_OWN_SETTINGS, Bundle.EMPTY)
 
     // Arguments of PLAY_FROM.
     const val ARG_BOOK_ID = "book_id"
@@ -99,6 +106,9 @@ object PlaybackContract {
 
     /** String: [SleepOptions.encode], the argument of SET_SLEEP_OPTIONS. */
     const val ARG_SLEEP_OPTIONS = "sleep_options"
+
+    /** Boolean, the argument of SET_OWN_SETTINGS. */
+    const val ARG_OWN_SETTINGS = "own_settings"
 
     // Arguments of SET_SPEECH_STYLE.
 
@@ -155,6 +165,12 @@ object PlaybackContract {
 
     /** The sleep timer extras in effect ([SleepOptions.encode]), always present. */
     const val SESSION_SLEEP_OPTIONS = "sleep_options"
+
+    /** True while the open book has its own speed, pace and voices; absent = false. */
+    const val SESSION_OWN_SETTINGS = "own_settings"
+
+    /** The open book's own voices (`BookSettings.encodeVoices`), while it has its own settings. */
+    const val SESSION_BOOK_VOICES = "book_voices"
 
     /** True when the open book has chapters, so [SleepTimerMode.END_OF_CHAPTER] can be set; absent = false. */
     const val SESSION_HAS_CHAPTERS = "has_chapters"

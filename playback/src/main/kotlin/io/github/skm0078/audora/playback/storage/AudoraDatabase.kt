@@ -24,6 +24,8 @@ import androidx.room.RoomDatabase
     autoMigrations = [
         // 1 → 2 (P1-06): adds the resume_anchors table. Room generates it from the committed schemas.
         AutoMigration(from = 1, to = 2),
+        // 2 → 3 (plan items 29, 4, 1): adds bookmarks, book_settings and pronunciations; existing rows untouched.
+        AutoMigration(from = 2, to = 3),
     ],
 )
 internal abstract class AudoraDatabase : RoomDatabase() {
