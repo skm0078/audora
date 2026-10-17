@@ -79,6 +79,29 @@ class BookCovers(
         }
     }
 
+    /** What the covers take on disk, for the Storage screen. */
+    suspend fun sizeBytes(): Long = withContext(io) { folder.listFiles().orEmpty().sumOf { it.length() } }
+
+    /**
+     * Deletes every cover, on disk and in memory; each is drawn again the next time the library shows it. Fails,
+     * logged, with the files that could not be removed.
+     */
+    suspend fun clear(): Outcome<Unit, String> = withContext(io) {
+        drawing.withLock {
+            memory.evictAll()
+            failed.clear()
+            val files = folder.listFiles().orEmpty()
+            val kept = files.count { !it.delete() }
+            if (kept == 0) {
+                AudoraLog.i(TAG, "Covers cleared, files=${files.size}")
+                Outcome.Success(Unit)
+            } else {
+                AudoraLog.w(TAG, "Covers: $kept of ${files.size} files could not be removed")
+                Outcome.Failure("$kept files could not be removed")
+            }
+        }
+    }
+
     private fun cached(id: BookId): Bitmap? {
         val file = fileOf(id)
         if (!file.exists()) return null
@@ -119,17 +142,6 @@ class BookCovers(
         }
     }
 
-    /** PDFium leaves blank paper transparent; a cover is paper, so it gets white behind it. */
-    private fun onWhite(page: Bitmap): Bitmap {
-        val cover = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
-        Canvas(cover).apply {
-            drawColor(Color.WHITE)
-            drawBitmap(page, 0f, 0f, null)
-        }
-        page.recycle()
-        return cover
-    }
-
     /** Written beside the final name, then renamed, so a cover is never half written; a failed save costs a redraw. */
     private fun save(id: BookId, cover: Bitmap) {
         val file = fileOf(id)
@@ -155,4 +167,15 @@ class BookCovers(
         const val PARTIAL_SUFFIX = ".part"
         const val FIRST_PAGE = 0
     }
+}
+
+/** PDFium leaves blank paper transparent; a cover is paper, so it gets white behind it. */
+private fun onWhite(page: Bitmap): Bitmap {
+    val cover = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
+    Canvas(cover).apply {
+        drawColor(Color.WHITE)
+        drawBitmap(page, 0f, 0f, null)
+    }
+    page.recycle()
+    return cover
 }
