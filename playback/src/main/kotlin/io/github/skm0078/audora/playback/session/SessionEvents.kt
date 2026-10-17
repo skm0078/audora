@@ -31,6 +31,7 @@ data class SessionState(
     val sleepMode: SleepTimerMode,
     val sleepEndsAtWallMillis: Long?,
     val hasChapters: Boolean = false,
+    val undoTo: Spot? = null,
 )
 
 /**

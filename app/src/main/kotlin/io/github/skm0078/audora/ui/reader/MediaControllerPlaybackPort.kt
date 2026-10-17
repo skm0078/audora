@@ -111,6 +111,10 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
         send(player, PlaybackContract.SET_SLEEP_TIMER, args, "sleep timer $setting")
     }
 
+    override fun undoJump() = withPlayer("undo jump") { player ->
+        send(player, PlaybackContract.UNDO_JUMP, Bundle.EMPTY, "undo jump")
+    }
+
     override fun reportSoundedWrong(report: SoundedWrongReport) = withPlayer("report") { player ->
         send(player, PlaybackContract.REPORT_SOUNDED_WRONG, PlaybackContract.reportArgs(report), "report")
     }
@@ -160,6 +164,7 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             canSkipForward = player.hasNextMediaItem(),
             sleepTimer = sleepTimerOf(extras),
             hasChapters = extras.getBoolean(PlaybackContract.SESSION_HAS_CHAPTERS, false),
+            undoJumpTo = undoOf(extras),
             // A skipped sentence is reported in the extras while reading goes on; only a stop is an error.
             errorCode = player.playerError?.errorCodeName
                 ?: extras.getString(PlaybackContract.SESSION_ERROR)?.takeUnless { player.playWhenReady },
@@ -175,6 +180,19 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
                 BookId(bookId),
                 extras.getInt(PlaybackContract.ITEM_PAGE),
                 extras.getInt(PlaybackContract.ITEM_CHAR_START),
+            )
+        }
+    }
+
+    private fun undoOf(extras: Bundle): ReadingPosition? {
+        val bookId = extras.getString(PlaybackContract.SESSION_BOOK_ID)?.takeIf { it.isNotBlank() }
+        return if (bookId == null || !extras.containsKey(PlaybackContract.SESSION_UNDO_PAGE)) {
+            null
+        } else {
+            ReadingPosition(
+                BookId(bookId),
+                extras.getInt(PlaybackContract.SESSION_UNDO_PAGE),
+                extras.getInt(PlaybackContract.SESSION_UNDO_CHAR),
             )
         }
     }

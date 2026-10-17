@@ -46,6 +46,10 @@ class SessionPublisher(
                 }
                 state.sleepEndsAtWallMillis?.let { putLong(PlaybackContract.SESSION_SLEEP_ENDS_AT, it) }
                 if (state.hasChapters) putBoolean(PlaybackContract.SESSION_HAS_CHAPTERS, true)
+                state.undoTo?.let {
+                    putInt(PlaybackContract.SESSION_UNDO_PAGE, it.page)
+                    putInt(PlaybackContract.SESSION_UNDO_CHAR, it.charStart)
+                }
                 state.error?.let {
                     putString(PlaybackContract.SESSION_ERROR, it.code.name)
                     putString(PlaybackContract.SESSION_ERROR_MESSAGE, it.message)

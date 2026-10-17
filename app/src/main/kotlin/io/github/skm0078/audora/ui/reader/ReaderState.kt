@@ -103,6 +103,9 @@ data class ReaderState(
     val playerReady: Boolean
         get() = document is DocumentState.Open && playback.connection == PlaybackSnapshot.Connection.CONNECTED
 
+    /** Where "Undo jump" goes back to in this book (plan item 78), if anywhere. */
+    val undoJumpTo: ReadingPosition? get() = playback.undoJumpTo?.takeIf { it.bookId == bookId }
+
     /** The reading position is on another page than the one shown. */
     val readingElsewhere: Boolean get() = readingPosition?.let { it.page != page } ?: false
 

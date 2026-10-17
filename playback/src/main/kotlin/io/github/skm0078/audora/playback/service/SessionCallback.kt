@@ -52,6 +52,7 @@ class SessionCallback(
                     .add(PlaybackContract.SET_SLEEP_TIMER)
                     .add(PlaybackContract.SET_SPEECH_STYLE)
                     .add(PlaybackContract.REPORT_SOUNDED_WRONG)
+                    .add(PlaybackContract.UNDO_JUMP)
                     .build(),
             )
         }
@@ -69,6 +70,7 @@ class SessionCallback(
         PlaybackContract.ACTION_SET_SLEEP_TIMER -> Futures.immediateFuture(setSleepTimer(args))
         PlaybackContract.ACTION_SET_SPEECH_STYLE -> Futures.immediateFuture(setSpeechStyle(args))
         PlaybackContract.ACTION_REPORT_SOUNDED_WRONG -> Futures.immediateFuture(report(args))
+        PlaybackContract.ACTION_UNDO_JUMP -> Futures.immediateFuture(undoJump())
         else -> Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
     }
 
@@ -123,6 +125,12 @@ class SessionCallback(
         val report = PlaybackContract.reportFrom(args) ?: return failure(PlaybackErrorCode.BAD_REQUEST)
         AudoraLog.i(TAG, report.logLine(voices.knownVoice(report.lang), style.current.modes))
         return SessionResult(SessionResult.RESULT_SUCCESS)
+    }
+
+    private fun undoJump(): SessionResult = if (bookSession().undoJump()) {
+        SessionResult(SessionResult.RESULT_SUCCESS)
+    } else {
+        failure(PlaybackErrorCode.BAD_REQUEST)
     }
 
     private fun setSleepTimer(args: Bundle): SessionResult {

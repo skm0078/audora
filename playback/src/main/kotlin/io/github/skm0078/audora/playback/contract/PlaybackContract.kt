@@ -43,6 +43,7 @@ object PlaybackContract {
     const val ACTION_SET_SLEEP_TIMER = "$PREFIX.SET_SLEEP_TIMER"
     const val ACTION_SET_SPEECH_STYLE = "$PREFIX.SET_SPEECH_STYLE"
     const val ACTION_REPORT_SOUNDED_WRONG = "$PREFIX.REPORT_SOUNDED_WRONG"
+    const val ACTION_UNDO_JUMP = "$PREFIX.UNDO_JUMP"
 
     /** Starts reading [ARG_BOOK_ID] at [ARG_PAGE] / [ARG_CHAR_START]. Only ever send it from a user action (C7). */
     val PLAY_FROM = SessionCommand(ACTION_PLAY_FROM, Bundle.EMPTY)
@@ -58,6 +59,9 @@ object PlaybackContract {
 
     /** "This sounded wrong" (RI-8b): the service logs it with the voice reading that language; nothing else. */
     val REPORT_SOUNDED_WRONG = SessionCommand(ACTION_REPORT_SOUNDED_WRONG, Bundle.EMPTY)
+
+    /** Back to where reading was before the last jump ([SESSION_UNDO_PAGE]); refused when there is none. */
+    val UNDO_JUMP = SessionCommand(ACTION_UNDO_JUMP, Bundle.EMPTY)
 
     // Arguments of PLAY_FROM.
     const val ARG_BOOK_ID = "book_id"
@@ -151,6 +155,10 @@ object PlaybackContract {
 
     /** The reading modes in effect ([ReadingModes.encode]), always present. */
     const val SESSION_READING_MODES = "reading_modes"
+
+    /** Int pair: where "Undo jump" goes back to in the book being read (plan item 78); absent with nothing to undo. */
+    const val SESSION_UNDO_PAGE = "undo_page"
+    const val SESSION_UNDO_CHAR = "undo_char"
 
     /** Token for `MediaController.Builder(context, PlaybackContract.sessionToken(context))`. */
     fun sessionToken(context: Context): SessionToken =
