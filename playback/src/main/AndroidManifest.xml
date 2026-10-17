@@ -15,6 +15,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- ExoPlayer's WAKE_MODE_LOCAL keeps the CPU awake while a sentence is synthesized with the screen off. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- A short buzz confirms "shake to extend" on the sleep timer (plan item 37); a normal permission. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <!-- The phone's own text-to-speech engines must be visible to bind them (Android 11+ package visibility). -->
     <queries>

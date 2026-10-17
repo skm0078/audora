@@ -36,6 +36,7 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.diagnostics.LogSharer
@@ -488,6 +489,8 @@ class MainActivity : ComponentActivity() {
         override fun onReadingModes(modes: ReadingModes) = model.setReadingModes(modes)
 
         override fun onSleepTimer(setting: SleepTimerSetting) = model.setSleepTimer(setting)
+
+        override fun onSleepOptions(options: SleepOptions) = model.setSleepOptions(options)
 
         override fun onUndoJump() = model.undoJump()
 

@@ -5,6 +5,7 @@ package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -245,7 +246,18 @@ class ReaderModelTest {
         model.skipForward()
         model.skipBack()
         model.setSleepTimer(SleepTimerSetting.EndOfPage)
-        assertEquals(listOf("next", "previous", "sleep EndOfPage"), port.calls)
+        model.setSleepTimer(SleepTimerSetting.AfterChapters(2))
+        model.setSleepOptions(SleepOptions(bedtime = true))
+        assertEquals(
+            listOf(
+                "next",
+                "previous",
+                "sleep EndOfPage",
+                "sleep AfterChapters(count=2)",
+                "sleep options ${SleepOptions(bedtime = true).encode()}",
+            ),
+            port.calls,
+        )
     }
 
     @Test

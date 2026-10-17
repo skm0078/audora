@@ -5,6 +5,7 @@ package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
+import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.flow.StateFlow
@@ -39,6 +40,9 @@ interface PlaybackPort {
 
     fun setSleepTimer(setting: SleepTimerSetting)
 
+    /** Shake to extend, fade-out and bedtime auto-on (plan item 37); the service keeps them. */
+    fun setSleepOptions(options: SleepOptions)
+
     /** Back to where reading was before the last jump (plan item 78), playing or paused as now. */
     fun undoJump()
 
@@ -53,6 +57,7 @@ interface PlaybackPort {
  *   or the item is not an Audora position.
  * @property wantsToPlay play was pressed and not paused since: true while buffering the next sentence too.
  * @property hasChapters the book being read has chapters, so [SleepTimerSetting.EndOfChapter] can be offered.
+ * @property sleepOptions the sleep timer extras the service has saved.
  * @property undoJumpTo where "Undo jump" goes back to in the book being read (plan item 78); null with nothing to undo.
  * @property errorCode Media3's error code name of the last playback error, for the log and a generic message.
  */
@@ -69,6 +74,7 @@ data class PlaybackSnapshot(
     val canSkipForward: Boolean = false,
     val sleepTimer: SleepTimerState = SleepTimerState.Off,
     val hasChapters: Boolean = false,
+    val sleepOptions: SleepOptions = SleepOptions(),
     val undoJumpTo: ReadingPosition? = null,
     val errorCode: String? = null,
 ) {

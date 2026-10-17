@@ -14,11 +14,13 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.session.BookSession
+import io.github.skm0078.audora.playback.session.SleepOptionsStore
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import kotlinx.coroutines.CoroutineScope
@@ -29,11 +31,12 @@ import kotlinx.coroutines.launch
  * the standard transport controls (play, pause, skip), which is all a lock screen or headset needs.
  */
 @OptIn(UnstableApi::class)
+@Suppress("TooManyFunctions") // One handler per custom command, plus the Media3 callbacks.
 class SessionCallback(
     private val ownPackage: String,
     private val scope: CoroutineScope,
     private val voices: SpeechVoices,
-    private val style: SpeechStyleStore,
+    private val stores: SessionStores,
     private val bookSession: () -> BookSession,
     private val resumption: () -> PlaybackResumption?,
 ) : MediaSession.Callback {
@@ -53,6 +56,7 @@ class SessionCallback(
                     .add(PlaybackContract.SET_SPEECH_STYLE)
                     .add(PlaybackContract.REPORT_SOUNDED_WRONG)
                     .add(PlaybackContract.UNDO_JUMP)
+                    .add(PlaybackContract.SET_SLEEP_OPTIONS)
                     .build(),
             )
         }
@@ -71,6 +75,7 @@ class SessionCallback(
         PlaybackContract.ACTION_SET_SPEECH_STYLE -> Futures.immediateFuture(setSpeechStyle(args))
         PlaybackContract.ACTION_REPORT_SOUNDED_WRONG -> Futures.immediateFuture(report(args))
         PlaybackContract.ACTION_UNDO_JUMP -> Futures.immediateFuture(undoJump())
+        PlaybackContract.ACTION_SET_SLEEP_OPTIONS -> Futures.immediateFuture(setSleepOptions(args))
         else -> Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
     }
 
@@ -114,6 +119,7 @@ class SessionCallback(
 
     private fun setSpeechStyle(args: Bundle): SessionResult {
         val requested = PlaybackContract.speechStyleFrom(args) ?: return failure(PlaybackErrorCode.BAD_REQUEST)
+        val style = stores.style
         val before = style.current
         val applied = style.set(requested)
         if (applied != before) bookSession().onSpeechStyleChanged(style.config.playerSpeed(applied.rate))
@@ -123,7 +129,7 @@ class SessionCallback(
     /** Logs a "This sounded wrong" report (RI-8b) with the voice reading its language; never the sentence's text. */
     private fun report(args: Bundle): SessionResult {
         val report = PlaybackContract.reportFrom(args) ?: return failure(PlaybackErrorCode.BAD_REQUEST)
-        AudoraLog.i(TAG, report.logLine(voices.knownVoice(report.lang), style.current.modes))
+        AudoraLog.i(TAG, report.logLine(voices.knownVoice(report.lang), stores.style.current.modes))
         return SessionResult(SessionResult.RESULT_SUCCESS)
     }
 
@@ -136,12 +142,19 @@ class SessionCallback(
     private fun setSleepTimer(args: Bundle): SessionResult {
         val mode = PlaybackContract.sleepModeFrom(args)
         val minutes = args.getInt(PlaybackContract.ARG_SLEEP_MINUTES, 0)
-        if (mode == null || (mode == SleepTimerMode.MINUTES && minutes !in 1..MAX_SLEEP_MINUTES)) {
-            return failure(PlaybackErrorCode.BAD_REQUEST)
-        }
+        val chapters = args.getInt(PlaybackContract.ARG_SLEEP_CHAPTERS, 1)
+        val valid = mode != null && chapters >= 1 && (mode != SleepTimerMode.MINUTES || minutes in 1..MAX_SLEEP_MINUTES)
+        if (!valid) return failure(PlaybackErrorCode.BAD_REQUEST)
         // End of chapter needs a book with chapters; the reader only offers it then (SESSION_HAS_CHAPTERS).
-        val accepted = bookSession().setSleepTimer(mode, minutes)
+        val accepted = bookSession().setSleepTimer(mode, minutes, chapters)
         return if (accepted) SessionResult(SessionResult.RESULT_SUCCESS) else failure(PlaybackErrorCode.BAD_REQUEST)
+    }
+
+    private fun setSleepOptions(args: Bundle): SessionResult {
+        val line = args.getString(PlaybackContract.ARG_SLEEP_OPTIONS) ?: return failure(PlaybackErrorCode.BAD_REQUEST)
+        stores.sleepOptions.set(SleepOptions.decode(line))
+        bookSession().onSleepOptionsChanged()
+        return SessionResult(SessionResult.RESULT_SUCCESS)
     }
 
     private fun failure(code: PlaybackErrorCode): SessionResult {
@@ -160,3 +173,6 @@ class SessionCallback(
         const val MAX_SLEEP_MINUTES = 24 * 60
     }
 }
+
+/** The listener's saved settings the custom commands change: speech style and the sleep timer extras. */
+class SessionStores(val style: SpeechStyleStore, val sleepOptions: SleepOptionsStore)

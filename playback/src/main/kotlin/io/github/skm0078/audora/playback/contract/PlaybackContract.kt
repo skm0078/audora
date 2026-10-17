@@ -13,6 +13,7 @@ import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
+import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.core.model.VoiceId
@@ -44,6 +45,7 @@ object PlaybackContract {
     const val ACTION_SET_SPEECH_STYLE = "$PREFIX.SET_SPEECH_STYLE"
     const val ACTION_REPORT_SOUNDED_WRONG = "$PREFIX.REPORT_SOUNDED_WRONG"
     const val ACTION_UNDO_JUMP = "$PREFIX.UNDO_JUMP"
+    const val ACTION_SET_SLEEP_OPTIONS = "$PREFIX.SET_SLEEP_OPTIONS"
 
     /** Starts reading [ARG_BOOK_ID] at [ARG_PAGE] / [ARG_CHAR_START]. Only ever send it from a user action (C7). */
     val PLAY_FROM = SessionCommand(ACTION_PLAY_FROM, Bundle.EMPTY)
@@ -62,6 +64,9 @@ object PlaybackContract {
 
     /** Back to where reading was before the last jump ([SESSION_UNDO_PAGE]); refused when there is none. */
     val UNDO_JUMP = SessionCommand(ACTION_UNDO_JUMP, Bundle.EMPTY)
+
+    /** Saves the sleep timer extras ([ARG_SLEEP_OPTIONS]): shake to extend, fade-out, bedtime (plan item 37). */
+    val SET_SLEEP_OPTIONS = SessionCommand(ACTION_SET_SLEEP_OPTIONS, Bundle.EMPTY)
 
     // Arguments of PLAY_FROM.
     const val ARG_BOOK_ID = "book_id"
@@ -87,6 +92,12 @@ object PlaybackContract {
     /** A [SleepTimerMode] name. */
     const val ARG_SLEEP_MODE = "sleep_mode"
     const val ARG_SLEEP_MINUTES = "sleep_minutes"
+
+    /** Int: chapter ends an end-of-chapter timer waits for; absent = 1. */
+    const val ARG_SLEEP_CHAPTERS = "sleep_chapters"
+
+    /** String: [SleepOptions.encode], the argument of SET_SLEEP_OPTIONS. */
+    const val ARG_SLEEP_OPTIONS = "sleep_options"
 
     // Arguments of SET_SPEECH_STYLE.
 
@@ -135,6 +146,12 @@ object PlaybackContract {
     /** Wall-clock millis when a [SleepTimerMode.MINUTES] timer pauses playback. */
     const val SESSION_SLEEP_ENDS_AT = "sleep_ends_at_millis"
 
+    /** Int: chapter ends an end-of-chapter timer still waits for, when more than one. */
+    const val SESSION_SLEEP_CHAPTERS = "sleep_chapters"
+
+    /** The sleep timer extras in effect ([SleepOptions.encode]), always present. */
+    const val SESSION_SLEEP_OPTIONS = "sleep_options"
+
     /** True when the open book has chapters, so [SleepTimerMode.END_OF_CHAPTER] can be set; absent = false. */
     const val SESSION_HAS_CHAPTERS = "has_chapters"
 
@@ -177,10 +194,14 @@ object PlaybackContract {
         putString(ARG_VOICE_LANG, lang.name)
     }
 
-    fun sleepTimerArgs(mode: SleepTimerMode, minutes: Int = 0): Bundle = Bundle().apply {
+    fun sleepTimerArgs(mode: SleepTimerMode, minutes: Int = 0, chapters: Int = 1): Bundle = Bundle().apply {
         putString(ARG_SLEEP_MODE, mode.name)
         putInt(ARG_SLEEP_MINUTES, minutes)
+        putInt(ARG_SLEEP_CHAPTERS, chapters)
     }
+
+    fun sleepOptionsArgs(options: SleepOptions): Bundle =
+        Bundle().apply { putString(ARG_SLEEP_OPTIONS, options.encode()) }
 
     fun speechStyleArgs(style: SpeechStyle): Bundle = Bundle().apply {
         putFloat(ARG_SPEECH_RATE, style.rate)

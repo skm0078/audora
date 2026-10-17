@@ -10,6 +10,7 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.OutlineEntry
@@ -102,6 +103,10 @@ class FakePlaybackPort : PlaybackPort {
 
     override fun setSleepTimer(setting: SleepTimerSetting) {
         calls += "sleep $setting"
+    }
+
+    override fun setSleepOptions(options: SleepOptions) {
+        calls += "sleep options ${options.encode()}"
     }
 
     override fun undoJump() {
