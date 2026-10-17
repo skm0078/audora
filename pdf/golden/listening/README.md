@@ -72,6 +72,7 @@ Status: `draft` = written from the page (ground truth or pdftotext) and correcte
 |---|---|---|
 | en-udhr-p0-1, hi-udhr-p0-1, bn-udhr-p0-1 | Clean English, Hindi and Bengali text layers; numbers in words | S2's generated UDHR PDFs (Noto); UDHR text free to reproduce, fonts OFL |
 | hi-udhr-scan200bad-p0-1 | A degraded 200 dpi scan read by OCR (same words as hi-udhr-p0-1) | Rasterised from the same; recorded with Tesseract 5.3.4 (Ubuntu `tesseract-ocr-hin`/`eng`) |
+| bn-udhr-scan200bad-p4-5 | A degraded 200 dpi Bengali scan: dandas and the vowel sign aa misread as "৷", "\|" or "!" (false stops, run-on sentences) | Rasterised from S2's bn-udhr-noto; recorded with Tesseract 5.3.4 (Ubuntu `tesseract-ocr-ben`/`eng`); script from its ground truth |
 | en-physimaging-tables-p2-3 | Two tables, figure captions, chart labels, units | PMC10500023, CC BY 4.0 |
 | en-forallx-footnotes-p22-23 | A footnote marker and a footnote running over the page | forall x: Calgary, CC BY 4.0 |
 | en-jmathbiol-math-p6-7 | Display equations and inline maths | PMC10500018, CC BY |
