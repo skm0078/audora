@@ -235,18 +235,20 @@ class BookSessionTest {
     @Test
     fun onlyABookReadToItsEndWhilePlayingCountsAsFinished() {
         play(page = 0, charStart = 0)
-        awaitEnd()
-        // On the main thread: the session hears ENDED in the same dispatch as the latch, after it.
-        assertEquals(listOf(BOOK.id), onMain { finished.toList() })
-
-        // Paused, then a seek past the end of the last sentence (its audio is still loaded): ENDED again, but the
-        // listener did not finish the book.
+        awaitCondition("second sentence") { played.size >= 2 }
+        // Paused, then the playlist emptied: ENDED, but the listener did not finish the book.
         onMain {
             player.pause()
-            player.seekTo(player.currentMediaItemIndex, SEEK_PAST_END_MS)
+            player.clearMediaItems()
         }
-        awaitCondition("ended again while paused") { endings.get() >= 2 }
+        awaitCondition("ended while paused") { endings.get() >= 1 }
         assertFalse(onMain { player.playWhenReady })
+        assertEquals(emptyList<BookId>(), onMain { finished.toList() })
+
+        // Read to the end while playing: finished once. On the main thread, since the session hears ENDED in the
+        // same dispatch as the counter, after it.
+        play(page = 0, charStart = 0)
+        awaitCondition("ended while playing") { endings.get() >= 2 }
         assertEquals(listOf(BOOK.id), onMain { finished.toList() })
     }
 
@@ -376,7 +378,6 @@ class BookSessionTest {
         const val LOOP_ROUNDS = 3
         const val REPLAY_FACTOR = 0.5f
         const val SPEED_DELTA = 0.001f
-        const val SEEK_PAST_END_MS = 60_000L
         val CHAPTER_STARTS = listOf(0, 2)
         val CONFIG = QueueConfig(minUnitsAhead = 2, keepBehindUnits = 2)
         val VOICE = VoiceId(EngineId.SHERPA, "test")
