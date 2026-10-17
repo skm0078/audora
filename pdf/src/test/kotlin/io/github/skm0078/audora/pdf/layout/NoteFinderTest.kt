@@ -50,6 +50,21 @@ class NoteFinderTest {
     }
 
     @Test
+    fun `a raised digit beside a maths operator is an exponent, and a raised plus is a charge`() {
+        listOf(
+            listOf("so E = mc", "2", " holds") to "so E = mc2 holds",
+            listOf("solve ax", "2", " + bx + c") to "solve ax2 + bx + c",
+            listOf("where ds", "2", " = dt") to "where ds2 = dt",
+            listOf("the ion Na", "+", " binds") to "the ion Na+ binds",
+        ).forEach { (pieces, heard) ->
+            val text = withLine(
+                listOf(Triple(pieces[0], BODY, 0f), Triple(pieces[1], SMALL, RISE), Triple(pieces[2], BODY, 0f)),
+            )
+            assertTrue("$pieces: $text", heard in text.replace('\n', ' '))
+        }
+    }
+
+    @Test
     fun `a subscript and a small word on the line are read`() {
         val subscript = withLine(listOf(Triple("the sentences B", BODY, 0f), Triple("1", SMALL, -2f)))
         assertTrue(subscript, "the sentences B1" in subscript)

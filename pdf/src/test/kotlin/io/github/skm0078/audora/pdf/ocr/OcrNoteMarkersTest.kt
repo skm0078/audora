@@ -78,6 +78,18 @@ class OcrNoteMarkersTest {
     }
 
     @Test
+    fun `superscript digits beside a maths operator are an exponent and stay`() {
+        assertEquals(listOf("E", "=", "mc²"), texts(markers.silence(line("E", "=", "mc²"), upright)))
+        assertEquals(listOf("ax²", "+", "bx"), texts(markers.silence(line("ax²", "+", "bx"), upright)))
+        assertEquals(
+            listOf("ds²", "=", "dt²", "−", "dx²"),
+            texts(markers.silence(line("ds²", "=", "dt²", "−", "dx²"), upright)),
+        )
+        // Without an operator nearby it is still a marker.
+        assertEquals(listOf("Smith", "said"), texts(markers.silence(line("Smith²", "said"), upright)))
+    }
+
+    @Test
     fun `switched off, nothing is left out`() {
         val off = OcrNoteMarkers(NoteConfig(silenceMarkers = false))
         assertEquals(listOf("A", "Vaswani*"), texts(off.silence(line("A", "Vaswani*"), upright)))

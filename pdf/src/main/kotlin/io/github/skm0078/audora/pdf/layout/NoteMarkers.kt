@@ -17,7 +17,9 @@ internal class NoteMarker(val span: TextSpan, val ref: Int?, val atLineStart: Bo
  * - a word of two or more letters, not a unit ("both¹", but not "x²", "χ²" or "600 deg²");
  * - closing punctuation (", . ; : ’ ” ।"), or a bracket closing words ("(see below)¹"), never "(x+1)²";
  * - nothing, at the start of a line, when a word follows: a footnote's or an affiliation's own number ("¹Even if…").
- * After a digit, an operator or a single letter it is maths ("10⁻²¹", "Gpc⁻³", "B₁" sits low anyway).
+ * After a digit, an operator or a single letter it is maths ("10⁻²¹", "Gpc⁻³", "B₁" sits low anyway). So is any
+ * raised run with a maths operator ([besideOperator]) right after it or right before the word it follows: "E = mc²",
+ * "ax² + bx", "ds² = dt² − dx²". "+" alone is no note sign: it is a charge ("Na⁺").
  */
 internal class NoteMarkers(private val config: NoteConfig) {
     /** "3", "12", "8,16,17", "4–7". */
@@ -74,7 +76,8 @@ internal class NoteMarkers(private val config: NoteConfig) {
         } else {
             // The text before it, as the listener hears it: in a fraction ("2GM/c²") the glyph left of the marker
             // on the line may be another part of the formula.
-            (start - 1 downTo 0).firstOrNull { !text[it].isWhitespace() }?.let { follows(text, it) } == true
+            (start - 1 downTo 0).firstOrNull { !text[it].isWhitespace() }?.let { follows(text, it) } == true &&
+                !besideOperator(text, start, end)
         }
         return if (isMarker) NoteMarker(TextSpan(start, end), refOf(value), atLineStart) else null
     }
@@ -97,6 +100,14 @@ internal class NoteMarkers(private val config: NoteConfig) {
         }
     }
 
+    /** A maths operator is the first thing after [end], or the last thing before the word that ends at [start]. */
+    private fun besideOperator(text: String, start: Int, end: Int): Boolean {
+        val after = (end until text.length).firstOrNull { !text[it].isWhitespace() }?.let { text[it] }
+        val wordStart = start - wordBefore(text, start).length
+        val before = (wordStart - 1 downTo 0).firstOrNull { !text[it].isWhitespace() }?.let { text[it] }
+        return after.isOperator() || before.isOperator()
+    }
+
     /** The letters (and the vowel signs between them) right before [end]. */
     private fun wordBefore(text: String, end: Int): String {
         var start = end
@@ -112,6 +123,11 @@ internal class NoteMarkers(private val config: NoteConfig) {
                 type == Character.NON_SPACING_MARK.toInt() ||
                 type == Character.COMBINING_SPACING_MARK.toInt()
         }
+
+        /** Maths operators: next to one, a raised digit after a word is an exponent ("mc²"), not a note marker. */
+        const val MATHS_OPERATORS = "=+−×÷/<>^±∓≤≥≈≠"
+
+        fun Char?.isOperator(): Boolean = this != null && this in MATHS_OPERATORS
 
         /** Greek letters are maths variables here ("χ²", "ðχ²" from a broken font map), not words. */
         private fun isGreek(c: Char) = Character.UnicodeScript.of(c.code) == Character.UnicodeScript.GREEK
@@ -130,7 +146,7 @@ internal class NoteMarkers(private val config: NoteConfig) {
         /** Note symbols in the order they are used in when a page has several; "∗" (U+2217) counts as "*". */
         private const val SYMBOL_ORDER = "*†‡§¶‖#\$+"
         private const val ASTERISK_OPERATOR = '∗'
-        private val SYMBOLS_ONLY = Regex("[*∗†‡§¶‖#\$+]{1,3}")
+        private val SYMBOLS_ONLY = Regex("[*∗†‡§¶‖#\$]{1,3}")
 
         private const val CLOSING_PUNCTUATION = ",.;:!?\"'\u2019\u201D।॥"
         private const val CLOSING_BRACKETS = ")]"
