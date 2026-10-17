@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/SpeechSheet.kt
-// Purpose: The player's speech sheet: speed with presets, sentence and clause pauses, and what to read (ADR-035).
+// Purpose: The player's speech sheet: speed, pauses, sound (loudness, boost, trim) and what to read (ADR-035).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -38,6 +38,7 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
+import io.github.skm0078.audora.core.model.VoiceShaping
 import kotlin.math.roundToInt
 
 /**
@@ -57,6 +58,8 @@ fun SpeechSheet(
     onClausePauses: (Boolean) -> Unit = {},
     readingModes: ReadingModes = ReadingModes(),
     onReadingModes: (ReadingModes) -> Unit = {},
+    voiceShaping: VoiceShaping = VoiceShaping(),
+    onVoiceShaping: (VoiceShaping) -> Unit = {},
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -69,6 +72,7 @@ fun SpeechSheet(
             SpeedSection(speed, config, onSpeed)
             PaceSection(pace, onPace)
             ClausePausesRow(clausePauses, onClausePauses)
+            VoiceShapingSection(voiceShaping, config.voiceShaping.boostChoicesDb, onVoiceShaping)
             ReadingModesSection(readingModes, onReadingModes)
             Text(
                 stringResource(R.string.speech_sheet_hint),

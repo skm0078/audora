@@ -17,6 +17,7 @@ import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
@@ -85,13 +86,16 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
 
     override fun setReadingModes(modes: ReadingModes) = setStyle(currentStyle().copy(modes = modes))
 
+    override fun setVoiceShaping(shaping: VoiceShaping) = setStyle(currentStyle().copy(shaping = shaping))
+
     private fun currentStyle(): SpeechStyle =
-        mutableState.value.let { SpeechStyle(it.speed, it.pace, it.clausePauses, it.readingModes) }
+        mutableState.value.let { SpeechStyle(it.speed, it.pace, it.clausePauses, it.readingModes, it.voiceShaping) }
 
     private fun setStyle(style: SpeechStyle) = withPlayer("speech style") { player ->
         AudoraLog.i(
             TAG,
-            "Speech style rate=${style.rate} pace=${style.pace} clauses=${style.clausePauses} ${style.modes}",
+            "Speech style rate=${style.rate} pace=${style.pace} clauses=${style.clausePauses} ${style.modes} " +
+                "shaping=${style.shaping.encode()}",
         )
         send(player, PlaybackContract.SET_SPEECH_STYLE, PlaybackContract.speechStyleArgs(style), "speech style")
     }
@@ -171,6 +175,7 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
                 ?: Pace.NORMAL,
             clausePauses = extras.getBoolean(PlaybackContract.SESSION_CLAUSE_PAUSES, true),
             readingModes = ReadingModes.decode(extras.getString(PlaybackContract.SESSION_READING_MODES)),
+            voiceShaping = VoiceShaping.decode(extras.getString(PlaybackContract.SESSION_VOICE_SHAPING)),
             canSkipBack = player.currentMediaItem != null && player.isCommandAvailable(Player.COMMAND_SEEK_TO_PREVIOUS),
             canSkipForward = player.hasNextMediaItem(),
             sleepTimer = sleepTimerOf(extras),
