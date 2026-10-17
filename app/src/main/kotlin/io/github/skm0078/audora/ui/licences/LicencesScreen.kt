@@ -209,7 +209,7 @@ private val SPEECH_SOFTWARE = listOf(
         "https://github.com/frankyoujian/Edge-Punct-Casing",
     ),
     Software(
-        "Open English Wordnet 2025 (Open English Wordnet team, from Princeton WordNet 3.0), dictionary, if downloaded",
+        "Open English Wordnet 2025 (Open English Wordnet team, from Princeton WordNet), dictionary, if downloaded",
         R.string.licences_cc_by_wordnet,
         "https://en-word.net/",
     ),

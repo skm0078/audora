@@ -9,12 +9,13 @@ ships only data it may redistribute under GPL-3.0. The reader has no text select
 is where sentence actions live.
 
 ## Decision
-1. **Data: Open English Wordnet 2025** (CC BY 4.0, derived from Princeton WordNet 3.0 under the WordNet License):
+1. **Data: Open English Wordnet 2025** (CC BY 4.0, derived from Princeton WordNet under the WordNet License):
    definitions, parts of speech and up to five synonyms per sense, plus the inflected forms the wordnet lists ("mice",
    "went"). Examples and semantic relations are left out to keep the download small.
 2. **Built on the mirror, downloaded on request.** `scripts/build_dictionary.py` turns the SHA-pinned LMF release
    into one sorted text file (`headword TAB pos|definition|synonyms ...`, or `form TAB =headword`) in a zip with the
-   licence, reproducibly; the voice-mirror workflow checks it against the pin in `speech/models.json`
+   licences (CC BY 4.0 and Princeton WordNet's notice, which must appear on all copies), reproducibly; the
+   voice-mirror workflow checks it against the pin in `speech/models.json`
    (`dictionaries`) and publishes it from `dev` to the "voices" release. The app downloads it through WorkManager with
    the voices' resumable, SHA-checked downloader (`Dictionaries`, `DictionaryFiles`, `DictionaryDownloadJob`), into
    the no-backup folder. 5.4 MB to download, 16.2 MB on the phone.
@@ -48,5 +49,6 @@ is where sentence actions live.
 
 ## Consequences
 - The dictionary is English only until a Wiktionary build lands; on a Hindi or Bengali sentence the dialog says so.
-- The licence screen credits Open English Wordnet and Princeton WordNet; the zip carries the licence text.
+- The licence screen credits Open English Wordnet and carries Princeton's copyright line; the zip carries both
+  licence texts in full.
 - The download works once the branch is on `dev` and the mirror workflow has published the zip.

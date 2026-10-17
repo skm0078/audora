@@ -7,7 +7,8 @@
 #   dictionary.tsv  one line per headword, sorted by code point so the app finds a word by binary search in the file
 #                   without loading it:  headword TAB sense TAB sense ...  where a sense is  pos|definition|syn,syn
 #                   and an inflected form the wordnet lists (abaci, went) is  form TAB =headword,headword
-#   LICENSE         the wordnet's licence text (CC BY 4.0 and the Princeton WordNet License), as it requires.
+#   LICENSE         the wordnet's licence texts (CC BY 4.0, and Princeton WordNet's notice, which must appear on all
+#                   copies, modifications included), joined.
 # Why a text file: the app parses it with a few lines of Kotlin (no SQLite asset, no XML parser on the phone), and a
 # binary search over sorted lines needs no index and no memory; the app unpacks it once after the download. Why
 # deflated (unlike the voice zips): text shrinks from 16 MB to about 5 MB, which matters on a phone's data plan.
@@ -137,7 +138,8 @@ def build(spec: dict, cache: Path, out: Path) -> Path:
     out.mkdir(parents=True, exist_ok=True)
     staging = out / f"{spec['id']}.zip.partial"
     with zipfile.ZipFile(staging, "w", compresslevel=DEFLATE_LEVEL) as archive:
-        archive.writestr(entry("LICENSE"), (repo_root() / spec["licenceFile"]).read_bytes())
+        licence = b"\n\n".join((repo_root() / name).read_bytes().rstrip() for name in spec["licenceFiles"]) + b"\n"
+        archive.writestr(entry("LICENSE"), licence)
         archive.writestr(entry(spec["file"]), text.encode("utf-8"))
     sha = sha256_of(staging)
     final = out / f"{spec['id']}-{sha[:SHA_PREFIX_CHARS]}.zip"

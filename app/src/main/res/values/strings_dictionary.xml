@@ -25,5 +25,5 @@
     <string name="dictionary_back">Back</string>
     <string name="dictionary_close">Close</string>
     <!-- Licences screen: the dictionary's terms. -->
-    <string name="licences_cc_by_wordnet">Creative Commons Attribution 4.0 and the Princeton WordNet License</string>
+    <string name="licences_cc_by_wordnet">Creative Commons Attribution 4.0, and the WordNet License: WordNet 3.1 Copyright 2011 by Princeton University. All rights reserved. Provided as is, without warranties; the full notice comes with the download.</string>
 </resources>
