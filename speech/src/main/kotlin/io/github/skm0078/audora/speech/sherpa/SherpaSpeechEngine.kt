@@ -208,7 +208,8 @@ class SherpaSpeechEngine(
 
         /**
          * The model loaded for exactly [spec], now the most recently used; null if there is none. A model of the
-         * same voice with other files (an update) is released, not kept beside the new one.
+         * same voice with other files (an update) or other noise values (expressiveness) is released, not kept
+         * beside the new one.
          */
         fun take(spec: SherpaVoiceSpec): SherpaSynthesizer? {
             val cached = voices.remove(spec.voiceId)
@@ -216,7 +217,7 @@ class SherpaSpeechEngine(
                 cached == null -> null
 
                 cached.spec != spec -> {
-                    release(cached, "voice files changed")
+                    release(cached, "voice files or expressiveness changed")
                     null
                 }
 

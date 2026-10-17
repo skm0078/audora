@@ -302,6 +302,20 @@ class SherpaSpeechEngineTest {
         assertEquals(other.label, requireNotNull(live.voices().getOrNull()).single { it.id == other.voiceId }.label)
     }
 
+    @Test
+    fun `a new expressiveness reloads the voice once, and the same one keeps it`() = runBlocking {
+        var noise = VitsNoise(0.667f, 0.8f)
+        val live = SherpaSpeechEngine({ listOf(english.copy(noise = noise)) }, factory)
+
+        live.render("One.", english.voiceId)
+        live.render("Two.", english.voiceId)
+        noise = VitsNoise(0.9f, 1.05f)
+        live.render("Three.", english.voiceId)
+
+        assertEquals(2, loaded.size)
+        assertTrue(loaded[0].second.released)
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun `a fixed list with duplicate ids is refused`() {
         SherpaSpeechEngine(listOf(english, english.copy(label = "again")), factory)

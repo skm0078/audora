@@ -137,9 +137,9 @@ class AudiobookExportService : Service() {
         val folder = AudiobookFolder.relativePath(title, getString(R.string.export_untitled), config)
         AudoraLog.i(TAG, "Export started, $logContext, pages=${book.text.pageCount}, chapters=${chapters.size}")
         val shownFolder = folder.trimEnd('/')
-        val voices = SpeechVoices(VoiceEngines(this))
+        val style = SpeechStyleStore.forContext(this)
+        val voices = SpeechVoices(VoiceEngines(this) { style.current.shaping.expressiveness })
         try {
-            val style = SpeechStyleStore.forContext(this)
             val chapterPages = book.text.chapterStarts().toSet()
             val renderer = EngineRenderer(
                 voices,

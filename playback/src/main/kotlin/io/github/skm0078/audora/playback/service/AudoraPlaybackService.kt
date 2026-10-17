@@ -103,9 +103,10 @@ class AudoraPlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate() // Hilt injects fields here.
-        val engines = VoiceEngines(this)
-        voices = SpeechVoices(engines)
         val style = SpeechStyleStore.forContext(this)
+        // Expressiveness (plan item 8) is global, like the rest of the voice shaping; a change reloads the voice.
+        val engines = VoiceEngines(this) { style.current.shaping.expressiveness }
+        voices = SpeechVoices(engines)
         val sleepOptions = SleepOptionsStore.forContext(this)
         val book = BookContext(bookSettings, pronunciations, scope) { bookSession.restartRendering() }
         voices.bookVoice = book::voice

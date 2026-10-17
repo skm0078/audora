@@ -83,9 +83,7 @@ internal fun sherpaModelConfig(
 ): OfflineTtsModelConfig {
     val base = OfflineTtsModelConfig(numThreads = threads, debug = false, provider = SHERPA_PROVIDER)
     return when (spec.family) {
-        SherpaFamily.VITS -> base.copy(
-            vits = OfflineTtsVitsModelConfig(model = path(spec.model), tokens = path(spec.tokens), dataDir = dataDir),
-        )
+        SherpaFamily.VITS -> base.copy(vits = vitsConfig(spec, dataDir, path))
 
         SherpaFamily.KITTEN -> base.copy(
             kitten = OfflineTtsKittenModelConfig(
@@ -119,6 +117,13 @@ internal fun sherpaModelConfig(
             ),
         )
     }
+}
+
+/** The listener's expressiveness ([SherpaVoiceSpec.noise]) on top; sherpa's own noise values without it. */
+private fun vitsConfig(spec: SherpaVoiceSpec, dataDir: String, path: (String) -> String): OfflineTtsVitsModelConfig {
+    val files = OfflineTtsVitsModelConfig(model = path(spec.model), tokens = path(spec.tokens), dataDir = dataDir)
+    val noise = spec.noise ?: return files
+    return files.copy(noiseScale = noise.scale, noiseScaleW = noise.width)
 }
 
 /**

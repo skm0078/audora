@@ -5,10 +5,12 @@ package io.github.skm0078.audora.playback.voice
 
 import android.content.Context
 import io.github.skm0078.audora.core.config.SpeechConfig
+import io.github.skm0078.audora.core.config.VoiceShapingConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
+import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.getOrNull
 import io.github.skm0078.audora.core.result.map
@@ -17,6 +19,7 @@ import io.github.skm0078.audora.speech.SpeechEngine
 import io.github.skm0078.audora.speech.SpeechEngines
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.route.VoiceSource
+import io.github.skm0078.audora.speech.sherpa.VitsNoise
 import io.github.skm0078.audora.speech.system.SystemSpeechEngine
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
 import io.github.skm0078.audora.speech.voices.VoiceSpeed
@@ -80,10 +83,23 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
     }
 }
 
-/** Creates each engine once, on first use, and releases only what was created. */
-class VoiceEngines(context: Context, config: SpeechConfig = SpeechConfig()) {
+/**
+ * Creates each engine once, on first use, and releases only what was created. [expressiveness] is the listener's step
+ * (plan item 8), read on every neural render; the Piper and MMS voices reload when it changes.
+ */
+class VoiceEngines(
+    context: Context,
+    config: SpeechConfig = SpeechConfig(),
+    shapingConfig: VoiceShapingConfig = VoiceShapingConfig(),
+    expressiveness: () -> Int = { VoiceShaping.DEFAULT_EXPRESSION },
+) {
     private val appContext = context.applicationContext
-    private val bundled = lazy { SpeechEngines.bundled(appContext, config) }
+    private val bundled = lazy {
+        SpeechEngines.bundled(appContext, config) {
+            val (scale, width) = shapingConfig.expressionNoise(expressiveness())
+            VitsNoise(scale, width)
+        }
+    }
     private val system = lazy { SpeechEngines.system(appContext, config) }
     private val library = lazy { VoiceLibrary.get(appContext) }
 
