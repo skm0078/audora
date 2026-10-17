@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/SettingsScreen.kt
-// Purpose: Settings: Voices (P4-01), Voices & licences (P3-06), OCR models (P3-05), background reading (P1-06),
-//          Share logs (P1-07), debug tool.
+// Purpose: Settings: Voices (P4-01), Voices & licences (P3-06), OCR models (P3-05), citation numbers (P2-03),
+//          background reading (P1-06), Share logs (P1-07), debug tool.
 
 package io.github.skm0078.audora.ui.settings
 
@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,12 +20,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
@@ -48,6 +51,8 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     ocrModels: OcrModelsState? = null,
     onOcrModels: (OcrModelsAction) -> Unit = {},
+    skipCitations: Boolean = true,
+    onSkipCitationsChange: (Boolean) -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -79,6 +84,8 @@ fun SettingsScreen(
                 OcrModelsItem(it, onOcrModels)
                 HorizontalDivider()
             }
+            SkipCitationsItem(skipCitations, onSkipCitationsChange)
+            HorizontalDivider()
             BatteryItem(batteryExempt, onOpenBatterySetup)
             HorizontalDivider()
             ShareLogsItem(shareState, onShareLogs)
@@ -98,6 +105,17 @@ fun SettingsScreen(
             }
         }
     }
+}
+
+/** The whole row toggles; the switch only shows the state (no onCheckedChange), so it is not a second target. */
+@Composable
+private fun SkipCitationsItem(skip: Boolean, onChange: (Boolean) -> Unit) {
+    ListItem(
+        headlineContent = { Text(stringResource(R.string.settings_skip_citations_title)) },
+        supportingContent = { Text(stringResource(R.string.settings_skip_citations_body)) },
+        trailingContent = { Switch(checked = skip, onCheckedChange = null) },
+        modifier = Modifier.toggleable(value = skip, role = Role.Switch, onValueChange = onChange),
+    )
 }
 
 @Composable
@@ -154,6 +172,7 @@ private fun SettingsScreenPreview() {
             onOpenLicences = {},
             onShareLogs = {},
             onSimulateReadingSession = {},
+            skipCitations = true,
         )
     }
 }

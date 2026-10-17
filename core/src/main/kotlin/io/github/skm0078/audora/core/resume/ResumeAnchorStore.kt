@@ -6,10 +6,14 @@ package io.github.skm0078.audora.core.resume
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.StorageError
 import io.github.skm0078.audora.core.result.Outcome
+import kotlinx.coroutines.flow.Flow
 
 /** Removing a book from the library removes its anchor with it (the database cascades). */
 interface ResumeAnchorStore {
     suspend fun get(bookId: BookId): ResumeAnchor?
+
+    /** Every book's anchor, again on each save: the library's progress and "Continue reading". */
+    fun observeAll(): Flow<List<ResumeAnchor>>
 
     /** The most recently saved anchor of any book: what a headset's play button resumes after a restart. */
     suspend fun latest(): ResumeAnchor?

@@ -22,13 +22,15 @@ class RoutedSpeechTest {
     /** Renders one sample per character at the voice's rate, so lengths show which voice read what. */
     private class RecordingEngine(override val id: EngineId) : SpeechEngine {
         val calls = mutableListOf<Pair<String, String>>()
+        val rates = mutableListOf<Float>()
 
         override fun supports(lang: Lang): Boolean = true
 
         override suspend fun voices(): Outcome<List<VoiceInfo>, SpeechError> = Outcome.Success(emptyList())
 
-        override suspend fun render(text: String, voice: VoiceId): RenderResult {
+        override suspend fun render(text: String, voice: VoiceId, rate: Float): RenderResult {
             calls.add(voice.name to text)
+            rates.add(rate)
             return Outcome.Success(PcmAudio(ShortArray(text.length) { SAMPLE }, RATES.getValue(voice.name)))
         }
 
@@ -73,6 +75,16 @@ class RoutedSpeechTest {
         assertEquals(EN_RATE, routed.audio.sampleRate)
         // 15 samples at 22 050 Hz plus 14 at 16 000 Hz upsampled to 22 050 Hz.
         assertEquals(15 + 14 * EN_RATE / HI_RATE, routed.audio.samples.size)
+    }
+
+    @Test
+    fun `the speaking rate reaches every part's voice`() = runTest {
+        val voices = FakeVoices()
+
+        RoutedSpeech(voices, ScriptRouter()).render("Read the world, इसी घोषणा को ।", Lang.EN, rate = 1.5f)
+
+        assertEquals(listOf(1.5f), voices.sherpa.rates)
+        assertEquals(listOf(1.5f), voices.system.rates)
     }
 
     @Test

@@ -4,9 +4,11 @@
 package io.github.skm0078.audora.playback.voice
 
 import io.github.skm0078.audora.core.config.ScriptRoutingConfig
+import io.github.skm0078.audora.core.config.SpeechStyleConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.map
@@ -33,24 +35,32 @@ import kotlinx.coroutines.runBlocking
  * its language first ([normalizers]: English P2-04, Hindi and Bengali P3-02; ADR-019), with headings read as headings.
  * Each render is timed for [speed], which sizes the render-ahead window (P4-02).
  *
- * The sentence's pause ([ReadingUnit.pauseAfterMs]: after headings, paragraphs and list items) is rendered as
- * silence at the end of its clip (ADR-029), so the player, highlight and sleep timer need no notion of pauses. The
- * speed is measured on the voice's audio alone: silence costs no render time and would make a voice look faster.
+ * Every sentence is spoken by the voice itself at the [style]'s rate, up to the model's cap (the player stretches any
+ * speed above it, ADR-033), and the style's pace sets the silences.
+ *
+ * The sentence's pause ([ReadingUnit.pauseAfterMs]: after headings, paragraphs and list items), scaled by the pace,
+ * plus the pace's gap after every sentence, is rendered as silence at the end of its clip (ADR-029), so the player,
+ * highlight and sleep timer need no notion of pauses. The speed is measured on the voice's audio alone: silence
+ * costs no render time and would make a voice look faster.
  */
 class EngineRenderer(
     voices: VoiceSource,
     config: ScriptRoutingConfig = ScriptRoutingConfig(),
     normalizers: Map<Lang, TextNormalizer> = speechNormalizers(),
     private val speed: RenderSpeedTracker? = null,
+    private val style: () -> SpeechStyle = { SpeechStyle() },
+    private val styleConfig: SpeechStyleConfig = SpeechStyleConfig(),
 ) : SentenceRenderer {
     private val speech = RoutedSpeech(voices, ScriptRouter(config), normalizers)
 
     override fun render(unit: ReadingUnit): Outcome<PcmAudio, SpeechError> {
         val started = System.nanoTime()
-        return runBlocking { speech.render(unit.text, unit.lang, roleOf(unit.kind)) }.map { routed ->
-            speed?.onRendered(unit.text.trim().length, routed, System.nanoTime() - started)
+        val now = style()
+        val rate = styleConfig.modelRate(now.rate)
+        return runBlocking { speech.render(unit.text, unit.lang, roleOf(unit.kind), rate) }.map { routed ->
+            speed?.onRendered(unit.text.trim().length, routed, System.nanoTime() - started, rate)
             log(unit, routed)
-            routed.audio.withSilenceAfter(unit.pauseAfterMs)
+            routed.audio.withSilenceAfter(styleConfig.silenceAfterMs(unit.pauseAfterMs, now))
         }
     }
 

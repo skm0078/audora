@@ -6,11 +6,15 @@ package io.github.skm0078.audora.playback.storage
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 internal interface ResumeAnchorDao {
     @Query("SELECT * FROM resume_anchors WHERE book_id = :bookId")
     suspend fun byBookId(bookId: String): ResumeAnchorEntity?
+
+    @Query("SELECT * FROM resume_anchors")
+    fun observeAll(): Flow<List<ResumeAnchorEntity>>
 
     // book_id breaks ties so the answer is stable when two saves share a millisecond.
     @Query("SELECT * FROM resume_anchors ORDER BY saved_at DESC, book_id LIMIT 1")

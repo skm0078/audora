@@ -37,16 +37,25 @@ fun interface RenderAheadPolicy {
  * assumptions, plus its pause (ADR-029): silence plays like audio but costs no render time. The sentence playing is
  * not counted: part of it has already played.
  *
+ * Audio is rendered at 1.0× and the player time-stretches it (Sonic), so at playback speed `s` the queue drains `s`
+ * times faster and a voice is effectively `rtf × s` slow: both the target and the start hold scale with it.
+ *
  * @param speedOf the measured speed of the voice that reads a language now, or null if not measured.
+ * @param playbackSpeed the player's current speed. Read on the main thread ([window]) and on the render thread
+ *   ([canStart]), so it must be thread-safe and must not call the player ([LivePlaybackSpeed]). A value that is not
+ *   positive (or not a number) counts as 1.0×.
  */
-class MeasuredRenderAhead(private val speedOf: (Lang) -> VoiceSpeed?) : RenderAheadPolicy {
+class MeasuredRenderAhead(
+    private val speedOf: (Lang) -> VoiceSpeed?,
+    private val playbackSpeed: () -> Double = { 1.0 },
+) : RenderAheadPolicy {
     override fun window(candidates: List<ReadingUnit>, config: QueueConfig): List<ReadingUnit> {
         if (candidates.isEmpty()) return candidates
         val settings = config.renderAhead
         val ahead = candidates.subList(1, candidates.size).take(settings.maxAheadUnits)
         val speeds = speedsOf(candidates)
         val rtf = speeds.values.maxOf { it?.rtf ?: settings.assumedRtf }
-        val target = settings.targetAheadSeconds(rtf)
+        val target = settings.targetAheadSeconds(rtf * effectiveSpeed())
         var seconds = 0.0
         var count = 0
         while (count < ahead.size && (count < config.prefetchUnits || seconds < target)) {
@@ -59,21 +68,25 @@ class MeasuredRenderAhead(private val speedOf: (Lang) -> VoiceSpeed?) : RenderAh
     /**
      * Plays once every pending sentence is predicted to be rendered before the playhead reaches it: rendering them in
      * order, each taking `rtf × startMargin × its length`, must stay behind the audio already buffered plus the
-     * pending sentences before it.
+     * pending sentences before it. Audio lengths are at 1.0×, so rendering time is scaled by the playback speed.
      */
     override fun canStart(bufferedSeconds: Double, pending: List<ReadingUnit>, config: QueueConfig): Boolean {
         val speeds = speedsOf(pending)
         val margin = config.renderAhead.startMargin
+        val speed = effectiveSpeed()
         var rendering = 0.0
         var playable = bufferedSeconds
         for (unit in pending) {
             val seconds = audioSeconds(unit, speeds, config)
-            rendering += (speeds[unit.lang]?.rtf ?: config.renderAhead.assumedRtf) * margin * seconds
+            rendering += (speeds[unit.lang]?.rtf ?: config.renderAhead.assumedRtf) * margin * speed * seconds
             if (rendering > playable) return false
             playable += seconds + pauseSeconds(unit)
         }
         return true
     }
+
+    /** The player's speed, or 1.0× if it reports nonsense: a window must never shrink to nothing or go negative. */
+    private fun effectiveSpeed(): Double = playbackSpeed().takeIf { it > 0.0 && it.isFinite() } ?: 1.0
 
     private fun speedsOf(units: List<ReadingUnit>): Map<Lang, VoiceSpeed?> =
         units.map { it.lang }.distinct().associateWith(speedOf)

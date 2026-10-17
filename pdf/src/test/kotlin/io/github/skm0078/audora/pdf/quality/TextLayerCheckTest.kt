@@ -6,6 +6,8 @@ package io.github.skm0078.audora.pdf.quality
 import io.github.skm0078.audora.core.config.QualityConfig
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.result.map
+import io.github.skm0078.audora.pdf.ocr.OcrText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -28,9 +30,9 @@ class TextLayerCheckTest {
         private val queue = ArrayDeque(results.toList())
         var calls = 0
 
-        override fun recognize(pageIndex: Int, langs: Set<Lang>): Outcome<String, OcrError> {
+        override fun recognize(pageIndex: Int, langs: Set<Lang>): Outcome<OcrText, OcrError> {
             calls++
-            return queue.removeFirstOrNull() ?: error("unexpected OCR call for page $pageIndex")
+            return (queue.removeFirstOrNull() ?: error("unexpected OCR call for page $pageIndex")).map(OcrText::plain)
         }
     }
 

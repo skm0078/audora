@@ -6,7 +6,7 @@
     <string name="library_title">Library</string>
     <string name="library_add_pdf">Add PDF</string>
     <string name="library_empty_title">Your library is empty</string>
-    <string name="library_empty_body">Add a PDF from your phone. Audora remembers where it is; the file is not copied.</string>
+    <string name="library_empty_body">Add a PDF from your phone, or open one from Files, WhatsApp or mail with Audora. Audora remembers where a file is; it copies only PDFs another app lends for a moment.</string>
     <string name="library_load_failed">Audora could not load your library. Please share the logs from Settings.</string>
     <string name="library_untitled">Untitled PDF</string>
     <string name="library_book_menu">More options</string>
@@ -15,6 +15,11 @@
         <item quantity="other">%1$d pages</item>
     </plurals>
     <string name="library_details">%1$s · %2$s</string>
+    <string name="library_continue_label">Continue reading</string>
+    <string name="library_continue">Continue</string>
+    <string name="library_progress">Page %1$d of %2$d · %3$d%%</string>
+    <string name="library_playing_page_of">Page %1$d of %2$d</string>
+    <string name="library_playing_page">Page %1$d</string>
     <string name="library_opened_ago">opened %1$s</string>
     <string name="library_added_ago">added %1$s</string>
     <string name="library_file_missing">File moved or deleted. Tap to find it.</string>
@@ -62,6 +67,14 @@
     <string name="reader_skip_back">Previous sentence</string>
     <string name="reader_skip_forward">Next sentence</string>
     <string name="reader_speed">Speed %1$s×</string>
+    <string name="speech_sheet_speed">Speed %1$s×</string>
+    <string name="speech_sheet_slower">Slower</string>
+    <string name="speech_sheet_faster">Faster</string>
+    <string name="speech_sheet_pace">Pause between sentences</string>
+    <string name="speech_pace_tight">Short</string>
+    <string name="speech_pace_normal">Normal</string>
+    <string name="speech_pace_relaxed">Long</string>
+    <string name="speech_sheet_hint">The voice itself speaks faster or slower, so words stay clear. The sentence playing restarts at the new setting.</string>
     <string name="reader_sleep_timer">Sleep timer</string>
     <string name="reader_sleep_off">Off</string>
     <string name="reader_sleep_minutes">%1$d minutes</string>
@@ -201,4 +214,8 @@
     <string name="settings_ocr_missing">Reads scanned and garbled pages aloud. Needs %1$d MB of text recognition files.</string>
     <string name="settings_ocr_ready">Ready for English, Hindi and Bengali · %1$d MB</string>
     <string name="settings_ocr_unavailable">Not available in this build.</string>
+
+    <!-- Reading text (P2-03) -->
+    <string name="settings_skip_citations_title">Skip citation numbers</string>
+    <string name="settings_skip_citations_body">Reads “[12]” and “[4–7]” markers aloud when off. Applies to books you open next.</string>
 </resources>

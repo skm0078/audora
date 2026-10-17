@@ -85,7 +85,7 @@ internal fun ViewToggle(view: ReaderView, actions: ReaderActions) {
     }
 }
 
-/** Why nothing will be highlighted on this page, if so: no text at all, or text without positions (OCR). */
+/** Why nothing will be highlighted on this page, if so: no text at all, or text without positions. */
 private fun pageNote(units: List<ReadingUnit>): Int? = when {
     units.isEmpty() -> R.string.reader_page_no_text
     units.all { it.bounds.isNullOrEmpty() } -> R.string.reader_page_no_highlight

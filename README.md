@@ -18,6 +18,20 @@ Free and open source under [GPL-3.0](LICENSE). Progress and known limits: [docs/
 
 - An Android phone with **Android 12 or newer** and a 64-bit processor (almost every phone from 2019 on).
 - Room for the app (over 100 MB, mostly the built-in English voice) plus any voices you download (up to 150 MB each).
+- Your phone added to Audora's list, once (next section).
+
+## Add your phone (once)
+
+Google is starting to block apps from outside the Play Store unless their developer is registered and, for a free
+account like Audora's, the phone is on the developer's list (up to 20 phones). In India this starts in 2027;
+Google has not said when. Until then Audora installs without this step, but do it now so updates keep working.
+
+1. Ask whoever gave you Audora to add your phone. They send you a link.
+2. Open the link **on the phone you will use Audora on**, within 7 days. It shows the developer's name: check it is
+   the person you expect, then confirm.
+3. Your phone shows a code. Send the code back to them. When they have entered it, you're done.
+
+New phone? Ask again; your old phone can be taken off the list.
 
 ## Install (the easy way: Obtainium)
 

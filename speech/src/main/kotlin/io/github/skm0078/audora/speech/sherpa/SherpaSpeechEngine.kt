@@ -1,8 +1,9 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/sherpa/SherpaSpeechEngine.kt
-// Purpose: SpeechEngine over sherpa-onnx voices: loads one model at a time, serializes renders, honours cancellation.
+// Purpose: SpeechEngine over sherpa-onnx voices: keeps a few models loaded, serializes renders, honours cancellation.
 
 package io.github.skm0078.audora.speech.sherpa
 
+import io.github.skm0078.audora.core.config.SpeechConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
@@ -29,8 +30,10 @@ import kotlinx.coroutines.withContext
 /**
  * Renders with sherpa-onnx voices.
  *
- * Only one model is kept loaded (a Piper voice is ~60 MB of weights plus ONNX Runtime arenas); asking for another
- * voice releases the current one first. Loading happens on the first render of a voice, not at construction.
+ * At most [maxLoadedVoices] models are kept loaded (a Piper voice is ~60 MB of weights plus ONNX Runtime arenas, a
+ * premium one ~150 MB), so a bilingual book does not reload a model at every language switch. Past the limit, the
+ * least recently used model is released before the next one loads. [trimMemory] drops all but the most recently
+ * used one. Loading happens on the first render of a voice, not at construction.
  *
  * The voice list comes from [source] on every call, so voices downloaded or deleted while the engine lives (P4-01)
  * are seen at once. A voice whose files changed (an update: new `contentVersion`) is reloaded on its next render.
@@ -40,66 +43,89 @@ import kotlinx.coroutines.withContext
  *
  * @param dispatcher where model loads and renders run. One thread: sherpa-onnx uses its own worker threads inside a
  *   call, and two renders at once would only compete for the same cores.
+ * @param maxLoadedVoices models kept loaded at once ([SpeechConfig.maxLoadedVoices]).
  */
 class SherpaSpeechEngine(
     private val source: SherpaVoiceSource,
     private val factory: SherpaSynthesizerFactory,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(1),
+    private val maxLoadedVoices: Int = SpeechConfig().maxLoadedVoices,
 ) : SpeechEngine {
     /** A fixed set of voices (tests, and the bundled voice alone). */
     constructor(
         voices: List<SherpaVoiceSpec>,
         factory: SherpaSynthesizerFactory,
         dispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(1),
-    ) : this(fixedVoices(voices), factory, dispatcher)
+        maxLoadedVoices: Int = SpeechConfig().maxLoadedVoices,
+    ) : this(fixedVoices(voices), factory, dispatcher, maxLoadedVoices)
+
+    init {
+        require(maxLoadedVoices >= 1) { "maxLoadedVoices must be >= 1, was $maxLoadedVoices" }
+    }
 
     override val id: EngineId = EngineId.SHERPA
 
     private val mutex = Mutex()
     private val released = AtomicBoolean(false)
+    private val trimRequested = AtomicBoolean(false)
 
     /** Guarded by [mutex]. */
-    private var loaded: LoadedVoice? = null
+    private val loaded = LoadedVoices(maxLoadedVoices)
 
     override fun supports(lang: Lang): Boolean = source.voices().any { it.lang == lang }
 
     override suspend fun voices(): Outcome<List<VoiceInfo>, SpeechError> =
         Outcome.Success(source.byId().values.map { it.toVoiceInfo() })
 
-    override suspend fun render(text: String, voice: VoiceId): RenderResult {
+    override suspend fun render(text: String, voice: VoiceId, rate: Float): RenderResult {
         val spec = source.byId()[voice]
             ?: return Outcome.Failure(
                 SpeechError.VoiceUnavailable(id, SpeechError.VoiceUnavailable.Reason.UNKNOWN_VOICE, voice),
             )
         return try {
-            mutex.withLock { withContext(dispatcher) { renderLocked(spec, text) } }
+            mutex.withLock { withContext(dispatcher) { renderLocked(spec, text, rate) } }
         } finally {
-            // release() may have found the lock taken by this render and left the unloading to whoever holds it next.
-            unloadIfReleased()
+            // release() or trimMemory() may have found the lock taken by this render and left their work to whoever
+            // holds it next.
+            settle()
         }
     }
 
     override fun release() {
         if (!released.compareAndSet(false, true)) return
         AudoraLog.i(TAG, "Released")
-        unloadIfReleased()
+        settle()
     }
 
     /**
-     * Frees the model once nothing is rendering. Both [release] and every render's exit call it after the flag is
-     * set, so whichever of them gets the lock last does the unloading and a model is never freed mid-render.
+     * Releases every loaded model except the most recently used one, to give memory back when Android asks for it.
+     * Any thread. Never frees a model mid-render: if a render holds the engine, its exit does the trimming.
      */
-    private fun unloadIfReleased() {
-        if (released.get() && mutex.tryLock()) {
+    fun trimMemory() {
+        trimRequested.set(true)
+        settle()
+    }
+
+    /**
+     * Does what [release] (free every model) or [trimMemory] asked for, once nothing is rendering. They and every
+     * render's exit call it after setting their flag, so whichever of them gets the lock last does the work and a
+     * model is never freed mid-render. Looks again after a trim, so one asked for meanwhile is not lost.
+     */
+    private fun settle() {
+        while ((released.get() || trimRequested.get()) && mutex.tryLock()) {
             try {
-                unloadLocked()
+                if (released.get()) {
+                    loaded.releaseAll("engine released")
+                    return
+                }
+                if (trimRequested.getAndSet(false)) loaded.trim()
             } finally {
                 mutex.unlock()
             }
         }
     }
 
-    private suspend fun renderLocked(spec: SherpaVoiceSpec, text: String): RenderResult {
+    private suspend fun renderLocked(spec: SherpaVoiceSpec, text: String, rate: Float): RenderResult {
         if (released.get()) return Outcome.Failure(SpeechError.EngineUnavailable(id, "engine was released"))
         return synthesizerFor(spec).flatMap { synthesizer ->
             if (text.isBlank()) {
@@ -107,16 +133,21 @@ class SherpaSpeechEngine(
                     PcmAudio.silence(synthesizer.sampleRate),
                 )
             } else {
-                generate(spec, synthesizer, text)
+                generate(spec, synthesizer, text, rate)
             }
         }
     }
 
-    private suspend fun generate(spec: SherpaVoiceSpec, synthesizer: SherpaSynthesizer, text: String): RenderResult {
+    private suspend fun generate(
+        spec: SherpaVoiceSpec,
+        synthesizer: SherpaSynthesizer,
+        text: String,
+        rate: Float,
+    ): RenderResult {
         val job = coroutineContext[Job]
         val started = System.nanoTime()
         val samples: Outcome<FloatArray, SpeechError> = try {
-            Outcome.Success(synthesizer.generate(text, spec.speakerId) { job?.isActive != false })
+            Outcome.Success(synthesizer.generate(text, spec.speakerId, rate) { job?.isActive != false })
         } catch (e: IllegalStateException) {
             failed(spec, e)
         } catch (e: IllegalArgumentException) {
@@ -132,7 +163,7 @@ class SherpaSpeechEngine(
             } else {
                 AudoraLog.d(
                     TAG,
-                    "Rendered voice=${spec.voiceId} chars=${text.length} audioMs=${audio.durationMs} " +
+                    "Rendered voice=${spec.voiceId} rate=$rate chars=${text.length} audioMs=${audio.durationMs} " +
                         "renderMs=$renderMs",
                 )
             }
@@ -141,14 +172,19 @@ class SherpaSpeechEngine(
     }
 
     private fun synthesizerFor(spec: SherpaVoiceSpec): Outcome<SherpaSynthesizer, SpeechError> {
-        loaded?.takeIf { it.spec == spec }?.let { return Outcome.Success(it.synthesizer) }
-        unloadLocked()
+        loaded.take(spec)?.let { return Outcome.Success(it) }
+        // Free a slot before loading, so the models in memory never exceed the limit, even for a moment.
+        loaded.makeRoom()
         val started = System.nanoTime()
         return when (val result = factory.load(spec)) {
             is Outcome.Success -> {
-                loaded = LoadedVoice(spec, result.value)
+                loaded.add(spec, result.value)
                 val loadMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started)
-                AudoraLog.i(TAG, "Loaded voice=${spec.voiceId} sampleRate=${result.value.sampleRate} loadMs=$loadMs")
+                AudoraLog.i(
+                    TAG,
+                    "Loaded voice=${spec.voiceId} sampleRate=${result.value.sampleRate} loadMs=$loadMs " +
+                        "loaded=${loaded.size}",
+                )
                 result
             }
 
@@ -159,16 +195,66 @@ class SherpaSpeechEngine(
         }
     }
 
-    private fun unloadLocked() {
-        val current = loaded ?: return
-        loaded = null
-        current.synthesizer.release()
-        AudoraLog.i(TAG, "Unloaded voice=${current.spec.voiceId}")
-    }
-
     private fun failed(spec: SherpaVoiceSpec, e: RuntimeException): Outcome.Failure<SpeechError> {
         AudoraLog.e(TAG, "Render failed for voice=${spec.voiceId}", e)
         return Outcome.Failure(SpeechError.SynthesisFailed(spec.voiceId, e.message ?: e.javaClass.simpleName, e))
+    }
+
+    /** The loaded models, least recently used first, at most [limit]. Not thread-safe: the engine's mutex guards it. */
+    private class LoadedVoices(private val limit: Int) {
+        private val voices = LinkedHashMap<VoiceId, LoadedVoice>()
+
+        val size: Int get() = voices.size
+
+        /**
+         * The model loaded for exactly [spec], now the most recently used; null if there is none. A model of the
+         * same voice with other files (an update) is released, not kept beside the new one.
+         */
+        fun take(spec: SherpaVoiceSpec): SherpaSynthesizer? {
+            val cached = voices.remove(spec.voiceId)
+            return when {
+                cached == null -> null
+
+                cached.spec != spec -> {
+                    release(cached, "voice files changed")
+                    null
+                }
+
+                else -> {
+                    voices[spec.voiceId] = cached // re-inserted at the end: most recently used
+                    cached.synthesizer
+                }
+            }
+        }
+
+        /** Releases the least recently used models until one more fits. */
+        fun makeRoom() {
+            while (voices.size >= limit) releaseEldest("least recently used")
+        }
+
+        fun add(spec: SherpaVoiceSpec, synthesizer: SherpaSynthesizer) {
+            voices[spec.voiceId] = LoadedVoice(spec, synthesizer)
+        }
+
+        /** Keeps only the most recently used model. */
+        fun trim() {
+            while (voices.size > 1) releaseEldest("memory trim")
+        }
+
+        fun releaseAll(reason: String) {
+            while (voices.isNotEmpty()) releaseEldest(reason)
+        }
+
+        private fun releaseEldest(reason: String) {
+            val eldest = voices.entries.first()
+            voices.remove(eldest.key)
+            release(eldest.value, reason)
+        }
+
+        private fun release(voice: LoadedVoice, reason: String) {
+            voice.synthesizer.release()
+            AudoraLog.i(TAG, "Unloaded voice=${voice.spec.voiceId} ($reason)")
+        }
     }
 
     private class LoadedVoice(val spec: SherpaVoiceSpec, val synthesizer: SherpaSynthesizer)

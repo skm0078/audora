@@ -29,6 +29,7 @@ class SystemSpeechEngineTest {
         var voiceList = listOf<SystemVoice>()
         override var maxInputChars = 4_000
         val synthesized = mutableListOf<Pair<String, String>>()
+        val speechRates = mutableListOf<Float>()
         var rates = ArrayDeque<Int>()
         var failWith: String? = null
         var hold: CompletableDeferred<Unit>? = null
@@ -44,8 +45,9 @@ class SystemSpeechEngineTest {
 
         override fun voices() = voiceList
 
-        override suspend fun synthesize(text: String, voiceName: String): Outcome<PcmAudio, String> {
+        override suspend fun synthesize(text: String, voiceName: String, rate: Float): Outcome<PcmAudio, String> {
             synthesized += text to voiceName
+            speechRates += rate
             hold?.await()
             failWith?.let { return Outcome.Failure(it) }
             return Outcome.Success(PcmAudio(ShortArray(text.length) { 1 }, rates.removeFirstOrNull() ?: 24_000))
@@ -133,8 +135,18 @@ class SystemSpeechEngineTest {
         val audio = requireNotNull(engine.render("Hello world.", systemVoice("en-local")).getOrNull())
 
         assertEquals(listOf("Hello world." to "en-local"), client.synthesized)
+        assertEquals(listOf(1f), client.speechRates)
         assertEquals(12, audio.samples.size)
         assertEquals(24_000, audio.sampleRate)
+    }
+
+    @Test
+    fun `the speaking rate goes to the phone's engine`() = runTest {
+        client.voiceList = listOf(voice("en-local", "en"))
+
+        engine.render("Hello world.", systemVoice("en-local"), rate = 0.75f)
+
+        assertEquals(listOf(0.75f), client.speechRates)
     }
 
     @Test

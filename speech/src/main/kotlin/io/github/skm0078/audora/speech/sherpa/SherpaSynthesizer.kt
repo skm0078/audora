@@ -11,12 +11,12 @@ interface SherpaSynthesizer {
     val sampleRate: Int
 
     /**
-     * Renders [text] and returns float samples in [-1, 1]. Blocking.
+     * Renders [text] at [rate] (1.0 = the voice's own speed) and returns float samples in [-1, 1]. Blocking.
      *
      * [keepGoing] is polled each time sherpa-onnx finishes one of its internal sentences; returning false stops the
      * render early and the partial result is discarded by the caller.
      */
-    fun generate(text: String, speakerId: Int, keepGoing: () -> Boolean): FloatArray
+    fun generate(text: String, speakerId: Int, rate: Float, keepGoing: () -> Boolean): FloatArray
 
     fun release()
 }

@@ -123,14 +123,20 @@ internal fun sherpaModelConfig(
 
 /**
  * Per-render options for [spec]: Supertonic is told its language and step count on every call (it is one
- * multilingual model); the other families ignore both.
+ * multilingual model); the other families ignore both. [rate] is the speaking rate every family honours: VITS and
+ * Piper as `1 / length_scale`, Kokoro, Kitten and Supertonic as their duration scale (ADR-033).
+ *
+ * [KEEP_VOICE_PAUSES]: sherpa-onnx's default silence scale (0.2) cuts every silence longer than 200 ms inside a
+ * sentence (after a comma, a colon, a dash) to a fifth, which runs clauses together. Audora keeps the voice's own
+ * pauses and adds its own between sentences (ADR-033).
  */
-internal fun sherpaGenerationConfig(spec: SherpaVoiceSpec, speakerId: Int): GenerationConfig {
+internal fun sherpaGenerationConfig(spec: SherpaVoiceSpec, speakerId: Int, rate: Float): GenerationConfig {
     val defaults = GenerationConfig()
     val extra = spec.engineLang?.takeIf { spec.family == SherpaFamily.SUPERTONIC }?.let { mapOf(EXTRA_LANG to it) }
     return GenerationConfig(
         sid = speakerId,
-        speed = 1f,
+        speed = rate,
+        silenceScale = KEEP_VOICE_PAUSES,
         numSteps = spec.numSteps ?: defaults.numSteps,
         extra = extra ?: defaults.extra,
     )
@@ -138,13 +144,14 @@ internal fun sherpaGenerationConfig(spec: SherpaVoiceSpec, speakerId: Int): Gene
 
 private const val SHERPA_PROVIDER = "cpu"
 private const val EXTRA_LANG = "lang"
+private const val KEEP_VOICE_PAUSES = 1f
 
 internal class OfflineTtsSynthesizer(private val tts: OfflineTts, private val spec: SherpaVoiceSpec) :
     SherpaSynthesizer {
     override val sampleRate: Int = tts.sampleRate()
 
-    override fun generate(text: String, speakerId: Int, keepGoing: () -> Boolean): FloatArray {
-        val config = sherpaGenerationConfig(spec, speakerId)
+    override fun generate(text: String, speakerId: Int, rate: Float, keepGoing: () -> Boolean): FloatArray {
+        val config = sherpaGenerationConfig(spec, speakerId, rate)
         return tts.generateWithConfigAndCallback(text, config, SherpaStopCallback(keepGoing)).samples
     }
 

@@ -7,7 +7,8 @@ package io.github.skm0078.audora.core.config
  * The window holds enough rendered audio ahead of the playhead to cover rendering one long sentence while the phone
  * runs slower than usual: `rtf × longSentenceSeconds × slowdownMargin`, kept within [minAheadSeconds] and
  * [maxAheadSeconds]. Rendering a sentence of `d` seconds takes `rtf × d`; while it renders the player drains that
- * much of the queue, so the queue must hold at least that much or the player waits (ADR-027).
+ * much of the queue, so the queue must hold at least that much or the player waits (ADR-027). Every duration here is
+ * audio at 1.0×: at playback speed `s` the player drains the queue `s` times faster, so the policy passes `rtf × s`.
  *
  * At a (re)start the queue is empty, so a short first sentence followed by a long one would stall at once: the first
  * sentence is held back until the sentences already in the window are predicted to render in time

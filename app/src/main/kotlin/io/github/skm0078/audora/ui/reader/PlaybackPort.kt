@@ -3,6 +3,8 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.SpeechStyle
 import kotlinx.coroutines.flow.StateFlow
 
 /** Implemented over a Media3 `MediaController` by [MediaControllerPlaybackPort]; faked in tests. */
@@ -20,7 +22,11 @@ interface PlaybackPort {
 
     fun skipToPreviousSentence()
 
+    /** The voice's speaking rate (ADR-033): the voice itself speaks faster or slower; the audio is never stretched. */
     fun setSpeed(speed: Float)
+
+    /** The silences between sentences (ADR-033). */
+    fun setPace(pace: Pace)
 
     fun setSleepTimer(setting: SleepTimerSetting)
 }
@@ -39,7 +45,8 @@ data class PlaybackSnapshot(
     val position: ReadingPosition? = null,
     val wantsToPlay: Boolean = false,
     val buffering: Boolean = false,
-    val speed: Float = 1f,
+    val speed: Float = SpeechStyle.NORMAL_RATE,
+    val pace: Pace = Pace.NORMAL,
     val canSkipBack: Boolean = false,
     val canSkipForward: Boolean = false,
     val sleepTimer: SleepTimerState = SleepTimerState.Off,

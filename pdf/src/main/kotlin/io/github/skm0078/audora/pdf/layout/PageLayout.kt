@@ -17,6 +17,11 @@ data class PageLayout(
     /** The most common glyph size on the page, by glyph count (GlyphStyles); 0 when nothing is sized. */
     val bodySize: Float,
     val mode: LayoutMode,
+    /**
+     * How the page's text was turned to run left to right before layout (a table set sideways, ADR-032). Line and
+     * block boxes are in that turned frame; glyph boxes in `PageText` stay in page space, for highlighting.
+     */
+    val turn: TextTurn = TextTurn.NONE,
 )
 
 enum class LayoutMode {

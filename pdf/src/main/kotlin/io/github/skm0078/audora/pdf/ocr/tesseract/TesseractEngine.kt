@@ -9,7 +9,9 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.flatMap
 import io.github.skm0078.audora.pdf.document.PageImage
+import io.github.skm0078.audora.pdf.ocr.Hocr
 import io.github.skm0078.audora.pdf.ocr.OcrEngine
+import io.github.skm0078.audora.pdf.ocr.RecognizedPage
 import io.github.skm0078.audora.pdf.quality.OcrError
 import java.io.File
 
@@ -41,11 +43,11 @@ class TesseractEngine(private val models: TessdataSource) : OcrEngine {
 
     override fun installedLangs(): Set<Lang> = models.installed()
 
-    override fun recognize(image: PageImage, langs: Set<Lang>): Outcome<String, OcrError> =
+    override fun recognize(image: PageImage, langs: Set<Lang>): Outcome<RecognizedPage, OcrError> =
         models.dataRoot(langs).flatMap { root -> synchronized(lock) { recognizeLocked(root, image, langs) } }
 
     @Suppress("TooGenericExceptionCaught") // The JNI wrapper reports native failures as RuntimeExceptions.
-    private fun recognizeLocked(root: File, image: PageImage, langs: Set<Lang>): Outcome<String, OcrError> {
+    private fun recognizeLocked(root: File, image: PageImage, langs: Set<Lang>): Outcome<RecognizedPage, OcrError> {
         val codes = codesOf(langs)
         return try {
             val tess = apiFor(root, codes)
@@ -53,9 +55,10 @@ class TesseractEngine(private val models: TessdataSource) : OcrEngine {
             tess.setPageSegMode(TessBaseAPI.PageSegMode.PSM_AUTO)
             tess.setVariable(DPI_VARIABLE, image.dpi.toString())
             tess.setImage(image.gray, image.width, image.height, GRAY_BYTES_PER_PIXEL, image.width)
-            val text = tess.getUTF8Text().orEmpty()
+            // hOCR rather than plain text: word boxes for the highlight and confidences for the orientation check.
+            val hocr = tess.getHOCRText(0).orEmpty()
             tess.clear()
-            Outcome.Success(text)
+            Outcome.Success(Hocr.parse(hocr, image.width, image.height))
         } catch (e: RuntimeException) {
             AudoraLog.e(TAG, "Tesseract failed on page=${image.pageIndex} langs=$codes", e)
             release()

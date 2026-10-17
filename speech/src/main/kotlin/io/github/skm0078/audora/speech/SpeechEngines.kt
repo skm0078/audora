@@ -69,6 +69,7 @@ object SpeechEngines {
         val engine = SherpaSpeechEngine(
             source = { listOf(spec) + library.installedSpecs() },
             factory = RoutingSynthesizerFactory(spec.id, fromAssets, fromDisk),
+            maxLoadedVoices = config.maxLoadedVoices,
         )
         AudoraLog.i(TAG, "Bundled voice ${spec.voiceId} (${spec.family}, ${spec.lang})")
         return Outcome.Success(BundledSpeech(engine, spec.toVoiceInfo()))

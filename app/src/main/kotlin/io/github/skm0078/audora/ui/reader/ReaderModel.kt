@@ -7,6 +7,7 @@ import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PdfOpenError
@@ -148,6 +149,8 @@ class ReaderModel(
         player.setSpeed(offered)
         scope.launch { speeds.save(offered) }
     }
+
+    fun setPace(pace: Pace) = player.setPace(pace)
 
     fun setSleepTimer(setting: SleepTimerSetting) = player.setSleepTimer(setting)
 

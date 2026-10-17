@@ -37,10 +37,10 @@ interface SystemTtsClient {
     fun voices(): List<SystemVoice>
 
     /**
-     * Synthesizes [text] (at most [maxInputChars]) with the voice named [voiceName]. Cancelling the caller stops the
-     * engine (`TextToSpeech.stop()`) and throws `CancellationException`.
+     * Synthesizes [text] (at most [maxInputChars]) with the voice named [voiceName] at speech [rate] (1.0 = normal).
+     * Cancelling the caller stops the engine (`TextToSpeech.stop()`) and throws `CancellationException`.
      */
-    suspend fun synthesize(text: String, voiceName: String): Outcome<PcmAudio, String>
+    suspend fun synthesize(text: String, voiceName: String, rate: Float): Outcome<PcmAudio, String>
 
     fun shutdown()
 }

@@ -21,12 +21,21 @@ package io.github.skm0078.audora.core.config
  *   Above the layout's run gap (`LayoutConfig.columnGapEm`): Bengali glyph boxes leave gaps of up to ~1.2 em.
  * @property tableAlignEm two rows share a column when cells start within this distance of each other.
  * @property minTableRows a run of at least this many aligned rows is a table interior. Its caption is kept.
- * @property skipCitationMarkers drop bracketed numeric citations ("[4–7]"): the spec's default. A setting in
- *   :app may turn it off later; the expected text of the golden corpus skips them.
+ * @property skipCitationMarkers drop bracketed numeric citations ("[4–7]"): the spec's default. Settings → "Skip
+ *   citation numbers" turns it off for books opened afterwards (`ReadingTextPreferences` in :playback, read by both
+ *   the reader and the playback service); the expected text of the golden corpus skips them.
  * @property profileCachePages page summaries a book keeps for its neighbours; about a kilobyte each.
  * @property analyzedCachePages extracted and analysed pages a book keeps, so a page read as a neighbour is
  *   not extracted again when it is read itself. Must exceed [neighbourPages] + 1, or reading on page by page
  *   extracts every page twice.
+ *
+ * Scanned pages (OCR, ADR-032): their neighbours are not OCR'd whole, only strips at their top and bottom.
+ * @property ocrNeighbourPages pages on each side whose strips a scanned page's margin lines are compared with. 2 keeps
+ *   both same-parity pages, for alternating left/right headers.
+ * @property ocrMarginShare the strips, and the band a scanned page's own header or footer lines must sit in, are this
+ *   share of the page's height (scans keep the page's own margins, so the band is wider than [marginBandShare]).
+ * @property ocrMatchSimilarity two OCR'd lines match when their signatures are at least this similar (1 − edit
+ *   distance / length): OCR misreads a letter or two of the same header on different pages.
  */
 data class CleanupConfig(
     val marginBandShare: Float = 0.08f,
@@ -41,6 +50,9 @@ data class CleanupConfig(
     val skipCitationMarkers: Boolean = true,
     val profileCachePages: Int = 64,
     val analyzedCachePages: Int = 6,
+    val ocrNeighbourPages: Int = 2,
+    val ocrMarginShare: Float = 0.12f,
+    val ocrMatchSimilarity: Float = 0.8f,
 ) {
     init {
         require(marginBandShare in 0f..1f) { "marginBandShare must be in 0..1, was $marginBandShare" }
@@ -51,5 +63,12 @@ data class CleanupConfig(
         require(minTableRows >= 2) { "minTableRows must be >= 2, was $minTableRows" }
         require(profileCachePages > 2 * neighbourPages) { "profileCachePages must hold a whole window" }
         require(analyzedCachePages > neighbourPages + 1) { "analyzedCachePages must exceed neighbourPages + 1" }
+        require(ocrNeighbourPages >= 0) { "ocrNeighbourPages must be >= 0, was $ocrNeighbourPages" }
+        require(ocrMarginShare in 0f..HALF && ocrMatchSimilarity in 0f..1f) { "OCR margin settings out of range" }
+    }
+
+    private companion object {
+        /** A top and a bottom band must not overlap. */
+        const val HALF = 0.5f
     }
 }

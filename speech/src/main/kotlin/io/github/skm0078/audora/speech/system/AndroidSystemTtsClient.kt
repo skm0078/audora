@@ -74,9 +74,15 @@ class AndroidSystemTtsClient(
 
     override fun voices(): List<SystemVoice> = tts?.voices.orEmpty().map { it.toSystemVoice() }
 
-    override suspend fun synthesize(text: String, voiceName: String): Outcome<PcmAudio, String> {
+    override suspend fun synthesize(text: String, voiceName: String, rate: Float): Outcome<PcmAudio, String> {
         val engine = tts ?: return Outcome.Failure("not connected")
-        return selectVoice(engine, voiceName).flatMap { synthesizeToFile(engine, text) }
+        return selectVoice(engine, voiceName).flatMap {
+            if (engine.setSpeechRate(rate) == TextToSpeech.SUCCESS) {
+                synthesizeToFile(engine, text)
+            } else {
+                Outcome.Failure("engine refused speech rate $rate")
+            }
+        }
     }
 
     private fun selectVoice(engine: TextToSpeech, voiceName: String): Outcome<Unit, String> {
