@@ -1,9 +1,10 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/SettingsScreen.kt
 // Purpose: Settings: Voices (P4-01), Voices & licences (P3-06), OCR models (P3-05), citation numbers (P2-03),
-//          background reading (P1-06), Share logs (P1-07), debug tool.
+//          keep screen on, background reading (P1-06), Share logs (P1-07), debug tool.
 
 package io.github.skm0078.audora.ui.settings
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,7 +36,6 @@ import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.ui.diagnostics.ShareLogsState
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     shareState: ShareLogsState,
@@ -53,19 +53,12 @@ fun SettingsScreen(
     onOcrModels: (OcrModelsAction) -> Unit = {},
     skipCitations: Boolean = true,
     onSkipCitationsChange: (Boolean) -> Unit = {},
+    keepScreenOn: Boolean = false,
+    onKeepScreenOnChange: (Boolean) -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.settings_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.navigate_back))
-                    }
-                },
-            )
-        },
+        topBar = { SettingsTopBar(onBack) },
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).verticalScroll(rememberScrollState())) {
             ListItem(
@@ -84,7 +77,19 @@ fun SettingsScreen(
                 OcrModelsItem(it, onOcrModels)
                 HorizontalDivider()
             }
-            SkipCitationsItem(skipCitations, onSkipCitationsChange)
+            SwitchItem(
+                R.string.settings_skip_citations_title,
+                R.string.settings_skip_citations_body,
+                skipCitations,
+                onSkipCitationsChange,
+            )
+            HorizontalDivider()
+            SwitchItem(
+                R.string.settings_keep_screen_on_title,
+                R.string.settings_keep_screen_on_body,
+                keepScreenOn,
+                onKeepScreenOnChange,
+            )
             HorizontalDivider()
             BatteryItem(batteryExempt, onOpenBatterySetup)
             HorizontalDivider()
@@ -107,14 +112,27 @@ fun SettingsScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SettingsTopBar(onBack: () -> Unit) {
+    TopAppBar(
+        title = { Text(stringResource(R.string.settings_title)) },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.navigate_back))
+            }
+        },
+    )
+}
+
 /** The whole row toggles; the switch only shows the state (no onCheckedChange), so it is not a second target. */
 @Composable
-private fun SkipCitationsItem(skip: Boolean, onChange: (Boolean) -> Unit) {
+private fun SwitchItem(@StringRes title: Int, @StringRes body: Int, checked: Boolean, onChange: (Boolean) -> Unit) {
     ListItem(
-        headlineContent = { Text(stringResource(R.string.settings_skip_citations_title)) },
-        supportingContent = { Text(stringResource(R.string.settings_skip_citations_body)) },
-        trailingContent = { Switch(checked = skip, onCheckedChange = null) },
-        modifier = Modifier.toggleable(value = skip, role = Role.Switch, onValueChange = onChange),
+        headlineContent = { Text(stringResource(title)) },
+        supportingContent = { Text(stringResource(body)) },
+        trailingContent = { Switch(checked = checked, onCheckedChange = null) },
+        modifier = Modifier.toggleable(value = checked, role = Role.Switch, onValueChange = onChange),
     )
 }
 
