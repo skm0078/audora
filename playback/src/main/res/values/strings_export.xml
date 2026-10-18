@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   File: playback/src/main/res/values/strings_export.xml
-  Purpose: Clip, accessible copy, talking-book and audiobook resume strings (plan items 41, 69, 76, ADR-040, ADR-034).
+  Purpose: Clip, accessible copy, talking-book, audiobook resume and cast strings (plan items 41, 63, 69, 76, ADR-040, ADR-034).
 -->
 <resources>
+    <!-- Audiobook export with "A voice for each character" on and a one-speaker narrator (plan item 63). -->
+    <string name="export_cast_narrator_only">Character voices need a built-in Kokoro or Kitten English voice. This voice has only one speaker, so every character is read in the dialogue voice.</string>
     <!-- Share as audio (plan item 41). -->
     <string name="clip_channel">Audio clips</string>
     <string name="clip_making">Making the audio clip…</string>

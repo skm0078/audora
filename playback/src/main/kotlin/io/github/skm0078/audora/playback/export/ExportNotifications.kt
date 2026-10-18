@@ -25,7 +25,8 @@ internal class ExportNotifications(private val context: Context) {
         manager.createNotificationChannel(channel)
     }
 
-    fun running(title: String, chapter: Int?, chapterCount: Int, percent: Int): Notification {
+    /** [note]: a line under the progress for the whole export, such as [exportCastNote]. */
+    fun running(title: String, chapter: Int?, chapterCount: Int, percent: Int, note: String? = null): Notification {
         val text = if (chapter == null) {
             context.getString(R.string.export_preparing)
         } else {
@@ -43,6 +44,7 @@ internal class ExportNotifications(private val context: Context) {
             .setProgress(PERCENT, percent, chapter == null)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            .apply { note?.let { setStyle(Notification.BigTextStyle().bigText("$text$NOTE_BREAK$it")) } }
             .addAction(
                 Notification.Action.Builder(null, context.getString(R.string.export_cancel), cancel).build(),
             )
@@ -51,7 +53,7 @@ internal class ExportNotifications(private val context: Context) {
 
     fun showRunning(notification: Notification) = manager.notify(RUNNING_ID, notification)
 
-    fun showDone(title: String, summary: ExportSummary, folder: String) {
+    fun showDone(title: String, summary: ExportSummary, folder: String, note: String? = null) {
         val minutes = summary.durationMs / MS_PER_MINUTE
         val duration = context.getString(
             R.string.export_duration,
@@ -60,7 +62,7 @@ internal class ExportNotifications(private val context: Context) {
         )
         val files = summary.chapters.size
         val text = context.resources.getQuantityString(R.plurals.export_done_text, files, files, duration, folder)
-        showResult(context.getString(R.string.export_done_title, title), text)
+        showResult(context.getString(R.string.export_done_title, title), note?.let { "$text$NOTE_BREAK$it" } ?: text)
     }
 
     fun showFailed(title: String, reason: String) =
@@ -124,7 +126,12 @@ internal class ExportNotifications(private val context: Context) {
         private const val IMMUTABLE_UPDATE = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         private const val CHANNEL = "audiobook_export"
         private const val PERCENT = 100
+        private const val NOTE_BREAK = "\n\n"
         private const val MS_PER_MINUTE = 60_000L
         private const val MINUTES_PER_HOUR = 60L
     }
 }
+
+/** What the export tells the listener about character voices (plan item 63); null when there is nothing to say. */
+internal fun Context.exportCastNote(cast: CastInExport): String? =
+    if (cast == CastInExport.NARRATOR_ONLY) getString(R.string.export_cast_narrator_only) else null
