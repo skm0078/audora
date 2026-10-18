@@ -99,10 +99,11 @@ class PdfBookTest {
 
     @Test
     fun `page labels come from the open document, cleaned, and do not count as page reads`() {
-        val printed = listOf("i", " ii ", null, "", "A-\u00003", "\u200B\uFEFF12\u200E")
+        val printed = listOf("i", " ii ", null, "", "A-\u00003", "\u200B\uFEFF12\u200E", "क्\u200Cष")
         val engine = FakeEngine(pages = printed.size, labels = printed::get)
         val book = requireNotNull(PdfBook.open(engine).getOrNull())
-        assertEquals(listOf("i", "ii", null, null, "A-3", "12"), book.pageLabels().getOrNull())
+        // A zero-width non-joiner stays: it changes how the Hindi letters join.
+        assertEquals(listOf("i", "ii", null, null, "A-3", "12", "क्\u200Cष"), book.pageLabels().getOrNull())
         assertEquals(0, engine.reads)
         assertEquals(printed.size, engine.labelReads)
         book.pageLabels()

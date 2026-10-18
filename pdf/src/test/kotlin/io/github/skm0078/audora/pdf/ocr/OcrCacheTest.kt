@@ -44,6 +44,19 @@ class OcrCacheTest {
     }
 
     @Test
+    fun `a peek reads the page without refreshing its date, a get refreshes it`() {
+        val cache = OcrCache(dir, maxBytes = 1_000_000)
+        cache.put(key(), "text")
+        val file = File(dir, key().fileName())
+        file.setLastModified(OLD)
+        assertEquals("text", cache.peek(key()))
+        assertEquals(OLD, file.lastModified())
+        assertNull(cache.peek(key(page = 2)))
+        cache.get(key())
+        assertTrue(file.lastModified() > OLD)
+    }
+
+    @Test
     fun `the least recently used pages go once the folder is over its limit`() {
         val page = "x".repeat(100)
         val cache = OcrCache(dir, maxBytes = 250)

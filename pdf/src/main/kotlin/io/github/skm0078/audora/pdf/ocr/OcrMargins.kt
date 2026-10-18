@@ -59,11 +59,20 @@ internal class OcrClutter(private val config: CleanupConfig) {
         val repeatable = needed > 0 && signature.count { it != SIGNATURE_DIGITS } >= config.minSignatureLetters
         val repeated = repeatable &&
             neighbours.values.count { lines -> lines.any { similar(signature, marginSignature(it)) } } >= needed
-        return folios.standalone || isRunningFolio(folios.values, neighbours) || repeated || isPrintSlug(line)
+        return folios.standalone || isRunningFolio(folios.values, neighbours) || repeated ||
+            isPrintSlug(line, neighbours)
     }
 
-    private fun isPrintSlug(line: String): Boolean =
-        LAYOUT_FILE.containsMatchIn(line) || PRINT_TIME.containsMatchIn(line)
+    /**
+     * A printer's slug: a layout file's name, or a print date and time that a neighbour's strip carries too. A date
+     * and time alone is an exam date sheet's row, a notice's date or a receipt's first line.
+     */
+    private fun isPrintSlug(line: String, neighbours: Map<Int, List<String>>): Boolean =
+        LAYOUT_FILE.containsMatchIn(line) ||
+            (
+                PRINT_TIME.containsMatchIn(line) &&
+                    neighbours.values.any { lines -> lines.any(PRINT_TIME::containsMatchIn) }
+                )
 
     /** A number on the line that a neighbour's strip carries shifted by the page offset: 12 here, 13 a page on. */
     private fun isRunningFolio(values: List<Int>, neighbours: Map<Int, List<String>>): Boolean =
@@ -100,5 +109,8 @@ internal class OcrClutter(private val config: CleanupConfig) {
 /** A layout program's file name in a printer's slug: "HUD3_25_09Single-Bengali-BE.indd", "ch04.qxd". */
 private val LAYOUT_FILE = Regex("""\S\.(?i:indd|qxd|qxp)\b""")
 
-/** A print date with its time in a printer's slug: "5/13/11 6:45 AM", "2019-03-04 10:12". */
-private val PRINT_TIME = Regex("""\d{1,4}[/.-]\d{1,2}[/.-]\d{2,4},?\s+\d{1,2}:\d{2}""")
+/**
+ * A print date with its time in a printer's slug: "5/13/11 6:45 AM", "2019-03-04 10:12". ASCII digits only, as
+ * typesetting software writes them (`\d` would also take Devanagari and Bengali digits on Android's ICU regex).
+ */
+private val PRINT_TIME = Regex("""[0-9]{1,4}[/.-][0-9]{1,2}[/.-][0-9]{2,4},?\s+[0-9]{1,2}:[0-9]{2}""")

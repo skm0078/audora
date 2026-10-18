@@ -57,7 +57,8 @@ class OcrCache(private val dir: File, private val maxBytes: Long) {
         return try {
             file.readText(Charsets.UTF_8).also { if (touch) file.setLastModified(System.currentTimeMillis()) }
         } catch (e: IOException) {
-            AudoraLog.w(TAG, "Cached OCR page unreadable, page=${key.page}; recognising it again", e)
+            val then = if (touch) "recognising it again" else "treated as not cached"
+            AudoraLog.w(TAG, "Cached OCR page unreadable, page=${key.page}; $then", e)
             null
         }
     }
