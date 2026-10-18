@@ -50,9 +50,9 @@ class AndroidSystemTtsClient(
     override suspend fun connect(): Outcome<Unit, SpeechError> {
         if (tts != null) return Outcome.Success(Unit)
         var created: TextToSpeech? = null
-        val status = try {
+        val status: Int? = try {
             withTimeoutOrNull(config.systemConnectTimeoutMs) {
-                suspendCancellableCoroutine { continuation ->
+                suspendCancellableCoroutine<Int> { continuation ->
                     created = TextToSpeech(context.applicationContext) { code -> continuation.resume(code) }
                 }
             }
