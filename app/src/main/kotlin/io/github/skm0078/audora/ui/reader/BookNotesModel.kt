@@ -46,15 +46,16 @@ data class NotesState(
     val highlights: List<Highlight> = emptyList(),
     val placed: PlacedHighlights = PlacedHighlights(),
 ) {
-    /** The highlight covering [unit] on the page showing, if it has one (plan item 30). */
-    fun highlightOf(unit: ReadingUnit): Highlight? = placed.byStart[unit.charStart]?.takeIf { placed.page == unit.page }
+    /** The highlights covering [unit] on the page showing (plan item 30); two when sentences were merged. */
+    fun highlightsOn(unit: ReadingUnit): List<Highlight> =
+        placed.byStart[unit.charStart]?.takeIf { placed.page == unit.page }.orEmpty()
 }
 
 /**
  * The showing page's highlights by the charStart of each sentence they cover, found again after a pipeline change
  * merged, split or moved sentences ([HighlightPlacement]). [page] is null before a page shows.
  */
-data class PlacedHighlights(val page: Int? = null, val byStart: Map<Int, Highlight> = emptyMap())
+data class PlacedHighlights(val page: Int? = null, val byStart: Map<Int, List<Highlight>> = emptyMap())
 
 /** What the screen calls; [BookNotesModel] implements it, [None] stands in where notes are not wired (previews). */
 @Suppress("TooManyFunctions") // One per control in the sentence menu, the bookmarks sheet and the fix dialog.
@@ -123,7 +124,7 @@ class BookNotesModel(
     private val pronunciations = stores.pronunciations
     private val highlights = stores.highlights
     private val fingerprint = SentenceFingerprint()
-    private val placement = HighlightPlacement(fingerprint)
+    private val placement = HighlightPlacement(pipelineVersion)
     private var pageUnits: List<ReadingUnit> = emptyList()
     private val mutableState = MutableStateFlow(NotesState())
     val state: StateFlow<NotesState> = mutableState.asStateFlow()
@@ -174,20 +175,22 @@ class BookNotesModel(
         }
     }
 
+    /** Highlights [unit], or removes every highlight its band shows (a merged sentence can carry two). */
     override fun toggleHighlight(unit: ReadingUnit) {
         mutableState.update { it.copy(menuFor = null) }
         val store = highlights ?: return
-        val existing = state.value.highlightOf(unit)
+        val existing = state.value.highlightsOn(unit)
         scope.launch {
-            val saved = if (existing != null) {
-                store.delete(existing.id)
+            val saved = if (existing.isNotEmpty()) {
+                existing.map { store.delete(it.id) }.firstOrNull { it is Outcome.Failure } ?: Outcome.Success(Unit)
             } else {
                 store.add(Highlight(0, anchorOf(unit), unit.page, unit.charEnd, unit.text)).map { }
             }
             when (saved) {
                 is Outcome.Success -> AudoraLog.i(
                     TAG,
-                    "Highlight ${if (existing == null) "added" else "removed"}, $logContext page=${unit.page}",
+                    "Highlight ${if (existing.isEmpty()) "added" else "removed (${existing.size})"}, " +
+                        "$logContext page=${unit.page}",
                 )
 
                 is Outcome.Failure -> failed("highlight", saved.error)

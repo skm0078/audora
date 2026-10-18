@@ -60,7 +60,7 @@ fun NotesOverlays(
     lookUp: LookUpBinding = LookUpBinding.None,
 ) {
     notes.menuFor?.let { unit ->
-        val highlighted = notes.highlightOf(unit) != null
+        val highlighted = notes.highlightsOn(unit).isNotEmpty()
         val rows = listOfNotNull(
             MenuEntry(R.string.sentence_menu_bookmark) { actions.bookmark(unit) },
             MenuEntry(if (highlighted) R.string.sentence_menu_unhighlight else R.string.sentence_menu_highlight) {

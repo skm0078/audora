@@ -140,8 +140,9 @@ class AudiobookExportService : Service() {
         val folder = AudiobookFolder.relativePath(title, getString(R.string.export_untitled), config)
         AudoraLog.i(TAG, "Export started, $logContext, pages=${book.text.pageCount}, chapters=${chapters.size}")
         val shownFolder = folder.trimEnd('/')
-        val style = SpeechStyleStore.forContext(this)
-        val voices = SpeechVoices(VoiceEngines(this) { style.current.shaping.expressiveness })
+        // The listener's shaping as the export starts, kept for the whole run like the voices (BookRendering).
+        val expressiveness = SpeechStyleStore.forContext(this).current.shaping.expressiveness
+        val voices = SpeechVoices(VoiceEngines(this) { expressiveness })
         try {
             // The book's own voices, pace and pronunciation fixes, as playback and the talking book read it.
             val factory = BookRendering.Factory(this, bookSettings, pronunciations)

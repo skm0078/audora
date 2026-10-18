@@ -91,6 +91,9 @@ class BookRendering private constructor(
                 timings = timings,
             )
             val key = StudioKey(id, StudioMode.signature(context, style, voices::choiceFor, fixer.signature))
+            // Fixed for the whole run once the key is made: a voice picked in Settings meanwhile would change the audio
+            // under a key that names the old one, and a resumed export would mix the two.
+            voices.bookVoice = BookSound.pinned(voices::knownVoice)
             return BookRendering(key, style, live, UnitReading(style.modes, chapterPages = chapterPages), timings)
         }
     }

@@ -133,5 +133,8 @@ internal class ExportNotifications(private val context: Context) {
 }
 
 /** What the export tells the listener about character voices (plan item 63); null when there is nothing to say. */
-internal fun Context.exportCastNote(cast: CastInExport): String? =
-    if (cast == CastInExport.NARRATOR_ONLY) getString(R.string.export_cast_narrator_only) else null
+internal fun Context.exportCastNote(cast: CastInExport): String? = when (cast) {
+    CastInExport.NEEDS_BUILT_IN_VOICE -> getString(R.string.export_cast_needs_built_in_voice)
+    CastInExport.ENGLISH_ONLY -> getString(R.string.export_cast_english_only)
+    CastInExport.OFF, CastInExport.CAST -> null
+}

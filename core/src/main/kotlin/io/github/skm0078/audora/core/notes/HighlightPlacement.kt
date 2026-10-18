@@ -3,6 +3,8 @@
 
 package io.github.skm0078.audora.core.notes
 
+import io.github.skm0078.audora.core.config.HighlightConfig
+import io.github.skm0078.audora.core.config.ResumeConfig
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.resume.AnchorMatch
 import io.github.skm0078.audora.core.resume.ReAnchoring
@@ -12,78 +14,135 @@ import kotlin.math.abs
 /**
  * A highlight is saved on one sentence as the pipeline cut it then; a later pipeline may merge that sentence into its
  * neighbour (abbreviations and initials no longer end sentences), split it, or move every offset (a margin slug
- * dropped). Its sentence is found as resume finds a position ([ReAnchoring]), then checked against the saved quote:
- * a sentence that now holds the whole quote (merged) is covered alone, and the parts of a split sentence are covered
- * together, each part's text lying inside the quote in order.
+ * dropped). Placement never guesses: a band on a sentence the listener never marked would be wrong, and its Remove
+ * would delete their highlight and note.
  *
- * Resume accepts [AnchorMatch.OFFSET_UNVERIFIED] (at worst a little is read again); a highlight takes it only when the
- * quote confirms it, as with a short sentence merged into the next (both fingerprints then change). A band on a
- * sentence the listener never marked would be wrong, so a highlight whose text is gone is not shown; it stays in the
- * notes list with its quote.
+ * 1. Found as resume finds a position ([ReAnchoring]), trusted at the saved offset, or by a fingerprint of part of a
+ *    long sentence within [HighlightConfig.maxShiftChars] with no equally near rival.
+ * 2. Otherwise by the saved quote, compared word by word: the same sentence, a sentence that begins or ends with it
+ *    (merged), or neighbours that join into it exactly (split), the nearest within [HighlightConfig.maxShiftChars].
+ *    Quotes shorter than [HighlightConfig.minQuoteChars] ("Yes.") are taken only where they cover the saved offset;
+ *    a tie between equally near matches places nothing.
+ *
+ * A trusted sentence that the new pipeline split is covered with all its parts. A highlight whose text is gone is not
+ * shown; it stays in the notes list with its quote.
  */
 class HighlightPlacement(
-    private val fingerprint: SentenceFingerprint = SentenceFingerprint(),
-    private val reAnchoring: ReAnchoring = ReAnchoring(fingerprint),
+    private val currentPipelineVersion: Int,
+    private val config: HighlightConfig = HighlightConfig(),
+    private val resume: ResumeConfig = ResumeConfig(),
 ) {
-    /** [units] are one page's current units in reading order; the result maps each covered unit's charStart. */
-    fun place(highlights: List<Highlight>, units: List<ReadingUnit>): Map<Int, Highlight> {
-        val page = units.firstOrNull()?.page ?: return emptyMap()
-        val texts = units.map { fingerprint.normalized(it.text) }
-        val placed = LinkedHashMap<Int, Highlight>()
-        highlights.filter { it.anchor.page == page }.forEach { highlight ->
-            covered(highlight, units, texts)?.forEach { placed.putIfAbsent(units[it].charStart, highlight) }
+    private val fingerprint = SentenceFingerprint(resume)
+    private val reAnchoring = ReAnchoring(fingerprint)
+
+    /** [units] are one page's current units in reading order; each covered unit's charStart maps to its highlights. */
+    fun place(highlights: List<Highlight>, units: List<ReadingUnit>): Map<Int, List<Highlight>> {
+        val page = units.firstOrNull()?.page
+        val onPage = highlights.filter { it.anchor.page == page }
+        if (onPage.isEmpty()) return emptyMap()
+        val text = PageText(units)
+        val placed = LinkedHashMap<Int, MutableList<Highlight>>()
+        onPage.forEach { highlight ->
+            covered(highlight, text)?.forEach { placed.getOrPut(units[it].charStart, ::mutableListOf).add(highlight) }
         }
         return placed
     }
 
-    private fun covered(highlight: Highlight, units: List<ReadingUnit>, texts: List<String>): IntRange? {
-        val quote = fingerprint.normalized(highlight.quote)
-        val point = reAnchoring.locate(highlight.anchor, highlight.anchor.pipelineVersion, units)
-        val found = units.indexOfFirst { it.charStart == point.charStart }
-        val verified = point.match != AnchorMatch.OFFSET_UNVERIFIED && point.match != AnchorMatch.PAGE_START
-        return when {
-            found < 0 -> null
-            texts[found].contains(quote) -> found..found
-            quote.contains(texts[found]) -> grown(found, quote, texts)
-            verified -> found..found
-            else -> null
-        } ?: searched(highlight, quote, units, texts)
+    /** One page's units as placement compares them, computed once per page. */
+    private inner class PageText(val units: List<ReadingUnit>) {
+        val words = units.map(::wordsOf)
+        val heads = units.map { fingerprint.head(it.text) }
+        val tails = units.map { fingerprint.tail(it.text) }
+
+        /** [index] with the parts a split left of the sentence [quote] names; [index] alone if it holds it whole. */
+        fun around(index: Int, quote: List<String>): IntRange {
+            if (words[index].holds(quote)) return index..index
+            return splits(quote).firstOrNull { index in it } ?: index..index
+        }
+
+        /** Runs of two or more units, none without words, whose words join into exactly [quote]. */
+        fun splits(quote: List<String>): List<IntRange> = units.indices.mapNotNull { first ->
+            var joined = emptyList<String>()
+            var last = first
+            while (last < units.size && words[last].isNotEmpty() && joined.size < quote.size) {
+                joined = joined + words[last]
+                last++
+            }
+            (first until last).takeIf { last - first > 1 && joined == quote }
+        }
     }
 
-    /** [found] and its neighbours while their texts, joined, still lie inside [quote]: a split sentence's parts. */
-    private fun grown(found: Int, quote: String, texts: List<String>): IntRange {
-        fun inQuote(first: Int, last: Int) = quote.contains((first..last).joinToString("") { texts[it] })
-        var first = found
-        var last = found
-        while (first > 0 && inQuote(first - 1, last)) first--
-        while (last < texts.lastIndex && inQuote(first, last + 1)) last++
-        return first..last
+    private fun covered(highlight: Highlight, page: PageText): IntRange? {
+        val quote = wordsOf(highlight.quote)
+        if (quote.isEmpty()) return null
+        val point = reAnchoring.locate(highlight.anchor, currentPipelineVersion, page.units)
+        val found = page.units.indexOfFirst { it.charStart == point.charStart }
+        val trusted = found >= 0 && when (point.match) {
+            AnchorMatch.EXACT, AnchorMatch.OFFSET_VERIFIED -> true
+            AnchorMatch.HEAD_FINGERPRINT -> fingerprintTrusted(highlight, quote, found, page.heads, page)
+            AnchorMatch.TAIL_FINGERPRINT -> fingerprintTrusted(highlight, quote, found, page.tails, page)
+            AnchorMatch.OFFSET_UNVERIFIED, AnchorMatch.PAGE_START -> false
+        }
+        return if (trusted) page.around(found, quote) else byQuote(highlight, quote, page)
     }
 
     /**
-     * Short sentences have fingerprints of their whole text, so a merge or split changes both and [ReAnchoring] can
-     * only guess by offset. The quote then finds them: a sentence holding all of it, or a run of sentences that make it
-     * up exactly, the one nearest the saved offset.
+     * A fingerprint of part of a long sentence, near its saved offset and with no equally near rival. A short
+     * sentence's fingerprints cover all of it ("Yes." matches every "Yes."), so it goes by its quote instead.
      */
-    private fun searched(
+    private fun fingerprintTrusted(
         highlight: Highlight,
-        quote: String,
-        units: List<ReadingUnit>,
-        texts: List<String>,
-    ): IntRange? {
-        if (quote.isEmpty()) return null
-        val runs = texts.indices.mapNotNull { first ->
-            if (texts[first].contains(quote)) return@mapNotNull first..first
-            var joined = ""
-            (first..texts.lastIndex).firstNotNullOfOrNull { last ->
-                joined += texts[last]
-                when {
-                    joined == quote -> first..last
-                    quote.startsWith(joined) -> null
-                    else -> IntRange.EMPTY
-                }
-            }?.takeUnless { it.isEmpty() }
+        quote: List<String>,
+        found: Int,
+        fingerprints: List<Long>,
+        page: PageText,
+    ): Boolean {
+        if (quote.sumOf { it.length } <= resume.fingerprintChars) return false
+        val distance = distanceOf(found..found, highlight, page)
+        val rivals = fingerprints.indices.count {
+            fingerprints[it] == fingerprints[found] && distanceOf(it..it, highlight, page) == distance
         }
-        return runs.minByOrNull { abs(units[it.first].charStart - highlight.anchor.charStart) }
+        return distance <= config.maxShiftChars && rivals == 1
+    }
+
+    /** The nearest sentence or run matching the quote; nothing when two are equally near. */
+    private fun byQuote(highlight: Highlight, quote: List<String>, page: PageText): IntRange? {
+        val long = quote.sumOf { it.length } >= config.minQuoteChars
+        val exact = page.words.indices.filter { page.words[it] == quote }.map { it..it }
+        val merged = page.words.indices.filter { page.words[it].size > quote.size && page.words[it].holds(quote) }
+            .map { it..it }
+        val split = page.splits(quote)
+        val tiers = listOf(exact to long, merged to long, split to long)
+        for ((candidates, mayMove) in tiers) {
+            val accepted = candidates.filter { range ->
+                val distance = distanceOf(range, highlight, page)
+                distance == 0 || (mayMove && distance <= config.maxShiftChars)
+            }
+            val best = accepted.minByOrNull { distanceOf(it, highlight, page) } ?: continue
+            val nearest = distanceOf(best, highlight, page)
+            return best.takeIf { accepted.count { distanceOf(it, highlight, page) == nearest } == 1 }
+        }
+        return null
+    }
+
+    /** 0 when [range] covers the saved offset, else how far its start is from it. */
+    private fun distanceOf(range: IntRange, highlight: Highlight, page: PageText): Int {
+        val saved = highlight.anchor.charStart
+        val start = page.units[range.first].charStart
+        return if (saved in start until page.units[range.last].charEnd) 0 else abs(start - saved)
+    }
+
+    private fun wordsOf(unit: ReadingUnit): List<String> = wordsOf(unit.text)
+
+    /** Letters, digits and marks of each word, as the fingerprints see them; words with none are dropped. */
+    private fun wordsOf(text: String): List<String> =
+        text.split(WHITESPACE).map(fingerprint::normalized).filter { it.isNotEmpty() }
+
+    /** These words are [quote], or begin or end with all of it. */
+    private fun List<String>.holds(quote: List<String>): Boolean =
+        size >= quote.size && (subList(0, quote.size) == quote || subList(size - quote.size, size) == quote)
+
+    private companion object {
+        val WHITESPACE = Regex("\\s+")
     }
 }

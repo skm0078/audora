@@ -9,8 +9,9 @@ import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.notes.BookSettings
 
 /**
- * Playback, studio, the talking book and the audiobook export all apply a book's own settings this one way, so the
- * files sound like listening: the book's voices for its languages and its pace on top of the listener's style.
+ * Studio, the talking book and the audiobook export apply a book's own settings this one way, as playback does
+ * (BookContext), so the files sound like listening: the book's voices for its languages and its pace on top of the
+ * listener's style.
  */
 object BookSound {
     /**
@@ -25,4 +26,10 @@ object BookSound {
 
     /** The book's own voice for a language; null follows the global choice. */
     fun voices(own: BookSettings?): (Lang) -> VoiceId? = { lang -> own?.voices?.get(lang) }
+
+    /** [current]'s answer for every language, read once now: a long run keeps the voices it started with. */
+    fun pinned(current: (Lang) -> VoiceId?): (Lang) -> VoiceId? {
+        val fixed = Lang.entries.associateWith(current)
+        return { lang -> fixed[lang] }
+    }
 }

@@ -40,6 +40,16 @@ class BookSoundTest {
         assertNull(BookSound.voices(null)(Lang.HI))
     }
 
+    @Test
+    fun `pinned voices do not follow later changes`() {
+        var live: VoiceId? = voice
+        val pinned = BookSound.pinned { live }
+
+        live = null
+        assertEquals(voice, pinned(Lang.HI))
+        assertEquals(voice, pinned(Lang.EN))
+    }
+
     private companion object {
         const val LISTENER_RATE = 1.5f
         const val BOOK_RATE = 0.8f

@@ -120,7 +120,7 @@ fun ReaderScreen(
                 is DocumentState.Open -> {
                     PlaceHighlights(state, notesActions)
                     OpenBook(state, document.pageCount, config, actions, ocrModels, look, spokenWord) {
-                        notes.highlightOf(it) != null
+                        notes.highlightsOn(it).isNotEmpty()
                     }
                     NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)
                 }
