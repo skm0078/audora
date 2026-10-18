@@ -319,13 +319,13 @@ class BookSessionTest {
             played.size
         }
         val replayed = played[before - 2]
-        awaitCondition("the replay played and paused") { played.size > before && !onMain { player.playWhenReady } }
+        awaitCondition("the replay played and paused") { played.size > before && !player.playWhenReady }
         assertEquals(replayed, played[before])
         assertTrue(renders.contains(replayed to SLOWER))
 
         onMain { player.play() }
         awaitCondition("the sentence after the replay") { played.size > before + 1 }
-        awaitCondition("paused after it") { !onMain { player.playWhenReady } }
+        awaitCondition("paused after it") { !player.playWhenReady }
         val ownRenders = renders.count { it == replayed to null }
         onMain { player.seekToPreviousMediaItem() }
 
