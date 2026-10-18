@@ -134,6 +134,16 @@ class IndicSentenceSplitterTest {
             // Dotted initials after an undotted author, and a single author, stay whole.
             Case("dotted after undotted", Lang.EN, listOf("Smith AB, Jones C. D., Brown E. F. Rapid imaging.")),
             Case("single author", Lang.EN, listOf("Lundberg P. Rapid imaging of the brain.")),
+            // A capitalised word that opens sentences after an initial's stop ends the sentence there.
+            Case(
+                "sentence after an initial",
+                Lang.EN,
+                listOf(
+                    "Henry V. ", "The king spoke. ", "Malcolm X. ", "The man spoke. ", "Sample A. ", "The rest. ",
+                    "Born in the U.S. ", "The economy grew. ", "In Washington, D.C. ", "The rain fell.",
+                ),
+            ),
+            Case("serial number heading", Lang.EN, listOf("Market S. No. 5 is closed.")),
         ),
     )
 

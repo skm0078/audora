@@ -135,8 +135,8 @@ private const val MAX_SERIAL_DIGITS = 6
 /** A number written with a leading zero, as a code is ("041"). */
 private val ZERO_PADDED = Regex("""0\d+""")
 
-/** A cell that says it holds no figure: "Nil", "N.A.", "NA", "N/A", "निरंक", "শূন্য"; read as an empty cell. */
-private val NIL_WORDS = Regex("""(?i:nil|n\.?[ ]?a\.?|n/a)|निरंक|শূন্য""")
+/** A cell that says it holds no figure: "Nil", "N.A.", "NA", "N/A", "निरंक", "शून्य", "শূন্য"; read as empty. */
+private val NIL_WORDS = Regex("""(?i:nil|n\.?[ ]?a\.?|n/a)|निरंक|शून्य|শূন্য""")
 
 /** A row whose numbers are two or more years names years ("District | 2011 | 2021"), whatever their columns hold. */
 private const val MIN_HEADER_YEARS = 2

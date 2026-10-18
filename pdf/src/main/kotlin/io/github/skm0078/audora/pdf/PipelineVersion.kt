@@ -62,6 +62,7 @@ package io.github.skm0078.audora.pdf
  *     a page's edge is outside its text area, so the page number above it goes too; dotted Hindi words with
  *     punctuation or brackets and Hindi initials without spaces held whole; rows numbering every column are headers
  *     and carry a table on; letter items in nested flush lists; "(अ)" labels; a leader reads as one ellipsis
- *     (left out at a unit's or cell's end, a dash for a cell holding only a rule) and keeps a contents line whole.
+ *     (left out at a unit's or cell's end, a dash for a cell holding only a rule) and keeps a contents line whole;
+ *     a stop glued between Indic letters holds; "Henry V. The" ends a sentence; column numbers in brackets.
  */
 const val PIPELINE_VERSION: Int = 11

@@ -39,6 +39,7 @@ internal class OcrParagraphKinds(
         val groups = ArrayList<MutableList<TextLine>>()
         val items = ArrayList<Boolean>()
         val labels = ArrayList<String>()
+        val labelsSoFar = ArrayList<List<String>>()
         lines.forEachIndexed { i, line ->
             val previous = lines.getOrNull(i - 1)
             val starts = previous == null ||
@@ -48,6 +49,7 @@ internal class OcrParagraphKinds(
                 groups.add(ArrayList())
                 items.add(ListMarkers.opensItem(text, line, labels))
                 if (items.last()) ListMarkers.labelOf(text, line)?.let(labels::add)
+                labelsSoFar.add(labels.toList())
             }
             groups.last().add(line)
         }
@@ -63,7 +65,7 @@ internal class OcrParagraphKinds(
                         ) {
                             items[g]
                         } else {
-                            ListMarkers.opensItem(text, piece.first(), labels)
+                            ListMarkers.opensItem(text, piece.first(), labelsSoFar[g])
                         },
                     ),
                 )
