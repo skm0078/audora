@@ -65,18 +65,21 @@ class BookRendering private constructor(
          * Sets [voices]' book voice. Reads the book's settings and fixes and the outline: call off the main thread.
          * @param normalRate read at the voice's own rate instead of the listener's speed, for files that go to an app
          *   with its own speed control (the talking book), as the audiobook export does.
+         * @param global the listener's style as the caller read it, so a run whose voices were built from one read of
+         *   the style file renders and keys with that same read; null reads it now.
          */
         suspend fun prepare(
             id: BookId,
             text: BookText,
             voices: SpeechVoices,
             normalRate: Boolean = false,
+            global: SpeechStyle? = null,
         ): BookRendering {
             val own = settings.get(id)
             val fixer = PronunciationFixer(pronunciations.observe(id).first())
             voices.bookVoice = BookSound.voices(own)
             val styleStore = SpeechStyleStore.forContext(context)
-            val style = BookSound.style(own, styleStore.current, normalRate)
+            val style = BookSound.style(own, global ?: styleStore.current, normalRate)
             val chapterPages = text.chapterStarts().toSet()
             val timings = SentenceTimings()
             // As AudoraPlaybackService builds it, so studio audio is the audio playback would render.

@@ -15,9 +15,9 @@ import kotlinx.coroutines.runBlocking
 /**
  * Studio mode, the talking book, a clip and the audiobook export each render a book with voices of their own, separate
  * from the playback service's so listening and rendering never share a model. They are built here one way, so the
- * audio under a studio key is the audio playback would render under it. The listener's shaping is read once: the key
- * carries it, so the audio must not change under it mid-run. Built on the worker thread (it reads the book's
- * settings); close it to free the voices.
+ * audio under a studio key is the audio playback would render under it. The listener's style is read once, for the
+ * voices and the rendering alike: the key carries it, so the audio must not change under it mid-run. Built on the
+ * worker thread (it reads the book's settings); close it to free the voices.
  *
  * @param normalRate the voice's own rate instead of any speed, for files played in apps with their own speed control.
  */
@@ -29,13 +29,15 @@ internal class BookVoice(
     normalRate: Boolean,
     style: SpeechStyleStore = SpeechStyleStore.forContext(context),
 ) : AutoCloseable {
-    val shaping: VoiceShaping = style.current.shaping
+    private val heard = style.current
+    val shaping: VoiceShaping = heard.shaping
     val engines = VoiceEngines(context) { shaping.expressiveness }
     val voices = SpeechVoices(engines)
 
     // Frees the voices if reading the book's settings fails or is interrupted: close() is never reached then.
-    val rendering: BookRendering = runCatching { runBlocking { factory.prepare(id, text, voices, normalRate) } }
-        .onFailure { voices.release() }
+    val rendering: BookRendering = runCatching {
+        runBlocking { factory.prepare(id, text, voices, normalRate, global = heard) }
+    }.onFailure { voices.release() }
         .getOrThrow()
 
     override fun close() = voices.release()

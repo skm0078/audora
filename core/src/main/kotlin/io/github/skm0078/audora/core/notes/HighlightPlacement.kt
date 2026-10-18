@@ -24,8 +24,8 @@ import kotlin.math.abs
  *    (merged), or neighbours that join into it exactly (split). One still at the saved place wins (an exact copy over
  *    the saved offset, a merge on the side the quote fills, a split at both ends); else the nearest of the first kind
  *    within [HighlightConfig.maxShiftChars], for quotes of at least [HighlightConfig.minQuoteChars]. A tie places
- *    nothing. A gone sentence with an identical copy within reach can still land on the copy: the text alone cannot
- *    tell them apart.
+ *    nothing. A gone sentence, or a merged or split one whose offsets also moved, can land on an identical copy within
+ *    reach: the text alone cannot tell that from a sentence that merely moved (a margin slug dropped).
  *
  * A trusted sentence that the new pipeline split is covered with all its parts. A highlight whose text is gone is not
  * shown; it stays in the notes list with its quote.
@@ -117,9 +117,10 @@ class HighlightPlacement(
     }
 
     /**
-     * A match that still sits where the highlight was wins whatever its kind (a merged sentence where the highlight was
-     * beats an exact copy further down); several such place nothing. Otherwise the nearest of the first kind with any
-     * match within [HighlightConfig.maxShiftChars]; two equally near place nothing rather than fall to the next kind.
+     * A match that still sits where the highlight was wins whatever its kind: a merged sentence beats an exact copy
+     * further down only while the quote's side has not moved; several such place nothing. Otherwise the nearest of the
+     * first kind with any match within [HighlightConfig.maxShiftChars]; two equally near place nothing rather than fall
+     * to the next kind.
      */
     private fun byQuote(highlight: Highlight, quote: List<String>, page: PageText): IntRange? {
         val long = quote.sumOf { it.length } >= config.minQuoteChars

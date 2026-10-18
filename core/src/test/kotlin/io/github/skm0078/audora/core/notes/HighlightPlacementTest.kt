@@ -162,6 +162,15 @@ class HighlightPlacementTest {
     }
 
     @Test
+    fun `a merged sentence whose offsets also moved yields to an identical copy within reach`() {
+        // Documented limit: once the quote's side moved, the merge looks like the slug case, so the copy wins.
+        val before = unitsOf(PAGE, FIRST, "He turned to Mr.", "Smith said.", FILL, "Smith said.")
+        val mergedAndMoved = unitsOf(PAGE, FIRST, "He turned to Mr. Smith said.", FILL, "Smith said.", startOffset = 1)
+
+        assertEquals(listOf("Smith said."), coveredTexts(highlightOn(before[2]), mergedAndMoved))
+    }
+
+    @Test
     fun `a long sentence's fingerprint is refused with an equally near rival and trusted when unique`() {
         val saved = unitsOf(PAGE, "p".repeat(PREFACE), LONG, THIRD)
         // Gone from offset 201; a copy 100 characters before it and one 100 after.
