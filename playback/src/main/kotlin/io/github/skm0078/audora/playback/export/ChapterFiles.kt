@@ -36,6 +36,11 @@ interface ChapterFile {
 
 fun interface ChapterFiles {
     fun create(name: String): Outcome<ChapterFile, ExportError.Storage>
+
+    /** These files with each one recorded in [session] as pending once created, before anything is written. */
+    fun recordedIn(session: ExportSession) = ChapterFiles { name ->
+        create(name).also { created -> (created as? Outcome.Success)?.value?.location?.let(session::onFileCreated) }
+    }
 }
 
 /**

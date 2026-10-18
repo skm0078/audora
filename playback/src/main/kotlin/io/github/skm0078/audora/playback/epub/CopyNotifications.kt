@@ -72,6 +72,8 @@ internal class CopyNotifications(private val context: Context) {
         val open = context.packageManager.getLaunchIntentForPackage(context.packageName)
             ?.putExtra(BookCopies.EXTRA_CONTINUE_BOOK, id.value)
             ?.putExtra(BookCopies.EXTRA_CONTINUE_KIND, kind.name)
+            // Delivered to a running Audora through onNewIntent; without these flags it only comes to the front.
+            ?.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             // Its own request code: launch intents differ only in extras, which PendingIntent matching ignores, so
             // with the app's usual code 0 this would rewrite (and be rewritten by) every "open Audora" tap in the app.
             ?.let {

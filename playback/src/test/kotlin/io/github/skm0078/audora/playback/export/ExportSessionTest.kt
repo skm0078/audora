@@ -104,6 +104,28 @@ class ExportSessionTest {
     }
 
     @Test
+    fun `a file created but never finished is deleted by the next run, a finished one is not`() {
+        val first = session("key-a")
+        first.onFileCreated("content://media/01.m4a")
+        first.onFileCreated("content://media/02.m4a")
+        first.onChapterDone(saved(chapters[0], "content://media/01.m4a"))
+        this.files.existing.add("content://media/02.m4a")
+
+        val second = session("key-a")
+
+        assertEquals(listOf("content://media/02.m4a"), this.files.deleted)
+        assertEquals(chapters.drop(1), second.remaining)
+        assertEquals(emptyList<String>(), records.load("book")?.pending)
+    }
+
+    @Test
+    fun `pending files read back from the record`() {
+        records.save("book", ExportRecord("k", emptyList(), pending = listOf("content://m/9")))
+
+        assertEquals(listOf("content://m/9"), records.load("book")?.pending)
+    }
+
+    @Test
     fun `the key changes with the chapter plan and the folder`() {
         val key = exportKey("sig", "Audiobooks/A/", chapters)
         assertNotEquals(key, exportKey("sig", "Audiobooks/B/", chapters))

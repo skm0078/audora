@@ -77,6 +77,8 @@ internal class ExportNotifications(private val context: Context) {
         // the app's usual code 0 this would rewrite (and be rewritten by) every "open Audora" tap in the app.
         val open = context.packageManager.getLaunchIntentForPackage(context.packageName)
             ?.putExtra(AudiobookExport.EXTRA_CONTINUE_BOOK, id.value)
+            // Delivered to a running Audora through onNewIntent; without these flags it only comes to the front.
+            ?.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             ?.let { PendingIntent.getActivity(context, CONTINUE_REQUEST, it, IMMUTABLE_UPDATE) }
         val action = open?.let {
             Notification.Action.Builder(null, context.getString(R.string.export_continue), it).build()

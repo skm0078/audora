@@ -5,6 +5,7 @@ package io.github.skm0078.audora.playback.export
 
 import io.github.skm0078.audora.core.logging.AudoraLog
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.security.MessageDigest
 
@@ -13,16 +14,26 @@ data class SavedChapter(val number: Int, val name: String, val durationMs: Long,
 
 /**
  * What one book's last export wrote. [key] says what it was rendered with (voices, style, folder, chapter plan, app
- * build); [complete] is set once every chapter is written.
+ * build); [complete] is set once every chapter is written. [pending] are files created but not yet finished (hidden
+ * MediaStore entries); a run that stops without finishing one leaves it here for the next run to delete.
  */
-data class ExportRecord(val key: String, val chapters: List<SavedChapter>, val complete: Boolean = false) {
-    fun with(chapter: SavedChapter) = copy(chapters = chapters.filterNot { it.number == chapter.number } + chapter)
+data class ExportRecord(
+    val key: String,
+    val chapters: List<SavedChapter>,
+    val complete: Boolean = false,
+    val pending: List<String> = emptyList(),
+) {
+    fun with(chapter: SavedChapter) = copy(
+        chapters = chapters.filterNot { it.number == chapter.number } + chapter,
+        pending = pending - chapter.location,
+    )
 }
 
 /**
- * One small text file per book in [folder], named by a hash of the book id and replaced whole (temp file, then
- * rename), so a record never describes a file that was not finished. It holds chapter numbers, durations, file names
- * built from page numbers and the files' MediaStore URIs: never the book's text or title.
+ * One small text file per book in [folder], named by a hash of the book id and replaced whole (temp file synced
+ * to disk, then rename), so a record never describes a file that was not finished, even after a power cut. It
+ * holds chapter numbers, durations, file names built from page numbers and the files' MediaStore URIs: never the
+ * book's text or title.
  */
 class ExportRecords(private val folder: File) {
     fun load(bookId: String): ExportRecord? {
@@ -42,7 +53,10 @@ class ExportRecords(private val folder: File) {
         val partial = File(folder, file.name + PARTIAL_SUFFIX)
         return try {
             if (!folder.isDirectory && !folder.mkdirs()) throw IOException("no folder")
-            partial.writeText(encode(record))
+            FileOutputStream(partial).use { out ->
+                out.write(encode(record).toByteArray())
+                out.fd.sync()
+            }
             if (!partial.renameTo(file)) throw IOException("rename failed")
             true
         } catch (e: IOException) {
@@ -63,6 +77,7 @@ class ExportRecords(private val folder: File) {
         append(VERSION).append('\n')
         append(KEY).append(' ').append(record.key).append('\n')
         append(COMPLETE).append(' ').append(if (record.complete) 1 else 0).append('\n')
+        record.pending.forEach { append(PENDING).append(' ').append(it).append('\n') }
         record.chapters.sortedBy { it.number }.forEach { chapter ->
             append(CHAPTER).append(' ')
             append(listOf(chapter.number, chapter.durationMs, chapter.location, chapter.name).joinToString(SEPARATOR))
@@ -78,7 +93,12 @@ class ExportRecords(private val folder: File) {
         val chapters = chapterLines.mapNotNull { chapterOf(it.second) }
         val readable = lines.firstOrNull() == VERSION && key != null && chapters.size == chapterLines.size
         return if (readable) {
-            ExportRecord(key, chapters, complete = fields.any { it.first == COMPLETE && it.second == "1" })
+            ExportRecord(
+                key,
+                chapters,
+                complete = fields.any { it.first == COMPLETE && it.second == "1" },
+                pending = fields.filter { it.first == PENDING && it.second.isNotEmpty() }.map { it.second },
+            )
         } else {
             null
         }
@@ -98,6 +118,7 @@ class ExportRecords(private val folder: File) {
         const val KEY = "key"
         const val COMPLETE = "complete"
         const val CHAPTER = "chapter"
+        const val PENDING = "pending"
         const val SEPARATOR = "\t"
         const val CHAPTER_FIELDS = 4
         const val LOCATION_FIELD = 2

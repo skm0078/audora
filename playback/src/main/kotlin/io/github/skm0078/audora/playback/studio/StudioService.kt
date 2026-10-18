@@ -88,6 +88,10 @@ class StudioService : Service() {
     /** Android 15+: this kind of foreground job used up its daily 6 hours; stop now, keep what is rendered. */
     override fun onTimeout(startId: Int, fgsType: Int) {
         stop("Android's time limit for background jobs")
+        // Android throws if the service is still in the foreground a few seconds after this; the worker may be
+        // inside a long native call, so stop now and let it finish its notice on its own thread.
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
     }
 
     override fun onDestroy() {

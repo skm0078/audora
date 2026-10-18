@@ -22,6 +22,8 @@ interface SavedFiles {
  *   earlier files are deleted first, so saving again replaces the audiobook instead of adding "(1)" copies beside it.
  *
  * Each finished chapter is added to the record at once ([onChapterDone]), so a stop costs only the chapter in progress.
+ * Each file is recorded as pending as soon as it is created ([ChapterFiles.recordedIn]); a run that stopped
+ * mid-chapter left a hidden partial file, which the next run deletes first.
  */
 class ExportSession(
     private val records: ExportRecords,
@@ -41,6 +43,7 @@ class ExportSession(
 
     init {
         val saved = records.load(bookId)
+        saved?.let(::dropPartials)
         val byNumber = chapters.associateBy { it.number }
         val keep = if (saved != null && saved.key == key && !saved.complete) {
             saved.chapters.filter { it.number in byNumber && files.exists(it.location) }
@@ -59,6 +62,12 @@ class ExportSession(
     /** Pages of [kept] chapters, which the progress counts as done. */
     val keptPages: Int get() = kept.sumOf { it.chapter.lastPage - it.chapter.firstPage + 1 }
 
+    /** Records a file just created, before anything is written to it ([ChapterFiles.recordedIn]). */
+    fun onFileCreated(location: String) {
+        record = record.copy(pending = record.pending + location)
+        records.save(bookId, record)
+    }
+
     fun onChapterDone(chapter: ExportedChapter) {
         val location = chapter.location ?: return // A plain-file sink (tests) leaves nothing to find again.
         record = record.with(SavedChapter(chapter.chapter.number, chapter.name, chapter.durationMs, location))
@@ -69,6 +78,14 @@ class ExportSession(
     fun finish(summary: ExportSummary): ExportSummary {
         records.save(bookId, record.copy(complete = true))
         return summary.copy(chapters = (kept + summary.chapters).sortedBy { it.chapter.number })
+    }
+
+    private fun dropPartials(saved: ExportRecord) {
+        val partials = saved.pending.filter(files::exists)
+        val failed = partials.count { !files.delete(it) }
+        if (partials.isNotEmpty()) {
+            AudoraLog.i(TAG, "Partial files of a stopped export: ${partials.size - failed} deleted, $logContext")
+        }
     }
 
     private fun replace(saved: ExportRecord) {

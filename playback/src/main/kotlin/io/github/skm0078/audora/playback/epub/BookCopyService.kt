@@ -90,6 +90,10 @@ class BookCopyService : Service() {
         AudoraLog.w(TAG, "Android's time limit for long jobs reached; stopping the copy")
         timedOut = true
         worker?.interrupt()
+        // Android throws if the service is still in the foreground a few seconds after this; the worker may be
+        // inside a long native call, so stop now and let it finish its notice on its own thread.
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
     }
 
     override fun onDestroy() {
