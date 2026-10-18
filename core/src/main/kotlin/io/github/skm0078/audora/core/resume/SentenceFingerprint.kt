@@ -26,7 +26,8 @@ class SentenceFingerprint(private val config: ResumeConfig = ResumeConfig()) {
     /** Fingerprint of its last [ResumeConfig.fingerprintChars] normalized characters. */
     fun tail(text: String): Long = hash(normalized(text).takeLast(config.fingerprintChars))
 
-    private fun normalized(text: String): String {
+    /** [text] as the fingerprints see it: NFKC, lower case, letters, digits and combining marks only. */
+    internal fun normalized(text: String): String {
         val folded = Normalizer.normalize(text, Normalizer.Form.NFKC).lowercase(Locale.ROOT)
         val kept = StringBuilder(folded.length)
         folded.codePoints().filter(::isKept).forEach { kept.appendCodePoint(it) }

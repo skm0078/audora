@@ -11,6 +11,7 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.BookmarkStore
 import io.github.skm0078.audora.core.notes.Highlight
+import io.github.skm0078.audora.core.notes.HighlightPlacement
 import io.github.skm0078.audora.core.notes.HighlightStore
 import io.github.skm0078.audora.core.notes.PronunciationRule
 import io.github.skm0078.audora.core.notes.PronunciationStore
@@ -43,11 +44,17 @@ data class NotesState(
     val listOpen: Boolean = false,
     val failed: Boolean = false,
     val highlights: List<Highlight> = emptyList(),
+    val placed: PlacedHighlights = PlacedHighlights(),
 ) {
-    /** The highlight starting at [unit], if it has one (plan item 30). */
-    fun highlightOf(unit: ReadingUnit): Highlight? =
-        highlights.firstOrNull { it.anchor.page == unit.page && it.anchor.charStart == unit.charStart }
+    /** The highlight covering [unit] on the page showing, if it has one (plan item 30). */
+    fun highlightOf(unit: ReadingUnit): Highlight? = placed.byStart[unit.charStart]?.takeIf { placed.page == unit.page }
 }
+
+/**
+ * The showing page's highlights by the charStart of each sentence they cover, found again after a pipeline change
+ * merged, split or moved sentences ([HighlightPlacement]). [page] is null before a page shows.
+ */
+data class PlacedHighlights(val page: Int? = null, val byStart: Map<Int, Highlight> = emptyMap())
 
 /** What the screen calls; [BookNotesModel] implements it, [None] stands in where notes are not wired (previews). */
 @Suppress("TooManyFunctions") // One per control in the sentence menu, the bookmarks sheet and the fix dialog.
@@ -78,6 +85,9 @@ interface BookNotesActions {
     fun addRule(written: String, spoken: String, wholeWord: Boolean, thisBookOnly: Boolean) = Unit
 
     fun deleteRule(rule: PronunciationRule) = Unit
+
+    /** The reader shows [units] (one page's, current pipeline): highlights are placed on them. */
+    fun showing(units: List<ReadingUnit>) = Unit
 
     fun dismissFix() = Unit
 
@@ -113,6 +123,8 @@ class BookNotesModel(
     private val pronunciations = stores.pronunciations
     private val highlights = stores.highlights
     private val fingerprint = SentenceFingerprint()
+    private val placement = HighlightPlacement(fingerprint)
+    private var pageUnits: List<ReadingUnit> = emptyList()
     private val mutableState = MutableStateFlow(NotesState())
     val state: StateFlow<NotesState> = mutableState.asStateFlow()
     private val logContext = "book=${bookId.logLabel}"
@@ -127,10 +139,20 @@ class BookNotesModel(
         }
         highlights?.let { store ->
             scope.launch {
-                store.observe(bookId).collect { list -> mutableState.update { it.copy(highlights = list) } }
+                store.observe(bookId).collect { list ->
+                    mutableState.update { it.copy(highlights = list, placed = placed(list)) }
+                }
             }
         }
     }
+
+    override fun showing(units: List<ReadingUnit>) {
+        pageUnits = units
+        mutableState.update { it.copy(placed = placed(it.highlights)) }
+    }
+
+    private fun placed(highlights: List<Highlight>) =
+        PlacedHighlights(pageUnits.firstOrNull()?.page, placement.place(highlights, pageUnits))
 
     override fun openMenu(unit: ReadingUnit) = mutableState.update { it.copy(menuFor = unit) }
 

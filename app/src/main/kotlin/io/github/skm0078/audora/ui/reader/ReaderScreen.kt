@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -117,6 +118,7 @@ fun ReaderScreen(
                 }
 
                 is DocumentState.Open -> {
+                    PlaceHighlights(state, notesActions)
                     OpenBook(state, document.pageCount, config, actions, ocrModels, look, spokenWord) {
                         notes.highlightOf(it) != null
                     }
@@ -294,4 +296,11 @@ private object PreviewActions : ReaderActions {
     override fun onPasswordDismissed() = Unit
     override fun onAskForPassword() = Unit
     override fun onRetry() = Unit
+}
+
+/** Tells the notes which sentences show, so highlights land on them after a pipeline change (plan item 30). */
+@Composable
+private fun PlaceHighlights(state: ReaderState, notes: BookNotesActions) {
+    val units = (state.content as? PageContent.Ready)?.units.orEmpty()
+    LaunchedEffect(units) { notes.showing(units) }
 }
