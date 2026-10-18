@@ -236,13 +236,21 @@ internal class PageCarry(private val config: PageCarryConfig) {
         const val RUN_ON = ",;-–—"
 
         /**
-         * A list or section number of one or two digits opening the text: "2 समुदाय", "3.", "(4)". Only punctuation and
-         * spaces may come before it (`\W` would also pass over Devanagari and Bengali words, which are not ASCII).
+         * A list or section number of one or two digits opening the text: "2.", "3)", "(4)". A bare number before a
+         * word ("15 अगस्त को…") may go on the sentence before. Only punctuation and spaces may come before it (`\W`
+         * would also pass over Devanagari and Bengali words, which are not ASCII).
          */
-        val ITEM_NUMBER = Regex("""^[\p{P}\s]*\p{Nd}{1,2}[.)]?(\s|$)""")
+        val ITEM_NUMBER = Regex("""^[\p{P}\s]*\p{Nd}{1,2}[.)](\s|$)""")
 
-        /** A caption over the rest of a table: "Table 2 (contd.)", "(continued)", "जारी", "क्रमशः", "ক্রমশ". */
-        val CONTINUED_CAPTION = Regex("""(?i)\b(contd|cont'd|continued)\b|जारी|क्रमश|ক্রমশ""")
+        /**
+         * A caption over the rest of a table: "Table 2 (contd.)", "(continued)", and the Hindi and Bengali words alone,
+         * bracketed ("तालिका 2 (जारी)", "(ক্রমশ)") or ending the caption ("…जारी है", "…क्रमशः"): within a caption
+         * they are ordinary words too ("जारी किए गए आँकड़े").
+         */
+        val CONTINUED_CAPTION = Regex(
+            """(?i)\b(contd|cont'd|continued)\b|""" +
+                """\(\s*(?:जारी|क्रमशः?|ক্রমশঃ?)\s*\)|(?:^|\s)(?:जारी(?:\s+है)?|क्रमशः?|ক্রমশঃ?)\s*[।.]?\s*$""",
+        )
     }
 }
 

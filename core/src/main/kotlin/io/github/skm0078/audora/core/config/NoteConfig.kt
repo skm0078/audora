@@ -23,6 +23,8 @@ package io.github.skm0078.audora.core.config
  * @property ocrFootnoteMinConfidence and their letters were read with a mean OCR confidence (0–100) of at least this,
  * @property ocrFootnoteConfidenceDrop or at least the page's own mean less this, if lower (Hindi and Bengali small
  *   print reads less surely than English): lower still, the small strip is a stamp or a garbled print slug.
+ * @property ocrFootnoteConfidenceFloor but never below this: on a badly read page, small lines read worse still are
+ *   noise.
  * @property ocrSureNoteLines on a scanned page, a run of small lines this long or longer is small enough by
  *   `footnoteSizeRatio`; a shorter run needs a second sign that it is notes, as one OCR size is a rough measure: it
  *   opens with a note sign ("*", "†"), a rule stands above it, or
@@ -30,6 +32,8 @@ package io.github.skm0078.audora.core.config
  * @property ocrFlushEm a run that opens with no marker carries on a note from the page before, so it starts within
  *   this many line heights of the left edge of its column, or under a rule: a block quote, verse or epigraph set small
  *   is indented or centred.
+ * @property ocrColumnWidthRatio its column is the lines over it no wider than this many times its widest line: a
+ *   title across both columns of a page is not the left edge of the right column.
  * @property ocrNoteEndShare on a scanned page, a "Note:" paragraph ends at its first line that ends a sentence short
  *   of this share of the paragraph's widest line: Tesseract often merges it with the paragraph after it.
  */
@@ -44,9 +48,11 @@ data class NoteConfig(
     val ocrFootnoteBandShare: Float = 0.12f,
     val ocrFootnoteMinConfidence: Int = 70,
     val ocrFootnoteConfidenceDrop: Int = 20,
+    val ocrFootnoteConfidenceFloor: Int = 40,
     val ocrSureNoteLines: Int = 3,
     val ocrNoteSpacingRatio: Float = 0.95f,
     val ocrFlushEm: Float = 1f,
+    val ocrColumnWidthRatio: Float = 1.5f,
     val ocrNoteEndShare: Float = 0.8f,
 ) {
     init {
@@ -64,6 +70,10 @@ data class NoteConfig(
             "ocrFootnoteMinConfidence must be in 0..100, was $ocrFootnoteMinConfidence"
         }
         require(ocrFootnoteConfidenceDrop >= 0) { "ocrFootnoteConfidenceDrop must be >= 0" }
+        require(ocrFootnoteConfidenceFloor in 0..ocrFootnoteMinConfidence) {
+            "ocrFootnoteConfidenceFloor must be in 0..ocrFootnoteMinConfidence, was $ocrFootnoteConfidenceFloor"
+        }
+        require(ocrColumnWidthRatio >= 1f) { "ocrColumnWidthRatio must be >= 1, was $ocrColumnWidthRatio" }
         require(ocrSureNoteLines >= 1) { "ocrSureNoteLines must be >= 1, was $ocrSureNoteLines" }
         require(ocrNoteSpacingRatio > 0f && ocrFlushEm >= 0f) { "ocrNoteSpacingRatio must be > 0, ocrFlushEm >= 0" }
         require(maxMarkerDigits >= 1) { "maxMarkerDigits must be >= 1, was $maxMarkerDigits" }

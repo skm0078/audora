@@ -165,15 +165,18 @@ internal class NoteFinder(private val layoutConfig: LayoutConfig) {
         private val NOTE_KINDS = setOf(ParagraphKind.BODY, ParagraphKind.LIST_ITEM)
 
         /**
-         * "Note:", "NOTES –", "N.B.", "नोट:", "टिप्पणी:", "দ্রষ্টব্য:", "টীকা:", "বিঃদ্রঃ". A full stop or dash
-         * counts only before a space: "Note-taking", "नोट-बुक", "নোট-বই" and "Notes.txt" are words. "N.B." and
-         * "বিঃদ্রঃ" need no mark after them.
+         * "Note:", "NOTES –", "N.B.", "नोट:", "नोट्स:", "टिप्पणी:", "দ্রষ্টব্য:", "টীকা:", "বিঃদ্রঃ" (also written with
+         * colons: "बि:द्र:", "বি:দ্র:"). A full stop or dash counts only before a space: "Note-taking", "नोट-बुक",
+         * "নোট-বই" and "Notes.txt" are words. "N.B." and "বিঃদ্রঃ" need no mark after them. Spaces include a no-break
+         * space, which `\s` matches on Android but not on the JVM.
          */
         private val NOTE_LABEL = Regex(
-            "^\\s*(?:" +
-                "(?:N\\.\\s?B\\.|বিঃ\\s?দ্রঃ)(?=[\\s:：]|$)|" +
-                "(?:Notes?|NOTES?|नोट|टिप्पणी|टिप्पणियाँ|ध्यान दें|দ্রষ্টব্য|টীকা|নোট)(?:\\s*\\p{Nd}+)?" +
-                "\\s*(?:[:：।]|[.\\-–—](?=\\s|$))" +
+            "^[\\s\\u00A0]*(?:" +
+                "(?:N\\.[\\s\\u00A0]?B\\.|বিঃ[\\s\\u00A0]?দ্রঃ|बि:[\\s\\u00A0]?द्र:|বি:[\\s\\u00A0]?দ্র:)" +
+                "(?=[\\s\\u00A0:：,\\-–—]|$)|" +
+                "(?:Notes?|NOTES?|नोट्स|नोट|टिप्पणी|टिप्पणियाँ|ध्यान दें|দ্রষ্টব্য|টীকা|নোট)" +
+                "(?:[\\s\\u00A0]*\\p{Nd}+)?" +
+                "[\\s\\u00A0]*(?:[:：।]|[.\\-–—](?=[\\s\\u00A0]|$))" +
                 ")",
         )
     }

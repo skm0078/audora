@@ -82,6 +82,19 @@ class OcrParagraphKindsTest {
         val units = builder.build(builder.ocrReadingText(PAGE, OcrText(lines)) { transform.toPage(it) })
         assertEquals(listOf(UnitKind.ASIDE) + List(body.size) { UnitKind.BODY }, units.map { it.kind })
         assertEquals(note.joinToString(" "), units.first().text)
+        // In Hindi and Bengali, ending with a danda as OCR reads it, the note ends there too.
+        val indic = listOf(
+            listOf("टिप्पणी: गमलों को धूप वाले दिनों में छाया में रखें और उन्हें", "रोज़ पानी दें।"),
+            listOf("टिप्पणी: गमलों को धूप वाले दिनों में छाया में रखें और उन्हें", "रोज़ पानी दें|"),
+            listOf("দ্রষ্টব্য: রোদের দিনে টবগুলো ছায়ায় রাখুন এবং প্রতিদিন", "জল দিন ২ বার৷"),
+        )
+        for (lines in indic) {
+            val all = lines.mapIndexed { i, text -> line(text, i, 0) } +
+                body.mapIndexed { i, text -> line(text, i + lines.size, 0) }
+            val read = builder.build(builder.ocrReadingText(PAGE, OcrText(all)) { transform.toPage(it) })
+            assertEquals(lines.last(), UnitKind.BODY, read.last().kind)
+            assertEquals(lines.last(), UnitKind.ASIDE, read.first().kind)
+        }
         // A note running to its paragraph's end stays one aside.
         val alone = note.mapIndexed { i, text -> line(text, i, 0) }
         val one = builder.build(builder.ocrReadingText(PAGE, OcrText(alone)) { transform.toPage(it) })

@@ -141,6 +141,12 @@ class NoteFinderTest {
             "Note - The fee is not refundable." to UnitKind.ASIDE,
             "नोट - यह शुल्क वापस नहीं होगा।" to UnitKind.ASIDE,
             "বিঃদ্রঃ এই ফি ফেরত দেওয়া হবে না।" to UnitKind.ASIDE,
+            "बि:द्र: यह शुल्क वापस नहीं होगा।" to UnitKind.ASIDE,
+            "বি:দ্র: এই ফি ফেরত দেওয়া হবে না।" to UnitKind.ASIDE,
+            "नोट्स: यह शुल्क वापस नहीं होगा।" to UnitKind.ASIDE,
+            "N.B.— The fee is not refundable." to UnitKind.ASIDE,
+            "N.B., the fee is not refundable." to UnitKind.ASIDE,
+            "Note\u00A0: The fee is not refundable." to UnitKind.ASIDE,
             // A word joined to "note" by a hyphen is not a label.
             "Note-taking helps you keep up in class." to UnitKind.BODY,
             "नोट-बुक में अपना नाम लिखें।" to UnitKind.BODY,

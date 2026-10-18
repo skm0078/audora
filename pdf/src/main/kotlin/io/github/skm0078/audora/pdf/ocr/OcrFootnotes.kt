@@ -66,8 +66,9 @@ internal class OcrFootnotes(private val config: NoteConfig) {
             smallRuns(placed, bodySize).map(foot::notesOf).filter { it.isNotEmpty() }
         }
         if (noteRuns.isEmpty()) return Tagged(paragraphs, emptyList())
-        val markers = openingMarkers(page.text, noteRuns)
         val notes = noteRuns.flatMapTo(HashSet()) { run -> run.map { it.line } }
+        val cited = citedMarkers(page.text, placed.map { it.line }.filter { it !in notes })
+        val markers = openingMarkers(page.text, noteRuns, cited)
         return Tagged(
             split(paragraphs, notes, markers, page.text),
             markers.values.filterNotNull().sortedBy {
@@ -105,11 +106,16 @@ internal class OcrFootnotes(private val config: NoteConfig) {
         item.line.size > 0f && item.line.size <= bodySize * config.footnoteSizeRatio
 
     /**
-     * Each note line's opening marker, when it opens a note: the first line of a run of notes, a line opening an OCR
-     * paragraph, or a line whose marker continues the numbering of the last note (3 after 2, "†" after "*"); null for
-     * the rest, whose numbers are read.
+     * Each note line's opening marker, when it opens a note: a line opening an OCR paragraph, a line whose marker
+     * continues the numbering of the last note (3 after 2, "†" after "*"), or the first line of a run whose marker the
+     * body text cites ([cited]); null for the rest, whose numbers are read. A run's first line may carry on a note
+     * from the page before: "12 pages…", "11 SCC 345" or "१२ पृष्ठ" there is text, not note 12.
      */
-    private fun openingMarkers(text: String, noteRuns: List<List<Placed>>): Map<TextLine, TextSpan?> {
+    private fun openingMarkers(
+        text: String,
+        noteRuns: List<List<Placed>>,
+        cited: Set<String>,
+    ): Map<TextLine, TextSpan?> {
         val out = HashMap<TextLine, TextSpan?>()
         var lastRef: Int? = null
         for (run in noteRuns) {
@@ -117,7 +123,8 @@ internal class OcrFootnotes(private val config: NoteConfig) {
                 val marker = openingMarker(text, note.line)
                 val ref = marker?.let { NoteMarkers.refOf(text.substring(it.start, it.end)) }
                 val continues = ref != null && lastRef != null && ref == lastRef + 1
-                val accepted = marker != null && (i == 0 || note.opensParagraph || continues)
+                val citedFirst = i == 0 && marker != null && text.substring(marker.start, marker.end).trim() in cited
+                val accepted = marker != null && (citedFirst || note.opensParagraph || continues)
                 out[note.line] = marker.takeIf { accepted }
                 if (accepted && ref != null) lastRef = ref
             }
@@ -144,12 +151,16 @@ internal class OcrFootnotes(private val config: NoteConfig) {
             .filter { it > 0f }
             .let(::median)
 
-        /** The page's own mean letter confidence less the allowed drop, at most `ocrFootnoteMinConfidence`. */
+        /**
+         * The page's own mean letter confidence less the allowed drop, at most `ocrFootnoteMinConfidence` and at least
+         * `ocrFootnoteConfidenceFloor`.
+         */
         private val minConfidence: Double = run {
             val text = page.text
             val confidences = text.indices.filter { text[it].isLetter() }.mapNotNull(page::ocrConfidenceAt)
             val pageMean = if (confidences.isEmpty()) Double.MAX_VALUE else confidences.average()
             minOf(config.ocrFootnoteMinConfidence.toDouble(), pageMean - config.ocrFootnoteConfidenceDrop)
+                .coerceAtLeast(config.ocrFootnoteConfidenceFloor.toDouble())
         }
 
         /**
@@ -227,9 +238,14 @@ internal class OcrFootnotes(private val config: NoteConfig) {
             return wide && placedLikeNotes && sure
         }
 
-        /** [first] starts within `ocrFlushEm` line heights of the left edge of the other lines in its column. */
+        /**
+         * [first] starts within `ocrFlushEm` line heights of the left edge of the other lines in its column: lines over
+         * it no wider than `ocrColumnWidthRatio` times its widest line (a title across two columns is not its column).
+         */
         private fun isFlush(first: TextBox, boxes: List<TextBox>, members: Set<TextLine>): Boolean {
-            val column = placed.filter { it.line !in members }.mapNotNull { it.box }.filter { it.overlapsAny(boxes) }
+            val widest = boxes.maxOf { it.width } * config.ocrColumnWidthRatio
+            val column = placed.filter { it.line !in members }.mapNotNull { it.box }
+                .filter { it.overlapsAny(boxes) && it.width <= widest }
             val left = column.minOfOrNull { it.left } ?: first.left
             return first.left - left <= first.height * config.ocrFlushEm
         }
@@ -299,6 +315,11 @@ internal class OcrFootnotes(private val config: NoteConfig) {
         return out
     }
 
+    /** Note markers [lines] cite glued to a word ("both.12", "Smith*", "পরিমাণ১২"): what a note may open with. */
+    private fun citedMarkers(text: String, lines: List<TextLine>): Set<String> = lines.flatMapTo(HashSet()) { line ->
+        line.spans.flatMap { span -> CITED_MARKER.findAll(text.substring(span.start, span.end)).map { it.value } }
+    }
+
     /**
      * The marker a note line opens with: a sign ("*", "†", alone or glued to the word), a number of its own followed
      * by a word, or a number glued to a capitalised word ("4To", never "3D" or "2017").
@@ -320,7 +341,10 @@ internal class OcrFootnotes(private val config: NoteConfig) {
         val OPENING_MARKER = Regex("""^([$SIGNS]{1,3}(?=[\s"“‘']*\p{L})|\p{Nd}+(?=\s+\p{L})|\p{Nd}+(?=\p{Lu}\p{Ll}))""")
 
         /** A source or credit line set small under a table or figure: not a note. */
-        val SOURCE_LABEL = Regex("""^\s*(?i:sources?|courtesy|स्रोत|साभार|সূত্র|উৎস)\s*[:：\-–]""")
+        val SOURCE_LABEL = Regex("""^\s*(?i:sources?|courtesy|स्रोत|स्त्रोत|साभार|সূত্র|উৎস)\s*[:：\-–]""")
+
+        /** A marker glued to the end of a word or after its punctuation, as the body text cites a note. */
+        val CITED_MARKER = Regex("""(?<=[\p{L}\p{M}.,;:)’”])(?:\p{Nd}{1,3}|[*†‡§¶#]+)(?=[\s.,;:)]|$)""")
     }
 }
 
