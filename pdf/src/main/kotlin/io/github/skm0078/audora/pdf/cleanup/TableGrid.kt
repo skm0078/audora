@@ -48,7 +48,8 @@ internal class Grid(
  *    `maxHeaderRows`: a header set over two lines ("State / Union" above "Territory"). The first row when no row has
  *    a number (a truth table) or every row does.
  * 7. **Side by side.** Two tables set side by side on the same row heights come as one: layout joins each row across
- *    the gutter. They are split there ([SideBySide]) and built as two grids.
+ *    the gutter. They are split there when they show it ([SideBySide]) and built as two grids. A side too sparse
+ *    for a grid stays text, unless it shares a line with the other: then they are built as one ([sideGrids]).
  */
 internal class TableGrid(private val config: TableConfig, private val rowOverlapRatio: Float) {
     private val closeColumns = CloseColumns(ColumnChannels(config))
@@ -64,8 +65,10 @@ internal class TableGrid(private val config: TableConfig, private val rowOverlap
         val fits = all.size in 2..config.maxRowsPerTable && !isChart(page, lines)
         val columns = Columns.of(all).takeIf { fits && it.size >= 2 } ?: return emptyList()
         val lineRows = withoutEdgeTitles(all, columns)
-        val halves = sideBySide.split(page, lineRows, columns)
-        return halves?.mapNotNull { half -> gridOf(page, half, Columns.of(half), half.lines(), half.spans()) }
+        val halves = sideBySide.split(page, lineRows, columns)?.let { halves ->
+            sideGrids(halves, halves.map { half -> gridOf(page, half, Columns.of(half), half.lines(), half.spans()) })
+        }
+        return halves
             ?: listOfNotNull(gridOf(page, lineRows, columns, lines.toSet() - all.minus(lineRows.toSet()).lines()))
     }
 
@@ -249,6 +252,17 @@ private class CloseColumns(private val channels: ColumnChannels) {
 
 private class Cell(val spans: List<TextSpan>, val box: TextBox, val em: Float, val line: TextLine)
 
+/**
+ * The grids of two tables side by side, [grids] built from [halves]. When one side makes no grid (too sparse), the
+ * other is the only table and the side that made none stays text; but when they share a line, the table would take
+ * that side's words with it, so null: the whole is built as one table and nothing is lost.
+ */
+private fun sideGrids(halves: List<List<LineRow>>, grids: List<Grid?>): List<Grid>? {
+    val built = grids.filterNotNull()
+    val failed = halves.zip(grids).filter { it.second == null }.flatMapTo(HashSet()) { it.first.lines() }
+    return built.takeIf { it.isNotEmpty() && it.none { grid -> grid.lines.any { line -> line in failed } } }
+}
+
 /** The lines the cells of these line rows come from. */
 private fun Collection<LineRow>.lines(): Set<TextLine> = flatMapTo(HashSet()) { row -> row.cells.map { it.line } }
 
@@ -258,9 +272,10 @@ private fun Collection<LineRow>.spans(): Set<TextSpan> = flatMapTo(HashSet()) { 
 /**
  * Two tables set side by side on the same row heights, which layout joined row by row into one. The gap between two
  * neighbouring columns is a gutter when it is more than `TableConfig.sideBySideGapRatio` times every other column
- * gap, at least [MIN_SIDE_COLUMNS] columns lie on each side, no cell crosses it, and the two sides show they are two
- * tables: the same header on both (a long list set in two halves), or a row of two or more cells on one side only
- * (tables of different lengths). A single wide table with one wide gap has neither.
+ * gap, at least `TableConfig.minSideColumns` columns lie on each side and no cell crosses it. The sides are two tables
+ * only when they show it ([TableSides]): the same header on both (a long list set in two halves), or, unless the right
+ * side is figures, a row on one side only (tables of different lengths). A single wide table with one wide gap shows
+ * neither.
  */
 private class SideBySide(private val config: TableConfig) {
     /** [rows] as the line rows of the left table and of the right one, or null when they are one table. */
@@ -269,15 +284,21 @@ private class SideBySide(private val config: TableConfig) {
         val k = gaps.indices.maxByOrNull { gaps[it].width() }
         val gutter = k?.takeIf { isGutter(rows, gaps, it) }?.let { gaps[it] } ?: return null
         val middle = (gutter.start + gutter.endInclusive) / 2
-        val halves = listOf(false, true).map { right ->
-            rows.mapNotNull { row -> row.cells.filter { (it.box.left >= middle) == right }.ifEmpty { null } }
-                .map(::LineRow)
+        val sides = rows.map { row -> row.cells.partition { it.box.left < middle } }
+        val (left, right) = listOf(sides.map { it.first }, sides.map { it.second }).map { side ->
+            side.filter { it.isNotEmpty() }.map(::LineRow)
         }
-        val oneSided = rows.any { row ->
-            row.cells.size >= 2 &&
-                row.cells.map { it.box.left >= middle }.toSet().size == 1
+        fun text(cells: List<Cell>) = cells.map { cell ->
+            cell.spans.joinToString(" ") { page.text.substring(it.start, it.end).trim() }
         }
-        return halves.takeIf { oneSided || sameHeader(page, halves) }
+        val leftText = left.map { text(it.cells) }
+        val rightText = right.map { text(it.cells) }
+        val rowText = sides.map { (l, r) -> text(l) to text(r) }
+        val headerRows = headerRowCount(rowText.map { (l, r) -> l + r }, config.maxHeaderRows)
+        val uneven = !TableSides.readsAsFigures(rightText, config.maxHeaderRows, config.minFigureRows) &&
+            TableSides.hasOneSidedRow(rowText, headerRows, config.minSideColumns)
+        val two = uneven || TableSides.sameHeader(leftText, rightText, config.minSideColumns)
+        return if (two) listOf(left, right) else null
     }
 
     /** Whether gap [k] of [gaps] (the one after column k) is a gutter between two tables of [rows]. */
@@ -286,24 +307,10 @@ private class SideBySide(private val config: TableConfig) {
         val widest = gaps.filterIndexed { i, _ -> i != k }.maxOfOrNull { it.width() } ?: return false
         val columnsEachSide = minOf(k + 1, gaps.size - k)
         val crossed = rows.any { row -> row.cells.any { it.box.left < gap.endInclusive && it.box.right > gap.start } }
-        return columnsEachSide >= MIN_SIDE_COLUMNS && gap.width() > widest * config.sideBySideGapRatio && !crossed
+        return columnsEachSide >= config.minSideColumns && gap.width() > widest * config.sideBySideGapRatio && !crossed
     }
 
     private fun ClosedFloatingPointRange<Float>.width() = endInclusive - start
-
-    /** Both halves start with the same header row of two or more cells. */
-    private fun sameHeader(page: PageText, halves: List<List<LineRow>>): Boolean {
-        val (left, right) = halves.map { half ->
-            half.firstOrNull()?.cells.orEmpty().map { cell ->
-                cell.spans.joinToString(" ") { page.text.substring(it.start, it.end).trim() }
-            }
-        }
-        return left.size >= MIN_SIDE_COLUMNS && left == right
-    }
-
-    private companion object {
-        const val MIN_SIDE_COLUMNS = 2
-    }
 }
 
 private class LineRow(val cells: List<Cell>) {

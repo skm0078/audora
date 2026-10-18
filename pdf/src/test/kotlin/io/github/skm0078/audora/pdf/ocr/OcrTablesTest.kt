@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.pdf.ocr
 
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.pdf.render.PageTransform
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.pdf.render.ViewRect
@@ -210,6 +211,26 @@ class OcrTablesTest {
             prose.joinToString(" "),
         )
         assertEquals(expected, rows(units(ocr)))
+    }
+
+    @Test
+    fun `a wide scanned table with section rows and blank figures beyond a wide gap stays one table`() {
+        val rows = listOf(
+            listOf("Item", "Head", "Budget", "Actual"),
+            listOf("1", "Taxes", "120", "135"),
+            listOf("A.", "Receipts"),
+            listOf("2", "Fees", "–", "–"),
+            listOf("B.", "Capital"),
+        )
+        val xs = listOf(0.05f, 0.15f, 0.6f, 0.75f)
+        val ocr = OcrText(
+            rows.mapIndexed { r, cells ->
+                OcrLine(cells.mapIndexed { c, w -> word(w, xs[c], 0.2f + r * ROW_PITCH) }, r)
+            },
+        )
+        val units = units(ocr)
+        assertEquals(1, units.count { it.kind == UnitKind.TABLE_SUMMARY })
+        assertEquals(rows.first(), rows(units).filterIsInstance<List<*>>().first())
     }
 
     @Test

@@ -46,6 +46,10 @@ package io.github.skm0078.audora.core.config
  * @property sideBySideGapRatio two runs of rows side by side are one table cut apart by XY-cut only when the gutter
  *   between them is at most this many times their own widest cell gap (and their rows pair one for one); XY-cut cuts
  *   at the widest gap, so it may be somewhat wider than the rest. A wider gutter sets two tables side by side.
+ * @property minSideColumns two tables set side by side have at least this many columns each, and a header both share
+ *   at least this many cells.
+ * @property minFigureRows the figures of a table set a wide gap apart from its labels run at least this many rows
+ *   under their header; fewer (one row of marks: "4 3 2 1") show nothing.
  * @property ruleBreakEm on a scanned page, rules in line with each other are one rule when less than this far apart
  *   along their length (a rule the scan broke); farther apart they are the rules of two tables side by side.
  */
@@ -70,6 +74,8 @@ data class TableConfig(
     val minSplitRows: Int = 3,
     val splitShare: Float = 0.8f,
     val sideBySideGapRatio: Float = 2f,
+    val minSideColumns: Int = 2,
+    val minFigureRows: Int = 2,
     val ruleBreakEm: Float = 2f,
 ) {
     init {
@@ -88,6 +94,8 @@ data class TableConfig(
         require(splitGapEm in 0f..cellGapEm && splitGapEm > 0f) { "splitGapEm must be in (0, cellGapEm]" }
         require(minSplitRows >= 2 && splitShare in 0f..1f) { "minSplitRows must be >= 2, splitShare in 0..1" }
         require(sideBySideGapRatio > 0f) { "sideBySideGapRatio must be > 0, was $sideBySideGapRatio" }
+        require(minFigureRows >= 1) { "minFigureRows must be >= 1, was $minFigureRows" }
+        require(minSideColumns >= 1) { "minSideColumns must be >= 1, was $minSideColumns" }
         require(ruleBreakEm >= ruleSnapEm) { "ruleBreakEm must be >= ruleSnapEm, was $ruleBreakEm" }
     }
 }
