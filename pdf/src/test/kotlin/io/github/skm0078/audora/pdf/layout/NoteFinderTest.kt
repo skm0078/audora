@@ -116,6 +116,25 @@ class NoteFinderTest {
     }
 
     @Test
+    fun `a corresponding author's short lines with the page's only e-mail address are a note`() {
+        fun page(directory: Boolean): List<ReadingUnit> {
+            val sketch = PageSketch()
+            val body = List(4) { "Body text set in the regular size of this page, line $it." } +
+                if (directory) listOf("Write to the office at office@example.org for a form.") else emptyList()
+            val below = sketch.lines(body, LEFT, TOP)
+            val notes = below - PITCH
+            listOf("B Nora M. Gilbertson", "nmg421@uw.edu", "Department of Mathematics").forEachIndexed { i, line ->
+                sketch.line(line, LEFT, notes - NOTE * 1.2f * i, NOTE)
+            }
+            return units(sketch)
+        }
+        val note = page(directory = false).filter { it.kind == UnitKind.FOOTNOTE }.joinToString(" ") { it.text }
+        assertEquals("B Nora M. Gilbertson nmg421@uw.edu Department of Mathematics", note)
+        // A page with addresses in its body too is a directory: its last entry is no note.
+        assertTrue(page(directory = true).none { it.kind == UnitKind.FOOTNOTE })
+    }
+
+    @Test
     fun `small text that is not at the foot of its column, or a stray cell, stays body text`() {
         val stray = PageSketch()
         val below = stray.lines(List(4) { "Body text set in the regular size of this page, line $it." }, LEFT, TOP)
