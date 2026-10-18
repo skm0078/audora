@@ -58,13 +58,9 @@ class FileSherpaSynthesizerFactory(
     ): Outcome<SherpaSynthesizer, SpeechError> = BlendCache.locked {
         if (spec.blend == null) cache.clear(spec.id)
         val blended = spec.blend?.let { cache.voicesFor(spec, dir) }
-        val loaded = create(spec, dir, blended)
-        if (blended != null && loaded is Outcome.Failure) {
+        loadPreferringBlend(blended, { voices -> create(spec, dir, voices) }) {
             AudoraLog.w(TAG, "sherpa-onnx refused the blend of ${spec.voiceId}, loading it as installed")
             cache.report.neededBytes = 0
-            create(spec, dir, null)
-        } else {
-            loaded
         }
     }
 

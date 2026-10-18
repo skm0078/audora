@@ -295,8 +295,13 @@ class ReaderModel(
     fun skipParagraph(forward: Boolean) {
         if (!state.value.playerReady) return
         mutableState.update { it.copy(following = true) }
-        player.skipParagraph(forward)
+        player.skipParagraph(forward) {
+            val refusal = if (forward) ParagraphSkipRefusal.NO_NEXT else ParagraphSkipRefusal.NO_PREVIOUS
+            mutableState.update { it.copy(skipRefused = refusal) }
+        }
     }
+
+    fun skipRefusalShown() = mutableState.update { it.copy(skipRefused = null) }
 
     /**
      * Study loops (plan item 31): marks A or B at the sentence being read in this book, turns looping on or off, or

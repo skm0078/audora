@@ -84,9 +84,8 @@ class SherpaSpeechEngine(
             ?: return Outcome.Failure(
                 SpeechError.VoiceUnavailable(id, SpeechError.VoiceUnavailable.Reason.UNKNOWN_VOICE, voice),
             )
-        val speaker = CastSpeakers.speakerFor(spec, requested)
         return try {
-            mutex.withLock { withContext(dispatcher) { renderLocked(spec, text, rate, speaker) } }
+            mutex.withLock { withContext(dispatcher) { renderLocked(spec, text, rate, requested) } }
         } finally {
             // release() or trimMemory() may have found the lock taken by this render and left their work to whoever
             // holds it next.
@@ -128,9 +127,11 @@ class SherpaSpeechEngine(
         }
     }
 
-    private suspend fun renderLocked(spec: SherpaVoiceSpec, text: String, rate: Float, speaker: Int): RenderResult {
+    /** [requested]: another speaker of [spec]'s model, checked against the model once loaded. */
+    private suspend fun renderLocked(spec: SherpaVoiceSpec, text: String, rate: Float, requested: Int?): RenderResult {
         if (released.get()) return Outcome.Failure(SpeechError.EngineUnavailable(id, "engine was released"))
         return synthesizerFor(spec).flatMap { synthesizer ->
+            val speaker = CastSpeakers.speakerFor(spec, requested, synthesizer.speakerCount)
             if (text.isBlank()) {
                 Outcome.Success(
                     PcmAudio.silence(synthesizer.sampleRate),
@@ -189,6 +190,13 @@ class SherpaSpeechEngine(
                     "Loaded voice=${spec.voiceId} sampleRate=${result.value.sampleRate} loadMs=$loadMs " +
                         "loaded=${loaded.size}",
                 )
+                if (!CastSpeakers.tableFits(spec, result.value.speakerCount)) {
+                    AudoraLog.w(
+                        TAG,
+                        "voice=${spec.voiceId} holds ${result.value.speakerCount} speakers, not the ones its " +
+                            "character table lists; characters read with the voice's own speaker",
+                    )
+                }
                 result
             }
 

@@ -138,8 +138,12 @@ class FakePlaybackPort : PlaybackPort {
         calls += "undo jump"
     }
 
-    override fun skipParagraph(forward: Boolean) {
+    /** True: every paragraph skip is refused, as the service does at the book's end. */
+    var refuseParagraphs = false
+
+    override fun skipParagraph(forward: Boolean, onRefused: () -> Unit) {
         calls += "paragraph forward=$forward"
+        if (refuseParagraphs) onRefused()
     }
 
     override fun replayPrevious(factor: Float) {

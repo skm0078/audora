@@ -14,6 +14,7 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SleepOptions
+import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.pdf.document.PdfPageError
@@ -34,6 +35,7 @@ import io.github.skm0078.audora.playback.reading.ReadingSource
 import io.github.skm0078.audora.playback.recovery.PlaybackRecovery
 import io.github.skm0078.audora.playback.recovery.PlayerFault
 import io.github.skm0078.audora.playback.recovery.RecoveryAction
+import io.github.skm0078.audora.playback.voice.ReplayRender
 import java.time.LocalTime
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -56,6 +58,8 @@ class SessionSources(
     val onBook: suspend (BookId) -> Unit = {},
     val keepGoingToNextChapter: () -> Boolean = { true },
     val onBookFinished: (BookId) -> Unit = {},
+    val replayRender: ReplayRender? = null,
+    val replayStyle: (factor: Float) -> SpeechStyle? = { null },
 )
 
 /**
@@ -247,6 +251,7 @@ class BookSession(
      */
     fun onSpeechStyleChanged(playerSpeed: Float) {
         replay.forget()
+        sources.replayRender?.onSentence(null)
         player.setPlaybackSpeed(playerSpeed)
         val at = resumePoint() ?: return publishState()
         AudoraLog.i(TAG, "Speech style changed, restart book=${bookId?.logLabel} page=${at.page} char=${at.char}")
@@ -258,18 +263,39 @@ class BookSession(
      * little slower), then goes on at their speed from the next sentence. Only the player's speed changes, so nothing
      * is saved: leaving the reader, rotating or locking the phone mid-replay cannot keep the slower speed. The sentence
      * is one the reading modes play (the playlist holds no other), from the recent-audio cache when it is still there.
-     * False when no sentence was played before this one.
+     * With smart speed stretching the voice ([SessionSources.replayStyle] gives a style), the sentence is rendered
+     * again at the slower speed instead and reading rebuilds from it: one time-stretch is never run over another, at
+     * the cost of that sentence's render time (ADR-049). False when no sentence was played before this one.
      */
     fun replayPrevious(factor: Float): Boolean {
         val current = player.currentMediaItemIndex
-        val target = (current - 1 downTo 0).firstOrNull { playlist.itemAt(it) is PlaybackItem.Sentence }
-        val unit = target?.let { (playlist.itemAt(it) as? PlaybackItem.Sentence)?.unit } ?: return false
+        val target = (current - 1 downTo 0).firstOrNull { playlist.itemAt(it) is PlaybackItem.Sentence } ?: return false
+        val unit = (playlist.itemAt(target) as PlaybackItem.Sentence).unit
+        if (!replayRendered(unit, factor)) replayFromCache(target, unit, factor)
+        return true
+    }
+
+    /** With smart speed stretching the voice: renders [unit] again slower and rebuilds from it; false otherwise. */
+    private fun replayRendered(unit: ReadingUnit, factor: Float): Boolean {
+        val render = sources.replayRender
+        val slower = render?.let { sources.replayStyle(factor) }
+        if (render == null || slower == null) return false
+        AudoraLog.i(
+            TAG,
+            "Replay page=${unit.page} unit=${unit.index} factor=$factor re-rendered, book=${bookId?.logLabel}",
+        )
+        render.set(UnitKey.of(unit), slower)
+        rebuild(unit.page, unit.charStart, play = true, index = unit.index)
+        return true
+    }
+
+    /** The cached sentence at [target], through the player at [factor] times the listener's speed. */
+    private fun replayFromCache(target: Int, unit: ReadingUnit, factor: Float) {
         player.setPlaybackSpeed(replay.start(UnitKey.of(unit), player.playbackParameters.speed, factor))
         AudoraLog.i(TAG, "Replay page=${unit.page} unit=${unit.index} factor=$factor, book=${bookId?.logLabel}")
         ownSeekTarget = target
         player.seekTo(target, 0L)
         player.play()
-        return true
     }
 
     /**
@@ -818,6 +844,7 @@ class BookSession(
             study.onNewSentence()
             checkOvershoot(reason, mediaItem, previous, started)
             replay.onSentence(started?.let(UnitKey::of))?.let(player::setPlaybackSpeed)
+            sources.replayRender?.onSentence(started?.let(UnitKey::of))
             (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.let { sentence ->
                 lastSentence = sentence.unit
                 bookId?.let { events.onSentenceStarted(it, sentence.unit) }

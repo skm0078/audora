@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 class FakeSynthesizer(
     override val sampleRate: Int = 22_050,
     private val output: FloatArray = floatArrayOf(0.5f, -0.5f),
+    override val speakerCount: Int? = null,
 ) : SherpaSynthesizer {
     val calls = mutableListOf<Pair<String, Int>>()
     val rates = mutableListOf<Float>()

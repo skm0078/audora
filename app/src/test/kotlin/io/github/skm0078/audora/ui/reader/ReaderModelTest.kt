@@ -290,6 +290,23 @@ class ReaderModelTest {
     }
 
     @Test
+    fun `a paragraph skip with no paragraph that way says so once`() = runTest(UnconfinedTestDispatcher()) {
+        val model = model()
+        port.connect()
+        model.skipParagraph(forward = true)
+        assertNull(model.state.value.skipRefused)
+
+        port.refuseParagraphs = true
+        model.skipParagraph(forward = true)
+        assertEquals(ParagraphSkipRefusal.NO_NEXT, model.state.value.skipRefused)
+        model.skipRefusalShown()
+        assertNull(model.state.value.skipRefused)
+        model.skipParagraph(forward = false)
+        assertEquals(ParagraphSkipRefusal.NO_PREVIOUS, model.state.value.skipRefused)
+        assertEquals(listOf("paragraph forward=true", "paragraph forward=true", "paragraph forward=false"), port.calls)
+    }
+
+    @Test
     fun `close releases the PDF`() = runTest(UnconfinedTestDispatcher()) {
         val model = model()
         model.close()

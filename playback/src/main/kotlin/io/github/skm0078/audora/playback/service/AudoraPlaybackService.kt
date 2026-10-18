@@ -53,6 +53,7 @@ import io.github.skm0078.audora.playback.session.QueueRegistry
 import io.github.skm0078.audora.playback.session.SentenceTimings
 import io.github.skm0078.audora.playback.session.SessionEnvironment
 import io.github.skm0078.audora.playback.session.SessionSources
+import io.github.skm0078.audora.playback.session.ShakeSource
 import io.github.skm0078.audora.playback.session.SleepOptionsStore
 import io.github.skm0078.audora.playback.session.SpeechPlayer
 import io.github.skm0078.audora.playback.upnext.QueueAdvance
@@ -61,6 +62,7 @@ import io.github.skm0078.audora.playback.voice.BookRenderers
 import io.github.skm0078.audora.playback.voice.CharacterCast
 import io.github.skm0078.audora.playback.voice.CharacterFileStore
 import io.github.skm0078.audora.playback.voice.RenderSpeedTracker
+import io.github.skm0078.audora.playback.voice.ReplayRender
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.StudyGapRenderer
@@ -126,6 +128,9 @@ class AudoraPlaybackService : MediaLibraryService() {
     // Where the voice speaks in each clip, for the reader's word highlight (plan item 14).
     private val timings = SentenceTimings()
 
+    // The sentence "What did it say?" renders again slower, with smart speed on (ADR-049).
+    private val replayRender = ReplayRender()
+
     override fun onCreate() {
         super.onCreate() // Hilt injects fields here.
         val style = SpeechStyleStore.forContext(this)
@@ -170,16 +175,12 @@ class AudoraPlaybackService : MediaLibraryService() {
                 },
                 keepGoingToNextChapter = { upNext.queue.value.keepGoingToNextChapter },
                 onBookFinished = queueAdvance()::onBookFinished,
+                replayRender = replayRender,
+                replayStyle = { factor -> style.config.replayStyle(heard(), factor) },
             ),
             config = config,
             events = publisher(mediaSession, stores, heard, engines).also { it.publishInitial() },
-            env = SessionEnvironment(
-                scope = scope,
-                extraction = Dispatchers.IO.limitedParallelism(1),
-                elapsedRealtime = SystemClock::elapsedRealtime,
-                wallClock = System::currentTimeMillis,
-                shakes = AccelerometerShakes(this, config.sleep),
-            ),
+            env = sessionEnvironment(scope, AccelerometerShakes(this, config.sleep)),
         )
         resumption = PlaybackResumption(
             anchors = resumeAnchors,
@@ -257,6 +258,7 @@ class AudoraPlaybackService : MediaLibraryService() {
             speakability = reading.speakability,
             speed = RenderSpeedTracker(engines::speeds),
             timings = timings,
+            replay = replayRender,
         ),
         // Live playback only: "Leave a gap to say it back" (plan item 31).
         gaps = { heard().modes.afterSentence == AfterSentence.GAP },
@@ -358,4 +360,13 @@ private fun characterCast(
     speakers = { voice -> engines.bundled().getOrNull()?.engine?.castSpeakers(voice).orEmpty() },
     taken = { lang -> heard().shaping.let { setOfNotNull(it.dialogueVoices[lang], it.headingVoices[lang]) } },
     files = CharacterFileStore.forContext(context),
+)
+
+/** The session's threads and clocks, on the service's [scope]. */
+private fun sessionEnvironment(scope: CoroutineScope, shakes: ShakeSource) = SessionEnvironment(
+    scope = scope,
+    extraction = Dispatchers.IO.limitedParallelism(1),
+    elapsedRealtime = SystemClock::elapsedRealtime,
+    wallClock = System::currentTimeMillis,
+    shakes = shakes,
 )
