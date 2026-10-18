@@ -233,7 +233,7 @@ private fun Sentences(state: ReaderState, units: List<ReadingUnit>, actions: Rea
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             )
         }
-        itemsIndexed(units, key = { _, unit -> unit.charStart }) { index, unit ->
+        itemsIndexed(units, key = { _, unit -> unit.index }) { index, unit ->
             Sentence(
                 unit,
                 SentenceLook(spoken = index == spoken, unreadable = state.isUnreadable(unit)),
