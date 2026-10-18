@@ -71,9 +71,20 @@ interface ScreenPreference {
     suspend fun saveVolumeKeysSkip(on: Boolean) = Unit
 
     /** "Audora, pause" and the other spoken commands in the reader (plan item 38); off by default (battery). */
-    fun voiceCommands(): Flow<Boolean> = flowOf(false)
+    fun voiceCommands(): Flow<VoiceCommandsMode> = flowOf(VoiceCommandsMode.OFF)
 
-    suspend fun saveVoiceCommands(on: Boolean) = Unit
+    suspend fun saveVoiceCommands(mode: VoiceCommandsMode) = Unit
+}
+
+/** When voice commands listen (plan item 38). */
+enum class VoiceCommandsMode {
+    OFF,
+
+    /** While the reader is on screen; Android shows the microphone indicator meanwhile. */
+    WHILE_VISIBLE,
+
+    /** Also with the screen off, from a microphone foreground service with its own notification (opt-in). */
+    SCREEN_OFF,
 }
 
 class LibraryReaderBooks(private val library: Library) : ReaderBooks {

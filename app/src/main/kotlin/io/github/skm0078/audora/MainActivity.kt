@@ -91,6 +91,7 @@ import io.github.skm0078.audora.ui.reader.SleepTimerSetting
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
 import io.github.skm0078.audora.ui.reader.VoiceCommandsEffect
+import io.github.skm0078.audora.ui.reader.VoiceCommandsMode
 import io.github.skm0078.audora.ui.reader.VolumeKeySkips
 import io.github.skm0078.audora.ui.reader.onVoiceCommand
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
@@ -106,6 +107,8 @@ import io.github.skm0078.audora.ui.voices.VoicesScreen
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -487,10 +490,14 @@ class MainActivity : ComponentActivity() {
         KeepScreenOn(keepScreenOn && state.playback.wantsToPlay)
         val volumeKeys by remember { screenPreference.volumeKeysSkip() }.collectAsStateWithLifecycle(false)
         VolumeKeySkips(volumeKeys && state.playback.wantsToPlay, model::skipForward, model::skipBack)
-        val commandsOn by remember { screenPreference.voiceCommands() }.collectAsStateWithLifecycle(false)
+        val commands by remember { screenPreference.voiceCommands() }
+            .collectAsStateWithLifecycle(VoiceCommandsMode.OFF)
         val commandsModel by remember { voiceCommandModels.installed() }.collectAsStateWithLifecycle(false)
         val listener = remember { CommandListener(context, voiceCommandModels) }
-        VoiceCommandsEffect(commandsOn && commandsModel, listener) { model.onVoiceCommand(it, readerConfig) }
+        val reading = remember(model) { model.state.map { it.isReading }.distinctUntilChanged() }
+        VoiceCommandsEffect(commands.takeIf { commandsModel } ?: VoiceCommandsMode.OFF, listener, reading) {
+            model.onVoiceCommand(it, readerConfig)
+        }
         ReaderScreen(
             state = state,
             config = readerConfig,

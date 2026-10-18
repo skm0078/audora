@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: playback/src/main/res/values/strings_commands.xml -->
+<!-- Purpose: The notification shown while voice commands listen with the screen off (plan item 38). -->
+<resources>
+    <string name="commands_channel">Voice commands</string>
+    <string name="commands_channel_description">Shown while Audora listens for voice commands with the screen off.</string>
+    <string name="commands_listening_title">Listening for \"Audora\"</string>
+    <string name="commands_listening_text">Say \"Audora, pause\", \"play\", \"next\" or another command. Heard only on this phone.</string>
+    <string name="commands_listening_stop">Stop listening</string>
+</resources>

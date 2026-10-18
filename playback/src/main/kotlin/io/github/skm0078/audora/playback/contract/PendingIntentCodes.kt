@@ -20,4 +20,10 @@ object PendingIntentCodes {
 
     /** The audiobook export notification's Cancel (a service intent). */
     const val CANCEL_EXPORT = 3
+
+    /** The screen-off voice commands notification (plan item 38): open Audora. */
+    const val OPEN_FROM_VOICE_COMMANDS = 4
+
+    /** The same notification's Stop listening (a service intent). */
+    const val STOP_SCREEN_OFF_LISTENING = 5
 }
