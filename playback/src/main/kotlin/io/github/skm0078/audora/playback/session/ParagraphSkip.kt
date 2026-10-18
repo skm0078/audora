@@ -46,7 +46,8 @@ class ParagraphSkip(
     /**
      * The start of the paragraph holding [current], or of the one before when [current] starts its paragraph (as a
      * music player's "previous" restarts the track, then goes back), with its unit index. At the book's start,
-     * [current] itself.
+     * [current] itself. With no unit at all in the [maxPages] pages back (unreadable or empty pages), the start of
+     * the page before them (no index), so a skip back never reads as "already at the start" mid-book.
      */
     fun previous(current: ReadingUnit): Spot {
         var start = current
@@ -56,7 +57,8 @@ class ParagraphSkip(
             if (endsParagraph(unit) && start !== current) return start.spot()
             start = unit
         }
-        return start.spot()
+        val nothingBack = start === current && current.page > 0
+        return if (nothingBack) Spot(maxOf(0, current.page - maxPages - 1), 0) else start.spot()
     }
 
     private fun endsParagraph(unit: ReadingUnit): Boolean =

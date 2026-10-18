@@ -1,11 +1,15 @@
 // File: playback/src/androidTest/kotlin/io/github/skm0078/audora/playback/contract/PlaybackContractDeviceTest.kt
-// Purpose: PLAY_FROM's unit index survives the Bundle, and a start without one (or a bad one) reads as none.
+// Purpose: PLAY_FROM's unit index survives the Bundle (a bad one reads as none); command errors read back by name.
 
 package io.github.skm0078.audora.playback.contract
 
 import android.os.Bundle
+import androidx.media3.session.SessionResult
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.github.skm0078.audora.playback.service.SessionResults
+import io.github.skm0078.audora.playback.session.ParagraphSkipResult
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -24,5 +28,21 @@ class PlaybackContractDeviceTest {
         assertNull(PlaybackContract.unitIndexFrom(PlaybackContract.playFromArgs("book", page = 2, charStart = 40)))
         val bad = Bundle().apply { putInt(PlaybackContract.ARG_UNIT_INDEX, -1) }
         assertNull(PlaybackContract.unitIndexFrom(bad))
+    }
+
+    @Test
+    fun aParagraphSkipBackAtTheBookStartIsAnErrorTheReaderTellsTheListener() {
+        // BookSessionTest shows the session answers NONE_THAT_WAY there; this is what the reader then receives.
+        val result = SessionResults.of(ParagraphSkipResult.NONE_THAT_WAY)
+        assertNotEquals(SessionResult.RESULT_SUCCESS, result.resultCode)
+        assertEquals(
+            PlaybackErrorCode.NO_PARAGRAPH_THAT_WAY.name,
+            result.extras.getString(PlaybackContract.RESULT_ERROR),
+        )
+        assertEquals(SessionResult.RESULT_SUCCESS, SessionResults.of(ParagraphSkipResult.MOVED).resultCode)
+        assertEquals(
+            PlaybackErrorCode.STALE_REQUEST.name,
+            SessionResults.of(ParagraphSkipResult.DROPPED).extras.getString(PlaybackContract.RESULT_ERROR),
+        )
     }
 }

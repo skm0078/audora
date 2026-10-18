@@ -20,10 +20,13 @@ import org.junit.Test
 class CharacterCastTest {
     private class MemoryFiles : CharacterFiles {
         val books = HashMap<BookId, Map<String, String>>()
+        var loads = 0
+        var saves = 0
 
-        override fun load(book: BookId): Map<String, String> = books[book].orEmpty()
+        override fun load(book: BookId): Map<String, String> = books[book].orEmpty().also { loads++ }
 
         override fun save(book: BookId, cast: Map<String, String>) {
+            saves++
             books[book] = cast
         }
     }
@@ -113,6 +116,39 @@ class CharacterCastTest {
     }
 
     @Test
+    fun `a new character saves once, a voice already given saves nothing, and two casts of a book load it once`() {
+        val playback = cast()
+        val export = cast()
+        assertEquals(1, files.loads)
+
+        playback.voiceFor(Lang.EN, Speaker("Mira", SpeakerGender.FEMALE))
+        export.voiceFor(Lang.EN, Speaker("Tom", SpeakerGender.MALE))
+        assertEquals(2, files.saves)
+
+        playback.voiceFor(Lang.EN, Speaker("Tom", SpeakerGender.UNKNOWN))
+        export.voiceFor(Lang.EN, Speaker("Mira", SpeakerGender.FEMALE))
+        playback.voiceFor(Lang.EN, Speaker("Sam", SpeakerGender.UNKNOWN))
+        assertEquals(2, files.saves)
+        assertEquals(1, files.loads)
+    }
+
+    @Test
+    fun `two threads casting at once keep every character`() {
+        val playback = cast()
+        val export = cast()
+        val names = (1..THREAD_CHARACTERS).map { "Character $it" }
+        val threads = listOf(playback, export).mapIndexed { i, reader ->
+            val mine = names.filterIndexed { n, _ -> n % 2 == i }
+            Thread { mine.forEach { reader.voiceFor(Lang.EN, Speaker(it, SpeakerGender.MALE)) } }
+        }
+        threads.forEach(Thread::start)
+        threads.forEach(Thread::join)
+
+        assertEquals(THREAD_CHARACTERS, files.books.getValue(BOOK).size)
+        assertEquals(THREAD_CHARACTERS, files.saves)
+    }
+
+    @Test
     fun `a book opened in a new process reads its file once`() {
         files.books[BOOK] = mapOf(listOf(NARRATOR.name, Lang.EN.name, "mira").joinToString("|") to "kokoro-en#2")
         val fresh = CharacterCasts(files)
@@ -127,6 +163,7 @@ class CharacterCastTest {
     private companion object {
         const val FEMALE_A = 1
         const val FEMALE_B = 2
+        const val THREAD_CHARACTERS = 40
         val BOOK = BookId("book-1")
         val NARRATOR = VoiceId(EngineId.SHERPA, "kokoro-en")
         val OTHER = VoiceId(EngineId.SHERPA, "piper-hi")

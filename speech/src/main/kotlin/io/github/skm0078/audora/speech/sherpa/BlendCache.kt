@@ -15,7 +15,9 @@ data class NarratorBlend(val narrator: VoiceId, val blend: StyleBlend)
 /**
  * [blend] on the narrator's spec only, and only when it names another English speaker of that Kokoro model: a
  * Kokoro quote or heading voice, a Kokoro voice in another language, or a speaker id a restored setting got wrong
- * reads as installed.
+ * reads as installed. So does an imported Kokoro voice (`custom-*`): the speaker tables are keyed on the catalog
+ * voice ([CastSpeakers]), and without one the other speaker cannot be checked, so an imported voice gets neither a
+ * blend nor a cast.
  */
 fun List<SherpaVoiceSpec>.withNarratorBlend(blend: NarratorBlend?): List<SherpaVoiceSpec> =
     if (blend == null) this else map { spec -> if (blend.fits(spec)) spec.copy(blend = blend.blend) else spec }

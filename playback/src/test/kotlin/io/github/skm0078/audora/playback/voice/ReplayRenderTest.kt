@@ -30,4 +30,12 @@ class ReplayRenderTest {
         assertNull(replay.styleFor(UnitKey(2, 4)))
         assertNull(replay.onSentence(UnitKey(2, 6)))
     }
+
+    @Test
+    fun `clearing ends the replay without naming a sentence`() {
+        replay.set(UnitKey(2, 4), slower)
+        replay.clear()
+        assertNull(replay.styleFor(UnitKey(2, 4)))
+        assertNull(replay.onSentence(UnitKey(2, 5)))
+    }
 }

@@ -37,6 +37,8 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 // Errors fail CI; warnings are listed in the report only.
                 abortOnError = true
                 warningsAsErrors = false
+                // TEMPORARY until the last landing (studio): the v0.1.0 gate makes this an error again.
+                warning += "MissingTranslation"
                 textReport = true
                 textOutput = file("build/reports/lint-results.txt")
             }

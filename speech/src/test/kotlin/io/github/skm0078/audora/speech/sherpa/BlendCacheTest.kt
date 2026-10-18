@@ -57,6 +57,14 @@ class BlendCacheTest {
     }
 
     @Test
+    fun `an imported Kokoro voice gets no blend, since no speaker table is keyed on it`() {
+        val imported = kokoro(id = "custom-my-kokoro-1a2b")
+        val specs = listOf(imported)
+
+        assertEquals(specs, specs.withNarratorBlend(NarratorBlend(imported.voiceId, StyleBlend(12, 0.3f))))
+    }
+
+    @Test
     fun `a copy is reused, rebuilt for a new voice version, and the old copy and temp files go`() {
         writeVoices()
         val cache = BlendCache(root, headroomBytes = 0)

@@ -56,8 +56,15 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
      * The voice that reads [lang] now if it is already known, without binding the phone's TTS: what the render-ahead
      * window sizes for. Null before the language's default was first resolved.
      */
-    fun knownVoice(lang: Lang): VoiceId? =
-        bookVoice(lang)?.takeIf(engines::canSpeak) ?: chosen[lang] ?: engines.preferred(lang) ?: defaults[lang]
+    fun knownVoice(lang: Lang): VoiceId? = choiceFor(lang) ?: defaults[lang]
+
+    /**
+     * The voice explicitly chosen for [lang] (the book's while still installed, the session's or Settings → Voices),
+     * null when the language reads with its default. Never binds the phone's TTS; studio mode keys its audio by it
+     * (ADR-039), so a deleted book voice, which playback never reads with, is not named in a key either.
+     */
+    fun choiceFor(lang: Lang): VoiceId? =
+        VoiceChoice.of(bookVoice(lang), engines::canSpeak, chosen[lang]) { engines.preferred(lang) }
 
     /** How fast the voice reading [lang] renders on this phone; null if unknown or not measured yet (P4-02). */
     fun speedOf(lang: Lang): VoiceSpeed? = knownVoice(lang)?.let { engines.speeds().get(it) }

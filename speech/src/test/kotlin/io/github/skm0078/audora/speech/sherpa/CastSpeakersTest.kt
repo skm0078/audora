@@ -59,13 +59,19 @@ class CastSpeakersTest {
         val catalogs = listOf("models.json", "bundled-voices.json").map { name ->
             (File(name).takeIf { it.isFile } ?: File("speech/$name")).readText()
         }
+        // Matched by pattern, not exact spacing, so reformatting a catalog cannot make a voice vanish from the check.
+        val nextId = Regex(""""id"\s*:""")
         CastSpeakers.archives.forEach { (voice, archive) ->
+            val id = Regex(""""id"\s*:\s*"${Regex.escape(voice)}"""")
+            val installs = Regex(""""archive"\s*:\s*"${Regex.escape(archive)}"""")
             val entries = catalogs.mapNotNull { text ->
-                text.takeIf { "\"id\": \"$voice\"" in it }
-                    ?.substringAfter("\"id\": \"$voice\"")?.substringBefore("\"id\":")
+                id.find(text)?.let { found ->
+                    val rest = text.substring(found.range.last + 1)
+                    rest.substring(0, nextId.find(rest)?.range?.first ?: rest.length)
+                }
             }
             assertTrue("no catalog has $voice", entries.isNotEmpty())
-            entries.forEach { assertTrue("$voice no longer installs $archive", "\"archive\": \"$archive\"" in it) }
+            entries.forEach { assertTrue("$voice no longer installs $archive", installs.containsMatchIn(it)) }
         }
     }
 

@@ -251,7 +251,7 @@ class BookSession(
      */
     fun onSpeechStyleChanged(playerSpeed: Float) {
         replay.forget()
-        sources.replayRender?.onSentence(null)
+        sources.replayRender?.clear()
         player.setPlaybackSpeed(playerSpeed)
         val at = resumePoint() ?: return publishState()
         AudoraLog.i(TAG, "Speech style changed, restart book=${bookId?.logLabel} page=${at.page} char=${at.char}")
@@ -856,7 +856,10 @@ class BookSession(
             checkOvershoot(reason, mediaItem, previous, started)
             replay.onSentence(started?.let(UnitKey::of))?.let(player::setPlaybackSpeed)
             // A replay's slower render ended: drop it, so skipping back plays the sentence at the listener's speed.
-            sources.replayRender?.onSentence(started?.let(UnitKey::of))?.let { queue?.forget(it) }
+            // Only a sentence ends it: a rebuild's placeholder (More) starts first, before the replayed sentence loads.
+            started?.let { sentence ->
+                sources.replayRender?.onSentence(UnitKey.of(sentence))?.let { queue?.forget(it) }
+            }
             (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.let { sentence ->
                 lastSentence = sentence.unit
                 bookId?.let { events.onSentenceStarted(it, sentence.unit) }
