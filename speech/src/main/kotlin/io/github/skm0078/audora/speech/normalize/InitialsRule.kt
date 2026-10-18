@@ -3,6 +3,8 @@
 
 package io.github.skm0078.audora.speech.normalize
 
+import io.github.skm0078.audora.core.config.NumberingWords
+
 /**
  * The voices' phonemizer (espeak-ng) ends a clause at every full stop followed by a space, so "A. P. J. Abdul
  * Kalam" was read as four sentences: a falling tone and a pause after each letter, as long as the pause after a real
@@ -13,8 +15,8 @@ package io.github.skm0078.audora.speech.normalize
  *
  * The unit's sentence boundaries were decided upstream, so a dot is a sentence end only at the very end of the text,
  * where the last one is kept ([keepSentenceStop]). A lone initial at the start of the text stays ("A. Introduction"
- * may be a list label), and so does one after a numbering word ("Part C. Results", "Chapter I. Origins"), where the
- * stop is real.
+ * may be a list label), and so does one after a numbering word ([NumberingWords], shared with the sentence
+ * splitter: "Part C. Results", "Article V. The"), where the stop is real.
  */
 internal class InitialsRule : NormalizationRule {
     override fun apply(text: String, role: TextRole): String {
@@ -23,7 +25,7 @@ internal class InitialsRule : NormalizationRule {
         }
         return SINGLE.replace(runs) { match ->
             val (word, letter) = match.destructured
-            if (word in NUMBERING_WORDS) match.value else "$word $letter"
+            if (word in NumberingWords.ALL) match.value else "$word $letter"
         }
     }
 
@@ -35,12 +37,5 @@ internal class InitialsRule : NormalizationRule {
 
         // A capitalised word, one initial, then a capitalised word ("W." in "George W. Bush").
         val SINGLE = Regex("""(?<![\p{L}\p{N}.])(\p{Lu}\p{Ll}+) (\p{Lu})\.(?=\s+\p{Lu}\p{Ll})""")
-
-        /** Words a letter or Roman numeral follows as a label; the full stop after that label is a real stop. */
-        val NUMBERING_WORDS = setOf(
-            "Act", "Annex", "Appendix", "Article", "Block", "Book", "Chapter", "Class", "Exhibit", "Figure", "Grade",
-            "Group", "Lesson", "Level", "Model", "Option", "Paper", "Part", "Phase", "Plan", "Room", "Scene",
-            "Schedule", "Section", "Stage", "Step", "Table", "Team", "Type", "Unit", "Vitamin", "Volume", "War",
-        )
     }
 }
