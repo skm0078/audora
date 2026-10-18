@@ -28,6 +28,10 @@ package io.github.skm0078.audora.core.model
  *   other kind.
  * @property noteRef the note number a [UnitKind.FOOTNOTE] unit holds (its marker in the body text points to it);
  *   null for every other kind.
+ * @property boldTerms the words of [text] set in a bold font, as spans in order (plan item 64: skim reads the bold
+ *   terms); bold words with only spaces between them are one span, and a sentence set wholly bold is one span over
+ *   it. Empty on headings, table units, scanned pages (OCR gives no font) and when nothing is bold. Display and
+ *   playback only: never part of a fingerprint, an anchor or anything saved.
  */
 data class ReadingUnit(
     val page: Int,
@@ -42,6 +46,7 @@ data class ReadingUnit(
     val speakScore: Float? = null,
     val table: TableRowInfo? = null,
     val noteRef: Int? = null,
+    val boldTerms: List<TermSpan> = emptyList(),
 ) {
     init {
         require(page >= 0) { "page must be >= 0, was $page" }
@@ -52,6 +57,7 @@ data class ReadingUnit(
             require(info.cells.all { it.end <= text.length }) { "table cells must lie inside the unit's text" }
         }
         require(noteRef == null || kind == UnitKind.FOOTNOTE) { "noteRef is only for footnotes, kind was $kind" }
+        require(boldTerms.all { it.end <= text.length }) { "bold terms must lie inside the unit's text" }
     }
 }
 
@@ -130,5 +136,12 @@ data class TableRowInfo(
 data class CellSpan(val start: Int, val end: Int) {
     init {
         require(start in 0..end) { "start ($start) must be in 0..end ($end)" }
+    }
+}
+
+/** A stretch of a unit's `text` (a bold term): [start] inclusive, [end] exclusive, never empty. */
+data class TermSpan(val start: Int, val end: Int) {
+    init {
+        require(start in 0 until end) { "start ($start) must be in 0 until end ($end)" }
     }
 }

@@ -46,6 +46,7 @@ package io.github.skm0078.audora.pdf
  *     merged with the next one split at its short last line; header years decided against their column's figures; a
  *     headless table's first row read as data row 0 under a summary of no length; scanned pages binarized with
  *     Sauvola instead of Otsu (ADR-025 amendment), so photos with shadows or uneven light keep their text; an unsure
- *     page with unevenly lit paper read again with its light evened out (a hard shadow across a photo).
+ *     page with unevenly lit paper read again with its light evened out (a hard shadow across a photo); words set
+ *     in a bold font tagged as each unit's bold terms (`ReadingUnit.boldTerms`, plan item 64).
  */
 const val PIPELINE_VERSION: Int = 11

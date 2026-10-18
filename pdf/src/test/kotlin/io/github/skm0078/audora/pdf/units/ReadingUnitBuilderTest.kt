@@ -181,4 +181,25 @@ class ReadingUnitBuilderTest {
         assertEquals(listOf(UnitKind.HEADING, UnitKind.BODY), units.map { it.kind })
         assertEquals(listOf(600, 400), units.map { it.pauseAfterMs })
     }
+
+    @Test
+    fun `words in a bold font are the unit's bold terms, as spans of its text`() {
+        val marked = "Water moves by osmosis. The [Krebs cycle] makes ATP in the [mitochondria]."
+        val chars = ArrayList<SyntheticChar>()
+        var bold = false
+        for (c in marked) {
+            when (c) {
+                '[' -> bold = true
+                ']' -> bold = false
+                else -> chars.add(RawPageFixture.chars(c.toString()).single().copy(fontId = if (bold) 2 else 0))
+            }
+        }
+        val fonts = listOf("Body", "Heading", "ABCDEF+Times-Bold")
+        val page = PageTextAssembler().assemble(RawPageFixture.page(chars, fontNames = fonts))
+        val units = builder.build(page)
+        assertEquals(
+            listOf(emptyList(), listOf("Krebs cycle", "mitochondria")),
+            units.map { unit -> unit.boldTerms.map { unit.text.substring(it.start, it.end) } },
+        )
+    }
 }

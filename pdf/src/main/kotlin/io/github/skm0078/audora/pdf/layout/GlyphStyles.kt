@@ -61,8 +61,8 @@ internal class GlyphStyles(page: PageText, private val config: LayoutConfig) {
         return boldGlyphs * 2 > glyphs
     }
 
-    private companion object {
-        const val HALF_POINTS = 2f
+    companion object {
+        private const val HALF_POINTS = 2f
 
         /** Subset fonts are named "ABCDEF+Times-Bold"; the prefix is random and could contain a marker. */
         fun isBoldFont(name: String, markers: List<String>): Boolean {
