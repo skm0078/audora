@@ -142,7 +142,10 @@ private class PdfiumDocumentHandle(private val document: PdfDocumentU, private v
     // A damaged label tree must not stop the book from being read: log it and read on with plain page numbers.
     @Suppress("TooGenericExceptionCaught") // PdfiumAndroidKt and JNI report failures as RuntimeExceptions.
     override fun pageLabel(pageIndex: Int): String? = try {
-        pdfiumLocked { PdfiumExtNative.nativePageLabel(document.mNativeDocPtr, pageIndex) }
+        pdfiumLocked { PdfiumExtNative.nativePageLabel(document.mNativeDocPtr, pageIndex) }?.ifEmpty {
+            AudoraLog.w(TAG, "Page label too long to be one (damaged label tree), page=$pageIndex")
+            null
+        }
     } catch (e: RuntimeException) {
         AudoraLog.w(TAG, "Could not read the page label, page=$pageIndex", e)
         null

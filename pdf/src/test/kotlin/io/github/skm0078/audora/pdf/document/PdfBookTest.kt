@@ -25,6 +25,7 @@ class PdfBookTest {
         val passwordsSeen = ArrayList<String?>()
         var openHandles = 0
         var reads = 0
+        var labelReads = 0
         var failNextOpen = false
 
         override fun open(password: String?): Outcome<PdfDocumentHandle, PdfOpenError> {
@@ -55,7 +56,10 @@ class PdfBookTest {
 
             override fun outline() = listOf(OutlineEntry("Chapter", 0))
 
-            override fun pageLabel(pageIndex: Int) = labels(pageIndex)
+            override fun pageLabel(pageIndex: Int): String? {
+                labelReads++
+                return labels(pageIndex)
+            }
 
             override fun close() {
                 openHandles--
@@ -100,6 +104,9 @@ class PdfBookTest {
         val book = requireNotNull(PdfBook.open(engine).getOrNull())
         assertEquals(listOf("i", "ii", null, null, "A-3", "12"), book.pageLabels().getOrNull())
         assertEquals(0, engine.reads)
+        assertEquals(printed.size, engine.labelReads)
+        book.pageLabels()
+        assertEquals("read once per book", printed.size, engine.labelReads)
         book.close()
         assertEquals(PdfPageError.BookClosed, book.pageLabels().errorOrNull())
     }

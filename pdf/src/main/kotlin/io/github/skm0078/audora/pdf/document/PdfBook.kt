@@ -67,6 +67,7 @@ class PdfBook private constructor(
     private val assembler = PageTextAssembler(config)
     private var caches: PageCaches? = null
     private var textLayerCheck: TextLayerCheck? = null
+    private var pageLabels: List<String?>? = null
     private var ocrLanguages: OcrLanguages? = null
     private val ocr: PageOcr? = ocrFactory?.create(PageRenderer(::render))
 
@@ -116,11 +117,14 @@ class PdfBook private constructor(
     /**
      * Each page's printed label ("iv", "A-3"), so a copy or a "Go to page" can use the numbers printed on the
      * pages; null for a page without one (most PDFs have no labels at all). Trimmed, control characters dropped.
-     * Does not count as a page read: labels live in the document catalog.
+     * Does not count as a page read: labels live in the document catalog. Read once per book (an older PDFium walks
+     * the label tree for every page).
      */
     @Synchronized
     fun pageLabels(): Outcome<List<String?>, PdfPageError> = handle?.let { open ->
-        Outcome.Success(List(pageCount) { page -> open.pageLabel(page)?.let(::cleanLabel) })
+        val labels = pageLabels ?: List(pageCount) { page -> open.pageLabel(page)?.let(::cleanLabel) }
+        pageLabels = labels
+        Outcome.Success(labels)
     } ?: Outcome.Failure(PdfPageError.BookClosed)
 
     /**
