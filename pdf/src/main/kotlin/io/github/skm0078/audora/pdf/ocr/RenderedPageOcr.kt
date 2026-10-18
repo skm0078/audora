@@ -148,7 +148,7 @@ class RenderedPageOcr(
     private fun evenlyLit(page: RecognizedPage, upright: PageImage, langs: Set<Lang>): Pair<RecognizedPage, PageImage> {
         val lighting = config.lighting
         val unsure = lighting.enabled && page.meanConfidence < lighting.readAgainBelow
-        val light = if (unsure) PaperLight.of(upright, lighting) else null
+        val light = if (unsure) PaperLight.of(upright, lighting, page.lineHeight) else null
         if (light == null || light.evenness >= lighting.unevenBelow) return page to upright
         val evened = light.evened()
         return when (val read = engine.recognize(evened, langs)) {
@@ -161,13 +161,18 @@ class RenderedPageOcr(
         }
     }
 
-    /** [again], read evened, reads clearly surer than [page] with as many words; logged either way. */
+    /**
+     * [again], read evened, reads clearly surer than [page], sure enough on its own, with as many words and more
+     * confidence over all its characters; logged either way.
+     */
     private fun keepsEvened(page: RecognizedPage, again: RecognizedPage, light: PaperLight): Boolean {
         val lighting = config.lighting
         val words = page.lines.sumOf { it.words.size }
         val againWords = again.lines.sumOf { it.words.size }
         val better = again.meanConfidence >= page.meanConfidence + lighting.minGain &&
-            againWords >= words * lighting.minWordShare
+            again.meanConfidence >= lighting.minEvenedConfidence &&
+            againWords >= words * lighting.minWordShare &&
+            confidenceTotal(again) > confidenceTotal(page)
         AudoraLog.i(
             TAG,
             "OCR lighting $logContext page=${light.pageIndex} evenness=${"%.2f".format(Locale.ROOT, light.evenness)} " +
@@ -176,6 +181,9 @@ class RenderedPageOcr(
         )
         return better
     }
+
+    private fun confidenceTotal(page: RecognizedPage): Long =
+        page.lines.sumOf { line -> line.words.sumOf { it.conf.toLong() * it.text.length } }
 
     /**
      * [variant] with the models the line retry may use: a page read before another model was installed is read again
@@ -256,9 +264,10 @@ class RenderedPageOcr(
 
         /**
          * Pages with the line retry (RI-3), rules (RI-4a part 2), line sizes (RI-10) and evened light; older text is
-         * not reused.
+         * not reused. [io.github.skm0078.audora.core.config.LightingConfig] is not in the key: bump this when it
+         * changes.
          */
-        private const val PAGE_VARIANT = "page-r4"
+        private const val PAGE_VARIANT = "page-r5"
 
         /** Margin strips with the line retry, like the page they are compared with. */
         private const val MARGIN_VARIANT = "margins-r2-"
