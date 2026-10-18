@@ -78,7 +78,9 @@ nothing, for a scan). Measured on the S2 corpus with desktop Tesseract 5.3.4 and
   blur, noise and JPEG from 34-80 % to 3-8 %, and under a hard shadow from 45-49 % to 15-33 %. On the generated
   300 dpi and degraded 200 dpi scans it stayed within half a point of Otsu (better on three of six), and on 19 pages
   of six real scans the word count and mean confidence moved by at most 2, at the same speed. The method is part of
-  the OCR cache key (`TesseractEngine.cacheTag`).
+  the OCR cache key (`TesseractEngine.cacheTag`). A Tesseract without `thresholding_method` (before 5.0) refuses the
+  variable; the engine asks once, keeps its own Otsu, logs a warning and names `otsu` in the cache key, so pages read
+  that way are never served as Sauvola reads (the bundled Tesseract4Android takes it, checked by an instrumented test).
 - **Amendment (2026-10-18, same follow-up):** a page that still reads unsure (mean confidence below 85) with its
   paper unevenly lit (the 5th percentile of its estimated brightness under 0.85 of the 95th) is read again with its
   light evened out (`PaperLight`, `OcrConfig.lighting`): the paper's brightness is estimated on a copy sampled once
@@ -87,8 +89,9 @@ nothing, for a scan). Measured on the S2 corpus with desktop Tesseract 5.3.4 and
   and smoothed there, and each pixel divided by it; pure Kotlin on 8-bit grey, two passes over the pixels, about
   50 ms for an A4 page at 300 dpi on a desktop JVM. The block follows the text, not the render's dpi, because a
   photo PDF's page size need not match its pixels. The evened read is kept only when it reads at least 5 points
-  surer, at 80 or more, with at least 90 % of the words and more confidence summed over its characters (the mean is
-  weighted by characters, so dropping a few sure words could raise it). On UDHR
+  surer, at 80 or more, with at least as many words (a short title the first read caught is not traded for surer
+  body text; the shadowed pages read 10-23 % more words evened) and more confidence summed over its characters (the
+  mean is weighted by characters, so dropping a few sure words could raise it). On UDHR
   pages with a hard shadow (Sauvola alone: 71-78 confidence, 15-33 % character error) it reads at 92-96 and 3-10 %,
   as the same pages unshadowed do. Gradient, vignette and blurred pages read at 87 or more and are not touched;
   every test scan's paper is at least 0.95 even, so scans are never touched. A cover with a white title on a grey

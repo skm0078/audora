@@ -12,12 +12,13 @@ import io.github.skm0078.audora.pdf.layout.TextSpan
 
 /**
  * A cell that is a number: "12", "-2.98", "4.00", "98,62,767", "৩.৯১", "45%", "12 %", "12." (a serial number), and as
- * accounts write them: "₹12", "Rs. 12", "500/-", "12*" (a note on the figure), "(1,234)" (a loss). A bracketed number
- * needs three characters at least: "(1)", "(12)" number a table's columns or a list's items.
+ * accounts write them: "₹12", "Rs. 12", "RS.12", "500/-", "12*" (a note on the figure), "(1,234)" or "(-1,234)" (a
+ * loss). A bracketed number needs three characters at least: "(1)", "(12)" number a table's columns or a list's
+ * items. Spaces are plain spaces (`\\s` would also take a no-break space on Android's ICU regex, not on the JVM).
  */
 internal val NUMBER_CELL = Regex(
-    "(?:₹\\s?|Rs\\.?\\s?)?[-−+]?\\p{Nd}[\\p{Nd},]*(?:\\.\\p{Nd}+)?(?:\\s?%|/-|\\*{1,3}|\\.)?|" +
-        "\\((?:₹\\s?|Rs\\.?\\s?)?(?=[\\p{Nd},.]{3})\\p{Nd}[\\p{Nd},]*(?:\\.\\p{Nd}+)?\\)",
+    "(?:₹ ?|(?i:rs)\\.? ?)?[-−+]?\\p{Nd}[\\p{Nd},]*(?:\\.\\p{Nd}+)?(?: ?%|/-|\\*{1,3}|\\.)?|" +
+        "\\((?:₹ ?|(?i:rs)\\.? ?)?[-−]?(?=[\\p{Nd},.]{3})\\p{Nd}[\\p{Nd},]*(?:\\.\\p{Nd}+)?\\)",
 )
 
 /**

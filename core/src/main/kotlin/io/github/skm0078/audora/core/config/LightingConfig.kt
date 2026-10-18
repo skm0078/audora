@@ -21,7 +21,8 @@ package io.github.skm0078.audora.core.config
  * @property unevenBelow the paper's evenness (the 5th percentile of its estimated brightness over the 95th) below
  *   which a page counts as unevenly lit.
  * @property minGain the evened read is kept only when its mean confidence is at least this much higher,
- * @property minWordShare it holds at least this share of the first read's words,
+ * @property minWordShare it holds at least this share of the first read's words (all of them by default: a short
+ *   title the first read caught is not traded for surer body text; shadowed test pages read 10-23 % more words evened),
  * @property minEvenedConfidence its mean confidence is at least this (a page that read no words takes no junk),
  *   and its confidence summed over its characters is higher too: the mean is weighted by characters, so a read that
  *   drops a few sure words (a cover's title) can raise it while reading less.
@@ -41,7 +42,7 @@ data class LightingConfig(
     val readAgainBelow: Int = 85,
     val unevenBelow: Float = 0.85f,
     val minGain: Int = 5,
-    val minWordShare: Float = 0.9f,
+    val minWordShare: Float = 1f,
     val minEvenedConfidence: Int = 80,
     val blockPerLine: Float = 0.17f,
     val blockInches: Float = 0.03125f, // 1/32 inch

@@ -5,6 +5,7 @@ package io.github.skm0078.audora.pdf.cleanup
 
 import io.github.skm0078.audora.core.config.TableConfig
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -54,11 +55,15 @@ class TableSidesTest {
         val forms =
             listOf(
                 "(1,234)", "₹12", "₹ 12", "Rs. 12", "Rs.12", "500/-", "12*", "12 %", "৩.৯১", "निरंक", "शून्य",
-                "শূন্য", "নেই", "N.A.", "–",
+                "শূন্য", "নেই", "N.A.", "–", "RS. 12", "rs.12", "(-1,234)", "(₹ -1,234)",
             )
         for (form in forms) {
             val side = listOf(listOf("2019", "2020"), listOf(form, "41"), listOf("74", form))
             assertTrue(form, TableSides.readsAsFigures(side, config.maxHeaderRows, config.minFigureRows))
+        }
+        // Only plain spaces: a no-break space inside a figure is a word gap on every platform.
+        for (form in listOf("Rs.\u00A012", "12\u00A0%")) {
+            assertFalse(form, NUMBER_CELL.matches(form))
         }
     }
 }

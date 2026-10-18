@@ -8,7 +8,7 @@ import org.junit.Test
 
 class PrintSlugsTest {
     @Test
-    fun `layout file names and print times with seconds are slugs by themselves`() {
+    fun `lines ending with a layout file's name and bare stamps to the second are slugs by themselves`() {
         val slugs = listOf(
             "HUD3_25_09Single-Bengali-BE.indd Sec1:9",
             "Chapter 9 Supporting Children’s Transitions.indd 71",
@@ -16,9 +16,12 @@ class PrintSlugsTest {
             "Cover 2 and 3.indd All Pages",
             "17-12-2019 12:54:06",
             "22-Nov-2019 2:51:06 PM",
+            "Cover 2 and 3.indd All Pages 22-Nov-2019 2:51:06 PM",
+            "HUD3_25_09Single-Bengali-BE.indd UD3_25_09Single-Bengali-BE.indd Sec1:6 Sec1:6",
+            "0_Prelims.indd 8 21-12-2019 12:00:11",
         )
         for (line in slugs) {
-            assertEquals(line, true, PrintSlugs.namesLayoutFile(line) || PrintSlugs.hasStampWithSeconds(line))
+            assertEquals(line, true, PrintSlugs.standsAlone(line))
         }
     }
 
@@ -31,10 +34,15 @@ class PrintSlugsTest {
             "Save it as index.html",
             "The inddex is wrong",
             "Meeting at 10:30:00 hours",
+            // A file named in a sentence, a receipt's or a log's stamp with words around it, a no-break space.
+            "Open the file Lesson01.indd and click Save",
+            "Paid on 17-12-2019 12:54:06 by card",
+            "17-12-2019 12:54:06 ERROR disk full",
+            "17-12-2019\u00A012:54:06",
             "",
         )
         for (line in lines) {
-            assertEquals(line, false, PrintSlugs.namesLayoutFile(line) || PrintSlugs.hasStampWithSeconds(line))
+            assertEquals(line, false, PrintSlugs.standsAlone(line))
         }
     }
 

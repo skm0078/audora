@@ -24,8 +24,9 @@ class OcrMargins(val top: List<String>, val bottom: List<String>)
  * [CleanupConfig.maxMarginLines] lines nearest that edge) and the page has text outside both bands. It is dropped
  * when it is a page number by itself, carries a number that steps with the page number across a neighbour's strip
  * (a running folio), or its letters repeat in the same strip on enough neighbours (a running header), allowing for
- * a letter or two misread ([CleanupConfig.ocrMatchSimilarity]), or it is a printer's slug ([PrintSlugs]): a layout
- * file's name ("HUD3_25_09.indd", ".qxd") or a print date with its time ("5/13/11 6:45 AM").
+ * a letter or two misread ([CleanupConfig.ocrMatchSimilarity]), or it is a printer's slug ([PrintSlugs]): a line
+ * ending with a layout file's name ("HUD3_25_09.indd Sec1:9"), a bare print stamp to the second
+ * ("17-12-2019 12:54:06"), or a print time a neighbour's strip carries to the minute ("5/13/11 6:45 AM").
  */
 internal class OcrClutter(private val config: CleanupConfig) {
     /**
@@ -64,12 +65,12 @@ internal class OcrClutter(private val config: CleanupConfig) {
             isPrintSlug(line, neighbours)
     }
 
-    /** A printer's slug ([PrintSlugs]): a layout file's name, a print time with seconds, or one a neighbour has. */
+    /** A printer's slug ([PrintSlugs]): one by itself, or a print time a neighbour's strip has to the minute. */
     private fun isPrintSlug(line: String, neighbours: Map<Int, List<String>>): Boolean {
         val times = PrintSlugs.times(line)
         val shared = times.isNotEmpty() &&
             neighbours.values.any { lines -> lines.any { other -> PrintSlugs.times(other).any(times::contains) } }
-        return PrintSlugs.namesLayoutFile(line) || PrintSlugs.hasStampWithSeconds(line) || shared
+        return PrintSlugs.standsAlone(line) || shared
     }
 
     /** A number on the line that a neighbour's strip carries shifted by the page offset: 12 here, 13 a page on. */

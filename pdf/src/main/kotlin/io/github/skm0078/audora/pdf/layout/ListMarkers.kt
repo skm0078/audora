@@ -4,11 +4,12 @@
 package io.github.skm0078.audora.pdf.layout
 
 /**
- * A bullet always starts an item. A label ("1.", "12)", "(a)", "a)", "b.", "(iv)", "iv.", "(A)", "B)", "(IV)") is
- * also how a wrapped prose line can begin ("… shown in Fig.\n3. We then …"), so [ParagraphBuilder] trusts one only
- * after a line that ends a clause or inside a list; numbers have at most two digits, so a year ("1947. The") never
- * counts. A capital letter or Roman numeral needs a bracket: "A. Smith" and "I. Introduction" open a line of prose
- * or a heading, not an item.
+ * A bullet always starts an item. A label ("1.", "12)", "(a)", "a)", "b.", "(iv)", "iv.", "(A)", "B)", "(IV)",
+ * "(क)", "(ক)") is also how a wrapped prose line can begin ("… shown in Fig.\n3. We then …"), so [ParagraphBuilder]
+ * trusts one only after a line that ends a clause or inside a list; numbers have at most two digits, so a year
+ * ("1947. The") never counts. A capital letter or Roman numeral needs a bracket: "A. Smith" and "I. Introduction"
+ * open a line of prose or a heading, not an item. A single small letter with a full stop starts an item only in
+ * sequence ([inSequence]): a wrapped line may open with "p. 12", "v. 3" or "c. 1900".
  */
 internal object ListMarkers {
     /** Bullets, including the Symbol and Wingdings private-use codes PDFs map them to. */
@@ -24,6 +25,7 @@ internal object ListMarkers {
             """\(\p{Nd}{1,2}\)""", // (3)
             """\p{Nd}{1,2}[.)]""", // 1. 12)
             """\((?:[a-z]|[ivx]{1,4}|[A-Z]|[IVX]{1,4})\)""", // (a) (iv) (A) (IV)
+            """\([\u0915-\u0939\u0995-\u09B9]\)""", // (क) (ক)
             """(?:[a-z]|[ivx]{1,4})[.)]""", // a) b. iv. ii)
             """[A-Z]\)""", // B)
         ).joinToString("|"),
@@ -32,11 +34,47 @@ internal object ListMarkers {
     fun startsWithBullet(text: String, start: Int): Boolean = start < text.length && text[start] in BULLETS
 
     /** A label at [start], followed by whitespace (the label's own span may end there, so the line's end counts). */
-    fun startsWithLabel(text: String, start: Int, lineEnd: Int): Boolean {
-        val label = LABEL.matchAt(text, start) ?: return false
+    fun startsWithLabel(text: String, start: Int, lineEnd: Int): Boolean = labelAt(text, start, lineEnd) != null
+
+    /** The label at [start] followed by whitespace before [lineEnd] ("b."), or null. */
+    fun labelAt(text: String, start: Int, lineEnd: Int): String? {
+        val label = LABEL.matchAt(text, start) ?: return null
         val after = label.range.last + 1
-        return after < lineEnd && text[after].isWhitespace()
+        return label.value.takeIf { after < lineEnd && text[after].isWhitespace() }
     }
+
+    /**
+     * [label] may open the next item after the item [previous] opened (null: no item before): any label but a single
+     * small letter with a full stop, which must open a list ("a.", "i.") or follow the letter or Roman numeral before
+     * it ("c." after "b)", "v." after "iv.").
+     */
+    fun inSequence(label: String, previous: String?): Boolean {
+        if (!LETTER_STOP.matches(label)) return true
+        val letter = label.first()
+        val before = previous?.trim('(', ')', '.')
+        val roman = romanValue(letter.toString())
+        return letter == 'a' || letter == 'i' || before == (letter - 1).toString() ||
+            (roman != null && before != null && romanValue(before) == roman - 1)
+    }
+
+    /** A small Roman numeral's value ("iv": 4), or null. */
+    private fun romanValue(text: String): Int? {
+        val values = text.map { ROMAN[it] ?: return null }
+        return values.indices.sumOf { i ->
+            if (values.getOrNull(i + 1)?.let { it > values[i] } ==
+                true
+            ) {
+                -values[i]
+            } else {
+                values[i]
+            }
+        }
+    }
+
+    private val LETTER_STOP = Regex("[a-z]\\.")
+    private val ROMAN = mapOf('i' to 1, 'v' to ROMAN_FIVE, 'x' to ROMAN_TEN)
+    private const val ROMAN_FIVE = 5
+    private const val ROMAN_TEN = 10
 
     /** Whether [text] is a label and nothing else: the sentence splitter cuts "1. Open the box" after "1.". */
     fun isLabel(text: String): Boolean = LABEL.matches(text.trim())

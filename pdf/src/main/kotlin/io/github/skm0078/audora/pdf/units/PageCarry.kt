@@ -53,10 +53,10 @@ internal class JoinedPage(val units: List<ReadingUnit>, val continuesPreviousPag
  *   its start, and the row becomes data row 0 with the header texts carried over. So every continued table opens
  *   with a continued [UnitKind.TABLE_SUMMARY] ("Table continues"), whatever its first row. A first row that is
  *   neither starts a new table as before.
- * - **A table with no header row of its own.** A table (continued or not, on any page) whose header row is data
- *   (its serial number runs on into the next row, or its cells are written like the column's data) has that row read
- *   as data row 0 under a summary of no length that is not continued and has no headers, so its rows are numbered
- *   as heard and the next page numbers on from all of them.
+ * - **A table with no header row of its own.** A table (carried from the page before or not, on any page) whose
+ *   header row is data (its serial number runs on into the next row, or its cells are written like the column's data)
+ *   has that row read as data row 0 under a summary of no length that is not continued and has no headers, so its
+ *   rows are numbered as heard and the next page numbers on from all of them.
  * - **A sentence carried on.** The page before ends inside a sentence of body text, a list item or an aside (no
  *   full stop, question mark, exclamation or danda at its end) and this page opens with the same kind, lower case.
  *   When either is in a script without capitals (Devanagari, Bengali), the page layout decides instead, in the
@@ -131,9 +131,9 @@ internal class PageCarry(private val config: PageCarryConfig) {
     /**
      * The table's header row is data: the page opened a table with no header row of its own, so it hands on no
      * header. Its serial number runs on into the next row, or it is written like the rows in every number column and
-     * holds no year ([matchesNumberColumns]); a word header ("Name | Age | City") or one of years stays a header. A
-     * summary already carried over (a continued table) holds the real header, and one of no length (a row already
-     * demoted, or a continued table's) has no row to judge.
+     * holds no year ([numberColumnsMatch], [holdsYear]); a word header ("Name | Age | City") or one of years stays a
+     * header. A summary already carried over (a continued table) holds the real header, and one of no length (a row
+     * already demoted, or a continued table's) has no row to judge.
      */
     private fun hasDataHeader(units: List<ReadingUnit>, info: TableRowInfo): Boolean {
         val table = units.filter { it.table?.tableIndex == info.tableIndex }
@@ -142,7 +142,7 @@ internal class PageCarry(private val config: PageCarryConfig) {
         val rows = table.filter { it.kind == UnitKind.TABLE_ROW }
         val summarySerial = serialOf(summary)
         val numbered = summarySerial != null && rows.firstOrNull()?.let(::serialOf) == summarySerial + 1
-        return numbered || matchesNumberColumns(summary, rows)
+        return numbered || (numberColumnsMatch(summary, rows) && !holdsYear(summary))
     }
 
     /** [units] with their opening table carried on from [tail], or null when the page opens with no such table. */
@@ -203,14 +203,13 @@ internal class PageCarry(private val config: PageCarryConfig) {
 
     /**
      * [first] is a row of data, not a header: its serial number follows [lastSerial] (the only evidence when its
-     * years are as long as their columns' figures, [YearCue.UNDECIDED]), or its years say nothing ([yearCue]) and, in
-     * at least `minRowFormatShare` of the columns whose [rows] are mostly written one way, it is written that way
-     * too; and some such column holds numbers, else a header and a row cannot be told apart.
+     * years are as long as their columns' figures, [YearCue.UNDECIDED]), or its years say nothing ([yearCue]) and it
+     * is written like [rows] in every number column ([numberColumnsMatch]): a word header opening the next page
+     * ("Name | Age | City") starts a table of its own.
      */
     private fun readsAsData(first: ReadingUnit, rows: List<ReadingUnit>, lastSerial: Long?): Boolean {
         val numbered = lastSerial != null && serialOf(first) == lastSerial + 1
-        return numbered ||
-            (yearCue(first, rows) == YearCue.NONE && matchesFormats(first, rows, config.minRowFormatShare))
+        return numbered || (yearCue(first, rows) == YearCue.NONE && numberColumnsMatch(first, rows))
     }
 
     /**
@@ -261,12 +260,13 @@ internal class PageCarry(private val config: PageCarryConfig) {
 
         /**
          * A caption over the rest of a table: "Table 2 (contd.)", "(continued)", and the Hindi and Bengali words alone,
-         * bracketed ("तालिका 2 (जारी)", "(ক্রমশ)") or ending the caption ("…जारी है", "…क्रमशः"): within a caption
-         * they are ordinary words too ("जारी किए गए आँकड़े").
+         * bracketed ("तालिका 2 (जारी)", "(जारी है)", "(पिछले पृष्ठ से जारी)", "(ক্রমশ)") or ending the caption
+         * ("…जारी है", "…क्रमशः"): within a caption they are ordinary words too ("जारी किए गए आँकड़े").
          */
         val CONTINUED_CAPTION = Regex(
             """(?i)\b(contd|cont'd|continued)\b|""" +
-                """\(\s*(?:जारी|क्रमशः?|ক্রমশঃ?)\s*\)|(?:^|\s)(?:जारी(?:\s+है)?|क्रमशः?|ক্রমশঃ?)\s*[।.]?\s*$""",
+                """\(\s*(?:पिछले\s+पृष्ठ\s+से\s+)?(?:जारी(?:\s+है)?|क्रमशः?|ক্রমশঃ?)\s*\)|""" +
+                """(?:^|\s)(?:जारी(?:\s+है)?|क्रमशः?|ক্রমশঃ?)\s*[।.]?\s*$""",
         )
     }
 }

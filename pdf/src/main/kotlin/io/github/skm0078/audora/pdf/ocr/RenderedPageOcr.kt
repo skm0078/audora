@@ -267,7 +267,7 @@ class RenderedPageOcr(
          * not reused. [io.github.skm0078.audora.core.config.LightingConfig] is not in the key: bump this when it
          * changes.
          */
-        private const val PAGE_VARIANT = "page-r5"
+        private const val PAGE_VARIANT = "page-r6"
 
         /** Margin strips with the line retry, like the page they are compared with. */
         private const val MARGIN_VARIANT = "margins-r2-"

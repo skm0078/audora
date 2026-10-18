@@ -53,8 +53,10 @@ class IndicSentenceSplitterTest {
             Case("Bengali initials", Lang.BN, listOf("এ. কে. ফজলুল হক বক্তৃতা দেন। ", "সবাই শুনল।")),
             Case("Bengali Mohammad", Lang.BN, listOf("মো. রহিম এসেছেন। ", "বসুন।")),
             Case("Hindi titles", Lang.HI, listOf("श्री. राम और डा. सीता आए। ", "बैठिए।")),
-            Case("Hindi references", Lang.HI, listOf("देखें पृ. १२ और सं. ३, ५०० ई.पू. में। ", "बस।")),
-            Case("Bengali titles", Lang.BN, listOf("ড. রহমান, ডঃ সেন ও শ্রী. বসু এলেন। ", "বসুন।")),
+            // Before a word: the JDK breaks there without the entries, where before a digit it does not.
+            Case("Hindi references", Lang.HI, listOf("सं. रामचंद्र शुक्ल, पृ. सं. १२, ५०० ई.पू. में। ", "बस।")),
+            Case("Bengali titles", Lang.BN, listOf("ড. রহমান, ডঃ. সেন ও শ্রী. বসু এলেন। ", "বসুন।")),
+            Case("Bengali era", Lang.BN, listOf("খ্রি.পূ. যুগে এটি তৈরি। ", "বসুন।")),
             // A full stop used as the sentence end after an ordinary word still splits.
             Case("full stop as sentence end", Lang.HI, listOf("यह वाक्य है. ", "दूसरा वाक्य है.")),
         ),
@@ -94,6 +96,20 @@ class IndicSentenceSplitterTest {
             Case("bracketed title", Lang.EN, listOf("The author (Dr. Rao) wrote it. ", "Good.")),
             Case("author list", Lang.EN, listOf("By Abbott B. P., Smith, J. A. Jones and Dr. A. Rao. ", "Fine.")),
             Case("reference", Lang.EN, listOf("See Fig. (A) and No. 5 on p. 7. ", "Done.")),
+            Case("rupees", Lang.EN, listOf("Pay Rs. 500 (Rupees Five Hundred) and Re. 1 only. ", "Done.")),
+            Case(
+                "initials after a small word",
+                Lang.EN,
+                listOf("Written by S. K. Mukherjee and A. P. J. Kalam. ", "Fine."),
+            ),
+            Case(
+                "offices",
+                Lang.EN,
+                listOf(
+                    "The Govt. Order went to Dy. Director, Addl. Secretary and Asstt. Engineer of X Pvt. Ltd. ",
+                    "Ok.",
+                ),
+            ),
             // Ordinary words, a lone lower-case letter and "etc." still end a sentence.
             Case("etc ends", Lang.EN, listOf("We bought pens, paper etc. ", "Then we went home.")),
             Case("No as an answer", Lang.EN, listOf("Was it him? ", "No. ", "It was her.")),
@@ -102,6 +118,13 @@ class IndicSentenceSplitterTest {
             Case("variable", Lang.EN, listOf("Take the matrix Q. ", "The keys follow.")),
             Case("symbol", Lang.EN, listOf("Write B\u2227 A. ", "But not B.")),
             Case("label", Lang.EN, listOf("See Appendix A. ", "Annexure B. ", "Class X. ", "Plan B. ", "Then stop.")),
+            Case(
+                "labels shared with the voice",
+                Lang.EN,
+                listOf("See Article V. ", "Team A. ", "World War I. ", "Then."),
+            ),
+            // A lone initial after a small word reads like a variable ending a sentence, so it still splits.
+            Case("lone initial after a small word", Lang.EN, listOf("Work with K. ", "Rao agreed.")),
         ),
     )
 

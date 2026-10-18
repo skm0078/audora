@@ -60,32 +60,31 @@ private fun columnValues(rows: List<ReadingUnit>, column: Int): List<String> =
 private fun ascii(text: String): String = text.map { c -> c.digitToIntOrNull()?.let { '0' + it } ?: c }.joinToString("")
 
 /**
- * In at least [share] of the columns whose [rows] are mostly written one way, [first] is written that way too, and
- * some such column holds numbers, else a header and a row cannot be told apart.
- */
-internal fun matchesFormats(first: ReadingUnit, rows: List<ReadingUnit>, share: Float): Boolean {
-    val firstFormats = cellsOf(first).map(::formatOf)
-    val majority = majorityFormats(first, rows)
-    val judged = majority.indices.filter { majority[it] != null }
-    val same = judged.count { firstFormats.getOrNull(it) == majority[it] }
-    return judged.any { requireNotNull(majority[it]).contains(DIGIT) } && same >= judged.size * share
-}
-
-/**
  * [first] is written like its [rows] in every column whose rows mostly hold numbers written one way, or is empty
- * there ("-"), in at least one such column it is written so, and it holds no year: a header names its number
- * columns in words ("Name | Age | City" over "Ram | 34 | Pune") or by year ("District | 2011 | 2021"), so only a
- * row of data passes. Text columns say nothing: a word header is written like the words under it.
+ * there ("-"), and in at least one such column it is written so: a header names its number columns in words
+ * ("Name | Age | City" over "Ram | 34 | Pune"), so only a row of data passes. Text columns say nothing: a word
+ * header is written like the words under it. Numbers that name the columns do not pass either: codes written with
+ * a leading zero over figures without ("Name | 041 | 042" over marks), or columns counted on from 0 or 1
+ * ("Item | 1 | 2 | 3"). [holdsYear] is the caller's to add: a row of years may be a header or data.
  */
-internal fun matchesNumberColumns(first: ReadingUnit, rows: List<ReadingUnit>): Boolean {
-    val firstFormats = cellsOf(first).map(::formatOf)
+internal fun numberColumnsMatch(first: ReadingUnit, rows: List<ReadingUnit>): Boolean {
+    val cells = cellsOf(first).map { ascii(it.trim()) }
+    val firstFormats = cells.map(::formatOf)
     val majority = majorityFormats(first, rows)
     val numeric = majority.indices.filter { majority[it]?.contains(DIGIT) == true }
-    val holdsYear = cellsOf(first).any { YEAR.matches(ascii(it.trim())) }
-    val matching = numeric.count { firstFormats.getOrNull(it) == majority[it] }
+    val matching = numeric.filter { firstFormats.getOrNull(it) == majority[it] }
     val empty = numeric.count { firstFormats.getOrNull(it) == null }
-    return matching > 0 && matching + empty == numeric.size && !holdsYear
+    val values = matching.map { cells[it] }
+    val codes = values.all { ZERO_PADDED.matches(it) } &&
+        matching.none { column -> columnValues(rows, column).any { ZERO_PADDED.matches(ascii(it)) } }
+    val counts = values.map { it.toLongOrNull() }
+    val counted = counts.size >= MIN_COUNTED_COLUMNS && counts.first().let { it == 0L || it == 1L } &&
+        counts.zipWithNext().all { (a, b) -> a != null && b == a + 1 }
+    return matching.isNotEmpty() && matching.size + empty == numeric.size && !codes && !counted
 }
+
+/** One of [first]'s cells is a year or a span of years ("2011", "2018-19"), any script's digits. */
+internal fun holdsYear(first: ReadingUnit): Boolean = cellsOf(first).any { YEAR.matches(ascii(it.trim())) }
 
 /** Per column of [first]'s table, how more than half of [rows] write it ([formatOf]), or null. */
 private fun majorityFormats(first: ReadingUnit, rows: List<ReadingUnit>): List<String?> {
@@ -134,6 +133,12 @@ private val YEAR = Regex("""^((?:1[89]|20)\d\d)(\s*[-–/]\s*\d{2,4})?$""")
 private const val DIGIT = '9'
 private const val LETTER = 'a'
 private const val MAX_SERIAL_DIGITS = 6
+
+/** A number written with a leading zero, as a code is ("041"). */
+private val ZERO_PADDED = Regex("""0\d+""")
+
+/** Column numbers count on ("1 | 2 | 3") across at least this many columns before they name the columns. */
+private const val MIN_COUNTED_COLUMNS = 2
 
 /** A row whose numbers are two or more years names years ("District | 2011 | 2021"), whatever their columns hold. */
 private const val MIN_HEADER_YEARS = 2

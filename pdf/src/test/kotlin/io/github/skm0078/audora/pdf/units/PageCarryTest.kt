@@ -151,6 +151,12 @@ class PageCarryTest {
                 ),
             "one year over larger figures" to
                 (listOf("State", "2020") to listOf(listOf("Goa", "15352"), listOf("Assam", "27500"))),
+            "subject codes over marks" to
+                (listOf("Name", "041", "042") to listOf(listOf("Ram", "78", "85"), listOf("Sita", "66", "91"))),
+            "column numbers" to (
+                listOf("Item", "1", "2", "3") to
+                    listOf(listOf("Rice", "45", "50", "61"), listOf("Dal", "30", "35", "38"))
+                ),
         )
         for ((name, table) in cases) {
             val own = page(head = table.first, rows = table.second)
@@ -170,6 +176,19 @@ class PageCarryTest {
             rows = listOf(listOf("Old grant", "2,667", "4,000"), listOf("Loans", "1,200", "3,100")),
         )
         assertEquals(listOf(null, 0, 1, 2), carry.join(dashed, null).units.map { it.table!!.row })
+    }
+
+    @Test
+    fun `a word header opening the next page starts a table of its own, a row with a dash carries on`() {
+        val before = page(head = listOf("No.", "Item", "Qty", "Cost"), rows = listOf(listOf("1", "Rice", "10", "400")))
+        val people = page(
+            head = listOf("Name", "Age", "City", "State"),
+            rows = listOf(listOf("Ram", "34", "Pune", "MH"), listOf("Sita", "29", "Agra", "UP")),
+        )
+        assertEquals(people, carry.join(people, carry.tailOf(before)).units)
+        val budget = page(head = listOf("Item", "Plan", "Actual"), rows = listOf(listOf("Loans", "1,200", "3,100")))
+        val grant = page(head = listOf("Grant", "-", "4,000"), rows = listOf(listOf("Old grant", "2,667", "4,000")))
+        assertEquals(TableCarry.DATA_FIRST, carry.join(grant, carry.tailOf(budget)).table)
     }
 
     @Test
@@ -278,6 +297,8 @@ class PageCarryTest {
         for (caption in listOf(
             "Table 2 (contd.)",
             "तालिका 2 (जारी)",
+            "तालिका 2 (जारी है)",
+            "तालिका 2 (पिछले पृष्ठ से जारी)",
             "सारणी 2 जारी है",
             "সারণি ২ (ক্রমশ)",
             "সারণি ২ ক্রমশঃ",

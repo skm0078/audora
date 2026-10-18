@@ -25,14 +25,14 @@ package io.github.skm0078.audora.core.config
  * @property referenceAbbreviations English words that point at a numbered thing: no break after one before a digit
  *   or an opening bracket.
  * @property letterLabels capitalised words that a letter after them labels ("Appendix A."), so the letter is not an
- *   initial.
+ *   initial; shared with the speech normalizer ([NumberingWords]).
  */
 data class SentenceConfig(
     val abbreviations: Set<String> = HINDI_ABBREVIATIONS + BENGALI_ABBREVIATIONS,
     val initials: Set<String> = HINDI_INITIALS + BENGALI_INITIALS,
     val englishAbbreviations: Set<String> = ENGLISH_ABBREVIATIONS,
     val referenceAbbreviations: Set<String> = REFERENCE_ABBREVIATIONS,
-    val letterLabels: Set<String> = LETTER_LABELS,
+    val letterLabels: Set<String> = NumberingWords.ALL,
 ) {
     init {
         require(
@@ -52,7 +52,7 @@ data class SentenceConfig(
         )
         val BENGALI_ABBREVIATIONS = setOf(
             "ডা", "ড", "ডঃ", "শ্রী", "শ্রীমতী", "প্রফ", "প্রো", "মো", "মোঃ", "মি", "মিসেস", "সং", "পৃ", "খ্রি", "কি.মি",
-            "নং",
+            "নং", "খ্রি.পূ",
         )
         val HINDI_INITIALS = setOf(
             "ए", "बी", "सी", "डी", "ई", "एफ", "जी", "एच", "आई", "जे", "के", "एल", "एम", "एन", "ओ", "पी", "क्यू", "आर",
@@ -61,15 +61,12 @@ data class SentenceConfig(
         val ENGLISH_ABBREVIATIONS = setOf(
             "Mr", "Mrs", "Ms", "Messrs", "Dr", "Prof", "Shri", "Smt", "Sh", "Kum", "Hon", "Gen", "Lt", "Col", "Maj",
             "Capt", "Brig", "Cdr", "Rev", "St", "Mt", "e.g", "i.e", "viz", "cf", "vs",
+            // Indian government and company usage: "Govt. Order", "Pvt. Ltd.", "Dy. Director", "Asstt. Engineer".
+            "Sri", "Govt", "Pvt", "Dy", "Addl", "Jt", "Asstt", "Spl",
         )
         val REFERENCE_ABBREVIATIONS = setOf(
             "No", "Nos", "no", "Art", "Sec", "Ch", "Fig", "Figs", "Eq", "Eqs", "Vol", "Vols", "pp", "p", "Para", "Ref",
-        )
-        val LETTER_LABELS = setOf(
-            "Appendix", "Annexure", "Annex", "Schedule", "Exhibit", "Part", "Chapter", "Section", "Table", "Figure",
-            "Class", "Grade", "Standard", "Group", "Type", "Plan", "Case", "Phase", "Stage", "Step", "Level", "Option",
-            "Model", "Form", "Paper", "Unit", "Item", "Block", "Sector", "Zone", "Category", "Vitamin", "Exercise",
-            "Example", "Question", "Problem", "Theorem", "Lemma", "Corollary", "Definition", "Proposition", "Point",
+            "Rs", "Re",
         )
         val BENGALI_INITIALS = setOf(
             "এ", "বি", "সি", "ডি", "ই", "এফ", "জি", "এইচ", "আই", "জে", "কে", "এল", "এম", "এন", "ও", "পি", "কিউ", "আর",
