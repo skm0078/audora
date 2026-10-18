@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_study.xml -->
+<!-- Purpose: Hindi copy of values/strings_study.xml: Strings for the study modes (plan item 31): repeats, pause after each sentence, A–B loops. -->
+<resources>
+    <string name="study_title">अध्ययन</string>
+    <string name="study_repeats">हर वाक्य पढ़ें</string>
+    <string name="study_repeats_times">%1$d×</string>
+    <string name="study_after">हर वाक्य के बाद</string>
+    <string name="study_after_continue">पढ़ते रहें</string>
+    <string name="study_after_gap">दोहराने के लिए अंतराल</string>
+    <string name="study_after_stop">रुकें</string>
+    <string name="study_after_detail">अंतराल वाक्य दोहराने का समय देता है; रुकें में प्ले दबाने तक इंतज़ार होता है।</string>
+    <string name="study_loop_title">एक हिस्सा दोहराएँ (A–B)</string>
+    <string name="study_loop_hint">पढ़ते समय पहले वाक्य पर A और आखिरी पर B लगाएँ।</string>
+    <string name="study_loop_a_only">A पेज %1$d पर लगा है। आखिरी वाक्य पर B लगाएँ।</string>
+    <string name="study_loop_range">पेज %1$d से पेज %2$d तक</string>
+    <string name="study_mark_a">A लगाएँ</string>
+    <string name="study_mark_b">B लगाएँ</string>
+    <string name="study_clear">हटाएँ</string>
+    <string name="study_loop">लूप</string>
+    <string name="study_loop_detail">बंद: हिस्सा एक बार पढ़कर रुक जाता है।</string>
+</resources>

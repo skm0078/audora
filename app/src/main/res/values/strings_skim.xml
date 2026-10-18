@@ -3,5 +3,5 @@
 <!-- Purpose: Strings for skim mode (plan item 64). -->
 <resources>
     <string name="reading_skim">Skim</string>
-    <string name="reading_skim_detail">Only headings, captions and the first sentence of each paragraph</string>
+    <string name="reading_skim_detail">Only headings, captions, the first sentence of each paragraph and sentences with bold terms</string>
 </resources>

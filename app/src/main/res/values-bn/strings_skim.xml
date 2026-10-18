@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_skim.xml -->
+<!-- Purpose: Bengali copy of values/strings_skim.xml: Strings for skim mode (plan item 64). -->
+<resources>
+    <string name="reading_skim">চোখ বোলানো</string>
+    <string name="reading_skim_detail">শুধু শিরোনাম, ক্যাপশন, প্রতিটি অনুচ্ছেদের প্রথম বাক্য আর বোল্ড শব্দওয়ালা বাক্য</string>
+</resources>

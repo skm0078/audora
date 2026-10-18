@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_commands.xml -->
+<!-- Purpose: Bengali copy of values/strings_commands.xml: Strings for spoken commands in the reader (plan item 38). -->
+<resources>
+    <string name="commands_model_title">ভয়েস কমান্ড মডেল (ইংরেজি)</string>
+    <string name="commands_model_missing">রিডার খোলা থাকলে আপনি “Audora, pause”, “play”, “next”, “back”, “repeat”, “faster” বা “slower” বলতে পারেন। সবকিছু আপনার ফোনেই শোনা হয়; কিছুই রেকর্ড বা পাঠানো হয় না। %1$d MB লাগবে।</string>
+    <string name="commands_model_ready">ইনস্টল করা · %1$d MB</string>
+    <string name="commands_switch_title">ভয়েস কমান্ড শুনুন</string>
+    <string name="commands_switch_body">রিডার স্ক্রিনে থাকলে Audora “Audora” আর তারপর একটি কমান্ড শোনে, আর Android মাইক্রোফোনের চিহ্ন দেখায়। শোনার সময় সামান্য ব্যাটারি খরচ হয়।</string>
+    <string name="commands_switch_needs_model">আগে ভয়েস কমান্ড মডেল ডাউনলোড করুন।</string>
+    <string name="commands_screen_off_title">স্ক্রিন বন্ধ থাকলেও শুনতে থাকুন</string>
+    <plurals name="commands_screen_off_body">
+        <item quantity="one">রিডারে কোনো বই খোলা থাকলে Audora স্ক্রিন বন্ধ থাকলে বা অন্য অ্যাপে থাকলেও শোনে, আর একটি নোটিফিকেশন দেখায় যেখান থেকে আপনি এটি থামাতে পারেন। ব্যাটারি বাঁচাতে, পড়া %1$d মিনিট থেমে থাকলে আর রিডার স্ক্রিনে না থাকলে এটি বন্ধ হয়ে যায়।</item>
+        <item quantity="other">রিডারে কোনো বই খোলা থাকলে Audora স্ক্রিন বন্ধ থাকলে বা অন্য অ্যাপে থাকলেও শোনে, আর একটি নোটিফিকেশন দেখায় যেখান থেকে আপনি এটি থামাতে পারেন। ব্যাটারি বাঁচাতে, পড়া %1$d মিনিট থেমে থাকলে আর রিডার স্ক্রিনে না থাকলে এটি বন্ধ হয়ে যায়।</item>
+    </plurals>
+    <string name="commands_notifications_denied">স্ক্রিন বন্ধ থাকা অবস্থায় শোনার জন্য নোটিফিকেশন দরকার, যাতে আপনি সবসময় এটি দেখতে আর থামাতে পারেন। Android-এর অ্যাপ সেটিংসে এগুলো চালু করতে পারেন।</string>
+    <string name="commands_permission_denied">ভয়েস কমান্ডের জন্য মাইক্রোফোন দরকার। Android-এর অ্যাপ সেটিংসে এটি চালু করতে পারেন।</string>
+</resources>
