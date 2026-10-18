@@ -53,6 +53,10 @@ internal class JoinedPage(val units: List<ReadingUnit>, val continuesPreviousPag
  *   its start, and the row becomes data row 0 with the header texts carried over. So every continued table opens
  *   with a continued [UnitKind.TABLE_SUMMARY] ("Table continues"), whatever its first row. A first row that is
  *   neither starts a new table as before.
+ * - **A table with no header row of its own.** A table (continued or not, on any page) whose header row is data
+ *   (its serial number runs on into the next row, or its cells are written like the column's data) has that row read
+ *   as data row 0 under a summary of no length that is not continued and has no headers, so its rows are numbered
+ *   as heard and the next page numbers on from all of them.
  * - **A sentence carried on.** The page before ends inside a sentence of body text, a list item or an aside (no
  *   full stop, question mark, exclamation or danda at its end) and this page opens with the same kind, lower case.
  *   When either is in a script without capitals (Devanagari, Bengali), the page layout decides instead, in the
@@ -81,24 +85,58 @@ internal class PageCarry(private val config: PageCarryConfig) {
         return PageTail(table, open?.kind, open != null && cue.endsFullLine(units, open), caseless)
     }
 
-    /** [units] (one page) joined to [previous], the tail of the page before; unchanged without one. */
+    /**
+     * [units] (one page) joined to [previous], the tail of the page before (none for a first page or a page read
+     * alone), and every table on it whose header row is data read with that row as data row 0 ([demoteHeadless]).
+     */
     fun join(units: List<ReadingUnit>, previous: PageTail?): JoinedPage {
-        if (previous == null) return JoinedPage(units, continuesPreviousPage = false, table = null)
         val first = units.firstOrNull { it.kind != UnitKind.CAPTION }
-        val carried = previous.table?.let { tail -> carryTable(units, tail) }
-        val continues = previous.openSentence != null && first?.kind == previous.openSentence &&
+        val carried = previous?.table?.let { tail -> carryTable(units, tail) }
+        val continues = previous?.openSentence != null && first?.kind == previous.openSentence &&
             carriesOn(units, first, previous)
-        return JoinedPage(carried?.first ?: units, continues, carried?.second)
+        return JoinedPage(demoteHeadless(carried?.first ?: units), continues, carried?.second)
+    }
+
+    /**
+     * [units] with each table whose header row is data ([hasDataHeader]: a table with no header row of its own) read
+     * with that row as data row 0 under a summary of no length, not continued, with no headers: "N rows, M columns."
+     * and then every row. So its rows are numbered as heard and the next page numbers on from all of them.
+     */
+    private fun demoteHeadless(units: List<ReadingUnit>): List<ReadingUnit> {
+        var out = units
+        while (true) {
+            val summary = out.firstOrNull { unit ->
+                unit.kind == UnitKind.TABLE_SUMMARY && hasDataHeader(out, requireNotNull(unit.table))
+            } ?: return out
+            val tableIndex = requireNotNull(summary.table).tableIndex
+            val tableUnits = out.indices.filter { out[it].table?.tableIndex == tableIndex }
+            out = withDataFirst(
+                out,
+                tableUnits,
+                summaryOf = { info ->
+                    TableRowInfo(
+                        tableIndex = info.tableIndex,
+                        row = null,
+                        rowCount = info.rowCount + 1,
+                        columnCount = info.columnCount,
+                        headers = emptyList(),
+                        cells = emptyList(),
+                    )
+                },
+                rowOf = { info, row -> info.copy(row = row, rowCount = info.rowCount + 1, headers = emptyList()) },
+            )
+        }
     }
 
     /**
      * The table's header row is data: the page opened a table with no header row of its own, so it hands on no
-     * header. A summary already carried over (a continued table) holds the real header.
+     * header. A summary already carried over (a continued table) holds the real header, and one of no length (a row
+     * already demoted, or a continued table's) has no row to judge.
      */
     private fun hasDataHeader(units: List<ReadingUnit>, info: TableRowInfo): Boolean {
         val table = units.filter { it.table?.tableIndex == info.tableIndex }
         val summary = table.firstOrNull { it.kind == UnitKind.TABLE_SUMMARY }
-        if (info.continued || summary == null) return false
+        if (info.continued || summary == null || summary.charEnd == summary.charStart) return false
         val rows = table.filter { it.kind == UnitKind.TABLE_ROW }
         val summarySerial = serialOf(summary)
         val numbered = summarySerial != null && rows.firstOrNull()?.let(::serialOf) == summarySerial + 1
@@ -130,47 +168,24 @@ internal class PageCarry(private val config: PageCarryConfig) {
      * The table's first row read as data row 0 under the carried header, its other rows numbered on, and a continued
      * summary of no length set before it.
      */
-    private fun dataFirst(units: List<ReadingUnit>, tableUnits: List<Int>, tail: TableTail): List<ReadingUnit> {
-        val first = tableUnits.first()
-        val opening = units[first]
-        val info = requireNotNull(opening.table)
-        val rowPause = tableUnits.drop(1).firstOrNull()?.let { units[it].pauseAfterMs } ?: opening.pauseAfterMs
-        val summary = opening.copy(
-            charEnd = opening.charStart,
-            text = "",
-            bounds = null,
-            speakScore = null,
-            table = TableRowInfo(
-                tableIndex = info.tableIndex,
-                row = null,
-                rowCount = info.rowCount + 1,
-                columnCount = info.columnCount,
-                headers = tail.headers,
-                cells = emptyList(),
-                continued = true,
-                rowsBefore = tail.rows,
-            ),
+    private fun dataFirst(units: List<ReadingUnit>, tableUnits: List<Int>, tail: TableTail): List<ReadingUnit> =
+        withDataFirst(
+            units,
+            tableUnits,
+            summaryOf = { info ->
+                TableRowInfo(
+                    tableIndex = info.tableIndex,
+                    row = null,
+                    rowCount = info.rowCount + 1,
+                    columnCount = info.columnCount,
+                    headers = tail.headers,
+                    cells = emptyList(),
+                    continued = true,
+                    rowsBefore = tail.rows,
+                )
+            },
+            rowOf = { info, row -> info.carried(row, tail) },
         )
-        val out = ArrayList<ReadingUnit>(units.size + 1)
-        units.forEachIndexed { i, unit ->
-            val moved = if (i >= first) unit.copy(index = unit.index + 1) else unit
-            when {
-                i == first -> {
-                    out.add(summary)
-                    out.add(
-                        moved.copy(kind = UnitKind.TABLE_ROW, pauseAfterMs = rowPause).withTable {
-                            it.carried(0, tail)
-                        },
-                    )
-                }
-
-                i in tableUnits -> out.add(moved.withTable { it.carried(requireNotNull(it.row) + 1, tail) })
-
-                else -> out.add(moved)
-            }
-        }
-        return out
-    }
 
     /**
      * More than half of the header cells that hold text, and at least `minHeaderMatchCells`, read like the carried
@@ -252,6 +267,44 @@ internal class PageCarry(private val config: PageCarryConfig) {
                 """\(\s*(?:जारी|क्रमशः?|ক্রমশঃ?)\s*\)|(?:^|\s)(?:जारी(?:\s+है)?|क्रमशः?|ক্রমশঃ?)\s*[।.]?\s*$""",
         )
     }
+}
+
+/**
+ * The table at [tableUnits] with its first unit read as data row 0 and its other rows numbered on ([rowOf], given
+ * a row's info and its new row number), and a summary of no length ([summaryOf], given the first unit's info)
+ * set before it at the first unit's start; every later unit's index moves up by one.
+ */
+private fun withDataFirst(
+    units: List<ReadingUnit>,
+    tableUnits: List<Int>,
+    summaryOf: (TableRowInfo) -> TableRowInfo,
+    rowOf: (TableRowInfo, Int) -> TableRowInfo,
+): List<ReadingUnit> {
+    val first = tableUnits.first()
+    val opening = units[first]
+    val rowPause = tableUnits.drop(1).firstOrNull()?.let { units[it].pauseAfterMs } ?: opening.pauseAfterMs
+    val summary = opening.copy(
+        charEnd = opening.charStart,
+        text = "",
+        bounds = null,
+        speakScore = null,
+        table = summaryOf(requireNotNull(opening.table)),
+    )
+    val out = ArrayList<ReadingUnit>(units.size + 1)
+    units.forEachIndexed { i, unit ->
+        val moved = if (i >= first) unit.copy(index = unit.index + 1) else unit
+        when {
+            i == first -> {
+                out.add(summary)
+                out.add(moved.copy(kind = UnitKind.TABLE_ROW, pauseAfterMs = rowPause).withTable { rowOf(it, 0) })
+            }
+
+            i in tableUnits -> out.add(moved.withTable { rowOf(it, requireNotNull(it.row) + 1) })
+
+            else -> out.add(moved)
+        }
+    }
+    return out
 }
 
 /**

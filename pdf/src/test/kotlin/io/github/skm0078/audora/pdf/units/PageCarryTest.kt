@@ -104,10 +104,32 @@ class PageCarryTest {
         val headless =
             page(head = listOf("68", "Raj Kumar", "37600"), rows = listOf(listOf("69", "Ram Singh", "28400")))
         val next = page(head = listOf("70", "Mohan", "6100"), rows = listOf(listOf("71", "Gita", "7200")))
-        val units = carry.join(next, carry.tailOf(headless)).units
+        val own = carry.join(headless, null)
+        assertEquals(null, own.table)
+        val (summary, demoted, second) = own.units
+        assertEquals(UnitKind.TABLE_SUMMARY, summary.kind)
+        assertEquals("", summary.text)
+        assertEquals(demoted.charStart to demoted.charStart, summary.charStart to summary.charEnd)
+        assertEquals(null, summary.bounds)
+        assertEquals(false, summary.table!!.continued)
+        assertEquals(emptyList<Any>(), summary.table!!.cells)
+        assertEquals(listOf(UnitKind.TABLE_ROW, UnitKind.TABLE_ROW), listOf(demoted.kind, second.kind))
+        assertEquals(3, demoted.table!!.cells.size)
+        assertEquals(listOf(null, 0, 1), own.units.map { it.table!!.row })
+        assertEquals(List(3) { 2 }, own.units.map { it.table!!.rowCount })
+        assertEquals(List(3) { emptyList<String>() }, own.units.map { it.table!!.headers })
+        assertEquals(listOf(0, 1, 2), own.units.map { it.index })
+        assertEquals(own.units, carry.join(own.units, null).units)
+        val units = carry.join(next, carry.tailOf(own.units)).units
         assertEquals(List(3) { emptyList<String>() }, units.map { it.table!!.headers })
         assertEquals(listOf(null, 0, 1), units.map { it.table!!.row })
-        assertEquals(List(3) { 1 }, units.map { it.table!!.rowsBefore })
+        assertEquals(List(3) { 2 }, units.map { it.table!!.rowsBefore })
+    }
+
+    @Test
+    fun `a table with a header of its own is left as it is, on a first page too`() {
+        val own = page(head = listOf("No.", "Name", "Pay"), rows = listOf(listOf("1", "Asha", "37600")))
+        assertEquals(own, carry.join(own, null).units)
     }
 
     @Test
@@ -203,11 +225,15 @@ class PageCarryTest {
         val rest = listOf(listOf("3", "Mohan", "6100"), listOf("4", "Gita", "7200"))
         val captioned =
             page(prose = listOf(UnitKind.CAPTION to "Table 3: Pensions"), head = rest[0], rows = rest.drop(1))
-        assertEquals(captioned, carry.join(captioned, carry.tailOf(firstPage)).units)
+        // A new table, read as if the page were read alone (its numbered first row demoted to data).
+        val joined = carry.join(captioned, carry.tailOf(firstPage))
+        assertNull(joined.table)
+        assertEquals(carry.join(captioned, null).units, joined.units)
+        assertFalse(joined.units.any { it.table?.continued == true })
         // The words within a caption are ordinary words.
         for (caption in listOf("तालिका 3: जारी किए गए प्रमाण पत्र", "সারণি ৩: ক্রমশ বাড়ছে খরচ")) {
             val ordinary = page(prose = listOf(UnitKind.CAPTION to caption), head = rest[0], rows = rest.drop(1))
-            assertEquals(caption, ordinary, carry.join(ordinary, carry.tailOf(firstPage)).units)
+            assertEquals(caption, carry.join(ordinary, null).units, carry.join(ordinary, carry.tailOf(firstPage)).units)
         }
         for (caption in listOf(
             "Table 2 (contd.)",
