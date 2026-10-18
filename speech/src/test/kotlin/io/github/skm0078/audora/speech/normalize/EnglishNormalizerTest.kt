@@ -246,6 +246,8 @@ class EnglishNormalizerTest {
         Case("initials", "Mr. M. Gandhi arrived.", "Mister M Gandhi arrived."),
         Case("initials", "A. Introduction", "A. Introduction"),
         Case("initials", "See Part C. Results follow.", "See Part C. Results follow."),
+        Case("initials", "See Article V. The court agreed.", "See Article five. The court agreed."),
+        Case("initials", "Ask Team B. They know.", "Ask Team B. They know."),
         Case("initials", "Ph.D. holders", "Ph.D. holders"),
         Case("initials", "the U.S.A and Europe", "the U.S.A and Europe"),
         // Text that must pass through untouched
