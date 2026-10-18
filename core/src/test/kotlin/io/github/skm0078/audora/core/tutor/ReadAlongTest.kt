@@ -104,7 +104,7 @@ class ReadAlongTest {
     fun `hindi and bengali keys ignore nukta, joiners and candrabindu`() {
         assertEquals(PageWords.key("पढ़ना"), PageWords.key("पढना"))
         assertEquals(PageWords.key("हँसना"), PageWords.key("हंसना"))
-        assertEquals(PageWords.key("র‍্যাব"), PageWords.key("র্যাব"))
+        assertEquals(PageWords.key("র\u200D্যাব"), PageWords.key("র্যাব"))
         val along = page("আমি বই পড়ি", lang = Lang.BN).say("আমি বই পড়ি")
         assertEquals(List(3) { READ }, along.marks)
     }

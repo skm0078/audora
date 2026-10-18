@@ -106,7 +106,8 @@ class BookCopyService : Service() {
     }
 
     override fun onDestroy() {
-        JobSlots.COPY.interrupt()
+        // Only this instance's own copy: a refused start's instance must not cut off another's.
+        if (mine) JobSlots.COPY.interrupt()
         super.onDestroy()
     }
 
@@ -120,6 +121,9 @@ class BookCopyService : Service() {
 
             // The restart that applies a restore would cut the copy off.
             Backups.restoreUnderWay -> notifications.showResult(preparing, getString(R.string.long_job_restoring))
+
+            // This instance's copy goes on: a second request is refused without stopping it.
+            mine -> notifications.showResult(preparing, getString(R.string.copy_busy))
 
             else -> {
                 timedOut = false

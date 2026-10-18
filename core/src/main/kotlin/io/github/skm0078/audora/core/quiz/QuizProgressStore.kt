@@ -11,23 +11,29 @@ import java.io.IOException
 /**
  * One line per card: the highlight id, the streak and when it is due; never the highlight's words. A card whose
  * highlight was deleted is dropped at the next save. Written to a synced temp file and renamed, so a crash never
- * leaves half a file; a foreign file (another format, a newer app's backup) reads as no progress (every card asks
- * again) and is set aside first, so the next save does not destroy it.
+ * leaves half a file; a foreign or unreadable file (another format, a newer app's backup, a read error) reads as no
+ * progress (every card asks again) and is set aside first, so the next save does not destroy it; one that will not
+ * move is never overwritten.
  */
 class QuizProgressStore(private val file: File) {
+    // A file that could not be read or set aside is never overwritten: saves refuse until the next start.
+    @Volatile
+    private var keepFile = false
+
     fun load(): Map<Long, CardProgress> {
         val lines = try {
             if (file.isFile) file.readLines() else emptyList()
         } catch (e: IOException) {
-            AudoraLog.w(TAG, "Quiz progress unreadable: ${e.javaClass.simpleName}")
-            emptyList()
+            AudoraLog.w(TAG, "Quiz progress unreadable, set aside: ${e.javaClass.simpleName}")
+            setAside()
+            return emptyMap()
         }
         return when {
             lines.isEmpty() -> emptyMap()
 
             lines.first() != HEADER -> {
                 AudoraLog.w(TAG, "Quiz progress from another format set aside")
-                TextFiles.setAside(file)
+                setAside()
                 emptyMap()
             }
 
@@ -36,7 +42,14 @@ class QuizProgressStore(private val file: File) {
     }
 
     /** Saves [progress] for the cards in [known] only; false (logged) if it could not be written. */
-    fun save(progress: Map<Long, CardProgress>, known: Set<Long>): Boolean = try {
+    fun save(progress: Map<Long, CardProgress>, known: Set<Long>): Boolean = if (keepFile) {
+        AudoraLog.w(TAG, "Quiz progress not saved: an unreadable file is in the way")
+        false
+    } else {
+        write(progress, known)
+    }
+
+    private fun write(progress: Map<Long, CardProgress>, known: Set<Long>): Boolean = try {
         val lines = progress.filterKeys { it in known }.toSortedMap()
             .map { (id, state) -> "$id$SEPARATOR${state.streak}$SEPARATOR${state.dueAtMs}" }
         TextFiles.writeDurably(file, (listOf(HEADER) + lines).joinToString("\n", postfix = "\n"))
@@ -44,6 +57,10 @@ class QuizProgressStore(private val file: File) {
     } catch (e: IOException) {
         AudoraLog.w(TAG, "Quiz progress not saved: ${e.javaClass.simpleName}")
         false
+    }
+
+    private fun setAside() {
+        if (!TextFiles.setAside(file)) keepFile = true
     }
 
     private fun entryOf(line: String): Pair<Long, CardProgress>? {

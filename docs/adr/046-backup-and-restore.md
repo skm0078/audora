@@ -65,7 +65,19 @@ small settings files.
    by its fingerprint (`BookPlacement`, unchanged). Books shared into the app are inside the backup and open at once.
    Watched folders come back as unreachable with *Pick again* (ADR-044 §6); picking the same folder again makes
    its books readable without re-adding each one.
-6. **Logs** say counts, bytes and the refusal reason, never file names, URIs or exception messages (which can carry
+6. **Start order.** No worker, service or store opens Room or writes a backup unit before `applyPending` returns.
+   WorkManager's `androidx.startup` initializer runs before `Application.onCreate`, so a worker left over from the
+   last run could in principle start while units are being renamed. No worker touches a backup unit today (workers
+   only download voices, models and dictionaries into `noBackupFilesDir`), so nothing guards it: a restore-only
+   content provider ordered before `androidx.startup` would add a component to the manifest for a gap that cannot
+   happen yet, and removing the app-wide initializer would break app basics' downloads. A future worker that writes
+   a backup unit must check `Backups.restoreUnderWay` first.
+7. **An unfinished restore blocks the app.** When a start finds a restore it could neither finish nor put back
+   (`Backups.restoreUnfinishedAtStart`), the activity shows only *Finish restoring* (restart Audora to try again)
+   instead of the library, so nothing opens Room or writes a unit over a half-moved set; long jobs already refuse
+   while `restoreUnderWay`. The playback service, quick-settings tile and widgets are started by the system without
+   the activity and honour the same flag at landing.
+8. **Logs** say counts, bytes and the refusal reason, never file names, URIs or exception messages (which can carry
    a URI).
 
 ## Alternatives considered

@@ -80,3 +80,12 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.junit)
 }
+
+// A failed unit test prints its message in the CI log: SchemaHashesTest names the hash to add after a schema bump,
+// and threads cannot download the test reports.
+tasks.withType<Test>().configureEach {
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+}

@@ -85,6 +85,9 @@ class ClipService : Service() {
             // The restart that applies a restore would cut the clip off.
             Backups.restoreUnderWay -> notices.showFailed(getString(R.string.long_job_restoring))
 
+            // This instance's clip goes on: a second request is dropped without stopping it.
+            mine -> AudoraLog.w(TAG, "A clip is already being made here; book=${id.logLabel} dropped")
+
             else -> {
                 // Set first: the job may end (and clear it) before launch returns.
                 mine = true
@@ -108,7 +111,8 @@ class ClipService : Service() {
     }
 
     override fun onDestroy() {
-        JobSlots.CLIP.interrupt()
+        // Only this instance's own clip: a refused start's instance must not cut off another's.
+        if (mine) JobSlots.CLIP.interrupt()
         super.onDestroy()
     }
 

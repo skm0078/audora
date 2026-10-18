@@ -71,8 +71,11 @@ class Dictionary(
             .flatMap { it.removePrefix(REDIRECT).split(',') }
             .filter { it.isNotEmpty() && it != key }
             .distinct()
-            .take(config.maxEntries) // A damaged or huge form line must not turn one tap into hundreds of searches.
-        return listOfNotNull(entryOf(line)) + redirects.mapNotNull { headword -> lineOf(headword)?.let(::entryOf) }
+            // A damaged or huge form line must not turn one tap into hundreds of searches: at most this many tried.
+            .take(config.maxEntries)
+        val found =
+            sequenceOf(entryOf(line)) + redirects.asSequence().map { headword -> lineOf(headword)?.let(::entryOf) }
+        return found.filterNotNull().take(config.maxEntries).toList()
     }
 
     private fun lineOf(key: String): String? = try {

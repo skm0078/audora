@@ -27,8 +27,10 @@ reachable from the build threads' containers (GitHub Actions reaches it).
    file is replaced in place, the mirror workflow keeps any dictionary whose pinned zip is already on the "voices"
    release (`--published`: downloaded and checked byte for byte) instead of rebuilding it; the snapshot is needed
    only until the first publish from dev. If kaikki.org moved on before that, the pin fails loudly on dev (which
-   publishes) and is re-measured (one more CI round), never silently replaced; on other branches it is a warning and
-   that zip is not rebuilt, so a feature branch's CI does not go red over an upstream refresh. A pin covers the zip's
+   publishes) and is re-measured (one more CI round), never silently replaced. Off dev nothing is published, so there
+   it is a warning and that zip is not rebuilt, and a feature branch's CI does not go red over an upstream refresh.
+   A measuring run prints whatever kaikki.org serves that day, so its pins (and §3's sizes) can differ from the last
+   ones; they are copied into `models.json` and `DictionaryPin` by hand, never picked up on their own. A pin covers the zip's
    name, SHA-256, size and the unpacked text's size.
 5. **App:** one optional download per language (`Dictionaries.forLanguage`, `DictionaryPin.HINDI`/`BENGALI`, folders
    `noBackupFilesDir/dictionary-hi` and `dictionary-bn`, their own WorkManager names). A tapped word goes to its

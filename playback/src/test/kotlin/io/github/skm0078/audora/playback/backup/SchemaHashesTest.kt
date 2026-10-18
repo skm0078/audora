@@ -18,9 +18,12 @@ class SchemaHashesTest {
                 .groupValues[1]
         }
 
-        // Room exports the current version's schema at every build, so a new version without a hash fails here.
+        // Each version first, so a schema bump (Room exports the new version at every build) fails with the exact
+        // line to add: a thread without an Android build can read it from the CI log.
+        exported.toSortedMap().forEach { (version, hash) ->
+            assertEquals("add $version to \"$hash\" in SchemaHashes", hash, SchemaHashes.of(version))
+        }
         assertEquals((1..exported.keys.max()).toSet(), exported.keys)
         assertEquals(exported.keys, SchemaHashes.versions)
-        exported.forEach { (version, hash) -> assertEquals("version $version", hash, SchemaHashes.of(version)) }
     }
 }

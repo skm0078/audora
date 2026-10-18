@@ -7,14 +7,14 @@ import java.text.BreakIterator
 
 /**
  * Where text may be cut. java.text's character boundaries keep surrogate pairs and combining marks with their base;
- * on top of that a cut never falls right after a virama or beside a zero-width joiner, which would split a Hindi or
- * Bengali conjunct (क्ष, র‍্যা) into a dangling half.
+ * on top of that a cut never falls right after a virama followed by a letter or beside a zero-width joiner, which
+ * would split a Hindi or Bengali conjunct (क्ष, র‍্যা) into a dangling half.
  */
 object TextCuts {
-    private const val DEVANAGARI_VIRAMA = '्'
-    private const val BENGALI_VIRAMA = '্'
-    private const val ZWNJ = '‌'
-    private const val ZWJ = '‍'
+    private const val DEVANAGARI_VIRAMA = '\u094D'
+    private const val BENGALI_VIRAMA = '\u09CD'
+    private const val ZWNJ = '\u200C'
+    private const val ZWJ = '\u200D'
 
     /** The last allowed cut at or before [index] (0 if none). */
     fun boundaryAtOrBefore(text: String, index: Int): Int {
@@ -42,7 +42,8 @@ object TextCuts {
         if (cut <= 0 || cut >= text.length) return true
         val before = text[cut - 1]
         val after = text[cut]
-        return before != DEVANAGARI_VIRAMA && before != BENGALI_VIRAMA && before != ZWJ && before != ZWNJ &&
-            after != ZWJ && after != ZWNJ
+        // A virama that ends a word (जगत्, before a space or punctuation) joins nothing, so a cut after it is fine.
+        val joiningVirama = (before == DEVANAGARI_VIRAMA || before == BENGALI_VIRAMA) && after.isLetter()
+        return !joiningVirama && before != ZWJ && before != ZWNJ && after != ZWJ && after != ZWNJ
     }
 }

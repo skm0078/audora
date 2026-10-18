@@ -41,12 +41,17 @@ class PendingRestore(private val root: File, private val contents: BackupContent
 
     /**
      * Drops any staged restore, marker first, so a new staging can never be applied half-written. The staging folder
-     * is renamed into the trash (instant), not deleted. False, and nothing else touched, while [unfinished] or if
-     * the marker would not go.
+     * is renamed into the trash (instant), not deleted. With [emptyTrash] (before a new staging, off the main thread)
+     * the trash is emptied too, so a retried restore does not count an earlier refused attempt's files against free
+     * space. False, and nothing else touched, while [unfinished] or if the marker would not go.
      */
-    fun clear(): Boolean {
+    fun clear(emptyTrash: Boolean = false): Boolean {
         val cleared = !unfinished && (!marker.exists() || marker.delete())
-        if (cleared) moveToTrash(staging, trash)
+        if (cleared) {
+            marker.parentFile?.let(::syncFolder)
+            moveToTrash(staging, trash)
+            if (emptyTrash) trash.deleteRecursively()
+        }
         return cleared
     }
 
@@ -146,7 +151,11 @@ class PendingRestore(private val root: File, private val contents: BackupContent
         return Run(Result.FAILED, listOf("restore failed ($cause), rolled back: ${moved.distinct().joinToString()}"))
     }
 
-    /** The units of [aside] that could not be put back. */
+    /**
+     * The units of [aside] that could not be put back. The database and its journals stand or fall together: the
+     * journals go back only after the database, and if any of them stays aside the start is INCOMPLETE and stops at
+     * "Finish restoring" ([Backups.restoreUnfinishedAtStart]), so a journal is never read against the wrong database.
+     */
     private fun putBackAll(aside: File): List<String> {
         val stuck = mutableListOf<String>()
         orderedUnits(contents.units()).forEach { unit ->
@@ -240,12 +249,26 @@ private fun putBack(root: File, trash: File, unit: String, aside: File): Boolean
     if (!saved.exists() && !none.exists()) return true
     val live = File(root, unit)
     return try {
-        if (live.exists()) move(live, File(File(trash, "replaced-" + UUID.randomUUID()), unit))
+        // Only the set-aside copy matters: a restored copy that will not move to the trash (a full disk refusing
+        // mkdirs) is deleted instead.
+        if (live.exists()) moveOrDelete(live, File(File(trash, "replaced-" + UUID.randomUUID()), unit))
         if (saved.exists()) move(saved, live)
         !none.exists() || none.delete()
     } catch (e: IOException) {
         false
     }
+}
+
+/** [move], or if it fails, deletes [from]; throws IOException only if [from] is still there. */
+@Suppress("SwallowedException") // A failed move falls back to deleting; only both failing is an error, thrown.
+private fun moveOrDelete(from: File, to: File) {
+    val moved = try {
+        move(from, to)
+        true
+    } catch (e: IOException) {
+        false
+    }
+    if (!moved && !from.deleteRecursively()) throw IOException("live copy neither moved nor deleted")
 }
 
 /** One rename into [trash]; if that fails the file or folder is deleted instead. */

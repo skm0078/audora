@@ -132,6 +132,24 @@ class QuizCardsTest {
         assertTrue(!shown.endsWith("\u094D"))
     }
 
+    @Test
+    fun `function words and OCR-broken tokens are never the blank, and a trailing joiner is the same word`() {
+        // Each word appears once, so rarity ties: उन्होंने (4 letters) would beat किताब (3) without the stoplist.
+        val stop = cards.build(listOf(highlight(1, "उन्होंने किताब पढ़ी")), blank).single()
+        assertEquals("किताब", stop.answer)
+
+        // An independent vowel followed by a vowel sign (आो) is an OCR misread, however rare.
+        val broken = cards.build(listOf(highlight(2, "आोराम बाजार गया था")), blank).single()
+        assertEquals("बाजार", broken.answer)
+
+        val joined = cards.build(
+            listOf(highlight(3, "সমুদ্র\u200C তীরে"), highlight(4, "সমুদ্র ঢেউ ভাঙে")),
+            blank,
+        )
+        assertTrue(joined.none { it.answer.endsWith("\u200C") })
+        assertTrue(joined.none { card -> card.choices.count { it.startsWith("সমুদ্র") } > 1 })
+    }
+
     private fun highlight(id: Long, quote: String) = Highlight(
         id = id,
         anchor = ResumeAnchor(BookId("book"), 0, 0, fingerprint = 0, tailFingerprint = 0, 1, savedAtMillis = 0),

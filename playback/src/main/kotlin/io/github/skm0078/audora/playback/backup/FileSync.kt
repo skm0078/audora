@@ -3,41 +3,14 @@
 
 package io.github.skm0078.audora.playback.backup
 
-import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.files.TextFiles
 import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
-import java.nio.channels.FileChannel
-import java.nio.file.StandardOpenOption
 
-private const val TAG = "Backup.Sync"
+/** Writes [bytes] to [target] durably ([TextFiles.writeDurably]: synced file, rename, synced folder). */
+internal fun writeDurably(target: File, bytes: ByteArray) = TextFiles.writeDurably(target, bytes)
 
-/** Writes [bytes] to [target] by a synced temporary file and a rename; throws IOException if it can't. */
-internal fun writeDurably(target: File, bytes: ByteArray) {
-    val temp = File(target.path + ".tmp")
-    target.parentFile?.mkdirs()
-    FileOutputStream(temp).use { out ->
-        out.write(bytes)
-        out.fd.sync()
-    }
-    if (!temp.renameTo(target)) throw IOException("not renamed into place")
-    target.parentFile?.let(::syncFolder)
-}
-
-/**
- * Flushes a folder's entries (the renames in it). Best effort: a file system that refuses is logged, not fatal,
- * since the restore is still correct without a power cut.
- */
-internal fun syncFolder(folder: File) {
-    if (!folder.isDirectory) return
-    try {
-        FileChannel.open(folder.toPath(), StandardOpenOption.READ).use { it.force(true) }
-    } catch (e: IOException) {
-        AudoraLog.w(TAG, "Folder not synced: ${e.javaClass.simpleName}")
-    } catch (e: UnsupportedOperationException) {
-        AudoraLog.w(TAG, "Folder not synced: ${e.javaClass.simpleName}")
-    }
-}
+/** Flushes a folder's entries (the renames in it), best effort ([TextFiles.syncFolder]). */
+internal fun syncFolder(folder: File) = TextFiles.syncFolder(folder)
 
 /** [syncFolder] on each distinct parent of [paths]. */
 internal fun syncParents(paths: Iterable<File>) {

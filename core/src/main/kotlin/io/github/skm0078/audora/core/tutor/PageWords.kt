@@ -20,7 +20,7 @@ object PageWords {
     private val WORD = Regex("""[\p{L}\p{M}\p{N}]+(?:['’][\p{L}\p{M}\p{N}]+)*""")
 
     // Joiners and the nukta change how a word is drawn, rarely how it is heard; recognisers write them unevenly.
-    private val DROPPED = setOf('‌', '‍', '़', '়', '\'', '’')
+    private val DROPPED = setOf('\u200C', '\u200D', '़', '়', '\'', '’')
 
     // Candrabindu and anusvara are heard alike and written either way.
     private val SAME_SOUND = mapOf('ँ' to 'ं', 'ঁ' to 'ং')

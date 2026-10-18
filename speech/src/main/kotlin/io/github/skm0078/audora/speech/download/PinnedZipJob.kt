@@ -24,7 +24,10 @@ class PinnedZipJob(
     private val onInstalled: () -> Unit,
 ) {
     /** @param attempt WorkManager's run attempt count, 0 for the first run. */
-    fun run(attempt: Int, onProgress: (Long, Long) -> Unit, keepGoing: () -> Boolean): JobResult {
+    fun run(attempt: Int, onProgress: (Long, Long) -> Unit, keepGoing: () -> Boolean): JobResult =
+        files.downloadingWhile { attempt(attempt, onProgress, keepGoing) }
+
+    private fun attempt(attempt: Int, onProgress: (Long, Long) -> Unit, keepGoing: () -> Boolean): JobResult {
         if (files.isInstalled()) return JobResult.Installed
         AudoraLog.i(TAG, "Download ${pin.id} attempt=${attempt + 1}/${config.maxAttempts}")
         files.dropOtherPartials()

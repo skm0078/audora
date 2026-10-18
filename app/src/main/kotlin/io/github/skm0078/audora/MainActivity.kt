@@ -100,7 +100,9 @@ import io.github.skm0078.audora.ui.library.LibraryScreen
 import io.github.skm0078.audora.ui.library.MiniPlayer
 import io.github.skm0078.audora.ui.library.WatchedFoldersRoute
 import io.github.skm0078.audora.ui.library.nowPlaying
+import io.github.skm0078.audora.ui.library.restartForRestore
 import io.github.skm0078.audora.ui.library.restoreMessageOf
+import io.github.skm0078.audora.ui.library.showFinishRestoringIfNeeded
 import io.github.skm0078.audora.ui.licences.LicenceSource
 import io.github.skm0078.audora.ui.licences.LicencesController
 import io.github.skm0078.audora.ui.licences.LicencesScreen
@@ -263,6 +265,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        // Nothing that opens the library, prunes or resumes runs until a half-undone restore is finished (ADR-046).
+        if (showFinishRestoringIfNeeded()) return
         if (savedInstanceState == null) {
             sharedPdf = SharedPdfIntent.uriOf(intent)
             sharedText = SharedPdfIntent.textOf(intent)
@@ -525,19 +529,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * Plan item 28: a staged restore is put in place at process start, so the app starts again in a new process.
-     * The task is relaunched first, then this process ends; playback stops with it (nothing resumes on its own).
-     */
-    private fun restartForRestore() {
-        val launch = packageManager.getLaunchIntentForPackage(packageName)?.component ?: return
-        AudoraLog.i(TAG, "Restarting to apply a restore")
-        startActivity(Intent.makeRestartActivityTask(launch))
-        Runtime.getRuntime().exit(0)
-    }
-
     /** Plan item 62: the camera app takes the photo (no camera permission); [makePhotoBook] reads what it saved. */
     private fun pointAndRead(takePhoto: ActivityResultLauncher<Uri>) {
+        if (photoBooks.making) {
+            Toast.makeText(this, R.string.photo_busy, Toast.LENGTH_LONG).show()
+            return
+        }
         try {
             takePhoto.launch(photoBooks.captureUri())
         } catch (e: ActivityNotFoundException) {
@@ -683,7 +680,7 @@ class MainActivity : ComponentActivity() {
             covers = bookCovers,
         )
         WatchedFoldersRoute(watchedFolders, open = watchedOpen) { watchedOpen = false }
-        BackupRoute(backups, open = backupOpen, onClose = { backupOpen = false }, onRestart = ::restartForRestore)
+        BackupRoute(backups, open = backupOpen, onClose = { backupOpen = false }, onRestart = { restartForRestore() })
         QuizRoute(highlightStore, open = quizOpen) { quizOpen = false }
         val guideBook = (controller.listState as? LibraryListState.Loaded)?.all
             ?.firstOrNull { it.book.id.value == guideBookId }?.book

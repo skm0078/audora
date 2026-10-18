@@ -13,6 +13,7 @@ import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -92,7 +93,8 @@ class CharacterGuideModel(
                 undoable = undoable,
             )
         }
-        scope.launch(io) { store.save(bookId.value, next) }
+        // Not tied to the screen: closing the guide or turning the phone right after a change still saves it.
+        scope.launch(io + NonCancellable) { store.save(bookId.value, next) }
     }
 
     private companion object {

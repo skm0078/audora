@@ -18,6 +18,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -121,7 +122,8 @@ class QuizModel(
         progress = schedule.answered(progress, answer.cardId, answer.right, now())
         val snapshot = progress
         val known = deck?.ids.orEmpty().toHashSet()
-        scope.launch(io) { progressStore.save(snapshot, known) }
+        // Not tied to the screen: closing the dialog or turning the phone right after an answer still saves it.
+        scope.launch(io + NonCancellable) { progressStore.save(snapshot, known) }
         answer.round.current?.let { say(it.answer, it) }
     }
 

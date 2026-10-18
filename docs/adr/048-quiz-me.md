@@ -14,7 +14,9 @@ a user call, ADR-037).
    then the first), at least 4 characters; words are runs of letters, combining marks and zero-width joiners, so
    Hindi and Bengali vowel signs and joined forms (র‍্যা, khanda-ta written ত্‍) stay in their word, and are compared in
    NFC and lower case, so two Unicode spellings are one word. A token mixing scripts (usually an OCR misread) is never
-   the blank. Every occurrence of the answer is blanked. A long highlight is cut at spaces to 280 characters around
+   the blank or a choice; nor is a common function word (a short stoplist per language: "which", "उसके", "তাদের"),
+   a Hindi or Bengali token with a vowel sign after a vowel sign or an independent vowel (an OCR or font misread), or
+   a trailing zero-width joiner (dropped from the word). Every occurrence of the answer is blanked. A long highlight is cut at spaces to 280 characters around
    the blank, or between whole characters (never inside a conjunct) when there is no space. Counts and word pools are
    built once per quiz; only the cards asked are made, off the main thread.
 2. **Choices are the listener's own words.** Up to three distractors come from other highlights in the same script,

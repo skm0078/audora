@@ -80,6 +80,12 @@ class PhotoBooks(
         return FileProvider.getUriForFile(appContext, "${appContext.packageName}$AUTHORITY_SUFFIX", captureFile)
     }
 
+    /**
+     * A photo book is being made from the one capture file: another photo now would overwrite it, so the caller
+     * says so instead of opening the camera.
+     */
+    val making: Boolean get() = busy.get()
+
     /** Records [title] beside the photo just taken and makes the book; the result arrives in [made]. */
     fun startBook(title: String) {
         if (!busy.compareAndSet(false, true)) {

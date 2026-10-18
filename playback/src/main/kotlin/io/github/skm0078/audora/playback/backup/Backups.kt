@@ -153,7 +153,7 @@ class Backups(context: Context, private val storage: AudoraStorage, config: Back
      * and [applyPending] puts it in place before anything opens the database.
      */
     private suspend fun stage(source: Uri): Outcome<BackupManifest, BackupError> = withContext(Dispatchers.IO) {
-        if (!restore.clear()) {
+        if (!restore.clear(emptyTrash = true)) {
             AudoraLog.w(TAG, "Restore refused: an earlier restore is still being undone, or its marker stuck")
             return@withContext Outcome.Failure(BackupError.UNFINISHED)
         }
@@ -240,6 +240,16 @@ class Backups(context: Context, private val storage: AudoraStorage, config: Back
             private set
 
         /**
+         * This process started with a restore half undone (INCOMPLETE): the database and the backed-up files may be
+         * a mix of the old library and the backup. The app shows only "Finish restoring" with a Restart button, opens
+         * no store and runs no prune, and the long-job services refuse to start ([restoreUnderWay]); the next start
+         * tries the roll-back again.
+         */
+        @Volatile
+        var restoreUnfinishedAtStart = false
+            private set
+
+        /**
          * Applies a staged restore, if any. The application calls this first thing at process start, before Hilt
          * builds anything that opens the database or preferences, and logs the result once logging has started
          * (this runs before it). A failed restore has been rolled back and dropped, or, if part of it could not be
@@ -256,6 +266,11 @@ class Backups(context: Context, private val storage: AudoraStorage, config: Back
             if (restored.result != PendingRestore.Result.NONE) {
                 startResult = restored.result
                 restoredThisStart = true
+            }
+            if (restored.result == PendingRestore.Result.INCOMPLETE) {
+                // Part of the old library is still aside: nothing may open the database or start a long job.
+                restoreUnfinishedAtStart = true
+                restoreUnderWay = true
             }
             return restored
         }

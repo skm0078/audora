@@ -26,6 +26,7 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.download.PinnedZipJob
+import io.github.skm0078.audora.speech.download.awaitNoDownload
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.voices.JobResult
 import io.github.skm0078.audora.speech.voices.ResumableDownloader
@@ -37,12 +38,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * One per process, shared by the reader and the download worker, like the punctuation model (RI-11): one dictionary
@@ -83,11 +82,9 @@ class Dictionaries private constructor(
     /** Cancels a download and waits for it to stop (up to `cancelWaitMs`), so it cannot write after the delete. */
     suspend fun delete(lang: Lang = Lang.EN): Outcome<Unit, String> = withContext(Dispatchers.IO) {
         workManager().cancelUniqueWork(workName(lang))
-        val stopped = withTimeoutOrNull(config.cancelWaitMs) {
-            workManager().getWorkInfosForUniqueWorkFlow(workName(lang))
-                .first { infos -> infos.none { it.state == WorkInfo.State.RUNNING } }
+        if (!slots.getValue(lang).files.awaitNoDownload(config.cancelWaitMs)) {
+            AudoraLog.w(TAG, "Dictionary download still stopping, lang=${lang.bcp47Tag}")
         }
-        if (stopped == null) AudoraLog.w(TAG, "Dictionary download still stopping, lang=${lang.bcp47Tag}")
         slots.getValue(lang).deleteFiles()
     }
 

@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.speech.download
 
+import io.github.skm0078.audora.core.files.TextFiles
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.voices.PinnedFile
@@ -10,10 +11,11 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.nio.channels.FileChannel
-import java.nio.file.StandardOpenOption
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.zip.ZipException
 import java.util.zip.ZipFile
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Layout under [root] (a no-backup folder: everything here is re-downloadable):
@@ -42,6 +44,10 @@ class PinnedZipFiles(
     val dir = File(root, pin.sha256.take(PIN_PREFIX_CHARS))
     private val marker = File(dir, MARKER)
     private val lock = Any()
+    private val downloads = AtomicInteger()
+
+    /** A [PinnedZipJob] of this pin is running in this process (WorkManager marks a cancelled job before it stops). */
+    val downloading: Boolean get() = downloads.get() > 0
 
     init {
         require(sizedEntries.all { it in entries }) { "sized entries must be among the entries" }
@@ -77,10 +83,10 @@ class PinnedZipFiles(
                 out.write(pin.sha256.toByteArray(Charsets.UTF_8))
                 out.fd.sync()
             }
-            syncFolder(staging)
+            TextFiles.syncFolder(staging)
             dir.deleteRecursively()
             if (!staging.renameTo(dir)) throw IOException("cannot move the $label into place")
-            syncFolder(root)
+            TextFiles.syncFolder(root)
             root.listFiles { file -> file.isDirectory && file.name.length == PIN_PREFIX_CHARS && file != dir }
                 ?.forEach { it.deleteRecursively() }
             AudoraLog.i(TAG, "Installed $label ${pin.id}")
@@ -91,6 +97,16 @@ class PinnedZipFiles(
         } finally {
             staging.deleteRecursively()
             zip.delete()
+        }
+    }
+
+    /** Runs one download attempt, counted in [downloading]. */
+    internal fun <T> downloadingWhile(attempt: () -> T): T {
+        downloads.incrementAndGet()
+        try {
+            return attempt()
+        } finally {
+            downloads.decrementAndGet()
         }
     }
 
@@ -137,17 +153,6 @@ class PinnedZipFiles(
         return total
     }
 
-    /** Flushes a folder's renames; best effort, as a file system that refuses still installs correctly. */
-    private fun syncFolder(folder: File) {
-        try {
-            FileChannel.open(folder.toPath(), StandardOpenOption.READ).use { it.force(true) }
-        } catch (e: IOException) {
-            AudoraLog.w(TAG, "Folder not synced: ${e.javaClass.simpleName}")
-        } catch (e: UnsupportedOperationException) {
-            AudoraLog.w(TAG, "Folder not synced: ${e.javaClass.simpleName}")
-        }
-    }
-
     private companion object {
         const val TAG = "Speech.PinnedZip"
         const val DOWNLOADS = "downloads"
@@ -157,3 +162,11 @@ class PinnedZipFiles(
         const val PIN_PREFIX_CHARS = 12
     }
 }
+
+/** Waits up to [timeoutMs] for a running download to stop (after its work was cancelled); false if it has not. */
+suspend fun PinnedZipFiles.awaitNoDownload(timeoutMs: Long): Boolean = withTimeoutOrNull(timeoutMs) {
+    while (downloading) delay(IDLE_POLL_MS)
+    true
+} ?: false
+
+private const val IDLE_POLL_MS = 50L

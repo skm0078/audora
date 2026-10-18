@@ -32,7 +32,7 @@ class IndicDictionaryTest {
     @Test
     fun `a precomposed nukta letter and a word in joiners or danda are found`() {
         assertEquals(listOf("क़िताब"), dictionary.lookUp("क़िताब").map { it.headword })
-        assertEquals(listOf("বই"), dictionary.lookUp("ব‌ই।").map { it.headword })
+        assertEquals(listOf("বই"), dictionary.lookUp("ব\u200Cই।").map { it.headword })
     }
 
     @Test

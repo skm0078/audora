@@ -18,9 +18,12 @@
     <string name="backup_restore_failed">The backup couldn\'t be read. Check there is free space on the phone and try again.</string>
     <string name="backup_size">This backup will be about %1$s before compression.</string>
     <string name="backup_no_space">There isn\'t enough free space on the phone to restore that backup. Free some space and try again.</string>
-    <string name="backup_busy">Audora is saving an audiobook, a copy or a clip, or running studio mode. Let it finish or stop it, then restore.</string>
+    <string name="backup_busy">Audora is saving an audiobook, a copy or a clip, or running studio mode. Let it finish or stop it, then restore. If nothing is running, close Audora fully and open it again.</string>
     <string name="backup_restored">Backup restored.</string>
     <string name="backup_unfinished">An earlier restore is still being undone. Close Audora fully and open it again, then try once more.</string>
     <string name="backup_restore_incomplete">The backup couldn\'t be put in place, and part of your library is still being put back. Close Audora fully and open it again to finish.</string>
     <string name="backup_restore_rolled_back">The backup couldn\'t be put in place, so your library is as it was. Try restoring it again.</string>
+    <string name="backup_finish_title">Finish restoring</string>
+    <string name="backup_finish_body">Audora couldn\'t finish putting your library back after a restore that didn\'t work. Your books and notes are safe; restart Audora to finish. If this screen keeps coming back, free some space on the phone first.</string>
+    <string name="backup_finish_restart">Restart Audora</string>
 </resources>

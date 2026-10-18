@@ -119,7 +119,8 @@ class QuizDeck internal constructor(highlights: List<Highlight>, private val con
     )
 
     private fun canBeChoice(word: Word): Boolean =
-        word.oneScript && word.value.codePointCount(0, word.value.length) >= config.minWordChars
+        word.oneScript && word.value.codePointCount(0, word.value.length) >= config.minWordChars &&
+            word.key !in QUIZ_STOP_WORDS && !isMalformedIndic(word.key)
 
     /** The text before and after [blank], cut with an ellipsis to fit [QuizConfig.maxPromptChars] around it. */
     private fun window(quote: String, blank: IntRange): Pair<String, String> {
@@ -164,6 +165,8 @@ class QuizDeck internal constructor(highlights: List<Highlight>, private val con
     }
 }
 
-private val WORD = Regex("""\p{L}[\p{L}\p{M}‌‍]*""")
+// Letters, marks and zero-width joiners inside a word; a joiner only before another letter or mark, so a word never
+// ends in one (with and without a stray joiner it is one word).
+private val WORD = Regex("""\p{L}(?:[\p{L}\p{M}]|[\u200C\u200D](?=[\p{L}\p{M}]))*""")
 
 private fun keyOf(word: String): String = Normalizer.normalize(word, Normalizer.Form.NFC).lowercase(Locale.ROOT)

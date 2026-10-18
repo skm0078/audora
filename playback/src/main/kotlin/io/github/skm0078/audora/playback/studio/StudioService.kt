@@ -104,7 +104,8 @@ class StudioService : Service() {
     }
 
     override fun onDestroy() {
-        stop("service destroyed")
+        // Only this instance's own run: a refused start's instance must not cut off another's.
+        if (mine) stop("service destroyed")
         super.onDestroy()
     }
 
@@ -119,6 +120,9 @@ class StudioService : Service() {
 
             // The restart that applies a restore would cut the run off.
             Backups.restoreUnderWay -> notifications.showFailed(untitled, getString(R.string.long_job_restoring))
+
+            // This instance's run goes on (a second tap, or Start now's start): never refuse it into a stop.
+            mine -> AudoraLog.i(TAG, "Studio mode already running here; book=${id.logLabel} not started")
 
             else -> {
                 // Set first: the job may end (and clear it) before launch returns.
