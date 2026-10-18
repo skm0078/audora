@@ -8,6 +8,8 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.voices.FakeHttpSource
 import io.github.skm0078.audora.speech.voices.JobResult
 import io.github.skm0078.audora.speech.voices.ResumableDownloader
+import io.github.skm0078.audora.speech.voices.ZipModelDownloadJob
+import io.github.skm0078.audora.speech.voices.ZipModelFiles
 import io.github.skm0078.audora.speech.voices.sha256Hex
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -50,7 +52,7 @@ class PunctuationDownloadTest {
     )
 
     private fun filesFor(model: PunctuationModel, cap: Long = config.maxUnpackedBytes) =
-        PunctuationFiles(temp.root.resolve("punctuation"), model, cap, config.bufferBytes)
+        ZipModelFiles(temp.root.resolve("punctuation"), model, cap, config.bufferBytes)
 
     private fun zipFile(bytes: ByteArray): File = temp.newFile().apply { writeBytes(bytes) }
 
@@ -101,7 +103,7 @@ class PunctuationDownloadTest {
         val files = filesFor(model)
         val server = FakeHttpSource(goodZip).apply { dropAfter = 500 }
         var installed = 0
-        val job = PunctuationDownloadJob(
+        val job = ZipModelDownloadJob(
             model,
             files,
             ResumableDownloader(server, config) { Long.MAX_VALUE },
@@ -120,7 +122,7 @@ class PunctuationDownloadTest {
     fun `a network failure on the last attempt gives up`() {
         val model = modelFor(goodZip)
         val server = FakeHttpSource(goodZip).apply { connectFailure = IOException("offline") }
-        val job = PunctuationDownloadJob(
+        val job = ZipModelDownloadJob(
             model,
             filesFor(model),
             ResumableDownloader(server, config) { Long.MAX_VALUE },

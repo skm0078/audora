@@ -3,7 +3,7 @@
 
 package io.github.skm0078.audora.speech.punct
 
-import io.github.skm0078.audora.speech.voices.PinnedFile
+import io.github.skm0078.audora.speech.voices.ZipModel
 
 /**
  * A zip on the app's own voice mirror (ADR-022), built by scripts/build_voice_mirror.py from speech/models.json's
@@ -20,8 +20,9 @@ data class PunctuationModel(
     val modelFile: String,
     val vocabFile: String,
     val baseUrl: String,
-) : PinnedFile {
+) : ZipModel {
     override val url: String get() = baseUrl + fileName
+    override val files: List<String> get() = listOf(modelFile, vocabFile)
 
     companion object {
         /** Edge-Punct-Casing's English CNN-BiLSTM, int8 (Apache-2.0); adds commas, full stops and question marks. */

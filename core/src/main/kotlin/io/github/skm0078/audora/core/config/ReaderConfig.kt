@@ -61,6 +61,13 @@ data class ReaderConfig(
     /** [speed] on the slider: within range and on a step, e.g. for a speed saved by an older version. */
     fun nearestSpeed(speed: Float): Float = speech.clampRate(speed)
 
+    /**
+     * The offered speed one step above (or below) [current], for "Audora, faster" (plan item 38); a speed between
+     * two offered ones moves to the next one in that direction. Null at the end of [speeds].
+     */
+    fun speedStep(current: Float, faster: Boolean): Float? =
+        if (faster) speeds.firstOrNull { it > current } else speeds.lastOrNull { it < current }
+
     companion object {
         private const val NORMAL_SPEED = 1f
         private val DEFAULT_SPEEDS = listOf(0.75f, 1f, 1.25f, 1.5f, 2f, 2.5f)

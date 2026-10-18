@@ -23,6 +23,8 @@ import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.voices.JobResult
 import io.github.skm0078.audora.speech.voices.ResumableDownloader
 import io.github.skm0078.audora.speech.voices.UrlConnectionHttpSource
+import io.github.skm0078.audora.speech.voices.ZipModelDownloadJob
+import io.github.skm0078.audora.speech.voices.ZipModelFiles
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
@@ -48,7 +50,7 @@ class PunctuationModels private constructor(
 ) {
     private val appContext = context.applicationContext
     private val model = PunctuationModel.ENGLISH
-    internal val files = PunctuationFiles(
+    internal val files = ZipModelFiles(
         File(appContext.noBackupFilesDir, ROOT_DIR),
         model,
         downloads.maxUnpackedBytes,
@@ -102,7 +104,7 @@ class PunctuationModels private constructor(
             .flowOn(Dispatchers.IO)
     }
 
-    internal fun downloadJob(): PunctuationDownloadJob = PunctuationDownloadJob(
+    internal fun downloadJob(): ZipModelDownloadJob = ZipModelDownloadJob(
         model = model,
         files = files,
         downloader = ResumableDownloader(UrlConnectionHttpSource(downloads, USER_AGENT), downloads),
@@ -157,7 +159,7 @@ class PunctuationModels private constructor(
     }
 }
 
-/** Runs one [PunctuationDownloadJob] attempt; every run resumes from the bytes on disk. */
+/** Runs one [ZipModelDownloadJob] attempt; every run resumes from the bytes on disk. */
 class PunctuationDownloadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val result = PunctuationModels.get(applicationContext).downloadJob().run(
