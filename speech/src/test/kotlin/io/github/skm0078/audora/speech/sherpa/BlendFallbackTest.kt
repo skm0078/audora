@@ -12,6 +12,7 @@ class BlendFallbackTest {
     private val blend = File("blend.bin")
     private val tried = mutableListOf<File?>()
     private var refusals = 0
+    private val reasons = mutableListOf<String>()
 
     private fun load(refuseBlend: Boolean, installedFails: Boolean = false, blended: File? = blend) =
         loadPreferringBlend(
@@ -24,7 +25,10 @@ class BlendFallbackTest {
                     else -> Outcome.Success(voices?.name ?: "installed")
                 }
             },
-            onRefused = { refusals++ },
+            onRefused = { error ->
+                refusals++
+                reasons += error
+            },
         )
 
     @Test
@@ -39,6 +43,7 @@ class BlendFallbackTest {
         assertEquals(Outcome.Success("installed"), load(refuseBlend = true))
         assertEquals(listOf(blend, null), tried)
         assertEquals(1, refusals)
+        assertEquals(listOf("blend refused"), reasons)
     }
 
     @Test

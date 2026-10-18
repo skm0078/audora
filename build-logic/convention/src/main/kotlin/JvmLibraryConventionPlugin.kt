@@ -21,6 +21,10 @@ class JvmLibraryConventionPlugin : Plugin<Project> {
         extensions.configure<KotlinJvmProjectExtension> {
             compilerOptions {
                 jvmTarget.set(kotlinJvmTarget)
+                // Compile against the JDK API of the target, not the JDK running Gradle (21): otherwise calls such as
+                // MutableList.removeFirst() bind to java.util.List members that Android has only from API 35, and
+                // crash on Android 12-14. Lint cannot see this module, so the compiler must.
+                freeCompilerArgs.add("-Xjdk-release=${libs.intVersion("jvmTarget")}")
             }
         }
 

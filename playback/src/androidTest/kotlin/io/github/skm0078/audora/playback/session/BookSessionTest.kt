@@ -345,8 +345,19 @@ class BookSessionTest {
         playPaused(page = 1, charStart = 2 * CHARS, book = TABLE_BOOK)
         assertEquals(UnitKey(1, 2), awaitSentenceOn(page = 1))
 
-        assertTrue(runBlocking { withContext(Dispatchers.Main) { session.skipParagraph(forward = false) } })
+        val skipped = runBlocking { withContext(Dispatchers.Main) { session.skipParagraph(forward = false) } }
+        assertEquals(ParagraphSkipResult.MOVED, skipped)
         assertEquals(UnitKey(1, 1), awaitSentenceOn(page = 1))
+    }
+
+    @Test
+    fun aParagraphSkipWithNowhereToGoSaysSoAndStaysPut() {
+        playPaused(page = 0, charStart = 0, book = BOOK)
+        assertEquals(UnitKey(0, 0), awaitSentenceOn(page = 0))
+
+        val skipped = runBlocking { withContext(Dispatchers.Main) { session.skipParagraph(forward = false) } }
+        assertEquals(ParagraphSkipResult.NONE_THAT_WAY, skipped)
+        assertEquals(UnitKey(0, 0), onMain { UnitKey.of(checkNotNull(session.currentSentence())) })
     }
 
     @Test

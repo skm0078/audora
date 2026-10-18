@@ -17,7 +17,10 @@ data class CastSpeaker(val speakerId: Int, val label: String, val gender: Speake
  * past a model's range is undefined behaviour in sherpa-onnx.
  *
  * The lists are the models' own speaker tables (sherpa-onnx's packaging of Kokoro v1.0 multi-lang and KittenTTS
- * v0.8 nano), English speakers only; a model not listed has one speaker.
+ * v0.8 nano), English speakers only. They are keyed on the catalog voice that installs that exact archive, never on
+ * the model family: a voice imported from any folder, or a family's other packaging, reads with its own speaker only.
+ * A test pins each key to its archive in models.json and bundled-voices.json, so a catalog update that swaps the
+ * archive under a keyed id fails the build; [tableFits] also checks the loaded model's speaker count at runtime.
  */
 object CastSpeakers {
     private const val SEPARATOR = '#'
@@ -42,12 +45,17 @@ object CastSpeakers {
     /** Kokoro's English speakers, for the narrator blend's choices (plan item 75). */
     val kokoroEnglish: List<CastSpeaker> get() = KOKORO_ENGLISH
 
-    /** The speakers [spec]'s model holds; empty for a one-speaker model. */
-    fun of(spec: SherpaVoiceSpec): List<CastSpeaker> = when {
-        spec.family == SherpaFamily.KOKORO && spec.engineLang?.startsWith(ENGLISH) == true -> KOKORO_ENGLISH
-        spec.family == SherpaFamily.KITTEN -> KITTEN
-        else -> emptyList()
-    }
+    /** Each keyed catalog voice's table: the archive it was written for, its speakers, the model's speaker count. */
+    private val TABLES = mapOf(
+        KOKORO_VOICE to CastTable(KOKORO_ARCHIVE, KOKORO_ENGLISH, KOKORO_MODEL_SPEAKERS),
+        KITTEN_VOICE to CastTable(KITTEN_ARCHIVE, KITTEN, KITTEN_SPEAKERS),
+    )
+
+    /** The archive each keyed catalog voice id was written for, so a test can check the catalogs still ship it. */
+    internal val archives: Map<String, String> get() = TABLES.mapValues { it.value.archive }
+
+    /** The speakers [spec]'s model holds; empty for a one-speaker model or a voice no table is keyed on. */
+    fun of(spec: SherpaVoiceSpec): List<CastSpeaker> = TABLES[spec.id]?.speakers.orEmpty()
 
     /** [base]'s model read by its speaker [speakerId]. */
     fun variant(base: VoiceId, speakerId: Int): VoiceId = VoiceId(base.engine, "${base.name}$SEPARATOR$speakerId")
@@ -61,12 +69,14 @@ object CastSpeakers {
     }
 
     /**
-     * Whether [spec]'s speaker table describes the model as loaded: the tables are keyed on family and language, so
-     * a later model version (Kokoro v1.1 holds 103 speakers, in another order) would otherwise read a character with
-     * whichever speaker sits at that id. True when the model's count is unknown ([loadedSpeakers] null).
+     * Whether [spec]'s speaker table describes the model as loaded: a model swapped under a keyed voice (Kokoro v1.1
+     * holds 103 speakers, in another order) would otherwise read a character with whichever speaker sits at that id.
+     * True when the model's count is unknown ([loadedSpeakers] null) or no table is keyed on [spec].
      */
-    fun tableFits(spec: SherpaVoiceSpec, loadedSpeakers: Int?): Boolean =
-        loadedSpeakers == null || of(spec).isEmpty() || modelSpeakers(spec) == loadedSpeakers
+    fun tableFits(spec: SherpaVoiceSpec, loadedSpeakers: Int?): Boolean {
+        val table = TABLES[spec.id]
+        return loadedSpeakers == null || table == null || table.modelSpeakers == loadedSpeakers
+    }
 
     /**
      * The speaker id [spec] reads with for [requested]: a listed one, else the voice's own; also the voice's own when
@@ -76,11 +86,13 @@ object CastSpeakers {
         requested?.takeIf { id -> tableFits(spec, loadedSpeakers) && of(spec).any { it.speakerId == id } }
             ?: spec.speakerId
 
-    /** How many speakers in all (every language) the model a table was written for holds. */
-    private fun modelSpeakers(spec: SherpaVoiceSpec): Int =
-        if (spec.family == SherpaFamily.KOKORO) KOKORO_MODEL_SPEAKERS else KITTEN_SPEAKERS
+    /** [modelSpeakers]: how many speakers in all (every language) the model in [archive] holds. */
+    private class CastTable(val archive: String, val speakers: List<CastSpeaker>, val modelSpeakers: Int)
 
-    private const val ENGLISH = "en"
+    private const val KOKORO_VOICE = "kokoro-en-heart"
+    private const val KOKORO_ARCHIVE = "kokoro-int8-multi-lang-v1_0"
+    private const val KITTEN_VOICE = "kitten-en-nano"
+    private const val KITTEN_ARCHIVE = "kitten-nano-en-v0_8-int8"
     private const val KOKORO_FIRST_MALE = 11
     private const val KOKORO_FIRST_BRITISH = 20
     private const val KOKORO_FIRST_BRITISH_MALE = 24

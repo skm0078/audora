@@ -141,6 +141,35 @@ class StudyLoopTest {
     }
 
     @Test
+    fun `a range ending on a page's last sentence at a chapter end does not run on into the next chapter`() {
+        val study = StudyLoop()
+        study.mark(StudyMark.START, units[3], loop = true)
+        study.mark(StudyMark.END, units[4], loop = true)
+
+        assertTrue("inside, before B", study.runsOnAfter(item(3), item(4)))
+        assertFalse("B with the next page still loading", study.runsOnAfter(item(4), PlaybackItem.More(0)))
+    }
+
+    @Test
+    fun `ends that name a unit leave out the other unit sharing their offset`() {
+        val summary = units[1].copy(charEnd = units[1].charStart, text = "")
+        val row = units[1].copy(index = 2)
+        val afterRow = units[2].copy(index = 3)
+        val fromRow = StudyRange(row.spot(), afterRow.spot(), loop = false)
+        assertFalse(summary in fromRow)
+        assertTrue(row in fromRow && afterRow in fromRow)
+
+        val toSummary = StudyRange(units[0].spot(), summary.spot(), loop = false)
+        assertTrue(summary in toSummary)
+        assertFalse(row in toSummary)
+        assertTrue(toSummary.endsAt(summary, PlaybackItem.Sentence(row)))
+
+        // A selection (no index) takes both.
+        val selection = StudyRange(Spot(2, units[1].charStart), Spot(2, units[1].charStart), loop = false)
+        assertTrue(summary in selection && row in selection)
+    }
+
+    @Test
     fun `a range end on a page not loaded yet is caught when the next sentence starts`() {
         val study = StudyLoop()
         study.set(StudyRange(Spot(2, 30), Spot(4, 0), loop = true))

@@ -6,6 +6,9 @@ package io.github.skm0078.audora.playback.session
 import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.model.ReadingUnit
 
+/** What a paragraph skip did: moved, had nowhere to go that way, or was dropped (reading moved on meanwhile). */
+enum class ParagraphSkipResult { MOVED, NONE_THAT_WAY, DROPPED }
+
 /**
  * A paragraph ends at a unit with a paragraph's pause after it (:pdf gives paragraphs, headings and list items a
  * longer one, ADR-029); paragraphs run on across page breaks. Pages come from [units] (null when a page cannot be

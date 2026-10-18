@@ -36,4 +36,10 @@ enum class PlaybackErrorCode {
 
     /** Synthesis or the player kept failing and recovery gave up. */
     PLAYBACK_FAILED,
+
+    /** A paragraph skip has nowhere to go: no paragraph after this one, or already at the book's start. */
+    NO_PARAGRAPH_THAT_WAY,
+
+    /** The request no longer applies: nothing was playing, or reading moved on before it could act. */
+    STALE_REQUEST,
 }

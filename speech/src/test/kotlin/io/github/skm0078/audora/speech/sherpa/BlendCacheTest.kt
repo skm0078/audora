@@ -38,7 +38,7 @@ class BlendCacheTest {
 
     @Test
     fun `the blend goes on the narrator's Kokoro voice only, with another of its English speakers`() {
-        val narrator = kokoro()
+        val narrator = kokoro(id = "kokoro-en-heart") // a voice the speaker tables are keyed on
         val quotes = kokoro(id = "kokoro-quotes")
         val piper = spec("piper-en")
         val specs = listOf(narrator, quotes, piper)

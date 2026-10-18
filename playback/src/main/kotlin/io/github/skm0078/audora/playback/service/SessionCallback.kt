@@ -37,6 +37,7 @@ import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.focus.FocusSoundStore
 import io.github.skm0078.audora.playback.notes.BookContext
 import io.github.skm0078.audora.playback.session.BookSession
+import io.github.skm0078.audora.playback.session.ParagraphSkipResult
 import io.github.skm0078.audora.playback.session.SleepOptionsStore
 import io.github.skm0078.audora.playback.session.StudyMark
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
@@ -318,8 +319,11 @@ class SessionCallback(
 
     private suspend fun skipParagraph(args: Bundle): SessionResult {
         if (!args.containsKey(PlaybackContract.ARG_FORWARD)) return badRequest()
-        val skipped = bookSession().skipParagraph(args.getBoolean(PlaybackContract.ARG_FORWARD))
-        return if (skipped) SessionResult(SessionResult.RESULT_SUCCESS) else badRequest()
+        return when (bookSession().skipParagraph(args.getBoolean(PlaybackContract.ARG_FORWARD))) {
+            ParagraphSkipResult.MOVED -> SessionResult(SessionResult.RESULT_SUCCESS)
+            ParagraphSkipResult.NONE_THAT_WAY -> failure(PlaybackErrorCode.NO_PARAGRAPH_THAT_WAY)
+            ParagraphSkipResult.DROPPED -> failure(PlaybackErrorCode.STALE_REQUEST)
+        }
     }
 
     /** The A–B study range (plan item 31); a range of a book plays it, like PLAY_FROM. */

@@ -19,8 +19,15 @@ data class StudyRange(val start: Spot, val end: Spot, val loop: Boolean) {
         require(!start.isAfter(end)) { "the range must not end before it starts: $start..$end" }
     }
 
-    operator fun contains(unit: ReadingUnit): Boolean =
-        Spot(unit.page, unit.spokenEnd).isAfter(start) && !Spot(unit.page, unit.charStart).isAfter(end)
+    /**
+     * By offset; where an end knows its unit ([Spot.index]), a unit sharing that offset counts by index too, so an A
+     * on a continued table's first row leaves out the zero-length summary before it, and a B on the summary leaves
+     * out the row.
+     */
+    operator fun contains(unit: ReadingUnit): Boolean {
+        val afterStart = Spot(unit.page, unit.spokenEnd).isAfter(start) && !unit.before(start)
+        return afterStart && !Spot(unit.page, unit.charStart).isAfter(end) && !end.before(unit)
+    }
 
     /** [unit] holds the range's start: the sentence a loop goes back to (the very unit, when the start knows it). */
     fun startsAt(unit: ReadingUnit): Boolean = unit.page == start.page &&
@@ -171,6 +178,14 @@ fun StudyLoop.runsOnAfter(current: PlaybackItem?, next: PlaybackItem?): Boolean 
     val inside = range
     return unit != null && inside != null && unit in inside && !inside.endsAt(unit, next)
 }
+
+/** This unit shares [spot]'s offset and comes before the unit [spot] names (false when it names none). */
+private fun ReadingUnit.before(spot: Spot): Boolean =
+    page == spot.page && charStart == spot.charStart && spot.index != null && index < spot.index
+
+/** [unit] shares this spot's offset and comes after the unit it names (false when it names none). */
+private fun Spot.before(unit: ReadingUnit): Boolean =
+    unit.page == page && unit.charStart == charStart && index != null && unit.index > index
 
 /** True when this spot comes after [other] in the book. */
 fun Spot.isAfter(other: Spot): Boolean = page > other.page || (page == other.page && charStart > other.charStart)

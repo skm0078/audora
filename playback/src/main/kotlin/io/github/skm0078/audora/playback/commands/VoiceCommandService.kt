@@ -50,8 +50,13 @@ class VoiceCommandService : Service() {
 
             ACTION_END -> end(intent, startId)
 
-            // Not listening: this start is the service's only reason to run, so it ends with it.
-            ACTION_SILENCED -> if (listening) post(intent.getBooleanExtra(EXTRA_SILENCED, false)) else stopSelf(startId)
+            ACTION_SILENCED -> if (listening) {
+                post(intent.getBooleanExtra(EXTRA_SILENCED, false))
+            } else {
+                // Not listening: this start is the service's only reason to run, so it ends with it.
+                AudoraLog.i(TAG, "Microphone silenced while not listening; stopping the service")
+                stopSelf(startId)
+            }
 
             else -> startListening(startId)
         }
