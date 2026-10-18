@@ -61,6 +61,17 @@ class OcrClutterTest {
     }
 
     @Test
+    fun `a printer's slug at the foot goes, the same words in the body stay`() {
+        val slugs =
+            listOf("HUD3_25_09Single-Bengali-BE.indd Sec1:9", "ch04.qxd 2/3/09 10:12 AM Page 62", "5/13/11 6:45 AM")
+        for (slug in slugs) {
+            assertEquals(slug, setOf(2), clutter.droppedLines(page(*body, slug to 0.96f), strips()))
+        }
+        val inBody = page("Save it as report.indd before 5/13/11 6:45 AM" to 0.4f, *body)
+        assertEquals(emptySet<Int>(), clutter.droppedLines(inBody, strips()))
+    }
+
+    @Test
     fun `body lines and pages without body text are never touched, and neighbours are not read for them`() {
         var asked = false
         val neighbours = {

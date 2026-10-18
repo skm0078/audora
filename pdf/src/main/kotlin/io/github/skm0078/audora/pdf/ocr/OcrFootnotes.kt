@@ -17,15 +17,23 @@ import io.github.skm0078.audora.pdf.layout.TextSpan
 /**
  * The text-layer rule (`NoteFinder`) on OCR's measures: a run of lines, one after another in reading order, set
  * smaller than the page's body (`OcrLine.size` at most `NoteConfig.footnoteSizeRatio` of it), with no line below them
- * in their column and a full-size line above them at least `footnoteGapEm` of that line's height away, is footnotes.
- * The run opens with a note's number or sign, or carries on a note from the page before and so runs at least
- * `minCarriedNoteWidthShare` of the width of the line above (a stray label does not). A run opening with a caption
- * label ("Figure 4:") is a caption under a figure, not a note.
+ * in their column and a full-size line above them at least `footnoteGapEm` of that line's height away, is footnotes,
+ * when it also looks placed like notes:
  *
- * Each OCR paragraph of the run, and each line opening with a marker, starts a [ParagraphKind.FOOTNOTE] holding that
- * note's number: OCR often misreads a raised number ("“To illustrate", "SWe used"), so its paragraph break, from the
- * first line's indent, is the surer sign of a new note. The opening marker itself ("4To", "† Work", "* Equal") is
- * returned to be left out of the reading text, as a text layer's is.
+ * - it opens with a note's number or sign; else it carries on a note from the page before, so it runs at least
+ *   `minCarriedNoteWidthShare` of the width of the line above (a stray label does not) and starts flush with its
+ *   column or under a rule (a block quote, verse or epigraph set small is indented or centred);
+ * - a run shorter than `ocrSureNoteLines` shows a second sign, as one OCR size is a rough measure: it opens with a
+ *   note sign ("*", "†"), a rule stands above it, or its lines are closer together than the body's
+ *   (`ocrNoteSpacingRatio`); a body line OCR measured a little small and starting with a number ("15 अगस्त…") is not;
+ * - it reads like text (`readsLikeNotes`): read with the page's confidence, opening with neither a caption label
+ *   ("Figure 4:"), a source line ("Source:") nor a bullet.
+ *
+ * Each OCR paragraph of the run starts a [ParagraphKind.FOOTNOTE], and so does a line opening with a marker that
+ * continues the notes' numbering (note 3 after note 2): OCR often misreads a raised number ("“To illustrate"), so the
+ * paragraph break is the surer sign of a new note, and a line that only starts with a number ("12 pages…", "11 SCC
+ * 345") carries on the note above. The markers that open notes ("4To", "† Work", "* Equal") are returned to be left
+ * out of the reading text, as a text layer's are; no other number is silenced.
  *
  * Boxes come from [PageText.boxAt] in the upright frame (y up); lines and words without boxes are never notes.
  */
@@ -33,48 +41,56 @@ internal class OcrFootnotes(private val config: NoteConfig) {
     /** [paragraphs] with their footnotes tagged, and the opening markers to leave out of the reading text. */
     class Tagged(val paragraphs: List<Paragraph>, val markers: List<TextSpan>)
 
+    /** The whole page ([box]) and the lines ruled on it ([rules], `OcrText.rules`), in the upright frame. */
+    class Sheet(val box: TextBox, val rules: List<TextBox>)
+
     /**
-     * [paragraphs] in reading order on [page] (boxes upright), [sheet] the whole page in the same frame, [obstacles]
-     * the spans of words that are on the page but in no line of [paragraphs] (a table's cells), [bodySize] the page's
-     * body size in `OcrLine.size` units.
+     * [paragraphs] in reading order on [page] (boxes upright), [obstacles] the spans of words that are on the page but
+     * in no line of [paragraphs] (a table's cells), [bodySize] the page's body size in `OcrLine.size` units.
      */
     fun tag(
         page: PageText,
-        sheet: TextBox,
+        sheet: Sheet,
         paragraphs: List<Paragraph>,
         obstacles: Collection<TextSpan>,
         bodySize: Float,
     ): Tagged {
-        val placed = paragraphs.flatMap { paragraph ->
-            paragraph.lines.map { Placed(it, paragraph.kind, page.boxOf(it.spans)) }
+        val placed = paragraphs.flatMapIndexed { p, paragraph ->
+            paragraph.lines.mapIndexed { i, line -> Placed(line, paragraph.kind, page.boxOf(line.spans), p, i == 0) }
         }
-        val foot = Foot(
-            page,
-            sheet,
-            placed,
-            placed.mapNotNull { it.box } + obstacles.mapNotNull { page.boxOf(listOf(it)) },
-        )
-        val notes = if (bodySize <= 0f) {
-            emptySet()
+        val blockers = placed.mapNotNull { it.box } + obstacles.mapNotNull { page.boxOf(listOf(it)) }
+        val noteRuns = if (bodySize <= 0f) {
+            emptyList()
         } else {
-            smallRuns(placed, bodySize).flatMapTo(HashSet()) { run -> foot.notesOf(run, bodySize).map { it.line } }
+            val foot = Foot(page, sheet, placed, blockers, bodySize)
+            smallRuns(placed, bodySize).map(foot::notesOf).filter { it.isNotEmpty() }
         }
-        if (notes.isEmpty()) return Tagged(paragraphs, emptyList())
-        val markers = notes.associateWith { openingMarker(page.text, it) }
-        val silent = markers.values.filterNotNull().sortedBy { it.start }
-        return Tagged(split(paragraphs, notes, markers, page.text), silent)
+        if (noteRuns.isEmpty()) return Tagged(paragraphs, emptyList())
+        val markers = openingMarkers(page.text, noteRuns)
+        val notes = noteRuns.flatMapTo(HashSet()) { run -> run.map { it.line } }
+        return Tagged(
+            split(paragraphs, notes, markers, page.text),
+            markers.values.filterNotNull().sortedBy {
+                it.start
+            },
+        )
     }
 
-    private class Placed(val line: TextLine, val kind: ParagraphKind, val box: TextBox?)
+    /** A line with its paragraph's kind, its box, its paragraph's place and whether it opens that paragraph. */
+    private class Placed(
+        val line: TextLine,
+        val kind: ParagraphKind,
+        val box: TextBox?,
+        val paragraph: Int,
+        val opensParagraph: Boolean,
+    )
 
     /** Runs of consecutive lines in reading order that are small enough to be notes, in body text or list items. */
     private fun smallRuns(placed: List<Placed>, bodySize: Float): List<List<Placed>> {
         val runs = ArrayList<List<Placed>>()
         var run = ArrayList<Placed>()
         for (item in placed) {
-            val small = item.kind in NOTE_KINDS && item.box != null &&
-                item.line.size > 0f && item.line.size <= bodySize * config.footnoteSizeRatio
-            if (small) {
+            if (item.kind in NOTE_KINDS && item.box != null && isSmall(item, bodySize)) {
                 run.add(item)
             } else if (run.isNotEmpty()) {
                 runs.add(run)
@@ -85,28 +101,72 @@ internal class OcrFootnotes(private val config: NoteConfig) {
         return runs
     }
 
-    /** One page's lines ([placed]) and every box a note must have nothing of below it ([blockers]). */
+    private fun isSmall(item: Placed, bodySize: Float): Boolean =
+        item.line.size > 0f && item.line.size <= bodySize * config.footnoteSizeRatio
+
+    /**
+     * Each note line's opening marker, when it opens a note: the first line of a run of notes, a line opening an OCR
+     * paragraph, or a line whose marker continues the numbering of the last note (3 after 2, "†" after "*"); null for
+     * the rest, whose numbers are read.
+     */
+    private fun openingMarkers(text: String, noteRuns: List<List<Placed>>): Map<TextLine, TextSpan?> {
+        val out = HashMap<TextLine, TextSpan?>()
+        var lastRef: Int? = null
+        for (run in noteRuns) {
+            run.forEachIndexed { i, note ->
+                val marker = openingMarker(text, note.line)
+                val ref = marker?.let { NoteMarkers.refOf(text.substring(it.start, it.end)) }
+                val continues = ref != null && lastRef != null && ref == lastRef + 1
+                val accepted = marker != null && (i == 0 || note.opensParagraph || continues)
+                out[note.line] = marker.takeIf { accepted }
+                if (accepted && ref != null) lastRef = ref
+            }
+        }
+        return out
+    }
+
+    /**
+     * One page's lines ([placed]), every box a note must have nothing of below it ([blockers]) and the page's body
+     * size and line spacing.
+     */
     private inner class Foot(
         private val page: PageText,
-        private val sheet: TextBox,
+        private val sheet: Sheet,
         private val placed: List<Placed>,
         private val blockers: List<TextBox>,
+        private val bodySize: Float,
     ) {
+        /** How far apart the body's lines follow each other within a paragraph (median); null when not known. */
+        private val bodyPitch: Float? = placed.filter { it.box != null && !isSmall(it, bodySize) }
+            .zipWithNext()
+            .filter { (a, b) -> a.paragraph == b.paragraph }
+            .map { (a, b) -> requireNotNull(a.box).top - requireNotNull(b.box).top }
+            .filter { it > 0f }
+            .let(::median)
+
+        /** The page's own mean letter confidence less the allowed drop, at most `ocrFootnoteMinConfidence`. */
+        private val minConfidence: Double = run {
+            val text = page.text
+            val confidences = text.indices.filter { text[it].isLetter() }.mapNotNull(page::ocrConfidenceAt)
+            val pageMean = if (confidences.isEmpty()) Double.MAX_VALUE else confidences.average()
+            minOf(config.ocrFootnoteMinConfidence.toDouble(), pageMean - config.ocrFootnoteConfidenceDrop)
+        }
+
         /**
          * The notes of [run]: the whole run, else its first tail that starts `footnoteGapEm` below the line before
          * it, else none. OCR measures a short body line as small at times ("Consider these sentences:" above the
          * notes): a run opening with one such line, narrower than `minCarriedNoteWidthShare` of the notes under the
          * space and with no marker, starts after it.
          */
-        fun notesOf(run: List<Placed>, bodySize: Float): List<Placed> {
+        fun notesOf(run: List<Placed>): List<Placed> {
             val cuts = (1 until run.size).filter { i ->
                 standsApart(requireNotNull(run[i - 1].box), requireNotNull(run[i].box))
             }
             val tailFirst = cuts.firstOrNull() == 1 && isShortLead(run)
             val start = when {
-                tailFirst && isNotes(run.subList(1, run.size), bodySize, afterCut = true) -> 1
-                isNotes(run, bodySize, afterCut = false) -> 0
-                else -> cuts.firstOrNull { isNotes(run.subList(it, run.size), bodySize, afterCut = true) }
+                tailFirst && isNotes(run.subList(1, run.size), afterCut = true) -> 1
+                isNotes(run, afterCut = false) -> 0
+                else -> cuts.firstOrNull { isNotes(run.subList(it, run.size), afterCut = true) }
             }
             return if (start == null) emptyList() else run.subList(start, run.size)
         }
@@ -119,49 +179,81 @@ internal class OcrFootnotes(private val config: NoteConfig) {
 
         /**
          * [run] sits at the page's foot with nothing below it in its column, set apart from the full-size line above
-         * it ([afterCut]: or from the short line a run was cut after), and opens with a marker or runs wide.
+         * it ([afterCut]: or from the short line a run was cut after), and is set and reads like notes.
          */
-        private fun isNotes(run: List<Placed>, bodySize: Float, afterCut: Boolean): Boolean {
+        private fun isNotes(run: List<Placed>, afterCut: Boolean): Boolean {
             val boxes = run.map { requireNotNull(it.box) }
-            val first = boxes.first()
-            val lowest = boxes.minOf { it.bottom }
             val members = run.mapTo(HashSet()) { it.line }
-            val above = placed.filter { it.line !in members && it.box != null && it.box.overlapsAny(boxes) }
-                .filter { it.box!!.bottom >= first.top }
-                .minByOrNull { it.box!!.bottom - first.top }
-            val aboveBox = above?.box ?: return false
-            val atFoot = lowest - sheet.bottom <= sheet.height * config.ocrFootnoteBandShare &&
-                blockers.none { box -> box.top <= lowest && box.overlapsAny(boxes) && box !in boxes }
+            val above = lineAbove(boxes, members) ?: return false
+            val aboveBox = requireNotNull(above.box)
             val apart = (above.line.size > bodySize * config.footnoteSizeRatio || afterCut) &&
-                standsApart(aboveBox, first)
-            val opens = openingMarker(page.text, run.first().line) != null
-            val wide = opens || first.width >= aboveBox.width * config.minCarriedNoteWidthShare
-            return atFoot && apart && wide && isClearlySmall(run, bodySize, opens) &&
+                standsApart(aboveBox, boxes.first())
+            return isAtFoot(boxes) && apart && isSetLikeNotes(run, boxes, aboveBox, members) &&
                 readsLikeNotes(run.map { it.line })
         }
 
-        /**
-         * One OCR size is a rough measure: a run with no marker and fewer than `ocrSureNoteLines` lines must average
-         * at most `ocrFewNoteLinesSizeRatio` of the body, so a body line measured a little small is not taken.
-         */
-        private fun isClearlySmall(run: List<Placed>, bodySize: Float, opens: Boolean): Boolean =
-            opens || run.size >= config.ocrSureNoteLines ||
-                run.map { it.line.size }.average() <= bodySize * config.ocrFewNoteLinesSizeRatio
+        /** The nearest line above [boxes] in their column, not one of [members]. */
+        private fun lineAbove(boxes: List<TextBox>, members: Set<TextLine>): Placed? {
+            val first = boxes.first()
+            return placed.filter { it.line !in members && it.box != null && it.box.overlapsAny(boxes) }
+                .filter { it.box!!.bottom >= first.top }
+                .minByOrNull { it.box!!.bottom - first.top }
+        }
+
+        /** [boxes] end within `ocrFootnoteBandShare` of the page's foot, with nothing below them in their column. */
+        private fun isAtFoot(boxes: List<TextBox>): Boolean {
+            val runBottom = boxes.minOf { it.bottom }
+            return runBottom - sheet.box.bottom <= sheet.box.height * config.ocrFootnoteBandShare &&
+                blockers.none { box -> box.top <= runBottom && box.overlapsAny(boxes) && box !in boxes }
+        }
 
         /**
-         * Read with confidence (`NoteConfig.ocrFootnoteMinConfidence`) and opening with neither a caption label
-         * ("Figure 4:", a caption under a figure) nor a bullet (a list in small type): a page's stamp, print slug or
-         * garbled strip reads badly or holds no letters.
+         * [run] opens with a marker, or runs wide and starts flush with its column or under a rule; and, when short, a
+         * note sign, a rule above it or close-set lines show it is notes.
+         */
+        private fun isSetLikeNotes(
+            run: List<Placed>,
+            boxes: List<TextBox>,
+            aboveBox: TextBox,
+            members: Set<TextLine>,
+        ): Boolean {
+            val first = boxes.first()
+            val marker = openingMarker(page.text, run.first().line)?.let { page.text.substring(it.start, it.end) }
+            val ruled = sheet.rules.any { isBetween(it, aboveBox, first) && it.overlapsAny(boxes) }
+            val wide = marker != null || first.width >= aboveBox.width * config.minCarriedNoteWidthShare
+            val placedLikeNotes = marker != null || ruled || isFlush(first, boxes, members)
+            val sure = run.size >= config.ocrSureNoteLines || marker?.none(Char::isDigit) == true || ruled ||
+                isTight(boxes)
+            return wide && placedLikeNotes && sure
+        }
+
+        /** [first] starts within `ocrFlushEm` line heights of the left edge of the other lines in its column. */
+        private fun isFlush(first: TextBox, boxes: List<TextBox>, members: Set<TextLine>): Boolean {
+            val column = placed.filter { it.line !in members }.mapNotNull { it.box }.filter { it.overlapsAny(boxes) }
+            val left = column.minOfOrNull { it.left } ?: first.left
+            return first.left - left <= first.height * config.ocrFlushEm
+        }
+
+        /** [boxes] (two lines or more) follow each other at most `ocrNoteSpacingRatio` of the body's spacing apart. */
+        private fun isTight(boxes: List<TextBox>): Boolean {
+            val pitch = median(boxes.zipWithNext { a, b -> a.top - b.top }.filter { it > 0f })
+            return pitch != null && bodyPitch != null && pitch <= bodyPitch * config.ocrNoteSpacingRatio
+        }
+
+        /**
+         * Read with the page's confidence (at least [minConfidence]) and opening with neither a caption label
+         * ("Figure 4:", a caption under a figure), a source line ("Source:", "स्रोत:") nor a bullet (a list in small
+         * type): a page's stamp, print slug or garbled strip reads badly or holds no letters.
          */
         private fun readsLikeNotes(lines: List<TextLine>): Boolean {
             val text = page.text
             val letters = lines.flatMap { line -> line.spans.flatMap { it.start until it.end } }
                 .filter { text[it].isLetter() }
             val confidences = letters.mapNotNull(page::ocrConfidenceAt)
-            val confident = confidences.isEmpty() || confidences.average() >= config.ocrFootnoteMinConfidence
+            val confident = confidences.isEmpty() || confidences.average() >= minConfidence
             val first = lines.first().spans.joinToString(" ") { text.substring(it.start, it.end) }
             return letters.isNotEmpty() && confident &&
-                !FurnitureFinder.opensWithCaptionLabel(first) &&
+                !FurnitureFinder.opensWithCaptionLabel(first) && !SOURCE_LABEL.containsMatchIn(first) &&
                 !ListMarkers.startsWithBullet(text, lines.first().spans.first().start)
         }
     }
@@ -226,8 +318,19 @@ internal class OcrFootnotes(private val config: NoteConfig) {
 
         /** A sign run, alone or glued; a number alone before a word; a number glued to a capital and a small letter. */
         val OPENING_MARKER = Regex("""^([$SIGNS]{1,3}(?=[\s"“‘']*\p{L})|\p{Nd}+(?=\s+\p{L})|\p{Nd}+(?=\p{Lu}\p{Ll}))""")
+
+        /** A source or credit line set small under a table or figure: not a note. */
+        val SOURCE_LABEL = Regex("""^\s*(?i:sources?|courtesy|स्रोत|साभार|সূত্র|উৎস)\s*[:：\-–]""")
     }
 }
+
+/** A rule whose middle lies between [above]'s middle and [below]'s. */
+private fun isBetween(rule: TextBox, above: TextBox, below: TextBox): Boolean {
+    val middle = (rule.top + rule.bottom) / 2
+    return middle < (above.top + above.bottom) / 2 && middle > (below.top + below.bottom) / 2
+}
+
+private fun median(values: List<Float>): Float? = values.sorted().let { if (it.isEmpty()) null else it[it.size / 2] }
 
 private fun TextBox.overlapsAny(boxes: List<TextBox>): Boolean =
     boxes.any { minOf(it.right, right) > maxOf(it.left, left) }

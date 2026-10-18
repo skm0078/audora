@@ -103,7 +103,7 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
             OcrFootnotes.Tagged(laidOut, emptyList())
         } else {
             val turn = ocr.uprightTurn(toPage)
-            val sheet = turn.apply(toPage(WHOLE_VIEW))
+            val sheet = OcrFootnotes.Sheet(turn.apply(toPage(WHOLE_VIEW)), ocr.rules.map { turn.apply(toPage(it)) })
             footnotes.tag(page.withBoxes(turn::apply), sheet, laidOut, taken, bodySize)
         }
         val kept = notes.paragraphs

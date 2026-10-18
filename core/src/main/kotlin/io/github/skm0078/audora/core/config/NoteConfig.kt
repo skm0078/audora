@@ -20,12 +20,16 @@ package io.github.skm0078.audora.core.config
  *   so their first line runs at least this share of the width of the line above (a stray table cell does not).
  * @property ocrFootnoteBandShare on a scanned page, footnotes end within this share of the page's height from its
  *   foot: OCR's sizes vary more than a font's, and small lines ending a short page mid-sheet are text, not notes.
- * @property ocrFootnoteMinConfidence and their letters were read with at least this mean OCR confidence (0–100):
- *   lower, the small strip is a stamp or a garbled print slug.
- * @property ocrSureNoteLines on a scanned page, a run of small lines this long or longer, or opening with a marker,
- *   is small enough by `footnoteSizeRatio`;
- * @property ocrFewNoteLinesSizeRatio a shorter run must average at most this share of the body size: one OCR size is
- *   a rough measure, and a body line measured a little small must not be taken for a note.
+ * @property ocrFootnoteMinConfidence and their letters were read with a mean OCR confidence (0–100) of at least this,
+ * @property ocrFootnoteConfidenceDrop or at least the page's own mean less this, if lower (Hindi and Bengali small
+ *   print reads less surely than English): lower still, the small strip is a stamp or a garbled print slug.
+ * @property ocrSureNoteLines on a scanned page, a run of small lines this long or longer is small enough by
+ *   `footnoteSizeRatio`; a shorter run needs a second sign that it is notes, as one OCR size is a rough measure: it
+ *   opens with a note sign ("*", "†"), a rule stands above it, or
+ * @property ocrNoteSpacingRatio its lines follow each other at most this share of the body's line spacing apart.
+ * @property ocrFlushEm a run that opens with no marker carries on a note from the page before, so it starts within
+ *   this many line heights of the left edge of its column, or under a rule: a block quote, verse or epigraph set small
+ *   is indented or centred.
  */
 data class NoteConfig(
     val silenceMarkers: Boolean = true,
@@ -37,8 +41,10 @@ data class NoteConfig(
     val minCarriedNoteWidthShare: Float = 0.5f,
     val ocrFootnoteBandShare: Float = 0.12f,
     val ocrFootnoteMinConfidence: Int = 70,
+    val ocrFootnoteConfidenceDrop: Int = 20,
     val ocrSureNoteLines: Int = 3,
-    val ocrFewNoteLinesSizeRatio: Float = 0.88f,
+    val ocrNoteSpacingRatio: Float = 0.95f,
+    val ocrFlushEm: Float = 1f,
 ) {
     init {
         val shares = listOf(
@@ -46,7 +52,6 @@ data class NoteConfig(
             footnoteSizeRatio,
             minCarriedNoteWidthShare,
             ocrFootnoteBandShare,
-            ocrFewNoteLinesSizeRatio,
         )
         require(shares.all { it in 0f..1f }) { "note shares must be in 0..1, were $shares" }
         require(markerRaiseEm > 0f) { "markerRaiseEm must be > 0, was $markerRaiseEm" }
@@ -54,7 +59,9 @@ data class NoteConfig(
         require(ocrFootnoteMinConfidence in 0..OcrConfig.MAX_CONFIDENCE) {
             "ocrFootnoteMinConfidence must be in 0..100, was $ocrFootnoteMinConfidence"
         }
+        require(ocrFootnoteConfidenceDrop >= 0) { "ocrFootnoteConfidenceDrop must be >= 0" }
         require(ocrSureNoteLines >= 1) { "ocrSureNoteLines must be >= 1, was $ocrSureNoteLines" }
+        require(ocrNoteSpacingRatio > 0f && ocrFlushEm >= 0f) { "ocrNoteSpacingRatio must be > 0, ocrFlushEm >= 0" }
         require(maxMarkerDigits >= 1) { "maxMarkerDigits must be >= 1, was $maxMarkerDigits" }
     }
 }
