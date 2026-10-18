@@ -82,6 +82,21 @@ class ClutterRemoverTest {
     }
 
     @Test
+    fun `a printer's slug at the foot goes, a date and time alone stays`() {
+        val slugs = listOf("Chapter 9 Transitions.indd 71", "17-12-2019 12:54:06")
+        for (slug in slugs) {
+            val pages = (0..2).map { page(it, footer = if (it == 1) listOf(slug to LEFT) else emptyList()) }
+            assertEquals(slug, bodyText(1), spoken(pages, 1))
+        }
+        // The same print time on the next page's foot marks both as slugs; a date sheet's times differ.
+        val printed = (0..2).map { page(it, footer = listOf("5/13/11 6:45 AM" to LEFT)) }
+        assertEquals(bodyText(1), spoken(printed, 1))
+        val subjects = listOf("Physics", "Chemistry", "Biology")
+        val sheet = (0..2).map { page(it, footer = listOf("${subjects[it]} 1$it/03/2024 10:30" to LEFT)) }
+        assertTrue(spoken(sheet, 1), "10:30" in spoken(sheet, 1))
+    }
+
+    @Test
     fun `lines that only look like headers stay`() {
         // A margin line on one page only, numbers that do not run with the page, and a repeated line mid-page.
         val pages = (0..4).map { i ->

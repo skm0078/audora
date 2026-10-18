@@ -5,6 +5,7 @@ package io.github.skm0078.audora.pdf.ocr
 
 import io.github.skm0078.audora.core.config.CleanupConfig
 import io.github.skm0078.audora.pdf.cleanup.Folios
+import io.github.skm0078.audora.pdf.cleanup.PrintSlugs
 import io.github.skm0078.audora.pdf.cleanup.SIGNATURE_DIGITS
 import io.github.skm0078.audora.pdf.cleanup.marginSignature
 import io.github.skm0078.audora.pdf.quality.CharacterErrorRate
@@ -23,8 +24,8 @@ class OcrMargins(val top: List<String>, val bottom: List<String>)
  * [CleanupConfig.maxMarginLines] lines nearest that edge) and the page has text outside both bands. It is dropped
  * when it is a page number by itself, carries a number that steps with the page number across a neighbour's strip
  * (a running folio), or its letters repeat in the same strip on enough neighbours (a running header), allowing for
- * a letter or two misread ([CleanupConfig.ocrMatchSimilarity]), or it is a printer's slug: a layout file's name
- * ("HUD3_25_09.indd", ".qxd") or a print date with its time ("5/13/11 6:45 AM").
+ * a letter or two misread ([CleanupConfig.ocrMatchSimilarity]), or it is a printer's slug ([PrintSlugs]): a layout
+ * file's name ("HUD3_25_09.indd", ".qxd") or a print date with its time ("5/13/11 6:45 AM").
  */
 internal class OcrClutter(private val config: CleanupConfig) {
     /**
@@ -63,21 +64,13 @@ internal class OcrClutter(private val config: CleanupConfig) {
             isPrintSlug(line, neighbours)
     }
 
-    /**
-     * A printer's slug: a layout file's name, or a print date and time that a neighbour's strip carries too, the
-     * same to the minute. A date and time alone is an exam date sheet's row, a notice's date or a receipt's first
-     * line, and a date sheet's next page holds other times.
-     */
+    /** A printer's slug ([PrintSlugs]): a layout file's name, a print time with seconds, or one a neighbour has. */
     private fun isPrintSlug(line: String, neighbours: Map<Int, List<String>>): Boolean {
-        val times = PRINT_TIME.findAll(line).map { timeKey(it.value) }.toSet()
-        return LAYOUT_FILE.containsMatchIn(line) ||
-            neighbours.values.any { lines ->
-                lines.any { other -> PRINT_TIME.findAll(other).any { timeKey(it.value) in times } }
-            }
+        val times = PrintSlugs.times(line)
+        val shared = times.isNotEmpty() &&
+            neighbours.values.any { lines -> lines.any { other -> PrintSlugs.times(other).any(times::contains) } }
+        return PrintSlugs.namesLayoutFile(line) || PrintSlugs.hasStampWithSeconds(line) || shared
     }
-
-    /** A print time with its spaces and comma made alike: OCR may read "5/13/11, 6:45" or "5/13/11  6:45". */
-    private fun timeKey(time: String): String = time.replace(",", "").split(Regex("\\s+")).joinToString(" ")
 
     /** A number on the line that a neighbour's strip carries shifted by the page offset: 12 here, 13 a page on. */
     private fun isRunningFolio(values: List<Int>, neighbours: Map<Int, List<String>>): Boolean =
@@ -110,12 +103,3 @@ internal class OcrClutter(private val config: CleanupConfig) {
 
     private enum class Band { TOP, BOTTOM }
 }
-
-/** A layout program's file name in a printer's slug: "HUD3_25_09Single-Bengali-BE.indd", "ch04.qxd". */
-private val LAYOUT_FILE = Regex("""\S\.(?i:indd|qxd|qxp)\b""")
-
-/**
- * A print date with its time in a printer's slug: "5/13/11 6:45 AM", "2019-03-04 10:12". ASCII digits only, as
- * typesetting software writes them (`\d` would also take Devanagari and Bengali digits on Android's ICU regex).
- */
-private val PRINT_TIME = Regex("""[0-9]{1,4}[/.-][0-9]{1,2}[/.-][0-9]{2,4},?\s+[0-9]{1,2}:[0-9]{2}""")

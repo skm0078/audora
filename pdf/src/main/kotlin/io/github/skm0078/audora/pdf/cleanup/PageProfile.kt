@@ -41,6 +41,9 @@ class PageProfile internal constructor(
  * @property letters how many letters the signature holds.
  * @property folios page numbers the line carries (Folios).
  * @property standaloneFolio the whole line is a page number ("12", "Page 3 of 50", "– 7 –").
+ * @property slug the line is a printer's slug by itself ([PrintSlugs]: a layout file's name, a print time with
+ *   seconds).
+ * @property printTimes the print times it carries, to the minute: a slug when a neighbour's margin has one too.
  */
 internal data class MarginLine(
     val line: TextLine,
@@ -49,6 +52,8 @@ internal data class MarginLine(
     val letters: Int,
     val folios: List<Int>,
     val standaloneFolio: Boolean,
+    val slug: Boolean = false,
+    val printTimes: Set<String> = emptySet(),
 )
 
 internal class PageProfiler(private val config: CleanupConfig) {
@@ -69,6 +74,7 @@ internal class PageProfiler(private val config: CleanupConfig) {
 
     private fun marginLine(page: PageText, line: TextLine): MarginLine {
         val spans = spanTexts(page, line)
+        val text = spans.joinToString(" ")
         val folios = Folios.of(spans, config.maxFolioDigits)
         val signature = signature(spans)
         return MarginLine(
@@ -78,6 +84,8 @@ internal class PageProfiler(private val config: CleanupConfig) {
             letters = signature.count { it != SIGNATURE_DIGITS },
             folios = folios.values,
             standaloneFolio = folios.standalone,
+            slug = PrintSlugs.namesLayoutFile(text) || PrintSlugs.hasStampWithSeconds(text),
+            printTimes = PrintSlugs.times(text),
         )
     }
 
