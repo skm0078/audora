@@ -147,6 +147,7 @@ import io.github.skm0078.audora.ui.shell.AppShell
 import io.github.skm0078.audora.ui.theme.Appearance
 import io.github.skm0078.audora.ui.theme.AppearancePreferences
 import io.github.skm0078.audora.ui.theme.AudoraTheme
+import io.github.skm0078.audora.ui.tutor.ReaderTutorRoute
 import io.github.skm0078.audora.ui.upnext.UpNextPort
 import io.github.skm0078.audora.ui.upnext.UpNextSheet
 import io.github.skm0078.audora.ui.upnext.libraryBooks
@@ -880,6 +881,7 @@ class MainActivity : ComponentActivity() {
         val scope = rememberCoroutineScope()
         var upNextOpen by rememberSaveable { mutableStateOf(false) }
         var searchOpen by rememberSaveable { mutableStateOf(false) }
+        var tutorOpen by rememberSaveable { mutableStateOf(false) }
         val document = state.document
         val look by remember { readingLookPreferences.look }.collectAsStateWithLifecycle(ReadingLook())
         val spokenWord = rememberSpokenWord(state, port, look.wordHighlight)
@@ -912,10 +914,12 @@ class MainActivity : ComponentActivity() {
                 onSearch = { searchOpen = true },
                 voiceNotes = voiceNotes,
                 lookUp = lookUp,
+                onTutor = { tutorOpen = true },
             )
         }
         if (upNextOpen) UpNextRoute(books, playing = target.id) { upNextOpen = false }
         if (searchOpen) SearchRoute(search, onGoToPage = actions::onGoToPage) { searchOpen = false }
+        if (tutorOpen) ReaderTutorRoute(state, port::pause, actions::onGoToPage) { tutorOpen = false }
     }
 
     @Composable

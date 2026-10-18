@@ -219,6 +219,26 @@ private val SPEECH_SOFTWARE = listOf(
         R.string.licences_cc_by_sa_wiktionary,
         "https://en.wiktionary.org/",
     ),
+    Software(
+        "Streaming Zipformer English model (k2-fsa icefall), reading tutor, if downloaded",
+        R.string.licences_apache,
+        "https://github.com/k2-fsa/icefall",
+    ),
+    Software(
+        "Vosk small streaming Bengali model (Alpha Cephei), reading tutor, if downloaded",
+        R.string.licences_apache,
+        "https://huggingface.co/alphacep/vosk-model-small-streaming-bn",
+    ),
+    Software(
+        "Dolphin speech recognition (DataoceanAI, Tsinghua University), Hindi reading tutor, if downloaded",
+        R.string.licences_apache,
+        "https://github.com/DataoceanAI/Dolphin",
+    ),
+    Software(
+        "Silero VAD (Silero team), Hindi reading tutor, if downloaded",
+        R.string.licences_mit,
+        "https://github.com/snakers4/silero-vad",
+    ),
     Software("Audora", R.string.licences_gpl3, "https://github.com/skm0078/audora"),
 )
 

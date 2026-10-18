@@ -273,5 +273,102 @@
         "speech/licences/wiktionary-CC-BY-SA-4.0.txt"
       ]
     }
+  ],
+  "asr": [
+    {
+      "id": "asr-en-zipformer-20m",
+      "label": "English reading tutor (follows word by word)",
+      "lang": "en",
+      "kind": "streaming-transducer",
+      "licence": "Apache-2.0",
+      "credit": "Streaming Zipformer transducer (20M) trained on LibriSpeech with icefall by desh2608 and k2-fsa (Apache-2.0), converted for sherpa-onnx by k2-fsa; only the int8 weights and tokens are kept, unchanged.",
+      "licenceUrl": "https://www.apache.org/licenses/LICENSE-2.0",
+      "sourceUrl": "https://github.com/k2-fsa/icefall/pull/903",
+      "sources": [
+        {
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17.tar.bz2",
+          "files": {
+            "sherpa-onnx-streaming-zipformer-en-20M-2023-02-17/encoder-epoch-99-avg-1.int8.onnx": "encoder.onnx",
+            "sherpa-onnx-streaming-zipformer-en-20M-2023-02-17/decoder-epoch-99-avg-1.int8.onnx": "decoder.onnx",
+            "sherpa-onnx-streaming-zipformer-en-20M-2023-02-17/joiner-epoch-99-avg-1.int8.onnx": "joiner.onnx",
+            "sherpa-onnx-streaming-zipformer-en-20M-2023-02-17/tokens.txt": "tokens.txt"
+          },
+          "sha256": "9c559283e8498d3fe95913c79ca1cb454bb26281ac2b102b41306c7d752765d9"
+        }
+      ],
+      "licenceFiles": [
+        "speech/licences/apache-2.0.txt"
+      ],
+      "file": "asr-en-zipformer-20m-896cc6625975.zip",
+      "sha256": "896cc6625975bbd1dd3d280f37b6bfb575c5cb03120acba4807e0fcc33e47343",
+      "sizeBytes": 43661165,
+      "unpackedBytes": 43660659
+    },
+    {
+      "id": "asr-bn-zipformer-vosk",
+      "label": "Bengali reading tutor (follows word by word)",
+      "lang": "bn",
+      "kind": "streaming-transducer",
+      "licence": "Apache-2.0",
+      "credit": "Vosk small streaming Bengali model, a Zipformer2 transducer trained with icefall by Alpha Cephei (Apache-2.0), converted for sherpa-onnx by k2-fsa; weights and tokens kept unchanged.",
+      "licenceUrl": "https://huggingface.co/alphacep/vosk-model-small-streaming-bn",
+      "licenceCheck": {
+        "url": "https://huggingface.co/alphacep/vosk-model-small-streaming-bn/raw/main/README.md",
+        "contains": "license: apache-2.0"
+      },
+      "sourceUrl": "https://huggingface.co/alphacep/vosk-model-small-streaming-bn",
+      "sources": [
+        {
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-bn-vosk-2026-02-09.tar.bz2",
+          "files": {
+            "sherpa-onnx-streaming-zipformer-bn-vosk-2026-02-09/encoder.onnx": "encoder.onnx",
+            "sherpa-onnx-streaming-zipformer-bn-vosk-2026-02-09/decoder.onnx": "decoder.onnx",
+            "sherpa-onnx-streaming-zipformer-bn-vosk-2026-02-09/joiner.onnx": "joiner.onnx",
+            "sherpa-onnx-streaming-zipformer-bn-vosk-2026-02-09/tokens.txt": "tokens.txt"
+          },
+          "sha256": "1bc89d81ee33ba7ddef8454736aeeb55e3cc1593274272485c6da342202b4b18"
+        }
+      ],
+      "licenceFiles": [
+        "speech/licences/apache-2.0.txt"
+      ],
+      "file": "asr-bn-zipformer-vosk-c108226b561f.zip",
+      "sha256": "c108226b561fe6d6c854ec9bc3d7fd6079d22a8a352f350217f5f503caa4f8a5",
+      "sizeBytes": 94131803,
+      "unpackedBytes": 94131297
+    },
+    {
+      "id": "asr-hi-dolphin-base",
+      "label": "Hindi reading tutor (follows phrase by phrase)",
+      "lang": "hi",
+      "kind": "phrase-ctc",
+      "licence": "Apache-2.0 AND MIT",
+      "credit": "Dolphin base multilingual speech recognition by DataoceanAI and Tsinghua University (Apache-2.0), CTC branch converted to int8 for sherpa-onnx by k2-fsa; Silero VAD by the Silero team (MIT) finds the phrases. Both kept unchanged.",
+      "licenceUrl": "https://github.com/DataoceanAI/Dolphin/blob/main/LICENSE",
+      "sourceUrl": "https://github.com/DataoceanAI/Dolphin",
+      "sources": [
+        {
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-dolphin-base-ctc-multi-lang-int8-2025-04-02.tar.bz2",
+          "files": {
+            "sherpa-onnx-dolphin-base-ctc-multi-lang-int8-2025-04-02/model.int8.onnx": "model.onnx",
+            "sherpa-onnx-dolphin-base-ctc-multi-lang-int8-2025-04-02/tokens.txt": "tokens.txt"
+          },
+          "sha256": "6f23da2303c3c2e5fa6445c450fa2a7133cd57e3da070ae5f97ab9e0dfbb4a54"
+        },
+        {
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx",
+          "sha256": "9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6",
+          "as": "vad.onnx"
+        }
+      ],
+      "licenceFiles": [
+        "speech/licences/apache-2.0.txt",
+        "speech/licences/silero-vad-LICENSE.txt"
+      ],
+      "file": "asr-hi-dolphin-base-6036b50ffc67.zip",
+      "sha256": "6036b50ffc677114c768c28368ec51c12aa7fe7a00bff02d9c11f1ee08d09a50",
+      "sizeBytes": 104891149,
+      "unpackedBytes": 104890753
+    }
   ]
 }

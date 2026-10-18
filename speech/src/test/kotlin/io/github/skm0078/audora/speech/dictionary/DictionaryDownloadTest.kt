@@ -47,7 +47,7 @@ class DictionaryDownloadTest {
     )
 
     private fun filesFor(pin: DictionaryPin, cap: Long = config.maxUnpackedBytes) =
-        DictionaryFiles(temp.root.resolve("dictionary"), pin, cap, config.bufferBytes)
+        dictionaryFiles(temp.root.resolve("dictionary"), pin, cap, config.bufferBytes)
 
     private fun zipFile(bytes: ByteArray): File = temp.newFile().apply { writeBytes(bytes) }
 
@@ -78,7 +78,7 @@ class DictionaryDownloadTest {
 
         assertTrue(files.isInstalled())
         assertFalse(zip.exists())
-        FileByteSource(files.text).use { source ->
+        FileByteSource(files.dictionaryText(pinFor(goodZip))).use { source ->
             assertEquals(listOf("mouse"), Dictionary(SortedLines(source)).lookUp("Mice").map { it.headword })
         }
     }
@@ -101,7 +101,7 @@ class DictionaryDownloadTest {
 
         val files = filesFor(pinFor(goodZip))
         assertTrue(files.install(zipFile(goodZip)) is Outcome.Success)
-        files.text.writeText("box")
+        files.dictionaryText(pinFor(goodZip)).writeText("box")
         assertFalse(files.isInstalled())
     }
 

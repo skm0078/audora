@@ -62,6 +62,7 @@ fun ReaderScreen(
     onSearch: (() -> Unit)? = null,
     voiceNotes: VoiceNotesBinding = VoiceNotesBinding.None,
     lookUp: LookUpBinding = LookUpBinding.None,
+    onTutor: (() -> Unit)? = null,
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -85,8 +86,8 @@ fun ReaderScreen(
                         BookmarksButton(notes, notesActions)
                         ChaptersButton(state, actions)
                         ViewToggle(state.view, actions)
-                        val textView = state.view == ReaderView.TEXT
-                        MoreMenu(textView, look, onLookChange, onOpenUpNext, onSearch, actions::onSaveAudiobook)
+                        val asText = state.view == ReaderView.TEXT
+                        MoreMenu(asText, look, onLookChange, onOpenUpNext, onSearch, actions::onSaveAudiobook, onTutor)
                     }
                 },
             )

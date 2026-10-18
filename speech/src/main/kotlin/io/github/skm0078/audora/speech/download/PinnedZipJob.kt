@@ -1,22 +1,24 @@
-// File: speech/src/main/kotlin/io/github/skm0078/audora/speech/dictionary/DictionaryDownloadJob.kt
-// Purpose: One background attempt at downloading and installing the dictionary, and whether to try again (item 33).
+// File: speech/src/main/kotlin/io/github/skm0078/audora/speech/download/PinnedZipJob.kt
+// Purpose: One background attempt at downloading and installing a pinned zip, and whether to try again (33, 67).
 
-package io.github.skm0078.audora.speech.dictionary
+package io.github.skm0078.audora.speech.download
 
 import io.github.skm0078.audora.core.config.VoiceDownloadConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.voices.DownloadError
 import io.github.skm0078.audora.speech.voices.JobResult
+import io.github.skm0078.audora.speech.voices.PinnedFile
 import io.github.skm0078.audora.speech.voices.ResumableDownloader
 
 /**
  * Resumable and SHA-256-checked by the voice downloader (ADR-022), with the voices' retry rules, like the punctuation
- * model's job: a stop or network trouble keeps the bytes and retries, a corrupt file or a full phone ends it.
+ * model's job: a stop or network trouble keeps the bytes and retries, a corrupt file or a full phone ends it. Used by
+ * the dictionaries and the reading tutor's speech models.
  */
-class DictionaryDownloadJob(
-    private val pin: DictionaryPin,
-    private val files: DictionaryFiles,
+class PinnedZipJob(
+    private val pin: PinnedFile,
+    private val files: PinnedZipFiles,
     private val downloader: ResumableDownloader,
     private val config: VoiceDownloadConfig,
     private val onInstalled: () -> Unit,
@@ -24,7 +26,7 @@ class DictionaryDownloadJob(
     /** @param attempt WorkManager's run attempt count, 0 for the first run. */
     fun run(attempt: Int, onProgress: (Long, Long) -> Unit, keepGoing: () -> Boolean): JobResult {
         if (files.isInstalled()) return JobResult.Installed
-        AudoraLog.i(TAG, "Download dictionary=${pin.id} attempt=${attempt + 1}/${config.maxAttempts}")
+        AudoraLog.i(TAG, "Download ${pin.id} attempt=${attempt + 1}/${config.maxAttempts}")
         files.dropOtherPartials()
         return when (val downloaded = downloader.download(pin, files.partialDownload(), onProgress, keepGoing)) {
             is Outcome.Failure -> failed(attempt, downloaded.error)
@@ -40,7 +42,7 @@ class DictionaryDownloadJob(
         val result = when {
             error == DownloadError.Stopped -> JobResult.Retry(error.message)
 
-            // A build's dictionary is published when that build reaches dev; before that the mirror has no file.
+            // A build's download is published when that build reaches dev; before that the mirror has no file.
             error is DownloadError.Http && error.code == HTTP_NOT_FOUND -> JobResult.Failed(NOT_PUBLISHED)
 
             !error.retryable -> JobResult.Failed(error.message)
@@ -52,15 +54,15 @@ class DictionaryDownloadJob(
             else -> JobResult.Retry(error.message)
         }
         when (result) {
-            is JobResult.Failed -> AudoraLog.e(TAG, "Dictionary ${pin.id} failed: ${result.message}")
-            else -> AudoraLog.w(TAG, "Dictionary ${pin.id} will retry: ${error.message}")
+            is JobResult.Failed -> AudoraLog.e(TAG, "Download ${pin.id} failed: ${result.message}")
+            else -> AudoraLog.w(TAG, "Download ${pin.id} will retry: ${error.message}")
         }
         return result
     }
 
     private companion object {
-        const val TAG = "Speech.DictJob"
+        const val TAG = "Speech.PinnedJob"
         const val HTTP_NOT_FOUND = 404
-        const val NOT_PUBLISHED = "this dictionary is not available for download yet; it comes with a later update"
+        const val NOT_PUBLISHED = "this download is not available yet; it comes with a later update"
     }
 }

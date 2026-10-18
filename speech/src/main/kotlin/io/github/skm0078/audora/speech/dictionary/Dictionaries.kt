@@ -25,6 +25,7 @@ import io.github.skm0078.audora.core.dictionary.SortedLines
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.speech.download.PinnedZipJob
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.voices.JobResult
 import io.github.skm0078.audora.speech.voices.ResumableDownloader
@@ -98,8 +99,8 @@ class Dictionaries private constructor(
             .flowOn(Dispatchers.IO)
     }
 
-    internal fun downloadJob(lang: Lang): DictionaryDownloadJob = slots.getValue(lang).let { slot ->
-        DictionaryDownloadJob(
+    internal fun downloadJob(lang: Lang): PinnedZipJob = slots.getValue(lang).let { slot ->
+        PinnedZipJob(
             pin = slot.pin,
             files = slot.files,
             downloader = ResumableDownloader(UrlConnectionHttpSource(downloads, USER_AGENT), downloads),
@@ -115,7 +116,7 @@ class Dictionaries private constructor(
     /** One language's pin, files and open dictionary. */
     private inner class Slot(private val lang: Lang) {
         val pin = DictionaryPin.of(lang)
-        val files = DictionaryFiles(
+        val files = dictionaryFiles(
             File(appContext.noBackupFilesDir, rootDir(lang)),
             pin,
             downloads.maxUnpackedBytes,
@@ -128,7 +129,7 @@ class Dictionaries private constructor(
         fun open(): Dictionary? = synchronized(this) {
             if (opened == null && isInstalled()) {
                 try {
-                    val file = FileByteSource(files.text)
+                    val file = FileByteSource(files.dictionaryText(pin))
                     source = file
                     val forms = if (lang == Lang.EN) EnglishBaseForms() else BaseForms.AsWritten
                     opened = Dictionary(SortedLines(file, config), forms, config)
@@ -200,7 +201,7 @@ class Dictionaries private constructor(
     }
 }
 
-/** Runs one [DictionaryDownloadJob] attempt; every run resumes from the bytes on disk. */
+/** Runs one [PinnedZipJob] attempt; every run resumes from the bytes on disk. */
 class DictionaryDownloadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val tag = inputData.getString(KEY_LANGUAGE)
