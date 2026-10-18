@@ -29,12 +29,13 @@ class CharacterCastTest {
     }
 
     private val files = MemoryFiles()
+    private val casts = CharacterCasts(files)
 
     private fun cast(narrator: VoiceId? = NARRATOR, taken: Set<VoiceId> = emptySet()) = CharacterCast(
         narrator = { narrator },
         speakers = { voice -> if (voice == NARRATOR) SPEAKERS else emptyList() },
         taken = { taken },
-        files = files,
+        casts = casts,
     ).also { it.open(BOOK) }
 
     @Test
@@ -95,6 +96,32 @@ class CharacterCastTest {
         val first = cast().voiceFor(Lang.EN, Speaker("Mira", SpeakerGender.FEMALE))
         assertNull(cast(narrator = OTHER).voiceFor(Lang.EN, Speaker("Mira", SpeakerGender.FEMALE)))
         assertEquals(first, cast().voiceFor(Lang.EN, Speaker("Mira", SpeakerGender.FEMALE)))
+    }
+
+    @Test
+    fun `a character first cast by another reader of the book, the export, is kept by both and saved once`() {
+        val playback = cast()
+        val export = cast()
+
+        val mira = export.voiceFor(Lang.EN, Speaker("Mira", SpeakerGender.FEMALE))
+        val tom = playback.voiceFor(Lang.EN, Speaker("Tom", SpeakerGender.MALE))
+
+        assertEquals(mira, playback.voiceFor(Lang.EN, Speaker("Mira", SpeakerGender.UNKNOWN)))
+        val saved = files.books.getValue(BOOK)
+        assertEquals(setOf(mira!!.name, tom!!.name), saved.values.toSet())
+        assertEquals(2, saved.size)
+    }
+
+    @Test
+    fun `a book opened in a new process reads its file once`() {
+        files.books[BOOK] = mapOf(listOf(NARRATOR.name, Lang.EN.name, "mira").joinToString("|") to "kokoro-en#2")
+        val fresh = CharacterCasts(files)
+        val first = CharacterCast({ NARRATOR }, { SPEAKERS }, casts = fresh).also { it.open(BOOK) }
+
+        assertEquals(
+            CastSpeakers.variant(NARRATOR, FEMALE_B),
+            first.voiceFor(Lang.EN, Speaker("Mira", SpeakerGender.FEMALE)),
+        )
     }
 
     private companion object {

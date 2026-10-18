@@ -32,6 +32,10 @@ interface CharacterFiles {
  * tells a gender that the kept voice does not have (an early guess was wrong), the character is cast again. The
  * voices [taken] for dialogue or headings are never given to a character.
  *
+ * The kept voices live in [casts], one per book for the whole process, so playback and the audiobook export share
+ * them and never save over each other ([CharacterCasts]). Build the app's casts with `forReading`, so both read
+ * characters the same way.
+ *
  * Thread-safe: [open] runs on the main thread, [voiceFor] on the render worker. A renderer takes [current] before it
  * looks up the sentence's speaker, so a book opened meanwhile never gets the old book's character.
  */
@@ -39,21 +43,18 @@ class CharacterCast(
     private val narrator: (Lang) -> VoiceId?,
     private val speakers: (VoiceId) -> List<CastSpeaker>,
     private val taken: (Lang) -> Set<VoiceId> = { emptySet() },
-    private val files: CharacterFiles? = null,
+    private val casts: CharacterCasts = CharacterCasts(files = null),
 ) : CharacterVoices {
     private val lock = Any()
-    private var book: BookId? = null
+    private var book: BookCast? = null
     private var opened = 0
-    private val assigned = HashMap<String, VoiceId>()
 
-    /** A book opened: its characters' voices as they were left. */
+    /** A book opened: its characters' voices as they were left, shared with any other cast of that book. */
     fun open(id: BookId) {
-        val saved = files?.load(id).orEmpty()
+        val cast = casts.of(id).also { it.edit { } } // loads the file here, on the caller's thread
         synchronized(lock) {
-            book = id
+            book = cast
             opened++
-            assigned.clear()
-            saved.forEach { (key, name) -> assigned[key] = VoiceId(EngineId.SHERPA, name) }
         }
     }
 
@@ -69,27 +70,27 @@ class CharacterCast(
         val cast = speakers(base)
         val voices = cast.associateBy { CastSpeakers.variant(base, it.speakerId) } - taken(lang)
         val key = keyOf(base, lang, speaker)
-        return synchronized(lock) {
+        // A renderer's snapshot from before another book opened gets no voice and keeps nothing.
+        val kept = synchronized(lock) { book.takeIf { at == null || at == opened } }
+        return kept?.edit { assigned ->
             val known = assigned[key]?.takeIf { it in voices }
             val wrong = known != null && speaker.gender != SpeakerGender.UNKNOWN &&
                 voices.getValue(known).gender != speaker.gender
             when {
-                at != null && at != opened -> null
-
                 known != null && !wrong -> known
-
                 speaker.gender == SpeakerGender.UNKNOWN -> null
-
-                else -> firstVoice(key, speaker, voices)?.also { voice ->
-                    assigned[key] = voice
-                    save()
-                }
+                else -> firstVoice(assigned, key, speaker, voices)?.also { assigned[key] = it }
             }
         }
     }
 
     /** The least used voice of [speaker]'s gender, the character's own current voice not counted. */
-    private fun firstVoice(key: String, speaker: Speaker, voices: Map<VoiceId, CastSpeaker>): VoiceId? {
+    private fun firstVoice(
+        assigned: Map<String, VoiceId>,
+        key: String,
+        speaker: Speaker,
+        voices: Map<VoiceId, CastSpeaker>,
+    ): VoiceId? {
         val pool = voices.filterValues { it.gender == speaker.gender }.keys.toList()
         val uses = assigned.filterKeys { it != key }.values.groupingBy { it }.eachCount()
         val fewest = pool.minOfOrNull { uses[it] ?: 0 } ?: return null
@@ -97,16 +98,11 @@ class CharacterCast(
         return least[Math.floorMod((speaker.key ?: speaker.gender.name).hashCode(), least.size)]
     }
 
-    private fun save() {
-        val id = book ?: return
-        files?.save(id, assigned.mapValues { it.value.name })
-    }
-
     private fun keyOf(base: VoiceId, lang: Lang, speaker: Speaker): String =
         listOf(base.name, lang.name, speaker.key ?: "$GENERIC${speaker.gender.name}").joinToString(SEPARATOR)
 
-    private companion object {
-        const val SEPARATOR = "|"
-        const val GENERIC = "#"
+    companion object {
+        private const val SEPARATOR = "|"
+        private const val GENERIC = "#"
     }
 }
