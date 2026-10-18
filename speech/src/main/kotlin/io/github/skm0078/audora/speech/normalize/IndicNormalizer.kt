@@ -35,12 +35,13 @@ class IndicNormalizer internal constructor(
         val written = if (role == TextRole.EQUATION) {
             MathSymbols.speak(text, lang)
         } else {
-            pack.romanNumerals(pack.abbreviations(text))
+            // Clock times first, while "a.m." is still whole (the initials step would take its dots).
+            pack.romanNumerals(pack.abbreviations(pack.times(asciiDigits(text))))
         }
         val spoken = speakSymbols(written)
         val ascii = asciiDigits(spoken)
         if (ascii.none(Char::isAsciiDigit)) return if (spoken == text) text else tidy(spoken)
-        var result = pack.units(pack.ordinals(pack.dates(pack.times(ascii))))
+        var result = pack.units(pack.ordinals(pack.dates(ascii)))
         result = CURRENCY.replace(result) { match -> money(match.groupValues[1]) }
         result = PERCENT.replace(result) { match -> "${read(match.groupValues[1])} ${words.percent}" }
         result = RANGE.replace(result) { match ->

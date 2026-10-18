@@ -26,9 +26,13 @@ internal fun interface NormalizationRule {
 
 /**
  * Replacement for an abbreviation whose final full stop may also end the sentence: "… and so on etc." keeps a
- * full stop after "et cetera" so the voice still falls at the end. [match] is a match found in [text].
+ * full stop after "et cetera" so the voice still falls at the end. Only closing quotes and brackets may follow
+ * ("… to the U.S.”"). [match] is a match found in [text].
  */
 internal fun keepSentenceStop(text: String, match: MatchResult, spoken: String): String {
-    val endsSentence = match.value.endsWith('.') && text.substring(match.range.last + 1).isBlank()
+    val endsSentence = match.value.endsWith('.') && SENTENCE_TAIL.matches(text.substring(match.range.last + 1))
     return if (endsSentence) "$spoken." else spoken
 }
+
+/** What may follow a sentence's last full stop: space, closing quotes and closing brackets. */
+private val SENTENCE_TAIL = Regex("""[\s"'”’»)\]}]*""")

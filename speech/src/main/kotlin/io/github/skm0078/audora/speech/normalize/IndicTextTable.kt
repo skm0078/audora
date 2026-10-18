@@ -14,6 +14,8 @@ import java.text.Normalizer
  *   elsewhere "सं." may be संपादक or संवत, so it is left as written).
  * @property letterNames how the language writes the English letter names that initials use ("एम", "এইচ"); a single
  *   akshara ("ए", "पी", "জে") or a Latin capital is an initial too ([initialsPattern]).
+ * @property shortWords one-akshara words that end sentences ("है", "हाँ", "না"), so "है. हाँ." is not a run of
+ *   initials; letters that are initials too ("के" for K, "জে" for J) are left out.
  * @property romanKeywords words a Roman numeral follows as a number ("अध्याय IV" is "अध्याय चार").
  * @property clock how clock times are said ([IndicClock]).
  */
@@ -25,6 +27,7 @@ internal class IndicTextTable private constructor(
     abbreviations: Map<String, String>,
     numberedAbbreviations: Map<String, String>,
     letterNames: Set<String>,
+    shortWords: Set<String>,
     romanKeywords: Set<String>,
     val clock: IndicClock,
     ordinalSuffixes: List<String>,
@@ -41,15 +44,18 @@ internal class IndicTextTable private constructor(
     val numberedAbbreviations: Map<String, String> =
         numberedAbbreviations.entries.associate { (k, v) -> nfc(k) to nfc(v) }
     val numberedAbbreviationPattern: Regex? = this.numberedAbbreviations.keys.takeIf { it.isNotEmpty() }?.let { keys ->
-        Regex("""(?<![\p{L}\p{M}.])(${alternatives(keys)})(?=\s?\p{Nd})""")
+        Regex("""(?<![\p{L}\p{M}.])(${alternatives(keys)})(?![\p{L}\p{M}])""")
     }
 
     /**
-     * Two or more initials, each with its full stop, spaced or not: a letter name, one akshara (a letter and its
-     * vowel signs, no conjunct) or a Latin capital. The voices end a sentence at each of those stops (item 57).
+     * Two or more initials, each with its full stop, spaced or not: a letter name, one Devanagari or Bengali akshara
+     * (a letter and its vowel signs, no conjunct) that is not one of [shortWords], or a Latin capital. The voices end
+     * a sentence at each of those stops (item 57).
      */
     val initialsPattern: Regex = run {
-        val initial = """(?:${alternatives(letterNames.map(::nfc))}|\p{L}\p{M}*)\."""
+        val words = alternatives(shortWords.map(::nfc) + shortWords)
+        val akshara = """(?!(?:$words)\.)(?=[\u0900-\u09FF])\p{L}\p{M}*"""
+        val initial = """(?:${alternatives(letterNames.map(::nfc))}|$akshara|\p{Lu})\."""
         Regex("""(?<![\p{L}\p{M}\p{N}.])$initial(?:\s?$initial)+(?![\p{L}\p{M}\p{N}])""")
     }
 
@@ -156,6 +162,10 @@ internal class IndicTextTable private constructor(
                 "एफ", "एफ़", "एच", "एल", "एम", "एन", "एस", "एक्स", "आर", "आई", "क्यू", "डब्ल्यू", "डबल्यू", "वाई",
                 "ज़ेड", "जेड", "यू",
             ),
+            shortWords = setOf(
+                "है", "हैं", "था", "थी", "थे", "हो", "हूँ", "हूं", "ना", "न", "हाँ", "हां",
+                "तो", "भी", "ही", "का", "की", "को", "से", "ने", "में",
+            ),
             romanKeywords = setOf(
                 "अध्याय", "भाग", "खंड", "खण्ड", "पाठ", "कक्षा", "अनुच्छेद", "सर्ग", "अंक", "परिशिष्ट", "पुस्तक",
             ),
@@ -198,6 +208,7 @@ internal class IndicTextTable private constructor(
             letterNames = setOf(
                 "এফ", "এইচ", "এল", "এম", "এন", "এস", "এক্স", "আর", "আই", "ইউ", "কিউ", "ডব্লিউ", "ওয়াই", "জেড",
             ),
+            shortWords = setOf("না", "কি", "কী", "যে", "সে", "তো", "তা", "যা", "হ্যাঁ", "নি"),
             romanKeywords = setOf(
                 "অধ্যায়", "ভাগ", "খণ্ড", "খন্ড", "পর্ব", "পাঠ", "শ্রেণি", "শ্রেণী", "অনুচ্ছেদ", "পরিশিষ্ট",
             ),

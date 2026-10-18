@@ -45,15 +45,13 @@ internal class RomanNumeralRule : NormalizationRule {
             """chapter|part|book|section|volume|appendix|act|scene|article|schedule|annexure|annex|unit|lesson|""" +
                 """canto|phase|class|grade|plate|table|figure|type|stage|level|round|title|division|paper|psalm|""" +
                 """world war"""
-        private const val NAMES =
-            """Henry|Edward|George|William|Charles|James|Richard|Louis|Elizabeth|Mary|Victoria|Pius|John|Paul|""" +
-                """Benedict|Leo|Gregory|Innocent|Clement|Peter|Catherine|Frederick|Philip|Napoleon|Nicholas|""" +
-                """Alexander|Ivan|Ramesses|Ptolemy|Constantine|Wilhelm|Ferdinand|Alfonso|Juan|Carlos"""
 
         // Upper or lower case numeral (never mixed), ending the word and not followed by an apostrophe word.
         private const val NUMERAL = """([IVXLCDM]+|[ivxlcdm]+)(?![\w'’])"""
 
         val AFTER_KEYWORD = Regex("""(?<![\w])((?i:$KEYWORDS))\s+$NUMERAL""")
+
+        private val NAMES = RomanNumerals.REGNAL_NAMES.joinToString("|")
 
         // A lone "I" after a name is read only before punctuation or the end ("Henry I." but not "when John I met").
         val REGNAL = Regex("""(?<![\w])($NAMES)\s+([IVXL]{2,}|[VX]|I(?=\s*[.,;:)]|\s*$))(?![\w'’])""")
@@ -62,8 +60,16 @@ internal class RomanNumeralRule : NormalizationRule {
     }
 }
 
-/** Roman numeral values, shared with the Hindi and Bengali rules ([IndicTextPack]). */
+/** Regnal names and Roman numeral values, shared with [InitialsRule] and the Hindi and Bengali rules. */
 internal object RomanNumerals {
+    /** Monarchs' and popes' names a numeral follows ("Henry VIII"), shared with [InitialsRule]. */
+    val REGNAL_NAMES: Set<String> = setOf(
+        "Henry", "Edward", "George", "William", "Charles", "James", "Richard", "Louis", "Elizabeth", "Mary",
+        "Victoria", "Pius", "John", "Paul", "Benedict", "Leo", "Gregory", "Innocent", "Clement", "Peter", "Catherine",
+        "Frederick", "Philip", "Napoleon", "Nicholas", "Alexander", "Ivan", "Ramesses", "Ptolemy", "Constantine",
+        "Wilhelm", "Ferdinand", "Alfonso", "Juan", "Carlos",
+    )
+
     private val CANONICAL = Regex("""M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})""")
 
     @Suppress("MagicNumber") // The numerals' own values.

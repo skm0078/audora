@@ -16,11 +16,13 @@ import java.text.Normalizer
  *   "১ম, ২য়, ৪র্থ, ১১শ, ২১তম" → প্রথম, দ্বিতীয়, চতুর্থ, একাদশ, একুশতম; Bengali day endings "১লা, ১৯শে" too.
  * - **Units** after a number, as Latin symbols: "5 km", "10kg", "37°C" → किलोमीटर, किलोग्राम, डिग्री सेल्सियस.
  * - **Abbreviations** the language's own: "डॉ.", "कि.मी.", "1947 ई.", "ডঃ", "পৃঃ", "খ্রিঃ" and the like; some only
- *   before a number ("सं. 5").
+ *   before a number of up to three digits ("सं. 5"), which elsewhere just lose the stop. A stop at the very end of
+ *   the text stays ("500 ई.पू." ends the sentence).
  * - **Initials** "ए. पी. जे.", "এ.পি.জে.", "A. P. J." lose their full stops ("ए पी जे"): the voices paused and fell
- *   at each one like a sentence end (item 57). A stop at the very end of the text stays a stop.
+ *   at each one like a sentence end (item 57). A stop at the very end of the text stays a stop, and short words
+ *   that end sentences ("है. हाँ.") are not initials.
  * - **Roman numerals** after a numbering word: "अध्याय IV" → "अध्याय चार", "ভাগ ii" → "ভাগ দুই".
- * - **Clock times** ([IndicClock]).
+ * - **Clock times** ([IndicClock]), run first, before the initials step can take the dots of "a.m.".
  */
 internal class IndicTextPack(
     private val words: IndicNumberWords,
@@ -28,12 +30,19 @@ internal class IndicTextPack(
     private val table: IndicTextTable,
 ) {
     fun abbreviations(text: String): String {
-        val eras = table.eraPattern.replace(text) { match -> " " + table.eras.getValue(match.groupValues[1]) }
+        val eras = table.eraPattern.replace(text) { match ->
+            keepSentenceStop(text, match, " " + table.eras.getValue(match.groupValues[1]))
+        }
         val numbered = table.numberedAbbreviationPattern?.replace(eras) { match ->
-            table.numberedAbbreviations.getValue(match.value)
+            val beforeNumber = SHORT_NUMBER_AHEAD.containsMatchIn(eras.substring(match.range.last + 1))
+            if (beforeNumber) {
+                table.numberedAbbreviations.getValue(match.value)
+            } else {
+                keepSentenceStop(eras, match, match.value.removeSuffix("."))
+            }
         } ?: eras
         val expanded = table.abbreviationPattern.replace(numbered) { match ->
-            table.abbreviations.getValue(match.value)
+            keepSentenceStop(numbered, match, table.abbreviations.getValue(match.value))
         }
         return table.initialsPattern.replace(expanded) { match ->
             val letters = match.value.split('.').map(String::trim).filter(String::isNotEmpty)
@@ -88,6 +97,9 @@ internal class IndicTextPack(
 
         /** Day, separator, month, the same separator, a four- or two-digit year. */
         val DATE = Regex("""(?<![\w./-])(\d{1,2})([/.-])(\d{1,2})\2(\d{4}|\d{2})(?![\w/-]|\.\d)""")
+
+        /** A number of one to three digits next: "सं. 5" is a number, "सं. 2050" a year of an era. */
+        val SHORT_NUMBER_AHEAD = Regex("""^\s?\p{Nd}{1,3}(?!\p{Nd})""")
 
         val UNIT = Regex("""(?<=\d)\s?(${IndicTextTable.UNIT_KEYS})(?![\p{L}\p{M}\d])""")
     }
