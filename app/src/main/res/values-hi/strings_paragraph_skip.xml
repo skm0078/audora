@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_paragraph_skip.xml -->
+<!-- Purpose: Hindi copy of values/strings_paragraph_skip.xml: Why a paragraph skip (long-press on next or previous) did nothing. -->
+<resources>
+    <string name="paragraph_skip_no_next">इस किताब में और अनुच्छेद नहीं हैं</string>
+    <string name="paragraph_skip_no_previous">आप पहले से किताब की शुरुआत में हैं</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_paragraph_skip.xml -->
+<!-- Purpose: Bengali copy of values/strings_paragraph_skip.xml: Why a paragraph skip (long-press on next or previous) did nothing. -->
+<resources>
+    <string name="paragraph_skip_no_next">এই বইয়ে আর কোনো অনুচ্ছেদ নেই</string>
+    <string name="paragraph_skip_no_previous">আপনি ইতিমধ্যে বইয়ের শুরুতে আছেন</string>
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: playback/src/main/res/values-bn/strings_browse.xml -->
+<!-- Purpose: Bengali copy of values/strings.xml: Android Auto and media browser labels (plan item 34); the English is in values/strings.xml. -->
+<resources>
+    <string name="browse_recent">সাম্প্রতিক</string>
+    <string name="browse_up_next">এরপর</string>
+    <string name="browse_library">লাইব্রেরি</string>
+    <string name="browse_resume">আবার শুরু করুন</string>
+    <string name="browse_where_left_off">যেখানে থেমেছিলেন সেখান থেকে</string>
+    <string name="browse_page">পৃষ্ঠা %1$d</string>
+    <string name="browse_chapter">অধ্যায় %1$d</string>
+</resources>
