@@ -73,14 +73,18 @@ class UnitTextTest {
     }
 
     @Test
-    fun `dot leaders, blanks and rules read as a space, an ellipsis stays`() {
+    fun `dot leaders, blanks and rules read as one ellipsis, or nothing at the end, an ellipsis stays`() {
         val cases = listOf(
-            "Introduction ........ 5" to "Introduction 5",
-            "भूमिका ............. ७" to "भूमिका ७",
-            "Name: ______ Date: ____________" to "Name: Date:",
-            "Chapter 2 . . . . . . . 19" to "Chapter 2 19",
-            "Total ······ 309" to "Total 309",
-            "Accidents,------------Asthma, 2" to "Accidents, Asthma, 2",
+            "Introduction ........ 5" to "Introduction … 5",
+            "भूमिका ............. ७" to "भूमिका … ७",
+            "Name: ______ Date: ____________" to "Name: … Date:",
+            "Chapter 2 . . . . . . . 19" to "Chapter 2 … 19",
+            "Total ······ 309" to "Total … 309",
+            "Accidents,------------Asthma, 2" to "Accidents,…Asthma, 2",
+            // A blank keeps its place, with no space before the punctuation after it.
+            "भारत की राजधानी ______ है।" to "भारत की राजधानी … है।",
+            "The answer is ______." to "The answer is ….",
+            "-----------" to "",
             // Shorter runs are punctuation: an ellipsis, one with the sentence's stop, a dash, a blank of four.
             "Wait... then go" to "Wait... then go",
             "Wait.... then go" to "Wait.... then go",

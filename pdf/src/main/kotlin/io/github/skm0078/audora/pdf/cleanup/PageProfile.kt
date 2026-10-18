@@ -16,7 +16,8 @@ import io.github.skm0078.audora.pdf.quality.IndicOrderEvidence
  * only a handful of whole pages. In memory only and never logged: signatures are the PDF's own words.
  *
  * @property extent union of the page's line boxes; null when no line has a box.
- * @property top the page's topmost lines, highest first; [bottom] its lowest, lowest first.
+ * @property top the page's topmost lines, highest first; [bottom] its lowest, lowest first: printer's slugs at the
+ *   edge, then up to `CleanupConfig.maxMarginLines` other lines.
  * @property hyphenated words printed with a hyphen inside a line on this page, as lower-case pairs ("block-pulse"),
  *   so a word broken at that hyphen at a line end keeps it.
  * @property bodySignatures hashes of the signatures of the page's other lines (empty when every line is a margin
@@ -58,16 +59,17 @@ internal data class MarginLine(
 
 internal class PageProfiler(private val config: CleanupConfig) {
     /**
-     * A printer's slug set outside the page ([PrintSlugs]) is no part of the text area: the lines at either edge that
-     * are slugs (at most [CleanupConfig.maxMarginLines], so an exam date sheet's rows of times stay its body) are left
-     * out of [PageProfile.extent] and take no margin slot of their own, so the band and the margin lines start at
-     * the page's own header or footer ("6" above "HUD3.indd Sec1:6" and "5/13/11 6:45 AM").
+     * A printer's slug set outside the page ([PrintSlugs]: a line ending with a layout file's name, or a print time
+     * alone; a dated line with words, such as a date sheet's row, is not one here) is no part of the text area: the
+     * lines at either edge that are slugs (at most [CleanupConfig.maxMarginLines]) are left out of
+     * [PageProfile.extent] and take no margin slot of their own, so the band and the margin lines start at the
+     * page's own header or footer ("6" above "HUD3.indd Sec1:6" and "5/13/11 6:45 AM").
      */
     fun profile(page: PageText, layout: PageLayout, indicOrder: IndicOrderEvidence): PageProfile {
         val lines = layout.blocks.flatMap { block -> block.paragraphs.flatMap { it.lines } }.filter { it.box != null }
         val isSlug = { line: TextLine ->
             val text = spanTexts(page, line).joinToString(" ")
-            PrintSlugs.standsAlone(text) || PrintSlugs.times(text).isNotEmpty()
+            PrintSlugs.standsAlone(text) || PrintSlugs.isBareStamp(text)
         }
         val byTop = lines.sortedByDescending { requireNotNull(it.box).top }
         val byBottom = lines.sortedBy { requireNotNull(it.box).bottom }
@@ -77,8 +79,8 @@ internal class PageProfiler(private val config: CleanupConfig) {
         val slugs = (topSlugs + bottomSlugs).toSet()
         val inner = lines.filter { it !in slugs }.ifEmpty { lines }
         val extent = inner.mapNotNull { it.box }.reduceOrNull(TextBox::union)
-        val top = (topSlugs + byTop.filter { it in inner }.take(k)).distinct().map { marginLine(page, it) }
-        val bottom = (bottomSlugs + byBottom.filter { it in inner }.take(k)).distinct().map { marginLine(page, it) }
+        val top = (topSlugs + byTop.filter { it !in slugs }.take(k)).map { marginLine(page, it) }
+        val bottom = (bottomSlugs + byBottom.filter { it !in slugs }.take(k)).map { marginLine(page, it) }
         val margin = (top + bottom).mapTo(HashSet()) { it.line }
         val body = lines.filter { it !in margin }.mapTo(HashSet()) { signature(spanTexts(page, it)).hashCode() }
         return PageProfile(page.pageIndex, extent, top, bottom, hyphenatedPairs(page.text), body, indicOrder)

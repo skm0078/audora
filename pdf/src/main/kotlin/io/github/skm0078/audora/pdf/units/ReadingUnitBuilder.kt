@@ -59,7 +59,7 @@ import io.github.skm0078.audora.pdf.render.ViewRect
 @Suppress("TooManyFunctions", "LongParameterList")
 class ReadingUnitBuilder(
     private val config: ReadingUnitConfig = ReadingUnitConfig(),
-    private val splitter: SentenceSplitter = BreakIteratorSentenceSplitter(),
+    private val splitter: SentenceSplitter = BreakIteratorSentenceSplitter(minLeaderRun = config.minLeaderRun),
     layoutConfig: LayoutConfig = LayoutConfig(),
     val cleanupConfig: CleanupConfig = CleanupConfig(),
     val qualityConfig: QualityConfig = QualityConfig(),

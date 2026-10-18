@@ -9,7 +9,8 @@ package io.github.skm0078.audora.core.config
  * @property marginBandShare a line is a header or footer candidate when it lies within this share of the text
  *   area's height from its top or bottom. The text area is the union of the line boxes on the neighbouring
  *   pages (the page size is not extracted), so the band follows where the text actually is.
- * @property maxMarginLines at most this many lines from each end of a page are header or footer candidates.
+ * @property maxMarginLines at most this many lines from each end of a page are header or footer candidates, besides
+ *   as many printer's slugs at the very edge, which take no slot of their own.
  * @property neighbourPages pages on each side looked at for repeated headers and running page numbers. 3 keeps
  *   both pages of the same parity two steps away in the window, so alternating left/right headers still repeat.
  * @property minRepeatPages a margin line is a running header when it repeats on at least this many pages of the

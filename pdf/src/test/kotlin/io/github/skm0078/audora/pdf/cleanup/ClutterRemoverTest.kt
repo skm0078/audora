@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.pdf.cleanup
 
+import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.pdf.layout.PageSketch
 import io.github.skm0078.audora.pdf.units.AnalyzedPage
@@ -181,6 +182,43 @@ class ClutterRemoverTest {
     }
 
     @Test
+    fun `leaders are read cell by cell, and a cell holding only a rule reads as a dash`() {
+        val sketch = PageSketch()
+        sketch.line("Crop", LEFT, 680f).line("2019", 150f, 680f).line("2020", 250f, 680f).line("2021", 350f, 680f)
+        val rows = listOf(
+            listOf("Wheat", ". .", ". .", "12"),
+            listOf("Rice", "-----", "14", "15"),
+            listOf("Maize", "16", "17", "18"),
+            listOf("Barley", "19", "20", "21"),
+        )
+        rows.forEachIndexed { i, cells ->
+            val top = 668f - i * 12f
+            sketch.line(
+                cells[0],
+                LEFT,
+                top,
+            ).line(cells[1], 150f, top).line(cells[2], 250f, top).line(cells[3], 350f, top)
+        }
+        sketch.lines(listOf("The table shows every crop.", "Yields were the same."), LEFT, 600f)
+        val units = builder.build(sketch.build()).filter { it.kind == UnitKind.TABLE_ROW }
+        fun cells(unit: ReadingUnit) = unit.table!!.cells.map { unit.text.substring(it.start, it.end) }
+        assertEquals(listOf("Wheat", ". .", ". .", "12"), cells(units[0]))
+        assertEquals(listOf("Rice", "\u2013", "14", "15"), cells(units[1]))
+    }
+
+    @Test
+    fun `a dated line at the foot is no slug by itself, so a number above it stays`() {
+        val pages = (0..2).map { i ->
+            val sketch = PageSketch()
+            sketch.lines(body(i), LEFT, BODY_TOP)
+            sketch.line("42", MID, NUMBER_TOP)
+            sketch.line("Physics 1$i/03/2024 10:30", LEFT, FOOTER_TOP)
+            builder.analyze(sketch.build(i))
+        }
+        for (p in pages.indices) assertTrue(spoken(pages, p), "42" in spoken(pages, p))
+    }
+
+    @Test
     fun `an intro line set close above a table is read before it, and the line after it after it`() {
         // Line spacing as tight as the rows', so layout joins intro, table and the line after into one paragraph.
         val sketch = PageSketch()
@@ -331,6 +369,7 @@ class ClutterRemoverTest {
         const val BODY_TOP = 700f
         const val FOOTER_TOP = 40f
         const val SLUG_TOP = 20f
+        const val NUMBER_TOP = 100f
         const val RAISED_FOOTER_TOP = 300f
         const val SHORT_BODY_LINES = 20
         const val BODY_LINES = 50

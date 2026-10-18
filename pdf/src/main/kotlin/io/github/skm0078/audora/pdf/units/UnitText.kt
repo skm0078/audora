@@ -10,7 +10,8 @@ import io.github.skm0078.audora.core.model.TermSpan
  * end. Whitespace is Unicode's White_Space, the same on the JVM and on Android: tab, line breaks, vertical tab, form
  * feed, next line (U+0085) and every space and line or paragraph separator, the no-break space included (Android's
  * `\s` matched all of these, the JVM's only the ASCII ones, so the golden run now reads what the phone reads).
- * A dot leader or fill-in rule ([Leaders]) counts as whitespace too.
+ * A dot leader or fill-in rule ([Leaders]) is one ellipsis ("…"), with no space before the punctuation after it, or
+ * whitespace at the unit's end.
  *
  * Its bold terms (plan item 64) are the stretches of bold characters, joined across spaces between bold words,
  * without the punctuation at their ends ("Note:" gives "Note"); a stretch with no word of at least `minLetters`
@@ -20,27 +21,24 @@ internal object UnitText {
     /** The text of [raw] and its bold terms, [isBold] telling for each offset of [raw]. */
     fun of(raw: String, minLetters: Int, minLeaderRun: Int, isBold: (Int) -> Boolean): Pair<String, List<TermSpan>> {
         val leaders = Leaders.mask(raw, minLeaderRun)
-        val text = StringBuilder(raw.length)
+        val readings = Leaders.readings(raw, leaders, alone = null)
+        val folded = FoldedText(raw.length)
+        val text = folded.text
         val terms = ArrayList<TermSpan>()
         var termStart = -1
         var termEnd = -1
-        var pendingSpace = false
         for (i in raw.indices) {
-            val c = raw[i]
-            if (isSpace(c) || leaders[i]) {
-                pendingSpace = text.isNotEmpty()
-                continue
-            }
-            if (pendingSpace) text.append(' ')
-            pendingSpace = false
-            if (isBold(i)) {
-                if (termStart < 0) termStart = text.length
-                termEnd = text.length + 1
+            // A leader is read once, at its first mark; the rest of it is nothing.
+            val c = if (leaders[i]) readings[i] else raw[i]
+            val at = folded.add(c, leaders[i], c != null && isSpace(c))
+            if (at < 0) continue
+            if (!leaders[i] && isBold(i)) {
+                if (termStart < 0) termStart = at
+                termEnd = at + 1
             } else if (termStart >= 0) {
                 term(text, termStart, termEnd, minLetters)?.let(terms::add)
                 termStart = -1
             }
-            text.append(c)
         }
         if (termStart >= 0) term(text, termStart, termEnd, minLetters)?.let(terms::add)
         return text.toString() to terms

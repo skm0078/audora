@@ -131,6 +131,9 @@ class IndicSentenceSplitterTest {
                 Lang.EN,
                 listOf("Warntjes JB, Leinhard OD, West J, Lundberg P. ", "Rapid magnetic resonance imaging."),
             ),
+            // Dotted initials after an undotted author, and a single author, stay whole.
+            Case("dotted after undotted", Lang.EN, listOf("Smith AB, Jones C. D., Brown E. F. Rapid imaging.")),
+            Case("single author", Lang.EN, listOf("Lundberg P. Rapid imaging of the brain.")),
         ),
     )
 
