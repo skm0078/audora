@@ -28,9 +28,6 @@ import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.export.JobSlots
 import io.github.skm0078.audora.playback.reading.UnitReading
-import io.github.skm0078.audora.playback.voice.SpeechStyleStore
-import io.github.skm0078.audora.playback.voice.SpeechVoices
-import io.github.skm0078.audora.playback.voice.VoiceEngines
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -175,37 +172,37 @@ class StudioService : Service() {
     private fun renderBook(book: OpenedBook, wakeLock: PowerManager.WakeLock) {
         val id = book.book.id
         val title = book.book.title.takeUnless { it == BookTitles.UNTITLED } ?: getString(R.string.studio_untitled)
-        // The listener's expressiveness, read once: the studio key carries it, so the audio must match it all run.
-        val expression = SpeechStyleStore.forContext(this).current.shaping.expressiveness
-        val voices = SpeechVoices(VoiceEngines(this) { expression })
         try {
-            val rendering = runBlocking {
-                BookRendering.Factory(this@StudioService, bookSettings, pronunciations).prepare(id, book.text, voices)
-            }
-            val key = rendering.key
-            val store = StudioMode.store(this)
-            store.dropBooksNotIn(runBlocking { library.books().first() }.mapTo(HashSet()) { it.id })
-            val fromPage = runBlocking { resumeAnchors.get(id) }?.page ?: 0
-            val progress = Progress(title)
-            val chargingGate = ChargingGate(this, config, wakeLock, progress::onWaiting).also { gate = it }
-            val run = StudioRun(
-                voice = rendering.studioVoice(),
-                store = store,
-                gate = chargingGate,
-                config = config,
-                freeBytes = { filesDir.usableSpace },
-                listener = progress,
-            )
-            AudoraLog.i(TAG, "Studio started, book=${id.logLabel}, from page=$fromPage, key=${key.signature.hash}")
-            when (val result = run.run(key, PagePlays(book.text, rendering.reading), fromPage)) {
-                is Outcome.Success -> notifications.showDone(title, result.value)
-                is Outcome.Failure -> notifications.showFailed(title, result.error.message)
+            val factory = BookRendering.Factory(this, bookSettings, pronunciations)
+            BookVoice(this, factory, id, book.text, normalRate = false).use { voice ->
+                render(id, title, book.text, voice, wakeLock)
             }
         } catch (interrupted: InterruptedException) {
             AudoraLog.i(TAG, "Studio mode stopped, book=${id.logLabel}")
             notifications.showStopped(title)
-        } finally {
-            voices.release()
+        }
+    }
+
+    private fun render(id: BookId, title: String, text: BookText, voice: BookVoice, wakeLock: PowerManager.WakeLock) {
+        val rendering = voice.rendering
+        val key = rendering.key
+        val store = StudioMode.store(this)
+        store.dropBooksNotIn(runBlocking { library.books().first() }.mapTo(HashSet()) { it.id })
+        val fromPage = runBlocking { resumeAnchors.get(id) }?.page ?: 0
+        val progress = Progress(title)
+        val chargingGate = ChargingGate(this, config, wakeLock, progress::onWaiting).also { gate = it }
+        val run = StudioRun(
+            voice = rendering.studioVoice(),
+            store = store,
+            gate = chargingGate,
+            config = config,
+            freeBytes = { filesDir.usableSpace },
+            listener = progress,
+        )
+        AudoraLog.i(TAG, "Studio started, book=${id.logLabel}, from page=$fromPage, key=${key.signature.hash}")
+        when (val result = run.run(key, PagePlays(text, rendering.reading), fromPage)) {
+            is Outcome.Success -> notifications.showDone(title, result.value)
+            is Outcome.Failure -> notifications.showFailed(title, result.error.message)
         }
     }
 

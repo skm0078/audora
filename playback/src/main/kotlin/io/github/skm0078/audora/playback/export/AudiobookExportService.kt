@@ -22,8 +22,7 @@ import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.studio.BookRendering
-import io.github.skm0078.audora.playback.voice.SpeechStyleStore
-import io.github.skm0078.audora.playback.voice.SpeechVoices
+import io.github.skm0078.audora.playback.studio.BookVoice
 import io.github.skm0078.audora.playback.voice.VoiceEngines
 import javax.inject.Inject
 import kotlinx.coroutines.runBlocking
@@ -140,25 +139,22 @@ class AudiobookExportService : Service() {
         val folder = AudiobookFolder.relativePath(title, getString(R.string.export_untitled), config)
         AudoraLog.i(TAG, "Export started, $logContext, pages=${book.text.pageCount}, chapters=${chapters.size}")
         val shownFolder = folder.trimEnd('/')
-        // The listener's shaping as the export starts, kept for the whole run like the voices (BookRendering).
-        val expressiveness = SpeechStyleStore.forContext(this).current.shaping.expressiveness
-        val voices = SpeechVoices(VoiceEngines(this) { expressiveness })
+        // The book's own voices, pace and pronunciation fixes, as playback and the talking book read it.
+        val factory = BookRendering.Factory(this, bookSettings, pronunciations)
         try {
-            // The book's own voices, pace and pronunciation fixes, as playback and the talking book read it.
-            val factory = BookRendering.Factory(this, bookSettings, pronunciations)
-            val rendering = runBlocking { factory.prepare(book.book.id, book.text, voices, normalRate = true) }
-            val sink = AacAudioSink(MediaStoreChapterFiles(contentResolver, folder), chapters.size, config)
-            val listener = ProgressListener(title, chapters)
-            val exporter = AudiobookExporter(rendering.live, config, rendering.reading)
-            when (val result = exporter.export(book.text, chapters, sink, listener, logContext)) {
-                is Outcome.Success -> notifications.showDone(title, result.value, shownFolder)
-                is Outcome.Failure -> notifications.showFailed(title, result.error.message)
+            BookVoice(this, factory, book.book.id, book.text, normalRate = true).use { voice ->
+                val rendering = voice.rendering
+                val sink = AacAudioSink(MediaStoreChapterFiles(contentResolver, folder), chapters.size, config)
+                val listener = ProgressListener(title, chapters)
+                val exporter = AudiobookExporter(rendering.live, config, rendering.reading)
+                when (val result = exporter.export(book.text, chapters, sink, listener, logContext)) {
+                    is Outcome.Success -> notifications.showDone(title, result.value, shownFolder)
+                    is Outcome.Failure -> notifications.showFailed(title, result.error.message)
+                }
             }
         } catch (interrupted: InterruptedException) {
             AudoraLog.i(TAG, "Export cancelled, $logContext")
             notifications.showCancelled(title, shownFolder)
-        } finally {
-            voices.release()
         }
     }
 

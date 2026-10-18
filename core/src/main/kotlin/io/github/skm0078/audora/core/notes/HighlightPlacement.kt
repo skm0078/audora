@@ -21,7 +21,8 @@ import kotlin.math.abs
  *    long sentence that is unique on the page (columns reordered), or else within [HighlightConfig.maxShiftChars] with
  *    no equally near rival.
  * 2. Otherwise by the saved quote, compared word by word: the same sentence, a sentence that begins or ends with it
- *    (merged), or neighbours that join into it exactly (split). One covering the saved offset wins; else the nearest
+ *    (merged), or neighbours that join into it exactly (split). One still at the saved place wins (an exact copy over
+ *    the saved offset, a merge on the side the quote fills, a split at both ends); else the nearest of the first kind
  *    within [HighlightConfig.maxShiftChars], for quotes of at least [HighlightConfig.minQuoteChars]. A tie places
  *    nothing. A gone sentence with an identical copy within reach can still land on the copy: the text alone cannot
  *    tell them apart.
@@ -72,6 +73,14 @@ class HighlightPlacement(
             }
             (first until last).takeIf { last - first > 1 && joined == quote }
         }
+
+        /** [range] begins where [highlight] began. */
+        fun startsAt(range: IntRange, highlight: Highlight): Boolean =
+            units[range.first].charStart == highlight.anchor.charStart
+
+        /** [range] ends where [highlight] ended, on the same page. */
+        fun endsAt(range: IntRange, highlight: Highlight): Boolean =
+            highlight.endPage == highlight.anchor.page && units[range.last].charEnd == highlight.endChar
     }
 
     private fun covered(highlight: Highlight, page: PageText): IntRange? {
@@ -108,22 +117,39 @@ class HighlightPlacement(
     }
 
     /**
-     * A match covering the saved offset wins whatever its kind (a merged sentence where the highlight was beats an
-     * exact copy further down); several covering it place nothing. Otherwise the nearest that may move, kind by kind,
-     * within [HighlightConfig.maxShiftChars]; two equally near place nothing.
+     * A match that still sits where the highlight was wins whatever its kind (a merged sentence where the highlight was
+     * beats an exact copy further down); several such place nothing. Otherwise the nearest of the first kind with any
+     * match within [HighlightConfig.maxShiftChars]; two equally near place nothing rather than fall to the next kind.
      */
     private fun byQuote(highlight: Highlight, quote: List<String>, page: PageText): IntRange? {
         val long = quote.sumOf { it.length } >= config.minQuoteChars
         val exact = page.words.indices.filter { page.words[it] == quote }.map { it..it }
         val merged = page.words.indices.filter { page.words[it].size > quote.size && page.words[it].holds(quote) }
             .map { it..it }
-        val tiers = listOf(exact, merged, page.splits(quote))
-        val covering = tiers.flatten().distinct().filter { distanceOf(it, highlight, page) == 0 }
+        val splits = page.splits(quote)
+        val covering = exact.filter { distanceOf(it, highlight, page) == 0 } +
+            merged.filter { stays(it, highlight, page, quote) } +
+            splits.filter { page.startsAt(it, highlight) && page.endsAt(it, highlight) }
+        val inReach = listOf(exact, merged, splits).firstOrNull { candidates ->
+            candidates.any { distanceOf(it, highlight, page) <= config.maxShiftChars }
+        }
         return when {
-            covering.isNotEmpty() -> covering.singleOrNull()
-            long -> tiers.firstNotNullOfOrNull { candidates -> nearestUnique(candidates, highlight, page) }
+            covering.isNotEmpty() -> covering.distinct().singleOrNull()
+            long && inReach != null -> nearestUnique(inReach, highlight, page)
             else -> null
         }
+    }
+
+    /**
+     * A merged sentence stays where the highlight was only on the side the quote fills: it begins at the saved start
+     * and begins with the quote, or ends at the saved end and ends with it. Merely containing the saved offset is not
+     * enough once offsets moved ("Thank you." before "Thank you for coming." after a margin slug was dropped).
+     */
+    private fun stays(range: IntRange, highlight: Highlight, page: PageText, quote: List<String>): Boolean {
+        val words = page.words[range.first]
+        val begins = words.subList(0, quote.size) == quote && page.startsAt(range, highlight)
+        val ends = words.subList(words.size - quote.size, words.size) == quote && page.endsAt(range, highlight)
+        return begins || ends
     }
 
     /** The candidate nearest the saved offset within the shift limit; null for none, or for a tie. */

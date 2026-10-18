@@ -26,10 +26,8 @@ import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.export.JobSlots
 import io.github.skm0078.audora.playback.studio.BookRendering
+import io.github.skm0078.audora.playback.studio.BookVoice
 import io.github.skm0078.audora.playback.studio.StudioMode
-import io.github.skm0078.audora.playback.voice.SpeechStyleStore
-import io.github.skm0078.audora.playback.voice.SpeechVoices
-import io.github.skm0078.audora.playback.voice.VoiceEngines
 import javax.inject.Inject
 import kotlinx.coroutines.runBlocking
 
@@ -202,15 +200,9 @@ class BookCopyService : Service() {
     }
 
     private fun talkingBook(book: OpenedBook, job: CopyJob, keepAwake: () -> Unit): Outcome<SavedCopy, CopyError> {
-        // The listener's expressiveness, read once: the studio key carries it, so the audio must match it all run.
-        val expression = SpeechStyleStore.forContext(this).current.shaping.expressiveness
-        val voices = SpeechVoices(VoiceEngines(this) { expression })
-        try {
-            val factory = BookRendering.Factory(this, bookSettings, pronunciations)
-            val rendering = runBlocking { factory.prepare(book.book.id, book.text, voices, normalRate = true) }
-            return job.talkingBook(rendering, StudioMode.store(this), onChapter = keepAwake)
-        } finally {
-            voices.release()
+        val factory = BookRendering.Factory(this, bookSettings, pronunciations)
+        return BookVoice(this, factory, book.book.id, book.text, normalRate = true).use { voice ->
+            job.talkingBook(voice.rendering, StudioMode.store(this), onChapter = keepAwake)
         }
     }
 

@@ -5,6 +5,7 @@ package io.github.skm0078.audora.playback.studio
 
 import android.content.Context
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
@@ -91,11 +92,14 @@ class BookRendering private constructor(
                 ),
                 timings = timings,
             )
-            val key = StudioKey(id, StudioMode.signature(context, style, voices::choiceFor, fixer.signature))
-            // Fixed for the whole run once the key is made: a voice picked in Settings meanwhile would change the audio
-            // under a key that names the old one, and a resumed export would mix the two. Resolving a default binds
-            // the phone's TTS once, as the first Hindi or Bengali sentence would.
-            voices.bookVoice = BookSound.pin(voices::choiceFor) { lang -> voices.voiceFor(lang).getOrNull() }
+            // One read of the explicit choices serves the key and the pin, so a voice picked in Settings while a
+            // default resolves below cannot be pinned under a key that names the default.
+            val chosen = Lang.entries.associateWith(voices::choiceFor)
+            val key = StudioKey(id, StudioMode.signature(context, style, chosen::get, fixer.signature))
+            // Fixed for the whole run once the key is made, so a resumed export never mixes two voices. A language on
+            // its default resolves it now, binding the phone's TTS for Hindi and Bengali even in an English-only
+            // book; a default that fails to resolve pins nothing and that language follows Settings for the run.
+            voices.bookVoice = BookSound.pin(chosen::get) { lang -> voices.voiceFor(lang).getOrNull() }
             return BookRendering(key, style, live, UnitReading(style.modes, chapterPages = chapterPages), timings)
         }
     }

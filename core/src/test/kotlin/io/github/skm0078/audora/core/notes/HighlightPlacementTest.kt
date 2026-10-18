@@ -124,6 +124,36 @@ class HighlightPlacementTest {
     }
 
     @Test
+    fun `a tie does not fall through to a merged sentence further away`() {
+        val saved = unitsOf(PAGE, FIRST, "$DR $HELLO", THIRD)
+        val twins = unitsOf(
+            PAGE,
+            "x".repeat(BEFORE),
+            "$DR $HELLO",
+            "y".repeat(BETWEEN),
+            "$DR $HELLO",
+            "$DR $HELLO She waved.",
+            THIRD,
+        )
+
+        assertEquals(emptyList<String>(), coveredTexts(highlightOn(saved[1]), twins))
+    }
+
+    @Test
+    fun `a merged sentence that only contains the moved offset does not win`() {
+        // A margin slug dropped: every sentence moved 30 characters back, so the old start of "Thank you." now lies
+        // inside the next sentence, which merely begins with the same words.
+        val slugged = unitsOf(PAGE, FIRST, THANKS, COMING, THIRD, startOffset = SLUG)
+        val unslugged = unitsOf(PAGE, FIRST, THANKS, COMING, THIRD)
+        // Everything moved 5 forward: the sentence before now spans the old start and ends with the same words.
+        val plain = unitsOf(PAGE, FIRST, SAID, THANKS, THIRD)
+        val nudged = unitsOf(PAGE, FIRST, SAID, THANKS, THIRD, startOffset = NUDGE)
+
+        assertEquals(listOf(THANKS), coveredTexts(highlightOn(slugged[1]), unslugged))
+        assertEquals(listOf(THANKS), coveredTexts(highlightOn(plain[2]), nudged))
+    }
+
+    @Test
     fun `a merged sentence covering the offset beats an exact copy further on`() {
         val before = unitsOf(PAGE, FIRST, "He turned to Mr.", "Smith said.", FILL, "Smith said.")
         val merged = unitsOf(PAGE, FIRST, "He turned to Mr. Smith said.", FILL, "Smith said.")
@@ -162,6 +192,7 @@ class HighlightPlacementTest {
         const val BETWEEN_LONG = 113
         const val FAR = 600
         const val BETWEEN = 46
+        const val NUDGE = 5
         const val FIRST = "It was the best of times, it was the worst of times."
         const val SECOND = "It was the age of wisdom, it was the age of foolishness."
         const val DR = "I met Dr."
@@ -169,6 +200,9 @@ class HighlightPlacementTest {
         const val SMITH = "Smith at the station that evening, just as the last train pulled away."
         const val FILL = "Then the evening went on without them for a while."
         const val LONG = "It was the season of Light, it was the season of Darkness, it was the spring of hope."
+        const val THANKS = "Thank you."
+        const val COMING = "Thank you for coming all this way."
+        const val SAID = "I said thank you."
         const val THIRD = "It was the epoch of belief, it was the epoch of incredulity."
     }
 }
