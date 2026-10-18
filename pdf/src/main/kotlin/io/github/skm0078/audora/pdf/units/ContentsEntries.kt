@@ -5,21 +5,22 @@ package io.github.skm0078.audora.pdf.units
 
 /**
  * An entry line ends with a leader ([Leaders]), perhaps spaces, then a page number: digits in any script, a range
- * ("9-12"), a Roman numeral in either case ("ix", "VII") or a letter and number ("A-1"). A paragraph holding at least
- * [MIN_ENTRIES] of them is a contents list: each entry is one unit, cut at its line's end, with no sentence break
- * between its leader and its page number (the splitters break "Appendix ..... | A-1" and "Foreword ..... | V").
- * Prose with one leader in it ("वह चला गया...... २⏎दिन बाद", "is ______ which⏎is") holds one entry line at most and
- * is left alone.
+ * ("9-12"), a Roman numeral up to 399 in one case ("ix", "VII"; not "did" or "mild") or a letter and number ("A-1"),
+ * perhaps in brackets ("(iii)"). A paragraph holding at least [MIN_ENTRIES] of them, or one line that is an entry,
+ * is a contents list: each entry is one unit, cut at its line's end, with no sentence break between its leader and
+ * its page number (the splitters break "Appendix ..... | A-1" and "Foreword ..... | V"). Prose with one leader in it
+ * ("वह चला गया...... २⏎दिन बाद", "is ______ which⏎is") holds one entry line at most and is left alone.
  */
 internal object ContentsEntries {
     /**
      * Each entry line of the paragraph from [start] to [end] of [text], as its leader's first offset until its line's
-     * end, [mask] marking the leaders of [text]; empty unless there are at least [MIN_ENTRIES].
+     * end, [mask] marking the leaders of [text]; empty unless there are at least [MIN_ENTRIES] or the paragraph is one
+     * line that is an entry ("Foreword ..... V" set apart, which the splitters break before its label).
      */
     fun of(text: CharSequence, mask: BooleanArray, start: Int, end: Int): List<IntRange> {
         val lineEnds = (start until end).filter { text[it] in LINE_ENDS } + end
         val entries = lineEnds.mapNotNull { lineEnd -> entryAt(text, mask, start, lineEnd) }
-        return entries.takeIf { it.size >= MIN_ENTRIES }.orEmpty()
+        return entries.takeIf { it.size >= MIN_ENTRIES || lineEnds.size == 1 }.orEmpty()
     }
 
     /**
@@ -40,14 +41,19 @@ internal object ContentsEntries {
         val wordEnd = i
         while (i > start && !text[i - 1].isWhitespace() && !mask[i - 1]) i--
         val word = text.subSequence(i, wordEnd)
-        while (i > start && text[i - 1] == ' ') i--
+        while (i > start && text[i - 1].isWhitespace() && text[i - 1] !in LINE_ENDS) i--
         if (i == start || !mask[i - 1] || !PAGE_NUMBER.matches(word)) return null
         while (i > start && mask[i - 1]) i--
         return i until lineEnd
     }
 
-    /** A page number: "5", "७", "9-12", "ix", "VII", "A-1". */
-    private val PAGE_NUMBER = Regex("""\p{Nd}+(?:[-–]\p{Nd}+)?|[ivxlcdm]+|[IVXLCDM]+|\p{L}[-–.]?\p{Nd}+""")
+    /** A Roman numeral up to 399, in one case ("ix", "XIV"): "mix", "did" and "DM" are words, not page numbers. */
+    private const val ROMAN_SMALL = """(?=[ivxlc])c{0,3}(?:xc|xl|l?x{0,3})(?:ix|iv|v?i{0,3})"""
+    private const val ROMAN_CAPITAL = """(?=[IVXLC])C{0,3}(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})"""
+
+    /** A page number: "5", "७", "9-12", "ix", "VII", "A-1", in brackets or with a stop too ("(iii)", "5)", "5."). */
+    private val PAGE_NUMBER =
+        Regex("""[(\[]?(?:\p{Nd}+(?:[-–]\p{Nd}+)?|$ROMAN_SMALL|$ROMAN_CAPITAL|\p{L}[-–.]?\p{Nd}+)[)\].]?""")
 
     /** A paragraph is a contents list once this many of its lines are entries. */
     private const val MIN_ENTRIES = 2

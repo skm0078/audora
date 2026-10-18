@@ -64,6 +64,8 @@ package io.github.skm0078.audora.pdf
  *     and carry a table on; letter items in nested flush lists; "(अ)" labels; a leader reads as one ellipsis
  *     (left out at a unit's or cell's end, a dash for a cell holding only a rule) and keeps a contents line whole;
  *     a stop glued between Indic letters holds; "Henry V. The" ends a sentence; column numbers in brackets; each
- *     contents entry its own unit; only a rule is a dash in a cell; "वि. सं.", "वि.वि. बंद" and "a.m. है" held whole.
+ *     contents entry its own unit; only a rule is a dash in a cell; an author list's split kept after a no-break
+ *     space; a bare print stamp repeats only its own time; "वि. सं.", "वि.वि. बंद", "a.m. है" and a dotted Indic word
+ *     with a joiner after its stop held whole; "(U.S.) The" and "the U.S. A new law" end a sentence.
  */
 const val PIPELINE_VERSION: Int = 11

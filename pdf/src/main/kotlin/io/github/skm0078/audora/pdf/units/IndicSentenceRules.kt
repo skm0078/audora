@@ -196,9 +196,10 @@ internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderR
         }
 
         /**
-         * After an initial's stop at [from], no initial follows and the next word is one of [openers] written as a
-         * word ("The", "It"; [SentenceOpeners]) without a stop of its own: "Henry V. The king", "in the U.S. The
-         * economy" end a sentence, "S. No." does not.
+         * After an initial's stop at [from] and any closing brackets or quotes after it, no initial follows and the
+         * next word is one of [openers] without a stop of its own, written as a word ("The", "It"; [SentenceOpeners])
+         * or a lone capital before a small word ("A new", "I think"): "Henry V. The king", "in the U.S. The economy",
+         * "the U.S. A new law" and "(U.S.) The end." end a sentence; "S. No.", "M. A Khan" and "J. I Packer" do not.
          */
         fun opensSentence(text: String, from: Int, openers: Set<String>): Boolean {
             var closed = from
@@ -209,14 +210,12 @@ internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderR
             val next = text.substring(begin, end)
             // "S. No." is a serial number's heading: an opener with its own stop is an abbreviation.
             val ownStop = text.getOrNull(end) == '.'
-            return !initialFollows(text, from) && OPENER_WORD.matches(next) && next in openers && !ownStop
+            // A lone capital ("A", "I") opens a sentence before a small word: "the U.S. A new law", not "M. A Khan".
+            val asWord = OPENER_WORD.matches(next) || text.getOrNull(skipSpaces(text, end))?.isLowerCase() == true
+            return !initialFollows(text, from) && asWord && next in openers && !ownStop
         }
 
-        /**
-         * A capital and small letters: an opener written as a word. The list's lone capitals ("A", "I") never count
-         * here, on purpose: "Henry V. A king" and "the U.S. A new law" stay whole, as a lone capital after an initial
-         * is more often a name's next initial.
-         */
+        /** A capital and small letters: an opener written as a word. */
         private val OPENER_WORD = Regex("""\p{Lu}\p{Ll}+""")
 
         /** A letter, vowel sign, joiner or full stop: what a dotted word ("कि.मी.") is written with. */

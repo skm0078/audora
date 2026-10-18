@@ -136,6 +136,13 @@ class IndicSentenceRulesTest {
                 listOf("कि.\u200C", "मी. ", "है। "),
                 listOf("है। "),
             ),
+            // An unlisted word: only the step back over the joiner holds it.
+            Case(
+                "joiner in an unlisted word",
+                "वह अ.\u200Dजा. श्रेणी में है। ठीक।",
+                listOf("अ.\u200D", "जा. ", "है। "),
+                listOf("है। "),
+            ),
             // A date's stops sit between digits, so its last stop still ends the sentence.
             Case("date", "दिनांक १२.०५.२०१९. अगली बैठक।", listOf("२०१९. "), listOf("२०१९. ")),
         )

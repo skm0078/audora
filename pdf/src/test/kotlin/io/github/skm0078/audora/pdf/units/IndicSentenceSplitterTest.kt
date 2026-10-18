@@ -58,7 +58,7 @@ class IndicSentenceSplitterTest {
             Case("Bengali titles", Lang.BN, listOf("ড. রহমান, ডঃ. সেন ও শ্রী. বসু এলেন। ", "বসুন।")),
             Case("Bengali era", Lang.BN, listOf("খ্রি.পূ. যুগে এটি তৈরি। ", "বসুন।")),
             Case("Vikram Samvat", Lang.HI, listOf("वि. सं. 2050 में मेला लगा। ", "ठीक।")),
-            Case("dotted words", Lang.HI, listOf("स्कूल कॉलेज वि.वि. बंद हैं और बी.ए. पास करके वह आया। ", "ठीक।")),
+            Case("dotted words", Lang.HI, listOf("स्कूल कॉलेज वि.वि. बंद हैं और प्रा.लि. कंपनी खुली है। ", "ठीक।")),
             Case("morning", Lang.HI, listOf("समय 10:30 a.m. है। ", "वह 10:30 P.M. पर आया। ", "ठीक।")),
             // A full stop used as the sentence end after an ordinary word still splits.
             Case("full stop as sentence end", Lang.HI, listOf("यह वाक्य है. ", "दूसरा वाक्य है.")),
@@ -151,7 +151,7 @@ class IndicSentenceSplitterTest {
     )
 
     // A closing bracket or quote after an initial does not hide the opener after it; "a.m." before English may end
-    // a sentence, where before Hindi it does not.
+    // a sentence, where before Hindi it does not; a lone "A" or "I" opens one only before a small word.
     @Test
     fun `an opener after a closer and a meridiem before an English capital end the sentence`() = check(
         listOf(
@@ -161,6 +161,13 @@ class IndicSentenceSplitterTest {
                 listOf("Made in the (U.S.) ", "The end. ", "\"U.S.\" ", "The end."),
             ),
             Case("a.m. before English", Lang.EN, listOf("We met at 10 a.m. ", "The rest left.")),
+            // A lone capital opens a sentence before a small word; before a capitalised word it is a name's initial.
+            Case(
+                "lone capital opener",
+                Lang.EN,
+                listOf("Made in the U.S. ", "A new law passed. ", "Henry V. ", "A king."),
+            ),
+            Case("undotted next initial", Lang.EN, listOf("Dr. M. A Khan spoke. ", "J. I Packer agreed.")),
         ),
     )
 
