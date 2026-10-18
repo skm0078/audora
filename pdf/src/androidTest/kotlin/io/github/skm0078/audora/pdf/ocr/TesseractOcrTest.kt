@@ -6,6 +6,7 @@ package io.github.skm0078.audora.pdf.ocr
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import io.github.skm0078.audora.core.config.OcrThreshold
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.getOrNull
@@ -41,6 +42,13 @@ class TesseractOcrTest {
 
     @Test
     fun bengaliScanReadsIntelligibly() = readsScan("bn", Lang.BN)
+
+    @Test
+    fun theBundledTesseractTakesSauvola() {
+        // The cache key names the method actually applied: Otsu here would mean thresholding_method was refused.
+        val engine = TesseractEngine(AssetTessdata(root, Lang.entries.toSet()))
+        assertTrue(engine.cacheTag, engine.cacheTag.endsWith("-${OcrThreshold.SAUVOLA.name.lowercase()}"))
+    }
 
     @Test
     fun aMissingModelFallsBackToTheTextLayerWithTheReason() {
