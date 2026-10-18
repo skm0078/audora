@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.core.library
 
 import io.github.skm0078.audora.core.config.LibraryConfig
+import io.github.skm0078.audora.core.files.readUpTo
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.flatMap
 import java.io.IOException
@@ -31,7 +32,7 @@ class BookFingerprinter(private val config: LibraryConfig = LibraryConfig()) {
         }
 
     private fun readHead(stream: InputStream): Outcome<ByteArray, FingerprintError> = try {
-        Outcome.Success(stream.readNBytes(config.fingerprintHeadBytes))
+        Outcome.Success(stream.readUpTo(config.fingerprintHeadBytes))
     } catch (e: IOException) {
         Outcome.Failure(FingerprintError.ReadFailed(e.toString()))
     }
