@@ -39,7 +39,7 @@ class SpeechStyleConfigTest {
         )
         cases.forEach { (rate, split) ->
             assertEquals("model at $rate", split.first, config.modelRate(rate), EPS)
-            assertEquals("player at $rate", split.second, config.playerSpeed(rate), EPS)
+            assertEquals("player at $rate", split.second, config.playerSpeed(SpeechStyle(rate = rate)), EPS)
         }
     }
 
@@ -93,6 +93,19 @@ class SpeechStyleConfigTest {
             assertEquals("plain player at $rate", stretch, config.playerSpeed(plain), EPS)
             assertEquals("plain voice at $rate", 1f, config.voiceStretch(plain), EPS)
         }
+        // Never stacked: the model, the voice and the player together make exactly the asked speed.
+        listOf(0.75f, 1.5f, 2.25f, 3f).forEach { rate ->
+            listOf(true, false).forEach { on ->
+                val style = SpeechStyle(rate = rate, shaping = VoiceShaping(smartSpeed = on))
+                val heard = config.modelRate(rate) * config.voiceStretch(style) * config.playerSpeed(style)
+                assertEquals("heard at $rate, smart $on", rate, heard, EPS)
+            }
+        }
+        // At or below the model's cap smart speed stretches nothing, so it is heard as off.
+        val slow = SpeechStyle(rate = 1.5f, shaping = VoiceShaping(smartSpeed = true))
+        assertEquals(config.asHeard(slow.copy(shaping = VoiceShaping())), config.asHeard(slow))
+        val fast = slow.copy(rate = 2f)
+        assertEquals(fast, config.asHeard(fast))
         // Heard silence is the same either way: 150 ms / sqrt(3), with no player stretch to survive.
         val smart = SpeechStyle(rate = 3f, pace = Pace.NORMAL, shaping = VoiceShaping(smartSpeed = true))
         assertEquals(87, config.silenceAfterMs(0, smart))

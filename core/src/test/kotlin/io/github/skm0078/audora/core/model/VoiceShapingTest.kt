@@ -34,7 +34,7 @@ class VoiceShapingTest {
     @Test
     fun `a line saved before smart speed existed keeps it off`() {
         assertEquals(false, VoiceShaping.decode("even=true;boost=3;trim=true").smartSpeed)
-        assertEquals(false, VoiceShaping.decode("smart=sometimes").smartSpeed)
+        assertEquals(false, VoiceShaping.decode("smartSpeed=sometimes").smartSpeed)
     }
 
     @Test

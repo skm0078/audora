@@ -71,14 +71,30 @@ data class SpeechStyleConfig(
     /** The rate the voice model renders at for listening [rate]. */
     fun modelRate(rate: Float): Float = clampRate(rate).coerceAtMost(maxModelRate)
 
-    /** The player's time-stretch for listening [rate]: 1.0 until the model's cap, the rest above it. */
-    fun playerSpeed(rate: Float): Float = clampRate(rate) / modelRate(rate)
-
-    /** The player's time-stretch for [style]: as for its rate, or 1.0 when smart speed stretches the voice instead. */
-    fun playerSpeed(style: SpeechStyle): Float = if (style.shaping.smartSpeed) 1f else playerSpeed(style.rate)
+    /**
+     * The player's time-stretch for [style]: 1.0 until the model's cap, the rest above it; or 1.0 when smart speed
+     * stretches the voice instead. With [voiceStretch], exactly one of the two carries the speed past the model's cap.
+     */
+    fun playerSpeed(style: SpeechStyle): Float = if (style.shaping.smartSpeed) 1f else pastModel(style.rate)
 
     /** How much faster than the model the renderer makes the voice for [style]: 1.0 unless smart speed is on. */
-    fun voiceStretch(style: SpeechStyle): Float = if (style.shaping.smartSpeed) playerSpeed(style.rate) else 1f
+    fun voiceStretch(style: SpeechStyle): Float = if (style.shaping.smartSpeed) pastModel(style.rate) else 1f
+
+    /**
+     * [style] as it is heard: smart speed changes nothing at or below the model's cap (the voice is not stretched
+     * there), so it counts as off, and turning it on or off there restarts nothing.
+     */
+    fun asHeard(style: SpeechStyle): SpeechStyle = if (style.shaping.smartSpeed && pastModel(style.rate) <= 1f) {
+        style.copy(shaping = style.shaping.copy(smartSpeed = false))
+    } else {
+        style
+    }
+
+    /**
+     * The speed left after the model's cap for listening [rate]. Private, so nothing can apply it as a player speed
+     * on top of the voice's own stretch (3x would then play as 6x): [playerSpeed] and [voiceStretch] split it.
+     */
+    private fun pastModel(rate: Float): Float = clampRate(rate) / modelRate(rate)
 
     /**
      * Milliseconds of silence to put in the clip after a sentence whose own pause is [pauseAfterMs]. Pauses shrink

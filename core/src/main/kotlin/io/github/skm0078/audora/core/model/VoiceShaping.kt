@@ -78,7 +78,7 @@ data class VoiceShaping(
         private const val KEY_CHARACTERS = "characters"
         private const val KEY_BLEND_WITH = "blendWith"
         private const val KEY_BLEND_PERCENT = "blendPercent"
-        private const val KEY_SMART = "smart"
+        private const val KEY_SMART = "smartSpeed"
 
         /** Reads [encode]'s line; a missing or bad value takes its default, so this never fails. */
         fun decode(line: String?): VoiceShaping {

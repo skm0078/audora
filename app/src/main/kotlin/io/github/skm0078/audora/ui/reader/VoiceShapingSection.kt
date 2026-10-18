@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.config.SpeechStyleConfig
 import io.github.skm0078.audora.core.config.VoiceShapingConfig
 import io.github.skm0078.audora.core.model.VoiceShaping
 import kotlin.math.roundToInt
@@ -44,7 +45,7 @@ fun VoiceShapingSection(shaping: VoiceShaping, config: VoiceShapingConfig, onCha
     ) { onChange(shaping.copy(trimPauses = it)) }
     ShapingSwitch(
         stringResource(R.string.speech_smart_speed),
-        stringResource(R.string.speech_smart_speed_detail),
+        stringResource(R.string.speech_smart_speed_detail, SMART_SPEED_FROM),
         shaping.smartSpeed,
     ) { onChange(shaping.copy(smartSpeed = it)) }
     Text(stringResource(R.string.speech_boost), style = MaterialTheme.typography.bodyLarge)
@@ -107,3 +108,6 @@ private fun ShapingSwitch(title: String, detail: String, on: Boolean, onChange: 
 @Composable
 private fun boostLabel(db: Int): String =
     if (db == 0) stringResource(R.string.speech_boost_off) else stringResource(R.string.speech_boost_db, db)
+
+/** Where smart speed starts to act: the voice model's own top speed (ADR-033, 049). */
+private val SMART_SPEED_FROM = SpeechStyleConfig().maxModelRate.toString()
