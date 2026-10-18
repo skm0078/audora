@@ -1,5 +1,5 @@
 // File: pdf/src/test/kotlin/io/github/skm0078/audora/pdf/units/IndicSentenceSplitterTest.kt
-// Purpose: Table-driven tests for Hindi and Bengali sentence splitting: danda, abbreviations, initials, verses.
+// Purpose: Table-driven sentence splitting tests: danda, Indic and English abbreviations and initials, verses.
 
 package io.github.skm0078.audora.pdf.units
 
@@ -73,6 +73,32 @@ class IndicSentenceSplitterTest {
             Case("two sentences", Lang.EN, listOf("It was late. ", "We left.")),
             Case("quote after the full stop", Lang.EN, listOf("He said \"Stop.\" ", "Then he left.")),
             Case("decimal", Lang.EN, listOf("Pi is 3.14 roughly. ", "Yes.")),
+        ),
+    )
+
+    @Test
+    fun `English titles, Latin abbreviations and initials do not end a sentence`() = check(
+        listOf(
+            Case("doctor", Lang.EN, listOf("Dr. Smith went home. ", "He slept.")),
+            Case("Mr and Mrs", Lang.EN, listOf("Mr. and Mrs. Rao came. ", "Then they left.")),
+            Case("professor", Lang.EN, listOf("Prof. Iyer et al. found it. ", "Yes.")),
+            Case("Indian titles", Lang.EN, listOf("Shri Ram and Smt. Sita spoke. ", "Sh. Gupta agreed.")),
+            Case("ranks", Lang.EN, listOf("Lt. Col. Singh and Capt. Rao met Gen. Bose. ", "Fine.")),
+            Case("saint", Lang.EN, listOf("St. Xavier's College is old. ", "It is in Mumbai.")),
+            Case("initials", Lang.EN, listOf("A. P. J. Abdul Kalam spoke. ", "M. K. Gandhi listened.")),
+            Case("dotted initialism", Lang.EN, listOf("The U.S. Army left. ", "It rained.")),
+            Case("Latin", Lang.EN, listOf("Fruit, e.g. Apples, i.e. Red ones, viz. Fuji. ", "Done.")),
+            Case("bracketed title", Lang.EN, listOf("The author (Dr. Rao) wrote it. ", "Good.")),
+            Case("author list", Lang.EN, listOf("By Abbott B. P., Smith, J. A. Jones and Dr. A. Rao. ", "Fine.")),
+            Case("reference", Lang.EN, listOf("See Fig. (A) and No. 5 on p. 7. ", "Done.")),
+            // Ordinary words, a lone lower-case letter and "etc." still end a sentence.
+            Case("etc ends", Lang.EN, listOf("We bought pens, paper etc. ", "Then we went home.")),
+            Case("No as an answer", Lang.EN, listOf("Was it him? ", "No. ", "It was her.")),
+            // A capital letter that ends a sentence is not an initial: a pronoun, a variable, a label.
+            Case("pronoun", Lang.EN, listOf("So says I. ", "Where now?")),
+            Case("variable", Lang.EN, listOf("Take the matrix Q. ", "The keys follow.")),
+            Case("symbol", Lang.EN, listOf("Write B\u2227 A. ", "But not B.")),
+            Case("label", Lang.EN, listOf("See Appendix A. ", "Annexure B. ", "Class X. ", "Plan B. ", "Then stop.")),
         ),
     )
 

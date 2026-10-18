@@ -1,5 +1,5 @@
 // File: pdf/src/main/kotlin/io/github/skm0078/audora/pdf/units/IndicSentenceRules.kt
-// Purpose: Corrects BreakIterator's sentence breaks for Hindi and Bengali: danda, abbreviations, verse numbers.
+// Purpose: Corrects BreakIterator's sentence breaks: danda, Indic and English abbreviations, verse numbers.
 
 package io.github.skm0078.audora.pdf.units
 
@@ -16,12 +16,18 @@ import java.text.Normalizer
  * 3. **Abbreviations and initials.** No break after "डॉ." or "ए." ([SentenceConfig]): Indic text ends sentences with
  *    the danda, so a full stop after one of these words is part of a name. When unsure, two sentences become one
  *    unit, which is cheaper than a name cut in half.
+ *    The same holds in English after a title or Latin abbreviation ("Dr.", "e.g.", [SentenceConfig]) and after
+ *    capital initials ("A. P. J.", "U.S."): both platforms break "Dr. | Smith" before a capital, ICU because
+ *    Android does not turn on its abbreviation suppressions.
  * 4. **Verse numbers.** "॥ १ ॥" after a verse is read with that verse, not as a unit of its own.
  *
  * The rules move breaks only; the ranges still cover the text in order.
  */
 internal class IndicSentenceRules(config: SentenceConfig) {
-    private val nonBreaking: Set<String> = (config.abbreviations + config.initials).mapTo(HashSet(), ::nfc)
+    private val nonBreaking: Set<String> =
+        (config.abbreviations + config.initials + config.englishAbbreviations).mapTo(HashSet(), ::nfc)
+    private val references = config.referenceAbbreviations
+    private val labels = config.letterLabels
 
     /** [breaks]: the iterator's sentence ends inside [text] (not 0 or its length). Returns the corrected ones. */
     fun refine(text: String, breaks: Collection<Int>): List<Int> {
@@ -68,7 +74,38 @@ internal class IndicSentenceRules(config: SentenceConfig) {
         if (stop < 1 || text[stop] != '.') return false
         var start = stop
         while (start > 0 && !text[start - 1].isWhitespace() && text[start - 1] !in OPENERS) start--
-        return nfc(text.substring(start, stop)) in nonBreaking
+        val word = text.substring(start, stop)
+        return nfc(word) in nonBreaking || isInitial(text, start, word) || isReference(text, at, word)
+    }
+
+    /** [word] points at a number or bracket that starts the next piece at [at]: "No. 5", "Fig. (a)". */
+    private fun isReference(text: String, at: Int, word: String): Boolean {
+        val next = text.getOrNull(skipSpaces(text, at))
+        return word in references && next != null && (next.isDigit() || next == '(')
+    }
+
+    /**
+     * [word] (before its full stop, starting at [start]) is capital initials: "U.S" or "A.P.J" always; a single
+     * capital only after nothing, a full stop or comma ("Dr. A.", "J. A.", "Smith, J."), or a name ("Abbott B."), so
+     * "says I.", "matrix Q.", "size N." and "Appendix A." ([SentenceConfig.letterLabels]) still end a sentence.
+     */
+    private fun isInitial(text: String, start: Int, word: String): Boolean {
+        if (!LATIN_INITIALS.matches(word) || word == "I") return false
+        val before = wordBefore(text, start)
+        return word.length > 1 || before == null || before.last() in ".," || isName(before)
+    }
+
+    private fun isName(word: String): Boolean =
+        word.first().isUpperCase() && word.all { it.isLetter() || it in NAME_JOINERS } && word !in labels
+
+    /** The whitespace-separated word before [start], or null at the start of the text or after an opening bracket. */
+    private fun wordBefore(text: String, start: Int): String? {
+        var stop = start
+        while (stop > 0 && text[stop - 1].isWhitespace()) stop--
+        var from = stop
+        while (from > 0 && !text[from - 1].isWhitespace()) from--
+        val afterOpener = stop == start && start > 0
+        return text.substring(from, stop).takeUnless { it.isEmpty() || afterOpener }
     }
 
     /** Merges a piece made only of a verse number between dandas ("॥ १ ॥") into the piece before it. */
@@ -105,6 +142,12 @@ internal class IndicSentenceRules(config: SentenceConfig) {
         const val CONTINUERS = ",;:\u2013\u2014"
 
         const val VERSE_BRACKETS = "()[]"
+
+        /** "A", "U.S", "A.P.J": capital Latin letters, each but the last with its full stop. */
+        val LATIN_INITIALS = Regex("(?:[A-Z]\\.)*[A-Z]")
+
+        /** Inside a name before an initial: "O'Brien", "Smith-Jones". */
+        const val NAME_JOINERS = "'\u2019-"
 
         fun nfc(text: String): String = Normalizer.normalize(text, Normalizer.Form.NFC)
     }

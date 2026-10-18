@@ -48,6 +48,8 @@ package io.github.skm0078.audora.pdf
  *     Sauvola instead of Otsu (ADR-025 amendment), so photos with shadows or uneven light keep their text; an unsure
  *     page with unevenly lit paper read again with its light evened out (a hard shadow across a photo); words set
  *     in a bold font tagged as each unit's bold terms (`ReadingUnit.boldTerms`, plan item 64); a table's own first
- *     row demoted only on a running serial number or figures like its rows with no year, two years a header again.
+ *     row demoted only on a running serial number or figures like its rows with no year, two years a header again;
+ *     English titles, Latin abbreviations, capital initials and references before a number no longer end a sentence
+ *     ("Dr. Rao", "e.g. Apples", "Abbott B. P.", "Eq. (A1)").
  */
 const val PIPELINE_VERSION: Int = 11
