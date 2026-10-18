@@ -52,6 +52,9 @@ class IndicSentenceSplitterTest {
             Case("Bengali doctor", Lang.BN, listOf("ডা. রায় আসবেন। ", "তিনি কলকাতায় থাকেন।")),
             Case("Bengali initials", Lang.BN, listOf("এ. কে. ফজলুল হক বক্তৃতা দেন। ", "সবাই শুনল।")),
             Case("Bengali Mohammad", Lang.BN, listOf("মো. রহিম এসেছেন। ", "বসুন।")),
+            Case("Hindi titles", Lang.HI, listOf("श्री. राम और डा. सीता आए। ", "बैठिए।")),
+            Case("Hindi references", Lang.HI, listOf("देखें पृ. १२ और सं. ३, ५०० ई.पू. में। ", "बस।")),
+            Case("Bengali titles", Lang.BN, listOf("ড. রহমান, ডঃ সেন ও শ্রী. বসু এলেন। ", "বসুন।")),
             // A full stop used as the sentence end after an ordinary word still splits.
             Case("full stop as sentence end", Lang.HI, listOf("यह वाक्य है. ", "दूसरा वाक्य है.")),
         ),
