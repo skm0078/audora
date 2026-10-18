@@ -64,15 +64,20 @@ internal class OcrClutter(private val config: CleanupConfig) {
     }
 
     /**
-     * A printer's slug: a layout file's name, or a print date and time that a neighbour's strip carries too. A date
-     * and time alone is an exam date sheet's row, a notice's date or a receipt's first line.
+     * A printer's slug: a layout file's name, or a print date and time that a neighbour's strip carries too, the
+     * same to the minute. A date and time alone is an exam date sheet's row, a notice's date or a receipt's first
+     * line, and a date sheet's next page holds other times.
      */
-    private fun isPrintSlug(line: String, neighbours: Map<Int, List<String>>): Boolean =
-        LAYOUT_FILE.containsMatchIn(line) ||
-            (
-                PRINT_TIME.containsMatchIn(line) &&
-                    neighbours.values.any { lines -> lines.any(PRINT_TIME::containsMatchIn) }
-                )
+    private fun isPrintSlug(line: String, neighbours: Map<Int, List<String>>): Boolean {
+        val times = PRINT_TIME.findAll(line).map { timeKey(it.value) }.toSet()
+        return LAYOUT_FILE.containsMatchIn(line) ||
+            neighbours.values.any { lines ->
+                lines.any { other -> PRINT_TIME.findAll(other).any { timeKey(it.value) in times } }
+            }
+    }
+
+    /** A print time with its spaces and comma made alike: OCR may read "5/13/11, 6:45" or "5/13/11  6:45". */
+    private fun timeKey(time: String): String = time.replace(",", "").split(Regex("\\s+")).joinToString(" ")
 
     /** A number on the line that a neighbour's strip carries shifted by the page offset: 12 here, 13 a page on. */
     private fun isRunningFolio(values: List<Int>, neighbours: Map<Int, List<String>>): Boolean =

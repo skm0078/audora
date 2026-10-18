@@ -66,9 +66,11 @@ class OcrClutterTest {
         for (slug in slugs) {
             assertEquals(slug, setOf(2), clutter.droppedLines(page(*body, slug to 0.96f), strips()))
         }
-        // A print date and time alone is a slug only when a neighbour's strip carries one too.
-        val printed = strips(1 to OcrMargins(emptyList(), listOf("5/13/11 6:46 AM")))
+        // A print date and time alone is a slug only when a neighbour's strip carries the same one.
+        val printed = strips(1 to OcrMargins(emptyList(), listOf("5/13/11, 6:45 AM")))
         assertEquals(setOf(2), clutter.droppedLines(page(*body, "5/13/11 6:45 AM" to 0.96f), printed))
+        val laterPrint = strips(1 to OcrMargins(emptyList(), listOf("5/13/11 6:46 AM")))
+        assertEquals(emptySet<Int>(), clutter.droppedLines(page(*body, "5/13/11 6:45 AM" to 0.96f), laterPrint))
         val inBody = page("Save it as report.indd before 5/13/11 6:45 AM" to 0.4f, *body)
         assertEquals(emptySet<Int>(), clutter.droppedLines(inBody, strips()))
     }
@@ -81,7 +83,8 @@ class OcrClutterTest {
             "दिनांक १२.०५.२०१९, १०:३० बजे" to 0.96f,
             "তারিখ ১২/০৫/২০১৯ ১০:৩০" to 0.97f,
         )
-        val neighbours = strips(1 to OcrMargins(listOf("Notice"), listOf("Chemistry 16/03/2024")))
+        // A date sheet's next page holds the next exam, at the same hour.
+        val neighbours = strips(1 to OcrMargins(listOf("Notice"), listOf("Chemistry 16/03/2024 10:30")))
         for (line in lines) {
             assertEquals(line.first, emptySet<Int>(), clutter.droppedLines(page(*body, line), neighbours))
         }
