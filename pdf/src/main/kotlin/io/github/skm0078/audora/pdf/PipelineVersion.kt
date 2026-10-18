@@ -57,6 +57,6 @@ package io.github.skm0078.audora.pdf
  *     a word header opening the next page starts a table of its own, and numbers that name the columns ("041",
  *     "1 | 2 | 3") stay a header; "S. K. Mukherjee", "Govt. Order", "Rs. 500" and dotted Hindi and Bengali words
  *     held whole on Android too; "x." opening an item only in sequence, "(क)" and "(ক)" labels; an evened OCR read
- *     kept only with as many words.
+ *     kept only with as many words; dot leaders, blanks and rules of five marks or more read as a space.
  */
 const val PIPELINE_VERSION: Int = 11

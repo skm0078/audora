@@ -153,7 +153,9 @@ class ReadingUnitBuilder(
             pieces.forEachIndexed { i, piece ->
                 val raw = text.substring(piece.first, piece.last + 1)
                 if (raw.none { it.isLetterOrDigit() }) return@forEachIndexed
-                val row = paragraph.table?.let { TableRowText.of(reading, piece.first, piece.last + 1, it) }
+                val row = paragraph.table?.let {
+                    TableRowText.of(reading, piece.first, piece.last + 1, it, config.minLeaderRun)
+                }
                 val (unitText, boldTerms) = textOf(raw, row, paragraph.kind) { bold[piece.first + it] }
                 val ocrConfidence = reading.ocrConfidence(piece.first, piece.last + 1)
                 units.add(
@@ -189,8 +191,8 @@ class ReadingUnitBuilder(
         isBold: (Int) -> Boolean,
     ): Pair<String, List<TermSpan>> = when {
         row != null -> row.text to emptyList()
-        kind == ParagraphKind.HEADING -> UnitText.of(raw, config.minBoldTermLetters) { false }
-        else -> UnitText.of(raw, config.minBoldTermLetters, isBold)
+        kind == ParagraphKind.HEADING -> UnitText.of(raw, config.minBoldTermLetters, config.minLeaderRun) { false }
+        else -> UnitText.of(raw, config.minBoldTermLetters, config.minLeaderRun, isBold)
     }
 
     /** A table unit's [TableRowInfo]; the header row records the table's header texts for its rows. */

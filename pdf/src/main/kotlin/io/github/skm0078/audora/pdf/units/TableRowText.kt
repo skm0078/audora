@@ -8,13 +8,15 @@ import io.github.skm0078.audora.pdf.layout.ReadingText
 import io.github.skm0078.audora.pdf.layout.TableCells
 
 /**
- * The unit text is the reading text of the row with runs of whitespace folded to one space, like every unit's.
+ * The unit text is the reading text of the row with runs of whitespace folded to one space, like every unit's, and
+ * dot leaders read as spaces ([Leaders]): a contents row's "Introduction ........" cell is "Introduction".
  * A cell's span covers the characters whose source offset lies in one of the cell's spans; an empty cell (or one
  * the repair emptied) is an empty span where the next cell starts.
  */
 internal class TableRowText(val text: String, val cells: List<CellSpan>) {
     companion object {
-        fun of(reading: ReadingText, start: Int, end: Int, table: TableCells): TableRowText {
+        fun of(reading: ReadingText, start: Int, end: Int, table: TableCells, minLeaderRun: Int): TableRowText {
+            val leaders = Leaders.mask(reading.text.subSequence(start, end), minLeaderRun)
             val columnOf = HashMap<Int, Int>()
             table.cells.forEachIndexed { column, spans ->
                 spans.forEach { span -> for (offset in span.start until span.end) columnOf[offset] = column }
@@ -25,7 +27,7 @@ internal class TableRowText(val text: String, val cells: List<CellSpan>) {
             var pendingSpace = false
             for (offset in start until end) {
                 val ch = reading.text[offset]
-                if (ch.isWhitespace()) {
+                if (ch.isWhitespace() || leaders[offset - start]) {
                     pendingSpace = out.isNotEmpty()
                     continue
                 }

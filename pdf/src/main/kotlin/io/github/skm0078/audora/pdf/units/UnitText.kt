@@ -10,6 +10,7 @@ import io.github.skm0078.audora.core.model.TermSpan
  * end. Whitespace is Unicode's White_Space, the same on the JVM and on Android: tab, line breaks, vertical tab, form
  * feed, next line (U+0085) and every space and line or paragraph separator, the no-break space included (Android's
  * `\s` matched all of these, the JVM's only the ASCII ones, so the golden run now reads what the phone reads).
+ * A dot leader or fill-in rule ([Leaders]) counts as whitespace too.
  *
  * Its bold terms (plan item 64) are the stretches of bold characters, joined across spaces between bold words,
  * without the punctuation at their ends ("Note:" gives "Note"); a stretch with no word of at least `minLetters`
@@ -17,7 +18,8 @@ import io.github.skm0078.audora.core.model.TermSpan
  */
 internal object UnitText {
     /** The text of [raw] and its bold terms, [isBold] telling for each offset of [raw]. */
-    fun of(raw: String, minLetters: Int, isBold: (Int) -> Boolean): Pair<String, List<TermSpan>> {
+    fun of(raw: String, minLetters: Int, minLeaderRun: Int, isBold: (Int) -> Boolean): Pair<String, List<TermSpan>> {
+        val leaders = Leaders.mask(raw, minLeaderRun)
         val text = StringBuilder(raw.length)
         val terms = ArrayList<TermSpan>()
         var termStart = -1
@@ -25,7 +27,7 @@ internal object UnitText {
         var pendingSpace = false
         for (i in raw.indices) {
             val c = raw[i]
-            if (isSpace(c)) {
+            if (isSpace(c) || leaders[i]) {
                 pendingSpace = text.isNotEmpty()
                 continue
             }

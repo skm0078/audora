@@ -25,7 +25,7 @@ class UnitTextTest {
                 }
             }
         }
-        val (text, terms) = UnitText.of(raw.toString(), MIN_LETTERS) { bold[it] }
+        val (text, terms) = UnitText.of(raw.toString(), MIN_LETTERS, LEADER_RUN) { bold[it] }
         return text to terms.map { text.substring(it.start, it.end) }
     }
 
@@ -52,7 +52,7 @@ class UnitTextTest {
 
     @Test
     fun `spans are offsets into the text, never empty`() {
-        val (text, terms) = UnitText.of("a  bold\tword", MIN_LETTERS) { it in 3..6 }
+        val (text, terms) = UnitText.of("a  bold\tword", MIN_LETTERS, LEADER_RUN) { it in 3..6 }
         assertEquals("a bold word", text)
         assertEquals(listOf(TermSpan(2, 6)), terms)
     }
@@ -68,11 +68,34 @@ class UnitTextTest {
         for (raw in raws) {
             // Android's \s, and the JVM's with Unicode classes: White_Space.
             val expected = raw.split(Regex("(?U)\\s+")).filter { it.isNotEmpty() }.joinToString(" ")
-            assertEquals(raw, expected, UnitText.of(raw, MIN_LETTERS) { false }.first)
+            assertEquals(raw, expected, UnitText.of(raw, MIN_LETTERS, LEADER_RUN) { false }.first)
+        }
+    }
+
+    @Test
+    fun `dot leaders, blanks and rules read as a space, an ellipsis stays`() {
+        val cases = listOf(
+            "Introduction ........ 5" to "Introduction 5",
+            "भूमिका ............. ७" to "भूमिका ७",
+            "Name: ______ Date: ____________" to "Name: Date:",
+            "Chapter 2 . . . . . . . 19" to "Chapter 2 19",
+            "Total ······ 309" to "Total 309",
+            "Accidents,------------Asthma, 2" to "Accidents, Asthma, 2",
+            // Shorter runs are punctuation: an ellipsis, one with the sentence's stop, a dash, a blank of four.
+            "Wait... then go" to "Wait... then go",
+            "Wait.... then go" to "Wait.... then go",
+            "and so on…… next" to "and so on…… next",
+            "up--down and a—b" to "up--down and a—b",
+            "Name ____" to "Name ____",
+            "well-known snake_case" to "well-known snake_case",
+        )
+        for ((raw, expected) in cases) {
+            assertEquals(raw, expected, UnitText.of(raw, MIN_LETTERS, LEADER_RUN) { false }.first)
         }
     }
 
     private companion object {
         const val MIN_LETTERS = 2
+        const val LEADER_RUN = 5
     }
 }

@@ -154,6 +154,20 @@ class ClutterRemoverTest {
     }
 
     @Test
+    fun `a dot leader in a table cell is left out of the cell`() {
+        val sketch = PageSketch()
+        sketch.line("Pat.", LEFT, 680f).line("Age", 150f, 680f).line("Dose", 250f, 680f)
+        for (row in 1..4) {
+            val top = 680f - row * 12f
+            sketch.line("$row ........", LEFT, top).line("${50 + row}", 150f, top).line("2 Gy x 30", 250f, top)
+        }
+        sketch.lines(listOf("The table shows every patient.", "Doses were the same."), LEFT, 600f)
+        val third = builder.build(sketch.build()).filter { it.kind.isTable }[3]
+        assertEquals("3 53 2 Gy x 30", third.text)
+        assertEquals(listOf("3", "53", "2 Gy x 30"), third.table?.cells?.map { third.text.substring(it.start, it.end) })
+    }
+
+    @Test
     fun `an intro line set close above a table is read before it, and the line after it after it`() {
         // Line spacing as tight as the rows', so layout joins intro, table and the line after into one paragraph.
         val sketch = PageSketch()

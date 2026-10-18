@@ -17,6 +17,8 @@ package io.github.skm0078.audora.core.config
  * @property minBoldTermLetters a bold term (plan item 64) holds a word of at least this many letters (vowel signs
  *   count): bold page numbers in a contents list, a bold maths symbol and letters spaced out in a bold title are
  *   not terms.
+ * @property minLeaderRun a run of at least this many full stops, middle dots, underscores or hyphens (a contents
+ *   page's dot leader, a form's blank, a divider) is left out of a unit's text like a space; an ellipsis is shorter.
  */
 data class ReadingUnitConfig(
     val maxUnitChars: Int = 400,
@@ -26,6 +28,7 @@ data class ReadingUnitConfig(
     val listItemPauseMs: Int = 300,
     val lineOverlapRatio: Float = 0.5f,
     val minBoldTermLetters: Int = 2,
+    val minLeaderRun: Int = 5,
 ) {
     init {
         require(maxUnitChars > 0) { "maxUnitChars must be > 0, was $maxUnitChars" }
@@ -33,5 +36,6 @@ data class ReadingUnitConfig(
         require(paragraphPauseMs >= 0 && headingPauseMs >= 0 && listItemPauseMs >= 0) { "pauses must be >= 0" }
         require(lineOverlapRatio in 0f..1f) { "lineOverlapRatio must be in 0..1, was $lineOverlapRatio" }
         require(minBoldTermLetters >= 1) { "minBoldTermLetters must be >= 1, was $minBoldTermLetters" }
+        require(minLeaderRun >= 2) { "minLeaderRun must be >= 2, was $minLeaderRun" }
     }
 }
