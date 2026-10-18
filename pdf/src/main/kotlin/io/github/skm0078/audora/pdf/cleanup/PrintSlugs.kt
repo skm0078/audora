@@ -48,11 +48,12 @@ internal object PrintSlugs {
     private const val MERIDIEM = """(?:[ \t]*(?i:[ap]\.?m\.?))?"""
 
     /**
-     * A line holding nothing but a print time, with "AM" or "PM" after it if given, the time perhaps repeated as some
-     * PDFs clip it ("5/13/11 /13/11 6:45 AM 6:45 AM").
+     * A line holding nothing but a print time, with "AM" or "PM" after it if given, the same time perhaps repeated
+     * as some PDFs clip it ("5/13/11 /13/11 6:45 AM 6:45 AM"); a second, different time ("10:00 AM 1:00 PM") is a
+     * date sheet's row.
      */
     private val BARE_STAMP =
-        Regex("""[ \t]*$TIME$MERIDIEM(?:[ \t]+[0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?$MERIDIEM)?[ \t]*""")
+        Regex("""[ \t]*$TIME$MERIDIEM(?:[ \t]+\2(?::[0-9]{2})?$MERIDIEM)?[ \t]*""")
 
     /**
      * A layout program's file name ("ch04.qxd", "HUD3_25_09.indd") with nothing after it but page references and

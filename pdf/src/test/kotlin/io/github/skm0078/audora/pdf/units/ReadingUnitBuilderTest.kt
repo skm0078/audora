@@ -200,6 +200,20 @@ class ReadingUnitBuilderTest {
     }
 
     @Test
+    fun `each contents entry is its own unit, cut after its page number`() {
+        val sketch = PageSketch()
+        sketch.lines(
+            listOf("Preface ........ ix", "Introduction ........ 5", "Methods . . . . . . 12", "भूमिका ..... ७"),
+            50f,
+            720f,
+        )
+        assertEquals(
+            listOf("Preface \u2026 ix", "Introduction \u2026 5", "Methods \u2026 12", "भूमिका \u2026 ७"),
+            ReadingUnitBuilder().build(sketch.build()).map { it.text },
+        )
+    }
+
+    @Test
     fun `headings carry their kind and default pauses follow the spec`() {
         val sketch = PageSketch()
         sketch.line("Introduction", left = 50f, top = 720f, size = 14f)

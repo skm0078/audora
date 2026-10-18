@@ -143,11 +143,13 @@ class ReadingUnitBuilder(
         val units = ArrayList<ReadingUnit>()
         val headers = HashMap<Int, List<String>>()
         val bold = reading.boldOffsets(boldMarkers)
+        val leaders = Leaders.mask(text, config.minLeaderRun)
         for (paragraph in reading.paragraphs) {
             val pieces = if (paragraph.table != null) {
                 listOf(trim(text, paragraph.start, paragraph.end)).filterNot { it.isEmpty() }
             } else {
                 sentencesOf(flat, paragraph, pageLang)
+                    .flatMap { cutAt(it, Leaders.entryEnds(text, leaders, it.first, it.last + 1)) }
                     .flatMap { capLength(text, trim(text, it.first, it.last + 1), config.maxUnitChars) }
             }
             pieces.forEachIndexed { i, piece ->
@@ -217,6 +219,10 @@ class ReadingUnitBuilder(
         val sentences = splitter.split(slice, lang).map { (it.first + paragraph.start)..(it.last + paragraph.start) }
         return if (paragraph.kind == ParagraphKind.LIST_ITEM) keepLabel(flat, sentences) else sentences
     }
+
+    /** [range] cut before each offset of [cuts] (each inside it): a contents page's entries ([Leaders.entryEnds]). */
+    private fun cutAt(range: IntRange, cuts: List<Int>): List<IntRange> =
+        (listOf(range.first) + cuts).zip(cuts + (range.last + 1)) { from, until -> from until until }
 
     /** An item's label is read with its first sentence ("1. Open the box"), never as a sentence of its own. */
     private fun keepLabel(flat: String, sentences: List<IntRange>): List<IntRange> {
