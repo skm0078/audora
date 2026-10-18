@@ -12,6 +12,7 @@ import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.TableMode
 import io.github.skm0078.audora.core.model.TableRowInfo
+import io.github.skm0078.audora.core.model.TermSpan
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.playback.book.PageCursor
 import io.github.skm0078.audora.playback.unit
@@ -194,6 +195,19 @@ class UnitReadingTest {
 
         assertEquals(listOf(0, 1, 3, 5, 6, 8, 11), played(ReadingModes(skim = true), units))
         assertEquals(units.indices.toList(), played(ReadingModes(tables = TableMode.ROWS), units))
+    }
+
+    @Test
+    fun `skim also reads a sentence with a bold term, whole, and a run-in bold heading`() {
+        // All four are one paragraph: only the first would be skimmed without bold.
+        val term = kind(1, UnitKind.BODY, text = "An enzyme is a protein.").copy(boldTerms = listOf(TermSpan(3, 9)))
+        val runIn = kind(3, UnitKind.BODY, text = "Note this.").copy(boldTerms = listOf(TermSpan(0, 9)))
+        val units = listOf(kind(0, UnitKind.BODY), term, kind(2, UnitKind.BODY), runIn)
+        val skim = ReadingModes(skim = true)
+
+        assertEquals(listOf(0, 1, 3), played(skim, units))
+        assertEquals("An enzyme is a protein.", (UnitReading(skim).speechOf(term) as Speech.Text).text)
+        assertEquals(listOf(0, 1, 2, 3), played(ReadingModes(), units))
     }
 
     @Test

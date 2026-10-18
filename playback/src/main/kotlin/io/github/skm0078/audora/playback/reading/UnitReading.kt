@@ -46,9 +46,11 @@ sealed interface Speech {
  * - **Skip switches** (plan item 2): (parentheses), [brackets] and links leave the text of every unit but tables and
  *   equations; a unit left empty is not played. "Page numbers" says "Page 12" before the page's first unit (index 0;
  *   when that unit is itself skipped, the page goes unannounced).
- * - **Skim** (plan item 64): headings, captions and table summaries, and the first sentence of each paragraph, list
- *   item or aside: one that follows a paragraph's end (a pause longer than a sentence's, [ReadingUnitConfig]), a
- *   change of kind, or opens the page. Table rows, footnotes and equations are left out.
+ * - **Skim** (plan item 64): headings, captions and table summaries, the first sentence of each paragraph, list
+ *   item or aside (one that follows a paragraph's end, a pause longer than a sentence's, [ReadingUnitConfig]; a
+ *   change of kind; or the page's start), and any sentence with a bold term ([ReadingUnit.boldTerms]), read whole:
+ *   bold mostly marks a term being defined, and the term alone says little. A sentence set wholly in bold (a run-in
+ *   heading) is kept the same way. Table rows, footnotes and equations are left out.
  */
 class UnitReading(
     private val modes: ReadingModes,
@@ -179,6 +181,6 @@ private fun skimKeeps(unit: ReadingUnit, previous: ReadingUnit?, sentencePauseMs
 
     UnitKind.TABLE_ROW, UnitKind.FOOTNOTE, UnitKind.EQUATION -> false
 
-    UnitKind.BODY, UnitKind.LIST_ITEM, UnitKind.ASIDE ->
+    UnitKind.BODY, UnitKind.LIST_ITEM, UnitKind.ASIDE -> unit.boldTerms.isNotEmpty() ||
         previous == null || previous.kind != unit.kind || previous.pauseAfterMs > sentencePauseMs
 }

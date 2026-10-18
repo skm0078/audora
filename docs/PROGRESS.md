@@ -111,7 +111,7 @@ One entry per merged ticket, newest first. Each entry: what changed, what was ve
 - A **Skim** switch at the top of the speech sheet's "What to read" (off by default) reads only headings, captions, table summaries and the first sentence of each paragraph, list item or aside, to get through a chapter fast; turning it off reads everything again from the sentence playing. Skipped sentences stay on the page and are still resume points.
 - How: at render time in `UnitReading` (no `:pdf` change, no pipeline version bump); a paragraph starts after a pause longer than a sentence's (`ReadingUnitConfig`), a change of kind, or at the top of a page. Table rows, footnotes and equations are left out; the other modes still apply (a skipped table stays skipped).
 - Tests: `UnitReadingTest`, `ReadingModesTest`.
-- **Gaps:** bold terms are not read yet: `:pdf` does not keep font weight, so it needs the PDF side to tag bold spans first (a pipeline version bump). A paragraph that continues from the previous page has its first sentence on this page read as if it opened a paragraph.
+- **Gaps:** skim keeps sentences with bold terms (`ReadingUnit.boldTerms`), but `:pdf` fills them only from reading intelligence's patch 0030 (a pipeline version bump); until that lands, no unit carries any and skim behaves as before. A paragraph that continues from the previous page has its first sentence on this page read as if it opened a paragraph.
 
 **Real-device checks (final phone session):** skim through a textbook chapter and a novel chapter; turn it off mid-page and hear the full text resume.
 
