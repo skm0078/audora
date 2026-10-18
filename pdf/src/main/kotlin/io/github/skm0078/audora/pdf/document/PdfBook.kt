@@ -32,6 +32,8 @@ import io.github.skm0078.audora.pdf.units.AnalyzedPage
 import io.github.skm0078.audora.pdf.units.PageCarry
 import io.github.skm0078.audora.pdf.units.PageTail
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
+import io.github.skm0078.audora.pdf.units.opensWithProse
+import io.github.skm0078.audora.pdf.units.opensWithTable
 import java.io.Closeable
 
 /**
@@ -175,12 +177,20 @@ class PdfBook private constructor(
         ocrLanguages ?: OcrLanguages(builder.qualityConfig).also { ocrLanguages = it }
 
     /**
-     * [read] joined to the page before it ([PageCarry]): a table or sentence carried over. What this page hands on
-     * is kept for the next one.
+     * [read] joined to the page before it ([PageCarry]): a table or sentence carried over. The page before is looked
+     * at only when this page can carry something on (it opens with a table, or with body text, a list item or an
+     * aside). What this page hands on is kept for the next one when it was built on a complete chain ([HandOn]).
      */
     private fun joined(pageIndex: Int, read: PageReading, builder: ReadingUnitBuilder, cache: PageCaches): PageReading {
-        val joined = cache.carry.join(read.units, tailBefore(pageIndex, builder, cache, depth = 0))
-        cache.tails[pageIndex] = cache.carry.tailOf(joined.units)
+        val carry = cache.carry
+        val needsTable = opensWithTable(read.units)
+        val before = if (needsTable || opensWithProse(read.units)) {
+            tailBefore(pageIndex, builder, cache, depth = 0, needsTable)
+        } else {
+            HandOn.NONE
+        }
+        val joined = carry.join(read.units, before.tail)
+        if (!needsTable || before.complete) keep(pageIndex, carry.tailOf(joined.units), cache)
         if (joined.table != null || joined.continuesPreviousPage) {
             AudoraLog.d(
                 TAG,
@@ -192,32 +202,61 @@ class PdfBook private constructor(
     }
 
     /**
-     * What the page before [pageIndex] hands on: remembered from reading it, else worked out by reading it quietly
-     * and, when it opens with a table, joining it to its own page before, at most `PageCarryConfig.maxCarryPages`
-     * back ([depth] pages so far). So a page reads the same whichever page was read before it; only a table running
-     * over more pages numbers its rows from that far back, and a scanned page not yet OCR'd hands on nothing.
+     * What the page before [pageIndex] hands on: kept from reading it (under the text-layer verdict still in force),
+     * else worked out by reading it quietly and, when this page needs its table ([needsTable]) and it opens with one,
+     * joining it to its own page before, at most `PageCarryConfig.maxCarryPages` back ([depth] pages so far). So a
+     * page reads the same whichever page was read before it. Best effort only past that many pages (a table's rows
+     * numbered from there, its header unknown) and after a scanned page not yet OCR'd (nothing handed on); neither
+     * is kept, so the page reads right once the chain is complete.
      */
-    private fun tailBefore(pageIndex: Int, builder: ReadingUnitBuilder, cache: PageCaches, depth: Int): PageTail? {
+    private fun tailBefore(
+        pageIndex: Int,
+        builder: ReadingUnitBuilder,
+        cache: PageCaches,
+        depth: Int,
+        needsTable: Boolean,
+    ): HandOn {
         val before = pageIndex - 1
-        val known = cache.tails[before]
+        val known = cache.tails[before]?.takeIf { it.verdict == textLayerVerdict }
         return when {
-            before < 0 -> null
-            known != null -> known
-            depth >= builder.cleanupConfig.carry.maxCarryPages -> null
-            else -> quietTail(before, builder, cache, depth)
+            before < 0 -> HandOn.NONE
+            known != null -> HandOn(known.tail, complete = true)
+            depth >= builder.cleanupConfig.carry.maxCarryPages -> HandOn.CUT
+            else -> quietTail(before, builder, cache, depth, needsTable)
         }
     }
 
-    /** What [pageIndex] hands on, read quietly ([tailBefore]); null when it cannot be read that way. */
-    private fun quietTail(pageIndex: Int, builder: ReadingUnitBuilder, cache: PageCaches, depth: Int): PageTail? {
-        val read = analyzedPage(pageIndex, cache).getOrNull()?.let { read(it, builder, cache, quiet = true) }
-            ?: return null
-        val previous = if (cache.carry.opensWithTable(read.units)) {
-            tailBefore(pageIndex, builder, cache, depth + 1)
-        } else {
-            null
+    /** What [pageIndex] hands on, read quietly ([tailBefore]); kept only when complete. */
+    private fun quietTail(
+        pageIndex: Int,
+        builder: ReadingUnitBuilder,
+        cache: PageCaches,
+        depth: Int,
+        needsTable: Boolean,
+    ): HandOn {
+        val page = analyzedPage(pageIndex, cache)
+        val read = page.getOrNull()?.let { read(it, builder, cache, quiet = true) }
+        if (read == null) {
+            val reason = (page as? Outcome.Failure)?.error ?: "a scanned page not in the OCR cache"
+            AudoraLog.d(TAG, "Page before not read for what it hands on, $logContext page=$pageIndex: $reason")
+            return HandOn.CUT
         }
-        return cache.carry.tailOf(cache.carry.join(read.units, previous).units).also { cache.tails[pageIndex] = it }
+        val carry = cache.carry
+        val opens = opensWithTable(read.units)
+        val previous = if (needsTable && opens) {
+            tailBefore(pageIndex, builder, cache, depth + 1, needsTable = true)
+        } else {
+            HandOn.NONE
+        }
+        val tail = carry.tailOf(carry.join(read.units, previous.tail).units)
+        // Only a text-layer page reads quietly as it reads aloud: an OCR page's quiet reading is whatever is cached.
+        val complete = read.source == PageSource.TextLayer && (!opens || (needsTable && previous.complete))
+        if (complete) keep(pageIndex, tail, cache)
+        return HandOn(tail, complete)
+    }
+
+    private fun keep(pageIndex: Int, tail: PageTail, cache: PageCaches) {
+        cache.tails[pageIndex] = KnownTail(tail, textLayerVerdict)
     }
 
     /**
@@ -247,7 +286,13 @@ class PdfBook private constructor(
         val pageIndex = page.pageIndex
         val ocr = (if (textLayer == null) bookOcr.cachedOnly() else bookOcr) ?: return null
         val languages = languagesFor(builder)
-        val recognized = languages.forPage(pageIndex, routing.reason, page.quality.ocrLangs, ocr).flatMap { langs ->
+        val recognized = languages.forPage(
+            pageIndex,
+            routing.reason,
+            page.quality.ocrLangs,
+            ocr,
+            remember = textLayer != null,
+        ).flatMap { langs ->
             ocr.recognize(pageIndex, langs).map { text -> langs to text }
         }
         return when (recognized) {
@@ -368,7 +413,7 @@ class PdfBook private constructor(
         val profiles: MutableMap<Int, PageProfile> = lru(owner.cleanupConfig.profileCachePages)
 
         /** What each page read hands on to the next ([PageCarry]); a few bytes each. */
-        val tails: MutableMap<Int, PageTail> = lru(owner.cleanupConfig.profileCachePages)
+        val tails: MutableMap<Int, KnownTail> = lru(owner.cleanupConfig.profileCachePages)
         val carry = PageCarry(owner.cleanupConfig.carry)
     }
 
@@ -409,9 +454,31 @@ class PdfBook private constructor(
     }
 }
 
-/** Route, reason and the scorer's measurements, for the log (no text). */
-private fun cleanLabel(label: String): String? = label.filterNot { it.isISOControl() }.trim().ifEmpty { null }
+/**
+ * A printed page label as shown: control and format characters (zero-width spaces, byte-order and bidi marks) dropped,
+ * trimmed; null when nothing is left.
+ */
+private fun cleanLabel(label: String): String? =
+    label.filterNot { it.isISOControl() || Character.getType(it) == Character.FORMAT.toInt() }.trim().ifEmpty { null }
 
+/**
+ * What the page before hands on ([tail]) and whether it may be kept: [complete] when built from pages read as they
+ * read aloud, back to a page that needs nothing before it.
+ */
+private class HandOn(val tail: PageTail?, val complete: Boolean) {
+    companion object {
+        /** Nothing to hand on, for certain: the first page, or a page that takes nothing from the one before. */
+        val NONE = HandOn(null, complete = true)
+
+        /** Nothing known: the chain was cut (too long, or a page that could not be read quietly). */
+        val CUT = HandOn(null, complete = false)
+    }
+}
+
+/** A page's hand-on, kept with the text-layer verdict it was built under: a new verdict may change the page. */
+private class KnownTail(val tail: PageTail, val verdict: TextLayerVerdict)
+
+/** Route, reason and the scorer's measurements, for the log (no text). */
 private fun describe(quality: PageQuality): String = with(quality.signals) {
     "${quality.route} (${quality.reason}) letters=$letters indic=$indicLetters mapErrors=$unicodeMapErrorRate " +
         "invisible=$invisibleShare garbage=$garbageRate invalidIndic=$invalidIndicRate legacy=$legacyShare " +

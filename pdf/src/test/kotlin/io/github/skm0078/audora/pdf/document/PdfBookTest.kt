@@ -95,7 +95,7 @@ class PdfBookTest {
 
     @Test
     fun `page labels come from the open document, cleaned, and do not count as page reads`() {
-        val printed = listOf("i", " ii ", null, "", "A-\u00003", "12")
+        val printed = listOf("i", " ii ", null, "", "A-\u00003", "\u200B\uFEFF12\u200E")
         val engine = FakeEngine(pages = printed.size, labels = printed::get)
         val book = requireNotNull(PdfBook.open(engine).getOrNull())
         assertEquals(listOf("i", "ii", null, null, "A-3", "12"), book.pageLabels().getOrNull())
