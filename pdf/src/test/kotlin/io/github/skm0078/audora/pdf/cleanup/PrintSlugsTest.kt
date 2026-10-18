@@ -19,6 +19,7 @@ class PrintSlugsTest {
             "Cover 2 and 3.indd All Pages 22-Nov-2019 2:51:06 PM",
             "HUD3_25_09Single-Bengali-BE.indd UD3_25_09Single-Bengali-BE.indd Sec1:6 Sec1:6",
             "0_Prelims.indd 8 21-12-2019 12:00:11",
+            "HUD3_25_09Single-Bengali-BE.indd UD3_25_09Single-Bengali-BE.indd 9 9 5/13/11 /13/11 6:45 AM",
         )
         for (line in slugs) {
             assertEquals(line, true, PrintSlugs.standsAlone(line))
@@ -51,6 +52,7 @@ class PrintSlugsTest {
         assertEquals(setOf("5/13/11 6:45"), PrintSlugs.times("5/13/11, 6:45 AM"))
         assertEquals(setOf("5/13/11 6:45"), PrintSlugs.times("x 5/13/11  6:45:59 y"))
         assertEquals(setOf("22-Nov-2019 2:51"), PrintSlugs.times("22-Nov-2019 2:51:06 PM"))
+        assertEquals(setOf("5/13/11 6:45"), PrintSlugs.times("5/13/11 /13/11 6:45 AM 6:45 AM"))
         assertEquals(emptySet<String>(), PrintSlugs.times("Chemistry 16/03/2024"))
     }
 }

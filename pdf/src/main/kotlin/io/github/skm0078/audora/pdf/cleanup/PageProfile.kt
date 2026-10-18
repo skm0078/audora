@@ -57,12 +57,28 @@ internal data class MarginLine(
 )
 
 internal class PageProfiler(private val config: CleanupConfig) {
+    /**
+     * A printer's slug set outside the page ([PrintSlugs]) is no part of the text area: the lines at either edge that
+     * are slugs (at most [CleanupConfig.maxMarginLines], so an exam date sheet's rows of times stay its body) are left
+     * out of [PageProfile.extent] and take no margin slot of their own, so the band and the margin lines start at
+     * the page's own header or footer ("6" above "HUD3.indd Sec1:6" and "5/13/11 6:45 AM").
+     */
     fun profile(page: PageText, layout: PageLayout, indicOrder: IndicOrderEvidence): PageProfile {
         val lines = layout.blocks.flatMap { block -> block.paragraphs.flatMap { it.lines } }.filter { it.box != null }
-        val extent = lines.mapNotNull { it.box }.reduceOrNull(TextBox::union)
+        val isSlug = { line: TextLine ->
+            val text = spanTexts(page, line).joinToString(" ")
+            PrintSlugs.standsAlone(text) || PrintSlugs.times(text).isNotEmpty()
+        }
+        val byTop = lines.sortedByDescending { requireNotNull(it.box).top }
+        val byBottom = lines.sortedBy { requireNotNull(it.box).bottom }
         val k = config.maxMarginLines
-        val top = lines.sortedByDescending { requireNotNull(it.box).top }.take(k).map { marginLine(page, it) }
-        val bottom = lines.sortedBy { requireNotNull(it.box).bottom }.take(k).map { marginLine(page, it) }
+        val topSlugs = byTop.take(k).takeWhile(isSlug)
+        val bottomSlugs = byBottom.take(k).takeWhile(isSlug)
+        val slugs = (topSlugs + bottomSlugs).toSet()
+        val inner = lines.filter { it !in slugs }.ifEmpty { lines }
+        val extent = inner.mapNotNull { it.box }.reduceOrNull(TextBox::union)
+        val top = (topSlugs + byTop.filter { it in inner }.take(k)).distinct().map { marginLine(page, it) }
+        val bottom = (bottomSlugs + byBottom.filter { it in inner }.take(k)).distinct().map { marginLine(page, it) }
         val margin = (top + bottom).mapTo(HashSet()) { it.line }
         val body = lines.filter { it !in margin }.mapTo(HashSet()) { signature(spanTexts(page, it)).hashCode() }
         return PageProfile(page.pageIndex, extent, top, bottom, hyphenatedPairs(page.text), body, indicOrder)

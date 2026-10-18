@@ -27,11 +27,13 @@ internal object PrintSlugs {
 
     /**
      * Date (numbers, or a month's short name: "22-Nov-2019"), then the time to the minute, then its seconds if
-     * given. ASCII digits and spaces only, as typesetting software writes them (`\d` and `\s` would also take
-     * Devanagari digits and a no-break space on Android's ICU regex, not on the JVM).
+     * given; the clipped copy of the date some PDFs repeat may come between ("5/13/11 /13/11 6:45"). ASCII digits
+     * and spaces only, as typesetting software writes them (`\d` and `\s` would also take Devanagari digits and a
+     * no-break space on Android's ICU regex, not on the JVM).
      */
     private const val TIME =
-        """([0-9]{1,4}[/.-](?:[0-9]{1,2}|[A-Za-z]{3})[/.-][0-9]{2,4}),?[ \t]+([0-9]{1,2}:[0-9]{2})(:[0-9]{2})?"""
+        """([0-9]{1,4}[/.-](?:[0-9]{1,2}|[A-Za-z]{3})[/.-][0-9]{2,4}),?(?:[ \t]+/[0-9/]+)?[ \t]+""" +
+            """([0-9]{1,2}:[0-9]{2})(:[0-9]{2})?"""
 
     private val PRINT_TIME = Regex(TIME)
 
@@ -40,11 +42,12 @@ internal object PrintSlugs {
 
     /**
      * A layout program's file name ("ch04.qxd", "HUD3_25_09.indd") with nothing after it but page references and
-     * a print stamp ("Sec1:9", "All Pages", "71", "2/3/09 10:12 AM Page 62", the file's name again), so a body line
-     * that names a file ("Open Lesson01.indd and click") is no slug.
+     * a print stamp ("Sec1:9", "All Pages", "71", "2/3/09 10:12 AM Page 62", the file's name again, or the clipped
+     * copy of a date a PDF repeats: "5/13/11 /13/11"), so a body line that names a file ("Open Lesson01.indd and
+     * click") is no slug.
      */
     private val LAYOUT_FILE = Regex(
-        """\S\.(?i:indd|qxd|qxp)(?:[ \t]+(?:\S*\.(?i:indd|qxd|qxp)|[0-9][0-9/.:,-]*|""" +
+        """\S\.(?i:indd|qxd|qxp)(?:[ \t]+(?:\S*\.(?i:indd|qxd|qxp)|[0-9/][0-9/.:,-]*|""" +
             """[0-9]{1,4}[/.-][A-Za-z]{3}[/.-][0-9]{2,4}|(?i:[ap]\.?m\.?|page|pages|all|sec[0-9:]+)))*[ \t]*$""",
     )
 }
