@@ -71,3 +71,11 @@ nothing, for a scan). Measured on the S2 corpus with desktop Tesseract 5.3.4 and
 - **Known limits:** ~~running headers on OCR'd pages are read (only page numbers are dropped without positions); no
   rotation or orientation detection; no sentence highlight boxes on OCR'd pages~~ (fixed in ADR-032); the first page of a scanned book
   costs one extra low-resolution probe.
+- **Amendment (2026-10-18, reading-intelligence follow-up):** pages are binarized with Sauvola
+  (`thresholding_method=2`, `OcrConfig.threshold`) instead of Tesseract's default global Otsu, set through
+  `TessBaseAPI.setVariable` on the bundled Tesseract; no new library. On UDHR pages in English, Hindi and Bengali
+  degraded like phone photos it cut the character error under a lighting gradient from 12-19 % to 3-8 %, under
+  blur, noise and JPEG from 34-80 % to 3-8 %, and under a hard shadow from 45-49 % to 15-33 %. On the generated
+  300 dpi and degraded 200 dpi scans it stayed within half a point of Otsu (better on three of six), and on 19 pages
+  of six real scans the word count and mean confidence moved by at most 2, at the same speed. The method is part of
+  the OCR cache key (`TesseractEngine.cacheTag`).
