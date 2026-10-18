@@ -128,8 +128,48 @@ class PageCarryTest {
 
     @Test
     fun `a table with a header of its own is left as it is, on a first page too`() {
-        val own = page(head = listOf("No.", "Name", "Pay"), rows = listOf(listOf("1", "Asha", "37600")))
-        assertEquals(own, carry.join(own, null).units)
+        val cases = listOf(
+            "numbered" to (listOf("No.", "Name", "Pay") to listOf(listOf("1", "Asha", "37600"))),
+            "words over words and a phone number" to (
+                listOf("Name", "Designation", "Department", "Phone") to
+                    listOf(
+                        listOf("Asha Rao", "Clerk", "Stores", "2345678"),
+                        listOf("Ravi", "Peon", "Accounts", "2345690"),
+                    )
+                ),
+            "words over an age" to (
+                listOf("Name", "Age", "City", "State") to
+                    listOf(listOf("Ram", "34", "Pune", "MH"), listOf("Sita", "29", "Agra", "UP"))
+                ),
+            "Hindi" to
+                (listOf("नाम", "आयु", "शहर") to listOf(listOf("राम", "३४", "पुणे"), listOf("सीता", "२९", "आगरा"))),
+            "Bengali" to
+                (listOf("নাম", "বয়স", "শহর") to listOf(listOf("রাম", "৩৪", "পুনে"), listOf("সীতা", "২৯", "আগ্রা"))),
+            "two census years" to (
+                listOf("District", "2011", "2021") to
+                    listOf(listOf("Pune", "94,29,408", "1,04,12,000"), listOf("Agra", "44,18,797", "49,02,300"))
+                ),
+            "one year over larger figures" to
+                (listOf("State", "2020") to listOf(listOf("Goa", "15352"), listOf("Assam", "27500"))),
+        )
+        for ((name, table) in cases) {
+            val own = page(head = table.first, rows = table.second)
+            assertEquals(name, own, carry.join(own, null).units)
+        }
+    }
+
+    @Test
+    fun `an unnumbered first row written like the rows in every number column is data`() {
+        val headless = page(
+            head = listOf("Raj Kumar", "Stores", "37,600"),
+            rows = listOf(listOf("Ram Singh", "Accounts", "28,400"), listOf("Gita", "Stores", "31,250")),
+        )
+        assertEquals(listOf(null, 0, 1, 2), carry.join(headless, null).units.map { it.table!!.row })
+        val dashed = page(
+            head = listOf("New grant", "1,333", "-"),
+            rows = listOf(listOf("Old grant", "2,667", "4,000"), listOf("Loans", "1,200", "3,100")),
+        )
+        assertEquals(listOf(null, 0, 1, 2), carry.join(dashed, null).units.map { it.table!!.row })
     }
 
     @Test
