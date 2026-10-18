@@ -20,6 +20,7 @@ import io.github.skm0078.audora.core.config.VoiceDownloadConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
+import io.github.skm0078.audora.speech.voices.InstallGate
 import io.github.skm0078.audora.speech.voices.JobResult
 import io.github.skm0078.audora.speech.voices.ResumableDownloader
 import io.github.skm0078.audora.speech.voices.UrlConnectionHttpSource
@@ -59,6 +60,9 @@ class PunctuationModels private constructor(
     )
     private val installedState = MutableStateFlow<Boolean?>(null)
     private val lock = Any()
+
+    /** Installs and deletes under [lock]; a download started before a delete does not install. */
+    private val gate = InstallGate(lock)
     private var loaded: SherpaPunctuator? = null
     private var loadFailed = false
 
@@ -90,7 +94,7 @@ class PunctuationModels private constructor(
     /** Clears everything in any state, leftovers included. */
     suspend fun delete(): Outcome<Unit, String> = withContext(Dispatchers.IO) {
         workManager().cancelAndAwait(WORK_NAME, downloads.stopWaitMs)
-        synchronized(lock) {
+        gate.delete {
             loaded?.release()
             loaded = null
             loadFailed = false
@@ -116,6 +120,7 @@ class PunctuationModels private constructor(
                 refreshLocked()
             }
         },
+        gate = gate,
     )
 
     fun isInstalled(): Boolean = installedState.value ?: synchronized(lock) { refreshLocked() }

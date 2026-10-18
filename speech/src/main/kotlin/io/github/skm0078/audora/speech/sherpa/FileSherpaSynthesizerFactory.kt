@@ -42,7 +42,8 @@ class FileSherpaSynthesizerFactory(
                 ),
             )
         }
-        val cache = blends?.takeIf { spec.family == SherpaFamily.KOKORO }
+        // Only a blend, or a copy to clear, needs the blend lock; any other voice loads without waiting on a build.
+        val cache = blends?.takeIf { spec.family == SherpaFamily.KOKORO && (spec.blend != null || it.holds(spec.id)) }
         return if (cache == null) create(spec, dir, null) else loadKokoro(spec, dir, cache)
     }
 

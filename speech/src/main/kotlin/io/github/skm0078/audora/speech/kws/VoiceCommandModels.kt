@@ -20,6 +20,7 @@ import io.github.skm0078.audora.core.config.VoiceDownloadConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
+import io.github.skm0078.audora.speech.voices.InstallGate
 import io.github.skm0078.audora.speech.voices.JobResult
 import io.github.skm0078.audora.speech.voices.ResumableDownloader
 import io.github.skm0078.audora.speech.voices.UrlConnectionHttpSource
@@ -57,6 +58,9 @@ class VoiceCommandModels private constructor(context: Context, private val downl
     private val installedState = MutableStateFlow<Boolean?>(null)
     private val lock = Any()
 
+    /** Installs and deletes under [lock]; a download started before a delete does not install. */
+    private val gate = InstallGate(lock)
+
     /** A new spotter for one listening spell, which the caller releases; null with no model or a damaged one. */
     fun spotter(config: VoiceCommandConfig): CommandSpotter? = synchronized(lock) {
         if (isInstalled()) CommandSpotter.load(files.modelDir, model, config) else null
@@ -84,7 +88,7 @@ class VoiceCommandModels private constructor(context: Context, private val downl
      */
     suspend fun delete(): Outcome<Unit, String> = withContext(Dispatchers.IO) {
         workManager().cancelAndAwait(WORK_NAME, downloads.stopWaitMs)
-        synchronized(lock) { files.deleteAll().also { refreshLocked() } }
+        gate.delete { files.deleteAll().also { refreshLocked() } }
     }
 
     fun state(): Flow<OcrModelsState> {
@@ -103,6 +107,7 @@ class VoiceCommandModels private constructor(context: Context, private val downl
         downloader = ResumableDownloader(UrlConnectionHttpSource(downloads, USER_AGENT), downloads),
         config = downloads,
         onInstalled = { synchronized(lock) { refreshLocked() } },
+        gate = gate,
     )
 
     fun isInstalled(): Boolean = installedState.value ?: synchronized(lock) { refreshLocked() }

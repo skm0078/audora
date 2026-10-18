@@ -4,7 +4,6 @@
 package io.github.skm0078.audora.playback.book
 
 import android.content.Context
-import android.net.Uri
 import io.github.skm0078.audora.core.config.CleanupConfig
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
@@ -16,6 +15,7 @@ import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.pdfium.PdfiumEngine
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
+import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.ocr.BookOcr
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -53,7 +53,7 @@ class LibraryBookSource(
             OpenFailure(PlaybackErrorCode.BOOK_NOT_FOUND, "This book is no longer in the library"),
         )
         val cleanup = withContext(io) { textPreferences.cleanupConfig() }
-        val engine = PdfiumEngine.forUri(context, Uri.parse(book.documentUri))
+        val engine = PdfiumEngine.forUri(context, SharedPdfCopies.readableUri(context, book.documentUri))
         val logContext = "book=${id.logLabel}"
         val ocr = BookOcr.factory(context, book.documentUri, logContext)
         val opened = withContext(io) { PdfBook.open(engine, password, logContext = logContext, ocr = ocr) }

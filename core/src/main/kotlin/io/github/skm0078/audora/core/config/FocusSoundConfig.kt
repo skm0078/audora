@@ -8,8 +8,8 @@ package io.github.skm0078.audora.core.config
  * envelope above [voiceThreshold] of full scale, held [holdMs] across the gaps between words) the sound dips to
  * [duckedFraction] of its level, within [duckMs]; it comes back over [releaseMs] once the voice stops, so a pause
  * between sentences fills gently instead of pumping. Switching sounds fades out over [switchMs] and back in. When
- * the voice's audio ends (the book's end) the sound fades out over [tailMs] instead of stopping dead; after a gap of
- * [gapMs] or more with no audio (a slow render, a seek) it fades back in instead of returning at full level.
+ * the book's audio ends the sound fades out over [tailMs] instead of stopping dead; after a seek or a stall (a render
+ * that fell behind) it fades back in instead of returning at full level.
  */
 data class FocusSoundConfig(
     val maxGain: Float = DEFAULT_MAX_GAIN,
@@ -20,7 +20,6 @@ data class FocusSoundConfig(
     val releaseMs: Int = DEFAULT_RELEASE_MS,
     val switchMs: Int = DEFAULT_SWITCH_MS,
     val tailMs: Int = DEFAULT_TAIL_MS,
-    val gapMs: Int = DEFAULT_GAP_MS,
 ) {
     init {
         require(maxGain in 0f..1f) { "maxGain must be in 0..1, was $maxGain" }
@@ -28,7 +27,7 @@ data class FocusSoundConfig(
         require(voiceThreshold in 0f..1f) { "voiceThreshold must be in 0..1, was $voiceThreshold" }
         require(holdMs >= 0) { "holdMs must be >= 0, was $holdMs" }
         require(minOf(duckMs, releaseMs, switchMs) > 0) { "fade times must be > 0: $duckMs, $releaseMs, $switchMs" }
-        require(tailMs >= 0 && gapMs > 0) { "tailMs must be >= 0 and gapMs > 0, were $tailMs and $gapMs" }
+        require(tailMs >= 0) { "tailMs must be >= 0, was $tailMs" }
     }
 
     companion object {
@@ -40,6 +39,5 @@ data class FocusSoundConfig(
         const val DEFAULT_RELEASE_MS = 700
         const val DEFAULT_SWITCH_MS = 500
         const val DEFAULT_TAIL_MS = 600
-        const val DEFAULT_GAP_MS = 400
     }
 }

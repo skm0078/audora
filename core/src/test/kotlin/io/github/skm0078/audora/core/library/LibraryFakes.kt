@@ -14,11 +14,14 @@ import kotlinx.coroutines.flow.map
 class FakeBookStore : BookStore {
     private val books = MutableStateFlow<Map<BookId, Book>>(emptyMap())
     var failWrites = false
+    var failReads = false
 
     val all: List<Book> get() = books.value.values.toList()
 
-    override fun observeAll(): Flow<List<Book>> =
-        books.map { map -> map.values.sortedByDescending(Book::recentAtMillis) }
+    override fun observeAll(): Flow<List<Book>> = books.map { map ->
+        if (failReads) error("database unreadable")
+        map.values.sortedByDescending(Book::recentAtMillis)
+    }
 
     override suspend fun byId(id: BookId): Book? = books.value[id]
 

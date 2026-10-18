@@ -6,6 +6,7 @@ package io.github.skm0078.audora.core.library
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -32,6 +33,7 @@ class Library(
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val changes = Mutex()
+    private val pruned = AtomicBoolean(false)
     private val scanner = DocumentScanner(documents, fingerprinter)
     private val placement = BookPlacement(store, documents, clock, newId)
 
@@ -87,10 +89,12 @@ class Library(
     }
 
     /**
-     * Once per start: deletes Audora's own copies of shared PDFs that no book uses (left by a crash between copying
-     * and adding). Under the lock, so no add or remove changes the books meanwhile; unreadable books skip it (logged).
+     * Once per process (later calls, from a recreated activity, do nothing): deletes Audora's own copies of shared
+     * PDFs that no book uses (left by a crash between copying and adding). Under the lock, so no add or remove changes
+     * the books meanwhile; unreadable books skip it (logged).
      */
     suspend fun pruneDocuments(): Unit = changes.withLock {
+        if (!pruned.compareAndSet(false, true)) return@withLock
         withContext(io) {
             val books = store.observeAll()
                 .catch { e -> AudoraLog.w(TAG, "Books could not be read; unused copies are kept this time", e) }

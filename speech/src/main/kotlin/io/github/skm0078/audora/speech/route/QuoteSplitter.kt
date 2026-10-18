@@ -30,6 +30,9 @@ class QuoteSplitter(private val config: DialogueConfig = DialogueConfig()) {
         return merged(parts)
     }
 
+    /** Whether [text] starts with an opening quote mark: a new paragraph that reopens a speech, as books print it. */
+    fun opensWithQuote(text: String): Boolean = text.trimStart().firstOrNull()?.let { it in OPENERS } == true
+
     /** Whether a quote is still open at the end of [text]: the next sentence of the paragraph starts inside it. */
     fun endsInQuote(text: String, startsInQuote: Boolean = false): Boolean = scan(text, startsInQuote).open
 

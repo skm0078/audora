@@ -4,7 +4,6 @@
 package io.github.skm0078.audora.playback.browse
 
 import android.content.Context
-import android.net.Uri
 import io.github.skm0078.audora.core.config.BrowseConfig
 import io.github.skm0078.audora.core.config.ExtractionConfig
 import io.github.skm0078.audora.core.library.Book
@@ -12,6 +11,7 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PdfBook
 import io.github.skm0078.audora.pdf.pdfium.PdfiumEngine
+import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -44,7 +44,11 @@ class OutlineChapters(
     /** Null when the book could not be read; logged with its context only. */
     private fun read(book: Book): List<BookChapter>? {
         val logContext = "book=${book.id.logLabel}"
-        val engine = PdfiumEngine.forUri(appContext, Uri.parse(book.documentUri), extraction)
+        val engine = PdfiumEngine.forUri(
+            appContext,
+            SharedPdfCopies.readableUri(appContext, book.documentUri),
+            extraction,
+        )
         return when (val opened = PdfBook.open(engine, config = extraction, logContext = logContext)) {
             is Outcome.Failure -> {
                 AudoraLog.w(TAG, "No chapters to browse, $logContext: ${opened.error}")

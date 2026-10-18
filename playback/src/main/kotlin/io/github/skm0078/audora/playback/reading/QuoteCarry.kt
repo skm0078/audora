@@ -92,7 +92,9 @@ class QuoteCarry(
         units.forEachIndexed { i, unit ->
             val previous = units.getOrNull(i - 1)
             val same = if (previous == null) continuesSentence else sameParagraph(previous, unit)
-            if (!same || paragraphs.isEmpty()) paragraphs.add(mutableListOf<Sentence>() to (open && !same))
+            // A speech goes on into a new paragraph only when that paragraph reopens the quote, as printed books do.
+            val goesOn = open && !same && splitter.opensWithQuote(unit.text)
+            if (!same || paragraphs.isEmpty()) paragraphs.add(mutableListOf<Sentence>() to goesOn)
             paragraphs.last().first.add(Sentence(unit, open && same))
             open = unit.kind in PROSE && splitter.endsInQuote(unit.text, open && same)
         }

@@ -243,6 +243,28 @@ class LibraryTest {
     }
 
     @Test
+    fun `pruning runs once per process, so a recreated screen does not prune again`() = runTest(dispatcher) {
+        docs.put(URI_A, "a.pdf", pdfBytes("a"))
+        addOk(URI_A)
+
+        library.pruneDocuments()
+        library.pruneDocuments()
+
+        assertEquals(1, docs.pruned.size)
+    }
+
+    @Test
+    fun `when the books cannot be read nothing is pruned`() = runTest(dispatcher) {
+        docs.put(URI_A, "a.pdf", pdfBytes("a"))
+        addOk(URI_A)
+        store.failReads = true
+
+        library.pruneDocuments()
+
+        assertTrue(docs.pruned.isEmpty())
+    }
+
+    @Test
     fun `an unknown size still fingerprints and records -1`() = runTest(dispatcher) {
         docs.docs[URI_A] = FakeDocuments.Doc("a.pdf", pdfBytes("a"), reportsSize = false)
 

@@ -6,6 +6,7 @@ package io.github.skm0078.audora.speech.punct
 import io.github.skm0078.audora.core.config.VoiceDownloadConfig
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.voices.FakeHttpSource
+import io.github.skm0078.audora.speech.voices.InstallGate
 import io.github.skm0078.audora.speech.voices.JobResult
 import io.github.skm0078.audora.speech.voices.ResumableDownloader
 import io.github.skm0078.audora.speech.voices.ZipModelDownloadJob
@@ -116,6 +117,47 @@ class PunctuationDownloadTest {
         assertEquals(1, installed)
         assertEquals(JobResult.Installed, job.run(2, { _, _ -> }, { true }))
         assertEquals(listOf(0L, 500L), server.offsets)
+    }
+
+    @Test
+    fun `a delete while the model downloads keeps it from installing, a later download installs`() {
+        val model = modelFor(goodZip)
+        val files = filesFor(model)
+        val gate = InstallGate()
+        var installed = 0
+        val job = ZipModelDownloadJob(
+            model,
+            files,
+            ResumableDownloader(FakeHttpSource(goodZip), config) { Long.MAX_VALUE },
+            config,
+            gate,
+        ) { installed++ }
+        var deletes = 0
+        val deleteOnce = { _: Long, _: Long -> if (deletes++ == 0) gate.delete {} }
+
+        assertTrue(job.run(0, deleteOnce, { true }) is JobResult.Failed)
+        assertFalse(files.isInstalled())
+        assertEquals(0, installed)
+        assertEquals(JobResult.Installed, job.run(1, { _, _ -> }, { true }))
+        assertEquals(1, installed)
+    }
+
+    @Test
+    fun `a download stopped before it installs installs nothing`() {
+        val model = modelFor(goodZip)
+        val files = filesFor(model)
+        var downloading = true
+        val job = ZipModelDownloadJob(
+            model,
+            files,
+            ResumableDownloader(FakeHttpSource(goodZip), config) { Long.MAX_VALUE },
+            config,
+        ) {}
+        val stopAtTheEnd = { bytes: Long, total: Long -> if (bytes == total) downloading = false }
+
+        job.run(0, stopAtTheEnd, { downloading })
+
+        assertFalse(files.isInstalled())
     }
 
     @Test

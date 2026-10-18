@@ -11,6 +11,7 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import java.io.File
 import java.io.IOException
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -37,10 +38,18 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
         return File(File(dir, folder), name)
     }
 
+    /**
+     * The URI to read a book from: for a copy, its file in today's folder (a restored URI names another phone's or
+     * user's path); any other URI as it is.
+     */
+    fun readable(uri: Uri): Uri = if (owns(uri)) Uri.fromFile(fileOf(uri)) else uri
+
     /** Copies [documentUri] and returns the copy's URI, or null (logged) if it could not be read or is too big. */
     suspend fun copy(documentUri: String): String? = withContext(Dispatchers.IO) {
         val source = Uri.parse(documentUri)
-        val target = File(File(dir, UUID.randomUUID().toString()), safeName(displayName(source)))
+        val folder = UUID.randomUUID().toString()
+        MADE_HERE += folder // before the folder exists, so a prune running meanwhile never takes it
+        val target = File(File(dir, folder), safeName(displayName(source)))
         try {
             target.parentFile?.mkdirs()
             val input = resolver.openInputStream(source) ?: throw IOException("provider returned no stream")
@@ -57,12 +66,18 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
 
     /**
      * Deletes every copy folder no book in [inUse] (every book's URI) points at, when nothing in it was written since
-     * this process started: a copy being added right now is newer, so it is never taken. Call under the library's
-     * lock (`Library.pruneDocuments`).
+     * this process started and this process did not make it: a copy being added right now is never taken, even after
+     * a clock change. Call under the library's lock (`Library.pruneDocuments`). Never throws: a folder that cannot be
+     * read or deleted is logged and kept.
      */
     fun prune(inUse: Set<String>) {
-        val kept = inUse.mapNotNullTo(HashSet()) { folderOf(Uri.parse(it)) }
-        val stray = strayCopyFolders(dir, kept, cutoffMillis = STARTED_AT_MILLIS - PRUNE_GRACE_MS)
+        val kept = inUse.mapNotNullTo(HashSet()) { folderOf(Uri.parse(it)) } + MADE_HERE
+        val stray = try {
+            strayCopyFolders(dir, kept, cutoffMillis = STARTED_AT_MILLIS - PRUNE_GRACE_MS)
+        } catch (e: SecurityException) {
+            AudoraLog.w(TAG, "Shared copies could not be listed; none pruned", e)
+            emptyList()
+        }
         val failed = stray.count { !it.deleteRecursively() }
         if (stray.isNotEmpty()) AudoraLog.i(TAG, "Pruned unused shared copies: ${stray.size - failed} of ${stray.size}")
         if (failed > 0) AudoraLog.w(TAG, "$failed unused shared copies could not be deleted")
@@ -100,23 +115,33 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
         null
     }
 
-    private companion object {
-        const val TAG = "Audora.SharedPdf"
-        const val DEFAULT_NAME = "Shared PDF.pdf"
-        const val MAX_NAME_CHARS = 120
+    companion object {
+        /**
+         * The URI every opener reads [documentUri] from (PDF engine, stream, cover): a shared copy mapped into today's
+         * folder ([readable]).
+         */
+        fun readableUri(context: Context, documentUri: String): Uri =
+            SharedPdfCopies(context).readable(Uri.parse(documentUri))
+
+        private const val TAG = "Audora.SharedPdf"
+        private const val DEFAULT_NAME = "Shared PDF.pdf"
+        private const val MAX_NAME_CHARS = 120
 
         /** Larger than any book in the test corpus (41 MB) by far; guards the phone's storage against a bad share. */
-        const val DEFAULT_MAX_BYTES = 512L * 1024 * 1024
+        private const val DEFAULT_MAX_BYTES = 512L * 1024 * 1024
 
         /** File times may be kept to the second; a copy written in the second the process started is still new. */
-        const val PRUNE_GRACE_MS = 2_000L
+        private const val PRUNE_GRACE_MS = 2_000L
 
         /** Set when the class is first used, before any copy of this process is made. */
-        val STARTED_AT_MILLIS = System.currentTimeMillis()
+        private val STARTED_AT_MILLIS = System.currentTimeMillis()
 
-        val UNSAFE = Regex("""[/\\:*?"<>|\u0000-\u001f]""")
+        /** Copy folders this process made: never pruned, whatever their file times say. */
+        private val MADE_HERE: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
-        fun safeName(name: String?): String {
+        private val UNSAFE = Regex("""[/\\:*?"<>|\u0000-\u001f]""")
+
+        private fun safeName(name: String?): String {
             val cleaned = name?.replace(UNSAFE, "_")?.trim()?.take(MAX_NAME_CHARS)
             return if (cleaned.isNullOrBlank() || cleaned.startsWith(".")) DEFAULT_NAME else cleaned
         }
