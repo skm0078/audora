@@ -11,10 +11,12 @@ package io.github.skm0078.audora.core.config
  * @property minBrokenWords a page ends inside a sentence only when its last sentence has at least this many words
  *   (a page number, running footer or print slug kept at its foot has fewer).
  * @property fullLineShare in a script without capitals, a page ends inside a paragraph only when its last line
- *   reaches the column's right edge, to within (1 − this share) of the column's width (a paragraph's last line stops
- *   short)
+ *   reaches the column's usual right edge (the median of its other lines', so ragged-right text counts), to within
+ *   (1 − this share) of the column's width (a paragraph's last line stops short)
  * @property maxIndentEm and the next page's first line starts within this many line heights of the paragraph's
  *   other lines (a new paragraph is indented).
+ * @property minColumnLines and both are judged only against at least this many other lines of the column; with
+ *   fewer, a line would be measured against itself, and nothing is carried.
  * @property maxCarryPages a page read out of order works out what the pages before it hand on, one after another,
  *   at most this far back (a table running over more pages numbers its rows from that far back only).
  */
@@ -24,6 +26,7 @@ data class PageCarryConfig(
     val minBrokenWords: Int = 3,
     val fullLineShare: Float = 0.9f,
     val maxIndentEm: Float = 0.5f,
+    val minColumnLines: Int = 2,
     val maxCarryPages: Int = 10,
 ) {
     init {
@@ -31,6 +34,7 @@ data class PageCarryConfig(
         require(minRowFormatShare in 0f..1f && fullLineShare in 0f..1f) { "carry shares must be in 0..1" }
         require(minBrokenWords >= 1) { "minBrokenWords must be >= 1, was $minBrokenWords" }
         require(maxIndentEm >= 0f) { "maxIndentEm must be >= 0, was $maxIndentEm" }
+        require(minColumnLines >= 1) { "minColumnLines must be >= 1, was $minColumnLines" }
         require(maxCarryPages >= 0) { "maxCarryPages must be >= 0, was $maxCarryPages" }
     }
 }

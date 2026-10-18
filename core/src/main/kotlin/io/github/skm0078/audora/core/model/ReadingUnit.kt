@@ -7,7 +7,8 @@ package io.github.skm0078.audora.core.model
  * @property page zero-based page index in the document.
  * @property index sentence index within the page. Display only, NOT the resume key (that is [charStart]).
  * @property charStart start offset (inclusive) into the page's reading-order text (layout output, ADR-018). Units
- *   of a page ascend by [charStart] in reading order and do not overlap.
+ *   of a page do not decrease by [charStart] in reading order and do not overlap; a unit of no length (a continued
+ *   table's "Table continues" summary, [charEnd] == [charStart]) shares its start with the unit after it.
  * @property charEnd end offset (exclusive) into the same text.
  * @property text the extracted text, whitespace collapsed. What the reader shows and resume fingerprints hash; the
  *   voice gets it normalized at render time (ADR-019).

@@ -10,6 +10,7 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.TableRowInfo
 import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.core.model.UnitKind
+import io.github.skm0078.audora.pdf.layout.TextTurn
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -126,6 +127,52 @@ class PageCarryTest {
     }
 
     @Test
+    fun `years in rows, a salary like a year, ID columns and an empty column are data, not a header`() {
+        fun carried(before: List<List<String>>, head: List<String>, next: List<List<String>>, columns: List<String>) =
+            carry.join(page(head = head, rows = next), carry.tailOf(page(head = columns, rows = before))).table
+        val perYear = listOf("Year", "Receipts", "Spending")
+        assertEquals(
+            TableCarry.DATA_FIRST,
+            carried(
+                listOf(listOf("2016-17", "120", "130"), listOf("2017-18", "140", "150")),
+                listOf("2018-19", "160", "170"),
+                listOf(listOf("2019-20", "180", "190")),
+                perYear,
+            ),
+        )
+        val staff = listOf("Name", "Dept", "Salary")
+        assertEquals(
+            TableCarry.DATA_FIRST,
+            carried(
+                listOf(listOf("Ram", "Stores", "28400"), listOf("Sita", "Accounts", "31200")),
+                listOf("Mohan", "Stores", "2000"),
+                listOf(listOf("Gita", "Accounts", "29900")),
+                staff,
+            ),
+        )
+        val ids = listOf("ID", "Name", "Ward")
+        assertEquals(
+            TableCarry.DATA_FIRST,
+            carried(
+                listOf(listOf("12345", "Ram", "A"), listOf("678", "Sita", "B")),
+                listOf("1999", "Mohan", "C"),
+                listOf(listOf("40213", "Gita", "D")),
+                ids,
+            ),
+        )
+        // A year in a column empty on every other row says nothing.
+        val empty = page(head = listOf("Paper", "2010"), rows = listOf(listOf("Pens", ""), listOf("Ink", "")))
+        assertFalse(namesYears(empty.first(), empty.drop(1)))
+    }
+
+    @Test
+    fun `a header of years over four-figure data opens a new table, not a continued one`() {
+        val before = page(head = listOf("State", "Funds", "Spent"), rows = listOf(listOf("Assam", "4599", "5131")))
+        val next = page(head = listOf("State", "2019", "2020"), rows = listOf(listOf("Goa", "5352", "7506")))
+        assertEquals(next, carry.join(next, carry.tailOf(before)).units)
+    }
+
+    @Test
     fun `a caption that does not say the table continues opens a new table`() {
         val rest = listOf(listOf("3", "Mohan", "6100"), listOf("4", "Gita", "7200"))
         val captioned =
@@ -198,24 +245,59 @@ class PageCarryTest {
         assertNull(carry.tailOf(ended).openSentence)
     }
 
-    /** A Hindi page of one sentence over [lines], each a line's left and right edge. */
-    private fun hindi(text: String, lines: List<Pair<Float, Float>>): List<ReadingUnit> {
+    /**
+     * A Hindi page of one sentence over [lines], each a line's left and right edge as read; [sideways]: printed
+     * running up the page (a /Rotate scan), so its boxes in page space are turned a quarter.
+     */
+    private fun hindi(text: String, lines: List<Pair<Float, Float>>, sideways: Boolean = false): List<ReadingUnit> {
         val bounds = lines.mapIndexed { i, (left, right) ->
-            TextBox(left, LINE_TOP - i * LINE_PITCH, right, LINE_TOP - i * LINE_PITCH - LINE_HEIGHT)
+            val upright = TextBox(left, LINE_TOP - i * LINE_PITCH, right, LINE_TOP - i * LINE_PITCH - LINE_HEIGHT)
+            if (sideways) TextTurn.COUNTER_CLOCKWISE.apply(upright) else upright
         }
         return listOf(ReadingUnit(PAGE, 0, 0, text.length, text, Lang.HI, PAUSE, bounds, UnitKind.BODY))
     }
 
     @Test
     fun `in Hindi a page continues the sentence only when the layout agrees`() {
-        val full = listOf(MARGIN to RIGHT, MARGIN to RIGHT)
-        val before = hindi("वह बोला कि हम फिर मिलेंगे जब", full)
-        val after = hindi("बारिश आएगी। फिर वह चला गया और नहीं लौटा।", full)
+        val full = List(3) { MARGIN to RIGHT }
+        val broken = "वह बोला कि हम फिर मिलेंगे जब"
+        val rest = "बारिश आएगी। फिर वह चला गया और नहीं लौटा।"
+        val before = hindi(broken, full)
+        val after = hindi(rest, full)
         assertTrue(carry.join(after, carry.tailOf(before)).continuesPreviousPage)
-        val indented = hindi("बारिश आएगी। फिर वह चला गया और नहीं लौटा।", listOf(INDENT to RIGHT, MARGIN to RIGHT))
+        val indented = hindi(rest, listOf(INDENT to RIGHT) + List(2) { MARGIN to RIGHT })
         assertFalse(carry.join(indented, carry.tailOf(before)).continuesPreviousPage)
-        val shortLast = hindi("वह बोला कि हम फिर मिलेंगे जब", listOf(MARGIN to RIGHT, MARGIN to SHORT))
+        val shortLast = hindi(broken, List(2) { MARGIN to RIGHT } + (MARGIN to SHORT))
         assertFalse(carry.join(after, carry.tailOf(shortLast)).continuesPreviousPage)
+        // Ragged right: the last line reaches the lines' usual edge, not the longest one.
+        val ragged = hindi(broken, listOf(MARGIN to RIGHT + RAGGED, MARGIN to RIGHT, MARGIN to RIGHT - 2))
+        assertTrue(carry.join(after, carry.tailOf(ragged)).continuesPreviousPage)
+    }
+
+    @Test
+    fun `in Hindi the layout is read upright, needs other lines, and decides whatever the next page opens with`() {
+        val broken = "वह बोला कि हम फिर मिलेंगे जब"
+        val rest = "बारिश आएगी। फिर वह चला गया और नहीं लौटा।"
+        val full = List(3) { MARGIN to RIGHT }
+        val sideways = carry.join(
+            hindi(rest, full, sideways = true),
+            carry.tailOf(hindi(broken, full, sideways = true)),
+        )
+        assertTrue(sideways.continuesPreviousPage)
+        // A sentence alone in its column is measured against nothing.
+        assertFalse(
+            carry.join(hindi(rest, full), carry.tailOf(hindi(broken, listOf(MARGIN to RIGHT)))).continuesPreviousPage,
+        )
+        // A Hindi sentence may go on with an acronym or a number.
+        for (opening in listOf("RBI ने कहा कि दरें नहीं बदलेंगी।", "2019 में यह कानून बना था।", "में 40 से कम था।")) {
+            assertTrue(
+                opening,
+                carry.join(hindi(opening, full), carry.tailOf(hindi(broken, full))).continuesPreviousPage,
+            )
+        }
+        // But a page opening with an item's number starts a new item.
+        val item = hindi("2 समुदाय भर में स्वच्छता बनी रहे।", full)
+        assertFalse(carry.join(item, carry.tailOf(hindi(broken, full))).continuesPreviousPage)
     }
 
     private companion object {
@@ -226,6 +308,7 @@ class PageCarryTest {
         const val INDENT = 80f
         const val RIGHT = 550f
         const val SHORT = 250f
+        const val RAGGED = 40f
         const val PAGE = 7
         const val PAUSE = 300
     }

@@ -6,17 +6,18 @@ package io.github.skm0078.audora.pdf.units
 import io.github.skm0078.audora.core.config.PageCarryConfig
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.TableRowInfo
-import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.core.model.UnitKind
 
 /**
  * What a page hands on to the next ([PageCarry.tailOf]): the table it ends with, if any, whether it ends inside a
- * sentence of body text, a list item or an aside, and whether that sentence's last line runs the full width.
+ * sentence of body text, a list item or an aside, whether that sentence's last line runs the full width, and whether
+ * it is written in a script without capitals ([caseless]: Devanagari, Bengali).
  */
 class PageTail internal constructor(
     internal val table: TableTail?,
     internal val openSentence: UnitKind?,
     internal val endsFullLine: Boolean,
+    internal val caseless: Boolean = false,
 )
 
 /**
@@ -54,15 +55,20 @@ internal class JoinedPage(val units: List<ReadingUnit>, val continuesPreviousPag
  *   neither starts a new table as before.
  * - **A sentence carried on.** The page before ends inside a sentence of body text, a list item or an aside (no
  *   full stop, question mark, exclamation or danda at its end) and this page opens with the same kind, lower case.
- *   In a script without capitals (Devanagari, Bengali) the page layout must agree: the sentence's last line runs the
- *   full width and this page's first line is not indented. The page then continues the paragraph, so a quote opened
+ *   When either is in a script without capitals (Devanagari, Bengali), the page layout decides instead, in the
+ *   page's reading frame ([readingTurn]) and against at least `PageCarryConfig.minColumnLines` other lines of the
+ *   column: the sentence's last line reaches the column's usual right edge and this page's first line is not
+ *   indented. The page then continues the paragraph, so a quote opened
  *   before the break is still open ([JoinedPage.continuesPreviousPage], plan item 7).
  *
  * Units keep their spans and text; only table info and one unit's kind change, and the continued summary of a page
- * opening with data is a unit of no length at the first row's start (later units' indexes move up by one), so
- * resume anchors stay valid and land on the summary.
+ * opening with data is a unit of no length at the first row's start (later units' indexes move up by one). So an
+ * anchor saved on that row stays valid; playback counts the summary as one character long (`spokenEnd`), so resuming
+ * at the row plays "Table continues" first.
  */
 internal class PageCarry(private val config: PageCarryConfig) {
+    private val cue = ColumnCue(config)
+
     /** What [units] (one page, in reading order, already joined to its page before) hand on to the next page. */
     fun tailOf(units: List<ReadingUnit>): PageTail {
         val last = units.lastOrNull { it.kind !in TRAILING }
@@ -71,7 +77,8 @@ internal class PageCarry(private val config: PageCarryConfig) {
             TableTail(info.columnCount, headers, info.rowsBefore + info.rowCount, serialOf(last))
         }
         val open = last?.takeIf { it.kind in PROSE && breaksOff(it.text) }
-        return PageTail(table, open?.kind, open != null && endsFullLine(units, open, config.fullLineShare))
+        val caseless = open?.text?.lastOrNull { it.isLetter() }?.let { !it.isUpperCase() && !it.isLowerCase() } == true
+        return PageTail(table, open?.kind, open != null && cue.endsFullLine(units, open), caseless)
     }
 
     /** [units] (one page) joined to [previous], the tail of the page before; unchanged without one. */
@@ -201,15 +208,20 @@ internal class PageCarry(private val config: PageCarryConfig) {
     }
 
     /**
-     * [first], the first unit of [page], opens like the rest of a sentence: with a small letter; in a script without
-     * capitals, when the sentence before ran to the full width and [first]'s first line is not indented.
+     * [first], the first unit of [page], opens like the rest of a sentence: with a small letter. When the sentence
+     * before is in a script without capitals (or [first] is), the layout decides instead, whatever [first] opens with
+     * (a Hindi sentence may go on with "RBI" or "2019"): the sentence before ran to the full width and [first]'s first
+     * line is not indented. A page opening with an item's number ("2 ", "3.", "(4)") opens a new item.
      */
     private fun carriesOn(page: List<ReadingUnit>, first: ReadingUnit, previous: PageTail): Boolean {
         val letter = first.text.firstOrNull { it.isLetterOrDigit() } ?: return false
         return when {
-            letter.isDigit() || letter.isUpperCase() || letter.isTitleCase() -> false
-            letter.isLowerCase() -> true
-            else -> previous.endsFullLine && !isIndented(page, first, config.maxIndentEm)
+            ITEM_NUMBER.containsMatchIn(first.text) -> false
+
+            previous.caseless || !(letter.isDigit() || letter.isUpperCase() || letter.isLowerCase()) ->
+                previous.endsFullLine && !cue.isIndented(page, first)
+
+            else -> letter.isLowerCase()
         }
     }
 
@@ -221,34 +233,16 @@ internal class PageCarry(private val config: PageCarryConfig) {
         const val CLOSERS = "\"'’”»)]"
         const val RUN_ON = ",;-–—"
 
+        /**
+         * A list or section number of one or two digits opening the text: "2 समुदाय", "3.", "(4)". Only punctuation and
+         * spaces may come before it (`\W` would also pass over Devanagari and Bengali words, which are not ASCII).
+         */
+        val ITEM_NUMBER = Regex("""^[\p{P}\s]*\p{Nd}{1,2}[.)]?(\s|$)""")
+
         /** A caption over the rest of a table: "Table 2 (contd.)", "(continued)", "जारी", "क्रमशः", "ক্রমশ". */
         val CONTINUED_CAPTION = Regex("""(?i)\b(contd|cont'd|continued)\b|जारी|क्रमश|ক্রমশ""")
     }
 }
-
-/**
- * [unit]'s first line starts more than [maxIndentEm] line heights in from the left edge of the prose lines on [page]
- * under or over it (its column); true when it has no box.
- */
-private fun isIndented(page: List<ReadingUnit>, unit: ReadingUnit, maxIndentEm: Float): Boolean {
-    val first = unit.bounds?.firstOrNull() ?: return true
-    return first.left - columnLines(page, first).minOf { it.left } > first.height * maxIndentEm
-}
-
-/**
- * [open]'s last line reaches the right edge of the prose lines on [page] in its column, to within (1 − [share]) of
- * the widest one; false when it has no box. Its box covers the sentence only, so it is its right end that counts.
- */
-private fun endsFullLine(page: List<ReadingUnit>, open: ReadingUnit, share: Float): Boolean {
-    val last = open.bounds?.lastOrNull() ?: return false
-    val column = columnLines(page, last)
-    return last.right >= column.maxOf { it.right } - column.maxOf { it.width } * (1f - share)
-}
-
-/** The boxes of the prose lines on [page] that share some width with [line], [line] included. */
-private fun columnLines(page: List<ReadingUnit>, line: TextBox): List<TextBox> =
-    page.filter { it.kind in PROSE }.flatMap { it.bounds.orEmpty() }
-        .filter { minOf(it.right, line.right) > maxOf(it.left, line.left) } + line
 
 /**
  * Whether [units] (one page) open with a table, after captions: only then does what the page hands on depend on the
@@ -262,7 +256,7 @@ internal fun opensWithProse(units: List<ReadingUnit>): Boolean =
     units.firstOrNull { it.kind != UnitKind.CAPTION }?.kind in PROSE
 
 /** Kinds a sentence runs on in over a page break. */
-private val PROSE = setOf(UnitKind.BODY, UnitKind.LIST_ITEM, UnitKind.ASIDE)
+internal val PROSE = setOf(UnitKind.BODY, UnitKind.LIST_ITEM, UnitKind.ASIDE)
 
 private fun TableRowInfo.carried(row: Int, tail: TableTail): TableRowInfo = copy(
     row = row,

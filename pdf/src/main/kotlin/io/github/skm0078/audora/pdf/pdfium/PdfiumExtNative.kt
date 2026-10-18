@@ -20,9 +20,14 @@ internal object PdfiumExtNative {
     @JvmStatic
     external fun nativeReadPage(pagePtr: Long, textPagePtr: Long, maxFormDepth: Int): Array<Any?>
 
+    /** Whether the loaded libpdfium.so can read page labels (FPDF_GetPageLabel is optional). */
+    @JvmStatic
+    external fun nativeHasPageLabels(): Boolean
+
     /**
      * The page's label from the document's page labels; null when it has none, libpdfium.so cannot read labels,
-     * or the label is damaged. Caller holds PdfiumAndroidKt's lock and keeps the document open for the call.
+     * or it cannot be read; empty when it is too long to be a label (a damaged label tree). Caller holds
+     * PdfiumAndroidKt's lock and keeps the document open for the call.
      */
     @JvmStatic
     external fun nativePageLabel(documentPtr: Long, pageIndex: Int): String?
