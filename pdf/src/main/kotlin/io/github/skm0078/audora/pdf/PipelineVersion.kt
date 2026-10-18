@@ -52,6 +52,8 @@ package io.github.skm0078.audora.pdf
  *     English titles, Latin abbreviations, capital initials and references before a number no longer end a sentence
  *     ("Dr. Rao", "e.g. Apples", "Abbott B. P.", "Eq. (A1)"); list items opened by "b.", "iv.", "ii)", "(A)",
  *     "B)" or "(IV)"; a corresponding author's block at a column's foot (short small lines with the page's only
- *     e-mail address) tagged as a footnote.
+ *     e-mail address) tagged as a footnote;
+ *     printer's slugs in a page's margin dropped (a layout file's name, a print time with seconds, or one another
+ *     page's margin shares to the minute).
  */
 const val PIPELINE_VERSION: Int = 11
