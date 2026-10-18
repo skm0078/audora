@@ -62,13 +62,29 @@ class OcrClutterTest {
 
     @Test
     fun `a printer's slug at the foot goes, the same words in the body stay`() {
-        val slugs =
-            listOf("HUD3_25_09Single-Bengali-BE.indd Sec1:9", "ch04.qxd 2/3/09 10:12 AM Page 62", "5/13/11 6:45 AM")
+        val slugs = listOf("HUD3_25_09Single-Bengali-BE.indd Sec1:9", "ch04.qxd 2/3/09 10:12 AM Page 62")
         for (slug in slugs) {
             assertEquals(slug, setOf(2), clutter.droppedLines(page(*body, slug to 0.96f), strips()))
         }
+        // A print date and time alone is a slug only when a neighbour's strip carries one too.
+        val printed = strips(1 to OcrMargins(emptyList(), listOf("5/13/11 6:46 AM")))
+        assertEquals(setOf(2), clutter.droppedLines(page(*body, "5/13/11 6:45 AM" to 0.96f), printed))
         val inBody = page("Save it as report.indd before 5/13/11 6:45 AM" to 0.4f, *body)
         assertEquals(emptySet<Int>(), clutter.droppedLines(inBody, strips()))
+    }
+
+    @Test
+    fun `a date and time in the margin band is kept without a slug on the neighbours`() {
+        val lines = listOf(
+            "Physics 15/03/2024 10:30" to 0.96f,
+            "दिनांक 12.05.2019, 10:30 बजे" to 0.03f,
+            "दिनांक १२.०५.२०१९, १०:३० बजे" to 0.96f,
+            "তারিখ ১২/০৫/২০১৯ ১০:৩০" to 0.97f,
+        )
+        val neighbours = strips(1 to OcrMargins(listOf("Notice"), listOf("Chemistry 16/03/2024")))
+        for (line in lines) {
+            assertEquals(line.first, emptySet<Int>(), clutter.droppedLines(page(*body, line), neighbours))
+        }
     }
 
     @Test
