@@ -136,8 +136,17 @@ internal class OcrFootnotes(private val config: NoteConfig) {
                 standsApart(aboveBox, first)
             val opens = openingMarker(page.text, run.first().line) != null
             val wide = opens || first.width >= aboveBox.width * config.minCarriedNoteWidthShare
-            return atFoot && apart && wide && readsLikeNotes(run.map { it.line })
+            return atFoot && apart && wide && isClearlySmall(run, bodySize, opens) &&
+                readsLikeNotes(run.map { it.line })
         }
+
+        /**
+         * One OCR size is a rough measure: a run with no marker and fewer than `ocrSureNoteLines` lines must average
+         * at most `ocrFewNoteLinesSizeRatio` of the body, so a body line measured a little small is not taken.
+         */
+        private fun isClearlySmall(run: List<Placed>, bodySize: Float, opens: Boolean): Boolean =
+            opens || run.size >= config.ocrSureNoteLines ||
+                run.map { it.line.size }.average() <= bodySize * config.ocrFewNoteLinesSizeRatio
 
         /**
          * Read with confidence (`NoteConfig.ocrFootnoteMinConfidence`) and opening with neither a caption label
@@ -216,7 +225,7 @@ internal class OcrFootnotes(private val config: NoteConfig) {
         private const val SIGNS = "*∗†‡§¶‖#"
 
         /** A sign run, alone or glued; a number alone before a word; a number glued to a capital and a small letter. */
-        val OPENING_MARKER = Regex("""^([$SIGNS]{1,3}(?=\s*\p{L})|\p{Nd}+(?=\s+\p{L})|\p{Nd}+(?=\p{Lu}\p{Ll}))""")
+        val OPENING_MARKER = Regex("""^([$SIGNS]{1,3}(?=[\s"“‘']*\p{L})|\p{Nd}+(?=\s+\p{L})|\p{Nd}+(?=\p{Lu}\p{Ll}))""")
     }
 }
 

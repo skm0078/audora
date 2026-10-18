@@ -22,6 +22,10 @@ package io.github.skm0078.audora.core.config
  *   foot: OCR's sizes vary more than a font's, and small lines ending a short page mid-sheet are text, not notes.
  * @property ocrFootnoteMinConfidence and their letters were read with at least this mean OCR confidence (0–100):
  *   lower, the small strip is a stamp or a garbled print slug.
+ * @property ocrSureNoteLines on a scanned page, a run of small lines this long or longer, or opening with a marker,
+ *   is small enough by `footnoteSizeRatio`;
+ * @property ocrFewNoteLinesSizeRatio a shorter run must average at most this share of the body size: one OCR size is
+ *   a rough measure, and a body line measured a little small must not be taken for a note.
  */
 data class NoteConfig(
     val silenceMarkers: Boolean = true,
@@ -33,15 +37,24 @@ data class NoteConfig(
     val minCarriedNoteWidthShare: Float = 0.5f,
     val ocrFootnoteBandShare: Float = 0.12f,
     val ocrFootnoteMinConfidence: Int = 70,
+    val ocrSureNoteLines: Int = 3,
+    val ocrFewNoteLinesSizeRatio: Float = 0.88f,
 ) {
     init {
-        val shares = listOf(markerSizeRatio, footnoteSizeRatio, minCarriedNoteWidthShare, ocrFootnoteBandShare)
+        val shares = listOf(
+            markerSizeRatio,
+            footnoteSizeRatio,
+            minCarriedNoteWidthShare,
+            ocrFootnoteBandShare,
+            ocrFewNoteLinesSizeRatio,
+        )
         require(shares.all { it in 0f..1f }) { "note shares must be in 0..1, were $shares" }
         require(markerRaiseEm > 0f) { "markerRaiseEm must be > 0, was $markerRaiseEm" }
         require(footnoteGapEm >= 0f) { "footnoteGapEm must be >= 0, was $footnoteGapEm" }
         require(ocrFootnoteMinConfidence in 0..OcrConfig.MAX_CONFIDENCE) {
             "ocrFootnoteMinConfidence must be in 0..100, was $ocrFootnoteMinConfidence"
         }
+        require(ocrSureNoteLines >= 1) { "ocrSureNoteLines must be >= 1, was $ocrSureNoteLines" }
         require(maxMarkerDigits >= 1) { "maxMarkerDigits must be >= 1, was $maxMarkerDigits" }
     }
 }
