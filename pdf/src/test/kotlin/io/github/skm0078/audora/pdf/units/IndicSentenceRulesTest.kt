@@ -44,7 +44,7 @@ class IndicSentenceRulesTest {
                 listOf("गए। "),
             ),
             Case("kilometre before a danda", "दूरी ५ कि.मी.। चलिए।", listOf("कि.", "मी.। "), listOf("मी.। ")),
-            Case("kilometres an hour", "गति ६० कि.मी./घंटा थी। ठीक।", listOf("कि.", "थी। "), listOf("थी। ")),
+            Case("kilometres an hour", "गति ६० कि.मी./घंटा थी। ठीक।", listOf("कि.", "मी.", "थी। "), listOf("थी। ")),
             Case(
                 "Bengali before a comma",
                 "দূরত্ব ৫ কি.মি., তারপর হাঁটা। বসুন।",
@@ -78,8 +78,6 @@ class IndicSentenceRulesTest {
                 listOf("S. ", "author. "),
                 listOf("author. "),
             ),
-            // A full stop inside an unlisted word still ends the sentence there (ICU breaks "है.|अगला").
-            Case("unlisted", "यह है.अगला वाक्य।", listOf("है."), listOf("है.")),
         )
         for (case in cases) {
             assertEquals(case.name, after(case.text, case.kept), rules.refine(case.text, after(case.text, case.icu)))
@@ -98,6 +96,32 @@ class IndicSentenceRulesTest {
             ),
             // An ellipsis before a number is no leader: the sentence ends there.
             Case("ellipsis", "Wait... 5 more came.", listOf("Wait... "), listOf("Wait... ")),
+        )
+        for (case in cases) {
+            assertEquals(case.name, after(case.text, case.kept), rules.refine(case.text, after(case.text, case.icu)))
+        }
+    }
+
+    @Test
+    fun `a stop glued between Indic letters is inside an abbreviation`() {
+        val cases = listOf(
+            // A stop between two Indic letters with no space is inside an abbreviation, as the JDK reads it:
+            // "रा.शै.अ.प्र.प." and "अ.जा." hold, and a sentence end that lost its space ("है.अगला") merges.
+            Case(
+                "dotted abbreviation",
+                "यह रा.शै.अ.प्र.प. की पुस्तक है। ठीक।",
+                listOf("रा.", "शै.", "अ.", "प्र.", "है। "),
+                listOf("है। "),
+            ),
+            Case("lost space", "यह है.अगला वाक्य।", listOf("है."), emptyList()),
+            Case(
+                "abbreviation glued to initials",
+                "डॉ.ए.पी.जे. अब्दुल कलाम और श्री.डी.वी. आए। ठीक।",
+                listOf("डॉ.ए.", "पी.", "जे. ", "श्री.डी.", "आए। "),
+                listOf("आए। "),
+            ),
+            Case("PhD", "वह पीएच.डी. छात्र है। ठीक।", listOf("पीएच.", "है। "), listOf("है। ")),
+            Case("joiner inside", "दूरी ५ कि.\u200Dमी. है। ठीक।", listOf("कि.", "है। "), listOf("है। ")),
         )
         for (case in cases) {
             assertEquals(case.name, after(case.text, case.kept), rules.refine(case.text, after(case.text, case.icu)))

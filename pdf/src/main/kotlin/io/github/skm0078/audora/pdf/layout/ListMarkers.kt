@@ -5,11 +5,11 @@ package io.github.skm0078.audora.pdf.layout
 
 /**
  * A bullet always starts an item. A label ("1.", "12)", "(a)", "a)", "b.", "(iv)", "iv.", "(A)", "B)", "(IV)",
- * "(क)", "(अ)", "(ক)", "(অ)") is also how a wrapped prose line can begin ("… shown in Fig.\n3. We then …"), so [ParagraphBuilder]
- * trusts one only after a line that ends a clause or inside a list; numbers have at most two digits, so a year
- * ("1947. The") never counts. A capital letter or Roman numeral needs a bracket: "A. Smith" and "I. Introduction"
- * open a line of prose or a heading, not an item. A single small letter with a full stop starts an item only in
- * sequence ([inSequence]): a wrapped line may open with "p. 12", "v. 3" or "c. 1900".
+ * "(क)", "(अ)", "(ক)", "(অ)") is also how a wrapped prose line can begin ("… shown in Fig.\n3. We then …"), so
+ * [ParagraphBuilder] trusts one only after a line that ends a clause or inside a list; numbers have at most two
+ * digits, so a year ("1947. The") never counts. A capital letter or Roman numeral needs a bracket: "A. Smith" and
+ * "I. Introduction" open a line of prose or a heading, not an item. A single small letter with a full stop starts an
+ * item only in sequence ([inSequence]): a wrapped line may open with "p. 12", "v. 3" or "c. 1900".
  */
 internal object ListMarkers {
     /** Bullets, including the Symbol and Wingdings private-use codes PDFs map them to. */

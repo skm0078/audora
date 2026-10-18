@@ -4,6 +4,9 @@
 package io.github.skm0078.audora.pdf.units
 
 import io.github.skm0078.audora.core.config.SentenceConfig
+import io.github.skm0078.audora.pdf.units.SentenceScan.leaderDotsBefore
+import io.github.skm0078.audora.pdf.units.SentenceScan.skipSpaces
+import io.github.skm0078.audora.pdf.units.SentenceScan.tokenEnd
 import java.text.Normalizer
 
 /**
@@ -28,7 +31,7 @@ import java.text.Normalizer
 internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderRun: Int) {
     private val nonBreaking: Set<String> =
         (config.abbreviations + config.initials + config.englishAbbreviations).mapTo(HashSet(), ::nfc)
-    private val initials: Set<String> = config.initials.mapTo(HashSet(), ::nfc)
+    private val openers = config.sentenceOpeners
     private val references = config.referenceAbbreviations
     private val labels = config.letterLabels
 
@@ -81,7 +84,7 @@ internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderR
         var start = stop
         while (start > 0 && !text[start - 1].isWhitespace() && text[start - 1] !in OPENERS) start--
         val word = text.substring(start, stop)
-        val listed = nfc(word) in nonBreaking || isIndicInitials(word, initials)
+        val listed = nfc(word) in nonBreaking || isIndicInitials(word, nonBreaking) || gluedIndicStop(text, at)
         return listed || isInitial(text, start, word) || isReference(text, at, word) ||
             insideListedWord(text, start, at)
     }
@@ -97,7 +100,7 @@ internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderR
         var end = at
         while (end < text.length && inDottedWord(text[end])) end++
         val word = text.substring(start, end).trimEnd('.')
-        return nfc(word) in nonBreaking || isIndicInitials(word, initials)
+        return nfc(word) in nonBreaking || isIndicInitials(word, nonBreaking)
     }
 
     /** [word] points at a number or bracket that starts the next piece at [at]: "No. 5", "Fig. (a)". */
@@ -115,7 +118,8 @@ internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderR
      * writes initials without stops ("West J, Lundberg P. Rapid imaging"): there the stop ends the list.
      */
     private fun isInitial(text: String, start: Int, word: String): Boolean {
-        if (!LATIN_INITIALS.matches(word) || word == "I") return false
+        val opensNext = opensSentence(text, start + word.length + 1, openers)
+        if (!LATIN_INITIALS.matches(word) || word == "I" || opensNext) return false
         val before = wordBefore(text, start)
         val name = before != null && isName(before) && !followsUndottedAuthor(text, start, before)
         return word.length > 1 || before == null || before.last() in ".," || name ||
@@ -173,19 +177,55 @@ internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderR
         /** Capital initials as the next word, with any closing punctuation stuck to them: "K.", "P.J.", "K.,". */
         val NEXT_INITIALS = Regex("(?:[A-Z]\\.)+[,;:)\\]\u2019\u201D]*")
 
-        fun nfc(text: String): String = Normalizer.normalize(text, Normalizer.Form.NFC)
+        /** NFC, without the zero-width joiners some fonts' text puts inside Indic words ("र\u200D्य"). */
+        fun nfc(text: String): String =
+            Normalizer.normalize(text, Normalizer.Form.NFC).filterNot { it == ZWNJ || it == ZWJ }
 
-        /** [word] is two or more of [initials] joined by full stops: "ए.पी.जे", "पी.एच.डी". */
-        fun isIndicInitials(word: String, initials: Set<String>): Boolean {
+        private const val ZWNJ = '\u200C'
+        private const val ZWJ = '\u200D'
+
+        /**
+         * [word] is two or more [listed] words (initials and abbreviations) joined by full stops: "ए.पी.जे",
+         * "पी.एच.डी", "डॉ.ए.पी.जे".
+         */
+        fun isIndicInitials(word: String, listed: Set<String>): Boolean {
             val parts = word.split('.')
-            return parts.size > 1 && parts.all { nfc(it) in initials }
+            return parts.size > 1 && parts.all { nfc(it) in listed }
         }
 
-        /** A letter, vowel sign or full stop: what a dotted word ("कि.मी.") is written with. */
-        fun inDottedWord(c: Char): Boolean = c.isLetter() || isCombiningMark(c) || c == '.'
+        /**
+         * The break [at] falls right after a full stop between two Devanagari or Bengali letters, with no space:
+         * "रा.|शै.अ.प्र.प.", "अ.|जा.". Indic text ends its sentences with the danda, so such a stop is inside a dotted
+         * abbreviation, as the JDK reads it; a sentence end that lost its space ("है.अगला") merges instead, which
+         * costs a pause, where a split abbreviation cuts a name in half.
+         */
+        fun gluedIndicStop(text: String, at: Int): Boolean =
+            at >= 2 && text[at - 1] == '.' && isIndic(text[at - 2]) && isIndic(text.getOrElse(at) { ' ' })
 
-        /** Full stops and middle dots: the leaders a contents page sets before its page numbers. */
-        const val LEADER_DOTS = ".\u00B7"
+        /** A Devanagari or Bengali letter or sign, or a zero-width joiner inside such a word. */
+        private fun isIndic(c: Char): Boolean =
+            c in '\u0900'..'\u097F' || c in '\u0980'..'\u09FF' || c == ZWNJ || c == ZWJ
+
+        /**
+         * After an initial's stop at [from], no initial follows and the next word is one of [openers] written as a
+         * word ("The", "It"; [SentenceOpeners]) without a stop of its own: "Henry V. The king", "in the U.S. The
+         * economy" end a sentence, "S. No." does not.
+         */
+        fun opensSentence(text: String, from: Int, openers: Set<String>): Boolean {
+            val begin = skipSpaces(text, from)
+            var end = begin
+            while (end < text.length && text[end].isLetter()) end++
+            val next = text.substring(begin, end)
+            // "S. No." is a serial number's heading: an opener with its own stop is an abbreviation.
+            val ownStop = text.getOrNull(end) == '.'
+            return !initialFollows(text, from) && OPENER_WORD.matches(next) && next in openers && !ownStop
+        }
+
+        /** A capital and small letters: an opener written as a word, not a lone capital ("A", "I"). */
+        private val OPENER_WORD = Regex("""\p{Lu}\p{Ll}+""")
+
+        /** A letter, vowel sign, joiner or full stop: what a dotted word ("कि.मी.") is written with. */
+        fun inDottedWord(c: Char): Boolean = c.isLetter() || isCombiningMark(c) || c == '.' || isIndic(c)
 
         /**
          * The sentence carries on at the break [at]: a comma-like mark follows it, or a number follows a dot leader
@@ -194,36 +234,6 @@ internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderR
         fun continuesAt(text: String, at: Int, minRun: Int): Boolean {
             val next = text.getOrNull(skipSpaces(text, at)) ?: return false
             return next in CONTINUERS || (next.isDigit() && leaderDotsBefore(text, at) >= minRun)
-        }
-
-        /** How many leader dots end just before [at] (and the spaces before it), one space apart at most. */
-        fun leaderDotsBefore(text: String, at: Int): Int {
-            var i = at - 1
-            while (i >= 0 && text[i].isWhitespace()) i--
-            val mark = text.getOrNull(i)?.takeIf { it in LEADER_DOTS } ?: return 0
-            var count = 0
-            while (i >= 0 && inLeader(text, i, mark)) {
-                if (text[i] == mark) count++
-                i--
-            }
-            return count
-        }
-
-        /** [text] at [i] is the leader's [mark], or one space between two of them. */
-        private fun inLeader(text: String, i: Int, mark: Char): Boolean =
-            text[i] == mark || (text[i] == ' ' && text.getOrNull(i - 1) == mark)
-
-        fun skipSpaces(text: String, from: Int): Int {
-            var i = from
-            while (i < text.length && text[i].isWhitespace()) i++
-            return i
-        }
-
-        /** Where the word at [from] ends: the next whitespace or the end of [text]. */
-        fun tokenEnd(text: String, from: Int): Int {
-            var i = from
-            while (i < text.length && !text[i].isWhitespace()) i++
-            return i
         }
 
         /** An author written with initials without stops, then a comma: "West J, ", "Persson AB, ". */

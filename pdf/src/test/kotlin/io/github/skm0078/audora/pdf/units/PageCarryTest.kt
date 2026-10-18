@@ -157,6 +157,14 @@ class PageCarryTest {
                 listOf("Item", "1", "2", "3") to
                     listOf(listOf("Rice", "45", "50", "61"), listOf("Dal", "30", "35", "38"))
                 ),
+            "columns numbered after two word columns" to (
+                listOf("Name", "Class", "1", "2", "3") to
+                    listOf(listOf("Ram", "VI", "45", "50", "61"), listOf("Sita", "VII", "30", "35", "38"))
+                ),
+            "columns numbered in brackets" to (
+                listOf("(1)", "(2)", "(3)", "(4)") to
+                    listOf(listOf("Pune", "45", "50", "61"), listOf("Agra", "30", "35", "38"))
+                ),
             "every column numbered" to (
                 listOf("1", "2", "3", "4") to
                     listOf(listOf("Pune", "45", "50", "61"), listOf("Agra", "30", "35", "38"))
@@ -197,10 +205,13 @@ class PageCarryTest {
 
     @Test
     fun `column numbers opening the next page repeat the numbering row of the table`() {
-        val numbers = listOf("1", "2", "3", "4")
-        val before = page(head = numbers, rows = listOf(listOf("45", "50", "61", "70"), listOf("30", "35", "38", "41")))
-        val next = page(head = numbers, rows = listOf(listOf("52", "57", "63", "66")))
-        assertEquals(TableCarry.HEADER_REPEATED, carry.join(next, carry.tailOf(before)).table)
+        // A word header on the first page, its numbering row opening the next: only the count says it repeats.
+        val zones = listOf("East", "West", "North", "South")
+        val before = page(head = zones, rows = listOf(listOf("45", "50", "61", "70"), listOf("30", "35", "38", "41")))
+        for (numbers in listOf(listOf("1", "2", "3", "4"), listOf("(1)", "(2)", "(3)", "(4)"))) {
+            val next = page(head = numbers, rows = listOf(listOf("52", "57", "63", "66")))
+            assertEquals(numbers.toString(), TableCarry.HEADER_REPEATED, carry.join(next, carry.tailOf(before)).table)
+        }
         val named = page(head = listOf("Item", "A", "B", "C"), rows = listOf(listOf("Rice", "45", "50", "61")))
         val counted = page(head = listOf("Item", "1", "2", "3"), rows = listOf(listOf("Dal", "30", "35", "38")))
         assertEquals(TableCarry.HEADER_REPEATED, carry.join(counted, carry.tailOf(named)).table)

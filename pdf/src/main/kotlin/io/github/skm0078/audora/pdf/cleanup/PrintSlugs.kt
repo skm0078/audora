@@ -41,6 +41,9 @@ internal object PrintSlugs {
 
     private val PRINT_TIME = Regex(TIME)
 
+    /** A small Roman page number ("iii", "xiv"), up to 399: a prelims page; "civil" is none. */
+    private const val ROMAN = """(?=[ivxlc])c{0,3}(?:xc|xl|l?x{0,3})(?:ix|iv|v?i{0,3})"""
+
     /** "AM" or "PM" after a time, with or without stops. */
     private const val MERIDIEM = """(?:[ \t]*(?i:[ap]\.?m\.?))?"""
 
@@ -60,6 +63,6 @@ internal object PrintSlugs {
     private val LAYOUT_FILE = Regex(
         """\S\.(?i:indd|qxd|qxp)(?:[ \t]+(?:\S*\.(?i:indd|qxd|qxp)|/?[0-9][0-9/.:,-]*|""" +
             """[0-9]{1,4}[/.-][A-Za-z]{3}[/.-][0-9]{2,4}|""" +
-            """(?i:[ap]\.?m\.?|page|pages|of|all|sec[0-9:]+|[ivxlc]{1,7})))*[ \t]*$""",
+            """(?i:[ap]\.?m\.?|page|pages|of|all|sec[0-9:]+|$ROMAN)))*[ \t]*$""",
     )
 }

@@ -27,6 +27,8 @@ package io.github.skm0078.audora.core.config
  *   or an opening bracket.
  * @property letterLabels capitalised words that a letter after them labels ("Appendix A."), so the letter is not an
  *   initial; shared with the speech normalizer ([NumberingWords]).
+ * @property sentenceOpeners words that, capitalised after an initial's full stop, start a new sentence
+ *   ("Henry V. The king"); shared with the speech normalizer ([SentenceOpeners]).
  */
 data class SentenceConfig(
     val abbreviations: Set<String> = HINDI_ABBREVIATIONS + BENGALI_ABBREVIATIONS,
@@ -34,6 +36,7 @@ data class SentenceConfig(
     val englishAbbreviations: Set<String> = ENGLISH_ABBREVIATIONS,
     val referenceAbbreviations: Set<String> = REFERENCE_ABBREVIATIONS,
     val letterLabels: Set<String> = NumberingWords.ALL,
+    val sentenceOpeners: Set<String> = SentenceOpeners.ALL,
 ) {
     init {
         require(
@@ -49,11 +52,11 @@ data class SentenceConfig(
     private companion object {
         val HINDI_ABBREVIATIONS = setOf(
             "डॉ", "डा", "श्री", "श्रीमती", "सुश्री", "कु", "प्रो", "पं", "स्व", "मि", "सं", "पृ", "क्र", "रु", "मो",
-            "कि.मी", "ई.पू", "उ.प्र", "म.प्र",
+            "कि.मी", "ई.पू", "उ.प्र", "म.प्र", "पीएच.डी",
         )
         val BENGALI_ABBREVIATIONS = setOf(
             "ডা", "ড", "ডঃ", "শ্রী", "শ্রীমতী", "প্রফ", "প্রো", "মো", "মোঃ", "মি", "মিসেস", "সং", "পৃ", "খ্রি", "কি.মি",
-            "নং", "খ্রি.পূ",
+            "নং", "খ্রি.পূ", "পিএইচ.ডি",
         )
         val HINDI_INITIALS = setOf(
             "ए", "बी", "सी", "डी", "ई", "एफ", "जी", "एच", "आई", "जे", "के", "एल", "एम", "एन", "ओ", "पी", "क्यू", "आर",

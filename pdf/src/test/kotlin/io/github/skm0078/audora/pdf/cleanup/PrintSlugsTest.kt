@@ -44,6 +44,7 @@ class PrintSlugsTest {
             // JDK's \s has no no-break space, so only Android's ICU regex would read it as a space without the fix).
             "Open the file Lesson01.indd and click Save",
             "Notes.indd / 2",
+            "Notes.indd civil",
             "Paid on 17-12-2019 12:54:06 by card",
             "17-12-2019 12:54:06 ERROR disk full",
             "17-12-2019\u00A012:54:06",
