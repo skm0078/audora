@@ -111,6 +111,16 @@ class PdfBook private constructor(
         handle?.let { Outcome.Success(it.outline()) } ?: Outcome.Failure(PdfPageError.BookClosed)
 
     /**
+     * Each page's printed label ("iv", "A-3"), so a copy or a "Go to page" can use the numbers printed on the
+     * pages; null for a page without one (most PDFs have no labels at all). Trimmed, control characters dropped.
+     * Does not count as a page read: labels live in the document catalog.
+     */
+    @Synchronized
+    fun pageLabels(): Outcome<List<String?>, PdfPageError> = handle?.let { open ->
+        Outcome.Success(List(pageCount) { page -> open.pageLabel(page)?.let(::cleanLabel) })
+    } ?: Outcome.Failure(PdfPageError.BookClosed)
+
+    /**
      * The page's units after layout and cleanup. A neighbour that fails to read is left out (logged): the page
      * is still read, at worst with a header the missing neighbour would have confirmed.
      */
@@ -337,6 +347,8 @@ class PdfBook private constructor(
 }
 
 /** Route, reason and the scorer's measurements, for the log (no text). */
+private fun cleanLabel(label: String): String? = label.filterNot { it.isISOControl() }.trim().ifEmpty { null }
+
 private fun describe(quality: PageQuality): String = with(quality.signals) {
     "${quality.route} (${quality.reason}) letters=$letters indic=$indicLetters mapErrors=$unicodeMapErrorRate " +
         "invisible=$invisibleShare garbage=$garbageRate invalidIndic=$invalidIndicRate legacy=$legacyShare " +
