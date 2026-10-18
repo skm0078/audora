@@ -80,6 +80,8 @@ class OcrFootnotesTest {
                 (3 to "The figures come from the survey of the last forty years."),
             "*Equal share of the work on this paper by all the authors." to
                 (1 to "Equal share of the work on this paper by all the authors."),
+            "*“Read the survey report on the board's website for details.”" to
+                (1 to "“Read the survey report on the board's website for details.”"),
             "†Work done while at the university farm in the hill country." to
                 (2 to "Work done while at the university farm in the hill country."),
         )
@@ -106,6 +108,8 @@ class OcrFootnotesTest {
         val note = "1 See the appendix for the full list of plants we grew."
         val cases = listOf(
             "body-sized" to page(note to 1, size = BODY),
+            "one unmarked line barely smaller" to
+                page("the soil was dry that year, so the roots grew deeper." to 1, size = BARELY_SMALL),
             "read badly" to page(note to 1, confidence = UNSURE),
             "ending a short page mid-sheet" to page(note to 1, top = MID_PAGE),
             "a caption under a figure" to page("Figure 2: Leaves of the plants we grew in the long summer." to 1),
@@ -144,6 +148,7 @@ class OcrFootnotesTest {
         const val PAGE_HEIGHT = 800f
         const val BODY = 0.015f
         const val SMALL = 0.012f
+        const val BARELY_SMALL = 0.0137f
         const val CONFIDENT = 95
         const val UNSURE = 50
         const val BODY_TOP = 0.7f
