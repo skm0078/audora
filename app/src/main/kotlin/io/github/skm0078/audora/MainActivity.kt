@@ -244,6 +244,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var backups: Backups
 
+    @Inject
+    lateinit var photoBooks: PhotoBooks
+
     private val appearancePreferences: AppearancePreferences by lazy { AppearancePreferences(applicationContext) }
 
     private val readingLookPreferences: ReadingLookPreferences by lazy { ReadingLookPreferences(applicationContext) }
@@ -252,7 +255,6 @@ class MainActivity : ComponentActivity() {
 
     private val voiceNoteAudio: VoiceNoteAudio by lazy { VoiceNoteAudio(applicationContext) }
 
-    private val photoBooks: PhotoBooks by lazy { PhotoBooks(applicationContext, sharedCopies) }
     private val watchedFolders: WatchedFolders by lazy { WatchedFolders(applicationContext, library) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -295,6 +297,7 @@ class MainActivity : ComponentActivity() {
         LaunchedEffect(Unit) { dropStaleBookFiles() }
         SharedPdfEffect(sharedPdf, { sharedPdf = null }, libraryController::addShared, nav::navigate)
         SharedTextEffect()
+        PhotoBookEffect()
         ResumeWidgetEffect(libraryController.listState, widgetResume, { widgetResume = null }, nav::continueReading)
         val books = libraryBooks(libraryController.listState)
 
@@ -536,15 +539,28 @@ class MainActivity : ComponentActivity() {
         } catch (e: ActivityNotFoundException) {
             AudoraLog.w(TAG, "No camera app: ${e.javaClass.simpleName}")
             Toast.makeText(this, R.string.photo_no_camera, Toast.LENGTH_LONG).show()
+        } catch (e: SecurityException) {
+            // Thrown if a CAMERA permission is ever declared but not granted; the manifest removes any merged one.
+            AudoraLog.w(TAG, "Camera app refused: ${e.javaClass.simpleName}")
+            Toast.makeText(this, R.string.photo_no_camera, Toast.LENGTH_LONG).show()
         }
     }
 
-    /** The photo becomes a one-page book, then is added and opened like a shared PDF. */
+    /** The photo becomes a one-page book in the app's scope (rotation keeps it); [PhotoBookEffect] adds it. */
     private fun makePhotoBook() {
-        activityScope.launch {
-            val takenAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern(PHOTO_TITLE_DATE))
-            when (val made = photoBooks.toBook(getString(R.string.photo_book_title, takenAt))) {
-                is Outcome.Success -> sharedPdf = made.value
+        val takenAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern(PHOTO_TITLE_DATE))
+        photoBooks.startBook(getString(R.string.photo_book_title, takenAt))
+    }
+
+    /** A finished photo book is added and opened like a shared PDF, whichever activity instance is showing. */
+    @Composable
+    private fun PhotoBookEffect() {
+        val made by photoBooks.made.collectAsStateWithLifecycle()
+        LaunchedEffect(made) {
+            val result = made ?: return@LaunchedEffect
+            photoBooks.consume()
+            when (result) {
+                is Outcome.Success -> sharedPdf = result.value
 
                 is Outcome.Failure ->
                     Toast.makeText(this@MainActivity, R.string.photo_failed, Toast.LENGTH_LONG).show()
@@ -591,7 +607,7 @@ class MainActivity : ComponentActivity() {
         val context = LocalContext.current.applicationContext
         val playWithPermission = rememberPlayWithNotificationPermission()
         val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
-            if (taken) makePhotoBook()
+            if (taken) makePhotoBook() else photoBooks.discardCapture()
         }
         var watchedOpen by rememberSaveable { mutableStateOf(false) }
         var backupOpen by rememberSaveable { mutableStateOf(false) }

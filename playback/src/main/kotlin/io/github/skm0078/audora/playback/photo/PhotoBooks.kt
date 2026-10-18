@@ -16,7 +16,13 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Why a photo did not become a book; the UI says so, the log has the detail. */
@@ -36,6 +42,9 @@ sealed interface PhotoError {
  * photo upright (its EXIF turn), scales it to `PhotoConfig.maxLongSidePx`, stores it as JPEG inside a one-page PDF
  * with no text layer ([ImagePdf]) beside the shared copies and returns that file's URI. The library adds it like a
  * shared PDF, and the reader's scanned-page path (OCR, layout, junk gate) reads it, with no `:pdf` change (ADR-043).
+ *
+ * One per process: [startBook] runs in its own scope, so turning the phone while a photo is turned into a book
+ * keeps it, and the screen reads [made] for the result.
  */
 class PhotoBooks(
     context: Context,
@@ -44,6 +53,11 @@ class PhotoBooks(
 ) {
     private val appContext = context.applicationContext
     private val captureFile = File(File(appContext.cacheDir, config.captureFolder), CAPTURE_NAME)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val mutableMade = MutableStateFlow<Outcome<String, PhotoError>?>(null)
+
+    /** The last [startBook]'s result until [consume]: the book's URI to add, or why there is none. */
+    val made: StateFlow<Outcome<String, PhotoError>?> = mutableMade.asStateFlow()
 
     /** Where the camera app writes the next photo; an older capture is deleted first. */
     fun captureUri(): Uri {
@@ -52,7 +66,25 @@ class PhotoBooks(
         return FileProvider.getUriForFile(appContext, "${appContext.packageName}$AUTHORITY_SUFFIX", captureFile)
     }
 
-    /** The photo as a one-page book named [title], as a file URI the library can add; the capture is then deleted. */
+    /** Starts [toBook] for the photo just taken; the result arrives in [made]. */
+    fun startBook(title: String) {
+        scope.launch { mutableMade.value = toBook(title) }
+    }
+
+    /** Clears [made] once the screen has acted on it. */
+    fun consume() {
+        mutableMade.value = null
+    }
+
+    /** The camera app came back without a photo: drops whatever it may have half-written. */
+    fun discardCapture() {
+        if (captureFile.exists() && !captureFile.delete()) AudoraLog.w(TAG, "A cancelled capture could not be deleted")
+    }
+
+    /**
+     * The photo as a one-page book named [title], as a file URI the library can add. The capture is deleted once the
+     * book is made; after a failure it stays until the next photo, so nothing is lost to a bug in the conversion.
+     */
     suspend fun toBook(title: String): Outcome<String, PhotoError> = withContext(Dispatchers.IO) {
         if (!captureFile.isFile || captureFile.length() == 0L) return@withContext Outcome.Failure(PhotoError.NoPhoto)
         val target = copies.newCopy("$title.pdf")
@@ -65,13 +97,12 @@ class PhotoBooks(
             target.writeBytes(ImagePdf.write(jpeg, bitmap.width, bitmap.height, config.pageLongSidePt))
             AudoraLog.i(TAG, "Photo book made, ${bitmap.width}x${bitmap.height} px, bytes=${target.length()}")
             bitmap.recycle()
+            if (!captureFile.delete()) AudoraLog.w(TAG, "The capture could not be deleted")
             Outcome.Success(Uri.fromFile(target).toString())
         } catch (e: IOException) {
             failed(target, e)
         } catch (e: IllegalStateException) {
             failed(target, e)
-        } finally {
-            if (!captureFile.delete()) AudoraLog.w(TAG, "The capture could not be deleted")
         }
     }
 
