@@ -97,6 +97,19 @@ class ClutterRemoverTest {
     }
 
     @Test
+    fun `page numbers set above a printer's slug go`() {
+        // The slug sits outside the printed page, well below its folio: the folio is still the page's own foot.
+        val pages = (0..2).map { i ->
+            val sketch = PageSketch()
+            sketch.lines(body(i).take(SHORT_BODY_LINES), LEFT, BODY_TOP)
+            sketch.line("${i + 6}", MID, RAISED_FOOTER_TOP)
+            sketch.lines(listOf("Book.indd Sec1:${i + 6}", "5/13/11 6:45 AM"), LEFT, SLUG_TOP)
+            builder.analyze(sketch.build(i))
+        }
+        for (p in pages.indices) assertEquals(body(p).take(SHORT_BODY_LINES).joinToString(" "), spoken(pages, p))
+    }
+
+    @Test
     fun `lines that only look like headers stay`() {
         // A margin line on one page only, numbers that do not run with the page, and a repeated line mid-page.
         val pages = (0..4).map { i ->
@@ -317,6 +330,9 @@ class ClutterRemoverTest {
         const val HEADER_TOP = 800f
         const val BODY_TOP = 700f
         const val FOOTER_TOP = 40f
+        const val SLUG_TOP = 20f
+        const val RAISED_FOOTER_TOP = 300f
+        const val SHORT_BODY_LINES = 20
         const val BODY_LINES = 50
         val WORDS = listOf("amber", "birch", "cedar", "delta", "ember", "fjord", "grove", "heath", "inlet", "jetty")
     }

@@ -58,6 +58,7 @@ package io.github.skm0078.audora.pdf
  *     "1 | 2 | 3") stay a header; "S. K. Mukherjee", "Govt. Order", "Rs. 500" and dotted Hindi and Bengali words
  *     held whole on Android too; "x." opening an item only in sequence, "(क)" and "(ক)" labels; an evened OCR read
  *     kept only with as many words; dot leaders, blanks and rules of five marks or more read as a space; the last
- *     initial of an author list written without stops ("West J, Lundberg P.") ends the sentence.
+ *     initial of an author list written without stops ("West J, Lundberg P.") ends the sentence; a printer's slug at
+ *     a page's edge is outside its text area, so the page number above it goes too.
  */
 const val PIPELINE_VERSION: Int = 11
