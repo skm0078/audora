@@ -44,7 +44,7 @@ object TableSpeech {
                 val header = table.headers.getOrNull(column)?.trim()?.trimEnd(':', '：')?.trim().orEmpty()
                 when {
                     cell.isEmpty() -> null
-                    header.isEmpty() -> cell
+                    header.isEmpty() || RULE_ONLY.matches(header) -> cell
                     else -> "$header: $cell"
                 }
             }
@@ -73,8 +73,8 @@ object TableSpeech {
         fun moreRows(count: Int): String = more(rows(count))
     }
 
-    /** Dashes and minus signs only: a cell ruled through instead of filled. */
-    private val RULE_ONLY = Regex("""[\p{Pd}−]+""")
+    /** Dashes and minus signs only, maybe with a note mark ("–*", "–¹"): a cell ruled through instead of filled. */
+    private val RULE_ONLY = Regex("""[\p{Pd}−]+[*†‡§¹²³⁴-⁹]*""")
 
     private val WORDS = mapOf(
         Lang.EN to TableWords("Row", ".", "row", "rows", "column", "columns", "Table continues", "nil") { rows ->

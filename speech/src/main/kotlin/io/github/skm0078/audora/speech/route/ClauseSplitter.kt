@@ -50,6 +50,9 @@ object ClauseSplitter {
     private val CLOSING = setOf(')', ']')
     private val DANDAS = setOf('।', '॥')
 
+    /** A time word ending the text before a colon ("समय", "সময়" in both spellings of য়). */
+    private val TIME_LABEL = Regex("""(?<![\p{L}\p{M}])(?:समय|সম(?:\u09DF|\u09AF\u09BC))\s*$""")
+
     /** Marks that are one character wherever they stand. */
     private val SINGLE = mapOf(';' to ClauseMark.SEMICOLON) +
         listOf('"', '“', '”', '«', '»', '„').associateWith { ClauseMark.QUOTE }
@@ -175,7 +178,7 @@ object ClauseSplitter {
 
             c in DANDAS && text.drop(i + 1).any(Char::isLetterOrDigit) -> markOne(state, ClauseMark.DANDA)
 
-            c == ':' && spaceOrEnd(text, i + 1) -> markOne(state, ClauseMark.COLON)
+            c == ':' && colonCuts(text, i) -> markOne(state, ClauseMark.COLON)
 
             isDash(text, i) -> {
                 state.mark(ClauseMark.DASH)
@@ -207,5 +210,15 @@ object ClauseSplitter {
         }
     }
 
-    private fun spaceOrEnd(text: String, i: Int): Boolean = i >= text.length || text[i].isWhitespace()
+    /**
+     * A colon cuts when a space or the end follows it, except after "समय"/"সময়" before a time: "समय: 10:30" stays one
+     * clause, since the bare "10:30" would lose the word that makes it a clock time for the Hindi and Bengali
+     * normalizer, and be read as two numbers.
+     */
+    private fun colonCuts(text: String, i: Int): Boolean {
+        val spaced = i + 1 >= text.length || text[i + 1].isWhitespace()
+        val labelsATime = TIME_LABEL.containsMatchIn(text.take(i)) &&
+            text.drop(i + 1).trimStart().firstOrNull()?.isDigit() == true
+        return spaced && !labelsATime
+    }
 }

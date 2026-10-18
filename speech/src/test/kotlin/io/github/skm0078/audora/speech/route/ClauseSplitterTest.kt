@@ -74,6 +74,9 @@ class ClauseSplitterTest {
             Lang.HI to ("राम (मोहन) आए।" to "राम |BRACKET| (मोहन) |BRACKET| आए।"),
             Lang.HI to ("पहली पंक्ति। दूसरी पंक्ति॥" to "पहली पंक्ति |DANDA| दूसरी पंक्ति॥"),
             Lang.BN to ("নিয়ম হল: সবাই পড়বে।" to "নিয়ম হল |COLON| সবাই পড়বে।"),
+            // A colon labelling a time keeps the time with its word, so it is still read as a time.
+            Lang.HI to ("बैठक का समय: 10:30 PM है।" to "बैठक का समय: 10:30 PM है।"),
+            Lang.BN to ("সময়: ৯:৩০ PM" to "সময়: ৯:৩০ PM"),
             Lang.BN to ("প্রথম অংশ; দ্বিতীয় অংশ।" to "প্রথম অংশ |SEMICOLON| দ্বিতীয় অংশ।"),
             Lang.BN to ("তিনি বললেন “এখন যাও” এবং গেলেন।" to "তিনি বললেন |QUOTE| এখন যাও |QUOTE| এবং গেলেন।"),
         )
