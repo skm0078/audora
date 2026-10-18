@@ -41,7 +41,7 @@ internal class OcrParagraphKinds(
             val previous = lines.getOrNull(i - 1)
             val starts = previous == null ||
                 isHeadingSized(previous) != isHeadingSized(line) ||
-                startsItem(previous, line, inList = startsWithMarker(groups.last().first()))
+                startsItem(previous, line, item = groups.last().first().takeIf(::startsWithMarker))
             if (starts) groups.add(ArrayList())
             groups.last().add(line)
         }
@@ -72,12 +72,14 @@ internal class OcrParagraphKinds(
     private fun extent(line: TextLine): TextBox? =
         line.spans.flatMap { span -> (span.start until span.end).mapNotNull(page::boxAt) }.reduceOrNull(TextBox::union)
 
-    private fun startsItem(previous: TextLine, line: TextLine, inList: Boolean): Boolean {
+    private fun startsItem(previous: TextLine, line: TextLine, item: TextLine?): Boolean {
         val start = line.spans.first().start
+        val label = ListMarkers.labelAt(text, start, line.spans.last().end)
+        val before = item?.let { ListMarkers.labelAt(text, it.spans.first().start, it.spans.last().end) }
         return ListMarkers.startsWithBullet(text, start) ||
             (
-                ListMarkers.startsWithLabel(text, start, line.spans.last().end) &&
-                    (inList || ListMarkers.endsClause(text, previous.spans.last().end))
+                label != null && ListMarkers.inSequence(label, before) &&
+                    (item != null || ListMarkers.endsClause(text, previous.spans.last().end))
                 )
     }
 

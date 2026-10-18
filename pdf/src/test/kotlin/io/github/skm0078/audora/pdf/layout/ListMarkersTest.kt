@@ -14,6 +14,7 @@ class ListMarkersTest {
         val labels = listOf(
             "1. Open the box", "12) Close it", "(3) Wait", "(a) Apples", "b) Bananas", "c. Cherries", "(iv) Fourth",
             "iv. Fourth", "ii) Second", "(A) First", "B) Second", "(IV) Fourth", "१. पहला", "(२) दूसरा",
+            "(क) पहला", "(ख) दूसरा", "(ক) প্রথম",
         )
         for (line in labels) assertEquals(line, true, opensWithLabel(line))
     }
@@ -25,6 +26,28 @@ class ListMarkersTest {
             "ab) not a label", "(ab) nor this", "b.", "iv.Fourth", "",
         )
         for (line in prose) assertEquals(line, false, opensWithLabel(line))
+    }
+
+    @Test
+    fun `a lone small letter with a full stop opens an item only in sequence`() {
+        val cases = listOf(
+            Triple("a.", null, true),
+            Triple("i.", null, true),
+            Triple("b.", "a.", true),
+            Triple("c.", "(b)", true),
+            Triple("v.", "iv.", true),
+            Triple("x.", "ix)", true),
+            Triple("iv.", null, true),
+            Triple("b)", null, true),
+            // A wrapped line opening with a page, verse or circa reference.
+            Triple("p.", null, false),
+            Triple("v.", "b.", false),
+            Triple("c.", "1.", false),
+            Triple("s.", "(iv)", false),
+        )
+        for ((label, before, opens) in cases) {
+            assertEquals("$label after $before", opens, ListMarkers.inSequence(label, before))
+        }
     }
 
     @Test

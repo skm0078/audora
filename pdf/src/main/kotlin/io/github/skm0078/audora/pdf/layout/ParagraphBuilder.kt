@@ -23,7 +23,7 @@ internal class ParagraphBuilder(
             val inList = i > 0 && startsWithMarker(groups.last().first())
             val starts = i == 0 ||
                 startsParagraph(lines[i - 1], line, blockLeft, pitch, inList) ||
-                startsItem(lines[i - 1], line, inList) ||
+                startsItem(lines[i - 1], line, groups.lastOrNull()?.first()?.takeIf { inList }) ||
                 (inList && outdented(lines[i - 1], line))
             if (starts) groups.add(ArrayList())
             groups.last().add(line)
@@ -55,14 +55,17 @@ internal class ParagraphBuilder(
     /**
      * Each list item is a paragraph of its own, so it gets its own sentences and pause: "• Apples" and "• Pears" are
      * not read as one sentence. A label ("3.") counts only after a line that ends a clause, or inside a list
-     * ([inList]: the paragraph so far is an item), never in the middle of running prose ([ListMarkers]).
+     * ([item]: the first line of the item so far), never in the middle of running prose, and a lone small letter
+     * with a full stop only in sequence ([ListMarkers.inSequence]).
      */
-    private fun startsItem(previous: TextLine, line: TextLine, inList: Boolean): Boolean {
+    private fun startsItem(previous: TextLine, line: TextLine, item: TextLine?): Boolean {
         val start = line.spans.first().start
+        val label = ListMarkers.labelAt(page.text, start, line.spans.last().end)
+        val before = item?.let { ListMarkers.labelAt(page.text, it.spans.first().start, it.spans.last().end) }
         return ListMarkers.startsWithBullet(page.text, start) ||
             (
-                ListMarkers.startsWithLabel(page.text, start, line.spans.last().end) &&
-                    (inList || ListMarkers.endsClause(page.text, previous.spans.last().end))
+                label != null && ListMarkers.inSequence(label, before) &&
+                    (item != null || ListMarkers.endsClause(page.text, previous.spans.last().end))
                 )
     }
 

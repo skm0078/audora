@@ -170,6 +170,16 @@ class OcrFootnotesTest {
             },
         )
         assertEquals(listOf(12 to "pages of tables follow in the appendix to this volume."), units.notes())
+        // Digits after a decimal point or a group comma cite nothing: "3.12", "1,12" leave the note carried on.
+        for (figure in listOf("The stem grew 3.12", "The stem grew 1,12")) {
+            val decimal = body.dropLast(1) + line("$figure cm a year.", BODY_TOP + 3 * BODY_PITCH, 0)
+            val read = builder.build(
+                builder.ocrReadingText(PAGE, OcrText(decimal + note, rules = listOf(rule))) {
+                    transform.toPage(it)
+                },
+            )
+            assertEquals(figure, listOf<Int?>(null), read.notes().map { it.first }.distinct())
+        }
     }
 
     @Test

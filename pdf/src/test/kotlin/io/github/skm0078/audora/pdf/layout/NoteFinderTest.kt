@@ -19,6 +19,8 @@ class NoteFinderTest {
 
     private fun units(sketch: PageSketch): List<ReadingUnit> = builder.build(sketch.build())
 
+    private val englishBody = List(4) { "Body text set in the regular size of this page, line $it." }
+
     /** A page of body text (it sets the body size), then [pieces] as one line, then body text below it. */
     private fun withLine(pieces: List<Triple<String, Float, Float>>): String {
         val sketch = PageSketch()
@@ -116,22 +118,25 @@ class NoteFinderTest {
     }
 
     @Test
-    fun `a corresponding author's short lines with the page's only e-mail address are a note`() {
-        fun page(directory: Boolean): List<ReadingUnit> {
+    fun `a corresponding author's short lines with the page's only e-mail addresses are a note`() {
+        /** A page of [body] lines, then [contact] at the column's foot in [size]; the footnote text, or "". */
+        fun note(contact: List<String>, size: Float = NOTE, body: List<String> = englishBody): String {
             val sketch = PageSketch()
-            val body = List(4) { "Body text set in the regular size of this page, line $it." } +
-                if (directory) listOf("Write to the office at office@example.org for a form.") else emptyList()
-            val below = sketch.lines(body, LEFT, TOP)
-            val notes = below - PITCH
-            listOf("B Nora M. Gilbertson", "nmg421@uw.edu", "Department of Mathematics").forEachIndexed { i, line ->
-                sketch.line(line, LEFT, notes - NOTE * 1.2f * i, NOTE)
-            }
-            return units(sketch)
+            val notes = sketch.lines(body, LEFT, TOP) - PITCH
+            contact.forEachIndexed { i, line -> sketch.line(line, LEFT, notes - size * 1.2f * i, size) }
+            return units(sketch).filter { it.kind == UnitKind.FOOTNOTE }.joinToString(" ") { it.text }
         }
-        val note = page(directory = false).filter { it.kind == UnitKind.FOOTNOTE }.joinToString(" ") { it.text }
-        assertEquals("B Nora M. Gilbertson nmg421@uw.edu Department of Mathematics", note)
-        // A page with addresses in its body too is a directory: its last entry is no note.
-        assertTrue(page(directory = true).none { it.kind == UnitKind.FOOTNOTE })
+        val author = listOf("B Nora M. Gilbertson", "nmg421@uw.edu", "Department of Mathematics")
+        assertEquals(author.joinToString(" "), note(author))
+        val two = listOf("Ravi Rao: ravi@iitb.ac.in", "Asha Sen: asha@iitb.ac.in", "IIT Bombay")
+        assertEquals("two addresses in one block", two.joinToString(" "), note(two))
+        val hindi = listOf("संपर्क: राम शर्मा", "ram.sharma@du.ac.in", "गणित विभाग")
+        val hindiBody = List(4) { "यह इस पृष्ठ के सामान्य आकार में लिखी गई पंक्ति संख्या $it है।" }
+        assertEquals("Hindi", hindi.joinToString(" "), note(hindi, body = hindiBody))
+        // Set at the body's size it is body text; a page with addresses in its body too is a directory.
+        assertEquals("body size", "", note(author, size = BODY))
+        val directory = englishBody + "Write to the office at office@example.org for a form."
+        assertEquals("directory", "", note(author, body = directory))
     }
 
     @Test

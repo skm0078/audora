@@ -17,8 +17,9 @@ internal enum class MarginReason { REPEATED, RUNNING_FOLIO, STANDALONE_FOLIO, PR
  * - it carries a page number that runs with the page index on another page of the window ("31" on page 40 and
  *   "Page 3 of 50" beside "Page 2 of 50" on the page before), which catches headers whose text changes by chapter;
  * - it is nothing but a page number;
- * - or it is a printer's slug ([PrintSlugs]): a layout file's name or a print time with its seconds, or a print time
- *   that another page of the window carries in its margin too, the same to the minute.
+ * - or it is a printer's slug ([PrintSlugs]): it ends with a layout file's name, is a bare print stamp to the
+ *   second, or carries a print time that another page of the window carries in its margin too, the same to the
+ *   minute.
  *
  * A page needs at least one line outside both bands for any of this: otherwise there is no body to tell the
  * margins from.

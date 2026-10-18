@@ -52,8 +52,11 @@ package io.github.skm0078.audora.pdf
  *     English titles, Latin abbreviations, capital initials and references before a number no longer end a sentence
  *     ("Dr. Rao", "e.g. Apples", "Abbott B. P.", "Eq. (A1)"); list items opened by "b.", "iv.", "ii)", "(A)",
  *     "B)" or "(IV)"; a corresponding author's block at a column's foot (short small lines with the page's only
- *     e-mail address) tagged as a footnote;
- *     printer's slugs in a page's margin dropped (a layout file's name, a print time with seconds, or one another
- *     page's margin shares to the minute).
+ *     e-mail address) tagged as a footnote; printer's slugs in a page's margin dropped (a line ending with a layout
+ *     file's name, a bare print stamp to the second, or a print time another page's margin shares to the minute);
+ *     a word header opening the next page starts a table of its own, and numbers that name the columns ("041",
+ *     "1 | 2 | 3") stay a header; "S. K. Mukherjee", "Govt. Order", "Rs. 500" and dotted Hindi and Bengali words
+ *     held whole on Android too; "x." opening an item only in sequence, "(क)" and "(ক)" labels; an evened OCR read
+ *     kept only with as many words.
  */
 const val PIPELINE_VERSION: Int = 11

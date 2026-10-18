@@ -75,7 +75,17 @@ internal class IndicSentenceRules(config: SentenceConfig) {
         var start = stop
         while (start > 0 && !text[start - 1].isWhitespace() && text[start - 1] !in OPENERS) start--
         val word = text.substring(start, stop)
-        return nfc(word) in nonBreaking || isInitial(text, start, word) || isReference(text, at, word)
+        return nfc(word) in nonBreaking || isInitial(text, start, word) || isReference(text, at, word) ||
+            insideListedWord(text, start, at)
+    }
+
+    /**
+     * [at] falls inside a listed dotted word that starts at [start]: ICU (Android) breaks "कि.|मी." and "उ.|प्र."
+     * at the inner full stop, where the JDK does not, so with no space after [at] the whole word is looked up.
+     */
+    private fun insideListedWord(text: String, start: Int, at: Int): Boolean {
+        if (at >= text.length || text[at].isWhitespace()) return false
+        return nfc(text.substring(start, tokenEnd(text, at)).trimEnd { it == '.' || it in CLOSERS }) in nonBreaking
     }
 
     /** [word] points at a number or bracket that starts the next piece at [at]: "No. 5", "Fig. (a)". */
@@ -86,13 +96,16 @@ internal class IndicSentenceRules(config: SentenceConfig) {
 
     /**
      * [word] (before its full stop, starting at [start]) is capital initials: "U.S" or "A.P.J" always; a single
-     * capital only after nothing, a full stop or comma ("Dr. A.", "J. A.", "Smith, J."), or a name ("Abbott B."), so
-     * "says I.", "matrix Q.", "size N." and "Appendix A." ([SentenceConfig.letterLabels]) still end a sentence.
+     * capital only after nothing, a full stop or comma ("Dr. A.", "J. A.", "Smith, J."), or a name ("Abbott B."), or
+     * before another initial ("by S. K. Mukherjee"), so "says I.", "matrix Q.", "size N." and "Appendix A."
+     * ([SentenceConfig.letterLabels]) still end a sentence. A lone initial after a small word before a surname
+     * ("with K. Rao") still splits: it reads like "matrix Q. The".
      */
     private fun isInitial(text: String, start: Int, word: String): Boolean {
         if (!LATIN_INITIALS.matches(word) || word == "I") return false
         val before = wordBefore(text, start)
-        return word.length > 1 || before == null || before.last() in ".," || isName(before)
+        return word.length > 1 || before == null || before.last() in ".," || isName(before) ||
+            initialFollows(text, start + word.length + 1)
     }
 
     private fun isName(word: String): Boolean =
@@ -119,12 +132,6 @@ internal class IndicSentenceRules(config: SentenceConfig) {
         }
     }
 
-    private fun skipSpaces(text: String, from: Int): Int {
-        var i = from
-        while (i < text.length && text[i].isWhitespace()) i++
-        return i
-    }
-
     private companion object {
         /** Danda and double danda (U+0964, U+0965), shared by Devanagari and Bengali. */
         const val DANDAS = "\u0964\u0965"
@@ -149,6 +156,28 @@ internal class IndicSentenceRules(config: SentenceConfig) {
         /** Inside a name before an initial: "O'Brien", "Smith-Jones". */
         const val NAME_JOINERS = "'\u2019-"
 
+        /** Capital initials as the next word: "K." or "P.J.". */
+        val NEXT_INITIALS = Regex("(?:[A-Z]\\.)+")
+
         fun nfc(text: String): String = Normalizer.normalize(text, Normalizer.Form.NFC)
+
+        fun skipSpaces(text: String, from: Int): Int {
+            var i = from
+            while (i < text.length && text[i].isWhitespace()) i++
+            return i
+        }
+
+        /** Where the word at [from] ends: the next whitespace or the end of [text]. */
+        fun tokenEnd(text: String, from: Int): Int {
+            var i = from
+            while (i < text.length && !text[i].isWhitespace()) i++
+            return i
+        }
+
+        /** The word after the spaces at [from] is capital initials ([NEXT_INITIALS]). */
+        fun initialFollows(text: String, from: Int): Boolean {
+            val begin = skipSpaces(text, from)
+            return NEXT_INITIALS.matches(text.substring(begin, tokenEnd(text, begin)))
+        }
     }
 }

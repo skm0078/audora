@@ -240,12 +240,15 @@ internal class OcrFootnotes(private val config: NoteConfig) {
 
         /**
          * [first] starts within `ocrFlushEm` line heights of the left edge of the other lines in its column: lines over
-         * it no wider than `ocrColumnWidthRatio` times its widest line (a title across two columns is not its column).
+         * it no wider than `ocrColumnWidthRatio` times its widest line or the column's median line, whichever is wider
+         * (a title across two columns is not its column, and a short centred block is measured against the column's
+         * full lines, not against nothing).
          */
         private fun isFlush(first: TextBox, boxes: List<TextBox>, members: Set<TextLine>): Boolean {
-            val widest = boxes.maxOf { it.width } * config.ocrColumnWidthRatio
-            val column = placed.filter { it.line !in members }.mapNotNull { it.box }
-                .filter { it.overlapsAny(boxes) && it.width <= widest }
+            val over = placed.filter { it.line !in members }.mapNotNull { it.box }.filter { it.overlapsAny(boxes) }
+            val usual = median(over.map { it.width }) ?: 0f
+            val widest = maxOf(boxes.maxOf { it.width }, usual) * config.ocrColumnWidthRatio
+            val column = over.filter { it.width <= widest }
             val left = column.minOfOrNull { it.left } ?: first.left
             return first.left - left <= first.height * config.ocrFlushEm
         }
@@ -343,8 +346,13 @@ internal class OcrFootnotes(private val config: NoteConfig) {
         /** A source or credit line set small under a table or figure: not a note. */
         val SOURCE_LABEL = Regex("""^\s*(?i:sources?|courtesy|स्रोत|स्त्रोत|साभार|সূত্র|উৎস)\s*[:：\-–]""")
 
-        /** A marker glued to the end of a word or after its punctuation, as the body text cites a note. */
-        val CITED_MARKER = Regex("""(?<=[\p{L}\p{M}.,;:)’”])(?:\p{Nd}{1,3}|[*†‡§¶#]+)(?=[\s.,;:)]|$)""")
+        /**
+         * A marker glued to the end of a word or after its punctuation, as the body text cites a note; not the digits
+         * after a decimal point or a group comma ("12.5", "1,250").
+         */
+        val CITED_MARKER = Regex(
+            """(?<=[\p{L}\p{M}.,;:)’”])(?<!\p{Nd}[.,])(?:\p{Nd}{1,3}|[*†‡§¶#]+)(?=[\s.,;:)]|$)""",
+        )
     }
 }
 
