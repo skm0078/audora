@@ -50,6 +50,21 @@ class ReadingText internal constructor(
         return if (count == 0) null else sum.toFloat() / count / OcrWord.MAX_CONFIDENCE
     }
 
+    /**
+     * For each offset of [text], whether its glyph is set in a bold font (by its name, [markers] as
+     * `LayoutConfig.boldFontMarkers`); false for separators and on scanned pages, which have no fonts.
+     */
+    internal fun boldOffsets(markers: List<String>): BooleanArray {
+        val bold = BooleanArray(page.text.length)
+        val boldFonts = HashMap<String, Boolean>()
+        for (run in page.fontRuns) {
+            if (boldFonts.getOrPut(run.fontName) { GlyphStyles.isBoldFont(run.fontName, markers) }) {
+                for (offset in run.start until minOf(run.end, bold.size)) bold[offset] = true
+            }
+        }
+        return BooleanArray(text.length) { i -> sources[i] != INSERTED && bold[sources[i]] }
+    }
+
     companion object {
         const val INSERTED = -1
     }

@@ -289,6 +289,7 @@ private fun withDataFirst(
         bounds = null,
         speakScore = null,
         table = summaryOf(requireNotNull(opening.table)),
+        boldTerms = emptyList(),
     )
     val out = ArrayList<ReadingUnit>(units.size + 1)
     units.forEachIndexed { i, unit ->

@@ -11,6 +11,7 @@ import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.TableRowInfo
+import io.github.skm0078.audora.core.model.TermSpan
 import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.pdf.cleanup.ClutterRemover
@@ -73,6 +74,7 @@ class ReadingUnitBuilder(
     private val clutter = ClutterRemover(cleanupConfig, layoutConfig)
     private val furniture = FurnitureFinder(layoutConfig.furniture)
     private val notes = NoteFinder(layoutConfig)
+    private val boldMarkers = layoutConfig.boldFontMarkers
 
     /** Running headers and page numbers on scanned pages (ADR-032); `PdfBook` feeds it the neighbours' strips. */
     internal val ocrClutter = OcrClutter(cleanupConfig)
@@ -140,6 +142,7 @@ class ReadingUnitBuilder(
         val flat = String(CharArray(text.length) { i -> if (text[i] in LINE_BREAKS) ' ' else text[i] })
         val units = ArrayList<ReadingUnit>()
         val headers = HashMap<Int, List<String>>()
+        val bold = reading.boldOffsets(boldMarkers)
         for (paragraph in reading.paragraphs) {
             val pieces = if (paragraph.table != null) {
                 listOf(trim(text, paragraph.start, paragraph.end)).filterNot { it.isEmpty() }
@@ -151,7 +154,7 @@ class ReadingUnitBuilder(
                 val raw = text.substring(piece.first, piece.last + 1)
                 if (raw.none { it.isLetterOrDigit() }) return@forEachIndexed
                 val row = paragraph.table?.let { TableRowText.of(reading, piece.first, piece.last + 1, it) }
-                val unitText = row?.text ?: raw.split(WHITESPACE).filter { it.isNotEmpty() }.joinToString(" ")
+                val (unitText, boldTerms) = textOf(raw, row, paragraph.kind) { bold[piece.first + it] }
                 val ocrConfidence = reading.ocrConfidence(piece.first, piece.last + 1)
                 units.add(
                     ReadingUnit(
@@ -167,11 +170,27 @@ class ReadingUnitBuilder(
                         speakScore = speakability.score(unitText, ocrConfidence),
                         table = paragraph.table?.let { cells -> row?.let { tableInfo(cells, it, headers) } },
                         noteRef = paragraph.noteRef,
+                        boldTerms = boldTerms,
                     ),
                 )
             }
         }
         return units
+    }
+
+    /**
+     * A unit's text and bold terms ([UnitText]) from its [raw] slice, [isBold] telling for each offset of it: a table
+     * row's text is its cells' ([row]), and headings and table rows tag no bold terms.
+     */
+    private fun textOf(
+        raw: String,
+        row: TableRowText?,
+        kind: ParagraphKind,
+        isBold: (Int) -> Boolean,
+    ): Pair<String, List<TermSpan>> = when {
+        row != null -> row.text to emptyList()
+        kind == ParagraphKind.HEADING -> UnitText.of(raw, config.minBoldTermLetters) { false }
+        else -> UnitText.of(raw, config.minBoldTermLetters, isBold)
     }
 
     /** A table unit's [TableRowInfo]; the header row records the table's header texts for its rows. */
@@ -230,7 +249,6 @@ class ReadingUnitBuilder(
     }
 
     private companion object {
-        val WHITESPACE = Regex("\\s+")
         const val LINE_BREAKS = "\n\r\t"
     }
 }
