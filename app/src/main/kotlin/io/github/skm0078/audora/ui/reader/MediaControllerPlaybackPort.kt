@@ -23,6 +23,7 @@ import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.notes.BookSettings
 import io.github.skm0078.audora.playback.contract.PlaybackContract
+import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
 import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.contract.SpeechStyleChange
@@ -161,7 +162,10 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
     override fun skipParagraph(forward: Boolean, onRefused: () -> Unit) = withPlayer("paragraph") { player ->
         AudoraLog.i(TAG, "Skip paragraph forward=$forward")
         val args = PlaybackContract.skipParagraphArgs(forward)
-        send(player, PlaybackContract.SKIP_PARAGRAPH, args, "paragraph", onRefused)
+        // Only "nowhere to go" is told; a skip dropped because reading moved on is just logged.
+        send(player, PlaybackContract.SKIP_PARAGRAPH, args, "paragraph") { error ->
+            if (error == PlaybackErrorCode.NO_PARAGRAPH_THAT_WAY.name) onRefused()
+        }
     }
 
     override fun replayPrevious(factor: Float) = withPlayer("replay") { player ->
@@ -196,13 +200,13 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
 
     override fun positionInSentenceMs(): Long? = controller?.takeIf { it.currentMediaItem != null }?.currentPosition
 
-    /** [onRefused]: on the main thread when the service did not do it (logged either way). */
+    /** [onRefused]: on the main thread when the service did not do it, with its error code (logged either way). */
     private fun send(
         player: MediaController,
         command: SessionCommand,
         args: Bundle,
         what: String,
-        onRefused: () -> Unit = {},
+        onRefused: (error: String?) -> Unit = {},
     ) {
         val result = player.sendCustomCommand(command, args)
         result.addListener(
@@ -211,7 +215,7 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
                 if (outcome?.resultCode != SessionResult.RESULT_SUCCESS) {
                     val error = outcome?.extras?.getString(PlaybackContract.RESULT_ERROR)
                     AudoraLog.w(TAG, "$what refused, result=${outcome?.resultCode} error=$error")
-                    onRefused()
+                    onRefused(error)
                 }
             },
             ContextCompat.getMainExecutor(context),

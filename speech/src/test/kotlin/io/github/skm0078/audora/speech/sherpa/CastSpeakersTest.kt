@@ -1,10 +1,11 @@
 // File: speech/src/test/kotlin/io/github/skm0078/audora/speech/sherpa/CastSpeakersTest.kt
-// Purpose: Character speakers are used only on the model version their table was written for.
+// Purpose: Character speakers are used only on the catalog voice and model version their table was written for.
 
 package io.github.skm0078.audora.speech.sherpa
 
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.getOrNull
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -39,6 +40,33 @@ class CastSpeakersTest {
     @Test
     fun `Kokoro lists 27 English speakers besides the narrator`() {
         assertEquals(27, CastSpeakers.of(kokoro).count { it.speakerId != HEART })
+    }
+
+    @Test
+    fun `the tables are keyed on the catalog voice, so an imported model of the same family has no cast`() {
+        val imported = kokoro.copy(id = "custom-my-kokoro-1a2b")
+        val importedKitten = kitten.copy(id = "custom-my-kitten-3c4d")
+
+        assertTrue(CastSpeakers.of(imported).isEmpty())
+        assertTrue(CastSpeakers.of(importedKitten).isEmpty())
+        assertEquals(HEART, CastSpeakers.speakerFor(imported, ADAM, KOKORO_V1_0))
+        assertTrue(CastSpeakers.tableFits(imported, KOKORO_V1_1))
+        assertEquals(KITTEN_V0_8, CastSpeakers.of(kitten).size)
+    }
+
+    @Test
+    fun `every keyed voice installs the archive its table was written for, in both catalogs`() {
+        val catalogs = listOf("models.json", "bundled-voices.json").map { name ->
+            (File(name).takeIf { it.isFile } ?: File("speech/$name")).readText()
+        }
+        CastSpeakers.archives.forEach { (voice, archive) ->
+            val entries = catalogs.mapNotNull { text ->
+                text.takeIf { "\"id\": \"$voice\"" in it }
+                    ?.substringAfter("\"id\": \"$voice\"")?.substringBefore("\"id\":")
+            }
+            assertTrue("no catalog has $voice", entries.isNotEmpty())
+            entries.forEach { assertTrue("$voice no longer installs $archive", "\"archive\": \"$archive\"" in it) }
+        }
     }
 
     @Test

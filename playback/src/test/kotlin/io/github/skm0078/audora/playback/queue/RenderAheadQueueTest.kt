@@ -187,6 +187,26 @@ class RenderAheadQueueTest {
     }
 
     @Test
+    fun aForgottenSentenceIsRenderedAgainWhenPlayedAgain() {
+        val renders = Collections.synchronizedList(ArrayList<UnitKey>())
+        val q = start { unit ->
+            renders.add(UnitKey.of(unit))
+            Outcome.Success(pcm(10 + renders.size))
+        }
+        val units = page(0, 6)
+        q.setWindow(units)
+        val first = q.awaitPcm(UnitKey(0, 0))
+        q.setWindow(units.drop(3))
+        q.awaitPcm(UnitKey(0, 3))
+        q.forget(UnitKey(0, 0))
+        q.setWindow(units)
+
+        val again = q.awaitPcm(UnitKey(0, 0))
+        assertTrue("a fresh render, not the cached one", again !== first)
+        assertEquals(2, renders.count { it == UnitKey(0, 0) })
+    }
+
+    @Test
     fun recentCacheIsBoundedInBytes() {
         val cache = RecentAudio(maxBytes = 100)
         cache.put(UnitKey(0, 0), pcm(30)) // 60 bytes

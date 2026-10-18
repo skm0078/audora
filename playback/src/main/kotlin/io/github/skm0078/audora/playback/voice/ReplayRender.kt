@@ -24,8 +24,13 @@ class ReplayRender {
     /** The style to render [key] with, when it is the sentence replayed. */
     fun styleFor(key: UnitKey): SpeechStyle? = replay?.takeIf { it.key == key }?.style
 
-    /** A sentence started playing: any other than the one replayed ends the replay. */
-    fun onSentence(key: UnitKey?) {
-        if (replay?.key != key) replay = null
+    /**
+     * A sentence started playing: any other than the one replayed ends the replay. Returns the sentence whose replay
+     * just ended, if any: its slower audio is still in the render caches and must be dropped.
+     */
+    fun onSentence(key: UnitKey?): UnitKey? {
+        val ended = replay?.key?.takeIf { it != key } ?: return null
+        replay = null
+        return ended
     }
 }

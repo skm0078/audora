@@ -23,9 +23,11 @@ class ReplayRenderTest {
     @Test
     fun `it lasts while the replayed sentence plays and ends with the next one`() {
         replay.set(UnitKey(2, 4), slower)
-        replay.onSentence(UnitKey(2, 4))
+        assertNull(replay.onSentence(UnitKey(2, 4)))
         assertEquals(slower, replay.styleFor(UnitKey(2, 4)))
-        replay.onSentence(UnitKey(2, 5))
+        // Ending it names the replayed sentence, once, so its slower audio can be dropped.
+        assertEquals(UnitKey(2, 4), replay.onSentence(UnitKey(2, 5)))
         assertNull(replay.styleFor(UnitKey(2, 4)))
+        assertNull(replay.onSentence(UnitKey(2, 6)))
     }
 }

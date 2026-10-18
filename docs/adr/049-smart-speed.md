@@ -35,8 +35,11 @@ podcast apps know the fix from "smart speed" features: take the time out of the 
    window below −50 dBFS stays at its nominal place), which keeps the pitch down to 80 Hz voices. The piece's last
    4 ms fade to zero, so a cut mid-wave never clicks into the pause after it. Tuned against a line-by-line
    simulator on synthetic signals (at 2×: silences about 2.7–3×, held sounds 1.6×, onsets 1.25×). Those figures
-   come from synthetic tones and silences, not real speech; on real voices the protected share runs higher, so they
-   are a design target that the phone-session listening checks must confirm. The ±8 ms search is pinned by a test:
+   come from synthetic tones and silences, not real speech. On real speech (12 flite sentences, the review's
+   simulator in `wip/smart-speed-sim/review-dca71fc/`) the protected share runs higher: at 2× 8 of the 12 leave the
+   spread between 1.69× and 2×, run silences and held sounds at the 4× cap and onsets at 1.25–1.45×; the other 4
+   run held sounds at 2.7–3.4×. So held vowels and hums are the sounds most shortened, and the phone-session check
+   (K16) listens for choppy vowels and clipped hums at 2× and 3×, not only for blurred consonants. The ±8 ms search is pinned by a test:
    with ±5 ms a five-harmonic 80 Hz voice loses over 1% of its energy off the harmonic lines at 1.33×.
 5. **Speed bookkeeping follows.** The render-ahead drain rate multiplies in `voiceStretch`, and the render speed
    tracker is given `modelRate × voiceStretch`, so its normal-rate audio seconds stay comparable across settings.

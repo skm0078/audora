@@ -83,7 +83,10 @@ class SmartStretch(private val config: SmartSpeedConfig = SmartSpeedConfig()) {
         if (kMax <= 0f || duration(weights, lengths, floor, kMax) > target) {
             val speeds = graded(weights, lengths, target) ?: FloatArray(weights.size) { factor }
             val share = protectedShare(weights, lengths) * PERCENT
-            AudoraLog.d(TAG, "x$factor: ${share.roundToInt()}% of frames protected, protected at x${speeds.min()}")
+            AudoraLog.d(
+                TAG,
+                "x$factor: ${share.roundToInt()}% of frames protected, protected at x${speeds.minOrNull()}",
+            )
             return speeds
         }
         var low = 0f
