@@ -23,7 +23,8 @@ class OcrMargins(val top: List<String>, val bottom: List<String>)
  * [CleanupConfig.maxMarginLines] lines nearest that edge) and the page has text outside both bands. It is dropped
  * when it is a page number by itself, carries a number that steps with the page number across a neighbour's strip
  * (a running folio), or its letters repeat in the same strip on enough neighbours (a running header), allowing for
- * a letter or two misread ([CleanupConfig.ocrMatchSimilarity]).
+ * a letter or two misread ([CleanupConfig.ocrMatchSimilarity]), or it is a printer's slug: a layout file's name
+ * ("HUD3_25_09.indd", ".qxd") or a print date with its time ("5/13/11 6:45 AM").
  */
 internal class OcrClutter(private val config: CleanupConfig) {
     /**
@@ -58,8 +59,11 @@ internal class OcrClutter(private val config: CleanupConfig) {
         val repeatable = needed > 0 && signature.count { it != SIGNATURE_DIGITS } >= config.minSignatureLetters
         val repeated = repeatable &&
             neighbours.values.count { lines -> lines.any { similar(signature, marginSignature(it)) } } >= needed
-        return folios.standalone || isRunningFolio(folios.values, neighbours) || repeated
+        return folios.standalone || isRunningFolio(folios.values, neighbours) || repeated || isPrintSlug(line)
     }
+
+    private fun isPrintSlug(line: String): Boolean =
+        LAYOUT_FILE.containsMatchIn(line) || PRINT_TIME.containsMatchIn(line)
 
     /** A number on the line that a neighbour's strip carries shifted by the page offset: 12 here, 13 a page on. */
     private fun isRunningFolio(values: List<Int>, neighbours: Map<Int, List<String>>): Boolean =
@@ -92,3 +96,9 @@ internal class OcrClutter(private val config: CleanupConfig) {
 
     private enum class Band { TOP, BOTTOM }
 }
+
+/** A layout program's file name in a printer's slug: "HUD3_25_09Single-Bengali-BE.indd", "ch04.qxd". */
+private val LAYOUT_FILE = Regex("""\S\.(?i:indd|qxd|qxp)\b""")
+
+/** A print date with its time in a printer's slug: "5/13/11 6:45 AM", "2019-03-04 10:12". */
+private val PRINT_TIME = Regex("""\d{1,4}[/.-]\d{1,2}[/.-]\d{2,4},?\s+\d{1,2}:\d{2}""")

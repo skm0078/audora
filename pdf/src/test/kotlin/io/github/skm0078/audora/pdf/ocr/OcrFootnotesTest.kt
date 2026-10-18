@@ -33,27 +33,56 @@ class OcrFootnotesTest {
         return OcrLine(words, paragraph, size)
     }
 
-    private fun body(top: Float = BODY_TOP) = listOf(
+    private fun body(top: Float = BODY_TOP, confidence: Int = CONFIDENT) = listOf(
         "Plants make their food from light and water every day.",
         "The leaves hold the green matter that catches the light.",
         "Roots take water up from the soil into the stem below.",
         "The stem carries the water up to every leaf it holds.",
-    ).mapIndexed { i, text -> line(text, top + i * BODY_PITCH, 0) }
+    ).mapIndexed { i, text -> line(text, top + i * BODY_PITCH, 0, confidence = confidence) }
 
     private val body = body()
 
-    /** [notes] (text to Tesseract paragraph) set small from [NOTES_TOP] down, under the body text. */
+    /**
+     * [notes] (text to Tesseract paragraph) set small from [top] down, under the body text; [rule]: a short rule
+     * ruled between them.
+     */
     private fun page(
         vararg notes: Pair<String, Int>,
         size: Float = SMALL,
         confidence: Int = CONFIDENT,
         top: Float = NOTES_TOP,
+        rule: Boolean = false,
     ): List<ReadingUnit> {
         val lines = body(top - (NOTES_TOP - BODY_TOP)) + notes.mapIndexed { i, (text, paragraph) ->
             line(text, top + i * NOTE_PITCH, paragraph, size, confidence)
         }
-        return builder.build(builder.ocrReadingText(PAGE, OcrText(lines)) { transform.toPage(it) })
+        val rules = if (rule) {
+            listOf(
+                ViewRect(LEFT, top - RULE_ABOVE, LEFT + RULE_WIDTH, top - RULE_ABOVE),
+            )
+        } else {
+            emptyList()
+        }
+        return builder.build(builder.ocrReadingText(PAGE, OcrText(lines, rules = rules)) { transform.toPage(it) })
     }
+
+    /** Three lines of verse set small and indented under the body text. */
+    private fun quote(): List<ReadingUnit> {
+        val verse = listOf(
+            "the soil was dry that year, so the roots grew deeper",
+            "and the leaves turned brown before the rains came back",
+            "to the hills where the old farm had stood for years.",
+        ).mapIndexed { i, text -> line(text, NOTES_TOP + i * NOTE_PITCH, 1, SMALL).shifted(QUOTE_INDENT) }
+        return builder.build(builder.ocrReadingText(PAGE, OcrText(body + verse)) { transform.toPage(it) })
+    }
+
+    private fun OcrLine.shifted(by: Float) = OcrLine(
+        words.map {
+            OcrWord(it.text, it.box?.let { b -> ViewRect(b.left + by, b.top, b.right + by, b.bottom) }, it.confidence)
+        },
+        paragraph,
+        size,
+    )
 
     private fun List<ReadingUnit>.notes() = filter { it.kind == UnitKind.FOOTNOTE }.map { it.noteRef to it.text }
 
@@ -85,13 +114,42 @@ class OcrFootnotesTest {
             "†Work done while at the university farm in the hill country." to
                 (2 to "Work done while at the university farm in the hill country."),
         )
-        for ((note, want) in cases) assertEquals(note, listOf(want), page(note to 1).notes())
+        // A sign is sure on its own; one line opening with a number needs a rule above it as well.
+        for ((note, want) in cases) {
+            assertEquals(note, listOf(want), page(note to 1, rule = note.first().isDigit()).notes())
+        }
     }
 
     @Test
-    fun `a wide note line without a number carries on a note from the page before`() {
-        val units = page("the soil was dry that year, so the roots grew deeper." to 1)
+    fun `a wide note line without a number under a rule carries on a note from the page before`() {
+        val units = page("the soil was dry that year, so the roots grew deeper." to 1, rule = true)
         assertEquals(listOf(null to "the soil was dry that year, so the roots grew deeper."), units.notes())
+    }
+
+    @Test
+    fun `a line that only starts with a number carries on the note above, the next number opens a new one`() {
+        val continued = page(
+            "1 See the appendix for the full list of plants we grew." to 1,
+            "12 pages of tables follow in the appendix to this volume." to 1,
+        )
+        assertEquals(listOf(1), continued.notes().map { it.first }.distinct().filterNotNull())
+        assertEquals(true, continued.notes().any { it.second.contains("grew. 12 pages of tables") })
+        val numbered = page(
+            "1 See the appendix for the full list of plants we grew." to 1,
+            "2 First printed in the spring of the year nineteen ninety." to 1,
+        )
+        assertEquals(listOf(1, 2), numbered.notes().map { it.first })
+    }
+
+    @Test
+    fun `small print read less surely than English is held to the page's own confidence`() {
+        val notes = listOf(
+            "१ पौधों की पूरी सूची परिशिष्ट में दी गई है और वह लंबी है।",
+            "२ यह पहली बार उन्नीस सौ नब्बे के वसंत में छपा था।",
+        ).mapIndexed { i, text -> line(text, NOTES_TOP + i * NOTE_PITCH, i + 1, SMALL, HINDI_NOTES) }
+        val lines = body(confidence = HINDI_BODY) + notes
+        val units = builder.build(builder.ocrReadingText(PAGE, OcrText(lines)) { transform.toPage(it) })
+        assertEquals(listOf(1, 2), units.notes().map { it.first })
     }
 
     @Test
@@ -115,6 +173,13 @@ class OcrFootnotesTest {
             "a caption under a figure" to page("Figure 2: Leaves of the plants we grew in the long summer." to 1),
             "a list in small type" to page("• Water the plants every morning before the sun is high." to 1),
             "a short label" to page("Plate one" to 1),
+            "one unmarked line with nothing more to show it is a note" to
+                page("the soil was dry that year, so the roots grew deeper." to 1),
+            "one line starting with a number, no rule above" to
+                page("15 August was the day the plants first came up in the field." to 1),
+            "an indented quote set small" to quote(),
+            "a source line under a rule" to
+                page("Source: survey of the plants grown on the farm in the year two thousand." to 1, rule = true),
         )
         for ((name, units) in cases) assertEquals(name, emptyList<Pair<Int?, String>>(), units.notes())
     }
@@ -131,7 +196,12 @@ class OcrFootnotesTest {
     fun `a short body line OCR measured small, set apart above the notes, stays body text`() {
         val lines = body + line("Consider these:", LEAD_TOP, 1, SMALL) +
             line("1 See the appendix for the full list of plants we grew.", NOTES_TOP, 2, SMALL)
-        val units = builder.build(builder.ocrReadingText(PAGE, OcrText(lines)) { transform.toPage(it) })
+        val rule = ViewRect(LEFT, NOTES_TOP - RULE_ABOVE, LEFT + RULE_WIDTH, NOTES_TOP - RULE_ABOVE)
+        val units = builder.build(
+            builder.ocrReadingText(PAGE, OcrText(lines, rules = listOf(rule))) {
+                transform.toPage(it)
+            },
+        )
         assertEquals(UnitKind.BODY to "Consider these:", units[body.size].kind to units[body.size].text)
         assertEquals(listOf(1 to "See the appendix for the full list of plants we grew."), units.notes())
     }
@@ -157,6 +227,11 @@ class OcrFootnotesTest {
         const val NOTES_TOP = 0.87f
         const val NOTE_PITCH = 0.016f
         const val MID_PAGE = 0.3f
+        const val RULE_ABOVE = 0.03f
+        const val RULE_WIDTH = 0.3f
+        const val QUOTE_INDENT = 0.1f
+        const val HINDI_BODY = 75
+        const val HINDI_NOTES = 60
         const val LEFT = 0.05f
         const val WORD_PITCH = 0.08f
         const val WORD_WIDTH = 0.07f
