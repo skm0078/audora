@@ -18,6 +18,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.concurrent.thread
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
@@ -140,14 +141,19 @@ class DictionaryDownloadTest {
                 release.await()
             }
         }
-        started.await()
-        assertTrue(files.downloading)
-        assertFalse(withContext(Dispatchers.Default) { files.awaitNoDownload(timeoutMs = 100L) })
+        try {
+            started.await()
+            assertTrue(files.downloading)
+            assertFalse(withContext(Dispatchers.Default) { files.awaitNoDownload(timeoutMs = 100L) })
 
-        release.countDown()
-        download.join()
+            val waiting = async(Dispatchers.Default) { files.awaitNoDownload(timeoutMs = 5_000L) }
+            release.countDown()
+            assertTrue("the wait ends once the download stops", waiting.await())
+        } finally {
+            release.countDown()
+            download.join()
+        }
         assertFalse(files.downloading)
-        assertTrue(files.awaitNoDownload(timeoutMs = 0L))
     }
 
     @Test

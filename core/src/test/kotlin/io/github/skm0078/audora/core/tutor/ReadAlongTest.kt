@@ -203,8 +203,9 @@ class ReadAlongTest {
             words.map { it.checked },
         )
         assertTrue(PageWords.of(listOf("The cat sat."), Lang.EN).all { it.checked })
-        assertTrue(PageWords.of(listOf("I saw Tom."), Lang.EN).all { it.checked })
-        assertTrue(PageWords.of(listOf("Ask Dad."), Lang.EN).all { it.checked })
+        // A word after the dot: an "up to three letters and a dot" pattern would have left Tom and Dad unjudged.
+        assertTrue(PageWords.of(listOf("I saw Tom. He waved."), Lang.EN).all { it.checked })
+        assertTrue(PageWords.of(listOf("Ask Dad. Then go."), Lang.EN).all { it.checked })
     }
 
     @Test
