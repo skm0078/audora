@@ -12,8 +12,8 @@ import io.github.skm0078.audora.pdf.units.SentenceScan.skipSpaces
  * abbreviation cuts a name in half.
  */
 internal object IndicStops {
-    /** Zero-width non-joiner and joiner, which some fonts' text puts inside Indic words ("र‍्य", "कि.‍मी."). */
-    const val JOINERS = "‌‍"
+    /** Zero-width non-joiner and joiner, which some fonts put inside Indic words: "र\u200D्य", "कि.\u200Dमी.". */
+    const val JOINERS = "\u200C\u200D"
 
     /**
      * The break [at] ends the word from [start] to its full stop [stop], and that stop does not end a sentence: it is
@@ -30,7 +30,7 @@ internal object IndicStops {
 
     /**
      * The break [at] falls right after a full stop between two Devanagari or Bengali letters, with no space
-     * ("रा.|शै.अ.प्र.प.", "अ.|जा."), or after a joiner that follows such a stop, where ICU puts it ("कि.‍|मी.").
+     * ("रा.|शै.अ.प्र.प.", "अ.|जा."), or after a joiner that follows such a stop, where ICU puts it ("कि.\u200D|मी.").
      */
     private fun gluedStop(text: String, at: Int): Boolean {
         var stop = at
@@ -39,7 +39,7 @@ internal object IndicStops {
     }
 
     /** A Devanagari or Bengali letter or sign, or a zero-width joiner inside such a word. */
-    fun isIndic(c: Char): Boolean = c in 'ऀ'..'ॿ' || c in 'ঀ'..'৿' || c in JOINERS
+    fun isIndic(c: Char): Boolean = c in '\u0900'..'\u097F' || c in '\u0980'..'\u09FF' || c in JOINERS
 
     private val MERIDIEMS = setOf("a.m", "p.m")
 }

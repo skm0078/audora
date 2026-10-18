@@ -223,6 +223,41 @@ class ReadingUnitBuilderTest {
     }
 
     @Test
+    fun `a word in Roman letters is no page number, a page number in brackets is`() {
+        val paragraphs = listOf(
+            listOf("She asked...... did", "he know? He paused...... mild", "surprise showed."),
+            listOf("Foreword ........ (i)", "Preface ........ (iii)", "Introduction ........ (5)"),
+        )
+        val texts = paragraphs.map { lines ->
+            ReadingUnitBuilder().build(PageSketch().apply { lines(lines, 50f, 720f) }.build()).map { it.text }
+        }
+        assertEquals(
+            listOf(
+                listOf("She asked\u2026 did he know?", "He paused\u2026 mild surprise showed."),
+                listOf("Foreword \u2026 (i)", "Preface \u2026 (iii)", "Introduction \u2026 (5)"),
+            ),
+            texts,
+        )
+    }
+
+    @Test
+    fun `a contents entry set apart as its own paragraph keeps its page label`() {
+        val texts = listOf("Foreword ........ V", "Appendix ..... A-1").map { line ->
+            ReadingUnitBuilder().build(PageSketch().apply { line(line, 50f, 720f) }.build()).map { it.text }
+        }
+        assertEquals(listOf(listOf("Foreword \u2026 V"), listOf("Appendix \u2026 A-1")), texts)
+    }
+
+    @Test
+    fun `an entry keeps its page number after a no-break space`() {
+        val entries = listOf("Introduction ........\u00A05", "Methods ........\u00A09")
+        assertEquals(
+            listOf("Introduction \u2026 5", "Methods \u2026 9"),
+            ReadingUnitBuilder().build(PageSketch().apply { lines(entries, 50f, 720f) }.build()).map { it.text },
+        )
+    }
+
+    @Test
     fun `prose with one leader in it is not cut at its line ends`() {
         val paragraphs = listOf(
             listOf("He waited...... then", "he left the room."),
