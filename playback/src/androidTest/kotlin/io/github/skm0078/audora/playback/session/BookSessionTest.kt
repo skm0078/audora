@@ -342,7 +342,7 @@ class BookSessionTest {
     fun aParagraphSkipLandsOnTheUnitItNamesWhenTwoShareAnOffset() {
         // Unit 0 (the zero-length summary) ends a paragraph, so "previous paragraph" from unit 2 is unit 1, which
         // starts where the summary does. Unit 1 is not in the playlist, so reading rebuilds there.
-        playPaused(page = 1, charStart = CHARS, book = TABLE_BOOK)
+        playPaused(page = 1, charStart = 2 * CHARS, book = TABLE_BOOK)
         assertEquals(UnitKey(1, 2), awaitSentenceOn(page = 1))
 
         assertTrue(runBlocking { withContext(Dispatchers.Main) { session.skipParagraph(forward = false) } })

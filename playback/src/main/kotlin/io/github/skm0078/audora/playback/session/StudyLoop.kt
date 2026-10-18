@@ -26,11 +26,15 @@ data class StudyRange(val start: Spot, val end: Spot, val loop: Boolean) {
     fun startsAt(unit: ReadingUnit): Boolean = unit.page == start.page &&
         start.charStart in unit.charStart until unit.spokenEnd && (start.index == null || start.index == unit.index)
 
-    /** [unit] is the range's last sentence: inside, with nothing after it inside. A page not loaded yet is unknown. */
+    /**
+     * [unit] is the range's last sentence: inside, with nothing after it inside. Pages join the playlist whole, so
+     * "more is coming" right after [unit] means nothing else on its page plays: with [end] on that page the range ends
+     * here; with [end] on a later page it is unknown until that page loads ([StudyLoop.onOvershoot] catches it).
+     */
     fun endsAt(unit: ReadingUnit, next: PlaybackItem?): Boolean = unit in this && when (next) {
         null -> true
         is PlaybackItem.Sentence -> next.unit !in this
-        is PlaybackItem.More -> false
+        is PlaybackItem.More -> end.page <= unit.page
     }
 
     /** Playback went from [previous], inside, straight on to [now], outside. */
