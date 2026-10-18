@@ -1,5 +1,5 @@
 // File: speech/src/test/kotlin/io/github/skm0078/audora/speech/normalize/IndicTextPackTest.kt
-// Purpose: Table-driven cases for the Indic text pack (plan item 3): dates, ordinals, units, abbreviations, currency.
+// Purpose: Table-driven cases for the Indic text pack (plan items 3, 57): dates, times, units, abbreviations, initials.
 
 package io.github.skm0078.audora.speech.normalize
 
@@ -29,6 +29,20 @@ class IndicTextPackTest {
         "सन् 1526 ई. में, 326 ई.पू. में" to "सन् पंद्रह सौ छब्बीस ईसवी में, तीन सौ छब्बीस ईसा पूर्व में",
         "रु. 500 और Rs. 20" to "पाँच सौ रुपये और बीस रुपये",
         "आदि. शब्द" to "आदि. शब्द",
+        // Item 57: initials and dotted words the voices read as sentence ends, Roman numerals, clock times.
+        "ए. पी. जे. अब्दुल कलाम आए।" to "ए पी जे अब्दुल कलाम आए।",
+        "डॉ. ए.पी.जे. अब्दुल कलाम" to "डॉक्टर ए पी जे अब्दुल कलाम",
+        "एम. के. गांधी और डब्ल्यू. सी. बनर्जी" to "एम के गांधी और डब्ल्यू सी बनर्जी",
+        "A. P. J. अब्दुल कलाम" to "A P J अब्दुल कलाम",
+        "उनका नाम ए. पी." to "उनका नाम ए पी.",
+        "श्री. मोहन घर गए।" to "श्री मोहन घर गए।",
+        "यह तीन सौ ई.पू. की बात है" to "यह तीन सौ ईसा पूर्व की बात है",
+        "सं. 5 देखें, सं. राम शर्मा" to "संख्या पाँच देखें, सं. राम शर्मा",
+        "अध्याय IV पढ़ें, भाग ii और कक्षा X" to "अध्याय चार पढ़ें, भाग दो और कक्षा दस",
+        "अध्याय C में" to "अध्याय C में",
+        "वह सुबह 10:30 बजे आया" to "वह सुबह दस बजकर तीस मिनट आया",
+        "बैठक ९:०० बजे है, समय 14:05" to "बैठक नौ बजे है, समय चौदह बजकर पाँच मिनट",
+        "अनुपात 25:70 का" to "अनुपात पच्चीस:सत्तर का",
     )
 
     private val bengaliCases = listOf(
@@ -44,6 +58,14 @@ class IndicTextPackTest {
         "১৭৫৭ খ্রিঃ পলাশি" to "সতেরোশো সাতান্ন খ্রিস্টাব্দ পলাশি",
         "টা. ৫০০ দিন" to "পাঁচশো টাকা দিন",
         "আমার ৩টি বই" to "আমার তিনটি বই",
+        // Item 57
+        "এ. পি. জে. আব্দুল কালাম এলেন।" to "এ পি জে আব্দুল কালাম এলেন।",
+        "এ.পি.জে. আব্দুল কালাম" to "এ পি জে আব্দুল কালাম",
+        "ড. রায় ও শ্রী. সেন" to "ডক্টর রায় ও শ্রী সেন",
+        "তিনশো খ্রি.পূ. থেকে" to "তিনশো খ্রিস্টপূর্ব থেকে",
+        "অধ্যায় IV, পর্ব ii" to "অধ্যায় চার, পর্ব দুই",
+        "সকাল ১০:৩০টায় এসো" to "সকাল দশটা বেজে ত্রিশ মিনিটে এসো",
+        "৯:০০টায় এসো, ২:০০ নাগাদ, ১৪:০৫" to "নটায় এসো, দুটো নাগাদ, চোদ্দটা বেজে পাঁচ মিনিট",
     )
 
     private fun check(normalizer: IndicNormalizer, cases: List<Pair<String, String>>) =

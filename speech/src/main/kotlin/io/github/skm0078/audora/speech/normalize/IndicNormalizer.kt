@@ -17,7 +17,8 @@ import io.github.skm0078.audora.core.model.Lang
  * plain numbers. Grouping follows the text (1,50,000 and 150,000 are both one lakh fifty thousand: Hindi and Bengali
  * count in lakh and crore); a decimal reads its digits one by one; leading zeros and runs longer than
  * [NormalizerConfig.maxCardinalDigits] read digit by digit; a bare year from 1100 to 1999 reads as "उन्नीस सौ
- * सैंतालीस". Dates, ordinals, units and abbreviations come first ([IndicTextPack], plan item 3). A slash between
+ * सैंतालीस". Clock times, dates, ordinals, units, abbreviations, initials and Roman numerals after a
+ * numbering word come first ([IndicTextPack], plan items 3 and 57). A slash between
  * words reads "या"/"বা" and "&" reads "और"/"এবং" (RI-6). Text with none of these is
  * returned unchanged.
  */
@@ -31,11 +32,15 @@ class IndicNormalizer internal constructor(
     private val pack = IndicTextPack(words, config, table)
 
     override fun normalize(text: String, role: TextRole): String {
-        val written = if (role == TextRole.EQUATION) MathSymbols.speak(text, lang) else pack.abbreviations(text)
+        val written = if (role == TextRole.EQUATION) {
+            MathSymbols.speak(text, lang)
+        } else {
+            pack.romanNumerals(pack.abbreviations(text))
+        }
         val spoken = speakSymbols(written)
         val ascii = asciiDigits(spoken)
         if (ascii.none(Char::isAsciiDigit)) return if (spoken == text) text else tidy(spoken)
-        var result = pack.units(pack.ordinals(pack.dates(ascii)))
+        var result = pack.units(pack.ordinals(pack.dates(pack.times(ascii))))
         result = CURRENCY.replace(result) { match -> money(match.groupValues[1]) }
         result = PERCENT.replace(result) { match -> "${read(match.groupValues[1])} ${words.percent}" }
         result = RANGE.replace(result) { match ->

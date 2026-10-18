@@ -15,7 +15,12 @@ import java.text.Normalizer
  * - **Ordinals** "1ला, 2री, 6ठे, 21वीं" → पहला, दूसरी, छठे, इक्कीसवीं;
  *   "১ম, ২য়, ৪র্থ, ১১শ, ২১তম" → প্রথম, দ্বিতীয়, চতুর্থ, একাদশ, একুশতম; Bengali day endings "১লা, ১৯শে" too.
  * - **Units** after a number, as Latin symbols: "5 km", "10kg", "37°C" → किलोमीटर, किलोग्राम, डिग्री सेल्सियस.
- * - **Abbreviations** the language's own: "डॉ.", "कि.मी.", "1947 ई.", "ডঃ", "পৃঃ", "খ্রিঃ" and the like.
+ * - **Abbreviations** the language's own: "डॉ.", "कि.मी.", "1947 ई.", "ডঃ", "পৃঃ", "খ্রিঃ" and the like; some only
+ *   before a number ("सं. 5").
+ * - **Initials** "ए. पी. जे.", "এ.পি.জে.", "A. P. J." lose their full stops ("ए पी जे"): the voices paused and fell
+ *   at each one like a sentence end (item 57). A stop at the very end of the text stays a stop.
+ * - **Roman numerals** after a numbering word: "अध्याय IV" → "अध्याय चार", "ভাগ ii" → "ভাগ দুই".
+ * - **Clock times** ([IndicClock]).
  */
 internal class IndicTextPack(
     private val words: IndicNumberWords,
@@ -24,8 +29,24 @@ internal class IndicTextPack(
 ) {
     fun abbreviations(text: String): String {
         val eras = table.eraPattern.replace(text) { match -> " " + table.eras.getValue(match.groupValues[1]) }
-        return table.abbreviationPattern.replace(eras) { match -> table.abbreviations.getValue(match.value) }
+        val numbered = table.numberedAbbreviationPattern?.replace(eras) { match ->
+            table.numberedAbbreviations.getValue(match.value)
+        } ?: eras
+        val expanded = table.abbreviationPattern.replace(numbered) { match ->
+            table.abbreviations.getValue(match.value)
+        }
+        return table.initialsPattern.replace(expanded) { match ->
+            val letters = match.value.split('.').map(String::trim).filter(String::isNotEmpty)
+            keepSentenceStop(expanded, match, letters.joinToString(" "))
+        }
     }
+
+    fun romanNumerals(text: String): String = table.romanPattern.replace(text) { match ->
+        val (keyword, numeral) = match.destructured
+        RomanNumerals.valueOf(numeral)?.let { "$keyword ${words.cardinal(it.toLong())}" } ?: match.value
+    }
+
+    fun times(ascii: String): String = table.clock.times(ascii, words)
 
     fun dates(ascii: String): String = DATE.replace(ascii) { match ->
         val day = match.groupValues[DAY].toInt()

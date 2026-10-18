@@ -10,6 +10,12 @@ import java.text.Normalizer
  *
  * @property eras the era abbreviations, said only right after a year ("1947 ई.", "১৯৪৭ খ্রিঃ").
  * @property abbreviations written abbreviation → what is said; matched as whole words, longest first.
+ * @property numberedAbbreviations abbreviations said this way only right before a number ("सं. 5" is "संख्या पाँच";
+ *   elsewhere "सं." may be संपादक or संवत, so it is left as written).
+ * @property letterNames how the language writes the English letter names that initials use ("एम", "এইচ"); a single
+ *   akshara ("ए", "पी", "জে") or a Latin capital is an initial too ([initialsPattern]).
+ * @property romanKeywords words a Roman numeral follows as a number ("अध्याय IV" is "अध्याय चार").
+ * @property clock how clock times are said ([IndicClock]).
  */
 @Suppress("LongParameterList") // A table of words: each list is its own kind, named at the two call sites.
 internal class IndicTextTable private constructor(
@@ -17,6 +23,10 @@ internal class IndicTextTable private constructor(
     val units: Map<String, String>,
     eras: Map<String, String>,
     abbreviations: Map<String, String>,
+    numberedAbbreviations: Map<String, String>,
+    letterNames: Set<String>,
+    romanKeywords: Set<String>,
+    val clock: IndicClock,
     ordinalSuffixes: List<String>,
     private val ordinal: (n: Int, suffix: String, words: IndicNumberWords) -> String?,
     private val day: (n: Int, words: IndicNumberWords) -> String,
@@ -28,6 +38,25 @@ internal class IndicTextTable private constructor(
     val eraPattern = Regex("""(?<=\p{Nd})\s?(${alternatives(this.eras.keys)})(?![\p{L}\p{M}])""")
     val abbreviationPattern =
         Regex("""(?<![\p{L}\p{M}.])(?:${alternatives(this.abbreviations.keys)})(?![\p{L}\p{M}])""")
+    val numberedAbbreviations: Map<String, String> =
+        numberedAbbreviations.entries.associate { (k, v) -> nfc(k) to nfc(v) }
+    val numberedAbbreviationPattern: Regex? = this.numberedAbbreviations.keys.takeIf { it.isNotEmpty() }?.let { keys ->
+        Regex("""(?<![\p{L}\p{M}.])(${alternatives(keys)})(?=\s?\p{Nd})""")
+    }
+
+    /**
+     * Two or more initials, each with its full stop, spaced or not: a letter name, one akshara (a letter and its
+     * vowel signs, no conjunct) or a Latin capital. The voices end a sentence at each of those stops (item 57).
+     */
+    val initialsPattern: Regex = run {
+        val initial = """(?:${alternatives(letterNames.map(::nfc))}|\p{L}\p{M}*)\."""
+        Regex("""(?<![\p{L}\p{M}\p{N}.])$initial(?:\s?$initial)+(?![\p{L}\p{M}\p{N}])""")
+    }
+
+    /** A keyword then a Roman numeral in one case: "अध्याय IV", "ভাগ ii". */
+    val romanPattern = Regex(
+        """(?<![\p{L}\p{M}])(${alternatives(romanKeywords.map(::nfc))})\s+([IVXLCDM]+|[ivxlcdm]+)(?![\w'’])""",
+    )
 
     // Each ending as listed and in NFC, so text stored either way matches.
     val ordinalPattern = Regex(
@@ -115,12 +144,22 @@ internal class IndicTextTable private constructor(
             ),
             eras = mapOf("ई.पू." to "ईसा पूर्व", "ई." to "ईसवी"),
             abbreviations = mapOf(
+                "ई.पू." to "ईसा पूर्व", "श्री." to "श्री", "श्रीमती." to "श्रीमती",
                 "डॉ." to "डॉक्टर", "प्रो." to "प्रोफ़ेसर", "स्व." to "स्वर्गीय", "कु." to "कुमारी",
                 "पृ.सं." to "पृष्ठ संख्या", "पृ." to "पृष्ठ", "क्र." to "क्रमांक", "नं." to "नंबर", "दि." to "दिनांक",
                 "वि.सं." to "विक्रम संवत", "कि.मी." to "किलोमीटर", "कि.ग्रा." to "किलोग्राम", "से.मी." to "सेंटीमीटर",
                 "मि.मी." to "मिलीमीटर", "मि.ली." to "मिलीलीटर", "प्रा." to "प्राइवेट", "लि." to "लिमिटेड",
                 "उ.प्र." to "उत्तर प्रदेश", "म.प्र." to "मध्य प्रदेश",
             ),
+            numberedAbbreviations = mapOf("सं." to "संख्या"),
+            letterNames = setOf(
+                "एफ", "एफ़", "एच", "एल", "एम", "एन", "एस", "एक्स", "आर", "आई", "क्यू", "डब्ल्यू", "डबल्यू", "वाई",
+                "ज़ेड", "जेड", "यू",
+            ),
+            romanKeywords = setOf(
+                "अध्याय", "भाग", "खंड", "खण्ड", "पाठ", "कक्षा", "अनुच्छेद", "सर्ग", "अंक", "परिशिष्ट", "पुस्तक",
+            ),
+            clock = IndicClock.HINDI,
             ordinalSuffixes = listOf(
                 "वाँ", "वां", "वीं", "वें", "वी", "वे",
                 "ला", "ली", "ले", "रा", "री", "रे",
@@ -148,12 +187,21 @@ internal class IndicTextTable private constructor(
                 "খ্রি." to "খ্রিস্টাব্দ",
             ),
             abbreviations = mapOf(
+                "খ্রিঃপূঃ" to "খ্রিস্টপূর্ব", "খ্রি.পূ." to "খ্রিস্টপূর্ব", "শ্রী." to "শ্রী", "ড." to "ডক্টর",
                 "ডঃ" to "ডক্টর", "ডা." to "ডাক্তার", "অধ্যাঃ" to "অধ্যাপক", "পৃঃ" to "পৃষ্ঠা", "পৃ." to "পৃষ্ঠা",
                 "কিমি" to "কিলোমিটার", "কি.মি." to "কিলোমিটার", "কিগ্রা" to "কিলোগ্রাম", "কি.গ্রা." to "কিলোগ্রাম",
                 "সেমি" to "সেন্টিমিটার", "সে.মি." to "সেন্টিমিটার", "মিমি" to "মিলিমিটার", "নং" to "নম্বর",
                 "বিঃদ্রঃ" to "বিশেষ দ্রষ্টব্য", "বি.দ্র." to "বিশেষ দ্রষ্টব্য", "তাং" to "তারিখ", "লিঃ" to "লিমিটেড",
                 "প্রাঃ" to "প্রাইভেট", "মোঃ" to "মোহাম্মদ", "পঃবঃ" to "পশ্চিমবঙ্গ",
             ),
+            numberedAbbreviations = emptyMap(),
+            letterNames = setOf(
+                "এফ", "এইচ", "এল", "এম", "এন", "এস", "এক্স", "আর", "আই", "ইউ", "কিউ", "ডব্লিউ", "ওয়াই", "জেড",
+            ),
+            romanKeywords = setOf(
+                "অধ্যায়", "ভাগ", "খণ্ড", "খন্ড", "পর্ব", "পাঠ", "শ্রেণি", "শ্রেণী", "অনুচ্ছেদ", "পরিশিষ্ট",
+            ),
+            clock = IndicClock.BENGALI,
             // য় appears both ways in PDFs: one code point (U+09DF) and য plus nukta, which NFC gives.
             ordinalSuffixes = listOf(
                 "তম", "র্থ", "ষ্ঠ", "শে", "লা", "রা", "ঠা",
