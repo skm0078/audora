@@ -60,16 +60,15 @@ import io.github.skm0078.audora.playback.upnext.QueueAdvance
 import io.github.skm0078.audora.playback.upnext.UpNextStore
 import io.github.skm0078.audora.playback.voice.BookRenderers
 import io.github.skm0078.audora.playback.voice.CharacterCast
-import io.github.skm0078.audora.playback.voice.CharacterFileStore
 import io.github.skm0078.audora.playback.voice.RenderSpeedTracker
 import io.github.skm0078.audora.playback.voice.ReplayRender
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.StudyGapRenderer
 import io.github.skm0078.audora.playback.voice.VoiceEngines
+import io.github.skm0078.audora.playback.voice.forReading
 import io.github.skm0078.audora.playback.voice.narratorBlend
 import io.github.skm0078.audora.speech.sherpa.blendableSpeaker
-import io.github.skm0078.audora.speech.sherpa.castSpeakers
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -153,7 +152,7 @@ class AudoraPlaybackService : MediaLibraryService() {
         // The reading modes travel with the speech style; a change restarts the sentence playing (ADR-035).
         val reading = ReadingSource(modes = { style.current.modes })
         val stores = SessionStores(style, sleepOptions, book, focusSound)
-        val characters = characterCast(this, engines, { voices }, heard)
+        val characters = CharacterCast.forReading(this, engines, { voices }) { heard().shaping }
         val mediaSession = mediaSession(stores).also { session = it }
         bookSession = BookSession(
             player = player,
@@ -348,19 +347,6 @@ private fun blendAvailability(engines: VoiceEngines, voices: SpeechVoices): Blen
     val narrator = voices.knownVoice(Lang.EN)
     return BlendAvailability(narrator?.let(bundled.engine::blendableSpeaker), bundled.blends.neededBytes)
 }
-
-/** Character voices (plan item 63): other speakers of the narrator's model, never the quote or heading voice. */
-private fun characterCast(
-    context: Context,
-    engines: VoiceEngines,
-    voices: () -> SpeechVoices,
-    heard: () -> SpeechStyle,
-) = CharacterCast(
-    narrator = { lang -> voices().knownVoice(lang) },
-    speakers = { voice -> engines.bundled().getOrNull()?.engine?.castSpeakers(voice).orEmpty() },
-    taken = { lang -> heard().shaping.let { setOfNotNull(it.dialogueVoices[lang], it.headingVoices[lang]) } },
-    files = CharacterFileStore.forContext(context),
-)
 
 /** The session's threads and clocks, on the service's [scope]. */
 private fun sessionEnvironment(scope: CoroutineScope, shakes: ShakeSource) = SessionEnvironment(
