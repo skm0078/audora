@@ -33,20 +33,21 @@ internal class IndicTextPack(
         val eras = table.eraPattern.replace(text) { match ->
             keepSentenceStop(text, match, " " + table.eras.getValue(match.groupValues[1]))
         }
-        val numbered = table.numberedAbbreviationPattern?.replace(eras) { match ->
-            val beforeNumber = SHORT_NUMBER_AHEAD.containsMatchIn(eras.substring(match.range.last + 1))
+        // Whole abbreviations before "सं." alone, so "वि. सं." is read whole, not as "वि." and "सं".
+        val expanded = table.abbreviationPattern.replace(eras) { match ->
+            keepSentenceStop(eras, match, table.abbreviations.getValue(match.value))
+        }
+        val numbered = table.numberedAbbreviationPattern?.replace(expanded) { match ->
+            val beforeNumber = SHORT_NUMBER_AHEAD.containsMatchIn(expanded.substring(match.range.last + 1))
             if (beforeNumber) {
                 table.numberedAbbreviations.getValue(match.value)
             } else {
-                keepSentenceStop(eras, match, match.value.removeSuffix("."))
+                keepSentenceStop(expanded, match, match.value.removeSuffix("."))
             }
-        } ?: eras
-        val expanded = table.abbreviationPattern.replace(numbered) { match ->
-            keepSentenceStop(numbered, match, table.abbreviations.getValue(match.value))
-        }
-        return table.initialsPattern.replace(expanded) { match ->
+        } ?: expanded
+        return table.initialsPattern.replace(numbered) { match ->
             val letters = match.value.split('.').map(String::trim).filter(String::isNotEmpty)
-            keepSentenceStop(expanded, match, letters.joinToString(" "))
+            keepSentenceStop(numbered, match, letters.joinToString(" "))
         }
     }
 

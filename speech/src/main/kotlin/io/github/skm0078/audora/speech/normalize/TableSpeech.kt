@@ -12,7 +12,9 @@ import io.github.skm0078.audora.core.model.TableRowInfo
  * numbers, dates and units ("34" → "thirty-four"). Nothing here is added to `ReadingUnit.text` (ADR-018).
  *
  * A row pairs every non-empty cell with its column's header ("Age: 34"); a table without a header row reads its
- * cells in order, separated by commas. Rows are numbered from 1, as a person counts them.
+ * cells in order, separated by commas. Rows are numbered from 1, as a person counts them. A cell holding only a rule
+ * ("–", "-----", the way tables write nil) is read as the language's word for nil: the voices say nothing for a dash,
+ * which left "2019:" hanging.
  */
 object TableSpeech {
     /**
@@ -32,7 +34,9 @@ object TableSpeech {
     fun row(table: TableRowInfo, text: String, lang: Lang): String {
         val row = table.row ?: return summary(table, lang)
         val words = WORDS.getValue(lang)
-        val cells = table.cells.map { span -> text.substring(span.start, span.end).trim() }
+        val cells = table.cells.map { span ->
+            text.substring(span.start, span.end).trim().let { if (RULE_ONLY.matches(it)) words.nil else it }
+        }
         val spokenCells = if (table.headers.isEmpty()) {
             listOfNotNull(cells.filter { it.isNotEmpty() }.joinToString(", ").ifEmpty { null })
         } else {
@@ -59,6 +63,7 @@ object TableSpeech {
         private val columnOne: String,
         private val columnMany: String,
         val continues: String,
+        val nil: String,
         private val more: (String) -> String,
     ) {
         fun rows(count: Int): String = "$count ${if (count == 1) rowOne else rowMany}"
@@ -68,11 +73,16 @@ object TableSpeech {
         fun moreRows(count: Int): String = more(rows(count))
     }
 
+    /** Dashes and minus signs only: a cell ruled through instead of filled. */
+    private val RULE_ONLY = Regex("""[\p{Pd}−]+""")
+
     private val WORDS = mapOf(
-        Lang.EN to TableWords("Row", ".", "row", "rows", "column", "columns", "Table continues") { rows ->
+        Lang.EN to TableWords("Row", ".", "row", "rows", "column", "columns", "Table continues", "nil") { rows ->
             rows.replaceFirst(" ", " more ")
         },
-        Lang.HI to TableWords("पंक्ति", "।", "पंक्ति", "पंक्तियाँ", "स्तंभ", "स्तंभ", "तालिका जारी है") { "और $it" },
-        Lang.BN to TableWords("সারি", "।", "সারি", "সারি", "কলাম", "কলাম", "সারণি চলছে") { "আরও $it" },
+        Lang.HI to TableWords("पंक्ति", "।", "पंक्ति", "पंक्तियाँ", "स्तंभ", "स्तंभ", "तालिका जारी है", "कुछ नहीं") {
+            "और $it"
+        },
+        Lang.BN to TableWords("সারি", "।", "সারি", "সারি", "কলাম", "কলাম", "সারণি চলছে", "নেই") { "আরও $it" },
     )
 }

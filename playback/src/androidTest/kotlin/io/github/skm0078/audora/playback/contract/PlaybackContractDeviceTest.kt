@@ -31,8 +31,8 @@ class PlaybackContractDeviceTest {
     }
 
     @Test
-    fun aParagraphSkipBackAtTheBookStartIsAnErrorTheReaderTellsTheListener() {
-        // BookSessionTest shows the session answers NONE_THAT_WAY there; this is what the reader then receives.
+    fun aParagraphSkipWithNowhereToGoIsTheNoParagraphThatWayError() {
+        // BookSessionTest shows the session answers NONE_THAT_WAY at the book's start; this is the result it becomes.
         val result = SessionResults.of(ParagraphSkipResult.NONE_THAT_WAY)
         assertNotEquals(SessionResult.RESULT_SUCCESS, result.resultCode)
         assertEquals(
