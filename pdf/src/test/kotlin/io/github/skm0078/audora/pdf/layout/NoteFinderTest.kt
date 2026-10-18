@@ -137,6 +137,15 @@ class NoteFinderTest {
             "टिप्पणी: यह शुल्क वापस नहीं होगा।" to UnitKind.ASIDE,
             "দ্রষ্টব্য: এই ফি ফেরত দেওয়া হবে না।" to UnitKind.ASIDE,
             "Note that the fee is not refundable." to UnitKind.BODY,
+            "N.B. The fee is not refundable." to UnitKind.ASIDE,
+            "Note - The fee is not refundable." to UnitKind.ASIDE,
+            "नोट - यह शुल्क वापस नहीं होगा।" to UnitKind.ASIDE,
+            "বিঃদ্রঃ এই ফি ফেরত দেওয়া হবে না।" to UnitKind.ASIDE,
+            // A word joined to "note" by a hyphen is not a label.
+            "Note-taking helps you keep up in class." to UnitKind.BODY,
+            "नोट-बुक में अपना नाम लिखें।" to UnitKind.BODY,
+            "নোট-বই খুলে প্রথম পাতা পড়ো।" to UnitKind.BODY,
+            "Notes.txt holds the list of files." to UnitKind.BODY,
         ).forEach { (text, kind) ->
             val sketch = PageSketch()
             val below = sketch.lines(List(3) { "Body text set in the regular size of this page, line $it." }, LEFT, TOP)

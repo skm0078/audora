@@ -5,6 +5,7 @@ package io.github.skm0078.audora.pdf.layout
 
 import io.github.skm0078.audora.core.config.LayoutConfig
 import io.github.skm0078.audora.core.config.NoteConfig
+import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.pdf.extract.PageText
 
 /**
@@ -40,7 +41,9 @@ internal class NoteFinder(private val layoutConfig: LayoutConfig) {
             block.copy(paragraphs = block.paragraphs.flatMap { tag(page, it, footnotes, markers) })
         }
         val silent = if (config.silenceMarkers) markers.values.flatten().map { it.span } else emptyList()
-        return layout.copy(blocks = withoutStrayContinuations(blocks), noteMarkers = silent.sortedBy { it.start })
+        val tagged = layout.copy(blocks = withoutStrayContinuations(blocks), noteMarkers = silent.sortedBy { it.start })
+        logCounts(tagged, "text layer")
+        return tagged
     }
 
     private fun tag(
@@ -140,16 +143,38 @@ internal class NoteFinder(private val layoutConfig: LayoutConfig) {
     }
 
     internal companion object {
+        private const val TAG = "Audora.Notes"
+
+        /** Logs how many footnotes, asides and silenced markers [layout] has, if any (counts only, no text). */
+        fun logCounts(layout: PageLayout, source: String) {
+            val kinds = layout.blocks.flatMap { block -> block.paragraphs.map { it.kind } }
+            val footnotes = kinds.count { it == ParagraphKind.FOOTNOTE }
+            val asides = kinds.count { it == ParagraphKind.ASIDE }
+            if (footnotes + asides + layout.noteMarkers.size == 0) return
+            AudoraLog.d(
+                TAG,
+                "Notes page=${layout.pageIndex} source=$source footnotes=$footnotes asides=$asides " +
+                    "markers=${layout.noteMarkers.size}",
+            )
+        }
+
         /** [text] opens with a note label ("Note:", "टिप्पणी:", "দ্রষ্টব্য:"): an aside, on a text layer or a scan. */
         fun opensWithNoteLabel(text: String): Boolean = NOTE_LABEL.containsMatchIn(text)
 
         /** Footnote lines come out of layout as body text or list items ("1 Arrays are…" looks like a label). */
         private val NOTE_KINDS = setOf(ParagraphKind.BODY, ParagraphKind.LIST_ITEM)
 
-        /** "Note:", "NOTES –", "N.B.", "नोट:", "टिप्पणी:", "দ্রষ্টব্য:", "টীকা:", "বিঃদ্রঃ". */
+        /**
+         * "Note:", "NOTES –", "N.B.", "नोट:", "टिप्पणी:", "দ্রষ্টব্য:", "টীকা:", "বিঃদ্রঃ". A full stop or dash
+         * counts only before a space: "Note-taking", "नोट-बुक", "নোট-বই" and "Notes.txt" are words. "N.B." and
+         * "বিঃদ্রঃ" need no mark after them.
+         */
         private val NOTE_LABEL = Regex(
-            "^\\s*(?:Notes?|NOTES?|N\\.\\s?B\\.|नोट|टिप्पणी|टिप्पणियाँ|ध्यान दें|দ্রষ্টব্য|টীকা|নোট|বিঃ\\s?দ্রঃ)" +
-                "(?:\\s*\\p{Nd}+)?\\s*[:：.\\-–—।]",
+            "^\\s*(?:" +
+                "(?:N\\.\\s?B\\.|বিঃ\\s?দ্রঃ)(?=[\\s:：]|$)|" +
+                "(?:Notes?|NOTES?|नोट|टिप्पणी|टिप्पणियाँ|ध्यान दें|দ্রষ্টব্য|টীকা|নোট)(?:\\s*\\p{Nd}+)?" +
+                "\\s*(?:[:：।]|[.\\-–—](?=\\s|$))" +
+                ")",
         )
     }
 }

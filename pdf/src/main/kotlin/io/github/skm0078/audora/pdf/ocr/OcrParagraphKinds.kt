@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.pdf.ocr
 
 import io.github.skm0078.audora.core.config.LayoutConfig
+import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.pdf.extract.PageText
 import io.github.skm0078.audora.pdf.layout.ListMarkers
 import io.github.skm0078.audora.pdf.layout.NoteFinder
@@ -22,7 +23,7 @@ import io.github.skm0078.audora.pdf.layout.TextLine
  * - **List items.** A line starting with a bullet, or with a label ("3.", "(क)") after a line that ends a clause or
  *   inside a list, starts an item ([ListMarkers]).
  * - **Asides.** A body paragraph opening with a note label ("Note:", "टिप्पणी:", "দ্রষ্টব্য:") is a
- *   [ParagraphKind.ASIDE], as on a text layer (`NoteFinder`, RI-5a).
+ *   [ParagraphKind.ASIDE], as on a text layer (`NoteFinder`, RI-5a), up to its short last line ([splitAtNoteEnd]).
  *
  * [page] holds the text and OCR confidences the lines' spans point into; [bodySize] 0 (no sizes, plain OCR text)
  * finds no headings.
@@ -44,8 +45,32 @@ internal class OcrParagraphKinds(
             if (starts) groups.add(ArrayList())
             groups.last().add(line)
         }
-        return groups.map { Paragraph(it, kindOf(it)) }
+        return groups.flatMap(::splitAtNoteEnd).map { Paragraph(it, kindOf(it)) }
     }
+
+    /**
+     * Tesseract often merges a "Note:" paragraph with the paragraph after it, which then read as part of the aside.
+     * The note ends at its first line that ends a sentence well short of the paragraph's widest line
+     * (`NoteConfig.ocrNoteEndShare`); the lines after it are a paragraph of their own.
+     */
+    private fun splitAtNoteEnd(lines: List<TextLine>): List<List<TextLine>> {
+        val end = if (NoteFinder.opensWithNoteLabel(lineText(lines.first()))) noteEnd(lines) else null
+        return if (end == null) listOf(lines) else listOf(lines.subList(0, end + 1), lines.subList(end + 1, lines.size))
+    }
+
+    private fun noteEnd(lines: List<TextLine>): Int? {
+        val boxes = lines.mapNotNull(::extent).takeIf { it.size == lines.size } ?: return null
+        val left = boxes.minOf { it.left }
+        val reach = (boxes.maxOf { it.right } - left) * config.notes.ocrNoteEndShare
+        return (0 until lines.lastIndex).firstOrNull { i ->
+            val last = lineText(lines[i]).trimEnd { it in CLOSERS }.lastOrNull()
+            last != null && last in SENTENCE_ENDS + EXCLAIMS && boxes[i].right - left < reach
+        }
+    }
+
+    /** The box around [line]'s words, from [page]'s word boxes (upright); null when OCR gave none. */
+    private fun extent(line: TextLine): TextBox? =
+        line.spans.flatMap { span -> (span.start until span.end).mapNotNull(page::boxAt) }.reduceOrNull(TextBox::union)
 
     private fun startsItem(previous: TextLine, line: TextLine, inList: Boolean): Boolean {
         val start = line.spans.first().start
@@ -100,5 +125,7 @@ internal class OcrParagraphKinds(
     private companion object {
         const val TABLE_BAR = '|'
         const val SENTENCE_ENDS = ".।॥"
+        const val EXCLAIMS = "?!"
+        const val CLOSERS = "\"'’”)"
     }
 }
