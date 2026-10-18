@@ -4,7 +4,8 @@
   Purpose: The playback service and the permissions background reading needs (Build Spec §6), merged into the app.
   Never SMS, accessibility or notification-listener permissions (AGENTS.md).
 -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
@@ -53,11 +54,14 @@
             android:exported="false"
             android:foregroundServiceType="dataSync|mediaProcessing" />
 
-        <!-- Voice commands with the screen off (plan item 38, opt-in): started only from the visible reader. -->
+        <!-- Voice commands with the screen off (plan item 38, opt-in): started only from the visible reader.
+             Lint reads this manifest alone; RECORD_AUDIO, the type's other permission, is in the app's, so the
+             merged manifest has both. -->
         <service
             android:name=".commands.VoiceCommandService"
             android:exported="false"
-            android:foregroundServiceType="microphone" />
+            android:foregroundServiceType="microphone"
+            tools:ignore="ForegroundServicePermission" />
 
         <!-- Playback resumption (P1-06): a headset's play button after Audora was closed resumes the last book.
              A media button press is a user action (C7); nothing here runs on boot. -->
