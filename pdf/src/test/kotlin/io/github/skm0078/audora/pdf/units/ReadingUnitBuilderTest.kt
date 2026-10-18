@@ -191,6 +191,15 @@ class ReadingUnitBuilderTest {
     }
 
     @Test
+    fun `a contents line reads its leader as a pause, a blank keeps its place, a rule at the end goes`() {
+        val lines = listOf("Introduction ........ 5", "The answer is ______.", "Signed: ____________")
+        val texts = lines.map { line ->
+            ReadingUnitBuilder().build(PageSketch().apply { line(line, left = 50f, top = 720f) }.build()).single().text
+        }
+        assertEquals(listOf("Introduction \u2026 5", "The answer is \u2026.", "Signed:"), texts)
+    }
+
+    @Test
     fun `headings carry their kind and default pauses follow the spec`() {
         val sketch = PageSketch()
         sketch.line("Introduction", left = 50f, top = 720f, size = 14f)

@@ -3,12 +3,13 @@
 
 package io.github.skm0078.audora.pdf.units
 
+import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.config.SentenceConfig
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class IndicSentenceRulesTest {
-    private val rules = IndicSentenceRules(SentenceConfig())
+    private val rules = IndicSentenceRules(SentenceConfig(), ReadingUnitConfig().minLeaderRun)
 
     /** A text, the breaks ICU makes in it (after each of [icu], in order) and the breaks that should stay. */
     private data class Case(val name: String, val text: String, val icu: List<String>, val kept: List<String>)
@@ -79,6 +80,24 @@ class IndicSentenceRulesTest {
             ),
             // A full stop inside an unlisted word still ends the sentence there (ICU breaks "है.|अगला").
             Case("unlisted", "यह है.अगला वाक्य।", listOf("है."), listOf("है.")),
+        )
+        for (case in cases) {
+            assertEquals(case.name, after(case.text, case.kept), rules.refine(case.text, after(case.text, case.icu)))
+        }
+    }
+
+    @Test
+    fun `a contents line stays one sentence where ICU breaks before its page numbers`() {
+        val cases = listOf(
+            // ICU breaks between a dot leader and its page number; the contents line stays one sentence.
+            Case(
+                "contents",
+                "Introduction ........ 5 Methods . . . . . . 9 भूमिका ..... ७",
+                listOf("........ ", ". . . . . . ", "..... "),
+                emptyList(),
+            ),
+            // An ellipsis before a number is no leader: the sentence ends there.
+            Case("ellipsis", "Wait... 5 more came.", listOf("Wait... "), listOf("Wait... ")),
         )
         for (case in cases) {
             assertEquals(case.name, after(case.text, case.kept), rules.refine(case.text, after(case.text, case.icu)))

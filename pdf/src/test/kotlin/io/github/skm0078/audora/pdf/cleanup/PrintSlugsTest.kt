@@ -4,6 +4,8 @@
 package io.github.skm0078.audora.pdf.cleanup
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PrintSlugsTest {
@@ -41,6 +43,7 @@ class PrintSlugsTest {
             // A file named in a sentence, a receipt's or a log's stamp with words around it, a no-break space (the
             // JDK's \s has no no-break space, so only Android's ICU regex would read it as a space without the fix).
             "Open the file Lesson01.indd and click Save",
+            "Notes.indd / 2",
             "Paid on 17-12-2019 12:54:06 by card",
             "17-12-2019 12:54:06 ERROR disk full",
             "17-12-2019\u00A012:54:06",
@@ -57,6 +60,10 @@ class PrintSlugsTest {
         assertEquals(setOf("5/13/11 6:45"), PrintSlugs.times("x 5/13/11  6:45:59 y"))
         assertEquals(setOf("22-Nov-2019 2:51"), PrintSlugs.times("22-Nov-2019 2:51:06 PM"))
         assertEquals(setOf("5/13/11 6:45"), PrintSlugs.times("5/13/11 /13/11 6:45 AM 6:45 AM"))
+        assertTrue(PrintSlugs.isBareStamp("5/13/11 /13/11 6:45 AM 6:45 AM"))
+        assertFalse(PrintSlugs.isBareStamp("Physics 15/03/2024 10:30"))
+        // Only the date's own last two parts count as its clipped copy.
+        assertEquals(emptySet<String>(), PrintSlugs.times("5/13/11 /1/2/3/4 6:45"))
         assertEquals(emptySet<String>(), PrintSlugs.times("Chemistry 16/03/2024"))
     }
 }

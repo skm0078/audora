@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.pdf.units
 
+import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.config.SentenceConfig
 import io.github.skm0078.audora.core.model.Lang
 import java.text.BreakIterator
@@ -19,8 +20,11 @@ fun interface SentenceSplitter {
  * [IndicSentenceRules] then correct the breaks around dandas, abbreviations and closing quotes, so both platforms
  * split the same way.
  */
-class BreakIteratorSentenceSplitter(config: SentenceConfig = SentenceConfig()) : SentenceSplitter {
-    private val rules = IndicSentenceRules(config)
+class BreakIteratorSentenceSplitter(
+    config: SentenceConfig = SentenceConfig(),
+    minLeaderRun: Int = ReadingUnitConfig().minLeaderRun,
+) : SentenceSplitter {
+    private val rules = IndicSentenceRules(config, minLeaderRun)
 
     override fun split(text: String, lang: Lang): List<IntRange> {
         if (text.isEmpty()) return emptyList()

@@ -13,6 +13,9 @@ package io.github.skm0078.audora.pdf.cleanup
  * ([times]): a time alone is an exam date sheet's row, a notice's date or a receipt's first line.
  */
 internal object PrintSlugs {
+    /** [text] is a print time alone, to the minute or the second, with "AM" or "PM" after it if given. */
+    fun isBareStamp(text: String): Boolean = BARE_STAMP.matches(text)
+
     /** [text] is a slug whatever other pages hold: a layout file's name at its end, or a bare stamp to the second. */
     fun standsAlone(text: String): Boolean = LAYOUT_FILE.containsMatchIn(text) ||
         BARE_STAMP.matchEntire(text)?.groupValues?.get(SECONDS)?.isNotEmpty() == true
@@ -27,18 +30,26 @@ internal object PrintSlugs {
 
     /**
      * Date (numbers, or a month's short name: "22-Nov-2019"), then the time to the minute, then its seconds if
-     * given; the clipped copy of the date some PDFs repeat may come between ("5/13/11 /13/11 6:45"). ASCII digits
+     * given; the clipped copy of the date some PDFs repeat, its last two parts, may come between ("5/13/11 /13/11
+     * 6:45"), and is no part of the key. ASCII digits
      * and spaces only, as typesetting software writes them (`\d` and `\s` would also take Devanagari digits and a
      * no-break space on Android's ICU regex, not on the JVM).
      */
     private const val TIME =
-        """([0-9]{1,4}[/.-](?:[0-9]{1,2}|[A-Za-z]{3})[/.-][0-9]{2,4}),?(?:[ \t]+/[0-9/]+)?[ \t]+""" +
+        """([0-9]{1,4}[/.-](?:[0-9]{1,2}|[A-Za-z]{3})[/.-][0-9]{2,4})(?:[ \t]+/[0-9]{1,2}/[0-9]{2,4})?,?[ \t]+""" +
             """([0-9]{1,2}:[0-9]{2})(:[0-9]{2})?"""
 
     private val PRINT_TIME = Regex(TIME)
 
-    /** A line holding nothing but a print time, with "AM" or "PM" after it if given. */
-    private val BARE_STAMP = Regex("""[ \t]*$TIME(?:[ \t]*(?i:[ap]\.?m\.?))?[ \t]*""")
+    /** "AM" or "PM" after a time, with or without stops. */
+    private const val MERIDIEM = """(?:[ \t]*(?i:[ap]\.?m\.?))?"""
+
+    /**
+     * A line holding nothing but a print time, with "AM" or "PM" after it if given, the time perhaps repeated as some
+     * PDFs clip it ("5/13/11 /13/11 6:45 AM 6:45 AM").
+     */
+    private val BARE_STAMP =
+        Regex("""[ \t]*$TIME$MERIDIEM(?:[ \t]+[0-9]{1,2}:[0-9]{2}(?::[0-9]{2})?$MERIDIEM)?[ \t]*""")
 
     /**
      * A layout program's file name ("ch04.qxd", "HUD3_25_09.indd") with nothing after it but page references and
@@ -47,7 +58,7 @@ internal object PrintSlugs {
      * ("Open Lesson01.indd and click") is no slug.
      */
     private val LAYOUT_FILE = Regex(
-        """\S\.(?i:indd|qxd|qxp)(?:[ \t]+(?:\S*\.(?i:indd|qxd|qxp)|[0-9/][0-9/.:,-]*|""" +
+        """\S\.(?i:indd|qxd|qxp)(?:[ \t]+(?:\S*\.(?i:indd|qxd|qxp)|/?[0-9][0-9/.:,-]*|""" +
             """[0-9]{1,4}[/.-][A-Za-z]{3}[/.-][0-9]{2,4}|""" +
             """(?i:[ap]\.?m\.?|page|pages|of|all|sec[0-9:]+|[ivxlc]{1,7})))*[ \t]*$""",
     )

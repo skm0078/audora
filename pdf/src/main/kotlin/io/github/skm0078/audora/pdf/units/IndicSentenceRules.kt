@@ -20,10 +20,12 @@ import java.text.Normalizer
  *    capital initials ("A. P. J.", "U.S."): both platforms break "Dr. | Smith" before a capital, ICU because
  *    Android does not turn on its abbreviation suppressions.
  * 4. **Verse numbers.** "॥ १ ॥" after a verse is read with that verse, not as a unit of its own.
+ * 5. **Dot leaders.** No break between a dot leader of at least [minLeaderRun] dots and the number after it
+ *    ("Introduction ........ 5", "भूमिका ..... ७"): ICU breaks there, the JDK does not.
  *
  * The rules move breaks only; the ranges still cover the text in order.
  */
-internal class IndicSentenceRules(config: SentenceConfig) {
+internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderRun: Int) {
     private val nonBreaking: Set<String> =
         (config.abbreviations + config.initials + config.englishAbbreviations).mapTo(HashSet(), ::nfc)
     private val initials: Set<String> = config.initials.mapTo(HashSet(), ::nfc)
@@ -36,7 +38,7 @@ internal class IndicSentenceRules(config: SentenceConfig) {
         breaks.mapTo(corrected) { moveAfterClosers(text, it) }
         dandaBreaks(text).forEach(corrected::add)
         corrected.removeAll {
-            it <= 0 || it >= text.length || text[skipSpaces(text, it)] in CONTINUERS || followsNonBreakingWord(text, it)
+            it <= 0 || it >= text.length || continuesAt(text, it, minLeaderRun) || followsNonBreakingWord(text, it)
         }
         removeVerseNumberBreaks(text, corrected)
         return corrected.toList()
@@ -182,6 +184,35 @@ internal class IndicSentenceRules(config: SentenceConfig) {
         /** A letter, vowel sign or full stop: what a dotted word ("कि.मी.") is written with. */
         fun inDottedWord(c: Char): Boolean = c.isLetter() || isCombiningMark(c) || c == '.'
 
+        /** Full stops and middle dots: the leaders a contents page sets before its page numbers. */
+        const val LEADER_DOTS = ".\u00B7"
+
+        /**
+         * The sentence carries on at the break [at]: a comma-like mark follows it, or a number follows a dot leader
+         * of at least [minRun] dots, perhaps one space apart ([Leaders]).
+         */
+        fun continuesAt(text: String, at: Int, minRun: Int): Boolean {
+            val next = text.getOrNull(skipSpaces(text, at)) ?: return false
+            return next in CONTINUERS || (next.isDigit() && leaderDotsBefore(text, at) >= minRun)
+        }
+
+        /** How many leader dots end just before [at] (and the spaces before it), one space apart at most. */
+        fun leaderDotsBefore(text: String, at: Int): Int {
+            var i = at - 1
+            while (i >= 0 && text[i].isWhitespace()) i--
+            val mark = text.getOrNull(i)?.takeIf { it in LEADER_DOTS } ?: return 0
+            var count = 0
+            while (i >= 0 && inLeader(text, i, mark)) {
+                if (text[i] == mark) count++
+                i--
+            }
+            return count
+        }
+
+        /** [text] at [i] is the leader's [mark], or one space between two of them. */
+        private fun inLeader(text: String, i: Int, mark: Char): Boolean =
+            text[i] == mark || (text[i] == ' ' && text.getOrNull(i - 1) == mark)
+
         fun skipSpaces(text: String, from: Int): Int {
             var i = from
             while (i < text.length && text[i].isWhitespace()) i++
@@ -196,7 +227,7 @@ internal class IndicSentenceRules(config: SentenceConfig) {
         }
 
         /** An author written with initials without stops, then a comma: "West J, ", "Persson AB, ". */
-        val UNDOTTED_AUTHOR = Regex("""\p{Lu}[\p{L}'’-]+ \p{Lu}{1,4},\s*$""")
+        val UNDOTTED_AUTHOR = Regex("""\p{Lu}[\p{L}'’-]+ \p{Lu}{1,4},[ \t]*$""")
 
         /** How far before a name [followsUndottedAuthor] looks for the author before it. */
         const val AUTHOR_LOOKBACK = 40
