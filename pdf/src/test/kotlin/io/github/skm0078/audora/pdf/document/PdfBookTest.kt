@@ -64,14 +64,22 @@ class PdfBookTest {
     }
 
     @Test
-    fun `a page read after the one before knows it opens inside that page's broken sentence`() {
-        val texts = listOf("He turned and said that the", "rains came late that year.")
+    fun `a page reads the same whichever page was read before it, in one book or another`() {
+        val texts = listOf("He turned and said that the", "rains came late that year.", "Then the river rose high.")
         val builder = ReadingUnitBuilder()
-        val inOrder = requireNotNull(PdfBook.open(FakeEngine(pages = 2) { texts[it] }).getOrNull())
+        fun open() = requireNotNull(PdfBook.open(FakeEngine(pages = 3) { texts[it] }).getOrNull())
+        val inOrder = open()
         inOrder.readPage(0, builder)
-        assertTrue(requireNotNull(inOrder.readPage(1, builder).getOrNull()).continuesPreviousPage)
-        val jumped = requireNotNull(PdfBook.open(FakeEngine(pages = 2) { texts[it] }).getOrNull())
-        assertFalse(requireNotNull(jumped.readPage(1, builder).getOrNull()).continuesPreviousPage)
+        val second = requireNotNull(inOrder.readPage(1, builder).getOrNull())
+        assertTrue(second.continuesPreviousPage)
+        val jumped = requireNotNull(open().readPage(1, builder).getOrNull())
+        assertTrue(jumped.continuesPreviousPage)
+        assertEquals(second.units, jumped.units)
+        val back = open()
+        back.readPage(2, builder)
+        assertTrue(requireNotNull(back.readPage(1, builder).getOrNull()).continuesPreviousPage)
+        assertFalse(requireNotNull(back.readPage(0, builder).getOrNull()).continuesPreviousPage)
+        assertFalse(requireNotNull(back.readPage(2, builder).getOrNull()).continuesPreviousPage)
     }
 
     @Test

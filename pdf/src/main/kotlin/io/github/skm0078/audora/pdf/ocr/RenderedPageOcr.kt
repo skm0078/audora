@@ -42,7 +42,8 @@ interface OcrEngine {
  * Logs one line per recognised page with the time spent drawing and recognising it (done-when: per-page time on
  * the test phones), never the text.
  */
-@Suppress("LongParameterList") // The book, its renderer and logs, the engine, the cache and two configs.
+// The book, its renderer and logs, the engine, the cache, two configs and cache-only; PageOcr calls and steps.
+@Suppress("LongParameterList", "TooManyFunctions")
 class RenderedPageOcr(
     private val pages: PageRenderer,
     private val engine: OcrEngine,
@@ -51,9 +52,13 @@ class RenderedPageOcr(
     private val logContext: String,
     private val config: OcrConfig = OcrConfig(),
     private val qualityConfig: QualityConfig = QualityConfig(),
+    private val cacheOnly: Boolean = false,
 ) : PageOcr {
     private val lineRetry = OcrLineRetry(engine, config, logContext)
     private val ruleFinder = RuleFinder(config.rules)
+
+    override fun cachedOnly(): PageOcr =
+        RenderedPageOcr(pages, engine, cache, bookKey, logContext, config, qualityConfig, cacheOnly = true)
 
     override fun recognize(pageIndex: Int, langs: Set<Lang>): Outcome<OcrText, OcrError> {
         if (langs.isEmpty()) return Outcome.Failure(OcrError.Failed("no language to recognise page $pageIndex in"))
@@ -167,6 +172,7 @@ class RenderedPageOcr(
     private fun cached(key: OcrKey, read: (PageImage) -> Outcome<OcrText, OcrError>): Outcome<OcrText, OcrError> =
         synchronized(lockFor(key)) {
             cache?.get(key)?.let(OcrTextCodec::decode)?.let { return Outcome.Success(it) }
+            if (cacheOnly) return Outcome.Failure(OcrError.Failed("page ${key.page} is not in the OCR cache"))
             val result = recognizeNow(key, read)
             if (result is Outcome.Success) cache?.put(key, OcrTextCodec.encode(result.value))
             result

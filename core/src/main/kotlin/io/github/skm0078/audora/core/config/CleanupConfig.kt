@@ -37,6 +37,7 @@ package io.github.skm0078.audora.core.config
  *   share of the page's height (scans keep the page's own margins, so the band is wider than [marginBandShare]).
  * @property ocrMatchSimilarity two OCR'd lines match when their signatures are at least this similar (1 − edit
  *   distance / length): OCR misreads a letter or two of the same header on different pages.
+ * @property carry how a table or a sentence is carried over a page break (RI-4a, plan item 7).
  */
 data class CleanupConfig(
     val marginBandShare: Float = 0.08f,
@@ -55,6 +56,7 @@ data class CleanupConfig(
     val ocrNeighbourPages: Int = 2,
     val ocrMarginShare: Float = 0.12f,
     val ocrMatchSimilarity: Float = 0.8f,
+    val carry: PageCarryConfig = PageCarryConfig(),
 ) {
     init {
         require(marginBandShare in 0f..1f) { "marginBandShare must be in 0..1, was $marginBandShare" }
