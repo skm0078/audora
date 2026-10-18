@@ -14,7 +14,8 @@ import java.security.MessageDigest
 /**
  * One file per book, named by a hash of its id, a line per character: key, a tab, the voice's name. The keys hold
  * character names from the book, so they stay in this file and never reach a log. A missing or unreadable file is
- * a book with no voices given yet; a failed save is logged and the voices hold until the service stops.
+ * a book with no voices given yet; a failed save is logged and the voices hold in [CharacterCasts] until the
+ * process ends.
  */
 class CharacterFileStore(private val dir: File) : CharacterFiles {
     override fun load(book: BookId): Map<String, String> {

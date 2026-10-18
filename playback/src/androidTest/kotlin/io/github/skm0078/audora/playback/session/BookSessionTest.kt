@@ -26,6 +26,7 @@ import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SleepOptions
+import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.TableRowInfo
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.core.model.VoiceId
@@ -39,6 +40,7 @@ import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.playlist.PlaybackItem
 import io.github.skm0078.audora.playback.queue.SentenceRenderer
 import io.github.skm0078.audora.playback.queue.UnitKey
+import io.github.skm0078.audora.playback.voice.ReplayRender
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import java.util.Collections
@@ -78,6 +80,13 @@ class BookSessionTest {
     private var failOn: UnitKey? = null
     private var sleepOptions = SleepOptions()
     private var keepGoing = true
+
+    // Smart speed's replay (ADR-049): when on, "What did it say?" renders the sentence again in [SLOWER].
+    private val replayRender = ReplayRender()
+    private var smartSpeed = false
+
+    // Each render: the sentence and the replay style it was rendered with (null: the listener's own).
+    private val renders: MutableList<Pair<UnitKey, SpeechStyle?>> = Collections.synchronizedList(mutableListOf())
     private lateinit var player: ExoPlayer
     private lateinit var session: BookSession
 
@@ -119,6 +128,8 @@ class BookSessionTest {
                     sleepOptions = { sleepOptions },
                     keepGoingToNextChapter = { keepGoing },
                     onBookFinished = { finished += it },
+                    replayRender = replayRender,
+                    replayStyle = { if (smartSpeed) SLOWER else null },
                 ),
                 CONFIG,
                 Events(),
@@ -296,6 +307,35 @@ class BookSessionTest {
     }
 
     @Test
+    fun aSmartSpeedReplayRendersTheSentenceSlowerOnceThenInTheListenersStyle() {
+        smartSpeed = true
+        play(page = 0, charStart = 0)
+        awaitCondition("reached page 2") { played.contains(UnitKey(1, 0)) }
+
+        // Each sentence pauses at its end, so the test steps from the replay to the next sentence and back.
+        val before = onMain {
+            player.pauseAtEndOfMediaItems = true
+            assertTrue(session.replayPrevious(REPLAY_FACTOR))
+            played.size
+        }
+        val replayed = played[before - 2]
+        awaitCondition("the replay played and paused") { played.size > before && !onMain { player.playWhenReady } }
+        assertEquals(replayed, played[before])
+        assertTrue(renders.contains(replayed to SLOWER))
+
+        onMain { player.play() }
+        awaitCondition("the sentence after the replay") { played.size > before + 1 }
+        awaitCondition("paused after it") { !onMain { player.playWhenReady } }
+        val ownRenders = renders.count { it == replayed to null }
+        onMain { player.seekToPreviousMediaItem() }
+
+        awaitCondition("the replayed sentence rendered again in the listener's style") {
+            renders.count { it == replayed to null } > ownRenders
+        }
+        assertEquals(1, renders.count { it == replayed to SLOWER })
+    }
+
+    @Test
     fun undoJumpNeverCrossesIntoAnotherBook() {
         play(page = 0, charStart = 0)
         awaitCondition("first sentence") { played.isNotEmpty() }
@@ -421,6 +461,7 @@ class BookSessionTest {
 
     private fun renderer() = SentenceRenderer { unit ->
         val key = UnitKey.of(unit)
+        renders += key to replayRender.styleFor(key)
         if (key == failOn) {
             Outcome.Failure(SpeechError.SynthesisFailed(VOICE, "test failure"))
         } else {
@@ -528,6 +569,7 @@ class BookSessionTest {
         const val POLL_MS = 20L
         const val LOOP_ROUNDS = 3
         const val REPLAY_FACTOR = 0.5f
+        val SLOWER = SpeechStyle(rate = REPLAY_FACTOR)
         const val SPEED_DELTA = 0.001f
 
         /** Long enough for a sentence past a range's end to start, were it going to. */

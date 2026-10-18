@@ -68,6 +68,15 @@ class ParagraphSkipTest {
     }
 
     @Test
+    fun previousPastUnreadablePagesGoesToThePageBeforeThem() {
+        val holes = ParagraphSkip({ p -> if (p in 2..4) null else units(p, "sss") }, 10, maxPages = 3)
+        assertEquals(Spot(1, 0), holes.previous(units(5, "sss")[0]))
+        // Reaching the book's first page with nothing on the way: the book's start, not "already there".
+        val openingHoles = ParagraphSkip({ p -> if (p < 2) null else units(p, "sss") }, 10, maxPages = 3)
+        assertEquals(Spot(0, 0), openingHoles.previous(units(2, "sss")[0]))
+    }
+
+    @Test
     fun aSkipLandsOnTheUnitItNamesWhenTwoShareAnOffset() {
         // Page 0 ends a paragraph; page 1 opens with a zero-length summary and its first row at the same offset.
         val summary = ReadingUnit(1, 0, 0, 0, "", Lang.EN, 0, null)

@@ -37,7 +37,6 @@ import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.focus.FocusSoundStore
 import io.github.skm0078.audora.playback.notes.BookContext
 import io.github.skm0078.audora.playback.session.BookSession
-import io.github.skm0078.audora.playback.session.ParagraphSkipResult
 import io.github.skm0078.audora.playback.session.SleepOptionsStore
 import io.github.skm0078.audora.playback.session.StudyMark
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
@@ -319,11 +318,7 @@ class SessionCallback(
 
     private suspend fun skipParagraph(args: Bundle): SessionResult {
         if (!args.containsKey(PlaybackContract.ARG_FORWARD)) return badRequest()
-        return when (bookSession().skipParagraph(args.getBoolean(PlaybackContract.ARG_FORWARD))) {
-            ParagraphSkipResult.MOVED -> SessionResult(SessionResult.RESULT_SUCCESS)
-            ParagraphSkipResult.NONE_THAT_WAY -> failure(PlaybackErrorCode.NO_PARAGRAPH_THAT_WAY)
-            ParagraphSkipResult.DROPPED -> failure(PlaybackErrorCode.STALE_REQUEST)
-        }
+        return SessionResults.of(bookSession().skipParagraph(args.getBoolean(PlaybackContract.ARG_FORWARD)))
     }
 
     /** The A–B study range (plan item 31); a range of a book plays it, like PLAY_FROM. */
@@ -387,14 +382,7 @@ class SessionCallback(
 
     private fun badRequest(): SessionResult = failure(PlaybackErrorCode.BAD_REQUEST)
 
-    private fun failure(code: PlaybackErrorCode): SessionResult {
-        val resultCode = if (code == PlaybackErrorCode.BAD_REQUEST) {
-            SessionError.ERROR_BAD_VALUE
-        } else {
-            SessionError.ERROR_UNKNOWN
-        }
-        return SessionResult(resultCode, Bundle().apply { putString(PlaybackContract.RESULT_ERROR, code.name) })
-    }
+    private fun failure(code: PlaybackErrorCode): SessionResult = SessionResults.failure(code)
 
     private companion object {
         const val TAG = "Playback.Session"
