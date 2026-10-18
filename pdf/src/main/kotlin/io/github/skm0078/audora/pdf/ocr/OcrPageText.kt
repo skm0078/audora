@@ -13,6 +13,7 @@ import io.github.skm0078.audora.pdf.extract.PageTextStats
 import io.github.skm0078.audora.pdf.extract.RawChars
 import io.github.skm0078.audora.pdf.extract.putBox
 import io.github.skm0078.audora.pdf.layout.LayoutMode
+import io.github.skm0078.audora.pdf.layout.NoteFinder
 import io.github.skm0078.audora.pdf.layout.PageLayout
 import io.github.skm0078.audora.pdf.layout.Paragraph
 import io.github.skm0078.audora.pdf.layout.TextBlock
@@ -97,25 +98,18 @@ internal class OcrPageText(private val tableFinder: OcrTables, private val layou
         val folios = folios(paragraphs).filterTo(HashSet()) { p -> spans[p].none { line -> line.any { it in taken } } }
         val keep = paragraphs.indices.filter { it !in folios }
         val bodySize = bodySizeOf(sizes)
-        val kinds = OcrParagraphKinds(page, layoutConfig, bodySize)
+        // Kinds and notes measure lines across the page, so in the frame where the text runs upright.
+        val upright = toPage?.let { page.withBoxes(ocr.uprightTurn(it)::apply) } ?: page
+        val kinds = OcrParagraphKinds(upright, layoutConfig, bodySize)
         val laidOut = layoutParagraphs(keep.map { spans[it] }, keep.map { sizes[it] }, found, kinds)
         val notes = if (toPage == null) {
             OcrFootnotes.Tagged(laidOut, emptyList())
         } else {
             val turn = ocr.uprightTurn(toPage)
             val sheet = OcrFootnotes.Sheet(turn.apply(toPage(WHOLE_VIEW)), ocr.rules.map { turn.apply(toPage(it)) })
-            footnotes.tag(page.withBoxes(turn::apply), sheet, laidOut, taken, bodySize)
+            footnotes.tag(upright, sheet, laidOut, taken, bodySize)
         }
-        val kept = notes.paragraphs
-        val blocks = if (kept.isEmpty()) emptyList() else listOf(TextBlock(kept, box = null))
-        val layout = PageLayout(
-            pageIndex,
-            blocks,
-            bodySize = 0f,
-            mode = LayoutMode.EXTRACTION_ORDER,
-            noteMarkers = notes.markers,
-        )
-        return OcrPage(page, layout, hyphenatedPairs(flat), found.size)
+        return OcrPage(page, layoutOf(pageIndex, notes), hyphenatedPairs(flat), found.size)
     }
 
     /**
@@ -339,3 +333,17 @@ private const val PROBE_RIGHT_U = 0.75f
 private const val PROBE_V = 0.5f
 private val PROBE_LEFT = ViewRect(PROBE_LEFT_U, PROBE_V, PROBE_LEFT_U, PROBE_V)
 private val PROBE_RIGHT = ViewRect(PROBE_RIGHT_U, PROBE_V, PROBE_RIGHT_U, PROBE_V)
+
+/** OCR's paragraphs in reading order as one block; the reading-text builder repairs them like extraction order. */
+private fun layoutOf(pageIndex: Int, notes: OcrFootnotes.Tagged): PageLayout {
+    val blocks = if (notes.paragraphs.isEmpty()) emptyList() else listOf(TextBlock(notes.paragraphs, box = null))
+    val layout = PageLayout(
+        pageIndex,
+        blocks,
+        bodySize = 0f,
+        mode = LayoutMode.EXTRACTION_ORDER,
+        noteMarkers = notes.markers,
+    )
+    NoteFinder.logCounts(layout, "ocr")
+    return layout
+}

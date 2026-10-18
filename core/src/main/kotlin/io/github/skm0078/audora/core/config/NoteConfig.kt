@@ -30,6 +30,8 @@ package io.github.skm0078.audora.core.config
  * @property ocrFlushEm a run that opens with no marker carries on a note from the page before, so it starts within
  *   this many line heights of the left edge of its column, or under a rule: a block quote, verse or epigraph set small
  *   is indented or centred.
+ * @property ocrNoteEndShare on a scanned page, a "Note:" paragraph ends at its first line that ends a sentence short
+ *   of this share of the paragraph's widest line: Tesseract often merges it with the paragraph after it.
  */
 data class NoteConfig(
     val silenceMarkers: Boolean = true,
@@ -45,6 +47,7 @@ data class NoteConfig(
     val ocrSureNoteLines: Int = 3,
     val ocrNoteSpacingRatio: Float = 0.95f,
     val ocrFlushEm: Float = 1f,
+    val ocrNoteEndShare: Float = 0.8f,
 ) {
     init {
         val shares = listOf(
@@ -52,6 +55,7 @@ data class NoteConfig(
             footnoteSizeRatio,
             minCarriedNoteWidthShare,
             ocrFootnoteBandShare,
+            ocrNoteEndShare,
         )
         require(shares.all { it in 0f..1f }) { "note shares must be in 0..1, were $shares" }
         require(markerRaiseEm > 0f) { "markerRaiseEm must be > 0, was $markerRaiseEm" }

@@ -75,6 +75,20 @@ class OcrParagraphKindsTest {
     }
 
     @Test
+    fun `a note that Tesseract merged with the paragraph after it ends at its short last line`() {
+        val note = listOf("Note: keep the pots in the shade on the days when the sun is hot", "and water them daily.")
+        val lines = note.mapIndexed { i, text -> line(text, i, 0) } +
+            body.mapIndexed { i, text -> line(text, i + note.size, 0) }
+        val units = builder.build(builder.ocrReadingText(PAGE, OcrText(lines)) { transform.toPage(it) })
+        assertEquals(listOf(UnitKind.ASIDE) + List(body.size) { UnitKind.BODY }, units.map { it.kind })
+        assertEquals(note.joinToString(" "), units.first().text)
+        // A note running to its paragraph's end stays one aside.
+        val alone = note.mapIndexed { i, text -> line(text, i, 0) }
+        val one = builder.build(builder.ocrReadingText(PAGE, OcrText(alone)) { transform.toPage(it) })
+        assertEquals(listOf(UnitKind.ASIDE), one.map { it.kind })
+    }
+
+    @Test
     fun `a heading at the top of a paragraph is split from the body text under it`() {
         val lines = listOf(line("How plants feed", 0, 0, LARGE)) + body.mapIndexed { i, text -> line(text, i + 1, 0) }
         val units = builder.build(builder.ocrReadingText(PAGE, OcrText(lines)) { transform.toPage(it) })
