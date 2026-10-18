@@ -55,6 +55,15 @@ class PaperLightTest {
         assertTrue(evened.grey(WIDTH - 2, 1) >= WHITE_ENOUGH)
     }
 
+    @Test
+    fun `blocks are sized from the text's line height, never so small that a large photo has too many`() {
+        val photo = PageImage(0, 400, 300, 72, ByteArray(400 * 300))
+        assertEquals("from the line height, whatever the dpi", 10, PaperLight.of(photo, config, lineHeight = 59f).block)
+        assertEquals("no lines read: from the dpi", 2, PaperLight.of(photo, config).block)
+        val big = PageImage(0, 4000, 3000, 10, ByteArray(4000 * 3000))
+        assertEquals("12 MP at a nominal 10 dpi", 7, PaperLight.of(big, config).block)
+    }
+
     /** Paper [LIT] on the left half and [shadow] on the right, with a one-pixel stroke every [STROKE_EVERY] pixels. */
     private fun shadowed(shadow: Int = SHADOW): PageImage {
         val gray = ByteArray(WIDTH * HEIGHT) { i ->

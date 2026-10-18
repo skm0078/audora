@@ -8,6 +8,7 @@ import io.github.skm0078.audora.pdf.document.PageImage
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 /**
  * How bright the paper of [image] is across the page ([LightingConfig]): one sample per block of `block` pixels,
@@ -17,7 +18,8 @@ import kotlin.math.roundToInt
  */
 internal class PaperLight private constructor(
     private val image: PageImage,
-    private val block: Int,
+    /** The width of a block, in pixels, with one sample each. */
+    internal val block: Int,
     private val columns: Int,
     private val rows: Int,
     private val samples: IntArray,
@@ -87,9 +89,14 @@ internal class PaperLight private constructor(
         private const val FRACTION_BITS = 8
         private const val ONE = 1 shl FRACTION_BITS
 
-        /** The paper light of [image], sampled as [config] says. */
-        fun of(image: PageImage, config: LightingConfig): PaperLight {
-            val block = (image.dpi * config.blockInches).roundToInt().coerceAtLeast(1)
+        /**
+         * The paper light of [image], sampled as [config] says, in blocks sized from [lineHeight] (the median height
+         * of its lines in pixels; 0 when none was read: from its dpi instead).
+         */
+        fun of(image: PageImage, config: LightingConfig, lineHeight: Float = 0f): PaperLight {
+            val wanted = if (lineHeight > 0f) lineHeight * config.blockPerLine else image.dpi * config.blockInches
+            val fewest = ceil(sqrt(image.width.toDouble() * image.height / config.maxSamples)).toInt()
+            val block = maxOf(wanted.roundToInt(), fewest, 1)
             val columns = (image.width + block - 1) / block
             val rows = (image.height + block - 1) / block
             var samples = brightest(image, block, columns, rows)

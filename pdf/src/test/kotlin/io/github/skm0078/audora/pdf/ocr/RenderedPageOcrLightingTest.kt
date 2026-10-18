@@ -75,6 +75,18 @@ class RenderedPageOcrLightingTest {
         assertEquals(4, engine.images.size)
     }
 
+    @Test
+    fun `an evened read that is surer on average but holds less, or is unsure itself, is dropped`() {
+        // Nine of ten words kept, all sure, but the long ones gone: the mean rises, the confidence in all is lower.
+        engine.drawn = List(10) { "aaaa" }.joinToString(" ") to UNSURE
+        engine.evened = List(9) { "b" }.joinToString(" ") to SURE
+        assertEquals(engine.drawn.first, read())
+        // A page that read no words takes no junk from the evened read.
+        engine.drawn = "" to UNSURE
+        engine.evened = "zz" to LightingConfig().minEvenedConfidence - 1
+        assertEquals("", read())
+    }
+
     private companion object {
         const val WIDTH = 300 // 33 blocks at 300 dpi: the right edge is well clear of the shadow's edge.
         const val HEIGHT = 24
