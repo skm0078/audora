@@ -24,8 +24,11 @@ enum class WordMark {
     PASSED,
 }
 
-/** [marks] for the page words from the start index on, in order; [next] the first page word after them. */
-internal data class Alignment(val marks: List<WordMark>, val next: Int)
+/**
+ * [marks] for the page words from the start index on, in order; [next] the first page word after them; [cost] how
+ * badly the stretch fits there (0 when every heard word matched).
+ */
+internal data class Alignment(val marks: List<WordMark>, val next: Int, val cost: Int)
 
 /**
  * An edit-distance alignment of the heard words against the page's words from [from], over at most as many page
@@ -37,24 +40,43 @@ internal data class Alignment(val marks: List<WordMark>, val next: Int)
  * after the first at [TutorConfig.numberWordCost].
  *
  * The end is free: page words after the last one matched stay unread, so a stretch cut mid-sentence marks only what
- * was read. Ties go to the shorter reach: a last word heard wrong stays unread, and is marked skipped if the next
- * stretch goes on after it.
+ * was read. Ties go to the shorter reach (a last word heard wrong stays unread, and is marked skipped if the next
+ * stretch goes on after it), except with [align]'s `toPageEnd` when reaching the page's last word costs no more: a
+ * final stretch whose last word was misread there marks it, so the page can finish.
  */
 internal class WordAligner(private val config: TutorConfig) {
-    fun align(page: List<PageWord>, from: Int, heard: List<String>): Alignment {
+    fun align(page: List<PageWord>, from: Int, heard: List<String>, toPageEnd: Boolean = false): Alignment {
         val spoken = heard.take(config.maxUtteranceWords)
         val reach = minOf(page.size - from, spoken.size + config.lookaheadWords)
-        if (reach <= 0 || spoken.isEmpty()) return Alignment(emptyList(), from)
-        val table = Table(page.subList(from, from + reach), spoken)
-        val end = (0..reach).minBy { table.main[spoken.size][it] }
-        return Alignment(table.trace(end), from + end)
+        if (reach <= 0 || spoken.isEmpty()) return Alignment(emptyList(), from, spoken.size * config.extraCost)
+        val table = Table(page.subList(from, from + reach), spoken, freeStart = false)
+        val costs = table.main[spoken.size]
+        val best = costs.min()
+        val reachesPageEnd = toPageEnd && from + reach == page.size && costs[reach] == best
+        val end = if (reachesPageEnd) reach else (0..reach).first { costs[it] == best }
+        return Alignment(table.trace(end), from + end, best)
+    }
+
+    /**
+     * How well the heard words fit somewhere among the up to [TutorConfig.lookaheadWords] page words before [until]
+     * (start and end both free): a reader going back over what they read. Null when there is nothing before.
+     */
+    fun repeatCost(page: List<PageWord>, until: Int, heard: List<String>): Int? {
+        val spoken = heard.take(config.maxUtteranceWords)
+        val from = maxOf(0, until - config.lookaheadWords)
+        if (until <= from || spoken.isEmpty()) return null
+        return Table(page.subList(from, until), spoken, freeStart = true).main[spoken.size].min()
     }
 
     /**
      * main[i][j]: the least cost of lining up the first i heard words with the first j page words; gap[i][j]: the same,
-     * ending in a run of passed-over page words.
+     * ending in a run of passed-over page words. With [freeStart] the heard words may begin at any page word.
      */
-    private inner class Table(private val words: List<PageWord>, private val spoken: List<String>) {
+    private inner class Table(
+        private val words: List<PageWord>,
+        private val spoken: List<String>,
+        freeStart: Boolean,
+    ) {
         val main = Array(spoken.size + 1) { IntArray(words.size + 1) }
         private val gap = Array(spoken.size + 1) { IntArray(words.size + 1) { UNREACHABLE } }
 
@@ -62,7 +84,7 @@ internal class WordAligner(private val config: TutorConfig) {
             for (i in 0..spoken.size) {
                 for (j in 0..words.size) {
                     if (j > 0) gap[i][j] = gapSteps(i, j).minOf { it.cost }
-                    main[i][j] = if (i == 0 && j == 0) 0 else mainSteps(i, j).minOf { it.cost }
+                    main[i][j] = if (i == 0 && (j == 0 || freeStart)) 0 else mainSteps(i, j).minOf { it.cost }
                 }
             }
         }

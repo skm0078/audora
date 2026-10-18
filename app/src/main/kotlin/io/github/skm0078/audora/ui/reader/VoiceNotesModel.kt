@@ -12,13 +12,17 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeAnchor
 import io.github.skm0078.audora.playback.notes.VoiceNoteAudio
 import io.github.skm0078.audora.playback.notes.VoiceNoteError
+import io.github.skm0078.audora.playback.tutor.MicrophoneGate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 enum class VoiceNoteFailure { MICROPHONE, NO_MICROPHONE_PERMISSION, TOO_SHORT, NOT_SAVED, NOT_PLAYED }
 
@@ -80,7 +84,7 @@ class VoiceNotesBinding(
  * Plain state holder, one per open book. Main thread. [scope] should outlive the screen (activity-wide): a recording
  * saved as the reader closes must still reach the database. The recordings are the listener's voice: never logged.
  */
-@Suppress("TooManyFunctions") // One per control: record, save, discard, play, stop, delete.
+@Suppress("TooManyFunctions", "LongParameterList") // One function per control; each parameter a seam tests replace.
 class VoiceNotesModel(
     private val bookId: BookId,
     private val store: VoiceNoteStore,
@@ -88,11 +92,14 @@ class VoiceNotesModel(
     private val scope: CoroutineScope,
     private val anchorOf: (ReadingUnit) -> ResumeAnchor,
     private val pauseReading: () -> Unit,
+    private val gate: MicrophoneGate = MicrophoneGate.shared,
 ) : VoiceNotesActions {
     private val mutableState = MutableStateFlow(VoiceNotesState())
     val state: StateFlow<VoiceNotesState> = mutableState.asStateFlow()
     private val logContext = "book=${bookId.logLabel}"
     private var recording: VoiceNoteAudio.Recording? = null
+    private var starting: Job? = null
+    private var hold: AutoCloseable? = null
     private var playing: VoiceNoteAudio.Playing? = null
     private var observer: Job? = null
 
@@ -104,16 +111,29 @@ class VoiceNotesModel(
     }
 
     override fun record(unit: ReadingUnit) {
-        if (recording != null) return
+        if (recording != null || starting?.isActive == true) return
         stopPlaying()
         pauseReading()
-        when (val begun = audio.record(onLimit = ::finishRecording)) {
-            is Outcome.Success -> {
-                recording = begun.value
-                mutableState.update { it.copy(recordingFor = unit) }
+        starting = scope.launch {
+            // Voice commands pause while the note records; taken where cancelling cannot drop it.
+            val held = withContext(NonCancellable) { gate.hold(MICROPHONE_REASON) }
+            starting = null
+            if (!isActive) {
+                held.close()
+                return@launch
             }
+            when (val begun = audio.record(onLimit = ::finishRecording)) {
+                is Outcome.Success -> {
+                    recording = begun.value
+                    hold = held
+                    mutableState.update { it.copy(recordingFor = unit) }
+                }
 
-            is Outcome.Failure -> mutableState.update { it.copy(failure = VoiceNoteFailure.MICROPHONE) }
+                is Outcome.Failure -> {
+                    held.close()
+                    mutableState.update { it.copy(failure = VoiceNoteFailure.MICROPHONE) }
+                }
+            }
         }
     }
 
@@ -122,15 +142,20 @@ class VoiceNotesModel(
         val unit = mutableState.value.recordingFor ?: return
         recording = null
         mutableState.update { it.copy(recordingFor = null) }
-        when (val finished = current.finish()) {
+        val finished = current.finish()
+        releaseMicrophone()
+        when (finished) {
             is Outcome.Success -> save(VoiceNote(0, anchorOf(unit), current.fileName, finished.value))
             is Outcome.Failure -> mutableState.update { it.copy(failure = failureOf(finished.error)) }
         }
     }
 
     override fun cancelRecording() {
+        starting?.cancel()
+        starting = null
         recording?.cancel()
         recording = null
+        releaseMicrophone()
         mutableState.update { it.copy(recordingFor = null) }
     }
 
@@ -180,6 +205,7 @@ class VoiceNotesModel(
 
     /** The screen is closing: a recording in progress is saved, playback stops. */
     fun close() {
+        starting?.cancel()
         finishRecording()
         stopPlaying()
         observer?.cancel()
@@ -199,6 +225,11 @@ class VoiceNotesModel(
         }
     }
 
+    private fun releaseMicrophone() {
+        hold?.close()
+        hold = null
+    }
+
     private fun onPlayed(id: Long) {
         if (mutableState.value.playing == id) stopPlaying()
     }
@@ -211,5 +242,6 @@ class VoiceNotesModel(
 
     private companion object {
         const val TAG = "VoiceNotes"
+        const val MICROPHONE_REASON = "voice note"
     }
 }

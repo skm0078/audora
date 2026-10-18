@@ -313,8 +313,8 @@
       "credit": "Vosk small streaming Bengali model, a Zipformer2 transducer trained with icefall by Alpha Cephei (Apache-2.0), converted for sherpa-onnx by k2-fsa; weights and tokens kept unchanged.",
       "licenceUrl": "https://huggingface.co/alphacep/vosk-model-small-streaming-bn",
       "licenceCheck": {
-        "url": "https://huggingface.co/alphacep/vosk-model-small-streaming-bn/raw/main/README.md",
-        "contains": "license: apache-2.0"
+        "url": "https://huggingface.co/api/models/alphacep/vosk-model-small-streaming-bn",
+        "license": "apache-2.0"
       },
       "sourceUrl": "https://huggingface.co/alphacep/vosk-model-small-streaming-bn",
       "sources": [

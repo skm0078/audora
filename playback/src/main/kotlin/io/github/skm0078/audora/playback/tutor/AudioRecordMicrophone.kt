@@ -3,10 +3,14 @@
 
 package io.github.skm0078.audora.playback.tutor
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import androidx.core.content.ContextCompat
 import io.github.skm0078.audora.core.config.TutorConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
@@ -20,8 +24,11 @@ import kotlinx.coroutines.withContext
  * honours that), which is what the models were trained on. The buffer holds `micBufferMs`, so a slow read never
  * overruns. Reads block on [Dispatchers.IO]; cancelling the caller stops within one chunk and frees the recorder.
  */
-class AudioRecordMicrophone(private val config: TutorConfig) : Microphone {
-    // The caller checks RECORD_AUDIO first; a SecurityException (revoked meanwhile) is still caught in create().
+class AudioRecordMicrophone(context: Context, private val config: TutorConfig) : Microphone {
+    private val appContext = context.applicationContext
+
+    // Without RECORD_AUDIO, AudioRecord comes back uninitialised rather than throwing, which would read as a busy
+    // microphone; so the permission is checked first (a SecurityException is still caught in create()).
     override suspend fun record(onChunk: suspend (FloatArray) -> Unit): Outcome<Unit, TutorError> =
         withContext(Dispatchers.IO) {
             when (val opened = open()) {
@@ -38,12 +45,19 @@ class AudioRecordMicrophone(private val config: TutorConfig) : Microphone {
         }
 
     private fun open(): Outcome<AudioRecord, TutorError> {
-        val minBytes = AudioRecord.getMinBufferSize(config.sampleRateHz, CHANNEL, ENCODING)
-        if (minBytes <= 0) {
-            AudoraLog.e(TAG, "Microphone format not supported, code=$minBytes")
-            return Outcome.Failure(TutorError.MICROPHONE_FAILED)
+        val held = ContextCompat.checkSelfPermission(appContext, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+        val minBytes = if (held) AudioRecord.getMinBufferSize(config.sampleRateHz, CHANNEL, ENCODING) else 0
+        return when {
+            !held -> Outcome.Failure(TutorError.NO_PERMISSION).also {
+                AudoraLog.w(TAG, "Microphone permission missing")
+            }
+
+            minBytes <= 0 -> Outcome.Failure(TutorError.MICROPHONE_FAILED)
+                .also { AudoraLog.e(TAG, "Microphone format not supported, code=$minBytes") }
+
+            else -> create(maxOf(minBytes, config.micBufferSamples * Float.SIZE_BYTES))
         }
-        return create(maxOf(minBytes, config.micBufferSamples * Float.SIZE_BYTES))
     }
 
     @SuppressLint("MissingPermission")
@@ -76,8 +90,10 @@ class AudioRecordMicrophone(private val config: TutorConfig) : Microphone {
             AudoraLog.e(TAG, "Microphone did not start: ${e.javaClass.simpleName}")
             false
         }
-        if (!started) {
-            AudoraLog.e(TAG, "Microphone did not start (another app may hold it)")
+        // Android 10+ gives a busy microphone silence instead of an error; that would read as a reader saying nothing.
+        val silenced = started && recorder.activeRecordingConfiguration?.isClientSilenced == true
+        if (!started || silenced) {
+            AudoraLog.e(TAG, "Microphone did not start, silenced=$silenced (another app may hold it)")
             return Outcome.Failure(TutorError.MICROPHONE_FAILED)
         }
         val buffer = FloatArray(config.micChunkSamples)

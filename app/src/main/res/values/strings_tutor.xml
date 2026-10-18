@@ -20,15 +20,23 @@
     <string name="tutor_next_page">Next page</string>
     <string name="tutor_no_text">This page has no text to read aloud.</string>
     <string name="tutor_legend">Coloured: read. Red and underlined: worth checking. Struck through: skipped.</string>
-    <string name="tutor_score">You read %1$d of %2$d words as written (%3$d%%).</string>
+    <plurals name="tutor_score">
+        <item quantity="one">You read %1$d of %2$d word as written (%3$d%%).</item>
+        <item quantity="other">You read %1$d of %2$d words as written (%3$d%%).</item>
+    </plurals>
     <string name="tutor_score_none">Nothing on this page could be checked (numbers, symbols and other scripts are not judged).</string>
     <string name="tutor_to_check">Worth checking (tap to hear it):</string>
-    <string name="tutor_skipped">Skipped: %1$d words.</string>
+    <plurals name="tutor_skipped">
+        <item quantity="one">Skipped: %1$d word.</item>
+        <item quantity="other">Skipped: %1$d words.</item>
+    </plurals>
     <string name="tutor_check_note">A word marked to check may also be one the speech model misheard.</string>
     <string name="tutor_hear_word">Hear “%1$s”</string>
     <string name="tutor_failed_model">The speech model would not load; its files may be damaged.</string>
+    <string name="tutor_try_again">Try again</string>
     <string name="tutor_download_again">Download it again</string>
     <string name="tutor_failed_permission">Audora needs the microphone to listen. You can allow it in the phone\'s settings.</string>
+    <string name="tutor_open_settings">Open settings</string>
     <string name="tutor_failed_microphone">The microphone could not be used. Another app may be using it.</string>
     <string name="tutor_lang_en">English</string>
     <string name="tutor_lang_hi">Hindi</string>

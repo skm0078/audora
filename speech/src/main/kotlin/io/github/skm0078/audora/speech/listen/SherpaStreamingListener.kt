@@ -102,9 +102,12 @@ class SherpaStreamingListener private constructor(
                     enableEndpoint = true,
                 ),
             )
+
+            // OnlineStream checks its handle with require (IllegalArgumentException); free the recognizer either way.
+            @Suppress("TooGenericExceptionCaught") // Rethrown as is; only here to free the recognizer.
             val stream = try {
                 recognizer.createStream()
-            } catch (e: IllegalStateException) {
+            } catch (e: RuntimeException) {
                 recognizer.release()
                 throw e
             }

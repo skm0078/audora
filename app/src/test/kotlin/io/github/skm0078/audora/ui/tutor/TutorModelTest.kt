@@ -50,19 +50,25 @@ class TutorModelTest {
         listener: Listener?,
         paused: MutableList<Unit> = mutableListOf(),
         spoken: MutableList<String> = mutableListOf(),
+        retries: MutableList<Boolean> = mutableListOf(),
+        saved: String? = null,
     ): TutorModel {
         val dispatcher = StandardTestDispatcher(testScheduler)
         return TutorModel(
             page = page,
             scope = CoroutineScope(dispatcher),
             newSession = { TutorSession(shortMicrophone, MicrophoneGate.NONE, config, dispatcher) },
-            openListener = { listener },
+            openListener = { _, retry ->
+                retries += retry
+                listener
+            },
             pause = { paused += Unit },
             speak = { text, _ ->
                 spoken += text
                 true
             },
             config = config,
+            saved = saved,
         )
     }
 
@@ -89,7 +95,7 @@ class TutorModelTest {
 
         val state = model.state.value
         assertFalse(state.listening)
-        assertEquals(List(5) { WordMark.READ } + WordMark.UNREAD, state.along.marks)
+        assertEquals(List(5) { WordMark.READ } + WordMark.MISREAD, state.along.marks)
         assertEquals(5, state.report?.read)
         assertNull(state.failure)
     }
@@ -127,5 +133,23 @@ class TutorModelTest {
 
     private companion object {
         const val CHUNKS = 3
+    }
+
+    @Test
+    fun `marks survive a rotation and try again forces the load`() = runTest {
+        val retries = mutableListOf<Boolean>()
+        val first = model(Hearing(listOf("the cat sat")), retries = retries)
+        first.start()
+        testScheduler.advanceUntilIdle()
+        val kept = first.state.value.saved
+
+        val again = model(Hearing(emptyList()), retries = retries, saved = kept)
+        assertEquals(first.state.value.along.marks, again.state.value.along.marks)
+        assertEquals(first.state.value.along.next, again.state.value.along.next)
+        assertEquals(List(6) { WordMark.UNREAD }, model(null, saved = "9:junk").state.value.along.marks)
+
+        again.retry()
+        testScheduler.advanceUntilIdle()
+        assertEquals(listOf(false, true), retries)
     }
 }

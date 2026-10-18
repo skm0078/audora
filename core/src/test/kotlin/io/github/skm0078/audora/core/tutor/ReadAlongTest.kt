@@ -60,7 +60,7 @@ class ReadAlongTest {
                 listOf(READ, PASSED, READ, READ),
             ),
             Case("a number left out", "In 1995 we left.", "in we left", listOf(READ, PASSED, READ, READ)),
-            Case("short words must match", "It is in.", "it is on", listOf(READ, READ, UNREAD)),
+            Case("short words must match", "It is in.", "it is on", listOf(READ, READ, MISREAD)),
         )
         cases.forEach { case -> assertEquals(case.name, case.marks, page(case.page).say(case.heard).marks) }
     }
@@ -117,5 +117,95 @@ class ReadAlongTest {
         assertFalse(
             page("मैंने Kindle पर पढ़ा", lang = Lang.HI).say("मैंने किंडल पर पढ़ा").report().toCheck.isNotEmpty(),
         )
+    }
+
+    @Test
+    fun `going back over what was read changes nothing`() {
+        val twoSentences = page("The cat sat on the mat.", "Then the dog sat on the rug.")
+        val reread = twoSentences.say("the cat sat on the mat").say("the cat sat on the mat")
+        assertEquals(List(6) { READ } + List(7) { UNREAD }, reread.marks)
+        assertEquals(6, reread.next)
+
+        val walked = page("He walked into the dark room.", "The floor was cold.")
+            .say("he walked into the")
+            .say("and walked into the")
+            .say("dark room the floor was cold")
+        assertEquals(List(10) { READ }, walked.marks)
+
+        val hindi = page("वह थक गया और वह सो गया।", "फिर सुबह हुई।", lang = Lang.HI)
+            .say("वह थक गया और वह सो गया")
+            .say("और वह सो गया")
+            .say("फिर सुबह हुई")
+        assertEquals(List(10) { READ }, hindi.marks)
+    }
+
+    @Test
+    fun `a page ending in an unjudged word or a misread word still finishes`() {
+        assertTrue(page("He was born in 1995.").say("he was born in").finished)
+        assertTrue(page("मैंने यह किताब Kindle", lang = Lang.HI).say("मैंने यह किताब").finished)
+        assertTrue(page("We met at 5 p.m.").say("we met at").finished)
+
+        val misreadLast = page("The cat sat on the mat.").say("the cat sat on the map")
+        assertEquals(List(5) { READ } + MISREAD, misreadLast.marks)
+        assertTrue(misreadLast.finished)
+        assertFalse(page("The cat sat on the mat.").say("um").finished)
+        assertEquals(List(6) { UNREAD }, page("The cat sat on the mat.").say("um").marks)
+    }
+
+    @Test
+    fun `joiners and soft hyphens keep a word whole`() {
+        val cases = listOf(
+            "র\u200D্যাব" to Lang.BN,
+            "উত্\u200Dসব" to Lang.BN,
+            "क्\u200Dष" to Lang.HI,
+            "read\u00ADing" to Lang.EN,
+        )
+        cases.forEach { (word, lang) ->
+            val words = PageWords.of(listOf(word), lang)
+            assertEquals(word, 1, words.size)
+            assertEquals(word, listOf(READ), ReadAlong.start(words).heard(listOf(words[0].key), final = true).marks)
+        }
+        assertEquals(PageWords.key("উৎসব"), PageWords.key("উত্\u200Dসব"))
+        assertEquals(PageWords.key("reading"), PageWords.key("read\u00ADing"))
+    }
+
+    @Test
+    fun `spelling variants read alike`() {
+        listOf(
+            "हिन्दी" to "हिंदी",
+            "सम्बन्ध" to "संबंध",
+            "गङ्गा" to "गंगा",
+            "गये" to "गए",
+            "नयी" to "नई",
+            "लिये" to "लिए",
+            "चाहिये" to "चाहिए",
+            "कि" to "की",
+            "কী" to "কি",
+            "হঠাত্\u200D" to "হঠাৎ",
+            "হঠাত্" to "হঠাৎ",
+        ).forEach { (a, b) -> assertEquals("$a / $b", PageWords.key(a), PageWords.key(b)) }
+        assertEquals(PageWords.key("ये"), "ये")
+    }
+
+    @Test
+    fun `short abbreviations are read any way`() {
+        val words = PageWords.of(listOf("Mr. Smith met Dr. Rao at 5 p.m. in St. Mary"), Lang.EN)
+        assertEquals(
+            listOf("mr", "smith", "met", "dr", "rao", "at", "5", "pm", "in", "st", "mary"),
+            words.map { it.key },
+        )
+        assertEquals(
+            listOf(false, true, true, false, true, true, false, false, true, false, true),
+            words.map { it.checked },
+        )
+        assertTrue(PageWords.of(listOf("The cat sat."), Lang.EN).all { it.checked })
+    }
+
+    @Test
+    fun `a stretch mostly in another script is recognised`() {
+        assertTrue(PageWords.mostlyIn("वह सो गया", Lang.HI))
+        assertFalse(PageWords.mostlyIn("وہ سو گیا", Lang.HI))
+        assertTrue(PageWords.mostlyIn("मैंने Kindle पर पढ़ा", Lang.HI))
+        assertTrue(PageWords.mostlyIn("", Lang.HI))
     }
 }

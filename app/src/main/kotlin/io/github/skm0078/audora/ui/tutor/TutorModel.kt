@@ -55,6 +55,9 @@ data class TutorState(
     /** What to show once listening stops; null while listening or before anything was heard. */
     val report: TutorReport? get() = if (listening || !started) null else along.report()
 
+    /** What to keep across a rotation or process death (the settled marks and place). */
+    val saved: String get() = along.saved()
+
     /** A page word as printed, for the "words to check" list and for hearing it. */
     fun wordText(index: Int): String = along.words[index].let { page.sentences[it.unit].substring(it.start, it.end) }
 }
@@ -62,19 +65,25 @@ data class TutorState(
 /**
  * The tutor's state and actions; the screen only draws [state]. [newSession] makes one listening run (microphone, gate,
  * decoding); [openListener] loads the page language's model; [pause] stops reading aloud first, since the microphone
- * would hear it; [speak] says one word in the book's voice ("hear it"), never while listening. Main thread.
+ * would hear it; [speak] says one word in the book's voice ("hear it"), never while listening, and [releaseVoice]
+ * frees that voice before the speech model loads, so the two are never in memory together. [saved] is what
+ * [TutorState.saved] kept before a rotation or process death. Main thread.
  */
 @Suppress("LongParameterList") // Each is one seam the tests replace; none derivable from another.
 class TutorModel(
     page: TutorPage,
     private val scope: CoroutineScope,
     private val newSession: () -> TutorSession,
-    private val openListener: (Lang) -> Listener?,
+    private val openListener: (Lang, Boolean) -> Listener?,
     private val pause: () -> Unit,
     private val speak: suspend (String, Lang) -> Boolean,
     private val config: TutorConfig = TutorConfig(),
+    private val releaseVoice: () -> Unit = {},
+    saved: String? = null,
 ) {
-    private val mutableState = MutableStateFlow(TutorState(page, fresh(page)))
+    private val mutableState = MutableStateFlow(
+        TutorState(page, ReadAlong.resume(PageWords.of(page.sentences, page.lang), saved, config)),
+    )
     private var run: Job? = null
     private var session: TutorSession? = null
 
@@ -84,9 +93,15 @@ class TutorModel(
     val state: StateFlow<TutorState> = mutableState.asStateFlow()
 
     /** Starts listening, or carries on where the reader stopped; a read page starts over. */
-    fun start() {
+    fun start() = begin(retry = false)
+
+    /** *Try again* after a model that did not load: loads it even though the last load never returned. */
+    fun retry() = begin(retry = true)
+
+    private fun begin(retry: Boolean) {
         if (run?.isActive == true) return
         pause()
+        releaseVoice()
         val current = mutableState.value
         val from = if (current.along.finished) fresh(current.page) else current.along
         val made = newSession().also { session = it }
@@ -97,7 +112,7 @@ class TutorModel(
         run = scope.launch {
             // A run being cancelled still holds the microphone and model for a moment; one at a time.
             previous?.join()
-            val outcome = made.listen(from, ::loadListener) { changed ->
+            val outcome = made.listen(from, { loadListener(retry) }) { changed ->
                 if (generation.get() == mine) mutableState.update { it.copy(along = changed) }
             }
             mutableState.update { state ->
@@ -140,7 +155,7 @@ class TutorModel(
         run?.cancel()
     }
 
-    private fun loadListener(): Listener? = openListener(mutableState.value.page.lang)
+    private fun loadListener(retry: Boolean): Listener? = openListener(mutableState.value.page.lang, retry)
         .also { mutableState.update { it.copy(preparing = false) } }
 
     private fun fresh(page: TutorPage) = ReadAlong.start(PageWords.of(page.sentences, page.lang), config)

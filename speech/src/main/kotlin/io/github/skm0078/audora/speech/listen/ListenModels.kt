@@ -58,21 +58,42 @@ class ListenModels private constructor(
             downloads.bufferBytes,
         )
     }
+
+    /** Each language's folder: the installed model, older pins and partial downloads. */
+    internal val roots: Map<Lang, File> get() = files.mapValues { it.value.root }
     private val installed: Map<Lang, MutableStateFlow<Boolean?>> = Lang.entries.associateWith { MutableStateFlow(null) }
 
     fun isInstalled(lang: Lang): Boolean = installed.getValue(lang).value ?: refresh(lang)
 
     /**
      * A listener over [lang]'s installed model, or null when it is not installed or will not load (logged). The
-     * caller releases it; loading takes a second or two and 40-100 MB of memory.
+     * caller releases it; loading takes a second or two and roughly 150-250 MB of memory while listening (ADR-050).
+     *
+     * sherpa-onnx 1.13.8 aborts the process on some damaged models instead of throwing, so a `loading` file marks a
+     * load under way; one still there means the last load never returned, and the model is reported as failed
+     * (null) without trying again, unless [retry] (the reader chose *Try again*).
      */
-    fun listener(lang: Lang): Listener? {
-        if (!isInstalled(lang)) return null
-        val pin = ListenPin.of(lang)
+    fun listener(lang: Lang, retry: Boolean = false): Listener? {
         val dir = files.getValue(lang).dir
-        return when (pin.kind) {
-            ListenKind.STREAMING_TRANSDUCER -> SherpaStreamingListener.open(dir, config)
-            ListenKind.PHRASE_CTC -> SherpaPhraseListener.open(dir, config)
+        val loading = File(dir, LOADING_MARKER)
+        return when {
+            !isInstalled(lang) -> null
+
+            loading.exists() && !retry -> null.also {
+                AudoraLog.w(TAG, "Speech model did not finish loading last time, lang=${lang.bcp47Tag}")
+            }
+
+            else -> {
+                if (!loading.exists() && !loading.createNewFile()) AudoraLog.w(TAG, "Loading marker not written")
+                try {
+                    when (ListenPin.of(lang).kind) {
+                        ListenKind.STREAMING_TRANSDUCER -> SherpaStreamingListener.open(dir, config)
+                        ListenKind.PHRASE_CTC -> SherpaPhraseListener.open(dir, config)
+                    }?.let { ScriptFilteredListener(it, lang) }
+                } finally {
+                    if (!loading.delete()) AudoraLog.w(TAG, "Loading marker not deleted, lang=${lang.bcp47Tag}")
+                }
+            }
         }
     }
 
@@ -132,6 +153,7 @@ class ListenModels private constructor(
     companion object {
         private const val TAG = "Speech.Listen"
         private const val USER_AGENT = "Audora (speech model download)"
+        private const val LOADING_MARKER = "loading"
 
         private fun rootDir(lang: Lang) = "listen-${lang.bcp47Tag}"
 
@@ -172,12 +194,17 @@ private fun listenState(pin: ListenPin, ready: Boolean, info: WorkInfo?): OcrMod
 class ListenDownloadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val tag = inputData.getString(KEY_LANGUAGE)
-        val lang = Lang.entries.firstOrNull { it.bcp47Tag == tag } ?: Lang.EN
-        val result = ListenModels.get(applicationContext).downloadJob(lang).run(
-            attempt = runAttemptCount,
-            onProgress = { bytes, total -> setProgressAsync(workDataOf(KEY_BYTES to bytes, KEY_TOTAL to total)) },
-            keepGoing = { !isStopped },
-        )
+        val lang = Lang.entries.firstOrNull { it.bcp47Tag == tag }
+        val result = if (lang == null) {
+            AudoraLog.e(TAG, "Speech model download for an unknown language tag")
+            JobResult.Failed("unknown language")
+        } else {
+            ListenModels.get(applicationContext).downloadJob(lang).run(
+                attempt = runAttemptCount,
+                onProgress = { bytes, total -> setProgressAsync(workDataOf(KEY_BYTES to bytes, KEY_TOTAL to total)) },
+                keepGoing = { !isStopped },
+            )
+        }
         when (result) {
             JobResult.Installed -> Result.success()
             is JobResult.Retry -> Result.retry()
@@ -190,5 +217,6 @@ class ListenDownloadWorker(context: Context, params: WorkerParameters) : Corouti
         const val KEY_BYTES = "bytes"
         const val KEY_TOTAL = "total"
         const val KEY_MESSAGE = "message"
+        private const val TAG = "Speech.Listen"
     }
 }

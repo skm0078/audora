@@ -11,7 +11,9 @@ import io.github.skm0078.audora.core.tutor.ReadAlong
 import io.github.skm0078.audora.core.tutor.WordMark
 import io.github.skm0078.audora.speech.listen.Heard
 import io.github.skm0078.audora.speech.listen.Listener
+import java.util.concurrent.CountDownLatch
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -51,10 +53,12 @@ class TutorSessionTest {
 
     private class RecordingGate : MicrophoneGate {
         val reasons = mutableListOf<String>()
+        var held = 0
 
-        override suspend fun holding(reason: String, body: suspend () -> Unit) {
+        override suspend fun hold(reason: String): AutoCloseable {
             reasons += reason
-            body()
+            held++
+            return AutoCloseable { held-- }
         }
     }
 
@@ -74,6 +78,7 @@ class TutorSessionTest {
         assertEquals(List(3) { WordMark.READ }, along.marks)
         assertEquals(2, changes.size)
         assertEquals(listOf("reading tutor"), gate.reasons)
+        assertEquals(0, gate.held)
         assertTrue(listener.closed)
     }
 
@@ -123,5 +128,51 @@ class TutorSessionTest {
         testScheduler.advanceUntilIdle()
 
         assertTrue(listener.closed)
+    }
+
+    @Test
+    fun `cancelling while the model loads still frees it, and the microphone is never held`() = runTest {
+        val listener = ScriptedListener(emptyList())
+        val loading = CompletableDeferred<Unit>()
+        val release = CountDownLatch(1)
+        val gate = RecordingGate()
+        val session = TutorSession(EndlessMicrophone(), gate, config, Dispatchers.IO)
+
+        val run = async(Dispatchers.Default) {
+            session.listen(start, {
+                loading.complete(Unit)
+                release.await()
+                listener
+            }) {}
+        }
+        loading.await()
+        run.cancel()
+        release.countDown()
+        run.join()
+
+        assertTrue(run.isCancelled)
+        assertTrue(listener.closed)
+        assertTrue(gate.reasons.isEmpty())
+    }
+
+    @Test
+    fun `a native decode error is reported as a damaged model`() = runTest {
+        val broken = object : Listener {
+            var closed = false
+
+            override fun accept(samples: FloatArray): List<Heard> = throw IllegalArgumentException("native")
+
+            override fun finish(): List<Heard> = emptyList()
+
+            override fun close() {
+                closed = true
+            }
+        }
+        val gate = RecordingGate()
+        val session = TutorSession(EndlessMicrophone(), gate, config, StandardTestDispatcher(testScheduler))
+
+        assertEquals(Outcome.Failure(TutorError.MODEL_FAILED), session.listen(start, { broken }) {})
+        assertTrue(broken.closed)
+        assertEquals(0, gate.held)
     }
 }

@@ -8,8 +8,9 @@
 # loads ("files": {member path: name in the zip}), or a single file ("as": name in the zip). The entry's licence
 # texts are joined into LICENSE. Zips are stored, sorted, dated 1980-01-01 with fixed permissions, like the voice zips
 # (build_voice_mirror.py): the weights barely compress, and stored output does not depend on the zlib build.
-# An entry may name a "licenceCheck" ({"url", "contains"}): the upstream page that states the licence must still say
-# so, or the build fails, so a model whose licence was taken from its card is re-checked on every mirror run.
+# An entry may name a "licenceCheck" ({"url", "license"}): the Hugging Face model API must still report that licence
+# in the card's metadata (status 200, no redirect, 30 s timeout), checked before building in every mode, so a model
+# whose licence was taken from its card is re-checked on every mirror run.
 # Standard library only.
 #
 #   python3 scripts/build_asr_mirror.py --out dist               # build and verify every model against its pin
@@ -120,20 +121,36 @@ def build(spec: dict, cache: Path, out: Path) -> tuple[Path, str, int, int]:
     return final, digest, final.stat().st_size, sum(len(data) for data in members.values())
 
 
+LICENCE_TIMEOUT_S = 30
+
+
+def fetch_licence_page(url: str) -> tuple[int, str, str]:
+    """Status, final URL (after any redirect) and text of [url]."""
+    with urllib.request.urlopen(url, timeout=LICENCE_TIMEOUT_S) as response:  # noqa: S310 (https only, checked)
+        return response.status, response.geturl(), response.read().decode("utf-8", "replace")
+
+
 def licence_problems(spec: dict, read=None) -> list[str]:
-    """An entry's "licenceCheck": its page must contain the text, ignoring case; [read] fetches a URL's text."""
+    """An entry's "licenceCheck": the Hugging Face model API at "url" must answer 200 itself (no redirect) with
+    cardData.license equal to "license". [read] returns (status, final URL, text) for a URL."""
     check = spec.get("licenceCheck")
     if check is None:
         return []
-    if not check["url"].startswith("https://"):
-        return [f"licence check must be https: {check['url']}"]
-    fetch_text = read or (lambda url: urllib.request.urlopen(url).read().decode("utf-8", "replace"))  # noqa: S310
+    url = check["url"]
+    if not url.startswith("https://huggingface.co/api/models/"):
+        return [f"licence check must use the https Hugging Face model API: {url}"]
     try:
-        text = fetch_text(check["url"])
-    except OSError as error:
-        return [f"licence page unreachable ({error.__class__.__name__}): {check['url']}"]
-    if check["contains"].lower() not in text.lower():
-        return [f"licence page no longer says {check['contains']!r}: {check['url']}"]
+        status, final_url, text = (read or fetch_licence_page)(url)
+    except (OSError, ValueError) as error:
+        return [f"licence page unreachable ({error.__class__.__name__}): {url}"]
+    if status != 200 or final_url != url:
+        return [f"licence page answered {status} from {final_url}: {url}"]
+    try:
+        licence = (json.loads(text).get("cardData") or {}).get("license")
+    except (ValueError, AttributeError):
+        return [f"licence page is not model JSON: {url}"]
+    if licence != check["license"]:
+        return [f"licence is {licence!r}, expected {check['license']!r}: {url}"]
     return []
 
 
@@ -164,12 +181,18 @@ def main(argv: list[str]) -> int:
         raise ValueError(f"duplicate asr ids: {ids}")
     failed = False
     for spec in specs:
+        # Checked first and in every mode, so a changed licence never yields a pin or a zip.
+        licence = licence_problems(spec)
+        if licence:
+            print(f"{spec['id']}: {'; '.join(licence)}")
+            failed = True
+            continue
         built, digest, size, unpacked = build(spec, args.cache, args.out)
         if args.print_pins:
             pin = {"id": spec["id"], "file": built.name, "sha256": digest, "sizeBytes": size, "unpackedBytes": unpacked}
             print(json.dumps(pin))
             continue
-        found = problems(spec, built, digest, size, unpacked) + licence_problems(spec)
+        found = problems(spec, built, digest, size, unpacked)
         print(f"{spec['id']}: {'ok' if not found else '; '.join(found)}")
         failed = failed or bool(found)
     return 1 if failed else 0

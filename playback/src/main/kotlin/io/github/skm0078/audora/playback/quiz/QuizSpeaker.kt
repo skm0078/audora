@@ -97,6 +97,17 @@ class QuizSpeaker(context: Context, private val idleMs: Long = QuizConfig().spea
         }
     }
 
+    /**
+     * Stops any line and frees the voices now instead of after the idle wait (the reading tutor loads its speech model
+     * next); the next line loads them again.
+     */
+    fun release() {
+        generation.incrementAndGet()
+        stop()
+        idleRelease?.cancel()
+        scope.launch { rendering.withLock { releaseLocked() } }
+    }
+
     override fun close() {
         closed = true
         generation.incrementAndGet()
@@ -122,7 +133,7 @@ class QuizSpeaker(context: Context, private val idleMs: Long = QuizConfig().spea
         voices?.release()
         voices = null
         renderer = null
-        if (closed) scope.cancel() else AudoraLog.i(TAG, "Quiz voices freed after ${idleMs / MS_PER_SECOND} s idle")
+        if (closed) scope.cancel() else AudoraLog.i(TAG, "Quiz voices freed")
     }
 
     /** Plays [pcm] unless a newer line or [close] came first; false (logged) if the audio output refused it. */
@@ -185,6 +196,5 @@ class QuizSpeaker(context: Context, private val idleMs: Long = QuizConfig().spea
     private companion object {
         const val TAG = "Quiz.Speaker"
         const val BYTES_PER_SAMPLE = 2
-        const val MS_PER_SECOND = 1_000
     }
 }

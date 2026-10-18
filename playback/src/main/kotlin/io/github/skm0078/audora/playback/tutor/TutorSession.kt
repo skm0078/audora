@@ -12,6 +12,7 @@ import io.github.skm0078.audora.speech.listen.Heard
 import io.github.skm0078.audora.speech.listen.Listener
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -40,19 +41,6 @@ fun interface Microphone {
 }
 
 /**
- * Takes the microphone from other features of the app for [body]: app basics' voice commands pause meanwhile
- * (VoiceCommandPause, wired at landing). The reason names a feature, never content.
- */
-fun interface MicrophoneGate {
-    suspend fun holding(reason: String, body: suspend () -> Unit)
-
-    companion object {
-        /** No other feature records on this branch (voice commands arrive with app basics' pack). */
-        val NONE = MicrophoneGate { _, body -> body() }
-    }
-}
-
-/**
  * One run, started by [listen] and ended by the reader reaching the page's end, by [stop] (the stretch under way is
  * finished and counted), or by cancelling the caller (nothing more is counted). The microphone is read on its own
  * coroutine into a queue of `micBufferMs`, so a phrase being decoded never loses audio; decoding runs on [work].
@@ -69,22 +57,35 @@ class TutorSession(
 
     /**
      * Listens from [start] until the run ends, reporting each change to [onChange] (on [work]). [openListener] loads
-     * the speech model (a second or two); the model is closed when the run ends, however it ends.
+     * the speech model (a second or two); the model is closed when the run ends, however it ends, even if the caller
+     * is cancelled while it loads. The microphone is held through [gate] only while recording.
      */
+    @Suppress("TooGenericExceptionCaught") // sherpa-onnx reports native decode errors as plain RuntimeException.
     suspend fun listen(
         start: ReadAlong,
         openListener: () -> Listener?,
         onChange: (ReadAlong) -> Unit,
     ): Outcome<ReadAlong, TutorError> {
-        val listener = withContext(work) { openListener() }
-            ?: return Outcome.Failure(TutorError.MODEL_FAILED)
-        var outcome: Outcome<ReadAlong, TutorError> = Outcome.Success(start)
-        try {
-            gate.holding(REASON) { outcome = run(listener, start, onChange) }
+        var listener: Listener? = null
+        return try {
+            withContext(work) { listener = openListener() }
+            val opened = listener
+            if (opened == null) {
+                Outcome.Failure(TutorError.MODEL_FAILED)
+            } else {
+                // Taken where cancelling cannot drop it: a hold lost between taking and use would keep voice
+                // commands paused until the process dies.
+                withContext(NonCancellable) { gate.hold(REASON) }.use { run(opened, start, onChange) }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: RuntimeException) {
+            AudoraLog.e(TAG, "Speech model failed while listening: ${e.javaClass.simpleName}")
+            Outcome.Failure(TutorError.MODEL_FAILED)
         } finally {
-            withContext(NonCancellable + work) { listener.close() }
+            // Also when the caller is cancelled while the model loads: the loaded model is native memory.
+            listener?.let { withContext(NonCancellable + work) { it.close() } }
         }
-        return outcome
     }
 
     /** Ends the run after the stretch under way; safe from any thread, before or during [listen]. */

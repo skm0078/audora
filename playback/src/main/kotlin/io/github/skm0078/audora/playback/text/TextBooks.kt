@@ -8,6 +8,7 @@ import android.content.Context
 import android.net.Uri
 import io.github.skm0078.audora.core.config.LibraryConfig
 import io.github.skm0078.audora.core.config.TextBookConfig
+import io.github.skm0078.audora.core.files.readUpTo
 import io.github.skm0078.audora.core.library.DocumentFormat
 import io.github.skm0078.audora.core.library.DocumentFormats
 import io.github.skm0078.audora.core.logging.AudoraLog
@@ -36,7 +37,7 @@ class TextBooks(
         val uri = Uri.parse(documentUri)
         return try {
             stream(uri).use {
-                DocumentFormats.sniff(it.readNBytes(library.pdfHeaderWindowBytes), library.pdfHeaderWindowBytes)
+                DocumentFormats.sniff(it.readUpTo(library.pdfHeaderWindowBytes), library.pdfHeaderWindowBytes)
             }
         } catch (e: IOException) {
             AudoraLog.w(TAG, "Format unknown, authority=${uri.authority}: ${e.javaClass.simpleName}")
@@ -75,7 +76,7 @@ class TextBooks(
             generateSequence { zip.nextEntry }
                 .filter { !it.isDirectory && EpubParser.isTextEntry(it.name) }
                 .forEach { entry ->
-                    val bytes = zip.readNBytes((config.maxBookBytes - total + 1).toInt().coerceAtLeast(1))
+                    val bytes = zip.readUpTo((config.maxBookBytes - total + 1).toInt().coerceAtLeast(1))
                     total += bytes.size
                     if (total >
                         config.maxBookBytes
@@ -89,7 +90,7 @@ class TextBooks(
     }
 
     private fun readText(uri: Uri): Outcome<TextDocument, TextBookError> {
-        val bytes = stream(uri).use { it.readNBytes((config.maxBookBytes + 1).toInt()) }
+        val bytes = stream(uri).use { it.readUpTo((config.maxBookBytes + 1).toInt()) }
         val parser = PlainTextParser(config)
         val document = parser.parse(parser.decode(bytes))
         return when {

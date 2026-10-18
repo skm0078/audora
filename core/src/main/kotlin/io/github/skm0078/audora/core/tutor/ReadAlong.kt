@@ -8,7 +8,8 @@ import io.github.skm0078.audora.core.config.TutorConfig
 /**
  * The tutor's view of one page, immutable. Recognisers report a stretch of speech (until a pause) as it grows, then
  * once more as final: [heard] lines the whole stretch up again from where the last final one ended, so a word the
- * recogniser corrects mid-stretch is re-marked, and only a final stretch moves the starting point on.
+ * recogniser corrects mid-stretch is re-marked, and only a final stretch moves the starting point on. A stretch that
+ * fits the words just read better than the words ahead is the reader going back over them: it changes nothing.
  *
  * @property marks one per page word, in order.
  * @property next the first page word not yet reached: where the reader is.
@@ -23,12 +24,16 @@ class ReadAlong private constructor(
     /** The marks and position as of the last final stretch. */
     private data class Settled(val marks: List<WordMark>, val next: Int)
 
-    /** The reader reached the page's last word. */
-    val finished: Boolean get() = next >= words.size
+    /** The reader reached the page's last judged word (numbers or other-script words after it may be left out). */
+    val finished: Boolean get() = words.subList(next, words.size).none { it.checked }
 
     /** [heardWords] the current stretch's words so far (all of them, each time); [final] once it ended. */
     fun heard(heardWords: List<String>, final: Boolean): ReadAlong {
-        val aligned = aligner.align(words, settled.next, heardWords)
+        val aligned = aligner.align(words, settled.next, heardWords, toPageEnd = final)
+        val repeat = aligner.repeatCost(words, settled.next, heardWords)
+        if (repeat != null && repeat < aligned.cost) {
+            return ReadAlong(words, settled.marks, settled.next, settled, aligner)
+        }
         val marked = settled.marks.toMutableList()
         aligned.marks.forEachIndexed { offset, mark -> marked[settled.next + offset] = mark }
         val moved = Settled(marked, aligned.next)
@@ -43,10 +48,28 @@ class ReadAlong private constructor(
         judged = marks.count { it == WordMark.READ || it == WordMark.MISREAD || it == WordMark.SKIPPED },
     )
 
+    /** The settled marks and place as text, to keep across a screen rotation or process death ([resume]). */
+    fun saved(): String = settled.next.toString() + SAVED_SEPARATOR + settled.marks.joinToString("") {
+        it.ordinal.toString()
+    }
+
     companion object {
+        private const val SAVED_SEPARATOR = ':'
+
         fun start(words: List<PageWord>, config: TutorConfig = TutorConfig()): ReadAlong {
             val unread = List(words.size) { WordMark.UNREAD }
             return ReadAlong(words, unread, 0, Settled(unread, 0), WordAligner(config))
+        }
+
+        /** [words] with what [saved] kept; a fresh start when it does not fit them (another page, an older form). */
+        fun resume(words: List<PageWord>, saved: String?, config: TutorConfig = TutorConfig()): ReadAlong {
+            val next = saved?.substringBefore(SAVED_SEPARATOR, "")?.toIntOrNull()
+            val marks = saved?.substringAfter(SAVED_SEPARATOR, "")?.map { WordMark.entries.getOrNull(it - '0') }
+            val fits = next != null && next in 0..words.size && marks != null && marks.size == words.size &&
+                marks.none { it == null }
+            if (!fits) return start(words, config)
+            val kept = marks.orEmpty().filterNotNull()
+            return ReadAlong(words, kept, next ?: 0, Settled(kept, next ?: 0), WordAligner(config))
         }
     }
 }

@@ -2,6 +2,16 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Reading tutor review fixes (plan item 67, ADR-050; 2026-10-18)
+- **Following the reader:** re-reading a sentence after a pause changes nothing (a stretch that fits the words just read better than the words ahead is a re-read); a page counts as finished once no judged word is left, and a misread last word is marked, so *Next page* appears; words stay whole across joiners and soft hyphens (র‍্যাব, উত্‍সব, an EPUB's soft hyphen); Hindi and Bengali spelling variants read alike (हिन्दी/हिंदी, गये/गए, कि/की, হঠাত্/হঠাৎ); "Mr.", "Dr.", "p.m." are not judged; a Hindi phrase that comes back in Urdu script is dropped. Marks survive rotation and process death.
+- **Safety:** the speech model is freed even when loading is cancelled; a native decode error reports a damaged model instead of crashing; a load that never returned (a damaged model aborting the process) is remembered, and the screen offers *Try again* and *Download it again*; the "hear it" voice is freed before the model loads.
+- **Microphone:** one app-wide gate for the tutor and voice notes, taken so cancelling cannot leak it (voice commands pause at landing); a missing permission and a busy (silenced) microphone are reported as such; *Open settings* after "Don't ask again".
+- **Mirror:** the speech-model step no longer blocks the dictionaries or the voices release (it still turns the run red); the Bengali licence is read from the model API's licence field before building, in every mode, with no redirects and a timeout.
+- **Also:** EPUB and text books no longer call an Android 13-only stream method (they would have failed on Android 12); Hindi and Bengali tutor strings with plurals; Storage measures the tutor's whole folders (partial downloads and old pins) and deletes the three languages side by side (landing patch); an unknown language never downloads English.
+- Tests: `ReadAlongTest` (re-reads, page ends, joiners, spelling variants, abbreviations, scripts), `TutorSessionTest` (cancel during load, decode error, gate released), `TutorModelTest` (rotation, try again), `StreamsTest`, `test_build_asr_mirror.py` (licence field, redirect, status).
+
+**Real-device checks (final phone session):** T1-T12 in the phone checklist.
+
 ## Third review fixes for studio's branch: restore start, busy services, quiz words, downloads (2026-10-18)
 - **Restore (28, ADR-046 §6-7):** a start that finds a restore it could neither finish nor put back shows only *Finish restoring* (restart to try again), so nothing opens the library over half-moved files; the trash is emptied when a new restore is staged and the marker folder is synced on clear; during a roll-back a restored copy that will not move to the trash is deleted, so the saved one can still go back. *Restore is busy* now also says to close Audora fully if nothing is running. No worker writes a backup unit before the restore is applied (recorded, not guarded: none does today).
 - **Long jobs:** studio, copy, clip and export services answer a second start with "busy" instead of cutting off the running job, and only the job that owns the slot is interrupted on destroy.

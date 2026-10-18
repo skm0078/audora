@@ -23,11 +23,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
@@ -61,7 +66,8 @@ import kotlinx.coroutines.launch
 /**
  * The tutor over [page] (null while the page loads, or when it has no text). [pause] stops reading aloud before the
  * microphone opens; [onNextPage] turns the reader's page, and the tutor follows. Closing stops listening and frees
- * the speech model and the "hear it" voice.
+ * the speech model and the "hear it" voice. The settled marks are saved, so rotation and process death keep them
+ * (the dialog reopens through the reader's saved state).
  */
 @Composable
 fun TutorRoute(page: TutorPage?, loading: Boolean, pause: () -> Unit, onNextPage: (() -> Unit)?, onClose: () -> Unit) {
@@ -79,24 +85,26 @@ fun TutorRoute(page: TutorPage?, loading: Boolean, pause: () -> Unit, onNextPage
     val speaker = remember { QuizSpeaker(context) }
     DisposableEffect(speaker) { onDispose { speaker.close() } }
     val scope = rememberCoroutineScope()
+    var saved by rememberSaveable(page) { mutableStateOf<String?>(null) }
     val model = remember(page) {
         val config = TutorConfig()
-        // App basics' VoiceCommandPause takes this seam at landing (landing-notes.md): voice commands pause meanwhile.
-        val gate = MicrophoneGate.NONE
         TutorModel(
             page = page,
             scope = scope,
-            newSession = { TutorSession(AudioRecordMicrophone(config), gate, config) },
+            newSession = { TutorSession(AudioRecordMicrophone(context, config), MicrophoneGate.shared, config) },
             openListener = models::listener,
             pause = pause,
             speak = speaker::speak,
             config = config,
+            releaseVoice = speaker::release,
+            saved = saved,
         )
     }
     DisposableEffect(model) { onDispose { model.close() } }
     // Android silences the microphone for an app out of sight; listening stops (and counts) instead.
     LifecycleStartEffect(model) { onStopOrDispose { model.stop() } }
     val state by model.state.collectAsStateWithLifecycle()
+    SideEffect { saved = state.saved }
     val download by remember(page.lang) { models.state(page.lang) }.collectAsStateWithLifecycle(initialValue = null)
     KeepScreenOn(state.listening)
     val listen = rememberWithMicrophone(model::start, model::permissionRefused)
@@ -111,11 +119,7 @@ fun TutorRoute(page: TutorPage?, loading: Boolean, pause: () -> Unit, onNextPage
             ) {
                 if (ready) {
                     TutorBody(state, model, onNextPage)
-                    if (state.failure == TutorError.MODEL_FAILED) {
-                        OutlinedButton(onClick = { scope.launch { models.reinstall(page.lang) } }) {
-                            Text(stringResource(R.string.tutor_download_again))
-                        }
-                    }
+                    FailureActions(state.failure, model::retry) { scope.launch { models.reinstall(page.lang) } }
                 } else {
                     TutorDownloadOffer(page.lang, download, { models.download(page.lang) }) { models.cancel(page.lang) }
                 }
@@ -224,12 +228,14 @@ private fun Summary(state: TutorState, report: TutorReport, hear: (Int) -> Unit)
         if (percent == null) {
             stringResource(R.string.tutor_score_none)
         } else {
-            stringResource(R.string.tutor_score, report.read, report.judged, percent)
+            pluralStringResource(R.plurals.tutor_score, report.judged, report.read, report.judged, percent)
         },
         style = MaterialTheme.typography.titleSmall,
         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
     )
-    if (report.skipped.isNotEmpty()) Text(stringResource(R.string.tutor_skipped, report.skipped.size))
+    if (report.skipped.isNotEmpty()) {
+        Text(pluralStringResource(R.plurals.tutor_skipped, report.skipped.size, report.skipped.size))
+    }
     if (report.toCheck.isEmpty()) return
     Text(stringResource(R.string.tutor_to_check))
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

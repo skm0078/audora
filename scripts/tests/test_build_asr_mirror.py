@@ -86,11 +86,22 @@ class BuildAsrMirrorTest(unittest.TestCase):
             asr.build(spec, self.cache, self.root / "out")
 
     def test_a_licence_check_must_still_hold(self):
-        spec = {"licenceCheck": {"url": "https://example.org/README.md", "contains": "license: apache-2.0"}}
-        self.assertEqual([], asr.licence_problems(spec, read=lambda url: "---\nLicense: Apache-2.0\n---"))
-        self.assertEqual(1, len(asr.licence_problems(spec, read=lambda url: "license: cc-by-nc-4.0")))
+        url = "https://huggingface.co/api/models/alphacep/m"
+        spec = {"licenceCheck": {"url": url, "license": "apache-2.0"}}
 
-        def unreachable(url):
+        def answer(status=200, final=url, card='{"cardData": {"license": "apache-2.0"}}'):
+            return lambda asked: (status, final, card)
+
+        self.assertEqual([], asr.licence_problems(spec, read=answer()))
+        self.assertEqual(1, len(asr.licence_problems(spec, read=answer(card='{"cardData": {"license": "cc-by-nc-4.0"}}'))))
+        # A substring elsewhere on the page does not count; only the card's licence field does.
+        self.assertEqual(1, len(asr.licence_problems(spec, read=answer(card='{"description": "license: apache-2.0"}'))))
+        self.assertEqual(1, len(asr.licence_problems(spec, read=answer(final="http://example.org/m"))))
+        self.assertEqual(1, len(asr.licence_problems(spec, read=answer(status=203))))
+        self.assertEqual(1, len(asr.licence_problems(spec, read=answer(card="<html>"))))
+        self.assertEqual(1, len(asr.licence_problems({"licenceCheck": {"url": "https://example.org/x", "license": "x"}})))
+
+        def unreachable(asked):
             raise OSError("blocked")
 
         self.assertEqual(1, len(asr.licence_problems(spec, read=unreachable)))
