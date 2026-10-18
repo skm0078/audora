@@ -130,8 +130,10 @@ internal class PageCarry(private val config: PageCarryConfig) {
 
     /**
      * The table's header row is data: the page opened a table with no header row of its own, so it hands on no
-     * header. A summary already carried over (a continued table) holds the real header, and one of no length (a row
-     * already demoted, or a continued table's) has no row to judge.
+     * header. Its serial number runs on into the next row, or it is written like the rows in every number column and
+     * holds no year ([matchesNumberColumns]); a word header ("Name | Age | City") or one of years stays a header. A
+     * summary already carried over (a continued table) holds the real header, and one of no length (a row already
+     * demoted, or a continued table's) has no row to judge.
      */
     private fun hasDataHeader(units: List<ReadingUnit>, info: TableRowInfo): Boolean {
         val table = units.filter { it.table?.tableIndex == info.tableIndex }
@@ -140,7 +142,7 @@ internal class PageCarry(private val config: PageCarryConfig) {
         val rows = table.filter { it.kind == UnitKind.TABLE_ROW }
         val summarySerial = serialOf(summary)
         val numbered = summarySerial != null && rows.firstOrNull()?.let(::serialOf) == summarySerial + 1
-        return numbered || readsAsData(summary, rows, lastSerial = null)
+        return numbered || matchesNumberColumns(summary, rows)
     }
 
     /** [units] with their opening table carried on from [tail], or null when the page opens with no such table. */
