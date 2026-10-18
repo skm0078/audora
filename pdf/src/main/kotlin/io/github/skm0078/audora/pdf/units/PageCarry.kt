@@ -84,10 +84,6 @@ internal class PageCarry(private val config: PageCarryConfig) {
         return JoinedPage(carried?.first ?: units, continues, carried?.second)
     }
 
-    /** Whether [units] (one page) open with a table, after captions: only then does the page before matter to it. */
-    fun opensWithTable(units: List<ReadingUnit>): Boolean =
-        units.firstOrNull { it.kind != UnitKind.CAPTION }?.kind == UnitKind.TABLE_SUMMARY
-
     /**
      * The table's header row is data: the page opened a table with no header row of its own, so it hands on no
      * header. A summary already carried over (a continued table) holds the real header.
@@ -253,6 +249,17 @@ private fun endsFullLine(page: List<ReadingUnit>, open: ReadingUnit, share: Floa
 private fun columnLines(page: List<ReadingUnit>, line: TextBox): List<TextBox> =
     page.filter { it.kind in PROSE }.flatMap { it.bounds.orEmpty() }
         .filter { minOf(it.right, line.right) > maxOf(it.left, line.left) } + line
+
+/**
+ * Whether [units] (one page) open with a table, after captions: only then does what the page hands on depend on the
+ * page before ([PageCarry]).
+ */
+internal fun opensWithTable(units: List<ReadingUnit>): Boolean =
+    units.firstOrNull { it.kind != UnitKind.CAPTION }?.kind == UnitKind.TABLE_SUMMARY
+
+/** Whether [units] (one page) open with body text, a list item or an aside: a sentence it may carry on. */
+internal fun opensWithProse(units: List<ReadingUnit>): Boolean =
+    units.firstOrNull { it.kind != UnitKind.CAPTION }?.kind in PROSE
 
 /** Kinds a sentence runs on in over a page break. */
 private val PROSE = setOf(UnitKind.BODY, UnitKind.LIST_ITEM, UnitKind.ASIDE)

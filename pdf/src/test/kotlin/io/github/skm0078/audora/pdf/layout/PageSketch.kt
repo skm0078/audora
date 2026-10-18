@@ -89,19 +89,20 @@ class PageSketch(private val boxes: Boolean = true) {
         return top - texts.size * pitch
     }
 
-    fun build(pageIndex: Int = 0): PageText = PageTextAssembler().assemble(
-        RawPage(
-            pageIndex = pageIndex,
-            chars = RawChars(
-                codePoints = codePoints.toIntArray(),
-                flags = flags.toIntArray(),
-                boxes = boxFloats.toFloatArray(),
-                fontSizes = sizes.toFloatArray(),
-                fontIds = fontIds.toIntArray(),
-                fontNames = FONT_NAMES,
-            ),
-            textObjects = emptyList(),
+    fun build(pageIndex: Int = 0): PageText = PageTextAssembler().assemble(raw(pageIndex))
+
+    /** The page as PDFium hands it over, for a fake engine. */
+    fun raw(pageIndex: Int = 0): RawPage = RawPage(
+        pageIndex = pageIndex,
+        chars = RawChars(
+            codePoints = codePoints.toIntArray(),
+            flags = flags.toIntArray(),
+            boxes = boxFloats.toFloatArray(),
+            fontSizes = sizes.toFloatArray(),
+            fontIds = fontIds.toIntArray(),
+            fontNames = FONT_NAMES,
         ),
+        textObjects = emptyList(),
     )
 
     private fun add(codePoint: Int, box: FloatArray, size: Float, font: Int) {

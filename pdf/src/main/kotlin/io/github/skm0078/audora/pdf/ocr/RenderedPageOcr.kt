@@ -169,13 +169,21 @@ class RenderedPageOcr(
         return if (scores[best] >= scores[0] + config.orientationMinGain) best else 0
     }
 
+    /**
+     * [key]'s text from the cache, else read now and cached. Cache-only, the cache is read without the page's lock
+     * (pages are written whole, through a rename) and without refreshing the page's date: a look, not a use.
+     */
     private fun cached(key: OcrKey, read: (PageImage) -> Outcome<OcrText, OcrError>): Outcome<OcrText, OcrError> =
-        synchronized(lockFor(key)) {
-            cache?.get(key)?.let(OcrTextCodec::decode)?.let { return Outcome.Success(it) }
-            if (cacheOnly) return Outcome.Failure(OcrError.Failed("page ${key.page} is not in the OCR cache"))
-            val result = recognizeNow(key, read)
-            if (result is Outcome.Success) cache?.put(key, OcrTextCodec.encode(result.value))
-            result
+        if (cacheOnly) {
+            cache?.peek(key)?.let(OcrTextCodec::decode)?.let { Outcome.Success(it) }
+                ?: Outcome.Failure(OcrError.Failed("page ${key.page} is not in the OCR cache"))
+        } else {
+            synchronized(lockFor(key)) {
+                cache?.get(key)?.let(OcrTextCodec::decode)?.let { return Outcome.Success(it) }
+                val result = recognizeNow(key, read)
+                if (result is Outcome.Success) cache?.put(key, OcrTextCodec.encode(result.value))
+                result
+            }
         }
 
     private fun recognizeNow(key: OcrKey, read: (PageImage) -> Outcome<OcrText, OcrError>): Outcome<OcrText, OcrError> {
