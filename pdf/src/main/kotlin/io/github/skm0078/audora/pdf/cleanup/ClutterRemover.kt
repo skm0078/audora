@@ -42,7 +42,8 @@ internal class ClutterRemover(config: CleanupConfig, layoutConfig: LayoutConfig)
             TAG,
             "Cleanup page=${layout.pageIndex} neighbours=${neighbours.size} " +
                 MarginReason.entries.joinToString(" ") { "${it.name.lowercase()}=${counts[it] ?: 0}" } +
-                " tables=${built.sumOf { it.second.size }} droppedTableLines=" +
+                " tables=${built.sumOf { it.second.size }} sideBySide=${built.count { it.second.size > 1 }}" +
+                " droppedTableLines=" +
                 built.filter { it.second.isEmpty() }.sumOf { it.first.size },
         )
         // Two tables side by side share their first line: both go there, left first.

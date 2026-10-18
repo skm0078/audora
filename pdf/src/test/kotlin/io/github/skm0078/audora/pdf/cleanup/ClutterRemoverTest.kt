@@ -233,6 +233,36 @@ class ClutterRemoverTest {
     }
 
     @Test
+    fun `one wide table with section rows, blank figures and a two-line header stays one table`() {
+        val sketch = PageSketch()
+        sketch.line("Item", LEFT, 700f).line("Head", 110f, 700f).line("Budget", 380f, 700f).line("Actual", 440f, 700f)
+        sketch.line("estimate", 380f, 688f).line("figures", 440f, 688f)
+        sketch.line("A.", LEFT, 676f).line("Receipts", 110f, 676f)
+        sketch.line("1", LEFT, 664f).line("Taxes", 110f, 664f).line("120", 380f, 664f).line("135", 440f, 664f)
+        sketch.line("2", LEFT, 652f).line("Fees", 110f, 652f).line("–", 380f, 652f).line("–", 440f, 652f)
+        sketch.line("3", LEFT, 640f).line("Duty", 110f, 640f).line("75", 380f, 640f).line("80", 440f, 640f)
+        sketch.line("B.", LEFT, 628f).line("Capital", 110f, 628f)
+        val (headers, _) = tablesOf(sketch)
+        assertEquals("$headers", 1, headers.size)
+        assertEquals(4, headers.single()?.size)
+    }
+
+    @Test
+    fun `a table of figures beside a list of labels a wide gap apart, one longer, stays one table`() {
+        // The labels run on below the figures: the right side is all figures, so it is this table's.
+        val sketch = PageSketch()
+        sketch.line("State", LEFT, 700f).line("Code", 110f, 700f).line("2019", 380f, 700f).line("2020", 440f, 700f)
+        for (row in 1..4) {
+            val top = 700f - row * 12f
+            sketch.line("S$row", LEFT, top).line("${row * 7}", 110f, top)
+            if (row <= 2) sketch.line("${row * 37}", 380f, top).line("${row * 41}", 440f, top)
+        }
+        val (headers, rows) = tablesOf(sketch)
+        assertEquals(listOf(listOf("State", "Code", "2019", "2020")), headers)
+        assertEquals(4, rows)
+    }
+
+    @Test
     fun `text with wide gaps that do not line up is not a table`() {
         val sketch = PageSketch()
         sketch.line("first", LEFT, 700f).line("words", 120f, 700f)

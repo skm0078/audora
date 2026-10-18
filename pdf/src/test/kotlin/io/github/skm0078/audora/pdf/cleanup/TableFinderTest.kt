@@ -80,8 +80,28 @@ class TableFinderTest {
 
     @Test
     fun `one table with a wide gap before its figures, cut by XY-cut, is one table`() {
-        val (page, layout) = layout(table(LEFT, PITCH, "P"), table(LEFT + 6 * COLUMN, PITCH, "W"))
+        // The right block: a header, then figures only (one left blank), no serial number opening its rows.
+        val figures = (0..4).map { r ->
+            val top = TOP - r * PITCH
+            val cells = if (r == 0) listOf("2019", "2020") else listOf("${r * 37}", if (r == 3) "–" else "${r * 41}")
+            cells.mapIndexed { c, text -> Cell(text, LEFT + (6 + c) * COLUMN, top) }
+        }
+        val (page, layout) = layout(table(LEFT, PITCH, "P"), figures)
         assertEquals(listOf(10), finder.find(page, layout).map { it.size })
+    }
+
+    @Test
+    fun `two tables of the same length, a wide gutter apart, stay two without the same header`() {
+        // The right one has labels of its own; a second table of figures opens its rows with a serial number.
+        val (page, layout) = layout(table(LEFT, PITCH, "P"), table(LEFT + 6 * COLUMN, PITCH, "W"))
+        assertEquals(listOf(5, 5), finder.find(page, layout).map { it.size })
+        val serials = (0..4).map { r ->
+            val top = TOP - r * PITCH
+            val cells = if (r == 0) listOf("No.", "Marks") else listOf("$r", "${r * 37}")
+            cells.mapIndexed { c, text -> Cell(text, LEFT + (6 + c) * COLUMN, top) }
+        }
+        val (page2, layout2) = layout(table(LEFT, PITCH, "P"), serials)
+        assertEquals(listOf(5, 5), finder.find(page2, layout2).map { it.size })
     }
 
     @Test

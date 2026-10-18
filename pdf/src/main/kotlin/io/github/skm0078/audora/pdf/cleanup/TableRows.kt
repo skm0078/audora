@@ -11,7 +11,7 @@ import io.github.skm0078.audora.pdf.layout.TextLine
 import io.github.skm0078.audora.pdf.layout.TextSpan
 
 /** A cell that is a number: "12", "-2.98", "4.00", "98,62,767", "৩.৯১", "45%", "12." (a serial number). */
-private val NUMBER = Regex("[-−+]?\\p{Nd}[\\p{Nd},]*(?:\\.\\p{Nd}+)?[.%]?")
+internal val NUMBER_CELL = Regex("[-−+]?\\p{Nd}[\\p{Nd},]*(?:\\.\\p{Nd}+)?[.%]?")
 
 /**
  * How many leading rows of [rows] (each its cells' text) make the header: the rows before the first one with a
@@ -19,7 +19,7 @@ private val NUMBER = Regex("[-−+]?\\p{Nd}[\\p{Nd},]*(?:\\.\\p{Nd}+)?[.%]?")
  * first row when no row has a number (a truth table) or the first one does.
  */
 internal fun headerRowCount(rows: List<List<String>>, maxHeaderRows: Int): Int {
-    val firstWithNumber = rows.indexOfFirst { row -> row.any { NUMBER.matches(it.trim()) } }
+    val firstWithNumber = rows.indexOfFirst { row -> row.any { NUMBER_CELL.matches(it.trim()) } }
     return if (firstWithNumber < 1) 1 else minOf(firstWithNumber, maxHeaderRows, rows.size - 1)
 }
 

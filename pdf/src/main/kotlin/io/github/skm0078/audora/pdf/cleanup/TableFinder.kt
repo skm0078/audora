@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.pdf.cleanup
 
 import io.github.skm0078.audora.core.config.CleanupConfig
+import io.github.skm0078.audora.core.config.TableConfig
 import io.github.skm0078.audora.pdf.extract.PageText
 import io.github.skm0078.audora.pdf.layout.PageLayout
 import io.github.skm0078.audora.pdf.layout.TextLine
@@ -28,9 +29,9 @@ import kotlin.math.abs
  *    enough pair (`TableConfig.maxColumnCellEm`, `minColumnPairShare`). Body text beside a table does neither.
  * 4. **One table per region.** Runs that share lines are one table, and so are runs over the same rows that overlap
  *    across, or whose lines mostly sit beside each other: XY-cut cut one table into blocks. They stay two tables set
- *    side by side when the gutter is wider than `TableConfig.sideBySideGapRatio` times their own widest cell gap and
- *    they show it: the same header on both, or rows on one side only. (Joined row by row by layout, two such tables
- *    are split by [TableGrid].)
+ *    side by side when the gutter is wider than `TableConfig.sideBySideGapRatio` times their own widest cell gap,
+ *    unless the right one is the table's figures ([TableSides]). (Joined row by row by layout, two such tables are
+ *    split by [TableGrid].)
  * 5. **Header band.** Short lines right above a table, within its width, are its header set apart in blocks of
  *    their own (a two-line header: "State / Union" over "Territory"), see [TableHeaderBand]; so are short lines side
  *    by side right below it, under its columns (a last row of one-run cells, a total).
@@ -97,8 +98,9 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
      * Whether regions [a] and [b], side by side over the same rows, are one table XY-cut cut apart: they overlap
      * across, or at least `TableConfig.minColumnPairShare` of the smaller one's lines sit beside lines of the other (a
      * cell spanning rows sits beside several) and either the gutter between them is no wider than
-     * `TableConfig.sideBySideGapRatio` times the widest gap between cells of their lines, or nothing shows two tables
-     * ([looksLikeTwo]): one table may have a wide gap before its figures.
+     * `TableConfig.sideBySideGapRatio` times the widest gap between cells of their lines, or the right one is the
+     * table's figures ([TableSides.readsAsFigures]) under a header of its own: one table may have a wide gap before
+     * its figures. Across a wide gutter, anything else is two tables.
      */
     private fun oneTableCut(
         a: Set<TextLine>,
@@ -115,8 +117,9 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
         val ownGap = (a + b).maxOf { cellGaps[it] ?: 0f }
         val besideRows = beside >= fewer.size * config.tables.minColumnPairShare
         val closeAsColumns = gutter <= ownGap * config.tables.sideBySideGapRatio
+        val (left, right) = if (boxA.left <= boxB.left) a to b else b to a
         // Overlapping across (a header over both halves), they cannot be two tables side by side.
-        return gutter <= 0f || (besideRows && (closeAsColumns || !looksLikeTwo(fewer, more, page, rowOverlapRatio)))
+        return gutter <= 0f || (besideRows && (closeAsColumns || figuresOf(left, right, page, config.tables)))
     }
 
     private class Run(val block: Int, val lines: List<TextLine>)
@@ -244,13 +247,15 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
     }
 }
 
-/**
- * Two tables, not one: the same header line on top of both (a long list set in two halves), or rows on one side
- * with nothing beside them (tables of different lengths).
- */
-private fun looksLikeTwo(fewer: Set<TextLine>, more: Set<TextLine>, page: PageText, ratio: Float): Boolean {
-    fun header(lines: Set<TextLine>) = lines.maxByOrNull { it.box?.top ?: Float.NEGATIVE_INFINITY }
-        ?.spans?.joinToString(" ") { page.text.substring(it.start, it.end).trim() }
-    val uneven = more.any { line -> !besideAny(line, fewer, ratio) }
-    return uneven || header(fewer) == header(more)
+/** Whether [right] is the figures of the table whose labels are [left], not a second table beside it. */
+private fun figuresOf(left: Set<TextLine>, right: Set<TextLine>, page: PageText, tables: TableConfig): Boolean {
+    val (leftText, rightText) = listOf(left, right).map { side -> cellsOf(side, page) }
+    return TableSides.readsAsFigures(rightText, tables.maxHeaderRows, tables.minFigureRows) &&
+        !TableSides.sameHeader(leftText, rightText, tables.minSideColumns)
 }
+
+/** [lines] top to bottom, each its runs' text: the cells of a row of a table. */
+private fun cellsOf(lines: Set<TextLine>, page: PageText): List<List<String>> =
+    lines.sortedByDescending { it.box?.top ?: Float.NEGATIVE_INFINITY }.map { line ->
+        line.spans.map { page.text.substring(it.start, it.end).trim() }
+    }
