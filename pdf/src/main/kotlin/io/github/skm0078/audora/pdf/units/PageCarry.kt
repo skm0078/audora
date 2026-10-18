@@ -185,13 +185,15 @@ internal class PageCarry(private val config: PageCarryConfig) {
     }
 
     /**
-     * [first] is a row of data, not a header: its serial number follows [lastSerial], or none of its cells reads as
-     * a year and, in at least `minRowFormatShare` of the columns whose [rows] are mostly written one way, it is
-     * written that way too; and some such column holds numbers, else a header and a row cannot be told apart.
+     * [first] is a row of data, not a header: its serial number follows [lastSerial] (the only evidence when its
+     * years are as long as their columns' figures, [YearCue.UNDECIDED]), or its years say nothing ([yearCue]) and, in
+     * at least `minRowFormatShare` of the columns whose [rows] are mostly written one way, it is written that way
+     * too; and some such column holds numbers, else a header and a row cannot be told apart.
      */
     private fun readsAsData(first: ReadingUnit, rows: List<ReadingUnit>, lastSerial: Long?): Boolean {
         val numbered = lastSerial != null && serialOf(first) == lastSerial + 1
-        return numbered || (!namesYears(first, rows) && matchesFormats(first, rows, config.minRowFormatShare))
+        return numbered ||
+            (yearCue(first, rows) == YearCue.NONE && matchesFormats(first, rows, config.minRowFormatShare))
     }
 
     /**
