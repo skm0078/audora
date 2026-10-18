@@ -35,7 +35,8 @@ interface TessdataSource {
  *
  * Settings: LSTM only (`tessdata_best` has no legacy model), automatic page segmentation (columns and paragraphs),
  * the image's real resolution so Tesseract does not guess the text size, and [threshold] (Sauvola by default, so a
- * phone photo's shadows and uneven light keep their text; part of the cache key).
+ * phone photo's shadows and uneven light keep their text). A Tesseract without `thresholding_method` (before 5.0)
+ * keeps its own Otsu; the method applied is what the log and the cache key name.
  */
 class TesseractEngine(
     private val models: TessdataSource,
@@ -45,7 +46,22 @@ class TesseractEngine(
     private var api: TessBaseAPI? = null
     private var loaded: String? = null
 
-    override val cacheTag: String get() = "tess-${models.revision}-${threshold.name.lowercase()}"
+    /** [threshold] if this Tesseract takes it, else the Otsu it always uses; asked once, before any page is read. */
+    private val applied: OcrThreshold by lazy {
+        val probe = TessBaseAPI()
+        try {
+            if (probe.setVariable(THRESHOLD_VARIABLE, threshold.tesseractValue.toString())) {
+                threshold
+            } else {
+                AudoraLog.w(TAG, "Tesseract ${probe.getVersion()} lacks $THRESHOLD_VARIABLE; reading with OTSU")
+                OcrThreshold.OTSU
+            }
+        } finally {
+            probe.recycle()
+        }
+    }
+
+    override val cacheTag: String get() = "tess-${models.revision}-${applied.name.lowercase()}"
 
     override fun installedLangs(): Set<Lang> = models.installed()
 
@@ -86,10 +102,10 @@ class TesseractEngine(
             false
         }
         return if (ok) {
-            if (!tess.setVariable(THRESHOLD_VARIABLE, threshold.tesseractValue.toString())) {
-                AudoraLog.w(TAG, "Tesseract ${tess.getVersion()} has no $THRESHOLD_VARIABLE; ${threshold.name} not set")
+            if (!tess.setVariable(THRESHOLD_VARIABLE, applied.tesseractValue.toString())) {
+                AudoraLog.w(TAG, "Tesseract ${tess.getVersion()} refused $THRESHOLD_VARIABLE=${applied.name}")
             }
-            AudoraLog.i(TAG, "Tesseract ${tess.getVersion()} loaded $codes threshold=${threshold.name}")
+            AudoraLog.i(TAG, "Tesseract ${tess.getVersion()} loaded $codes threshold=${applied.name}")
             api = tess
             loaded = key
             tess
