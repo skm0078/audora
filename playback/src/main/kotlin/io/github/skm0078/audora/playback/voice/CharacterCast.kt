@@ -43,7 +43,7 @@ class CharacterCast(
     private val narrator: (Lang) -> VoiceId?,
     private val speakers: (VoiceId) -> List<CastSpeaker>,
     private val taken: (Lang) -> Set<VoiceId> = { emptySet() },
-    private val casts: CharacterCasts = CharacterCasts(files = null),
+    private val casts: CharacterCasts,
 ) : CharacterVoices {
     private val lock = Any()
     private var book: BookCast? = null

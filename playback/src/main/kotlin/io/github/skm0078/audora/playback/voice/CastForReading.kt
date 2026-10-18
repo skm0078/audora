@@ -5,6 +5,7 @@ package io.github.skm0078.audora.playback.voice
 
 import android.content.Context
 import io.github.skm0078.audora.core.model.VoiceShaping
+import io.github.skm0078.audora.core.result.getOrNull
 import io.github.skm0078.audora.speech.sherpa.castSpeakers
 
 /**
