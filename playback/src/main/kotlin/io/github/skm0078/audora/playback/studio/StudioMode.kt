@@ -12,6 +12,7 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
+import io.github.skm0078.audora.playback.export.JobSlots
 import io.github.skm0078.audora.speech.punct.PunctuationModels
 import java.io.File
 
@@ -45,6 +46,23 @@ object StudioMode {
         val store = store(context)
         store.dropBooksNotIn(library)
         store.dropWrittenBefore(appStamp(context))
+    }
+
+    /** Bytes of studio audio on the phone (Settings → Storage). Walks the folder: call it off the main thread. */
+    fun audioBytes(context: Context): Long = store(context).totalBytes()
+
+    /**
+     * Deletes all studio audio (Settings → Storage); playback renders live until studio mode runs again. Refused
+     * (false) while studio mode is rendering, which would write into the folder being emptied. Blocking file work.
+     */
+    fun clearAll(context: Context): Boolean {
+        if (JobSlots.STUDIO.busy) {
+            AudoraLog.i(TAG, "Studio audio not cleared: studio mode is running")
+            return false
+        }
+        store(context).dropBooksNotIn(emptySet())
+        AudoraLog.i(TAG, "Studio audio cleared")
+        return true
     }
 
     /** The audio key for a book read with [style], [voices] and pronunciation [fixes] (ADR-039). */

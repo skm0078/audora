@@ -33,6 +33,12 @@ class SearchIndexes(context: Context, private val config: SearchConfig = SearchC
         if (stale.isNotEmpty()) AudoraLog.i(TAG, "Search indexes dropped: ${stale.size} files")
     }
 
+    /** Bytes of every book's index (Settings → Storage). Lists the folder: call it off the main thread. */
+    fun totalBytes(): Long = folder.listFiles().orEmpty().filter { it.isFile }.sumOf { it.length() }
+
+    /** Deletes every index (Settings → Storage); each is rebuilt the next time its book is searched. */
+    fun clearAll() = dropBooksNotIn(emptySet())
+
     private fun stem(book: BookId): String = MessageDigest.getInstance("SHA-256")
         .digest(book.value.toByteArray(Charsets.UTF_8))
         .joinToString("") { "%02x".format(it) }
