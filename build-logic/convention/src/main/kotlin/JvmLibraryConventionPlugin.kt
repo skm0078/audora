@@ -11,7 +11,8 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 class JvmLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
         pluginManager.apply("org.jetbrains.kotlin.jvm")
-        // Android lint on plain Kotlin too, so :app's lint (checkDependencies) flags API calls above minSdk here.
+        // Android lint on plain Kotlin too, so :app's lint (checkDependencies) runs its checks here; NewApi does not
+        // fire on this module (a readNBytes call passed it), see the compiler guard below.
         pluginManager.apply("com.android.lint")
 
         extensions.configure<JavaPluginExtension> {

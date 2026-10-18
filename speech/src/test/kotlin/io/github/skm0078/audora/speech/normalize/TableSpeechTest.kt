@@ -54,6 +54,22 @@ class TableSpeechTest {
     }
 
     @Test
+    fun `a cell ruled through instead of filled reads as nil`() {
+        val cases = listOf(
+            Triple(row("2019 | –", listOf("Year", "Loss")), Lang.EN, "Row 1. Year: 2019. Loss: nil."),
+            Triple(row("2019 | -----", emptyList()), Lang.EN, "Row 1. 2019, nil."),
+            Triple(row("2019 | −", listOf("वर्ष", "हानि")), Lang.HI, "पंक्ति 1। वर्ष: 2019। हानि: कुछ नहीं।"),
+            Triple(row("2019 | —", listOf("বছর", "ক্ষতি")), Lang.BN, "সারি 1। বছর: 2019। ক্ষতি: নেই।"),
+            // A dash inside a value stays as written.
+            Triple(row("2019 | 10–12", listOf("Year", "Range")), Lang.EN, "Row 1. Year: 2019. Range: 10–12."),
+        )
+        for ((input, lang, spoken) in cases) {
+            val (table, text) = input
+            assertEquals(spoken, TableSpeech.row(table, text, lang))
+        }
+    }
+
+    @Test
     fun `the header unit reads as the size`() {
         val (table, text) = row("Name | Age", listOf("Name", "Age"), row = null, rows = 2)
         assertEquals("2 rows, 2 columns.", TableSpeech.row(table, text, Lang.EN))

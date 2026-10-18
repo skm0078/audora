@@ -15,24 +15,29 @@ import java.text.Normalizer
  *   "साढ़े दस बजे", "10:45" → "पौने ग्यारह बजे", "1:30" → "डेढ़ बजे", "2:30" → "ढाई बजे"; Bengali "সোয়া দশটা",
  *   "সাড়ে দশটা", "পৌনে এগারোটা", "দেড়টা", "আড়াইটা". Other minutes: "दस बजकर बीस मिनट", "দশটা বেজে কুড়ি মিনিট".
  * - Hours 13–23 keep the minutes: "चौदह बजकर पाँच मिनट".
- * - AM and PM become the part of the day before the hour: "10:30 PM" → "रात साढ़े दस बजे", "সকাল সাড়ে দশটা".
+ * - AM and PM become the part of the day before the hour: "10:30 PM" → "रात साढ़े दस बजे", "সকাল সাড়ে দশটা"; a part of
+ *   the day written before the time says it already ("शाम 6:30 PM"), "समय" does not ("समय रात साढ़े दस बजे").
  * - A "बजे" written after the time is part of what is said, so it is not read twice; when the minutes end the phrase,
  *   it becomes "पर" ("दस बजकर बीस मिनट पर"). A Bengali "টায়"/"টা" becomes the locative ("দশটায়", "… মিনিটে").
  * Anything that is not a clock time ("25:10", "10:75", "1:2", a verse "3:16:2", "1:30,5") is left for the number
  * rules. [times] runs before the initials step, so "a.m." is still whole.
  */
 internal class IndicClock private constructor(private val language: ClockLanguage) {
+    private val marker = alternatives(language.dayParts + language.timeWords)
     private val pattern = Regex(
-        """(?:(?<![\p{L}\p{M}])((?:${alternatives(language.timeWords)})${language.timeWordTail})\s+)?""" +
+        """(?:(?<![\p{L}\p{M}])((?:$marker)${language.timeWordTail}):?\s+)?""" +
             """(?<![\w.:])(\d{1,2}):(\d{2})""" +
             """(?:((?:${language.suffix.pattern})(?![\p{L}\p{M}]))|\s?([AaPp])\.?\s?[Mm]\.?(?![\p{L}\p{M}]))?""" +
             """(?![\p{L}\p{M}\p{N}:]|[.,]\p{N})""",
     )
 
+    private val dayPart = Regex("""^(?:${alternatives(language.dayParts)})""")
+
     fun times(ascii: String, words: IndicNumberWords): String = pattern.replace(ascii) { match ->
         val time = ClockTime.of(match, ascii) ?: return@replace match.value
         val prefix = match.groupValues[TIME_WORD]
-        val period = if (prefix.isEmpty()) time.meridiemHour?.let(language::periodOf) else null
+        // A part of the day before the time already says what AM or PM would; "समय" does not.
+        val period = time.meridiemHour?.takeUnless { dayPart.containsMatchIn(prefix) }?.let(language::periodOf)
         val said = listOfNotNull(prefix.ifEmpty { null }, period, language.say(time, words)).joinToString(" ")
         keepSentenceStop(ascii, match, nfc(said))
     }
@@ -80,6 +85,10 @@ internal class IndicClock private constructor(private val language: ClockLanguag
 
     /** What one language says. */
     internal interface ClockLanguage {
+        /** Parts of the day ("सुबह", "রাত"): before a time they replace its AM or PM. */
+        val dayParts: List<String>
+
+        /** Other words that mark a time ("समय", "সময়"); an AM or PM after the time is still said. */
         val timeWords: List<String>
 
         /** What may follow a time word before the time ("शाम को", "সকালে"). */
@@ -121,7 +130,8 @@ internal class IndicClock private constructor(private val language: ClockLanguag
 
         val HINDI = IndicClock(
             object : ClockLanguage {
-                override val timeWords = listOf("सुबह", "दोपहर", "शाम", "रात", "समय")
+                override val dayParts = listOf("सुबह", "दोपहर", "शाम", "रात")
+                override val timeWords = listOf("समय")
                 override val timeWordTail = """(?:\s+(?:के|को|में))?"""
                 override val suffix = Regex("""\s?बजे""")
 
@@ -161,7 +171,8 @@ internal class IndicClock private constructor(private val language: ClockLanguag
 
         val BENGALI = IndicClock(
             object : ClockLanguage {
-                override val timeWords = listOf("সকাল", "দুপুর", "বিকেল", "সন্ধ্যা", "রাত", "সময়")
+                override val dayParts = listOf("সকাল", "দুপুর", "বিকেল", "সন্ধ্যা", "রাত")
+                override val timeWords = listOf("সময়")
                 override val timeWordTail = """(?:ে|য়|য়)?"""
                 override val suffix = Regex("""\s?টা(?:য়|য়)?""")
 
