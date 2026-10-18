@@ -272,6 +272,13 @@ object PlaybackContract {
     /** Boolean: whether the range loops; present with A. */
     const val SESSION_STUDY_LOOP = "study_loop"
 
+    /**
+     * The narrator blend (plan item 75): the narrator's own Kokoro English speaker, present only while such a voice
+     * narrates (the only one a blend changes); and the bytes a blend that could not be built needed free.
+     */
+    const val SESSION_BLEND_OWN_SPEAKER = "blend_own_speaker"
+    const val SESSION_BLEND_NEEDS_BYTES = "blend_needs_bytes"
+
     /** Int pair: where "Undo jump" goes back to in the book being read (plan item 78); absent with nothing to undo. */
     const val SESSION_UNDO_PAGE = "undo_page"
     const val SESSION_UNDO_CHAR = "undo_char"

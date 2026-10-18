@@ -129,7 +129,7 @@ class EngineRenderer(
         val shaping = now.shaping
         val shaper = reading.shaper
         val trim: (PcmAudio) -> PcmAudio = if (shaping.trimPauses) shaper::trimPauses else { audio -> audio }
-        val characters = reading.characters?.takeIf { shaping.characterVoices }
+        val characters = reading.characters?.takeIf { shaping.characterVoices }?.current()
         val cast = Cast(shaping.dialogueVoices, shaping.headingVoices, characters)
         val quotePauseMs = if (now.clausePauses) styleConfig.clauseSilenceMs(ClauseMark.QUOTE, now) else 0
         val level: (PcmAudio) -> PcmAudio = { shaper.level(it, shaping.evenLoudness, boostDb = 0) }

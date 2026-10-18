@@ -135,4 +135,57 @@ class QuoteCarryTest {
 
         assertEquals("Mira", carry.speakerOf(next.single())?.name)
     }
+
+    @Test
+    fun `a pronoun takes a name tagged earlier in its paragraph, and never an ungendered name from before`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "“Where were you?” asked Tom.", pause = paragraphPauseMs),
+            sentence(1, "Mary looked away.", pause = 0),
+            sentence(2, "“Out,” she said.", pause = paragraphPauseMs),
+            sentence(3, "“Out,” said Asha.", pause = 0),
+            sentence(4, "“With friends,” she added.", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertEquals(null, carry.speakerOf(units[2])?.name)
+        assertEquals(SpeakerGender.FEMALE, carry.speakerOf(units[2])?.gender)
+        assertEquals("Asha", carry.speakerOf(units[4])?.name)
+        assertEquals(SpeakerGender.FEMALE, carry.speakerOf(units[4])?.gender)
+    }
+
+    @Test
+    fun `a speech over several paragraphs keeps its speaker, and a heading forgets the conversation`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "“Ready?” asked Mira.", pause = paragraphPauseMs),
+            sentence(1, "“Yes,” said Arjun.", pause = paragraphPauseMs),
+            sentence(2, "“It began long ago, in the hills.", pause = paragraphPauseMs),
+            sentence(3, "“And it never ended.”", pause = paragraphPauseMs),
+            sentence(4, "Chapter Two", kind = UnitKind.HEADING, pause = paragraphPauseMs),
+            sentence(5, "“Who is there?”", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertEquals("Mira", carry.speakerOf(units[2])?.name)
+        assertEquals("Mira", carry.speakerOf(units[3])?.name)
+        assertNull(carry.speakerOf(units[5]))
+    }
+
+    @Test
+    fun `a page that goes on with the sentence the page before broke off keeps its quote open`() {
+        val carry = QuoteCarry()
+        val first = listOf(sentence(0, "She leaned in and said, “The key is under the"))
+        val next = listOf(sentence(0, "third stone by the gate.” Then she left.", page = 1))
+        val fresh = listOf(sentence(0, "third stone by the gate.", page = 2))
+
+        carry.page(first)
+        carry.page(next, continuesPreviousPage = true)
+        carry.page(fresh)
+
+        assertEquals(true, carry.startsInQuote(next.single()))
+        assertEquals(false, carry.startsInQuote(fresh.single()))
+    }
 }

@@ -79,6 +79,22 @@ class UnitReadingTest {
     }
 
     @Test
+    fun `a continued table says it continues before its rows, in summary and in row by row`() {
+        val carried = { unit: ReadingUnit -> unit.copy(table = unit.table!!.copy(continued = true, rowsBefore = 12)) }
+        val units = listOf(table(0, null, "Name Age"), table(1, 0), table(2, 1, "Sita 29")).map(carried)
+        val continues = Speech.Text("Table continues, 2 more rows.", TextRole.BODY)
+
+        assertEquals(listOf(0), played(ReadingModes(tables = TableMode.SUMMARY), units))
+        assertEquals(continues, UnitReading(ReadingModes(tables = TableMode.SUMMARY)).speechOf(units[0]))
+        val rows = UnitReading(ReadingModes(tables = TableMode.ROWS))
+        assertEquals(listOf(0, 1, 2), rows.plays(units).map { it.index })
+        assertEquals(
+            listOf(continues, Speech.Text("Row 13. Name: Ram. Age: 34.", TextRole.BODY)),
+            units.take(2).map(rows::speechOf),
+        )
+    }
+
+    @Test
     fun `footnotes read where printed or skipped`() {
         val units = listOf(body(0), kind(1, UnitKind.FOOTNOTE))
         assertEquals(listOf(0, 1), played(ReadingModes(), units))

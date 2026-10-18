@@ -66,6 +66,7 @@ class FakeDocuments : DocumentAccess {
     val granted = mutableSetOf<String>()
     val oneTimeOnly = mutableSetOf<String>()
     val released = mutableListOf<String>()
+    val pruned = mutableListOf<Set<String>>()
 
     fun put(uri: String, name: String?, bytes: ByteArray) {
         docs[uri] = Doc(name, bytes)
@@ -101,6 +102,10 @@ class FakeDocuments : DocumentAccess {
         documentUri !in granted -> BookAvailability.ACCESS_LOST
         documentUri !in docs -> BookAvailability.MISSING
         else -> BookAvailability.AVAILABLE
+    }
+
+    override fun pruneUnused(inUse: Set<String>) {
+        pruned += inUse
     }
 }
 

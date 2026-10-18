@@ -118,6 +118,7 @@ private fun SpeedButton(
             study = study,
             focusSound = playback.focusSound,
             onFocusSound = actions::onFocusSound,
+            blend = NarratorBlendState(playback.blendOwnSpeaker, playback.blendNeedsBytes),
             onDismiss = { open = false },
         )
     }

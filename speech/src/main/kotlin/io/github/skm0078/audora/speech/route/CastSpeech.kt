@@ -19,6 +19,12 @@ import io.github.skm0078.audora.speech.normalize.TextRole
 /** Each character's own voice (plan item 63): null keeps the [Cast.dialogue] voice for that speaker. */
 fun interface CharacterVoices {
     fun voiceFor(lang: Lang, speaker: Speaker): VoiceId?
+
+    /**
+     * These voices as they stand now, taken before the sentence's speaker is looked up: a book opened in between
+     * makes the snapshot give no voice (and keep nothing), so one book's character never lands in another's cast.
+     */
+    fun current(): CharacterVoices = this
 }
 
 /**
@@ -75,25 +81,18 @@ class CastSpeech(
         quotePauseMs: Int = 0,
         level: (PcmAudio) -> PcmAudio = { it },
     ): Outcome<RoutedAudio, SpeechError> {
-        val parts = if (cast.dialogue.isEmpty() && cast.characters == null) {
-            null
+        val heading = request.role == TextRole.HEADING && cast.headings.isNotEmpty()
+        // Split only when the quotes get a voice of their own: pieces joined with pauses would change the prosody
+        // of a sentence read by the narrator alone anyway (an unknown speaker with no dialogue voice, say).
+        val dialogue = if (heading) emptyMap() else quoteVoices(lang, request, cast)
+        val parts = if (lang in dialogue) {
+            quotes.split(text, request.startsInQuote).takeIf { split -> split.any { it.quoted } }
         } else {
-            quotes.split(text, request.startsInQuote).takeIf { split ->
-                split.any { it.quoted }
-            }
+            null
         }
         return when {
-            request.role == TextRole.HEADING && cast.headings.isNotEmpty() ->
-                castOrNarrator(text, lang, request, cast.headings)
-
-            parts != null -> renderParts(
-                parts,
-                lang,
-                request,
-                quoteVoices(lang, request, cast),
-                Join(quotePauseMs, level),
-            )
-
+            heading -> castOrNarrator(text, lang, request, cast.headings)
+            parts != null -> renderParts(parts, lang, request, dialogue, Join(quotePauseMs, level))
             else -> narrator.render(text, lang, request)
         }
     }

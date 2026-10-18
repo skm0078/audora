@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
  * Main thread. The sentence playing's timing ([timings], plan item 14) joins the extras when it starts, or when its
  * render finishes if it started first (the player waits for it then).
  */
-@Suppress("LongParameterList") // The session, two bridges and what the extras show; the last four are optional.
+@Suppress("LongParameterList") // The session, two bridges and what the extras show; the last five are optional.
 class SessionPublisher(
     private val session: MediaSession,
     private val diagnostics: DiagnosticsBridge,
@@ -44,6 +44,7 @@ class SessionPublisher(
     private val bookSettings: () -> BookSettings? = { null },
     private val timings: SentenceTimings? = null,
     private val focusSound: () -> FocusSoundOptions = { FocusSoundOptions() },
+    private val blend: () -> BlendAvailability = { BlendAvailability() },
 ) : SessionEvents {
     private val main = Handler(Looper.getMainLooper())
     private var lastState: SessionState? = null
@@ -116,17 +117,33 @@ class SessionPublisher(
                     putString(PlaybackContract.SESSION_ERROR, it.code.name)
                     putString(PlaybackContract.SESSION_ERROR_MESSAGE, it.message)
                 }
-                val speech = style()
-                putFloat(PlaybackContract.SESSION_SPEECH_RATE, speech.rate)
-                putString(PlaybackContract.SESSION_PACE, speech.pace.name)
-                putBoolean(PlaybackContract.SESSION_CLAUSE_PAUSES, speech.clausePauses)
-                putString(PlaybackContract.SESSION_READING_MODES, speech.modes.encode())
-                putString(PlaybackContract.SESSION_VOICE_SHAPING, speech.shaping.encode())
+                putSpeech(style())
                 timing?.let { putString(PlaybackContract.SESSION_SENTENCE_TIMING, it.encode()) }
+                putBlend(blend())
             },
         )
     }
 }
+
+private fun Bundle.putSpeech(speech: SpeechStyle) {
+    putFloat(PlaybackContract.SESSION_SPEECH_RATE, speech.rate)
+    putString(PlaybackContract.SESSION_PACE, speech.pace.name)
+    putBoolean(PlaybackContract.SESSION_CLAUSE_PAUSES, speech.clausePauses)
+    putString(PlaybackContract.SESSION_READING_MODES, speech.modes.encode())
+    putString(PlaybackContract.SESSION_VOICE_SHAPING, speech.shaping.encode())
+}
+
+private fun Bundle.putBlend(now: BlendAvailability) {
+    now.ownSpeaker?.let { putInt(PlaybackContract.SESSION_BLEND_OWN_SPEAKER, it) }
+    now.neededBytes?.let { putLong(PlaybackContract.SESSION_BLEND_NEEDS_BYTES, it) }
+}
+
+/**
+ * What the speech sheet's narrator blend (plan item 75) can do now: [ownSpeaker] the narrator's own Kokoro English
+ * speaker (null when the narrator is another voice, which a blend leaves alone); [neededBytes] what the last blend
+ * that could not be built needed free (0 when the voice refused it), null when it was built.
+ */
+data class BlendAvailability(val ownSpeaker: Int? = null, val neededBytes: Long? = null)
 
 /**
  * P1-07's unfinished-session marker: "reading" while audio plays, "not reading" on pause, stop, end, error and

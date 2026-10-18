@@ -7,6 +7,7 @@ import android.content.Context
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.security.MessageDigest
 
@@ -34,10 +35,14 @@ class CharacterFileStore(private val dir: File) : CharacterFiles {
         val temp = File(file.path + ".tmp")
         try {
             dir.mkdirs()
-            temp.writeText(cast.entries.joinToString("\n") { "${it.key}$TAB${it.value}" }, Charsets.UTF_8)
+            FileOutputStream(temp).use { out ->
+                out.write(cast.entries.joinToString("\n") { "${it.key}$TAB${it.value}" }.toByteArray(Charsets.UTF_8))
+                out.fd.sync() // on disk before the rename, so a power cut never leaves an empty file in its place
+            }
             if (!temp.renameTo(file)) throw IOException("cannot replace ${file.name}")
             AudoraLog.d(TAG, "Saved ${cast.size} character voices for book=${book.logLabel}")
         } catch (e: IOException) {
+            temp.delete()
             AudoraLog.e(TAG, "Could not save character voices for book=${book.logLabel}", e)
         }
     }

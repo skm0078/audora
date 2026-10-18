@@ -2,6 +2,22 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Voice commands, and review fixes for the pack (plan item 38; 2026-10-18)
+- **Voice commands** (Settings, off by default; an optional 5.3 MB download): while the reader is on screen, say "Audora pause", "play", "next", "back", "repeat", "faster" or "slower". A small keyword spotter (sherpa-onnx Zipformer, GigaSpeech, Apache-2.0) listens on the phone, with echo cancelling, and nothing leaves it.
+  - Audora's own reading can't trigger a command: a command is ignored while a sentence that says "Audora" (or ऑडोरा, অডোরা) plays and for 2 s after (`NarratorEcho`).
+  - The microphone is used only while the reader is visible and the switch is on; Android's privacy dot shows then. Listening with the screen off is the next step.
+  - Storage: the model has a size and a Delete row; LicencesScreen credits it. `RECORD_AUDIO` is the same manifest line as studio's voice notes.
+- **Review fixes:**
+  - Characters: "he" or "she" points only to a speaker of that gender (one of unknown gender only if they were named in this paragraph or speak next), and a paragraph that goes on with an open quote keeps its speaker. A heading resets the conversation. A character whose known voice turns out to be the wrong gender is re-cast. Character voices are kept per narrator model, and a book opened meanwhile never gets the last book's cast. A language with no dialogue voice reads the sentence whole.
+  - Study: resuming a study range no longer rewinds or restarts the bedtime timer; a study loop at the end of a chapter stops there; "More" at a range end works again; a stale paragraph-skip target is dropped.
+  - Focus sound fades back in after a gap and fades out at the end, across sample-rate changes.
+  - Narrator blend: only on the narrator's Kokoro English voice, never on a speaker that isn't in the model or is the narrator itself; the export uses it too. Each copy is named by speaker, mix and voice version, built under one lock with a temp file of its own, and refused (with the space it needs shown in the speech sheet) when the disk is short. Deleting a voice deletes its copy; the sheet hides the blend for other narrators.
+  - Model deletes (OCR, punctuation, voice commands) wait for a running download to stop first.
+  - Shared PDF copies: a copy restored from a backup (an old absolute path) is found in today's folder, so it no longer shows as missing; copies no book uses are pruned once per start; a move that can't be saved gives back the new copy or grant.
+  - A continued table's summary ("Table continues, 7 more rows.") plays in Row by row as well as Summary.
+- Tests: `VoiceCommandTest`, `ReaderSpeedStepTest`, `QuoteCarryTest`, `CharacterCastTest`, `CastSpeechTest`, `FocusMixerTest`, `BlendCacheTest`, `KokoroBlendsTest` (row-by-row mix, `SPEAKER_BYTES`), `StyleBlendShapingTest`, `SharedCopyPathsTest`, `LibraryTest`, `UnitReadingTest`.
+- Phone checks: K13 (extended), K14.
+
 ## Narrator blend (plan item 75; 2026-10-17)
 - **Blend the narrator** in the speech sheet: mix another Kokoro English voice into the Kokoro narrator, from 1% to 99% (30% by default). Off by default. The voice reloads after a change, which takes about a second, like expressiveness.
 - How:

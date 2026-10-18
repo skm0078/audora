@@ -25,7 +25,7 @@ data class StyleBlend(val withSpeaker: Int, val amount: Float) {
  * row in a copy of the file, so the file keeps its size and speaker count (sherpa-onnx checks both against the
  * model) and every other speaker, the character voices among them (plan item 63), stays as it was.
  *
- * The copy is as big as the original (about 28 MB for Kokoro v1.0); one is kept per voice and blend, rebuilt when
+ * The copy is as big as the original (about 28 MB for Kokoro v1.0); [BlendCache] keeps one per voice, rebuilt when
  * missing (it lives in a cache), so a blend costs that disk and one copy when it is chosen, and no extra memory.
  */
 object KokoroBlends {
@@ -33,6 +33,7 @@ object KokoroBlends {
     const val STYLE_DIM = 256
     private const val FLOAT_BYTES = 4
     const val SPEAKER_BYTES = STYLE_ROWS * STYLE_DIM * FLOAT_BYTES
+    private const val TEMP_SUFFIX = ".tmp"
 
     /** [target]: [source] with speaker [own]'s row blended; reused when it is already there. */
     fun write(source: File, target: File, own: Int, blend: StyleBlend): Outcome<File, String> {
@@ -50,26 +51,31 @@ object KokoroBlends {
         }
     }
 
-    private fun copyBlended(source: File, target: File, own: Int, blend: StyleBlend): Outcome<File, String> {
-        val temp = File(target.path + ".tmp")
+    private fun copyBlended(source: File, target: File, speaker: Int, blend: StyleBlend): Outcome<File, String> {
+        var temp: File? = null
         return try {
-            target.parentFile?.mkdirs()
-            source.copyTo(temp, overwrite = true)
-            RandomAccessFile(temp, "rw").use { file ->
-                val mine = read(file, own)
+            val folder = target.absoluteFile.parentFile ?: throw IOException("no folder for ${target.name}")
+            folder.mkdirs()
+            // A temp file of this build's own: another build of the same copy never shares or renames it.
+            val own = File.createTempFile(target.name, TEMP_SUFFIX, folder).also { temp = it }
+            source.copyTo(own, overwrite = true)
+            RandomAccessFile(own, "rw").use { file ->
+                val mine = read(file, speaker)
                 val other = read(file, blend.withSpeaker)
                 val mixed = ByteBuffer.allocate(SPEAKER_BYTES).order(ByteOrder.LITTLE_ENDIAN)
                 while (mine.hasRemaining()) {
                     mixed.putFloat(mine.getFloat() * (1f - blend.amount) + other.getFloat() * blend.amount)
                 }
                 mixed.flip()
-                file.channel.write(mixed, own.toLong() * SPEAKER_BYTES)
+                val at = speaker.toLong() * SPEAKER_BYTES
+                // A short write is possible on a nearly full disk: write until the whole row is down.
+                while (mixed.hasRemaining()) file.channel.write(mixed, at + mixed.position())
                 file.fd.sync()
             }
-            if (!temp.renameTo(target)) throw IOException("cannot replace ${target.name}")
+            if (!own.renameTo(target)) throw IOException("cannot replace ${target.name}")
             Outcome.Success(target)
         } catch (e: IOException) {
-            temp.delete()
+            temp?.delete()
             Outcome.Failure("blend not written: ${e.message}")
         }
     }

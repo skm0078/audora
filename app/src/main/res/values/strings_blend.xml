@@ -6,4 +6,6 @@
     <string name="speech_blend_detail">Mix another voice into the Kokoro narrator for a voice of your own. Kokoro voices only. The voice reloads after each change, about a second, and each blend keeps a 28 MB copy in the cache.</string>
     <string name="speech_blend_off">Off</string>
     <string name="speech_blend_amount">Mixed in: %1$d%%</string>
+    <string name="speech_blend_needs_space">Not applied: the blend needs %1$d MB free. The narrator reads as installed until there is room.</string>
+    <string name="speech_blend_refused">Not applied: this voice would not load with the blend, so it reads as installed.</string>
 </resources>

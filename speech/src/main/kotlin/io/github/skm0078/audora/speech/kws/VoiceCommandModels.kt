@@ -25,6 +25,7 @@ import io.github.skm0078.audora.speech.voices.ResumableDownloader
 import io.github.skm0078.audora.speech.voices.UrlConnectionHttpSource
 import io.github.skm0078.audora.speech.voices.ZipModelDownloadJob
 import io.github.skm0078.audora.speech.voices.ZipModelFiles
+import io.github.skm0078.audora.speech.voices.cancelAndAwait
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
@@ -82,7 +83,7 @@ class VoiceCommandModels private constructor(context: Context, private val downl
      * until its spell ends; the listener sees [isInstalled] false and does not start another.
      */
     suspend fun delete(): Outcome<Unit, String> = withContext(Dispatchers.IO) {
-        workManager().cancelUniqueWork(WORK_NAME)
+        workManager().cancelAndAwait(WORK_NAME, downloads.stopWaitMs)
         synchronized(lock) { files.deleteAll().also { refreshLocked() } }
     }
 

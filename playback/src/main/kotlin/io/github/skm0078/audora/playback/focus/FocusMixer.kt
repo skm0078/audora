@@ -51,6 +51,41 @@ class FocusMixer(
         }
     }
 
+    /**
+     * The same sound carried on at another [rate] (a voice of another sample rate took over): its level, and whether
+     * the voice was speaking, go on, so the sound neither restarts nor fades in again.
+     */
+    fun continuedAt(rate: Int): FocusMixer = FocusMixer(rate, config, seed).also { next ->
+        next.playing = playing
+        next.source = source?.let { FocusNoise.of(playing, rate, seed) }
+        next.gain = gain
+        next.voice = voice
+        next.held = (held.toLong() * rate / sampleRate).toInt()
+    }
+
+    /** The audio stopped for a while (a slow render, a seek): the sound comes back from silence, fading in. */
+    fun fadeIn() {
+        gain = 0f
+    }
+
+    /**
+     * [FocusSoundConfig.tailMs] of the sound alone, fading to silence: played after the voice's last audio so the
+     * sound does not stop dead. Empty with the sound off or already silent.
+     */
+    fun tail(channels: Int): ShortArray {
+        val noise = source
+        val frames = frames(config.tailMs)
+        if (noise == null || gain < SILENT || frames == 0) return ShortArray(0)
+        val start = gain
+        val out = ShortArray(frames * channels)
+        for (frame in 0 until frames) {
+            val bed = noise.next() * start * (frames - frame) / frames
+            for (c in 0 until channels) out[frame * channels + c] = clip(bed * Short.MAX_VALUE)
+        }
+        gain = 0f
+        return out
+    }
+
     private fun nextBed(peak: Float, options: FocusSoundOptions): Float {
         trackVoice(peak)
         val switching = options.sound != playing
@@ -92,9 +127,6 @@ class FocusMixer(
         return peak.toFloat() / Short.MAX_VALUE
     }
 
-    private fun clip(value: Float): Short =
-        value.roundToInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
-
     private fun frames(ms: Int): Int = (sampleRate.toLong() * ms / MS_PER_SECOND).toInt()
 
     /** The share of the distance to its target a one-pole fade covers per frame, for a time constant of [ms]. */
@@ -107,3 +139,6 @@ class FocusMixer(
         const val MS_PER_SECOND = 1_000L
     }
 }
+
+private fun clip(value: Float): Short =
+    value.roundToInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()

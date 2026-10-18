@@ -57,6 +57,27 @@ class KokoroBlendsTest {
         assertTrue(!target.exists())
     }
 
+    @Test
+    fun `each style row is mixed with the same row of the other speaker`() {
+        assertEquals(522_240, KokoroBlends.SPEAKER_BYTES)
+        // Row r of speaker n holds n × 1000 + r, so a row read from the wrong place shows.
+        val buffer = ByteBuffer.allocate(2 * KokoroBlends.SPEAKER_BYTES).order(ByteOrder.LITTLE_ENDIAN)
+        repeat(2) { speaker ->
+            repeat(floatsPerSpeaker) { buffer.putFloat(speaker * 1000f + it / KokoroBlends.STYLE_DIM) }
+        }
+        val source = folder.newFile("rows.bin").apply { writeBytes(buffer.array()) }
+
+        val made = KokoroBlends.write(source, File(folder.root, "rows-out.bin"), own = 1, blend = StyleBlend(0, 0.5f))
+
+        val file = (made as Outcome.Success).value
+        for (row in listOf(0, 1, KokoroBlends.STYLE_ROWS - 1)) {
+            val index = row * KokoroBlends.STYLE_DIM
+            assertEquals(row.toFloat(), valueAt(file, 0, index), DELTA)
+            // 0.5 × (1000 + r) + 0.5 × r
+            assertEquals(500f + row, valueAt(file, 1, index), DELTA)
+        }
+    }
+
     private companion object {
         const val DELTA = 1e-6f
     }

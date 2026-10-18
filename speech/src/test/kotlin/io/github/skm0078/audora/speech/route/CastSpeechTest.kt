@@ -95,12 +95,18 @@ class CastSpeechTest {
     }
 
     @Test
-    fun `a language with no dialogue voice keeps the narrator for its quotes`() = runTest {
+    fun `a language with no dialogue voice reads the sentence whole with the narrator, unsplit`() = runTest {
         val engine = RecordingEngine()
+        val noOne = Cast(characters = { _, _ -> null })
 
         speech(engine).render("“Come here at once,” she said.", Lang.EN, cast = Cast(mapOf(Lang.HI to DIALOGUE)))
+        val tom = SpeechRequest(speaker = Speaker("Tom", SpeakerGender.MALE))
+        speech(engine).render("“Halt,” he said.", Lang.EN, tom, noOne)
 
-        assertEquals(listOf(NARRATOR.name to "Come here at once,", NARRATOR.name to "she said."), engine.calls)
+        assertEquals(
+            listOf(NARRATOR.name to "“Come here at once,” she said.", NARRATOR.name to "“Halt,” he said."),
+            engine.calls,
+        )
     }
 
     @Test

@@ -19,6 +19,7 @@ import io.github.skm0078.audora.speech.SpeechEngine
 import io.github.skm0078.audora.speech.SpeechEngines
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.route.VoiceSource
+import io.github.skm0078.audora.speech.sherpa.NarratorBlend
 import io.github.skm0078.audora.speech.sherpa.StyleBlend
 import io.github.skm0078.audora.speech.sherpa.VitsNoise
 import io.github.skm0078.audora.speech.system.SystemSpeechEngine
@@ -88,13 +89,14 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
 /**
  * Creates each engine once, on first use, and releases only what was created. [expressiveness] is the listener's step
  * (plan item 8), read on every neural render; the Piper and MMS voices reload when it changes. [blend] is the
- * listener's narrator blend (plan item 75), read the same way; the Kokoro voices reload when it changes.
+ * listener's narrator blend (plan item 75) for the narrator it names, read the same way; that voice reloads when it
+ * changes.
  */
 class VoiceEngines(
     context: Context,
     config: SpeechConfig = SpeechConfig(),
     shapingConfig: VoiceShapingConfig = VoiceShapingConfig(),
-    blend: () -> StyleBlend? = { null },
+    blend: () -> NarratorBlend? = { null },
     expressiveness: () -> Int = { VoiceShaping.DEFAULT_EXPRESSION },
 ) {
     private val appContext = context.applicationContext
@@ -131,6 +133,10 @@ class VoiceEngines(
         if (system.isInitialized()) system.value.release()
     }
 }
+
+/** [shaping]'s narrator blend for the voice reading English now (plan item 75); null with no blend or no voice. */
+fun SpeechVoices.narratorBlend(shaping: VoiceShaping): NarratorBlend? =
+    shaping.styleBlend()?.let { blend -> knownVoice(Lang.EN)?.let { NarratorBlend(it, blend) } }
 
 /** The shaping's narrator blend as the engine takes it (plan item 75); null when there is none. */
 fun VoiceShaping.styleBlend(): StyleBlend? = blendWith?.let { StyleBlend(it, blendPercent / PERCENT) }

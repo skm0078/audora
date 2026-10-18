@@ -20,6 +20,7 @@ import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.AfterSentence
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.BookmarkStore
@@ -63,7 +64,8 @@ import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.StudyGapRenderer
 import io.github.skm0078.audora.playback.voice.VoiceEngines
-import io.github.skm0078.audora.playback.voice.styleBlend
+import io.github.skm0078.audora.playback.voice.narratorBlend
+import io.github.skm0078.audora.speech.sherpa.blendableSpeaker
 import io.github.skm0078.audora.speech.sherpa.castSpeakers
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -127,7 +129,8 @@ class AudoraPlaybackService : MediaLibraryService() {
         super.onCreate() // Hilt injects fields here.
         val style = SpeechStyleStore.forContext(this)
         // Expressiveness (plan item 8) is global, like the rest of the voice shaping; a change reloads the voice.
-        val engines = VoiceEngines(this, blend = { style.current.shaping.styleBlend() }) {
+        // The narrator blend (plan item 75) goes to the voice reading English now, nothing else.
+        val engines = VoiceEngines(this, blend = { voices.narratorBlend(style.current.shaping) }) {
             style.current.shaping.expressiveness
         }
         voices = SpeechVoices(engines)
@@ -170,7 +173,7 @@ class AudoraPlaybackService : MediaLibraryService() {
                 onBookFinished = queueAdvance()::onBookFinished,
             ),
             config = config,
-            events = publisher(mediaSession, stores, heard).also { it.publishInitial() },
+            events = publisher(mediaSession, stores, heard, engines).also { it.publishInitial() },
             env = SessionEnvironment(
                 scope = scope,
                 extraction = Dispatchers.IO.limitedParallelism(1),
@@ -264,6 +267,7 @@ class AudoraPlaybackService : MediaLibraryService() {
         mediaSession: MediaSession,
         stores: SessionStores,
         heard: () -> SpeechStyle,
+        engines: VoiceEngines,
     ): SessionPublisher {
         val recorder = ResumeRecorder(resumeAnchors, resumeScope, PIPELINE_VERSION, System::currentTimeMillis)
         return SessionPublisher(
@@ -275,6 +279,7 @@ class AudoraPlaybackService : MediaLibraryService() {
             bookSettings = { stores.book.settings },
             timings = timings,
             focusSound = stores.focusSound::current,
+            blend = { blendAvailability(engines, voices) },
         )
     }
 
@@ -326,6 +331,13 @@ class AudoraPlaybackService : MediaLibraryService() {
     private companion object {
         const val TAG = "Playback.Service"
     }
+}
+
+/** What the speech sheet's narrator blend can do for the voice reading English now (plan item 75). */
+private fun blendAvailability(engines: VoiceEngines, voices: SpeechVoices): BlendAvailability {
+    val bundled = engines.bundled().getOrNull() ?: return BlendAvailability()
+    val narrator = voices.knownVoice(Lang.EN)
+    return BlendAvailability(narrator?.let(bundled.engine::blendableSpeaker), bundled.blends.neededBytes)
 }
 
 /** Character voices (plan item 63): other speakers of the narrator's model, never the quote or heading voice. */

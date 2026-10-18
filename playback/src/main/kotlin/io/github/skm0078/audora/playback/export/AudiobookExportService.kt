@@ -27,6 +27,7 @@ import io.github.skm0078.audora.playback.voice.RenderBook
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
+import io.github.skm0078.audora.playback.voice.narratorBlend
 import javax.inject.Inject
 import kotlinx.coroutines.runBlocking
 
@@ -137,7 +138,13 @@ class AudiobookExportService : Service() {
         AudoraLog.i(TAG, "Export started, $logContext, pages=${book.text.pageCount}, chapters=${chapters.size}")
         val shownFolder = folder.trimEnd('/')
         val style = SpeechStyleStore.forContext(this)
-        val voices = SpeechVoices(VoiceEngines(this) { style.current.shaping.expressiveness })
+        lateinit var voices: SpeechVoices
+        // The narrator blend (plan item 75) as playback uses it; BlendCache keeps the two from building it at once.
+        voices = SpeechVoices(
+            VoiceEngines(this, blend = { voices.narratorBlend(style.current.shaping) }) {
+                style.current.shaping.expressiveness
+            },
+        )
         try {
             val chapterPages = book.text.chapterStarts().toSet()
             val quotes = QuoteCarry()

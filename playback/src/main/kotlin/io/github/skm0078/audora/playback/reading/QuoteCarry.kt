@@ -17,9 +17,11 @@ import java.util.concurrent.ConcurrentHashMap
  * Each page is read whole when it is extracted ([page]), before any of its sentences render, so the renderer can ask
  * about any one sentence ([startsInQuote]) without the sentences around it. A quote is carried only within a
  * paragraph: it ends at a paragraph's end (a pause after the sentence longer than a sentence's, from `:pdf` layout,
- * the same boundary skim uses), at a change of kind, at a heading or table, and at the top of a page, so a stray OCR
- * mark never turns a whole chapter into dialogue. Who speaks each quoted sentence ([speakerOf]) comes from
- * [SpeakerTurns]; the conversation carries over from the page before when that page is still remembered.
+ * the same boundary skim uses), at a change of kind, at a heading or table, and at the top of a page unless the page
+ * goes on with the sentence the page before broke off, so a stray OCR mark never turns a whole chapter into dialogue.
+ * A paragraph that follows one left inside an open quote goes on with that speech (its speaker, [Paragraph]). Who
+ * speaks each quoted sentence ([speakerOf]) comes from [SpeakerTurns]; the conversation carries over from the page
+ * before when that page is still remembered.
  *
  * Thread-safe: the session writes on the main thread, the renderer reads on its worker. Only the last
  * [DialogueConfig.rememberedPages] pages are kept.
@@ -36,15 +38,25 @@ class QuoteCarry(
         SpeakerTurns(SpeakerTags(anyQuote), anyQuote, config.rememberedSpeakers)
     }
 
-    private class PageQuotes(val opened: Set<Int>, val speakers: Map<Int, Speaker>, val end: Turns)
+    private class PageQuotes(
+        val opened: Set<Int>,
+        val speakers: Map<Int, Speaker>,
+        val end: Turns,
+        val endsOpen: Boolean,
+    )
 
-    /** One extracted page's units, in reading order. */
-    fun page(units: List<ReadingUnit>) {
+    /**
+     * One extracted page's units, in reading order. [continuesPreviousPage]: the page opens inside the sentence the
+     * page before broke off (`PageReading.continuesPreviousPage`), so a quote open there is open here too.
+     */
+    fun page(units: List<ReadingUnit>, continuesPreviousPage: Boolean = false) {
         val page = units.firstOrNull()?.page ?: return
-        val paragraphs = paragraphs(units)
-        val spoken = turns.page(paragraphs, pages[page - 1]?.end ?: Turns())
-        val opened = paragraphs.flatten().filter { it.carried }.mapTo(HashSet()) { UnitKey.of(it.unit).index }
-        pages[page] = PageQuotes(opened, spoken.speakers, spoken.end)
+        val before = pages[page - 1]
+        val (paragraphs, endsOpen) = paragraphs(units, before?.endsOpen == true, continuesPreviousPage)
+        val spoken = turns.page(paragraphs, before?.end ?: Turns())
+        val opened = paragraphs.flatMap { it.sentences }.filter { it.carried }
+            .mapTo(HashSet()) { UnitKey.of(it.unit).index }
+        pages[page] = PageQuotes(opened, spoken.speakers, spoken.end, endsOpen)
         synchronized(order) {
             order.remove(page)
             order.addLast(page)
@@ -65,19 +77,26 @@ class QuoteCarry(
         }
     }
 
-    /** The page's paragraphs, each sentence marked with whether it starts inside an earlier sentence's quote. */
-    private fun paragraphs(units: List<ReadingUnit>): List<List<Sentence>> {
-        val paragraphs = mutableListOf<MutableList<Sentence>>()
-        var open = false
+    /**
+     * The page's paragraphs, each sentence marked with whether it starts inside an earlier sentence's quote, and
+     * whether the page ends inside one. [openBefore]: the page before ended inside a quote; [continuesSentence]: this
+     * page goes on with that page's last sentence (so with its paragraph).
+     */
+    private fun paragraphs(
+        units: List<ReadingUnit>,
+        openBefore: Boolean,
+        continuesSentence: Boolean,
+    ): Pair<List<Paragraph>, Boolean> {
+        val paragraphs = mutableListOf<Pair<MutableList<Sentence>, Boolean>>()
+        var open = openBefore
         units.forEachIndexed { i, unit ->
             val previous = units.getOrNull(i - 1)
-            val same = previous != null && sameParagraph(previous, unit)
-            val carried = open && same
-            if (!same) paragraphs.add(mutableListOf())
-            paragraphs.last().add(Sentence(unit, carried))
-            open = unit.kind in PROSE && splitter.endsInQuote(unit.text, carried)
+            val same = if (previous == null) continuesSentence else sameParagraph(previous, unit)
+            if (!same || paragraphs.isEmpty()) paragraphs.add(mutableListOf<Sentence>() to (open && !same))
+            paragraphs.last().first.add(Sentence(unit, open && same))
+            open = unit.kind in PROSE && splitter.endsInQuote(unit.text, open && same)
         }
-        return paragraphs
+        return paragraphs.map { (sentences, speech) -> Paragraph(sentences, speech) } to open
     }
 
     private fun sameParagraph(previous: ReadingUnit, unit: ReadingUnit): Boolean =

@@ -15,17 +15,21 @@ package io.github.skm0078.audora.core.config
  * @property systemConnectTimeoutMs how long to wait for the phone's TTS engine to bind and initialise.
  * @property systemChunkTimeoutMs how long one `synthesizeToFile` call may take before it counts as hung. Generous:
  *   a chunk can be up to `getMaxSpeechInputLength()` (4000) characters on a slow engine.
+ * @property blendHeadroomBytes free space a narrator blend's copy (plan item 75, ~28 MB) must leave on top of its
+ *   own size, so the copy never fills the phone.
  */
 data class SpeechConfig(
     val sherpaThreads: Int = 2,
     val maxLoadedVoices: Int = 3,
     val systemConnectTimeoutMs: Long = 15_000,
     val systemChunkTimeoutMs: Long = 120_000,
+    val blendHeadroomBytes: Long = 67_108_864, // 64 MB
 ) {
     init {
         require(sherpaThreads > 0) { "sherpaThreads must be > 0, was $sherpaThreads" }
         require(maxLoadedVoices >= 1) { "maxLoadedVoices must be >= 1, was $maxLoadedVoices" }
         require(systemConnectTimeoutMs > 0) { "systemConnectTimeoutMs must be > 0, was $systemConnectTimeoutMs" }
         require(systemChunkTimeoutMs > 0) { "systemChunkTimeoutMs must be > 0, was $systemChunkTimeoutMs" }
+        require(blendHeadroomBytes >= 0) { "blendHeadroomBytes must be >= 0, was $blendHeadroomBytes" }
     }
 }
