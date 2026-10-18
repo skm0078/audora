@@ -7,5 +7,5 @@
     <string name="speech_blend_off">बंद</string>
     <string name="speech_blend_amount">मिलाया गया: %1$d%%</string>
     <string name="speech_blend_needs_space">लागू नहीं हुआ: मिश्रण के लिए %1$d MB खाली जगह चाहिए। जगह होने तक नैरेटर इंस्टॉल की गई आवाज़ में पढ़ेगा।</string>
-    <string name="speech_blend_refused">लागू नहीं हुआ: यह आवाज़ मिश्रण के साथ लोड नहीं हुई, इसलिए इंस्टॉल की गई आवाज़ में पढ़ती है।</string>
+    <string name="speech_blend_refused">लागू नहीं हुआ: यह आवाज़ मिश्रण के साथ लोड नहीं हुई, इसलिए बिना मिश्रण के पढ़ी जा रही है।</string>
 </resources>
