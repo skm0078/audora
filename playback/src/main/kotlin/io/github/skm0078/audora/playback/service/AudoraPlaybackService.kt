@@ -25,7 +25,6 @@ import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.BookmarkStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
-import io.github.skm0078.audora.core.result.getOrNull
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.core.resume.ResumeRecorder
