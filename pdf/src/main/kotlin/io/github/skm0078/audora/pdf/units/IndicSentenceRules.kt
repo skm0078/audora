@@ -99,12 +99,14 @@ internal class IndicSentenceRules(config: SentenceConfig) {
      * capital only after nothing, a full stop or comma ("Dr. A.", "J. A.", "Smith, J."), or a name ("Abbott B."), or
      * before another initial ("by S. K. Mukherjee"), so "says I.", "matrix Q.", "size N." and "Appendix A."
      * ([SentenceConfig.letterLabels]) still end a sentence. A lone initial after a small word before a surname
-     * ("with K. Rao") still splits: it reads like "matrix Q. The".
+     * ("with K. Rao") still splits: it reads like "matrix Q. The". So does the last author's initial in a list that
+     * writes initials without stops ("West J, Lundberg P. Rapid imaging"): there the stop ends the list.
      */
     private fun isInitial(text: String, start: Int, word: String): Boolean {
         if (!LATIN_INITIALS.matches(word) || word == "I") return false
         val before = wordBefore(text, start)
-        return word.length > 1 || before == null || before.last() in ".," || isName(before) ||
+        val name = before != null && isName(before) && !followsUndottedAuthor(text, start, before)
+        return word.length > 1 || before == null || before.last() in ".," || name ||
             initialFollows(text, start + word.length + 1)
     }
 
@@ -172,6 +174,20 @@ internal class IndicSentenceRules(config: SentenceConfig) {
             var i = from
             while (i < text.length && !text[i].isWhitespace()) i++
             return i
+        }
+
+        /** An author written with initials without stops, then a comma: "West J, ", "Persson AB, ". */
+        val UNDOTTED_AUTHOR = Regex("""\p{Lu}[\p{L}'’-]+ \p{Lu}{1,4},\s*$""")
+
+        /** How far before a name [followsUndottedAuthor] looks for the author before it. */
+        const val AUTHOR_LOOKBACK = 40
+
+        /** The name [name] that ends before [start] (and its spaces) comes after an [UNDOTTED_AUTHOR]. */
+        fun followsUndottedAuthor(text: String, start: Int, name: String): Boolean {
+            var stop = start
+            while (stop > 0 && text[stop - 1].isWhitespace()) stop--
+            val from = stop - name.length
+            return UNDOTTED_AUTHOR.containsMatchIn(text.substring(maxOf(0, from - AUTHOR_LOOKBACK), maxOf(0, from)))
         }
 
         /** The word after the spaces at [from] is capital initials ([NEXT_INITIALS]). */

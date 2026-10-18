@@ -125,6 +125,12 @@ class IndicSentenceSplitterTest {
             ),
             // A lone initial after a small word reads like a variable ending a sentence, so it still splits.
             Case("lone initial after a small word", Lang.EN, listOf("Work with K. ", "Rao agreed.")),
+            // Initials written without stops: the last author's stop ends the list, before the title.
+            Case(
+                "Vancouver authors",
+                Lang.EN,
+                listOf("Warntjes JB, Leinhard OD, West J, Lundberg P. ", "Rapid magnetic resonance imaging."),
+            ),
         ),
     )
 
