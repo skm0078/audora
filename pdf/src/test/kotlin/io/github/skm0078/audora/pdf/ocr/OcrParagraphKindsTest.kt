@@ -102,6 +102,22 @@ class OcrParagraphKindsTest {
     }
 
     @Test
+    fun `a paragraph split off after a note opens an item only after the labels before it`() {
+        val texts = listOf(
+            "Note: keep the pots in the shade on the days when the sun is hot",
+            "and water them daily.",
+            "b. 12 pots stand in the yard near the old wall.",
+            "a. Rice grows in the wet fields.",
+        )
+        val lines = texts.mapIndexed { i, text -> line(text, i, 0) }
+        val units = builder.build(builder.ocrReadingText(PAGE, OcrText(lines)) { transform.toPage(it) })
+        // "a." comes later in the list: "b." after the note has no letter before it, so it is prose.
+        assertEquals(UnitKind.ASIDE, units.first().kind)
+        assertEquals(listOf(UnitKind.BODY), units.filter { "pots stand" in it.text }.map { it.kind })
+        assertEquals(UnitKind.LIST_ITEM, units.last().kind)
+    }
+
+    @Test
     fun `a heading at the top of a paragraph is split from the body text under it`() {
         val lines = listOf(line("How plants feed", 0, 0, LARGE)) + body.mapIndexed { i, text -> line(text, i + 1, 0) }
         val units = builder.build(builder.ocrReadingText(PAGE, OcrText(lines)) { transform.toPage(it) })

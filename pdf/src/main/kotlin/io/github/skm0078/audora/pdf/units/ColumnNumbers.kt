@@ -6,10 +6,11 @@ package io.github.skm0078.audora.pdf.units
 import io.github.skm0078.audora.core.model.ReadingUnit
 
 /**
- * [first] numbers its columns: its numbers count on one per column, from 0 or 1, across the row ("1 | 2 | 3 | 4",
- * "Item | 1 | 2 | 3", "Name | Class | 1 | 2 | 3", "(1) | (2) | (3)"), in at least [MIN_COUNTED_COLUMNS] columns,
- * and its other cells are words. A grid numbered on row by row ("1 | 2 | 3 | 4" over "5 | 6 | 7 | 8") is data: the
- * first of [rows] carries the count on. Small counts ("Ram | 1 | 2", "Ram | 0 | 1") are data too.
+ * [first] numbers its columns: its numbers count on one per column across the row, from 1, or from 0 in the first
+ * column ("1 | 2 | 3 | 4", "Item | 1 | 2 | 3", "Name | Class | 1 | 2 | 3", "(1) | (2) | (3)", "0 | 1 | 2"), in at
+ * least [MIN_COUNTED_COLUMNS] columns, and its other cells are words ("Ram | 0 | 1 | 2" is data). A grid numbered
+ * on row by row ("1 | 2 | 3 | 4" over "5 | 6 | 7 | 8") is data: the first of [rows] carries the count on. Small
+ * counts ("Ram | 1 | 2", "Ram | 0 | 1") are data too.
  */
 internal fun countsColumns(first: ReadingUnit, rows: List<ReadingUnit>): Boolean {
     val texts = cellsOf(first)
@@ -17,7 +18,7 @@ internal fun countsColumns(first: ReadingUnit, rows: List<ReadingUnit>): Boolean
     val numbers = texts.indices.filter { texts[it].any(Char::isDigit) }
     val values = numbers.map { cells[it] }
     val offsets = numbers.map { column -> cells[column]?.minus(column) }
-    val counted = numbers.size >= MIN_COUNTED_COLUMNS && (values.first() == 0L || values.first() == 1L) &&
+    val counted = numbers.size >= MIN_COUNTED_COLUMNS && (values.first() == 1L || offsets.first() == 0L) &&
         offsets.all { it != null && it == offsets.first() }
     val next = rows.firstOrNull()?.let(::cellsOf)?.map(::columnNumber)
     val countsOn = { column: Int -> next?.getOrNull(column) == requireNotNull(cells[column]) + cells.size }

@@ -117,18 +117,27 @@ class IndicSentenceRulesTest {
             Case(
                 "dotted abbreviation",
                 "यह रा.शै.अ.प्र.प. की पुस्तक है। ठीक।",
-                listOf("रा.", "शै.", "अ.", "प्र.", "है। "),
+                listOf("रा.", "शै.", "अ.", "प्र.", "प. ", "है। "),
                 listOf("है। "),
             ),
             Case("lost space", "यह है.अगला वाक्य।", listOf("है."), emptyList()),
             Case(
                 "abbreviation glued to initials",
                 "डॉ.ए.पी.जे. अब्दुल कलाम और श्री.डी.वी. आए। ठीक।",
-                listOf("डॉ.ए.", "पी.", "जे. ", "श्री.डी.", "आए। "),
+                listOf("डॉ.", "ए.", "पी.", "जे. ", "श्री.", "डी.", "वी. ", "आए। "),
                 listOf("आए। "),
             ),
-            Case("PhD", "वह पीएच.डी. छात्र है। ठीक।", listOf("पीएच.", "है। "), listOf("है। ")),
-            Case("joiner inside", "दूरी ५ कि.\u200Dमी. है। ठीक।", listOf("कि.", "है। "), listOf("है। ")),
+            Case("PhD", "वह पीएच.डी. छात्र है। ठीक।", listOf("पीएच.", "डी. ", "है। "), listOf("है। ")),
+            // ICU breaks after a joiner that follows the stop, not before it.
+            Case("joiner inside", "दूरी ५ कि.\u200Dमी. है। ठीक।", listOf("कि.\u200D", "मी. ", "है। "), listOf("है। ")),
+            Case(
+                "non-joiner inside",
+                "दूरी ५ कि.\u200Cमी. है। ठीक।",
+                listOf("कि.\u200C", "मी. ", "है। "),
+                listOf("है। "),
+            ),
+            // A date's stops sit between digits, so its last stop still ends the sentence.
+            Case("date", "दिनांक १२.०५.२०१९. अगली बैठक।", listOf("२०१९. "), listOf("२०१९. ")),
         )
         for (case in cases) {
             assertEquals(case.name, after(case.text, case.kept), rules.refine(case.text, after(case.text, case.icu)))
