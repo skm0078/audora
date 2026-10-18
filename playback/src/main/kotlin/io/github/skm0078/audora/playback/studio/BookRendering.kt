@@ -72,11 +72,9 @@ class BookRendering private constructor(
         ): BookRendering {
             val own = settings.get(id)
             val fixer = PronunciationFixer(pronunciations.observe(id).first())
-            voices.bookVoice = { lang -> own?.voices?.get(lang) }
+            voices.bookVoice = BookSound.voices(own)
             val styleStore = SpeechStyleStore.forContext(context)
-            val global = styleStore.current
-            val heard = own?.over(global) ?: global
-            val style = if (normalRate) heard.copy(rate = SpeechStyle.NORMAL_RATE) else heard
+            val style = BookSound.style(own, styleStore.current, normalRate)
             val chapterPages = text.chapterStarts().toSet()
             val timings = SentenceTimings()
             // As AudoraPlaybackService builds it, so studio audio is the audio playback would render.

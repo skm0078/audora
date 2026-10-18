@@ -15,19 +15,16 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
-import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.notes.BookSettingsStore
+import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
-import io.github.skm0078.audora.playback.reading.UnitReading
-import io.github.skm0078.audora.playback.voice.EngineRenderer
-import io.github.skm0078.audora.playback.voice.ReadingSetup
+import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
-import io.github.skm0078.audora.speech.punct.PunctuationModels
-import io.github.skm0078.audora.speech.punct.RunOnPunctuation
 import javax.inject.Inject
 import kotlinx.coroutines.runBlocking
 
@@ -46,6 +43,12 @@ import kotlinx.coroutines.runBlocking
 class AudiobookExportService : Service() {
     @Inject
     lateinit var library: Library
+
+    @Inject
+    lateinit var bookSettings: BookSettingsStore
+
+    @Inject
+    lateinit var pronunciations: PronunciationStore
 
     private val config = AudiobookConfig()
     private lateinit var notifications: ExportNotifications
@@ -140,21 +143,12 @@ class AudiobookExportService : Service() {
         val style = SpeechStyleStore.forContext(this)
         val voices = SpeechVoices(VoiceEngines(this) { style.current.shaping.expressiveness })
         try {
-            val chapterPages = book.text.chapterStarts().toSet()
-            val renderer = EngineRenderer(
-                voices,
-                style = { style.current.copy(rate = SpeechStyle.NORMAL_RATE) },
-                styleConfig = style.config,
-                reading = ReadingSetup(
-                    chapterPages = { chapterPages },
-                    scanned = book.text::isScanned,
-                    runOn = RunOnPunctuation(punctuator = PunctuationModels.get(this)::punctuator),
-                ),
-            )
+            // The book's own voices, pace and pronunciation fixes, as playback and the talking book read it.
+            val factory = BookRendering.Factory(this, bookSettings, pronunciations)
+            val rendering = runBlocking { factory.prepare(book.book.id, book.text, voices, normalRate = true) }
             val sink = AacAudioSink(MediaStoreChapterFiles(contentResolver, folder), chapters.size, config)
             val listener = ProgressListener(title, chapters)
-            val exporter =
-                AudiobookExporter(renderer, config, UnitReading(style.current.modes, chapterPages = chapterPages))
+            val exporter = AudiobookExporter(rendering.live, config, rendering.reading)
             when (val result = exporter.export(book.text, chapters, sink, listener, logContext)) {
                 is Outcome.Success -> notifications.showDone(title, result.value, shownFolder)
                 is Outcome.Failure -> notifications.showFailed(title, result.error.message)
