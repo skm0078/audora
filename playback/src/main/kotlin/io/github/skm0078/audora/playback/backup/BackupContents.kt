@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.playback.backup
 
+import io.github.skm0078.audora.core.quiz.QuizProgressStore
 import java.io.File
 
 /**
@@ -61,6 +62,7 @@ data class BackupContents(val files: List<String>, val folders: List<String>) {
                 "files/sleep-options.txt",
                 "files/watched-folders.txt",
                 "files/focus-sound.txt",
+                "files/${QuizProgressStore.FILE_NAME}",
                 "files/datastore/reader.preferences_pb",
                 "files/datastore/reading_look.preferences_pb",
                 "files/datastore/appearance.preferences_pb",

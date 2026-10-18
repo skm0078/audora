@@ -105,6 +105,7 @@ import io.github.skm0078.audora.ui.licences.LicencesController
 import io.github.skm0078.audora.ui.licences.LicencesScreen
 import io.github.skm0078.audora.ui.notes.NotesScreen
 import io.github.skm0078.audora.ui.notes.bookNotes
+import io.github.skm0078.audora.ui.quiz.QuizRoute
 import io.github.skm0078.audora.ui.reader.BookNotesModel
 import io.github.skm0078.audora.ui.reader.DocumentState
 import io.github.skm0078.audora.ui.reader.KeepScreenOn
@@ -611,6 +612,7 @@ class MainActivity : ComponentActivity() {
         }
         var watchedOpen by rememberSaveable { mutableStateOf(false) }
         var backupOpen by rememberSaveable { mutableStateOf(false) }
+        var quizOpen by rememberSaveable { mutableStateOf(false) }
         val actions = remember(controller) {
             object : LibraryActions {
                 override fun onAddPdf(documentUri: Uri) = controller.add(documentUri.toString())
@@ -657,6 +659,7 @@ class MainActivity : ComponentActivity() {
                     LibraryAction.POINT_AND_READ -> pointAndRead(takePhoto)
                     LibraryAction.WATCHED_FOLDERS -> watchedOpen = true
                     LibraryAction.BACKUP -> backupOpen = true
+                    LibraryAction.QUIZ -> quizOpen = true
                 }
             }
         }
@@ -674,6 +677,7 @@ class MainActivity : ComponentActivity() {
         )
         WatchedFoldersRoute(watchedFolders, open = watchedOpen) { watchedOpen = false }
         BackupRoute(backups, open = backupOpen, onClose = { backupOpen = false }, onRestart = ::restartForRestore)
+        QuizRoute(highlightStore, open = quizOpen) { quizOpen = false }
     }
 
     @Composable

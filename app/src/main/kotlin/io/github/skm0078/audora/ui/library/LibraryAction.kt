@@ -16,4 +16,7 @@ enum class LibraryAction(@StringRes val label: Int) {
 
     /** Saves one backup file, or restores one on a new phone (plan item 28, ADR-046). */
     BACKUP(R.string.library_backup),
+
+    /** Fill-in-the-blank questions from every book's highlights, read aloud (plan item 70, ADR-048). */
+    QUIZ(R.string.library_quiz),
 }
