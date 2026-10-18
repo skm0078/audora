@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.playback.backup
 
+import io.github.skm0078.audora.core.guide.CharacterGuideStore
 import io.github.skm0078.audora.core.quiz.QuizProgressStore
 import java.io.File
 
@@ -68,8 +69,14 @@ data class BackupContents(val files: List<String>, val folders: List<String>) {
                 "files/datastore/appearance.preferences_pb",
                 "no_backup/voices/managed/voice-speeds.properties",
             ),
-            // characters/: per-book character names for character voices (item 63), the listener's own content.
-            folders = listOf("files/voice-notes", "files/shared-pdfs", "files/characters"),
+            // characters/: per-book character names for character voices (item 63); character-guide/: the listener's
+            // own who's-who lists (item 80).
+            folders = listOf(
+                "files/voice-notes",
+                "files/shared-pdfs",
+                "files/characters",
+                "files/${CharacterGuideStore.FOLDER_NAME}",
+            ),
         )
     }
 }

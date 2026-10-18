@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Character guide: the listener's own spoiler-free list of who is who (plan item 80). -->
+<resources>
+    <string name="library_character_guide">Character guide</string>
+    <string name="guide_title">Who\'s who: %1$s</string>
+    <string name="guide_empty">No characters yet up to where you are. Add each person as you meet them; they only show from the page you meet them on, so the list never gives away who comes next.</string>
+    <plurals name="guide_later">
+        <item quantity="one">1 more later in the book (hidden until you get there)</item>
+        <item quantity="other">%d more later in the book (hidden until you get there)</item>
+    </plurals>
+    <string name="guide_met_on">Met on page %1$d</string>
+    <string name="guide_add">Add a character</string>
+    <string name="guide_edit">Edit character</string>
+    <string name="guide_name">Name</string>
+    <string name="guide_note">Who they are (optional)</string>
+    <string name="guide_page">Met on page</string>
+    <string name="guide_delete">Delete</string>
+    <string name="guide_save">Save</string>
+    <string name="guide_cancel">Cancel</string>
+    <string name="guide_close">Close</string>
+</resources>

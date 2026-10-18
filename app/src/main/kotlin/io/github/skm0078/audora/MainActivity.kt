@@ -88,6 +88,7 @@ import io.github.skm0078.audora.ui.battery.BatterySetupController
 import io.github.skm0078.audora.ui.battery.BatterySetupScreen
 import io.github.skm0078.audora.ui.diagnostics.DiagnosticsController
 import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
+import io.github.skm0078.audora.ui.guide.CharacterGuideRoute
 import io.github.skm0078.audora.ui.library.BackupRoute
 import io.github.skm0078.audora.ui.library.BookAction
 import io.github.skm0078.audora.ui.library.BookCovers
@@ -613,6 +614,7 @@ class MainActivity : ComponentActivity() {
         var watchedOpen by rememberSaveable { mutableStateOf(false) }
         var backupOpen by rememberSaveable { mutableStateOf(false) }
         var quizOpen by rememberSaveable { mutableStateOf(false) }
+        var guideBook by remember { mutableStateOf<Book?>(null) }
         val actions = remember(controller) {
             object : LibraryActions {
                 override fun onAddPdf(documentUri: Uri) = controller.add(documentUri.toString())
@@ -653,6 +655,8 @@ class MainActivity : ComponentActivity() {
                         playWithPermission { BookCopies.start(context, book.id, CopyKind.TALKING_BOOK) }
 
                     BookAction.EXPORT_NOTES -> exportNotes(book)
+
+                    BookAction.CHARACTER_GUIDE -> guideBook = book
                 }
 
                 override fun onLibraryAction(action: LibraryAction) = when (action) {
@@ -678,6 +682,7 @@ class MainActivity : ComponentActivity() {
         WatchedFoldersRoute(watchedFolders, open = watchedOpen) { watchedOpen = false }
         BackupRoute(backups, open = backupOpen, onClose = { backupOpen = false }, onRestart = ::restartForRestore)
         QuizRoute(highlightStore, open = quizOpen) { quizOpen = false }
+        CharacterGuideRoute(guideBook, resumeAnchors) { guideBook = null }
     }
 
     @Composable

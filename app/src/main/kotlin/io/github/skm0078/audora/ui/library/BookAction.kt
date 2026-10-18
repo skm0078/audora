@@ -19,4 +19,7 @@ enum class BookAction(@StringRes val label: Int) {
 
     /** The book's highlights, bookmarks and voice notes as Markdown and text (plan item 30). */
     EXPORT_NOTES(R.string.library_export_notes),
+
+    /** The listener's own list of who is who, shown up to where they are (plan item 80). */
+    CHARACTER_GUIDE(R.string.library_character_guide),
 }
