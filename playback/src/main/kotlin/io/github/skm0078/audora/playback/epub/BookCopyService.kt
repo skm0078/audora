@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.playback.epub
 
 import android.app.Notification
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -20,8 +21,10 @@ import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.R
+import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
+import io.github.skm0078.audora.playback.export.JobSlots
 import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.studio.StudioMode
 import io.github.skm0078.audora.playback.voice.SpeechVoices
@@ -51,8 +54,13 @@ class BookCopyService : Service() {
     private val config = EpubConfig()
     private lateinit var notifications: CopyNotifications
 
+    /** This instance started the running job ([JobSlots.COPY]); a refused or finished start lets it stop. */
     @Volatile
-    private var worker: Thread? = null
+    private var mine = false
+
+    /** Set once Android's time limit stopped the service: progress must not re-post the removed notification. */
+    @Volatile
+    private var stopping = false
 
     /** Set before the time limit interrupts the worker, so the stop is reported as that, not as Cancel. */
     @Volatile
@@ -76,11 +84,11 @@ class BookCopyService : Service() {
                 intent.getStringExtra(BookCopies.EXTRA_KIND)?.let { name -> CopyKind.entries.find { it.name == name } },
             )
 
-            BookCopies.ACTION_CANCEL -> worker?.interrupt()
+            BookCopies.ACTION_CANCEL -> JobSlots.COPY.interrupt()
 
             else -> AudoraLog.w(TAG, "Unknown command ${intent?.action}")
         }
-        if (worker == null) stopSelf(startId)
+        if (!mine) stopSelf(startId)
         // Never restarted by the system: a copy starts only from a user action (C7).
         return START_NOT_STICKY
     }
@@ -89,7 +97,8 @@ class BookCopyService : Service() {
     override fun onTimeout(startId: Int, fgsType: Int) {
         AudoraLog.w(TAG, "Android's time limit for long jobs reached; stopping the copy")
         timedOut = true
-        worker?.interrupt()
+        stopping = true
+        JobSlots.COPY.interrupt()
         // Android throws if the service is still in the foreground a few seconds after this; the worker may be
         // inside a long native call, so stop now and let it finish its notice on its own thread.
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -97,24 +106,29 @@ class BookCopyService : Service() {
     }
 
     override fun onDestroy() {
-        worker?.interrupt()
+        JobSlots.COPY.interrupt()
         super.onDestroy()
     }
 
     private fun start(id: BookId?, kind: CopyKind?) {
         // Foreground first, always: Android requires it within seconds of startForegroundService.
         val preparing = getString(R.string.copy_preparing)
-        val notice =
-            lastRunning?.takeIf { worker != null } ?: notifications.running(preparing, preparing, percent = null)
+        val notice = lastRunning?.takeIf { mine } ?: notifications.running(preparing, preparing, percent = null)
         startForeground(CopyNotifications.RUNNING_ID, notice, foregroundType())
         when {
             id == null || kind == null -> AudoraLog.w(TAG, "Copy request without a book or kind")
 
-            worker != null -> notifications.showResult(preparing, getString(R.string.copy_busy))
+            // The restart that applies a restore would cut the copy off.
+            Backups.restoreUnderWay -> notifications.showResult(preparing, getString(R.string.long_job_restoring))
 
             else -> {
                 timedOut = false
-                worker = Thread({ runCopy(id, kind) }, THREAD_NAME).apply { start() }
+                // Set first: the job may end (and clear it) before launch returns.
+                mine = true
+                if (!JobSlots.COPY.launch(THREAD_NAME) { runCopy(id, kind) }) {
+                    mine = false
+                    notifications.showResult(preparing, getString(R.string.copy_busy))
+                }
             }
         }
     }
@@ -146,8 +160,10 @@ class BookCopyService : Service() {
         } finally {
             if (wakeLock.isHeld) wakeLock.release()
             lastRunning = null
-            worker = null
+            mine = false
             stopForeground(STOP_FOREGROUND_REMOVE)
+            // A late progress update may have re-posted it after the service left the foreground.
+            getSystemService(NotificationManager::class.java)?.cancel(CopyNotifications.RUNNING_ID)
             stopSelf()
         }
     }
@@ -161,7 +177,7 @@ class BookCopyService : Service() {
             keepAwake()
             val running = notifications.running(heading, step, percent)
             lastRunning = running
-            notifications.showRunning(running)
+            if (!stopping) notifications.showRunning(running)
         }
         val result = when (kind) {
             CopyKind.ACCESSIBLE -> job.accessibleCopy()

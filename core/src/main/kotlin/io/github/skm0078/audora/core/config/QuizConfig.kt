@@ -11,6 +11,7 @@ package io.github.skm0078.audora.core.config
  * @property intervalsMs how long after a right answer a card comes back, by how many times in a row it was right;
  *   the last interval repeats.
  * @property retryMs how long after a wrong answer a card comes back.
+ * @property speakerIdleMs the quiz's own copy of the voices is freed after this long without a line.
  */
 data class QuizConfig(
     val minWordChars: Int = 4,
@@ -19,6 +20,7 @@ data class QuizConfig(
     val sessionCards: Int = 10,
     val intervalsMs: List<Long> = DEFAULT_INTERVAL_DAYS.map { it * MS_PER_DAY },
     val retryMs: Long = 600_000L, // 10 minutes
+    val speakerIdleMs: Long = 60_000L,
 ) {
     init {
         require(minWordChars > 0) { "minWordChars must be > 0, was $minWordChars" }
@@ -27,6 +29,7 @@ data class QuizConfig(
         require(sessionCards > 0) { "sessionCards must be > 0, was $sessionCards" }
         require(intervalsMs.isNotEmpty() && intervalsMs.all { it > 0 }) { "intervalsMs must be positive, non-empty" }
         require(retryMs >= 0) { "retryMs must be >= 0, was $retryMs" }
+        require(speakerIdleMs >= 0) { "speakerIdleMs must be >= 0, was $speakerIdleMs" }
     }
 }
 

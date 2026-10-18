@@ -77,6 +77,10 @@ def key_of(word: str) -> str:
     return unicodedata.normalize("NFKC", clean(word)).translate(INVISIBLE).lower()
 
 
+class SourceChanged(Exception):
+    """A pinned source no longer matches its sha256: kaikki.org regenerates its files under the same name."""
+
+
 def fetch(url: str, sha256: str | None, cache: Path) -> Path:
     """Downloads [url] once into [cache]; with no [sha256] (a measuring run) it is fetched fresh and not checked."""
     cache.mkdir(parents=True, exist_ok=True)
@@ -92,7 +96,7 @@ def fetch(url: str, sha256: str | None, cache: Path) -> Path:
     actual = sha256_of(target)
     if sha256 is not None and actual != sha256:
         target.unlink()
-        raise SystemExit(f"{url}: sha256 {actual} does not match the pin {sha256}")
+        raise SourceChanged(f"{url}: sha256 {actual} does not match the pin {sha256}")
     return target
 
 
@@ -267,6 +271,17 @@ def is_published(spec: dict, prefix: str, out: Path) -> bool:
     raise SystemExit(f"{spec['id']}: the published {spec['zip']} does not match its pin")
 
 
+def is_moving_source(spec: dict) -> bool:
+    return spec["source"].get("format") == "kaikki"
+
+
+def pin_problems(spec: dict, name: str, sha: str, size: int, unpacked: int) -> list[str]:
+    """The built zip against its pin; the app checks the unpacked text's size before it counts as installed."""
+    built = (name, sha, size, unpacked)
+    pinned = (spec.get("zip"), spec.get("sha256"), spec.get("sizeBytes"), spec.get("unpackedBytes"))
+    return [] if built == pinned else [f"{spec['id']}: built {built}, pinned {pinned}"]
+
+
 def text_lines(built: Path, name: str) -> int:
     with zipfile.ZipFile(built) as archive:
         return archive.read(name).count(b"\n")
@@ -289,16 +304,24 @@ def main(argv: list[str]) -> int:
         if args.published and not spec.get("measure") and is_published(spec, args.published, args.out):
             print(f"{spec['id']}: {spec['zip']} already published with its pin; not rebuilt")
             continue
-        built = build(spec, args.cache, args.out)
+        try:
+            built = build(spec, args.cache, args.out)
+        except SourceChanged as changed:
+            if is_moving_source(spec) and os.environ.get("GITHUB_REF") != PUBLISHING_REF:
+                # Off dev nothing is published, so a snapshot kaikki.org has replaced only means this zip cannot be
+                # rebuilt here; dev, which publishes, still fails on it.
+                print(f"warning: {spec['id']}: {changed}; not rebuilt (re-measure it before dev)", file=sys.stderr)
+            else:
+                problems.append(f"{spec['id']}: {changed}")
+            continue
         sha, size = sha256_of(built), built.stat().st_size
+        with zipfile.ZipFile(built) as archive:
+            unpacked = archive.getinfo(spec["file"]).file_size
         if args.print_pin or spec.get("measure"):
-            with zipfile.ZipFile(built) as archive:
-                unpacked = archive.getinfo(spec["file"]).file_size
             print(json.dumps({"id": spec["id"], "zip": built.name, "sha256": sha, "sizeBytes": size,
                               "unpackedBytes": unpacked, "lines": text_lines(built, spec["file"])}))
-        elif (built.name, sha, size) != (spec.get("zip"), spec.get("sha256"), spec.get("sizeBytes")):
-            problems.append(f"{spec['id']}: built {built.name} {sha} {size}, pinned "
-                            f"{spec.get('zip')} {spec.get('sha256')} {spec.get('sizeBytes')}")
+        else:
+            problems.extend(pin_problems(spec, built.name, sha, size, unpacked))
     for problem in problems:
         print(problem, file=sys.stderr)
     return 1 if problems else 0

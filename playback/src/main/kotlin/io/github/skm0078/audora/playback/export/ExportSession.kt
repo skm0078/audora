@@ -23,7 +23,9 @@ interface SavedFiles {
  *
  * Each finished chapter is added to the record at once ([onChapterDone]), so a stop costs only the chapter in progress.
  * Each file is recorded as pending as soon as it is created ([ChapterFiles.recordedIn]); a run that stopped
- * mid-chapter left a hidden partial file, which the next run deletes first.
+ * mid-chapter left a hidden partial file, which the next run deletes first. A partial that could not be deleted stays
+ * pending, so a later run tries again. A chapter whose file was finished but not yet recorded when the run stopped is
+ * still pending too: it is deleted and rendered again, the price of never keeping a file that might be cut short.
  */
 class ExportSession(
     private val records: ExportRecords,
@@ -43,7 +45,7 @@ class ExportSession(
 
     init {
         val saved = records.load(bookId)
-        saved?.let(::dropPartials)
+        val undeleted = saved?.let(::dropPartials).orEmpty()
         val byNumber = chapters.associateBy { it.number }
         val keep = if (saved != null && saved.key == key && !saved.complete) {
             saved.chapters.filter { it.number in byNumber && files.exists(it.location) }
@@ -54,7 +56,7 @@ class ExportSession(
         kept = keep.sortedBy { it.number }.map { ExportedChapter(byNumber.getValue(it.number), it.name, it.durationMs) }
         val keptNumbers = keep.mapTo(HashSet()) { it.number }
         remaining = chapters.filterNot { it.number in keptNumbers }
-        record = ExportRecord(key, keep)
+        record = ExportRecord(key, keep, pending = undeleted)
         records.save(bookId, record)
         if (keep.isNotEmpty()) AudoraLog.i(TAG, "Export goes on: ${keep.size} chapters kept, $logContext")
     }
@@ -80,12 +82,15 @@ class ExportSession(
         return summary.copy(chapters = (kept + summary.chapters).sortedBy { it.chapter.number })
     }
 
-    private fun dropPartials(saved: ExportRecord) {
+    /** Deletes the partial files a stopped run left; returns those that are still there. */
+    private fun dropPartials(saved: ExportRecord): List<String> {
         val partials = saved.pending.filter(files::exists)
-        val failed = partials.count { !files.delete(it) }
+        val failed = partials.filterNot(files::delete)
         if (partials.isNotEmpty()) {
-            AudoraLog.i(TAG, "Partial files of a stopped export: ${partials.size - failed} deleted, $logContext")
+            AudoraLog.i(TAG, "Partial files of a stopped export: ${partials.size - failed.size} deleted, $logContext")
         }
+        if (failed.isNotEmpty()) AudoraLog.w(TAG, "${failed.size} partial files kept for the next run, $logContext")
+        return failed
     }
 
     private fun replace(saved: ExportRecord) {

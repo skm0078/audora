@@ -70,6 +70,8 @@ class Dictionary(
         val redirects = line.split('\t').drop(1).filter { it.startsWith(REDIRECT) }
             .flatMap { it.removePrefix(REDIRECT).split(',') }
             .filter { it.isNotEmpty() && it != key }
+            .distinct()
+            .take(config.maxEntries) // A damaged or huge form line must not turn one tap into hundreds of searches.
         return listOfNotNull(entryOf(line)) + redirects.mapNotNull { headword -> lineOf(headword)?.let(::entryOf) }
     }
 
@@ -118,11 +120,12 @@ object WordKey {
         return trimmed.takeIf { it.isNotEmpty() && it.length <= maxChars }
     }
 
-    private val word = Regex("[\\p{L}\\p{M}][\\p{L}\\p{M}'’-]*")
+    // Joiners stay inside a word: Bengali র‍্যালি and khanda-ta written ত্‍ are one word with a ZWJ in them.
+    private val word = Regex("[\\p{L}\\p{M}][\\p{L}\\p{M}\\u200C\\u200D'’-]*")
 
     /** The words of [text] a listener may want to look up, in order, each once whatever its case. */
     fun wordsOf(text: String): List<String> = word.findAll(text)
-        .map { it.value.trimEnd('\'', '’', '-') }
+        .map { it.value.trimEnd('\'', '’', '-', '\u200C', '\u200D') }
         .distinctBy { it.lowercase() }
         .toList()
 }

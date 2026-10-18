@@ -19,8 +19,20 @@ import java.io.File
  *
  * @property files single files.
  * @property folders folders taken whole, every file below them.
+ * @property renamed earlier names of files and folders, by the name they have now: a backup from an older app restores
+ *   them under the new name. A rename of a listed path adds its old name here.
  */
-data class BackupContents(val files: List<String>, val folders: List<String>) {
+data class BackupContents(
+    val files: List<String>,
+    val folders: List<String>,
+    val renamed: Map<String, String> = emptyMap(),
+) {
+    /** [path] under its current name: an earlier file name, or a path below an earlier folder name, is renamed. */
+    fun current(path: String): String {
+        val folder = renamed.keys.firstOrNull { path.startsWith("$it/") }
+        return renamed[path] ?: folder?.let { renamed.getValue(it) + path.removePrefix(it) } ?: path
+    }
+
     /** True if [path] (an entry name) is one of [files] or lies below one of [folders], with no `.` or `..` part. */
     fun allows(path: String): Boolean {
         val parts = path.split('/')

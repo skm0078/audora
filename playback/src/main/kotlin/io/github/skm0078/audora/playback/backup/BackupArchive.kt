@@ -8,6 +8,7 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -18,21 +19,24 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 /**
- * The first entry of every backup: which format and database version wrote it, and [units], the allow-list of the
+ * The first entry of every backup: which format and database version wrote it, [units], the allow-list of the
  * app that wrote it ([BackupContents.units]; null if not recorded), so a restore can tell a file the writer had not
- * got (reset) from one it did not know about (kept).
+ * got (reset) from one it did not know about (kept), and [bytes], what its entries unpack to (null if not recorded),
+ * so a restore that would not fit is refused before anything is unpacked.
  */
 data class BackupManifest(
     val format: Int,
     val databaseVersion: Int,
     val createdAtMs: Long,
     val units: List<String>? = null,
+    val bytes: Long? = null,
 ) {
     fun encode(): ByteArray = Properties().apply {
         setProperty(FORMAT, format.toString())
         setProperty(DATABASE_VERSION, databaseVersion.toString())
         setProperty(CREATED_AT, createdAtMs.toString())
         units?.let { setProperty(UNITS, it.joinToString(UNIT_SEPARATOR)) }
+        bytes?.let { setProperty(BYTES, it.toString()) }
     }.let { properties ->
         ByteArrayOutputStream().also { properties.store(it, null) }.toByteArray()
     }
@@ -45,6 +49,7 @@ data class BackupManifest(
         private const val DATABASE_VERSION = "databaseVersion"
         private const val CREATED_AT = "createdAtMs"
         private const val UNITS = "units"
+        private const val BYTES = "bytes"
         private const val UNIT_SEPARATOR = ","
 
         /** Null unless all three numeric fields are there and numeric; throws IllegalArgumentException if malformed. */
@@ -55,7 +60,7 @@ data class BackupManifest(
             val created = properties.getProperty(CREATED_AT)?.toLongOrNull()
             return if (format != null && version != null && created != null) {
                 val units = properties.getProperty(UNITS)?.split(UNIT_SEPARATOR)?.filter { it.isNotEmpty() }
-                BackupManifest(format, version, created, units)
+                BackupManifest(format, version, created, units, properties.getProperty(BYTES)?.toLongOrNull())
             } else {
                 null
             }
@@ -80,6 +85,9 @@ enum class BackupError {
     /** An export, copy, clip or studio run is going; restoring would restart the app under it. */
     BUSY,
 
+    /** An earlier restore failed and is still being undone at each start; nothing new can be restored meanwhile. */
+    UNFINISHED,
+
     /** Reading or writing failed (the file went away, storage full, a damaged zip). */
     IO_FAILED,
 }
@@ -92,14 +100,15 @@ class BackupArchive(
     private val config: BackupConfig = BackupConfig(),
 ) {
     /**
-     * Writes the manifest, the [database] snapshot as [BackupContents.DATABASE] and every allowed file under
-     * [root] to [out], which the caller closes. Throws IOException; the caller deletes the half-written file.
+     * Writes the manifest (with the entries' total size), the [database] snapshot as [BackupContents.DATABASE] and
+     * every allowed file under [root] to [out], which the caller closes. Throws IOException; the caller deletes the
+     * half-written file.
      */
     fun write(out: OutputStream, manifest: BackupManifest, database: File, root: File): BackupSummary {
         val entries = listOf(BackupContents.DATABASE to database) + contents.existing(root)
         val zip = ZipOutputStream(out)
         zip.putNextEntry(ZipEntry(BackupManifest.ENTRY))
-        zip.write(manifest.encode())
+        zip.write(manifest.copy(bytes = entries.sumOf { it.second.length() }).encode())
         zip.closeEntry()
         var bytes = 0L
         entries.forEach { (name, file) ->
@@ -155,6 +164,7 @@ class BackupArchive(
                 manifest == null -> BackupError.NOT_A_BACKUP
                 manifest.format > BackupManifest.CURRENT_FORMAT -> BackupError.FROM_NEWER_APP
                 manifest.databaseVersion > databaseVersion -> BackupError.FROM_NEWER_APP
+                manifest.bytes?.let { !fits(it) } == true -> BackupError.NO_SPACE
                 else -> unpackAll()
             }
             if (refusal != null) {
@@ -171,8 +181,15 @@ class BackupArchive(
         private fun readManifest(): BackupManifest? {
             val first = zip.nextEntry
             if (first?.name != BackupManifest.ENTRY) return null
-            val bytes = readBounded(ByteArrayOutputStream(), MANIFEST_MAX_BYTES)?.toByteArray()
-            return bytes?.let(BackupManifest::decode)
+            val out = ByteArrayOutputStream()
+            val read = copy(out, MANIFEST_MAX_BYTES, checkSpace = false)
+            return if (read == Copy.DONE) BackupManifest.decode(out.toByteArray()) else null
+        }
+
+        /** Whether [bytes] more still leave [BackupConfig.minFreeBytes] free where staging unpacks. */
+        private fun fits(bytes: Long): Boolean {
+            staging.mkdirs()
+            return staging.usableSpace - bytes >= config.minFreeBytes
         }
 
         /** Null when everything fit; otherwise why the backup is refused. */
@@ -187,41 +204,63 @@ class BackupArchive(
         }
 
         private fun unpackEntry(entry: ZipEntry): BackupError? {
-            if (entry.isDirectory || !contents.allows(entry.name)) {
-                skipped++
-                return null
-            }
-            count++
-            val target = File(staging, entry.name)
-            val folder = target.parentFile ?: staging
-            folder.mkdirs()
-            val limit = minOf(config.maxEntryBytes, config.maxTotalBytes - total)
+            val name = contents.current(entry.name)
             return when {
-                count > config.maxEntries -> BackupError.TOO_LARGE
+                entry.isDirectory || !contents.allows(name) -> {
+                    skipped++
+                    null
+                }
 
-                // The claimed size only refuses early; the bytes actually written are bounded by the limit.
-                folder.usableSpace - entry.size.coerceAtLeast(0) < config.minFreeBytes -> BackupError.NO_SPACE
+                ++count > config.maxEntries -> BackupError.TOO_LARGE
 
-                target.outputStream().use { out -> readBounded(out, limit) } == null -> BackupError.TOO_LARGE
-
-                else -> null
+                else -> unpackTo(File(staging, name))
             }
         }
 
-        /** Copies the current entry to [out]; null (and [out] left partial) if it passes [limit] bytes. */
-        private fun <T : OutputStream> readBounded(out: T, limit: Long): T? {
-            var copied = 0L
-            var read = zip.read(buffer)
-            while (read >= 0) {
-                copied += read
-                if (copied > limit) return null
-                out.write(buffer, 0, read)
-                read = zip.read(buffer)
+        private fun unpackTo(target: File): BackupError? {
+            target.parentFile?.mkdirs()
+            val limit = minOf(config.maxEntryBytes, config.maxTotalBytes - total)
+            // Synced as written: the marker that makes this restore apply is written after, and must never point at
+            // files a power cut emptied.
+            val copied = FileOutputStream(target).use { out -> copy(out, limit).also { out.fd.sync() } }
+            return when (copied) {
+                Copy.DONE -> null
+                Copy.TOO_LARGE -> BackupError.TOO_LARGE
+                Copy.NO_SPACE -> BackupError.NO_SPACE
             }
-            total += copied
-            return out
+        }
+
+        /**
+         * Copies the current entry to [out], counting the bytes actually read (an entry's claimed size is not
+         * trusted, and streamed entries claim none): stops past [limit] or, with [checkSpace], when free space drops
+         * below the minimum, checked every [BackupConfig.spaceCheckBytes].
+         */
+        private fun copy(out: OutputStream, limit: Long, checkSpace: Boolean = true): Copy {
+            var copied = 0L
+            var sinceCheck = 0L
+            var result = Copy.DONE
+            var read = zip.read(buffer)
+            while (read >= 0 && result == Copy.DONE) {
+                copied += read
+                sinceCheck += read
+                val checkNow = checkSpace && sinceCheck >= config.spaceCheckBytes
+                if (checkNow) sinceCheck = 0
+                result = when {
+                    copied > limit -> Copy.TOO_LARGE
+                    checkNow && !fits(0) -> Copy.NO_SPACE
+                    else -> Copy.DONE
+                }
+                if (result == Copy.DONE) {
+                    out.write(buffer, 0, read)
+                    read = zip.read(buffer)
+                }
+            }
+            if (result == Copy.DONE) total += copied
+            return result
         }
     }
+
+    private enum class Copy { DONE, TOO_LARGE, NO_SPACE }
 
     private companion object {
         const val TAG = "Backup.Archive"

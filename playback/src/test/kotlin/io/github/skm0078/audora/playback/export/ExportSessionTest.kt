@@ -119,6 +119,21 @@ class ExportSessionTest {
     }
 
     @Test
+    fun `a partial file that could not be deleted stays pending for the next run`() {
+        session("key-a").onFileCreated("content://media/02.m4a")
+        files.existing.add("content://media/02.m4a")
+        files.undeletable.add("content://media/02.m4a")
+
+        session("key-a")
+        assertEquals(listOf("content://media/02.m4a"), records.load("book")?.pending)
+
+        files.undeletable.clear()
+        session("key-a")
+        assertEquals(emptyList<String>(), records.load("book")?.pending)
+        assertTrue("content://media/02.m4a" !in files.existing)
+    }
+
+    @Test
     fun `pending files read back from the record`() {
         records.save("book", ExportRecord("k", emptyList(), pending = listOf("content://m/9")))
 
@@ -143,10 +158,12 @@ class ExportSessionTest {
     private class FakeFiles : SavedFiles {
         val existing = HashSet<String>()
         val deleted = ArrayList<String>()
+        val undeletable = HashSet<String>()
 
         override fun exists(location: String) = location in existing
 
         override fun delete(location: String): Boolean {
+            if (location in undeletable) return false
             deleted.add(location)
             existing.remove(location)
             return true

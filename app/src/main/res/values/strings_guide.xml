@@ -18,4 +18,8 @@
     <string name="guide_save">Save</string>
     <string name="guide_cancel">Cancel</string>
     <string name="guide_close">Close</string>
+    <string name="guide_deleted">Character deleted.</string>
+    <string name="guide_undo">Undo</string>
+    <!-- %1$d is the most characters one book can keep. -->
+    <string name="guide_full">This guide is full: a book keeps at most %1$d characters. Delete one to add another.</string>
 </resources>

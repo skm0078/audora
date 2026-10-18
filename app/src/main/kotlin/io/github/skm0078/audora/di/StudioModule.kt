@@ -9,6 +9,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.photo.PhotoBooks
@@ -25,5 +26,6 @@ object StudioModule {
     // SharedPdfCopies holds no state of its own; this one writes to the same folder as the activity's.
     @Provides
     @Singleton
-    fun photoBooks(@ApplicationContext context: Context): PhotoBooks = PhotoBooks(context, SharedPdfCopies(context))
+    fun photoBooks(@ApplicationContext context: Context, library: Library): PhotoBooks =
+        PhotoBooks(context, SharedPdfCopies(context), library)
 }

@@ -6,6 +6,7 @@ package io.github.skm0078.audora.playback.backup
 import io.github.skm0078.audora.core.logging.AudoraLog
 import java.io.File
 import java.io.IOException
+import java.util.UUID
 
 /**
  * A restore is staged while the app runs and applied by [applyIfReady] at the next process start, before Room,
@@ -13,9 +14,17 @@ import java.io.IOException
  *
  * Applying is renames only, all inside the app's data folder (one volume), so it needs no free space and takes
  * milliseconds. Each replaced path (a unit: a file, the database's journal files, or a whole folder) first moves
- * aside, then the staged one moves in. On any failure, or at a start that finds an apply cut short, every unit moves
- * back and the restore is dropped: one failed attempt never repeats at every start. The marker is the commit
- * point: once it is gone, the restore stands. What was moved aside is deleted later by [cleanUp], off the start path.
+ * aside into this attempt's own folder, then the staged one moves in. The marker file records each step and is
+ * written durably (synced, then renamed), and every rename phase is synced too:
+ * - `ready`: staged and complete; the next start applies it.
+ * - `applying`: renames under way. A start that finds this (a crash, or a roll-back that could not finish) rolls
+ *   back again; while it stays, nothing new can be staged ([unfinished]).
+ * - `committed`: everything moved in; the restore stands. A start that finds this only tidies up.
+ * Rolling back tries every unit on its own, the database with its journals as one group, and keeps what it could not
+ * put back (and the marker) for the next start, so a unit is never dropped. What was moved aside or replaced goes to
+ * a trash folder that [cleanUp] empties at a later start, once the restored library has opened.
+ *
+ * [applyIfReady] cannot log: it runs before logging starts. What happened comes back as [Run.notes].
  *
  * @param root the app's data folder (the parent of `files/` and `databases/`).
  */
@@ -24,13 +33,21 @@ class PendingRestore(private val root: File, private val contents: BackupContent
     val staging: File = File(root, STAGING)
 
     private val marker = File(root, MARKER)
-    private val aside = File(root, ASIDE)
+    private val asides = File(root, ASIDE)
     private val trash = File(root, TRASH)
 
-    /** Drops any staged restore, marker first, so a new staging can never be applied half-written. */
-    fun clear() {
-        if (marker.exists() && !marker.delete()) throw IOException("marker not removed")
-        staging.deleteRecursively()
+    /** An earlier restore is half applied or half undone: the next start finishes undoing it first. */
+    val unfinished: Boolean get() = readMarker()?.let { it.state != READY } ?: false
+
+    /**
+     * Drops any staged restore, marker first, so a new staging can never be applied half-written. The staging folder
+     * is renamed into the trash (instant), not deleted. False, and nothing else touched, while [unfinished] or if
+     * the marker would not go.
+     */
+    fun clear(): Boolean {
+        val cleared = !unfinished && (!marker.exists() || marker.delete())
+        if (cleared) moveToTrash(staging, trash)
+        return cleared
     }
 
     /**
@@ -39,11 +56,14 @@ class PendingRestore(private val root: File, private val contents: BackupContent
      * backup) is left as it is. False if the marker could not be written (the restore is then dropped).
      */
     fun markReady(known: List<String>?): Boolean {
+        if (unfinished) return false
+        val knownNow = known?.map(contents::current)
         val replaced = contents.units().filter { unit ->
-            unit == BackupContents.DATABASE || known?.contains(unit) ?: File(staging, unit).exists()
+            unit == BackupContents.DATABASE || knownNow?.contains(unit) ?: File(staging, unit).exists()
         }
         return try {
-            writeMarker(READY, replaced + JOURNALS)
+            staging.walkBottomUp().filter { it.isDirectory }.forEach(::syncFolder)
+            writeMarker(Marker(READY, UUID.randomUUID().toString(), orderedUnits(replaced)))
             true
         } catch (e: IOException) {
             AudoraLog.w(TAG, "Restore not marked ready: ${e.javaClass.simpleName}")
@@ -51,114 +71,189 @@ class PendingRestore(private val root: File, private val contents: BackupContent
         }
     }
 
-    /**
-     * Applies a staged backup if one is marked ready. Without a marker, or without a staged database (never replace
-     * a library with nothing), the staging is dropped. Throws IOException when the restore failed; it has then been
-     * rolled back and dropped.
-     */
-    fun applyIfReady(): Result {
-        val state = marker.takeIf { it.isFile }?.readLines()
-        val units = state.orEmpty().drop(1).filter { it in contents.unitsWithJournals() }
+    /** Applies, finishes or rolls back whatever the marker says; called once, first thing at process start. */
+    fun applyIfReady(): Run {
+        val found = readMarker()
         return when {
-            state?.firstOrNull() == APPLYING -> {
-                rollBack(units)
-                throw IOException("an earlier restore was cut short")
+            found == null -> Run(Result.NONE).also { moveToTrash(staging, trash) }
+
+            found.state == COMMITTED -> finish(found)
+
+            found.state == READY && File(staging, BackupContents.DATABASE).isFile -> apply(found)
+
+            found.state == READY -> Run(Result.NONE, listOf("ready restore without a staged database dropped")).also {
+                marker.delete()
+                moveToTrash(staging, trash)
             }
 
-            state?.firstOrNull() != READY || !File(staging, BackupContents.DATABASE).isFile -> {
-                clear()
-                Result.NONE
-            }
-
-            else -> apply(units)
+            else -> rollBack(found, cause = "an earlier restore was cut short")
         }
     }
 
-    /** Deletes what a finished or rolled-back restore left behind; call it off the main thread. */
+    /** Empties the trash and any aside folder no marker owns; call it off the main thread, at a later start. */
     fun cleanUp() {
-        if (!marker.exists()) trash.deleteRecursively()
+        if (marker.exists()) return
+        trash.deleteRecursively()
+        asides.deleteRecursively()
     }
 
-    private fun apply(units: List<String>): Result {
+    private fun apply(ready: Marker): Run {
+        val aside = File(asides, ready.attempt)
         try {
-            writeMarker(APPLYING, units)
-            units.forEach(::moveAside)
-            units.forEach { unit -> move(File(staging, unit), File(root, unit)) }
-            if (!marker.delete()) throw IOException("marker not removed")
+            writeMarker(ready.copy(state = APPLYING))
+            ready.units.forEach { moveAside(root, it, aside) }
+            syncParents(ready.units.flatMap { listOf(File(root, it), File(aside, it)) })
+            ready.units.forEach { unit -> move(File(staging, unit), File(root, unit)) }
+            syncParents(ready.units.map { File(root, it) })
+            writeMarker(ready.copy(state = COMMITTED))
         } catch (e: IOException) {
-            rollBack(units)
-            throw e
+            return rollBack(ready.copy(state = APPLYING), cause = e.javaClass.simpleName)
         }
-        moveToTrash(aside)
-        moveToTrash(staging)
-        AudoraLog.i(TAG, "Restore applied: ${units.size} units")
-        return Result.APPLIED
+        return finish(ready)
     }
 
-    /** Moves the live unit aside, or records that there was none, so a roll-back knows what to put back. */
-    private fun moveAside(unit: String) {
-        val live = File(root, unit)
-        if (live.exists()) {
-            move(live, File(aside, unit))
-        } else {
-            File(aside, unit + NONE).apply { parentFile?.mkdirs() }.createNewFile()
-        }
+    /** After the commit point: the old units and the empty staging go to the trash, then the marker. */
+    private fun finish(committed: Marker): Run {
+        moveToTrash(File(asides, committed.attempt), trash)
+        moveToTrash(staging, trash)
+        marker.delete()
+        marker.parentFile?.let(::syncFolder)
+        return Run(Result.APPLIED, listOf("restore applied, units replaced: ${committed.units.joinToString()}"))
     }
 
     /**
-     * Puts every unit that was moved aside back, then drops the restore. A unit not yet moved aside was never
-     * touched. If a unit cannot be put back, what was moved aside is kept (not lost) and the error is logged.
+     * Puts back every unit that was moved aside, each on its own; a unit that was never moved aside was never touched.
+     * The database's journals go back only if the database did. If everything went back the restore is dropped
+     * (FAILED); otherwise the marker stays, so the next start tries again (INCOMPLETE), and nothing is deleted.
      */
-    private fun rollBack(units: List<String>) {
-        var restored = true
-        units.forEach { unit ->
-            val saved = File(aside, unit)
-            val none = File(aside, unit + NONE)
-            if (saved.exists() || none.exists()) {
-                val live = File(root, unit)
-                restored = restored && (!live.exists() || live.deleteRecursively()) &&
-                    (!saved.exists() || saved.renameTo(live)) && (!none.exists() || none.delete())
+    private fun rollBack(applying: Marker, cause: String): Run {
+        val folders = if (applying.attempt.isEmpty()) {
+            asides.listFiles().orEmpty().filter { it.isDirectory }
+        } else {
+            listOf(File(asides, applying.attempt))
+        }
+        val all = orderedUnits(contents.units())
+        val moved = folders.flatMap { aside -> all.filter { wasMovedAside(aside, it) } }
+        val stuck = folders.flatMap(::putBackAll)
+        if (stuck.isNotEmpty()) {
+            if (applying.state != APPLYING) writeMarker(applying.copy(state = APPLYING))
+            return Run(Result.INCOMPLETE, listOf("restore failed ($cause); still to put back: ${stuck.joinToString()}"))
+        }
+        folders.forEach { moveToTrash(it, trash) }
+        moveToTrash(staging, trash)
+        marker.delete()
+        marker.parentFile?.let(::syncFolder)
+        return Run(Result.FAILED, listOf("restore failed ($cause), rolled back: ${moved.distinct().joinToString()}"))
+    }
+
+    /** The units of [aside] that could not be put back. */
+    private fun putBackAll(aside: File): List<String> {
+        val stuck = mutableListOf<String>()
+        orderedUnits(contents.units()).forEach { unit ->
+            val databaseStuck = BackupContents.DATABASE in stuck && unit in JOURNALS
+            if (databaseStuck || !putBack(root, trash, unit, aside)) {
+                if (wasMovedAside(aside, unit)) stuck += unit
             }
         }
-        marker.delete()
-        moveToTrash(staging)
-        if (restored) moveToTrash(aside) else AudoraLog.e(TAG, "Restore roll-back incomplete; kept in no_backup")
+        syncParents(orderedUnits(contents.units()).map { File(root, it) })
+        return stuck
     }
 
-    /** One rename; the folder is emptied later by [cleanUp]. */
-    private fun moveToTrash(folder: File) {
-        if (!folder.exists()) return
-        trash.mkdirs()
-        if (!folder.renameTo(File(trash, folder.name + System.nanoTime()))) folder.deleteRecursively()
+    private fun writeMarker(state: Marker) {
+        val lines = listOf(state.state, state.attempt) + state.units
+        writeDurably(marker, lines.joinToString("\n", postfix = "\n").toByteArray())
     }
 
-    private fun writeMarker(state: String, units: List<String>) {
-        val temp = File(marker.path + TEMP)
-        marker.parentFile?.mkdirs()
-        temp.writeText((listOf(state) + units).joinToString("\n", postfix = "\n"))
-        if (!temp.renameTo(marker)) throw IOException("marker not written")
+    /** Null without a marker; a marker that cannot be read as written is read as `applying`, attempt unknown. */
+    @Suppress("SwallowedException") // An unreadable marker is handled as a torn one, which is what it is.
+    private fun readMarker(): Marker? {
+        if (!marker.isFile) return null
+        val lines = try {
+            marker.readLines()
+        } catch (e: IOException) {
+            emptyList()
+        }
+        val state = lines.firstOrNull()
+        val known = contents.units().toSet() + JOURNALS
+        return if (state in STATES && lines.size >= 2) {
+            Marker(state.orEmpty(), lines[1], lines.drop(2).filter { it in known })
+        } else {
+            Marker(APPLYING, attempt = "", units = emptyList())
+        }
     }
 
-    /** What [Backups.applyPending] found at start: nothing staged, a restore put in place, or one that failed. */
-    enum class Result { NONE, APPLIED, FAILED }
+    /** [state] is one of [STATES]; [attempt] names this attempt's aside folder (empty when unknown: all of them). */
+    private data class Marker(val state: String, val attempt: String, val units: List<String>)
 
-    private companion object {
-        const val TAG = "Backup.Restore"
-        const val STAGING = "no_backup/restore-pending"
-        const val MARKER = "no_backup/restore-pending.ready"
-        const val ASIDE = "no_backup/restore-aside"
-        const val TRASH = "no_backup/restore-trash"
-        const val READY = "ready"
-        const val APPLYING = "applying"
+    /** What [Backups.applyPending] found at start, and what to log once logging has started. */
+    data class Run(val result: Result, val notes: List<String> = emptyList())
+
+    /**
+     * NONE: nothing staged. APPLIED: the restore is in place. FAILED: it failed and was rolled back fully.
+     * INCOMPLETE: it failed and part of the old library is still aside; the next start puts it back.
+     */
+    enum class Result { NONE, APPLIED, FAILED, INCOMPLETE }
+
+    internal companion object {
+        private const val TAG = "Backup.Restore"
+        private const val STAGING = "no_backup/restore-pending"
+        private const val MARKER = "no_backup/restore-pending.ready"
+        private const val ASIDE = "no_backup/restore-aside"
+        private const val TRASH = "no_backup/restore-trash"
+        private const val READY = "ready"
+        private const val APPLYING = "applying"
+        private const val COMMITTED = "committed"
+        private val STATES = setOf(READY, APPLYING, COMMITTED)
         const val NONE = ".none"
-        const val TEMP = ".tmp"
+
+        /** The database's journal files, replaced (dropped) whenever the database is. */
+        val JOURNALS = BackupContents.DATABASE_SIDE_FILES.map { BackupContents.DATABASE + it }
     }
 }
 
-/** The database's journal files, replaced (dropped) whenever the database is. */
-private val JOURNALS = BackupContents.DATABASE_SIDE_FILES.map { BackupContents.DATABASE + it }
+/** The database first, then its journals, then the rest: aside before anything moves in, back as a group. */
+private fun orderedUnits(units: List<String>): List<String> {
+    val database = units.filter { it == BackupContents.DATABASE }
+    val journals = if (database.isEmpty()) emptyList() else PendingRestore.JOURNALS
+    return database + journals + units.filter { it !in database }
+}
 
-private fun BackupContents.unitsWithJournals(): Set<String> = (units() + JOURNALS).toSet()
+/** Whether [aside] holds [unit] or the record that it was absent. */
+private fun wasMovedAside(aside: File, unit: String) =
+    File(aside, unit).exists() || File(aside, unit + PendingRestore.NONE).exists()
+
+/** Moves the live unit aside, or records that there was none, so a roll-back knows what to put back. */
+private fun moveAside(root: File, unit: String, aside: File) {
+    val live = File(root, unit)
+    if (live.exists()) {
+        move(live, File(aside, unit))
+    } else {
+        File(aside, unit + PendingRestore.NONE).apply { parentFile?.mkdirs() }.createNewFile()
+    }
+}
+
+/** One unit back from [aside]; true if done or nothing to do. The restored copy goes to [trash]. */
+@Suppress("SwallowedException") // False is the report: the caller lists the unit as still to put back.
+private fun putBack(root: File, trash: File, unit: String, aside: File): Boolean {
+    val saved = File(aside, unit)
+    val none = File(aside, unit + PendingRestore.NONE)
+    if (!saved.exists() && !none.exists()) return true
+    val live = File(root, unit)
+    return try {
+        if (live.exists()) move(live, File(File(trash, "replaced-" + UUID.randomUUID()), unit))
+        if (saved.exists()) move(saved, live)
+        !none.exists() || none.delete()
+    } catch (e: IOException) {
+        false
+    }
+}
+
+/** One rename into [trash]; if that fails the file or folder is deleted instead. */
+private fun moveToTrash(file: File, trash: File) {
+    if (!file.exists()) return
+    trash.mkdirs()
+    if (!file.renameTo(File(trash, file.name + "-" + UUID.randomUUID()))) file.deleteRecursively()
+}
 
 /** Renames [from] to [to] (nothing if [from] is absent), replacing what is there; throws IOException if it can't. */
 private fun move(from: File, to: File) {

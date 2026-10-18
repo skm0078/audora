@@ -15,6 +15,7 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.epub.BookCopyService
 import io.github.skm0078.audora.playback.export.AudiobookExportService
 import io.github.skm0078.audora.playback.export.ClipService
+import io.github.skm0078.audora.playback.export.JobSlots
 import io.github.skm0078.audora.playback.storage.AudoraStorage
 import io.github.skm0078.audora.playback.studio.StudioService
 import java.io.File
@@ -64,8 +65,9 @@ class Backups(context: Context, private val storage: AudoraStorage, config: Back
     val state: StateFlow<BackupState> = mutableState.asStateFlow()
 
     init {
-        // What the last restore moved aside or left over; deleted here, off the start path (ADR-046).
-        scope.launch { restore.cleanUp() }
+        // What an earlier restore moved aside or replaced; kept until a later start has opened the library it put in
+        // place, then deleted here, off the start path (ADR-046).
+        if (!restoredThisStart) scope.launch { cleanUpOnceOpened() }
     }
 
     /** Starts writing a backup to [target] (a document the user created); ignored while another job runs. */
@@ -76,15 +78,34 @@ class Backups(context: Context, private val storage: AudoraStorage, config: Back
      * an export, copy, clip or studio run is going, since the restart would cut it off.
      */
     fun startRestore(source: Uri) = start {
-        if (busy()) {
+        if (busy(appContext)) {
             AudoraLog.i(TAG, "Restore refused: a long job is running")
             BackupEvent.Refused(BackupError.BUSY)
         } else {
+            restoreUnderWay = true
             when (val staged = stage(source)) {
                 is Outcome.Success -> BackupEvent.RestartNeeded
-                is Outcome.Failure -> BackupEvent.Refused(staged.error)
+
+                is Outcome.Failure -> {
+                    restoreUnderWay = false
+                    BackupEvent.Refused(staged.error)
+                }
             }
         }
+    }
+
+    /**
+     * Called just before the restart that applies a staged restore. False if a long job started meanwhile (from a
+     * notification, say): the staged restore is then dropped, rather than cutting the job off; the caller says why.
+     */
+    fun confirmRestart(): Boolean {
+        if (!busy(appContext)) return true
+        AudoraLog.i(TAG, "Restart for restore refused: a long job is running")
+        scope.launch {
+            restore.clear()
+            restoreUnderWay = false
+        }
+        return false
     }
 
     /** Clears the outcome once the screen has shown it. */
@@ -117,11 +138,11 @@ class Backups(context: Context, private val storage: AudoraStorage, config: Back
             AudoraLog.i(TAG, "Backup saved: ${summary.files} files, ${summary.bytes} bytes, $absent listed not present")
             Outcome.Success(summary)
         } catch (e: IOException) {
-            failed(target, e)
+            failed(appContext, target, e)
         } catch (e: SQLException) {
-            failed(target, e)
+            failed(appContext, target, e)
         } catch (e: SecurityException) {
-            failed(target, e)
+            failed(appContext, target, e)
         } finally {
             snapshot.delete()
         }
@@ -132,79 +153,62 @@ class Backups(context: Context, private val storage: AudoraStorage, config: Back
      * and [applyPending] puts it in place before anything opens the database.
      */
     private suspend fun stage(source: Uri): Outcome<BackupManifest, BackupError> = withContext(Dispatchers.IO) {
-        val unpacked = try {
-            restore.clear()
-            appContext.contentResolver.openInputStream(source)?.use { input ->
-                archive.stage(input, restore.staging, AudoraStorage.SCHEMA_VERSION)
-            } ?: Outcome.Failure(BackupError.IO_FAILED)
-        } catch (e: IOException) {
-            AudoraLog.w(TAG, "Backup not opened: ${e.javaClass.simpleName}")
-            Outcome.Failure(BackupError.IO_FAILED)
-        } catch (e: SecurityException) {
-            AudoraLog.w(TAG, "Backup not opened: ${e.javaClass.simpleName}")
-            Outcome.Failure(BackupError.IO_FAILED)
+        if (!restore.clear()) {
+            AudoraLog.w(TAG, "Restore refused: an earlier restore is still being undone, or its marker stuck")
+            return@withContext Outcome.Failure(BackupError.UNFINISHED)
         }
+        val unpacked = unpack(source)
         val checked = if (unpacked is Outcome.Success) {
             checkDatabase(File(restore.staging, BackupContents.DATABASE))?.let { Outcome.Failure(it) } ?: unpacked
         } else {
             unpacked
         }
         val ready = when (checked) {
-            is Outcome.Success -> if (restore.markReady(checked.value.units)) checked else null
             is Outcome.Failure -> checked
-        } ?: Outcome.Failure(BackupError.IO_FAILED)
-        if (ready is Outcome.Failure) restore.staging.deleteRecursively()
+
+            is Outcome.Success -> when {
+                // Staging can take minutes: a job started meanwhile would be cut off by the restart.
+                busy(appContext) -> Outcome.Failure(BackupError.BUSY)
+
+                restore.markReady(checked.value.units) -> checked
+
+                else -> Outcome.Failure(BackupError.IO_FAILED)
+            }
+        }
+        if (ready is Outcome.Failure) restore.clear()
         ready
     }
 
-    /**
-     * Opens the staged database read-only before anything is replaced: a newer schema than the manifest claimed,
-     * a damaged file, or one of this version with another schema (not a database this app wrote) is refused.
-     * Null when it can be restored.
-     */
-    private fun checkDatabase(file: File): BackupError? = try {
-        val error = SQLiteDatabase.openDatabase(file.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
-            val version = db.version
-            when {
-                version > AudoraStorage.SCHEMA_VERSION -> BackupError.FROM_NEWER_APP
+    private fun unpack(source: Uri): Outcome<BackupManifest, BackupError> = try {
+        appContext.contentResolver.openInputStream(source)?.use { input ->
+            archive.stage(input, restore.staging, AudoraStorage.SCHEMA_VERSION)
+        } ?: Outcome.Failure(BackupError.IO_FAILED)
+    } catch (e: IOException) {
+        AudoraLog.w(TAG, "Backup not opened: ${e.javaClass.simpleName}")
+        Outcome.Failure(BackupError.IO_FAILED)
+    } catch (e: SecurityException) {
+        AudoraLog.w(TAG, "Backup not opened: ${e.javaClass.simpleName}")
+        Outcome.Failure(BackupError.IO_FAILED)
+    }
 
-                version < 1 -> BackupError.NOT_A_BACKUP
-
-                db.firstString(QUICK_CHECK) != QUICK_CHECK_OK -> BackupError.NOT_A_BACKUP
-
-                version == AudoraStorage.SCHEMA_VERSION &&
-                    db.firstString(AudoraStorage.IDENTITY_HASH_QUERY) != storage.identityHash() ->
-                    BackupError.NOT_A_BACKUP
-
-                else -> null
-            }
+    /** Deletes what earlier restores left, once the library opens: a broken restored database keeps the old one. */
+    @Suppress("TooGenericExceptionCaught") // Whatever stops the library opening, nothing is deleted; logged.
+    private fun cleanUpOnceOpened() {
+        try {
+            if (restore.unfinished) return
+            storage.identityHash()
+            restore.cleanUp()
+        } catch (e: Exception) {
+            AudoraLog.w(TAG, "Restore leftovers kept: ${e.javaClass.simpleName}")
         }
-        // Opening may leave journal files beside it; they must not be restored over the live database's.
-        BackupContents.DATABASE_SIDE_FILES.forEach { File(file.path + it).delete() }
-        if (error != null) AudoraLog.w(TAG, "Staged database refused: $error")
-        error
-    } catch (e: SQLException) {
-        AudoraLog.w(TAG, "Staged database unreadable: ${e.javaClass.simpleName}")
-        BackupError.NOT_A_BACKUP
     }
 
-    /** True while one of the app's long jobs runs: an export, a copy, a clip or studio mode. */
-    @Suppress("DEPRECATION") // getRunningServices still lists the caller's own services, which is all this needs.
-    private fun busy(): Boolean {
-        val manager = appContext.getSystemService(ActivityManager::class.java) ?: return false
-        return manager.getRunningServices(Int.MAX_VALUE).any { it.started && it.service.className in LONG_JOBS }
-    }
-
-    private fun failed(target: Uri, e: Exception): Outcome<BackupSummary, BackupError> {
-        // The class name only: exception messages can carry the document's URI.
-        AudoraLog.e(TAG, "Backup not saved: ${e.javaClass.simpleName}")
-        runCatching { DocumentsContract.deleteDocument(appContext.contentResolver, target) }
-            .onFailure { AudoraLog.w(TAG, "Half-written backup not deleted: ${it.javaClass.simpleName}") }
-        return Outcome.Failure(BackupError.IO_FAILED)
-    }
-
-    /** What [applyPending] did; [error] names the exception's class when it failed. */
-    data class StartRestore(val result: PendingRestore.Result, val error: String? = null)
+    /** What [applyPending] did; [error] names the exception's class when it failed; [notes] what to log. */
+    data class StartRestore(
+        val result: PendingRestore.Result,
+        val error: String? = null,
+        val notes: List<String> = emptyList(),
+    )
 
     companion object {
         private const val TAG = "Backup"
@@ -224,24 +228,86 @@ class Backups(context: Context, private val storage: AudoraStorage, config: Back
         @Volatile
         private var startResult: PendingRestore.Result? = null
 
+        @Volatile
+        private var restoredThisStart = false
+
+        /**
+         * True from the moment a restore starts staging until it is refused or the app restarts to apply it: the
+         * long-job services refuse to start meanwhile, since the restart would cut them off.
+         */
+        @Volatile
+        var restoreUnderWay = false
+            private set
+
         /**
          * Applies a staged restore, if any. The application calls this first thing at process start, before Hilt
          * builds anything that opens the database or preferences, and logs the result once logging has started
-         * (this runs before it). A failed restore has been rolled back and dropped; the library says so once.
+         * (this runs before it). A failed restore has been rolled back and dropped, or, if part of it could not be
+         * put back, is rolled back again at the next start; the library says which once. An unexpected exception
+         * counts as the latter: the marker is left as it was, so the next start sees it again.
          */
         @Suppress("TooGenericExceptionCaught") // Nothing may stop the app from starting; the class name is kept.
         fun applyPending(context: Context): StartRestore {
             val restored = try {
-                StartRestore(PendingRestore(dataFolder(context)).applyIfReady())
+                PendingRestore(dataFolder(context)).applyIfReady().let { StartRestore(it.result, notes = it.notes) }
             } catch (e: Exception) {
-                StartRestore(PendingRestore.Result.FAILED, e.javaClass.simpleName)
+                StartRestore(PendingRestore.Result.INCOMPLETE, e.javaClass.simpleName)
             }
-            if (restored.result != PendingRestore.Result.NONE) startResult = restored.result
+            if (restored.result != PendingRestore.Result.NONE) {
+                startResult = restored.result
+                restoredThisStart = true
+            }
             return restored
         }
 
         /** The restore this process started with (applied or failed), once; null after the first call or if none. */
         fun takeStartResult(): PendingRestore.Result? = startResult.also { startResult = null }
+
+        /**
+         * True while one of the app's long jobs runs: an export, a copy, a clip or studio mode. The job slots also see
+         * a worker its service left running after Android's time limit stopped the service.
+         */
+        @Suppress("DEPRECATION") // getRunningServices still lists the caller's own services, which is all this needs.
+        private fun busy(context: Context): Boolean = JobSlots.anyBusy ||
+            context.getSystemService(ActivityManager::class.java)?.getRunningServices(Int.MAX_VALUE).orEmpty()
+                .any { it.started && it.service.className in LONG_JOBS }
+
+        private fun failed(context: Context, target: Uri, e: Exception): Outcome<BackupSummary, BackupError> {
+            // The class name only: exception messages can carry the document's URI.
+            AudoraLog.e(TAG, "Backup not saved: ${e.javaClass.simpleName}")
+            runCatching { DocumentsContract.deleteDocument(context.contentResolver, target) }
+                .onFailure { AudoraLog.w(TAG, "Half-written backup not deleted: ${it.javaClass.simpleName}") }
+            return Outcome.Failure(BackupError.IO_FAILED)
+        }
+
+        /**
+         * Opens the staged database read-only before anything is replaced: a newer schema than the manifest claimed,
+         * a damaged file, or one whose schema is not the one this app's Room wrote at that version (a foreign or
+         * hand-made database, which Room's migration check would refuse at every start) is refused. Null when it can be
+         * restored.
+         */
+        private fun checkDatabase(file: File): BackupError? = try {
+            val error = SQLiteDatabase.openDatabase(file.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+                val version = db.version
+                when {
+                    version > AudoraStorage.SCHEMA_VERSION -> BackupError.FROM_NEWER_APP
+
+                    db.firstString(QUICK_CHECK) != QUICK_CHECK_OK -> BackupError.NOT_A_BACKUP
+
+                    db.firstString(AudoraStorage.IDENTITY_HASH_QUERY) != SchemaHashes.of(version) ->
+                        BackupError.NOT_A_BACKUP
+
+                    else -> null
+                }
+            }
+            // Opening may leave journal files beside it; they must not be restored over the live database's.
+            BackupContents.DATABASE_SIDE_FILES.forEach { File(file.path + it).delete() }
+            if (error != null) AudoraLog.w(TAG, "Staged database refused: $error")
+            error
+        } catch (e: SQLException) {
+            AudoraLog.w(TAG, "Staged database unreadable: ${e.javaClass.simpleName}")
+            BackupError.NOT_A_BACKUP
+        }
 
         private fun dataFolder(context: Context): File = context.dataDir
 

@@ -114,6 +114,21 @@ class KaikkiTest(unittest.TestCase):
         self.assertLessEqual(len(line.encode("utf-8")), dictionary.MAX_LINE_BYTES)
         self.assertTrue(line.startswith("क\tn|" + "x" * 250 + " 0|"))
 
+    def test_a_pin_counts_the_unpacked_size_too(self):
+        spec = {"id": "d", "zip": "d-1.zip", "sha256": "1", "sizeBytes": 5, "unpackedBytes": 9}
+        self.assertEqual([], dictionary.pin_problems(spec, "d-1.zip", "1", 5, 9))
+        self.assertEqual(1, len(dictionary.pin_problems(spec, "d-1.zip", "1", 5, 8)))
+
+    def test_a_replaced_source_is_reported_not_exited(self):
+        with tempfile.TemporaryDirectory() as folder:
+            cache = Path(folder)
+            source = cache / "source.jsonl"
+            source.write_text("{}")
+            pinned = "0" * 64
+            (cache / f"{pinned[:dictionary.SHA_PREFIX_CHARS]}-source.jsonl").write_text("{}")
+            with self.assertRaises(dictionary.SourceChanged):
+                dictionary.fetch(source.as_uri(), pinned, cache)
+
 
 if __name__ == "__main__":
     unittest.main()

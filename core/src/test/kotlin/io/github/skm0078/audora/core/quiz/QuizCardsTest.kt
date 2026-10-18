@@ -8,6 +8,7 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.notes.Highlight
 import io.github.skm0078.audora.core.resume.ResumeAnchor
+import java.text.Normalizer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -71,6 +72,64 @@ class QuizCardsTest {
         assertTrue(card.shown.startsWith("…word"))
         assertTrue(card.shown.endsWith("word…"))
         assertTrue(card.shown.length <= 40 + 2)
+    }
+
+    @Test
+    fun `a Bengali word with a joiner inside is blanked whole`() {
+        val rally = "\u09B0\u200D\u09CD\u09AF\u09BE\u09B2\u09BF"
+        val card = cards.build(listOf(highlight(1, "$rally হবে")), blank).single()
+
+        assertEquals(rally, card.answer)
+        assertEquals("${QuizCard.BLANK} হবে", card.shown)
+    }
+
+    @Test
+    fun `two Unicode spellings are one word, counted together and never a look-alike distractor`() {
+        val composed = "\u09AC\u09CB\u09A8\u099F\u09BF" // বোনটি with ো as one code point
+        val decomposed = "\u09AC\u09C7\u09BE\u09A8\u099F\u09BF" // the same word, ে + া
+        val highlights = listOf(
+            highlight(1, "$composed এসেছিল"),
+            highlight(2, "$decomposed বাড়িতে"),
+            highlight(3, "কলকাতায় থাকে"),
+            highlight(4, "পাঠশালায় পড়ে"),
+        )
+
+        val card = cards.build(highlights, blank).first { it.highlightId == 1L }
+
+        assertEquals("এসেছিল", card.answer) // বোনটি appears twice, so it is no longer the rarest
+        assertTrue(card.choices.none { Normalizer.normalize(it, Normalizer.Form.NFC) == composed })
+    }
+
+    @Test
+    fun `a repeated answer is blanked everywhere, distractors are cased like it and not from the card`() {
+        val highlights = listOf(
+            highlight(1, "Volcanoes erupt; volcanoes cool."),
+            highlight(2, "erupt glaciers"),
+            highlight(3, "meander rivers cool"),
+            highlight(4, "mountains erode"),
+        )
+
+        val card = QuizCards(QuizConfig(choices = 3)).build(highlights, blank).first { it.highlightId == 1L }
+
+        assertEquals("Volcanoes", card.answer)
+        assertEquals("${QuizCard.BLANK} erupt; ${QuizCard.BLANK} cool.", card.shown)
+        assertTrue(card.choices.all { it.first().isUpperCase() })
+        assertTrue(card.choices.none { it.equals("erupt", ignoreCase = true) })
+        assertEquals("Volcanoes erupt; volcanoes cool.", card.line)
+    }
+
+    @Test
+    fun `a mixed-script token is never the blank, and a cut without spaces keeps conjuncts whole`() {
+        val mixed = cards.build(listOf(highlight(1, "Rangeरंग is long and also here")), blank).single()
+        assertTrue(mixed.answer != "Rangeरंग")
+
+        val run = "\u0915\u094D\u0937".repeat(30)
+        val noSpaces = "$run,अद्भुत,$run"
+        val card = QuizCards(QuizConfig(choices = 3, maxPromptChars = 20))
+            .build(listOf(highlight(2, noSpaces)), blank).single()
+        val shown = card.shown.removePrefix("…").removeSuffix("…")
+        assertTrue(!shown.startsWith("\u094D") && !shown.startsWith("\u0937"))
+        assertTrue(!shown.endsWith("\u094D"))
     }
 
     private fun highlight(id: Long, quote: String) = Highlight(

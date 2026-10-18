@@ -64,4 +64,5 @@
     <string name="export_continue">Continue</string>
     <!-- %1$s is the folder, e.g. "Audiobooks/Moby Dick". -->
     <string name="export_cancelled_resume">Chapters already saved are kept in %1$s. Save the book as an audiobook again to go on from there.</string>
+    <string name="long_job_restoring">A backup is being restored, so this can\'t start now. Try again after the app restarts.</string>
 </resources>

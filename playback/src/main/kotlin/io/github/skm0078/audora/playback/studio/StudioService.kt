@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.playback.studio
 
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -21,9 +22,11 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.playback.R
+import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.BookText
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
+import io.github.skm0078.audora.playback.export.JobSlots
 import io.github.skm0078.audora.playback.reading.UnitReading
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
@@ -60,8 +63,13 @@ class StudioService : Service() {
     private val config = StudioConfig()
     private lateinit var notifications: StudioNotifications
 
+    /** This instance started the running job ([JobSlots.STUDIO]); a refused or finished start lets it stop. */
     @Volatile
-    private var worker: Thread? = null
+    private var mine = false
+
+    /** Set once Android's time limit stopped the service: progress must not re-post the removed notification. */
+    @Volatile
+    private var stopping = false
 
     @Volatile
     private var gate: ChargingGate? = null
@@ -80,13 +88,14 @@ class StudioService : Service() {
             StudioMode.ACTION_ON_BATTERY -> gate?.allowBattery()
             else -> AudoraLog.w(TAG, "Unknown command ${intent?.action}")
         }
-        if (worker == null) stopSelf(startId)
+        if (!mine) stopSelf(startId)
         // Never restarted by the system: studio mode starts only from a user action (C7).
         return START_NOT_STICKY
     }
 
     /** Android 15+: this kind of foreground job used up its daily 6 hours; stop now, keep what is rendered. */
     override fun onTimeout(startId: Int, fgsType: Int) {
+        stopping = true
         stop("Android's time limit for background jobs")
         // Android throws if the service is still in the foreground a few seconds after this; the worker may be
         // inside a long native call, so stop now and let it finish its notice on its own thread.
@@ -102,25 +111,30 @@ class StudioService : Service() {
     private fun start(id: BookId?) {
         // Foreground first, always: Android requires it within seconds of startForegroundService. While a run is going
         // its own notification is re-posted, so a second tap does not drop "Start now".
-        val shown = notifications.lastRunning?.takeIf { worker != null } ?: notifications.preparing()
+        val shown = notifications.lastRunning?.takeIf { mine } ?: notifications.preparing()
         startForeground(StudioNotifications.RUNNING_ID, shown, foregroundType())
-        if (id == null) {
-            AudoraLog.w(TAG, "Studio request without a book")
-            return
+        val untitled = getString(R.string.studio_untitled)
+        when {
+            id == null -> AudoraLog.w(TAG, "Studio request without a book")
+
+            // The restart that applies a restore would cut the run off.
+            Backups.restoreUnderWay -> notifications.showFailed(untitled, getString(R.string.long_job_restoring))
+
+            else -> {
+                // Set first: the job may end (and clear it) before launch returns.
+                mine = true
+                if (!JobSlots.STUDIO.launch(THREAD_NAME) { runStudio(id) }) {
+                    mine = false
+                    AudoraLog.w(TAG, "Studio mode already running; book=${id.logLabel} not started")
+                    notifications.showFailed(untitled, getString(R.string.studio_busy))
+                }
+            }
         }
-        if (worker != null) {
-            AudoraLog.w(TAG, "Studio mode already running; book=${id.logLabel} not started")
-            notifications.showFailed(getString(R.string.studio_untitled), getString(R.string.studio_busy))
-            return
-        }
-        worker = Thread({ runStudio(id) }, THREAD_NAME).apply { start() }
     }
 
     private fun stop(why: String) {
-        worker?.let { thread ->
-            AudoraLog.i(TAG, "Stopping studio mode: $why")
-            thread.interrupt()
-        }
+        if (JobSlots.STUDIO.busy) AudoraLog.i(TAG, "Stopping studio mode: $why")
+        JobSlots.STUDIO.interrupt()
     }
 
     /** On the worker thread. */
@@ -145,8 +159,10 @@ class StudioService : Service() {
             gate = null
             if (wakeLock.isHeld) wakeLock.release()
             // The worker is done: the service goes with it.
-            worker = null
+            mine = false
             stopForeground(STOP_FOREGROUND_REMOVE)
+            // A late progress update may have re-posted it after the service left the foreground.
+            getSystemService(NotificationManager::class.java)?.cancel(StudioNotifications.RUNNING_ID)
             stopSelf()
         }
     }
@@ -214,12 +230,15 @@ class StudioService : Service() {
             show()
         }
 
-        private fun show() = notifications.showRunning(title, readyMs, config.aheadMs, waiting)
+        private fun show() {
+            if (!stopping) notifications.showRunning(title, readyMs, config.aheadMs, waiting)
+        }
     }
 
     private companion object {
         const val TAG = "Studio.Service"
         const val THREAD_NAME = "studio-mode"
+
         const val WAKE_LOCK_TAG = "Audora:StudioMode"
 
         /** mediaProcessing is the type made for this (Android 15+); dataSync before it existed. */

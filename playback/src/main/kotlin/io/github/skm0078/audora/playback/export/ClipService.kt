@@ -25,6 +25,7 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.getOrNull
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.playback.R
+import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.queue.UnitKey
@@ -59,8 +60,9 @@ class ClipService : Service() {
     private val clipConfig = ClipConfig()
     private lateinit var notices: ClipNotices
 
+    /** This instance started the running job ([JobSlots.CLIP]); a refused or finished start lets it stop. */
     @Volatile
-    private var worker: Thread? = null
+    private var mine = false
 
     override fun onCreate() {
         super.onCreate() // Hilt injects fields here.
@@ -80,17 +82,25 @@ class ClipService : Service() {
                 "Bad clip request ${intent?.action}",
             )
 
-            worker != null -> AudoraLog.w(TAG, "A clip is already being made; book=${id.logLabel} dropped")
+            // The restart that applies a restore would cut the clip off.
+            Backups.restoreUnderWay -> notices.showFailed(getString(R.string.long_job_restoring))
 
-            else -> worker = Thread({ makeClip(id, start) }, THREAD_NAME).apply { start() }
+            else -> {
+                // Set first: the job may end (and clear it) before launch returns.
+                mine = true
+                if (!JobSlots.CLIP.launch(THREAD_NAME) { makeClip(id, start) }) {
+                    mine = false
+                    AudoraLog.w(TAG, "A clip is already being made; book=${id.logLabel} dropped")
+                }
+            }
         }
-        if (worker == null) stopSelf(startId)
+        if (!mine) stopSelf(startId)
         return START_NOT_STICKY
     }
 
     override fun onTimeout(startId: Int, fgsType: Int) {
         AudoraLog.w(TAG, "Android's time limit for long jobs reached; stopping the clip")
-        worker?.interrupt()
+        JobSlots.CLIP.interrupt()
         // Android throws if the service is still in the foreground a few seconds after this; the worker may be
         // inside a long native call, so stop now and let it finish its notice on its own thread.
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -98,7 +108,7 @@ class ClipService : Service() {
     }
 
     override fun onDestroy() {
-        worker?.interrupt()
+        JobSlots.CLIP.interrupt()
         super.onDestroy()
     }
 
@@ -118,7 +128,7 @@ class ClipService : Service() {
             AudoraLog.i(TAG, "Clip cancelled, book=${id.logLabel}")
         } finally {
             if (wakeLock.isHeld) wakeLock.release()
-            worker = null
+            mine = false
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
         }
@@ -199,6 +209,7 @@ class ClipService : Service() {
     private companion object {
         const val TAG = "Clip.Service"
         const val THREAD_NAME = "audio-clip"
+
         const val WAKE_LOCK_TAG = "Audora:AudioClip"
         const val MIME_TYPE = "audio/mp4"
 

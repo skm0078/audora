@@ -26,17 +26,24 @@ reachable from the build threads' containers (GitHub Actions reaches it).
    voice-mirror log (source and zip pins), so a thread can pin a snapshot it cannot download. Because the upstream
    file is replaced in place, the mirror workflow keeps any dictionary whose pinned zip is already on the "voices"
    release (`--published`: downloaded and checked byte for byte) instead of rebuilding it; the snapshot is needed
-   only until the first publish from dev. If kaikki.org moved on before that, the pin fails loudly and is re-measured
-   (one more CI round), never silently replaced.
+   only until the first publish from dev. If kaikki.org moved on before that, the pin fails loudly on dev (which
+   publishes) and is re-measured (one more CI round), never silently replaced; on other branches it is a warning and
+   that zip is not rebuilt, so a feature branch's CI does not go red over an upstream refresh. A pin covers the zip's
+   name, SHA-256, size and the unpacked text's size.
 5. **App:** one optional download per language (`Dictionaries.forLanguage`, `DictionaryPin.HINDI`/`BENGALI`, folders
    `noBackupFilesDir/dictionary-hi` and `dictionary-bn`, their own WorkManager names). A tapped word goes to its
    script's dictionary (`DictionaryLanguage`: Devanagari to Hindi, Bengali script to Bengali, anything else English);
    the offer names the language, size and source. Hindi and Bengali take words only as written (their form lines
    cover inflections); English keeps WordNet's base-form rules. Parts of speech gain pronoun, postposition,
-   conjunction, interjection, number and "word" for the rest.
+   conjunction, interjection, number and "word" for the rest. A dictionary counts as installed only while its text
+   has the pinned unpacked size (files synced before the marker), so a power cut or a damaged file reads as not
+   installed; deleting one waits for a cancelled download to stop. A word with a zero-width joiner inside stays one
+   word; a form line is followed to at most as many headwords as a look-up shows. The builder's multi-word filtering
+   is unchanged, since changing it would change the published pins for no reader-visible gain.
 6. **Licence:** CC BY-SA 4.0. The dictionary files are adapted material and are shared under the same licence; the
-   app's code stays GPL-3.0 (the data is a separate download, not compiled in). Credit in the licences screen and the
-   full licence text in each zip.
+   app's code stays GPL-3.0 (the data is a separate download, not compiled in). Credit in the licences screen, with the
+   licence's link and a note that Wiktionary text from before June 2023 was published under CC BY-SA 3.0 and the GNU
+   FDL and is used under CC BY-SA (3.0 allows adaptations under 4.0), and the full licence text in each zip.
 
 ## Alternatives considered
 - **Hindi WordNet / IndoWordNet:** better sense structure, but no redistribution (ADR-045). Rejected.

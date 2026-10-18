@@ -35,14 +35,26 @@ small settings files.
    restarts itself, and `AudoraApplication.onCreate` applies it (`Backups.applyPending`, `PendingRestore`) before
    Hilt builds anything that opens the database or preferences. Applying is renames only, inside one volume: each
    unit (a file, a whole folder, the database with its `-wal`, `-shm` and `-journal`, which would otherwise be
-   replayed over the restored file) moves to `no_backup/restore-aside/`, or leaves a `.none` note if absent, and the
-   staged one moves in. Removing the marker commits. On any failure, and at a start that finds an apply cut short by
-   a crash, every unit moves back and the restore is dropped, so a bad restore is tried once, never at every start;
-   the library then says the library is as it was. What was moved aside is deleted later, off the start path.
+   replayed over the restored file) moves to this attempt's own folder `no_backup/restore-aside/<attempt>/`, or
+   leaves a `.none` note if absent, and the staged one moves in. The marker records each step (`ready`, `applying`,
+   `committed`) and is written by a synced temp file and a rename; every rename phase is synced too, so a power cut
+   cannot reorder them. Writing `committed` is the commit point; a start that finds it only tidies up. On any
+   failure, and at a start that finds `applying` (a crash, or a torn marker), every unit moves back, each on its own,
+   the database and its journals as one group; a unit that cannot go back keeps the marker, so the next start tries
+   again and nothing new can be staged meanwhile (the library says the restore is unfinished). Only when everything
+   is back is the restore dropped, so a bad restore is tried once, never at every start; the library then says the
+   library is as it was. What was moved aside goes to a trash folder that a later start empties, after the restored
+   library has opened. An aside folder from another attempt is never put back.
+   Unpacking checks free space against the manifest's total before it starts and again as it writes, and syncs each
+   file. A staged database must carry the Room identity hash of its schema version (`SchemaHashes`, one entry per
+   version; a new schema version adds one), not just the live one's.
    A unit the writer knew but did not hold goes back to its default; a unit it did not know (added in a later app
    version) is left as it is. A staging without a database is never applied. A restore is refused while an export,
-   copy, clip or studio run is going, since the restart would cut it off; the job itself runs in a process-wide
-   scope (`Backups`), so turning the phone keeps it.
+   copy, clip or studio run is going, since the restart would cut it off (`JobSlots`, one per kind, checked again
+   just before the restart), and those jobs refuse to start while a restore is being staged; the job itself runs in a
+   process-wide scope (`Backups`), so turning the phone keeps it. Rows and copies arrive together: the database and
+   `files/shared-pdfs` are renamed into place before Room opens, so the shared-copy prune never sees a restored copy
+   without its book row.
 4. **A picked file is untrusted.** The manifest must be the first entry, so a foreign or newer file is refused before
    anything is unpacked. A newer format or schema version is refused ("update the app first"); an older schema is
    accepted and Room's migrations bring it up to date. Only allow-listed names are unpacked (no `..`, `.`, empty or

@@ -59,8 +59,12 @@ fun BackupRoute(backups: Backups, open: Boolean, onClose: () -> Unit, onRestart:
         val event = state.event ?: return@LaunchedEffect
         backups.consume()
         when (event) {
-            BackupEvent.RestartNeeded -> onRestart()
+            // A job started from a notification while staging: the restore is dropped rather than cutting it off.
+            BackupEvent.RestartNeeded ->
+                if (backups.confirmRestart()) onRestart() else toast(context, R.string.backup_busy)
+
             is BackupEvent.Saved -> toast(context, if (event.ok) R.string.backup_saved else R.string.backup_save_failed)
+
             is BackupEvent.Refused -> toast(context, messageOf(event.error))
         }
         close()
@@ -135,6 +139,7 @@ private fun messageOf(error: BackupError): Int = when (error) {
     BackupError.TOO_LARGE -> R.string.backup_too_large
     BackupError.NO_SPACE -> R.string.backup_no_space
     BackupError.BUSY -> R.string.backup_busy
+    BackupError.UNFINISHED -> R.string.backup_unfinished
     BackupError.IO_FAILED -> R.string.backup_restore_failed
 }
 
@@ -142,6 +147,7 @@ private fun messageOf(error: BackupError): Int = when (error) {
 fun restoreMessageOf(result: PendingRestore.Result): Int = when (result) {
     PendingRestore.Result.APPLIED -> R.string.backup_restored
     PendingRestore.Result.FAILED, PendingRestore.Result.NONE -> R.string.backup_restore_rolled_back
+    PendingRestore.Result.INCOMPLETE -> R.string.backup_restore_incomplete
 }
 
 private fun toast(context: Context, message: Int) = Toast.makeText(context, message, Toast.LENGTH_LONG).show()

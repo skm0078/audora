@@ -13,9 +13,13 @@ already reads scanned PDF pages: Tesseract OCR (P3-05), sideways-scan turning, l
    that declares it must hold it to send that intent), and the camera app's focus, flash and HDR come free.
 2. **The photo becomes a one-page PDF with no text layer** (`ImagePdf`, about 60 lines of pure Kotlin): turned
    upright from its EXIF orientation and scaled to at most 3,000 px on its long side by `ImageDecoder`, stored as JPEG
-   (quality 90) in a DCT image stream on an A4-sized page. Everything after that is the existing path: the library adds
-   it like a shared PDF (`SharedPdfCopies.newCopy`, so removing the book deletes it), and the reader finds no text
-   layer and reads the page with OCR, the page view showing the photo.
+   (quality 90) in a DCT image stream on an A4-sized page. Everything after that is the existing path: the book is
+   added like a shared PDF (`SharedPdfCopies.newCopy`, so removing the book deletes it), and the reader finds no text
+   layer and reads the page with OCR, the page view showing the photo. The PDF is written beside the capture and moves
+   into the shared copies only to be added at once, inside `PhotoBooks`' own scope (turning the phone or leaving the
+   screen keeps it); an unreferenced copy there is pruned at the next start. A marker beside the capture holds the
+   title until the book is added, so a book cut short by the process dying is made at the next start; a failure is
+   reported, never a crash, and is not retried at every start.
 3. **Entry point:** *Point and read (take a photo)* in the library's new ⋮ menu (`LibraryAction`), the place the
    watched folder (item 26) and backup (item 28) also go.
 

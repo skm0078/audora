@@ -11,7 +11,9 @@ package io.github.skm0078.audora.core.config
  * @property maxTotalBytes the most a restore unpacks in all; staging needs this much free space at worst.
  * @property maxEntries the most files a restore unpacks, so a crafted archive of tiny entries stops early.
  * @property bufferBytes the copy buffer for writing and unpacking.
- * @property minFreeBytes free space a restore leaves on the phone; a file that would go below it stops the restore.
+ * @property minFreeBytes free space a restore leaves on the phone; a backup whose total would go below it is refused
+ *   before unpacking, and unpacking stops if free space drops below it anyway.
+ * @property spaceCheckBytes how often, in bytes unpacked, free space is checked again.
  */
 data class BackupConfig(
     val maxEntryBytes: Long = 2_147_483_648L, // 2 GiB
@@ -19,6 +21,7 @@ data class BackupConfig(
     val maxEntries: Int = 20_000,
     val bufferBytes: Int = 65_536,
     val minFreeBytes: Long = 134_217_728L, // 128 MiB
+    val spaceCheckBytes: Long = 8_388_608L, // 8 MiB
 ) {
     init {
         require(maxEntryBytes > 0) { "maxEntryBytes must be > 0, was $maxEntryBytes" }
@@ -26,5 +29,6 @@ data class BackupConfig(
         require(maxEntries > 0) { "maxEntries must be > 0, was $maxEntries" }
         require(bufferBytes > 0) { "bufferBytes must be > 0, was $bufferBytes" }
         require(minFreeBytes >= 0) { "minFreeBytes must be >= 0, was $minFreeBytes" }
+        require(spaceCheckBytes > 0) { "spaceCheckBytes must be > 0, was $spaceCheckBytes" }
     }
 }

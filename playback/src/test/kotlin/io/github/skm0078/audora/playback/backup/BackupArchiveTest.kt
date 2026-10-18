@@ -40,7 +40,7 @@ class BackupArchiveTest {
         val bytes = ByteArrayOutputStream().also { archive.write(it, manifest, snapshot, root) }.toByteArray()
         val result = archive.stage(bytes.inputStream(), staging, DB_VERSION)
 
-        assertEquals(Outcome.Success(manifest), result)
+        assertEquals("the total size travels", Outcome.Success(manifest.copy(bytes = 12L)), result)
         assertEquals("db", File(staging, "databases/audora.db").readText())
         assertEquals("queue", File(staging, "files/up-next.txt").readText())
         assertEquals("voice", File(staging, "files/voice-notes/1.m4a").readText())
@@ -140,7 +140,8 @@ class BackupArchiveTest {
         val badManifest = ByteArrayOutputStream().also { out ->
             ZipOutputStream(out).use { zip -> entry(zip, BackupManifest.ENTRY, "format=\\uZZZZ\n") }
         }.toByteArray()
-        val full = BackupArchive(config = BackupConfig(minFreeBytes = Long.MAX_VALUE / 2))
+        // Streamed entries claim no size: free space is checked as bytes arrive.
+        val full = BackupArchive(config = BackupConfig(minFreeBytes = Long.MAX_VALUE / 2, spaceCheckBytes = 1))
         val valid = zipOf(manifest, "databases/audora.db" to "db")
 
         assertEquals(
@@ -160,7 +161,29 @@ class BackupArchiveTest {
         val listed = manifest.copy(units = BackupContents.DEFAULT.units())
         val bytes = ByteArrayOutputStream().also { archive.write(it, listed, snapshot, root) }.toByteArray()
 
-        assertEquals(Outcome.Success(listed), archive.stage(bytes.inputStream(), staging, DB_VERSION))
+        assertEquals(Outcome.Success(listed.copy(bytes = 2L)), archive.stage(bytes.inputStream(), staging, DB_VERSION))
+    }
+
+    @Test
+    fun `a backup bigger than the free space is refused before anything is unpacked`() {
+        val huge = zipOf(manifest.copy(bytes = Long.MAX_VALUE / 4), "databases/audora.db" to "db")
+
+        assertEquals(Outcome.Failure(BackupError.NO_SPACE), archive.stage(huge.inputStream(), staging, DB_VERSION))
+        assertFalse(staging.exists())
+    }
+
+    @Test
+    fun `files and folders saved under an earlier name come back under the current one`() {
+        val renamed = BackupContents.DEFAULT.copy(
+            renamed = mapOf("files/queue.txt" to "files/up-next.txt", "files/notes" to "files/voice-notes"),
+        )
+        val old = zipOf(manifest, "databases/audora.db" to "db", "files/queue.txt" to "q", "files/notes/1.m4a" to "v")
+
+        assertTrue(BackupArchive(renamed).stage(old.inputStream(), staging, DB_VERSION) is Outcome.Success)
+
+        assertEquals("q", File(staging, "files/up-next.txt").readText())
+        assertEquals("v", File(staging, "files/voice-notes/1.m4a").readText())
+        assertEquals("files/voice-notes", renamed.current("files/notes"))
     }
 
     private fun put(path: String, text: String) = File(root, path).apply {

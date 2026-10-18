@@ -40,8 +40,11 @@ class DictionaryDownloadTest {
     private val text = "box\tn|a container|\nmice\t=mouse\nmouse\tn|a small rodent|\n".toByteArray()
     private val goodZip = zipOf("LICENSE" to "CC BY 4.0".toByteArray(), "dictionary.tsv" to text)
 
-    private fun pinFor(zip: ByteArray) =
-        DictionaryPin.ENGLISH.copy(sha256 = sha256Hex(zip), sizeBytes = zip.size.toLong())
+    private fun pinFor(zip: ByteArray) = DictionaryPin.ENGLISH.copy(
+        sha256 = sha256Hex(zip),
+        sizeBytes = zip.size.toLong(),
+        unpackedBytes = text.size.toLong(),
+    )
 
     private fun filesFor(pin: DictionaryPin, cap: Long = config.maxUnpackedBytes) =
         DictionaryFiles(temp.root.resolve("dictionary"), pin, cap, config.bufferBytes)
@@ -87,6 +90,18 @@ class DictionaryDownloadTest {
 
         val files = filesFor(pinFor(goodZip), cap = 10)
         assertTrue(files.install(zipFile(goodZip)) is Outcome.Failure)
+        assertFalse(files.isInstalled())
+    }
+
+    @Test
+    fun `a text of another size than pinned is never installed, and one damaged later reads as not installed`() {
+        val wrongSize = filesFor(pinFor(goodZip).copy(unpackedBytes = text.size + 1L))
+        assertTrue(wrongSize.install(zipFile(goodZip)) is Outcome.Failure)
+        assertFalse(wrongSize.isInstalled())
+
+        val files = filesFor(pinFor(goodZip))
+        assertTrue(files.install(zipFile(goodZip)) is Outcome.Success)
+        files.text.writeText("box")
         assertFalse(files.isInstalled())
     }
 

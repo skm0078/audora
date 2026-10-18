@@ -269,6 +269,7 @@ class MainActivity : ComponentActivity() {
             BookCopies.continueFrom(this, intent)
             AudiobookExport.continueFrom(this, intent)
             Backups.takeStartResult()?.let { Toast.makeText(this, restoreMessageOf(it), Toast.LENGTH_LONG).show() }
+            photoBooks.resumePending()
         }
         setContent {
             val appearance by remember {
@@ -299,7 +300,7 @@ class MainActivity : ComponentActivity() {
         LaunchedEffect(Unit) { dropStaleBookFiles() }
         SharedPdfEffect(sharedPdf, { sharedPdf = null }, libraryController::addShared, nav::navigate)
         SharedTextEffect()
-        PhotoBookEffect()
+        PhotoBookEffect(nav::navigate)
         ResumeWidgetEffect(libraryController.listState, widgetResume, { widgetResume = null }, nav::continueReading)
         val books = libraryBooks(libraryController.listState)
 
@@ -548,21 +549,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** The photo becomes a one-page book in the app's scope (rotation keeps it); [PhotoBookEffect] adds it. */
+    /** The photo becomes a book, added in the app's scope (rotation keeps it); [PhotoBookEffect] opens it. */
     private fun makePhotoBook() {
         val takenAt = LocalDateTime.now().format(DateTimeFormatter.ofPattern(PHOTO_TITLE_DATE))
         photoBooks.startBook(getString(R.string.photo_book_title, takenAt))
     }
 
-    /** A finished photo book is added and opened like a shared PDF, whichever activity instance is showing. */
+    /** A photo book already in the library is opened, whichever activity instance is showing. */
     @Composable
-    private fun PhotoBookEffect() {
+    private fun PhotoBookEffect(navigate: (AppDestination) -> Unit) {
         val made by photoBooks.made.collectAsStateWithLifecycle()
         LaunchedEffect(made) {
             val result = made ?: return@LaunchedEffect
             photoBooks.consume()
             when (result) {
-                is Outcome.Success -> sharedPdf = result.value
+                is Outcome.Success -> navigate(AppDestination.Reader(result.value))
 
                 is Outcome.Failure ->
                     Toast.makeText(this@MainActivity, R.string.photo_failed, Toast.LENGTH_LONG).show()
@@ -614,7 +615,8 @@ class MainActivity : ComponentActivity() {
         var watchedOpen by rememberSaveable { mutableStateOf(false) }
         var backupOpen by rememberSaveable { mutableStateOf(false) }
         var quizOpen by rememberSaveable { mutableStateOf(false) }
-        var guideBook by remember { mutableStateOf<Book?>(null) }
+        // Saved by id, so a rotation, theme switch or process death keeps the guide open.
+        var guideBookId by rememberSaveable { mutableStateOf<String?>(null) }
         val actions = remember(controller) {
             object : LibraryActions {
                 override fun onAddPdf(documentUri: Uri) = controller.add(documentUri.toString())
@@ -656,7 +658,7 @@ class MainActivity : ComponentActivity() {
 
                     BookAction.EXPORT_NOTES -> exportNotes(book)
 
-                    BookAction.CHARACTER_GUIDE -> guideBook = book
+                    BookAction.CHARACTER_GUIDE -> guideBookId = book.id.value
                 }
 
                 override fun onLibraryAction(action: LibraryAction) = when (action) {
@@ -682,7 +684,9 @@ class MainActivity : ComponentActivity() {
         WatchedFoldersRoute(watchedFolders, open = watchedOpen) { watchedOpen = false }
         BackupRoute(backups, open = backupOpen, onClose = { backupOpen = false }, onRestart = ::restartForRestore)
         QuizRoute(highlightStore, open = quizOpen) { quizOpen = false }
-        CharacterGuideRoute(guideBook, resumeAnchors) { guideBook = null }
+        val guideBook = (controller.listState as? LibraryListState.Loaded)?.all
+            ?.firstOrNull { it.book.id.value == guideBookId }?.book
+        CharacterGuideRoute(guideBook, resumeAnchors) { guideBookId = null }
     }
 
     @Composable

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -23,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -107,13 +109,22 @@ private fun RoundBody(round: QuizRound, model: QuizModel) {
         stringResource(R.string.quiz_progress, round.position + 1, round.cards.size),
         style = MaterialTheme.typography.labelMedium,
     )
-    Text(card.shown, style = MaterialTheme.typography.bodyLarge)
+    // TalkBack would read the blank as underscores; it reads the spoken form ("blank") instead.
+    Text(
+        card.shown,
+        style = MaterialTheme.typography.bodyLarge,
+        modifier = Modifier.semantics { contentDescription = card.spoken },
+    )
     card.choices.forEach { choice ->
-        OutlinedButton(
-            onClick = { model.choose(choice) },
-            enabled = round.verdict == null,
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(choice) }
+        if (choice == round.picked) {
+            Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) { Text(choice) }
+        } else {
+            OutlinedButton(
+                onClick = { model.choose(choice) },
+                enabled = round.verdict == null,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(choice) }
+        }
     }
     if (round.revealed && round.verdict == null) {
         Text(stringResource(R.string.quiz_answer_was, card.answer), style = MaterialTheme.typography.titleMedium)
