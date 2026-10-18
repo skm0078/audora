@@ -46,6 +46,20 @@ class PageCursorTest {
         assertEquals(listOf(2, 3), later.playable(4, units).map { it.index })
     }
 
+    @Test
+    fun aStartOnAKnownUnitSkipsTheSummarySharingItsOffset() {
+        // A tap on row 0, or a rebuild while row 0 plays: the summary is not said again; a rebuild on it is.
+        val rows = page(4, 3)
+        val summary = rows[0].copy(index = 0, charEnd = rows[0].charStart, text = "")
+        val units = listOf(summary) + rows.map { it.copy(index = it.index + 1) }
+
+        val onRow = PageCursor(pageCount = 5, startPage = 4, startChar = rows[0].charStart, startIndex = 1)
+        assertEquals(listOf(1, 2, 3), onRow.playable(4, units).map { it.index })
+        val onSummary = PageCursor(pageCount = 5, startPage = 4, startChar = rows[0].charStart, startIndex = 0)
+        assertEquals(listOf(0, 1, 2, 3), onSummary.playable(4, units).map { it.index })
+        assertEquals("other pages are whole", 4, onRow.playable(3, page(3, 4)).size)
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun aStartPageOutsideTheBookIsRefused() {
         PageCursor(pageCount = 3, startPage = 3, startChar = 0)

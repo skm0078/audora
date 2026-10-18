@@ -127,7 +127,7 @@ class EngineRendererTest {
         renderer.render(sentence)
 
         // No cue, 20 ms of voice ("Pay five rupees now." at 1 kHz), then the 400 ms pause.
-        assertEquals(SentenceTiming(2, 30, 0, 20, 420), timings.of(UnitKey(2, 5)))
+        assertEquals(SentenceTiming(2, 30, 5, 0, 20, 420), timings.of(UnitKey(2, 5)))
     }
 
     @Test

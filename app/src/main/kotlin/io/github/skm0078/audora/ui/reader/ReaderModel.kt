@@ -142,7 +142,7 @@ class ReaderModel(
             mutableState.update { it.copy(unreadableTapped = unit) }
             return
         }
-        startReading(ReadingPosition(bookId, unit.page, unit.charStart))
+        startReading(ReadingPosition(bookId, unit.page, unit.charStart), unit.index)
     }
 
     /** "Read it anyway" on a greyed sentence: turns "Skip unreadable text" off and reads from that sentence. */
@@ -151,7 +151,7 @@ class ReaderModel(
         mutableState.update { it.copy(unreadableTapped = null) }
         AudoraLog.i(TAG, "Skip unreadable turned off from a greyed sentence, $logContext page=${unit.page}")
         player.setReadingModes(state.value.playback.readingModes.copy(skipUnreadable = false))
-        startReading(ReadingPosition(bookId, unit.page, unit.charStart))
+        startReading(ReadingPosition(bookId, unit.page, unit.charStart), unit.index)
     }
 
     fun dismissUnreadable() = mutableState.update { it.copy(unreadableTapped = null) }
@@ -338,13 +338,14 @@ class ReaderModel(
         document = null
     }
 
-    private fun startReading(position: ReadingPosition) {
+    /** [unitIndex]: the tapped unit's, so a continued table's first row starts there, not at its summary. */
+    private fun startReading(position: ReadingPosition, unitIndex: Int? = null) {
         if (!state.value.playerReady) {
             AudoraLog.w(TAG, "Start ignored, $logContext player not ready")
             return
         }
         mutableState.update { it.copy(following = true) }
-        player.start(position, password)
+        player.start(position, password, unitIndex)
         if (position.page != state.value.page) loadPage(position.page)
     }
 

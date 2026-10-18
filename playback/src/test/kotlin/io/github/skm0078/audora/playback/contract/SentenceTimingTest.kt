@@ -8,7 +8,8 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class SentenceTimingTest {
-    private val timing = SentenceTiming(page = 3, charStart = 120, leadMs = 200, speechMs = 1_000, totalMs = 1_500)
+    private val timing =
+        SentenceTiming(page = 3, charStart = 120, unitIndex = 4, leadMs = 200, speechMs = 1_000, totalMs = 1_500)
 
     @Test
     fun `round trips`() {
@@ -17,7 +18,15 @@ class SentenceTimingTest {
 
     @Test
     fun `a missing or malformed line is no timing`() {
-        listOf(null, "", "3;120;200;1000", "3;120;x;1000;1500", "3;120;200;1000;900", "-1;0;0;0;0").forEach {
+        val malformed = listOf(
+            null,
+            "",
+            "3;120;200;1000;1500", // the five-field line from before the unit index
+            "3;120;4;x;1000;1500",
+            "3;120;4;200;1000;900",
+            "-1;0;0;0;0;0",
+        )
+        malformed.forEach {
             assertNull(it, SentenceTiming.decode(it))
         }
     }
@@ -33,7 +42,7 @@ class SentenceTimingTest {
 
     @Test
     fun `a cue alone has no speech to move through`() {
-        val cue = SentenceTiming(0, 0, leadMs = 300, speechMs = 0, totalMs = 700)
+        val cue = SentenceTiming(0, 0, 0, leadMs = 300, speechMs = 0, totalMs = 700)
         assertEquals(0f, cue.speechFraction(100), EPS)
         assertEquals(1f, cue.speechFraction(400), EPS)
     }

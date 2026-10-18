@@ -118,6 +118,7 @@ class ReaderModelTest {
         port.connect()
         model.readFrom(unitsOf(0)[2])
         assertEquals(listOf(ReadingPosition(BOOK, 0, 40) to null), port.starts)
+        assertEquals("a tap names its unit", listOf<Int?>(2), port.startIndexes)
     }
 
     @Test

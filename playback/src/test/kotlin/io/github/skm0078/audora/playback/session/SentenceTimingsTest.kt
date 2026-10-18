@@ -31,5 +31,5 @@ class SentenceTimingsTest {
         assertEquals(listOf(UnitKey(1, 4), UnitKey(1, 4)), heard)
     }
 
-    private fun timing(speechMs: Int) = SentenceTiming(0, 0, 0, speechMs.toLong(), speechMs.toLong())
+    private fun timing(speechMs: Int) = SentenceTiming(0, 0, 0, 0, speechMs.toLong(), speechMs.toLong())
 }
