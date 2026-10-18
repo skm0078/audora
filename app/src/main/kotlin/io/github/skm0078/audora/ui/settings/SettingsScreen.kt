@@ -59,6 +59,7 @@ fun SettingsScreen(
     onPunctuationModel: (OcrModelsAction) -> Unit = {},
     volumeKeysSkip: Boolean = false,
     onVolumeKeysSkipChange: (Boolean) -> Unit = {},
+    voiceCommands: VoiceCommandsSettings? = null,
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -87,6 +88,7 @@ fun SettingsScreen(
             )
             HorizontalDivider()
             ReaderSwitches(keepScreenOn, onKeepScreenOnChange, volumeKeysSkip, onVolumeKeysSkipChange)
+            voiceCommands?.let { VoiceCommandsItems(it) }
             BatteryItem(batteryExempt, onOpenBatterySetup)
             HorizontalDivider()
             ShareLogsItem(shareState, onShareLogs)
@@ -134,7 +136,7 @@ private fun ReaderSwitches(
 
 /** A downloadable model pack's row and its divider; nothing while its state is still loading. */
 @Composable
-private fun ModelPackRow(state: OcrModelsState?, onAction: (OcrModelsAction) -> Unit, texts: ModelPackTexts) {
+internal fun ModelPackRow(state: OcrModelsState?, onAction: (OcrModelsAction) -> Unit, texts: ModelPackTexts) {
     state?.let {
         OcrModelsItem(it, onAction, texts)
         HorizontalDivider()
@@ -156,7 +158,7 @@ private fun SettingsTopBar(onBack: () -> Unit) {
 
 /** The whole row toggles; the switch only shows the state (no onCheckedChange), so it is not a second target. */
 @Composable
-private fun SwitchItem(@StringRes title: Int, @StringRes body: Int, checked: Boolean, onChange: (Boolean) -> Unit) {
+internal fun SwitchItem(@StringRes title: Int, @StringRes body: Int, checked: Boolean, onChange: (Boolean) -> Unit) {
     ListItem(
         headlineContent = { Text(stringResource(title)) },
         supportingContent = { Text(stringResource(body)) },

@@ -200,6 +200,30 @@
       "file": "punct-en-cnn-bilstm-a8fac296fa09.zip",
       "sha256": "a8fac296fa09911b974292efc845e028cd38d99809dad0186529d3aa4eb6e332",
       "sizeBytes": 7640490
+    },
+    {
+      "id": "kws-en-zipformer-gigaspeech",
+      "label": "English voice commands",
+      "lang": "en",
+      "family": "kws-zipformer",
+      "model": "encoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
+      "tokens": "tokens.txt",
+      "extraFiles": [
+        "decoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
+        "joiner-epoch-12-avg-2-chunk-16-left-64.int8.onnx"
+      ],
+      "licence": "Apache-2.0",
+      "credit": "Zipformer keyword spotter (3.3M, GigaSpeech) by the k2-fsa project (Apache-2.0), trained with icefall and converted for sherpa-onnx. Only the int8 encoder, decoder and joiner and the token list are kept, unchanged.",
+      "licenceUrl": "https://github.com/k2-fsa/icefall/blob/master/LICENSE",
+      "sourceUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/kws-models",
+      "source": {
+        "archive": "sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01",
+        "sha256": "f170013b4716e41b62b9bfd809687c207cef798ef9bc6534d524e17af9b6561a",
+        "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01.tar.bz2"
+      },
+      "file": "kws-en-zipformer-gigaspeech-325100325fc0.zip",
+      "sha256": "325100325fc0b984169e2654d3b4fa01194df28bf8182a0b98d0b1d3f5c68dfa",
+      "sizeBytes": 5254988
     }
   ]
 }

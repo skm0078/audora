@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/DataStoreReaderPreferences.kt
-// Purpose: Keeps the listener's reading speed, page/text view and keep-screen-on in a Preferences DataStore.
+// Purpose: Keeps the listener's reading speed, page/text view and the reader's switches in a Preferences DataStore.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -32,57 +32,61 @@ class DataStoreReaderPreferences(context: Context) :
     ScreenPreference {
     private val store = context.applicationContext.readerPreferences
 
-    override suspend fun load(): Float? = read("speed") { it[SPEED] }
+    override suspend fun load(): Float? = store.read("speed") { it[SPEED] }
 
-    override suspend fun save(speed: Float) = write("speed $speed") { it[SPEED] = speed }
+    override suspend fun save(speed: Float) = store.write("speed $speed") { it[SPEED] = speed }
 
-    // An unknown name (a view a later version added, then a downgrade) falls back to the default view.
-    override suspend fun loadView(): ReaderView? =
-        read("view") { prefs -> prefs[VIEW]?.let { name -> ReaderView.entries.firstOrNull { it.name == name } } }
-
-    override suspend fun saveView(view: ReaderView) = write("view $view") { it[VIEW] = view.name }
-
-    override fun keepScreenOn(): Flow<Boolean> = store.data
-        .map { it[KEEP_SCREEN_ON] ?: false }
-        .catch { e ->
-            if (e !is IOException) throw e
-            AudoraLog.w(TAG, "Could not read the saved keep screen on", e)
-            emit(false)
-        }
-        .distinctUntilChanged()
-
-    override suspend fun saveKeepScreenOn(on: Boolean) = write("keep screen on $on") { it[KEEP_SCREEN_ON] = on }
-
-    override fun volumeKeysSkip(): Flow<Boolean> = store.data
-        .map { it[VOLUME_KEYS_SKIP] ?: false }
-        .catch { e ->
-            if (e !is IOException) throw e
-            AudoraLog.w(TAG, "Could not read the saved volume keys setting", e)
-            emit(false)
-        }
-
-    override suspend fun saveVolumeKeysSkip(on: Boolean) = write("volume keys skip $on") { it[VOLUME_KEYS_SKIP] = on }
-
-    private suspend fun <T> read(what: String, get: (Preferences) -> T?): T? = try {
-        get(store.data.first())
-    } catch (e: IOException) {
-        AudoraLog.w(TAG, "Could not read the saved $what", e)
-        null
+    override suspend fun loadView(): ReaderView? = store.read("view") { prefs ->
+        prefs[VIEW]?.let { name -> ReaderView.entries.firstOrNull { it.name == name } }
     }
 
-    private suspend fun write(what: String, set: (MutablePreferences) -> Unit) {
-        try {
-            store.edit { set(it) }
-        } catch (e: IOException) {
-            AudoraLog.w(TAG, "Could not save the $what", e)
-        }
-    }
+    override suspend fun saveView(view: ReaderView) = store.write("view $view") { it[VIEW] = view.name }
+
+    override fun keepScreenOn(): Flow<Boolean> = store.flag(KEEP_SCREEN_ON, "keep screen on")
+
+    override suspend fun saveKeepScreenOn(on: Boolean) = store.write("keep screen on $on") { it[KEEP_SCREEN_ON] = on }
+
+    override fun volumeKeysSkip(): Flow<Boolean> = store.flag(VOLUME_KEYS_SKIP, "volume keys setting")
+
+    override suspend fun saveVolumeKeysSkip(on: Boolean) =
+        store.write("volume keys skip $on") { it[VOLUME_KEYS_SKIP] = on }
+
+    override fun voiceCommands(): Flow<Boolean> = store.flag(VOICE_COMMANDS, "voice commands setting")
+
+    override suspend fun saveVoiceCommands(on: Boolean) = store.write("voice commands $on") { it[VOICE_COMMANDS] = on }
 
     private companion object {
-        const val TAG = "Audora.ReaderPrefs"
         val SPEED = floatPreferencesKey("speed")
         val VIEW = stringPreferencesKey("view")
         val KEEP_SCREEN_ON = booleanPreferencesKey("keepScreenOn")
         val VOLUME_KEYS_SKIP = booleanPreferencesKey("volumeKeysSkip")
+        val VOICE_COMMANDS = booleanPreferencesKey("voiceCommands")
+    }
+}
+
+private const val TAG = "Audora.ReaderPrefs"
+
+/** A switch that is off until saved on; an unreadable file reads as off (logged). */
+private fun DataStore<Preferences>.flag(key: Preferences.Key<Boolean>, what: String): Flow<Boolean> = data
+    .map { it[key] ?: false }
+    .catch { e ->
+        if (e !is IOException) throw e
+        AudoraLog.w(TAG, "Could not read the saved $what", e)
+        emit(false)
+    }
+    .distinctUntilChanged()
+
+private suspend fun <T> DataStore<Preferences>.read(what: String, get: (Preferences) -> T?): T? = try {
+    get(data.first())
+} catch (e: IOException) {
+    AudoraLog.w(TAG, "Could not read the saved $what", e)
+    null
+}
+
+private suspend fun DataStore<Preferences>.write(what: String, set: (MutablePreferences) -> Unit) {
+    try {
+        edit { set(it) }
+    } catch (e: IOException) {
+        AudoraLog.w(TAG, "Could not save the $what", e)
     }
 }

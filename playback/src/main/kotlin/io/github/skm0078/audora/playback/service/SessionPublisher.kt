@@ -6,6 +6,7 @@ package io.github.skm0078.audora.playback.service
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import androidx.media3.session.MediaSession
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.BookId
@@ -23,6 +24,7 @@ import io.github.skm0078.audora.playback.queue.UnitKey
 import io.github.skm0078.audora.playback.session.SentenceTimings
 import io.github.skm0078.audora.playback.session.SessionEvents
 import io.github.skm0078.audora.playback.session.SessionState
+import io.github.skm0078.audora.speech.kws.NarratorEcho
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,11 +58,14 @@ class SessionPublisher(
 
     override fun onNotReading() {
         diagnostics.notReading()
+        NarratorEcho.shared.stopped(SystemClock.elapsedRealtime())
         resume.flush()
     }
 
     override fun onSentenceStarted(bookId: BookId, unit: ReadingUnit) {
         resume.sentenceStarted(bookId, unit)
+        // Voice commands (plan item 38) ignore the book's own voice while it says the app's name.
+        NarratorEcho.shared.sentenceStarted(unit.text, SystemClock.elapsedRealtime())
         val key = UnitKey.of(unit)
         playing = key
         showTiming(key)

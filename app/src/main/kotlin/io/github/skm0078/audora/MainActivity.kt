@@ -55,6 +55,8 @@ import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
+import io.github.skm0078.audora.speech.kws.CommandListener
+import io.github.skm0078.audora.speech.kws.VoiceCommandModels
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.punct.PunctuationModels
@@ -88,10 +90,13 @@ import io.github.skm0078.audora.ui.reader.ScreenPreference
 import io.github.skm0078.audora.ui.reader.SleepTimerSetting
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
+import io.github.skm0078.audora.ui.reader.VoiceCommandsEffect
 import io.github.skm0078.audora.ui.reader.VolumeKeySkips
+import io.github.skm0078.audora.ui.reader.onVoiceCommand
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.settings.OcrModelsAction
 import io.github.skm0078.audora.ui.settings.SettingsScreen
+import io.github.skm0078.audora.ui.settings.rememberVoiceCommandsSettings
 import io.github.skm0078.audora.ui.settings.runModelAction
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import io.github.skm0078.audora.ui.voices.VoiceManager
@@ -157,6 +162,7 @@ class MainActivity : ComponentActivity() {
     /** The OCR model manager (P3-05); one per process, shared with the playback service's OCR. */
     private val ocrModels: OcrModels by lazy { OcrModels.get(applicationContext) }
     private val punctuationModels: PunctuationModels by lazy { PunctuationModels.get(applicationContext) }
+    private val voiceCommandModels: VoiceCommandModels by lazy { VoiceCommandModels.get(applicationContext) }
 
     @Inject
     lateinit var licenceSource: LicenceSource
@@ -317,6 +323,7 @@ class MainActivity : ComponentActivity() {
                     punctuationModels.delete()
                 }
             },
+            voiceCommands = rememberVoiceCommandsSettings(voiceCommandModels, screenPreference),
         )
     }
 
@@ -480,6 +487,10 @@ class MainActivity : ComponentActivity() {
         KeepScreenOn(keepScreenOn && state.playback.wantsToPlay)
         val volumeKeys by remember { screenPreference.volumeKeysSkip() }.collectAsStateWithLifecycle(false)
         VolumeKeySkips(volumeKeys && state.playback.wantsToPlay, model::skipForward, model::skipBack)
+        val commandsOn by remember { screenPreference.voiceCommands() }.collectAsStateWithLifecycle(false)
+        val commandsModel by remember { voiceCommandModels.installed() }.collectAsStateWithLifecycle(false)
+        val listener = remember { CommandListener(context, voiceCommandModels) }
+        VoiceCommandsEffect(commandsOn && commandsModel, listener) { model.onVoiceCommand(it, readerConfig) }
         ReaderScreen(
             state = state,
             config = readerConfig,

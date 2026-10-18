@@ -69,6 +69,11 @@ interface ScreenPreference {
     fun volumeKeysSkip(): Flow<Boolean> = flowOf(false)
 
     suspend fun saveVolumeKeysSkip(on: Boolean) = Unit
+
+    /** "Audora, pause" and the other spoken commands in the reader (plan item 38); off by default (battery). */
+    fun voiceCommands(): Flow<Boolean> = flowOf(false)
+
+    suspend fun saveVoiceCommands(on: Boolean) = Unit
 }
 
 class LibraryReaderBooks(private val library: Library) : ReaderBooks {

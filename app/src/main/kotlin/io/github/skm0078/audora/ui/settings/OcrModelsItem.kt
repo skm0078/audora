@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/OcrModelsItem.kt
-// Purpose: Settings row for a downloadable model pack (OCR P3-05, punctuation RI-11): state, download, cancel, delete.
+// Purpose: Settings row for a downloadable model pack (OCR, punctuation, voice commands): state, download, delete.
 
 package io.github.skm0078.audora.ui.settings
 
@@ -76,6 +76,11 @@ internal data class ModelPackTexts(@StringRes val title: Int, @StringRes val mis
             R.string.settings_punct_title,
             R.string.settings_punct_missing,
             R.string.settings_punct_ready,
+        )
+        val VOICE_COMMANDS = ModelPackTexts(
+            R.string.commands_model_title,
+            R.string.commands_model_missing,
+            R.string.commands_model_ready,
         )
     }
 }

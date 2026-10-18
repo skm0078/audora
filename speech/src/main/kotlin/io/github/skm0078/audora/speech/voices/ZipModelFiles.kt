@@ -1,7 +1,7 @@
-// File: speech/src/main/kotlin/io/github/skm0078/audora/speech/punct/PunctuationFiles.kt
-// Purpose: Where the punctuation model lives, whether it is installed, and how its zip is unpacked or removed.
+// File: speech/src/main/kotlin/io/github/skm0078/audora/speech/voices/ZipModelFiles.kt
+// Purpose: Where a model downloaded as one zip lives, whether it is installed, and how it is unpacked or removed.
 
-package io.github.skm0078.audora.speech.punct
+package io.github.skm0078.audora.speech.voices
 
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
@@ -11,18 +11,24 @@ import java.io.InputStream
 import java.util.zip.ZipException
 import java.util.zip.ZipFile
 
+/** A model downloaded as one pinned zip from the voice mirror; [files] are the entries it needs, by name. */
+interface ZipModel : PinnedFile {
+    val files: List<String>
+}
+
 /**
- * Layout under [root] (the no-backup folder: the model is re-downloadable):
- * - `<sha12>/` the installed model's two files, plus an `installed` marker written last, so a kill mid-install never
- *   leaves something that looks complete, and a new pin is a new folder;
+ * The punctuation model (RI-11) and the voice-command model (plan item 38) share it. Layout under [root] (the
+ * no-backup folder: the model is re-downloadable):
+ * - `<sha12>/` the installed model's [ZipModel.files], plus an `installed` marker written last, so a kill
+ *   mid-install never leaves something that looks complete, and a new pin is a new folder;
  * - `downloads/<id>-<sha12>.partial` a download in progress.
  *
- * Only the model's two named files are taken from the zip, wherever they sit in it; the zip was already checked
+ * Only the model's named files are taken from the zip, wherever they sit in it; the zip was already checked
  * against its pin, and [maxUnpackedBytes] caps what is written in case a pin is ever wrong.
  */
-class PunctuationFiles(
+class ZipModelFiles(
     val root: File,
-    private val model: PunctuationModel,
+    private val model: ZipModel,
     private val maxUnpackedBytes: Long,
     private val bufferBytes: Int,
 ) {
@@ -32,9 +38,7 @@ class PunctuationFiles(
     fun partialDownload(): File =
         File(File(root, DOWNLOADS), "${model.id}-${model.sha256.take(PIN_PREFIX_CHARS)}$PARTIAL_SUFFIX")
 
-    fun isInstalled(): Boolean = marker.isFile && listOf(model.modelFile, model.vocabFile).all {
-        File(modelDir, it).isFile
-    }
+    fun isInstalled(): Boolean = marker.isFile && model.files.all { File(modelDir, it).isFile }
 
     /** Unpacks a verified zip into place and deletes it, whatever the outcome; older pins are removed on success. */
     fun install(zip: File): Outcome<Unit, String> {
@@ -48,11 +52,11 @@ class PunctuationFiles(
             if (!staging.renameTo(modelDir)) throw IOException("cannot move the model into place")
             root.listFiles { file -> file.isDirectory && file.name.length == PIN_PREFIX_CHARS && file != modelDir }
                 ?.forEach { it.deleteRecursively() }
-            AudoraLog.i(TAG, "Installed punctuation model ${model.id}")
+            AudoraLog.i(TAG, "Installed model ${model.id}")
             Outcome.Success(Unit)
         } catch (e: IOException) {
-            AudoraLog.e(TAG, "Installing punctuation model ${model.id} failed", e)
-            Outcome.Failure("could not install the punctuation model: ${e.message}")
+            AudoraLog.e(TAG, "Installing model ${model.id} failed", e)
+            Outcome.Failure("could not install ${model.id}: ${e.message}")
         } finally {
             staging.deleteRecursively()
             zip.delete()
@@ -65,13 +69,13 @@ class PunctuationFiles(
     /** Removes the model and any download, leftovers of a cancelled or failed one included. */
     fun deleteAll(): Outcome<Unit, String> {
         val clean = !root.exists() || root.deleteRecursively()
-        AudoraLog.i(TAG, if (clean) "Deleted the punctuation model" else "Could not fully delete the punctuation model")
-        return if (clean) Outcome.Success(Unit) else Outcome.Failure("could not delete every punctuation model file")
+        AudoraLog.i(TAG, if (clean) "Deleted model ${model.id}" else "Could not fully delete model ${model.id}")
+        return if (clean) Outcome.Success(Unit) else Outcome.Failure("could not delete every file of ${model.id}")
     }
 
     @Throws(IOException::class)
     private fun unpack(zip: File, into: File) {
-        val wanted = setOf(model.modelFile, model.vocabFile)
+        val wanted = model.files.toSet()
         try {
             ZipFile(zip).use { unpackWanted(it, wanted, into) }
         } catch (e: ZipException) {
@@ -107,7 +111,7 @@ class PunctuationFiles(
     }
 
     private companion object {
-        const val TAG = "Speech.PunctFiles"
+        const val TAG = "Speech.ModelFiles"
         const val DOWNLOADS = "downloads"
         const val STAGING = "staging"
         const val MARKER = "installed"

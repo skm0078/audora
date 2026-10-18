@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_commands.xml -->
+<!-- Purpose: Strings for spoken commands in the reader (plan item 38). -->
+<resources>
+    <string name="commands_model_title">Voice commands model (English)</string>
+    <string name="commands_model_missing">Lets you say \"Audora, pause\", \"play\", \"next\", \"back\", \"repeat\", \"faster\" or \"slower\" with the reader open. Everything is heard on your phone; nothing is recorded or sent. Needs %1$d MB.</string>
+    <string name="commands_model_ready">Installed · %1$d MB</string>
+    <string name="commands_switch_title">Listen for voice commands</string>
+    <string name="commands_switch_body">While the reader is on screen, Audora listens for \"Audora\" and a command, and Android shows the microphone indicator. Uses a little battery while it listens.</string>
+    <string name="commands_switch_needs_model">Download the voice commands model first.</string>
+    <string name="commands_permission_denied">Voice commands need the microphone. You can allow it in Android\'s app settings.</string>
+</resources>
