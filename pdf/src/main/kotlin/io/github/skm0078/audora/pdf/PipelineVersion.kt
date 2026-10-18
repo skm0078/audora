@@ -51,6 +51,7 @@ package io.github.skm0078.audora.pdf
  *     row demoted only on a running serial number or figures like its rows with no year, two years a header again;
  *     English titles, Latin abbreviations, capital initials and references before a number no longer end a sentence
  *     ("Dr. Rao", "e.g. Apples", "Abbott B. P.", "Eq. (A1)"); list items opened by "b.", "iv.", "ii)", "(A)",
- *     "B)" or "(IV)".
+ *     "B)" or "(IV)"; a corresponding author's block at a column's foot (short small lines with the page's only
+ *     e-mail address) tagged as a footnote.
  */
 const val PIPELINE_VERSION: Int = 11

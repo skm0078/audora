@@ -16,7 +16,9 @@ import io.github.skm0078.audora.pdf.extract.PageText
  * - **Footnotes.** The last lines of a column, set smaller than the body (`NoteConfig.footnoteSizeRatio`) and apart
  *   from the line above (`footnoteGapEm`), with nothing below them. Each line opening with a marker starts a
  *   [ParagraphKind.FOOTNOTE] holding that note's number; lines before the first marker carry on a note from the page
- *   before (no number). Footnotes stay where they are printed, so playback reads them in page order.
+ *   before (no number). A run holding the page's only e-mail address is a note however narrow its lines (a paper's
+ *   corresponding author: "✉ Nora M. Gilbertson", "nmg421@uw.edu", an affiliation); a page with addresses elsewhere
+ *   too is a directory. Footnotes stay where they are printed, so playback reads them in page order.
  * - **Asides.** A body paragraph opening with a note label ("Note:", "NOTE –", "टिप्पणी:", "দ্রষ্টব্য:") is a
  *   [ParagraphKind.ASIDE].
  *
@@ -36,7 +38,11 @@ internal class NoteFinder(private val layoutConfig: LayoutConfig) {
                 for (line in paragraph.lines) markers[line] = markerFinder.of(page, styles, line)
             }
         }
-        val footnotes = footnoteLines(layout) { line -> markers[line].orEmpty().any { it.atLineStart } }
+        val footnotes = footnoteLines(
+            layout,
+            opening = { line -> markers[line].orEmpty().any { it.atLineStart } },
+            contact = { line -> line.spans.any { EMAIL.containsMatchIn(page.text.subSequence(it.start, it.end)) } },
+        )
         val blocks = layout.blocks.map { block ->
             block.copy(paragraphs = block.paragraphs.flatMap { tag(page, it, footnotes, markers) })
         }
@@ -82,12 +88,20 @@ internal class NoteFinder(private val layoutConfig: LayoutConfig) {
      * Each block's trailing small lines, when they are the bottom of their column (no line below them) and stand
      * apart from the full-size line above them.
      */
-    private fun footnoteLines(layout: PageLayout, opening: (TextLine) -> Boolean): Set<TextLine> {
+    private fun footnoteLines(
+        layout: PageLayout,
+        opening: (TextLine) -> Boolean,
+        contact: (TextLine) -> Boolean,
+    ): Set<TextLine> {
         val all = layout.blocks.flatMap { block -> block.paragraphs.flatMap { it.lines } }.filter { it.box != null }
         val out = HashSet<TextLine>()
         for (block in layout.blocks) {
             val run = trailingSmallLines(block, layout.bodySize)
-            if (run.isNotEmpty() && isFootnoteRun(run, all, layout.bodySize, opening(run.first()))) out.addAll(run)
+            val members = run.toSet()
+            // A page listing addresses throughout (a directory) has no corresponding author.
+            val contactNote = run.any(contact) && all.none { it !in members && contact(it) }
+            val opensAsNote = run.isNotEmpty() && (opening(run.first()) || contactNote)
+            if (run.isNotEmpty() && isFootnoteRun(run, all, layout.bodySize, opensAsNote)) out.addAll(run)
         }
         return out
     }
@@ -101,14 +115,15 @@ internal class NoteFinder(private val layoutConfig: LayoutConfig) {
     }
 
     /**
-     * [opensWithMarker]: the run's first line starts with a note's number. Without one it must carry on a note from
-     * the page before, and so run the width of the column (the line above), not be a stray table cell.
+     * [opensAsNote]: the run's first line starts with a note's number, or the run holds an e-mail address. Otherwise
+     * it must carry on a note from the page before, and so run the width of the column (the line above), not be a
+     * stray table cell.
      */
     private fun isFootnoteRun(
         run: List<TextLine>,
         all: List<TextLine>,
         bodySize: Float,
-        opensWithMarker: Boolean,
+        opensAsNote: Boolean,
     ): Boolean {
         val first = run.first().box!!
         val last = run.last().box!!
@@ -117,7 +132,7 @@ internal class NoteFinder(private val layoutConfig: LayoutConfig) {
         val above = others.filter { it.box!!.bottom >= first.top }.minByOrNull { it.box!!.bottom - first.top }
         val nothingBelow = others.none { it.box!!.top <= last.bottom }
         val aboveBox = above?.box ?: return false
-        val wide = opensWithMarker || first.width >= aboveBox.width * config.minCarriedNoteWidthShare
+        val wide = opensAsNote || first.width >= aboveBox.width * config.minCarriedNoteWidthShare
         return nothingBelow && wide &&
             above.size > bodySize * config.footnoteSizeRatio &&
             aboveBox.bottom - first.top >= bodySize * config.footnoteGapEm
@@ -160,6 +175,9 @@ internal class NoteFinder(private val layoutConfig: LayoutConfig) {
 
         /** [text] opens with a note label ("Note:", "टिप्पणी:", "দ্রষ্টব্য:"): an aside, on a text layer or a scan. */
         fun opensWithNoteLabel(text: String): Boolean = NOTE_LABEL.containsMatchIn(text)
+
+        /** An e-mail address: "nmg421@uw.edu". */
+        private val EMAIL = Regex("""[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+""")
 
         /** Footnote lines come out of layout as body text or list items ("1 Arrays are…" looks like a label). */
         private val NOTE_KINDS = setOf(ParagraphKind.BODY, ParagraphKind.LIST_ITEM)
