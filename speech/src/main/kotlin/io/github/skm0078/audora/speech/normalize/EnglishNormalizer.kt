@@ -23,6 +23,7 @@ class EnglishNormalizer(config: NormalizerConfig = NormalizerConfig()) : TextNor
         CurrencyRule(config, numbers),
         TimeRule(),
         AbbreviationRule(),
+        InitialsRule(),
         DateRule(config),
         SignRule(),
         SymbolRule(),
