@@ -92,6 +92,7 @@ class VoiceLibrary private constructor(
     suspend fun delete(id: String): Outcome<Unit, String> = withContext(Dispatchers.IO) {
         downloads.cancel(id)
         val result = synchronized(lock) { files.delete(id).also { refreshLocked() } }
+        SpeechEngines.blendCache(appContext).clear(id) // a Kokoro voice's narrator blend copy (plan item 75)
         readingVoices.forget(VoiceId(EngineId.SHERPA, id))
         speeds.forget(VoiceId(EngineId.SHERPA, id))
         result

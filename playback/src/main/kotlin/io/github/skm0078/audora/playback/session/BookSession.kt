@@ -114,8 +114,23 @@ class BookSession(
     /** Study modes (plan item 31): repeats, pause after each sentence, A–B loops. */
     private val study = StudyLoop()
 
-    /** The sleep timer or "Keep going" wants this sentence's end-of-item pause: study modes leave it alone. */
+    /** The sleep timer wants this sentence's end-of-item pause: study modes leave it alone. */
     private var stopForSleep = false
+
+    /**
+     * "Keep going to the next chapter" is off and this sentence ends a chapter: reading stops there, unless a study
+     * step reads on inside the chapter first (a repeat, or an A–B loop back).
+     */
+    private var atChapterEnd = false
+
+    /**
+     * A study step is starting play again by itself (repeat, go on, loop back): not the listener pressing play, so
+     * no rewind and no bedtime timer. Taken by the next play, cleared by any pause before it.
+     */
+    private var studyResume = false
+
+    /** Playback reached a page not loaded yet straight from a sentence: the range check waits for that page. */
+    private var overshootPending = false
 
     private var book: OpenedBook? = null
 
@@ -256,7 +271,8 @@ class BookSession(
      * there. Counts as a jump for "Undo jump". False with no sentence playing, or no paragraph that way.
      */
     suspend fun skipParagraph(forward: Boolean): Boolean {
-        val (from, target) = paragraphTarget(forward) ?: return false
+        val (from, target) = paragraphTarget(forward)?.takeIf { (from, _) -> currentSentence() == from }
+            ?: return false.also { AudoraLog.i(TAG, "Paragraph skip dropped: nothing playing, or reading moved on") }
         AudoraLog.i(
             TAG,
             "Paragraph forward=$forward to page=${target.page} char=${target.charStart}, book=${bookId?.logLabel}",
@@ -265,14 +281,20 @@ class BookSession(
             val at = (playlist.itemAt(i) as? PlaybackItem.Sentence)?.unit
             at != null && Spot(at.page, at.charStart) == target
         }
-        if (index != null) {
+        // Already there: nothing to skip, nor to undo.
+        val moves = index != player.currentMediaItemIndex
+        when {
+            !moves -> Unit
+
+            index == null -> {
+                recordJump(Spot(from.page, from.charStart), target, JumpOrigin.SKIP)
+                rebuild(target.page, target.charStart, play = player.playWhenReady)
+            }
+
             // The seek is recorded as a jump by the transition, like any skip.
-            player.seekTo(index, 0L)
-        } else {
-            recordJump(Spot(from.page, from.charStart), target, JumpOrigin.SKIP)
-            rebuild(target.page, target.charStart, play = player.playWhenReady)
+            else -> player.seekTo(index, 0L)
         }
-        return true
+        return moves
     }
 
     /** The sentence playing and where a paragraph skip goes; null with none, or when the book changed meanwhile. */
@@ -427,8 +449,10 @@ class BookSession(
         queue?.setWindow(sources.renderAhead.window(candidates, config))
         val current = playlist.current()
         val next = playlist.next()
-        stopForSleep = sleep.pauseAfter(current, next) || stopsAtChapterEnd(current, next)
-        player.pauseAtEndOfMediaItems = stopForSleep || study.pausesAfter(current, next, sources.reading.modes())
+        stopForSleep = sleep.pauseAfter(current, next)
+        atChapterEnd = stopsAtChapterEnd(current, next)
+        player.pauseAtEndOfMediaItems =
+            stopForSleep || atChapterEnd || study.pausesAfter(current, next, sources.reading.modes())
     }
 
     /** With "Keep going to the next chapter" off, reading pauses where a chapter ends (the book's end included). */
@@ -493,6 +517,7 @@ class BookSession(
     private fun onStudySentenceEnd(): Boolean {
         val unit = (playlist.current() as? PlaybackItem.Sentence)?.unit ?: return false
         val step = study.onSentenceEnd(unit, playlist.next(), sources.reading.modes())
+            .let { if (it == StudyStep.Continue && atChapterEnd) StudyStep.Stop else it }
         studyStep(step)
         return step != StudyStep.Stop
     }
@@ -501,10 +526,10 @@ class BookSession(
         when (step) {
             StudyStep.Repeat -> {
                 player.seekTo(player.currentMediaItemIndex, 0L)
-                player.play()
+                resumeForStudy()
             }
 
-            StudyStep.Continue -> player.play()
+            StudyStep.Continue -> resumeForStudy()
 
             StudyStep.Stop -> {
                 if (player.playWhenReady) player.pause()
@@ -522,12 +547,18 @@ class BookSession(
             (playlist.itemAt(i) as? PlaybackItem.Sentence)?.unit?.let(study::startsRange) == true
         }
         AudoraLog.i(TAG, "Study loop to page=${start.page} char=${start.charStart} seek=${index != null}")
+        studyResume = true
         if (index == null) {
             rebuild(start.page, start.charStart, play = true)
             return
         }
         ownSeekTarget = index
         player.seekTo(index, 0L)
+        player.play()
+    }
+
+    private fun resumeForStudy() {
+        studyResume = true
         player.play()
     }
 
@@ -764,9 +795,7 @@ class BookSession(
             val previous = lastSentence
             noteSeek(reason, started)
             study.onNewSentence()
-            if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
-                study.onOvershoot(previous, started)?.let(::studyStep)
-            }
+            checkOvershoot(reason, mediaItem, previous, started)
             replay.onSentence(started?.let(UnitKey::of))?.let(player::setPlaybackSpeed)
             (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.let { sentence ->
                 lastSentence = sentence.unit
@@ -777,12 +806,33 @@ class BookSession(
             pump()
         }
 
+        /**
+         * Played on from inside a study range to outside it: the range's end was missed (a seek, or the next page
+         * loading late). Arriving on a page not loaded yet ([PlaybackItem.More]) waits for the page: the playlist
+         * change that replaces it brings the sentence to check.
+         */
+        private fun checkOvershoot(reason: Int, mediaItem: MediaItem?, previous: ReadingUnit?, started: ReadingUnit?) {
+            val auto = reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO
+            val waited = overshootPending && reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED
+            if ((auto || waited) && started != null) study.onOvershoot(previous, started)?.let(::studyStep)
+            overshootPending = when {
+                auto -> PlaylistItems.itemOf(mediaItem) is PlaybackItem.More
+                started != null -> false
+                else -> overshootPending
+            }
+        }
+
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
             if (playWhenReady) {
-                rewindOnResume()
-                sleep.onStarted()
+                if (studyResume) {
+                    studyResume = false
+                } else {
+                    rewindOnResume()
+                    sleep.onStarted()
+                }
                 return
             }
+            studyResume = false
             val atItemEnd = reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM
             // A study mode's stop at a sentence end goes on by itself unless it is a real stop.
             if (atItemEnd && !stopForSleep && onStudySentenceEnd()) return

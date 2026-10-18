@@ -65,8 +65,8 @@ class BookCovers(
             book.documentUri in failed -> null
 
             else -> withContext(io) {
-                val bitmap = drawing.withLock { cached(book.id) ?: draw(book) }
-                bitmap?.also { memory.put(book.id, it) }?.asImageBitmap()
+                // Into memory under the same lock as clear(), so a cover drawn just before it is not kept after.
+                drawing.withLock { (cached(book.id) ?: draw(book))?.also { memory.put(book.id, it) } }?.asImageBitmap()
             }
         }
     }

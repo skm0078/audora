@@ -68,6 +68,35 @@ class CharacterCastTest {
         assertEquals(first, cast(taken = setOf(dialogue)).voiceFor(Lang.EN, Speaker("Mira", SpeakerGender.FEMALE)))
     }
 
+    @Test
+    fun `a character cast on a wrong guess of gender is cast again when the gender is told`() {
+        val cast = cast()
+        val guessed = cast.voiceFor(Lang.EN, Speaker("Tom", SpeakerGender.FEMALE))
+        val told = cast.voiceFor(Lang.EN, Speaker("Tom", SpeakerGender.MALE))
+
+        assertTrue(guessed in listOf(FEMALE_A, FEMALE_B).map { CastSpeakers.variant(NARRATOR, it) })
+        assertTrue(told in listOf(11, 12).map { CastSpeakers.variant(NARRATOR, it) })
+        assertEquals(told, cast().voiceFor(Lang.EN, Speaker("Tom", SpeakerGender.UNKNOWN)))
+    }
+
+    @Test
+    fun `a renderer's snapshot from before another book opened gives no voice and keeps nothing`() {
+        val cast = cast()
+        val before = cast.current()
+        cast.open(BookId("book-2"))
+
+        assertNull(before.voiceFor(Lang.EN, Speaker("Tom", SpeakerGender.MALE)))
+        assertTrue(files.books[BookId("book-2")].isNullOrEmpty())
+        assertTrue(cast.current().voiceFor(Lang.EN, Speaker("Tom", SpeakerGender.MALE)) != null)
+    }
+
+    @Test
+    fun `the cast is kept per narrator model, so switching away and back finds it`() {
+        val first = cast().voiceFor(Lang.EN, Speaker("Mira", SpeakerGender.FEMALE))
+        assertNull(cast(narrator = OTHER).voiceFor(Lang.EN, Speaker("Mira", SpeakerGender.FEMALE)))
+        assertEquals(first, cast().voiceFor(Lang.EN, Speaker("Mira", SpeakerGender.FEMALE)))
+    }
+
     private companion object {
         const val FEMALE_A = 1
         const val FEMALE_B = 2

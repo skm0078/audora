@@ -22,15 +22,18 @@ interface CharacterFiles {
 
 /**
  * Characters are read by the other speakers of the narrator's own model ([CastSpeakers]): Kokoro's English model
- * holds 26 more, Kitten's 7, all loaded with the narrator, so a full cast costs no memory and no model switch. A
+ * holds 27 more, Kitten's 7, all loaded with the narrator, so a full cast costs no memory and no model switch. A
  * one-speaker narrator (the Hindi and Bengali voices today) has no cast and its quotes keep the dialogue voice.
  *
  * A character's first voice is the least used one of their gender, ties broken by the name's hash so a book sounds
- * the same on every phone; it is kept for the book ([open]) from then on. A character whose gender no tag or pronoun
- * has told yet keeps the dialogue voice until it is known: Tom in a woman's voice is worse than no voice of his own.
- * The voices [taken] for dialogue or headings are never given to a character.
+ * the same on every phone; it is kept for the book ([open]) from then on, per narrator model, so switching the
+ * narrator away and back finds the same cast. A character whose gender no tag or pronoun has told yet keeps the
+ * dialogue voice until it is known: Tom in a woman's voice is worse than no voice of his own. When a later line
+ * tells a gender that the kept voice does not have (an early guess was wrong), the character is cast again. The
+ * voices [taken] for dialogue or headings are never given to a character.
  *
- * Thread-safe: [open] runs on the main thread, [voiceFor] on the render worker.
+ * Thread-safe: [open] runs on the main thread, [voiceFor] on the render worker. A renderer takes [current] before it
+ * looks up the sentence's speaker, so a book opened meanwhile never gets the old book's character.
  */
 class CharacterCast(
     private val narrator: (Lang) -> VoiceId?,
@@ -40,6 +43,7 @@ class CharacterCast(
 ) : CharacterVoices {
     private val lock = Any()
     private var book: BookId? = null
+    private var opened = 0
     private val assigned = HashMap<String, VoiceId>()
 
     /** A book opened: its characters' voices as they were left. */
@@ -47,35 +51,47 @@ class CharacterCast(
         val saved = files?.load(id).orEmpty()
         synchronized(lock) {
             book = id
+            opened++
             assigned.clear()
             saved.forEach { (key, name) -> assigned[key] = VoiceId(EngineId.SHERPA, name) }
         }
     }
 
-    override fun voiceFor(lang: Lang, speaker: Speaker): VoiceId? {
+    override fun current(): CharacterVoices {
+        val at = synchronized(lock) { opened }
+        return CharacterVoices { lang, speaker -> voiceFor(lang, speaker, at) }
+    }
+
+    override fun voiceFor(lang: Lang, speaker: Speaker): VoiceId? = voiceFor(lang, speaker, null)
+
+    private fun voiceFor(lang: Lang, speaker: Speaker, at: Int?): VoiceId? {
         val base = narrator(lang)?.takeIf { it.engine == EngineId.SHERPA } ?: return null
         val cast = speakers(base)
-        val all = cast.map { CastSpeakers.variant(base, it.speakerId) }.toSet() - taken(lang)
-        val key = keyOf(lang, speaker)
+        val voices = cast.associateBy { CastSpeakers.variant(base, it.speakerId) } - taken(lang)
+        val key = keyOf(base, lang, speaker)
         return synchronized(lock) {
-            val known = assigned[key]?.takeIf { it in all }
-            val first = if (known == null && speaker.gender != SpeakerGender.UNKNOWN) {
-                firstVoice(base, cast, speaker, all)
-            } else {
-                null
-            }
-            known ?: first?.also { voice ->
-                assigned[key] = voice
-                save()
+            val known = assigned[key]?.takeIf { it in voices }
+            val wrong = known != null && speaker.gender != SpeakerGender.UNKNOWN &&
+                voices.getValue(known).gender != speaker.gender
+            when {
+                at != null && at != opened -> null
+
+                known != null && !wrong -> known
+
+                speaker.gender == SpeakerGender.UNKNOWN -> null
+
+                else -> firstVoice(key, speaker, voices)?.also { voice ->
+                    assigned[key] = voice
+                    save()
+                }
             }
         }
     }
 
-    private fun firstVoice(base: VoiceId, cast: List<CastSpeaker>, speaker: Speaker, all: Set<VoiceId>): VoiceId? {
-        val pool = cast.filter { it.gender == speaker.gender }
-            .map { CastSpeakers.variant(base, it.speakerId) }
-            .filter { it in all }
-        val uses = assigned.values.groupingBy { it }.eachCount()
+    /** The least used voice of [speaker]'s gender, the character's own current voice not counted. */
+    private fun firstVoice(key: String, speaker: Speaker, voices: Map<VoiceId, CastSpeaker>): VoiceId? {
+        val pool = voices.filterValues { it.gender == speaker.gender }.keys.toList()
+        val uses = assigned.filterKeys { it != key }.values.groupingBy { it }.eachCount()
         val fewest = pool.minOfOrNull { uses[it] ?: 0 } ?: return null
         val least = pool.filter { (uses[it] ?: 0) == fewest }
         return least[Math.floorMod((speaker.key ?: speaker.gender.name).hashCode(), least.size)]
@@ -86,11 +102,11 @@ class CharacterCast(
         files?.save(id, assigned.mapValues { it.value.name })
     }
 
-    private fun keyOf(lang: Lang, speaker: Speaker): String =
-        "${lang.name}$SEPARATOR${speaker.key ?: "$GENERIC${speaker.gender.name}"}"
+    private fun keyOf(base: VoiceId, lang: Lang, speaker: Speaker): String =
+        listOf(base.name, lang.name, speaker.key ?: "$GENERIC${speaker.gender.name}").joinToString(SEPARATOR)
 
     private companion object {
-        const val SEPARATOR = '|'
+        const val SEPARATOR = "|"
         const val GENERIC = "#"
     }
 }

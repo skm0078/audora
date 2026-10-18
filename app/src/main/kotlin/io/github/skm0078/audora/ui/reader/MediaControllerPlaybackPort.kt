@@ -243,6 +243,10 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             undoJumpTo = undoOf(extras),
             study = studyOf(extras),
             sentenceTiming = SentenceTiming.decode(extras.getString(PlaybackContract.SESSION_SENTENCE_TIMING)),
+            blendOwnSpeaker = PlaybackContract.SESSION_BLEND_OWN_SPEAKER.takeIf(extras::containsKey)
+                ?.let(extras::getInt),
+            blendNeedsBytes = PlaybackContract.SESSION_BLEND_NEEDS_BYTES.takeIf(extras::containsKey)
+                ?.let(extras::getLong),
             // A skipped sentence is reported in the extras while reading goes on; only a stop is an error.
             errorCode = player.playerError?.errorCodeName
                 ?: extras.getString(PlaybackContract.SESSION_ERROR)?.takeUnless { player.playWhenReady },

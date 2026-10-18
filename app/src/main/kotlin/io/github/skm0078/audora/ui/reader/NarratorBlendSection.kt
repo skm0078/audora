@@ -23,15 +23,22 @@ import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.speech.sherpa.CastSpeakers
+import io.github.skm0078.audora.ui.voices.megabytes
 import kotlin.math.roundToInt
 
 /**
- * A chip per Kokoro English speaker, Off first, and how much of it to mix in. Only Kokoro narrators change: the
- * setting is kept for the others and applies when a Kokoro voice reads. Each change reloads the voice, so the
- * slider applies when the thumb is let go.
+ * A chip per other Kokoro English speaker, Off first, and how much of it to mix in. Shown only while a Kokoro
+ * English voice narrates ([NarratorBlendState.ownSpeaker]), the one voice a blend changes; the narrator's own
+ * speaker is left out (mixing a voice with itself changes nothing). Each change reloads the voice, so the slider
+ * applies when the thumb is let go. A blend that could not be built says why.
  */
 @Composable
-fun NarratorBlendSection(shaping: VoiceShaping, onChange: (VoiceShaping) -> Unit) {
+fun NarratorBlendSection(
+    shaping: VoiceShaping,
+    ownSpeaker: Int,
+    neededBytes: Long?,
+    onChange: (VoiceShaping) -> Unit,
+) {
     Text(stringResource(R.string.speech_blend), style = MaterialTheme.typography.titleMedium)
     Text(
         stringResource(R.string.speech_blend_detail),
@@ -47,7 +54,7 @@ fun NarratorBlendSection(shaping: VoiceShaping, onChange: (VoiceShaping) -> Unit
             onClick = { onChange(shaping.copy(blendWith = null)) },
             label = { Text(stringResource(R.string.speech_blend_off)) },
         )
-        CastSpeakers.kokoroEnglish.forEach { speaker ->
+        CastSpeakers.kokoroEnglish.filter { it.speakerId != ownSpeaker }.forEach { speaker ->
             FilterChip(
                 selected = shaping.blendWith == speaker.speakerId,
                 onClick = { onChange(shaping.copy(blendWith = speaker.speakerId)) },
@@ -55,7 +62,20 @@ fun NarratorBlendSection(shaping: VoiceShaping, onChange: (VoiceShaping) -> Unit
             )
         }
     }
-    if (shaping.blendWith != null) BlendAmountSlider(shaping.blendPercent) { onChange(shaping.copy(blendPercent = it)) }
+    if (shaping.blendWith != null) {
+        BlendAmountSlider(shaping.blendPercent) { onChange(shaping.copy(blendPercent = it)) }
+        neededBytes?.let { BlendNotApplied(it) }
+    }
+}
+
+@Composable
+private fun BlendNotApplied(neededBytes: Long) {
+    val text = if (neededBytes > 0) {
+        stringResource(R.string.speech_blend_needs_space, megabytes(neededBytes))
+    } else {
+        stringResource(R.string.speech_blend_refused)
+    }
+    Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
 }
 
 @Composable

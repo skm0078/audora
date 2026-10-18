@@ -97,6 +97,38 @@ class FocusMixerTest {
         assertTrue(rms(out) > 0f)
     }
 
+    @Test
+    fun aVoiceAtAnotherRateCarriesTheSoundOnAtItsLevel() {
+        val mixer = FocusMixer(RATE, config)
+        run(mixer, ShortArray(RATE * 2), rain)
+        val next = mixer.continuedAt(OTHER_RATE)
+        val bed = run(next, ShortArray(OTHER_RATE / 2), rain)
+        val full = config.maxGain * NOISE_RMS
+        assertEquals(FocusSound.RAIN, next.sound)
+        assertEquals(full, rms(bed), full * TOLERANCE)
+    }
+
+    @Test
+    fun afterAGapTheSoundFadesBackIn() {
+        val mixer = FocusMixer(RATE, config)
+        run(mixer, ShortArray(RATE * 2), rain)
+        mixer.fadeIn()
+        val start = run(mixer, ShortArray(RATE / 20), rain)
+        assertTrue(rms(start) < config.maxGain * NOISE_RMS / 2)
+    }
+
+    @Test
+    fun theEndFadesOutInsteadOfStoppingDead() {
+        val mixer = FocusMixer(RATE, config)
+        run(mixer, ShortArray(RATE * 2), rain)
+        val tail = mixer.tail(channels = 2)
+        assertEquals(RATE * config.tailMs / MS * 2, tail.size)
+        val firstPart = rms(tail.copyOfRange(0, tail.size / 10))
+        val lastPart = rms(tail.copyOfRange(tail.size * 9 / 10, tail.size))
+        assertTrue(lastPart < firstPart / 4)
+        assertEquals(0, mixer.tail(channels = 2).size)
+    }
+
     private fun run(mixer: FocusMixer, samples: ShortArray, options: FocusSoundOptions): ShortArray {
         // In buffers like the audio sink's, so state carries across calls.
         for (from in samples.indices step BUFFER) {
@@ -117,6 +149,7 @@ class FocusMixerTest {
 
     private companion object {
         const val RATE = 22_050
+        const val OTHER_RATE = 24_000
         const val MS = 1_000
         const val BUFFER = 1_024
         const val NOISE_RMS = 0.19f

@@ -293,3 +293,11 @@ fun SherpaSpeechEngine.castSpeakers(voice: VoiceId): List<CastSpeaker> {
     val spec = source.byId()[CastSpeakers.parse(voice).first] ?: return emptyList()
     return CastSpeakers.of(spec).filter { it.speakerId != spec.speakerId }
 }
+
+/**
+ * [voice]'s own speaker when a narrator blend can change it (plan item 75): a Kokoro voice with English speakers to
+ * mix in; null for any other voice, or one not installed. Cheap: reads the voice list, never loads a model.
+ */
+fun SherpaSpeechEngine.blendableSpeaker(voice: VoiceId): Int? = source.byId()[CastSpeakers.parse(voice).first]
+    ?.takeIf { it.family == SherpaFamily.KOKORO && CastSpeakers.of(it).isNotEmpty() }
+    ?.speakerId

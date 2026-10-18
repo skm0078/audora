@@ -109,6 +109,10 @@ data class StudyRangeState(val start: ReadingPosition, val end: ReadingPosition?
  * @property sentenceTiming where the voice speaks in the sentence playing (plan item 14), once it is rendered; use it
  *   only while its page and char start match [position].
  * @property errorCode Media3's error code name of the last playback error, for the log and a generic message.
+ * @property blendOwnSpeaker the narrator's own Kokoro English speaker, only while such a voice narrates: the narrator
+ *   blend (plan item 75) changes nothing else, so the speech sheet offers it only then.
+ * @property blendNeedsBytes the last narrator blend could not be built and needed this much free (0: the voice
+ *   refused it); null when it was built.
  */
 data class PlaybackSnapshot(
     val connection: Connection,
@@ -133,6 +137,8 @@ data class PlaybackSnapshot(
     val study: StudyRangeState? = null,
     val sentenceTiming: SentenceTiming? = null,
     val errorCode: String? = null,
+    val blendOwnSpeaker: Int? = null,
+    val blendNeedsBytes: Long? = null,
 ) {
     enum class Connection { CONNECTING, CONNECTED, UNAVAILABLE }
 

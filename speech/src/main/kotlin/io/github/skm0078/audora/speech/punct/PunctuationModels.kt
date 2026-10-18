@@ -25,6 +25,7 @@ import io.github.skm0078.audora.speech.voices.ResumableDownloader
 import io.github.skm0078.audora.speech.voices.UrlConnectionHttpSource
 import io.github.skm0078.audora.speech.voices.ZipModelDownloadJob
 import io.github.skm0078.audora.speech.voices.ZipModelFiles
+import io.github.skm0078.audora.speech.voices.cancelAndAwait
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
@@ -88,7 +89,7 @@ class PunctuationModels private constructor(
 
     /** Clears everything in any state, leftovers included. */
     suspend fun delete(): Outcome<Unit, String> = withContext(Dispatchers.IO) {
-        workManager().cancelUniqueWork(WORK_NAME)
+        workManager().cancelAndAwait(WORK_NAME, downloads.stopWaitMs)
         synchronized(lock) {
             loaded?.release()
             loaded = null

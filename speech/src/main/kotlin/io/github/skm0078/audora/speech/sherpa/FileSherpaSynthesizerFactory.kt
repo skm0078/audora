@@ -11,7 +11,6 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.SpeechError.VoiceUnavailable.Reason
 import java.io.File
-import kotlin.math.roundToInt
 
 /**
  * Loads voices installed by the voice manager (P4-01): every file is a plain file in [voiceDir]`(id)`, so sherpa-onnx
@@ -19,13 +18,14 @@ import kotlin.math.roundToInt
  * process on some missing ones; a deleted voice fails here as MODEL_FILES_MISSING.
  *
  * A Kokoro voice with a narrator blend ([SherpaVoiceSpec.blend], plan item 75) reads a blended copy of its voices
- * file from [blendDir] ([KokoroBlends]); if the copy can't be made, the voice loads as installed and the reason is
- * logged, so a full disk costs the blend, never the reading.
+ * file from [blends]; if the copy can't be made, or sherpa-onnx refuses it, the voice loads as installed and the
+ * reason is logged and reported, so a full disk costs the blend, never the reading. A Kokoro voice loading with no
+ * blend drops its old copy. Building and loading a blended voice hold [BlendCache.locked] together.
  */
 class FileSherpaSynthesizerFactory(
     private val voiceDir: (String) -> File,
     private val threads: Int,
-    private val blendDir: File? = null,
+    private val blends: BlendCache? = null,
 ) : SherpaSynthesizerFactory {
     override fun load(spec: SherpaVoiceSpec): Outcome<SherpaSynthesizer, SpeechError> {
         val dir = voiceDir(spec.id)
@@ -42,10 +42,36 @@ class FileSherpaSynthesizerFactory(
                 ),
             )
         }
+        val cache = blends?.takeIf { spec.family == SherpaFamily.KOKORO }
+        return if (cache == null) create(spec, dir, null) else loadKokoro(spec, dir, cache)
+    }
+
+    /**
+     * Under the blend lock, so no other build or clear of this voice's copy runs between its write and its load: the
+     * blend's copy when it has one (an old copy cleared when it has none), else the voice as installed.
+     */
+    private fun loadKokoro(
+        spec: SherpaVoiceSpec,
+        dir: File,
+        cache: BlendCache,
+    ): Outcome<SherpaSynthesizer, SpeechError> = BlendCache.locked {
+        if (spec.blend == null) cache.clear(spec.id)
+        val blended = spec.blend?.let { cache.voicesFor(spec, dir) }
+        val loaded = create(spec, dir, blended)
+        if (blended != null && loaded is Outcome.Failure) {
+            AudoraLog.w(TAG, "sherpa-onnx refused the blend of ${spec.voiceId}, loading it as installed")
+            cache.report.neededBytes = 0
+            create(spec, dir, null)
+        } else {
+            loaded
+        }
+    }
+
+    /** [voices]: the blended voices file to read instead of the installed one, if any. */
+    private fun create(spec: SherpaVoiceSpec, dir: File, voices: File?): Outcome<SherpaSynthesizer, SpeechError> {
         val dataDir = spec.dataDir?.let { File(dir, it).path }.orEmpty()
-        val blended = blendedVoices(spec, dir)
         val model = sherpaModelConfig(spec, threads, dataDir) { file ->
-            if (blended != null && file == spec.voices) blended.path else File(dir, file).path
+            if (voices != null && file == spec.voices) voices.path else File(dir, file).path
         }
         return try {
             val config = OfflineTtsConfig(model = model, maxNumSentences = 1)
@@ -57,33 +83,7 @@ class FileSherpaSynthesizerFactory(
         }
     }
 
-    /** The blended voices file for [spec], made now if missing; null without a blend or when it can't be made. */
-    private fun blendedVoices(spec: SherpaVoiceSpec, dir: File): File? {
-        val blend = spec.blend?.takeIf { spec.family == SherpaFamily.KOKORO }
-        val voices = spec.voices
-        val root = blendDir
-        if (blend == null || voices == null || root == null) return null
-        val percent = (blend.amount * PERCENT).roundToInt()
-        val target = File(root, "${spec.id}$PART${spec.speakerId}$PART${blend.withSpeaker}$PART$percent$SUFFIX")
-        return when (val made = KokoroBlends.write(File(dir, voices), target, spec.speakerId, blend)) {
-            is Outcome.Success -> made.value.also { kept ->
-                // One blend per voice: the one before it is 28 MB of cache nobody reads again.
-                root.listFiles { file ->
-                    file.name.startsWith("${spec.id}$PART") && file != kept
-                }?.forEach(File::delete)
-            }
-
-            is Outcome.Failure -> {
-                AudoraLog.w(TAG, "Blend for ${spec.voiceId} not applied, reading the voice as installed: ${made.error}")
-                null
-            }
-        }
-    }
-
     private companion object {
         const val TAG = "Speech.Blend"
-        const val PERCENT = 100
-        const val PART = "-"
-        const val SUFFIX = ".bin"
     }
 }

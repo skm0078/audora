@@ -9,6 +9,8 @@ import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -81,6 +83,19 @@ class Library(
         withContext(io) {
             val book = store.byId(id) ?: return@withContext Outcome.Failure(LibraryError.NotInLibrary)
             store.update(book.copy(pageCount = pageCount, lastOpenedAtMillis = clock())).toLibrary {}
+        }
+    }
+
+    /**
+     * Once per start: deletes Audora's own copies of shared PDFs that no book uses (left by a crash between copying
+     * and adding). Under the lock, so no add or remove changes the books meanwhile; unreadable books skip it (logged).
+     */
+    suspend fun pruneDocuments(): Unit = changes.withLock {
+        withContext(io) {
+            val books = store.observeAll()
+                .catch { e -> AudoraLog.w(TAG, "Books could not be read; unused copies are kept this time", e) }
+                .firstOrNull() ?: return@withContext
+            documents.pruneUnused(books.mapTo(HashSet()) { it.documentUri })
         }
     }
 

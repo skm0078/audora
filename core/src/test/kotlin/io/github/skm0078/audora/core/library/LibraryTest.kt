@@ -217,6 +217,32 @@ class LibraryTest {
     }
 
     @Test
+    fun `a move that cannot be saved gives back the new grant and keeps the old`() = runTest(dispatcher) {
+        docs.put(URI_A, "a.pdf", pdfBytes("a"))
+        addOk(URI_A)
+        docs.put(URI_B, "a copy.pdf", pdfBytes("a"))
+        store.failWrites = true
+
+        assertTrue(library.add(URI_B) is Outcome.Failure)
+
+        assertEquals(listOf(URI_A), store.all.map(Book::documentUri))
+        assertTrue(URI_A in docs.granted)
+        assertFalse(URI_B in docs.granted)
+    }
+
+    @Test
+    fun `pruning hands every book's file to the documents, so unused copies can go`() = runTest(dispatcher) {
+        docs.put(URI_A, "a.pdf", pdfBytes("a"))
+        docs.put(URI_B, "b.pdf", pdfBytes("b"))
+        addOk(URI_A)
+        addOk(URI_B)
+
+        library.pruneDocuments()
+
+        assertEquals(listOf(setOf(URI_A, URI_B)), docs.pruned)
+    }
+
+    @Test
     fun `an unknown size still fingerprints and records -1`() = runTest(dispatcher) {
         docs.docs[URI_A] = FakeDocuments.Doc("a.pdf", pdfBytes("a"), reportsSize = false)
 

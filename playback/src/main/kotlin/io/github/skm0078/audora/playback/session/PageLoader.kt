@@ -30,7 +30,7 @@ class PageLoader(
     private val onPage: (List<ReadingUnit>) -> Unit = {},
 ) {
     interface Listener {
-        /** A page's sentences were appended; the render window may have grown. */
+        /** A page's sentences were appended, or the playlist was finished; the render window may have changed. */
         fun onPageAppended()
 
         /** The PDF can no longer be read; the feeder has been finished, so the book ends after what is queued. */
@@ -53,6 +53,9 @@ class PageLoader(
                 keepGoing = if (page == null) {
                     AudoraLog.i(TAG, "All pages queued, $logContext")
                     feeder.finish()
+                    // The playlist lost its "more to come" item: the end-of-item pause for the book's last
+                    // sentence (a study range ending there) must be re-armed against what now follows it.
+                    listener.onPageAppended()
                     false
                 } else {
                     load(text, cursor, feeder, page, logContext)

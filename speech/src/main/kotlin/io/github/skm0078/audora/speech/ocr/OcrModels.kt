@@ -22,6 +22,7 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.voices.JobResult
 import io.github.skm0078.audora.speech.voices.ResumableDownloader
 import io.github.skm0078.audora.speech.voices.UrlConnectionHttpSource
+import io.github.skm0078.audora.speech.voices.cancelAndAwait
 import java.io.File
 import java.io.IOException
 import java.util.Properties
@@ -91,7 +92,7 @@ class OcrModels private constructor(context: Context, private val config: VoiceD
 
     /** Clears everything in any state, leftovers included. */
     suspend fun delete(): Outcome<Unit, String> = withContext(Dispatchers.IO) {
-        workManager().cancelUniqueWork(WORK_NAME)
+        workManager().cancelAndAwait(WORK_NAME, config.stopWaitMs)
         synchronized(lock) { files.deleteAll().also { refreshLocked() } }
     }
 

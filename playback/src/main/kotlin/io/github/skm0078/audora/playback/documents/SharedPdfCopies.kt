@@ -18,21 +18,24 @@ import kotlinx.coroutines.withContext
  * "Open with Audora" from WhatsApp, Gmail or Downloads hands Audora a read grant that ends with the activity, so the
  * book could not be opened again later. Such a PDF is copied into the app's own files (`<dir>/<random>/<name>`,
  * keeping the file's name for the title) and the library keeps the copy. A copy is deleted when its book is removed
- * ([SafDocumentAccess.releaseAccess]). Errors name the provider only, never the file (it may be in the URI).
+ * ([SafDocumentAccess.releaseAccess]), and [prune] deletes copies no book uses (a crash between copying and adding).
+ * Errors name the provider only, never the file (it may be in the URI).
+ *
+ * A copy's URI is a `file://` path, which a backup restored to another phone or user (a different files folder) still
+ * carries, so a copy is found by its last three segments, `shared-pdfs/<folder>/<name>`, in today's folder.
  */
 class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX_BYTES) {
     private val resolver: ContentResolver = context.applicationContext.contentResolver
-    private val dir = File(context.applicationContext.filesDir, DIR_NAME)
+    private val dir = File(context.applicationContext.filesDir, SHARED_COPIES_DIR)
 
-    /** True for a URI of a copy made here. */
-    fun owns(uri: Uri): Boolean {
-        val path = uri.path
-        if (uri.scheme != ContentResolver.SCHEME_FILE || path == null) return false
-        return File(path).canonicalPath.startsWith(dir.canonicalPath + File.separator)
+    /** True for a URI of a copy made here, on this phone or (restored from a backup) another. */
+    fun owns(uri: Uri): Boolean = uri.scheme == ContentResolver.SCHEME_FILE && uri.path?.let(::copyPathOf) != null
+
+    /** The copy's file in today's copies folder, for a URI [owns] accepts. */
+    fun fileOf(uri: Uri): File {
+        val (folder, name) = requireNotNull(uri.path?.let(::copyPathOf)) { "not a shared copy's URI" }
+        return File(File(dir, folder), name)
     }
-
-    /** The copy's file, for a URI [owns] accepts. */
-    fun fileOf(uri: Uri): File = File(requireNotNull(uri.path) { "a copy's URI has a path" })
 
     /** Copies [documentUri] and returns the copy's URI, or null (logged) if it could not be read or is too big. */
     suspend fun copy(documentUri: String): String? = withContext(Dispatchers.IO) {
@@ -53,8 +56,21 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
     }
 
     /**
-     * Bytes of every copy, for the Storage screen. Size only: a copy is the book's only file, so it goes when its book
-     * is removed ([delete], through [SafDocumentAccess.releaseAccess]), never on its own.
+     * Deletes every copy folder no book in [inUse] (every book's URI) points at, when nothing in it was written since
+     * this process started: a copy being added right now is newer, so it is never taken. Call under the library's
+     * lock (`Library.pruneDocuments`).
+     */
+    fun prune(inUse: Set<String>) {
+        val kept = inUse.mapNotNullTo(HashSet()) { folderOf(Uri.parse(it)) }
+        val stray = strayCopyFolders(dir, kept, cutoffMillis = STARTED_AT_MILLIS - PRUNE_GRACE_MS)
+        val failed = stray.count { !it.deleteRecursively() }
+        if (stray.isNotEmpty()) AudoraLog.i(TAG, "Pruned unused shared copies: ${stray.size - failed} of ${stray.size}")
+        if (failed > 0) AudoraLog.w(TAG, "$failed unused shared copies could not be deleted")
+    }
+
+    /**
+     * Bytes of every copy folder, for the Storage screen. Size only: a copy is the book's only file, so it goes when
+     * its book is removed ([delete], through [SafDocumentAccess.releaseAccess]) or, unused, by [prune].
      */
     suspend fun sizeBytes(): Long = withContext(Dispatchers.IO) {
         dir.walkBottomUp().filter { it.isFile }.sumOf { it.length() }
@@ -66,6 +82,8 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
         val deleted = file.delete() && file.parentFile?.delete() != false
         if (!deleted) AudoraLog.w(TAG, "A removed book's copy could not be deleted")
     }
+
+    private fun folderOf(uri: Uri): String? = uri.takeIf(::owns)?.path?.let(::copyPathOf)?.first
 
     private fun failed(target: File, source: Uri, e: Exception): String? {
         AudoraLog.e(TAG, "Could not copy a shared PDF from authority=${source.authority}: ${e.javaClass.simpleName}")
@@ -84,12 +102,17 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
 
     private companion object {
         const val TAG = "Audora.SharedPdf"
-        const val DIR_NAME = "shared-pdfs"
         const val DEFAULT_NAME = "Shared PDF.pdf"
         const val MAX_NAME_CHARS = 120
 
         /** Larger than any book in the test corpus (41 MB) by far; guards the phone's storage against a bad share. */
         const val DEFAULT_MAX_BYTES = 512L * 1024 * 1024
+
+        /** File times may be kept to the second; a copy written in the second the process started is still new. */
+        const val PRUNE_GRACE_MS = 2_000L
+
+        /** Set when the class is first used, before any copy of this process is made. */
+        val STARTED_AT_MILLIS = System.currentTimeMillis()
 
         val UNSAFE = Regex("""[/\\:*?"<>|\u0000-\u001f]""")
 

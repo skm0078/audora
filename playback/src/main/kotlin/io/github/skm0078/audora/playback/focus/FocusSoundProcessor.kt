@@ -21,9 +21,12 @@ import java.nio.ByteBuffer
 class FocusSoundProcessor(
     private val options: () -> FocusSoundOptions,
     private val config: FocusSoundConfig = FocusSoundConfig(),
+    private val nanoTime: () -> Long = System::nanoTime,
 ) : BaseAudioProcessor() {
     private var mixer: FocusMixer? = null
     private var samples = ShortArray(0)
+    private var lastInputNanos = NONE
+    private val gapNanos = config.gapMs * NANOS_PER_MS
 
     override fun onConfigure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat =
         if (inputAudioFormat.encoding == C.ENCODING_PCM_16BIT) inputAudioFormat else AudioProcessor.AudioFormat.NOT_SET
@@ -34,18 +37,48 @@ class FocusSoundProcessor(
         val count = bytes / Short.SIZE_BYTES
         if (samples.size < count) samples = ShortArray(count)
         for (i in 0 until count) samples[i] = inputBuffer.getShort()
-        mixerFor(inputAudioFormat.sampleRate).mix(samples, count, inputAudioFormat.channelCount, options())
+        val now = nanoTime()
+        val current = mixerFor(inputAudioFormat.sampleRate)
+        if (lastInputNanos != NONE && now - lastInputNanos >= gapNanos) current.fadeIn()
+        lastInputNanos = now
+        current.mix(samples, count, inputAudioFormat.channelCount, options())
         val output = replaceOutputBuffer(count * Short.SIZE_BYTES)
         for (i in 0 until count) output.putShort(samples[i])
         output.flip()
     }
 
+    /** The voice's audio ended: the sound fades out after it instead of stopping dead. */
+    override fun onQueueEndOfStream() {
+        val tail = mixer?.tail(inputAudioFormat.channelCount) ?: return
+        if (tail.isEmpty()) return
+        val output = replaceOutputBuffer(tail.size * Short.SIZE_BYTES)
+        tail.forEach(output::putShort)
+        output.flip()
+    }
+
+    /** A seek: what follows comes back from silence. */
+    override fun onFlush() {
+        mixer?.fadeIn()
+    }
+
     override fun onReset() {
         mixer = null
         samples = ShortArray(0)
+        lastInputNanos = NONE
     }
 
-    /** One mixer per sample rate; a new voice at another rate starts the sound again (with its fade-in). */
-    private fun mixerFor(sampleRate: Int): FocusMixer =
-        mixer?.takeIf { it.sampleRate == sampleRate } ?: FocusMixer(sampleRate, config).also { mixer = it }
+    /** One mixer per sample rate; a voice at another rate carries the sound on where it was. */
+    private fun mixerFor(sampleRate: Int): FocusMixer {
+        val current = mixer
+        return when {
+            current == null -> FocusMixer(sampleRate, config)
+            current.sampleRate == sampleRate -> current
+            else -> current.continuedAt(sampleRate)
+        }.also { mixer = it }
+    }
+
+    private companion object {
+        const val NONE = Long.MIN_VALUE
+        const val NANOS_PER_MS = 1_000_000L
+    }
 }

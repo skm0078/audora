@@ -70,6 +70,7 @@ fun SpeechSheet(
     study: StudyControls = StudyControls(),
     focusSound: FocusSoundOptions = FocusSoundOptions(),
     onFocusSound: (FocusSoundOptions) -> Unit = {},
+    blend: NarratorBlendState = NarratorBlendState(),
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -85,7 +86,9 @@ fun SpeechSheet(
             PaceSection(pace, onPace)
             ClausePausesRow(clausePauses, onClausePauses)
             VoiceShapingSection(voiceShaping, config.voiceShaping, onVoiceShaping)
-            NarratorBlendSection(voiceShaping, onVoiceShaping)
+            blend.ownSpeaker?.let { own ->
+                NarratorBlendSection(voiceShaping, own, blend.neededBytes, onVoiceShaping)
+            }
             CastVoicesSection(voices.rows, voiceShaping, onVoiceShaping)
             ReadingModesSection(readingModes, onReadingModes)
             StudySection(readingModes, study, onReadingModes)

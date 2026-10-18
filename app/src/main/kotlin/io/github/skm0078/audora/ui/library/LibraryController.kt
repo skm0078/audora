@@ -67,6 +67,7 @@ class LibraryController(
             AudoraLog.w(TAG, "Reading positions could not be loaded; the library shows no progress", e)
             emit(emptyList())
         }
+        scope.launch { library.pruneDocuments() }
         watch = scope.launch {
             combine(library.books(), saved) { latest, positions -> latest to positions }
                 .catch { e ->

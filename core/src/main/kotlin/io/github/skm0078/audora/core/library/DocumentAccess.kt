@@ -20,6 +20,9 @@ interface DocumentAccess {
     fun openStream(documentUri: String): Outcome<InputStream, DocumentError>
 
     fun availability(documentUri: String): BookAvailability
+
+    /** Deletes Audora's own copies that no book uses; [inUse] is every book's URI. A grant has nothing to clean. */
+    fun pruneUnused(inUse: Set<String>) = Unit
 }
 
 /**
