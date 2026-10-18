@@ -118,11 +118,8 @@ object PlaybackContract {
     /** Offset into the page's text (a `ReadingUnit.charStart`); 0 or absent = start of the page. */
     const val ARG_CHAR_START = "char_start"
 
-    /**
-     * The start unit's index on [ARG_PAGE] when the start is a known unit (a tap); absent for a saved resume. A
-     * continued table's first row then starts at that row, not at the "Table continues" summary sharing its offset.
-     */
-    const val ARG_UNIT_INDEX = "unit_index"
+    // ARG_UNIT_INDEX (below, shared with REPORT_SOUNDED_WRONG): the start unit's index on ARG_PAGE when the start
+    // is a known unit (a tap, a rebuild); absent for a saved resume, which then starts at the first unit there.
 
     /** For encrypted books: kept in memory for this session only, never stored or logged. */
     const val ARG_PASSWORD = "password"
@@ -190,6 +187,8 @@ object PlaybackContract {
     private const val MIN_REPLAY_FACTOR = 0.5f
 
     // Arguments of REPORT_SOUNDED_WRONG (and ARG_BOOK_ID, ARG_PAGE): where the sentence is and how it was judged.
+
+    /** A unit's index on ARG_PAGE; also PLAY_FROM's optional start unit. */
     const val ARG_UNIT_INDEX = "unit_index"
     const val ARG_UNIT_KIND = "unit_kind"
 
