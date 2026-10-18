@@ -50,6 +50,7 @@ package io.github.skm0078.audora.pdf
  *     in a bold font tagged as each unit's bold terms (`ReadingUnit.boldTerms`, plan item 64); a table's own first
  *     row demoted only on a running serial number or figures like its rows with no year, two years a header again;
  *     English titles, Latin abbreviations, capital initials and references before a number no longer end a sentence
- *     ("Dr. Rao", "e.g. Apples", "Abbott B. P.", "Eq. (A1)").
+ *     ("Dr. Rao", "e.g. Apples", "Abbott B. P.", "Eq. (A1)"); list items opened by "b.", "iv.", "ii)", "(A)",
+ *     "B)" or "(IV)".
  */
 const val PIPELINE_VERSION: Int = 11

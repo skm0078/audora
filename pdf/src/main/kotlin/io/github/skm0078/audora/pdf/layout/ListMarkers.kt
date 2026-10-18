@@ -4,10 +4,11 @@
 package io.github.skm0078.audora.pdf.layout
 
 /**
- * A bullet always starts an item. A label ("1.", "12)", "(a)", "(iv)", "a)") is also how a wrapped prose line can
- * begin ("… shown in Fig.\n3. We then …"), so [ParagraphBuilder] trusts one only after a line that ends a clause or
- * inside a list; numbers have at most two digits, so a year ("1947. The") never counts, and a bare letter needs a
- * bracket, since "a." is ordinary prose.
+ * A bullet always starts an item. A label ("1.", "12)", "(a)", "a)", "b.", "(iv)", "iv.", "(A)", "B)", "(IV)") is
+ * also how a wrapped prose line can begin ("… shown in Fig.\n3. We then …"), so [ParagraphBuilder] trusts one only
+ * after a line that ends a clause or inside a list; numbers have at most two digits, so a year ("1947. The") never
+ * counts. A capital letter or Roman numeral needs a bracket: "A. Smith" and "I. Introduction" open a line of prose
+ * or a heading, not an item.
  */
 internal object ListMarkers {
     /** Bullets, including the Symbol and Wingdings private-use codes PDFs map them to. */
@@ -18,7 +19,15 @@ internal object ListMarkers {
     private const val CLAUSE_ENDS = ".!?…:;।॥"
     private const val CLOSERS = "\"'”’»)]"
 
-    private val LABEL = Regex("""\(\p{Nd}{1,2}\)|\p{Nd}{1,2}[.)]|\((?:[a-z]|[ivx]{1,4})\)|[a-z]\)""")
+    private val LABEL = Regex(
+        listOf(
+            """\(\p{Nd}{1,2}\)""", // (3)
+            """\p{Nd}{1,2}[.)]""", // 1. 12)
+            """\((?:[a-z]|[ivx]{1,4}|[A-Z]|[IVX]{1,4})\)""", // (a) (iv) (A) (IV)
+            """(?:[a-z]|[ivx]{1,4})[.)]""", // a) b. iv. ii)
+            """[A-Z]\)""", // B)
+        ).joinToString("|"),
+    )
 
     fun startsWithBullet(text: String, start: Int): Boolean = start < text.length && text[start] in BULLETS
 
