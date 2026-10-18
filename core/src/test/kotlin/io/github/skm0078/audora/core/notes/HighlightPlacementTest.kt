@@ -91,7 +91,7 @@ class HighlightPlacementTest {
     }
 
     @Test
-    fun `a gone sentence never lands on a lookalike`() {
+    fun `a gone sentence does not land on a lookalike a word or the offset tells apart`() {
         val yeses = unitsOf(PAGE, FIRST, "Yes.", SECOND, "Yes.", THIRD)
         val oneGone = unitsOf(PAGE, FIRST, SECOND, "Yes.", THIRD)
         val eyes = unitsOf(PAGE, FIRST, "Her eyes closed.", THIRD)
@@ -124,6 +124,26 @@ class HighlightPlacementTest {
     }
 
     @Test
+    fun `a merged sentence covering the offset beats an exact copy further on`() {
+        val before = unitsOf(PAGE, FIRST, "He turned to Mr.", "Smith said.", FILL, "Smith said.")
+        val merged = unitsOf(PAGE, FIRST, "He turned to Mr. Smith said.", FILL, "Smith said.")
+
+        assertEquals(listOf("He turned to Mr. Smith said."), coveredTexts(highlightOn(before[2]), merged))
+    }
+
+    @Test
+    fun `a long sentence's fingerprint is refused with an equally near rival and trusted when unique`() {
+        val saved = unitsOf(PAGE, "p".repeat(PREFACE), LONG, THIRD)
+        // Gone from offset 201; a copy 100 characters before it and one 100 after.
+        val rivals = unitsOf(PAGE, "a".repeat(BEFORE_LONG), LONG, "b".repeat(BETWEEN_LONG), LONG, THIRD)
+        // Columns reordered: the only copy now sits far beyond the shift limit.
+        val reordered = unitsOf(PAGE, "c".repeat(FAR), FIRST, THIRD, LONG)
+
+        assertEquals(emptyList<String>(), coveredTexts(highlightOn(saved[1]), rivals))
+        assertEquals(listOf(LONG), coveredTexts(highlightOn(saved[1]), reordered))
+    }
+
+    @Test
     fun `only the page's highlights are placed`() {
         val elsewhere = unitsOf(PAGE + 1, FIRST, DR, SMITH, THIRD)
 
@@ -137,12 +157,18 @@ class HighlightPlacementTest {
         const val V2 = 2
         const val SLUG = 30
         const val BEFORE = 20
+        const val PREFACE = 200
+        const val BEFORE_LONG = 100
+        const val BETWEEN_LONG = 113
+        const val FAR = 600
         const val BETWEEN = 46
         const val FIRST = "It was the best of times, it was the worst of times."
         const val SECOND = "It was the age of wisdom, it was the age of foolishness."
         const val DR = "I met Dr."
         const val HELLO = "Hello."
         const val SMITH = "Smith at the station that evening, just as the last train pulled away."
+        const val FILL = "Then the evening went on without them for a while."
+        const val LONG = "It was the season of Light, it was the season of Darkness, it was the spring of hope."
         const val THIRD = "It was the epoch of belief, it was the epoch of incredulity."
     }
 }

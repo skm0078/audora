@@ -18,10 +18,10 @@ enum class CastInExport {
     /** Every language read has a cast: characters get voices of their own, the ones playback gave them. */
     CAST,
 
-    /** Only English is read and its narrator has no other speakers. */
+    /** The English narrator has no other speakers (whatever else the book reads). */
     NEEDS_BUILT_IN_VOICE,
 
-    /** The book reads Hindi or Bengali, which have no character voices. */
+    /** English characters get voices, but the book also reads Hindi or Bengali, which have none. */
     ENGLISH_ONLY,
     ;
 
@@ -35,8 +35,8 @@ enum class CastInExport {
             val uncast = languages.filter { castSize(it) <= 0 }
             return when {
                 uncast.isEmpty() -> CAST
-                uncast.any { it != Lang.EN } -> ENGLISH_ONLY
-                else -> NEEDS_BUILT_IN_VOICE
+                Lang.EN in uncast -> NEEDS_BUILT_IN_VOICE
+                else -> ENGLISH_ONLY
             }
         }
     }

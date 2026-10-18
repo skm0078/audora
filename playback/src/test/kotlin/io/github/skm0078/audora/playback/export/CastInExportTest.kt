@@ -23,8 +23,9 @@ class CastInExportTest {
             Case(true, setOf(Lang.EN), imported, CastInExport.NEEDS_BUILT_IN_VOICE),
             Case(true, setOf(Lang.HI), kokoro, CastInExport.ENGLISH_ONLY),
             Case(true, setOf(Lang.BN), imported, CastInExport.ENGLISH_ONLY),
+            Case(true, setOf(Lang.HI, Lang.BN), kokoro, CastInExport.ENGLISH_ONLY),
             Case(true, setOf(Lang.EN, Lang.HI), kokoro, CastInExport.ENGLISH_ONLY),
-            Case(true, setOf(Lang.EN, Lang.BN), imported, CastInExport.ENGLISH_ONLY),
+            Case(true, setOf(Lang.EN, Lang.BN), imported, CastInExport.NEEDS_BUILT_IN_VOICE),
         )
         cases.forEach { case ->
             assertEquals(case.toString(), case.expected, CastInExport.of(case.on, case.languages, case.castSize))

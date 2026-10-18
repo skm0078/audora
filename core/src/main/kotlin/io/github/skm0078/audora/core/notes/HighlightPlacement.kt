@@ -18,11 +18,13 @@ import kotlin.math.abs
  * would delete their highlight and note.
  *
  * 1. Found as resume finds a position ([ReAnchoring]), trusted at the saved offset, or by a fingerprint of part of a
- *    long sentence within [HighlightConfig.maxShiftChars] with no equally near rival.
+ *    long sentence that is unique on the page (columns reordered), or else within [HighlightConfig.maxShiftChars] with
+ *    no equally near rival.
  * 2. Otherwise by the saved quote, compared word by word: the same sentence, a sentence that begins or ends with it
- *    (merged), or neighbours that join into it exactly (split), the nearest within [HighlightConfig.maxShiftChars].
- *    Quotes shorter than [HighlightConfig.minQuoteChars] ("Yes.") are taken only where they cover the saved offset;
- *    a tie between equally near matches places nothing.
+ *    (merged), or neighbours that join into it exactly (split). One covering the saved offset wins; else the nearest
+ *    within [HighlightConfig.maxShiftChars], for quotes of at least [HighlightConfig.minQuoteChars]. A tie places
+ *    nothing. A gone sentence with an identical copy within reach can still land on the copy: the text alone cannot
+ *    tell them apart.
  *
  * A trusted sentence that the new pipeline split is covered with all its parts. A highlight whose text is gone is not
  * shown; it stays in the notes list with its quote.
@@ -87,7 +89,8 @@ class HighlightPlacement(
     }
 
     /**
-     * A fingerprint of part of a long sentence, near its saved offset and with no equally near rival. A short
+     * A fingerprint of part of a long sentence, unique on the page or near its saved offset with no equally near
+     * rival. A short
      * sentence's fingerprints cover all of it ("Yes." matches every "Yes."), so it goes by its quote instead.
      */
     private fun fingerprintTrusted(
@@ -97,32 +100,37 @@ class HighlightPlacement(
         fingerprints: List<Long>,
         page: PageText,
     ): Boolean {
-        if (quote.sumOf { it.length } <= resume.fingerprintChars) return false
+        val same = fingerprints.indices.filter { fingerprints[it] == fingerprints[found] }
         val distance = distanceOf(found..found, highlight, page)
-        val rivals = fingerprints.indices.count {
-            fingerprints[it] == fingerprints[found] && distanceOf(it..it, highlight, page) == distance
-        }
-        return distance <= config.maxShiftChars && rivals == 1
+        val near =
+            distance <= config.maxShiftChars && same.count { distanceOf(it..it, highlight, page) == distance } == 1
+        return quote.sumOf { it.length } > resume.fingerprintChars && (same.size == 1 || near)
     }
 
-    /** The nearest sentence or run matching the quote; nothing when two are equally near. */
+    /**
+     * A match covering the saved offset wins whatever its kind (a merged sentence where the highlight was beats an
+     * exact copy further down); several covering it place nothing. Otherwise the nearest that may move, kind by kind,
+     * within [HighlightConfig.maxShiftChars]; two equally near place nothing.
+     */
     private fun byQuote(highlight: Highlight, quote: List<String>, page: PageText): IntRange? {
         val long = quote.sumOf { it.length } >= config.minQuoteChars
         val exact = page.words.indices.filter { page.words[it] == quote }.map { it..it }
         val merged = page.words.indices.filter { page.words[it].size > quote.size && page.words[it].holds(quote) }
             .map { it..it }
-        val split = page.splits(quote)
-        val tiers = listOf(exact to long, merged to long, split to long)
-        for ((candidates, mayMove) in tiers) {
-            val accepted = candidates.filter { range ->
-                val distance = distanceOf(range, highlight, page)
-                distance == 0 || (mayMove && distance <= config.maxShiftChars)
-            }
-            val best = accepted.minByOrNull { distanceOf(it, highlight, page) } ?: continue
-            val nearest = distanceOf(best, highlight, page)
-            return best.takeIf { accepted.count { distanceOf(it, highlight, page) == nearest } == 1 }
+        val tiers = listOf(exact, merged, page.splits(quote))
+        val covering = tiers.flatten().distinct().filter { distanceOf(it, highlight, page) == 0 }
+        return when {
+            covering.isNotEmpty() -> covering.singleOrNull()
+            long -> tiers.firstNotNullOfOrNull { candidates -> nearestUnique(candidates, highlight, page) }
+            else -> null
         }
-        return null
+    }
+
+    /** The candidate nearest the saved offset within the shift limit; null for none, or for a tie. */
+    private fun nearestUnique(candidates: List<IntRange>, highlight: Highlight, page: PageText): IntRange? {
+        val near = candidates.filter { distanceOf(it, highlight, page) <= config.maxShiftChars }
+        val nearest = near.minOfOrNull { distanceOf(it, highlight, page) } ?: return null
+        return near.filter { distanceOf(it, highlight, page) == nearest }.singleOrNull()
     }
 
     /** 0 when [range] covers the saved offset, else how far its start is from it. */

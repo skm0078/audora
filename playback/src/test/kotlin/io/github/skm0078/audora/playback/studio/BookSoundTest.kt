@@ -10,6 +10,7 @@ import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.notes.BookSettings
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -17,6 +18,8 @@ import org.junit.Test
 class BookSoundTest {
     private val global = SpeechStyle(rate = LISTENER_RATE, pace = Pace.NORMAL)
     private val voice = VoiceId(EngineId.SHERPA, "piper-hi-pratham")
+    private val phoneDefault = VoiceId(EngineId.SYSTEM, "bn-in-x-default")
+    private val picked = VoiceId(EngineId.SHERPA, "mms-bn")
     private val own = BookSettings(BookId("b"), rate = BOOK_RATE, pace = Pace.RELAXED, voices = mapOf(Lang.HI to voice))
 
     @Test
@@ -41,13 +44,17 @@ class BookSoundTest {
     }
 
     @Test
-    fun `pinned voices do not follow later changes`() {
-        var live: VoiceId? = voice
-        val pinned = BookSound.pinned { live }
+    fun `pinned voices keep the choice and the default of the moment`() = runTest {
+        var chosen: VoiceId? = voice
+        var preferred: VoiceId? = null
+        val pinned = BookSound.pin({ lang -> chosen.takeIf { lang == Lang.HI } }) { preferred ?: phoneDefault }
 
-        live = null
+        // A voice picked in Settings after the run started, and the book's choice changed: neither is heard.
+        chosen = null
+        preferred = picked
         assertEquals(voice, pinned(Lang.HI))
-        assertEquals(voice, pinned(Lang.EN))
+        assertEquals(phoneDefault, pinned(Lang.BN))
+        assertEquals(phoneDefault, pinned(Lang.EN))
     }
 
     private companion object {

@@ -27,9 +27,13 @@ object BookSound {
     /** The book's own voice for a language; null follows the global choice. */
     fun voices(own: BookSettings?): (Lang) -> VoiceId? = { lang -> own?.voices?.get(lang) }
 
-    /** [current]'s answer for every language, read once now: a long run keeps the voices it started with. */
-    fun pinned(current: (Lang) -> VoiceId?): (Lang) -> VoiceId? {
-        val fixed = Lang.entries.associateWith(current)
+    /**
+     * The voice for every language, fixed now for a long run: the explicit [choice] (book, session, Settings), else the
+     * default [resolve] finds at this moment. Without the default a language on it would follow a voice first picked
+     * in Settings mid-run, changing the audio under a key made before.
+     */
+    suspend fun pin(choice: (Lang) -> VoiceId?, resolve: suspend (Lang) -> VoiceId?): (Lang) -> VoiceId? {
+        val fixed = Lang.entries.associateWith { lang -> choice(lang) ?: resolve(lang) }
         return { lang -> fixed[lang] }
     }
 }

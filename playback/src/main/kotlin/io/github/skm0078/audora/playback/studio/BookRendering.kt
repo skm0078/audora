@@ -9,6 +9,7 @@ import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.result.getOrNull
 import io.github.skm0078.audora.playback.book.BookText
 import io.github.skm0078.audora.playback.queue.UnitKey
 import io.github.skm0078.audora.playback.reading.UnitReading
@@ -92,8 +93,9 @@ class BookRendering private constructor(
             )
             val key = StudioKey(id, StudioMode.signature(context, style, voices::choiceFor, fixer.signature))
             // Fixed for the whole run once the key is made: a voice picked in Settings meanwhile would change the audio
-            // under a key that names the old one, and a resumed export would mix the two.
-            voices.bookVoice = BookSound.pinned(voices::knownVoice)
+            // under a key that names the old one, and a resumed export would mix the two. Resolving a default binds
+            // the phone's TTS once, as the first Hindi or Bengali sentence would.
+            voices.bookVoice = BookSound.pin(voices::choiceFor) { lang -> voices.voiceFor(lang).getOrNull() }
             return BookRendering(key, style, live, UnitReading(style.modes, chapterPages = chapterPages), timings)
         }
     }

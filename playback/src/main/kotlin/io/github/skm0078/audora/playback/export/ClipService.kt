@@ -32,6 +32,7 @@ import io.github.skm0078.audora.playback.queue.UnitKey
 import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.studio.StudioMode
 import io.github.skm0078.audora.playback.studio.StudioSentenceRenderer
+import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
 import java.io.File
@@ -139,7 +140,9 @@ class ClipService : Service() {
     }
 
     private fun clipOf(book: OpenedBook, start: UnitKey) {
-        val voices = SpeechVoices(VoiceEngines(this))
+        // The listener's expressiveness, read once: the studio key carries it, so the audio must match it all run.
+        val expression = SpeechStyleStore.forContext(this).current.shaping.expressiveness
+        val voices = SpeechVoices(VoiceEngines(this) { expression })
         try {
             val text = book.text
             val rendering = runBlocking {

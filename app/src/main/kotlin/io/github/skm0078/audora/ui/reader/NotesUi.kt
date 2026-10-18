@@ -63,9 +63,10 @@ fun NotesOverlays(
         val highlighted = notes.highlightsOn(unit).isNotEmpty()
         val rows = listOfNotNull(
             MenuEntry(R.string.sentence_menu_bookmark) { actions.bookmark(unit) },
+            // A sentence with no words ("* * *") can never show a band, so it is not offered.
             MenuEntry(if (highlighted) R.string.sentence_menu_unhighlight else R.string.sentence_menu_highlight) {
                 actions.toggleHighlight(unit)
-            },
+            }.takeIf { highlighted || unit.text.any(Char::isLetterOrDigit) },
             MenuEntry(R.string.sentence_menu_voice_note) {
                 actions.dismissMenu()
                 voice.askToRecord(unit)

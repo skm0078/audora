@@ -28,6 +28,7 @@ import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.export.JobSlots
 import io.github.skm0078.audora.playback.reading.UnitReading
+import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
 import javax.inject.Inject
@@ -174,7 +175,9 @@ class StudioService : Service() {
     private fun renderBook(book: OpenedBook, wakeLock: PowerManager.WakeLock) {
         val id = book.book.id
         val title = book.book.title.takeUnless { it == BookTitles.UNTITLED } ?: getString(R.string.studio_untitled)
-        val voices = SpeechVoices(VoiceEngines(this))
+        // The listener's expressiveness, read once: the studio key carries it, so the audio must match it all run.
+        val expression = SpeechStyleStore.forContext(this).current.shaping.expressiveness
+        val voices = SpeechVoices(VoiceEngines(this) { expression })
         try {
             val rendering = runBlocking {
                 BookRendering.Factory(this@StudioService, bookSettings, pronunciations).prepare(id, book.text, voices)

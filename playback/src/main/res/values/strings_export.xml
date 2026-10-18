@@ -6,8 +6,8 @@
 <resources>
     <!-- Audiobook export with "A voice for each character" on (plan item 63): an English narrator with one speaker. -->
     <string name="export_cast_needs_built_in_voice">Characters are read in one voice: character voices need a built-in Kokoro or Kitten English voice.</string>
-    <!-- The same for a book that reads Hindi or Bengali. -->
-    <string name="export_cast_english_only">Character voices work for English only, so this book\'s characters share one voice.</string>
+    <!-- The same for a book that also reads Hindi or Bengali, while its English characters get voices. -->
+    <string name="export_cast_english_only">Character voices work for English only, so Hindi and Bengali characters share one voice.</string>
     <!-- Share as audio (plan item 41). -->
     <string name="clip_channel">Audio clips</string>
     <string name="clip_making">Making the audio clip…</string>
