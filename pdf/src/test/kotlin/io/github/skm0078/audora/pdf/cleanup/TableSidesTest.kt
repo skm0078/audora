@@ -61,7 +61,8 @@ class TableSidesTest {
             val side = listOf(listOf("2019", "2020"), listOf(form, "41"), listOf("74", form))
             assertTrue(form, TableSides.readsAsFigures(side, config.maxHeaderRows, config.minFigureRows))
         }
-        // Only plain spaces: a no-break space inside a figure is a word gap on every platform.
+        // Only plain spaces: a no-break space inside a figure is a word gap on every platform. The JDK's \s has no
+        // no-break space, so this passes here either way; only Android's ICU regex would take one for `\s`.
         for (form in listOf("Rs.\u00A012", "12\u00A0%")) {
             assertFalse(form, NUMBER_CELL.matches(form))
         }

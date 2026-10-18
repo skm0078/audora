@@ -76,6 +76,16 @@ class OcrFootnotesTest {
         return builder.build(builder.ocrReadingText(PAGE, OcrText(body + verse)) { transform.toPage(it) })
     }
 
+    /** Three short lines set small and centred under the body text: a motto or a sign-off, measured by its column. */
+    private fun centred(): List<ReadingUnit> {
+        val block = listOf(
+            "with thanks to all who helped",
+            "on the farm in those years",
+            "and to the rain that came",
+        ).mapIndexed { i, text -> line(text, NOTES_TOP + i * NOTE_PITCH, 1, SMALL).shifted(CENTRED_INDENT) }
+        return builder.build(builder.ocrReadingText(PAGE, OcrText(body + block)) { transform.toPage(it) })
+    }
+
     private fun OcrLine.shifted(by: Float) = OcrLine(
         words.map {
             OcrWord(it.text, it.box?.let { b -> ViewRect(b.left + by, b.top, b.right + by, b.bottom) }, it.confidence)
@@ -253,6 +263,7 @@ class OcrFootnotesTest {
             "one line starting with a number, no rule above" to
                 page("15 August was the day the plants first came up in the field." to 1),
             "an indented quote set small" to quote(),
+            "a short centred block set small" to centred(),
             "a source line under a rule" to
                 page("Source: survey of the plants grown on the farm in the year two thousand." to 1, rule = true),
             "a Hindi source line spelt with त्र" to
@@ -307,6 +318,7 @@ class OcrFootnotesTest {
         const val RULE_ABOVE = 0.03f
         const val RULE_WIDTH = 0.3f
         const val QUOTE_INDENT = 0.1f
+        const val CENTRED_INDENT = 0.16f
         const val HINDI_BODY = 75
         const val HINDI_NOTES = 60
         const val BAD_PAGE = 40

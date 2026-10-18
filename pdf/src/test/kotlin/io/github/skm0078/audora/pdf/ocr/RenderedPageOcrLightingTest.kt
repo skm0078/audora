@@ -81,6 +81,10 @@ class RenderedPageOcrLightingTest {
         engine.drawn = List(10) { "aaaa" }.joinToString(" ") to UNSURE
         engine.evened = List(9) { "b" }.joinToString(" ") to SURE
         assertEquals(engine.drawn.first, read())
+        // Surer and holding more in all, but one word fewer: only the word count (minWordShare) drops it.
+        engine.drawn = List(10) { "aa" }.joinToString(" ") to UNSURE
+        engine.evened = List(9) { "aaaa" }.joinToString(" ") to SURE
+        assertEquals(engine.drawn.first, read())
         // A page that read no words takes no junk from the evened read.
         engine.drawn = "" to UNSURE
         engine.evened = "zz" to LightingConfig().minEvenedConfidence - 1

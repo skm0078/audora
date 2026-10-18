@@ -156,7 +156,11 @@ internal class PageCarry(private val config: PageCarryConfig) {
         val tableUnits = units.indices.filter { units[it].table?.tableIndex == info.tableIndex }
         val rows = tableUnits.drop(1).map { units[it] }
         return when {
-            repeatsHeader(info, opening.text, tail.headers) -> units.mapIndexed { i, unit ->
+            // Column numbers ("1 | 2 | 3 | 4") opening the page repeat the table's numbering row, whatever its header.
+            repeatsHeader(info, opening.text, tail.headers) || countsColumns(opening, rows) -> units.mapIndexed {
+                    i,
+                    unit,
+                ->
                 if (i in tableUnits) unit.withTable { it.copy(continued = true, rowsBefore = tail.rows) } else unit
             } to TableCarry.HEADER_REPEATED
 

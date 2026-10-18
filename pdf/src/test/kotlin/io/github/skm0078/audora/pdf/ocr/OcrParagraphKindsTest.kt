@@ -119,6 +119,17 @@ class OcrParagraphKindsTest {
     }
 
     @Test
+    fun `letter items follow their letter across a list nested flush, a paragraph opening with c dot is prose`() {
+        val texts = listOf("Choose one:", "a. Rice", "(i) white", "(ii) brown", "b. Wheat", "c. Maize")
+        val lines = texts.mapIndexed { i, text -> line(text, i, 0) }
+        val units = builder.build(builder.ocrReadingText(PAGE, OcrText(lines)) { transform.toPage(it) })
+        assertEquals(listOf(UnitKind.BODY) + List(texts.size - 1) { UnitKind.LIST_ITEM }, units.map { it.kind })
+        val circa = listOf(line("The old town grew slowly.", 0, 0), line("c. 1900 the mill opened.", 1, 1))
+        val prose = builder.build(builder.ocrReadingText(PAGE, OcrText(circa)) { transform.toPage(it) })
+        assertEquals(listOf(UnitKind.BODY, UnitKind.BODY), prose.map { it.kind })
+    }
+
+    @Test
     fun `a symbol far from the next word is a table's first cell, not a bullet`() {
         val symbol = OcrWord("©", ViewRect(LEFT, TOP, LEFT + 0.02f, TOP + BODY), CONFIDENT)
         val far = OcrWord("biconditional", ViewRect(LEFT + 0.2f, TOP, LEFT + 0.35f, TOP + BODY), CONFIDENT)

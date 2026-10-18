@@ -5,7 +5,7 @@ package io.github.skm0078.audora.pdf.layout
 
 /**
  * A bullet always starts an item. A label ("1.", "12)", "(a)", "a)", "b.", "(iv)", "iv.", "(A)", "B)", "(IV)",
- * "(क)", "(ক)") is also how a wrapped prose line can begin ("… shown in Fig.\n3. We then …"), so [ParagraphBuilder]
+ * "(क)", "(अ)", "(ক)", "(অ)") is also how a wrapped prose line can begin ("… shown in Fig.\n3. We then …"), so [ParagraphBuilder]
  * trusts one only after a line that ends a clause or inside a list; numbers have at most two digits, so a year
  * ("1947. The") never counts. A capital letter or Roman numeral needs a bracket: "A. Smith" and "I. Introduction"
  * open a line of prose or a heading, not an item. A single small letter with a full stop starts an item only in
@@ -25,7 +25,7 @@ internal object ListMarkers {
             """\(\p{Nd}{1,2}\)""", // (3)
             """\p{Nd}{1,2}[.)]""", // 1. 12)
             """\((?:[a-z]|[ivx]{1,4}|[A-Z]|[IVX]{1,4})\)""", // (a) (iv) (A) (IV)
-            """\([\u0915-\u0939\u0995-\u09B9]\)""", // (क) (ক)
+            """\([\u0905-\u0939\u0985-\u09B9]\)""", // (अ) (क) (অ) (ক): vowels and consonants
             """(?:[a-z]|[ivx]{1,4})[.)]""", // a) b. iv. ii)
             """[A-Z]\)""", // B)
         ).joinToString("|"),
@@ -44,18 +44,30 @@ internal object ListMarkers {
     }
 
     /**
-     * [label] may open the next item after the item [previous] opened (null: no item before): any label but a single
-     * small letter with a full stop, which must open a list ("a.", "i.") or follow the letter or Roman numeral before
-     * it ("c." after "b)", "v." after "iv.").
+     * [label] may open the next item after the items labelled [previous] in the same block, in order: any label but
+     * a single small letter with a full stop, which must open a list ("a.", "i.") or follow the letter or Roman
+     * numeral before it somewhere in the list ("c." after "b)", "v." after "iv.", "b." after "a. / (i) / (ii)" in a
+     * list nested flush).
      */
-    fun inSequence(label: String, previous: String?): Boolean {
+    fun inSequence(label: String, previous: List<String>): Boolean {
         if (!LETTER_STOP.matches(label)) return true
         val letter = label.first()
-        val before = previous?.trim('(', ')', '.')
         val roman = romanValue(letter.toString())
-        return letter == 'a' || letter == 'i' || before == (letter - 1).toString() ||
-            (roman != null && before != null && romanValue(before) == roman - 1)
+        return letter == 'a' || letter == 'i' || previous.map { it.trim('(', ')', '.') }.any { before ->
+            before == (letter - 1).toString() || (roman != null && romanValue(before) == roman - 1)
+        }
     }
+
+    /** The label opening [line] of [text] ([labelAt]), or null. */
+    fun labelOf(text: String, line: TextLine): String? = labelAt(text, line.spans.first().start, line.spans.last().end)
+
+    /**
+     * [line] opens a list item after the items labelled [previous] in its block: a bullet, or a label in sequence
+     * ([inSequence]). The caller adds where a label counts: inside a list or after a line that ends a clause.
+     */
+    fun opensItem(text: String, line: TextLine, previous: List<String>): Boolean =
+        startsWithBullet(text, line.spans.first().start) ||
+            labelOf(text, line)?.let { inSequence(it, previous) } == true
 
     /** A small Roman numeral's value ("iv": 4), or null. */
     private fun romanValue(text: String): Int? {

@@ -42,12 +42,13 @@ internal object PrintSlugs {
 
     /**
      * A layout program's file name ("ch04.qxd", "HUD3_25_09.indd") with nothing after it but page references and
-     * a print stamp ("Sec1:9", "All Pages", "71", "2/3/09 10:12 AM Page 62", the file's name again, or the clipped
-     * copy of a date a PDF repeats: "5/13/11 /13/11"), so a body line that names a file ("Open Lesson01.indd and
-     * click") is no slug.
+     * a print stamp ("Sec1:9", "All Pages", "71", "iii", "Page 3 of 10", "2/3/09 10:12 AM Page 62", the file's name
+     * again, or the clipped copy of a date a PDF repeats: "5/13/11 /13/11"), so a body line that names a file
+     * ("Open Lesson01.indd and click") is no slug.
      */
     private val LAYOUT_FILE = Regex(
         """\S\.(?i:indd|qxd|qxp)(?:[ \t]+(?:\S*\.(?i:indd|qxd|qxp)|[0-9/][0-9/.:,-]*|""" +
-            """[0-9]{1,4}[/.-][A-Za-z]{3}[/.-][0-9]{2,4}|(?i:[ap]\.?m\.?|page|pages|all|sec[0-9:]+)))*[ \t]*$""",
+            """[0-9]{1,4}[/.-][A-Za-z]{3}[/.-][0-9]{2,4}|""" +
+            """(?i:[ap]\.?m\.?|page|pages|of|all|sec[0-9:]+|[ivxlc]{1,7})))*[ \t]*$""",
     )
 }

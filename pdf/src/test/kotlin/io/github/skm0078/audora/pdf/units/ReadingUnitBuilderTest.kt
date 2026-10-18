@@ -173,6 +173,24 @@ class ReadingUnitBuilderTest {
     }
 
     @Test
+    fun `letter items follow their letter across a list nested flush, a paragraph opening with c dot is prose`() {
+        val sketch = PageSketch()
+        val lines = listOf("Choose one:", "a. Rice", "(i) white", "(ii) brown", "b. Wheat", "c. Maize")
+        lines.forEachIndexed { i, line -> sketch.line(line, left = 50f, top = 720f - i * 12f) }
+        val units = ReadingUnitBuilder().build(sketch.build())
+        assertEquals(lines, units.map { it.text })
+        assertEquals(listOf(UnitKind.BODY) + List(lines.size - 1) { UnitKind.LIST_ITEM }, units.map { it.kind })
+        // A paragraph whose first line opens with a circa date, no list before it.
+        val circa = PageSketch()
+        circa.line("The old town grew slowly.", left = 50f, top = 720f)
+        circa.line("c. 1900 the mill opened.", left = 50f, top = 680f)
+        assertEquals(
+            listOf(UnitKind.BODY, UnitKind.BODY),
+            ReadingUnitBuilder().build(circa.build()).map { it.kind },
+        )
+    }
+
+    @Test
     fun `headings carry their kind and default pauses follow the spec`() {
         val sketch = PageSketch()
         sketch.line("Introduction", left = 50f, top = 720f, size = 14f)

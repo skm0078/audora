@@ -14,7 +14,7 @@ class ListMarkersTest {
         val labels = listOf(
             "1. Open the box", "12) Close it", "(3) Wait", "(a) Apples", "b) Bananas", "c. Cherries", "(iv) Fourth",
             "iv. Fourth", "ii) Second", "(A) First", "B) Second", "(IV) Fourth", "१. पहला", "(२) दूसरा",
-            "(क) पहला", "(ख) दूसरा", "(ক) প্রথম",
+            "(क) पहला", "(ख) दूसरा", "(ক) প্রথম", "(अ) पहला", "(औ) आठवाँ", "(অ) প্রথম",
         )
         for (line in labels) assertEquals(line, true, opensWithLabel(line))
     }
@@ -45,8 +45,12 @@ class ListMarkersTest {
             Triple("c.", "1.", false),
             Triple("s.", "(iv)", false),
         )
+        // In a list nested flush the letter before may be several items back.
+        assertEquals(true, ListMarkers.inSequence("b.", listOf("a.", "(i)", "(ii)")))
+        assertEquals(true, ListMarkers.inSequence("c.", listOf("a.", "(i)", "(ii)", "b.")))
+        assertEquals(false, ListMarkers.inSequence("c.", listOf("(i)", "(ii)")))
         for ((label, before, opens) in cases) {
-            assertEquals("$label after $before", opens, ListMarkers.inSequence(label, before))
+            assertEquals("$label after $before", opens, ListMarkers.inSequence(label, listOfNotNull(before)))
         }
     }
 

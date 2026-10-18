@@ -19,6 +19,9 @@ class PrintSlugsTest {
             "Cover 2 and 3.indd All Pages 22-Nov-2019 2:51:06 PM",
             "HUD3_25_09Single-Bengali-BE.indd UD3_25_09Single-Bengali-BE.indd Sec1:6 Sec1:6",
             "0_Prelims.indd 8 21-12-2019 12:00:11",
+            "Prelims.indd iii",
+            "FM.indd ii 1/10/12 3:45 PM",
+            "Book.indd Page 3 of 10",
             "HUD3_25_09Single-Bengali-BE.indd UD3_25_09Single-Bengali-BE.indd 9 9 5/13/11 /13/11 6:45 AM",
         )
         for (line in slugs) {
@@ -35,7 +38,8 @@ class PrintSlugsTest {
             "Save it as index.html",
             "The inddex is wrong",
             "Meeting at 10:30:00 hours",
-            // A file named in a sentence, a receipt's or a log's stamp with words around it, a no-break space.
+            // A file named in a sentence, a receipt's or a log's stamp with words around it, a no-break space (the
+            // JDK's \s has no no-break space, so only Android's ICU regex would read it as a space without the fix).
             "Open the file Lesson01.indd and click Save",
             "Paid on 17-12-2019 12:54:06 by card",
             "17-12-2019 12:54:06 ERROR disk full",

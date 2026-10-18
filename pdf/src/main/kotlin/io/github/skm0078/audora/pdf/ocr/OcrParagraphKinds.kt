@@ -37,15 +37,38 @@ internal class OcrParagraphKinds(
 
     fun paragraphs(lines: List<TextLine>): List<Paragraph> {
         val groups = ArrayList<MutableList<TextLine>>()
+        val items = ArrayList<Boolean>()
+        val labels = ArrayList<String>()
         lines.forEachIndexed { i, line ->
             val previous = lines.getOrNull(i - 1)
             val starts = previous == null ||
                 isHeadingSized(previous) != isHeadingSized(line) ||
-                startsItem(previous, line, item = groups.last().first().takeIf(::startsWithMarker))
-            if (starts) groups.add(ArrayList())
+                startsItem(previous, line, inList = items.last(), labels)
+            if (starts) {
+                groups.add(ArrayList())
+                items.add(ListMarkers.opensItem(text, line, labels))
+                if (items.last()) ListMarkers.labelOf(text, line)?.let(labels::add)
+            }
             groups.last().add(line)
         }
-        return groups.flatMap(::splitAtNoteEnd).map { Paragraph(it, kindOf(it)) }
+        // A paragraph split off after a note's end opens an item only in sequence too.
+        return groups.indices.flatMap { g ->
+            splitAtNoteEnd(groups[g]).mapIndexed { k, piece ->
+                Paragraph(
+                    piece,
+                    kindOf(
+                        piece,
+                        if (k ==
+                            0
+                        ) {
+                            items[g]
+                        } else {
+                            ListMarkers.opensItem(text, piece.first(), labels)
+                        },
+                    ),
+                )
+            }
+        }
     }
 
     /**
@@ -72,24 +95,15 @@ internal class OcrParagraphKinds(
     private fun extent(line: TextLine): TextBox? =
         line.spans.flatMap { span -> (span.start until span.end).mapNotNull(page::boxAt) }.reduceOrNull(TextBox::union)
 
-    private fun startsItem(previous: TextLine, line: TextLine, item: TextLine?): Boolean {
-        val start = line.spans.first().start
-        val label = ListMarkers.labelAt(text, start, line.spans.last().end)
-        val before = item?.let { ListMarkers.labelAt(text, it.spans.first().start, it.spans.last().end) }
-        return ListMarkers.startsWithBullet(text, start) ||
-            (
-                label != null && ListMarkers.inSequence(label, before) &&
-                    (item != null || ListMarkers.endsClause(text, previous.spans.last().end))
-                )
-    }
+    /** As on a text layer (`ParagraphBuilder`): a bullet, or a label in sequence inside a list or after a clause. */
+    private fun startsItem(previous: TextLine, line: TextLine, inList: Boolean, labels: List<String>): Boolean =
+        ListMarkers.opensItem(text, line, labels) && (
+            ListMarkers.startsWithBullet(text, line.spans.first().start) || inList ||
+                ListMarkers.endsClause(text, previous.spans.last().end)
+            )
 
-    private fun startsWithMarker(line: TextLine): Boolean {
-        val start = line.spans.first().start
-        return ListMarkers.startsWithBullet(text, start) ||
-            ListMarkers.startsWithLabel(text, start, line.spans.last().end)
-    }
-
-    private fun kindOf(lines: List<TextLine>): ParagraphKind {
+    /** [item]: the paragraph opens with a bullet or a label in sequence ([ListMarkers.opensItem]). */
+    private fun kindOf(lines: List<TextLine>, item: Boolean): ParagraphKind {
         val chars = lines.sumOf { line -> line.spans.sumOf { it.end - it.start } }
         val heading = lines.size <= config.maxHeadingLines &&
             chars <= config.maxHeadingChars &&
@@ -97,7 +111,7 @@ internal class OcrParagraphKinds(
             looksLikeHeading(lines)
         return when {
             heading -> ParagraphKind.HEADING
-            startsWithMarker(lines.first()) -> ParagraphKind.LIST_ITEM
+            item -> ParagraphKind.LIST_ITEM
             NoteFinder.opensWithNoteLabel(lineText(lines.first())) -> ParagraphKind.ASIDE
             else -> ParagraphKind.BODY
         }
