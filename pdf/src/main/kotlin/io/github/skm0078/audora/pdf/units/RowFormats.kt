@@ -9,28 +9,44 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 internal fun cellsOf(unit: ReadingUnit): List<String> =
     requireNotNull(unit.table).cells.map { unit.text.substring(it.start, it.end) }
 
+/** What the years in a table's first row say about it ([yearCue]). */
+internal enum class YearCue {
+    /** A header naming years ("2018-19", or "2020" over figures of fewer digits). */
+    HEADER,
+
+    /** Plain years as long as their columns' figures ("2020" over "5352"): a header or data alike. */
+    UNDECIDED,
+
+    /** No years to go by: a number that is no year, years where the column holds years, or a year shorter than its
+     *  column's figures (a salary of 2000 among salaries of five figures). */
+    NONE,
+}
+
 /**
- * [first] names years, as a header does: every cell of it with a number is a year or a span of years ("2018-19",
- * "१९९८–२००३") in a column whose [rows] are not years themselves (a table with a row per year), and the years show it:
- * a span, two or more of them, or one year above numbers of fewer figures ("2020" over "120"). So "68 | Raj Kumar |
- * 2000" is data (its serial number is no year), and so is a salary of 2000 among salaries of five figures.
+ * What [first]'s years say, against the data [rows] under it. Only a row whose every number is a year counts, and
+ * not in a column whose values are all years (a table with a row per year): a span of years ("2018-19",
+ * "१९९८–२००३") names years, as does a plain year with more digits than its column's figures ("2020" over "120"). A
+ * plain year as long as its column's figures is [YearCue.UNDECIDED]; one shorter says nothing.
  */
-internal fun namesYears(first: ReadingUnit, rows: List<ReadingUnit>): Boolean {
+internal fun yearCue(first: ReadingUnit, rows: List<ReadingUnit>): YearCue {
     val numbers = cellsOf(first).withIndex().filter { (_, cell) -> cell.any(Char::isDigit) }
     val years = numbers.mapNotNull { (column, cell) ->
         YEAR.matchEntire(ascii(cell.trim()))?.takeUnless { holdsYears(rows, column) }?.let { column to it }
     }
-    val single = years.singleOrNull()
-    return when {
-        years.isEmpty() || years.size < numbers.size -> false
-
-        single == null -> true
-
-        else -> {
-            val (column, year) = single
-            val longest = columnValues(rows, column).maxOfOrNull { value -> value.count(Char::isDigit) } ?: 0
-            year.groupValues[2].isNotEmpty() || year.groupValues[1].length > longest
+    val cues = years.map { (column, year) ->
+        val longest = columnValues(rows, column).maxOfOrNull { value -> value.count(Char::isDigit) } ?: 0
+        val digits = year.groupValues[1].length
+        when {
+            year.groupValues[2].isNotEmpty() || digits > longest -> YearCue.HEADER
+            digits == longest -> YearCue.UNDECIDED
+            else -> YearCue.NONE
         }
+    }
+    return when {
+        years.isEmpty() || years.size < numbers.size -> YearCue.NONE
+        YearCue.HEADER in cues -> YearCue.HEADER
+        YearCue.UNDECIDED in cues -> YearCue.UNDECIDED
+        else -> YearCue.NONE
     }
 }
 
@@ -38,11 +54,9 @@ internal fun namesYears(first: ReadingUnit, rows: List<ReadingUnit>): Boolean {
 private fun columnValues(rows: List<ReadingUnit>, column: Int): List<String> =
     rows.mapNotNull { row -> cellsOf(row).getOrNull(column)?.trim()?.takeIf { it.isNotEmpty() } }
 
-/** At least half of [column]'s values in [rows] are years, or it has none: a year there may be data. */
-private fun holdsYears(rows: List<ReadingUnit>, column: Int): Boolean {
-    val values = columnValues(rows, column)
-    return values.isEmpty() || values.count { YEAR.matches(ascii(it)) } * 2 >= values.size
-}
+/** Every value of [column] in [rows] is a year (or it has none): a year there may be data. */
+private fun holdsYears(rows: List<ReadingUnit>, column: Int): Boolean =
+    columnValues(rows, column).all { YEAR.matches(ascii(it)) }
 
 /** [text] with every script's digits written as ASCII digits ("१९९८" to "1998"). */
 private fun ascii(text: String): String = text.map { c -> c.digitToIntOrNull()?.let { '0' + it } ?: c }.joinToString("")

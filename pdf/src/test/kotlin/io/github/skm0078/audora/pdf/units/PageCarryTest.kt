@@ -162,7 +162,33 @@ class PageCarryTest {
         )
         // A year in a column empty on every other row says nothing.
         val empty = page(head = listOf("Paper", "2010"), rows = listOf(listOf("Pens", ""), listOf("Ink", "")))
-        assertFalse(namesYears(empty.first(), empty.drop(1)))
+        assertEquals(YearCue.NONE, yearCue(empty.first(), empty.drop(1)))
+    }
+
+    @Test
+    fun `a year as long as its column's figures decides nothing, so only a serial number carries the table on`() {
+        val cases = listOf(
+            "a year over four-digit figures" to (listOf("State", "2020") to listOf(listOf("Goa", "5352"))),
+            "in Devanagari digits" to (listOf("राज्य", "२०२०") to listOf(listOf("गोवा", "५३५२"))),
+            "amounts that look like years" to (listOf("Item", "1850") to listOf(listOf("Rice", "4210"))),
+        )
+        for ((name, rows) in cases) {
+            val (head, next) = rows
+            val units = page(head = head, rows = next)
+            assertEquals(name, YearCue.UNDECIDED, yearCue(units.first(), units.drop(1)))
+        }
+        // A span of years always names years; a column all years makes years data.
+        val span = page(head = listOf("State", "2019-20"), rows = listOf(listOf("Goa", "5352")))
+        assertEquals(YearCue.HEADER, yearCue(span.first(), span.drop(1)))
+        val perYear = page(head = listOf("Total", "1998"), rows = listOf(listOf("Rice", "2004"), listOf("Dal", "2011")))
+        assertEquals(YearCue.NONE, yearCue(perYear.first(), perYear.drop(1)))
+        // With a serial number running on, a row of years in a four-digit column is the table's next row.
+        val before = page(head = listOf("No.", "Item", "Cost"), rows = listOf(listOf("1", "Rice", "4210")))
+        val next = page(head = listOf("2", "Dal", "1850"), rows = listOf(listOf("3", "Oil", "2003")))
+        assertEquals(TableCarry.DATA_FIRST, carry.join(next, carry.tailOf(before)).table)
+        val unnumbered = page(head = listOf("Item", "1850"), rows = listOf(listOf("Oil", "2975")))
+        val priced = page(head = listOf("Item", "Cost"), rows = listOf(listOf("Rice", "4210")))
+        assertEquals(unnumbered, carry.join(unnumbered, carry.tailOf(priced)).units)
     }
 
     @Test
