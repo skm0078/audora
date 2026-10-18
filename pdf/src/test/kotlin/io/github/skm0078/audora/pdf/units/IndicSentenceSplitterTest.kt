@@ -57,6 +57,9 @@ class IndicSentenceSplitterTest {
             Case("Hindi references", Lang.HI, listOf("सं. रामचंद्र शुक्ल, पृ. सं. १२, ५०० ई.पू. में। ", "बस।")),
             Case("Bengali titles", Lang.BN, listOf("ড. রহমান, ডঃ. সেন ও শ্রী. বসু এলেন। ", "বসুন।")),
             Case("Bengali era", Lang.BN, listOf("খ্রি.পূ. যুগে এটি তৈরি। ", "বসুন।")),
+            Case("Vikram Samvat", Lang.HI, listOf("वि. सं. 2050 में मेला लगा। ", "ठीक।")),
+            Case("dotted words", Lang.HI, listOf("स्कूल कॉलेज वि.वि. बंद हैं और बी.ए. पास करके वह आया। ", "ठीक।")),
+            Case("morning", Lang.HI, listOf("समय 10:30 a.m. है। ", "वह 10:30 P.M. पर आया। ", "ठीक।")),
             // A full stop used as the sentence end after an ordinary word still splits.
             Case("full stop as sentence end", Lang.HI, listOf("यह वाक्य है. ", "दूसरा वाक्य है.")),
         ),
@@ -144,6 +147,20 @@ class IndicSentenceSplitterTest {
                 ),
             ),
             Case("serial number heading", Lang.EN, listOf("Market S. No. 5 is closed.")),
+        ),
+    )
+
+    // A closing bracket or quote after an initial does not hide the opener after it; "a.m." before English may end
+    // a sentence, where before Hindi it does not.
+    @Test
+    fun `an opener after a closer and a meridiem before an English capital end the sentence`() = check(
+        listOf(
+            Case(
+                "closer before an opener",
+                Lang.EN,
+                listOf("Made in the (U.S.) ", "The end. ", "\"U.S.\" ", "The end."),
+            ),
+            Case("a.m. before English", Lang.EN, listOf("We met at 10 a.m. ", "The rest left.")),
         ),
     )
 

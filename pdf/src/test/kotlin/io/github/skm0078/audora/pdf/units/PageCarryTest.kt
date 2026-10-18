@@ -196,6 +196,8 @@ class PageCarryTest {
             listOf("New grant", "Nil", "4,000") to listOf(listOf("Old grant", "2,667", "4,000")),
             listOf("New grant", "N.A.", "4,000") to listOf(listOf("Old grant", "2,667", "4,000")),
             listOf("नया अनुदान", "निरंक", "४,०००") to listOf(listOf("पुराना अनुदान", "२,६६७", "४,०००")),
+            listOf("नया अनुदान", "शून्य", "४,०००") to listOf(listOf("पुराना अनुदान", "२,६६७", "४,०००")),
+            listOf("Ram", "0", "1", "2") to listOf(listOf("Sita", "4", "7", "9"), listOf("Gita", "3", "5", "8")),
         )
         for ((head, rows) in data) {
             val numbered = carry.join(page(head = head, rows = rows), null).units.map { it.table!!.row }

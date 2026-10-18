@@ -201,15 +201,44 @@ class ReadingUnitBuilderTest {
 
     @Test
     fun `each contents entry is its own unit, cut after its page number`() {
-        val sketch = PageSketch()
-        sketch.lines(
-            listOf("Preface ........ ix", "Introduction ........ 5", "Methods . . . . . . 12", "भूमिका ..... ७"),
-            50f,
-            720f,
+        val entries = listOf(
+            "Foreword ........ V",
+            "Preface ........ ix",
+            "Introduction ........ 5",
+            "Methods . . . . . . 12-14",
+            "भूमिका ..... ७",
+            "Appendix ..... A-1",
         )
         assertEquals(
-            listOf("Preface \u2026 ix", "Introduction \u2026 5", "Methods \u2026 12", "भूमिका \u2026 ७"),
-            ReadingUnitBuilder().build(sketch.build()).map { it.text },
+            listOf(
+                "Foreword \u2026 V",
+                "Preface \u2026 ix",
+                "Introduction \u2026 5",
+                "Methods \u2026 12-14",
+                "भूमिका \u2026 ७",
+                "Appendix \u2026 A-1",
+            ),
+            ReadingUnitBuilder().build(PageSketch().apply { lines(entries, 50f, 720f) }.build()).map { it.text },
+        )
+    }
+
+    @Test
+    fun `prose with one leader in it is not cut at its line ends`() {
+        val paragraphs = listOf(
+            listOf("He waited...... then", "he left the room."),
+            listOf("वह चला गया...... २", "दिन बाद वह लौटा।"),
+            listOf("The capital of India is ______ which", "is in the north."),
+        )
+        val texts = paragraphs.map { lines ->
+            ReadingUnitBuilder().build(PageSketch().apply { lines(lines, 50f, 720f) }.build()).map { it.text }
+        }
+        assertEquals(
+            listOf(
+                listOf("He waited\u2026 then he left the room."),
+                listOf("वह चला गया\u2026 २ दिन बाद वह लौटा।"),
+                listOf("The capital of India is \u2026 which is in the north."),
+            ),
+            texts,
         )
     }
 

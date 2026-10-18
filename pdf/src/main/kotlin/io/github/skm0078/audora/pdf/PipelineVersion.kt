@@ -63,6 +63,7 @@ package io.github.skm0078.audora.pdf
  *     punctuation or brackets and Hindi initials without spaces held whole; rows numbering every column are headers
  *     and carry a table on; letter items in nested flush lists; "(अ)" labels; a leader reads as one ellipsis
  *     (left out at a unit's or cell's end, a dash for a cell holding only a rule) and keeps a contents line whole;
- *     a stop glued between Indic letters holds; "Henry V. The" ends a sentence; column numbers in brackets.
+ *     a stop glued between Indic letters holds; "Henry V. The" ends a sentence; column numbers in brackets; each
+ *     contents entry its own unit; only a rule is a dash in a cell; "वि. सं.", "वि.वि. बंद" and "a.m. है" held whole.
  */
 const val PIPELINE_VERSION: Int = 11

@@ -74,18 +74,20 @@ internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderR
     }
 
     /**
-     * The text before [at] ends with "word." where the word is a listed abbreviation or initial, or a run of listed
-     * initials ("ए.पी.जे.", "पी.एच.डी."); closing brackets and quotes may follow the full stop ("(कि.मी.) में").
+     * The text before [at] ends with "word." where the word is a listed abbreviation or initial, a run of listed
+     * initials ("ए.पी.जे.", "पी.एच.डी.") or a dotted Indic abbreviation ("वि.वि.", "बी.ए."); closing brackets,
+     * quotes and joiners may follow the full stop ("(कि.मी.) में", "कि.\u200Dमी.").
      */
     private fun followsNonBreakingWord(text: String, at: Int): Boolean {
         var stop = at - 1
-        while (stop >= 0 && (text[stop].isWhitespace() || text[stop] in CLOSERS)) stop--
+        while (stop >= 0 && (text[stop].isWhitespace() || text[stop] in BEFORE_STOP)) stop--
         if (stop < 1 || text[stop] != '.') return false
         var start = stop
         while (start > 0 && !text[start - 1].isWhitespace() && text[start - 1] !in OPENERS) start--
         val word = text.substring(start, stop)
-        val listed = nfc(word) in nonBreaking || isIndicInitials(word, nonBreaking) || gluedIndicStop(text, at)
-        return listed || isInitial(text, start, word) || isReference(text, at, word) ||
+        val listed = nfc(word) in nonBreaking || isIndicInitials(word, nonBreaking)
+        return listed || IndicStops.holds(text, start, stop, at) || isInitial(text, start, word) ||
+            isReference(text, at, word) ||
             insideListedWord(text, start, at)
     }
 
@@ -160,6 +162,9 @@ internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderR
         /** Closing quotes and brackets; the straight quotes count only when a space follows them. */
         const val CLOSERS = "\"'\u2019\u201D\u00BB)]"
 
+        /** What may stand between a word's full stop and a break: closers, and the joiners ICU breaks after. */
+        const val BEFORE_STOP = "$CLOSERS${IndicStops.JOINERS}"
+
         /** Opening quotes and brackets before a word: "(डॉ." is still the word "डॉ". */
         const val OPENERS = "\"'\u2018\u201C\u00AB(["
 
@@ -179,10 +184,7 @@ internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderR
 
         /** NFC, without the zero-width joiners some fonts' text puts inside Indic words ("र\u200D्य"). */
         fun nfc(text: String): String =
-            Normalizer.normalize(text, Normalizer.Form.NFC).filterNot { it == ZWNJ || it == ZWJ }
-
-        private const val ZWNJ = '\u200C'
-        private const val ZWJ = '\u200D'
+            Normalizer.normalize(text, Normalizer.Form.NFC).filterNot { it in IndicStops.JOINERS }
 
         /**
          * [word] is two or more [listed] words (initials and abbreviations) joined by full stops: "ए.पी.जे",
@@ -194,25 +196,14 @@ internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderR
         }
 
         /**
-         * The break [at] falls right after a full stop between two Devanagari or Bengali letters, with no space:
-         * "रा.|शै.अ.प्र.प.", "अ.|जा.". Indic text ends its sentences with the danda, so such a stop is inside a dotted
-         * abbreviation, as the JDK reads it; a sentence end that lost its space ("है.अगला") merges instead, which
-         * costs a pause, where a split abbreviation cuts a name in half.
-         */
-        fun gluedIndicStop(text: String, at: Int): Boolean =
-            at >= 2 && text[at - 1] == '.' && isIndic(text[at - 2]) && isIndic(text.getOrElse(at) { ' ' })
-
-        /** A Devanagari or Bengali letter or sign, or a zero-width joiner inside such a word. */
-        private fun isIndic(c: Char): Boolean =
-            c in '\u0900'..'\u097F' || c in '\u0980'..'\u09FF' || c == ZWNJ || c == ZWJ
-
-        /**
          * After an initial's stop at [from], no initial follows and the next word is one of [openers] written as a
          * word ("The", "It"; [SentenceOpeners]) without a stop of its own: "Henry V. The king", "in the U.S. The
          * economy" end a sentence, "S. No." does not.
          */
         fun opensSentence(text: String, from: Int, openers: Set<String>): Boolean {
-            val begin = skipSpaces(text, from)
+            var closed = from
+            while (closed < text.length && text[closed] in CLOSERS) closed++
+            val begin = skipSpaces(text, closed)
             var end = begin
             while (end < text.length && text[end].isLetter()) end++
             val next = text.substring(begin, end)
@@ -221,11 +212,15 @@ internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderR
             return !initialFollows(text, from) && OPENER_WORD.matches(next) && next in openers && !ownStop
         }
 
-        /** A capital and small letters: an opener written as a word, not a lone capital ("A", "I"). */
+        /**
+         * A capital and small letters: an opener written as a word. The list's lone capitals ("A", "I") never count
+         * here, on purpose: "Henry V. A king" and "the U.S. A new law" stay whole, as a lone capital after an initial
+         * is more often a name's next initial.
+         */
         private val OPENER_WORD = Regex("""\p{Lu}\p{Ll}+""")
 
         /** A letter, vowel sign, joiner or full stop: what a dotted word ("कि.मी.") is written with. */
-        fun inDottedWord(c: Char): Boolean = c.isLetter() || isCombiningMark(c) || c == '.' || isIndic(c)
+        fun inDottedWord(c: Char): Boolean = c.isLetter() || isCombiningMark(c) || c == '.' || IndicStops.isIndic(c)
 
         /**
          * The sentence carries on at the break [at]: a comma-like mark follows it, or a number follows a dot leader

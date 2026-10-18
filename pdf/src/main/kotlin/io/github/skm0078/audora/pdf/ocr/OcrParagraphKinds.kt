@@ -56,19 +56,8 @@ internal class OcrParagraphKinds(
         // A paragraph split off after a note's end opens an item only in sequence too.
         return groups.indices.flatMap { g ->
             splitAtNoteEnd(groups[g]).mapIndexed { k, piece ->
-                Paragraph(
-                    piece,
-                    kindOf(
-                        piece,
-                        if (k ==
-                            0
-                        ) {
-                            items[g]
-                        } else {
-                            ListMarkers.opensItem(text, piece.first(), labelsSoFar[g])
-                        },
-                    ),
-                )
+                val item = if (k == 0) items[g] else ListMarkers.opensItem(text, piece.first(), labelsSoFar[g])
+                Paragraph(piece, kindOf(piece, item))
             }
         }
     }
