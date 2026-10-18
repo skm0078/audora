@@ -32,6 +32,7 @@ package io.github.skm0078.audora.core.config
  * @property retryBudgetMs retries stop once a page has spent this long on them (done-when: at most 3 s extra a page).
  * @property rules how the lines ruled between a scanned table's cells are found (RI-4a part 2).
  * @property threshold how a page is split into ink and paper before recognition ([OcrThreshold]).
+ * @property lighting when a photographed page is read again with its light evened out (a hard shadow).
  */
 data class OcrConfig(
     val renderDpi: Int = 300,
@@ -48,6 +49,7 @@ data class OcrConfig(
     val retryBudgetMs: Long = 2_000L,
     val rules: RuleConfig = RuleConfig(),
     val threshold: OcrThreshold = OcrThreshold.SAUVOLA,
+    val lighting: LightingConfig = LightingConfig(),
 ) {
     init {
         require(renderDpi > 0) { "renderDpi must be > 0, was $renderDpi" }
