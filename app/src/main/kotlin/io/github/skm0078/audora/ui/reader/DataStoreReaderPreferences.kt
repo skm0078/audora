@@ -53,7 +53,7 @@ class DataStoreReaderPreferences(context: Context) :
 
     override fun voiceCommands(): Flow<VoiceCommandsMode> =
         store.setting("voice commands setting", VoiceCommandsMode.OFF) { prefs ->
-            VoiceCommandsMode.entries.firstOrNull { it.name == prefs[VOICE_COMMANDS] }
+            VoiceCommandsMode.fromSaved(prefs[VOICE_COMMANDS])
         }
 
     override suspend fun saveVoiceCommands(mode: VoiceCommandsMode) =

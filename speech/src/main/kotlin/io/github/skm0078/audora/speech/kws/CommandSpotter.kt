@@ -22,10 +22,10 @@ class CommandSpotter private constructor(
     private var spotter: KeywordSpotter?,
     private var stream: OnlineStream?,
     private val sampleRate: Int,
-) {
+) : KeywordDecoder {
     /** Feeds [samples] (mono floats in -1..1 at the config's rate); the command heard, if one ended in them. */
     @Synchronized
-    fun accept(samples: FloatArray): VoiceCommand? {
+    override fun accept(samples: FloatArray): VoiceCommand? {
         val kws = spotter
         val input = stream
         var heard: VoiceCommand? = null
@@ -59,9 +59,24 @@ class CommandSpotter private constructor(
 
         /**
          * Loads the model from [dir] with this build's phrases (written beside it each time, so an app update's new
-         * phrase is used without a new download); null (logged) when the files or sherpa-onnx refuse.
+         * phrase is used without a new download); null (logged) when the files or sherpa-onnx refuse, or when a
+         * phrase names a piece the model lacks ([KeywordTokens]: sherpa-onnx would end the process).
          */
         fun load(dir: File, model: KeywordModel, config: VoiceCommandConfig): CommandSpotter? = try {
+            val unknown = File(dir, model.tokens).useLines { KeywordTokens.unknown(KeywordTokens.vocabulary(it)) }
+            if (unknown.isEmpty()) {
+                loadChecked(dir, model, config)
+            } else {
+                null.also {
+                    AudoraLog.e(TAG, "Voice-command model ${model.id} lacks the pieces $unknown; not loaded")
+                }
+            }
+        } catch (e: IOException) {
+            AudoraLog.e(TAG, "Reading the tokens of voice-command model ${model.id} failed", e)
+            null
+        }
+
+        private fun loadChecked(dir: File, model: KeywordModel, config: VoiceCommandConfig): CommandSpotter? = try {
             val keywords = File(dir, KEYWORDS_FILE)
             keywords.writeText(VoiceCommand.keywordsFile(), Charsets.UTF_8)
             val spotter = KeywordSpotter(null, spotterConfig(dir, model, keywords, config))

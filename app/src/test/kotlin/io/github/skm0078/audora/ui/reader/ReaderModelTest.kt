@@ -9,6 +9,7 @@ import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.pdf.document.PdfOpenError
+import io.github.skm0078.audora.speech.kws.VoiceCommand
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -241,6 +242,17 @@ class ReaderModelTest {
         assertEquals(listOf("speed 2.0"), port.calls)
         assertEquals(2f, speeds.saved)
     }
+
+    @Test
+    fun `a voice command's speed change plays but is not saved, and pause acts only while reading`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val model = model()
+            port.connect(speed = 1f)
+            model.onVoiceCommand(VoiceCommand.FASTER, ReaderConfig())
+            model.onVoiceCommand(VoiceCommand.PAUSE, ReaderConfig())
+            assertEquals(listOf("speed 1.25"), port.calls)
+            assertNull(speeds.saved)
+        }
 
     @Test
     fun `speeds between the steps snap to the slider, and pace goes to the player`() =

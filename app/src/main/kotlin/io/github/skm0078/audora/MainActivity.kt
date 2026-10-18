@@ -55,7 +55,6 @@ import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
-import io.github.skm0078.audora.speech.kws.CommandListener
 import io.github.skm0078.audora.speech.kws.VoiceCommandModels
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
@@ -81,19 +80,18 @@ import io.github.skm0078.audora.ui.reader.KeepScreenOn
 import io.github.skm0078.audora.ui.reader.LibraryReaderBooks
 import io.github.skm0078.audora.ui.reader.LocatorReaderResume
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
+import io.github.skm0078.audora.ui.reader.PlayerConnectionEffect
 import io.github.skm0078.audora.ui.reader.ReaderActions
 import io.github.skm0078.audora.ui.reader.ReaderDocumentOpener
 import io.github.skm0078.audora.ui.reader.ReaderModel
 import io.github.skm0078.audora.ui.reader.ReaderScreen
 import io.github.skm0078.audora.ui.reader.ReaderView
+import io.github.skm0078.audora.ui.reader.ReaderVoiceCommands
 import io.github.skm0078.audora.ui.reader.ScreenPreference
 import io.github.skm0078.audora.ui.reader.SleepTimerSetting
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
-import io.github.skm0078.audora.ui.reader.VoiceCommandsEffect
-import io.github.skm0078.audora.ui.reader.VoiceCommandsMode
 import io.github.skm0078.audora.ui.reader.VolumeKeySkips
-import io.github.skm0078.audora.ui.reader.onVoiceCommand
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.settings.OcrModelsAction
 import io.github.skm0078.audora.ui.settings.SettingsScreen
@@ -107,8 +105,7 @@ import io.github.skm0078.audora.ui.voices.VoicesScreen
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -465,11 +462,9 @@ class MainActivity : ComponentActivity() {
                 views = viewPreference,
             ).also { it.start() }
         }
-        // Connected only while visible: a controller left connected keeps the playback service bound.
-        LifecycleStartEffect(port) {
-            port.connect()
-            onStopOrDispose { port.release() }
-        }
+        // Connected while visible, or while voice commands listen with the screen off (they act on this player).
+        val listeningInBackground = remember(port) { MutableStateFlow(false) }
+        PlayerConnectionEffect(port, listeningInBackground)
         DisposableEffect(model) { onDispose { model.close() } }
         val state by model.state.collectAsStateWithLifecycle()
         val ocrState by remember { ocrModels.state() }.collectAsStateWithLifecycle(initialValue = null)
@@ -490,13 +485,8 @@ class MainActivity : ComponentActivity() {
         KeepScreenOn(keepScreenOn && state.playback.wantsToPlay)
         val volumeKeys by remember { screenPreference.volumeKeysSkip() }.collectAsStateWithLifecycle(false)
         VolumeKeySkips(volumeKeys && state.playback.wantsToPlay, model::skipForward, model::skipBack)
-        val commands by remember { screenPreference.voiceCommands() }
-            .collectAsStateWithLifecycle(VoiceCommandsMode.OFF)
-        val commandsModel by remember { voiceCommandModels.installed() }.collectAsStateWithLifecycle(false)
-        val listener = remember { CommandListener(context, voiceCommandModels) }
-        val reading = remember(model) { model.state.map { it.isReading }.distinctUntilChanged() }
-        VoiceCommandsEffect(commands.takeIf { commandsModel } ?: VoiceCommandsMode.OFF, listener, reading) {
-            model.onVoiceCommand(it, readerConfig)
+        ReaderVoiceCommands(model, screenPreference, voiceCommandModels, readerConfig) {
+            listeningInBackground.value = it
         }
         ReaderScreen(
             state = state,

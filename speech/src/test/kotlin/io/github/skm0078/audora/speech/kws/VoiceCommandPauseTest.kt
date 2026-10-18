@@ -40,18 +40,18 @@ class VoiceCommandPauseTest {
     @Test
     fun `a hold returns once the listener lets the microphone go, or after the wait`() = runTest {
         val pause = VoiceCommandPause(releaseWaitMs = WAIT_MS)
-        pause.microphone(open = true)
+        assertTrue(pause.claimMicrophone())
 
         val held = async { pause.hold("reading tutor") }
         advanceTimeBy(RELEASE_MS)
         runCurrent()
         assertFalse(held.isCompleted)
-        pause.microphone(open = false)
+        pause.microphoneClosed()
         runCurrent()
         assertTrue(held.isCompleted)
         held.await().close()
 
-        pause.microphone(open = true)
+        assertTrue(pause.claimMicrophone())
         val start = currentTime
         pause.hold("stuck listener").close()
         assertEquals(WAIT_MS, currentTime - start)
@@ -62,6 +62,61 @@ class VoiceCommandPauseTest {
         val start = currentTime
         VoiceCommandPause().hold("reading tutor").close()
         assertEquals(start, currentTime)
+    }
+
+    @Test
+    fun `a hold cancelled while it waits is closed, so commands resume`() = runTest {
+        val pause = VoiceCommandPause(releaseWaitMs = WAIT_MS)
+        assertTrue(pause.claimMicrophone())
+        val held = launch { pause.hold("voice note") }
+        runCurrent()
+        assertTrue(pause.isPaused)
+
+        held.cancel()
+        runCurrent()
+        assertFalse(pause.isPaused)
+    }
+
+    @Test
+    fun `a listener cannot claim the microphone while held, and a claim makes the next hold wait`() = runTest {
+        val pause = VoiceCommandPause(releaseWaitMs = WAIT_MS)
+        val tutor = pause.hold("reading tutor")
+        assertFalse(pause.claimMicrophone())
+        tutor.close()
+
+        assertTrue(pause.claimMicrophone())
+        val held = async { pause.hold("voice note") }
+        runCurrent()
+        assertFalse(held.isCompleted)
+        assertFalse(pause.claimMicrophone())
+        pause.microphoneClosed()
+        runCurrent()
+        assertTrue(held.isCompleted)
+        held.await().close()
+    }
+
+    @Test
+    fun `two listeners both let go before a hold returns`() = runTest {
+        val pause = VoiceCommandPause(releaseWaitMs = WAIT_MS)
+        assertTrue(pause.claimMicrophone())
+        assertTrue(pause.claimMicrophone())
+        val held = async { pause.hold("reading tutor") }
+        pause.microphoneClosed()
+        runCurrent()
+        assertFalse(held.isCompleted)
+        pause.microphoneClosed()
+        runCurrent()
+        assertTrue(held.isCompleted)
+        held.await().close()
+    }
+
+    @Test
+    fun `holding closes its hold when the block ends or throws`() = runTest {
+        val pause = VoiceCommandPause(releaseWaitMs = WAIT_MS)
+        assertEquals(1, pause.holding("voice note") { if (pause.isPaused) 1 else 0 })
+        assertFalse(pause.isPaused)
+        runCatching { pause.holding("reading tutor") { error("recorder failed") } }
+        assertFalse(pause.isPaused)
     }
 
     private companion object {

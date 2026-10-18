@@ -4,7 +4,9 @@
 package io.github.skm0078.audora.ui.settings
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,19 +21,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.config.VoiceCommandConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.speech.kws.VoiceCommandModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.ui.reader.ScreenPreference
 import io.github.skm0078.audora.ui.reader.VoiceCommandsMode
+import io.github.skm0078.audora.ui.reader.microphoneAllowed
+import io.github.skm0078.audora.ui.reader.notificationsAllowed
+import io.github.skm0078.audora.ui.reader.rememberEffectiveVoiceCommands
 import kotlinx.coroutines.launch
 
 /**
@@ -58,14 +66,14 @@ internal fun VoiceCommandsItems(settings: VoiceCommandsSettings) {
     val on = settings.mode != VoiceCommandsMode.OFF && ready
     SwitchRow(
         title = R.string.commands_switch_title,
-        body = if (ready) R.string.commands_switch_body else R.string.commands_switch_needs_model,
+        body = stringResource(if (ready) R.string.commands_switch_body else R.string.commands_switch_needs_model),
         checked = on,
         enabled = ready,
     ) { turnOn -> settings.onChange(if (turnOn) VoiceCommandsMode.WHILE_VISIBLE else VoiceCommandsMode.OFF) }
     if (on) {
         SwitchRow(
             title = R.string.commands_screen_off_title,
-            body = R.string.commands_screen_off_body,
+            body = pluralStringResource(R.plurals.commands_screen_off_body, IDLE_MINUTES, IDLE_MINUTES),
             checked = settings.mode == VoiceCommandsMode.SCREEN_OFF,
             enabled = true,
         ) { screenOff ->
@@ -78,14 +86,14 @@ internal fun VoiceCommandsItems(settings: VoiceCommandsSettings) {
 @Composable
 private fun SwitchRow(
     @StringRes title: Int,
-    @StringRes body: Int,
+    body: String,
     checked: Boolean,
     enabled: Boolean,
     onChange: (Boolean) -> Unit,
 ) {
     ListItem(
         headlineContent = { Text(stringResource(title)) },
-        supportingContent = { Text(stringResource(body)) },
+        supportingContent = { Text(body) },
         trailingContent = { Switch(checked = checked, onCheckedChange = null, enabled = enabled) },
         modifier = Modifier.toggleable(
             value = checked,
@@ -97,43 +105,65 @@ private fun SwitchRow(
 }
 
 /**
- * Settings' state for voice commands: [models]' state, the saved mode, and turning listening on only once the
- * microphone is allowed (asked then, never before). A refusal leaves it off and says why.
+ * Settings' state for voice commands: [models]' state, the saved mode as it can run now
+ * ([rememberEffectiveVoiceCommands]), and turning listening on only once the microphone is allowed (asked then,
+ * never before). Screen-off listening also needs notifications on Android 13+, since its notification is where Stop
+ * lives. A refusal leaves the setting as it was and says why.
  */
 @Composable
 fun rememberVoiceCommandsSettings(models: VoiceCommandModels, preference: ScreenPreference): VoiceCommandsSettings {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val state by remember(models) { models.state() }.collectAsStateWithLifecycle(initialValue = null)
-    val mode by remember(preference) { preference.voiceCommands() }
+    val saved by remember(preference) { preference.voiceCommands() }
         .collectAsStateWithLifecycle(initialValue = VoiceCommandsMode.OFF)
-    var asked by remember { mutableStateOf(VoiceCommandsMode.WHILE_VISIBLE) }
-    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+    val save: (VoiceCommandsMode) -> Unit = { mode -> scope.launch { preference.saveVoiceCommands(mode) } }
+    val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        AudoraLog.i(TAG, "Notification permission for screen-off voice commands granted=$granted")
+        if (granted) save(VoiceCommandsMode.SCREEN_OFF) else toast(context, R.string.commands_notifications_denied)
+    }
+    val needsNotifications = { notificationsNeeded(context) }
+    var asked by rememberSaveable { mutableStateOf(VoiceCommandsMode.WHILE_VISIBLE) }
+    val askMicrophone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         AudoraLog.i(TAG, "Microphone permission for voice commands granted=$granted")
-        if (granted) {
-            scope.launch { preference.saveVoiceCommands(asked) }
-        } else {
-            Toast.makeText(context, R.string.commands_permission_denied, Toast.LENGTH_LONG).show()
+        when {
+            !granted -> toast(context, R.string.commands_permission_denied)
+            asked == VoiceCommandsMode.SCREEN_OFF && needsNotifications() -> askNotifications.launch(NOTIFICATIONS)
+            else -> save(asked)
         }
     }
-    // A mode restored from a backup on a phone where the microphone is not allowed yet shows as off: nothing listens.
-    val allowed = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
-        PackageManager.PERMISSION_GRANTED
     return VoiceCommandsSettings(
         model = state,
-        mode = if (allowed) mode else VoiceCommandsMode.OFF,
+        mode = rememberEffectiveVoiceCommands(saved, preference),
         onModel = { action -> scope.runModelAction(action, models::download, models::cancel) { models.delete() } },
         onChange = { next ->
-            val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
-                PackageManager.PERMISSION_GRANTED
-            if (next != VoiceCommandsMode.OFF && !granted) {
-                asked = next
-                ask.launch(Manifest.permission.RECORD_AUDIO)
-            } else {
-                scope.launch { preference.saveVoiceCommands(next) }
+            when {
+                next != VoiceCommandsMode.OFF && !microphoneAllowed(context) -> {
+                    asked = next
+                    askMicrophone.launch(Manifest.permission.RECORD_AUDIO)
+                }
+
+                next == VoiceCommandsMode.SCREEN_OFF && needsNotifications() -> askNotifications.launch(NOTIFICATIONS)
+
+                next == VoiceCommandsMode.SCREEN_OFF && !notificationsAllowed(context) ->
+                    toast(context, R.string.commands_notifications_denied)
+
+                else -> save(next)
             }
         },
     )
 }
 
+/** Android 13+ with the permission not granted yet: it can be asked for. Before 13 there is nothing to ask. */
+private fun notificationsNeeded(context: Context): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+    ContextCompat.checkSelfPermission(context, NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+
+private fun toast(context: Context, @StringRes text: Int) = Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+
+/** POST_NOTIFICATIONS' value: the constant is Android 13's, the string is the same on every version. */
+private const val NOTIFICATIONS = "android.permission.POST_NOTIFICATIONS"
+
 private const val TAG = "UI.VoiceCommands"
+
+/** The idle limit the screen-off row names; the listener's own config. */
+private val IDLE_MINUTES = VoiceCommandConfig().screenOffIdleMinutes
