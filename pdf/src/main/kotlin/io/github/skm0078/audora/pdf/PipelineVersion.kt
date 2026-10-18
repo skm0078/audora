@@ -59,6 +59,8 @@ package io.github.skm0078.audora.pdf
  *     held whole on Android too; "x." opening an item only in sequence, "(क)" and "(ক)" labels; an evened OCR read
  *     kept only with as many words; dot leaders, blanks and rules of five marks or more read as a space; the last
  *     initial of an author list written without stops ("West J, Lundberg P.") ends the sentence; a printer's slug at
- *     a page's edge is outside its text area, so the page number above it goes too.
+ *     a page's edge is outside its text area, so the page number above it goes too; dotted Hindi words with
+ *     punctuation or brackets and Hindi initials without spaces held whole; rows numbering every column are headers
+ *     and carry a table on; letter items in nested flush lists; "(अ)" labels.
  */
 const val PIPELINE_VERSION: Int = 11

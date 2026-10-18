@@ -14,10 +14,11 @@ package io.github.skm0078.audora.core.config
  *
  * English text ends sentences with the full stop too, so only a title or a Latin abbreviation that is usually
  * followed by a capital ("Dr. Smith", "e.g. Apples") is listed, besides capital initials ("A. P. J.", "U.S."), which
- * need no list. A single capital is an initial only after a name, a comma or a full stop ("Abbott B.", "Smith, J.",
- * "Dr. A."): "says I.", "matrix Q." and "Appendix A." end sentences. BreakIterator already keeps a full stop before a
- * lower-case word ("et al. found"). Words that often end a sentence stay off the list: "etc.", "Jr.", "Ltd.", and
- * "No." ("No. It was her."), which is kept only as a reference before a number or bracket ("No. 5", "Fig. (a)").
+ * need no list. A single capital is an initial only after a name, a comma or a full stop, or before another initial
+ * ("Abbott B.", "Smith, J.", "Dr. A.", "by S. K. Rao"): "says I.", "matrix Q." and "Appendix A." end sentences.
+ * BreakIterator already keeps a full stop before a lower-case word ("et al. found"). Words that often end a sentence
+ * stay off the list: "etc.", "Jr.", "Ltd.", and "No." ("No. It was her."), which is kept only as a reference before
+ * a number or bracket ("No. 5", "Fig. (a)").
  *
  * @property abbreviations Hindi and Bengali; matched against the whole word before the full stop.
  * @property initials Hindi and Bengali; matched the same way.

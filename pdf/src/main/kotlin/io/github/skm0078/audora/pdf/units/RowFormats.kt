@@ -32,8 +32,8 @@ internal fun yearCue(first: ReadingUnit, rows: List<ReadingUnit>): YearCue {
     val numbers = cellsOf(first).withIndex().filter { (_, cell) -> cell.any(Char::isDigit) }
     val years = numbers.mapNotNull { (column, cell) ->
         // A column whose every value is a year (or that has none) may hold a year as data.
-        val holdsYears = columnValues(rows, column).all { YEAR.matches(ascii(it)) }
-        YEAR.matchEntire(ascii(cell.trim()))?.takeUnless { holdsYears }?.let { column to it }
+        val holdsYears = columnValues(rows, column).all { YEAR.matches(asciiDigits(it)) }
+        YEAR.matchEntire(asciiDigits(cell.trim()))?.takeUnless { holdsYears }?.let { column to it }
     }
     val cues = years.map { (column, year) ->
         val longest = columnValues(rows, column).maxOfOrNull { value -> value.count(Char::isDigit) } ?: 0
@@ -57,18 +57,19 @@ private fun columnValues(rows: List<ReadingUnit>, column: Int): List<String> =
     rows.mapNotNull { row -> cellsOf(row).getOrNull(column)?.trim()?.takeIf { it.isNotEmpty() } }
 
 /** [text] with every script's digits written as ASCII digits ("१९९८" to "1998"). */
-private fun ascii(text: String): String = text.map { c -> c.digitToIntOrNull()?.let { '0' + it } ?: c }.joinToString("")
+internal fun asciiDigits(text: String): String =
+    text.map { c -> c.digitToIntOrNull()?.let { '0' + it } ?: c }.joinToString("")
 
 /**
  * [first] is written like its [rows] in every column whose rows mostly hold numbers written one way, or is empty
- * there ("-"), and in at least one such column it is written so: a header names its number columns in words
- * ("Name | Age | City" over "Ram | 34 | Pune"), so only a row of data passes. Text columns say nothing: a word
- * header is written like the words under it. Numbers that name the columns do not pass either: codes written with
- * a leading zero over figures without ("Name | 041 | 042" over marks), or columns counted on from 0 or 1
- * ("Item | 1 | 2 | 3"). [holdsYear] is the caller's to add: a row of years may be a header or data.
+ * there ("-", "Nil", "N.A."), and in at least one such column it is written so: a header names its number columns
+ * in words ("Name | Age | City" over "Ram | 34 | Pune"), so only a row of data passes. Text columns say nothing: a
+ * word header is written like the words under it. Numbers that name the columns do not pass either: codes written
+ * with a leading zero over figures without ("Name | 041 | 042" over marks), or columns counted ([countsColumns]).
+ * [holdsYear] is the caller's to add: a row of years may be a header or data.
  */
 internal fun numberColumnsMatch(first: ReadingUnit, rows: List<ReadingUnit>): Boolean {
-    val cells = cellsOf(first).map { ascii(it.trim()) }
+    val cells = cellsOf(first).map { asciiDigits(it.trim()) }
     val firstFormats = cells.map(::formatOf)
     val majority = majorityFormats(first, rows)
     val numeric = majority.indices.filter { majority[it]?.contains(DIGIT) == true }
@@ -76,15 +77,12 @@ internal fun numberColumnsMatch(first: ReadingUnit, rows: List<ReadingUnit>): Bo
     val empty = numeric.count { firstFormats.getOrNull(it) == null }
     val values = matching.map { cells[it] }
     val codes = values.all { ZERO_PADDED.matches(it) } &&
-        matching.none { column -> columnValues(rows, column).any { ZERO_PADDED.matches(ascii(it)) } }
-    val counts = values.map { it.toLongOrNull() }
-    val counted = counts.size >= MIN_COUNTED_COLUMNS && counts.first().let { it == 0L || it == 1L } &&
-        counts.zipWithNext().all { (a, b) -> a != null && b == a + 1 }
-    return matching.isNotEmpty() && matching.size + empty == numeric.size && !codes && !counted
+        matching.none { column -> columnValues(rows, column).any { ZERO_PADDED.matches(asciiDigits(it)) } }
+    return matching.isNotEmpty() && matching.size + empty == numeric.size && !codes && !countsColumns(first, rows)
 }
 
 /** One of [first]'s cells is a year or a span of years ("2011", "2018-19"), any script's digits. */
-internal fun holdsYear(first: ReadingUnit): Boolean = cellsOf(first).any { YEAR.matches(ascii(it.trim())) }
+internal fun holdsYear(first: ReadingUnit): Boolean = cellsOf(first).any { YEAR.matches(asciiDigits(it.trim())) }
 
 /** Per column of [first]'s table, how more than half of [rows] write it ([formatOf]), or null. */
 private fun majorityFormats(first: ReadingUnit, rows: List<ReadingUnit>): List<String?> {
@@ -99,7 +97,7 @@ private fun majorityFormats(first: ReadingUnit, rows: List<ReadingUnit>): List<S
 internal fun serialOf(unit: ReadingUnit): Long? {
     val first = cellsOf(unit).firstOrNull()?.trim()?.trimEnd('.', ')')
         ?.takeIf { it.isNotEmpty() && it.length <= MAX_SERIAL_DIGITS && it.all(Char::isDigit) }
-    return first?.let(::ascii)?.toLongOrNull()
+    return first?.let(::asciiDigits)?.toLongOrNull()
 }
 
 /** A vowel sign or virama: "है" ends on a sign, not a letter, and "नाम" is not "नमी". */
@@ -107,10 +105,10 @@ internal fun isCombiningMark(c: Char): Boolean = Character.getType(c).let {
     it == Character.NON_SPACING_MARK.toInt() || it == Character.COMBINING_SPACING_MARK.toInt()
 }
 
-/** How a cell is written ("28,400" and "5739": "9"; "Ram Lal": "a"; "2018-19": "9-9"); null when empty. */
+/** How a cell is written ("28,400" and "5739": "9"; "Ram Lal": "a"; "2018-19": "9-9"); null when empty or nil. */
 private fun formatOf(cell: String): String? {
     val text = cell.trim()
-    if (text.none { it.isLetterOrDigit() }) return null
+    if (text.none { it.isLetterOrDigit() } || NIL_WORDS.matches(text)) return null
     val out = StringBuilder()
     text.forEachIndexed { i, c ->
         val digitGroup = (c == ',' || c == '.') && text.getOrNull(i + 1)?.isDigit() == true &&
@@ -137,8 +135,8 @@ private const val MAX_SERIAL_DIGITS = 6
 /** A number written with a leading zero, as a code is ("041"). */
 private val ZERO_PADDED = Regex("""0\d+""")
 
-/** Column numbers count on ("1 | 2 | 3") across at least this many columns before they name the columns. */
-private const val MIN_COUNTED_COLUMNS = 2
+/** A cell that says it holds no figure: "Nil", "N.A.", "NA", "N/A", "निरंक", "শূন্য"; read as an empty cell. */
+private val NIL_WORDS = Regex("""(?i:nil|n\.?[ ]?a\.?|n/a)|निरंक|শূন্য""")
 
 /** A row whose numbers are two or more years names years ("District | 2011 | 2021"), whatever their columns hold. */
 private const val MIN_HEADER_YEARS = 2

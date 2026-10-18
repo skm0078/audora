@@ -26,6 +26,7 @@ import java.text.Normalizer
 internal class IndicSentenceRules(config: SentenceConfig) {
     private val nonBreaking: Set<String> =
         (config.abbreviations + config.initials + config.englishAbbreviations).mapTo(HashSet(), ::nfc)
+    private val initials: Set<String> = config.initials.mapTo(HashSet(), ::nfc)
     private val references = config.referenceAbbreviations
     private val labels = config.letterLabels
 
@@ -67,25 +68,34 @@ internal class IndicSentenceRules(config: SentenceConfig) {
         return if (end == text.length || text[end].isWhitespace()) skipSpaces(text, end) else at
     }
 
-    /** The text before [at] ends with "word." where the word is a listed abbreviation or initial. */
+    /**
+     * The text before [at] ends with "word." where the word is a listed abbreviation or initial, or a run of listed
+     * initials ("ए.पी.जे.", "पी.एच.डी."); closing brackets and quotes may follow the full stop ("(कि.मी.) में").
+     */
     private fun followsNonBreakingWord(text: String, at: Int): Boolean {
         var stop = at - 1
-        while (stop >= 0 && text[stop].isWhitespace()) stop--
+        while (stop >= 0 && (text[stop].isWhitespace() || text[stop] in CLOSERS)) stop--
         if (stop < 1 || text[stop] != '.') return false
         var start = stop
         while (start > 0 && !text[start - 1].isWhitespace() && text[start - 1] !in OPENERS) start--
         val word = text.substring(start, stop)
-        return nfc(word) in nonBreaking || isInitial(text, start, word) || isReference(text, at, word) ||
+        val listed = nfc(word) in nonBreaking || isIndicInitials(word, initials)
+        return listed || isInitial(text, start, word) || isReference(text, at, word) ||
             insideListedWord(text, start, at)
     }
 
     /**
-     * [at] falls inside a listed dotted word that starts at [start]: ICU (Android) breaks "कि.|मी." and "उ.|प्र."
-     * at the inner full stop, where the JDK does not, so with no space after [at] the whole word is looked up.
+     * [at] falls inside a dotted word that starts at [start]: ICU (Android) breaks "कि.|मी." and "उ.|प्र." at the
+     * inner full stop, where the JDK does not, so with no space after [at] the word's letters, marks and full stops
+     * are looked up whole, whatever punctuation is stuck to its end ("कि.मी.।", "उ.प्र.,", "कि.मी./घंटा"): a
+     * listed word, or a run of initials ("ए.|पी.जे.").
      */
     private fun insideListedWord(text: String, start: Int, at: Int): Boolean {
         if (at >= text.length || text[at].isWhitespace()) return false
-        return nfc(text.substring(start, tokenEnd(text, at)).trimEnd { it == '.' || it in CLOSERS }) in nonBreaking
+        var end = at
+        while (end < text.length && inDottedWord(text[end])) end++
+        val word = text.substring(start, end).trimEnd('.')
+        return nfc(word) in nonBreaking || isIndicInitials(word, initials)
     }
 
     /** [word] points at a number or bracket that starts the next piece at [at]: "No. 5", "Fig. (a)". */
@@ -158,10 +168,19 @@ internal class IndicSentenceRules(config: SentenceConfig) {
         /** Inside a name before an initial: "O'Brien", "Smith-Jones". */
         const val NAME_JOINERS = "'\u2019-"
 
-        /** Capital initials as the next word: "K." or "P.J.". */
-        val NEXT_INITIALS = Regex("(?:[A-Z]\\.)+")
+        /** Capital initials as the next word, with any closing punctuation stuck to them: "K.", "P.J.", "K.,". */
+        val NEXT_INITIALS = Regex("(?:[A-Z]\\.)+[,;:)\\]\u2019\u201D]*")
 
         fun nfc(text: String): String = Normalizer.normalize(text, Normalizer.Form.NFC)
+
+        /** [word] is two or more of [initials] joined by full stops: "ए.पी.जे", "पी.एच.डी". */
+        fun isIndicInitials(word: String, initials: Set<String>): Boolean {
+            val parts = word.split('.')
+            return parts.size > 1 && parts.all { nfc(it) in initials }
+        }
+
+        /** A letter, vowel sign or full stop: what a dotted word ("कि.मी.") is written with. */
+        fun inDottedWord(c: Char): Boolean = c.isLetter() || isCombiningMark(c) || c == '.'
 
         fun skipSpaces(text: String, from: Int): Int {
             var i = from
