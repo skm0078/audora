@@ -2,6 +2,12 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Smart speed (plan item 10; 2026-10-18)
+- **Smart speed** (speech sheet, sound section; off by default, ADR-049): past the voice model's own top speed (1.5×), the rest of the speed comes from an uneven stretch of the voice instead of the player's even one. Silences and held vowels are shortened most, onsets (consonants) least, and the sentence still comes out exactly as long as the speed asks; the pitch is kept (WSOLA). Audora's own pauses keep their length; the audiobook export is unaffected.
+  - `SmartStretch` (`:speech`), tunables in `SmartSpeedConfig`; `SpeechStyleConfig.playerSpeed(style)` and `voiceStretch(style)` split the speed; the render-ahead window and the render speed tracker count the stretch.
+  - To judge by ear in the final phone session (checklist K16): 2× and 3×, on and off, in all three languages.
+- Tests: `SmartStretchTest` (exact length, kept pitch, frame kinds, the spread), `SpeechStyleConfigTest`, `VoiceShapingTest`, `ShapedRenderTest`.
+
 ## Voice commands, and review fixes for the pack (plan item 38; 2026-10-18)
 - **Voice commands** (Settings, off by default; an optional 5.3 MB download): while the reader is on screen, say "Audora pause", "play", "next", "back", "repeat", "faster" or "slower". A small keyword spotter (sherpa-onnx Zipformer, GigaSpeech, Apache-2.0) listens on the phone, with echo cancelling, and nothing leaves it.
   - Audora's own reading can't trigger a command: a command is ignored while a sentence that says "Audora" (or ऑडोरा, অডোরা) plays and for 2 s after (`NarratorEcho`).

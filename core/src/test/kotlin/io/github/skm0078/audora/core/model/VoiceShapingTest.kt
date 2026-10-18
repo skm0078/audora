@@ -17,6 +17,7 @@ class VoiceShapingTest {
             characterVoices = true,
             blendWith = 11,
             blendPercent = 40,
+            smartSpeed = true,
         )
         assertEquals(shaping, VoiceShaping.decode(shaping.encode()))
     }
@@ -28,6 +29,12 @@ class VoiceShapingTest {
         assertEquals(VoiceShaping(boostDb = 3), VoiceShaping.decode("boost=3"))
         assertEquals(VoiceShaping(), VoiceShaping.decode("expression=-1"))
         assertEquals(VoiceShaping(), VoiceShaping.decode("blendWith=-2;blendPercent=100"))
+    }
+
+    @Test
+    fun `a line saved before smart speed existed keeps it off`() {
+        assertEquals(false, VoiceShaping.decode("even=true;boost=3;trim=true").smartSpeed)
+        assertEquals(false, VoiceShaping.decode("smart=sometimes").smartSpeed)
     }
 
     @Test

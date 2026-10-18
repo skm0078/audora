@@ -6,6 +6,7 @@ package io.github.skm0078.audora.core.config
 import io.github.skm0078.audora.core.model.ClauseMark
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.model.VoiceShaping
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
@@ -79,6 +80,23 @@ class SpeechStyleConfigTest {
             val (mark, ms) = expected
             assertEquals("$mark at $style", ms, config.clauseSilenceMs(mark, style))
         }
+    }
+
+    @Test
+    fun `smart speed moves the player's stretch to the voice and stops lengthening pauses for it`() {
+        val cases = listOf(1f to 1f, 1.5f to 1f, 2.25f to 1.5f, 3f to 2f)
+        cases.forEach { (rate, stretch) ->
+            val smart = SpeechStyle(rate = rate, shaping = VoiceShaping(smartSpeed = true))
+            val plain = SpeechStyle(rate = rate)
+            assertEquals("player at $rate", 1f, config.playerSpeed(smart), EPS)
+            assertEquals("voice at $rate", stretch, config.voiceStretch(smart), EPS)
+            assertEquals("plain player at $rate", stretch, config.playerSpeed(plain), EPS)
+            assertEquals("plain voice at $rate", 1f, config.voiceStretch(plain), EPS)
+        }
+        // Heard silence is the same either way: 150 ms / sqrt(3), with no player stretch to survive.
+        val smart = SpeechStyle(rate = 3f, pace = Pace.NORMAL, shaping = VoiceShaping(smartSpeed = true))
+        assertEquals(87, config.silenceAfterMs(0, smart))
+        assertEquals(177, config.clauseSilenceMs(ClauseMark.DASH, smart.copy(rate = 2f)))
     }
 
     @Test

@@ -1,6 +1,6 @@
 // File: core/src/main/kotlin/io/github/skm0078/audora/core/model/VoiceShaping.kt
-// Purpose: How the voice sounds: loudness, boost, pause trim (items 9, 10), expressiveness (8), cast voices (7)
-// character voices (63) and the narrator blend (75).
+// Purpose: How the voice sounds: loudness, boost, pause trim and smart speed (items 9, 10), expressiveness (8), cast
+// voices (7), character voices (63) and the narrator blend (75).
 
 package io.github.skm0078.audora.core.model
 
@@ -26,6 +26,9 @@ import io.github.skm0078.audora.core.text.UrlText
  *   mixed into the narrator's own, for a voice of the listener's making; null (the default) keeps the voice as is.
  *   Like expressiveness, set when the voice loads, so a change reloads it.
  * @property blendPercent how much of [blendWith] is mixed in, from 1 to 99 percent.
+ * @property smartSpeed plan item 10: past the voice model's own top speed, the voice is sped up unevenly instead of
+ *   by the player's even stretch: silences and held vowels shorten most, consonants least, so fast speech stays
+ *   crisp (ADR-049). Off by default until judged by ear.
  */
 data class VoiceShaping(
     val evenLoudness: Boolean = true,
@@ -37,6 +40,7 @@ data class VoiceShaping(
     val characterVoices: Boolean = false,
     val blendWith: Int? = null,
     val blendPercent: Int = DEFAULT_BLEND_PERCENT,
+    val smartSpeed: Boolean = false,
 ) {
     init {
         require(blendWith == null || blendWith >= 0) { "blendWith must be >= 0, was $blendWith" }
@@ -52,7 +56,8 @@ data class VoiceShaping(
     fun encode(): String =
         "$KEY_EVEN=$evenLoudness;$KEY_BOOST=$boostDb;$KEY_TRIM=$trimPauses;$KEY_EXPRESSION=$expressiveness;" +
             "$KEY_DIALOGUE=${encoded(dialogueVoices)};$KEY_HEADING=${encoded(headingVoices)};" +
-            "$KEY_CHARACTERS=$characterVoices;$KEY_BLEND_WITH=${blendWith ?: ""};$KEY_BLEND_PERCENT=$blendPercent"
+            "$KEY_CHARACTERS=$characterVoices;$KEY_BLEND_WITH=${blendWith ?: ""};$KEY_BLEND_PERCENT=$blendPercent;" +
+            "$KEY_SMART=$smartSpeed"
 
     companion object {
         /** The middle step: the voices' own noise values, as before the setting existed. */
@@ -73,6 +78,7 @@ data class VoiceShaping(
         private const val KEY_CHARACTERS = "characters"
         private const val KEY_BLEND_WITH = "blendWith"
         private const val KEY_BLEND_PERCENT = "blendPercent"
+        private const val KEY_SMART = "smart"
 
         /** Reads [encode]'s line; a missing or bad value takes its default, so this never fails. */
         fun decode(line: String?): VoiceShaping {
@@ -91,6 +97,7 @@ data class VoiceShaping(
                 blendWith = values[KEY_BLEND_WITH]?.toIntOrNull()?.takeIf { it >= 0 },
                 blendPercent = values[KEY_BLEND_PERCENT]?.toIntOrNull()?.takeIf { it in BLEND_PERCENTS }
                     ?: defaults.blendPercent,
+                smartSpeed = values[KEY_SMART]?.toBooleanStrictOrNull() ?: defaults.smartSpeed,
             )
         }
 

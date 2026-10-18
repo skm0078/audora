@@ -1,5 +1,5 @@
 // File: playback/src/test/kotlin/io/github/skm0078/audora/playback/voice/ShapedRenderTest.kt
-// Purpose: The renderer applies the style's voice shaping: pause trim, even loudness and boost (plan items 9, 10).
+// Purpose: The renderer applies the style's voice shaping: pause trim, smart speed, even loudness and boost (9, 10).
 
 package io.github.skm0078.audora.playback.voice
 
@@ -45,8 +45,8 @@ class ShapedRenderTest {
         override fun release() = Unit
     }
 
-    private fun render(shaping: VoiceShaping): PcmAudio {
-        val style = SpeechStyle(pace = Pace.NORMAL, clausePauses = false, shaping = shaping)
+    private fun render(shaping: VoiceShaping, rate: Float = SpeechStyle.NORMAL_RATE): PcmAudio {
+        val style = SpeechStyle(rate = rate, pace = Pace.NORMAL, clausePauses = false, shaping = shaping)
         val renderer = EngineRenderer(PausingVoice, style = { style }, styleConfig = flatPaces)
         return (renderer.render(unit(0, 0).copy(text = "Hello there.", pauseAfterMs = 0)) as Outcome.Success).value
     }
@@ -57,6 +57,15 @@ class ShapedRenderTest {
         val trimmed = render(VoiceShaping(evenLoudness = false, trimPauses = true))
         assertEquals(VOICED + PAUSE + VOICED, untouched.samples.size)
         assertEquals(VOICED + LONG_PAUSE_MS + VOICED, trimmed.samples.size)
+    }
+
+    @Test
+    fun `smart speed shortens the voice by what the player would have stretched`() {
+        val plain = render(VoiceShaping(evenLoudness = false), rate = 3f)
+        val smart = render(VoiceShaping(evenLoudness = false, smartSpeed = true), rate = 3f)
+        assertEquals(VOICED + PAUSE + VOICED, plain.samples.size)
+        // The model is at its 1.5 cap; the other 2x is the stretch's.
+        assertEquals((VOICED + PAUSE + VOICED) / 2f, smart.samples.size.toFloat(), (VOICED + PAUSE + VOICED) * 0.01f)
     }
 
     @Test
