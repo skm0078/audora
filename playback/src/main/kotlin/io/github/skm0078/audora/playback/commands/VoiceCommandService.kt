@@ -50,7 +50,8 @@ class VoiceCommandService : Service() {
 
             ACTION_END -> end(intent, startId)
 
-            ACTION_SILENCED -> if (listening) post(intent.getBooleanExtra(EXTRA_SILENCED, false))
+            // Not listening: this start is the service's only reason to run, so it ends with it.
+            ACTION_SILENCED -> if (listening) post(intent.getBooleanExtra(EXTRA_SILENCED, false)) else stopSelf(startId)
 
             else -> startListening(startId)
         }

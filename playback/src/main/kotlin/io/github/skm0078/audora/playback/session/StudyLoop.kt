@@ -22,9 +22,9 @@ data class StudyRange(val start: Spot, val end: Spot, val loop: Boolean) {
     operator fun contains(unit: ReadingUnit): Boolean =
         Spot(unit.page, unit.spokenEnd).isAfter(start) && !Spot(unit.page, unit.charStart).isAfter(end)
 
-    /** [unit] holds the range's start: the sentence a loop goes back to. */
-    fun startsAt(unit: ReadingUnit): Boolean =
-        unit.page == start.page && start.charStart in unit.charStart until unit.spokenEnd
+    /** [unit] holds the range's start: the sentence a loop goes back to (the very unit, when the start knows it). */
+    fun startsAt(unit: ReadingUnit): Boolean = unit.page == start.page &&
+        start.charStart in unit.charStart until unit.spokenEnd && (start.index == null || start.index == unit.index)
 
     /** [unit] is the range's last sentence: inside, with nothing after it inside. A page not loaded yet is unknown. */
     fun endsAt(unit: ReadingUnit, next: PlaybackItem?): Boolean = unit in this && when (next) {
@@ -88,7 +88,7 @@ class StudyLoop {
      * A starts the range at the sentence playing too (a one-sentence loop). False with no sentence playing.
      */
     fun mark(mark: StudyMark, unit: ReadingUnit?, loop: Boolean): Boolean {
-        val here = unit?.let { Spot(it.page, it.charStart) } ?: return false
+        val here = unit?.spot() ?: return false
         this.loop = loop
         when (mark) {
             StudyMark.START -> {

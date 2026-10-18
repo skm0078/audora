@@ -48,7 +48,7 @@ class SharedCopyPathsTest {
         val empty = File(dir, "empty").apply { mkdirs() }.also { it.setLastModified(OLD) }
         val half = copy(dir, "half", writtenAt = OLD).also { File(it, "more.pdf").writeText("x") }
 
-        val stray = strayCopyFolders(dir, kept = setOf(used.name), cutoffMillis = CUTOFF)
+        val stray = strayCopyFolders(dir, kept = setOf(used.name)::contains, cutoffMillis = CUTOFF)
 
         assertEquals(setOf(unused, empty), stray.toSet())
         assertEquals(false, half in stray) // A file written inside it after the cutoff keeps the folder.
@@ -56,7 +56,22 @@ class SharedCopyPathsTest {
 
     @Test
     fun `a missing copies folder has nothing to prune`() {
-        assertEquals(emptyList<File>(), strayCopyFolders(File(temp.root, "none"), emptySet(), CUTOFF))
+        assertEquals(emptyList<File>(), strayCopyFolders(File(temp.root, "none"), { false }, CUTOFF))
+    }
+
+    @Test
+    fun `a name kept after the walk began is still kept`() {
+        val dir = temp.newFolder(SHARED_COPIES_DIR)
+        val names = setOf(copy(dir, "a", writtenAt = OLD).name, copy(dir, "b", writtenAt = OLD).name)
+        val madeHere = mutableSetOf<String>()
+
+        // Asked about the first folder, the set gains the other one, as when a copy starts while prune walks.
+        val stray = strayCopyFolders(dir, kept = { name ->
+            if (madeHere.isEmpty()) madeHere += names - name
+            name in madeHere
+        }, cutoffMillis = CUTOFF)
+
+        assertEquals(1, stray.size)
     }
 
     private fun copy(dir: File, folder: String, writtenAt: Long): File {

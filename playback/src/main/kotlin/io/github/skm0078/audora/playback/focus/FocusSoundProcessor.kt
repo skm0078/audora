@@ -20,7 +20,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  *
  * Media3 drains and flushes its processors at every media item change (each sentence is one), so neither the end of
  * a stream nor a flush means the book ended or was sought. The session says so instead ([FocusSoundCues]): [fadeIn]
- * after a seek or a stall, [endsAfterCurrent] when the item playing is the book's last, so only that end fades out.
+ * after a seek or a new playlist, [endsAfterCurrent] when the item playing is the book's last, so only that end
+ * fades out.
  */
 @OptIn(UnstableApi::class)
 class FocusSoundProcessor(
@@ -32,7 +33,7 @@ class FocusSoundProcessor(
     private val fadeInNext = AtomicBoolean(false)
     private val lastItem = AtomicBoolean(false)
 
-    /** Any thread: what is queued next comes back from silence (a seek, a stall). */
+    /** Any thread: what is queued next comes back from silence (a seek, a new playlist). */
     fun fadeIn() = fadeInNext.set(true)
 
     /** Any thread: whether the item playing is the book's last, so its end is the book's and the sound fades out. */

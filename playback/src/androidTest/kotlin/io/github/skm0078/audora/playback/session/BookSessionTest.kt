@@ -1,6 +1,7 @@
 // File: playback/src/androidTest/kotlin/io/github/skm0078/audora/playback/session/BookSessionTest.kt
 // Purpose: The book session on a real ExoPlayer: reads in order, seeks, rebuilds, skips failures, sleeps at chapters,
-// studies (ranges at page, chapter and book ends; loops never revive a timer), replays and finishes books.
+// studies (ranges at page, chapter and book ends; loops never revive a timer), replays and finishes books, and
+// starts, skips and undoes onto the unit asked for when two share an offset.
 
 package io.github.skm0078.audora.playback.session
 
@@ -16,6 +17,7 @@ import androidx.media3.exoplayer.RenderersFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.skm0078.audora.core.config.QueueConfig
+import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
@@ -24,6 +26,8 @@ import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SleepOptions
+import io.github.skm0078.audora.core.model.TableRowInfo
+import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PdfPageError
@@ -99,8 +103,17 @@ class BookSessionTest {
                 SessionSources(
                     renderer(),
                     BookSource { id, _ ->
-                        val (book, pages) = if (id == SHORT_BOOK.id) SHORT_BOOK to SHORT_PAGES else BOOK to PAGES
-                        Outcome.Success(OpenedBook(book, FakeText(CHAPTER_STARTS, pages)))
+                        val book = listOf(BOOK, SHORT_BOOK, TABLE_BOOK).first { it.id == id }
+                        Outcome.Success(
+                            OpenedBook(
+                                book,
+                                FakeText(
+                                    CHAPTER_STARTS,
+                                    checkNotNull(book.pageCount),
+                                    book == TABLE_BOOK,
+                                ),
+                            ),
+                        )
                     },
                     Texts,
                     sleepOptions = { sleepOptions },
@@ -316,6 +329,56 @@ class BookSessionTest {
         assertEquals(listOf(BOOK.id), onMain { finished.toList() })
     }
 
+    @Test
+    fun aStartWithAUnitIndexStartsAtThatUnitNotTheOneSharingItsOffset() {
+        playPaused(page = 1, charStart = 0, book = TABLE_BOOK)
+        assertEquals(UnitKey(1, 0), awaitSentenceOn(page = 1))
+
+        playPaused(page = 1, charStart = 0, book = TABLE_BOOK, unitIndex = 1)
+        assertEquals(UnitKey(1, 1), awaitSentenceOn(page = 1))
+    }
+
+    @Test
+    fun aParagraphSkipLandsOnTheUnitItNamesWhenTwoShareAnOffset() {
+        // Unit 0 (the zero-length summary) ends a paragraph, so "previous paragraph" from unit 2 is unit 1, which
+        // starts where the summary does. Unit 1 is not in the playlist, so reading rebuilds there.
+        playPaused(page = 1, charStart = CHARS, book = TABLE_BOOK)
+        assertEquals(UnitKey(1, 2), awaitSentenceOn(page = 1))
+
+        assertTrue(runBlocking { withContext(Dispatchers.Main) { session.skipParagraph(forward = false) } })
+        assertEquals(UnitKey(1, 1), awaitSentenceOn(page = 1))
+    }
+
+    @Test
+    fun undoJumpGoesBackToTheUnitItLeftNotTheOneSharingItsOffset() {
+        playPaused(page = 1, charStart = 0, book = TABLE_BOOK, unitIndex = 1)
+        assertEquals(UnitKey(1, 1), awaitSentenceOn(page = 1))
+        playPaused(page = PAGES - 1, charStart = 0, book = TABLE_BOOK)
+        awaitSentenceOn(page = PAGES - 1)
+
+        assertTrue(onMain { session.undoJump() })
+        assertEquals(UnitKey(1, 1), awaitSentenceOn(page = 1))
+    }
+
+    /** Starts reading and pauses at once, so the first sentence stays current while it is checked. */
+    private fun playPaused(page: Int, charStart: Int, book: Book, unitIndex: Int? = null) {
+        val result = runBlocking {
+            withContext(Dispatchers.Main) {
+                session.playFrom(book.id, page, charStart, null, unitIndex).also { player.pause() }
+            }
+        }
+        assertTrue("playFrom failed: $result", result is Outcome.Success)
+    }
+
+    /** Waits for a sentence on [page] to be current, and names it. */
+    private fun awaitSentenceOn(page: Int): UnitKey {
+        // The playlist's own item, not the last sentence heard, which a rebuild leaves in place until its page loads.
+        awaitCondition("a sentence on page ${page + 1}") {
+            (PlaylistItems.itemOf(player.currentMediaItem) as? PlaybackItem.Sentence)?.unit?.page == page
+        }
+        return onMain { UnitKey.of(checkNotNull(session.currentSentence())) }
+    }
+
     private fun awaitCondition(what: String, condition: () -> Boolean) {
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(TIMEOUT_S)
         while (!onMain(condition)) {
@@ -398,17 +461,30 @@ class BookSessionTest {
         }
     }
 
-    /** Pages load slowly, so playback catches up with extraction and waits on the "more is coming" item. */
-    private class FakeText(private val chapters: List<Int>, override val pageCount: Int) : BookText {
+    /**
+     * Pages load slowly, so playback catches up with extraction and waits on the "more is coming" item. With
+     * [tableStart], each page opens with a zero-length table summary ending a paragraph, and unit 1 starts at its
+     * offset too (as a continued table's first row does).
+     */
+    private class FakeText(
+        private val chapters: List<Int>,
+        override val pageCount: Int,
+        private val tableStart: Boolean = false,
+    ) : BookText {
         override fun chapterStarts() = chapters
 
         override fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError> {
             Thread.sleep(PAGE_DELAY_MS)
-            return Outcome.Success(
-                (0 until UNITS_PER_PAGE).map { i ->
-                    ReadingUnit(page, i, i * CHARS, i * CHARS + CHARS - 1, "s", Lang.EN, 0, null)
-                },
+            val plain = (0 until UNITS_PER_PAGE).map { i ->
+                ReadingUnit(page, i, i * CHARS, i * CHARS + CHARS - 1, "s", Lang.EN, 0, null)
+            }
+            if (!tableStart) return Outcome.Success(plain)
+            val summary = ReadingUnit(
+                page, 0, 0, 0, "", Lang.EN, ReadingUnitConfig().paragraphPauseMs, null,
+                kind = UnitKind.TABLE_SUMMARY,
+                table = TableRowInfo(0, null, 1, 1, emptyList(), emptyList(), continued = true),
             )
+            return Outcome.Success(listOf(summary, plain[1].copy(charStart = 0)) + plain.drop(2))
         }
 
         override fun close() = Unit
@@ -452,5 +528,6 @@ class BookSessionTest {
         val VOICE = VoiceId(EngineId.SHERPA, "test")
         val BOOK = Book(BookId("book-1"), "content://test/book-1", "Test book", 1L, "fp", PAGES, 0L, null)
         val SHORT_BOOK = Book(BookId("book-2"), "content://test/book-2", "Short book", 1L, "fp2", SHORT_PAGES, 0L, null)
+        val TABLE_BOOK = Book(BookId("book-3"), "content://test/book-3", "Table book", 1L, "fp3", PAGES, 0L, null)
     }
 }

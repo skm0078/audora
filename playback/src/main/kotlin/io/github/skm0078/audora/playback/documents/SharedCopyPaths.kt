@@ -23,12 +23,13 @@ internal fun copyPathOf(path: String): Pair<String, String>? {
 }
 
 /**
- * The entries of [dir] (copy folders, or stray files) not named in [kept] whose newest write, anything inside them
- * included, is before [cutoffMillis]. An entry removed while it is looked at is left out.
+ * The entries of [dir] (copy folders, or stray files) [kept] says no to, whose newest write, anything inside them
+ * included, is before [cutoffMillis]. [kept] is asked per entry as it is reached, so a set it reads that grows during
+ * the walk (a copy being made) is seen live. An entry removed while it is looked at is left out.
  */
-internal fun strayCopyFolders(dir: File, kept: Set<String>, cutoffMillis: Long): List<File> =
+internal fun strayCopyFolders(dir: File, kept: (String) -> Boolean, cutoffMillis: Long): List<File> =
     dir.listFiles().orEmpty().filter { entry ->
-        val newest = if (entry.name in kept) null else entry.walk().maxOfOrNull(File::lastModified)
+        val newest = if (kept(entry.name)) null else entry.walk().maxOfOrNull(File::lastModified)
         newest != null && newest > 0L && newest < cutoffMillis
     }
 

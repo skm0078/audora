@@ -79,7 +79,7 @@ class StudyLoopTest {
 
         assertFalse("inside the range", study.pausesAfter(item(2), item(3), plain))
         assertTrue("B is the range's last sentence", study.pausesAfter(item(3), item(4), plain))
-        assertEquals(StudyStep.LoopTo(Spot(2, 10)), study.onSentenceEnd(units[3], item(4), plain))
+        assertEquals(StudyStep.LoopTo(Spot(2, 10, 1)), study.onSentenceEnd(units[3], item(4), plain))
     }
 
     @Test
@@ -111,11 +111,11 @@ class StudyLoopTest {
         val study = StudyLoop()
         study.mark(StudyMark.START, units[3], loop = true)
         study.mark(StudyMark.END, units[1], loop = true)
-        assertEquals(StudyRange(Spot(2, 10), Spot(2, 30), loop = true), study.range)
+        assertEquals(StudyRange(Spot(2, 10, 1), Spot(2, 30, 3), loop = true), study.range)
 
         study.clear()
         study.mark(StudyMark.END, units[2], loop = true)
-        assertEquals(StudyRange(Spot(2, 20), Spot(2, 20), loop = true), study.range)
+        assertEquals(StudyRange(Spot(2, 20, 2), Spot(2, 20, 2), loop = true), study.range)
     }
 
     @Test
@@ -127,7 +127,7 @@ class StudyLoopTest {
         study.mark(StudyMark.START, units[3], loop = true)
 
         assertNull(study.range)
-        assertEquals(Spot(2, 30), study.start)
+        assertEquals(Spot(2, 30, 3), study.start)
     }
 
     @Test
@@ -137,7 +137,7 @@ class StudyLoopTest {
         study.mark(StudyMark.END, units[4], loop = true)
 
         assertFalse("the next page is not loaded: unknown", study.pausesAfter(item(4), PlaybackItem.More(0), plain))
-        assertEquals(StudyStep.LoopTo(Spot(2, 30)), study.onOvershoot(units[4], unit(3, 0)))
+        assertEquals(StudyStep.LoopTo(Spot(2, 30, 3)), study.onOvershoot(units[4], unit(3, 0)))
         assertNull("inside the range is no overshoot", study.onOvershoot(units[3], units[4]))
     }
 
@@ -162,6 +162,31 @@ class StudyLoopTest {
         assertTrue(summary in range)
         assertTrue(range.startsAt(summary))
         assertFalse(units[0] in range)
+    }
+
+    @Test
+    fun `a loop marked on a unit sharing its offset goes back to that unit, a selection to the first`() {
+        val summary = units[1].copy(charEnd = units[1].charStart, text = "")
+        val row = units[1].copy(index = 2)
+        val study = StudyLoop()
+        study.mark(StudyMark.START, row, loop = true)
+        study.mark(StudyMark.END, units[3], loop = true)
+
+        assertEquals(Spot(2, units[1].charStart, 2), study.range?.start)
+        assertTrue(study.startsRange(row))
+        assertFalse(study.startsRange(summary))
+
+        val selection = StudyRange(Spot(2, units[1].charStart), Spot(2, units[3].charStart), loop = true)
+        assertTrue(selection.startsAt(summary) && selection.startsAt(row))
+    }
+
+    @Test
+    fun `spots are the same sentence by offset, and by unit only when both know theirs`() {
+        assertTrue(Spot(2, 10).sameSentence(Spot(2, 10, 1)))
+        assertTrue(Spot(2, 10, 1).sameSentence(Spot(2, 10, 1)))
+        assertFalse(Spot(2, 10, 1).sameSentence(Spot(2, 10, 2)))
+        assertFalse(Spot(2, 10).sameSentence(Spot(2, 11)))
+        assertEquals(Spot(2, 10, 1), units[1].spot())
     }
 
     private companion object {
