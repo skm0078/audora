@@ -45,6 +45,7 @@ package io.github.skm0078.audora.pdf
  *     accounts write them; Hindi and Bengali sentences carried by the column's layout; a "Note:" paragraph that OCR
  *     merged with the next one split at its short last line; header years decided against their column's figures; a
  *     headless table's first row read as data row 0 under a summary of no length; scanned pages binarized with
- *     Sauvola instead of Otsu (ADR-025 amendment), so photos with shadows or uneven light keep their text.
+ *     Sauvola instead of Otsu (ADR-025 amendment), so photos with shadows or uneven light keep their text; an unsure
+ *     page with unevenly lit paper read again with its light evened out (a hard shadow across a photo).
  */
 const val PIPELINE_VERSION: Int = 11

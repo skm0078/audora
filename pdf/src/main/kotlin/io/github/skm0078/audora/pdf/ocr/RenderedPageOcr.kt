@@ -37,7 +37,9 @@ interface OcrEngine {
  * book), so the second one waits and reads the first one's result instead of recognising the page again.
  *
  * A page that reads with a low confidence may be a sideways or upside-down scan: a shrunk copy is read turned each
- * way and, when one turn reads clearly better, the page is read again turned that way ([OcrText.quarterTurns]).
+ * way and, when one turn reads clearly better, the page is read again turned that way ([OcrText.quarterTurns]). A
+ * page that still reads unsure with its paper unevenly lit (a shadow across a photo) is read again with its light
+ * evened out, kept when that reads clearly better ([evenlyLit]).
  *
  * Logs one line per recognised page with the time spent drawing and recognising it (done-when: per-page time on
  * the test phones), never the text.
@@ -130,13 +132,50 @@ class RenderedPageOcr(
     private fun readUpright(image: PageImage, langs: Set<Lang>): Outcome<OcrText, OcrError> =
         engine.recognize(image, langs).flatMap { asDrawn ->
             val turns = if (asDrawn.meanConfidence >= config.orientationCheckBelow) 0 else bestTurn(image, langs)
-            if (turns == 0) {
-                Outcome.Success(finished(asDrawn, image, langs, 0))
-            } else {
-                val upright = image.turned(turns)
-                engine.recognize(upright, langs).map { finished(it, upright, langs, turns) }
+            val upright = image.turned(turns)
+            val read = if (turns == 0) Outcome.Success(asDrawn) else engine.recognize(upright, langs)
+            read.map { page ->
+                val (best, from) = evenlyLit(page, upright, langs)
+                finished(best, from, langs, turns)
             }
         }
+
+    /**
+     * [page], read from [upright], or the page read again with its light evened out ([PaperLight]) when it read
+     * unsure, its paper is unevenly lit (a shadow across a photo) and the evened read is clearly better with as many
+     * words ([io.github.skm0078.audora.core.config.LightingConfig]); with the image it was read from.
+     */
+    private fun evenlyLit(page: RecognizedPage, upright: PageImage, langs: Set<Lang>): Pair<RecognizedPage, PageImage> {
+        val lighting = config.lighting
+        val unsure = lighting.enabled && page.meanConfidence < lighting.readAgainBelow
+        val light = if (unsure) PaperLight.of(upright, lighting) else null
+        if (light == null || light.evenness >= lighting.unevenBelow) return page to upright
+        val evened = light.evened()
+        return when (val read = engine.recognize(evened, langs)) {
+            is Outcome.Success -> if (keepsEvened(page, read.value, light)) read.value to evened else page to upright
+
+            is Outcome.Failure -> {
+                AudoraLog.w(TAG, "OCR evened read failed $logContext page=${upright.pageIndex}: ${read.error}")
+                page to upright
+            }
+        }
+    }
+
+    /** [again], read evened, reads clearly surer than [page] with as many words; logged either way. */
+    private fun keepsEvened(page: RecognizedPage, again: RecognizedPage, light: PaperLight): Boolean {
+        val lighting = config.lighting
+        val words = page.lines.sumOf { it.words.size }
+        val againWords = again.lines.sumOf { it.words.size }
+        val better = again.meanConfidence >= page.meanConfidence + lighting.minGain &&
+            againWords >= words * lighting.minWordShare
+        AudoraLog.i(
+            TAG,
+            "OCR lighting $logContext page=${light.pageIndex} evenness=${"%.2f".format(Locale.ROOT, light.evenness)} " +
+                "confidence=${page.meanConfidence}->${again.meanConfidence} words=$words->$againWords " +
+                "kept=${if (better) "evened" else "as drawn"}",
+        )
+        return better
+    }
 
     /**
      * [variant] with the models the line retry may use: a page read before another model was installed is read again
@@ -215,8 +254,11 @@ class RenderedPageOcr(
         private const val TOP_STRIP = 0
         private const val BOTTOM_STRIP = 1
 
-        /** Pages with the line retry (RI-3), rules (RI-4a part 2) and line sizes (RI-10); older text is not reused. */
-        private const val PAGE_VARIANT = "page-r3"
+        /**
+         * Pages with the line retry (RI-3), rules (RI-4a part 2), line sizes (RI-10) and evened light; older text is
+         * not reused.
+         */
+        private const val PAGE_VARIANT = "page-r4"
 
         /** Margin strips with the line retry, like the page they are compared with. */
         private const val MARGIN_VARIANT = "margins-r2-"

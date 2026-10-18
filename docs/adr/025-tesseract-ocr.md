@@ -79,3 +79,13 @@ nothing, for a scan). Measured on the S2 corpus with desktop Tesseract 5.3.4 and
   300 dpi and degraded 200 dpi scans it stayed within half a point of Otsu (better on three of six), and on 19 pages
   of six real scans the word count and mean confidence moved by at most 2, at the same speed. The method is part of
   the OCR cache key (`TesseractEngine.cacheTag`).
+- **Amendment (2026-10-18, same follow-up):** a page that still reads unsure (mean confidence below 85) with its
+  paper unevenly lit (the 5th percentile of its estimated brightness under 0.85 of the 95th) is read again with its
+  light evened out (`PaperLight`, `OcrConfig.lighting`): the paper's brightness is estimated on a copy sampled once
+  per 1/32 inch (each block's brightest pixel, so ink drops out), widened and smoothed there, and each pixel divided
+  by it; pure Kotlin on 8-bit grey, two passes over the pixels, about 50 ms for an A4 page at 300 dpi on a desktop
+  JVM. The evened read is kept only when it reads at least 5 points surer with at least 90 % of the words. On UDHR
+  pages with a hard shadow (Sauvola alone: 71-78 confidence, 15-33 % character error) it reads at 92-96 and 3-10 %,
+  as the same pages unshadowed do. Gradient, vignette and blurred pages read at 87 or more and are not touched;
+  every test scan's paper is at least 0.95 even, so scans are never touched. A cover with a white title on a grey
+  band reads worse evened (the band turns white) and keeps its first read.
