@@ -43,6 +43,7 @@ package io.github.skm0078.audora.pdf
  *     Further review fixes (same version): printers' slugs dropped from scanned pages' margins; short unmarked note
  *     runs held to stricter signs; side-by-side tables judged by one rule for finder and grid, with figures as
  *     accounts write them; Hindi and Bengali sentences carried by the column's layout; a "Note:" paragraph that OCR
- *     merged with the next one split at its short last line; header years decided against their column's figures.
+ *     merged with the next one split at its short last line; header years decided against their column's figures; a
+ *     headless table's first row read as data row 0 under a summary of no length.
  */
 const val PIPELINE_VERSION: Int = 11
