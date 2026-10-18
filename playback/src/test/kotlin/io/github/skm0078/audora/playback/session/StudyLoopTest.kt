@@ -131,13 +131,22 @@ class StudyLoopTest {
     }
 
     @Test
-    fun `a range end before the next page is known is caught when the next sentence starts`() {
+    fun `a range ending on a page's last sentence stops there while the next page loads`() {
         val study = StudyLoop()
         study.mark(StudyMark.START, units[3], loop = true)
         study.mark(StudyMark.END, units[4], loop = true)
 
-        assertFalse("the next page is not loaded: unknown", study.pausesAfter(item(4), PlaybackItem.More(0), plain))
-        assertEquals(StudyStep.LoopTo(Spot(2, 30, 3)), study.onOvershoot(units[4], unit(3, 0)))
+        assertTrue("B is on this page: it ends here", study.pausesAfter(item(4), PlaybackItem.More(0), plain))
+        assertEquals(StudyStep.LoopTo(Spot(2, 30, 3)), study.onSentenceEnd(units[4], PlaybackItem.More(0), plain))
+    }
+
+    @Test
+    fun `a range end on a page not loaded yet is caught when the next sentence starts`() {
+        val study = StudyLoop()
+        study.set(StudyRange(Spot(2, 30), Spot(4, 0), loop = true))
+
+        assertFalse("B is on a later page: unknown", study.pausesAfter(item(4), PlaybackItem.More(0), plain))
+        assertEquals(StudyStep.LoopTo(Spot(2, 30)), study.onOvershoot(unit(4, 0), unit(5, 0)))
         assertNull("inside the range is no overshoot", study.onOvershoot(units[3], units[4]))
     }
 
