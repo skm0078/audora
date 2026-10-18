@@ -9,11 +9,17 @@ import io.github.skm0078.audora.core.dictionary.FileByteSource
 import io.github.skm0078.audora.core.dictionary.SortedLines
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.speech.download.awaitNoDownload
 import io.github.skm0078.audora.speech.voices.sha256Hex
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.concurrent.CountDownLatch
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import kotlin.concurrent.thread
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -118,5 +124,36 @@ class DictionaryDownloadTest {
 
         assertTrue(current.exists())
         assertFalse(old.exists())
+    }
+
+    @Test
+    fun `a delete waits for a running download, and gives up after its timeout`() = runTest {
+        val files = filesFor(pinFor(goodZip))
+        assertFalse(files.downloading)
+        assertTrue(files.awaitNoDownload(timeoutMs = 0L))
+
+        val started = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val download = thread {
+            files.downloadingWhile {
+                started.countDown()
+                release.await()
+            }
+        }
+        started.await()
+        assertTrue(files.downloading)
+        assertFalse(withContext(Dispatchers.Default) { files.awaitNoDownload(timeoutMs = 100L) })
+
+        release.countDown()
+        download.join()
+        assertFalse(files.downloading)
+        assertTrue(files.awaitNoDownload(timeoutMs = 0L))
+    }
+
+    @Test
+    fun `a failed attempt still stops counting as a download`() {
+        val files = filesFor(pinFor(goodZip))
+        runCatching { files.downloadingWhile { error("network") } }
+        assertFalse(files.downloading)
     }
 }

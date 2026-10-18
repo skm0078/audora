@@ -20,8 +20,9 @@ object PageWords {
     // (an EPUB's "read­ing"); Hindi and Bengali words are letters plus marks.
     private const val WORD = """[\p{L}\p{M}\p{N}]+(?:[\u200C\u200D\u00AD'’][\p{L}\p{M}\p{N}]+)*"""
 
-    // Short abbreviations read as words ("Mr. Smith", "Dr.", "p.m.", "e.g."): letters with dots, never judged.
-    private const val ABBREVIATION = """(?:\p{L}\.){2,}|\p{Lu}\p{Ll}{0,2}\.(?=\s+\p{L})"""
+    // Abbreviations read as words: dotted letters ("p.m.", "e.g.") and a fixed list of titles ("Mr. Smith", "Dr."),
+    // never judged. A list, not a pattern: a sentence-final "Tom." or "Dad." is a word to judge.
+    private const val ABBREVIATION = """(?:\p{L}\.){2,}|\b(?:Mrs|Mr|Ms|Dr|St|Jr|Sr|Mt)\."""
 
     private val TOKEN = Regex("$ABBREVIATION|$WORD")
     private val HEARD = Regex(WORD)

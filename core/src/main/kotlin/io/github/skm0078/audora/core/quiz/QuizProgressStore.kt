@@ -15,7 +15,10 @@ import java.io.IOException
  * progress (every card asks again) and is set aside first, so the next save does not destroy it; one that will not
  * move is never overwritten.
  */
-class QuizProgressStore(private val file: File) {
+class QuizProgressStore(
+    private val file: File,
+    private val moveAside: (File) -> Boolean = { TextFiles.setAside(it) },
+) {
     // A file that could not be read or set aside is never overwritten: saves refuse until the next start.
     @Volatile
     private var keepFile = false
@@ -60,7 +63,7 @@ class QuizProgressStore(private val file: File) {
     }
 
     private fun setAside() {
-        if (!TextFiles.setAside(file)) keepFile = true
+        if (!moveAside(file)) keepFile = true
     }
 
     private fun entryOf(line: String): Pair<Long, CardProgress>? {

@@ -244,7 +244,11 @@ class MainActivity : ComponentActivity() {
     lateinit var licenceSource: LicenceSource
 
     @Inject
-    lateinit var upNext: UpNextPort
+    lateinit var upNextLazy: dagger.Lazy<UpNextPort>
+
+    // Lazy: StoredUpNext reads Room and rewrites files/up-next.txt (a backup unit) when built, which must not happen
+    // before onCreate's "Finish restoring" check (ADR-046 §6-7).
+    private val upNext: UpNextPort get() = upNextLazy.get()
 
     @Inject
     lateinit var backups: Backups

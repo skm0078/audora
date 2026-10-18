@@ -125,7 +125,9 @@ class TutorSession(
             along = mark(along, listener.accept(chunk), onChange)
             if (along.finished) break
         }
-        return if (along.finished) along else mark(along, listener.finish(), onChange)
+        // Always: a page finished on a growing (not yet final) stretch settles only through finish(), and only
+        // settled marks are kept across a rotation.
+        return mark(along, listener.finish(), onChange)
     }
 
     private fun mark(along: ReadAlong, heard: List<Heard>, onChange: (ReadAlong) -> Unit): ReadAlong =

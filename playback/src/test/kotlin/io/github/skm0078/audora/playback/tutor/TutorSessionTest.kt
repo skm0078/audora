@@ -175,4 +175,21 @@ class TutorSessionTest {
         assertTrue(broken.closed)
         assertEquals(0, gate.held)
     }
+
+    @Test
+    fun `a page finished on a growing stretch is settled, so it survives a rotation`() = runTest {
+        val listener = ScriptedListener(
+            listOf(listOf(Heard("the cat sat", final = false))),
+            onFinish = listOf(Heard("the cat sat", final = true)),
+        )
+        val session =
+            TutorSession(EndlessMicrophone(), MicrophoneGate.NONE, config, StandardTestDispatcher(testScheduler))
+
+        val along = (session.listen(start, { listener }) {} as Outcome.Success).value
+
+        assertTrue(listener.finished)
+        val resumed = ReadAlong.resume(start.words, along.saved(), config)
+        assertTrue(resumed.finished)
+        assertEquals(List(3) { WordMark.READ }, resumed.marks)
+    }
 }

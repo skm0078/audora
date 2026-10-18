@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import http.client
 import json
 import sys
 import tarfile
@@ -141,7 +142,7 @@ def licence_problems(spec: dict, read=None) -> list[str]:
         return [f"licence check must use the https Hugging Face model API: {url}"]
     try:
         status, final_url, text = (read or fetch_licence_page)(url)
-    except (OSError, ValueError) as error:
+    except (OSError, ValueError, http.client.HTTPException) as error:
         return [f"licence page unreachable ({error.__class__.__name__}): {url}"]
     if status != 200 or final_url != url:
         return [f"licence page answered {status} from {final_url}: {url}"]

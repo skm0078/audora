@@ -28,6 +28,7 @@ import io.github.skm0078.audora.speech.voices.JobResult
 import io.github.skm0078.audora.speech.voices.ResumableDownloader
 import io.github.skm0078.audora.speech.voices.UrlConnectionHttpSource
 import java.io.File
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -84,7 +85,7 @@ class ListenModels private constructor(
             }
 
             else -> {
-                if (!loading.exists() && !loading.createNewFile()) AudoraLog.w(TAG, "Loading marker not written")
+                markLoading(loading)
                 try {
                     when (ListenPin.of(lang).kind) {
                         ListenKind.STREAMING_TRANSDUCER -> SherpaStreamingListener.open(dir, config)
@@ -220,3 +221,14 @@ class ListenDownloadWorker(context: Context, params: WorkerParameters) : Corouti
         private const val TAG = "Speech.Listen"
     }
 }
+
+/** Writes the `loading` marker; a failure is logged and the model still loads (only the abort guard is lost). */
+private fun markLoading(marker: File) {
+    try {
+        if (!marker.exists() && !marker.createNewFile()) AudoraLog.w(MARKER_TAG, "Loading marker not written")
+    } catch (e: IOException) {
+        AudoraLog.w(MARKER_TAG, "Loading marker not written: ${e.javaClass.simpleName}")
+    }
+}
+
+private const val MARKER_TAG = "Speech.Listen"

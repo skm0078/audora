@@ -39,6 +39,7 @@ class VoiceNoteAudio(context: Context, private val config: VoiceNoteConfig = Voi
     fun file(fileName: String): File = File(folder, fileName)
 
     /** Starts recording to a new file; [onLimit] runs if the recording reaches the length limit by itself. */
+    @Suppress("TooGenericExceptionCaught") // MediaRecorder reports a busy microphone as a bare RuntimeException.
     fun record(onLimit: () -> Unit): Outcome<Recording, VoiceNoteError> {
         if (!folder.isDirectory) folder.mkdirs()
         val name = "${UUID.randomUUID()}$EXTENSION"
@@ -65,7 +66,9 @@ class VoiceNoteAudio(context: Context, private val config: VoiceNoteConfig = Voi
             recorder.release()
             file(name).delete()
             recorderFailed("start", e)
-        } catch (e: IllegalStateException) {
+        } catch (e: RuntimeException) {
+            // IllegalStateException, and the bare RuntimeException a busy microphone gives ("start failed.",
+            // "setAudioSource failed."): a failed start, not a crash.
             recorder.release()
             file(name).delete()
             recorderFailed("start", e)

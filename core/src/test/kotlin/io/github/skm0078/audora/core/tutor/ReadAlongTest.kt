@@ -148,6 +148,10 @@ class ReadAlongTest {
         val misreadLast = page("The cat sat on the mat.").say("the cat sat on the map")
         assertEquals(List(5) { READ } + MISREAD, misreadLast.marks)
         assertTrue(misreadLast.finished)
+        val filler = page("The cat sat on the mat.").say("the cat sat on the the")
+        assertEquals(List(5) { READ } + UNREAD, filler.marks)
+        assertFalse(filler.finished)
+        assertTrue(filler.say("mat").finished)
         assertFalse(page("The cat sat on the mat.").say("um").finished)
         assertEquals(List(6) { UNREAD }, page("The cat sat on the mat.").say("um").marks)
     }
@@ -199,6 +203,8 @@ class ReadAlongTest {
             words.map { it.checked },
         )
         assertTrue(PageWords.of(listOf("The cat sat."), Lang.EN).all { it.checked })
+        assertTrue(PageWords.of(listOf("I saw Tom."), Lang.EN).all { it.checked })
+        assertTrue(PageWords.of(listOf("Ask Dad."), Lang.EN).all { it.checked })
     }
 
     @Test

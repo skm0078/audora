@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -117,7 +118,8 @@ class VoiceNotesModel(
         starting = scope.launch {
             // Voice commands pause while the note records; taken where cancelling cannot drop it.
             val held = withContext(NonCancellable) { gate.hold(MICROPHONE_REASON) }
-            starting = null
+            // Only this start: after a cancel and a quick re-tap, a newer start is in the field.
+            if (starting === coroutineContext.job) starting = null
             if (!isActive) {
                 held.close()
                 return@launch

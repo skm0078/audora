@@ -41,7 +41,7 @@ reachable from the build threads' containers (GitHub Actions reaches it).
    has the pinned unpacked size (files synced before the marker), so a power cut or a damaged file reads as not
    installed; deleting one waits for a cancelled download to stop. A word with a zero-width joiner inside stays one
    word; a form line is followed to at most as many headwords as a look-up shows. The builder's multi-word filtering
-   is unchanged, since changing it would change the published pins for no reader-visible gain.
+   is unchanged: changing it would mean re-measuring both pins for no reader-visible gain.
 6. **Licence:** CC BY-SA 4.0. The dictionary files are adapted material and are shared under the same licence; the
    app's code stays GPL-3.0 (the data is a separate download, not compiled in). Credit in the licences screen, with the
    licence's link and a note that Wiktionary text from before June 2023 was published under CC BY-SA 3.0 and the GNU

@@ -44,8 +44,8 @@ free, and never keep or log what the reader says.
    still counts), or when the app leaves the screen (Android silences a hidden app's microphone). A busy microphone
    (silenced by Android) and a missing permission are reported as such. The microphone is taken through the
    app-wide `MicrophoneGate.shared` (`hold(reason)` returns a handle to close, taken under `NonCancellable`), which
-   app basics' `VoiceCommandPause` fills at landing, so voice commands pause meanwhile; voice notes take it too. One
-   feature holds the microphone at a time. The model is freed however the run ends, even when it is cancelled
+   app basics' `VoiceCommandPause` fills at landing, so voice commands pause meanwhile; voice notes take it too. The
+   tutor and voice notes never record together, since each is a modal dialog. The model is freed however the run ends, even when it is cancelled
    while loading, and a native decode error is reported as a damaged model. Nothing heard is stored or logged.
 4. **Screen:** *Read aloud to me* in the reader's ⋮ menu opens a dialog over the shown page: the page's text with
    each word styled (coloured when read, red and underlined to check, struck through when skipped; the next word

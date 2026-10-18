@@ -2,6 +2,12 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Studio landing review: last fixes (2026-10-18)
+- Reading tutor: a page finished mid-phrase is settled before the run ends, so a rotation keeps it finished; a filler word repeated before the last word ("on the the") no longer marks it or ends the page; abbreviations are a fixed list (Mr, Mrs, Ms, Dr, St, Jr, Sr, Mt), so a sentence-final "Tom." is judged.
+- Restore: Up next is built only after the Finish-restoring check (it rewrites a backup file when built); the other owners' guards are listed for landing.
+- Voice notes: a busy microphone fails cleanly (MediaRecorder's bare RuntimeException) and a quick re-tap after cancel keeps its own start; a model's loading marker that cannot be written no longer escapes; the licence check reports a cut-off answer cleanly; a delete with no download running never waits.
+- Tests: `QuizProgressStoreTest`, `PendingRestoreTest` (journals roll back with the database; clear and empty trash), `DictionaryDownloadTest` (waiting for a running download), `TutorSessionTest` (finish on a growing stretch), `ReadAlongTest` (filler, abbreviations).
+
 ## Reading tutor review fixes (plan item 67, ADR-050; 2026-10-18)
 - **Following the reader:** re-reading a sentence after a pause changes nothing (a stretch that fits the words just read better than the words ahead is a re-read); a page counts as finished once no judged word is left, and a misread last word is marked, so *Next page* appears; words stay whole across joiners and soft hyphens (র‍্যাব, উত্‍সব, an EPUB's soft hyphen); Hindi and Bengali spelling variants read alike (हिन्दी/हिंदी, गये/गए, कि/की, হঠাত্/হঠাৎ); "Mr.", "Dr.", "p.m." are not judged; a Hindi phrase that comes back in Urdu script is dropped. Marks survive rotation and process death.
 - **Safety:** the speech model is freed even when loading is cancelled; a native decode error reports a damaged model instead of crashing; a load that never returned (a damaged model aborting the process) is remembered, and the screen offers *Try again* and *Download it again*; the "hear it" voice is freed before the model loads.

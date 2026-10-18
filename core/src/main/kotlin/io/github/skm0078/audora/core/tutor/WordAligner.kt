@@ -42,7 +42,8 @@ internal data class Alignment(val marks: List<WordMark>, val next: Int, val cost
  * The end is free: page words after the last one matched stay unread, so a stretch cut mid-sentence marks only what
  * was read. Ties go to the shorter reach (a last word heard wrong stays unread, and is marked skipped if the next
  * stretch goes on after it), except with [align]'s `toPageEnd` when reaching the page's last word costs no more: a
- * final stretch whose last word was misread there marks it, so the page can finish.
+ * final stretch whose last word was misread there marks it, so the page can finish (unless that heard word repeats
+ * the page word before the last, a filler such as "on the the").
  */
 internal class WordAligner(private val config: TutorConfig) {
     fun align(page: List<PageWord>, from: Int, heard: List<String>, toPageEnd: Boolean = false): Alignment {
@@ -52,7 +53,9 @@ internal class WordAligner(private val config: TutorConfig) {
         val table = Table(page.subList(from, from + reach), spoken, freeStart = false)
         val costs = table.main[spoken.size]
         val best = costs.min()
-        val reachesPageEnd = toPageEnd && from + reach == page.size && costs[reach] == best
+        // A last heard word that repeats the word before the page's last ("on the the") is an extra, not a misread.
+        val repeatsWordBefore = page.getOrNull(page.size - 2)?.let { similar(it.key, spoken.last()) } == true
+        val reachesPageEnd = toPageEnd && from + reach == page.size && costs[reach] == best && !repeatsWordBefore
         val end = if (reachesPageEnd) reach else (0..reach).first { costs[it] == best }
         return Alignment(table.trace(end), from + end, best)
     }

@@ -229,6 +229,43 @@ class PendingRestoreTest {
         movedAside.forEach { move(it, aside(it)) }
     }
 
+    @Test
+    fun `a roll-back puts the database back with every journal it had`() {
+        put("databases/audora.db", "live")
+        put("databases/audora.db-wal", "live wal")
+        put("databases/audora.db-shm", "live shm")
+        put("databases/audora.db-journal", "live journal")
+        stage("databases/audora.db", "restored")
+        stage("no_backup/voices/managed/voice-speeds.properties", "speeds")
+        assertTrue(restore.markReady(everything))
+        put("no_backup/voices", "in the way")
+
+        assertEquals(Result.FAILED, restore.applyIfReady().result)
+
+        assertEquals("live", read("databases/audora.db"))
+        assertEquals("live wal", read("databases/audora.db-wal"))
+        assertEquals("live shm", read("databases/audora.db-shm"))
+        assertEquals("live journal", read("databases/audora.db-journal"))
+    }
+
+    @Test
+    fun `clearing moves the staging to the trash, and empties it only when asked`() {
+        stage("databases/audora.db", "first try")
+        assertTrue(restore.markReady(everything))
+
+        assertTrue(restore.clear())
+        assertFalse(restore.staging.exists())
+        assertTrue("kept in the trash", trashed().isNotEmpty())
+
+        stage("databases/audora.db", "second try")
+        assertTrue(restore.clear(emptyTrash = true))
+        assertFalse(restore.staging.exists())
+        assertTrue(trashed().isEmpty())
+        assertEquals(Result.NONE, restore.applyIfReady().result)
+    }
+
+    private fun trashed(): List<File> = File(root, "no_backup/restore-trash").listFiles().orEmpty().toList()
+
     private fun aside(unit: String): String = "no_backup/restore-aside/${File(root, MARKER).readLines()[1]}/$unit"
 
     private fun put(path: String, text: String) = File(root, path).apply {

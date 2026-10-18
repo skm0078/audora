@@ -164,9 +164,10 @@ class PinnedZipFiles(
 }
 
 /** Waits up to [timeoutMs] for a running download to stop (after its work was cancelled); false if it has not. */
-suspend fun PinnedZipFiles.awaitNoDownload(timeoutMs: Long): Boolean = withTimeoutOrNull(timeoutMs) {
-    while (downloading) delay(IDLE_POLL_MS)
-    true
-} ?: false
+suspend fun PinnedZipFiles.awaitNoDownload(timeoutMs: Long): Boolean = !downloading ||
+    withTimeoutOrNull(timeoutMs) {
+        while (downloading) delay(IDLE_POLL_MS)
+        true
+    } ?: false
 
 private const val IDLE_POLL_MS = 50L
