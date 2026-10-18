@@ -45,10 +45,15 @@ class ShapedRenderTest {
         override fun release() = Unit
     }
 
-    private fun render(shaping: VoiceShaping, rate: Float = SpeechStyle.NORMAL_RATE): PcmAudio {
-        val style = SpeechStyle(rate = rate, pace = Pace.NORMAL, clausePauses = false, shaping = shaping)
+    private fun render(
+        shaping: VoiceShaping,
+        rate: Float = SpeechStyle.NORMAL_RATE,
+        text: String = "Hello there.",
+        clausePauses: Boolean = false,
+    ): PcmAudio {
+        val style = SpeechStyle(rate = rate, pace = Pace.NORMAL, clausePauses = clausePauses, shaping = shaping)
         val renderer = EngineRenderer(PausingVoice, style = { style }, styleConfig = flatPaces)
-        return (renderer.render(unit(0, 0).copy(text = "Hello there.", pauseAfterMs = 0)) as Outcome.Success).value
+        return (renderer.render(unit(0, 0).copy(text = text, pauseAfterMs = 0)) as Outcome.Success).value
     }
 
     @Test
@@ -66,6 +71,17 @@ class ShapedRenderTest {
         assertEquals(VOICED + PAUSE + VOICED, plain.samples.size)
         // The model is at its 1.5 cap; the other 2x is the stretch's.
         assertEquals((VOICED + PAUSE + VOICED) / 2f, smart.samples.size.toFloat(), (VOICED + PAUSE + VOICED) * 0.01f)
+    }
+
+    @Test
+    fun `with smart speed Audora's own clause pauses are heard as long as with the player's stretch`() {
+        val text = "Hello there, said the voice; and then, at last, it stopped."
+        val plain = render(VoiceShaping(evenLoudness = false), rate = 3f, text = text, clausePauses = true)
+        val smart = render(VoiceShaping(evenLoudness = false, smartSpeed = true), 3f, text, clausePauses = true)
+        val unpaused = render(VoiceShaping(evenLoudness = false), rate = 3f, text = text, clausePauses = false)
+        assertTrue("clause pauses were added", plain.samples.size > unpaused.samples.size)
+        // The player plays the plain one at 2x; the smart one is already that short, its pauses included.
+        assertEquals(plain.samples.size / 2f, smart.samples.size.toFloat(), plain.samples.size * 0.01f)
     }
 
     @Test

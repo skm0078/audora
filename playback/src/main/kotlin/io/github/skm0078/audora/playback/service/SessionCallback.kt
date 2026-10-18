@@ -276,7 +276,8 @@ class SessionCallback(
         val bookOwnsSpeed = own == Outcome.Success(true)
         style.set(if (bookOwnsSpeed) requested.copy(rate = global.rate, pace = global.pace) else requested)
         val after = book.style(style.current)
-        if (after != before) bookSession().onSpeechStyleChanged(style.config.playerSpeed(after))
+        val heard = style.config::asHeard
+        if (heard(after) != heard(before)) bookSession().onSpeechStyleChanged(style.config.playerSpeed(after))
         return SessionResult(SessionResult.RESULT_SUCCESS)
     }
 
