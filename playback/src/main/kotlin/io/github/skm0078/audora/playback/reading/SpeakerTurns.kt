@@ -21,21 +21,36 @@ class Paragraph(val sentences: List<Sentence>, val continuesSpeech: Boolean = fa
 
 /**
  * The conversation so far: [known] named speakers, most recent first, for a pronoun to point back to; [last] and
- * [previous] the two who spoke the latest quoted paragraphs, for an untagged line to alternate between. A paragraph
- * with no quote, or a heading, ends the run ([last] and [previous] cleared) but keeps the names.
+ * [previous] the two who spoke the latest quoted paragraphs, for an untagged line to alternate between; [crowded] once
+ * a third speaker joined the run, when turns no longer simply alternate. A paragraph with no quote, or a heading, ends
+ * the run ([last], [previous] and [crowded] cleared) but keeps the names.
  */
-data class Turns(val known: List<Speaker> = emptyList(), val last: Speaker? = null, val previous: Speaker? = null) {
-    /** The speaker an untagged line most likely is in a two-way conversation: the one who did not speak last. */
-    val nextTurn: Speaker? get() = previous.takeIf { last != null }
+data class Turns(
+    val known: List<Speaker> = emptyList(),
+    val last: Speaker? = null,
+    val previous: Speaker? = null,
+    val crowded: Boolean = false,
+) {
+    /**
+     * The speaker an untagged line most likely is in a two-way conversation: the one who did not speak last. None
+     * once a third speaker joined: with three, the next line could be either of the other two.
+     */
+    val nextTurn: Speaker? get() = previous.takeIf { last != null && !crowded }
 
     fun genderOf(key: String): SpeakerGender = known.firstOrNull { it.key == key }?.gender ?: SpeakerGender.UNKNOWN
 
-    fun brokenRun(): Turns = copy(last = null, previous = null)
+    /** Whether one of the run's two latest speakers is of [gender], named or not. */
+    fun runHas(gender: SpeakerGender): Boolean = listOfNotNull(last, previous).any { it.gender == gender }
+
+    fun brokenRun(): Turns = copy(last = null, previous = null, crowded = false)
 
     fun spoke(speaker: Speaker, remembered: Int): Turns {
         val known = if (speaker.key == null) known else (listOf(speaker) + known.filter { it.key != speaker.key })
         val next = copy(known = known.take(remembered))
-        return if (identity(speaker) == last?.let(::identity)) next else next.copy(last = speaker, previous = last)
+        val who = identity(speaker)
+        if (who == last?.let(::identity)) return next
+        val third = previous != null && who != identity(previous)
+        return next.copy(last = speaker, previous = last, crowded = crowded || third)
     }
 
     private fun identity(speaker: Speaker): String = speaker.key ?: "${GENERIC}${speaker.gender}"
@@ -48,12 +63,14 @@ data class Turns(val known: List<Speaker> = emptyList(), val last: Speaker? = nu
 /**
  * A quoted sentence is spoken by, in order: its own tag ("said Tom"); the speaker its paragraph's tag names (a speech
  * that runs on over several sentences); the speaker of the paragraph before when this one goes on with that speech;
- * else the other one of the last two speakers (lines of a conversation alternate). A pronoun tag ("she said") points
- * to a speaker of that gender: one tagged earlier in the same paragraph first, then the alternation's next speaker,
- * the last one and the names remembered. A name whose gender is not known yet is taken only from the same paragraph
- * or as the alternation's next speaker, and is taught the gender; otherwise the line stays a generic female or male
- * speaker. A heading (a new chapter or scene) forgets the conversation. Every guess falls back to null, which keeps
- * the dialogue voice: a wrong character's voice is worse than none.
+ * else the other one of the last two speakers (lines of a conversation alternate). A pronoun tag ("she said") points to
+ * a speaker of that gender: one tagged earlier in the same paragraph first, then the alternation's next speaker, the
+ * last one and the names remembered. A name whose gender is not known yet is taken only from the same paragraph or as
+ * the alternation's next speaker, and is taught the gender (the next speaker only when neither of the run's two latest
+ * speakers already is of that gender: then "she" is most likely her again); otherwise the line stays a generic female
+ * or male speaker. Once a third speaker joins a run, untagged lines no longer alternate. A heading (a new chapter or
+ * scene) forgets the conversation. Every guess falls back to null, which keeps the dialogue voice: a wrong character's
+ * voice is worse than none.
  */
 class SpeakerTurns(
     private val tags: SpeakerTags = SpeakerTags(),
@@ -106,7 +123,9 @@ class SpeakerTurns(
 
     private fun pronoun(gender: SpeakerGender, turns: Turns, earlier: List<Speaker>): Speaker {
         val named = (earlier + listOfNotNull(turns.nextTurn, turns.last) + turns.known).filter { it.key != null }
-        val learner = (earlier + listOfNotNull(turns.nextTurn)).filter { it.key != null }
+        // The other speaker learns the gender only if "she" can't simply be the run's own speaker of that gender again.
+        val other = turns.nextTurn.takeUnless { turns.runHas(gender) }
+        val learner = (earlier + listOfNotNull(other)).filter { it.key != null }
         val match = named.firstOrNull { it.gender == gender }
             ?: learner.firstOrNull { it.gender == SpeakerGender.UNKNOWN }
         return match?.copy(gender = gender) ?: Speaker(null, gender)

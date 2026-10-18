@@ -161,5 +161,12 @@ class StudyLoop {
     }
 }
 
+/** Whether [current] is inside the range and not its end, so reading goes on past it (a chapter's end included). */
+fun StudyLoop.runsOnAfter(current: PlaybackItem?, next: PlaybackItem?): Boolean {
+    val unit = (current as? PlaybackItem.Sentence)?.unit
+    val inside = range
+    return unit != null && inside != null && unit in inside && !inside.endsAt(unit, next)
+}
+
 /** True when this spot comes after [other] in the book. */
 fun Spot.isAfter(other: Spot): Boolean = page > other.page || (page == other.page && charStart > other.charStart)

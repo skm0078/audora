@@ -117,6 +117,9 @@ class VoiceEngines(
 
     fun bundled(): Outcome<BundledSpeech, SpeechError> = bundled.value
 
+    /** The neural engine if something already built it, else null: never builds it, so safe on the main thread. */
+    fun bundledIfBuilt(): BundledSpeech? = if (bundled.isInitialized()) bundled.value.getOrNull() else null
+
     /** Measured voice speeds, shared with the Voices screen. */
     fun speeds(): VoiceSpeeds = library.value.speeds
 

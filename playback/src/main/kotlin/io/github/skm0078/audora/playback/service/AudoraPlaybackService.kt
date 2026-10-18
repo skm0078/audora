@@ -40,6 +40,7 @@ import io.github.skm0078.audora.playback.browse.OutlineChapters
 import io.github.skm0078.audora.playback.browse.ResourceBrowseTexts
 import io.github.skm0078.audora.playback.contract.PendingIntentCodes
 import io.github.skm0078.audora.playback.focus.FocusRenderersFactory
+import io.github.skm0078.audora.playback.focus.FocusSoundCues
 import io.github.skm0078.audora.playback.focus.FocusSoundProcessor
 import io.github.skm0078.audora.playback.focus.FocusSoundStore
 import io.github.skm0078.audora.playback.notes.BookContext
@@ -140,11 +141,9 @@ class AudoraPlaybackService : MediaLibraryService() {
         // What is heard: the global style with the open book's own speed and pace on top (plan item 4).
         val heard = { book.style(style.current) }
         val focusSound = FocusSoundStore.forContext(this)
-        // The focus sound (plan item 72) is mixed into the voice's own audio, so it pauses and ducks with it.
-        val focus = FocusSoundProcessor(focusSound::current)
-        player = SpeechPlayer.build(this, registry, config, renderers = FocusRenderersFactory(this, focus))
-        // The player's share of the listener's speed (ADR-033); the voice model (and smart speed, ADR-049) the rest.
-        player.setPlaybackSpeed(style.config.playerSpeed(heard()))
+        val focus = FocusSoundProcessor(focusSound::current) // In the voice's audio: pauses and ducks with it (72).
+        player = speechPlayer(this, registry, config, focus)
+        player.setPlaybackSpeed(style.config.playerSpeed(heard())) // ADR-033, 049: the voice speaks the rest.
         speed = LivePlaybackSpeed(player)
         // The reading modes travel with the speech style; a change restarts the sentence playing (ADR-035).
         val reading = ReadingSource(modes = { style.current.modes })
@@ -333,9 +332,17 @@ class AudoraPlaybackService : MediaLibraryService() {
     }
 }
 
-/** What the speech sheet's narrator blend can do for the voice reading English now (plan item 75). */
+/** The player, with the focus sound in its audio and told of seeks, stalls and the book's end. */
+private fun speechPlayer(context: Context, registry: QueueRegistry, config: QueueConfig, focus: FocusSoundProcessor) =
+    SpeechPlayer.build(context, registry, config, renderers = FocusRenderersFactory(context, focus))
+        .also { FocusSoundCues.attach(it, focus) }
+
+/**
+ * What the speech sheet's narrator blend can do for the voice reading English now (plan item 75). Runs on the main
+ * thread at every publish, so it never builds the engine: until the first sentence does, it reports nothing.
+ */
 private fun blendAvailability(engines: VoiceEngines, voices: SpeechVoices): BlendAvailability {
-    val bundled = engines.bundled().getOrNull() ?: return BlendAvailability()
+    val bundled = engines.bundledIfBuilt() ?: return BlendAvailability()
     val narrator = voices.knownVoice(Lang.EN)
     return BlendAvailability(narrator?.let(bundled.engine::blendableSpeaker), bundled.blends.neededBytes)
 }

@@ -83,6 +83,19 @@ class StudyLoopTest {
     }
 
     @Test
+    fun `inside a range reading runs on past a chapter's end, at B and outside it does not`() {
+        val study = StudyLoop()
+        assertFalse("no range", study.runsOnAfter(item(2), item(3)))
+        study.mark(StudyMark.START, units[1], loop = true)
+        study.mark(StudyMark.END, units[3], loop = true)
+
+        assertTrue(study.runsOnAfter(item(2), item(3)))
+        assertFalse("B ends the range", study.runsOnAfter(item(3), item(4)))
+        assertFalse("after B", study.runsOnAfter(item(4), null))
+        assertFalse("before A", study.runsOnAfter(item(0), item(1)))
+    }
+
+    @Test
     fun `a selection read once stops at its end and is then done`() {
         val study = StudyLoop()
         study.set(StudyRange(Spot(2, 15), Spot(2, 29), loop = false))

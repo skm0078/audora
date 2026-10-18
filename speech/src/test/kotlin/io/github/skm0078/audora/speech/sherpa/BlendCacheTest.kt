@@ -85,6 +85,18 @@ class BlendCacheTest {
     }
 
     @Test
+    fun `a stale copy is deleted before the space check, so its space counts for the new one`() {
+        writeVoices()
+        val spec = kokoro().copy(blend = StyleBlend(1, 0.5f))
+        val old = requireNotNull(BlendCache(root, headroomBytes = 0).voicesFor(spec, voiceDir))
+        val tight = BlendCache(root, headroomBytes = Long.MAX_VALUE / 2)
+        assertTrue(tight.holds(spec.id))
+
+        assertNull(tight.voicesFor(spec.copy(contentVersion = "bbbbbbbbbbbb2222"), voiceDir))
+        assertFalse(old.exists())
+    }
+
+    @Test
     fun `size and clear cover one voice and every voice`() {
         writeVoices()
         val cache = BlendCache(root, headroomBytes = 0)

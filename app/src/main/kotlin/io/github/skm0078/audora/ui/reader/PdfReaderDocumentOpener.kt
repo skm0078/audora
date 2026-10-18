@@ -4,7 +4,6 @@
 package io.github.skm0078.audora.ui.reader
 
 import android.content.Context
-import android.net.Uri
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import io.github.skm0078.audora.core.logging.AudoraLog
@@ -23,6 +22,7 @@ import io.github.skm0078.audora.pdf.quality.OcrError
 import io.github.skm0078.audora.pdf.render.PageTransform
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
+import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.ocr.BookOcr
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -41,7 +41,7 @@ class PdfReaderDocumentOpener(
         password: String?,
         logContext: String,
     ): Outcome<ReaderDocument, PdfOpenError> = withContext(io) {
-        val engine = PdfiumEngine.forUri(context, Uri.parse(documentUri))
+        val engine = PdfiumEngine.forUri(context, SharedPdfCopies.readableUri(context, documentUri))
         // Same OCR, models and text cache as the playback service, so a page is recognised once for both.
         val ocr = BookOcr.factory(context, documentUri, logContext)
         val builder = ReadingUnitBuilder(cleanupConfig = textPreferences.cleanupConfig())

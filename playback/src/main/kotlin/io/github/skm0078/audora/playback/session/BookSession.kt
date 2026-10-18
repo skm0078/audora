@@ -450,7 +450,8 @@ class BookSession(
         val current = playlist.current()
         val next = playlist.next()
         stopForSleep = sleep.pauseAfter(current, next)
-        atChapterEnd = stopsAtChapterEnd(current, next)
+        // An A–B range that spans a chapter's end reads on to its B; the chapter stop applies outside ranges only.
+        atChapterEnd = stopsAtChapterEnd(current, next) && !study.runsOnAfter(current, next)
         player.pauseAtEndOfMediaItems =
             stopForSleep || atChapterEnd || study.pausesAfter(current, next, sources.reading.modes())
     }

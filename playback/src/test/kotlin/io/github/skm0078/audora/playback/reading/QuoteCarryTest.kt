@@ -175,6 +175,60 @@ class QuoteCarryTest {
     }
 
     @Test
+    fun `a paragraph after an open quote goes on with the speech only when it reopens the quote`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "“Ready?” asked Mira.", pause = paragraphPauseMs),
+            sentence(1, "“Yes,” said Arjun.", pause = paragraphPauseMs),
+            sentence(2, "“It began long ago, in the hills.", pause = paragraphPauseMs),
+            sentence(3, "Arjun laughed. “Never in my life.”", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertEquals("Mira", carry.speakerOf(units[2])?.name)
+        assertEquals("Arjun", carry.speakerOf(units[3])?.name) // the next turn, not Mira's speech going on
+        assertEquals(false, carry.startsInQuote(units[3]))
+    }
+
+    @Test
+    fun `a pronoun that can be the last speaker again never teaches the other one its gender`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "“Where were you?” asked Tom.", pause = paragraphPauseMs),
+            sentence(1, "“Out,” she said.", pause = paragraphPauseMs),
+            sentence(2, "“With friends,” she added.", pause = paragraphPauseMs),
+            sentence(3, "“Which friends?” Tom asked.", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertEquals(SpeakerGender.FEMALE, carry.speakerOf(units[2])?.gender)
+        assertNull(carry.speakerOf(units[2])?.name)
+        assertEquals(SpeakerGender.UNKNOWN, carry.speakerOf(units[3])?.gender)
+    }
+
+    @Test
+    fun `once a third speaker joins, untagged lines keep the dialogue voice`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "“Ready?” asked Ann.", pause = paragraphPauseMs),
+            sentence(1, "“Ready,” said Tom.", pause = paragraphPauseMs),
+            sentence(2, "“Me too,” said Raj.", pause = paragraphPauseMs),
+            sentence(3, "“Then go.”", pause = paragraphPauseMs),
+            sentence(4, "The door shut.", pause = paragraphPauseMs),
+            sentence(5, "“Who was that?” asked Ann.", pause = paragraphPauseMs),
+            sentence(6, "“Raj,” said Tom.", pause = paragraphPauseMs),
+            sentence(7, "“Oh.”", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertNull(carry.speakerOf(units[3]))
+        assertEquals("Ann", carry.speakerOf(units[7])?.name) // a new run: two speakers alternate again
+    }
+
+    @Test
     fun `a page that goes on with the sentence the page before broke off keeps its quote open`() {
         val carry = QuoteCarry()
         val first = listOf(sentence(0, "She leaned in and said, “The key is under the"))

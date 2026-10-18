@@ -64,7 +64,7 @@ class SafDocumentAccess(context: Context, private val copies: SharedPdfCopies = 
     }
 
     override fun openStream(documentUri: String): Outcome<InputStream, DocumentError> {
-        val uri = Uri.parse(documentUri)
+        val uri = copies.readable(Uri.parse(documentUri))
         return guarded(uri) { resolver.openInputStream(uri) ?: throw FileNotFoundException("provider returned null") }
     }
 

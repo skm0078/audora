@@ -19,6 +19,7 @@ import io.github.skm0078.audora.core.config.VoiceDownloadConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.speech.voices.InstallGate
 import io.github.skm0078.audora.speech.voices.JobResult
 import io.github.skm0078.audora.speech.voices.ResumableDownloader
 import io.github.skm0078.audora.speech.voices.UrlConnectionHttpSource
@@ -65,6 +66,9 @@ class OcrModels private constructor(context: Context, private val config: VoiceD
     private val installedState = MutableStateFlow<Set<Lang>?>(null)
     private val lock = Any()
 
+    /** Installs and deletes under [lock]; a download started before a delete does not install. */
+    private val gate = InstallGate(lock)
+
     /** Null for a broken build (logged). */
     val catalog: TessdataCatalog? by lazy { readCatalog() }
 
@@ -93,7 +97,7 @@ class OcrModels private constructor(context: Context, private val config: VoiceD
     /** Clears everything in any state, leftovers included. */
     suspend fun delete(): Outcome<Unit, String> = withContext(Dispatchers.IO) {
         workManager().cancelAndAwait(WORK_NAME, config.stopWaitMs)
-        synchronized(lock) { files.deleteAll().also { refreshLocked() } }
+        gate.delete { files.deleteAll().also { refreshLocked() } }
     }
 
     fun state(): Flow<OcrModelsState> {
@@ -111,6 +115,7 @@ class OcrModels private constructor(context: Context, private val config: VoiceD
             downloader = ResumableDownloader(UrlConnectionHttpSource(config, USER_AGENT), config),
             config = config,
             onInstalled = { synchronized(lock) { refreshLocked() } },
+            gate = gate,
         )
     }
 

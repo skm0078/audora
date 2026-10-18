@@ -48,14 +48,16 @@ class BlendCache(private val root: File, private val headroomBytes: Long, val re
         val folder = File(root, spec.id)
         val target = File(folder, nameOf(spec, blend))
         val needed = voices.length() + headroomBytes
-        val free = (folder.takeIf { it.isDirectory } ?: root.takeIf { it.isDirectory } ?: root.parentFile)?.usableSpace
-        val made = when {
-            target.isFile && target.length() == voices.length() -> Outcome.Success(target)
-
-            free != null && free < needed -> Outcome.Failure("needs $needed bytes free, has $free")
-
-            else -> {
-                prune(folder, keep = null)
+        val made = if (target.isFile && target.length() == voices.length()) {
+            Outcome.Success(target)
+        } else {
+            // The old copy goes first, so the space it frees counts towards the new one.
+            prune(folder, keep = null)
+            val free = (folder.takeIf { it.isDirectory } ?: root.takeIf { it.isDirectory } ?: root.parentFile)
+                ?.usableSpace
+            if (free != null && free < needed) {
+                Outcome.Failure("needs $needed bytes free, has $free")
+            } else {
                 KokoroBlends.write(voices, target, spec.speakerId, blend)
             }
         }
@@ -75,6 +77,9 @@ class BlendCache(private val root: File, private val headroomBytes: Long, val re
 
     /** Removes [id]'s copy: its blend was turned off, or the voice deleted. */
     fun clear(id: String) = locked { delete(File(root, id), "the blend of $id") }
+
+    /** Whether a copy (or a leftover) of [id]'s blend is on disk; a voice with none needs no lock to load. */
+    fun holds(id: String): Boolean = File(root, id).exists()
 
     /** Removes every copy (the Storage screen). */
     fun clearAll(): Outcome<Unit, String> = locked {

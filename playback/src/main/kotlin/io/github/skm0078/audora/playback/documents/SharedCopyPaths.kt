@@ -24,11 +24,12 @@ internal fun copyPathOf(path: String): Pair<String, String>? {
 
 /**
  * The entries of [dir] (copy folders, or stray files) not named in [kept] whose newest write, anything inside them
- * included, is before [cutoffMillis].
+ * included, is before [cutoffMillis]. An entry removed while it is looked at is left out.
  */
 internal fun strayCopyFolders(dir: File, kept: Set<String>, cutoffMillis: Long): List<File> =
     dir.listFiles().orEmpty().filter { entry ->
-        entry.name !in kept && entry.walk().maxOf(File::lastModified) < cutoffMillis
+        val newest = if (entry.name in kept) null else entry.walk().maxOfOrNull(File::lastModified)
+        newest != null && newest > 0L && newest < cutoffMillis
     }
 
 private fun isPlainName(name: String): Boolean =

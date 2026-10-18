@@ -8,7 +8,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
-import android.net.Uri
 import android.util.LruCache
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -18,6 +17,7 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.pdfium.PdfiumEngine
+import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
@@ -123,7 +123,7 @@ class BookCovers(
 
     private fun firstPage(book: Book): Bitmap? {
         val logContext = "book=${book.id.logLabel}"
-        val engine = PdfiumEngine.forUri(appContext, Uri.parse(book.documentUri))
+        val engine = PdfiumEngine.forUri(appContext, SharedPdfCopies.readableUri(appContext, book.documentUri))
         val renderer = when (val opened = engine.openRenderer(password = null, logContext)) {
             is Outcome.Success -> opened.value
 
