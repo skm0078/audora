@@ -116,14 +116,17 @@ fun rememberVoiceCommandsSettings(models: VoiceCommandModels, preference: Screen
             Toast.makeText(context, R.string.commands_permission_denied, Toast.LENGTH_LONG).show()
         }
     }
+    // A mode restored from a backup on a phone where the microphone is not allowed yet shows as off: nothing listens.
+    val allowed = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+        PackageManager.PERMISSION_GRANTED
     return VoiceCommandsSettings(
         model = state,
-        mode = mode,
+        mode = if (allowed) mode else VoiceCommandsMode.OFF,
         onModel = { action -> scope.runModelAction(action, models::download, models::cancel) { models.delete() } },
         onChange = { next ->
-            val allowed = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+            val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
                 PackageManager.PERMISSION_GRANTED
-            if (next != VoiceCommandsMode.OFF && !allowed) {
+            if (next != VoiceCommandsMode.OFF && !granted) {
                 asked = next
                 ask.launch(Manifest.permission.RECORD_AUDIO)
             } else {

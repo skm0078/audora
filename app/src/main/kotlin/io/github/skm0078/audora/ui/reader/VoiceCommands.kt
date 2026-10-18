@@ -3,7 +3,9 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,7 +58,7 @@ fun VoiceCommandsEffect(
             VoiceCommandsMode.OFF -> Unit
 
             VoiceCommandsMode.WHILE_VISIBLE -> lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                listen(listener, heard)
+                if (microphoneAllowed(context)) listen(listener, heard)
             }
 
             VoiceCommandsMode.SCREEN_OFF -> {
@@ -64,7 +66,9 @@ fun VoiceCommandsEffect(
                 val active = combine(visible, reading) { shown, playing -> shown || playing }
                 while (true) {
                     visible.first { it }
-                    screenOffSession(context, listener, active, config, heard)
+                    // Settings restored from a backup may say "screen off" on a phone where the microphone is not
+                    // allowed yet: no service and no notification then, until it is (checked each time shown).
+                    if (microphoneAllowed(context)) screenOffSession(context, listener, active, config, heard)
                     // The next session starts only when the reader is shown again.
                     visible.first { !it }
                 }
@@ -72,6 +76,9 @@ fun VoiceCommandsEffect(
         }
     }
 }
+
+private fun microphoneAllowed(context: Context): Boolean =
+    context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
 /** Hears commands until cancelled or the listener stops (logged). */
 private suspend fun listen(listener: CommandListener, onCommand: (VoiceCommand) -> Unit) = coroutineScope {
