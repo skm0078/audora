@@ -11,6 +11,9 @@
     <!-- Audiobook export (ADR-034): a long user-started render; mediaProcessing on Android 15+, dataSync before. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
+    <!-- Voice commands with the screen off (plan item 38), only when the listener turns it on; RECORD_AUDIO is the
+         app's own (Settings asks for it). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <!-- The playback notification on Android 13+; the UI asks for it on first play. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- ExoPlayer's WAKE_MODE_LOCAL keeps the CPU awake while a sentence is synthesized with the screen off. -->
@@ -49,6 +52,12 @@
             android:name=".export.AudiobookExportService"
             android:exported="false"
             android:foregroundServiceType="dataSync|mediaProcessing" />
+
+        <!-- Voice commands with the screen off (plan item 38, opt-in): started only from the visible reader. -->
+        <service
+            android:name=".commands.VoiceCommandService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
 
         <!-- Playback resumption (P1-06): a headset's play button after Audora was closed resumes the last book.
              A media button press is a user action (C7); nothing here runs on boot. -->

@@ -1,5 +1,5 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/kws/CommandListener.kt
-// Purpose: Reads the microphone while the reader is on screen and reports the voice commands heard (plan item 38).
+// Purpose: Reads the microphone while the reader is open and reports the voice commands heard (plan item 38).
 
 package io.github.skm0078.audora.speech.kws
 
@@ -23,20 +23,24 @@ import kotlinx.coroutines.withContext
 enum class ListenFailure { NO_PERMISSION, NO_MODEL, MICROPHONE_BUSY }
 
 /**
- * Listens only inside [listen], which the reader calls while it is visible: Android lets an app read the microphone
- * in the foreground without a foreground service, and the privacy indicator shows meanwhile, as it should. Screen-off
- * listening would need a `microphone` foreground service, which Android 14 only lets start while the app is visible,
- * and a mic open for hours; it is not offered.
+ * Listens only inside [listen], which the reader calls while it is open: Android lets an app read the microphone in
+ * the foreground without a foreground service, and the privacy indicator shows meanwhile, as it should. With the
+ * screen off (an opt-in) the reader keeps a `microphone` foreground service running meanwhile, started while it is
+ * visible, as Android 14 requires.
  *
  * The source is VOICE_RECOGNITION (tuned for speech, no automatic gain that would pump the book's voice up between
  * words) with the platform's echo canceller where the phone has one, so the book's own audio is mostly removed
  * before the spotter hears it; the "Audora" prefix covers the rest.
+ *
+ * While another feature holds the microphone ([VoiceCommandPause]) the listener lets it go and waits, the model
+ * still loaded, then opens it again.
  */
 class CommandListener(
     context: Context,
     private val models: VoiceCommandModels,
     private val config: VoiceCommandConfig = VoiceCommandConfig(),
     private val echo: NarratorEcho = NarratorEcho.shared,
+    private val pause: VoiceCommandPause = VoiceCommandPause.shared,
 ) {
     private val appContext = context.applicationContext
 
@@ -48,31 +52,57 @@ class CommandListener(
         val granted = appContext.checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED
         val spotter = if (granted) models.spotter(config) else null
-        val microphone = spotter?.let { Microphone.open(config) }
         when {
             !granted -> Outcome.Failure(ListenFailure.NO_PERMISSION)
 
             spotter == null -> Outcome.Failure(ListenFailure.NO_MODEL)
 
-            microphone == null -> Outcome.Failure(ListenFailure.MICROPHONE_BUSY).also { spotter.release() }
-
             else -> try {
-                readLoop(microphone.record, spotter, onCommand)
-                Outcome.Success(Unit)
+                listenWith(spotter, CommandRepeats(config.repeatGapMs), onCommand)
             } finally {
-                microphone.close()
                 spotter.release()
                 AudoraLog.i(TAG, "Stopped listening for voice commands")
             }
         }
     }
 
-    private suspend fun readLoop(record: AudioRecord, spotter: CommandSpotter, onCommand: (VoiceCommand) -> Unit) {
-        val repeats = CommandRepeats(config.repeatGapMs)
+    /** Opens the microphone whenever no feature holds it, until cancelled or the microphone fails. */
+    private suspend fun listenWith(
+        spotter: CommandSpotter,
+        repeats: CommandRepeats,
+        onCommand: (VoiceCommand) -> Unit,
+    ): Outcome<Unit, ListenFailure> {
+        var outcome: Outcome<Unit, ListenFailure>? = null
+        while (outcome == null) {
+            pause.awaitFree()
+            val microphone = Microphone.open(config)
+            if (microphone == null) {
+                outcome = Outcome.Failure(ListenFailure.MICROPHONE_BUSY)
+            } else {
+                pause.microphone(open = true)
+                val failed = try {
+                    !readLoop(microphone.record, spotter, repeats, onCommand)
+                } finally {
+                    microphone.close()
+                    pause.microphone(open = false)
+                }
+                if (failed) outcome = Outcome.Success(Unit) else AudoraLog.i(TAG, "Microphone let go for a pause")
+            }
+        }
+        return outcome
+    }
+
+    /** Reads until a pause is asked for (true) or the microphone fails (false). */
+    private suspend fun readLoop(
+        record: AudioRecord,
+        spotter: CommandSpotter,
+        repeats: CommandRepeats,
+        onCommand: (VoiceCommand) -> Unit,
+    ): Boolean {
         val pcm = ShortArray(config.chunkSamples)
         val floats = FloatArray(config.chunkSamples)
         var read = 0
-        while (read >= 0) {
+        while (read >= 0 && !pause.isPaused) {
             coroutineContext.ensureActive()
             read = record.read(pcm, 0, pcm.size)
             for (i in 0 until read) floats[i] = pcm[i] / PCM_FULL_SCALE
@@ -84,7 +114,8 @@ class CommandListener(
                 repeats.accept(heard, now) -> onCommand(heard).also { AudoraLog.i(TAG, "Voice command ${heard.name}") }
             }
         }
-        AudoraLog.w(TAG, "Microphone read failed with code $read; stopped listening")
+        if (read < 0) AudoraLog.w(TAG, "Microphone read failed with code $read; stopped listening")
+        return read >= 0
     }
 
     /** The started microphone and its echo canceller, released together. */

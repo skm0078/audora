@@ -42,37 +42,41 @@ class DataStoreReaderPreferences(context: Context) :
 
     override suspend fun saveView(view: ReaderView) = store.write("view $view") { it[VIEW] = view.name }
 
-    override fun keepScreenOn(): Flow<Boolean> = store.flag(KEEP_SCREEN_ON, "keep screen on")
+    override fun keepScreenOn(): Flow<Boolean> = store.setting("keep screen on", false) { it[KEEP_SCREEN_ON] }
 
     override suspend fun saveKeepScreenOn(on: Boolean) = store.write("keep screen on $on") { it[KEEP_SCREEN_ON] = on }
 
-    override fun volumeKeysSkip(): Flow<Boolean> = store.flag(VOLUME_KEYS_SKIP, "volume keys setting")
+    override fun volumeKeysSkip(): Flow<Boolean> = store.setting("volume keys setting", false) { it[VOLUME_KEYS_SKIP] }
 
     override suspend fun saveVolumeKeysSkip(on: Boolean) =
         store.write("volume keys skip $on") { it[VOLUME_KEYS_SKIP] = on }
 
-    override fun voiceCommands(): Flow<Boolean> = store.flag(VOICE_COMMANDS, "voice commands setting")
+    override fun voiceCommands(): Flow<VoiceCommandsMode> =
+        store.setting("voice commands setting", VoiceCommandsMode.OFF) { prefs ->
+            VoiceCommandsMode.entries.firstOrNull { it.name == prefs[VOICE_COMMANDS] }
+        }
 
-    override suspend fun saveVoiceCommands(on: Boolean) = store.write("voice commands $on") { it[VOICE_COMMANDS] = on }
+    override suspend fun saveVoiceCommands(mode: VoiceCommandsMode) =
+        store.write("voice commands $mode") { it[VOICE_COMMANDS] = mode.name }
 
     private companion object {
         val SPEED = floatPreferencesKey("speed")
         val VIEW = stringPreferencesKey("view")
         val KEEP_SCREEN_ON = booleanPreferencesKey("keepScreenOn")
         val VOLUME_KEYS_SKIP = booleanPreferencesKey("volumeKeysSkip")
-        val VOICE_COMMANDS = booleanPreferencesKey("voiceCommands")
+        val VOICE_COMMANDS = stringPreferencesKey("voiceCommandsMode")
     }
 }
 
 private const val TAG = "Audora.ReaderPrefs"
 
-/** A switch that is off until saved on; an unreadable file reads as off (logged). */
-private fun DataStore<Preferences>.flag(key: Preferences.Key<Boolean>, what: String): Flow<Boolean> = data
-    .map { it[key] ?: false }
+/** A setting that is [default] until saved; an unreadable file reads as [default] (logged). */
+private fun <T> DataStore<Preferences>.setting(what: String, default: T, get: (Preferences) -> T?): Flow<T> = data
+    .map { get(it) ?: default }
     .catch { e ->
         if (e !is IOException) throw e
         AudoraLog.w(TAG, "Could not read the saved $what", e)
-        emit(false)
+        emit(default)
     }
     .distinctUntilChanged()
 

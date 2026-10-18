@@ -16,6 +16,9 @@ package io.github.skm0078.audora.core.config
  * @property repeatGapMs a phrase heard again within this time is the same utterance, not a second command.
  * @property narratorHoldMs commands stay ignored this long after the book itself said the app's name: past the
  *   spotter's lag after a phrase ends.
+ * @property screenOffIdleMs screen-off listening ends once reading has been paused in the background this long. The
+ *   same as Media3's foreground timeout after a pause (its default and maximum, 10 minutes): until then the playback
+ *   service is still in the foreground, so "Audora, play" can start it again; after it, Android would refuse.
  */
 data class VoiceCommandConfig(
     val sampleRate: Int = 16_000,
@@ -25,12 +28,14 @@ data class VoiceCommandConfig(
     val numThreads: Int = 1,
     val repeatGapMs: Long = 1_500,
     val narratorHoldMs: Long = 2_000,
+    val screenOffIdleMs: Long = 600_000,
 ) {
     init {
         require(sampleRate > 0 && chunkMs > 0) { "sampleRate and chunkMs must be > 0" }
         require(keywordsThreshold > 0f && keywordsThreshold < 1f) { "keywordsThreshold must be in (0, 1)" }
         require(keywordsScore > 0f && numThreads >= 1) { "keywordsScore must be > 0 and numThreads >= 1" }
         require(repeatGapMs >= 0 && narratorHoldMs >= 0) { "repeatGapMs and narratorHoldMs must be >= 0" }
+        require(screenOffIdleMs >= 0) { "screenOffIdleMs must be >= 0, was $screenOffIdleMs" }
     }
 
     /** Samples per chunk at [sampleRate]. */
