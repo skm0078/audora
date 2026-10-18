@@ -147,6 +147,15 @@ class IndicSentenceSplitterTest {
         ),
     )
 
+    // As with a plain space, a no-break, narrow no-break or thin space after the comma keeps the authors' split,
+    // as Android's ICU regex reads it too.
+    @Test
+    fun `undotted authors split before the title whatever space follows the comma`() = check(
+        listOf(' ', '\u00A0', '\u202F', '\u2009').map { space ->
+            Case("space U+%04X".format(space.code), Lang.EN, listOf("West J,${space}Lundberg P. ", "Rapid imaging."))
+        },
+    )
+
     @Test
     fun `ranges cover the text in order`() {
         val text = "डॉ. शर्मा आए। \"ठीक है।\" उन्होंने कहा॥ १ ॥ अगला।"

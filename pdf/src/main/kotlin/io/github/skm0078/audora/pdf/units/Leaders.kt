@@ -10,13 +10,17 @@ package io.github.skm0078.audora.pdf.units
  * ellipsis ([readings]), which the voice reads as a short pause: "Introduction ........ 5" reads "Introduction … 5",
  * and a blank keeps its place in "भारत की राजधानी … है।" instead of making it a statement. A leader that ends the
  * text says nothing and is left out ("Name: ______" reads "Name:"). An ellipsis ("...", "…") and a sentence's own
- * full stop after one ("wait....") are shorter than a leader.
+ * full stop after one ("wait....") are shorter than a leader. A contents line ends after its page number
+ * ([entryEnds]), so each entry is its own unit.
  */
 internal object Leaders {
     /** What a leader inside the text reads as: the voice's ellipsis pause (the pack's `ClauseSplitter`). */
     const val PAUSE = '\u2026'
 
-    /** What a table cell holding only a rule reads as ("-----" for nil): a dash, so the cell is not emptied. */
+    /**
+     * What a table cell holding only a rule reads as ("-----" for nil): a dash, so the cell is not emptied. A cell of
+     * dots or underscores (a blank to fill in, "______") is left out instead: it says nothing, where a rule says nil.
+     */
     const val NIL = '\u2013'
 
     /** For each offset of [text], whether it belongs to a leader of at least [minRun] marks. */
@@ -55,7 +59,7 @@ internal object Leaders {
         for (i in text.indices) {
             if (!mask[i] || (i > 0 && mask[i - 1])) continue
             out[i] = when {
-                last == null -> alone
+                last == null -> alone?.takeIf { text[i] == RULE }
                 i > last -> null
                 else -> PAUSE
             }
@@ -63,10 +67,33 @@ internal object Leaders {
         return out
     }
 
+    /**
+     * The offsets in [text] from [start] to [end] where a line ends after a leader and the one word after it (a
+     * contents entry's page number: "Introduction ........ 5", "Preface ..... ix", "Appendix .... A-1"), [mask]
+     * marking the leaders of [text]. Prose with a leader in the middle of a line ("गया...... २ दिन") has none.
+     */
+    fun entryEnds(text: CharSequence, mask: BooleanArray, start: Int, end: Int): List<Int> =
+        (start until end).filter { at -> text[at] in LINE_ENDS && endsEntry(text, mask, start, at) }
+
+    private fun endsEntry(text: CharSequence, mask: BooleanArray, start: Int, lineEnd: Int): Boolean {
+        var i = lineEnd
+        while (i > start && text[i - 1].isWhitespace()) i--
+        val wordEnd = i
+        while (i > start && !text[i - 1].isWhitespace() && !mask[i - 1]) i--
+        if (i == wordEnd) return false
+        while (i > start && text[i - 1] == ' ') i--
+        return i > start && mask[i - 1]
+    }
+
+    private const val LINE_ENDS = "\n\r"
+
     /** After a leader read as [PAUSE], these follow it with no space: "is ______." reads "is …." */
     const val TIGHT_AFTER = ".,;:!?)]}\u0964\u0965\"'\u2019\u201D\u00BB"
 
     private const val MARKS = "._-·"
+
+    /** The only mark that draws a rule; the pack reads a lone dash cell as nil. */
+    private const val RULE = '-'
 
     /** Marks a leader may space out one space apart. */
     private const val SPACED = ".·"

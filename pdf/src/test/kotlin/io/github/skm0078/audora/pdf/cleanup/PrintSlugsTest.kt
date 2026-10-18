@@ -63,6 +63,8 @@ class PrintSlugsTest {
         assertEquals(setOf("5/13/11 6:45"), PrintSlugs.times("5/13/11 /13/11 6:45 AM 6:45 AM"))
         assertTrue(PrintSlugs.isBareStamp("5/13/11 /13/11 6:45 AM 6:45 AM"))
         assertFalse(PrintSlugs.isBareStamp("Physics 15/03/2024 10:30"))
+        // A second, different time is a date sheet's row, not a clipped copy.
+        assertFalse(PrintSlugs.isBareStamp("15/03/2024 10:00 AM 1:00 PM"))
         // Only the date's own last two parts count as its clipped copy.
         assertEquals(emptySet<String>(), PrintSlugs.times("5/13/11 /1/2/3/4 6:45"))
         assertEquals(emptySet<String>(), PrintSlugs.times("Chemistry 16/03/2024"))

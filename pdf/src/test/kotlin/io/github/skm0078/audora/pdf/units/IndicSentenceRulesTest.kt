@@ -95,7 +95,14 @@ class IndicSentenceRulesTest {
                 emptyList(),
             ),
             // An ellipsis before a number is no leader: the sentence ends there.
-            Case("ellipsis", "Wait... 5 more came.", listOf("Wait... "), listOf("Wait... ")),
+            Case("ellipsis", "It fell... 5 States agreed.", listOf("It fell... "), listOf("It fell... ")),
+            // A leader-length run before a word is no contents line: the break stays, as on the JVM.
+            Case(
+                "long ellipsis",
+                "He waited...... Then he left.",
+                listOf("He waited...... "),
+                listOf("He waited...... "),
+            ),
         )
         for (case in cases) {
             assertEquals(case.name, after(case.text, case.kept), rules.refine(case.text, after(case.text, case.icu)))

@@ -236,8 +236,12 @@ internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderR
             return next in CONTINUERS || (next.isDigit() && leaderDotsBefore(text, at) >= minRun)
         }
 
-        /** An author written with initials without stops, then a comma: "West J, ", "Persson AB, ". */
-        val UNDOTTED_AUTHOR = Regex("""\p{Lu}[\p{L}'’-]+ \p{Lu}{1,4},[ \t]*$""")
+        /**
+         * An author written with initials without stops, then a comma, at the end of the text before a name ("West J,",
+         * "Persson AB,"): any space between, a no-break one too, and the text's trailing spaces trimmed with
+         * Char.isWhitespace, so Android's ICU regex and the JVM's read "West J,\u00A0Lundberg P." alike.
+         */
+        val UNDOTTED_AUTHOR = Regex("""\p{Lu}[\p{L}'’-]+\p{Zs}\p{Lu}{1,4},$""")
 
         /** How far before a name [followsUndottedAuthor] looks for the author before it. */
         const val AUTHOR_LOOKBACK = 40
@@ -247,7 +251,9 @@ internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderR
             var stop = start
             while (stop > 0 && text[stop - 1].isWhitespace()) stop--
             val from = stop - name.length
-            return UNDOTTED_AUTHOR.containsMatchIn(text.substring(maxOf(0, from - AUTHOR_LOOKBACK), maxOf(0, from)))
+            return UNDOTTED_AUTHOR.containsMatchIn(
+                text.substring(maxOf(0, from - AUTHOR_LOOKBACK), maxOf(0, from)).trimEnd(),
+            )
         }
 
         /** The word after the spaces at [from] is capital initials ([NEXT_INITIALS]). */

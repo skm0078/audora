@@ -182,13 +182,13 @@ class ClutterRemoverTest {
     }
 
     @Test
-    fun `leaders are read cell by cell, and a cell holding only a rule reads as a dash`() {
+    fun `leaders are read cell by cell, a cell holding only a rule reads as a dash, a blank as nothing`() {
         val sketch = PageSketch()
         sketch.line("Crop", LEFT, 680f).line("2019", 150f, 680f).line("2020", 250f, 680f).line("2021", 350f, 680f)
         val rows = listOf(
-            listOf("Wheat", ". .", ". .", "12"),
+            listOf("Wheat", ". . .", ". . .", "12"),
             listOf("Rice", "-----", "14", "15"),
-            listOf("Maize", "16", "17", "18"),
+            listOf("Maize", "______", "17", "18"),
             listOf("Barley", "19", "20", "21"),
         )
         rows.forEachIndexed { i, cells ->
@@ -202,8 +202,11 @@ class ClutterRemoverTest {
         sketch.lines(listOf("The table shows every crop.", "Yields were the same."), LEFT, 600f)
         val units = builder.build(sketch.build()).filter { it.kind == UnitKind.TABLE_ROW }
         fun cells(unit: ReadingUnit) = unit.table!!.cells.map { unit.text.substring(it.start, it.end) }
-        assertEquals(listOf("Wheat", ". .", ". .", "12"), cells(units[0]))
+        // Six spaced dots across two cells would make a leader; each cell's three stay as they are.
+        assertEquals(listOf("Wheat", ". . .", ". . .", "12"), cells(units[0]))
         assertEquals(listOf("Rice", "\u2013", "14", "15"), cells(units[1]))
+        // A blank to fill in says nothing: only a rule reads as nil.
+        assertEquals(listOf("Maize", "", "17", "18"), cells(units[2]))
     }
 
     @Test
