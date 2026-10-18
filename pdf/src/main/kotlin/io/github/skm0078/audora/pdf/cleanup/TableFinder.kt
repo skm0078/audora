@@ -5,6 +5,7 @@ package io.github.skm0078.audora.pdf.cleanup
 
 import io.github.skm0078.audora.core.config.CleanupConfig
 import io.github.skm0078.audora.core.config.TableConfig
+import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.pdf.extract.PageText
 import io.github.skm0078.audora.pdf.layout.PageLayout
 import io.github.skm0078.audora.pdf.layout.TextLine
@@ -98,9 +99,8 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
      * Whether regions [a] and [b], side by side over the same rows, are one table XY-cut cut apart: they overlap
      * across, or at least `TableConfig.minColumnPairShare` of the smaller one's lines sit beside lines of the other (a
      * cell spanning rows sits beside several) and either the gutter between them is no wider than
-     * `TableConfig.sideBySideGapRatio` times the widest gap between cells of their lines, or the right one is the
-     * table's figures ([TableSides.readsAsFigures]) under a header of its own: one table may have a wide gap before
-     * its figures. Across a wide gutter, anything else is two tables.
+     * `TableConfig.sideBySideGapRatio` times the widest gap between cells of their lines, or, across a wider gutter,
+     * they do not show they are two tables ([TableSides.twoTables], the grid's rule too).
      */
     private fun oneTableCut(
         a: Set<TextLine>,
@@ -119,7 +119,8 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
         val closeAsColumns = gutter <= ownGap * config.tables.sideBySideGapRatio
         val (left, right) = if (boxA.left <= boxB.left) a to b else b to a
         // Overlapping across (a header over both halves), they cannot be two tables side by side.
-        return gutter <= 0f || (besideRows && (closeAsColumns || figuresOf(left, right, page, config.tables)))
+        return gutter <= 0f ||
+            (besideRows && (closeAsColumns || !TableSides.twoTables(sideRows(left, right, page), config.tables)))
     }
 
     private class Run(val block: Int, val lines: List<TextLine>)
@@ -247,15 +248,24 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
     }
 }
 
-/** Whether [right] is the figures of the table whose labels are [left], not a second table beside it. */
-private fun figuresOf(left: Set<TextLine>, right: Set<TextLine>, page: PageText, tables: TableConfig): Boolean {
-    val (leftText, rightText) = listOf(left, right).map { side -> cellsOf(side, page) }
-    return TableSides.readsAsFigures(rightText, tables.maxHeaderRows, tables.minFigureRows) &&
-        !TableSides.sameHeader(leftText, rightText, tables.minSideColumns)
-}
-
-/** [lines] top to bottom, each its runs' text: the cells of a row of a table. */
-private fun cellsOf(lines: Set<TextLine>, page: PageText): List<List<String>> =
-    lines.sortedByDescending { it.box?.top ?: Float.NEGATIVE_INFINITY }.map { line ->
-        line.spans.map { page.text.substring(it.start, it.end).trim() }
+/**
+ * The lines of [left] and [right] as rows across both, top to bottom: a line starts a new row unless its middle lies
+ * within the first line of the row; each row is its left lines' cells and its right lines' cells.
+ */
+private fun sideRows(
+    left: Set<TextLine>,
+    right: Set<TextLine>,
+    page: PageText,
+): List<Pair<List<String>, List<String>>> {
+    val boxed = (left + right).mapNotNull { line -> line.box?.let { line to it } }.sortedByDescending { it.second.top }
+    val rows = ArrayList<MutableList<Pair<TextLine, TextBox>>>()
+    for (entry in boxed) {
+        val first = rows.lastOrNull()?.first()?.second
+        val middle = (entry.second.top + entry.second.bottom) / 2
+        if (first != null && middle in first.bottom..first.top) rows.last().add(entry) else rows.add(arrayListOf(entry))
     }
+    fun cells(row: List<Pair<TextLine, TextBox>>, side: Set<TextLine>) = row.filter { it.first in side }
+        .sortedBy { it.second.left }
+        .flatMap { (line, _) -> line.spans.map { page.text.substring(it.start, it.end).trim() } }
+    return rows.map { row -> cells(row, left) to cells(row, right) }
+}

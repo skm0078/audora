@@ -91,10 +91,11 @@ class TableFinderTest {
     }
 
     @Test
-    fun `two tables of the same length, a wide gutter apart, stay two without the same header`() {
-        // The right one has labels of its own; a second table of figures opens its rows with a serial number.
+    fun `blocks of the same length a wide gutter apart are one table unless the right opens with a serial number`() {
+        // Labels of its own and nothing on one side only: as the grid reads it joined by layout, one table.
         val (page, layout) = layout(table(LEFT, PITCH, "P"), table(LEFT + 6 * COLUMN, PITCH, "W"))
-        assertEquals(listOf(5, 5), finder.find(page, layout).map { it.size })
+        assertEquals(listOf(10), finder.find(page, layout).map { it.size })
+        // A second table of figures opens its rows with a serial number.
         val serials = (0..4).map { r ->
             val top = TOP - r * PITCH
             val cells = if (r == 0) listOf("No.", "Marks") else listOf("$r", "${r * 37}")

@@ -10,8 +10,15 @@ import io.github.skm0078.audora.pdf.layout.TableCells
 import io.github.skm0078.audora.pdf.layout.TextLine
 import io.github.skm0078.audora.pdf.layout.TextSpan
 
-/** A cell that is a number: "12", "-2.98", "4.00", "98,62,767", "৩.৯১", "45%", "12." (a serial number). */
-internal val NUMBER_CELL = Regex("[-−+]?\\p{Nd}[\\p{Nd},]*(?:\\.\\p{Nd}+)?[.%]?")
+/**
+ * A cell that is a number: "12", "-2.98", "4.00", "98,62,767", "৩.৯১", "45%", "12 %", "12." (a serial number), and as
+ * accounts write them: "₹12", "Rs. 12", "500/-", "12*" (a note on the figure), "(1,234)" (a loss). A bracketed number
+ * needs three characters at least: "(1)", "(12)" number a table's columns or a list's items.
+ */
+internal val NUMBER_CELL = Regex(
+    "(?:₹\\s?|Rs\\.?\\s?)?[-−+]?\\p{Nd}[\\p{Nd},]*(?:\\.\\p{Nd}+)?(?:\\s?%|/-|\\*{1,3}|\\.)?|" +
+        "\\((?:₹\\s?|Rs\\.?\\s?)?(?=[\\p{Nd},.]{3})\\p{Nd}[\\p{Nd},]*(?:\\.\\p{Nd}+)?\\)",
+)
 
 /**
  * How many leading rows of [rows] (each its cells' text) make the header: the rows before the first one with a

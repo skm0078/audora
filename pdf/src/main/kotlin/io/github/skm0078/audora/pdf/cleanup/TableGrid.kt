@@ -273,9 +273,7 @@ private fun Collection<LineRow>.spans(): Set<TextSpan> = flatMapTo(HashSet()) { 
  * Two tables set side by side on the same row heights, which layout joined row by row into one. The gap between two
  * neighbouring columns is a gutter when it is more than `TableConfig.sideBySideGapRatio` times every other column
  * gap, at least `TableConfig.minSideColumns` columns lie on each side and no cell crosses it. The sides are two tables
- * only when they show it ([TableSides]): the same header on both (a long list set in two halves), or, unless the right
- * side is figures, a row on one side only (tables of different lengths). A single wide table with one wide gap shows
- * neither.
+ * only when they show it ([TableSides.twoTables], the finder's rule too).
  */
 private class SideBySide(private val config: TableConfig) {
     /** [rows] as the line rows of the left table and of the right one, or null when they are one table. */
@@ -291,13 +289,7 @@ private class SideBySide(private val config: TableConfig) {
         fun text(cells: List<Cell>) = cells.map { cell ->
             cell.spans.joinToString(" ") { page.text.substring(it.start, it.end).trim() }
         }
-        val leftText = left.map { text(it.cells) }
-        val rightText = right.map { text(it.cells) }
-        val rowText = sides.map { (l, r) -> text(l) to text(r) }
-        val headerRows = headerRowCount(rowText.map { (l, r) -> l + r }, config.maxHeaderRows)
-        val uneven = !TableSides.readsAsFigures(rightText, config.maxHeaderRows, config.minFigureRows) &&
-            TableSides.hasOneSidedRow(rowText, headerRows, config.minSideColumns)
-        val two = uneven || TableSides.sameHeader(leftText, rightText, config.minSideColumns)
+        val two = TableSides.twoTables(sides.map { (l, r) -> text(l) to text(r) }, config)
         return if (two) listOf(left, right) else null
     }
 
