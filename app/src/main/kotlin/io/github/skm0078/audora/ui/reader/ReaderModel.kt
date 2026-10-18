@@ -249,11 +249,14 @@ class ReaderModel(
 
     fun skipBack() = player.skipToPreviousSentence()
 
-    /** A book with its own settings keeps its speed itself (in the service); only the global one is saved here. */
-    fun setSpeed(speed: Float) {
+    /**
+     * A book with its own settings keeps its speed itself (in the service); only the global one is saved here, and
+     * only when [save] (a voice command's change is not: it may have been heard by mistake).
+     */
+    fun setSpeed(speed: Float, save: Boolean = true) {
         val offered = config.nearestSpeed(speed)
         player.setSpeed(offered)
-        if (!state.value.playback.ownSettings) scope.launch { speeds.save(offered) }
+        if (save && !state.value.playback.ownSettings) scope.launch { speeds.save(offered) }
     }
 
     fun setPace(pace: Pace) = player.setPace(pace)

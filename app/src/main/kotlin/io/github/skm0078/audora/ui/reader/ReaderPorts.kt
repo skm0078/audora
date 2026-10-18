@@ -85,6 +85,22 @@ enum class VoiceCommandsMode {
 
     /** Also with the screen off, from a microphone foreground service with its own notification (opt-in). */
     SCREEN_OFF,
+    ;
+
+    /**
+     * What actually listens: nothing without the microphone (a mode restored from a backup, or a permission taken
+     * back), and only on screen without notifications, since the screen-off notification is where Stop lives.
+     */
+    fun effective(microphone: Boolean, notifications: Boolean): VoiceCommandsMode = when {
+        this == OFF || !microphone -> OFF
+        this == SCREEN_OFF && !notifications -> WHILE_VISIBLE
+        else -> this
+    }
+
+    companion object {
+        /** The mode saved under [name]; null for nothing saved or a name this build doesn't know. */
+        fun fromSaved(name: String?): VoiceCommandsMode? = entries.firstOrNull { it.name == name }
+    }
 }
 
 class LibraryReaderBooks(private val library: Library) : ReaderBooks {
