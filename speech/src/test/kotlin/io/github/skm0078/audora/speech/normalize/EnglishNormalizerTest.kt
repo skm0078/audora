@@ -236,6 +236,18 @@ class EnglishNormalizerTest {
         Case("symbol", "~10 km away", "about ten kilometres away"),
         Case("symbol", "5 ± 0.5 mm", "five plus or minus zero point five millimetres"),
         Case("symbol", "C++ code", "C++ code"),
+        // Initials read as letters, not as sentence ends (item 57)
+        Case("initials", "Dr. A. P. J. Abdul Kalam spoke.", "Doctor A P J Abdul Kalam spoke."),
+        Case("initials", "A.P.J. Abdul Kalam spoke.", "A P J Abdul Kalam spoke."),
+        Case("initials", "The U.S. Army, then the U.K. fleet.", "The U S Army, then the U K fleet."),
+        Case("initials", "She moved to the U.S.", "She moved to the U S."),
+        Case("initials", "J. R. R. Tolkien wrote it.", "J R R Tolkien wrote it."),
+        Case("initials", "President George W. Bush said", "President George W Bush said"),
+        Case("initials", "Mr. M. Gandhi arrived.", "Mister M Gandhi arrived."),
+        Case("initials", "A. Introduction", "A. Introduction"),
+        Case("initials", "See Part C. Results follow.", "See Part C. Results follow."),
+        Case("initials", "Ph.D. holders", "Ph.D. holders"),
+        Case("initials", "the U.S.A and Europe", "the U.S.A and Europe"),
         // Text that must pass through untouched
         Case("untouched", "", ""),
         Case("untouched", "No digits here.", "No digits here."),
