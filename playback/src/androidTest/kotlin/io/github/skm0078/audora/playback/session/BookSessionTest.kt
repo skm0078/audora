@@ -70,6 +70,9 @@ class BookSessionTest {
     private val registry = QueueRegistry()
     private val played: MutableList<UnitKey> = Collections.synchronizedList(mutableListOf())
 
+    // [Recorder] pauses the player when this many sentences have started; null = never.
+    @Volatile private var pauseWhenPlayed: Int? = null
+
     // The player's speed as each sentence started (same index as [played]).
     private val speeds: MutableList<Float> = Collections.synchronizedList(mutableListOf())
     private val finished: MutableList<BookId> = Collections.synchronizedList(mutableListOf())
@@ -312,23 +315,24 @@ class BookSessionTest {
         play(page = 0, charStart = 0)
         awaitCondition("reached page 2") { played.contains(UnitKey(1, 0)) }
 
-        // Each sentence pauses at its end, so the test steps from the replay to the next sentence and back.
         val before = onMain {
-            player.pauseAtEndOfMediaItems = true
             assertTrue(session.replayPrevious(REPLAY_FACTOR))
+            // The replay is played[before]; the player pauses as the sentence after it starts (see [Recorder]).
+            pauseWhenPlayed = played.size + 2
             played.size
         }
         val replayed = played[before - 2]
-        awaitCondition("the replay played and paused") { played.size > before && !player.playWhenReady }
+        awaitCondition("the sentence after the replay started and paused") {
+            played.size >= before + 2 && !player.playWhenReady
+        }
         assertEquals(replayed, played[before])
         assertTrue(renders.contains(replayed to SLOWER))
 
-        onMain { player.play() }
-        awaitCondition("the sentence after the replay") { played.size > before + 1 }
-        awaitCondition("paused after it") { !player.playWhenReady }
+        // Back to the replayed sentence: its slower audio was dropped, so it renders again in the listener's style.
         val ownRenders = renders.count { it == replayed to null }
-        onMain { player.seekToPreviousMediaItem() }
-
+        val index = onMain { itemIndexOf(replayed) }
+        assertTrue("$replayed is not in the playlist: ${describePlayer()}", index >= 0)
+        onMain { player.seekTo(index, 0) }
         awaitCondition("the replayed sentence rendered again in the listener's style") {
             renders.count { it == replayed to null } > ownRenders
         }
@@ -447,6 +451,11 @@ class BookSessionTest {
         if (!ended.await(TIMEOUT_S, TimeUnit.SECONDS)) fail("book did not end: ${describePlayer()}")
     }
 
+    /** The playlist index of [key]'s sentence, or -1; main thread. */
+    private fun itemIndexOf(key: UnitKey): Int = (0 until player.mediaItemCount).indexOfFirst { i ->
+        (PlaylistItems.itemOf(player.getMediaItemAt(i)) as? PlaybackItem.Sentence)?.let { UnitKey.of(it.unit) } == key
+    }
+
     private fun describePlayer(): String = onMain {
         "state=${player.playbackState} playWhenReady=${player.playWhenReady} playing=${player.isPlaying} " +
             "item=${player.currentMediaItem?.mediaId} index=${player.currentMediaItemIndex}/${player.mediaItemCount} " +
@@ -486,6 +495,7 @@ class BookSessionTest {
                 // Recorded before the session's own listener runs, so a replay's speed is still the one it set.
                 speeds += player.playbackParameters.speed
                 played += UnitKey.of(it.unit)
+                if (played.size == pauseWhenPlayed) player.pause()
             }
         }
 
