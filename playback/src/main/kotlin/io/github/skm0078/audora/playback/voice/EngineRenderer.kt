@@ -22,6 +22,7 @@ import io.github.skm0078.audora.playback.session.SentenceTimings
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.audio.Earcon
 import io.github.skm0078.audora.speech.audio.PcmAudio
+import io.github.skm0078.audora.speech.audio.SmartStretch
 import io.github.skm0078.audora.speech.audio.VoiceShaper
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
 import io.github.skm0078.audora.speech.normalize.TextNormalizer
@@ -59,8 +60,10 @@ import kotlinx.coroutines.runBlocking
  * costs no render time and would make a voice look faster.
  *
  * The voice's audio is then shaped by the style's [SpeechStyle.shaping] (plan items 9, 10): with pause trim, each
- * voiced piece's own long silences are cut before the clause pauses go in, so only the voice's are trimmed; then the
- * whole sentence is evened to one loudness and boosted, before any cue and the silence after.
+ * voiced piece's own long silences are cut before the clause pauses go in, so only the voice's are trimmed; with
+ * smart speed, each piece is then sped up unevenly past the model's cap ([ReadingSetup.smartStretch], ADR-049), so
+ * Audora's own pauses keep their length; then the whole sentence is evened to one loudness and boosted, before any
+ * cue and the silence after.
  *
  * The open book's pronunciation fixes ([ReadingSetup.fixer], plan item 1) are applied first, before normalization;
  * then, on a scanned page, a run-on sentence gets the punctuation model's pauses when it is downloaded (RI-11).
@@ -129,14 +132,16 @@ class EngineRenderer(
         val shaping = now.shaping
         val shaper = reading.shaper
         val trim: (PcmAudio) -> PcmAudio = if (shaping.trimPauses) shaper::trimPauses else { audio -> audio }
+        val stretch = styleConfig.voiceStretch(now)
+        val shape: (PcmAudio) -> PcmAudio = { audio -> reading.smartStretch.stretch(trim(audio), stretch) }
         val characters = reading.characters?.takeIf { shaping.characterVoices }?.current()
         val cast = Cast(shaping.dialogueVoices, shaping.headingVoices, characters)
         val quotePauseMs = if (now.clausePauses) styleConfig.clauseSilenceMs(ClauseMark.QUOTE, now) else 0
         val level: (PcmAudio) -> PcmAudio = { shaper.level(it, shaping.evenLoudness, boostDb = 0) }
         val speaker = characters?.let { reading.speakerOf(unit) }
-        val request = SpeechRequest(speech.role, rate, prosody, trim, reading.startsInQuote(unit), speaker)
+        val request = SpeechRequest(speech.role, rate, prosody, shape, reading.startsInQuote(unit), speaker)
         return runBlocking { castSpeech.render(text, unit.lang, request, cast, quotePauseMs, level) }.map { routed ->
-            speed?.onRendered(text.trim().length, routed, System.nanoTime() - started, rate)
+            speed?.onRendered(text.trim().length, routed, System.nanoTime() - started, rate * stretch)
             log(unit, routed)
             shaper.level(routed.audio, shaping.evenLoudness, shaping.boostDb)
         }
@@ -170,6 +175,7 @@ class EngineRenderer(
  *   ([io.github.skm0078.audora.playback.reading.QuoteCarry], plan item 7).
  * @property speakerOf who says a sentence's quotes, from the same carry (plan item 63); null when unknown.
  * @property characters the open book's character voices, used when the style's shaping turns them on.
+ * @property smartStretch smart speed's uneven stretch (plan item 10), used when the style's shaping turns it on.
  */
 @Suppress("LongParameterList") // All optional: each caller sets the few it has.
 class ReadingSetup(
@@ -183,6 +189,7 @@ class ReadingSetup(
     val startsInQuote: (ReadingUnit) -> Boolean = { false },
     val speakerOf: (ReadingUnit) -> Speaker? = { null },
     val characters: CharacterVoices? = null,
+    val smartStretch: SmartStretch = SmartStretch(),
 ) {
     /** [text] with the model's pauses when it is a run-on on a scanned page, else [text]. */
     fun punctuated(text: String, unit: ReadingUnit): String = when {

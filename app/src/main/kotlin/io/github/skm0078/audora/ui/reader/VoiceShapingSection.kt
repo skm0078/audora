@@ -42,6 +42,11 @@ fun VoiceShapingSection(shaping: VoiceShaping, config: VoiceShapingConfig, onCha
         stringResource(R.string.speech_trim_pauses_detail),
         shaping.trimPauses,
     ) { onChange(shaping.copy(trimPauses = it)) }
+    ShapingSwitch(
+        stringResource(R.string.speech_smart_speed),
+        stringResource(R.string.speech_smart_speed_detail),
+        shaping.smartSpeed,
+    ) { onChange(shaping.copy(smartSpeed = it)) }
     Text(stringResource(R.string.speech_boost), style = MaterialTheme.typography.bodyLarge)
     Row(
         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),

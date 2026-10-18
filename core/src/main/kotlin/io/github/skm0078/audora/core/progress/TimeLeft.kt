@@ -60,7 +60,7 @@ class TimeLeft(
     private fun unitMs(unit: ReadingUnit, style: SpeechStyle): Double {
         val rate = speech.clampRate(style.rate)
         val speaking = unit.text.length / config.charsPerSecond.getValue(unit.lang) / rate * MS_PER_SECOND
-        val silence = speech.silenceAfterMs(unit.pauseAfterMs, style) / speech.playerSpeed(rate)
+        val silence = speech.silenceAfterMs(unit.pauseAfterMs, style) / speech.playerSpeed(style)
         return speaking + silence
     }
 

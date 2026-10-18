@@ -276,7 +276,7 @@ class SessionCallback(
         val bookOwnsSpeed = own == Outcome.Success(true)
         style.set(if (bookOwnsSpeed) requested.copy(rate = global.rate, pace = global.pace) else requested)
         val after = book.style(style.current)
-        if (after != before) bookSession().onSpeechStyleChanged(style.config.playerSpeed(after.rate))
+        if (after != before) bookSession().onSpeechStyleChanged(style.config.playerSpeed(after))
         return SessionResult(SessionResult.RESULT_SUCCESS)
     }
 
@@ -290,7 +290,7 @@ class SessionCallback(
         val after = book.style(style.current)
         // Turning it off may change the speed or the voices back; either way the sentences ahead are redone.
         if (after != before) {
-            bookSession().onSpeechStyleChanged(style.config.playerSpeed(after.rate))
+            bookSession().onSpeechStyleChanged(style.config.playerSpeed(after))
         } else {
             bookSession().restartRendering()
         }

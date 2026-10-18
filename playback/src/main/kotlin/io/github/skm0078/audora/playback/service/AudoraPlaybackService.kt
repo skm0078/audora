@@ -143,8 +143,8 @@ class AudoraPlaybackService : MediaLibraryService() {
         // The focus sound (plan item 72) is mixed into the voice's own audio, so it pauses and ducks with it.
         val focus = FocusSoundProcessor(focusSound::current)
         player = SpeechPlayer.build(this, registry, config, renderers = FocusRenderersFactory(this, focus))
-        // The player's share of the listener's speed (ADR-033); the voice model speaks the rest.
-        player.setPlaybackSpeed(style.config.playerSpeed(style.current.rate))
+        // The player's share of the listener's speed (ADR-033); the voice model (and smart speed, ADR-049) the rest.
+        player.setPlaybackSpeed(style.config.playerSpeed(heard()))
         speed = LivePlaybackSpeed(player)
         // The reading modes travel with the speech style; a change restarts the sentence playing (ADR-035).
         val reading = ReadingSource(modes = { style.current.modes })
@@ -158,16 +158,16 @@ class AudoraPlaybackService : MediaLibraryService() {
                 renderer = renderer(engines, stores, reading, heard, characters),
                 books = LibraryBookSource(this, library),
                 texts = ResourceTexts(),
-                // The model's share of the speed drains the queue like the player's share does (ADR-033).
+                // The model's share of the speed and smart speed's drain the queue like the player's (ADR-033, 049).
                 renderAhead = MeasuredRenderAhead(voices::speedOf) {
-                    speed.value * style.config.modelRate(heard().rate)
+                    speed.value * style.config.modelRate(heard().rate) * style.config.voiceStretch(heard())
                 },
                 reading = reading,
                 sleepOptions = sleepOptions::current,
                 onBook = { id ->
                     book.open(id)
                     characters.open(id)
-                    player.setPlaybackSpeed(style.config.playerSpeed(heard().rate))
+                    player.setPlaybackSpeed(style.config.playerSpeed(heard()))
                 },
                 keepGoingToNextChapter = { upNext.queue.value.keepGoingToNextChapter },
                 onBookFinished = queueAdvance()::onBookFinished,
