@@ -3,5 +3,5 @@
 <!-- Purpose: Hindi copy of values/strings_smart_speed.xml: Strings for smart speed in the speech sheet (plan item 10, ADR-049). -->
 <resources>
     <string name="speech_smart_speed">स्मार्ट स्पीड</string>
-    <string name="speech_smart_speed_detail">%1$s× से ऊपर, यह व्यंजनों से ज़्यादा चुप्पी और लंबी ध्वनियों को छोटा करता है, ताकि तेज़ बोली भी साफ़ रहे। इससे नीचे आवाज़ खुद तेज़ बोलती है और इससे कुछ नहीं बदलता।</string>
+    <string name="speech_smart_speed_detail">%1$s× से ऊपर, यह व्यंजनों से ज़्यादा चुप्पी और लंबी ध्वनियों को छोटा करता है, ताकि तेज़ बोली भी साफ़ रहे। उससे कम पर आवाज़ खुद तेज़ बोलती है और यह सेटिंग कुछ नहीं बदलती।</string>
 </resources>

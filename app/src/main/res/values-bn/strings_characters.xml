@@ -2,6 +2,6 @@
 <!-- File: app/src/main/res/values-bn/strings_characters.xml -->
 <!-- Purpose: Bengali copy of values/strings_characters.xml: Strings for a voice per character (plan item 63). -->
 <resources>
-    <string name="speech_cast_characters">প্রতিটি চরিত্রের নিজস্ব কণ্ঠ</string>
-    <string name="speech_cast_characters_detail">যে লাইনের বক্তা স্পষ্ট (“মীরা বলল”), সেগুলো সেই চরিত্রের নিজস্ব কণ্ঠ পায়, যা পুরো বইয়ে একই থাকে। ইংরেজি Kokoro আর Kitten কণ্ঠের ভেতরের অন্য কণ্ঠগুলো ব্যবহার হয়, তাই বাড়তি মেমরি লাগে না। বাকি লাইন উদ্ধৃতির কণ্ঠেই থাকে।</string>
+    <string name="speech_cast_characters">প্রতিটি চরিত্রের নিজস্ব ভয়েস</string>
+    <string name="speech_cast_characters_detail">যে লাইনগুলোর বক্তা স্পষ্ট (“মীরা বলল”), সেগুলো সেই চরিত্রের নিজস্ব ভয়েস পায়, যা পুরো বইয়ে একই থাকে। ইংরেজি Kokoro আর Kitten ভয়েসের ভেতরের অন্য ভয়েসগুলো ব্যবহার হয়, তাই বাড়তি মেমরি লাগে না। বাকি লাইন সংলাপের ভয়েসেই থাকে।</string>
 </resources>

@@ -3,7 +3,7 @@
 <!-- Purpose: Bengali copy of values/strings_focus.xml: Strings for the focus sound under the voice (plan item 72). -->
 <resources>
     <string name="focus_title">ফোকাস সাউন্ড</string>
-    <string name="focus_detail">কণ্ঠের নিচে আস্তে বাজে আর কণ্ঠ কথা বললেই কমে যায়। আপনার ফোনেই তৈরি হয়, কিছু ডাউনলোড করতে হয় না।</string>
+    <string name="focus_detail">কণ্ঠের পেছনে মৃদু বাজে আর কণ্ঠ কথা বললেই কমে যায়। আপনার ফোনেই তৈরি হয়, কিছু ডাউনলোড করতে হয় না।</string>
     <string name="focus_off">বন্ধ</string>
     <string name="focus_rain">বৃষ্টি</string>
     <string name="focus_cafe">ক্যাফে</string>

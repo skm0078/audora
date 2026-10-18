@@ -8,5 +8,5 @@
     <string name="focus_rain">बारिश</string>
     <string name="focus_cafe">कैफ़े</string>
     <string name="focus_brown_noise">ब्राउन नॉइज़</string>
-    <string name="focus_level">आवाज़ का स्तर</string>
+    <string name="focus_level">वॉल्यूम</string>
 </resources>
