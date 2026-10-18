@@ -329,13 +329,16 @@ private fun describe(quality: PageQuality): String = with(quality.signals) {
 
 /**
  * A page's units, its route and where its words actually came from. [ocrConfidence] is `OcrText.meanConfidence` for a
- * page read by OCR, else null: the reader's quality badge (RI-9).
+ * page read by OCR, else null: the reader's quality badge (RI-9). [continuesPreviousPage]: the page opens inside
+ * the sentence the page before broke off (plan item 7: a quote opened there is still open); false when it does not,
+ * or when the page before cannot be read without new OCR (a scanned page not yet recognised).
  */
 class PageReading(
     val units: List<ReadingUnit>,
     val routing: PageRouting,
     val source: PageSource,
     val ocrConfidence: Int? = null,
+    val continuesPreviousPage: Boolean = false,
 )
 
 /** Where a page's words came from: what the reader's "OCR" badge shows (P3-05). */

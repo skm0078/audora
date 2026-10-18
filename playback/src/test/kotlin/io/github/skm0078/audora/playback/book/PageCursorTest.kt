@@ -32,6 +32,20 @@ class PageCursorTest {
         assertEquals(emptyList<Any>(), cursor.playable(0, page(0, 4)))
     }
 
+    @Test
+    fun resumingAtAContinuedTablesFirstRowPlaysItsEmptySummaryFirst() {
+        // A page opening with carried rows: an empty "Table continues" summary shares row 0's charStart.
+        val rows = page(4, 3)
+        val summary = rows[0].copy(index = 0, charEnd = rows[0].charStart, text = "")
+        val units = listOf(summary) + rows.map { it.copy(index = it.index + 1) }
+
+        val cursor = PageCursor(pageCount = 5, startPage = 4, startChar = rows[0].charStart)
+
+        assertEquals(listOf(0, 1, 2, 3), cursor.playable(4, units).map { it.index })
+        val later = PageCursor(pageCount = 5, startPage = 4, startChar = rows[1].charStart)
+        assertEquals(listOf(2, 3), later.playable(4, units).map { it.index })
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun aStartPageOutsideTheBookIsRefused() {
         PageCursor(pageCount = 3, startPage = 3, startChar = 0)

@@ -7,7 +7,9 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 
 /**
  * @param startChar offset into the start page's text: reading starts at the first sentence that ends after
- *   it, so an offset inside a sentence starts that sentence (Build Spec §6 re-anchoring by charStart).
+ *   it, so an offset inside a sentence starts that sentence (Build Spec §6 re-anchoring by charStart). A unit with
+ *   no text (a continued table's "Table continues" summary, sharing its first row's charStart) counts as one
+ *   character long, so resuming at that row plays the summary first.
  */
 class PageCursor(val pageCount: Int, val startPage: Int, private val startChar: Int) {
     init {
@@ -22,5 +24,8 @@ class PageCursor(val pageCount: Int, val startPage: Int, private val startChar: 
 
     /** The sentences of [page] that belong in the playlist. */
     fun playable(page: Int, units: List<ReadingUnit>): List<ReadingUnit> =
-        if (page == startPage) units.filter { it.charEnd > startChar } else units
+        if (page == startPage) units.filter { it.spokenEnd > startChar } else units
 }
+
+/** Where [this] ends for playback's position checks: an empty unit (no text) still takes one character. */
+val ReadingUnit.spokenEnd: Int get() = maxOf(charEnd, charStart + 1)

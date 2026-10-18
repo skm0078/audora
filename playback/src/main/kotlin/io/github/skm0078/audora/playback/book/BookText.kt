@@ -7,10 +7,15 @@ import io.github.skm0078.audora.core.config.ExtractionConfig
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.map
+import io.github.skm0078.audora.pdf.document.PageReading
 import io.github.skm0078.audora.pdf.document.PageSource
 import io.github.skm0078.audora.pdf.document.PdfBook
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.pdf.outline.ChapterStarts
+import io.github.skm0078.audora.pdf.quality.PageRoute
+import io.github.skm0078.audora.pdf.quality.PageRouting
+import io.github.skm0078.audora.pdf.quality.RouteReason
+import io.github.skm0078.audora.pdf.quality.TextLayerVerdict
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import java.io.Closeable
 import java.util.concurrent.ConcurrentHashMap
@@ -20,6 +25,14 @@ interface BookText : Closeable {
     val pageCount: Int
 
     fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError>
+
+    /**
+     * [units] with how the page was read and whether it opens inside the sentence the page before broke off
+     * (`PageReading.continuesPreviousPage`, plan item 7). The default (fakes) reads [units] as text-layer units that
+     * continue nothing.
+     */
+    fun reading(page: Int): Outcome<PageReading, PdfPageError> =
+        units(page).map { PageReading(it, TEXT_LAYER_ROUTING, PageSource.TextLayer) }
 
     /**
      * First pages of the book's chapters, ascending; empty when it has none (the end-of-chapter sleep timer
@@ -35,6 +48,10 @@ interface BookText : Closeable {
     fun isScanned(page: Int): Boolean = false
 }
 
+/** How [BookText.reading]'s default says its pages were read. */
+private val TEXT_LAYER_ROUTING =
+    PageRouting(PageRoute.TEXT_LAYER, RouteReason.TEXT_LAYER_OK, TextLayerVerdict.UNCHECKED)
+
 /** :pdf's page-at-a-time extraction (P1-02): PDFium text, `/ActualText` rebuild, sentence split. */
 class PdfBookText(
     private val book: PdfBook,
@@ -45,9 +62,11 @@ class PdfBookText(
 
     private val scannedPages: MutableSet<Int> = ConcurrentHashMap.newKeySet()
 
-    override fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError> = book.readPage(page, builder).map {
+    override fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError> = reading(page).map { it.units }
+
+    override fun reading(page: Int): Outcome<PageReading, PdfPageError> = book.readPage(page, builder).map {
         if (it.source is PageSource.Ocr) scannedPages += page else scannedPages -= page
-        it.units
+        it
     }
 
     override fun isScanned(page: Int): Boolean = page in scannedPages

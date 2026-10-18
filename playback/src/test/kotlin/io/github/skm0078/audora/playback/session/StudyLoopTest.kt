@@ -141,6 +141,16 @@ class StudyLoopTest {
         assertFalse(StudyLoop().mark(StudyMark.START, null, loop = true))
     }
 
+    @Test
+    fun `an empty unit at the range's start is inside it, and a loop goes back to it`() {
+        val summary = units[1].copy(charEnd = units[1].charStart, text = "")
+        val range = StudyRange(Spot(2, units[1].charStart), Spot(2, units[2].charEnd - 1), loop = true)
+
+        assertTrue(summary in range)
+        assertTrue(range.startsAt(summary))
+        assertFalse(units[0] in range)
+    }
+
     private companion object {
         const val SENTENCE_CHARS = 10
     }

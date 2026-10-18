@@ -6,6 +6,7 @@ package io.github.skm0078.audora.playback.session
 import io.github.skm0078.audora.core.model.AfterSentence
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.playback.book.spokenEnd
 import io.github.skm0078.audora.playback.playlist.PlaybackItem
 
 /**
@@ -19,11 +20,11 @@ data class StudyRange(val start: Spot, val end: Spot, val loop: Boolean) {
     }
 
     operator fun contains(unit: ReadingUnit): Boolean =
-        Spot(unit.page, unit.charEnd).isAfter(start) && !Spot(unit.page, unit.charStart).isAfter(end)
+        Spot(unit.page, unit.spokenEnd).isAfter(start) && !Spot(unit.page, unit.charStart).isAfter(end)
 
     /** [unit] holds the range's start: the sentence a loop goes back to. */
     fun startsAt(unit: ReadingUnit): Boolean =
-        unit.page == start.page && start.charStart in unit.charStart until unit.charEnd
+        unit.page == start.page && start.charStart in unit.charStart until unit.spokenEnd
 
     /** [unit] is the range's last sentence: inside, with nothing after it inside. A page not loaded yet is unknown. */
     fun endsAt(unit: ReadingUnit, next: PlaybackItem?): Boolean = unit in this && when (next) {

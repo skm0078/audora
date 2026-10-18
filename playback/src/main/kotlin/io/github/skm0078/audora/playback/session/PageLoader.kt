@@ -20,14 +20,15 @@ import kotlinx.coroutines.withContext
  * Main-thread object; only the PDF reads run on [extraction] (one thread: PDFium documents must not be used
  * from two threads, P1-02). Pages load while the feeder wants more (Build Spec §6: lazily, about two pages
  * ahead). [cancel] on every rebuild: a cancelled load never appends, because `withContext` re-checks
- * cancellation before returning. Every loaded page goes whole to [onPage] first, before the resume point trims it
- * (the quote carry, plan item 7, reads the sentences before the one playing).
+ * cancellation before returning. Every loaded page goes whole to [onPage] first, with whether it opens inside the
+ * sentence the page before broke off, before the resume point trims it (the quote carry, plan item 7, reads the
+ * sentences before the one playing).
  */
 class PageLoader(
     private val scope: CoroutineScope,
     private val extraction: CoroutineDispatcher,
     private val listener: Listener,
-    private val onPage: (List<ReadingUnit>) -> Unit = {},
+    private val onPage: (units: List<ReadingUnit>, continuesPreviousPage: Boolean) -> Unit = { _, _ -> },
 ) {
     interface Listener {
         /** A page's sentences were appended, or the playlist was finished; the render window may have changed. */
@@ -71,10 +72,11 @@ class PageLoader(
         feeder: PlaylistFeeder,
         page: Int,
         logContext: String,
-    ): Boolean = when (val loaded = withContext(extraction) { text.units(page) }) {
+    ): Boolean = when (val loaded = withContext(extraction) { text.reading(page) }) {
         is Outcome.Success -> {
-            onPage(loaded.value)
-            val unreadable = feeder.append(cursor.playable(page, loaded.value))
+            val reading = loaded.value
+            onPage(reading.units, reading.continuesPreviousPage)
+            val unreadable = feeder.append(cursor.playable(page, reading.units))
             if (unreadable > 0) AudoraLog.i(TAG, "Unreadable units skipped, $logContext page=$page count=$unreadable")
             listener.onPageAppended()
             true
