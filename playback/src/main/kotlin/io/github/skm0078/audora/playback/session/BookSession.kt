@@ -191,7 +191,7 @@ class BookSession(
         AudoraLog.i(TAG, "Play book=${id.logLabel} page=$page char=$charStart pages=$pageCount")
         // Only a jump within the book: after a book switch the player still holds the old book's playlist.
         if (playlistBook == id) {
-            currentSpot()?.let { from -> recordJump(from, Spot(page, charStart), JumpOrigin.START) }
+            currentSpot()?.let { from -> recordJump(from, Spot(page, charStart, unitIndex), JumpOrigin.START) }
         }
         rebuild(page, charStart, play = true, index = unitIndex)
         sleep.onStarted()
@@ -230,7 +230,7 @@ class BookSession(
         // Never outside the open book, whatever the history holds.
         val spot = jumps.undo()?.takeIf { it.page in 0 until pageCount } ?: return false
         AudoraLog.i(TAG, "Undo jump to page=${spot.page} char=${spot.charStart}, book=${bookId?.logLabel}")
-        rebuild(spot.page, spot.charStart, play = player.playWhenReady)
+        rebuild(spot.page, spot.charStart, play = player.playWhenReady, index = spot.index)
         return true
     }
 
@@ -305,16 +305,15 @@ class BookSession(
      * there. Counts as a jump for "Undo jump". False with no sentence playing, or no paragraph that way.
      */
     suspend fun skipParagraph(forward: Boolean): Boolean {
-        val (from, skip) = paragraphTarget(forward)?.takeIf { (from, _) -> currentSentence() == from }
+        val (from, target) = paragraphTarget(forward)?.takeIf { (from, _) -> currentSentence() == from }
             ?: return false.also { AudoraLog.i(TAG, "Paragraph skip dropped: nothing playing, or reading moved on") }
-        val target = skip.spot
         AudoraLog.i(
             TAG,
             "Paragraph forward=$forward to page=${target.page} char=${target.charStart}, book=${bookId?.logLabel}",
         )
         val index = (0 until player.mediaItemCount).firstOrNull { i ->
             val at = (playlist.itemAt(i) as? PlaybackItem.Sentence)?.unit
-            at != null && Spot(at.page, at.charStart) == target && (skip.index == null || at.index == skip.index)
+            at != null && at.spot().sameSentence(target)
         }
         // Already there: nothing to skip, nor to undo.
         val moves = index != player.currentMediaItemIndex
@@ -322,8 +321,8 @@ class BookSession(
             !moves -> Unit
 
             index == null -> {
-                recordJump(Spot(from.page, from.charStart), target, JumpOrigin.SKIP)
-                rebuild(target.page, target.charStart, play = player.playWhenReady, index = skip.index)
+                recordJump(from.spot(), target, JumpOrigin.SKIP)
+                rebuild(target.page, target.charStart, play = player.playWhenReady, index = target.index)
             }
 
             // The seek is recorded as a jump by the transition, like any skip.
@@ -333,14 +332,14 @@ class BookSession(
     }
 
     /** The sentence playing and where a paragraph skip goes; null with none, or when the book changed meanwhile. */
-    private suspend fun paragraphTarget(forward: Boolean): Pair<ReadingUnit, SkipTarget>? {
+    private suspend fun paragraphTarget(forward: Boolean): Pair<ReadingUnit, Spot>? {
         val opened = book
         val unit = currentSentence()
         if (opened == null || unit == null) return null
         val text = opened.text
         val target = withContext(env.extraction) {
             val skip = ParagraphSkip({ page -> (text.units(page) as? Outcome.Success)?.value }, text.pageCount)
-            if (forward) skip.nextTarget(unit) else skip.previousTarget(unit)
+            if (forward) skip.next(unit) else skip.previous(unit)
         }
         return target?.takeIf { book === opened }?.let { unit to it }
     }
@@ -534,8 +533,7 @@ class BookSession(
     }
 
     /** The sentence playing, or the one last played while waiting for a page. */
-    private fun currentSpot(): Spot? =
-        ((playlist.current() as? PlaybackItem.Sentence)?.unit ?: lastSentence)?.let { Spot(it.page, it.charStart) }
+    private fun currentSpot(): Spot? = ((playlist.current() as? PlaybackItem.Sentence)?.unit ?: lastSentence)?.spot()
 
     /** A seek to another sentence (skip buttons, headset, notification, car) is a jump, unless it is the rewind. */
     private fun noteSeek(reason: Int, now: ReadingUnit?) {
@@ -544,7 +542,7 @@ class BookSession(
         if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_SEEK || rewound) return
         val from = lastSentence
         if (from != null && now != null) {
-            recordJump(Spot(from.page, from.charStart), Spot(now.page, now.charStart), JumpOrigin.SKIP)
+            recordJump(from.spot(), now.spot(), JumpOrigin.SKIP)
         }
     }
 
@@ -596,7 +594,7 @@ class BookSession(
         AudoraLog.i(TAG, "Study loop to page=${start.page} char=${start.charStart} seek=${index != null}")
         studyResume = true
         if (index == null) {
-            rebuild(start.page, start.charStart, play = true)
+            rebuild(start.page, start.charStart, play = true, index = start.index)
             return
         }
         ownSeekTarget = index

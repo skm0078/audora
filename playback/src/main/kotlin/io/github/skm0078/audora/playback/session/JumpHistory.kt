@@ -4,9 +4,21 @@
 package io.github.skm0078.audora.playback.session
 
 import io.github.skm0078.audora.core.config.JumpConfig
+import io.github.skm0078.audora.core.model.ReadingUnit
 
-/** A place in the open book: the sentence starting at [charStart] on [page]. */
-data class Spot(val page: Int, val charStart: Int)
+/**
+ * A place in the open book: the sentence starting at [charStart] on [page]. [index] is its unit index when the spot
+ * came from a unit: a zero-length table summary and the first row share an offset, and only the index tells them
+ * apart when reading rebuilds there ([io.github.skm0078.audora.playback.book.PageCursor]).
+ */
+data class Spot(val page: Int, val charStart: Int, val index: Int? = null)
+
+/** Where this unit is, its index included. */
+fun ReadingUnit.spot(): Spot = Spot(page, charStart, index)
+
+/** The same sentence: the same offset, and the same unit when both spots know theirs. */
+fun Spot.sameSentence(other: Spot): Boolean = page == other.page && charStart == other.charStart &&
+    (index == null || other.index == null || index == other.index)
 
 /** What moved reading: a tap or chapter in the app (a new start), or a skip (headset, notification, car, buttons). */
 enum class JumpOrigin { START, SKIP }
@@ -27,11 +39,12 @@ class JumpHistory(private val config: JumpConfig = JumpConfig()) {
 
     /** Records a jump; a "jump" to where reading already was is no jump. */
     fun record(from: Spot, to: Spot, origin: JumpOrigin, atMillis: Long) {
-        if (from == to) return
+        if (from.sameSentence(to)) return
         val previous = jumps.lastOrNull()
         if (previous != null && atMillis - previous.atMillis <= config.mergeWindowMs) {
             jumps[jumps.lastIndex] = previous.copy(to = to, atMillis = atMillis)
-            if (previous.from == to) jumps.removeLast() // Skipped back to where the burst began: nothing to undo.
+            // Skipped back to where the burst began: nothing to undo.
+            if (previous.from.sameSentence(to)) jumps.removeLast()
             return
         }
         jumps.addLast(Jump(from, to, origin, atMillis))

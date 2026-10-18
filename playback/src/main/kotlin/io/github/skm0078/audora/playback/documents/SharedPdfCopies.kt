@@ -71,9 +71,10 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
      * read or deleted is logged and kept.
      */
     fun prune(inUse: Set<String>) {
-        val kept = inUse.mapNotNullTo(HashSet()) { folderOf(Uri.parse(it)) } + MADE_HERE
+        val used = inUse.mapNotNullTo(HashSet()) { folderOf(Uri.parse(it)) }
         val stray = try {
-            strayCopyFolders(dir, kept, cutoffMillis = STARTED_AT_MILLIS - PRUNE_GRACE_MS)
+            // MADE_HERE is read live: a copy started while this walks is kept too.
+            strayCopyFolders(dir, { it in used || it in MADE_HERE }, cutoffMillis = STARTED_AT_MILLIS - PRUNE_GRACE_MS)
         } catch (e: SecurityException) {
             AudoraLog.w(TAG, "Shared copies could not be listed; none pruned", e)
             emptyList()

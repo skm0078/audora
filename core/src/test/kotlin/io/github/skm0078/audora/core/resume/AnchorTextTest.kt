@@ -33,6 +33,25 @@ class AnchorTextTest {
     }
 
     @Test
+    fun `numbers that would run together once spaces are dropped still give different fingerprints`() {
+        val oneThenTwentyThree = summary.copy(table = info.copy(rowsBefore = 1, rowCount = 23))
+        val twelveThenThree = summary.copy(table = info.copy(rowsBefore = 12, rowCount = 3))
+        assertNotEquals(fingerprint.head(oneThenTwentyThree), fingerprint.head(twelveThenThree))
+
+        // Unlettered, both were "12": one column headed "2", and twelve headless columns.
+        val oneColumnHeadedTwo = summary.copy(table = info.copy(columnCount = 1, headers = listOf("2")))
+        val twelveHeadless = summary.copy(table = info.copy(columnCount = 12, headers = emptyList()))
+        assertNotEquals(fingerprint.head(oneColumnHeadedTwo), fingerprint.head(twelveHeadless))
+    }
+
+    @Test
+    fun `a headless table summary anchors on its shape alone`() {
+        val headless = summary.copy(table = info.copy(headers = emptyList()))
+        assertEquals("table r0 n3 c2 h ", headless.anchorText)
+        assertNotEquals(SentenceFingerprint.NONE, fingerprint.head(headless))
+    }
+
+    @Test
     fun `a textless unit outside a table still has no fingerprint`() {
         assertEquals(SentenceFingerprint.NONE, fingerprint.head(unit.copy(text = "")))
     }

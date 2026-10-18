@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.speech.audio
 
 import io.github.skm0078.audora.core.config.SmartSpeedConfig
+import io.github.skm0078.audora.core.logging.AudoraLog
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -64,8 +65,11 @@ class SmartStretch(private val config: SmartSpeedConfig = SmartSpeedConfig()) {
     /**
      * Each frame's speed, `floor + k × weight` clamped to [SmartSpeedConfig.maxFrameSpeed], with k found so the frames
      * together last exactly 1/[factor] of their time ([lengths]: each frame's samples; the last one may be short).
-     * The floor is [SmartSpeedConfig.consonantShare] of the extra speed. When no k gets there (the weights are all
-     * zero, or the clamp is reached), every frame takes [factor].
+     * The floor is [SmartSpeedConfig.consonantShare] of the extra speed. When no k gets there, because too many
+     * frames are protected (weight 0) for the others to make up the time even at the clamp, the fallback is graded:
+     * the others stay at the clamp and the protected frames take the one speed between the floor and [factor] that
+     * makes the time ([graded]); only with nothing to spread, or a clamp at or below the floor, does every frame take
+     * [factor]. Each fallback is logged with the protected share, so the phone's logs show what real voices do (K16).
      */
     internal fun frameSpeeds(
         weights: FloatArray,
@@ -77,7 +81,10 @@ class SmartStretch(private val config: SmartSpeedConfig = SmartSpeedConfig()) {
         val minWeight = smallestPositive(weights)
         val kMax = if (minWeight > 0f) (config.maxFrameSpeed - floor) / minWeight else 0f
         if (kMax <= 0f || duration(weights, lengths, floor, kMax) > target) {
-            return FloatArray(weights.size) { factor }
+            val speeds = graded(weights, lengths, target) ?: FloatArray(weights.size) { factor }
+            val share = protectedShare(weights, lengths) * PERCENT
+            AudoraLog.d(TAG, "x$factor: ${share.roundToInt()}% of frames protected, protected at x${speeds.min()}")
+            return speeds
         }
         var low = 0f
         var high: Float = kMax
@@ -86,6 +93,26 @@ class SmartStretch(private val config: SmartSpeedConfig = SmartSpeedConfig()) {
             if (duration(weights, lengths, floor, mid) > target) low = mid else high = mid
         }
         return FloatArray(weights.size) { speedOf(weights[it], floor, high) }
+    }
+
+    /**
+     * Frames with weight at the clamp, protected frames at the speed that makes [target]; null when there is nothing
+     * to spread or the others alone would already be too long.
+     */
+    private fun graded(weights: FloatArray, lengths: IntArray, target: Double): FloatArray? {
+        var protectedLength = 0.0
+        var otherLength = 0.0
+        for (f in weights.indices) if (weights[f] > 0f) otherLength += lengths[f] else protectedLength += lengths[f]
+        val left = target - otherLength / config.maxFrameSpeed
+        val speed = if (otherLength > 0.0 && left > 0.0) (protectedLength / left).toFloat() else Float.NaN
+        if (!(speed > 0f && speed <= config.maxFrameSpeed)) return null
+        return FloatArray(weights.size) { if (weights[it] > 0f) config.maxFrameSpeed else speed }
+    }
+
+    private fun protectedShare(weights: FloatArray, lengths: IntArray): Float {
+        var protectedLength = 0L
+        for (f in weights.indices) if (weights[f] <= 0f) protectedLength += lengths[f]
+        return protectedLength.toFloat() / lengths.sum().coerceAtLeast(1)
     }
 
     private enum class Kind { SILENT, STEADY, CHANGING }
@@ -118,6 +145,8 @@ class SmartStretch(private val config: SmartSpeedConfig = SmartSpeedConfig()) {
     }
 
     private companion object {
+        const val TAG = "Speech.SmartSpeed"
+        const val PERCENT = 100f
         const val BISECTION_STEPS = 40
         const val MS_PER_SECOND = 1_000
         const val PCM16_FULL_SCALE = 32_768.0

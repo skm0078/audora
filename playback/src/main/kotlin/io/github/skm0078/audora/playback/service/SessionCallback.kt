@@ -226,7 +226,7 @@ class SessionCallback(
             return Futures.immediateFuture(failure(PlaybackErrorCode.BAD_REQUEST))
         }
         val password = args.getString(PlaybackContract.ARG_PASSWORD)
-        val unitIndex = args.getInt(PlaybackContract.ARG_UNIT_INDEX, -1).takeIf { it >= 0 }
+        val unitIndex = PlaybackContract.unitIndexFrom(args)
         return later {
             when (val outcome = bookSession().playFrom(BookId(bookId), page, charStart, password, unitIndex)) {
                 is Outcome.Success -> SessionResult(SessionResult.RESULT_SUCCESS)

@@ -306,6 +306,9 @@ object PlaybackContract {
         if (unitIndex != null) putInt(ARG_UNIT_INDEX, unitIndex)
     }
 
+    /** The unit index [playFromArgs] or [reportArgs] carry; null when absent (an offset-only start) or negative. */
+    fun unitIndexFrom(args: Bundle): Int? = args.getInt(ARG_UNIT_INDEX, -1).takeIf { it >= 0 }
+
     fun setVoiceArgs(voice: VoiceId, lang: Lang): Bundle = Bundle().apply {
         putString(ARG_VOICE_ENGINE, voice.engine.name)
         putString(ARG_VOICE_NAME, voice.name)
@@ -439,7 +442,7 @@ object PlaybackContract {
     fun reportFrom(args: Bundle): SoundedWrongReport? {
         val bookId = args.getString(ARG_BOOK_ID)?.takeIf { it.isNotBlank() }?.let(::BookId)
         val page = args.getInt(ARG_PAGE, -1).takeIf { it >= 0 }
-        val index = args.getInt(ARG_UNIT_INDEX, -1).takeIf { it >= 0 }
+        val index = unitIndexFrom(args)
         val kind = enumOrNull<UnitKind>(args.getString(ARG_UNIT_KIND))
         val lang = enumOrNull<Lang>(args.getString(ARG_UNIT_LANG))
         val reason = enumOrNull<SoundedWrongReason>(args.getString(ARG_REPORT_REASON))

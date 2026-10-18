@@ -6,8 +6,8 @@ package io.github.skm0078.audora.core.resume
 import io.github.skm0078.audora.core.model.ReadingUnit
 
 /**
- * What [SentenceFingerprint] hashes for this unit: its text, or, for a unit with none (a zero-length table summary
- * that only announces "Table continues"), a key built from its table's shape. Without it such a unit fingerprints as
+ * What [SentenceFingerprint] hashes for this unit: its text, or, for a unit with none (a zero-length table summary,
+ * continued or headless), a key built from its table's shape. Without it such a unit fingerprints as
  * [SentenceFingerprint.NONE] and an anchor saved on it is never found again after a pipeline change. Every saver
  * (resume, bookmark, headset bookmark) and [ReAnchoring] go through this, so they agree.
  */
@@ -17,7 +17,8 @@ val ReadingUnit.anchorText: String
         return if (text.isNotBlank() || info == null) {
             text
         } else {
-            // Letters and digits only count (SentenceFingerprint drops the rest), so each part is a separate word.
-            "table ${info.rowsBefore} ${info.rowCount} ${info.columnCount} ${info.headers.joinToString(" ")}"
+            // SentenceFingerprint keeps only letters and digits, so spaces vanish: a letter before each number keeps
+            // rowsBefore 1 / rowCount 23 apart from 12 / 3, and "h" ends the numbers before a header such as "2019".
+            "table r${info.rowsBefore} n${info.rowCount} c${info.columnCount} h " + info.headers.joinToString(" ")
         }
     }

@@ -23,6 +23,17 @@ class JumpHistoryTest {
     }
 
     @Test
+    fun `undo keeps the unit a jump left from, so a summary and a row sharing an offset stay apart`() {
+        history.record(Spot(2, 40, 7), Spot(5, 0, 30), JumpOrigin.START, atMillis = 0)
+        assertEquals(Spot(2, 40, 7), history.undo())
+        // A tap on the other unit at the same offset is a jump; a tap that does not know its unit is not.
+        history.record(Spot(2, 40, 7), Spot(2, 40, 8), JumpOrigin.START, atMillis = 60_000)
+        assertEquals(Spot(2, 40, 8), history.last?.to)
+        history.record(Spot(2, 40, 8), Spot(2, 40), JumpOrigin.START, atMillis = 120_000)
+        assertEquals(60_000L, history.last?.atMillis)
+    }
+
+    @Test
     fun `a burst of skips is one jump`() {
         history.record(spot(3), spot(4), JumpOrigin.SKIP, atMillis = 0)
         history.record(spot(4), spot(5), JumpOrigin.SKIP, atMillis = 1_000)

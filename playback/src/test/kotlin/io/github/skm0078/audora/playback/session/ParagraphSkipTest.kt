@@ -19,17 +19,17 @@ class ParagraphSkipTest {
 
     @Test
     fun nextGoesToTheFirstSentenceAfterTheParagraphEnd() {
-        assertEquals(Spot(0, 2 * CHARS), skip.next(unit(0, 0)))
-        assertEquals(Spot(0, 2 * CHARS), skip.next(unit(0, 1)))
+        assertEquals(at(0, 2), skip.next(unit(0, 0)))
+        assertEquals(at(0, 2), skip.next(unit(0, 1)))
     }
 
     @Test
     fun nextRunsAcrossAPageBreak() {
         // Page 0 ends on a paragraph end, so page 1 starts one.
-        assertEquals(Spot(1, 0), skip.next(unit(0, 2)))
+        assertEquals(at(1, 0), skip.next(unit(0, 2)))
         // Page 1's last unit ends one; page 2 is the next paragraph.
-        assertEquals(Spot(1, 3 * CHARS), skip.next(unit(1, 0)))
-        assertEquals(Spot(2, 0), skip.next(unit(1, 3)))
+        assertEquals(at(1, 3), skip.next(unit(1, 0)))
+        assertEquals(at(2, 0), skip.next(unit(1, 3)))
     }
 
     @Test
@@ -40,17 +40,17 @@ class ParagraphSkipTest {
     @Test
     fun previousRestartsTheParagraphThenGoesToTheOneBefore() {
         // Mid-paragraph: its own start.
-        assertEquals(Spot(0, 2 * CHARS), skip.previous(unit(0, 4)))
+        assertEquals(at(0, 2), skip.previous(unit(0, 4)))
         // At a paragraph's start: the paragraph before.
-        assertEquals(Spot(0, 0), skip.previous(unit(0, 2)))
+        assertEquals(at(0, 0), skip.previous(unit(0, 2)))
         // Across a page break: page 1 starts a paragraph, so back to page 0's last one.
-        assertEquals(Spot(0, 2 * CHARS), skip.previous(unit(1, 0)))
+        assertEquals(at(0, 2), skip.previous(unit(1, 0)))
     }
 
     @Test
     fun previousAtTheBookStartStaysThere() {
-        assertEquals(Spot(0, 0), skip.previous(unit(0, 0)))
-        assertEquals(Spot(0, 0), skip.previous(unit(0, 1)))
+        assertEquals(at(0, 0), skip.previous(unit(0, 0)))
+        assertEquals(at(0, 0), skip.previous(unit(0, 1)))
     }
 
     @Test
@@ -58,14 +58,31 @@ class ParagraphSkipTest {
         val flat = List(10) { "sss" }
         val limited = ParagraphSkip({ p -> units(p, flat[p]) }, flat.size, maxPages = 2)
         assertEquals(Spot(3, 0), limited.next(units(0, flat[0])[1]))
-        assertEquals(Spot(3, 0), limited.previous(units(5, flat[5])[1]))
+        assertEquals(at(3, 0), limited.previous(units(5, flat[5])[1]))
     }
 
     @Test
     fun anUnreadablePageIsPassedOver() {
         val withHole = ParagraphSkip({ p -> if (p == 1) null else page(p) }, book.size, maxPages = 3)
-        assertEquals(Spot(2, 0), withHole.next(unit(0, 2)))
+        assertEquals(at(2, 0), withHole.next(unit(0, 2)))
     }
+
+    @Test
+    fun aSkipLandsOnTheUnitItNamesWhenTwoShareAnOffset() {
+        // Page 0 ends a paragraph; page 1 opens with a zero-length summary and its first row at the same offset.
+        val summary = ReadingUnit(1, 0, 0, 0, "", Lang.EN, 0, null)
+        val row = ReadingUnit(1, 1, 0, CHARS - 1, "r", Lang.EN, PARAGRAPH_PAUSE_MS, null)
+        val pages = listOf(page(0), listOf(summary, row), page(2))
+        val shared = ParagraphSkip({ pages[it] }, pages.size, maxPages = 3)
+
+        assertEquals(Spot(1, 0, 0), shared.next(unit(0, 2)))
+        assertEquals(Spot(1, 0, 0), shared.previous(unit(2, 0)))
+        // With no paragraph end in reach, the unread page's start names no unit.
+        assertNull(ParagraphSkip({ units(it, "sss") }, 9, maxPages = 2).next(units(0, "sss")[0])?.index)
+    }
+
+    /** The unit [index] on [page] as a skip names it. */
+    private fun at(page: Int, index: Int) = Spot(page, index * CHARS, index)
 
     private fun unit(page: Int, index: Int) = page(page)[index]
 

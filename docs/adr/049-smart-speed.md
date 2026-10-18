@@ -25,12 +25,19 @@ podcast apps know the fix from "smart speed" features: take the time out of the 
    hums, and a fricative's steady hiss). A held-sound frame next to an onset or release is spared with it (a guard
    frame each side). Every frame gets a floor of a quarter of the extra speed; the rest is spread by weight (silence
    1, steady 0.25, onset 0), capped at 4× per frame, and solved by bisection, each frame counted at its real length,
-   so the piece ends up exactly `1/factor` as long. If the spread cannot reach the factor (all onsets, or the cap),
-   every frame takes the factor (an even stretch, as before). The time map then drives a WSOLA overlap-add (20 ms
+   so the piece ends up exactly `1/factor` as long. If the spread cannot reach the factor because too many frames
+   are protected for the cap, the fallback stays graded: unprotected frames stay at the cap and the protected ones
+   share the time that is left, so they still run slower than the factor. Only when there is nothing to spread (no
+   weighted frames, or a cap at or below the factor) does every frame take the factor (an even stretch, as before).
+   Each fallback logs its factor, the protected share and the protected speed (no text), so a blurred line can be
+   traced to it. The time map then drives a WSOLA overlap-add (20 ms
    Hann windows, 50% overlap, ±8 ms alignment by normalised correlation searched outward from the nominal place; a
    window below −50 dBFS stays at its nominal place), which keeps the pitch down to 80 Hz voices. The piece's last
    4 ms fade to zero, so a cut mid-wave never clicks into the pause after it. Tuned against a line-by-line
-   simulator on synthetic signals (at 2×: silences about 2.7–3×, held sounds 1.6×, onsets 1.25×).
+   simulator on synthetic signals (at 2×: silences about 2.7–3×, held sounds 1.6×, onsets 1.25×). Those figures
+   come from synthetic tones and silences, not real speech; on real voices the protected share runs higher, so they
+   are a design target that the phone-session listening checks must confirm. The ±8 ms search is pinned by a test:
+   with ±5 ms a five-harmonic 80 Hz voice loses over 1% of its energy off the harmonic lines at 1.33×.
 5. **Speed bookkeeping follows.** The render-ahead drain rate multiplies in `voiceStretch`, and the render speed
    tracker is given `modelRate × voiceStretch`, so its normal-rate audio seconds stay comparable across settings.
 

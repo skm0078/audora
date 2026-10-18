@@ -110,4 +110,4 @@ private fun boostLabel(db: Int): String =
     if (db == 0) stringResource(R.string.speech_boost_off) else stringResource(R.string.speech_boost_db, db)
 
 /** Where smart speed starts to act: the voice model's own top speed (ADR-033, 049). */
-private val SMART_SPEED_FROM = SpeechStyleConfig().maxModelRate.toString()
+private val SMART_SPEED_FROM = speedLabel(SpeechStyleConfig().maxModelRate)
