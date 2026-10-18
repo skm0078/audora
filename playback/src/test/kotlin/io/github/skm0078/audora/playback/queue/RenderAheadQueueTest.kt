@@ -183,7 +183,7 @@ class RenderAheadQueueTest {
         q.setWindow(units)
         assertSame(first, q.awaitPcm(UnitKey(0, 0)))
         Thread.sleep(SETTLE_MS)
-        assertEquals("unit 0 is rendered once", 1, renders.count { it == UnitKey(0, 0) })
+        assertEquals("unit 0 is rendered once", 1, renders.toList().count { it == UnitKey(0, 0) })
     }
 
     @Test
@@ -203,7 +203,7 @@ class RenderAheadQueueTest {
 
         val again = q.awaitPcm(UnitKey(0, 0))
         assertTrue("a fresh render, not the cached one", again !== first)
-        assertEquals(2, renders.count { it == UnitKey(0, 0) })
+        assertEquals(2, renders.toList().count { it == UnitKey(0, 0) })
     }
 
     @Test

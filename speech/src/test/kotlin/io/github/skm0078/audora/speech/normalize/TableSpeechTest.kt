@@ -65,6 +65,9 @@ class TableSpeechTest {
                 Lang.EN,
                 "Row 1. Year: 2019. Loss: nil. Tax: nil.",
             ),
+            // Dots only ("not available") are skipped with their header, like an empty cell.
+            Triple(row("Wheat | .. | 12", listOf("Crop", "2019", "2020")), Lang.EN, "Row 1. Crop: Wheat. 2020: 12."),
+            Triple(row("Wheat | …", emptyList()), Lang.EN, "Row 1. Wheat."),
             // A header ruled through gives the cell no header.
             Triple(row("Revenue | 5", listOf("–", "Units")), Lang.EN, "Row 1. Revenue. Units: 5."),
             // A dash inside a value stays as written.

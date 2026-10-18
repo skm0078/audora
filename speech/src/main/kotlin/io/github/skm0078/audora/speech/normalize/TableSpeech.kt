@@ -14,7 +14,7 @@ import io.github.skm0078.audora.core.model.TableRowInfo
  * A row pairs every non-empty cell with its column's header ("Age: 34"); a table without a header row reads its
  * cells in order, separated by commas. Rows are numbered from 1, as a person counts them. A cell holding only a rule
  * ("–", "-----", the way tables write nil) is read as the language's word for nil: the voices say nothing for a dash,
- * which left "2019:" hanging.
+ * which left "2019:" hanging. A cell of dots only ("..", statistics' "not available") is skipped like an empty one.
  */
 object TableSpeech {
     /**
@@ -35,7 +35,13 @@ object TableSpeech {
         val row = table.row ?: return summary(table, lang)
         val words = WORDS.getValue(lang)
         val cells = table.cells.map { span ->
-            text.substring(span.start, span.end).trim().let { if (RULE_ONLY.matches(it)) words.nil else it }
+            text.substring(span.start, span.end).trim().let { cell ->
+                when {
+                    RULE_ONLY.matches(cell) -> words.nil
+                    DOTS_ONLY.matches(cell) -> ""
+                    else -> cell
+                }
+            }
         }
         val spokenCells = if (table.headers.isEmpty()) {
             listOfNotNull(cells.filter { it.isNotEmpty() }.joinToString(", ").ifEmpty { null })
@@ -75,6 +81,9 @@ object TableSpeech {
 
     /** Dashes and minus signs only, maybe with a note mark ("–*", "–¹"): a cell ruled through instead of filled. */
     private val RULE_ONLY = Regex("""[\p{Pd}−]+[*†‡§¹²³⁴-⁹]*""")
+
+    /** Dots only (".." for "not available", too short for a leader): left empty, so skipped with its header. */
+    private val DOTS_ONLY = Regex("""[.…·]+""")
 
     private val WORDS = mapOf(
         Lang.EN to TableWords("Row", ".", "row", "rows", "column", "columns", "Table continues", "nil") { rows ->

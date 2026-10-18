@@ -50,6 +50,9 @@ object ClauseSplitter {
     private val CLOSING = setOf(')', ']')
     private val DANDAS = setOf('।', '॥')
 
+    /** An "H:MM" next, in any script's digits ("समय: 3 घंटे" is a duration, and still cuts). */
+    private val CLOCK_AHEAD = Regex("""^\s*\p{Nd}{1,2}:\p{Nd}{2}""")
+
     /** A time word ending the text before a colon ("समय", "সময়" in both spellings of য়). */
     private val TIME_LABEL = Regex("""(?<![\p{L}\p{M}])(?:समय|সম(?:\u09DF|\u09AF\u09BC))\s*$""")
 
@@ -217,8 +220,7 @@ object ClauseSplitter {
      */
     private fun colonCuts(text: String, i: Int): Boolean {
         val spaced = i + 1 >= text.length || text[i + 1].isWhitespace()
-        val labelsATime = TIME_LABEL.containsMatchIn(text.take(i)) &&
-            text.drop(i + 1).trimStart().firstOrNull()?.isDigit() == true
+        val labelsATime = TIME_LABEL.containsMatchIn(text.take(i)) && CLOCK_AHEAD.containsMatchIn(text.substring(i + 1))
         return spaced && !labelsATime
     }
 }

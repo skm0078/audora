@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.playback.voice
 
 import io.github.skm0078.audora.core.model.EngineId
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -29,5 +30,20 @@ class VoiceChoiceTest {
     @Test
     fun `with no book voice the installed check is not asked`() {
         assertEquals(settings, VoiceChoice.of(null, { error("not asked") }, null) { settings })
+    }
+
+    @Test
+    fun `a run's fixed choices hold when the live ones change, a language left to its default included`() {
+        val live = HashMap<Lang, VoiceId?>(mapOf(Lang.EN to book))
+        val choices = FixedChoices()
+        assertEquals(book, choices.choiceFor(Lang.EN) { live[it] })
+
+        val fixed = choices.fix { live[it] }
+        live[Lang.EN] = session
+        live[Lang.HI] = settings
+
+        assertEquals(Lang.entries.toSet(), fixed.keys)
+        assertEquals(book, choices.choiceFor(Lang.EN) { live[it] })
+        assertNull(choices.choiceFor(Lang.HI) { live[it] })
     }
 }
