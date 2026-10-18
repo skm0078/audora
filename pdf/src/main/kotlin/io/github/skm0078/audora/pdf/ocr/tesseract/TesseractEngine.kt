@@ -4,6 +4,8 @@
 package io.github.skm0078.audora.pdf.ocr.tesseract
 
 import com.googlecode.tesseract.android.TessBaseAPI
+import io.github.skm0078.audora.core.config.OcrConfig
+import io.github.skm0078.audora.core.config.OcrThreshold
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
@@ -32,14 +34,18 @@ interface TessdataSource {
  * serialized; the player reads about a page ahead and the reader rarely asks at the same time.
  *
  * Settings: LSTM only (`tessdata_best` has no legacy model), automatic page segmentation (columns and paragraphs),
- * and the image's real resolution so Tesseract does not guess the text size.
+ * the image's real resolution so Tesseract does not guess the text size, and [threshold] (Sauvola by default, so a
+ * phone photo's shadows and uneven light keep their text; part of the cache key).
  */
-class TesseractEngine(private val models: TessdataSource) : OcrEngine {
+class TesseractEngine(
+    private val models: TessdataSource,
+    private val threshold: OcrThreshold = OcrConfig().threshold,
+) : OcrEngine {
     private val lock = Any()
     private var api: TessBaseAPI? = null
     private var loaded: String? = null
 
-    override val cacheTag: String get() = "tess-${models.revision}"
+    override val cacheTag: String get() = "tess-${models.revision}-${threshold.name.lowercase()}"
 
     override fun installedLangs(): Set<Lang> = models.installed()
 
@@ -80,7 +86,10 @@ class TesseractEngine(private val models: TessdataSource) : OcrEngine {
             false
         }
         return if (ok) {
-            AudoraLog.i(TAG, "Tesseract ${tess.getVersion()} loaded $codes")
+            if (!tess.setVariable(THRESHOLD_VARIABLE, threshold.tesseractValue.toString())) {
+                AudoraLog.w(TAG, "Tesseract ${tess.getVersion()} has no $THRESHOLD_VARIABLE; ${threshold.name} not set")
+            }
+            AudoraLog.i(TAG, "Tesseract ${tess.getVersion()} loaded $codes threshold=${threshold.name}")
             api = tess
             loaded = key
             tess
@@ -99,6 +108,7 @@ class TesseractEngine(private val models: TessdataSource) : OcrEngine {
     companion object {
         private const val TAG = "Audora.Tesseract"
         private const val DPI_VARIABLE = "user_defined_dpi"
+        private const val THRESHOLD_VARIABLE = "thresholding_method"
         private const val GRAY_BYTES_PER_PIXEL = 1
 
         /** Tesseract's codes, main language first: an Indic script before English on a bilingual page. */
