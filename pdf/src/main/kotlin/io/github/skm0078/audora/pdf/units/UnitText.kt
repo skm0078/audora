@@ -6,11 +6,14 @@ package io.github.skm0078.audora.pdf.units
 import io.github.skm0078.audora.core.model.TermSpan
 
 /**
- * A unit's text is its raw slice of the reading text with every run of whitespace (as `\s` matches it: space, tab,
- * line breaks, vertical tab, form feed; not a no-break space) made one space, and none at either end. Its bold terms
- * (plan item 64) are the stretches of bold characters, joined across spaces between bold words, without the
- * punctuation at their ends ("Note:" gives "Note"); a stretch with no word of at least `minLetters` letters (vowel
- * signs and viramas count, digits do not) is none: "4.33", "z", "e c".
+ * A unit's text is its raw slice of the reading text with every run of whitespace made one space, and none at either
+ * end. Whitespace is Unicode's White_Space, the same on the JVM and on Android: tab, line breaks, vertical tab, form
+ * feed, next line (U+0085) and every space and line or paragraph separator, the no-break space included (Android's
+ * `\s` matched all of these, the JVM's only the ASCII ones, so the golden run now reads what the phone reads).
+ *
+ * Its bold terms (plan item 64) are the stretches of bold characters, joined across spaces between bold words,
+ * without the punctuation at their ends ("Note:" gives "Note"); a stretch with no word of at least `minLetters`
+ * letters (vowel signs and viramas count, digits do not) is none: "4.33", "z", "e c".
  */
 internal object UnitText {
     /** The text of [raw] and its bold terms, [isBold] telling for each offset of [raw]. */
@@ -22,7 +25,7 @@ internal object UnitText {
         var pendingSpace = false
         for (i in raw.indices) {
             val c = raw[i]
-            if (c in WHITESPACE) {
+            if (isSpace(c)) {
                 pendingSpace = text.isNotEmpty()
                 continue
             }
@@ -68,6 +71,13 @@ internal object UnitText {
     /** A letter, a digit, or a mark (a Devanagari or Bengali vowel sign, a virama) that belongs to one. */
     private fun isWordPart(c: Char): Boolean = c.isLetterOrDigit() || isMark(c)
 
-    private const val WHITESPACE = " \t\n\u000B\u000C\r"
+    /** Unicode White_Space: the ASCII controls, next line, and the space, line and paragraph separators. */
+    private fun isSpace(c: Char): Boolean =
+        c in ASCII_SPACES || c == NEXT_LINE || Character.getType(c).toByte() in SPACES
+
+    private const val ASCII_SPACES = "\t\n\u000B\u000C\r"
+    private const val NEXT_LINE = '\u0085'
+    private val SPACES =
+        setOf(Character.SPACE_SEPARATOR, Character.LINE_SEPARATOR, Character.PARAGRAPH_SEPARATOR)
     private val MARKS = setOf(Character.NON_SPACING_MARK, Character.COMBINING_SPACING_MARK, Character.ENCLOSING_MARK)
 }

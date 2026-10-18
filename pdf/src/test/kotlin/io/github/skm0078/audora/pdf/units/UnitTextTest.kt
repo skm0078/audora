@@ -58,13 +58,16 @@ class UnitTextTest {
     }
 
     @Test
-    fun `the text is exactly what splitting on whitespace and joining with spaces gives`() {
+    fun `the text is exactly what splitting on Unicode whitespace and joining with spaces gives`() {
         val raws = listOf(
-            "", " ", "\n\n", "one", " lead", "trail ", "a b", "tab\there", "vt\u000Bff\u000Cend", "x\r\ny",
-            "  many   spaces  here  ", " em space", "नमस्ते  दुनिया",
+            "", " ", "\n\n", "one", " lead", "trail ", "a b", "tab\there", "vt\u000Bff\u000Cend", "x\r\ny",
+            "  many   spaces  here  ", "em\u2003space", "नमस्ते  दुनिया", "no\u00A0break", "₹\u202F500",
+            "thin\u2009space", "line\u2028para\u2029end", "next\u0085line", "ideo\u3000graphic",
+            "zero\u200Bwidth stays",
         )
         for (raw in raws) {
-            val expected = raw.split(Regex("\\s+")).filter { it.isNotEmpty() }.joinToString(" ")
+            // Android's \s, and the JVM's with Unicode classes: White_Space.
+            val expected = raw.split(Regex("(?U)\\s+")).filter { it.isNotEmpty() }.joinToString(" ")
             assertEquals(raw, expected, UnitText.of(raw, MIN_LETTERS) { false }.first)
         }
     }
