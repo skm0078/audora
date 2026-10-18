@@ -22,6 +22,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -49,10 +50,16 @@ class AndroidSystemTtsClient(
     override suspend fun connect(): Outcome<Unit, SpeechError> {
         if (tts != null) return Outcome.Success(Unit)
         var created: TextToSpeech? = null
-        val status = withTimeoutOrNull(config.systemConnectTimeoutMs) {
-            suspendCancellableCoroutine { continuation ->
-                created = TextToSpeech(context.applicationContext) { code -> continuation.resume(code) }
+        val status = try {
+            withTimeoutOrNull(config.systemConnectTimeoutMs) {
+                suspendCancellableCoroutine { continuation ->
+                    created = TextToSpeech(context.applicationContext) { code -> continuation.resume(code) }
+                }
             }
+        } catch (cancelled: CancellationException) {
+            // Stopped while binding (Stop during prepare): the half-built engine would stay bound to the TTS service.
+            created?.shutdown()
+            throw cancelled
         }
         val engine = created
         return if (engine != null && status == TextToSpeech.SUCCESS) {

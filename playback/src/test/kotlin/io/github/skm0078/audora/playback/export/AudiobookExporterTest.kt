@@ -6,6 +6,8 @@ package io.github.skm0078.audora.playback.export
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.result.map
+import io.github.skm0078.audora.pdf.document.PageReading
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.playback.TEST_SAMPLE_RATE
 import io.github.skm0078.audora.playback.book.BookText
@@ -29,6 +31,13 @@ class AudiobookExporterTest {
             failing[page]?.let { Outcome.Failure(it) } ?: Outcome.Success(page(page, sentences))
 
         override fun close() = Unit
+    }
+
+    /** [inner], with [continuing] pages opening inside the sentence the page before broke off. */
+    private class ContinuingBook(private val inner: BookText, private val continuing: Set<Int>) : BookText by inner {
+        override fun reading(page: Int): Outcome<PageReading, PdfPageError> = inner.reading(page).map {
+            PageReading(it.units, it.routing, it.source, continuesPreviousPage = page in continuing)
+        }
     }
 
     /** Collects what each chapter's file would hold, as sample counts per write. */
@@ -170,5 +179,22 @@ class AudiobookExporterTest {
         assertTrue(thrown is InterruptedException)
         assertEquals(listOf(1), done)
         assertEquals(listOf(2), sink.aborted)
+    }
+
+    @Test
+    fun `each page reaches the quote carry with whether it continues the page before, as in playback`() {
+        val seen = ArrayList<Pair<Int, Boolean>>()
+        val exporter = AudiobookExporter(renderer(), onPage = { units, continues ->
+            seen +=
+                units.first().page to continues
+        })
+
+        exporter.export(
+            ContinuingBook(FakeBook(pageCount = 3), setOf(1)),
+            listOf(AudioChapter(1, 0, 2)),
+            RecordingSink(),
+        )
+
+        assertEquals(listOf(0 to false, 1 to true, 2 to false), seen)
     }
 }

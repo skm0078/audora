@@ -42,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap
 class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
     private val chosen = ConcurrentHashMap<Lang, VoiceId>()
     private val defaults = ConcurrentHashMap<Lang, VoiceId>()
+    private val fixedChoices = FixedChoices()
 
     /** The open book's own voice for a language (plan item 4), ahead of every other choice; null = none. */
     @Volatile
@@ -63,8 +64,16 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
      * null when the language reads with its default. Never binds the phone's TTS; studio mode keys its audio by it
      * (ADR-039), so a deleted book voice, which playback never reads with, is not named in a key either.
      */
-    fun choiceFor(lang: Lang): VoiceId? =
-        VoiceChoice.of(bookVoice(lang), engines::canSpeak, chosen[lang]) { engines.preferred(lang) }
+    fun choiceFor(lang: Lang): VoiceId? = fixedChoices.choiceFor(lang) { live ->
+        VoiceChoice.of(bookVoice(live), engines::canSpeak, chosen[live]) { engines.preferred(live) }
+    }
+
+    /**
+     * Fixes every language's [choiceFor] for the rest of this instance's life and returns it (a whole-book run's key).
+     * For the voices a run builds for itself (studio, export, clip), never the playback service's: playback must keep
+     * following the listener's picks. A language with no choice still binds its default voice on its first sentence.
+     */
+    fun fixChoices(): Map<Lang, VoiceId?> = fixedChoices.fix { lang -> choiceFor(lang) }
 
     /** How fast the voice reading [lang] renders on this phone; null if unknown or not measured yet (P4-02). */
     fun speedOf(lang: Lang): VoiceSpeed? = knownVoice(lang)?.let { engines.speeds().get(it) }
