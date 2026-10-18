@@ -142,6 +142,71 @@ class OcrFootnotesTest {
     }
 
     @Test
+    fun `a run's first number is text unless it opens a paragraph or the body cites it`() {
+        // In the body's Tesseract paragraph: the run's first line carries on a note from the page before.
+        for (carried in listOf(
+            "12 pages of tables follow in the appendix to this volume.",
+            "११ एससीसी ३४५ में यह फ़ैसला छपा है।",
+        )) {
+            val lines = body + line(carried, NOTES_TOP, 0, SMALL) +
+                line("the full list follows in the appendix to this volume.", NOTES_TOP + NOTE_PITCH, 0, SMALL)
+            val rule = ViewRect(LEFT, NOTES_TOP - RULE_ABOVE, LEFT + RULE_WIDTH, NOTES_TOP - RULE_ABOVE)
+            val units = builder.build(
+                builder.ocrReadingText(PAGE, OcrText(lines, rules = listOf(rule))) {
+                    transform.toPage(it)
+                },
+            )
+            assertEquals(carried, listOf<Int?>(null), units.notes().map { it.first }.distinct())
+            assertEquals(carried, true, units.notes().first().second.startsWith(carried.substringBefore(' ')))
+        }
+        // The same line, the body citing "12" glued to a word: note 12.
+        val cites =
+            body.dropLast(1) + line("The stem carries the water up to every leaf.12", BODY_TOP + 3 * BODY_PITCH, 0)
+        val note = line("12 pages of tables follow in the appendix to this volume.", NOTES_TOP, 0, SMALL)
+        val rule = ViewRect(LEFT, NOTES_TOP - RULE_ABOVE, LEFT + RULE_WIDTH, NOTES_TOP - RULE_ABOVE)
+        val units = builder.build(
+            builder.ocrReadingText(PAGE, OcrText(cites + note, rules = listOf(rule))) {
+                transform.toPage(it)
+            },
+        )
+        assertEquals(listOf(12 to "pages of tables follow in the appendix to this volume."), units.notes())
+    }
+
+    @Test
+    fun `on a two-column page a title across both columns does not make a right-column note look indented`() {
+        val title = line("How the plants on the farm were grown and watered that year", TITLE_TOP, 0)
+        val columns = (0 until 4).flatMap { i ->
+            val top = BODY_TOP + i * BODY_PITCH
+            listOf(
+                line("Plants make food from light.", top, 1),
+                line("Roots take water from soil.", top, 2).shifted(RIGHT),
+            )
+        }
+        val notes = listOf(
+            "the soil was dry, so the roots",
+            "grew deeper and the leaves",
+            "turned brown before the rains.",
+        ).mapIndexed { i, text -> line(text, NOTES_TOP + i * NOTE_PITCH, 3, SMALL).shifted(RIGHT) }
+        val units = builder.build(
+            builder.ocrReadingText(PAGE, OcrText(listOf(title) + columns + notes)) { transform.toPage(it) },
+        )
+        assertEquals(listOf<Int?>(null), units.notes().map { it.first }.distinct())
+    }
+
+    @Test
+    fun `a page read badly holds its notes to a floor, not to its own low confidence`() {
+        val note = "1 See the appendix for the full list of plants we grew."
+        val lines = body(confidence = BAD_PAGE) + line(note, NOTES_TOP, 1, SMALL, confidence = BELOW_FLOOR)
+        val rule = ViewRect(LEFT, NOTES_TOP - RULE_ABOVE, LEFT + RULE_WIDTH, NOTES_TOP - RULE_ABOVE)
+        val units = builder.build(
+            builder.ocrReadingText(PAGE, OcrText(lines, rules = listOf(rule))) {
+                transform.toPage(it)
+            },
+        )
+        assertEquals(emptyList<Pair<Int?, String>>(), units.notes())
+    }
+
+    @Test
     fun `small print read less surely than English is held to the page's own confidence`() {
         val notes = listOf(
             "१ पौधों की पूरी सूची परिशिष्ट में दी गई है और वह लंबी है।",
@@ -180,6 +245,8 @@ class OcrFootnotesTest {
             "an indented quote set small" to quote(),
             "a source line under a rule" to
                 page("Source: survey of the plants grown on the farm in the year two thousand." to 1, rule = true),
+            "a Hindi source line spelt with त्र" to
+                page("स्त्रोत: वर्ष दो हज़ार में खेत पर उगाए गए पौधों का सर्वेक्षण और उसकी रिपोर्ट।" to 1, rule = true),
         )
         for ((name, units) in cases) assertEquals(name, emptyList<Pair<Int?, String>>(), units.notes())
     }
@@ -232,6 +299,10 @@ class OcrFootnotesTest {
         const val QUOTE_INDENT = 0.1f
         const val HINDI_BODY = 75
         const val HINDI_NOTES = 60
+        const val BAD_PAGE = 40
+        const val TITLE_TOP = 0.6f
+        const val RIGHT = 0.5f
+        const val BELOW_FLOOR = 30
         const val LEFT = 0.05f
         const val WORD_PITCH = 0.08f
         const val WORD_WIDTH = 0.07f

@@ -40,5 +40,9 @@ package io.github.skm0078.audora.pdf
  *     (same version).
  *     RI-4a: a table carried over a page break continues there; its first row of data is no longer a header row
  *     (same version).
+ *     Further review fixes (same version): printers' slugs dropped from scanned pages' margins; short unmarked note
+ *     runs held to stricter signs; side-by-side tables judged by one rule for finder and grid, with figures as
+ *     accounts write them; Hindi and Bengali sentences carried by the column's layout; a "Note:" paragraph that OCR
+ *     merged with the next one split at its short last line; header years decided against their column's figures.
  */
 const val PIPELINE_VERSION: Int = 11

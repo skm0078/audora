@@ -64,7 +64,7 @@ internal class OcrParagraphKinds(
         val reach = (boxes.maxOf { it.right } - left) * config.notes.ocrNoteEndShare
         return (0 until lines.lastIndex).firstOrNull { i ->
             val last = lineText(lines[i]).trimEnd { it in CLOSERS }.lastOrNull()
-            last != null && last in SENTENCE_ENDS + EXCLAIMS && boxes[i].right - left < reach
+            last != null && last in SENTENCE_ENDS + EXCLAIMS + OCR_DANDAS && boxes[i].right - left < reach
         }
     }
 
@@ -126,6 +126,9 @@ internal class OcrParagraphKinds(
         const val TABLE_BAR = '|'
         const val SENTENCE_ENDS = ".।॥"
         const val EXCLAIMS = "?!"
+
+        /** A danda as OCR reads it before the danda repairs run: "है|", or "৷" after a digit or a quote. */
+        const val OCR_DANDAS = "|৷"
         const val CLOSERS = "\"'’”)"
     }
 }

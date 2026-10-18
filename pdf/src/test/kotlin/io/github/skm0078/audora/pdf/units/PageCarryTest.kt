@@ -204,7 +204,18 @@ class PageCarryTest {
         val captioned =
             page(prose = listOf(UnitKind.CAPTION to "Table 3: Pensions"), head = rest[0], rows = rest.drop(1))
         assertEquals(captioned, carry.join(captioned, carry.tailOf(firstPage)).units)
-        for (caption in listOf("Table 2 (contd.)", "तालिका 2 (जारी)", "সারণি ২ (ক্রমশ)")) {
+        // The words within a caption are ordinary words.
+        for (caption in listOf("तालिका 3: जारी किए गए प्रमाण पत्र", "সারণি ৩: ক্রমশ বাড়ছে খরচ")) {
+            val ordinary = page(prose = listOf(UnitKind.CAPTION to caption), head = rest[0], rows = rest.drop(1))
+            assertEquals(caption, ordinary, carry.join(ordinary, carry.tailOf(firstPage)).units)
+        }
+        for (caption in listOf(
+            "Table 2 (contd.)",
+            "तालिका 2 (जारी)",
+            "सारणी 2 जारी है",
+            "সারণি ২ (ক্রমশ)",
+            "সারণি ২ ক্রমশঃ",
+        )) {
             val continued = page(prose = listOf(UnitKind.CAPTION to caption), head = rest[0], rows = rest.drop(1))
             assertEquals(caption, TableCarry.DATA_FIRST, carry.join(continued, carry.tailOf(firstPage)).table)
         }
@@ -315,14 +326,19 @@ class PageCarryTest {
             carry.join(hindi(rest, full), carry.tailOf(hindi(broken, listOf(MARGIN to RIGHT)))).continuesPreviousPage,
         )
         // A Hindi sentence may go on with an acronym or a number.
-        for (opening in listOf("RBI ने कहा कि दरें नहीं बदलेंगी।", "2019 में यह कानून बना था।", "में 40 से कम था।")) {
+        for (opening in listOf(
+            "RBI ने कहा कि दरें नहीं बदलेंगी।",
+            "2019 में यह कानून बना था।",
+            "में 40 से कम था।",
+            "15 अगस्त को झंडा फहराया गया।",
+        )) {
             assertTrue(
                 opening,
                 carry.join(hindi(opening, full), carry.tailOf(hindi(broken, full))).continuesPreviousPage,
             )
         }
         // But a page opening with an item's number starts a new item.
-        val item = hindi("2 समुदाय भर में स्वच्छता बनी रहे।", full)
+        val item = hindi("2. समुदाय भर में स्वच्छता बनी रहे।", full)
         assertFalse(carry.join(item, carry.tailOf(hindi(broken, full))).continuesPreviousPage)
     }
 
