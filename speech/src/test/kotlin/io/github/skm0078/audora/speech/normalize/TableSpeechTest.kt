@@ -60,6 +60,13 @@ class TableSpeechTest {
             Triple(row("2019 | -----", emptyList()), Lang.EN, "Row 1. 2019, nil."),
             Triple(row("2019 | −", listOf("वर्ष", "हानि")), Lang.HI, "पंक्ति 1। वर्ष: 2019। हानि: कुछ नहीं।"),
             Triple(row("2019 | —", listOf("বছর", "ক্ষতি")), Lang.BN, "সারি 1। বছর: 2019। ক্ষতি: নেই।"),
+            Triple(
+                row("2019 | –* | –¹", listOf("Year", "Loss", "Tax")),
+                Lang.EN,
+                "Row 1. Year: 2019. Loss: nil. Tax: nil.",
+            ),
+            // A header ruled through gives the cell no header.
+            Triple(row("Revenue | 5", listOf("–", "Units")), Lang.EN, "Row 1. Revenue. Units: 5."),
             // A dash inside a value stays as written.
             Triple(row("2019 | 10–12", listOf("Year", "Range")), Lang.EN, "Row 1. Year: 2019. Range: 10–12."),
         )

@@ -25,7 +25,7 @@ import java.text.Normalizer
 internal class IndicClock private constructor(private val language: ClockLanguage) {
     private val marker = alternatives(language.dayParts + language.timeWords)
     private val pattern = Regex(
-        """(?:(?<![\p{L}\p{M}])((?:$marker)${language.timeWordTail}):?\s+)?""" +
+        """(?:(?<![\p{L}\p{M}])((?:$marker)${language.timeWordTail}:?)\s+)?""" +
             """(?<![\w.:])(\d{1,2}):(\d{2})""" +
             """(?:((?:${language.suffix.pattern})(?![\p{L}\p{M}]))|\s?([AaPp])\.?\s?[Mm]\.?(?![\p{L}\p{M}]))?""" +
             """(?![\p{L}\p{M}\p{N}:]|[.,]\p{N})""",
