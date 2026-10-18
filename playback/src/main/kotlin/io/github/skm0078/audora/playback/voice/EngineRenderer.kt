@@ -115,7 +115,8 @@ class EngineRenderer(
         val timings = timings ?: return
         val total = clip.durationMs
         val lead = leadMs.coerceIn(0, total)
-        val timing = SentenceTiming(unit.page, unit.charStart, lead, speechMs.coerceIn(0, total - lead), total)
+        val speech = speechMs.coerceIn(0, total - lead)
+        val timing = SentenceTiming(unit.page, unit.charStart, unit.index, lead, speech, total)
         timings.record(UnitKey.of(unit), timing)
     }
 

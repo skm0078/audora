@@ -58,8 +58,8 @@ class ResumeRecorder(
             bookId = bookId,
             page = unit.page,
             charStart = unit.charStart,
-            fingerprint = fingerprint.head(unit.text),
-            tailFingerprint = fingerprint.tail(unit.text),
+            fingerprint = fingerprint.head(unit),
+            tailFingerprint = fingerprint.tail(unit),
             pipelineVersion = pipelineVersion,
             savedAtMillis = clock(),
         )

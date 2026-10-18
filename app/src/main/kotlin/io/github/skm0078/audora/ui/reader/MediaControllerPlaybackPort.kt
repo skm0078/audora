@@ -68,9 +68,15 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
         future = null
     }
 
-    override fun start(position: ReadingPosition, password: String?) = withPlayer("start") { player ->
+    override fun start(position: ReadingPosition, password: String?, unitIndex: Int?) = withPlayer("start") { player ->
         AudoraLog.i(TAG, "Start book=${position.bookId.logLabel} page=${position.page} char=${position.charStart}")
-        val args = PlaybackContract.playFromArgs(position.bookId.value, position.page, position.charStart, password)
+        val args = PlaybackContract.playFromArgs(
+            position.bookId.value,
+            position.page,
+            position.charStart,
+            password,
+            unitIndex,
+        )
         send(player, PlaybackContract.PLAY_FROM, args, "start")
     }
 

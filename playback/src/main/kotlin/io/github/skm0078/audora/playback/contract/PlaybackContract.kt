@@ -118,6 +118,12 @@ object PlaybackContract {
     /** Offset into the page's text (a `ReadingUnit.charStart`); 0 or absent = start of the page. */
     const val ARG_CHAR_START = "char_start"
 
+    /**
+     * The start unit's index on [ARG_PAGE] when the start is a known unit (a tap); absent for a saved resume. A
+     * continued table's first row then starts at that row, not at the "Table continues" summary sharing its offset.
+     */
+    const val ARG_UNIT_INDEX = "unit_index"
+
     /** For encrypted books: kept in memory for this session only, never stored or logged. */
     const val ARG_PASSWORD = "password"
 
@@ -287,11 +293,18 @@ object PlaybackContract {
     fun sessionToken(context: Context): SessionToken =
         SessionToken(context, ComponentName(context, AudoraPlaybackService::class.java))
 
-    fun playFromArgs(bookId: String, page: Int, charStart: Int = 0, password: String? = null): Bundle = Bundle().apply {
+    fun playFromArgs(
+        bookId: String,
+        page: Int,
+        charStart: Int = 0,
+        password: String? = null,
+        unitIndex: Int? = null,
+    ): Bundle = Bundle().apply {
         putString(ARG_BOOK_ID, bookId)
         putInt(ARG_PAGE, page)
         putInt(ARG_CHAR_START, charStart)
         if (password != null) putString(ARG_PASSWORD, password)
+        if (unitIndex != null) putInt(ARG_UNIT_INDEX, unitIndex)
     }
 
     fun setVoiceArgs(voice: VoiceId, lang: Lang): Bundle = Bundle().apply {

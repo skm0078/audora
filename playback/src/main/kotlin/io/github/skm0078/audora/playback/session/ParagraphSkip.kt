@@ -6,6 +6,9 @@ package io.github.skm0078.audora.playback.session
 import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.model.ReadingUnit
 
+/** Where a skip goes: [spot], and the unit's [index] on its page when it lands on a known unit. */
+data class SkipTarget(val spot: Spot, val index: Int?)
+
 /**
  * A paragraph ends at a unit with a paragraph's pause after it (:pdf gives paragraphs, headings and list items a
  * longer one, ADR-029); paragraphs run on across page breaks. Pages come from [units] (null when a page cannot be
@@ -29,29 +32,35 @@ class ParagraphSkip(
      * The first sentence after the paragraph holding [current]; past [maxPages] with no paragraph end, the start of
      * the next page not looked at. Null when the book ends first.
      */
-    fun next(current: ReadingUnit): Spot? {
+    fun next(current: ReadingUnit): Spot? = nextTarget(current)?.spot
+
+    /** [next], with the unit's index when the skip lands on a known unit (not on the start of an unread page). */
+    fun nextTarget(current: ReadingUnit): SkipTarget? {
         var ended = endsParagraph(current)
         for (unit in after(current)) {
-            if (ended) return Spot(unit.page, unit.charStart)
+            if (ended) return target(unit)
             ended = endsParagraph(unit)
         }
         val unread = current.page + 1 + maxPages
-        return if (unread < pageCount) Spot(unread, 0) else null
+        return if (unread < pageCount) SkipTarget(Spot(unread, 0), index = null) else null
     }
 
     /**
      * The start of the paragraph holding [current], or of the one before when [current] starts its paragraph (as a
      * music player's "previous" restarts the track, then goes back). At the book's start, [current] itself.
      */
-    fun previous(current: ReadingUnit): Spot {
+    fun previous(current: ReadingUnit): Spot = previousTarget(current).spot
+
+    /** [previous], with the unit's index. */
+    fun previousTarget(current: ReadingUnit): SkipTarget {
         var start = current
         for (unit in before(current)) {
             // The first unit back is always taken: when it ends a paragraph, [current] starts one, so the
             // paragraph before is the one to go to.
-            if (endsParagraph(unit) && start !== current) return spot(start)
+            if (endsParagraph(unit) && start !== current) return target(start)
             start = unit
         }
-        return spot(start)
+        return target(start)
     }
 
     private fun endsParagraph(unit: ReadingUnit): Boolean =
@@ -76,7 +85,7 @@ class ParagraphSkip(
         }
     }
 
-    private fun spot(unit: ReadingUnit) = Spot(unit.page, unit.charStart)
+    private fun target(unit: ReadingUnit) = SkipTarget(Spot(unit.page, unit.charStart), unit.index)
 
     private companion object {
         const val DEFAULT_MAX_PAGES = 3

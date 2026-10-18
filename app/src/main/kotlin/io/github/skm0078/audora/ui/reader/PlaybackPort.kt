@@ -22,7 +22,7 @@ interface PlaybackPort {
     val state: StateFlow<PlaybackSnapshot>
 
     /** Replaces whatever is playing with this book from [position] and plays. Only ever on a user action (C7). */
-    fun start(position: ReadingPosition, password: String?)
+    fun start(position: ReadingPosition, password: String?, unitIndex: Int? = null)
 
     fun play()
 

@@ -70,8 +70,12 @@ class FakePlaybackPort : PlaybackPort {
         state.value = state.value.copy(position = position, wantsToPlay = playing)
     }
 
-    override fun start(position: ReadingPosition, password: String?) {
+    /** The unit index each start carried (a tap's), in order. */
+    val startIndexes = mutableListOf<Int?>()
+
+    override fun start(position: ReadingPosition, password: String?, unitIndex: Int?) {
         starts += position to password
+        startIndexes += unitIndex
     }
 
     override fun play() {

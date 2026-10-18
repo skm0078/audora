@@ -21,6 +21,7 @@ import io.github.skm0078.audora.playback.book.BookSource
 import io.github.skm0078.audora.playback.book.OpenFailure
 import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.book.PageCursor
+import io.github.skm0078.audora.playback.book.spokenEnd
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.playlist.PlaybackItem
@@ -152,39 +153,46 @@ class BookSession(
     val bookId: BookId? get() = book?.book?.id
 
     /**
-     * Starts reading [id] at the first sentence of [page] that ends after [charStart]. Reuses the open book
-     * when it is the same one (a seek), unless the reading text settings changed since it was opened. Plays at
-     * once: callers send this only from a user action (C7).
+     * Starts reading [id] at the first sentence of [page] that ends after [charStart], and at or after [unitIndex]
+     * when the start is a known unit (a tap: a continued table's first row then starts at that row, not at the
+     * summary sharing its offset; see [PageCursor]). Reuses the open book when it is the same one (a seek), unless
+     * the reading text settings changed since it was opened. Plays at once: callers send this only from a user
+     * action (C7).
      */
-    suspend fun playFrom(id: BookId, page: Int, charStart: Int, password: String?): Outcome<Unit, OpenFailure> =
-        opening.withLock {
-            fun fail(failure: OpenFailure): Outcome<Unit, OpenFailure> {
-                error = SessionError(failure.code, failure.message)
-                publishState()
-                return Outcome.Failure(failure)
-            }
-            val same = book?.takeIf { it.book.id == id && (password == null || password == bookPassword) }
-            // A same book opened again (settings changed) keeps the password it was opened with.
-            val openPassword = password ?: same?.let { bookPassword }
-            val opened = same?.takeIf { current(it) }
-                ?: when (val result = sources.books.open(id, openPassword)) {
-                    is Outcome.Success -> result.value.also { replaceBook(it, openPassword) }
-                    is Outcome.Failure -> return@withLock fail(result.error)
-                }
-            val pageCount = opened.text.pageCount
-            if (page !in 0 until pageCount || charStart < 0) {
-                return@withLock fail(OpenFailure(PlaybackErrorCode.BAD_REQUEST, "Page ${page + 1} is not in this book"))
-            }
-            error = null
-            AudoraLog.i(TAG, "Play book=${id.logLabel} page=$page char=$charStart pages=$pageCount")
-            // Only a jump within the book: after a book switch the player still holds the old book's playlist.
-            if (playlistBook == id) {
-                currentSpot()?.let { from -> recordJump(from, Spot(page, charStart), JumpOrigin.START) }
-            }
-            rebuild(page, charStart, play = true)
-            sleep.onStarted()
-            Outcome.Success(Unit)
+    suspend fun playFrom(
+        id: BookId,
+        page: Int,
+        charStart: Int,
+        password: String?,
+        unitIndex: Int? = null,
+    ): Outcome<Unit, OpenFailure> = opening.withLock {
+        fun fail(failure: OpenFailure): Outcome<Unit, OpenFailure> {
+            error = SessionError(failure.code, failure.message)
+            publishState()
+            return Outcome.Failure(failure)
         }
+        val same = book?.takeIf { it.book.id == id && (password == null || password == bookPassword) }
+        // A same book opened again (settings changed) keeps the password it was opened with.
+        val openPassword = password ?: same?.let { bookPassword }
+        val opened = same?.takeIf { current(it) }
+            ?: when (val result = sources.books.open(id, openPassword)) {
+                is Outcome.Success -> result.value.also { replaceBook(it, openPassword) }
+                is Outcome.Failure -> return@withLock fail(result.error)
+            }
+        val pageCount = opened.text.pageCount
+        if (page !in 0 until pageCount || charStart < 0) {
+            return@withLock fail(OpenFailure(PlaybackErrorCode.BAD_REQUEST, "Page ${page + 1} is not in this book"))
+        }
+        error = null
+        AudoraLog.i(TAG, "Play book=${id.logLabel} page=$page char=$charStart pages=$pageCount")
+        // Only a jump within the book: after a book switch the player still holds the old book's playlist.
+        if (playlistBook == id) {
+            currentSpot()?.let { from -> recordJump(from, Spot(page, charStart), JumpOrigin.START) }
+        }
+        rebuild(page, charStart, play = true, index = unitIndex)
+        sleep.onStarted()
+        Outcome.Success(Unit)
+    }
 
     /**
      * Playback resumption (P1-06): reopens [id] without a password and plays from its saved anchor, re-anchored
@@ -227,9 +235,9 @@ class BookSession(
 
     /** The voice changed: the current sentence restarts in the new voice (Build Spec §6). */
     fun restartRendering() {
-        val (page, char) = resumePoint() ?: return
-        AudoraLog.i(TAG, "Restart rendering book=${bookId?.logLabel} page=$page char=$char")
-        rebuild(page, char, play = player.playWhenReady)
+        val at = resumePoint() ?: return
+        AudoraLog.i(TAG, "Restart rendering book=${bookId?.logLabel} page=${at.page} char=${at.char}")
+        rebuild(at.page, at.char, play = player.playWhenReady, index = at.index)
     }
 
     /**
@@ -240,9 +248,9 @@ class BookSession(
     fun onSpeechStyleChanged(playerSpeed: Float) {
         replay.forget()
         player.setPlaybackSpeed(playerSpeed)
-        val (page, char) = resumePoint() ?: return publishState()
-        AudoraLog.i(TAG, "Speech style changed, restart book=${bookId?.logLabel} page=$page char=$char")
-        rebuild(page, char, play = player.playWhenReady)
+        val at = resumePoint() ?: return publishState()
+        AudoraLog.i(TAG, "Speech style changed, restart book=${bookId?.logLabel} page=${at.page} char=${at.char}")
+        rebuild(at.page, at.char, play = player.playWhenReady, index = at.index)
     }
 
     /**
@@ -271,15 +279,16 @@ class BookSession(
      * there. Counts as a jump for "Undo jump". False with no sentence playing, or no paragraph that way.
      */
     suspend fun skipParagraph(forward: Boolean): Boolean {
-        val (from, target) = paragraphTarget(forward)?.takeIf { (from, _) -> currentSentence() == from }
+        val (from, skip) = paragraphTarget(forward)?.takeIf { (from, _) -> currentSentence() == from }
             ?: return false.also { AudoraLog.i(TAG, "Paragraph skip dropped: nothing playing, or reading moved on") }
+        val target = skip.spot
         AudoraLog.i(
             TAG,
             "Paragraph forward=$forward to page=${target.page} char=${target.charStart}, book=${bookId?.logLabel}",
         )
         val index = (0 until player.mediaItemCount).firstOrNull { i ->
             val at = (playlist.itemAt(i) as? PlaybackItem.Sentence)?.unit
-            at != null && Spot(at.page, at.charStart) == target
+            at != null && Spot(at.page, at.charStart) == target && (skip.index == null || at.index == skip.index)
         }
         // Already there: nothing to skip, nor to undo.
         val moves = index != player.currentMediaItemIndex
@@ -288,7 +297,7 @@ class BookSession(
 
             index == null -> {
                 recordJump(Spot(from.page, from.charStart), target, JumpOrigin.SKIP)
-                rebuild(target.page, target.charStart, play = player.playWhenReady)
+                rebuild(target.page, target.charStart, play = player.playWhenReady, index = skip.index)
             }
 
             // The seek is recorded as a jump by the transition, like any skip.
@@ -298,14 +307,14 @@ class BookSession(
     }
 
     /** The sentence playing and where a paragraph skip goes; null with none, or when the book changed meanwhile. */
-    private suspend fun paragraphTarget(forward: Boolean): Pair<ReadingUnit, Spot>? {
+    private suspend fun paragraphTarget(forward: Boolean): Pair<ReadingUnit, SkipTarget>? {
         val opened = book
         val unit = currentSentence()
         if (opened == null || unit == null) return null
         val text = opened.text
         val target = withContext(env.extraction) {
             val skip = ParagraphSkip({ page -> (text.units(page) as? Outcome.Success)?.value }, text.pageCount)
-            if (forward) skip.next(unit) else skip.previous(unit)
+            if (forward) skip.nextTarget(unit) else skip.previousTarget(unit)
         }
         return target?.takeIf { book === opened }?.let { unit to it }
     }
@@ -406,7 +415,8 @@ class BookSession(
         AudoraLog.i(TAG, "Opened book=${opened.book.id.logLabel} chapters=${chapters.size}")
     }
 
-    private fun rebuild(page: Int, charStart: Int, play: Boolean) {
+    /** [index]: the start unit's index on [page] when known (see [PageCursor]); null starts at [charStart] alone. */
+    private fun rebuild(page: Int, charStart: Int, play: Boolean, index: Int? = null) {
         val opened = book ?: return
         playlistBook = opened.book.id
         replay.finish()?.let(player::setPlaybackSpeed)
@@ -422,7 +432,7 @@ class BookSession(
         val items = PlaylistItems(opened.book.id.value, epoch, opened.book.title, opened.text.pageCount, sources.texts)
         val newFeeder = PlaylistFeeder(PlayerPlaylist(player, items), config, sources.reading.current())
         feeder = newFeeder
-        cursor = PageCursor(opened.text.pageCount, page, charStart)
+        cursor = PageCursor(opened.text.pageCount, page, charStart, index)
         player.setMediaItems(newFeeder.initialItems().map(items::toMediaItem), 0, 0L)
         player.prepare()
         if (play) player.play()
@@ -463,10 +473,20 @@ class BookSession(
         return chapterStop.pauseAfter(current, next)
     }
 
-    /** Where a rebuild restarts: the current sentence, or just after the last one while waiting for a page. */
-    private fun resumePoint(): Pair<Int, Int>? = when (val item = playlist.current()) {
-        is PlaybackItem.Sentence -> item.unit.page to item.unit.charStart
-        is PlaybackItem.More -> lastSentence?.let { it.page to it.charEnd } ?: cursor?.let { it.startPage to 0 }
+    /** Where an in-session rebuild restarts: a page, an offset on it, and the unit's index when known. */
+    private class Restart(val page: Int, val char: Int, val index: Int?)
+
+    /**
+     * The current sentence (by its index too, so a rebuild on a continued table's first row restarts that row, not
+     * the summary sharing its offset), or just after the last one while waiting for a page.
+     */
+    private fun resumePoint(): Restart? = when (val item = playlist.current()) {
+        is PlaybackItem.Sentence -> Restart(item.unit.page, item.unit.charStart, item.unit.index)
+
+        is PlaybackItem.More ->
+            lastSentence?.let { Restart(it.page, it.spokenEnd, it.index + 1) }
+                ?: cursor?.let { Restart(it.startPage, 0, null) }
+
         null -> null
     }
 
@@ -596,8 +616,8 @@ class BookSession(
             when (action) {
                 RecoveryAction.Retry -> player.prepare()
 
-                RecoveryAction.RestartRendering -> resumePoint()?.let { (page, char) ->
-                    rebuild(page, char, play = true)
+                RecoveryAction.RestartRendering -> resumePoint()?.let { at ->
+                    rebuild(at.page, at.char, play = true, index = at.index)
                 }
 
                 RecoveryAction.SkipSentence -> skip(fault)
