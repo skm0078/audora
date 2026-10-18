@@ -8,6 +8,7 @@
 namespace audora {
 
 // Opaque PDFium handles (fpdfview.h declares them as pointers to incomplete structs).
+using FpdfDocument = void*;
 using FpdfPage = void*;
 using FpdfTextPage = void*;
 using FpdfPageObject = void*;
@@ -24,7 +25,7 @@ struct FsRectF {
 constexpr int kPageObjText = 1;  // FPDF_PAGEOBJ_TEXT
 constexpr int kPageObjForm = 5;  // FPDF_PAGEOBJ_FORM
 
-// Signatures copied from PDFium's public headers (fpdf_text.h, fpdf_edit.h). FPDF_BOOL is int.
+// Signatures copied from PDFium's public headers (fpdf_text.h, fpdf_edit.h, fpdf_doc.h). FPDF_BOOL is int.
 struct PdfiumApi {
     int (*textCountChars)(FpdfTextPage);
     unsigned int (*textGetUnicode)(FpdfTextPage, int);
@@ -46,6 +47,9 @@ struct PdfiumApi {
     FpdfPageObjectMark (*pageObjGetMark)(FpdfPageObject, unsigned long);
     int (*markGetParamBlobValue)(FpdfPageObjectMark, const char*, unsigned char*, unsigned long, unsigned long*);
     unsigned long (*textObjGetText)(FpdfPageObject, FpdfTextPage, unsigned short*, unsigned long);
+
+    // Optional (fpdf_doc.h): without it every page reads as unlabelled.
+    unsigned long (*getPageLabel)(FpdfDocument, int, void*, unsigned long);
 };
 
 // Fills `api` from a dlopen() handle. Returns nullptr on success, else the name of the first missing

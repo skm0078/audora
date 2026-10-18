@@ -19,6 +19,7 @@ class PdfBookTest {
     private class FakeEngine(
         val pages: Int,
         val password: String? = null,
+        val labels: (Int) -> String? = { null },
         val text: (Int) -> String = { "Page $it." },
     ) : PdfEngine {
         val passwordsSeen = ArrayList<String?>()
@@ -54,6 +55,8 @@ class PdfBookTest {
 
             override fun outline() = listOf(OutlineEntry("Chapter", 0))
 
+            override fun pageLabel(pageIndex: Int) = labels(pageIndex)
+
             override fun close() {
                 openHandles--
             }
@@ -80,6 +83,17 @@ class PdfBookTest {
         assertEquals(1, book.opens)
         book.close()
         assertEquals(PdfPageError.BookClosed, book.outline().errorOrNull())
+    }
+
+    @Test
+    fun `page labels come from the open document, cleaned, and do not count as page reads`() {
+        val printed = listOf("i", " ii ", null, "", "A-\u00003", "12")
+        val engine = FakeEngine(pages = printed.size, labels = printed::get)
+        val book = requireNotNull(PdfBook.open(engine).getOrNull())
+        assertEquals(listOf("i", "ii", null, null, "A-3", "12"), book.pageLabels().getOrNull())
+        assertEquals(0, engine.reads)
+        book.close()
+        assertEquals(PdfPageError.BookClosed, book.pageLabels().errorOrNull())
     }
 
     @Test

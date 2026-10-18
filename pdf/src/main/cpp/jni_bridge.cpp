@@ -167,3 +167,26 @@ Java_io_github_skm0078_audora_pdf_pdfium_PdfiumExtNative_nativeReadPage(JNIEnv* 
     // On failure a Java exception (usually OutOfMemoryError) is pending and propagates to Kotlin.
     return ok ? result : nullptr;
 }
+
+namespace {
+
+// A page label is a short prefix and number ("A-12", "iv"); anything longer is a damaged /PageLabels tree.
+constexpr unsigned long kMaxPageLabelBytes = 1024;
+
+}  // namespace
+
+// The page's label from the document's /PageLabels tree, or null when it has none, the build cannot read
+// labels, or the label is damaged. Caller holds PdfiumAndroidKt's lock and keeps the document open.
+extern "C" JNIEXPORT jstring JNICALL
+Java_io_github_skm0078_audora_pdf_pdfium_PdfiumExtNative_nativePageLabel(JNIEnv* env, jclass, jlong documentPtr,
+                                                                           jint pageIndex) {
+    auto document = reinterpret_cast<audora::FpdfDocument>(static_cast<intptr_t>(documentPtr));
+    if (!gInitError.empty() || gApi.getPageLabel == nullptr || document == nullptr) return nullptr;
+    // Bytes of UTF-16LE including the two-byte terminator; 0 when the page has no label.
+    unsigned long bytes = gApi.getPageLabel(document, pageIndex, nullptr, 0);
+    if (bytes <= sizeof(char16_t) || bytes > kMaxPageLabelBytes) return nullptr;
+    std::u16string label(bytes / sizeof(char16_t), u'\0');
+    if (gApi.getPageLabel(document, pageIndex, label.data(), bytes) != bytes) return nullptr;
+    label.resize(label.size() - 1);  // the terminator
+    return env->NewString(reinterpret_cast<const jchar*>(label.data()), static_cast<jsize>(label.size()));
+}
