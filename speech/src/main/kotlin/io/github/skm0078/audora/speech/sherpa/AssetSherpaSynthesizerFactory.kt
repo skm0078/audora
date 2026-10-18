@@ -155,6 +155,8 @@ internal class OfflineTtsSynthesizer(private val tts: OfflineTts, private val sp
     SherpaSynthesizer {
     override val sampleRate: Int = tts.sampleRate()
 
+    override val speakerCount: Int = tts.numSpeakers()
+
     override fun generate(text: String, speakerId: Int, rate: Float, keepGoing: () -> Boolean): FloatArray {
         val config = sherpaGenerationConfig(spec, speakerId, rate)
         return tts.generateWithConfigAndCallback(text, config, SherpaStopCallback(keepGoing)).samples

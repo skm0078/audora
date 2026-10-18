@@ -51,7 +51,9 @@ podcast apps know the fix from "smart speed" features: take the time out of the 
   sentence like a speed change does.
 - The audiobook export is unaffected: it renders at the normal rate, where the stretch is 1.0.
 - At or below the model's cap (1.5×) it changes nothing, so switching it there restarts nothing.
-- Known: "What did it say?" replays the rendered (already stretched) sentence through the player's slower speed, so
-  below 1.0× the replay runs Sonic over WSOLA output. It is one sentence at a slower speed; judged by ear (K16).
+- "What did it say?" with smart speed stretching the voice renders its sentence again at the slower speed
+  (`SpeechStyleConfig.replayStyle`, `ReplayRender`) and reading rebuilds from it, instead of slowing the stretched
+  audio with the player, which would run Sonic over WSOLA output. It costs that sentence's render time before the
+  replay starts; with smart speed off or not stretching, the replay stays an instant seek with the player slowed.
 - To check by ear (phone-session checklist): 2× and 3× with it on and off, English, Hindi and Bengali voices; listen
   for clicks at piece boundaries and for words running together.

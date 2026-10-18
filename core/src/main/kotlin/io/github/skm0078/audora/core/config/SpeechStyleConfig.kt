@@ -91,6 +91,15 @@ data class SpeechStyleConfig(
     }
 
     /**
+     * The style to render the sentence "What did it say?" replays with, [factor] times [style]'s speed, when the
+     * replay must not go through the player's stretch: with smart speed stretching the voice, slowing its output with
+     * the player would run one time-stretch over the other. Null when the player can slow the rendered sentence
+     * cleanly (smart speed off or not stretching), which needs no new render.
+     */
+    fun replayStyle(style: SpeechStyle, factor: Float): SpeechStyle? =
+        style.takeIf { voiceStretch(it) > 1f }?.copy(rate = clampRate(style.rate * factor))
+
+    /**
      * The speed left after the model's cap for listening [rate]. Private, so nothing can apply it as a player speed
      * on top of the voice's own stretch (3x would then play as 6x): [playerSpeed] and [voiceStretch] split it.
      */

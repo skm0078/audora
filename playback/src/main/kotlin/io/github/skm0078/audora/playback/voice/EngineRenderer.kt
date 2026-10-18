@@ -75,6 +75,8 @@ import kotlinx.coroutines.runBlocking
  *
  * With cast voices in the style's shaping (plan item 7), headings and quoted speech are read by their own voices
  * ([CastSpeech]), the quote's clause pause where the voice changes, each part evened before the join.
+ *
+ * The sentence "What did it say?" renders again ([replay]) uses the slower style the session gave it.
  */
 @Suppress("LongParameterList") // All optional: the app passes the speed tracker, style, reading setup and timings.
 class EngineRenderer(
@@ -86,11 +88,12 @@ class EngineRenderer(
     private val styleConfig: SpeechStyleConfig = SpeechStyleConfig(),
     private val reading: ReadingSetup = ReadingSetup(),
     private val timings: SentenceTimings? = null,
+    private val replay: ReplayRender? = null,
 ) : SentenceRenderer {
     private val castSpeech = CastSpeech(voices, ScriptRouter(config), normalizers)
 
     override fun render(unit: ReadingUnit): Outcome<PcmAudio, SpeechError> {
-        val now = style()
+        val now = replay?.styleFor(UnitKey.of(unit)) ?: style()
         val pauseAfterMs = styleConfig.silenceAfterMs(unit.pauseAfterMs, now)
         return when (val speech = UnitReading(now.modes, reading.speakability, reading.chapterPages()).speechOf(unit)) {
             Speech.Cue -> {

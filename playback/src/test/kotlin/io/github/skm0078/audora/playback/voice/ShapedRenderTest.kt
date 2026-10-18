@@ -13,6 +13,7 @@ import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.TEST_SAMPLE_RATE
+import io.github.skm0078.audora.playback.queue.UnitKey
 import io.github.skm0078.audora.playback.unit
 import io.github.skm0078.audora.speech.RenderResult
 import io.github.skm0078.audora.speech.SpeechEngine
@@ -82,6 +83,23 @@ class ShapedRenderTest {
         assertTrue("clause pauses were added", plain.samples.size > unpaused.samples.size)
         // The player plays the plain one at 2x; the smart one is already that short, its pauses included.
         assertEquals(plain.samples.size / 2f, smart.samples.size.toFloat(), plain.samples.size * 0.01f)
+    }
+
+    @Test
+    fun `the replayed sentence renders with the replay's style, the rest with the listener's`() {
+        val listener =
+            SpeechStyle(rate = 3f, pace = Pace.NORMAL, shaping = VoiceShaping(evenLoudness = false, smartSpeed = true))
+        val replayed = unit(0, 0).copy(text = "Hello there.", pauseAfterMs = 0)
+        val replay = ReplayRender().apply {
+            set(UnitKey.of(replayed), requireNotNull(flatPaces.replayStyle(listener, 0.5f)))
+        }
+        val renderer = EngineRenderer(PausingVoice, style = { listener }, styleConfig = flatPaces, replay = replay)
+
+        val slower = (renderer.render(replayed) as Outcome.Success).value
+        val next = (renderer.render(replayed.copy(index = 1)) as Outcome.Success).value
+        // At half of 3x the model reads 1.5x itself, unstretched; the next sentence is stretched to 3x.
+        assertEquals(VOICED + PAUSE + VOICED, slower.samples.size)
+        assertEquals((VOICED + PAUSE + VOICED) / 2f, next.samples.size.toFloat(), (VOICED + PAUSE + VOICED) * 0.01f)
     }
 
     @Test

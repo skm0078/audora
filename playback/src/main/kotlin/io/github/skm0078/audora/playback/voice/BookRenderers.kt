@@ -15,7 +15,7 @@ import io.github.skm0078.audora.speech.route.VoiceSource
 /**
  * Every renderer built here gets the same reading setup (reading modes, cues, pronunciation fixes, run-on punctuation,
  * cast voices) and the listener's live [style], which carries the voice shaping; a new renderer feature is wired
- * once, here, rather than in each service. [speed] and [timings] are what only live playback needs.
+ * once, here, rather than in each service. [speed], [timings] and [replay] are what only live playback needs.
  */
 object BookRenderers {
     @Suppress("LongParameterList") // The voices, the style, the book; the rest optional.
@@ -28,6 +28,7 @@ object BookRenderers {
         speakability: SpeakabilityConfig = SpeakabilityConfig(),
         speed: RenderSpeedTracker? = null,
         timings: SentenceTimings? = null,
+        replay: ReplayRender? = null,
     ): EngineRenderer = EngineRenderer(
         voices,
         speed = speed,
@@ -44,5 +45,6 @@ object BookRenderers {
             characters = book.characters,
         ),
         timings = timings,
+        replay = replay,
     )
 }

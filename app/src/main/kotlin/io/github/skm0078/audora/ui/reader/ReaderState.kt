@@ -91,6 +91,8 @@ data class ReaderState(
     val chapters: List<ChapterEntry> = emptyList(),
     val chapterStarts: List<Int> = emptyList(),
     val timeLeft: TimeLeftEstimate? = null,
+    /** A paragraph skip found no paragraph that way: shown once, then cleared ([ReaderModel.skipRefusalShown]). */
+    val skipRefused: ParagraphSkipRefusal? = null,
 ) {
     val pageCount: Int? get() = (document as? DocumentState.Open)?.pageCount
 
@@ -151,4 +153,13 @@ data class ReaderState(
             val units = (content as? PageContent.Ready)?.units ?: return emptyList()
             return units[index].bounds.orEmpty().map(image.transform::toView)
         }
+}
+
+/** Why a paragraph skip did nothing, for a short notice. */
+enum class ParagraphSkipRefusal {
+    /** Forward, with no paragraph after this one (the book's end). */
+    NO_NEXT,
+
+    /** Back, at the book's first sentence. */
+    NO_PREVIOUS,
 }

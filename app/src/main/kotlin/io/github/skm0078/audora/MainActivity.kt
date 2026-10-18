@@ -80,6 +80,7 @@ import io.github.skm0078.audora.ui.reader.KeepScreenOn
 import io.github.skm0078.audora.ui.reader.LibraryReaderBooks
 import io.github.skm0078.audora.ui.reader.LocatorReaderResume
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
+import io.github.skm0078.audora.ui.reader.ParagraphSkipNotice
 import io.github.skm0078.audora.ui.reader.PlayerConnectionEffect
 import io.github.skm0078.audora.ui.reader.ReaderActions
 import io.github.skm0078.audora.ui.reader.ReaderDocumentOpener
@@ -485,6 +486,7 @@ class MainActivity : ComponentActivity() {
         KeepScreenOn(keepScreenOn && state.playback.wantsToPlay)
         val volumeKeys by remember { screenPreference.volumeKeysSkip() }.collectAsStateWithLifecycle(false)
         VolumeKeySkips(volumeKeys && state.playback.wantsToPlay, model::skipForward, model::skipBack)
+        ParagraphSkipNotice(state.skipRefused, model::skipRefusalShown)
         ReaderVoiceCommands(model, screenPreference, voiceCommandModels, readerConfig) {
             listeningInBackground.value = it
         }

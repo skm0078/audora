@@ -1,6 +1,6 @@
 // File: playback/src/androidTest/kotlin/io/github/skm0078/audora/playback/session/BookSessionTest.kt
 // Purpose: The book session on a real ExoPlayer: reads in order, seeks, rebuilds, skips failures, sleeps at chapters,
-// studies, replays and finishes books.
+// studies (ranges at page, chapter and book ends; loops never revive a timer), replays and finishes books.
 
 package io.github.skm0078.audora.playback.session
 
@@ -23,6 +23,7 @@ import io.github.skm0078.audora.core.logging.LogSink
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PdfPageError
@@ -71,6 +72,8 @@ class BookSessionTest {
     private val pausedAtItemEnd = CountDownLatch(1)
     private val states: MutableList<SessionState> = Collections.synchronizedList(mutableListOf())
     private var failOn: UnitKey? = null
+    private var sleepOptions = SleepOptions()
+    private var keepGoing = true
     private lateinit var player: ExoPlayer
     private lateinit var session: BookSession
 
@@ -100,6 +103,8 @@ class BookSessionTest {
                         Outcome.Success(OpenedBook(book, FakeText(CHAPTER_STARTS, pages)))
                     },
                     Texts,
+                    sleepOptions = { sleepOptions },
+                    keepGoingToNextChapter = { keepGoing },
                     onBookFinished = { finished += it },
                 ),
                 CONFIG,
@@ -109,6 +114,7 @@ class BookSessionTest {
                     Dispatchers.IO.limitedParallelism(1),
                     System::nanoTime,
                     System::currentTimeMillis,
+                    minuteOfDay = { TEST_MINUTE_OF_DAY },
                 ),
             )
         }
@@ -199,6 +205,64 @@ class BookSessionTest {
         onMain { player.pause() }
         val round = listOf(UnitKey(0, 0), UnitKey(0, 1))
         assertEquals((1..LOOP_ROUNDS).flatMap { round }, played.take(LOOP_ROUNDS * 2))
+    }
+
+    @Test
+    fun aRangeEndingOnAPageEndPausesThereWhileTheNextPageLoads() {
+        // The range ends on page 1's last sentence; the next page takes longer to load than a sentence plays, so the
+        // item after it is "more is coming", not a sentence.
+        playRange(StudyRange(Spot(0, CHARS), Spot(0, 2 * CHARS + CHARS / 2), loop = false))
+
+        awaitCondition("range paused") { played.contains(UnitKey(0, 2)) && !player.playWhenReady }
+        Thread.sleep(SETTLE_MS)
+        assertEquals(listOf(UnitKey(0, 1), UnitKey(0, 2)), played.toList())
+    }
+
+    @Test
+    fun aLoopingRangeEndingOnAPageEndLoops() {
+        playRange(StudyRange(Spot(0, CHARS), Spot(0, 2 * CHARS + CHARS / 2), loop = true))
+
+        awaitCondition("looped twice") { played.size >= LOOP_ROUNDS * 2 }
+        onMain { player.pause() }
+        val round = listOf(UnitKey(0, 1), UnitKey(0, 2))
+        assertEquals((1..LOOP_ROUNDS).flatMap { round }, played.take(LOOP_ROUNDS * 2))
+    }
+
+    @Test
+    fun aRangeEndingOnTheBookLastSentenceDoesNotFinishTheBook() {
+        val last = PAGES - 1
+        playRange(StudyRange(Spot(last, 2 * CHARS), Spot(last, 2 * CHARS + CHARS / 2), loop = false))
+
+        awaitCondition("range paused") { played.contains(UnitKey(last, 2)) && !player.playWhenReady }
+        Thread.sleep(SETTLE_MS)
+        assertEquals(emptyList<BookId>(), onMain { finished.toList() })
+    }
+
+    @Test
+    fun aLoopAtAChapterEndLoopsWithKeepGoingOff() {
+        keepGoing = false
+        // Chapter 2 starts on page 3, so page 2's last sentence ends chapter 1.
+        playRange(StudyRange(Spot(1, CHARS), Spot(1, 2 * CHARS + CHARS / 2), loop = true))
+
+        awaitCondition("looped twice") { played.size >= LOOP_ROUNDS * 2 }
+        onMain { player.pause() }
+        val round = listOf(UnitKey(1, 1), UnitKey(1, 2))
+        assertEquals((1..LOOP_ROUNDS).flatMap { round }, played.take(LOOP_ROUNDS * 2))
+    }
+
+    @Test
+    fun studyLoopsNeverTurnATimerTheListenerTurnedOffBackOn() {
+        // Bedtime all day long: the start turns the bedtime timer on, as it should.
+        sleepOptions = SleepOptions(bedtime = true, bedtimeFromMinute = 0, bedtimeToMinute = LAST_MINUTE_OF_DAY)
+        playRange(StudyRange(Spot(0, 0), Spot(0, CHARS + CHARS / 2), loop = true))
+        awaitCondition("bedtime timer on") { states.lastOrNull()?.sleepMode == SleepTimerMode.MINUTES }
+
+        assertTrue(onMain { session.setSleepTimer(SleepTimerMode.OFF, 0) })
+        val before = onMain { played.size }
+        // Each loop pauses at the range's end and plays again: none of those resumes is the listener starting.
+        awaitCondition("looped twice more") { played.size >= before + LOOP_ROUNDS * 2 }
+        onMain { player.pause() }
+        assertEquals(SleepTimerMode.OFF, onMain { states.last().sleepMode })
     }
 
     @Test
@@ -378,6 +442,11 @@ class BookSessionTest {
         const val LOOP_ROUNDS = 3
         const val REPLAY_FACTOR = 0.5f
         const val SPEED_DELTA = 0.001f
+
+        /** Long enough for a sentence past a range's end to start, were it going to. */
+        const val SETTLE_MS = 600L
+        const val TEST_MINUTE_OF_DAY = 600
+        const val LAST_MINUTE_OF_DAY = 1_439
         val CHAPTER_STARTS = listOf(0, 2)
         val CONFIG = QueueConfig(minUnitsAhead = 2, keepBehindUnits = 2)
         val VOICE = VoiceId(EngineId.SHERPA, "test")

@@ -113,6 +113,20 @@ class SpeechStyleConfigTest {
     }
 
     @Test
+    fun `a replay re-renders only when smart speed is stretching the voice`() {
+        val smart = SpeechStyle(rate = 3f, shaping = VoiceShaping(smartSpeed = true))
+        // Half of 3x: the model speaks 1.5x itself, nothing is stretched twice.
+        val replay = requireNotNull(config.replayStyle(smart, 0.5f))
+        assertEquals(1.5f, replay.rate, EPS)
+        assertEquals(1f, config.voiceStretch(replay), EPS)
+        assertEquals(smart.shaping, replay.shaping)
+        assertEquals(null, config.replayStyle(smart.copy(shaping = VoiceShaping()), 0.5f))
+        assertEquals(null, config.replayStyle(smart.copy(rate = 1.25f), 0.5f))
+        // Never below the slowest rate offered.
+        assertEquals(config.minRate, requireNotNull(config.replayStyle(smart.copy(rate = 2f), 0.1f)).rate, EPS)
+    }
+
+    @Test
     fun `bad ranges are rejected`() {
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(minRate = 0f) }
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(minRate = 2f, maxRate = 1f) }

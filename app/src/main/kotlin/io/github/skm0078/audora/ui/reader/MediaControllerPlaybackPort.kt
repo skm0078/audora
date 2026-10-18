@@ -158,9 +158,10 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
         send(player, PlaybackContract.UNDO_JUMP, Bundle.EMPTY, "undo jump")
     }
 
-    override fun skipParagraph(forward: Boolean) = withPlayer("paragraph") { player ->
+    override fun skipParagraph(forward: Boolean, onRefused: () -> Unit) = withPlayer("paragraph") { player ->
         AudoraLog.i(TAG, "Skip paragraph forward=$forward")
-        send(player, PlaybackContract.SKIP_PARAGRAPH, PlaybackContract.skipParagraphArgs(forward), "paragraph")
+        val args = PlaybackContract.skipParagraphArgs(forward)
+        send(player, PlaybackContract.SKIP_PARAGRAPH, args, "paragraph", onRefused)
     }
 
     override fun replayPrevious(factor: Float) = withPlayer("replay") { player ->
@@ -195,7 +196,14 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
 
     override fun positionInSentenceMs(): Long? = controller?.takeIf { it.currentMediaItem != null }?.currentPosition
 
-    private fun send(player: MediaController, command: SessionCommand, args: Bundle, what: String) {
+    /** [onRefused]: on the main thread when the service did not do it (logged either way). */
+    private fun send(
+        player: MediaController,
+        command: SessionCommand,
+        args: Bundle,
+        what: String,
+        onRefused: () -> Unit = {},
+    ) {
         val result = player.sendCustomCommand(command, args)
         result.addListener(
             {
@@ -203,6 +211,7 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
                 if (outcome?.resultCode != SessionResult.RESULT_SUCCESS) {
                     val error = outcome?.extras?.getString(PlaybackContract.RESULT_ERROR)
                     AudoraLog.w(TAG, "$what refused, result=${outcome?.resultCode} error=$error")
+                    onRefused()
                 }
             },
             ContextCompat.getMainExecutor(context),

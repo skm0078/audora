@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_paragraph_skip.xml -->
+<!-- Purpose: Why a paragraph skip (long-press on next or previous) did nothing. -->
+<resources>
+    <string name="paragraph_skip_no_next">No more paragraphs in this book</string>
+    <string name="paragraph_skip_no_previous">Already at the start of the book</string>
+</resources>

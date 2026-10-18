@@ -60,14 +60,33 @@ object CastSpeakers {
         return VoiceId(voice.engine, voice.name.substring(0, cut)) to speaker
     }
 
-    /** The speaker id [spec] reads with for [requested]: a listed one, else the voice's own. */
-    fun speakerFor(spec: SherpaVoiceSpec, requested: Int?): Int =
-        requested?.takeIf { id -> of(spec).any { it.speakerId == id } } ?: spec.speakerId
+    /**
+     * Whether [spec]'s speaker table describes the model as loaded: the tables are keyed on family and language, so
+     * a later model version (Kokoro v1.1 holds 103 speakers, in another order) would otherwise read a character with
+     * whichever speaker sits at that id. True when the model's count is unknown ([loadedSpeakers] null).
+     */
+    fun tableFits(spec: SherpaVoiceSpec, loadedSpeakers: Int?): Boolean =
+        loadedSpeakers == null || of(spec).isEmpty() || modelSpeakers(spec) == loadedSpeakers
+
+    /**
+     * The speaker id [spec] reads with for [requested]: a listed one, else the voice's own; also the voice's own when
+     * the loaded model holds [loadedSpeakers] speakers, not the count its table was written for ([tableFits]).
+     */
+    fun speakerFor(spec: SherpaVoiceSpec, requested: Int?, loadedSpeakers: Int? = null): Int =
+        requested?.takeIf { id -> tableFits(spec, loadedSpeakers) && of(spec).any { it.speakerId == id } }
+            ?: spec.speakerId
+
+    /** How many speakers in all (every language) the model a table was written for holds. */
+    private fun modelSpeakers(spec: SherpaVoiceSpec): Int =
+        if (spec.family == SherpaFamily.KOKORO) KOKORO_MODEL_SPEAKERS else KITTEN_SPEAKERS
 
     private const val ENGLISH = "en"
     private const val KOKORO_FIRST_MALE = 11
     private const val KOKORO_FIRST_BRITISH = 20
     private const val KOKORO_FIRST_BRITISH_MALE = 24
     private const val KITTEN_SPEAKERS = 8
+
+    /** Kokoro v1.0 multi-lang's speakers in all languages; its English ones are the first [KOKORO_ENGLISH]. */
+    private const val KOKORO_MODEL_SPEAKERS = 53
     private const val KITTEN_FIRST_NUMBER = 2
 }
