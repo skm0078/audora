@@ -53,6 +53,7 @@ class RenderedPageOcr(
     private val qualityConfig: QualityConfig = QualityConfig(),
 ) : PageOcr {
     private val lineRetry = OcrLineRetry(engine, config, logContext)
+    private val ruleFinder = RuleFinder(config.rules)
 
     override fun recognize(pageIndex: Int, langs: Set<Lang>): Outcome<OcrText, OcrError> {
         if (langs.isEmpty()) return Outcome.Failure(OcrError.Failed("no language to recognise page $pageIndex in"))
@@ -117,18 +118,31 @@ class RenderedPageOcr(
     /**
      * The page as drawn, unless it reads poorly and a shrunk copy turned a quarter, half or three quarters reads at
      * least `OcrConfig.orientationMinGain` more confidently: then the page turned that way. Its unsure lines are then
-     * read again with the other models ([OcrLineRetry]).
+     * read again with the other models ([OcrLineRetry]), and its rules found ([RuleFinder]).
      */
     private fun readUpright(image: PageImage, langs: Set<Lang>): Outcome<OcrText, OcrError> =
         engine.recognize(image, langs).flatMap { asDrawn ->
             val turns = if (asDrawn.meanConfidence >= config.orientationCheckBelow) 0 else bestTurn(image, langs)
             if (turns == 0) {
-                Outcome.Success(lineRetry.improve(asDrawn, image, langs).toOcrText(0))
+                Outcome.Success(finished(asDrawn, image, langs, 0))
             } else {
                 val upright = image.turned(turns)
-                engine.recognize(upright, langs).map { lineRetry.improve(it, upright, langs).toOcrText(turns) }
+                engine.recognize(upright, langs).map { finished(it, upright, langs, turns) }
             }
         }
+
+    /** [page], read from [upright], with its unsure lines read again and the rules found in [upright]. */
+    private fun finished(page: RecognizedPage, upright: PageImage, langs: Set<Lang>, turns: Int): OcrText {
+        val improved = lineRetry.improve(page, upright, langs)
+        val started = System.nanoTime()
+        val rules = ruleFinder.find(upright, improved.lineHeight)
+        AudoraLog.d(
+            TAG,
+            "OCR rules $logContext page=${upright.pageIndex} rules=${rules.size} " +
+                "ms=${(System.nanoTime() - started) / NANOS_PER_MS}",
+        )
+        return improved.toOcrText(turns, rules)
+    }
 
     /** The quarter turns that make a shrunk copy of [image] read best, or 0 when none reads clearly better. */
     private fun bestTurn(image: PageImage, langs: Set<Lang>): Int {
@@ -178,8 +192,8 @@ class RenderedPageOcr(
         private const val TOP_STRIP = 0
         private const val BOTTOM_STRIP = 1
 
-        /** Pages read with the line retry (RI-3); text cached before it ("page") is not reused. */
-        private const val PAGE_VARIANT = "page-r1"
+        /** Pages read with the line retry (RI-3) and their rules found (RI-4a part 2); older text is not reused. */
+        private const val PAGE_VARIANT = "page-r2"
 
         /** Striped, so the locks stay few however many pages a session reads. */
         private val locks = Array(LOCK_STRIPES) { Any() }

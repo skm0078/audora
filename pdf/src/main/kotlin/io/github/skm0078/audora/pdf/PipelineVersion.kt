@@ -28,5 +28,7 @@ package io.github.skm0078.audora.pdf
  *     RI-5a: note markers left out of the text, footnotes and "Note:" paragraphs tagged (same version).
  *     RI-3: on scanned pages, unsure lines read again with the other installed models, and OCR near-misses
  *     corrected against the word lists (same version).
+ *     RI-4a part 2: tables on scanned pages read as a header unit and row units, ruled ones from the rules found in
+ *     the page image, borderless ones from OCR's rows (same version).
  */
 const val PIPELINE_VERSION: Int = 10

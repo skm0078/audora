@@ -30,6 +30,7 @@ package io.github.skm0078.audora.core.config
  * @property retryMinGain a retry replaces the line only when it reads at least this much more confidently.
  * @property retryMaxLines at most this many lines of a page are retried, the least confident first.
  * @property retryBudgetMs retries stop once a page has spent this long on them (done-when: at most 3 s extra a page).
+ * @property rules how the lines ruled between a scanned table's cells are found (RI-4a part 2).
  */
 data class OcrConfig(
     val renderDpi: Int = 300,
@@ -44,6 +45,7 @@ data class OcrConfig(
     val retryMinGain: Int = 10,
     val retryMaxLines: Int = 8,
     val retryBudgetMs: Long = 2_000L,
+    val rules: RuleConfig = RuleConfig(),
 ) {
     init {
         require(renderDpi > 0) { "renderDpi must be > 0, was $renderDpi" }

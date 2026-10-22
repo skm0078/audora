@@ -71,15 +71,15 @@ internal class TableGrid(private val config: TableConfig, private val rowOverlap
         return lineRows.dropWhile(::isTitle).dropLastWhile(::isTitle)
     }
 
-    /** How many leading rows make the header: those before the first row with a number for a cell. */
-    private fun headerRows(rows: List<List<List<Cell>>>, page: PageText): Int {
-        fun isNumber(cell: List<Cell>): Boolean {
-            val text = cell.joinToString("") { c -> c.spans.joinToString("") { page.text.substring(it.start, it.end) } }
-            return NUMBER.matches(text.trim())
-        }
-        val firstWithNumber = rows.indexOfFirst { row -> row.any(::isNumber) }
-        return if (firstWithNumber < 1) 1 else minOf(firstWithNumber, config.maxHeaderRows, rows.size - 1)
-    }
+    /** How many leading rows make the header ([headerRowCount]). */
+    private fun headerRows(rows: List<List<List<Cell>>>, page: PageText): Int = headerRowCount(
+        rows.map { row ->
+            row.map { cell ->
+                cell.joinToString("") { c -> c.spans.joinToString("") { page.text.substring(it.start, it.end) } }
+            }
+        },
+        config.maxHeaderRows,
+    )
 
     /** The line's cells: its runs, those closer than `cellGapEm` joined. Null when a run has no glyph box. */
     private fun cellsOf(page: PageText, line: TextLine, bodySize: Float): List<Cell>? {
@@ -168,11 +168,6 @@ internal class TableGrid(private val config: TableConfig, private val rowOverlap
         val runs = lines.flatMap { line -> line.spans.map { page.text.substring(it.start, it.end).trim() } }
         val singleLetters = runs.count { it.codePointCount(0, it.length) == 1 && Character.isLetter(it.codePointAt(0)) }
         return runs.isNotEmpty() && singleLetters > runs.size * config.maxSingleLetterRunShare
-    }
-
-    private companion object {
-        /** A cell that is a number: "12", "-2.98", "4.00", "98,62,767", "৩.৯১", "45%", "12." (a serial number). */
-        val NUMBER = Regex("[-−+]?\\p{Nd}[\\p{Nd},]*(?:\\.\\p{Nd}+)?[.%]?")
     }
 }
 

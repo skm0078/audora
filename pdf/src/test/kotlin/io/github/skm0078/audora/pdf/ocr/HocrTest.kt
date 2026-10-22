@@ -1,5 +1,5 @@
 // File: pdf/src/test/kotlin/io/github/skm0078/audora/pdf/ocr/HocrTest.kt
-// Purpose: Tesseract's hOCR becomes words with boxes and confidences, lines and paragraphs; boxes turn back correctly.
+// Purpose: Tesseract's hOCR becomes words with boxes and confidences, lines and paragraphs; boxes and rules turn back.
 
 package io.github.skm0078.audora.pdf.ocr
 
@@ -56,6 +56,24 @@ class HocrTest {
         val box = requireNotNull(turned.lines[0].words[0].box)
         assertRect(ViewRect(0f, 0.75f, 0.1f, 1f), box)
         assertRect(ViewRect(0f, 0f, 0.25f, 0.1f), turned.readingFrame(box))
+    }
+
+    @Test
+    fun `rules become fractions of the page as displayed, turned back like the words`() {
+        val page = RecognizedPage(emptyList(), 200, 100)
+        val rule = PixelRule(left = 0, top = 49, right = 199, bottom = 50)
+        assertRect(ViewRect(0f, 0.49f, 1f, 0.51f), page.toOcrText(0, listOf(rule)).rules.single())
+        // Read from the page turned a quarter clockwise: a rule across that image runs down the page.
+        val turned = page.toOcrText(1, listOf(rule))
+        assertRect(ViewRect(0.49f, 0f, 0.51f, 1f), turned.rules.single())
+        assertRect(ViewRect(0f, 0.49f, 1f, 0.51f), turned.readingFrame(turned.rules.single()))
+    }
+
+    @Test
+    fun `the line height is the median height of the lines`() {
+        fun line(top: Int, bottom: Int) = RecognizedLine(listOf(RecognizedWord("x", 0, top, 10, bottom, 90)), 0)
+        assertEquals(12f, RecognizedPage(listOf(line(0, 10), line(20, 32), line(40, 70)), 100, 100).lineHeight)
+        assertEquals(0f, RecognizedPage(emptyList(), 100, 100).lineHeight)
     }
 
     @Test

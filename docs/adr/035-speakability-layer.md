@@ -167,4 +167,36 @@ and highlight need a unit to land on.
   Hindi–English gazette, a UP revenue board letter, others) the retry replaced 257 of 502 unsure lines, turning their
   English forms and letters from noise into text. Limits: the 8-line, 2-second cap leaves whole English pages inside
   a Hindi book partly unread; a word the list lacks is never repaired; online repair waits on ADR-037.
+- RI-4a part 2 (scanned tables) in `:pdf/ocr`. Tesseract reads a ruled table cell by cell and often a column at a
+  time, and a borderless one as a line per row or as blocks of columns, so OCR order alone cannot rebuild either.
+  **Rules** (`RuleFinder`, `RuleConfig`) are found in the upright page image right after OCR: ink below the page's
+  Otsu threshold (capped at 200, for faint grey rules), runs at least 8 em long across (2 em down), rows smeared by
+  0.2 em for skew and gaps up to 0.15 em bridged; a stroke thicker than 0.5 em is split into its well-inked bands (a
+  double rule) and dropped if still thick (a filled bar, a photo). Linear in pixels, 30-200 ms a page on a desktop;
+  rules are cached with the words (cache format v3; v1 and v2 still decode, the page cache key changed). **Ruled
+  tables** (`RuledTables`): rules within 0.5 em are one edge; edges that meet make a grid, a table when it has at
+  least three each way; slots join into cells where no rule divides them, and only rectangles are cells (the space
+  around a box drawn inside a page frame is not); each word goes to the cell holding its centre; a word no wider
+  than the snap on a vertical rule is a "|" or "।" read from the rule and is left out of the cells; the grid is cut
+  where a row is divided differently from the one above (wall sets less than half shared), so a footer or title
+  across it is text. A grid row with words in two or more cells that makes no table (one tall row of ruled columns)
+  keeps OCR's column-at-a-time order rather than being cut into rows line by line. **Borderless tables**
+  (`OcrTables`): the words left are joined into rows of OCR lines side by side and handed to the text-layer path
+  (`TableFinder`, `TableGrid`); prose stops a run (a Tesseract paragraph of two or more lines of running text, or a
+  row of two stretches of it side by side; running text is a stretch of at least 5 words or wider than 15 em, since
+  OCR's em is a line's height and a narrow prose column is under 15 of them), as does a gap wider than 2 em, and a
+  grid whose median cell is wider than 15 em is prose. A cell wrapped over several lines is therefore read whole, in
+  OCR's order, rather than as a table cut line by line. A table's units go where its first word was read; pages without tables lay out
+  exactly as before, and a lone number a table took is no longer dropped as a page number. **Measured** on the four
+  labelled tables of the corpora OCR'd from 300 dpi renders (desktop Tesseract 5, the app's models): 145 of 145 cells
+  in the right row and column, 106 exactly as printed (the rest are OCR misreads of ×, −, superscripts and
+  symbols). On 9 scanned pages of two government documents kept outside the repository (a Bengali list, a Hindi
+  form) the ruled tables come out row by row where Tesseract read them cell by cell, each cell only as clean as
+  Tesseract read it; the six UDHR scans are unchanged (no table, same character error rate). Book kinds (RI-10) on
+  the 57 test PDFs, re-measured with OCR'd pages read through this path: 49 right, from 50. The one change is the
+  Bengali staff-transfer notice, labelled a gazette, whose tables are now found and make 56% of its units table
+  rows, so it reads as a form; the label is kept (a notice), and the gazette rule does not outrank tables.
+  Limits: a cell Tesseract never read stays empty (serial numbers in thick-ruled forms); a table continued from the
+  previous page takes its first row as its header; a letterhead set as two aligned blocks reads as a small table;
+  two prose columns that Tesseract ran together across the gutter stay run together. Same PIPELINE_VERSION 10.
 - Logs carry kinds, scores, page and unit index, never the page's text (AGENTS.md).
