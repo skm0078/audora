@@ -66,9 +66,11 @@ class CharacterCast(
     override fun voiceFor(lang: Lang, speaker: Speaker): VoiceId? = voiceFor(lang, speaker, null)
 
     private fun voiceFor(lang: Lang, speaker: Speaker, at: Int?): VoiceId? {
-        val base = narrator(lang)?.takeIf { it.engine == EngineId.SHERPA } ?: return null
+        val reader = narrator(lang)?.takeIf { it.engine == EngineId.SHERPA } ?: return null
+        // The narrator may itself be another speaker of its model (a built-in voice's speaker, ADR-052).
+        val base = CastSpeakers.parse(reader).first
         val cast = speakers(base)
-        val voices = cast.associateBy { CastSpeakers.variant(base, it.speakerId) } - taken(lang)
+        val voices = cast.associateBy { CastSpeakers.variant(base, it.speakerId) } - taken(lang) - reader
         val key = keyOf(base, lang, speaker)
         // A renderer's snapshot from before another book opened gets no voice and keeps nothing.
         val kept = synchronized(lock) { book.takeIf { at == null || at == opened } }

@@ -17,8 +17,9 @@ data class CastSpeaker(val speakerId: Int, val label: String, val gender: Speake
  * past a model's range is undefined behaviour in sherpa-onnx.
  *
  * The lists are the models' own speaker tables (sherpa-onnx's packaging of Kokoro v1.0 multi-lang and KittenTTS
- * v0.8 nano), English speakers only. They are keyed on the catalog voice that installs that exact archive, never on
- * the model family: a voice imported from any folder, or a family's other packaging, reads with its own speaker only.
+ * v0.8 nano and micro, which share one table), English speakers only. They are keyed on the catalog voice that
+ * installs that exact archive, never on the model family: a voice imported from any folder, or a family's other
+ * packaging, reads with its own speaker only.
  * A test pins each key to its archive in models.json and bundled-voices.json, so a catalog update that swaps the
  * archive under a keyed id fails the build; [tableFits] also checks the loaded model's speaker count at runtime.
  */
@@ -36,11 +37,12 @@ object CastSpeakers {
         listOf("Daniel", "Fable", "George", "Lewis")
             .mapIndexed { i, name -> CastSpeaker(KOKORO_FIRST_BRITISH_MALE + i, name, SpeakerGender.MALE) }
 
-    /** KittenTTS v0.8 nano: four voices, each male then female. */
-    private val KITTEN = (0 until KITTEN_SPEAKERS).map { i ->
-        val gender = if (i % 2 == 0) SpeakerGender.MALE else SpeakerGender.FEMALE
-        CastSpeaker(i, "Kitten ${i / 2 + KITTEN_FIRST_NUMBER}${if (gender == SpeakerGender.MALE) "M" else "F"}", gender)
-    }
+    /**
+     * KittenTTS v0.8: four voices, each male then female (the model's `expr-voice-2-m` … `expr-voice-5-f`), named as
+     * KittenTTS names them.
+     */
+    private val KITTEN = listOf("Jasper", "Bella", "Bruno", "Luna", "Hugo", "Rosie", "Leo", "Kiki")
+        .mapIndexed { i, name -> CastSpeaker(i, name, if (i % 2 == 0) SpeakerGender.MALE else SpeakerGender.FEMALE) }
 
     /** Kokoro's English speakers, for the narrator blend's choices (plan item 75). */
     val kokoroEnglish: List<CastSpeaker> get() = KOKORO_ENGLISH
@@ -49,6 +51,7 @@ object CastSpeakers {
     private val TABLES = mapOf(
         KOKORO_VOICE to CastTable(KOKORO_ARCHIVE, KOKORO_ENGLISH, KOKORO_MODEL_SPEAKERS),
         KITTEN_VOICE to CastTable(KITTEN_ARCHIVE, KITTEN, KITTEN_SPEAKERS),
+        KITTEN_MICRO_VOICE to CastTable(KITTEN_MICRO_ARCHIVE, KITTEN, KITTEN_SPEAKERS),
     )
 
     /** The archive each keyed catalog voice id was written for, so a test can check the catalogs still ship it. */
@@ -93,6 +96,10 @@ object CastSpeakers {
     private const val KOKORO_ARCHIVE = "kokoro-int8-multi-lang-v1_0"
     private const val KITTEN_VOICE = "kitten-en-nano"
     private const val KITTEN_ARCHIVE = "kitten-nano-en-v0_8-int8"
+
+    /** The bundled English voice (ADR-052). */
+    private const val KITTEN_MICRO_VOICE = "kitten-en-micro"
+    private const val KITTEN_MICRO_ARCHIVE = "kitten-micro-en-v0_8"
     private const val KOKORO_FIRST_MALE = 11
     private const val KOKORO_FIRST_BRITISH = 20
     private const val KOKORO_FIRST_BRITISH_MALE = 24
@@ -100,5 +107,4 @@ object CastSpeakers {
 
     /** Kokoro v1.0 multi-lang's speakers in all languages; its English ones are the first [KOKORO_ENGLISH]. */
     private const val KOKORO_MODEL_SPEAKERS = 53
-    private const val KITTEN_FIRST_NUMBER = 2
 }

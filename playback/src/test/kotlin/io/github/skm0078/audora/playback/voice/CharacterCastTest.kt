@@ -42,6 +42,16 @@ class CharacterCastTest {
     ).also { it.open(BOOK) }
 
     @Test
+    fun `a narrator that is another speaker of its model casts from that model and never reads a character`() {
+        val narrator = CastSpeakers.variant(NARRATOR, 11)
+        val cast = cast(narrator = narrator)
+
+        val tom = cast.voiceFor(Lang.EN, Speaker("Tom", SpeakerGender.MALE))
+
+        assertEquals(CastSpeakers.variant(NARRATOR, 12), tom)
+    }
+
+    @Test
     fun `characters of one gender get different voices of that gender, each kept`() {
         val cast = cast()
 

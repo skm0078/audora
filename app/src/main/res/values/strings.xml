@@ -98,10 +98,10 @@
     <string name="speech_pace_normal">Normal</string>
     <string name="speech_pace_relaxed">Long</string>
     <string name="speech_clause_pauses">Pause at punctuation</string>
-    <string name="speech_clause_pauses_detail">Short pauses at dashes, colons, brackets and quotes; brackets a little quieter</string>
+    <string name="speech_clause_pauses_detail">On: a short breath at dashes, colons, brackets and quotes, like a person reading. Off: reads straight through them.</string>
     <string name="reading_modes_title">What to read</string>
     <string name="reading_skip_unreadable">Skip unreadable text</string>
-    <string name="reading_skip_unreadable_detail">Garbled scans and broken fonts play a soft sound instead</string>
+    <string name="reading_skip_unreadable_detail">On: garbled scan text plays a soft sound instead of nonsense words. Off: everything is read, even junk.</string>
     <string name="reading_tables">Tables</string>
     <string name="reading_tables_summary">Size only</string>
     <string name="reading_tables_rows">Row by row</string>
@@ -142,14 +142,14 @@
     <string name="duration_minutes">%1$d min</string>
     <string name="duration_under_minute">under a minute</string>
     <string name="reader_undo_jump">Undo jump (page %1$d)</string>
-    <string name="speech_sheet_hint">The voice itself speaks faster or slower, so words stay clear. The sentence playing restarts at the new setting.</string>
+    <string name="speech_sheet_hint">Changes apply at once: the sentence playing starts again with the new setting, so you may hear it twice.</string>
     <string name="reader_sleep_timer">Sleep timer</string>
     <string name="reader_sleep_off">Off</string>
     <string name="reader_sleep_minutes">%1$d minutes</string>
     <string name="reader_sleep_end_of_page">End of page</string>
     <string name="reader_sleep_end_of_chapter">End of chapter</string>
     <string name="speech_own_settings">Use for this book only</string>
-    <string name="speech_own_settings_detail">Speed, pace and voices stay with this book; other books keep theirs</string>
+    <string name="speech_own_settings_detail">On: this book remembers its own speed, pause and voices; other books keep the usual ones. Off: this book uses the usual ones.</string>
     <string name="bookmarks_title">Bookmarks</string>
     <string name="bookmarks_add_here">Bookmark here</string>
     <string name="bookmarks_empty">No bookmarks yet. Long-press a sentence, or tap Bookmark here.</string>
@@ -180,14 +180,14 @@
     <string name="speech_book_voices">Voices for this book</string>
     <string name="speech_sound">Sound</string>
     <string name="speech_even_loudness">Even loudness</string>
-    <string name="speech_even_loudness_detail">Every sentence and every voice at the same level</string>
+    <string name="speech_even_loudness_detail">On: every sentence and every voice plays at the same volume, so nothing is suddenly loud or quiet.</string>
     <string name="speech_trim_pauses">Trim long pauses</string>
-    <string name="speech_trim_pauses_detail">Shortens the voice\'s own silences; Audora\'s pauses stay</string>
+    <string name="speech_trim_pauses_detail">On: cuts the voice\'s own long silences, so reading flows faster. The pauses you set above are kept.</string>
     <string name="speech_boost">Voice boost</string>
     <string name="speech_boost_off">Off</string>
     <string name="speech_boost_db">+%1$d dB</string>
     <string name="speech_expressiveness">Expressiveness</string>
-    <string name="speech_expressiveness_detail">For Piper and MMS voices. Changing it reloads the voice, about a second</string>
+    <string name="speech_expressiveness_detail">Left: calm and even, like a newsreader. Right: more rise and fall, like a storyteller. Only Piper and MMS voices use it; the voice reloads after a change, about a second.</string>
     <string name="speech_expressiveness_newsreader">Newsreader</string>
     <string name="speech_expressiveness_storyteller">Storyteller</string>
     <string name="reader_sleep_chapters">After %1$d chapters</string>
@@ -339,7 +339,7 @@
 
     <!-- Reading text (P2-03) -->
     <string name="settings_skip_citations_title">Skip citation numbers</string>
-    <string name="settings_skip_citations_body">Reads “[12]” and “[4–7]” markers aloud when off. Applies to books you open next.</string>
+    <string name="settings_skip_citations_body">On: leaves out reference numbers such as “[12]” and “[4–7]”. Off: reads them aloud. Takes effect the next time you open a book.</string>
     <string name="settings_keep_screen_on_title">Keep screen on while reading aloud</string>
     <string name="settings_volume_keys_title">Volume keys skip sentences</string>
     <string name="settings_volume_keys_body">While Audora reads aloud in the reader, volume down goes to the next sentence and volume up back one. Paused, or outside the reader, the keys change the volume as usual.</string>

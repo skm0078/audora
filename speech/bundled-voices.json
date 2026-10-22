@@ -1,9 +1,25 @@
 {
-  "comment": "File: speech/bundled-voices.json. Purpose: the English voice packed into the APK (ADR-012 rule, ADR-014). 'bundled' picks one entry; changing it is the whole swap once the phone blind rating is in. Archives come from sherpa-onnx's tts-models release and are checked against sha256 at build time. Never add Lessac/Blizzard-derived voices (lessac, amy, hfc_*, hi_IN rohan).",
-  "bundled": "piper-en-ljspeech",
+  "comment": "File: speech/bundled-voices.json. Purpose: the English voice packed into the APK (ADR-012 rule, ADR-014). 'bundled' picks one entry; changing it is the whole swap (ADR-052: KittenTTS micro, read by its deep male speaker). Archives come from sherpa-onnx's tts-models release and are checked against sha256 at build time. Never add Lessac/Blizzard-derived voices (lessac, amy, hfc_*, hi_IN rohan).",
+  "bundled": "kitten-en-micro",
   "baseUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/",
   "espeakDictionaries": ["en", "hi", "bn"],
   "voices": [
+    {
+      "id": "kitten-en-micro",
+      "label": "English, Bruno (male)",
+      "lang": "en",
+      "family": "kitten",
+      "archive": "kitten-micro-en-v0_8",
+      "sha256": "85faaea7511ca9d1d2f251fed0a4553bdf0d1ee046102fa60ddd8046c751f76f",
+      "model": "model.onnx",
+      "voices": "voices.bin",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 2,
+      "licence": "KittenTTS v0.8 (Apache-2.0)",
+      "credit": "KittenTTS v0.8 micro by KittenML. Packaged for sherpa-onnx by k2-fsa; files unchanged.",
+      "licenceUrl": "https://www.apache.org/licenses/LICENSE-2.0",
+      "sourceUrl": "https://github.com/KittenML/KittenTTS"
+    },
     {
       "id": "piper-en-ljspeech",
       "label": "English (US), Piper ljspeech",

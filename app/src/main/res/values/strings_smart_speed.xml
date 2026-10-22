@@ -3,5 +3,5 @@
 <!-- Purpose: Strings for smart speed in the speech sheet (plan item 10, ADR-049). -->
 <resources>
     <string name="speech_smart_speed">Smart speed</string>
-    <string name="speech_smart_speed_detail">Above %1$s×, shortens silences and long sounds more than consonants, so fast speech stays crisp. Below it the voice itself speaks faster and this changes nothing.</string>
+    <string name="speech_smart_speed_detail">Only matters above %1$s×: shortens silences and long sounds but keeps consonants, so fast speech stays clear. At normal speeds it changes nothing.</string>
 </resources>

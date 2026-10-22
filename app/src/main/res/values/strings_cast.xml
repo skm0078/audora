@@ -4,8 +4,8 @@
 <resources>
     <string name="speech_cast">Voices for quotes and headings</string>
     <string name="speech_cast_dialogue">Quotes in a second voice</string>
-    <string name="speech_cast_dialogue_detail">Speech inside quote marks is read by another voice, like a second reader</string>
+    <string name="speech_cast_dialogue_detail">Words inside quote marks are read by a second voice, like a second reader. Pick that voice below.</string>
     <string name="speech_cast_headings">Headings in a third voice</string>
-    <string name="speech_cast_headings_detail">Headings and chapter titles are read by their own voice</string>
-    <string name="speech_cast_needs_voice">Add a second voice for this language in Settings, Voices</string>
+    <string name="speech_cast_headings_detail">Headings and chapter titles get their own voice, so you hear where a section starts. Pick that voice below.</string>
+    <string name="speech_cast_needs_voice">Needs a second voice for this language: get one in Settings, Voices</string>
 </resources>

@@ -3,7 +3,7 @@
 <!-- Purpose: Hindi copy of values/strings_focus.xml: Strings for the focus sound under the voice (plan item 72). -->
 <resources>
     <string name="focus_title">फ़ोकस साउंड</string>
-    <string name="focus_detail">आवाज़ के नीचे धीरे बजता है और जब भी आवाज़ बोलती है, धीमा हो जाता है। आपके फ़ोन पर ही बनता है, कुछ डाउनलोड नहीं करना।</string>
+    <string name="focus_detail">आवाज़ के नीचे धीमे बजता है और बोलते समय और धीमा हो जाता है। सिर्फ़ पढ़ाई चलते समय सुनाई देता है। फ़ोन पर ही बनता है, कुछ डाउनलोड नहीं।</string>
     <string name="focus_off">बंद</string>
     <string name="focus_rain">बारिश</string>
     <string name="focus_cafe">कैफ़े</string>

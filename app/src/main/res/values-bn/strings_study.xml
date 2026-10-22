@@ -3,20 +3,20 @@
 <!-- Purpose: Bengali copy of values/strings_study.xml: Strings for the study modes (plan item 31): repeats, pause after each sentence, A–B loops. -->
 <resources>
     <string name="study_title">পড়াশোনা</string>
-    <string name="study_repeats">প্রতিটি বাক্য পড়ুন</string>
+    <string name="study_repeats">প্রতিটি বাক্য পড়ুন (1× স্বাভাবিক পড়া)</string>
     <string name="study_repeats_times">%1$d×</string>
     <string name="study_after">প্রতিটি বাক্যের পরে</string>
     <string name="study_after_continue">পড়তে থাকুন</string>
     <string name="study_after_gap">পুনরাবৃত্তির জন্য বিরতি</string>
     <string name="study_after_stop">থামুন</string>
-    <string name="study_after_detail">বিরতি বাক্যটি বলে দেখার সময় দেয়; থামুন-এ প্লে চাপা পর্যন্ত অপেক্ষা করে।</string>
+    <string name="study_after_detail">“পড়তে থাকুন” স্বাভাবিক। “পুনরাবৃত্তির জন্য বিরতি” প্রতিটি বাক্যের পরে নীরবতা রাখে যাতে আপনি সেটি বলতে পারেন। “থামুন” প্রতিটি বাক্যের পরে থামে যতক্ষণ না প্লে চাপেন।</string>
     <string name="study_loop_title">একটি অংশ পুনরাবৃত্তি করুন (A–B)</string>
-    <string name="study_loop_hint">পড়ার সময় প্রথম বাক্যে A আর শেষ বাক্যে B সেট করুন।</string>
+    <string name="study_loop_hint">A সেট না করা পর্যন্ত বন্ধ। পড়ার সময় প্রথম বাক্যে A আর শেষ বাক্যে B সেট করুন; তারপর পড়া ওদের মধ্যেই থাকে। স্বাভাবিক পড়ায় ফিরতে “মুছুন” চাপুন।</string>
     <string name="study_loop_a_only">A পৃষ্ঠা %1$d-এ সেট করা আছে। শেষ বাক্যে B সেট করুন।</string>
     <string name="study_loop_range">পৃষ্ঠা %1$d থেকে পৃষ্ঠা %2$d পর্যন্ত</string>
     <string name="study_mark_a">A সেট করুন</string>
     <string name="study_mark_b">B সেট করুন</string>
     <string name="study_clear">মুছুন</string>
     <string name="study_loop">লুপ</string>
-    <string name="study_loop_detail">বন্ধ: অংশটি একবার পড়ে থেমে যায়।</string>
+    <string name="study_loop_detail">চালু: B-এর পরে আবার A-তে ফেরে, বারবার, যতক্ষণ না “মুছুন” চাপেন। বন্ধ: A থেকে B একবার পড়ে থামে।</string>
 </resources>

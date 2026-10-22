@@ -3,20 +3,20 @@
 <!-- Purpose: Strings for the study modes (plan item 31): repeats, pause after each sentence, A–B loops. -->
 <resources>
     <string name="study_title">Study</string>
-    <string name="study_repeats">Read each sentence</string>
+    <string name="study_repeats">Read each sentence (1× is normal reading)</string>
     <string name="study_repeats_times">%1$d×</string>
     <string name="study_after">After each sentence</string>
     <string name="study_after_continue">Keep reading</string>
     <string name="study_after_gap">Gap to repeat</string>
     <string name="study_after_stop">Pause</string>
-    <string name="study_after_detail">A gap leaves time to say the sentence back; pause waits for you to press play.</string>
+    <string name="study_after_detail">Keep reading is normal. Gap to repeat leaves a silence after each sentence so you can say it back. Pause stops after every sentence until you press play.</string>
     <string name="study_loop_title">Repeat a stretch (A–B)</string>
-    <string name="study_loop_hint">While reading, set A at the first sentence and B at the last.</string>
+    <string name="study_loop_hint">Off until you set A. While reading, tap Set A at the first sentence and Set B at the last; reading then stays between them. Tap Clear to go back to normal reading.</string>
     <string name="study_loop_a_only">A is set on page %1$d. Set B at the last sentence.</string>
     <string name="study_loop_range">From page %1$d to page %2$d</string>
     <string name="study_mark_a">Set A</string>
     <string name="study_mark_b">Set B</string>
     <string name="study_clear">Clear</string>
     <string name="study_loop">Loop</string>
-    <string name="study_loop_detail">Off: read the stretch once and stop.</string>
+    <string name="study_loop_detail">On: goes back to A after B, again and again, until you tap Clear. Off: reads A to B once and stops.</string>
 </resources>

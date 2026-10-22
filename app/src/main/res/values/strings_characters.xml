@@ -3,5 +3,5 @@
 <!-- Purpose: Strings for a voice per character (plan item 63). -->
 <resources>
     <string name="speech_cast_characters">A voice for each character</string>
-    <string name="speech_cast_characters_detail">Lines whose speaker is clear (\"said Mira\") get that character\'s own voice, kept for the book. Uses the other voices inside the English Kokoro and Kitten voices, so no extra memory. Other lines keep the voice for quotes.</string>
+    <string name="speech_cast_characters_detail">Lines where the speaker is clear (\"said Mira\") get that character\'s own voice, kept for the whole book. Works with the built-in English voice, Kokoro and Kitten. Other quoted lines keep the quote voice.</string>
 </resources>

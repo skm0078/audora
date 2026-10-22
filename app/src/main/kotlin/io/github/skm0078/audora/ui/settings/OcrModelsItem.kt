@@ -78,6 +78,13 @@ internal data class ModelPackTexts(@StringRes val title: Int, @StringRes val mis
             R.string.settings_punct_missing,
             R.string.settings_punct_ready,
         )
+
+        /** [PUNCTUATION] while scanned pages (OCR) are not downloaded: ready, but nothing for it to work on yet. */
+        val PUNCTUATION_NEEDS_OCR = ModelPackTexts(
+            R.string.settings_punct_title,
+            R.string.settings_punct_missing,
+            R.string.settings_punct_ready_needs_ocr,
+        )
         val VOICE_COMMANDS = ModelPackTexts(
             R.string.commands_model_title,
             R.string.commands_model_missing,

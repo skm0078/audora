@@ -136,14 +136,21 @@ private fun Bundle.putSpeech(speech: SpeechStyle) {
 private fun Bundle.putBlend(now: BlendAvailability) {
     now.ownSpeaker?.let { putInt(PlaybackContract.SESSION_BLEND_OWN_SPEAKER, it) }
     now.neededBytes?.let { putLong(PlaybackContract.SESSION_BLEND_NEEDS_BYTES, it) }
+    now.expressive?.let { putBoolean(PlaybackContract.SESSION_VOICE_EXPRESSIVE, it) }
 }
 
 /**
  * What the speech sheet's narrator blend (plan item 75) can do now: [ownSpeaker] the narrator's own Kokoro English
  * speaker (null when the narrator is another voice, which a blend leaves alone); [neededBytes] what the last blend
- * that could not be built needed free (0 when the voice refused it), null when it was built.
+ * that could not be built needed free (0 when the voice refused it), null when it was built. [expressive]: whether a
+ * voice reading now honours expressiveness (plan item 8), so the sheet shows its slider only then; null while none is
+ * known.
  */
-data class BlendAvailability(val ownSpeaker: Int? = null, val neededBytes: Long? = null)
+data class BlendAvailability(
+    val ownSpeaker: Int? = null,
+    val neededBytes: Long? = null,
+    val expressive: Boolean? = null,
+)
 
 /**
  * P1-07's unfinished-session marker: "reading" while audio plays, "not reading" on pause, stop, end, error and

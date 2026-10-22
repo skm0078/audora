@@ -303,6 +303,13 @@ fun SherpaSpeechEngine.castSpeakers(voice: VoiceId): List<CastSpeaker> {
 }
 
 /**
+ * Whether [voice] honours expressiveness (plan item 8): only Piper and MMS (VITS) voices have noise values to change.
+ * False for any other voice, or one not installed. Cheap: reads the voice list, never loads a model.
+ */
+fun SherpaSpeechEngine.isExpressive(voice: VoiceId): Boolean =
+    source.byId()[CastSpeakers.parse(voice).first]?.family == SherpaFamily.VITS
+
+/**
  * [voice]'s own speaker when a narrator blend can change it (plan item 75): a Kokoro voice with English speakers to
  * mix in; null for any other voice, or one not installed. Cheap: reads the voice list, never loads a model.
  */

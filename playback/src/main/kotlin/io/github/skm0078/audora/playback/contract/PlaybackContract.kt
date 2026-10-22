@@ -284,6 +284,12 @@ object PlaybackContract {
     const val SESSION_BLEND_OWN_SPEAKER = "blend_own_speaker"
     const val SESSION_BLEND_NEEDS_BYTES = "blend_needs_bytes"
 
+    /**
+     * Boolean: whether a voice reading now honours expressiveness (plan item 8: Piper and MMS only); absent while no
+     * voice is known yet.
+     */
+    const val SESSION_VOICE_EXPRESSIVE = "voice_expressive"
+
     /** Int pair: where "Undo jump" goes back to in the book being read (plan item 78); absent with nothing to undo. */
     const val SESSION_UNDO_PAGE = "undo_page"
     const val SESSION_UNDO_CHAR = "undo_char"

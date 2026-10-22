@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_option_help.xml -->
+<!-- Purpose: Hindi copies of strings_option_help.xml. -->
+<resources>
+    <string name="speech_own_settings_play_first">पहले प्ले दबाएँ: यह पढ़ी जा रही किताब की सेटिंग्स रखता है</string>
+    <string name="settings_punct_ready_needs_ocr">डाउनलोड हो गया · %1$d MB। स्कैन किए गए पेज (OCR) डाउनलोड होने पर काम करेगा</string>
+    <string name="kids_confirm_title">बच्चों का मोड चालू करें?</string>
+    <string name="kids_confirm_body">सेटिंग्स छिप जाएँगी और पढ़ना धीमा होगा। बाहर निकलने के लिए लाइब्रेरी के ऊपर बच्चों के मोड वाली पट्टी को दबाकर रखें।</string>
+    <string name="kids_confirm_turn_on">चालू करें</string>
+    <string name="kids_confirm_cancel">रद्द करें</string>
+</resources>

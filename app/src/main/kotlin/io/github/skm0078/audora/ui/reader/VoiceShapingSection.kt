@@ -29,9 +29,17 @@ import io.github.skm0078.audora.core.config.VoiceShapingConfig
 import io.github.skm0078.audora.core.model.VoiceShaping
 import kotlin.math.roundToInt
 
-/** Each change applies from the next sentence rendered; the sentence playing restarts like a speed change. */
+/**
+ * Each change applies from the next sentence rendered; the sentence playing restarts like a speed change. The
+ * expressiveness slider shows only while a voice that honours it reads ([expressive]): the others ignore it.
+ */
 @Composable
-fun VoiceShapingSection(shaping: VoiceShaping, config: VoiceShapingConfig, onChange: (VoiceShaping) -> Unit) {
+fun VoiceShapingSection(
+    shaping: VoiceShaping,
+    config: VoiceShapingConfig,
+    expressive: Boolean,
+    onChange: (VoiceShaping) -> Unit,
+) {
     Text(stringResource(R.string.speech_sound), style = MaterialTheme.typography.titleMedium)
     ShapingSwitch(
         stringResource(R.string.speech_even_loudness),
@@ -61,7 +69,11 @@ fun VoiceShapingSection(shaping: VoiceShaping, config: VoiceShapingConfig, onCha
             )
         }
     }
-    ExpressivenessSlider(shaping.expressiveness, config.maxExpression) { onChange(shaping.copy(expressiveness = it)) }
+    if (expressive) {
+        ExpressivenessSlider(shaping.expressiveness, config.maxExpression) {
+            onChange(shaping.copy(expressiveness = it))
+        }
+    }
 }
 
 /**

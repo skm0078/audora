@@ -266,6 +266,8 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
                 ?.let(extras::getInt),
             blendNeedsBytes = PlaybackContract.SESSION_BLEND_NEEDS_BYTES.takeIf(extras::containsKey)
                 ?.let(extras::getLong),
+            voiceExpressive = PlaybackContract.SESSION_VOICE_EXPRESSIVE.takeIf(extras::containsKey)
+                ?.let(extras::getBoolean),
             // A skipped sentence is reported in the extras while reading goes on; only a stop is an error.
             errorCode = player.playerError?.errorCodeName
                 ?: extras.getString(PlaybackContract.SESSION_ERROR)?.takeUnless { player.playWhenReady },

@@ -6,7 +6,10 @@ package io.github.skm0078.audora.speech.voices
 import io.github.skm0078.audora.core.config.VoiceSpeedConfig
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
+import io.github.skm0078.audora.speech.sherpa.CastSpeaker
+import io.github.skm0078.audora.speech.sherpa.CastSpeakers
 import io.github.skm0078.audora.speech.sherpa.SherpaVoiceSpec
+import io.github.skm0078.audora.speech.sherpa.SpeakerGender
 
 enum class VoiceKind { BUILT_IN, CATALOG, CUSTOM }
 
@@ -79,9 +82,10 @@ object VoiceRows {
         preferred: Map<Lang, VoiceId>,
     ): List<VoiceRow> {
         val installedById = installed.associateBy { it.spec.id }
-        val builtIn = listOfNotNull(bundled).map { spec ->
+        val builtIn = listOfNotNull(bundled).flatMap { spec ->
             val reads = preferred[spec.lang]?.let { it == spec.voiceId } ?: (spec.lang == DEFAULT_NEURAL_LANG)
-            row(spec, VoiceKind.BUILT_IN, VoiceStatus.BuiltIn, 0, reads)
+            listOf(row(spec, VoiceKind.BUILT_IN, VoiceStatus.BuiltIn, 0, reads).copy(recommended = true)) +
+                builtInSpeakers(spec, preferred)
         }
         val fromCatalog = catalog.voices.map { voice ->
             val copy = installedById[voice.id]?.takeIf { it.origin == VoiceOrigin.CATALOG }
@@ -122,8 +126,39 @@ object VoiceRows {
         speeds.byVoice[row.id]?.let { row.copy(speed = it, tooSlow = it.tooSlow(speeds.config)) } ?: row
     }
 
+    /**
+     * The built-in voice's other speakers (ADR-052), each a voice of its own to pick: same model, so no download and
+     * no extra memory. Named like the built-in voice's label, "English, Bruno (male)".
+     */
+    private fun builtInSpeakers(spec: SherpaVoiceSpec, preferred: Map<Lang, VoiceId>): List<VoiceRow> =
+        CastSpeakers.of(spec).filter { it.speakerId != spec.speakerId }.map { speaker ->
+            val id = CastSpeakers.variant(spec.voiceId, speaker.speakerId)
+            VoiceRow(
+                id = id,
+                label = speakerLabel(spec, speaker),
+                lang = spec.lang,
+                licence = spec.licence,
+                sizeBytes = 0,
+                kind = VoiceKind.BUILT_IN,
+                status = VoiceStatus.BuiltIn,
+                readsLanguage = preferred[spec.lang] == id,
+            )
+        }
+
+    private fun speakerLabel(spec: SherpaVoiceSpec, speaker: CastSpeaker): String {
+        val language = spec.label.substringBefore(LABEL_LANGUAGE_END)
+        return when (speaker.gender) {
+            SpeakerGender.MALE -> "$language, ${speaker.label} (male)"
+            SpeakerGender.FEMALE -> "$language, ${speaker.label} (female)"
+            SpeakerGender.UNKNOWN -> "$language, ${speaker.label}"
+        }
+    }
+
     private fun row(spec: SherpaVoiceSpec, kind: VoiceKind, status: VoiceStatus, size: Long, reads: Boolean) =
         VoiceRow(spec.voiceId, spec.label, spec.lang, spec.licence, size, kind, status, reads)
+
+    /** A catalog label starts with its language: "English, Bruno (male)". */
+    private const val LABEL_LANGUAGE_END = ','
 
     /** The language the built-in neural voice reads by default (Build Spec §3). */
     private val DEFAULT_NEURAL_LANG = Lang.EN
