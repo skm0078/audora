@@ -107,7 +107,8 @@ jobs:
           ./gradlew ktlintCheck detekt test :pdf:goldenTest -Pgolden.baseline="$GOLDEN_BASELINE"
           :playback:listeningTest -Plistening.baseline="$LISTENING_BASELINE"
           assembleDebug :app:assembleRelease :app:lintDebug
-          :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest --stacktrace
+          :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest
+          :app:assembleUiTestAndroidTest --stacktrace
 
       - name: Lint report
         # Android lint over the app and every module it depends on (API levels above minSdk among them).
@@ -238,7 +239,9 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Build the test APK
-        run: ./gradlew :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest --stacktrace
+        run: >-
+          ./gradlew :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest
+          :app:assembleUiTestAndroidTest --stacktrace
 
       - name: Start the emulator
         timeout-minutes: 15
@@ -276,11 +279,11 @@ jobs:
           [ "$booted" = "1" ] || fail "Emulator did not finish booting"
           echo "Emulator booted"
 
-      - name: Instrumented tests (:pdf, :playback, :speech)
+      - name: Instrumented tests (:pdf, :playback, :speech, :app)
         timeout-minutes: 20
         run: >-
           ./gradlew :pdf:connectedDebugAndroidTest :playback:connectedDebugAndroidTest
-          :speech:connectedDebugAndroidTest --stacktrace
+          :speech:connectedDebugAndroidTest :app:connectedUiTestAndroidTest --stacktrace
 
       - name: Failed device tests
         if: failure()

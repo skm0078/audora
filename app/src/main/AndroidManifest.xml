@@ -28,7 +28,8 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -46,6 +47,33 @@
                 <data android:mimeType="application/pdf" />
             </intent-filter>
         </activity>
+
+        <!-- The Resume widget (plan item 35): draws what the app saved; Resume opens MainActivity. -->
+        <receiver
+            android:name=".widget.ResumeWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_resume_info" />
+        </receiver>
+
+        <!-- Quick Settings tile (plan item 36): play or pause through the media session, or resume the last book. -->
+        <service
+            android:name=".tile.PlaybackTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_play"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
 
         <!-- Hands the Share logs zip (cacheDir/shared-logs only) to the app the user picks (P1-07). -->
         <provider

@@ -12,7 +12,9 @@ import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SleepOptions
+import io.github.skm0078.audora.core.model.TableRowInfo
 import io.github.skm0078.audora.core.model.TextBox
+import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.result.Outcome
@@ -32,6 +34,31 @@ fun book(id: BookId = BOOK) = Book(id, "content://docs/1", "Moby Dick", 1_000, "
 /** Three sentences per page; sentence i of page p starts at char i * 20. */
 fun unitsOf(page: Int, count: Int = 3) = List(count) { i ->
     ReadingUnit(page, i, i * 20, i * 20 + 15, "Page $page sentence $i.", Lang.EN, 0, null)
+}
+
+/**
+ * A page where a table continues from the page before: a sentence, then the table's summary unit with no text whose
+ * `charStart` is its first row's (the :pdf contract; playback says "Table continues"), then two rows.
+ */
+fun continuedTableOf(page: Int): List<ReadingUnit> {
+    fun table(row: Int?) = TableRowInfo(
+        tableIndex = 0,
+        row = row,
+        rowCount = 2,
+        columnCount = 1,
+        headers = emptyList(),
+        cells = emptyList(),
+    )
+    fun row(index: Int, row: Int) = ReadingUnit(
+        page, index, (index - 1) * 20, (index - 1) * 20 + 15, "Row $row.", Lang.EN, 0, null, UnitKind.TABLE_ROW,
+        table = table(row),
+    )
+    return listOf(
+        ReadingUnit(page, 0, 0, 15, "Before the table.", Lang.EN, 0, null),
+        ReadingUnit(page, 1, 20, 20, "", Lang.EN, 0, null, UnitKind.TABLE_SUMMARY, table = table(null)),
+        row(2, 0),
+        row(3, 1),
+    )
 }
 
 /** US Letter, the fake document's page size in points. */

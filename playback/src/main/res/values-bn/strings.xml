@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: playback/src/main/res/values-bn/strings.xml
+  Purpose: Bengali notification and lock-screen text (plan item 44); same keys as values/strings.xml.
+-->
+<resources>
+    <!-- Shown under the book title, e.g. "Page 3 of 50". -->
+    <string name="playback_page_of">পৃষ্ঠা %1$d / %2$d</string>
+    <!-- Shown while the next page is still being prepared. -->
+    <string name="playback_loading_next_page">পরের পৃষ্ঠা তৈরি হচ্ছে…</string>
+
+    <!-- Audiobook export (ADR-034): the notification channel and its notifications. -->
+    <string name="export_channel">অডিওবুক এক্সপোর্ট</string>
+    <string name="export_channel_description">বই অডিও ফাইল হিসেবে সেভ হওয়ার অগ্রগতি</string>
+    <!-- %1$s is the book's title. -->
+    <string name="export_running_title">“%1$s” অডিওবুক হিসেবে সেভ হচ্ছে</string>
+    <!-- e.g. "Chapter 3 of 12 · 41%". -->
+    <string name="export_running_text">অধ্যায় %1$d / %2$d · %3$d%%</string>
+    <string name="export_preparing">তৈরি হচ্ছে…</string>
+    <string name="export_cancel">বাতিল</string>
+    <string name="export_done_title">অডিওবুক তৈরি: “%1$s”</string>
+    <!-- %1$d files, %2$s a duration like "2 h 05 min", %3$s the folder, e.g. "Audiobooks/Moby Dick". -->
+    <plurals name="export_done_text">
+        <item quantity="one">%1$dটি ফাইল, %2$s, %3$s-এ</item>
+        <item quantity="other">%1$dটি ফাইল, %2$s, %3$s-এ</item>
+    </plurals>
+    <string name="export_duration">%1$d ঘণ্টা %2$02d মিনিট</string>
+    <string name="export_failed_title">“%1$s” অডিওবুক হিসেবে সেভ করা যায়নি</string>
+    <string name="export_cancelled_title">“%1$s” সেভ করা বন্ধ হয়েছে</string>
+    <string name="export_cancelled_text">যে অধ্যায়গুলো সেভ হয়েছে সেগুলো %1$s-এ রাখা আছে</string>
+    <string name="export_busy">আরেকটি বই অডিওবুক হিসেবে সেভ হচ্ছে; সেটি শেষ হলে আবার চেষ্টা করুন</string>
+    <string name="export_untitled">অডিওবুক</string>
+</resources>

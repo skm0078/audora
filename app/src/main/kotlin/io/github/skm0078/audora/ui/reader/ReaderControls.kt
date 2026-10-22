@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.speech.voices.VoiceRow
+import io.github.skm0078.audora.ui.theme.Dimens
 import kotlinx.coroutines.delay
 
 @Composable
@@ -47,9 +50,14 @@ fun ReaderControls(
 ) {
     val enabled = state.playerReady
     val loaded = state.readingPosition != null
-    Surface(tonalElevation = 3.dp, modifier = modifier.fillMaxWidth()) {
+    // A raised panel with rounded top corners, so the controls read as one block under the thumb (ADR-036).
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(topStart = Dimens.SpaceXl, topEnd = Dimens.SpaceXl),
+        modifier = modifier.fillMaxWidth(),
+    ) {
         Row(
-            modifier = Modifier.navigationBarsPadding().padding(horizontal = 8.dp, vertical = 8.dp),
+            modifier = Modifier.navigationBarsPadding().padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceM),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -213,5 +221,5 @@ private fun sleepTimerLabel(timer: SleepTimerState): String? = when (timer) {
     is SleepTimerState.AfterChapters -> stringResource(R.string.reader_sleep_chapters, timer.count)
 }
 
-private val PLAY_BUTTON_SIZE = 64.dp
+private val PLAY_BUTTON_SIZE = Dimens.PlayButton
 private const val TICK_MS = 1_000L

@@ -325,4 +325,19 @@ class ReaderModelTest {
         assertEquals(1, state.spokenUnitIndex)
         assertNull(state.copy(playback = state.playback.copy(position = ReadingPosition(BOOK, 0, 17))).spokenUnitIndex)
     }
+
+    @Test
+    fun `a position at a continued table's first row is that row, not the empty summary before it`() {
+        val units = continuedTableOf(0)
+        val state = ReaderState(
+            bookId = BOOK,
+            document = DocumentState.Open(10),
+            content = PageContent.Ready(units),
+            playback = PlaybackSnapshot(
+                PlaybackSnapshot.Connection.CONNECTED,
+                position = ReadingPosition(BOOK, 0, units[2].charStart),
+            ),
+        )
+        assertEquals(2, state.spokenUnitIndex)
+    }
 }

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: playback/src/main/res/values-hi/strings.xml
+  Purpose: Hindi notification and lock-screen text (plan item 44); same keys as values/strings.xml.
+-->
+<resources>
+    <!-- Shown under the book title, e.g. "Page 3 of 50". -->
+    <string name="playback_page_of">पेज %1$d / %2$d</string>
+    <!-- Shown while the next page is still being prepared. -->
+    <string name="playback_loading_next_page">अगला पेज तैयार हो रहा है…</string>
+
+    <!-- Audiobook export (ADR-034): the notification channel and its notifications. -->
+    <string name="export_channel">ऑडियोबुक एक्सपोर्ट</string>
+    <string name="export_channel_description">किताब को ऑडियो फ़ाइलों के रूप में सेव करते समय प्रगति</string>
+    <!-- %1$s is the book's title. -->
+    <string name="export_running_title">“%1$s” ऑडियोबुक के रूप में सेव हो रही है</string>
+    <!-- e.g. "Chapter 3 of 12 · 41%". -->
+    <string name="export_running_text">अध्याय %1$d / %2$d · %3$d%%</string>
+    <string name="export_preparing">तैयार हो रहा है…</string>
+    <string name="export_cancel">रद्द करें</string>
+    <string name="export_done_title">ऑडियोबुक तैयार: “%1$s”</string>
+    <!-- %1$d files, %2$s a duration like "2 h 05 min", %3$s the folder, e.g. "Audiobooks/Moby Dick". -->
+    <plurals name="export_done_text">
+        <item quantity="one">%1$d फ़ाइल, %2$s, %3$s में</item>
+        <item quantity="other">%1$d फ़ाइलें, %2$s, %3$s में</item>
+    </plurals>
+    <string name="export_duration">%1$d घंटे %2$02d मिनट</string>
+    <string name="export_failed_title">“%1$s” को ऑडियोबुक के रूप में सेव नहीं किया जा सका</string>
+    <string name="export_cancelled_title">“%1$s” को सेव करना रोका गया</string>
+    <string name="export_cancelled_text">जो अध्याय सेव हो चुके हैं, वे %1$s में रखे गए हैं</string>
+    <string name="export_busy">एक और किताब ऑडियोबुक के रूप में सेव हो रही है; उसके पूरा होने पर फिर से कोशिश करें</string>
+    <string name="export_untitled">ऑडियोबुक</string>
+</resources>

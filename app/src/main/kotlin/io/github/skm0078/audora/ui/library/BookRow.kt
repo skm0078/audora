@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/BookRow.kt
-// Purpose: One library row: cover, title, pages, last use and progress, a warning when the file is gone, its menu.
+// Purpose: A library book as a list row or a grid tile: cover, title, progress, a warning when the file is gone, menu.
 
 package io.github.skm0078.audora.ui.library
 
@@ -40,6 +40,7 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.library.LibraryError
+import io.github.skm0078.audora.ui.kids.LocalKidsMode
 
 @Composable
 internal fun BookRow(
@@ -48,10 +49,11 @@ internal fun BookRow(
     onRemove: () -> Unit,
     onExport: () -> Unit,
     covers: CoverSource = CoverSource.None,
+    onAddToUpNext: () -> Unit = {},
+    onDetails: () -> Unit = {},
 ) {
-    var menuOpen by remember { mutableStateOf(false) }
     ListItem(
-        leadingContent = { BookCover(item.book, covers) },
+        leadingContent = { BookCover(item.book, covers, Modifier.size(COVER_WIDTH, COVER_HEIGHT)) },
         headlineContent = {
             Text(displayTitle(item.book), maxLines = TITLE_LINES, overflow = TextOverflow.Ellipsis)
         },
@@ -66,41 +68,55 @@ internal fun BookRow(
                 }
             }
         },
-        trailingContent = {
-            Box {
-                IconButton(onClick = { menuOpen = true }) {
-                    Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.library_book_menu))
-                }
-                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    // Only a book Audora can still open can be read into audio files (ADR-034).
-                    if (item.availability == BookAvailability.AVAILABLE) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.library_export_audiobook)) },
-                            onClick = {
-                                menuOpen = false
-                                onExport()
-                            },
-                        )
-                    }
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.library_remove)) },
-                        onClick = {
-                            menuOpen = false
-                            onRemove()
-                        },
-                    )
-                }
-            }
-        },
+        trailingContent = { BookMenu(item, onRemove, onExport, onAddToUpNext, onDetails) },
         modifier = Modifier.clickable(onClick = onTap),
     )
+}
+
+/** A book's menu: Details, Up next and Save as audiobook while the file can be opened, Remove. None in kids mode. */
+@Composable
+internal fun BookMenu(
+    item: LibraryItem,
+    onRemove: () -> Unit,
+    onExport: () -> Unit,
+    onAddToUpNext: () -> Unit,
+    onDetails: () -> Unit = {},
+) {
+    if (LocalKidsMode.current) return
+    var menuOpen by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { menuOpen = true }) {
+            Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.library_book_menu))
+        }
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            val choose = { action: () -> Unit ->
+                menuOpen = false
+                action()
+            }
+            DropdownMenuItem(text = {
+                Text(stringResource(R.string.book_details_title))
+            }, onClick = { choose(onDetails) })
+            // Only a book Audora can still open can be queued or read into audio files (ADR-034).
+            if (item.availability == BookAvailability.AVAILABLE) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.library_add_to_up_next)) },
+                    onClick = { choose(onAddToUpNext) },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.library_export_audiobook)) },
+                    onClick = { choose(onExport) },
+                )
+            }
+            DropdownMenuItem(text = { Text(stringResource(R.string.library_remove)) }, onClick = { choose(onRemove) })
+        }
+    }
 }
 
 @Composable
 internal fun displayTitle(book: Book): String = titleOrUntitled(book.title)
 
 @Composable
-private fun availabilityWarning(availability: BookAvailability?): String? = when (availability) {
+internal fun availabilityWarning(availability: BookAvailability?): String? = when (availability) {
     BookAvailability.MISSING -> stringResource(R.string.library_file_missing)
     BookAvailability.ACCESS_LOST -> stringResource(R.string.library_access_lost)
     BookAvailability.AVAILABLE, null -> null
@@ -139,7 +155,7 @@ internal fun messageText(message: LibraryMessage): String = when (message) {
 }
 
 @Composable
-private fun titleOrUntitled(title: String): String =
+internal fun titleOrUntitled(title: String): String =
     title.takeUnless { it == BookTitles.UNTITLED } ?: stringResource(R.string.library_untitled)
 
 private fun errorText(error: LibraryError): Int = when (error) {
@@ -151,16 +167,15 @@ private fun errorText(error: LibraryError): Int = when (error) {
     is LibraryError.Storage -> R.string.library_error_storage
 }
 
-private const val TITLE_LINES = 2
+internal const val TITLE_LINES = 2
 
 /** The first page once drawn (plan item 21); until then, or without one, a paper-coloured card with the initial. */
 @Composable
-private fun BookCover(book: Book, covers: CoverSource) {
+internal fun BookCover(book: Book, covers: CoverSource, modifier: Modifier = Modifier) {
     val cover by produceState<ImageBitmap?>(null, book.id, book.documentUri) { value = covers.cover(book) }
     val shape = RoundedCornerShape(COVER_CORNER)
     Box(
-        modifier = Modifier.size(COVER_WIDTH, COVER_HEIGHT).clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+        modifier = modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
         val image = cover

@@ -41,6 +41,7 @@ internal fun OcrModelsItem(
             }
             action?.let { (what, label) -> TextButton(onClick = { onAction(what) }) { Text(stringResource(label)) } }
         },
+        colors = settingsRowColors(),
     )
 }
 
