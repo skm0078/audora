@@ -26,7 +26,9 @@ data class PaceTiming(val sentenceGapMs: Int, val pauseScale: Float) {
  * Speed is hybrid (ADR-033): up to [maxModelRate] the voice model itself speaks faster (VITS/Piper length scale,
  * Kokoro and Supertonic duration), which keeps every phoneme; past it the model stays at [maxModelRate] and the
  * player time-stretches the rest (Sonic, in Media3), because a model pushed further starts to swallow syllables.
- * Slower than normal is always the model's own: a stretched voice sounds smeared.
+ * Slower than normal is always the model's own: a stretched voice sounds smeared. With smart speed on
+ * ([VoiceShaping.smartSpeed], ADR-049) the rest above the cap is the renderer's uneven stretch of the voice instead
+ * ([voiceStretch]), and the player stays at 1.0 ([playerSpeed] of a style).
  *
  * @property minRate slowest rate offered. Neural voices stay clear down to about half speed.
  * @property maxRate fastest rate offered.
@@ -69,26 +71,58 @@ data class SpeechStyleConfig(
     /** The rate the voice model renders at for listening [rate]. */
     fun modelRate(rate: Float): Float = clampRate(rate).coerceAtMost(maxModelRate)
 
-    /** The player's time-stretch for listening [rate]: 1.0 until the model's cap, the rest above it. */
-    fun playerSpeed(rate: Float): Float = clampRate(rate) / modelRate(rate)
+    /**
+     * The player's time-stretch for [style]: 1.0 until the model's cap, the rest above it; or 1.0 when smart speed
+     * stretches the voice instead. With [voiceStretch], exactly one of the two carries the speed past the model's cap.
+     */
+    fun playerSpeed(style: SpeechStyle): Float = if (style.shaping.smartSpeed) 1f else pastModel(style.rate)
+
+    /** How much faster than the model the renderer makes the voice for [style]: 1.0 unless smart speed is on. */
+    fun voiceStretch(style: SpeechStyle): Float = if (style.shaping.smartSpeed) pastModel(style.rate) else 1f
+
+    /**
+     * [style] as it is heard: smart speed changes nothing at or below the model's cap (the voice is not stretched
+     * there), so it counts as off, and turning it on or off there restarts nothing.
+     */
+    fun asHeard(style: SpeechStyle): SpeechStyle = if (style.shaping.smartSpeed && pastModel(style.rate) <= 1f) {
+        style.copy(shaping = style.shaping.copy(smartSpeed = false))
+    } else {
+        style
+    }
+
+    /**
+     * The style to render the sentence "What did it say?" replays with, [factor] times [style]'s speed, when the
+     * replay must not go through the player's stretch: with smart speed stretching the voice, slowing its output with
+     * the player would run one time-stretch over the other. Null when the player can slow the rendered sentence
+     * cleanly (smart speed off or not stretching), which needs no new render.
+     */
+    fun replayStyle(style: SpeechStyle, factor: Float): SpeechStyle? =
+        style.takeIf { voiceStretch(it) > 1f }?.copy(rate = clampRate(style.rate * factor))
+
+    /**
+     * The speed left after the model's cap for listening [rate]. Private, so nothing can apply it as a player speed
+     * on top of the voice's own stretch (3x would then play as 6x): [playerSpeed] and [voiceStretch] split it.
+     */
+    private fun pastModel(rate: Float): Float = clampRate(rate) / modelRate(rate)
 
     /**
      * Milliseconds of silence to put in the clip after a sentence whose own pause is [pauseAfterMs]. Pauses shrink
      * with the square root of the speed, not in proportion to it: kept pauses are what keeps fast speech
-     * intelligible. The clip is then stretched by [playerSpeed], so the silence is lengthened to survive that.
+     * intelligible. The clip is then stretched by the player ([playerSpeed] of [style]), so the silence is
+     * lengthened to survive that.
      */
     fun silenceAfterMs(pauseAfterMs: Int, style: SpeechStyle): Int {
         val timing = paces.getValue(style.pace)
         val atNormal = timing.sentenceGapMs + pauseAfterMs.coerceAtLeast(0) * timing.pauseScale
         val rate = clampRate(style.rate)
-        return (atNormal / sqrt(rate) * playerSpeed(rate)).roundToInt()
+        return (atNormal / sqrt(rate) * playerSpeed(style)).roundToInt()
     }
 
     /** Milliseconds of silence at [mark] inside a sentence: scaled by the pace and the speed like [silenceAfterMs]. */
     fun clauseSilenceMs(mark: ClauseMark, style: SpeechStyle): Int {
         val atNormal = clausePausesMs.getValue(mark) * paces.getValue(style.pace).pauseScale
         val rate = clampRate(style.rate)
-        return (atNormal / sqrt(rate) * playerSpeed(rate)).roundToInt()
+        return (atNormal / sqrt(rate) * playerSpeed(style)).roundToInt()
     }
 
     private companion object {

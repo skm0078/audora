@@ -67,7 +67,10 @@ class VoiceLibrary private constructor(
     fun voiceDir(id: String): File = files.voiceDir(id)
 
     /** The voice picked for [lang] in Settings → Voices if it can still speak, else null (the default reads). */
-    fun preferredVoice(lang: Lang): VoiceId? = readingVoices.preferred(lang) { voice ->
+    fun preferredVoice(lang: Lang): VoiceId? = readingVoices.preferred(lang, canSpeak)
+
+    /** Whether a voice can read now: a phone TTS voice always may; a neural one only while bundled or installed. */
+    val canSpeak: (VoiceId) -> Boolean = { voice ->
         voice.engine != EngineId.SHERPA || voice.name == bundled?.id || installedNow().any { it.spec.id == voice.name }
     }
 
@@ -89,6 +92,7 @@ class VoiceLibrary private constructor(
     suspend fun delete(id: String): Outcome<Unit, String> = withContext(Dispatchers.IO) {
         downloads.cancel(id)
         val result = synchronized(lock) { files.delete(id).also { refreshLocked() } }
+        SpeechEngines.blendCache(appContext).clear(id) // a Kokoro voice's narrator blend copy (plan item 75)
         readingVoices.forget(VoiceId(EngineId.SHERPA, id))
         speeds.forget(VoiceId(EngineId.SHERPA, id))
         result

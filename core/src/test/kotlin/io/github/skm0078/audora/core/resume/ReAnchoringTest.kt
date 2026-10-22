@@ -4,6 +4,8 @@
 package io.github.skm0078.audora.core.resume
 
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.TableRowInfo
+import io.github.skm0078.audora.core.model.UnitKind
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -14,7 +16,23 @@ class ReAnchoringTest {
     private val page = unitsOf(4, FIRST, SECOND, THIRD)
 
     private fun anchorAt(index: Int, units: List<ReadingUnit> = page) = units[index].let {
-        ResumeAnchor(BOOK, it.page, it.charStart, fingerprint.head(it.text), fingerprint.tail(it.text), V1, 0L)
+        ResumeAnchor(BOOK, it.page, it.charStart, fingerprint.head(it), fingerprint.tail(it), V1, 0L)
+    }
+
+    /** A continued table: a zero-length "Table continues" summary sharing its offset with row 0, then row 1. */
+    private fun continuedTable(startOffset: Int): List<ReadingUnit> {
+        val rows = unitsOf(4, FIRST, SECOND, startOffset = startOffset)
+        val info = TableRowInfo(0, null, 2, 1, listOf("Year"), emptyList(), continued = true, rowsBefore = 5)
+        val summary = rows[0].copy(
+            index = 0,
+            charEnd = startOffset,
+            text = "",
+            kind = UnitKind.TABLE_SUMMARY,
+            table = info,
+        )
+        return listOf(summary) + rows.mapIndexed { i, row ->
+            row.copy(index = i + 1, kind = UnitKind.TABLE_ROW, table = info.copy(row = i, cells = emptyList()))
+        }
     }
 
     @Test
@@ -109,6 +127,27 @@ class ReAnchoringTest {
 
         assertEquals(AnchorMatch.OFFSET_UNVERIFIED, point.match)
         assertEquals(symbols[1].charStart, point.charStart)
+    }
+
+    @Test
+    fun `an anchor on a zero-length table summary is found again after a pipeline change`() {
+        val units = continuedTable(startOffset = 10)
+        val anchor = anchorAt(0, units)
+
+        assertEquals(ResumePoint(4, 10, AnchorMatch.EXACT), reAnchoring.locate(anchor, V1, units))
+        assertEquals(ResumePoint(4, 10, AnchorMatch.OFFSET_VERIFIED), reAnchoring.locate(anchor, V2, units))
+        // A new sentence now sits at the saved offset and the table moved after it.
+        val moved = unitsOf(4, THIRD) + continuedTable(startOffset = THIRD.length + 1)
+        val point = reAnchoring.locate(anchor, V2, moved)
+        assertEquals(ResumePoint(4, THIRD.length + 1, AnchorMatch.HEAD_FINGERPRINT), point)
+    }
+
+    @Test
+    fun `among units sharing an offset, the one with the saved fingerprint is picked`() {
+        val units = continuedTable(startOffset = 10)
+
+        assertEquals(AnchorMatch.EXACT, reAnchoring.locate(anchorAt(0, units), V1, units).match)
+        assertEquals(AnchorMatch.EXACT, reAnchoring.locate(anchorAt(1, units), V1, units).match)
     }
 
     private companion object {

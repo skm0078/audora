@@ -83,9 +83,7 @@ internal fun sherpaModelConfig(
 ): OfflineTtsModelConfig {
     val base = OfflineTtsModelConfig(numThreads = threads, debug = false, provider = SHERPA_PROVIDER)
     return when (spec.family) {
-        SherpaFamily.VITS -> base.copy(
-            vits = OfflineTtsVitsModelConfig(model = path(spec.model), tokens = path(spec.tokens), dataDir = dataDir),
-        )
+        SherpaFamily.VITS -> base.copy(vits = vitsConfig(spec, dataDir, path))
 
         SherpaFamily.KITTEN -> base.copy(
             kitten = OfflineTtsKittenModelConfig(
@@ -121,6 +119,13 @@ internal fun sherpaModelConfig(
     }
 }
 
+/** The listener's expressiveness ([SherpaVoiceSpec.noise]) on top; sherpa's own noise values without it. */
+private fun vitsConfig(spec: SherpaVoiceSpec, dataDir: String, path: (String) -> String): OfflineTtsVitsModelConfig {
+    val files = OfflineTtsVitsModelConfig(model = path(spec.model), tokens = path(spec.tokens), dataDir = dataDir)
+    val noise = spec.noise ?: return files
+    return files.copy(noiseScale = noise.scale, noiseScaleW = noise.width)
+}
+
 /**
  * Per-render options for [spec]: Supertonic is told its language and step count on every call (it is one
  * multilingual model); the other families ignore both. [rate] is the speaking rate every family honours: VITS and
@@ -149,6 +154,8 @@ private const val KEEP_VOICE_PAUSES = 1f
 internal class OfflineTtsSynthesizer(private val tts: OfflineTts, private val spec: SherpaVoiceSpec) :
     SherpaSynthesizer {
     override val sampleRate: Int = tts.sampleRate()
+
+    override val speakerCount: Int = tts.numSpeakers()
 
     override fun generate(text: String, speakerId: Int, rate: Float, keepGoing: () -> Boolean): FloatArray {
         val config = sherpaGenerationConfig(spec, speakerId, rate)

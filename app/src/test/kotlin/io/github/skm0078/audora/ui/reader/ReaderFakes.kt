@@ -6,14 +6,22 @@ package io.github.skm0078.audora.ui.reader
 import androidx.compose.ui.graphics.ImageBitmap
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.TextBox
+import io.github.skm0078.audora.core.model.VoiceId
+import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.pdf.document.OutlineEntry
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.pdf.render.PageTransform
+import io.github.skm0078.audora.playback.contract.StudyAction
+import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.flow.MutableStateFlow
 
 val BOOK = BookId("3f2a9c01-7b1e-4c55-9a0d-2f6c1e8b7d10")
@@ -51,17 +59,23 @@ class FakePlaybackPort : PlaybackPort {
     override val state = MutableStateFlow(PlaybackSnapshot.Connecting)
     val calls = mutableListOf<String>()
     val starts = mutableListOf<Pair<ReadingPosition, String?>>()
+    val reports = mutableListOf<SoundedWrongReport>()
 
-    fun connect(speed: Float = 1f) {
-        state.value = PlaybackSnapshot(PlaybackSnapshot.Connection.CONNECTED, speed = speed)
+    /** [styleKnown] false: connected, but the service hasn't published its speech style yet. */
+    fun connect(speed: Float = 1f, styleKnown: Boolean = true) {
+        state.value = PlaybackSnapshot(PlaybackSnapshot.Connection.CONNECTED, styleKnown = styleKnown, speed = speed)
     }
 
     fun readingAt(position: ReadingPosition, playing: Boolean = true) {
         state.value = state.value.copy(position = position, wantsToPlay = playing)
     }
 
-    override fun start(position: ReadingPosition, password: String?) {
+    /** The unit index each start carried (a tap's), in order. */
+    val startIndexes = mutableListOf<Int?>()
+
+    override fun start(position: ReadingPosition, password: String?, unitIndex: Int?) {
         starts += position to password
+        startIndexes += unitIndex
     }
 
     override fun play() {
@@ -88,12 +102,64 @@ class FakePlaybackPort : PlaybackPort {
         calls += "clause pauses $on"
     }
 
+    override fun setReadingModes(modes: ReadingModes) {
+        calls += "reading modes ${modes.encode()}"
+    }
+
+    override fun setVoiceShaping(shaping: VoiceShaping) {
+        calls += "voice shaping ${shaping.encode()}"
+    }
+
     override fun setSpeed(speed: Float) {
         calls += "speed $speed"
     }
 
     override fun setSleepTimer(setting: SleepTimerSetting) {
         calls += "sleep $setting"
+    }
+
+    override fun setSleepOptions(options: SleepOptions) {
+        calls += "sleep options ${options.encode()}"
+    }
+
+    override fun setFocusSound(options: FocusSoundOptions) {
+        calls += "focus sound ${options.encode()}"
+    }
+
+    override fun setOwnSettings(on: Boolean) {
+        calls += "own settings $on"
+    }
+
+    override fun setBookVoice(lang: Lang, voice: VoiceId) {
+        calls += "book voice $lang $voice"
+    }
+
+    override fun undoJump() {
+        calls += "undo jump"
+    }
+
+    /** True: every paragraph skip is refused, as the service does at the book's end. */
+    var refuseParagraphs = false
+
+    override fun skipParagraph(forward: Boolean, onRefused: () -> Unit) {
+        calls += "paragraph forward=$forward"
+        if (refuseParagraphs) onRefused()
+    }
+
+    override fun replayPrevious(factor: Float) {
+        calls += "replay $factor"
+    }
+
+    override fun study(action: StudyAction, loop: Boolean) {
+        calls += "study $action loop=$loop"
+    }
+
+    override fun playRange(start: ReadingPosition, end: ReadingPosition, loop: Boolean, password: String?) {
+        calls += "range ${start.page}:${start.charStart}..${end.page}:${end.charStart} loop=$loop"
+    }
+
+    override fun reportSoundedWrong(report: SoundedWrongReport) {
+        reports += report
     }
 }
 
@@ -102,6 +168,7 @@ class FakeDocument(
     private val failingPages: Set<Int> = emptySet(),
     private val unitsOnPage: (Int) -> List<ReadingUnit> = { unitsOf(it) },
     private val failingRenders: Set<Int> = emptySet(),
+    private val outline: List<OutlineEntry> = emptyList(),
 ) : ReaderDocument {
     var closed = false
     val reads = mutableListOf<Int>()
@@ -115,6 +182,8 @@ class FakeDocument(
             Outcome.Success(unitsOnPage(page))
         }
     }
+
+    override suspend fun outline(): List<OutlineEntry> = outline
 
     override suspend fun render(page: Int, widthPx: Int, maxPixels: Int): Outcome<PageImage, PdfPageError> =
         if (page in failingRenders) {

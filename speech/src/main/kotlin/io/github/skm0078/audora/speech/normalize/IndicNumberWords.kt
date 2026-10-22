@@ -27,8 +27,8 @@ internal class IndicNumberWords private constructor(
      */
     class Terms(val point: String, val percent: String, val to: String, val currency: String, val paise: String)
 
-    /** Words for "/" and "&" between words (RI-6). */
-    class Conjunctions(val or: String, val and: String)
+    /** Words for "/" and "&" between words (RI-6), and for "/" in a rate after a number ("60 किमी/घंटा"). */
+    class Conjunctions(val or: String, val and: String, val per: String)
 
     private val belowHundred = belowHundred.map(::nfc)
     private val thousand = nfc(scale.thousand)
@@ -41,6 +41,7 @@ internal class IndicNumberWords private constructor(
     val paise = nfc(terms.paise)
     val or = nfc(conjunctions.or)
     val and = nfc(conjunctions.and)
+    val per = nfc(conjunctions.per)
 
     init {
         require(this.belowHundred.size == HUNDRED.toInt()) { "one word for each of 0..99" }
@@ -109,7 +110,7 @@ internal class IndicNumberWords private constructor(
                 currency = "रुपये",
                 paise = "पैसे",
             ),
-            conjunctions = Conjunctions(or = "या", and = "और"),
+            conjunctions = Conjunctions(or = "या", and = "और", per = "प्रति"),
         )
 
         val BENGALI = IndicNumberWords(
@@ -136,7 +137,7 @@ internal class IndicNumberWords private constructor(
                 currency = "টাকা",
                 paise = "পয়সা",
             ),
-            conjunctions = Conjunctions(or = "বা", and = "এবং"),
+            conjunctions = Conjunctions(or = "বা", and = "এবং", per = "প্রতি"),
         )
     }
 }

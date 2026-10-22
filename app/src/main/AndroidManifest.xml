@@ -14,6 +14,9 @@
          off on several brands without it (Build Spec §6). -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- Voice notes (plan item 32, ADR-041): asked the first time the listener records one, never otherwise. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <application
         android:name=".AudoraApplication"
         android:allowBackup="false"

@@ -25,6 +25,7 @@ class ClauseSplitterTest {
         val cases = listOf(
             "Wait — then go." to "Wait |DASH| then go.",
             "Wait -- then go." to "Wait |DASH| then go.",
+            "Wait---then go." to "Wait |DASH| then go.",
             "Wait - then go." to "Wait |DASH| then go.",
             "Wait – then go." to "Wait |DASH| then go.",
             "Note: read this." to "Note |COLON| read this.",
@@ -40,7 +41,7 @@ class ClauseSplitterTest {
     }
 
     @Test
-    fun `commas, ranges, times, links and lone closing brackets never cut`() {
+    fun `commas, ranges, times, links, labels and lone closing brackets never cut`() {
         val cases = listOf(
             "Red, green, and blue.",
             "Pages 10–20 and 10 – 20 and 1990—2000.",
@@ -48,6 +49,8 @@ class ClauseSplitterTest {
             "See https://example.org now.",
             "COVID-19 and well-known words.",
             "a) first item",
+            "Two cases, (i) the first and (iv) the last.",
+            "See (a), Eq. (2.14) and the word(s) in it.",
             "Is it? Yes!",
             "Value 3.14 here.",
         )
@@ -71,6 +74,12 @@ class ClauseSplitterTest {
             Lang.HI to ("राम (मोहन) आए।" to "राम |BRACKET| (मोहन) |BRACKET| आए।"),
             Lang.HI to ("पहली पंक्ति। दूसरी पंक्ति॥" to "पहली पंक्ति |DANDA| दूसरी पंक्ति॥"),
             Lang.BN to ("নিয়ম হল: সবাই পড়বে।" to "নিয়ম হল |COLON| সবাই পড়বে।"),
+            // A colon labelling a time keeps the time with its word, so it is still read as a time.
+            Lang.HI to ("बैठक का समय: 10:30 PM है।" to "बैठक का समय: 10:30 PM है।"),
+            Lang.BN to ("সময়: ৯:৩০ PM" to "সময়: ৯:৩০ PM"),
+            Lang.HI to ("समय : 10:30 बजे" to "समय : 10:30 बजे"),
+            Lang.HI to ("समय:\u00A010:30 बजे" to "समय:\u00A010:30 बजे"),
+            Lang.HI to ("समय: 3 घंटे" to "समय |COLON| 3 घंटे"),
             Lang.BN to ("প্রথম অংশ; দ্বিতীয় অংশ।" to "প্রথম অংশ |SEMICOLON| দ্বিতীয় অংশ।"),
             Lang.BN to ("তিনি বললেন “এখন যাও” এবং গেলেন।" to "তিনি বললেন |QUOTE| এখন যাও |QUOTE| এবং গেলেন।"),
         )
@@ -98,5 +107,28 @@ class ClauseSplitterTest {
         assertEquals(listOf<ClauseMark?>(null, COLON), clauses.map { it.pauseBefore })
         assertEquals(listOf("The rule for everyone here", "इसी को पढ़ें।"), clauses.map { it.text })
         assertEquals(listOf(Lang.EN, Lang.HI), clauses.map { it.lang })
+    }
+
+    @Test
+    fun `a symbol between two cuts is read with the next piece, never dropped`() {
+        assertEquals(
+            "Thus |BRACKET| (a + b) |BRACKET| (= c + d) |BRACKET| holds.",
+            cut("Thus (a + b) = (c + d) holds."),
+        )
+        assertEquals("(¬ P and Q) |BRACKET| is false.", cut("¬(P and Q) is false."))
+    }
+
+    @Test
+    fun `a label inside brackets keeps the outer aside whole`() {
+        assertEquals(
+            "The model |BRACKET| (see Eq. (3) below) |BRACKET| fits.",
+            cut("The model (see Eq. (3) below) fits."),
+        )
+        assertEquals(
+            "Read it |BRACKET| (as amended by clause (iv) of section 2) |BRACKET| today.",
+            cut("Read it (as amended by clause (iv) of section 2) today."),
+        )
+        assertEquals("Exceptions (i) and (iv) apply.", cut("Exceptions (i) and (iv) apply."))
+        assertEquals("Enter the word(s) here.", cut("Enter the word(s) here."))
     }
 }

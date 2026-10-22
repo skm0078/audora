@@ -13,6 +13,7 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.BookProgress
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.library.LibraryError
+import io.github.skm0078.audora.core.library.LibraryQuery
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeAnchor
@@ -52,6 +53,7 @@ class LibraryController(
         private set
 
     private var books: List<Book> = emptyList()
+    private var query = LibraryQuery()
     private var progress: Map<BookId, ResumeAnchor> = emptyMap()
 
     /** Last check per book, with the URI it was made for: a book moved to a new URI is checked again. */
@@ -65,6 +67,7 @@ class LibraryController(
             AudoraLog.w(TAG, "Reading positions could not be loaded; the library shows no progress", e)
             emit(emptyList())
         }
+        scope.launch { library.pruneDocuments() }
         watch = scope.launch {
             combine(library.books(), saved) { latest, positions -> latest to positions }
                 .catch { e ->
@@ -79,6 +82,13 @@ class LibraryController(
                     checkFiles(fresh)
                 }
         }
+    }
+
+    /** Search, sort and filter (plan item 22); the search text is the listener's own, so it is never logged. */
+    fun setQuery(next: LibraryQuery) {
+        if (next == query) return
+        query = next
+        publish()
     }
 
     /** The screen came back to the foreground: files may have been moved or deleted meanwhile. */
@@ -176,7 +186,12 @@ class LibraryController(
             .mapNotNull { item -> item.progress?.let { item to it.savedAtMillis } }
             .maxByOrNull { it.second }
             ?.first
-        listState = LibraryListState.Loaded(items, continueReading = latest)
+        listState = LibraryListState.Loaded(
+            items = query.apply(items, book = { it.book }, progress = { it.progress }),
+            continueReading = latest.takeIf { query.isDefault },
+            all = items,
+            query = query,
+        )
     }
 
     private companion object {

@@ -4,8 +4,12 @@
 package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.config.ReaderConfig
+import io.github.skm0078.audora.core.model.FocusSound
+import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.pdf.document.PdfOpenError
+import io.github.skm0078.audora.speech.kws.VoiceCommand
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -114,6 +118,7 @@ class ReaderModelTest {
         port.connect()
         model.readFrom(unitsOf(0)[2])
         assertEquals(listOf(ReadingPosition(BOOK, 0, 40) to null), port.starts)
+        assertEquals("a tap names its unit", listOf<Int?>(2), port.startIndexes)
     }
 
     @Test
@@ -211,6 +216,18 @@ class ReaderModelTest {
     }
 
     @Test
+    fun `the saved speed waits for the service's own style, so a default is never taken for it`() =
+        runTest(UnconfinedTestDispatcher()) {
+            speeds.saved = 1.5f
+            model()
+            port.connect(speed = 1f, styleKnown = false)
+            assertTrue(port.calls.isEmpty())
+
+            port.connect(speed = 1.5f)
+            assertTrue("the service already reads at the saved speed", port.calls.isEmpty())
+        }
+
+    @Test
     fun `no speed call when the player already has it`() = runTest(UnconfinedTestDispatcher()) {
         speeds.saved = 1.5f
         model()
@@ -226,6 +243,17 @@ class ReaderModelTest {
         assertEquals(listOf("speed 2.0"), port.calls)
         assertEquals(2f, speeds.saved)
     }
+
+    @Test
+    fun `a voice command's speed change plays but is not saved, and pause acts only while reading`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val model = model()
+            port.connect(speed = 1f)
+            model.onVoiceCommand(VoiceCommand.FASTER, ReaderConfig())
+            model.onVoiceCommand(VoiceCommand.PAUSE, ReaderConfig())
+            assertEquals(listOf("speed 1.25"), port.calls)
+            assertNull(speeds.saved)
+        }
 
     @Test
     fun `speeds between the steps snap to the slider, and pace goes to the player`() =
@@ -245,7 +273,37 @@ class ReaderModelTest {
         model.skipForward()
         model.skipBack()
         model.setSleepTimer(SleepTimerSetting.EndOfPage)
-        assertEquals(listOf("next", "previous", "sleep EndOfPage"), port.calls)
+        model.setSleepTimer(SleepTimerSetting.AfterChapters(2))
+        model.setSleepOptions(SleepOptions(bedtime = true))
+        model.setFocusSound(FocusSoundOptions(FocusSound.RAIN, level = 0.3f))
+        assertEquals(
+            listOf(
+                "next",
+                "previous",
+                "sleep EndOfPage",
+                "sleep AfterChapters(count=2)",
+                "sleep options ${SleepOptions(bedtime = true).encode()}",
+                "focus sound sound=RAIN;level=0.3",
+            ),
+            port.calls,
+        )
+    }
+
+    @Test
+    fun `a paragraph skip with no paragraph that way says so once`() = runTest(UnconfinedTestDispatcher()) {
+        val model = model()
+        port.connect()
+        model.skipParagraph(forward = true)
+        assertNull(model.state.value.skipRefused)
+
+        port.refuseParagraphs = true
+        model.skipParagraph(forward = true)
+        assertEquals(ParagraphSkipRefusal.NO_NEXT, model.state.value.skipRefused)
+        model.skipRefusalShown()
+        assertNull(model.state.value.skipRefused)
+        model.skipParagraph(forward = false)
+        assertEquals(ParagraphSkipRefusal.NO_PREVIOUS, model.state.value.skipRefused)
+        assertEquals(listOf("paragraph forward=true", "paragraph forward=true", "paragraph forward=false"), port.calls)
     }
 
     @Test

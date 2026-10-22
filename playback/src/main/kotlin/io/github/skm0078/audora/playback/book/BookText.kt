@@ -18,6 +18,7 @@ import io.github.skm0078.audora.pdf.quality.RouteReason
 import io.github.skm0078.audora.pdf.quality.TextLayerVerdict
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import java.io.Closeable
+import java.util.concurrent.ConcurrentHashMap
 
 /** Blocking and thread-confined to the caller's extraction thread. Fakes implement it in tests. */
 interface BookText : Closeable {
@@ -39,6 +40,12 @@ interface BookText : Closeable {
      * pipeline finds them (P2-02).
      */
     fun chapterStarts(): List<Int> = emptyList()
+
+    /**
+     * Whether [page]'s words came from OCR, once [units] has read it: the punctuation model only touches scanned
+     * pages (RI-11). Read on the render thread, so implementations must be thread-safe.
+     */
+    fun isScanned(page: Int): Boolean = false
 }
 
 /** How [BookText.reading]'s default says its pages were read. */
@@ -53,9 +60,16 @@ class PdfBookText(
 ) : BookText {
     override val pageCount: Int get() = book.pageCount
 
-    override fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError> = book.readingUnits(page, builder)
+    private val scannedPages: MutableSet<Int> = ConcurrentHashMap.newKeySet()
 
-    override fun reading(page: Int): Outcome<PageReading, PdfPageError> = book.readPage(page, builder)
+    override fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError> = reading(page).map { it.units }
+
+    override fun reading(page: Int): Outcome<PageReading, PdfPageError> = book.readPage(page, builder).map {
+        if (it.source is PageSource.Ocr) scannedPages += page else scannedPages -= page
+        it
+    }
+
+    override fun isScanned(page: Int): Boolean = page in scannedPages
 
     override fun chapterStarts(): List<Int> = when (val outline = book.outline()) {
         is Outcome.Success -> ChapterStarts.from(outline.value, book.pageCount, config.outlineChapterDepth)

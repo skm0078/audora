@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_characters.xml -->
+<!-- Purpose: Hindi copy of values/strings_characters.xml: Strings for a voice per character (plan item 63). -->
+<resources>
+    <string name="speech_cast_characters">हर पात्र की अपनी आवाज़</string>
+    <string name="speech_cast_characters_detail">जिन पंक्तियों का वक्ता साफ़ है (“मीरा ने कहा”), उन्हें उस पात्र की अपनी आवाज़ मिलती है, जो पूरी किताब में वही रहती है। अंग्रेज़ी Kokoro और Kitten आवाज़ों के अंदर की दूसरी आवाज़ें इस्तेमाल होती हैं, इसलिए अलग से मेमोरी नहीं लगती। बाकी पंक्तियाँ संवाद वाली आवाज़ में रहती हैं।</string>
+</resources>

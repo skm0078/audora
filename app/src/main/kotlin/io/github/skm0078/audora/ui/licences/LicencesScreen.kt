@@ -203,6 +203,16 @@ private val SPEECH_SOFTWARE = listOf(
     Software("eSpeak NG", R.string.licences_gpl3, "https://github.com/espeak-ng/espeak-ng"),
     Software("Tesseract OCR and its data", R.string.licences_apache, "https://github.com/tesseract-ocr/tesseract"),
     Software("wordfreq (Robyn Speer), word lists", R.string.licences_cc_by_sa, "https://github.com/rspeer/wordfreq"),
+    Software(
+        "Edge-Punct-Casing punctuation model (frankyoujian), if downloaded",
+        R.string.licences_apache,
+        "https://github.com/frankyoujian/Edge-Punct-Casing",
+    ),
+    Software(
+        "Zipformer keyword spotter (k2-fsa, GigaSpeech), voice commands, if downloaded",
+        R.string.licences_apache,
+        "https://github.com/k2-fsa/icefall",
+    ),
     Software("Audora", R.string.licences_gpl3, "https://github.com/skm0078/audora"),
 )
 

@@ -1,12 +1,17 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/BookRow.kt
-// Purpose: One library row: title, pages, last use and progress, a clear warning when the file is gone, and its menu.
+// Purpose: One library row: cover, title, pages, last use and progress, a warning when the file is gone, its menu.
 
 package io.github.skm0078.audora.ui.library
 
 import android.text.format.DateUtils
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -17,13 +22,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookAvailability
@@ -31,9 +42,16 @@ import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.library.LibraryError
 
 @Composable
-internal fun BookRow(item: LibraryItem, onTap: () -> Unit, onRemove: () -> Unit, onExport: () -> Unit) {
+internal fun BookRow(
+    item: LibraryItem,
+    onTap: () -> Unit,
+    onRemove: () -> Unit,
+    onExport: () -> Unit,
+    covers: CoverSource = CoverSource.None,
+) {
     var menuOpen by remember { mutableStateOf(false) }
     ListItem(
+        leadingContent = { BookCover(item.book, covers) },
         headlineContent = {
             Text(displayTitle(item.book), maxLines = TITLE_LINES, overflow = TextOverflow.Ellipsis)
         },
@@ -134,3 +152,30 @@ private fun errorText(error: LibraryError): Int = when (error) {
 }
 
 private const val TITLE_LINES = 2
+
+/** The first page once drawn (plan item 21); until then, or without one, a paper-coloured card with the initial. */
+@Composable
+private fun BookCover(book: Book, covers: CoverSource) {
+    val cover by produceState<ImageBitmap?>(null, book.id, book.documentUri) { value = covers.cover(book) }
+    val shape = RoundedCornerShape(COVER_CORNER)
+    Box(
+        modifier = Modifier.size(COVER_WIDTH, COVER_HEIGHT).clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        val image = cover
+        if (image != null) {
+            Image(image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        } else {
+            Text(
+                displayTitle(book).take(1).uppercase(),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+private val COVER_WIDTH = 40.dp
+private val COVER_HEIGHT = 56.dp
+private val COVER_CORNER = 4.dp

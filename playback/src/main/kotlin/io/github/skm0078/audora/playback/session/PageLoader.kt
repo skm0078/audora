@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.playback.session
 
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.playback.book.BookText
@@ -19,15 +20,18 @@ import kotlinx.coroutines.withContext
  * Main-thread object; only the PDF reads run on [extraction] (one thread: PDFium documents must not be used
  * from two threads, P1-02). Pages load while the feeder wants more (Build Spec §6: lazily, about two pages
  * ahead). [cancel] on every rebuild: a cancelled load never appends, because `withContext` re-checks
- * cancellation before returning.
+ * cancellation before returning. Every loaded page goes whole to [onPage] first, with whether it opens inside the
+ * sentence the page before broke off, before the resume point trims it (the quote carry, plan item 7, reads the
+ * sentences before the one playing).
  */
 class PageLoader(
     private val scope: CoroutineScope,
     private val extraction: CoroutineDispatcher,
     private val listener: Listener,
+    private val onPage: (units: List<ReadingUnit>, continuesPreviousPage: Boolean) -> Unit = { _, _ -> },
 ) {
     interface Listener {
-        /** A page's sentences were appended; the render window may have grown. */
+        /** A page's sentences were appended, or the playlist was finished; the render window may have changed. */
         fun onPageAppended()
 
         /** The PDF can no longer be read; the feeder has been finished, so the book ends after what is queued. */
@@ -50,6 +54,9 @@ class PageLoader(
                 keepGoing = if (page == null) {
                     AudoraLog.i(TAG, "All pages queued, $logContext")
                     feeder.finish()
+                    // The playlist lost its "more to come" item: the end-of-item pause for the book's last
+                    // sentence (a study range ending there) must be re-armed against what now follows it.
+                    listener.onPageAppended()
                     false
                 } else {
                     load(text, cursor, feeder, page, logContext)
@@ -65,9 +72,12 @@ class PageLoader(
         feeder: PlaylistFeeder,
         page: Int,
         logContext: String,
-    ): Boolean = when (val loaded = withContext(extraction) { text.units(page) }) {
+    ): Boolean = when (val loaded = withContext(extraction) { text.reading(page) }) {
         is Outcome.Success -> {
-            feeder.append(cursor.playable(page, loaded.value))
+            val reading = loaded.value
+            onPage(reading.units, reading.continuesPreviousPage)
+            val unreadable = feeder.append(cursor.playable(page, reading.units))
+            if (unreadable > 0) AudoraLog.i(TAG, "Unreadable units skipped, $logContext page=$page count=$unreadable")
             listener.onPageAppended()
             true
         }

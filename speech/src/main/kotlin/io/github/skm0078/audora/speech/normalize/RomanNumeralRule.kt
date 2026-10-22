@@ -22,7 +22,7 @@ internal class RomanNumeralRule : NormalizationRule {
         }
         result = REGNAL.replace(result) { match ->
             val (name, numeral) = match.destructured
-            valueOf(numeral)?.let { "$name the ${NumberWords.ordinal(it.toLong())}" } ?: match.value
+            RomanNumerals.valueOf(numeral)?.let { "$name the ${NumberWords.ordinal(it.toLong())}" } ?: match.value
         }
         result = LIST_LABEL.replace(result) { match ->
             cardinalOf(match.groupValues[1])?.let { "($it)" } ?: match.value
@@ -36,42 +36,55 @@ internal class RomanNumeralRule : NormalizationRule {
         return result
     }
 
-    private fun cardinalOf(numeral: String): String? = valueOf(numeral)?.let { NumberWords.cardinal(it.toLong()) }
+    private fun cardinalOf(numeral: String): String? = RomanNumerals.valueOf(numeral)?.let {
+        NumberWords.cardinal(it.toLong())
+    }
 
     private companion object {
-        private val CANONICAL = Regex("""M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})""")
-        private val VALUES = mapOf('I' to 1, 'V' to 5, 'X' to 10, 'L' to 50, 'C' to 100, 'D' to 500, 'M' to 1000)
-        private val SINGLE_LETTER_LABELS = setOf("L", "C", "D", "M")
-
-        /** Value of a canonical numeral in one case, or null for letter labels and malformed numerals. */
-        fun valueOf(numeral: String): Int? {
-            val upper = numeral.uppercase()
-            val isOneCase = numeral == upper || numeral == numeral.lowercase()
-            val isLetterLabel = upper.isEmpty() || upper in SINGLE_LETTER_LABELS
-            if (!isOneCase || isLetterLabel || !CANONICAL.matches(upper)) return null
-            val values = upper.map(VALUES::getValue)
-            return values.indices.sumOf { i ->
-                if (i + 1 < values.size && values[i] < values[i + 1]) -values[i] else values[i]
-            }
-        }
-
         private const val KEYWORDS =
             """chapter|part|book|section|volume|appendix|act|scene|article|schedule|annexure|annex|unit|lesson|""" +
                 """canto|phase|class|grade|plate|table|figure|type|stage|level|round|title|division|paper|psalm|""" +
                 """world war"""
-        private const val NAMES =
-            """Henry|Edward|George|William|Charles|James|Richard|Louis|Elizabeth|Mary|Victoria|Pius|John|Paul|""" +
-                """Benedict|Leo|Gregory|Innocent|Clement|Peter|Catherine|Frederick|Philip|Napoleon|Nicholas|""" +
-                """Alexander|Ivan|Ramesses|Ptolemy|Constantine|Wilhelm|Ferdinand|Alfonso|Juan|Carlos"""
 
         // Upper or lower case numeral (never mixed), ending the word and not followed by an apostrophe word.
         private const val NUMERAL = """([IVXLCDM]+|[ivxlcdm]+)(?![\w'’])"""
 
         val AFTER_KEYWORD = Regex("""(?<![\w])((?i:$KEYWORDS))\s+$NUMERAL""")
 
+        private val NAMES = RomanNumerals.REGNAL_NAMES.joinToString("|")
+
         // A lone "I" after a name is read only before punctuation or the end ("Henry I." but not "when John I met").
         val REGNAL = Regex("""(?<![\w])($NAMES)\s+([IVXL]{2,}|[VX]|I(?=\s*[.,;:)]|\s*$))(?![\w'’])""")
         val LIST_LABEL = Regex("""\(([ivx]+|[IVX]+)\)""")
         val HEADING_START = Regex("""^(\s*)([IVXLCDM]+|[ivxlcdm]+)(?=[.):](?:\s|$)|\s*$)""")
+    }
+}
+
+/** Regnal names and Roman numeral values, shared with [InitialsRule] and the Hindi and Bengali rules. */
+internal object RomanNumerals {
+    /** Monarchs' and popes' names a numeral follows ("Henry VIII"), shared with [InitialsRule]. */
+    val REGNAL_NAMES: Set<String> = setOf(
+        "Henry", "Edward", "George", "William", "Charles", "James", "Richard", "Louis", "Elizabeth", "Mary",
+        "Victoria", "Pius", "John", "Paul", "Benedict", "Leo", "Gregory", "Innocent", "Clement", "Peter", "Catherine",
+        "Frederick", "Philip", "Napoleon", "Nicholas", "Alexander", "Ivan", "Ramesses", "Ptolemy", "Constantine",
+        "Wilhelm", "Ferdinand", "Alfonso", "Juan", "Carlos",
+    )
+
+    private val CANONICAL = Regex("""M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})""")
+
+    @Suppress("MagicNumber") // The numerals' own values.
+    private val VALUES = mapOf('I' to 1, 'V' to 5, 'X' to 10, 'L' to 50, 'C' to 100, 'D' to 500, 'M' to 1000)
+    private val SINGLE_LETTER_LABELS = setOf("L", "C", "D", "M")
+
+    /** Value of a canonical numeral in one case, or null for letter labels and malformed numerals. */
+    fun valueOf(numeral: String): Int? {
+        val upper = numeral.uppercase()
+        val isOneCase = numeral == upper || numeral == numeral.lowercase()
+        val isLetterLabel = upper.isEmpty() || upper in SINGLE_LETTER_LABELS
+        if (!isOneCase || isLetterLabel || !CANONICAL.matches(upper)) return null
+        val values = upper.map(VALUES::getValue)
+        return values.indices.sumOf { i ->
+            if (i + 1 < values.size && values[i] < values[i + 1]) -values[i] else values[i]
+        }
     }
 }

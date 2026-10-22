@@ -64,7 +64,7 @@ class SafDocumentAccess(context: Context, private val copies: SharedPdfCopies = 
     }
 
     override fun openStream(documentUri: String): Outcome<InputStream, DocumentError> {
-        val uri = Uri.parse(documentUri)
+        val uri = copies.readable(Uri.parse(documentUri))
         return guarded(uri) { resolver.openInputStream(uri) ?: throw FileNotFoundException("provider returned null") }
     }
 
@@ -79,6 +79,8 @@ class SafDocumentAccess(context: Context, private val copies: SharedPdfCopies = 
             else -> providerAvailability(uri)
         }
     }
+
+    override fun pruneUnused(inUse: Set<String>) = copies.prune(inUse)
 
     private fun providerAvailability(uri: Uri): BookAvailability =
         when (val opened = guarded(uri) { resolver.openFileDescriptor(uri, READ_MODE)?.close() != null }) {
@@ -127,10 +129,10 @@ class SafDocumentAccess(context: Context, private val copies: SharedPdfCopies = 
         Outcome.Failure(DocumentError.ReadFailed(detail(e, uri)))
     }
 
-    private fun detail(e: Exception, uri: Uri): String = "${e.javaClass.simpleName} authority=${uri.authority}"
-
     private companion object {
         const val TAG = "Audora.Documents"
         const val READ_MODE = "r"
     }
 }
+
+private fun detail(e: Exception, uri: Uri): String = "${e.javaClass.simpleName} authority=${uri.authority}"

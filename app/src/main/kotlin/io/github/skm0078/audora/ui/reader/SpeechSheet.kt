@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/SpeechSheet.kt
-// Purpose: The player's speed and pace sheet: a speed slider with presets, sentence pauses and clause pauses.
+// Purpose: The player's speech sheet: speed, pauses, sound, cast voices (item 7) and what to read (ADR-035).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -35,7 +36,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
+import io.github.skm0078.audora.core.model.FocusSoundOptions
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.ReadingModes
+import io.github.skm0078.audora.core.model.VoiceId
+import io.github.skm0078.audora.core.model.VoiceShaping
+import io.github.skm0078.audora.speech.voices.VoiceRow
 import kotlin.math.roundToInt
 
 /**
@@ -53,15 +60,39 @@ fun SpeechSheet(
     onDismiss: () -> Unit,
     clausePauses: Boolean = true,
     onClausePauses: (Boolean) -> Unit = {},
+    readingModes: ReadingModes = ReadingModes(),
+    onReadingModes: (ReadingModes) -> Unit = {},
+    voiceShaping: VoiceShaping = VoiceShaping(),
+    onVoiceShaping: (VoiceShaping) -> Unit = {},
+    ownSettings: Boolean = false,
+    onOwnSettings: (Boolean) -> Unit = {},
+    voices: BookVoices = BookVoices(),
+    study: StudyControls = StudyControls(),
+    focusSound: FocusSoundOptions = FocusSoundOptions(),
+    onFocusSound: (FocusSoundOptions) -> Unit = {},
+    blend: NarratorBlendState = NarratorBlendState(),
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
-            modifier = Modifier.navigationBarsPadding().padding(horizontal = 24.dp).padding(bottom = 24.dp),
+            modifier = Modifier.navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            OwnSettingsRow(ownSettings, onOwnSettings)
+            if (ownSettings) BookVoicesSection(voices.rows, voices.chosen, voices.onVoice)
             SpeedSection(speed, config, onSpeed)
             PaceSection(pace, onPace)
             ClausePausesRow(clausePauses, onClausePauses)
+            VoiceShapingSection(voiceShaping, config.voiceShaping, onVoiceShaping)
+            blend.ownSpeaker?.let { own ->
+                NarratorBlendSection(voiceShaping, own, blend.neededBytes, onVoiceShaping)
+            }
+            CastVoicesSection(voices.rows, voiceShaping, onVoiceShaping)
+            ReadingModesSection(readingModes, onReadingModes)
+            StudySection(readingModes, study, onReadingModes)
+            FocusSoundSection(focusSound, onFocusSound)
             Text(
                 stringResource(R.string.speech_sheet_hint),
                 style = MaterialTheme.typography.bodySmall,
@@ -142,6 +173,22 @@ private fun ClausePausesRow(on: Boolean, onChange: (Boolean) -> Unit) {
     }
 }
 
+/** Plan item 4: speed, pace and voices become this book's own; off, it follows the settings of every book. */
+@Composable
+private fun OwnSettingsRow(on: Boolean, onChange: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.speech_own_settings), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.speech_own_settings_detail),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = on, onCheckedChange = onChange)
+    }
+}
+
 private fun paceLabel(pace: Pace): Int = when (pace) {
     Pace.TIGHT -> R.string.speech_pace_tight
     Pace.NORMAL -> R.string.speech_pace_normal
@@ -151,3 +198,10 @@ private fun paceLabel(pace: Pace): Int = when (pace) {
 /** Material's Slider counts the stops between the ends, not the intervals. */
 internal fun stepsBetween(range: ClosedFloatingPointRange<Float>, step: Float): Int =
     (((range.endInclusive - range.start) / step).roundToInt() - 1).coerceAtLeast(0)
+
+/** The voices the open book can pick from (plan item 4), its own choices, and what a tap does. */
+class BookVoices(
+    val rows: List<VoiceRow> = emptyList(),
+    val chosen: Map<Lang, VoiceId> = emptyMap(),
+    val onVoice: (Lang, VoiceId) -> Unit = { _, _ -> },
+)

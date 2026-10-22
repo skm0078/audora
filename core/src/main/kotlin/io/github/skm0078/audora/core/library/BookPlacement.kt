@@ -38,13 +38,14 @@ internal class BookPlacement(
     suspend fun moveTo(book: Book, documentUri: String, scanned: ScannedDocument): Outcome<Book, LibraryError> {
         if (book.documentUri == documentUri) return Outcome.Success(book)
         val moved = book.copy(documentUri = documentUri, sizeBytes = scanned.sizeBytes)
-        return dropStale(store.byDocumentUri(documentUri), keep = book.id)
-            .flatMap { store.update(moved) }
-            .toLibrary {
-                releaseIfUnused(book.documentUri)
-                AudoraLog.i(TAG, "Book found at a new location, book=${book.id.logLabel}")
-                moved
-            }
+        val written = dropStale(store.byDocumentUri(documentUri), keep = book.id).flatMap { store.update(moved) }
+        // The new URI's grant (or Audora's own copy) was taken for this move; give it back if the move failed.
+        if (written is Outcome.Failure) releaseIfUnused(documentUri)
+        return written.toLibrary {
+            releaseIfUnused(book.documentUri)
+            AudoraLog.i(TAG, "Book found at a new location, book=${book.id.logLabel}")
+            moved
+        }
     }
 
     suspend fun releaseIfUnused(documentUri: String) {

@@ -25,6 +25,8 @@ package io.github.skm0078.audora.core.config
  * @property renderAhead how far ahead to render for a voice of a given speed; its `maxAheadUnits` also caps the
  *   window the render queue accepts.
  * @property resumeRewind how far reading steps back when it resumes after a pause (ADR-033).
+ * @property jumps the jump history behind "Undo jump" (plan item 78).
+ * @property sleep the sleep timer extras: fade-out and shake to extend (plan item 37).
  */
 data class QueueConfig(
     val prefetchUnits: Int = 3,
@@ -37,6 +39,8 @@ data class QueueConfig(
     val playbackStartBufferMs: Int = 0,
     val renderAhead: RenderAheadConfig = RenderAheadConfig(),
     val resumeRewind: ResumeRewindConfig = ResumeRewindConfig(),
+    val jumps: JumpConfig = JumpConfig(),
+    val sleep: SleepConfig = SleepConfig(),
 ) {
     init {
         require(prefetchUnits >= 1) { "prefetchUnits must be >= 1, was $prefetchUnits" }

@@ -4,6 +4,9 @@
 #          sherpa-onnx archives, byte-for-byte reproducibly, and checks them against the catalog's pins (ADR-022).
 #          A source is a sherpa-onnx .tar.bz2 by default; a voice sherpa-onnx does not publish (the Bengali Piper and MMS
 #          conversions, P3-06) names a pinned .zip on this repo's s1-voices release instead (source.url, ADR-030).
+#          The catalog's "models" are built the same way: the opt-in English punctuation model (RI-11) comes from
+#          sherpa-onnx's punctuation-models release (source.url to a .tar.bz2) and keeps only its int8 weights;
+#          the voice-command keyword spotter (plan item 38) comes from its kws-models release the same way.
 #
 # Why zips: the phone has no bzip2 (adding one is a new dependency) and java.util.zip reads zips. Why reproducible:
 # the pins are written into the catalog before the release asset exists, and CI rebuilds the same bytes to publish.
@@ -61,8 +64,10 @@ class Voice:
     file: str
     sha256: str
     size_bytes: int
-    # Full URL of a .zip source; None means sourceBaseUrl + archive + ".tar.bz2".
+    # Full URL of a .zip or .tar.bz2 source; None means sourceBaseUrl + archive + ".tar.bz2".
     source_url: str | None = None
+    # More single files a model needs ("extraFiles"): the keyword spotter's decoder and joiner (plan item 38).
+    extra_files: tuple[str, ...] = ()
 
     def source(self, base_url: str) -> str:
         return self.source_url or f"{base_url}{self.archive}{TAR_SUFFIX}"
@@ -72,7 +77,7 @@ class Voice:
         optional = [self.voices, self.lexicon]
         if self.family == SUPERTONIC:
             return [self.model, *SUPERTONIC_PARTS, *[name for name in optional if name]]
-        return [self.model, self.tokens, *[name for name in optional if name]]
+        return [self.model, self.tokens, *[name for name in optional if name], *self.extra_files]
 
 
 @dataclass(frozen=True)
@@ -98,9 +103,10 @@ class Built:
 
 
 def load_catalog(path: Path) -> tuple[dict, list[Voice]]:
+    """The voices, then the other models (root "models", RI-11); both are built and pinned alike."""
     root = json.loads(path.read_text(encoding="utf-8"))
     voices = []
-    for entry in root["voices"]:
+    for entry in [*root["voices"], *root.get("models", [])]:
         source = entry["source"]
         voices.append(
             Voice(
@@ -117,14 +123,16 @@ def load_catalog(path: Path) -> tuple[dict, list[Voice]]:
                 sha256=entry["sha256"].lower(),
                 size_bytes=int(entry["sizeBytes"]),
                 source_url=source.get("url"),
+                extra_files=tuple(entry.get("extraFiles", [])),
             )
         )
     ids = [v.id for v in voices]
     if len(set(ids)) != len(ids):
         raise ValueError(f"duplicate voice ids in {path}: {ids}")
     for v in voices:
-        if v.source_url is not None and not (v.source_url.startswith("https://") and v.source_url.endswith(ZIP_SUFFIX)):
-            raise ValueError(f"{v.id}: source.url must be an https .zip, is {v.source_url}")
+        url = v.source_url
+        if url is not None and not (url.startswith("https://") and url.endswith((ZIP_SUFFIX, TAR_SUFFIX))):
+            raise ValueError(f"{v.id}: source.url must be an https .zip or .tar.bz2, is {url}")
     return root, voices
 
 
@@ -180,9 +188,11 @@ def read_members(voice: Voice, archive: Path, dictionaries: set[str]) -> dict[st
         return members
     with tarfile.open(archive, mode="r:bz2") as tar:
         for member in tar:
-            if not member.isfile() or not member.name.startswith(prefix):
+            # Some upstream archives name their members "./folder/...".
+            name = member.name.removeprefix("./")
+            if not member.isfile() or not name.startswith(prefix):
                 continue
-            relative = member.name[len(prefix):]
+            relative = name[len(prefix):]
             if wanted(voice, relative, dictionaries):
                 extracted = tar.extractfile(member)
                 if extracted is None:

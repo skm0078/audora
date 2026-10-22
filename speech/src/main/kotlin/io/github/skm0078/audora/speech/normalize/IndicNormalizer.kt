@@ -17,17 +17,32 @@ import io.github.skm0078.audora.core.model.Lang
  * plain numbers. Grouping follows the text (1,50,000 and 150,000 are both one lakh fifty thousand: Hindi and Bengali
  * count in lakh and crore); a decimal reads its digits one by one; leading zeros and runs longer than
  * [NormalizerConfig.maxCardinalDigits] read digit by digit; a bare year from 1100 to 1999 reads as "उन्नीस सौ
- * सैंतालीस". A slash between words reads "या"/"বা" and "&" reads "और"/"এবং" (RI-6). Text with none of these is
+ * सैंतालीस". Clock times, dates, ordinals, units, abbreviations, initials and Roman numerals after a
+ * numbering word come first ([IndicTextPack], plan items 3 and 57). A slash between
+ * words reads "या"/"বা" and "&" reads "और"/"এবং" (RI-6). Text with none of these is
  * returned unchanged.
  */
-class IndicNormalizer internal constructor(private val words: IndicNumberWords, private val config: NormalizerConfig) :
-    TextNormalizer {
+class IndicNormalizer internal constructor(
+    private val words: IndicNumberWords,
+    private val config: NormalizerConfig,
+    private val lang: Lang,
+    private val table: IndicTextTable,
+) : TextNormalizer {
+
+    private val pack = IndicTextPack(words, config, table)
 
     override fun normalize(text: String, role: TextRole): String {
-        val spoken = speakSymbols(text)
+        val written = if (role == TextRole.EQUATION) {
+            MathSymbols.speak(text, lang)
+        } else {
+            // Clock times first, while "a.m." is still whole (the initials step would take its dots).
+            pack.romanNumerals(pack.abbreviations(pack.times(asciiDigits(text))))
+        }
+        val spoken = speakSymbols(written)
         val ascii = asciiDigits(spoken)
-        if (ascii.none(Char::isAsciiDigit)) return if (spoken === text) text else tidy(spoken)
-        var result = CURRENCY.replace(ascii) { match -> money(match.groupValues[1]) }
+        if (ascii.none(Char::isAsciiDigit)) return if (spoken == text) text else tidy(spoken)
+        var result = pack.units(pack.ordinals(pack.dates(ascii)))
+        result = CURRENCY.replace(result) { match -> money(match.groupValues[1]) }
         result = PERCENT.replace(result) { match -> "${read(match.groupValues[1])} ${words.percent}" }
         result = RANGE.replace(result) { match ->
             val (from, to) = match.destructured
@@ -42,10 +57,14 @@ class IndicNormalizer internal constructor(private val words: IndicNumberWords, 
 
     private fun tidy(text: String): String = EXTRA_SPACES.replace(text, " ").trim()
 
-    /** "हाँ/नहीं" → "हाँ या नहीं", "&" → "और"; the text itself when it has neither. */
+    /**
+     * "हाँ/नहीं" → "हाँ या नहीं", "60 किमी/घंटा" → "60 किमी प्रति घंटा", "&" → "और"; the text itself when it has
+     * neither.
+     */
     private fun speakSymbols(text: String): String {
         if ('/' !in text && '&' !in text) return text
-        val slashed = WORD_SLASH.replace(text, " ${words.or} ")
+        val rated = RATE_SLASH.replace(text, " ${words.per} ")
+        val slashed = WORD_SLASH.replace(rated, " ${words.or} ")
         return AMPERSAND.replace(slashed, " ${words.and} ")
     }
 
@@ -87,7 +106,8 @@ class IndicNormalizer internal constructor(private val words: IndicNumberWords, 
         private const val DIGIT_COUNT = 10
         private const val NUMBER = NumberPatterns.NUMBER
 
-        private val CURRENCY = Regex("""₹\s?($NUMBER)(?![\w])""")
+        /** The rupee sign, "Rs.", "रु." or Bengali "টা." before an amount, read after it in the part's language. */
+        private val CURRENCY = Regex("""(?:₹|Rs\.?|रु\.?|টা\.)\s?($NUMBER)(?![\w])""")
         private val PERCENT = Regex("""(?<![\w.])($NUMBER)\s?%""")
 
         /** Hyphen or dash, up to four digits a side: "10-12", "2019-20". Longer runs are codes. */
@@ -96,14 +116,20 @@ class IndicNormalizer internal constructor(private val words: IndicNumberWords, 
         private val PLAIN = Regex("""(?<![\w.])$NUMBER(?![\w])""")
         private val EXTRA_SPACES = Regex("""[ \t]{2,}""")
 
+        /**
+         * A slash after a short unit (up to 4 letters, "किमी") that follows a number, any script's digits: a rate, read
+         * "per". A longer word ("10–12 देखें/पढ़ें") is not a unit, so its slash stays "or".
+         */
+        private val RATE_SLASH = Regex("""(?<=\p{Nd}\s?[\p{L}\p{M}]{1,4})/(?=[\p{L}\p{M}]{2})""")
+
         /** A slash between two words, Indic or Latin, two letters or more a side ("w/o" stays). */
         private val WORD_SLASH = Regex("""(?<=[\p{L}\p{M}]{2})/(?=[\p{L}\p{M}]{2})""")
         private val AMPERSAND = Regex("""\s*&\s*""")
 
         /** The normalizer for [lang]'s parts, or null for a language the Indic rules do not cover. */
         fun forLang(lang: Lang, config: NormalizerConfig = NormalizerConfig()): IndicNormalizer? = when (lang) {
-            Lang.HI -> IndicNormalizer(IndicNumberWords.HINDI, config)
-            Lang.BN -> IndicNormalizer(IndicNumberWords.BENGALI, config)
+            Lang.HI -> IndicNormalizer(IndicNumberWords.HINDI, config, Lang.HI, IndicTextTable.HINDI)
+            Lang.BN -> IndicNormalizer(IndicNumberWords.BENGALI, config, Lang.BN, IndicTextTable.BENGALI)
             Lang.EN -> null
         }
 

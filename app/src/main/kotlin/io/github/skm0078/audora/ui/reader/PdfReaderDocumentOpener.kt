@@ -4,12 +4,13 @@
 package io.github.skm0078.audora.ui.reader
 
 import android.content.Context
-import android.net.Uri
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.map
+import io.github.skm0078.audora.pdf.document.OutlineEntry
 import io.github.skm0078.audora.pdf.document.PageSource
 import io.github.skm0078.audora.pdf.document.PdfBook
 import io.github.skm0078.audora.pdf.document.PdfOpenError
@@ -21,6 +22,7 @@ import io.github.skm0078.audora.pdf.quality.OcrError
 import io.github.skm0078.audora.pdf.render.PageTransform
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
+import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.ocr.BookOcr
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -39,7 +41,7 @@ class PdfReaderDocumentOpener(
         password: String?,
         logContext: String,
     ): Outcome<ReaderDocument, PdfOpenError> = withContext(io) {
-        val engine = PdfiumEngine.forUri(context, Uri.parse(documentUri))
+        val engine = PdfiumEngine.forUri(context, SharedPdfCopies.readableUri(context, documentUri))
         // Same OCR, models and text cache as the playback service, so a page is recognised once for both.
         val ocr = BookOcr.factory(context, documentUri, logContext)
         val builder = ReadingUnitBuilder(cleanupConfig = textPreferences.cleanupConfig())
@@ -74,7 +76,20 @@ private class PdfReaderDocument(
         withContext(io) { book.readingUnits(page, builder) }
 
     override suspend fun page(page: Int): Outcome<ReaderPage, PdfPageError> =
-        withContext(io) { book.readPage(page, builder) }.map { ReaderPage(it.units, originOf(it.source)) }
+        withContext(io) { book.readPage(page, builder) }.map { reading ->
+            ReaderPage(reading.units, originOf(reading.source), reading.ocrConfidence)
+        }
+
+    override suspend fun outline(): List<OutlineEntry> = withContext(io) {
+        when (val outline = book.outline()) {
+            is Outcome.Success -> outline.value
+
+            is Outcome.Failure -> {
+                AudoraLog.w(TAG, "Outline unavailable, $logContext: ${outline.error}")
+                emptyList()
+            }
+        }
+    }
 
     override suspend fun render(page: Int, widthPx: Int, maxPixels: Int): Outcome<PageImage, PdfPageError> =
         withContext(io) {
@@ -126,3 +141,5 @@ private fun originOf(source: PageSource): PageOrigin = when (source) {
         is OcrError.Failed -> PageOrigin.OCR_FAILED
     }
 }
+
+private const val TAG = "Audora.ReaderDocument"

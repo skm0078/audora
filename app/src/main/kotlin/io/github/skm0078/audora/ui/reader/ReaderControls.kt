@@ -34,10 +34,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
+import io.github.skm0078.audora.speech.voices.VoiceRow
 import kotlinx.coroutines.delay
 
 @Composable
-fun ReaderControls(state: ReaderState, config: ReaderConfig, actions: ReaderActions, modifier: Modifier = Modifier) {
+fun ReaderControls(
+    state: ReaderState,
+    config: ReaderConfig,
+    actions: ReaderActions,
+    modifier: Modifier = Modifier,
+    voices: List<VoiceRow> = emptyList(),
+) {
     val enabled = state.playerReady
     val loaded = state.readingPosition != null
     Surface(tonalElevation = 3.dp, modifier = modifier.fillMaxWidth()) {
@@ -46,7 +53,8 @@ fun ReaderControls(state: ReaderState, config: ReaderConfig, actions: ReaderActi
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            SpeedButton(state.playback, config, enabled, actions)
+            val study = StudyControls(state.study, canMark = state.readingPosition != null, onStudy = actions::onStudy)
+            SpeedButton(state.playback, config, enabled, actions, voices, study)
             IconButton(onClick = actions::onSkipBack, enabled = enabled && loaded && state.playback.canSkipBack) {
                 Icon(painterResource(R.drawable.ic_skip_previous), stringResource(R.string.reader_skip_back))
             }
@@ -59,13 +67,7 @@ fun ReaderControls(state: ReaderState, config: ReaderConfig, actions: ReaderActi
             IconButton(onClick = actions::onSkipForward, enabled = enabled && loaded && state.playback.canSkipForward) {
                 Icon(painterResource(R.drawable.ic_skip_next), stringResource(R.string.reader_skip_forward))
             }
-            SleepTimerButton(
-                state.playback.sleepTimer,
-                state.playback.hasChapters,
-                config,
-                enabled,
-                actions::onSleepTimer,
-            )
+            SleepTimerButton(state.playback, config, enabled, actions)
         }
     }
 }
@@ -85,7 +87,14 @@ private fun PlayPauseButton(reading: Boolean, buffering: Boolean, enabled: Boole
 }
 
 @Composable
-private fun SpeedButton(playback: PlaybackSnapshot, config: ReaderConfig, enabled: Boolean, actions: ReaderActions) {
+private fun SpeedButton(
+    playback: PlaybackSnapshot,
+    config: ReaderConfig,
+    enabled: Boolean,
+    actions: ReaderActions,
+    voices: List<VoiceRow>,
+    study: StudyControls,
+) {
     var open by remember { mutableStateOf(false) }
     TextButton(onClick = { open = true }, enabled = enabled) {
         Text(stringResource(R.string.reader_speed, speedLabel(playback.speed)))
@@ -99,6 +108,17 @@ private fun SpeedButton(playback: PlaybackSnapshot, config: ReaderConfig, enable
             onPace = actions::onPace,
             clausePauses = playback.clausePauses,
             onClausePauses = actions::onClausePauses,
+            readingModes = playback.readingModes,
+            onReadingModes = actions::onReadingModes,
+            voiceShaping = playback.voiceShaping,
+            onVoiceShaping = actions::onVoiceShaping,
+            ownSettings = playback.ownSettings,
+            onOwnSettings = actions::onOwnSettings,
+            voices = BookVoices(voices, playback.bookVoices, actions::onBookVoice),
+            study = study,
+            focusSound = playback.focusSound,
+            onFocusSound = actions::onFocusSound,
+            blend = NarratorBlendState(playback.blendOwnSpeaker, playback.blendNeedsBytes),
             onDismiss = { open = false },
         )
     }
@@ -106,17 +126,17 @@ private fun SpeedButton(playback: PlaybackSnapshot, config: ReaderConfig, enable
 
 @Composable
 private fun SleepTimerButton(
-    timer: SleepTimerState,
-    hasChapters: Boolean,
+    playback: PlaybackSnapshot,
     config: ReaderConfig,
     enabled: Boolean,
-    onSleepTimer: (SleepTimerSetting) -> Unit,
+    actions: ReaderActions,
 ) {
     var open by remember { mutableStateOf(false) }
+    var editingOptions by remember { mutableStateOf(false) }
     Box {
         TextButton(onClick = { open = true }, enabled = enabled) {
             Icon(painterResource(R.drawable.ic_timer), stringResource(R.string.reader_sleep_timer))
-            sleepTimerLabel(timer)?.let { label ->
+            sleepTimerLabel(playback.sleepTimer)?.let { label ->
                 Spacer(Modifier.width(4.dp))
                 Text(label)
             }
@@ -124,30 +144,51 @@ private fun SleepTimerButton(
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             val choose = { setting: SleepTimerSetting ->
                 open = false
-                onSleepTimer(setting)
+                actions.onSleepTimer(setting)
+            }
+            sleepTimerChoices(playback.hasChapters, config).forEach { setting ->
+                DropdownMenuItem(text = { Text(settingLabel(setting)) }, onClick = { choose(setting) })
             }
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.reader_sleep_off)) },
-                onClick = { choose(SleepTimerSetting.Off) },
+                text = { Text(stringResource(R.string.sleep_options_menu)) },
+                onClick = {
+                    open = false
+                    editingOptions = true
+                },
             )
-            config.sleepMinutes.forEach { minutes ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.reader_sleep_minutes, minutes)) },
-                    onClick = { choose(SleepTimerSetting.AfterMinutes(minutes)) },
-                )
-            }
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.reader_sleep_end_of_page)) },
-                onClick = { choose(SleepTimerSetting.EndOfPage) },
-            )
-            if (hasChapters) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.reader_sleep_end_of_chapter)) },
-                    onClick = { choose(SleepTimerSetting.EndOfChapter) },
-                )
-            }
         }
     }
+    if (editingOptions) {
+        SleepOptionsDialog(
+            options = playback.sleepOptions,
+            config = config,
+            onSave = {
+                editingOptions = false
+                actions.onSleepOptions(it)
+            },
+            onDismiss = { editingOptions = false },
+        )
+    }
+}
+
+/** The menu's timer choices in order; chapter choices only for books with chapters. */
+internal fun sleepTimerChoices(hasChapters: Boolean, config: ReaderConfig): List<SleepTimerSetting> = buildList {
+    add(SleepTimerSetting.Off)
+    config.sleepMinutes.forEach { add(SleepTimerSetting.AfterMinutes(it)) }
+    add(SleepTimerSetting.EndOfPage)
+    if (hasChapters) {
+        add(SleepTimerSetting.EndOfChapter)
+        config.sleepChapterCounts.forEach { add(SleepTimerSetting.AfterChapters(it)) }
+    }
+}
+
+@Composable
+private fun settingLabel(setting: SleepTimerSetting): String = when (setting) {
+    SleepTimerSetting.Off -> stringResource(R.string.reader_sleep_off)
+    is SleepTimerSetting.AfterMinutes -> stringResource(R.string.reader_sleep_minutes, setting.minutes)
+    SleepTimerSetting.EndOfPage -> stringResource(R.string.reader_sleep_end_of_page)
+    SleepTimerSetting.EndOfChapter -> stringResource(R.string.reader_sleep_end_of_chapter)
+    is SleepTimerSetting.AfterChapters -> stringResource(R.string.reader_sleep_chapters, setting.count)
 }
 
 /** What the timer button shows next to its icon; null when off. */
@@ -168,6 +209,8 @@ private fun sleepTimerLabel(timer: SleepTimerState): String? = when (timer) {
     SleepTimerState.EndOfPage -> stringResource(R.string.reader_sleep_end_of_page)
 
     SleepTimerState.EndOfChapter -> stringResource(R.string.reader_sleep_end_of_chapter)
+
+    is SleepTimerState.AfterChapters -> stringResource(R.string.reader_sleep_chapters, timer.count)
 }
 
 private val PLAY_BUTTON_SIZE = 64.dp

@@ -18,11 +18,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -30,7 +28,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -62,6 +59,7 @@ fun LibraryScreen(
     modifier: Modifier = Modifier,
     nowPlaying: NowPlaying? = null,
     banner: @Composable () -> Unit = {},
+    covers: CoverSource = CoverSource.None,
 ) {
     val snackbar = remember { SnackbarHostState() }
     // Saveable: the picker can outlive this process, and its result must still reach the right book.
@@ -84,9 +82,9 @@ fun LibraryScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = { LibraryTopBar(onOpenSettings = actions::onOpenSettings) },
+        topBar = { LibraryTopBar(listState, actions) },
         floatingActionButton = {
-            if (listState is LibraryListState.Loaded && listState.items.isNotEmpty()) {
+            if (listState is LibraryListState.Loaded && listState.all.isNotEmpty()) {
                 ExtendedFloatingActionButton(
                     onClick = { if (!busy) pickPdf() },
                     icon = { Icon(painterResource(R.drawable.ic_add), contentDescription = null) },
@@ -115,23 +113,11 @@ fun LibraryScreen(
                 onRemove = actions::onRequestRemoval,
                 onExport = actions::onExportAudiobook,
                 onContinue = actions::onContinue,
+                covers = covers,
             )
         }
     }
     pendingRemoval?.let { RemovalDialog(it, actions) }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun LibraryTopBar(onOpenSettings: () -> Unit) {
-    TopAppBar(
-        title = { Text(stringResource(R.string.library_title)) },
-        actions = {
-            IconButton(onClick = onOpenSettings) {
-                Icon(painterResource(R.drawable.ic_settings), stringResource(R.string.settings_title))
-            }
-        },
-    )
 }
 
 @Composable
@@ -143,6 +129,7 @@ private fun LibraryContent(
     onRemove: (Book) -> Unit,
     onExport: (Book) -> Unit,
     onContinue: (Book) -> Unit,
+    covers: CoverSource,
 ) {
     when (listState) {
         LibraryListState.Loading -> Centered { CircularProgressIndicator() }
@@ -155,10 +142,25 @@ private fun LibraryContent(
             )
         }
 
-        is LibraryListState.Loaded -> if (listState.items.isEmpty()) {
-            EmptyLibrary(enabled = !busy, onAddPdf = onAddPdf)
-        } else {
-            BookList(listState, onTap = onTap, onRemove = onRemove, onExport = onExport, onContinue = onContinue)
+        is LibraryListState.Loaded -> when {
+            listState.all.isEmpty() -> EmptyLibrary(enabled = !busy, onAddPdf = onAddPdf)
+
+            listState.items.isEmpty() -> Centered {
+                Text(
+                    stringResource(R.string.library_no_match),
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                )
+            }
+
+            else -> BookList(
+                listState,
+                onTap = onTap,
+                onRemove = onRemove,
+                onExport = onExport,
+                onContinue = onContinue,
+                covers = covers,
+            )
         }
     }
 }
@@ -185,6 +187,7 @@ private fun BookList(
     onRemove: (Book) -> Unit,
     onExport: (Book) -> Unit,
     onContinue: (Book) -> Unit,
+    covers: CoverSource,
 ) {
     LazyColumn(contentPadding = PaddingValues(bottom = FAB_CLEARANCE)) {
         list.continueReading?.let { latest ->
@@ -198,6 +201,7 @@ private fun BookList(
                 onTap = { onTap(item) },
                 onRemove = { onRemove(item.book) },
                 onExport = { onExport(item.book) },
+                covers = covers,
             )
             HorizontalDivider()
         }

@@ -61,6 +61,37 @@ class ReaderPageViewTest {
     }
 
     @Test
+    fun `a thumbnail is drawn at its own width and leaves the page view alone`() = runTest(UnconfinedTestDispatcher()) {
+        val model = model()
+        model.setPageWidth(WIDTH)
+        val shown = model.state.value.pageImage
+
+        val thumb = model.thumbnail(3, THUMB_WIDTH) as FakePageImage
+
+        assertEquals(3, thumb.page)
+        assertEquals(THUMB_WIDTH, thumb.widthPx)
+        assertEquals(config.pageMaxPixels, thumb.maxPixels)
+        assertEquals(shown, model.state.value.pageImage)
+        assertNull("a page that can't be drawn", model.thumbnail(7, THUMB_WIDTH))
+        assertNull("no width", model.thumbnail(3, 0))
+    }
+
+    @Test
+    fun `no thumbnail before the book is open`() = runTest(UnconfinedTestDispatcher()) {
+        val closed = ReaderModel(
+            bookId = BOOK,
+            books = FakeBooks(),
+            opener = FakeOpener(document),
+            player = port,
+            speeds = FakeSpeeds(),
+            config = config,
+            scope = backgroundScope,
+            views = views,
+        )
+        assertNull(closed.thumbnail(0, THUMB_WIDTH))
+    }
+
+    @Test
     fun `a page that cannot be drawn says so`() = runTest(UnconfinedTestDispatcher()) {
         val model = model()
         model.setPageWidth(WIDTH)
@@ -152,6 +183,7 @@ class ReaderPageViewTest {
 
     private companion object {
         const val WIDTH = 1080
+        const val THUMB_WIDTH = 120
         const val EPSILON = 1e-5f
     }
 }

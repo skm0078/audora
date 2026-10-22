@@ -20,6 +20,8 @@ package io.github.skm0078.audora.core.config
  *   espeak-ng-data has about 400.
  * @property maxImportDepth how deep the import looks for a voice inside the picked folder.
  * @property maxLabelChars longest name a user can give an imported voice.
+ * @property stopWaitMs how long a model delete waits for a download it cancelled to stop, so the worker cannot
+ *   install into the folder being deleted.
  */
 data class VoiceDownloadConfig(
     val connectTimeoutMs: Int = 15_000,
@@ -33,12 +35,14 @@ data class VoiceDownloadConfig(
     val maxImportFiles: Int = 2_000,
     val maxImportDepth: Int = 4,
     val maxLabelChars: Int = 60,
+    val stopWaitMs: Long = 10_000,
 ) {
     init {
         require(connectTimeoutMs > 0) { "connectTimeoutMs must be > 0, was $connectTimeoutMs" }
         require(readTimeoutMs > 0) { "readTimeoutMs must be > 0, was $readTimeoutMs" }
         require(maxAttempts > 0) { "maxAttempts must be > 0, was $maxAttempts" }
         require(retryBackoffMs > 0) { "retryBackoffMs must be > 0, was $retryBackoffMs" }
+        require(stopWaitMs >= 0) { "stopWaitMs must be >= 0, was $stopWaitMs" }
         require(progressStepBytes > 0) { "progressStepBytes must be > 0, was $progressStepBytes" }
         require(bufferBytes > 0) { "bufferBytes must be > 0, was $bufferBytes" }
         require(installHeadroomBytes >= 0) { "installHeadroomBytes must be >= 0, was $installHeadroomBytes" }

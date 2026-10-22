@@ -6,7 +6,8 @@ package io.github.skm0078.audora.speech.normalize
 /**
  * Case-sensitive on purpose: "No. 5" is "number five" but "no." is a word. Reference abbreviations (Fig., p., Ch.)
  * expand only before a number or Roman numeral, where they cannot be anything else. "St." is "Saint" before a
- * capitalised name and "Street" otherwise. Acronyms (NASA, U.S.) are left to the engine.
+ * capitalised name and "Street" otherwise. Plain acronyms (NASA) are left to the engine; dotted ones and initials
+ * ("U.S.", "A. P. J.") are read as letters by [InitialsRule], which runs next.
  */
 internal class AbbreviationRule : NormalizationRule {
     override fun apply(text: String, role: TextRole): String {

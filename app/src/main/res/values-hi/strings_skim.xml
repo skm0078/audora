@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_skim.xml -->
+<!-- Purpose: Hindi copy of values/strings_skim.xml: Strings for skim mode (plan item 64). -->
+<resources>
+    <string name="reading_skim">सरसरी नज़र</string>
+    <string name="reading_skim_detail">सिर्फ़ शीर्षक, कैप्शन, हर अनुच्छेद का पहला वाक्य और बोल्ड शब्दों वाले वाक्य</string>
+</resources>

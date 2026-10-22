@@ -23,7 +23,7 @@ import java.security.MessageDigest
  * from the OCR model manager; until they are downloaded, OCR pages fall back to their text layer and say why.
  */
 object BookOcr {
-    private const val CACHE_DIR = "ocr"
+    internal const val CACHE_DIR = "ocr"
     private const val BOOK_KEY_CHARS = 16
 
     @Volatile

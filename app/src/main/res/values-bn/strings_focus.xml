@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_focus.xml -->
+<!-- Purpose: Bengali copy of values/strings_focus.xml: Strings for the focus sound under the voice (plan item 72). -->
+<resources>
+    <string name="focus_title">ফোকাস সাউন্ড</string>
+    <string name="focus_detail">কণ্ঠের পেছনে মৃদু বাজে আর কণ্ঠ কথা বললেই কমে যায়। আপনার ফোনেই তৈরি হয়, কিছু ডাউনলোড করতে হয় না।</string>
+    <string name="focus_off">বন্ধ</string>
+    <string name="focus_rain">বৃষ্টি</string>
+    <string name="focus_cafe">ক্যাফে</string>
+    <string name="focus_brown_noise">ব্রাউন নয়েজ</string>
+    <string name="focus_level">ভলিউম</string>
+</resources>

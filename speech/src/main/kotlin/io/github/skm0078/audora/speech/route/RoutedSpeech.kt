@@ -79,12 +79,14 @@ class RoutedSpeech(
     private val router: ScriptRouter,
     private val normalizers: Map<Lang, TextNormalizer> = speechNormalizers(),
 ) {
+    @Suppress("LongParameterList") // All but the text and language optional, with the defaults of a plain read.
     suspend fun render(
         text: String,
         lang: Lang,
         role: TextRole = TextRole.BODY,
         rate: Float = SpeechStyle.NORMAL_RATE,
         prosody: ClauseProsody? = null,
+        shape: (PcmAudio) -> PcmAudio = { it },
     ): Outcome<RoutedAudio, SpeechError> {
         val segments = router.route(text, lang).ifEmpty { listOf(ScriptSegment(text, lang)) }
         val uncut = segments.map { Clause(it.text, it.lang, pauseBefore = null, aside = false) }
@@ -92,8 +94,8 @@ class RoutedSpeech(
         val parts = ArrayList<Voiced>(clauses.size)
         for (clause in clauses) {
             when (val part = renderWith(clause.text, clause.lang, role, rate)) {
-                is Outcome.Success -> parts.add(part.value)
-                is Outcome.Failure -> return fallBack(Part(text, lang, role, rate), clause.lang, part.error)
+                is Outcome.Success -> parts.add(part.value.let { Voiced(shape(it.audio), it.voice) })
+                is Outcome.Failure -> return fallBack(Part(text, lang, role, rate), clause.lang, part.error, shape)
             }
         }
         return Outcome.Success(join(clauses, parts, prosody))
@@ -124,11 +126,12 @@ class RoutedSpeech(
         sentence: Part,
         failedLang: Lang,
         error: SpeechError,
+        shape: (PcmAudio) -> PcmAudio,
     ): Outcome<RoutedAudio, SpeechError> = if (failedLang == sentence.lang) {
         Outcome.Failure(error)
     } else {
         renderWith(sentence.text, sentence.lang, sentence.role, sentence.rate)
-            .map { RoutedAudio(it.audio, listOf(sentence.lang), listOf(it.voice), error) }
+            .map { RoutedAudio(shape(it.audio), listOf(sentence.lang), listOf(it.voice), error) }
     }
 
     private suspend fun renderWith(

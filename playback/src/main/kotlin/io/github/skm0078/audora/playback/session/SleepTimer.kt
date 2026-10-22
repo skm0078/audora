@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/session/SleepTimer.kt
-// Purpose: Sleep-timer rules: pause after N minutes, or at the end of the current page or chapter.
+// Purpose: Sleep-timer rules: pause after N minutes, at the end of the page, or after one or more chapters.
 
 package io.github.skm0078.audora.playback.session
 
@@ -20,14 +20,31 @@ class SleepTimer(private val clock: () -> Long) {
      */
     var chapterStarts: List<Int> = emptyList()
 
+    /**
+     * For "stop after N chapters": the chapter start page reading stops before; null for one chapter (any chapter
+     * start ends it) or when the book has fewer chapters left (the end of the book ends it).
+     */
+    var chapterTarget: Int? = null
+        private set
+
     /** [clock] time when a [SleepTimerMode.MINUTES] timer is due; null otherwise. */
     var dueAt: Long? = null
         private set
 
-    fun set(mode: SleepTimerMode, minutes: Int) {
+    /**
+     * [chapters] (end-of-chapter mode) counts chapter ends from [fromPage], the page being read: 2 stops before the
+     * second chapter start after it.
+     */
+    fun set(mode: SleepTimerMode, minutes: Int, chapters: Int = 1, fromPage: Int? = null) {
         require(mode != SleepTimerMode.MINUTES || minutes > 0) { "A minutes timer needs minutes > 0, was $minutes" }
+        require(chapters > 0) { "chapters must be > 0, was $chapters" }
         this.mode = mode
         dueAt = if (mode == SleepTimerMode.MINUTES) clock() + minutes * MS_PER_MINUTE else null
+        chapterTarget = if (mode == SleepTimerMode.END_OF_CHAPTER && chapters > 1 && fromPage != null) {
+            chapterStarts.filter { it > fromPage }.getOrNull(chapters - 1) ?: Int.MAX_VALUE
+        } else {
+            null
+        }
     }
 
     fun clear() = set(SleepTimerMode.OFF, 0)
@@ -51,9 +68,15 @@ class SleepTimer(private val clock: () -> Long) {
         }
         return when (mode) {
             SleepTimerMode.END_OF_PAGE -> nextPage != page
-            SleepTimerMode.END_OF_CHAPTER -> nextPage == null || chapterStarts.any { it in page + 1..nextPage }
+            SleepTimerMode.END_OF_CHAPTER -> nextPage == null || endsChapterRun(page, nextPage)
             SleepTimerMode.OFF, SleepTimerMode.MINUTES -> false
         }
+    }
+
+    /** Crossing into [nextPage] ends the timer's chapters: the target chapter start, or any start without one. */
+    private fun endsChapterRun(page: Int, nextPage: Int): Boolean {
+        val target = chapterTarget?.takeIf { it > page }
+        return if (target == null) chapterStarts.any { it in page + 1..nextPage } else nextPage >= target
     }
 
     private companion object {

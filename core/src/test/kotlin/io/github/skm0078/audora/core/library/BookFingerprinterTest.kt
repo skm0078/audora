@@ -88,14 +88,47 @@ class BookFingerprinterTest {
         assertTrue(fingerprinter.fingerprint(failing, 10L) is Outcome.Failure)
     }
 
+    @Test
+    fun `a stream that hands over one byte per read gives the same fingerprint`() {
+        val bytes = pdfBytes("a") + ByteArray(100) { it.toByte() }
+        val trickle = fingerprinter.fingerprint(TrickleStream(bytes), bytes.size.toLong())
+
+        assertEquals(fingerprintOf(bytes).getOrNull(), trickle.getOrNull())
+        assertNotNull(trickle.getOrNull())
+    }
+
+    @Test
+    fun `a file shorter than the head is read whole`() {
+        val short = pdfBytes("a")
+        val trickle = fingerprinter.fingerprint(TrickleStream(short), short.size.toLong())
+
+        assertEquals(fingerprintOf(short).getOrNull(), trickle.getOrNull())
+        assertTrue(short.size < config.fingerprintHeadBytes)
+    }
+
+    /** Returns at most one byte from each bulk read, as some content providers' streams do. */
+    private class TrickleStream(private val bytes: ByteArray) : InputStream() {
+        private var at = 0
+
+        override fun read(): Int = if (at < bytes.size) bytes[at++].toInt() and BYTE_MASK else -1
+
+        override fun read(b: ByteArray, off: Int, len: Int): Int {
+            val next = if (len == 0) 0 else read()
+            if (next >= 0 && len > 0) b[off] = next.toByte()
+            return when {
+                len == 0 -> 0
+                next < 0 -> -1
+                else -> 1
+            }
+        }
+    }
+
     private class CountingStream(private val bytes: ByteArray) : InputStream() {
         var consumed = 0
             private set
 
         override fun read(): Int = if (consumed < bytes.size) bytes[consumed++].toInt() and BYTE_MASK else -1
-
-        private companion object {
-            const val BYTE_MASK = 0xFF
-        }
     }
 }
+
+private const val BYTE_MASK = 0xFF

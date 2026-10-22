@@ -1,5 +1,5 @@
 {
-  "comment": "File: speech/models.json. Purpose: the voices Audora can download (P4-01, ADR-022). Each voice is a flat, uncompressed zip on this repo's 'voices' release, built from the SHA-pinned upstream archive by scripts/build_voice_mirror.py (same bytes every run) and published by .github/workflows/voice-mirror.yml, which never replaces an asset. The app checks every download against sha256 and sizeBytes. A voice whose id matches the bundled voice (bundled-voices.json) is left out of the APK's catalog. To add or change a voice: edit its entry, run the script with --print-pins, paste file/sha256/sizeBytes. Never add Lessac/Blizzard-derived voices (lessac, amy, hfc_*, hi_IN rohan).",
+  "comment": "File: speech/models.json. Purpose: the voices Audora can download (P4-01, ADR-022). Each voice is a flat, uncompressed zip on this repo's 'voices' release, built from the SHA-pinned upstream archive by scripts/build_voice_mirror.py (same bytes every run) and published by .github/workflows/voice-mirror.yml, which never replaces an asset. The app checks every download against sha256 and sizeBytes. A voice whose id matches the bundled voice (bundled-voices.json) is left out of the APK's catalog. To add or change a voice: edit its entry, run the script with --print-pins, paste file/sha256/sizeBytes. 'models' holds the other downloadable models, built the same way but not voices: the opt-in English punctuation model (RI-11), whose pins speech/src/.../punct/PunctuationModelSpec.kt repeats (a test checks they match). Never add Lessac/Blizzard-derived voices (lessac, amy, hfc_*, hi_IN rohan).",
   "baseUrl": "https://github.com/skm0078/audora/releases/download/voices/",
   "sourceBaseUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/",
   "espeakDictionaries": [
@@ -54,6 +54,27 @@
       "sizeBytes": 28778024
     },
     {
+      "id": "kitten-en-nano-male",
+      "label": "English, KittenTTS nano, male",
+      "lang": "en",
+      "family": "kitten",
+      "model": "model.int8.onnx",
+      "voices": "voices.bin",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 0,
+      "licence": "KittenTTS v0.8 (Apache-2.0)",
+      "credit": "KittenTTS v0.8 nano by KittenML, male voice expr-voice-2-m. Packaged for sherpa-onnx by k2-fsa; files unchanged.",
+      "licenceUrl": "https://www.apache.org/licenses/LICENSE-2.0",
+      "sourceUrl": "https://github.com/KittenML/KittenTTS",
+      "source": {
+        "archive": "kitten-nano-en-v0_8-int8",
+        "sha256": "6fa5be852612ce761094ba74ee6123b4fc4acfefa79bf64dc63acae4a83af2fd"
+      },
+      "file": "kitten-en-nano-male-9b9a3d2b8697.zip",
+      "sha256": "9b9a3d2b8697fb8d95acc8f41fd0b7ec37b3a8699c72ca31ac3d2520e77a2da0",
+      "sizeBytes": 28778024
+    },
+    {
       "id": "kokoro-en-heart",
       "label": "English (US), Kokoro Heart (premium)",
       "lang": "en",
@@ -73,6 +94,29 @@
         "sha256": "4c3052abaa60943a341f193888cf6abd68787dae6ab8ae5c925a706caa247e4e"
       },
       "file": "kokoro-en-heart-5bade7e6fb72.zip",
+      "sha256": "5bade7e6fb72265288ab73838c93742f44452302fc792d619117b44fc0e9db1d",
+      "sizeBytes": 149491614
+    },
+    {
+      "id": "kokoro-en-michael",
+      "label": "English (US), Kokoro Michael, male (premium)",
+      "lang": "en",
+      "family": "kokoro",
+      "model": "model.int8.onnx",
+      "voices": "voices.bin",
+      "lexicon": "lexicon-us-en.txt",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 16,
+      "engineLang": "en-us",
+      "licence": "Kokoro v1.0 (Apache-2.0)",
+      "credit": "Kokoro-82M v1.0 by hexgrad, voice am_michael. Packaged for sherpa-onnx by k2-fsa (int8); files unchanged.",
+      "licenceUrl": "https://www.apache.org/licenses/LICENSE-2.0",
+      "sourceUrl": "https://huggingface.co/hexgrad/Kokoro-82M",
+      "source": {
+        "archive": "kokoro-int8-multi-lang-v1_0",
+        "sha256": "4c3052abaa60943a341f193888cf6abd68787dae6ab8ae5c925a706caa247e4e"
+      },
+      "file": "kokoro-en-michael-5bade7e6fb72.zip",
       "sha256": "5bade7e6fb72265288ab73838c93742f44452302fc792d619117b44fc0e9db1d",
       "sizeBytes": 149491614
     },
@@ -178,6 +222,52 @@
       "file": "mms-bn-43bfe7db9d7a.zip",
       "sha256": "43bfe7db9d7a92b2985c3d2d673db1262b399b68330e18ed81fe97dc435241bd",
       "sizeBytes": 114392967
+    }
+  ],
+  "models": [
+    {
+      "id": "punct-en-cnn-bilstm",
+      "label": "English punctuation for run-on sentences",
+      "lang": "en",
+      "family": "punct-cnn-bilstm",
+      "model": "model.int8.onnx",
+      "tokens": "bpe.vocab",
+      "licence": "Apache-2.0",
+      "credit": "Edge-Punct-Casing CNN-BiLSTM punctuation and casing model by frankyoujian (Apache-2.0). Converted for sherpa-onnx by k2-fsa; only the int8 model and its vocabulary are kept, unchanged.",
+      "licenceUrl": "https://github.com/frankyoujian/Edge-Punct-Casing/blob/main/LICENSE",
+      "sourceUrl": "https://github.com/frankyoujian/Edge-Punct-Casing",
+      "source": {
+        "archive": "sherpa-onnx-online-punct-en-2024-08-06",
+        "sha256": "9f5e5a72c7d2829635bd074fce92b6bbd5b78da8a52e7ad8ed1be933f366b99d",
+        "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/punctuation-models/sherpa-onnx-online-punct-en-2024-08-06.tar.bz2"
+      },
+      "file": "punct-en-cnn-bilstm-a8fac296fa09.zip",
+      "sha256": "a8fac296fa09911b974292efc845e028cd38d99809dad0186529d3aa4eb6e332",
+      "sizeBytes": 7640490
+    },
+    {
+      "id": "kws-en-zipformer-gigaspeech",
+      "label": "English voice commands",
+      "lang": "en",
+      "family": "kws-zipformer",
+      "model": "encoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
+      "tokens": "tokens.txt",
+      "extraFiles": [
+        "decoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
+        "joiner-epoch-12-avg-2-chunk-16-left-64.int8.onnx"
+      ],
+      "licence": "Apache-2.0",
+      "credit": "Zipformer keyword spotter (3.3M, GigaSpeech) by the k2-fsa project (Apache-2.0), trained with icefall and converted for sherpa-onnx. Only the int8 encoder, decoder and joiner and the token list are kept, unchanged.",
+      "licenceUrl": "https://github.com/k2-fsa/icefall/blob/master/LICENSE",
+      "sourceUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/kws-models",
+      "source": {
+        "archive": "sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01",
+        "sha256": "f170013b4716e41b62b9bfd809687c207cef798ef9bc6534d524e17af9b6561a",
+        "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01.tar.bz2"
+      },
+      "file": "kws-en-zipformer-gigaspeech-325100325fc0.zip",
+      "sha256": "325100325fc0b984169e2654d3b4fa01194df28bf8182a0b98d0b1d3f5c68dfa",
+      "sizeBytes": 5254988
     }
   ]
 }

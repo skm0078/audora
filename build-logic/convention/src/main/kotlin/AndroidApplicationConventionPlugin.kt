@@ -30,6 +30,18 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 compose = true
                 buildConfig = true
             }
+            lint {
+                // One run covers every module the app depends on, :core included, so NewApi checks their calls
+                // against the app's minSdk (the Android 12 URLEncoder crash was a JVM-module call lint never saw).
+                checkDependencies = true
+                // Errors fail CI; warnings are listed in the report only.
+                abortOnError = true
+                warningsAsErrors = false
+                // TEMPORARY until the last landing (studio): the v0.1.0 gate makes this an error again.
+                warning += "MissingTranslation"
+                textReport = true
+                textOutput = file("build/reports/lint-results.txt")
+            }
         }
 
         dependencies {

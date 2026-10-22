@@ -45,8 +45,8 @@ class ReAnchoring(private val fingerprint: SentenceFingerprint = SentenceFingerp
     /** [units] are the current units of [ResumeAnchor.page], in reading order. */
     fun locate(anchor: ResumeAnchor, currentPipelineVersion: Int, units: List<ReadingUnit>): ResumePoint {
         if (units.isEmpty()) return ResumePoint(anchor.page, 0, AnchorMatch.PAGE_START)
-        val heads = units.map { fingerprint.head(it.text) }
-        val atOffset = units.indexOfLast { it.charStart <= anchor.charStart }.coerceAtLeast(0)
+        val heads = units.map { fingerprint.head(it) }
+        val atOffset = atOffset(anchor, heads, units)
 
         fun point(index: Int, match: AnchorMatch) = ResumePoint(anchor.page, units[index].charStart, match)
 
@@ -59,10 +59,24 @@ class ReAnchoring(private val fingerprint: SentenceFingerprint = SentenceFingerp
 
             else -> nearestWith(anchor.fingerprint, heads, units, anchor.charStart)
                 ?.let { point(it, AnchorMatch.HEAD_FINGERPRINT) }
-                ?: nearestWith(anchor.tailFingerprint, units.map { fingerprint.tail(it.text) }, units, anchor.charStart)
+                ?: nearestWith(anchor.tailFingerprint, units.map { fingerprint.tail(it) }, units, anchor.charStart)
                     ?.let { point(it, AnchorMatch.TAIL_FINGERPRINT) }
                 ?: point(atOffset, AnchorMatch.OFFSET_UNVERIFIED)
         }
+    }
+
+    /**
+     * The unit containing (or last before) the saved offset. Units can share an offset (a zero-length table summary
+     * and the row after it): among them, the one with the saved fingerprint, else the last.
+     */
+    private fun atOffset(anchor: ResumeAnchor, heads: List<Long>, units: List<ReadingUnit>): Int {
+        val last = units.indexOfLast { it.charStart <= anchor.charStart }.coerceAtLeast(0)
+        val offset = units[last].charStart
+        val matching = units.indices.firstOrNull {
+            units[it].charStart == offset && heads[it] == anchor.fingerprint &&
+                anchor.fingerprint != SentenceFingerprint.NONE
+        }
+        return matching ?: last
     }
 
     /** Index of the unit with [wanted] closest to [charStart]; a repeated sentence ("Yes.") picks the right one. */

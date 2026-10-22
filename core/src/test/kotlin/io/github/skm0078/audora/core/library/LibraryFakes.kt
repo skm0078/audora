@@ -14,11 +14,14 @@ import kotlinx.coroutines.flow.map
 class FakeBookStore : BookStore {
     private val books = MutableStateFlow<Map<BookId, Book>>(emptyMap())
     var failWrites = false
+    var failReads = false
 
     val all: List<Book> get() = books.value.values.toList()
 
-    override fun observeAll(): Flow<List<Book>> =
-        books.map { map -> map.values.sortedByDescending(Book::recentAtMillis) }
+    override fun observeAll(): Flow<List<Book>> = books.map { map ->
+        if (failReads) error("database unreadable")
+        map.values.sortedByDescending(Book::recentAtMillis)
+    }
 
     override suspend fun byId(id: BookId): Book? = books.value[id]
 
@@ -66,6 +69,7 @@ class FakeDocuments : DocumentAccess {
     val granted = mutableSetOf<String>()
     val oneTimeOnly = mutableSetOf<String>()
     val released = mutableListOf<String>()
+    val pruned = mutableListOf<Set<String>>()
 
     fun put(uri: String, name: String?, bytes: ByteArray) {
         docs[uri] = Doc(name, bytes)
@@ -101,6 +105,10 @@ class FakeDocuments : DocumentAccess {
         documentUri !in granted -> BookAvailability.ACCESS_LOST
         documentUri !in docs -> BookAvailability.MISSING
         else -> BookAvailability.AVAILABLE
+    }
+
+    override fun pruneUnused(inUse: Set<String>) {
+        pruned += inUse
     }
 }
 

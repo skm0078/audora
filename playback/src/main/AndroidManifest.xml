@@ -11,10 +11,17 @@
     <!-- Audiobook export (ADR-034): a long user-started render; mediaProcessing on Android 15+, dataSync before. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
+    <!-- Voice commands with the screen off (plan item 38, ADR-051), only when the listener turns it on. RECORD_AUDIO
+         is declared here too, beside the service it belongs to, so lint checks the pair; Settings asks for it. The
+         app's identical line merges into one. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- The playback notification on Android 13+; the UI asks for it on first play. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- ExoPlayer's WAKE_MODE_LOCAL keeps the CPU awake while a sentence is synthesized with the screen off. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- A short buzz confirms "shake to extend" on the sleep timer (plan item 37); a normal permission. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <!-- The phone's own text-to-speech engines must be visible to bind them (Android 11+ package visibility). -->
     <queries>
@@ -28,16 +35,31 @@
             android:name=".service.AudoraPlaybackService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">
+            <!-- A MediaLibraryService (plan item 34): media browsers such as Android Auto list the library and
+                 play from it; the legacy browser action is how Android Auto finds media apps. -->
             <intent-filter>
+                <action android:name="androidx.media3.session.MediaLibraryService" />
                 <action android:name="androidx.media3.session.MediaSessionService" />
+                <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
+
+        <!-- Android Auto shows Audora as a media app (plan item 34); no other car features are used. -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
 
         <!-- Audiobook export (ADR-034): started only from the library's "Save as audiobook" (C7). -->
         <service
             android:name=".export.AudiobookExportService"
             android:exported="false"
             android:foregroundServiceType="dataSync|mediaProcessing" />
+
+        <!-- Voice commands with the screen off (plan item 38, opt-in): started only from the visible reader. -->
+        <service
+            android:name=".commands.VoiceCommandService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
 
         <!-- Playback resumption (P1-06): a headset's play button after Audora was closed resumes the last book.
              A media button press is a user action (C7); nothing here runs on boot. -->

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_smart_speed.xml -->
+<!-- Purpose: Bengali copy of values/strings_smart_speed.xml: Strings for smart speed in the speech sheet (plan item 10, ADR-049). -->
+<resources>
+    <string name="speech_smart_speed">স্মার্ট স্পিড</string>
+    <string name="speech_smart_speed_detail">%1$s×-এর ওপরে, এটি ব্যঞ্জনের চেয়ে বেশি নীরবতা আর লম্বা ধ্বনি ছোট করে, যাতে দ্রুত কথাও স্পষ্ট থাকে। এর নিচে কণ্ঠ নিজেই দ্রুত বলে আর এতে কিছু বদলায় না।</string>
+</resources>

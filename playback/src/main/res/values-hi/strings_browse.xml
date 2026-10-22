@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: playback/src/main/res/values-hi/strings_browse.xml -->
+<!-- Purpose: Hindi copy of values/strings.xml: Android Auto and media browser labels (plan item 34); the English is in values/strings.xml. -->
+<resources>
+    <string name="browse_recent">हाल की किताबें</string>
+    <string name="browse_up_next">आगे सुनें</string>
+    <string name="browse_library">लाइब्रेरी</string>
+    <string name="browse_resume">जारी रखें</string>
+    <string name="browse_where_left_off">जहाँ छोड़ा था वहीं से</string>
+    <string name="browse_page">पेज %1$d</string>
+    <string name="browse_chapter">अध्याय %1$d</string>
+</resources>

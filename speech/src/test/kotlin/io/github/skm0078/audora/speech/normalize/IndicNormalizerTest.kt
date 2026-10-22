@@ -48,6 +48,7 @@ class IndicNormalizerTest {
         Case("list", "1,2,3", "एक,दो,तीन"),
         Case("no digits", "कोई अंक नहीं।", "कोई अंक नहीं।"),
         Case("slash", "हाँ/नहीं चुनें।", "हाँ या नहीं चुनें।"),
+        Case("slash", "60 किमी/घंटा की गति।", "साठ किमी प्रति घंटा की गति।"),
         Case("ampersand", "राम & श्याम", "राम और श्याम"),
         Case("short slash stays", "क/ख", "क/ख"),
         Case("question kept", "क्या आप आएँगे? हाँ!", "क्या आप आएँगे? हाँ!"),

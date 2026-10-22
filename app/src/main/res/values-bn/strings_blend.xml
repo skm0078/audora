@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_blend.xml -->
+<!-- Purpose: Bengali copy of values/strings_blend.xml: Strings for the narrator blend (plan item 75). -->
+<resources>
+    <string name="speech_blend">ন্যারেটরের ভয়েস মেশান</string>
+    <string name="speech_blend_detail">নিজের পছন্দের ভয়েসের জন্য Kokoro ন্যারেটরে অন্য একটি ভয়েস মেশান। শুধু Kokoro ভয়েস। প্রতিবার বদলানোর পরে ভয়েস প্রায় এক সেকেন্ডে আবার লোড হয়, আর প্রতিটি মিশ্রণ ক্যাশে 28 MB-এর একটি কপি রাখে।</string>
+    <string name="speech_blend_off">বন্ধ</string>
+    <string name="speech_blend_amount">মেশানো: %1$d%%</string>
+    <string name="speech_blend_needs_space">প্রয়োগ হয়নি: মিশ্রণের জন্য %1$d MB খালি জায়গা দরকার। জায়গা না হওয়া পর্যন্ত ন্যারেটর ইনস্টল করা ভয়েসেই পড়বে।</string>
+    <string name="speech_blend_refused">প্রয়োগ হয়নি: এই ভয়েস মিশ্রণসহ লোড হয়নি, তাই মিশ্রণ ছাড়াই পড়া হচ্ছে।</string>
+</resources>

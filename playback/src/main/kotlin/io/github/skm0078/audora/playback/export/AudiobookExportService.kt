@@ -20,10 +20,14 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
-import io.github.skm0078.audora.playback.voice.EngineRenderer
+import io.github.skm0078.audora.playback.reading.QuoteCarry
+import io.github.skm0078.audora.playback.reading.UnitReading
+import io.github.skm0078.audora.playback.voice.BookRenderers
+import io.github.skm0078.audora.playback.voice.RenderBook
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
+import io.github.skm0078.audora.playback.voice.narratorBlend
 import javax.inject.Inject
 import kotlinx.coroutines.runBlocking
 
@@ -133,17 +137,32 @@ class AudiobookExportService : Service() {
         val folder = AudiobookFolder.relativePath(title, getString(R.string.export_untitled), config)
         AudoraLog.i(TAG, "Export started, $logContext, pages=${book.text.pageCount}, chapters=${chapters.size}")
         val shownFolder = folder.trimEnd('/')
-        val voices = SpeechVoices(VoiceEngines(this))
+        val style = SpeechStyleStore.forContext(this)
+        lateinit var voices: SpeechVoices
+        // The narrator blend (plan item 75) as playback uses it; BlendCache keeps the two from building it at once.
+        voices = SpeechVoices(
+            VoiceEngines(this, blend = { voices.narratorBlend(style.current.shaping) }) {
+                style.current.shaping.expressiveness
+            },
+        )
         try {
-            val style = SpeechStyleStore.forContext(this)
-            val renderer = EngineRenderer(
+            val chapterPages = book.text.chapterStarts().toSet()
+            val quotes = QuoteCarry()
+            val renderer = BookRenderers.create(
+                this,
                 voices,
                 style = { style.current.copy(rate = SpeechStyle.NORMAL_RATE) },
                 styleConfig = style.config,
+                book = RenderBook(
+                    chapterPages = { chapterPages },
+                    scanned = book.text::isScanned,
+                    startsInQuote = quotes::startsInQuote,
+                ),
             )
             val sink = AacAudioSink(MediaStoreChapterFiles(contentResolver, folder), chapters.size, config)
             val listener = ProgressListener(title, chapters)
-            val exporter = AudiobookExporter(renderer, config)
+            val reading = UnitReading(style.current.modes, chapterPages = chapterPages)
+            val exporter = AudiobookExporter(renderer, config, reading, onPage = quotes::page)
             when (val result = exporter.export(book.text, chapters, sink, listener, logContext)) {
                 is Outcome.Success -> notifications.showDone(title, result.value, shownFolder)
                 is Outcome.Failure -> notifications.showFailed(title, result.error.message)
