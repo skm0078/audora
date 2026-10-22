@@ -13,7 +13,9 @@ import io.github.skm0078.audora.core.model.TextBox
  *    with at least [LayoutConfig.minColumnWidthEm] of text on each side and each side at least as tall, is a
  *    gutter: cut there, left side first.
  *    No run crosses such a strip, so a full-width title or figure caption keeps the cut from happening above or
- *    below it. A single line is never cut: a wide justified space is not a gutter.
+ *    below it. A single line is never cut: a wide justified space is not a gutter. Nor is a group set wholly in
+ *    a monospace font ([GlyphRun.monospace]) ever cut: preformatted text lines up its own columns ("-n, --dry-run"
+ *    with its description beside it), and each of its rows is read whole.
  * 2. Otherwise cut at every empty horizontal strip of at least [LayoutConfig.yCutShare] of the widest one, top first.
  * 3. A group that cannot be cut is a leaf.
  *
@@ -70,7 +72,7 @@ internal class XyCut(private val config: LayoutConfig) {
     private fun columnCut(runs: List<GlyphRun>, em: Float): Float? {
         val minGap = config.columnGapEm * em
         val minWidth = config.minColumnWidthEm * em
-        if (heightOf(runs) < config.minColumnHeightEm * em) return null
+        if (heightOf(runs) < config.minColumnHeightEm * em || runs.all { it.monospace }) return null
         val groupLeft = runs.minOf { it.box.left }
         val groupRight = runs.maxOf { it.box.right }
         var best: Float? = null

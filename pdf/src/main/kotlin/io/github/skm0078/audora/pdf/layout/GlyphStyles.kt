@@ -1,5 +1,5 @@
 // File: pdf/src/main/kotlin/io/github/skm0078/audora/pdf/layout/GlyphStyles.kt
-// Purpose: Glyph size and boldness per offset of a page's text, from glyph boxes and font names.
+// Purpose: Glyph size, boldness and monospace per offset of a page's text, from glyph boxes and font names.
 
 package io.github.skm0078.audora.pdf.layout
 
@@ -16,16 +16,20 @@ import kotlin.math.roundToInt
 internal class GlyphStyles(page: PageText, private val config: LayoutConfig) {
     private val sizes = FloatArray(page.text.length)
     private val bold = BooleanArray(page.text.length)
+    private val mono = BooleanArray(page.text.length)
 
     /** The most common glyph size by glyph count (to the nearest half point); 0 when nothing is sized. */
     val bodySize: Float
 
     init {
         val boldFonts = HashMap<String, Boolean>()
+        val monoFonts = HashMap<String, Boolean>()
         for (run in page.fontRuns) {
-            val isBold = boldFonts.getOrPut(run.fontName) { isBoldFont(run.fontName, config.boldFontMarkers) }
+            val isBold = boldFonts.getOrPut(run.fontName) { fontNameHas(run.fontName, config.boldFontMarkers) }
+            val isMono = monoFonts.getOrPut(run.fontName) { fontNameHas(run.fontName, config.monospaceFontMarkers) }
             for (offset in run.start until run.end) {
                 bold[offset] = isBold
+                mono[offset] = isMono
                 sizes[offset] = run.fontSize
             }
         }
@@ -54,6 +58,12 @@ internal class GlyphStyles(page: PageText, private val config: LayoutConfig) {
         return countsByHalfPoint.maxByOrNull { it.value }?.key?.let { it / HALF_POINTS } ?: 0f
     }
 
+    /** More than half the non-space glyphs in [range] use a monospace font. */
+    fun isMostlyMonospace(range: IntRange, text: CharSequence): Boolean {
+        val glyphs = range.filter { !text[it].isWhitespace() }
+        return glyphs.count { mono[it] } * 2 > glyphs.size
+    }
+
     /** More than half the glyphs in [ranges] use a bold font. */
     fun isMostlyBold(ranges: List<IntRange>): Boolean {
         val glyphs = ranges.sumOf { it.last - it.first + 1 }
@@ -64,8 +74,11 @@ internal class GlyphStyles(page: PageText, private val config: LayoutConfig) {
     companion object {
         private const val HALF_POINTS = 2f
 
-        /** Subset fonts are named "ABCDEF+Times-Bold"; the prefix is random and could contain a marker. */
-        fun isBoldFont(name: String, markers: List<String>): Boolean {
+        /**
+         * The font named [name] holds one of [markers] (bold or monospace ones). Subset fonts are named
+         * "ABCDEF+Times-Bold"; the prefix is random and could contain a marker.
+         */
+        fun fontNameHas(name: String, markers: List<String>): Boolean {
             val base = name.substringAfter('+').lowercase()
             return markers.any { it in base }
         }

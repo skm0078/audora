@@ -66,6 +66,7 @@ package io.github.skm0078.audora.pdf
  *     a stop glued between Indic letters holds; "Henry V. The" ends a sentence; column numbers in brackets; each
  *     contents entry its own unit; only a rule is a dash in a cell; an author list's split kept after a no-break
  *     space; a bare print stamp repeats only its own time; "वि. सं.", "वि.वि. बंद", "a.m. है" and a dotted Indic word
- *     with a joiner after its stop held whole; "(U.S.) The" and "the U.S. A new law" end a sentence.
+ *     with a joiner after its stop held whole; "(U.S.) The" and "the U.S. A new law" end a sentence; a math sign's
+ *     tall box no longer joins two lines of words; text set wholly in a monospace font is never cut into columns.
  */
 const val PIPELINE_VERSION: Int = 11

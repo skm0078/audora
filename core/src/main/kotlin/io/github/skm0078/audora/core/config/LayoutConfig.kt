@@ -44,6 +44,9 @@ package io.github.skm0078.audora.core.config
  * @property maxHeadingChars a heading has at most this many characters.
  * @property boldFontMarkers lower-case fragments of a font name that mean bold. Font weight is unreliable in
  *   PDFium (ADR-011 §1), so the name decides: "Times-Bold", "CMBX10" (TeX bold), "NimbusRomNo9L-Medi".
+ * @property monospaceFontMarkers lower-case fragments of a font name that mean monospace ("Courier", "CMTT10",
+ *   "DejaVuSansMono", Pro Git's "mplus1mn"). A block set wholly in such fonts is preformatted (code, a command's
+ *   option list): its rows are kept whole and never cut into columns.
  * @property minBoxedShare below this share of glyphs with a box (OCR'd or converted text), the page keeps the
  *   extraction order instead of a geometric layout.
  * @property minRunShare below this share of glyphs in runs of two or more (vertical or rotated text), the page
@@ -52,6 +55,15 @@ package io.github.skm0078.audora.core.config
  *   words; with fewer steps than this it is not judged (ADR-032).
  * @property minTurnedShare a page is laid out turned when at least this share of its steps go up, down or left.
  * @property maxGlyphStepEm a step longer than this many glyph sizes is a jump to another line or cell, not counted.
+ * @property tallGlyphRatio a glyph box taller than this multiple of its run's typical glyph height (a math font's
+ *   "≳", "≃" or "⊙", whose box reaches down into the next line) is left out of the run's core height: two runs of
+ *   words whose cores are on different rows are never one line, so "2GM/c² ≳ 210 km" is not read inside
+ *   "orbital frequency of 75 Hz" below it. A formula keeps its tall signs' reach, which gathers its limits.
+ * @property typicalGlyphQuantile a run's typical glyph height is this quantile of its glyphs' heights: high enough
+ *   that capitals and brackets set it on PDFs whose glyph boxes hug each letter.
+ * @property proseLetterShare a run of at least [proseMinGlyphs] glyphs, at least this share of them letters, is words
+ *   rather than a formula's pieces.
+ * @property proseMinGlyphs see [proseLetterShare].
  * @property furniture captions and display equations, tagged after cleanup (RI-7a).
  * @property notes note markers silenced, footnotes and "Note:" asides tagged after that (RI-5a).
  */
@@ -76,17 +88,24 @@ data class LayoutConfig(
     val maxHeadingLines: Int = 3,
     val maxHeadingChars: Int = 200,
     val boldFontMarkers: List<String> = DEFAULT_BOLD_MARKERS,
+    val monospaceFontMarkers: List<String> = DEFAULT_MONOSPACE_MARKERS,
     val minBoxedShare: Float = 0.5f,
     val minRunShare: Float = 0.5f,
     val minDirectionSteps: Int = 20,
     val minTurnedShare: Float = 0.6f,
     val maxGlyphStepEm: Float = 2f,
+    val tallGlyphRatio: Float = 1.5f,
+    val typicalGlyphQuantile: Float = 0.75f,
+    val proseLetterShare: Float = 0.6f,
+    val proseMinGlyphs: Int = 10,
     val furniture: FurnitureConfig = FurnitureConfig(),
     val notes: NoteConfig = NoteConfig(),
 ) {
     init {
         require(minFontSize >= 0f) { "minFontSize must be >= 0, was $minFontSize" }
         require(lineOverlapRatio in 0f..1f) { "lineOverlapRatio must be in 0..1, was $lineOverlapRatio" }
+        require(tallGlyphRatio >= 1f) { "tallGlyphRatio must be >= 1, was $tallGlyphRatio" }
+        require(typicalGlyphQuantile in 0f..1f) { "typicalGlyphQuantile must be in 0..1, was $typicalGlyphQuantile" }
         require(columnGapEm > 0f && backJumpEm > 0f) { "columnGapEm and backJumpEm must be > 0" }
         require(minColumnWidthEm >= 0f && minColumnHeightEm >= 0f) { "column minimums must be >= 0" }
         require(yCutShare in 0f..1f) { "yCutShare must be in 0..1, was $yCutShare" }
@@ -101,6 +120,7 @@ data class LayoutConfig(
         require(ocrDandaMinIndicWords > 0) { "ocrDandaMinIndicWords must be > 0, was $ocrDandaMinIndicWords" }
         require(maxHeadingLines > 0 && maxHeadingChars > 0) { "heading limits must be > 0" }
         require(boldFontMarkers.all { it.isNotEmpty() && it == it.lowercase() }) { "bold markers must be lower case" }
+        require(monospaceFontMarkers.all { it.isNotEmpty() && it == it.lowercase() }) { "mono markers: lower case" }
         require(minBoxedShare in 0f..1f && minRunShare in 0f..1f) { "shares must be in 0..1" }
         require(minDirectionSteps > 0 && minTurnedShare in 0f..1f) { "direction thresholds out of range" }
         require(maxGlyphStepEm > 0f) { "maxGlyphStepEm must be > 0, was $maxGlyphStepEm" }
@@ -108,5 +128,6 @@ data class LayoutConfig(
 
     private companion object {
         val DEFAULT_BOLD_MARKERS = listOf("bold", "black", "heavy", "demi", "cmbx", "-medi", "-bd", ",bd")
+        val DEFAULT_MONOSPACE_MARKERS = listOf("mono", "courier", "consol", "menlo", "cmtt", "typewriter", "mplus1mn")
     }
 }

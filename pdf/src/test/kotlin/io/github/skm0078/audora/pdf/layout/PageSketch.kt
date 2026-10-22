@@ -125,9 +125,10 @@ class PageSketch(private val boxes: Boolean = true) {
         const val BODY = 10f
         const val REGULAR = 0
         const val BOLD = 1
+        const val MONO = 2
         const val CHAR_WIDTH = 0.5f
         const val SPACE_WIDTH = 0.25f
         const val BOX_HEIGHT = 1.15f
-        val FONT_NAMES = listOf("ABCDEF+NotoSerif-Regular", "GHIJKL+NotoSerif-Bold")
+        val FONT_NAMES = listOf("ABCDEF+NotoSerif-Regular", "GHIJKL+NotoSerif-Bold", "MNOPQR+DejaVuSansMono")
     }
 }

@@ -58,7 +58,7 @@ class ReadingText internal constructor(
         val bold = BooleanArray(page.text.length)
         val boldFonts = HashMap<String, Boolean>()
         for (run in page.fontRuns) {
-            if (boldFonts.getOrPut(run.fontName) { GlyphStyles.isBoldFont(run.fontName, markers) }) {
+            if (boldFonts.getOrPut(run.fontName) { GlyphStyles.fontNameHas(run.fontName, markers) }) {
                 for (offset in run.start until minOf(run.end, bold.size)) bold[offset] = true
             }
         }
