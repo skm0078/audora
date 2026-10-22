@@ -4,7 +4,9 @@
 # scripts/build_voice_mirror.py rebuilds each zip from its SHA-pinned upstream archive and fails unless the bytes
 # match the catalog's pin, so what lands on the release is exactly what the app checks for. Assets are only ever
 # added, never replaced or deleted: an APK in someone's hands keeps working after the catalog moves on.
-# On feature branches it only builds and checks; publishing happens from dev.
+# On feature branches a push only builds and checks; publishing happens from dev, or from any branch when the
+# workflow is started by hand (so a branch's test APK can download the models it adds before they reach dev).
+# Every asset is pinned by sha256 and never replaced, so a branch can only add what its catalog pins.
 
 name: Voice mirror
 
@@ -48,7 +50,7 @@ jobs:
         run: python3 scripts/build_voice_mirror.py --out dist
 
       - name: Publish new assets to the voices release
-        if: github.ref == 'refs/heads/dev'
+        if: github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
