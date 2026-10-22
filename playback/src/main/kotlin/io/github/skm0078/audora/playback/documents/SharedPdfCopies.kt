@@ -49,7 +49,7 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
         val source = Uri.parse(documentUri)
         val folder = UUID.randomUUID().toString()
         MADE_HERE += folder // before the folder exists, so a prune running meanwhile never takes it
-        val target = File(File(dir, folder), safeName(displayName(source)))
+        val target = File(File(dir, folder), safeName(resolver.displayName(source)))
         try {
             target.parentFile?.mkdirs()
             val input = resolver.openInputStream(source) ?: throw IOException("provider returned no stream")
@@ -92,6 +92,35 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
         dir.walkBottomUp().filter { it.isFile }.sumOf { it.length() }
     }
 
+    /**
+     * Saves text shared from another app (plan item 42) as `<title>.txt` beside the copies, so the library keeps it
+     * like any shared book; returns its URI, or null (logged) if it could not be written. [maxChars] caps a share.
+     */
+    suspend fun saveText(text: String, title: String?, maxChars: Int): String? = withContext(Dispatchers.IO) {
+        val name = safeName(title ?: text.lineSequence().firstOrNull { it.isNotBlank() }?.take(TITLE_FROM_TEXT_CHARS))
+            .removeSuffix(".pdf").let { if (it == DEFAULT_NAME.removeSuffix(".pdf")) SHARED_TEXT_NAME else it }
+        val target = newCopy("$name.txt")
+        try {
+            target.writeText(text.take(maxChars))
+            AudoraLog.i(TAG, "Saved shared text, chars=${minOf(text.length, maxChars)}")
+            Uri.fromFile(target).toString()
+        } catch (e: IOException) {
+            AudoraLog.e(TAG, "Could not save shared text: ${e.javaClass.simpleName}")
+            target.parentFile?.deleteRecursively()
+            null
+        }
+    }
+
+    /**
+     * A new, empty place for a book Audora makes itself (shared text, a camera photo, plan items 42 and 62): its own
+     * folder beside the copies, so [owns] accepts it and removing the book deletes it. [fileName] is made safe.
+     */
+    fun newCopy(fileName: String): File {
+        val folder = UUID.randomUUID().toString()
+        MADE_HERE += folder // before the folder exists, so a prune running meanwhile never takes it
+        return File(File(dir, folder), safeName(fileName)).also { it.parentFile?.mkdirs() }
+    }
+
     /** Deletes a copy and its folder. */
     fun delete(uri: Uri) {
         val file = fileOf(uri)
@@ -101,21 +130,6 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
 
     private fun folderOf(uri: Uri): String? = uri.takeIf(::owns)?.path?.let(::copyPathOf)?.first
 
-    private fun failed(target: File, source: Uri, e: Exception): String? {
-        AudoraLog.e(TAG, "Could not copy a shared PDF from authority=${source.authority}: ${e.javaClass.simpleName}")
-        target.parentFile?.deleteRecursively()
-        return null
-    }
-
-    private fun displayName(uri: Uri): String? = try {
-        resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
-            if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getString(0) else null
-        }
-    } catch (e: IllegalArgumentException) {
-        AudoraLog.d(TAG, "No name from authority=${uri.authority}: ${e.javaClass.simpleName}")
-        null
-    }
-
     companion object {
         /**
          * The URI every opener reads [documentUri] from (PDF engine, stream, cover): a shared copy mapped into today's
@@ -124,8 +138,9 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
         fun readableUri(context: Context, documentUri: String): Uri =
             SharedPdfCopies(context).readable(Uri.parse(documentUri))
 
-        private const val TAG = "Audora.SharedPdf"
         private const val DEFAULT_NAME = "Shared PDF.pdf"
+        private const val SHARED_TEXT_NAME = "Shared text"
+        private const val TITLE_FROM_TEXT_CHARS = 60
         private const val MAX_NAME_CHARS = 120
 
         /** Larger than any book in the test corpus (41 MB) by far; guards the phone's storage against a bad share. */
@@ -147,4 +162,23 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
             return if (cleaned.isNullOrBlank() || cleaned.startsWith(".")) DEFAULT_NAME else cleaned
         }
     }
+}
+
+private const val TAG = "Audora.SharedPdf"
+
+/** A copy that failed: logged without the source's name, and its half-written folder deleted. */
+private fun failed(target: File, source: Uri, e: Exception): String? {
+    AudoraLog.e(TAG, "Could not copy a shared PDF from authority=${source.authority}: ${e.javaClass.simpleName}")
+    target.parentFile?.deleteRecursively()
+    return null
+}
+
+/** The name the providing app gives [uri], or null; never throws for a provider that cannot answer. */
+private fun ContentResolver.displayName(uri: Uri): String? = try {
+    query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+        if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getString(0) else null
+    }
+} catch (e: IllegalArgumentException) {
+    AudoraLog.d(TAG, "No name from authority=${uri.authority}: ${e.javaClass.simpleName}")
+    null
 }

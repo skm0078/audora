@@ -60,6 +60,46 @@
             android:name=".commands.VoiceCommandService"
             android:exported="false"
             android:foregroundServiceType="microphone" />
+        <!-- Studio mode (ADR-039): renders a book ahead while the phone charges; started only from the library (C7). -->
+        <service
+            android:name=".studio.StudioService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|mediaProcessing" />
+
+        <!-- Accessible copy and talking book (plan items 69, 76, ADR-040): started only from the library (C7). -->
+        <service
+            android:name=".epub.BookCopyService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|mediaProcessing" />
+
+        <!-- Share as audio (plan item 41): renders one passage into a clip; started only from the reader (C7). -->
+        <service
+            android:name=".export.ClipService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|mediaProcessing" />
+
+        <!-- Hands the shared clip (cacheDir/shared-clips only) to the app the user picks (plan item 41). -->
+        <provider
+            android:name=".export.ClipFileProvider"
+            android:authorities="${applicationId}.clips"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/clip_share_paths" />
+        </provider>
+
+        <!-- Lets the camera app write "Point and read"'s photo (cacheDir/photo-capture only, plan item 62). The camera app
+             takes the picture, so Audora declares no camera permission. -->
+        <provider
+            android:name=".photo.PhotoFileProvider"
+            android:authorities="${applicationId}.photos"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/photo_capture_paths" />
+        </provider>
 
         <!-- Playback resumption (P1-06): a headset's play button after Audora was closed resumes the last book.
              A media button press is a user action (C7); nothing here runs on boot. -->

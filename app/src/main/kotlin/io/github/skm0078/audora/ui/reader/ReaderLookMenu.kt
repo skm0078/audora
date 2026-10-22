@@ -43,9 +43,10 @@ internal fun boldWordStarts(text: String): AnnotatedString = buildAnnotatedStrin
 }
 
 /**
- * The reader's overflow. Both views: the page colours (plan item 18) and the Up next sheet (plan item 25). Text view
- * only: follow-along, word highlight and the highlight style (plan items 13 and 14), Focus view and bold word starts
- * (plan item 77). The look items are checkboxes and radio buttons, so TalkBack reads their state.
+ * The reader's overflow. Both views: the page colours (plan item 18), the Up next sheet (plan item 25), Save as
+ * audiobook (ADR-034), search (plan item 16) and Read aloud to me (plan item 67). Text view only: follow-along, word
+ * highlight and the highlight style (plan items 13 and 14), Focus view and bold word starts (plan item 77). The look
+ * items are checkboxes and radio buttons, so TalkBack reads their state.
  */
 @Composable
 internal fun MoreMenu(
@@ -54,6 +55,9 @@ internal fun MoreMenu(
     onLookChange: (ReadingLook) -> Unit,
     onOpenUpNext: (() -> Unit)?,
     onOpenTextLook: () -> Unit = {},
+    onSearch: (() -> Unit)? = null,
+    onSaveAudiobook: (() -> Unit)? = null,
+    onReadAloudToMe: (() -> Unit)? = null,
 ) {
     var open by remember { mutableStateOf(false) }
     Box {
@@ -79,6 +83,34 @@ internal fun MoreMenu(
                     onClick = {
                         open = false
                         openUpNext()
+                    },
+                )
+            }
+            onSaveAudiobook?.let { save ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.library_export_audiobook)) },
+                    onClick = {
+                        open = false
+                        save()
+                    },
+                )
+            }
+            onReadAloudToMe?.let { tutor ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.tutor_menu)) },
+                    onClick = {
+                        open = false
+                        tutor()
+                    },
+                )
+            }
+            onSearch?.let { search ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.search_action)) },
+                    leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null) },
+                    onClick = {
+                        open = false
+                        search()
                     },
                 )
             }

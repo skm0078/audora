@@ -51,6 +51,7 @@ internal fun BookRow(
     covers: CoverSource = CoverSource.None,
     onAddToUpNext: () -> Unit = {},
     onDetails: () -> Unit = {},
+    onAction: (BookAction) -> Unit = {},
 ) {
     ListItem(
         leadingContent = { BookCover(item.book, covers, Modifier.size(COVER_WIDTH, COVER_HEIGHT)) },
@@ -68,12 +69,15 @@ internal fun BookRow(
                 }
             }
         },
-        trailingContent = { BookMenu(item, onRemove, onExport, onAddToUpNext, onDetails) },
+        trailingContent = { BookMenu(item, onRemove, onExport, onAddToUpNext, onDetails, onAction) },
         modifier = Modifier.clickable(onClick = onTap),
     )
 }
 
-/** A book's menu: Details, Up next and Save as audiobook while the file can be opened, Remove. None in kids mode. */
+/**
+ * A book's menu: Details, then Up next, Save as audiobook and the [BookAction]s while the file can be opened, and
+ * Remove. None in kids mode.
+ */
 @Composable
 internal fun BookMenu(
     item: LibraryItem,
@@ -81,6 +85,7 @@ internal fun BookMenu(
     onExport: () -> Unit,
     onAddToUpNext: () -> Unit,
     onDetails: () -> Unit = {},
+    onAction: (BookAction) -> Unit = {},
 ) {
     if (LocalKidsMode.current) return
     var menuOpen by remember { mutableStateOf(false) }
@@ -106,6 +111,12 @@ internal fun BookMenu(
                     text = { Text(stringResource(R.string.library_export_audiobook)) },
                     onClick = { choose(onExport) },
                 )
+                BookAction.entries.forEach { action ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(action.label)) },
+                        onClick = { choose { onAction(action) } },
+                    )
+                }
             }
             DropdownMenuItem(text = { Text(stringResource(R.string.library_remove)) }, onClick = { choose(onRemove) })
         }

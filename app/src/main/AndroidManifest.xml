@@ -5,7 +5,8 @@
   (FGS media playback in S3/P1-04, notifications on first play). Never SMS, accessibility
   or notification-listener permissions (AGENTS.md).
 -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Asked on the first play (P1-05) so the media notification and lock-screen controls show. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -16,6 +17,10 @@
 
     <!-- Voice notes (plan item 32, ADR-041): asked the first time the listener records one, never otherwise. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Point and read (item 62) uses the camera app, which needs no permission; a declared but ungranted CAMERA
+         permission (merged from a library) would make that intent throw, so none may be merged in. -->
+    <uses-permission android:name="android.permission.CAMERA" tools:node="remove" />
 
     <application
         android:name=".AudoraApplication"
@@ -34,17 +39,22 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- "Open with Audora" and "Share to Audora" for PDFs from Files, Downloads, WhatsApp or mail (ADR-033). -->
+            <!-- "Open with Audora" and "Share to Audora" for PDFs from Files, Downloads, WhatsApp or mail (ADR-033),
+                 EPUB and text books (items 42 and 43, ADR-042), and shared text from a browser or chat. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="content" />
                 <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/epub+zip" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/epub+zip" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
 

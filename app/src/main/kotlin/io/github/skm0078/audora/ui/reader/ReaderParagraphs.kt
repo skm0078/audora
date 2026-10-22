@@ -86,6 +86,7 @@ internal fun Paragraph(
     look: ReadingLook,
     spokenWord: IntRange?,
     actions: ReaderActions,
+    isHighlighted: (ReadingUnit) -> Boolean = { false },
 ) {
     val sentences = units.slice(range)
     val spans = remember(sentences) { sentenceSpans(sentences.map { it.text }) }
@@ -93,7 +94,8 @@ internal fun Paragraph(
     val text = buildAnnotatedString {
         sentences.forEachIndexed { i, unit ->
             if (i > 0) append(SEPARATOR)
-            val sentence = sentenceLook(state, unit, range.first + i, look, spokenWord)
+            val sentence =
+                sentenceLook(state, unit, range.first + i, look, spokenWord).copy(marked = isHighlighted(unit))
             append(sentenceText(unit.text, sentence, colors))
         }
     }
@@ -138,7 +140,11 @@ private fun sentenceText(text: String, look: SentenceLook, colors: ColorScheme):
     val highlight = look.look.highlight.takeIf { look.spoken }
     val style = SpanStyle(
         color = sentenceColor(look, colors),
-        background = if (highlight == HighlightStyle.FILL) colors.primaryContainer else Color.Unspecified,
+        background = when {
+            highlight == HighlightStyle.FILL -> colors.primaryContainer
+            look.marked -> colors.tertiaryContainer
+            else -> Color.Unspecified
+        },
         fontWeight = if (highlight == HighlightStyle.BOLD) FontWeight.Bold else null,
         fontStyle = if (look.unreadable) FontStyle.Italic else null,
         textDecoration = if (highlight == HighlightStyle.UNDERLINE) TextDecoration.Underline else null,

@@ -1,8 +1,9 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/export/AudiobookExportService.kt
-// Purpose: Foreground service that saves one library book as audiobook files, with progress and Cancel (ADR-034).
+// Purpose: Foreground service that saves a book as audiobook files, with progress, Cancel and Continue (ADR-034).
 
 package io.github.skm0078.audora.playback.export
 
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -15,27 +16,27 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
-import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.notes.BookSettingsStore
+import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.R
+import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
-import io.github.skm0078.audora.playback.reading.QuoteCarry
-import io.github.skm0078.audora.playback.reading.UnitReading
-import io.github.skm0078.audora.playback.voice.BookRenderers
-import io.github.skm0078.audora.playback.voice.RenderBook
+import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
-import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.VoiceEngines
-import io.github.skm0078.audora.playback.voice.narratorBlend
+import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.runBlocking
 
 /**
  * One export at a time, on its own thread (PDFium and the exporter are thread-confined). Cancel, Android 15's
  * 6-hour limit for this kind of job, and the service being destroyed all interrupt that thread; finished chapters
- * stay. A partial wake lock keeps the CPU rendering with the screen off, released when the job ends or after
- * [AudiobookConfig.maxExportMs] at most.
+ * stay, and an [ExportSession] record lets the next export of the same book go on from them (Continue after Android's
+ * limit, or saving again after Cancel). Saving a book again with other settings replaces its earlier files. A partial
+ * wake lock keeps the CPU rendering with the screen off, renewed on every finished page and released when the job
+ * ends, so a stuck export lets go within [AudiobookConfig.wakeLockMs].
  *
  * Its voices are its own [VoiceEngines], separate from the playback service's, so listening and exporting can
  * overlap at the cost of a second copy of the voice model in memory. Files are read at the voice's own rate
@@ -47,11 +48,28 @@ class AudiobookExportService : Service() {
     @Inject
     lateinit var library: Library
 
+    @Inject
+    lateinit var bookSettings: BookSettingsStore
+
+    @Inject
+    lateinit var pronunciations: PronunciationStore
+
     private val config = AudiobookConfig()
     private lateinit var notifications: ExportNotifications
 
+    /** This instance started the running job ([JobSlots.EXPORT]); a refused or finished start lets it stop. */
     @Volatile
-    private var worker: Thread? = null
+    private var mine = false
+
+    /** Set once Android's time limit stopped the service: progress must not re-post the removed notification. */
+    @Volatile
+    private var stopping = false
+
+    /** Set when Android's time limit stopped the export, so it offers Continue instead of reporting a cancel. */
+    @Volatile
+    private var timedOut = false
+
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onCreate() {
         super.onCreate() // Hilt injects fields here.
@@ -66,18 +84,25 @@ class AudiobookExportService : Service() {
             AudiobookExport.ACTION_CANCEL -> cancel("cancelled by the user")
             else -> AudoraLog.w(TAG, "Unknown command ${intent?.action}")
         }
-        if (worker == null) stopSelf(startId)
+        if (!mine) stopSelf(startId)
         // Never restarted by the system: an export starts only from a user action (C7).
         return START_NOT_STICKY
     }
 
     /** Android 15+: this kind of foreground job used up its daily 6 hours; stop now, keep finished chapters. */
     override fun onTimeout(startId: Int, fgsType: Int) {
+        timedOut = true
+        stopping = true
         cancel("Android's time limit for background jobs")
+        // Android throws if the service is still in the foreground a few seconds after this; the worker may be
+        // inside a long native call, so stop now and let it post its notice on its own thread.
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
     }
 
     override fun onDestroy() {
-        cancel("service destroyed")
+        // Only this instance's own export: a refused start's instance must not cut off another's.
+        if (mine) cancel("service destroyed")
         super.onDestroy()
     }
 
@@ -88,33 +113,48 @@ class AudiobookExportService : Service() {
             notifications.running(getString(R.string.export_untitled), chapter = null, chapterCount = 0, percent = 0),
             foregroundType(),
         )
-        if (id == null) {
-            AudoraLog.w(TAG, "Export request without a book")
-            return
+        val untitled = getString(R.string.export_untitled)
+        // Taken first, whatever happens next, so a refused start never leaves the password behind.
+        val password = id?.let(PasswordHandoff.shared::take)
+        when {
+            id == null -> AudoraLog.w(TAG, "Export request without a book")
+
+            // The restart that applies a restore would cut the export off.
+            Backups.restoreUnderWay -> notifications.showFailed(untitled, getString(R.string.long_job_restoring))
+
+            // This instance's export goes on: exporting another book is refused without stopping it.
+            mine -> notifications.showFailed(untitled, getString(R.string.export_busy))
+
+            else -> {
+                timedOut = false
+                // Set first: the job may end (and clear it) before launch returns.
+                mine = true
+                if (!JobSlots.EXPORT.launch(THREAD_NAME) { runExport(id, password) }) {
+                    mine = false
+                    AudoraLog.w(TAG, "Export already running; book=${id.logLabel} not started")
+                    notifications.showFailed(untitled, getString(R.string.export_busy))
+                }
+            }
         }
-        if (worker != null) {
-            AudoraLog.w(TAG, "Export already running; book=${id.logLabel} not started")
-            notifications.showFailed(getString(R.string.export_untitled), getString(R.string.export_busy))
-            return
-        }
-        worker = Thread({ runExport(id) }, THREAD_NAME).apply { start() }
     }
 
     private fun cancel(why: String) {
-        worker?.let { thread ->
-            AudoraLog.i(TAG, "Stopping the export: $why")
-            thread.interrupt()
-        }
+        if (JobSlots.EXPORT.busy) AudoraLog.i(TAG, "Stopping the export: $why")
+        JobSlots.EXPORT.interrupt()
     }
 
     /** On the worker thread. */
-    private fun runExport(id: BookId) {
-        val wakeLock = getSystemService(PowerManager::class.java)
+    private fun runExport(id: BookId, password: String?) {
+        val lock = getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)
-            .apply { acquire(config.maxExportMs) }
+            .apply {
+                setReferenceCounted(false) // Each renewal replaces the timeout; one release lets go.
+                acquire(config.wakeLockMs)
+            }
+        wakeLock = lock
         try {
             val books = LibraryBookSource(this, library)
-            when (val opened = runBlocking { books.open(id, password = null) }) {
+            when (val opened = runBlocking { books.open(id, password) }) {
                 is Outcome.Success -> opened.value.text.use { exportBook(opened.value) }
 
                 is Outcome.Failure -> {
@@ -123,9 +163,11 @@ class AudiobookExportService : Service() {
                 }
             }
         } catch (interrupted: InterruptedException) {
-            AudoraLog.i(TAG, "Export interrupted before it started, book=${id.logLabel}")
+            AudoraLog.i(TAG, "Export interrupted before it started, timedOut=$timedOut, book=${id.logLabel}")
+            if (timedOut) notifications.showTimedOut(id, getString(R.string.export_untitled))
         } finally {
-            if (wakeLock.isHeld) wakeLock.release()
+            if (lock.isHeld) lock.release()
+            wakeLock = null
             onWorkerDone()
         }
     }
@@ -137,64 +179,94 @@ class AudiobookExportService : Service() {
         val folder = AudiobookFolder.relativePath(title, getString(R.string.export_untitled), config)
         AudoraLog.i(TAG, "Export started, $logContext, pages=${book.text.pageCount}, chapters=${chapters.size}")
         val shownFolder = folder.trimEnd('/')
-        val style = SpeechStyleStore.forContext(this)
-        lateinit var voices: SpeechVoices
-        // The narrator blend (plan item 75) as playback uses it; BlendCache keeps the two from building it at once.
-        voices = SpeechVoices(
-            VoiceEngines(this, blend = { voices.narratorBlend(style.current.shaping) }) {
-                style.current.shaping.expressiveness
-            },
-        )
+        val factory = BookRendering.Factory(this, bookSettings, pronunciations)
         try {
-            val chapterPages = book.text.chapterStarts().toSet()
-            val quotes = QuoteCarry()
-            val renderer = BookRenderers.create(
-                this,
-                voices,
-                style = { style.current.copy(rate = SpeechStyle.NORMAL_RATE) },
-                styleConfig = style.config,
-                book = RenderBook(
-                    chapterPages = { chapterPages },
-                    scanned = book.text::isScanned,
-                    startsInQuote = quotes::startsInQuote,
-                ),
-            )
-            val sink = AacAudioSink(MediaStoreChapterFiles(contentResolver, folder), chapters.size, config)
-            val listener = ProgressListener(title, chapters)
-            val reading = UnitReading(style.current.modes, chapterPages = chapterPages)
-            val exporter = AudiobookExporter(renderer, config, reading, onPage = quotes::page)
-            when (val result = exporter.export(book.text, chapters, sink, listener, logContext)) {
-                is Outcome.Success -> notifications.showDone(title, result.value, shownFolder)
-                is Outcome.Failure -> notifications.showFailed(title, result.error.message)
+            ExportVoice(this, SpeechStyleStore.forContext(this), factory, book.book.id, book.text).use { voice ->
+                val session = ExportSession(
+                    ExportRecords(File(filesDir, RECORDS_FOLDER)),
+                    MediaStoreSavedFiles(contentResolver),
+                    bookId = book.book.id.value,
+                    // The book's voices and fixes are in the signature: changing either starts again, never mixes.
+                    key = exportKey(voice.rendering.key.signature.hash, folder, chapters),
+                    chapters,
+                    logContext,
+                )
+                // Each file is recorded as pending once created, so a crash mid-chapter never strands a hidden file.
+                val files = MediaStoreChapterFiles(contentResolver, folder).recordedIn(session)
+                val sink = AacAudioSink(files, chapters.size, config)
+                val listener = ProgressListener(title, chapters, session)
+                val exporter = voice.exporter(config) { cast ->
+                    AudoraLog.i(TAG, "Export cast=$cast, $logContext")
+                    listener.castChanged(exportCastNote(cast))
+                }
+                when (val result = exporter.export(book.text, session.remaining, sink, listener, logContext)) {
+                    is Outcome.Success ->
+                        notifications.showDone(title, session.finish(result.value), shownFolder, listener.note)
+
+                    is Outcome.Failure -> notifications.showFailed(title, result.error.message)
+                }
             }
         } catch (interrupted: InterruptedException) {
-            AudoraLog.i(TAG, "Export cancelled, $logContext")
-            notifications.showCancelled(title, shownFolder)
-        } finally {
-            voices.release()
+            AudoraLog.i(TAG, "Export stopped, timedOut=$timedOut, $logContext")
+            if (timedOut) {
+                notifications.showTimedOut(book.book.id, title)
+            } else {
+                notifications.showCancelled(title, shownFolder)
+            }
         }
     }
 
     private fun onWorkerDone() {
-        worker = null
+        mine = false
         stopForeground(STOP_FOREGROUND_REMOVE)
+        // A late progress update may have re-posted it after the service left the foreground.
+        getSystemService(NotificationManager::class.java)?.cancel(ExportNotifications.RUNNING_ID)
         stopSelf()
     }
 
-    private inner class ProgressListener(private val title: String, chapters: List<AudioChapter>) : ExportListener {
-        private val progress = ExportProgress(chapters, config.progressStepPercent)
+    private inner class ProgressListener(
+        private val title: String,
+        chapters: List<AudioChapter>,
+        private val session: ExportSession,
+    ) : ExportListener {
+        private val progress = ExportProgress(chapters, config.progressStepPercent).apply { skip(session.keptPages) }
         private val chapterCount = chapters.size
+        private var shownChapter: Int? = null
+        private var shownPercent = 0
+
+        /** The character-voice note (plan item 63), shown under the progress from the moment it is known. */
+        @Volatile
+        var note: String? = null
+            private set
 
         override fun onPageDone(chapter: AudioChapter, page: Int) {
+            wakeLock?.acquire(config.wakeLockMs)
             val percent = progress.onPageDone() ?: return
-            notifications.showRunning(notifications.running(title, chapter.number, chapterCount, percent))
+            shownChapter = chapter.number
+            shownPercent = percent
+            show()
         }
+
+        /** On the worker, before the page's progress: re-posts the progress at once rather than at the next step. */
+        fun castChanged(note: String?) {
+            if (note == this.note) return
+            this.note = note
+            show()
+        }
+
+        private fun show() {
+            if (stopping) return
+            notifications.showRunning(notifications.running(title, shownChapter, chapterCount, shownPercent, note))
+        }
+
+        override fun onChapterDone(chapter: ExportedChapter) = session.onChapterDone(chapter)
     }
 
     private companion object {
         const val TAG = "Export.Service"
         const val THREAD_NAME = "audiobook-export"
         const val WAKE_LOCK_TAG = "Audora:AudiobookExport"
+        const val RECORDS_FOLDER = "audiobook-exports"
 
         /** mediaProcessing is the type made for this (Android 15+); dataSync before it existed. */
         fun foregroundType(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {

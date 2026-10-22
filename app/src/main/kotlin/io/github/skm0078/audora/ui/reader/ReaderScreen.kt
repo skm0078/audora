@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -62,6 +63,10 @@ fun ReaderScreen(
     onOpenUpNext: (() -> Unit)? = null,
     spokenWord: () -> IntRange? = { null },
     thumbnails: PageThumbnails? = null,
+    onSearch: (() -> Unit)? = null,
+    voiceNotes: VoiceNotesBinding = VoiceNotesBinding.None,
+    lookUp: LookUpBinding = LookUpBinding.None,
+    onTutor: (() -> Unit)? = null,
 ) {
     var textLookOpen by rememberSaveable { mutableStateOf(false) }
     if (textLookOpen) TextLookSheet(look, onLookChange) { textLookOpen = false }
@@ -70,19 +75,22 @@ fun ReaderScreen(
         topBar = {
             TopAppBar(
                 title = { ReaderTitle(state.title.orEmpty()) },
-                navigationIcon = {
-                    IconButton(onClick = actions::onBack) {
-                        Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.navigate_back))
-                    }
-                },
+                navigationIcon = { BackButton(actions::onBack) },
                 actions = {
                     if (state.document is DocumentState.Open) {
                         BookmarksButton(notes, notesActions)
                         ChaptersButton(state, actions)
                         ViewToggle(state.view, actions)
-                        MoreMenu(state.view == ReaderView.TEXT, look, onLookChange, onOpenUpNext) {
-                            textLookOpen = true
-                        }
+                        MoreMenu(
+                            textView = state.view == ReaderView.TEXT,
+                            look = look,
+                            onLookChange = onLookChange,
+                            onOpenUpNext = onOpenUpNext,
+                            onOpenTextLook = { textLookOpen = true },
+                            onSearch = onSearch,
+                            onSaveAudiobook = actions::onSaveAudiobook,
+                            onReadAloudToMe = onTutor,
+                        )
                     }
                 },
             )
@@ -112,8 +120,11 @@ fun ReaderScreen(
                 }
 
                 is DocumentState.Open -> {
-                    OpenBook(state, document.pageCount, config, actions, ocrModels, look, spokenWord, thumbnails)
-                    NotesOverlays(notes, notesActions, actions)
+                    PlaceHighlights(state, notesActions)
+                    OpenBook(state, document.pageCount, config, actions, ocrModels, look, spokenWord, thumbnails) {
+                        notes.highlightsOn(it).isNotEmpty()
+                    }
+                    NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)
                 }
             }
         }
@@ -130,6 +141,7 @@ private fun OpenBook(
     look: ReadingLook,
     spokenWord: () -> IntRange?,
     thumbnails: PageThumbnails?,
+    isHighlighted: (ReadingUnit) -> Boolean,
 ) {
     var picking by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
@@ -162,7 +174,10 @@ private fun OpenBook(
                 PageOriginNotice(content.origin, ocrModels, badge, actions::onDownloadOcrModels)
                 when {
                     state.view == ReaderView.PAGE -> PageView(state, content.units, actions, look.tone)
-                    content.units.isNotEmpty() -> Sentences(state, content.units, actions, look, spokenWord)
+
+                    content.units.isNotEmpty() ->
+                        Sentences(state, content.units, actions, look, spokenWord, isHighlighted)
+
                     content.origin == PageOrigin.TEXT -> Message(stringResource(R.string.reader_page_no_text))
                 }
             }
@@ -283,6 +298,13 @@ private object PreviewActions : ReaderActions {
 
 /** The book's title in the top bar, one line; TalkBack's heading, so a swipe by headings lands on it. */
 @Composable
+private fun BackButton(onBack: () -> Unit) {
+    IconButton(onClick = onBack) {
+        Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.navigate_back))
+    }
+}
+
+@Composable
 private fun ReaderTitle(title: String) {
     Text(
         title,
@@ -291,4 +313,11 @@ private fun ReaderTitle(title: String) {
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.semantics { heading() },
     )
+}
+
+/** Tells the notes which sentences show, so highlights land on them after a pipeline change (plan item 30). */
+@Composable
+private fun PlaceHighlights(state: ReaderState, notes: BookNotesActions) {
+    val units = (state.content as? PageContent.Ready)?.units.orEmpty()
+    LaunchedEffect(units) { notes.showing(units) }
 }

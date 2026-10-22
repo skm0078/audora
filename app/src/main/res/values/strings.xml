@@ -53,7 +53,7 @@
     <string name="library_no_match">No book matches. Change the search or the filter.</string>
     <string name="library_error_cannot_keep">The app you picked from only lends the file for a moment. Save the PDF to your phone first, then add it from there.</string>
     <string name="library_error_unreadable">Audora could not read that file. It may have been moved or deleted.</string>
-    <string name="library_error_not_pdf">That file is not a PDF.</string>
+    <string name="library_error_not_pdf">That file is not a PDF, EPUB or text file.</string>
     <string name="library_error_different_file">That is a different PDF. Pick the same file, or remove this book and add the new one.</string>
     <string name="library_error_not_in_library">That book is no longer in your library.</string>
     <string name="library_error_storage">Audora could not save your library. Is your phone\'s storage full?</string>

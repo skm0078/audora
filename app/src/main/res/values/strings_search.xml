@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Search in the book (plan item 16). -->
+<resources>
+    <string name="search_action">Search in book</string>
+    <string name="search_hint">Search words in this book</string>
+    <string name="search_opening">Opening the search…</string>
+    <string name="search_building">Reading the book for search: page %1$d of %2$d. Results so far are shown.</string>
+    <plurals name="search_missing">
+        <item quantity="one">%1$d scanned page could not be searched yet; it is tried again when text recognition is ready.</item>
+        <item quantity="other">%1$d scanned pages could not be searched yet; they are tried again when text recognition is ready.</item>
+    </plurals>
+    <string name="search_no_results">No sentence has all these words.</string>
+    <string name="search_failed">Search is not available for this book right now.</string>
+    <string name="search_page">Page %1$d</string>
+</resources>

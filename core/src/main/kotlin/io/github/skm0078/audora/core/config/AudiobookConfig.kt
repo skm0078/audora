@@ -18,6 +18,8 @@ package io.github.skm0078.audora.core.config
  * @property maxExportMs the export's wake lock is held at most this long, so a stuck export cannot drain the
  *   battery; Android 15+ also stops long foreground jobs after 6 hours a day.
  * @property progressStepPercent the progress notification is updated when the export moves on by this much.
+ * @property wakeLockMs the export's wake lock times out after this long and is renewed on every finished page, so it
+ *   is held exactly while pages keep coming: a stuck export releases it within this time, a long book never does.
  */
 data class AudiobookConfig(
     val pagesPerPartWithoutChapters: Int = 10,
@@ -28,6 +30,7 @@ data class AudiobookConfig(
     val folderNameMaxChars: Int = 80,
     val maxExportMs: Long = 21_600_000L, // 6 h
     val progressStepPercent: Int = 1,
+    val wakeLockMs: Long = 1_800_000L, // 30 min: far beyond one page, even a slow OCR page on a slow phone.
 ) {
     init {
         require(pagesPerPartWithoutChapters >= 1) {
@@ -39,6 +42,7 @@ data class AudiobookConfig(
         require(codecDrainAttempts >= 1) { "codecDrainAttempts must be >= 1, was $codecDrainAttempts" }
         require(folderNameMaxChars >= 1) { "folderNameMaxChars must be >= 1, was $folderNameMaxChars" }
         require(maxExportMs > 0) { "maxExportMs must be > 0, was $maxExportMs" }
+        require(wakeLockMs > 0) { "wakeLockMs must be > 0, was $wakeLockMs" }
         require(progressStepPercent in 1..PERCENT) {
             "progressStepPercent must be in 1..$PERCENT, was $progressStepPercent"
         }

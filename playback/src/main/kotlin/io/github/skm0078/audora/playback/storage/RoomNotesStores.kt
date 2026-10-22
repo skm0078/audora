@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/storage/RoomNotesStores.kt
-// Purpose: Bookmark, book settings and pronunciation stores over Room; write failures become typed errors.
+// Purpose: Bookmark, settings, pronunciation, highlight and voice-note stores over Room; failures become typed errors.
 
 package io.github.skm0078.audora.playback.storage
 
@@ -10,8 +10,12 @@ import io.github.skm0078.audora.core.notes.BookSettings
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.BookmarkStore
+import io.github.skm0078.audora.core.notes.Highlight
+import io.github.skm0078.audora.core.notes.HighlightStore
 import io.github.skm0078.audora.core.notes.PronunciationRule
 import io.github.skm0078.audora.core.notes.PronunciationStore
+import io.github.skm0078.audora.core.notes.VoiceNote
+import io.github.skm0078.audora.core.notes.VoiceNoteStore
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.map
 import kotlinx.coroutines.flow.Flow
@@ -50,6 +54,37 @@ internal class RoomPronunciationStore(private val dao: NotesDao) : Pronunciation
 
     override suspend fun delete(id: Long): Outcome<Unit, StorageError> =
         write("delete pronunciation") { dao.deletePronunciation(id) }.expectRow("pronunciation $id")
+}
+
+internal class RoomHighlightStore(private val dao: MarksDao) : HighlightStore {
+    override fun observe(bookId: BookId): Flow<List<Highlight>> =
+        dao.observeHighlights(bookId.value).map { rows -> rows.mapNotNull { it.toHighlight() } }
+
+    override fun observeAll(): Flow<List<Highlight>> =
+        dao.observeAllHighlights().map { rows -> rows.mapNotNull { it.toHighlight() } }
+
+    override suspend fun add(highlight: Highlight): Outcome<Long, StorageError> =
+        write("add highlight") { dao.insertHighlight(HighlightEntity.of(highlight.copy(id = 0))) }
+
+    override suspend fun updateNote(id: Long, note: String): Outcome<Unit, StorageError> =
+        write("update highlight") { dao.updateHighlightNote(id, note) }.expectRow("highlight $id")
+
+    override suspend fun delete(id: Long): Outcome<Unit, StorageError> =
+        write("delete highlight") { dao.deleteHighlight(id) }.expectRow("highlight $id")
+}
+
+internal class RoomVoiceNoteStore(private val dao: MarksDao) : VoiceNoteStore {
+    override fun observe(bookId: BookId): Flow<List<VoiceNote>> =
+        dao.observeVoiceNotes(bookId.value).map { rows -> rows.map { it.toVoiceNote() } }
+
+    override fun observeAll(): Flow<List<VoiceNote>> =
+        dao.observeAllVoiceNotes().map { rows -> rows.map { it.toVoiceNote() } }
+
+    override suspend fun add(note: VoiceNote): Outcome<Long, StorageError> =
+        write("add voice note") { dao.insertVoiceNote(VoiceNoteEntity.of(note.copy(id = 0))) }
+
+    override suspend fun delete(id: Long): Outcome<Unit, StorageError> =
+        write("delete voice note") { dao.deleteVoiceNote(id) }.expectRow("voice note $id")
 }
 
 private inline fun <T> write(what: String, block: () -> T): Outcome<T, StorageError> = try {

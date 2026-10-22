@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Read aloud to me: the reading tutor listens while you read the page and marks each word (plan item 67, ADR-050). -->
+<resources>
+    <string name="tutor_menu">Read aloud to me</string>
+    <string name="tutor_title">Read aloud to me</string>
+    <string name="tutor_mode_words">Read the page aloud. Audora listens word by word, on this phone only.</string>
+    <string name="tutor_mode_phrases">Read the page aloud. Audora listens a phrase at a time, so marks appear after each pause. On this phone only.</string>
+    <string name="tutor_needs_model">To listen in %1$s, Audora needs a speech model: %2$s to download once, %3$s on the phone. After that it works offline.</string>
+    <string name="tutor_download">Download</string>
+    <string name="tutor_queued">Waiting for a connection to download…</string>
+    <string name="tutor_download_failed">The download stopped (%1$s). Try again.</string>
+    <string name="tutor_cancel_download">Cancel download</string>
+    <string name="tutor_preparing">Getting ready to listen…</string>
+    <string name="tutor_listening">Listening…</string>
+    <string name="tutor_start">Start reading</string>
+    <string name="tutor_continue">Carry on</string>
+    <string name="tutor_stop">Stop</string>
+    <string name="tutor_start_over">Start over</string>
+    <string name="tutor_close">Close</string>
+    <string name="tutor_next_page">Next page</string>
+    <string name="tutor_no_text">This page has no text to read aloud.</string>
+    <string name="tutor_legend">Coloured: read. Red and underlined: worth checking. Struck through: skipped.</string>
+    <plurals name="tutor_score">
+        <item quantity="one">You read %1$d of %2$d word as written (%3$d%%).</item>
+        <item quantity="other">You read %1$d of %2$d words as written (%3$d%%).</item>
+    </plurals>
+    <string name="tutor_score_none">Nothing on this page could be checked (numbers, symbols and other scripts are not judged).</string>
+    <string name="tutor_to_check">Worth checking (tap to hear it):</string>
+    <plurals name="tutor_skipped">
+        <item quantity="one">Skipped: %1$d word.</item>
+        <item quantity="other">Skipped: %1$d words.</item>
+    </plurals>
+    <string name="tutor_check_note">A word marked to check may also be one the speech model misheard.</string>
+    <string name="tutor_hear_word">Hear “%1$s”</string>
+    <string name="tutor_failed_model">The speech model would not load; its files may be damaged.</string>
+    <string name="tutor_try_again">Try again</string>
+    <string name="tutor_download_again">Download it again</string>
+    <string name="tutor_failed_permission">Audora needs the microphone to listen. You can allow it in the phone\'s settings.</string>
+    <string name="tutor_open_settings">Open settings</string>
+    <string name="tutor_failed_microphone">The microphone could not be used. Another app may be using it.</string>
+    <string name="tutor_lang_en">English</string>
+    <string name="tutor_lang_hi">Hindi</string>
+    <string name="tutor_lang_bn">Bengali</string>
+</resources>

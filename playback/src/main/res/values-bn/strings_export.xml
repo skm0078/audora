@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_cast_needs_built_in_voice">সব চরিত্র একই ভয়েসে পড়া হয়: চরিত্রদের আলাদা ভয়েসের জন্য Kokoro বা Kitten-এর অন্তর্নির্মিত ইংরেজি ভয়েস লাগবে।</string>
+    <string name="export_cast_english_only">চরিত্রদের আলাদা ভয়েস শুধু ইংরেজিতে কাজ করে, তাই হিন্দি ও বাংলা চরিত্রদের একই ভয়েসে পড়া হয়।</string>
+</resources>

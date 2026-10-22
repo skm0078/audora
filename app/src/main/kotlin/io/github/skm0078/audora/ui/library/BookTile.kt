@@ -40,6 +40,7 @@ internal fun BookTile(
     covers: CoverSource = CoverSource.None,
     onAddToUpNext: () -> Unit = {},
     onDetails: () -> Unit = {},
+    onAction: (BookAction) -> Unit = {},
 ) {
     val title = displayTitle(item.book)
     val status = availabilityWarning(item.availability) ?: tileStatus(item.progress)
@@ -79,7 +80,7 @@ internal fun BookTile(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            BookMenu(item, onRemove, onExport, onAddToUpNext, onDetails)
+            BookMenu(item, onRemove, onExport, onAddToUpNext, onDetails, onAction)
         }
     }
 }

@@ -24,4 +24,14 @@ class ExportProgressTest {
 
         assertEquals((1..100).toList(), reports)
     }
+
+    @Test
+    fun `pages kept from an earlier run count as done without a report`() {
+        val progress = ExportProgress(listOf(AudioChapter(1, 0, 3), AudioChapter(2, 4, 7)), stepPercent = 25)
+
+        progress.skip(4)
+
+        assertEquals(50, progress.percent)
+        assertEquals(listOf(null, 75, null, 100), List(4) { progress.onPageDone() })
+    }
 }
