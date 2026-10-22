@@ -68,7 +68,9 @@ internal fun Sentences(
                 modifier = Modifier.padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
             )
         }
-        itemsIndexed(units, key = { _, unit -> unit.charStart }) { index, unit ->
+        // index is unique on a page; charStart is not (a continued table's empty summary shares row 0's).
+        itemsIndexed(units, key = { _, unit -> unit.index }) { index, unit ->
+            if (unit.text.isBlank()) return@itemsIndexed
             Sentence(
                 unit,
                 SentenceLook(
