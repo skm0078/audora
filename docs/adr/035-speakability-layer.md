@@ -199,4 +199,64 @@ and highlight need a unit to land on.
   Limits: a cell Tesseract never read stays empty (serial numbers in thick-ruled forms); a table continued from the
   previous page takes its first row as its header; a letterhead set as two aligned blocks reads as a small table;
   two prose columns that Tesseract ran together across the gutter stay run together. Same PIPELINE_VERSION 10.
+- RI-10 on scanned pages: headings and lists from OCR (`OcrParagraphKinds`, `OcrBullets` in `:pdf/ocr`). OCR gives
+  no fonts, so a scanned textbook had no headings or list items and read like a novel. Tesseract's hOCR gives each
+  line's type size (`x_size`); it is kept on `OcrLine.size` (cache format v4; v1-v3 still decode, page cache key
+  changed). A line at least 1.3 times the page's median line size is heading-sized (`LayoutConfig.ocrHeadingSizeRatio`;
+  higher than the text layer's 1.15 because the estimate varies a little between lines of one type); a change of size
+  splits a Tesseract paragraph, and a run of heading-sized lines within the text layer's heading limits is a heading
+  when it reads like one: mean OCR confidence at least 80 (`ocrHeadingMinConfidence`), starting with a letter or
+  digit, no "|", no sentence end. Those guards come from false headings on a UP revenue letter whose pages are
+  screenshots of a web form: large text there is noise, pointers ("> click here") or table rows read badly. **Misread
+  bullets:** Tesseract's Hindi and Bengali models have no bullet, so "•" and "○" come out as "o", "०", "০", "*", "+",
+  "°" or "©" (66 lines of "*" and 19 of "o" in one NCERT book); a line's first word that is one of those, followed by
+  a word starting with a letter at most 2.2 times its height away (`ocrBulletMaxGapEm`; farther, the "©" is "↔" in
+  a table's first column), becomes "•", so the item is a list item and is no longer read as "zero" or "star".
+  List labels after a clause end start items as on a text layer. **Measured** on the 57 test PDFs: 51 right (89.5%),
+  from 49; 35 of 41 without the UDHR copies. The two scanned textbooks now classify (the Bengali fair-lending guide,
+  the NCERT preschool curriculum); no right answer changed. Still short of 90% by one PDF; the six misses are not
+  structure: a Bengali magazine and a scanned land-revenue table read as gazettes, a SutonnyMJ notice as a textbook,
+  a DevLys exam paper and a Bengali notice as forms, an RTI reply so badly scanned it has 101 words. Golden,
+  listening and the UDHR character error rates are unchanged (no scanned headings or bullets in them).
+  PIPELINE_VERSION 11.
+- Close table columns (`ColumnChannels`, in `TableGrid`, text-layer and scanned tables alike). Two columns become one
+  when set closer than `cellGapEm` or when a header cell reaches across both (the Jal Shakti report's serial number
+  and state, under one "क्र.सं. राज्य/केंद्र शासित प्रदेश" header). The gap between them still runs down the column at one
+  place, while a cell's word spaces fall anywhere and are narrower: a column splits where at least 3 line rows, and
+  80% of those reaching across that place, have a gap of at least 0.5 em there (`splitGapEm`, `minSplitRows`,
+  `splitShare`); a total row to one side does not count. Of the 30 tables in the table corpora (18 text-layer, 12 scanned), the one that ran its
+  serial numbers into the state names now reads them as two columns and nothing else changed; the 145 labelled cells
+  and the scanned tables are unchanged.
+- Note markers on scanned pages (`OcrNoteMarkers`, RI-5a). OCR gives no font sizes, so `NoteMarkers` cannot run, and
+  Tesseract reads a superscript marker as a sign glued to the word ("Vaswani*", "Eich*,", "Haghighat®,", "Smith#,",
+  "double.!") or drops it. A run of note signs (stars, daggers, "#", "®", "™", "§", "¶", superscript digits) after a
+  word of at least two letters is left out, with any punctuation after it kept, and so is a "!" glued after a full
+  stop; a sign set as its own word right against the word before, small and raised (the text layer's
+  `markerSizeRatio` and `markerRaiseEm`) is left out too. Plain digits glued to a word ("Fig.1") and raised numbers on
+  their own are kept: on 364 scanned test pages every raised number was a table figure or chart label. **Measured**
+  on 130 footnoted text-layer pages rendered at 300 dpi and OCR'd, plus the 234 scanned pages of the other
+  measurements: 51 lines changed, every change a marker or a form's required-field star; the title blocks of two
+  papers now read their 23 author names without "star", "hash" or "registered"; no figure or word was dropped. Two
+  markers stay: one OCR read as a letter ("Bebenitat") and one read as "™#," with its comma. Most in-text numeric
+  markers are dropped by Tesseract itself.
+- Sentence ends on scanned Hindi and Bengali pages (`OcrDandas`, `OcrAaBars`, RI-3). There is no offline Hindi or
+  Bengali punctuation model, so the danda Tesseract misreads is restored from the page itself. **Measured** against
+  the hand-checked text of the 40 UDHR scan pages (200 dpi degraded and 300 dpi): Hindi lost 2 of 208 sentence ends,
+  both at 200 dpi (one danda merged into a misread word, one heading's full stop read as a comma), and dandas read as
+  "|" were already restored by the text layer's pipe repair, so Hindi needs nothing. Bengali lost 14 of 130 to
+  misreads: a line-end danda read as "৷" (U+09F7, a currency sign drawn as the same bar) or as a lone "|" after a
+  misread word, and three dropped outright; worse, the vowel sign aa (also a bar) was read as "!", "|" or "৷" glued to
+  a word, making 14 false stops on the 200 dpi pages and the wrong word ("কর" for "করা", "ধার" for "ধারা"), which
+  `OcrRepair` left alone because the word as read is a word. Now a line-final "৷", or a lone "|" on a line of at least
+  `LayoutConfig.ocrDandaMinIndicWords` Hindi or Bengali words, is the danda; mid-line, an unsure word's glued bar that
+  runs on to another Bengali word is the sign aa after a consonant when that word is common, is dropped after the sign
+  itself (the bar read twice; "৷" after the sign is dropped anywhere), completes the sign o after the sign e when that
+  word is clearly commoner and is otherwise the danda. Result: running on 4 → 2 (one danda Tesseract dropped
+  mid-line, one "= |" mid-line), false stops 14 → 0, Bengali character errors 1.12% → 0.91%. Across the 221 pages of
+  the book-kind corpus, 47 units changed (into 23, as false stops no longer split sentences), all of them those repairs, except in a scanned table a "!" after "আলোচনা"
+  (perhaps a danda) dropped. A lone "|" stays a pipe with Latin letters or digits on both sides (the word before and
+  the next line's first word: a table rule or separator, "28400 | 988"), and becomes "(" when the next line closes a
+  bracket at its end that it never opened ("JPG |" over "সাইজ ২০০ কেবির মধ্যে)", 1 of 151 line-end pipes on the test
+  pages, the only change). The listening
+  corpus has no Bengali scan and its Hindi scan pages had no lost sentence end, so the listening score is unchanged.
 - Logs carry kinds, scores, page and unit index, never the page's text (AGENTS.md).

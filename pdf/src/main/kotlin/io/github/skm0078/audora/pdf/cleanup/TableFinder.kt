@@ -4,6 +4,8 @@
 package io.github.skm0078.audora.pdf.cleanup
 
 import io.github.skm0078.audora.core.config.CleanupConfig
+import io.github.skm0078.audora.core.config.TableConfig
+import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.pdf.extract.PageText
 import io.github.skm0078.audora.pdf.layout.PageLayout
 import io.github.skm0078.audora.pdf.layout.TextLine
@@ -26,7 +28,11 @@ import kotlin.math.abs
  *    cells sits in a block of its own. Whole paragraphs of such a block are part of the table when every line
  *    pairs with a distinct row of a run in another block, and so are short lines within the run's height of which
  *    enough pair (`TableConfig.maxColumnCellEm`, `minColumnPairShare`). Body text beside a table does neither.
- * 4. **One table per region.** Runs that share lines or sit side by side over the same rows are one table.
+ * 4. **One table per region.** Runs that share lines are one table, and so are runs over the same rows that overlap
+ *    across, or whose lines mostly sit beside each other: XY-cut cut one table into blocks. They stay two tables set
+ *    side by side when the gutter is wider than `TableConfig.sideBySideGapRatio` times their own widest cell gap,
+ *    unless the right one is the table's figures ([TableSides]). (Joined row by row by layout, two such tables are
+ *    split by [TableGrid].)
  * 5. **Header band.** Short lines right above a table, within its width, are its header set apart in blocks of
  *    their own (a two-line header: "State / Union" over "Territory"), see [TableHeaderBand]; so are short lines side
  *    by side right below it, under its columns (a last row of one-run cells, a total).
@@ -43,19 +49,24 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
     /** The page's tables, each the lines it covers (possibly across blocks), in reading order of their first line. */
     fun find(page: PageText, layout: PageLayout): List<Set<TextLine>> {
         val blocks = layout.blocks.map { block -> block.paragraphs.map { it.lines } }
+        val cellGaps = HashMap<TextLine, Float>()
         val runs = blocks.flatMapIndexed { index, paragraphs ->
             val rows = paragraphs.flatten().map { Row.of(page, it, layout.bodySize, config) }
+            rows.forEach { cellGaps[it.line] = it.widestGap }
             cellRuns(rows).map { Run(index, it) }
         }
         if (runs.isEmpty()) return emptyList()
+        // Rows of another run are no paired column: whether two runs are one table is step 4's call.
+        val inRuns = runs.flatMapTo(HashSet()) { it.lines }
         val regions = runs.map { run ->
             val columns = blocks.flatMapIndexed { index, paragraphs ->
-                if (index == run.block) emptyList() else pairedColumns(paragraphs, run.lines, layout.bodySize)
+                val free = paragraphs.map { lines -> lines.filterNot { it in inRuns } }.filter { it.isNotEmpty() }
+                if (index == run.block) emptyList() else pairedColumns(free, run.lines, layout.bodySize)
             }
             (run.lines + columns).toMutableSet()
         }
         val lines = blocks.flatten().flatten()
-        val merged = mergeOverlapping(regions)
+        val merged = mergeOverlapping(regions, page, cellGaps)
         val taken = merged.flatten().toSet()
         return merged.map { table ->
             val free = lines - taken
@@ -65,16 +76,18 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
             .sortedBy { region -> lines.indexOfFirst { it in region } }
     }
 
-    /** Regions sharing a line or side by side over the same rows are one table cut by XY-cut into blocks. */
-    private fun mergeOverlapping(regions: List<MutableSet<TextLine>>): List<Set<TextLine>> {
-        fun sameRows(a: Set<TextLine>, b: Set<TextLine>): Boolean {
-            val boxA = a.unionBox()
-            val boxB = b.unionBox()
-            return boxA != null && boxB != null && overlapsVertically(boxA, boxB, rowOverlapRatio)
-        }
+    /** Regions sharing a line, or one table cut by XY-cut into blocks ([oneTableCut]), are one table. */
+    private fun mergeOverlapping(
+        regions: List<MutableSet<TextLine>>,
+        page: PageText,
+        cellGaps: Map<TextLine, Float>,
+    ): List<Set<TextLine>> {
         val merged = ArrayList<MutableSet<TextLine>>()
         for (region in regions) {
-            val joined = merged.filter { other -> other.any { it in region } || sameRows(other, region) }
+            val joined = merged.filter { other ->
+                other.any { it in region } ||
+                    oneTableCut(other, region, page, cellGaps)
+            }
             joined.forEach { region.addAll(it) }
             merged.removeAll(joined.toSet())
             merged.add(region)
@@ -82,10 +95,44 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
         return merged
     }
 
+    /**
+     * Whether regions [a] and [b], side by side over the same rows, are one table XY-cut cut apart: they overlap
+     * across, or at least `TableConfig.minColumnPairShare` of the smaller one's lines sit beside lines of the other (a
+     * cell spanning rows sits beside several) and either the gutter between them is no wider than
+     * `TableConfig.sideBySideGapRatio` times the widest gap between cells of their lines, or, across a wider gutter,
+     * they do not show they are two tables ([TableSides.twoTables], the grid's rule too).
+     */
+    private fun oneTableCut(
+        a: Set<TextLine>,
+        b: Set<TextLine>,
+        page: PageText,
+        cellGaps: Map<TextLine, Float>,
+    ): Boolean {
+        val boxA = a.unionBox()
+        val boxB = b.unionBox()
+        if (boxA == null || boxB == null || !overlapsVertically(boxA, boxB, rowOverlapRatio)) return false
+        val (fewer, more) = if (a.size <= b.size) a to b else b to a
+        val beside = fewer.count { line -> besideAny(line, more, rowOverlapRatio) }
+        val gutter = maxOf(boxB.left - boxA.right, boxA.left - boxB.right)
+        val ownGap = (a + b).maxOf { cellGaps[it] ?: 0f }
+        val besideRows = beside >= fewer.size * config.tables.minColumnPairShare
+        val closeAsColumns = gutter <= ownGap * config.tables.sideBySideGapRatio
+        val (left, right) = if (boxA.left <= boxB.left) a to b else b to a
+        // Overlapping across (a header over both halves), they cannot be two tables side by side.
+        return gutter <= 0f ||
+            (besideRows && (closeAsColumns || !TableSides.twoTables(sideRows(left, right, page), config.tables)))
+    }
+
     private class Run(val block: Int, val lines: List<TextLine>)
 
     /** A line with what the rules need: is it split into cells, and where do its cells (after the first) start. */
-    private class Row(val line: TextLine, val isCandidate: Boolean, val cellStarts: List<Float>, val em: Float) {
+    private class Row(
+        val line: TextLine,
+        val isCandidate: Boolean,
+        val cellStarts: List<Float>,
+        val em: Float,
+        val widestGap: Float = 0f,
+    ) {
         /** Several runs, however close: a table's header or last row joins a run next to it. */
         val isSplit: Boolean get() = line.spans.size >= 2
 
@@ -104,7 +151,7 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
                     val left = lefts[j]
                     if (right != null && left != null) left - right else 0f
                 }
-                return Row(line, widestGap >= config.tableGapEm * em, lefts.drop(1).filterNotNull(), em)
+                return Row(line, widestGap >= config.tableGapEm * em, lefts.drop(1).filterNotNull(), em, widestGap)
             }
 
             private fun endsInEquationNumber(page: PageText, line: TextLine): Boolean {
@@ -188,7 +235,7 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
 
     private fun pairsLineForLine(column: List<TextLine>, rows: List<TextLine>): Boolean {
         if (column.size < config.minTableRows) return false
-        val paired = column.map { line -> pairedRow(line, rows) }
+        val paired = column.map { line -> pairedRow(line, rows, rowOverlapRatio) }
         return paired.none { it == null } && paired.toSet().size == paired.size
     }
 
@@ -196,12 +243,29 @@ internal class TableFinder(private val config: CleanupConfig, private val rowOve
         if (lines.isEmpty()) return false
         val em = lines.map { if (it.size > 0f) it.size else bodySize }.average().toFloat()
         val narrow = em > 0f && lines.mapNotNull { it.box?.width }.average() <= config.tables.maxColumnCellEm * em
-        val paired = lines.mapNotNull { pairedRow(it, rows) }.toSet().size
+        val paired = lines.mapNotNull { pairedRow(it, rows, rowOverlapRatio) }.toSet().size
         return narrow && paired >= config.minTableRows - 1 && paired >= lines.size * config.tables.minColumnPairShare
     }
+}
 
-    /** The one row [line] overlaps; null when it overlaps none or several. */
-    private fun pairedRow(line: TextLine, rows: List<TextLine>): Int? = line.box?.let { box ->
-        rows.indices.singleOrNull { rows[it].box?.let { row -> overlapsVertically(box, row, rowOverlapRatio) } == true }
+/**
+ * The lines of [left] and [right] as rows across both, top to bottom: a line starts a new row unless its middle lies
+ * within the first line of the row; each row is its left lines' cells and its right lines' cells.
+ */
+private fun sideRows(
+    left: Set<TextLine>,
+    right: Set<TextLine>,
+    page: PageText,
+): List<Pair<List<String>, List<String>>> {
+    val boxed = (left + right).mapNotNull { line -> line.box?.let { line to it } }.sortedByDescending { it.second.top }
+    val rows = ArrayList<MutableList<Pair<TextLine, TextBox>>>()
+    for (entry in boxed) {
+        val first = rows.lastOrNull()?.first()?.second
+        val middle = (entry.second.top + entry.second.bottom) / 2
+        if (first != null && middle in first.bottom..first.top) rows.last().add(entry) else rows.add(arrayListOf(entry))
     }
+    fun cells(row: List<Pair<TextLine, TextBox>>, side: Set<TextLine>) = row.filter { it.first in side }
+        .sortedBy { it.second.left }
+        .flatMap { (line, _) -> line.spans.map { page.text.substring(it.start, it.end).trim() } }
+    return rows.map { row -> cells(row, left) to cells(row, right) }
 }

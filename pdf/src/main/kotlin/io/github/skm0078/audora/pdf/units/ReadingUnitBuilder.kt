@@ -11,6 +11,7 @@ import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.TableRowInfo
+import io.github.skm0078.audora.core.model.TermSpan
 import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.pdf.cleanup.ClutterRemover
@@ -58,7 +59,7 @@ import io.github.skm0078.audora.pdf.render.ViewRect
 @Suppress("TooManyFunctions", "LongParameterList")
 class ReadingUnitBuilder(
     private val config: ReadingUnitConfig = ReadingUnitConfig(),
-    private val splitter: SentenceSplitter = BreakIteratorSentenceSplitter(),
+    private val splitter: SentenceSplitter = BreakIteratorSentenceSplitter(minLeaderRun = config.minLeaderRun),
     layoutConfig: LayoutConfig = LayoutConfig(),
     val cleanupConfig: CleanupConfig = CleanupConfig(),
     val qualityConfig: QualityConfig = QualityConfig(),
@@ -66,13 +67,14 @@ class ReadingUnitBuilder(
     ocrRepairConfig: OcrRepairConfig = OcrRepairConfig(),
 ) {
     private val ocrRepair = OcrRepair(ocrRepairConfig, BundledWordModels)
-    private val ocrTables = OcrTables(cleanupConfig, layoutConfig.lineOverlapRatio)
+    private val ocrPages = OcrPageText(OcrTables(cleanupConfig, layoutConfig.lineOverlapRatio), layoutConfig)
     private val lineBoxes = LineBoxes(config.lineOverlapRatio)
     private val analyzer = PageLayoutAnalyzer(layoutConfig)
     private val profiler = PageProfiler(cleanupConfig)
     private val clutter = ClutterRemover(cleanupConfig, layoutConfig)
     private val furniture = FurnitureFinder(layoutConfig.furniture)
     private val notes = NoteFinder(layoutConfig)
+    private val boldMarkers = layoutConfig.boldFontMarkers
 
     /** Running headers and page numbers on scanned pages (ADR-032); `PdfBook` feeds it the neighbours' strips. */
     internal val ocrClutter = OcrClutter(cleanupConfig)
@@ -119,7 +121,7 @@ class ReadingUnitBuilder(
         dropped: Set<Int> = emptySet(),
         toPage: ((ViewRect) -> TextBox)? = null,
     ): ReadingText {
-        val page = OcrPageText.build(pageIndex, ocrRepair.repair(ocr), dropped, toPage, ocrTables)
+        val page = ocrPages.build(pageIndex, ocrRepair.repair(ocr), dropped, toPage)
         return textBuilder.build(page.text, furniture.tag(page.text, page.layout), page.hyphenated, IndicOrder.LOGICAL)
     }
 
@@ -140,18 +142,23 @@ class ReadingUnitBuilder(
         val flat = String(CharArray(text.length) { i -> if (text[i] in LINE_BREAKS) ' ' else text[i] })
         val units = ArrayList<ReadingUnit>()
         val headers = HashMap<Int, List<String>>()
+        val bold = reading.boldOffsets(boldMarkers)
+        val leaders = Leaders.mask(text, config.minLeaderRun)
         for (paragraph in reading.paragraphs) {
             val pieces = if (paragraph.table != null) {
                 listOf(trim(text, paragraph.start, paragraph.end)).filterNot { it.isEmpty() }
             } else {
                 sentencesOf(flat, paragraph, pageLang)
+                    .let { entriesCut(text, leaders, paragraph, it) }
                     .flatMap { capLength(text, trim(text, it.first, it.last + 1), config.maxUnitChars) }
             }
             pieces.forEachIndexed { i, piece ->
                 val raw = text.substring(piece.first, piece.last + 1)
                 if (raw.none { it.isLetterOrDigit() }) return@forEachIndexed
-                val row = paragraph.table?.let { TableRowText.of(reading, piece.first, piece.last + 1, it) }
-                val unitText = row?.text ?: raw.split(WHITESPACE).filter { it.isNotEmpty() }.joinToString(" ")
+                val row = paragraph.table?.let {
+                    TableRowText.of(reading, piece.first, piece.last + 1, it, config.minLeaderRun)
+                }
+                val (unitText, boldTerms) = textOf(raw, row, paragraph.kind) { bold[piece.first + it] }
                 val ocrConfidence = reading.ocrConfidence(piece.first, piece.last + 1)
                 units.add(
                     ReadingUnit(
@@ -167,11 +174,27 @@ class ReadingUnitBuilder(
                         speakScore = speakability.score(unitText, ocrConfidence),
                         table = paragraph.table?.let { cells -> row?.let { tableInfo(cells, it, headers) } },
                         noteRef = paragraph.noteRef,
+                        boldTerms = boldTerms,
                     ),
                 )
             }
         }
         return units
+    }
+
+    /**
+     * A unit's text and bold terms ([UnitText]) from its [raw] slice, [isBold] telling for each offset of it: a table
+     * row's text is its cells' ([row]), and headings and table rows tag no bold terms.
+     */
+    private fun textOf(
+        raw: String,
+        row: TableRowText?,
+        kind: ParagraphKind,
+        isBold: (Int) -> Boolean,
+    ): Pair<String, List<TermSpan>> = when {
+        row != null -> row.text to emptyList()
+        kind == ParagraphKind.HEADING -> UnitText.of(raw, config.minBoldTermLetters, config.minLeaderRun) { false }
+        else -> UnitText.of(raw, config.minBoldTermLetters, config.minLeaderRun, isBold)
     }
 
     /** A table unit's [TableRowInfo]; the header row records the table's header texts for its rows. */
@@ -195,6 +218,18 @@ class ReadingUnitBuilder(
         if (paragraph.kind == ParagraphKind.EQUATION) return listOf(paragraph.start until paragraph.end)
         val sentences = splitter.split(slice, lang).map { (it.first + paragraph.start)..(it.last + paragraph.start) }
         return if (paragraph.kind == ParagraphKind.LIST_ITEM) keepLabel(flat, sentences) else sentences
+    }
+
+    /** [sentences] of [paragraph] recut so each contents entry is a unit ([ContentsEntries]); equations stay whole. */
+    private fun entriesCut(
+        text: String,
+        leaders: BooleanArray,
+        paragraph: ReadingParagraph,
+        sentences: List<IntRange>,
+    ): List<IntRange> {
+        if (paragraph.kind == ParagraphKind.EQUATION) return sentences
+        val entries = ContentsEntries.of(text, leaders, paragraph.start, paragraph.end)
+        return ContentsEntries.cut(sentences, entries, paragraph.start, paragraph.end)
     }
 
     /** An item's label is read with its first sentence ("1. Open the box"), never as a sentence of its own. */
@@ -230,7 +265,6 @@ class ReadingUnitBuilder(
     }
 
     private companion object {
-        val WHITESPACE = Regex("\\s+")
         const val LINE_BREAKS = "\n\r\t"
     }
 }

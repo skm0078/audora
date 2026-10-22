@@ -37,6 +37,12 @@ fun interface PageOcr {
      */
     fun margins(pageIndex: Int, langs: Set<Lang>, quarterTurns: Int, share: Float): Outcome<OcrMargins, OcrError> =
         Outcome.Failure(OcrError.Failed("margin strips are not supported"))
+
+    /**
+     * The same OCR reading only what it has already read (its cache) and failing on anything else, so a page can be
+     * looked at without running OCR; null when it keeps nothing.
+     */
+    fun cachedOnly(): PageOcr? = null
 }
 
 /** Builds a book's [PageOcr] from the book's own renderer (`PdfBook.open`). */
@@ -131,11 +137,14 @@ class TextLayerCheck(private val config: QualityConfig, private val ocr: PageOcr
         }
         indicPagesSinceCheck++
         if (isDue() && quality.signals.letters >= config.minSampleLetters) check(pageIndex, langs, layerText())
-        return if (verdict == TextLayerVerdict.REJECTED) {
-            PageRouting(PageRoute.OCR, RouteReason.SAMPLE_MISMATCH, verdict)
-        } else {
-            PageRouting(PageRoute.TEXT_LAYER, RouteReason.TEXT_LAYER_OK, verdict)
-        }
+        return currentRoute(quality)
+    }
+
+    /** The route of a page the scorer judged [quality] by the verdict so far, sampling nothing and counting nothing. */
+    fun currentRoute(quality: PageQuality): PageRouting = when {
+        quality.route != PageRoute.TEXT_LAYER || !quality.isIndic -> PageRouting(quality.route, quality.reason, verdict)
+        verdict == TextLayerVerdict.REJECTED -> PageRouting(PageRoute.OCR, RouteReason.SAMPLE_MISMATCH, verdict)
+        else -> PageRouting(PageRoute.TEXT_LAYER, RouteReason.TEXT_LAYER_OK, verdict)
     }
 
     private fun isDue(): Boolean = when (verdict) {

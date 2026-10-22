@@ -233,6 +233,7 @@ private fun Sentences(state: ReaderState, units: List<ReadingUnit>, actions: Rea
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             )
         }
+        // One page's units: index is unique; charStart is not (a continued table's empty summary shares row 0's).
         itemsIndexed(units, key = { _, unit -> unit.index }) { index, unit ->
             Sentence(
                 unit,

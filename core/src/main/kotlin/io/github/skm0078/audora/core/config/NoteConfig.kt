@@ -18,6 +18,24 @@ package io.github.skm0078.audora.core.config
  *   rule usually sits); body lines follow each other much closer.
  * @property minCarriedNoteWidthShare footnote lines that open without a number carry on a note from the page before,
  *   so their first line runs at least this share of the width of the line above (a stray table cell does not).
+ * @property ocrFootnoteBandShare on a scanned page, footnotes end within this share of the page's height from its
+ *   foot: OCR's sizes vary more than a font's, and small lines ending a short page mid-sheet are text, not notes.
+ * @property ocrFootnoteMinConfidence and their letters were read with a mean OCR confidence (0–100) of at least this,
+ * @property ocrFootnoteConfidenceDrop or at least the page's own mean less this, if lower (Hindi and Bengali small
+ *   print reads less surely than English): lower still, the small strip is a stamp or a garbled print slug.
+ * @property ocrFootnoteConfidenceFloor but never below this: on a badly read page, small lines read worse still are
+ *   noise.
+ * @property ocrSureNoteLines on a scanned page, a run of small lines this long or longer is small enough by
+ *   `footnoteSizeRatio`; a shorter run needs a second sign that it is notes, as one OCR size is a rough measure: it
+ *   opens with a note sign ("*", "†"), a rule stands above it, or
+ * @property ocrNoteSpacingRatio its lines follow each other at most this share of the body's line spacing apart.
+ * @property ocrFlushEm a run that opens with no marker carries on a note from the page before, so it starts within
+ *   this many line heights of the left edge of its column, or under a rule: a block quote, verse or epigraph set small
+ *   is indented or centred.
+ * @property ocrColumnWidthRatio its column is the lines over it no wider than this many times its widest line: a
+ *   title across both columns of a page is not the left edge of the right column.
+ * @property ocrNoteEndShare on a scanned page, a "Note:" paragraph ends at its first line that ends a sentence short
+ *   of this share of the paragraph's widest line: Tesseract often merges it with the paragraph after it.
  */
 data class NoteConfig(
     val silenceMarkers: Boolean = true,
@@ -27,12 +45,37 @@ data class NoteConfig(
     val footnoteSizeRatio: Float = 0.92f,
     val footnoteGapEm: Float = 0.5f,
     val minCarriedNoteWidthShare: Float = 0.5f,
+    val ocrFootnoteBandShare: Float = 0.12f,
+    val ocrFootnoteMinConfidence: Int = 70,
+    val ocrFootnoteConfidenceDrop: Int = 20,
+    val ocrFootnoteConfidenceFloor: Int = 40,
+    val ocrSureNoteLines: Int = 3,
+    val ocrNoteSpacingRatio: Float = 0.95f,
+    val ocrFlushEm: Float = 1f,
+    val ocrColumnWidthRatio: Float = 1.5f,
+    val ocrNoteEndShare: Float = 0.8f,
 ) {
     init {
-        val shares = listOf(markerSizeRatio, footnoteSizeRatio, minCarriedNoteWidthShare)
+        val shares = listOf(
+            markerSizeRatio,
+            footnoteSizeRatio,
+            minCarriedNoteWidthShare,
+            ocrFootnoteBandShare,
+            ocrNoteEndShare,
+        )
         require(shares.all { it in 0f..1f }) { "note shares must be in 0..1, were $shares" }
         require(markerRaiseEm > 0f) { "markerRaiseEm must be > 0, was $markerRaiseEm" }
         require(footnoteGapEm >= 0f) { "footnoteGapEm must be >= 0, was $footnoteGapEm" }
+        require(ocrFootnoteMinConfidence in 0..OcrConfig.MAX_CONFIDENCE) {
+            "ocrFootnoteMinConfidence must be in 0..100, was $ocrFootnoteMinConfidence"
+        }
+        require(ocrFootnoteConfidenceDrop >= 0) { "ocrFootnoteConfidenceDrop must be >= 0" }
+        require(ocrFootnoteConfidenceFloor in 0..ocrFootnoteMinConfidence) {
+            "ocrFootnoteConfidenceFloor must be in 0..ocrFootnoteMinConfidence, was $ocrFootnoteConfidenceFloor"
+        }
+        require(ocrColumnWidthRatio >= 1f) { "ocrColumnWidthRatio must be >= 1, was $ocrColumnWidthRatio" }
+        require(ocrSureNoteLines >= 1) { "ocrSureNoteLines must be >= 1, was $ocrSureNoteLines" }
+        require(ocrNoteSpacingRatio > 0f && ocrFlushEm >= 0f) { "ocrNoteSpacingRatio must be > 0, ocrFlushEm >= 0" }
         require(maxMarkerDigits >= 1) { "maxMarkerDigits must be >= 1, was $maxMarkerDigits" }
     }
 }

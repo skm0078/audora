@@ -17,6 +17,6 @@ bn-udhr-lohit	bn-unicode	exact	10	0.9976	0.9682	0.9842
 bn-udhr-fpdf2	bn-broken-map	exact	10	0.9072	0.5378	0.5138
 bn-us-fda-factsheet-vrinda-pd	bn-broken-map	draft	4	0.6635	0.1971	0.1865
 bn-rotated-pages-90-180-270-fda	bn-broken-map	draft	4	0.6551	0.1826	0.1637
-bn-us-hud-fairlending-guide-pd	bn-broken-map	draft	3	0.7611	0.6799	0.6423
+bn-us-hud-fairlending-guide-pd	bn-broken-map	draft	3	0.8050	0.6799	0.6674
 hi-udhr-krutidev	hi-legacy	exact	2	0.9989	0.9953	0.9953
 bn-udhr-bijoy	bn-legacy	exact	2	1.0000	1.0000	1.0000

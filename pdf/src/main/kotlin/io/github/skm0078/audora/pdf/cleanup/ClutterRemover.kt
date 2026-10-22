@@ -42,21 +42,22 @@ internal class ClutterRemover(config: CleanupConfig, layoutConfig: LayoutConfig)
             TAG,
             "Cleanup page=${layout.pageIndex} neighbours=${neighbours.size} " +
                 MarginReason.entries.joinToString(" ") { "${it.name.lowercase()}=${counts[it] ?: 0}" } +
-                " tables=${built.count { it.second != null }} droppedTableLines=" +
-                built.filter { it.second == null }.sumOf { it.first.size },
+                " tables=${built.sumOf { it.second.size }} sideBySide=${built.count { it.second.size > 1 }}" +
+                " droppedTableLines=" +
+                built.filter { it.second.isEmpty() }.sumOf { it.first.size },
         )
-        val inserted = HashMap<TextLine, List<Paragraph>>()
+        // Two tables side by side share their first line: both go there, left first.
+        val inserted = HashMap<TextLine, MutableList<Paragraph>>()
         var tableIndex = 0
-        for ((_, grid) in built) {
-            if (grid == null) continue
+        for (grid in built.flatMap { it.second }) {
             val first = layout.blocks.asSequence().flatMap { it.paragraphs }.flatMap { it.lines }.first {
                 it in
                     grid.lines
             }
-            inserted[first] = paragraphsOf(grid, tableIndex++)
+            inserted.getOrPut(first) { ArrayList() }.addAll(paragraphsOf(grid, tableIndex++))
         }
         // A grid leaves a title across the table's edge to the text; a region that makes no grid goes whole.
-        val tableLines = built.flatMap { (region, grid) -> grid?.lines ?: region }
+        val tableLines = built.flatMap { (region, grids) -> grids.flatMap { it.lines }.ifEmpty { region } }
         return without(layout, margin.keys + tableLines, inserted)
     }
 
@@ -65,10 +66,12 @@ internal class ClutterRemover(config: CleanupConfig, layoutConfig: LayoutConfig)
         tableParagraphs(grid.header, grid.rows, tableIndex, grid.lines.unionBox(), grid.lines.maxOf { it.size })
 
     /**
-     * The layout minus [dropped], with [inserted] paragraphs put before the paragraph holding their key line. A
-     * paragraph that loses every line goes; a block that loses every paragraph goes. A continuation
-     * (`Paragraph.continuesPrevious`) stays one only when the paragraph it continued is still there and still ends
-     * where it did: a removed table or footer must not glue two unrelated texts together.
+     * The layout minus [dropped], with [inserted] paragraphs put right before their key line: a paragraph holding key
+     * lines is split there, so an intro line set close above a table ("The rates are as follows:") is read before it
+     * and a line after it starts a new paragraph, and every table keyed in one paragraph is read. A paragraph that
+     * loses every line goes; a block that loses every paragraph goes. A continuation (`Paragraph.continuesPrevious`)
+     * stays one only when the paragraph it continued is still there and still ends where it did: a removed table or
+     * footer must not glue two unrelated texts together.
      */
     private fun without(
         layout: PageLayout,
@@ -80,18 +83,42 @@ internal class ClutterRemover(config: CleanupConfig, layoutConfig: LayoutConfig)
         for (block in layout.blocks) {
             val paragraphs = ArrayList<Paragraph>()
             for (paragraph in block.paragraphs) {
-                paragraph.lines.firstNotNullOfOrNull { inserted[it] }?.let { table ->
-                    paragraphs.addAll(table)
-                    previousIntact = false
-                }
-                val lines = paragraph.lines.filterNot { it in dropped }
-                val continues = paragraph.continuesPrevious && previousIntact
-                previousIntact = lines.isNotEmpty() && lines.last() == paragraph.lines.last()
-                if (lines.isNotEmpty()) paragraphs.add(paragraph.copy(lines = lines, continuesPrevious = continues))
+                previousIntact = split(paragraph, dropped, inserted, previousIntact, paragraphs)
             }
             if (paragraphs.isNotEmpty()) blocks.add(block.copy(paragraphs = paragraphs))
         }
         return layout.copy(blocks = blocks)
+    }
+
+    /**
+     * [paragraph]'s kept lines, split before each key line of [inserted] with its paragraphs put there, added to
+     * [out]. Returns whether the paragraph still ends where it did, with nothing inserted after its last kept line.
+     */
+    private fun split(
+        paragraph: Paragraph,
+        dropped: Set<TextLine>,
+        inserted: Map<TextLine, List<Paragraph>>,
+        previousIntact: Boolean,
+        out: MutableList<Paragraph>,
+    ): Boolean {
+        val kept = ArrayList<TextLine>()
+        var continues = paragraph.continuesPrevious && previousIntact
+        fun emit() {
+            if (kept.isNotEmpty()) out.add(paragraph.copy(lines = kept.toList(), continuesPrevious = continues))
+            kept.clear()
+            continues = false
+        }
+        for (line in paragraph.lines) {
+            inserted[line]?.let { table ->
+                emit()
+                continues = false
+                out.addAll(table)
+            }
+            if (line !in dropped) kept.add(line)
+        }
+        val intact = kept.isNotEmpty() && kept.last() == paragraph.lines.last()
+        emit()
+        return intact
     }
 
     private companion object {

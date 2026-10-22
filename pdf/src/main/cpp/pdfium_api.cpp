@@ -38,6 +38,7 @@ const char* LoadPdfiumApi(void* handle, PdfiumApi* api) {
     AUDORA_REQUIRE(textObjGetText, "FPDFTextObj_GetText");
 #undef AUDORA_REQUIRE
     Resolve(handle, "FPDFText_GetTextRenderMode", &api->textGetTextRenderMode);
+    Resolve(handle, "FPDF_GetPageLabel", &api->getPageLabel);
     return nullptr;
 }
 

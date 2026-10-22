@@ -46,13 +46,19 @@ data class OcrKey(
  * the caller serializes work on the same key (`RenderedPageOcr`).
  */
 class OcrCache(private val dir: File, private val maxBytes: Long) {
-    fun get(key: OcrKey): String? {
+    fun get(key: OcrKey): String? = read(key, touch = true)
+
+    /** [get] without refreshing the page's date: a look that must not keep the page from being trimmed. */
+    fun peek(key: OcrKey): String? = read(key, touch = false)
+
+    private fun read(key: OcrKey, touch: Boolean): String? {
         val file = File(dir, key.fileName())
         if (!file.isFile) return null
         return try {
-            file.readText(Charsets.UTF_8).also { file.setLastModified(System.currentTimeMillis()) }
+            file.readText(Charsets.UTF_8).also { if (touch) file.setLastModified(System.currentTimeMillis()) }
         } catch (e: IOException) {
-            AudoraLog.w(TAG, "Cached OCR page unreadable, page=${key.page}; recognising it again", e)
+            val then = if (touch) "recognising it again" else "treated as not cached"
+            AudoraLog.w(TAG, "Cached OCR page unreadable, page=${key.page}; $then", e)
             null
         }
     }

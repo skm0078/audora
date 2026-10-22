@@ -5,6 +5,7 @@ package io.github.skm0078.audora.pdf.ocr
 
 import io.github.skm0078.audora.core.config.CleanupConfig
 import io.github.skm0078.audora.pdf.cleanup.Folios
+import io.github.skm0078.audora.pdf.cleanup.PrintSlugs
 import io.github.skm0078.audora.pdf.cleanup.SIGNATURE_DIGITS
 import io.github.skm0078.audora.pdf.cleanup.marginSignature
 import io.github.skm0078.audora.pdf.quality.CharacterErrorRate
@@ -23,7 +24,9 @@ class OcrMargins(val top: List<String>, val bottom: List<String>)
  * [CleanupConfig.maxMarginLines] lines nearest that edge) and the page has text outside both bands. It is dropped
  * when it is a page number by itself, carries a number that steps with the page number across a neighbour's strip
  * (a running folio), or its letters repeat in the same strip on enough neighbours (a running header), allowing for
- * a letter or two misread ([CleanupConfig.ocrMatchSimilarity]).
+ * a letter or two misread ([CleanupConfig.ocrMatchSimilarity]), or it is a printer's slug ([PrintSlugs]): a line
+ * ending with a layout file's name ("HUD3_25_09.indd Sec1:9"), a bare print stamp to the second
+ * ("17-12-2019 12:54:06"), or a print time a neighbour's strip carries to the minute ("5/13/11 6:45 AM").
  */
 internal class OcrClutter(private val config: CleanupConfig) {
     /**
@@ -58,7 +61,16 @@ internal class OcrClutter(private val config: CleanupConfig) {
         val repeatable = needed > 0 && signature.count { it != SIGNATURE_DIGITS } >= config.minSignatureLetters
         val repeated = repeatable &&
             neighbours.values.count { lines -> lines.any { similar(signature, marginSignature(it)) } } >= needed
-        return folios.standalone || isRunningFolio(folios.values, neighbours) || repeated
+        return folios.standalone || isRunningFolio(folios.values, neighbours) || repeated ||
+            isPrintSlug(line, neighbours)
+    }
+
+    /** A printer's slug ([PrintSlugs]): one by itself, or a print time a neighbour's strip has to the minute. */
+    private fun isPrintSlug(line: String, neighbours: Map<Int, List<String>>): Boolean {
+        val times = PrintSlugs.times(line)
+        val shared = times.isNotEmpty() &&
+            neighbours.values.any { lines -> lines.any { other -> PrintSlugs.times(other).any(times::contains) } }
+        return PrintSlugs.standsAlone(line) || shared
     }
 
     /** A number on the line that a neighbour's strip carries shifted by the page offset: 12 here, 13 a page on. */

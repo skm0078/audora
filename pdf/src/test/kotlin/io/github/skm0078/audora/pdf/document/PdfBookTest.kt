@@ -11,14 +11,21 @@ import io.github.skm0078.audora.pdf.extract.RawPage
 import io.github.skm0078.audora.pdf.extract.RawPageFixture
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PdfBookTest {
-    private class FakeEngine(val pages: Int, val password: String? = null) : PdfEngine {
+    private class FakeEngine(
+        val pages: Int,
+        val password: String? = null,
+        val labels: (Int) -> String? = { null },
+        val text: (Int) -> String = { "Page $it." },
+    ) : PdfEngine {
         val passwordsSeen = ArrayList<String?>()
         var openHandles = 0
         var reads = 0
+        var labelReads = 0
         var failNextOpen = false
 
         override fun open(password: String?): Outcome<PdfDocumentHandle, PdfOpenError> {
@@ -43,16 +50,40 @@ class PdfBookTest {
             override fun readPage(pageIndex: Int): Outcome<RawPage, PdfPageError> {
                 reads++
                 return Outcome.Success(
-                    RawPageFixture.page(RawPageFixture.chars("Page $pageIndex."), pageIndex = pageIndex),
+                    RawPageFixture.page(RawPageFixture.chars(text(pageIndex)), pageIndex = pageIndex),
                 )
             }
 
             override fun outline() = listOf(OutlineEntry("Chapter", 0))
 
+            override fun pageLabel(pageIndex: Int): String? {
+                labelReads++
+                return labels(pageIndex)
+            }
+
             override fun close() {
                 openHandles--
             }
         }
+    }
+
+    @Test
+    fun `a page reads the same whichever page was read before it, in one book or another`() {
+        val texts = listOf("He turned and said that the", "rains came late that year.", "Then the river rose high.")
+        val builder = ReadingUnitBuilder()
+        fun open() = requireNotNull(PdfBook.open(FakeEngine(pages = 3) { texts[it] }).getOrNull())
+        val inOrder = open()
+        inOrder.readPage(0, builder)
+        val second = requireNotNull(inOrder.readPage(1, builder).getOrNull())
+        assertTrue(second.continuesPreviousPage)
+        val jumped = requireNotNull(open().readPage(1, builder).getOrNull())
+        assertTrue(jumped.continuesPreviousPage)
+        assertEquals(second.units, jumped.units)
+        val back = open()
+        back.readPage(2, builder)
+        assertTrue(requireNotNull(back.readPage(1, builder).getOrNull()).continuesPreviousPage)
+        assertFalse(requireNotNull(back.readPage(0, builder).getOrNull()).continuesPreviousPage)
+        assertFalse(requireNotNull(back.readPage(2, builder).getOrNull()).continuesPreviousPage)
     }
 
     @Test
@@ -64,6 +95,21 @@ class PdfBookTest {
         assertEquals(1, book.opens)
         book.close()
         assertEquals(PdfPageError.BookClosed, book.outline().errorOrNull())
+    }
+
+    @Test
+    fun `page labels come from the open document, cleaned, and do not count as page reads`() {
+        val printed = listOf("i", " ii ", null, "", "A-\u00003", "\u200B\uFEFF12\u200E", "क्\u200Cष")
+        val engine = FakeEngine(pages = printed.size, labels = printed::get)
+        val book = requireNotNull(PdfBook.open(engine).getOrNull())
+        // A zero-width non-joiner stays: it changes how the Hindi letters join.
+        assertEquals(listOf("i", "ii", null, null, "A-3", "12", "क्\u200Cष"), book.pageLabels().getOrNull())
+        assertEquals(0, engine.reads)
+        assertEquals(printed.size, engine.labelReads)
+        book.pageLabels()
+        assertEquals("read once per book", printed.size, engine.labelReads)
+        book.close()
+        assertEquals(PdfPageError.BookClosed, book.pageLabels().errorOrNull())
     }
 
     @Test

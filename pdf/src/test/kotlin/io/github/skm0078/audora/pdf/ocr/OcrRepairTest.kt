@@ -21,7 +21,13 @@ class OcrRepairTest {
     private val hindi = LanguageModel(
         mapOf("सरकार" to 50, "अधिकार" to 50, "मानव" to 48, "और" to 70, "सद्भावना" to 35, "एवं" to 60, "विशेषतः" to 40),
     )
-    private val bengali = LanguageModel(mapOf("নিরাপত্তা" to 45, "অধিকার" to 50))
+    private val bengali = LanguageModel(
+        mapOf(
+            "নিরাপত্তা" to 45, "অধিকার" to 50, "করা" to 60, "কর" to 50, "বা" to 65, "ধারা" to 50, "ধার" to 40,
+            "একা" to 40, "এক" to 60, "ইচ্ছা" to 45, "মানুষ" to 55, "যাবে" to 55, "যাবো" to 40,
+            "হবে" to 60, "হবো" to 40, "কারো" to 50, "কারে" to 20,
+        ),
+    )
     private val models = WordModels { lang -> mapOf(Lang.EN to english, Lang.HI to hindi, Lang.BN to bengali)[lang] }
     private val repair = OcrRepair(OcrRepairConfig(), models)
 
@@ -63,6 +69,33 @@ class OcrRepairTest {
             word("rnodern", confidence = null), // no confidence to go on
             word("सरकर"), // Hindi changes only through the confusions: a free edit is not tried
         ).forEach { w -> assertEquals(w.text, listOf(w.text), repaired(w)) }
+    }
+
+    @Test
+    fun `in Bengali, a bar running on to the next word is a vowel sign, that sign read twice, or a danda`() {
+        listOf(
+            listOf("কর!", "এবং") to listOf("করা", "এবং"),
+            listOf("ব৷", "ভূখণ্ড") to listOf("বা", "ভূখণ্ড"),
+            listOf("ধার|", "১৯") to listOf("ধারা", "১৯"),
+            listOf("এক!", "অথবা") to listOf("একা", "অথবা"),
+            listOf("ইচ্ছা!", "নিয়মিত") to listOf("ইচ্ছা", "নিয়মিত"),
+            listOf("কারে৷", "জাতীয়তা") to listOf("কারো", "জাতীয়তা"), // the bar completes the sign o
+            listOf("হবে৷", "প্রাথমিক") to listOf("হবে।", "প্রাথমিক"), // "হবো" is rarer: a danda
+            listOf("নিরাপত্ত|") to listOf("নিরাপত্তা"), // unknown word: a pipe for the sign, as "!" and "৷"
+        ).forEach { (read, printed) ->
+            assertEquals(read.toString(), printed, repaired(*read.map(::word).toTypedArray()))
+        }
+    }
+
+    @Test
+    fun `a bar that may be a sentence end is kept`() {
+        listOf(
+            listOf(word("মানুষ|"), word("তারা")), // "মানুষা" is not a word: a danda
+            listOf(word("যাবে!"), word("কোন")), // after the vowel sign e: a danda, not "যাবো"
+            listOf(word("কর!")), // at the line's end
+            listOf(word("কর!", confidence = 95), word("এবং")), // Tesseract was sure
+            listOf(word("কর!"), word("and")), // the line runs on in English
+        ).forEach { line -> assertEquals(line.map { it.text }, repaired(*line.toTypedArray())) }
     }
 
     @Test

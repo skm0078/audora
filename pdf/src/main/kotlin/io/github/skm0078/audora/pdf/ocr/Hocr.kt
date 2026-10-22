@@ -4,11 +4,13 @@
 package io.github.skm0078.audora.pdf.ocr
 
 import io.github.skm0078.audora.pdf.render.ViewRect
+import kotlin.math.roundToInt
 
 /** A word in image pixels (left, top, right, bottom; y down), with Tesseract's confidence 0–100. */
 class RecognizedWord(val text: String, val left: Int, val top: Int, val right: Int, val bottom: Int, val conf: Int)
 
-class RecognizedLine(val words: List<RecognizedWord>, val paragraph: Int)
+/** A line of words; [size] is Tesseract's estimate of its type size in pixels (`x_size`), 0 when it gave none. */
+class RecognizedLine(val words: List<RecognizedWord>, val paragraph: Int, val size: Int = 0)
 
 /**
  * What an [OcrEngine] read in one image of [width] × [height] pixels. [meanConfidence] is the confidence of its
@@ -42,6 +44,7 @@ class RecognizedPage(val lines: List<RecognizedLine>, val width: Int, val height
                     )
                 },
                 paragraph = line.paragraph,
+                size = line.size.toFloat() / height,
             )
         },
         quarterTurns = quarterTurns,
@@ -67,7 +70,8 @@ class RecognizedPage(val lines: List<RecognizedLine>, val width: Int, val height
 
 /**
  * Tesseract's hOCR (`getHOCRText`): `ocr_par` paragraphs holding `ocr_line` lines (or `ocr_header`, `ocr_caption`,
- * `ocr_textfloat`) holding `ocrx_word` words, each with `title="bbox l t r b; x_wconf c"`. Words keep Tesseract's
+ * `ocr_textfloat`, with `x_size` their type size) holding `ocrx_word` words, each with
+ * `title="bbox l t r b; x_wconf c"`. Words keep Tesseract's
  * reading order; a word outside any line or paragraph joins the last one seen. Malformed parts are skipped.
  */
 object Hocr {
@@ -82,6 +86,7 @@ object Hocr {
     private val TITLE = Regex("""title=(['"])(.*?)\1""")
     private val BBOX = Regex("""bbox\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)\s+(-?\d+)""")
     private val CONFIDENCE = Regex("""x_wconf\s+(\d+)""")
+    private val SIZE = Regex("""x_size\s+(\d+(?:\.\d+)?)""")
     private val TAG = Regex("<[^>]*>")
     private const val WORD_END = "</span>"
     private val ENTITIES = listOf("&lt;" to "<", "&gt;" to ">", "&quot;" to "\"", "&#39;" to "'", "&apos;" to "'")
@@ -91,14 +96,19 @@ object Hocr {
         var words = ArrayList<RecognizedWord>()
         var paragraph = -1
         var lineParagraph = 0
+        var size = 0
+        var lineSize = 0
 
         fun addWord(word: RecognizedWord) {
-            if (words.isEmpty()) lineParagraph = paragraph.coerceAtLeast(0)
+            if (words.isEmpty()) {
+                lineParagraph = paragraph.coerceAtLeast(0)
+                lineSize = size
+            }
             words.add(word)
         }
 
         fun closeLine() {
-            if (words.isNotEmpty()) lines.add(RecognizedLine(words, lineParagraph))
+            if (words.isNotEmpty()) lines.add(RecognizedLine(words, lineParagraph, lineSize))
             words = ArrayList()
         }
 
@@ -107,11 +117,15 @@ object Hocr {
                 "ocr_par" -> {
                     closeLine()
                     paragraph++
+                    size = 0
                 }
 
                 "ocrx_word" -> word(hocr, element)?.let(::addWord)
 
-                else -> closeLine()
+                else -> {
+                    closeLine()
+                    size = sizeOf(element)
+                }
             }
         }
         closeLine()
@@ -133,6 +147,12 @@ object Hocr {
             bottom = box[BOTTOM].toInt(),
             conf = CONFIDENCE.find(title)?.groupValues?.get(1)?.toInt() ?: 0,
         )
+    }
+
+    /** A line's `x_size`, rounded; 0 when its title has none. */
+    private fun sizeOf(element: MatchResult): Int {
+        val title = TITLE.find(element.value)?.groupValues?.get(2).orEmpty()
+        return SIZE.find(title)?.groupValues?.get(1)?.toFloatOrNull()?.roundToInt() ?: 0
     }
 
     private fun unescape(text: String): String {

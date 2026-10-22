@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.pdf.cleanup
 
+import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.pdf.layout.PageSketch
 import io.github.skm0078.audora.pdf.units.AnalyzedPage
@@ -82,6 +83,34 @@ class ClutterRemoverTest {
     }
 
     @Test
+    fun `a printer's slug at the foot goes, a date and time alone stays`() {
+        val slugs = listOf("Chapter 9 Transitions.indd 71", "17-12-2019 12:54:06")
+        for (slug in slugs) {
+            val pages = (0..2).map { page(it, footer = if (it == 1) listOf(slug to LEFT) else emptyList()) }
+            assertEquals(slug, bodyText(1), spoken(pages, 1))
+        }
+        // The same print time on the next page's foot marks both as slugs; a date sheet's times differ.
+        val printed = (0..2).map { page(it, footer = listOf("5/13/11 6:45 AM" to LEFT)) }
+        assertEquals(bodyText(1), spoken(printed, 1))
+        val subjects = listOf("Physics", "Chemistry", "Biology")
+        val sheet = (0..2).map { page(it, footer = listOf("${subjects[it]} 1$it/03/2024 10:30" to LEFT)) }
+        assertTrue(spoken(sheet, 1), "10:30" in spoken(sheet, 1))
+    }
+
+    @Test
+    fun `page numbers set above a printer's slug go`() {
+        // The slug sits outside the printed page, well below its folio: the folio is still the page's own foot.
+        val pages = (0..2).map { i ->
+            val sketch = PageSketch()
+            sketch.lines(body(i).take(SHORT_BODY_LINES), LEFT, BODY_TOP)
+            sketch.line("${i + 6}", MID, RAISED_FOOTER_TOP)
+            sketch.lines(listOf("Book.indd Sec1:${i + 6}", "5/13/11 6:45 AM"), LEFT, SLUG_TOP)
+            builder.analyze(sketch.build(i))
+        }
+        for (p in pages.indices) assertEquals(body(p).take(SHORT_BODY_LINES).joinToString(" "), spoken(pages, p))
+    }
+
+    @Test
     fun `lines that only look like headers stay`() {
         // A margin line on one page only, numbers that do not run with the page, and a repeated line mid-page.
         val pages = (0..4).map { i ->
@@ -139,6 +168,184 @@ class ClutterRemoverTest {
     }
 
     @Test
+    fun `a dot leader in a table cell is left out of the cell`() {
+        val sketch = PageSketch()
+        sketch.line("Pat.", LEFT, 680f).line("Age", 150f, 680f).line("Dose", 250f, 680f)
+        for (row in 1..4) {
+            val top = 680f - row * 12f
+            sketch.line("$row ........", LEFT, top).line("${50 + row}", 150f, top).line("2 Gy x 30", 250f, top)
+        }
+        sketch.lines(listOf("The table shows every patient.", "Doses were the same."), LEFT, 600f)
+        val third = builder.build(sketch.build()).filter { it.kind.isTable }[3]
+        assertEquals("3 53 2 Gy x 30", third.text)
+        assertEquals(listOf("3", "53", "2 Gy x 30"), third.table?.cells?.map { third.text.substring(it.start, it.end) })
+    }
+
+    @Test
+    fun `leaders are read cell by cell, a cell holding only a rule reads as a dash, a blank as nothing`() {
+        val sketch = PageSketch()
+        sketch.line("Crop", LEFT, 680f).line("2019", 150f, 680f).line("2020", 250f, 680f).line("2021", 350f, 680f)
+        val rows = listOf(
+            listOf("Wheat", ". . .", ". . .", "12"),
+            listOf("Rice", "-----", "14", "15"),
+            listOf("Maize", "______", "17", "18"),
+            listOf("Barley", "19", "20", "21"),
+        )
+        rows.forEachIndexed { i, cells ->
+            val top = 668f - i * 12f
+            sketch.line(
+                cells[0],
+                LEFT,
+                top,
+            ).line(cells[1], 150f, top).line(cells[2], 250f, top).line(cells[3], 350f, top)
+        }
+        sketch.lines(listOf("The table shows every crop.", "Yields were the same."), LEFT, 600f)
+        val units = builder.build(sketch.build()).filter { it.kind == UnitKind.TABLE_ROW }
+        fun cells(unit: ReadingUnit) = unit.table!!.cells.map { unit.text.substring(it.start, it.end) }
+        // Six spaced dots across two cells would make a leader; each cell's three stay as they are.
+        assertEquals(listOf("Wheat", ". . .", ". . .", "12"), cells(units[0]))
+        assertEquals(listOf("Rice", "\u2013", "14", "15"), cells(units[1]))
+        // A blank to fill in says nothing: only a rule reads as nil.
+        assertEquals(listOf("Maize", "", "17", "18"), cells(units[2]))
+    }
+
+    @Test
+    fun `a dated line at the foot is no slug by itself, so a number above it stays`() {
+        val pages = (0..2).map { i ->
+            val sketch = PageSketch()
+            sketch.lines(body(i), LEFT, BODY_TOP)
+            sketch.line("42", MID, NUMBER_TOP)
+            sketch.line("Physics 1$i/03/2024 10:30", LEFT, FOOTER_TOP)
+            builder.analyze(sketch.build(i))
+        }
+        for (p in pages.indices) assertTrue(spoken(pages, p), "42" in spoken(pages, p))
+    }
+
+    @Test
+    fun `an intro line set close above a table is read before it, and the line after it after it`() {
+        // Line spacing as tight as the rows', so layout joins intro, table and the line after into one paragraph.
+        val sketch = PageSketch()
+        sketch.line("The doses were as follows:", LEFT, 692f)
+        sketch.line("Pat.", LEFT, 680f).line("Age", 150f, 680f).line("Dose", 250f, 680f)
+        for (row in 1..4) {
+            val top = 680f - row * 12f
+            sketch.line("$row", LEFT, top).line("${50 + row}", 150f, top).line("2 Gy x 30", 250f, top)
+        }
+        sketch.line("Nobody missed a dose.", LEFT, 620f)
+        val units = builder.build(sketch.build())
+        val order = units.map { if (it.kind.isTable) it.kind.name else it.text }
+        val summary = order.indexOf(UnitKind.TABLE_SUMMARY.name)
+        assertTrue("$order", order.indexOfFirst { "as follows" in it } in 0 until summary)
+        assertTrue("$order", order.indexOfFirst { "Nobody" in it } > order.lastIndexOf(UnitKind.TABLE_ROW.name))
+        assertFalse("$order", order.any { "follows" in it && "Nobody" in it })
+    }
+
+    @Test
+    fun `two tables keyed in one paragraph are both read, in order`() {
+        // Two grids set at the rows' spacing with different columns: one paragraph to layout, two tables.
+        val sketch = PageSketch()
+        sketch.line("Pat.", LEFT, 700f).line("Age", 150f, 700f).line("Dose", 250f, 700f)
+        for (row in 1..3) {
+            val top = 700f - row * 12f
+            sketch.line("$row", LEFT, top).line("${50 + row}", 150f, top).line("2 Gy x 30", 250f, top)
+        }
+        sketch.line("Site", LEFT, 652f).line("Beds", 200f, 652f).line("Staff", 350f, 652f)
+        for (row in 1..3) {
+            val top = 652f - row * 12f
+            sketch.line("Ward $row", LEFT, top).line("${10 * row}", 200f, top).line("${row + 4}", 350f, top)
+        }
+        val units = builder.build(sketch.build())
+        val headers = units.filter { it.kind == UnitKind.TABLE_SUMMARY }.map { it.table?.headers }
+        assertEquals(
+            "${units.map {
+                it.text
+            }}",
+            listOf(listOf("Pat.", "Age", "Dose"), listOf("Site", "Beds", "Staff")),
+            headers,
+        )
+        assertEquals(6, units.count { it.kind == UnitKind.TABLE_ROW })
+    }
+
+    /** The headers of the page's tables and its row count, from a sketch of two blocks of columns on shared rows. */
+    private fun tablesOf(sketch: PageSketch): Pair<List<List<String>?>, Int> {
+        val units = builder.build(sketch.build())
+        return units.filter { it.kind == UnitKind.TABLE_SUMMARY }.map { it.table?.headers } to
+            units.count { it.kind == UnitKind.TABLE_ROW }
+    }
+
+    @Test
+    fun `a list set in two halves side by side on shared rows reads as two tables`() {
+        val sketch = PageSketch()
+        sketch.line("No.", LEFT, 700f).line("Name", 110f, 700f).line("No.", 380f, 700f).line("Name", 440f, 700f)
+        for (row in 1..4) {
+            val top = 700f - row * 12f
+            sketch.line("$row", LEFT, top).line("Asha$row", 110f, top)
+            sketch.line("${row + 4}", 380f, top).line("Ravi$row", 440f, top)
+        }
+        val (headers, rows) = tablesOf(sketch)
+        assertEquals(listOf(listOf("No.", "Name"), listOf("No.", "Name")), headers)
+        assertEquals(8, rows)
+    }
+
+    @Test
+    fun `two different tables side by side, one longer, read as two tables`() {
+        val sketch = PageSketch()
+        sketch.line("Pat.", LEFT, 700f).line("Age", 110f, 700f).line("Site", 380f, 700f).line("Beds", 440f, 700f)
+        for (row in 1..4) {
+            val top = 700f - row * 12f
+            sketch.line("P$row", LEFT, top).line("${50 + row}", 110f, top)
+            if (row <= 2) sketch.line("W$row", 380f, top).line("${10 * row}", 440f, top)
+        }
+        val (headers, rows) = tablesOf(sketch)
+        assertEquals(listOf(listOf("Pat.", "Age"), listOf("Site", "Beds")), headers)
+        assertEquals(6, rows)
+    }
+
+    @Test
+    fun `one table with a wide gap before its figures stays one table`() {
+        val sketch = PageSketch()
+        sketch.line("No.", LEFT, 700f).line("Item", 110f, 700f).line("2019", 380f, 700f).line("2020", 440f, 700f)
+        for (row in 1..4) {
+            val top = 700f - row * 12f
+            sketch.line("$row", LEFT, top).line("Pens$row", 110f, top)
+            sketch.line("${10 * row}", 380f, top).line("${12 * row}", 440f, top)
+        }
+        val (headers, rows) = tablesOf(sketch)
+        assertEquals(listOf(listOf("No.", "Item", "2019", "2020")), headers)
+        assertEquals(4, rows)
+    }
+
+    @Test
+    fun `one wide table with section rows, blank figures and a two-line header stays one table`() {
+        val sketch = PageSketch()
+        sketch.line("Item", LEFT, 700f).line("Head", 110f, 700f).line("Budget", 380f, 700f).line("Actual", 440f, 700f)
+        sketch.line("estimate", 380f, 688f).line("figures", 440f, 688f)
+        sketch.line("A.", LEFT, 676f).line("Receipts", 110f, 676f)
+        sketch.line("1", LEFT, 664f).line("Taxes", 110f, 664f).line("120", 380f, 664f).line("135", 440f, 664f)
+        sketch.line("2", LEFT, 652f).line("Fees", 110f, 652f).line("–", 380f, 652f).line("–", 440f, 652f)
+        sketch.line("3", LEFT, 640f).line("Duty", 110f, 640f).line("75", 380f, 640f).line("80", 440f, 640f)
+        sketch.line("B.", LEFT, 628f).line("Capital", 110f, 628f)
+        val (headers, _) = tablesOf(sketch)
+        assertEquals("$headers", 1, headers.size)
+        assertEquals(4, headers.single()?.size)
+    }
+
+    @Test
+    fun `a table of figures beside a list of labels a wide gap apart, one longer, stays one table`() {
+        // The labels run on below the figures: the right side is all figures, so it is this table's.
+        val sketch = PageSketch()
+        sketch.line("State", LEFT, 700f).line("Code", 110f, 700f).line("2019", 380f, 700f).line("2020", 440f, 700f)
+        for (row in 1..4) {
+            val top = 700f - row * 12f
+            sketch.line("S$row", LEFT, top).line("${row * 7}", 110f, top)
+            if (row <= 2) sketch.line("${row * 37}", 380f, top).line("${row * 41}", 440f, top)
+        }
+        val (headers, rows) = tablesOf(sketch)
+        assertEquals(listOf(listOf("State", "Code", "2019", "2020")), headers)
+        assertEquals(4, rows)
+    }
+
+    @Test
     fun `text with wide gaps that do not line up is not a table`() {
         val sketch = PageSketch()
         sketch.line("first", LEFT, 700f).line("words", 120f, 700f)
@@ -164,6 +371,10 @@ class ClutterRemoverTest {
         const val HEADER_TOP = 800f
         const val BODY_TOP = 700f
         const val FOOTER_TOP = 40f
+        const val SLUG_TOP = 20f
+        const val NUMBER_TOP = 100f
+        const val RAISED_FOOTER_TOP = 300f
+        const val SHORT_BODY_LINES = 20
         const val BODY_LINES = 50
         val WORDS = listOf("amber", "birch", "cedar", "delta", "ember", "fjord", "grove", "heath", "inlet", "jetty")
     }
