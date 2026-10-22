@@ -6,6 +6,8 @@ plugins {
     id("audora.hilt")
 }
 
+val uiTestBuildType = "uiTest"
+
 val releaseVersionName: String = providers.gradleProperty("audora.versionName").get()
 
 // Release signing (P0-02, docs/RELEASING.md). Only the release workflow sets these; locally and on
@@ -21,6 +23,7 @@ android {
         applicationId = "io.github.skm0078.audora"
         versionCode = versionCodeOf(releaseVersionName)
         versionName = releaseVersionName
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -59,8 +62,21 @@ android {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
+        // Only for the Compose UI tests on CI's x86_64 emulator, which cannot run arm64-only native code. Debug and
+        // release stay arm64-v8a only (ADR-010); this variant is never uploaded, published or 16 KB checked.
+        create(uiTestBuildType) {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".uitest"
+            matchingFallbacks += "debug"
+            ndk { abiFilters += "x86_64" }
+        }
     }
+
+    testBuildType = uiTestBuildType
 }
+
+// The UI-test variant's unit tests are the debug ones again; skip the second run.
+tasks.matching { it.name == "testUiTestUnitTest" }.configureEach { enabled = false }
 
 /**
  * MAJOR.MINOR.PATCH → MAJOR * 1_000_000 + MINOR * 1_000 + PATCH, so every newer release has a higher
@@ -100,4 +116,13 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
 
     testImplementation(libs.kotlinx.coroutines.test)
+
+    // Compose UI tests of the main flows on the CI emulator, hosted in a plain ComponentActivity with fakes.
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.junit)
+    // Declares the ComponentActivity the tests host; in the UI-test variant only, so no shipped APK carries it.
+    "uiTestImplementation"(libs.compose.ui.test.manifest)
 }

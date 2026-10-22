@@ -122,8 +122,9 @@ data class ReaderState(
         get() {
             val position = readingPosition?.takeIf { it.page == page } ?: return null
             val units = (content as? PageContent.Ready)?.units ?: return null
-            // Containment, not equality: robust if the service's units were cut slightly differently.
-            return units.indexOfFirst { position.charStart in it.charStart until it.charEnd }
+            // Containment, not equality: robust if the service's units were cut slightly differently. A unit with no
+            // text (a continued table's summary, sharing its first row's charStart) is never the one shown as read.
+            return units.indexOfFirst { it.text.isNotBlank() && position.charStart in it.charStart until it.charEnd }
                 .takeIf { it >= 0 }
         }
 

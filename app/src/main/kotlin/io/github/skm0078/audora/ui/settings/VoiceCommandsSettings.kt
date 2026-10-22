@@ -12,7 +12,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -56,7 +55,8 @@ data class VoiceCommandsSettings(
 
 /**
  * The model row, the switch (only once the model is installed), and under it, while on, the screen-off opt-in: it
- * keeps a microphone notification up while the reader is open, and costs battery for as long as it listens.
+ * keeps a microphone notification up while the reader is open, and costs battery for as long as it listens. Rows of
+ * Settings' Reading group, each with the group's divider before it.
  */
 @Composable
 internal fun VoiceCommandsItems(settings: VoiceCommandsSettings) {
@@ -64,6 +64,7 @@ internal fun VoiceCommandsItems(settings: VoiceCommandsSettings) {
     val ready = settings.model is OcrModelsState.Ready
     // Shown as off without the model, whatever was saved: nothing listens then.
     val on = settings.mode != VoiceCommandsMode.OFF && ready
+    SettingsDivider()
     SwitchRow(
         title = R.string.commands_switch_title,
         body = stringResource(if (ready) R.string.commands_switch_body else R.string.commands_switch_needs_model),
@@ -71,6 +72,7 @@ internal fun VoiceCommandsItems(settings: VoiceCommandsSettings) {
         enabled = ready,
     ) { turnOn -> settings.onChange(if (turnOn) VoiceCommandsMode.WHILE_VISIBLE else VoiceCommandsMode.OFF) }
     if (on) {
+        SettingsDivider()
         SwitchRow(
             title = R.string.commands_screen_off_title,
             body = pluralStringResource(R.plurals.commands_screen_off_body, IDLE_MINUTES, IDLE_MINUTES),
@@ -80,7 +82,6 @@ internal fun VoiceCommandsItems(settings: VoiceCommandsSettings) {
             settings.onChange(if (screenOff) VoiceCommandsMode.SCREEN_OFF else VoiceCommandsMode.WHILE_VISIBLE)
         }
     }
-    HorizontalDivider()
 }
 
 @Composable

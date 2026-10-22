@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/layout/widget_resume.xml
+  Purpose: The home-screen widget (plan item 35): book title, page progress and a Resume button. RemoteViews
+  allows only framework views, so this is plain LinearLayout, TextView, ProgressBar and ImageButton.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="@dimen/widget_padding"
+    android:paddingVertical="@dimen/widget_padding_vertical">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/app_name"
+            android:textColor="@color/widget_on_surface"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_progress_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/widget_empty_body"
+            android:textColor="@color/widget_on_surface_variant"
+            android:textSize="13sp" />
+
+        <ProgressBar
+            android:id="@+id/widget_progress"
+            style="@android:style/Widget.Material.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/widget_gap"
+            android:max="100"
+            android:progressBackgroundTint="@color/widget_track"
+            android:progressTint="@color/widget_accent"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/widget_resume"
+        android:layout_width="@dimen/widget_button"
+        android:layout_height="@dimen/widget_button"
+        android:layout_marginStart="@dimen/widget_padding"
+        android:background="@drawable/widget_button_background"
+        android:contentDescription="@string/widget_resume"
+        android:src="@drawable/ic_play"
+        android:tint="@color/widget_on_accent"
+        android:visibility="gone" />
+</LinearLayout>

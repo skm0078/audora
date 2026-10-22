@@ -1,8 +1,9 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/LibraryTopBar.kt
-// Purpose: The library's top bar: title, search field, sort and filter menu (plan item 22), settings.
+// Purpose: The library's top bar: title, search field, sort and filter menu (plan item 22).
 
 package io.github.skm0078.audora.ui.library
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.DropdownMenu
@@ -30,6 +31,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.LibraryFilter
 import io.github.skm0078.audora.core.library.LibraryQuery
@@ -42,7 +45,6 @@ internal fun LibraryTopBar(listState: LibraryListState, actions: LibraryActions)
         query = loaded?.query ?: LibraryQuery(),
         hasBooks = loaded?.all?.isNotEmpty() == true,
         onQuery = actions::onQuery,
-        onOpenSettings = actions::onOpenSettings,
     )
 }
 
@@ -52,23 +54,27 @@ internal fun LibraryTopBar(listState: LibraryListState, actions: LibraryActions)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun LibraryTopBar(
-    query: LibraryQuery,
-    hasBooks: Boolean,
-    onQuery: (LibraryQuery) -> Unit,
-    onOpenSettings: () -> Unit,
-) {
+internal fun LibraryTopBar(query: LibraryQuery, hasBooks: Boolean, onQuery: (LibraryQuery) -> Unit) {
     var searching by rememberSaveable { mutableStateOf(query.text.isNotEmpty()) }
+    // The keyboard rises only after a tap on search, never when the library is rebuilt with a search still open (a
+    // back swipe's preview, a rotation).
+    var focusOnOpen by remember { mutableStateOf(false) }
     val closeSearch = {
         searching = false
         onQuery(query.copy(text = ""))
     }
+    // Back closes the search first, as its arrow does (predictive back delivers it here, never to onBackPressed).
+    BackHandler(enabled = searching, onBack = closeSearch)
     TopAppBar(
         title = {
             if (searching) {
-                SearchField(query.text) { onQuery(query.copy(text = it)) }
+                SearchField(query.text, focusOnOpen) { onQuery(query.copy(text = it)) }
             } else {
-                Text(stringResource(R.string.library_title))
+                Text(
+                    stringResource(R.string.library_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.semantics { heading() },
+                )
             }
         },
         navigationIcon = {
@@ -80,22 +86,22 @@ internal fun LibraryTopBar(
         },
         actions = {
             if (hasBooks && !searching) {
-                IconButton(onClick = { searching = true }) {
+                IconButton(onClick = {
+                    focusOnOpen = true
+                    searching = true
+                }) {
                     Icon(painterResource(R.drawable.ic_search), stringResource(R.string.library_search))
                 }
             }
             if (hasBooks) SortMenu(query, onQuery)
-            IconButton(onClick = onOpenSettings) {
-                Icon(painterResource(R.drawable.ic_settings), stringResource(R.string.settings_title))
-            }
         },
     )
 }
 
 @Composable
-private fun SearchField(text: String, onChange: (String) -> Unit) {
+private fun SearchField(text: String, focusOnOpen: Boolean, onChange: (String) -> Unit) {
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focus.requestFocus() }
+    LaunchedEffect(Unit) { if (focusOnOpen) focus.requestFocus() }
     TextField(
         value = text,
         onValueChange = onChange,

@@ -3,6 +3,8 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -12,15 +14,19 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,12 +35,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.speech.voices.VoiceRow
+import io.github.skm0078.audora.ui.theme.Dimens
 import kotlinx.coroutines.delay
 
 @Composable
@@ -47,28 +56,68 @@ fun ReaderControls(
 ) {
     val enabled = state.playerReady
     val loaded = state.readingPosition != null
-    Surface(tonalElevation = 3.dp, modifier = modifier.fillMaxWidth()) {
+    // A raised panel with rounded top corners, so the controls read as one block under the thumb (ADR-036).
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(topStart = Dimens.SpaceXl, topEnd = Dimens.SpaceXl),
+        modifier = modifier.fillMaxWidth(),
+    ) {
         Row(
-            modifier = Modifier.navigationBarsPadding().padding(horizontal = 8.dp, vertical = 8.dp),
+            modifier = Modifier.navigationBarsPadding().padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceM),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             val study = StudyControls(state.study, canMark = state.readingPosition != null, onStudy = actions::onStudy)
             SpeedButton(state.playback, config, enabled, actions, voices, study)
-            IconButton(onClick = actions::onSkipBack, enabled = enabled && loaded && state.playback.canSkipBack) {
-                Icon(painterResource(R.drawable.ic_skip_previous), stringResource(R.string.reader_skip_back))
-            }
+            SkipButton(
+                forward = false,
+                enabled = enabled && loaded && state.playback.canSkipBack,
+                onClick = actions::onSkipBack,
+                onLongClick = { actions.onSkipParagraph(forward = false) },
+            )
             PlayPauseButton(
                 reading = state.isReading,
                 buffering = state.isReading && state.playback.buffering,
                 enabled = enabled,
                 onClick = actions::onPlayPause,
             )
-            IconButton(onClick = actions::onSkipForward, enabled = enabled && loaded && state.playback.canSkipForward) {
-                Icon(painterResource(R.drawable.ic_skip_next), stringResource(R.string.reader_skip_forward))
-            }
+            SkipButton(
+                forward = true,
+                enabled = enabled && loaded && state.playback.canSkipForward,
+                onClick = actions::onSkipForward,
+                onLongClick = { actions.onSkipParagraph(forward = true) },
+            )
             SleepTimerButton(state.playback, config, enabled, actions)
         }
+    }
+}
+
+/**
+ * Previous / next sentence; a long-press skips a paragraph (the player says when there is none that way). Drawn like
+ * an IconButton, which has no long-press, with the same touch target and disabled look.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun SkipButton(forward: Boolean, enabled: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
+    val icon = if (forward) R.drawable.ic_skip_next else R.drawable.ic_skip_previous
+    val label = stringResource(if (forward) R.string.reader_skip_forward else R.string.reader_skip_back)
+    val longLabel = stringResource(if (forward) R.string.reader_paragraph_forward else R.string.reader_paragraph_back)
+    val tint = LocalContentColor.current.let { if (enabled) it else it.copy(alpha = DISABLED_ALPHA) }
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .minimumInteractiveComponentSize()
+            .clip(CircleShape)
+            .combinedClickable(
+                enabled = enabled,
+                role = Role.Button,
+                onClickLabel = label,
+                onLongClickLabel = longLabel,
+                onLongClick = onLongClick,
+                onClick = onClick,
+            ),
+    ) {
+        Icon(painterResource(icon), contentDescription = label, tint = tint)
     }
 }
 
@@ -213,5 +262,8 @@ private fun sleepTimerLabel(timer: SleepTimerState): String? = when (timer) {
     is SleepTimerState.AfterChapters -> stringResource(R.string.reader_sleep_chapters, timer.count)
 }
 
-private val PLAY_BUTTON_SIZE = 64.dp
+private val PLAY_BUTTON_SIZE = Dimens.PlayButton
 private const val TICK_MS = 1_000L
+
+/** Material 3's disabled-content alpha, as an IconButton draws it. */
+private const val DISABLED_ALPHA = 0.38f

@@ -5,6 +5,7 @@ package io.github.skm0078.audora.ui.library
 
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookAvailability
+import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.BookProgress
 import io.github.skm0078.audora.core.library.LibraryError
 import io.github.skm0078.audora.core.library.LibraryQuery
@@ -41,9 +42,10 @@ sealed interface LibraryListState {
 sealed interface LibraryMessage {
     data class Added(val title: String) : LibraryMessage
 
-    data class AlreadyInLibrary(val title: String) : LibraryMessage
+    /** [id] lets the duplicate check (plan item 27) open the book the library already has. */
+    data class AlreadyInLibrary(val title: String, val id: BookId? = null) : LibraryMessage
 
-    data class FoundAgain(val title: String) : LibraryMessage
+    data class FoundAgain(val title: String, val id: BookId? = null) : LibraryMessage
 
     data class Removed(val title: String) : LibraryMessage
 
