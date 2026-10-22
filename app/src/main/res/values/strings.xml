@@ -87,6 +87,8 @@
     <string name="reader_pause">Pause</string>
     <string name="reader_skip_back">Previous sentence</string>
     <string name="reader_skip_forward">Next sentence</string>
+    <string name="reader_paragraph_back">Previous paragraph</string>
+    <string name="reader_paragraph_forward">Next paragraph</string>
     <string name="reader_speed">Speed %1$s×</string>
     <string name="speech_sheet_speed">Speed %1$s×</string>
     <string name="speech_sheet_slower">Slower</string>
@@ -167,6 +169,10 @@
     <string name="fix_every_book">every book</string>
     <string name="fix_this_book_short">this book</string>
     <string name="fix_rule">%1$s → %2$s (%3$s)</string>
+    <string name="settings_group_pronunciation">Pronunciation</string>
+    <string name="settings_pronunciation_title">Words in every book</string>
+    <string name="settings_pronunciation_body">Fix how a word sounds in every book. A fix for one book is made from a sentence\'s menu.</string>
+    <string name="pronunciation_save_failed">Couldn\'t save the fix. Try again.</string>
     <string name="notes_delete">Delete</string>
     <string name="notes_done">Done</string>
     <string name="notes_ok">OK</string>
@@ -488,6 +494,11 @@
     <string name="storage_ocr">Text recognition for scanned pages</string>
     <string name="storage_punctuation">Punctuation model</string>
     <string name="storage_page_pictures">Page pictures (scrubber)</string>
+    <string name="storage_voice_commands">Voice commands model</string>
+    <string name="storage_ocr_text">Text read from scanned pages</string>
+    <string name="storage_covers">Book covers</string>
+    <string name="storage_voice_blends">Narrator blends</string>
+    <string name="storage_shared_pdfs">PDFs shared to Audora</string>
     <string name="storage_measuring">Measuring…</string>
     <string name="storage_measure_failed">Couldn\'t measure</string>
     <string name="storage_free_failed">Couldn\'t free %1$s. Try again.</string>

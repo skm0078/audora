@@ -26,4 +26,13 @@ object PendingIntentCodes {
 
     /** The same notification's Stop listening (a service intent). */
     const val STOP_SCREEN_OFF_LISTENING = 5
+
+    /** The resume widget's body: open Audora. */
+    const val OPEN_FROM_WIDGET = 10
+
+    /** The resume widget's Resume: open the last book and read on. */
+    const val RESUME_FROM_WIDGET = 11
+
+    /** The Quick Settings tile (plan item 36), on Android 14 and later: open Audora on the last book. */
+    const val OPEN_FROM_TILE = 12
 }

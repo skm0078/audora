@@ -4,7 +4,7 @@
 
 package io.github.skm0078.audora.ui.storage
 
-import io.github.skm0078.audora.speech.ocr.OcrModelsState
+import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.speech.voices.VoiceStatus
 import java.io.File
@@ -28,7 +28,39 @@ enum class StorageAction {
  */
 data class StorageRow(val kind: StorageKind, val bytes: Long?, val action: StorageAction?, val failed: Boolean = false)
 
-enum class StorageKind { VOICES, OCR, PUNCTUATION, PAGE_PICTURES }
+/** Which data a row is; the order is the screen's: downloads first, then caches, then the copies books keep. */
+enum class StorageKind {
+    VOICES,
+    OCR,
+    PUNCTUATION,
+    VOICE_COMMANDS,
+    PAGE_PICTURES,
+    OCR_TEXT,
+    COVERS,
+    VOICE_BLENDS,
+    SHARED_PDFS,
+}
+
+/**
+ * What freeing each kind does. A shared PDF's copy has none: it is the book itself (a PDF shared from an app that
+ * would not let Audora open it again) and goes when its book is removed.
+ */
+fun actionOf(kind: StorageKind): StorageAction? = when (kind) {
+    StorageKind.VOICES -> StorageAction.MANAGE_VOICES
+
+    StorageKind.OCR, StorageKind.PUNCTUATION, StorageKind.VOICE_COMMANDS -> StorageAction.DELETE
+
+    StorageKind.PAGE_PICTURES, StorageKind.OCR_TEXT, StorageKind.COVERS, StorageKind.VOICE_BLENDS ->
+        StorageAction.CLEAR
+
+    StorageKind.SHARED_PDFS -> null
+}
+
+/**
+ * How one kind of data is measured and, unless its row is size only, freed. Both are the owner's own calls and
+ * switch to a background thread themselves.
+ */
+class StorageOwner(val measure: suspend () -> Long, val free: (suspend () -> Outcome<Unit, String>)? = null)
 
 /** The rows' total, counting only the measured ones. */
 fun storageTotal(rows: List<StorageRow>): Long = rows.sumOf { it.bytes ?: 0L }
@@ -37,25 +69,20 @@ fun storageTotal(rows: List<StorageRow>): Long = rows.sumOf { it.bytes ?: 0L }
 fun directoryBytes(dir: File): Long = dir.walkBottomUp().filter { it.isFile }.sumOf { it.length() }
 
 /**
- * The screen's rows from what each owner reports: downloaded voices (the built-in one is part of the app), the OCR
- * and punctuation packs when present, and the page pictures cache. Null inputs are still loading, unless their kind
- * is in [failed]: its owner could not report a size.
+ * The screen's rows from what each owner reports: downloaded voices (the built-in one is part of the app) and every
+ * other kind's size on disk as measured into [sizes]. A model pack counts what is on disk, so a half-finished
+ * download shows and can be deleted too. Null [voices] and a kind missing from [sizes] are still measuring, unless
+ * the kind is in [failed]: its owner could not report a size.
  */
 fun storageRows(
     voices: List<VoiceRow>?,
-    ocr: OcrModelsState?,
-    punctuation: OcrModelsState?,
-    pagePictures: Long?,
+    sizes: Map<StorageKind, Long>,
     failed: Set<StorageKind> = emptySet(),
-): List<StorageRow> = listOf(
-    StorageRow(StorageKind.VOICES, voices?.let(::downloadedVoiceBytes), StorageAction.MANAGE_VOICES),
-    StorageRow(StorageKind.OCR, ocr?.let(::packBytes), StorageAction.DELETE),
-    StorageRow(StorageKind.PUNCTUATION, punctuation?.let(::packBytes), StorageAction.DELETE),
-    StorageRow(StorageKind.PAGE_PICTURES, pagePictures, StorageAction.CLEAR),
-).map { row -> if (row.bytes == null && row.kind in failed) row.copy(failed = true) else row }
+): List<StorageRow> = StorageKind.entries.map { kind ->
+    val bytes = if (kind == StorageKind.VOICES) voices?.let(::downloadedVoiceBytes) else sizes[kind]
+    StorageRow(kind, bytes, actionOf(kind), failed = bytes == null && kind in failed)
+}
 
 private fun downloadedVoiceBytes(rows: List<VoiceRow>): Long = rows
     .filter { it.status == VoiceStatus.Installed || it.status == VoiceStatus.UpdateAvailable }
     .sumOf { it.sizeBytes }
-
-private fun packBytes(state: OcrModelsState): Long = (state as? OcrModelsState.Ready)?.bytes ?: 0L

@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -56,8 +55,8 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.library.LibraryQuery
-import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
@@ -69,7 +68,6 @@ import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.BookmarkStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.result.Outcome
-import io.github.skm0078.audora.core.result.errorOrNull
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.diagnostics.LogSharer
@@ -83,11 +81,16 @@ import io.github.skm0078.audora.playback.book.ReadingTextPreferences
 import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.export.AudiobookExport
+import io.github.skm0078.audora.playback.ocr.OcrTextCacheFiles
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
+import io.github.skm0078.audora.speech.SpeechEngines
 import io.github.skm0078.audora.speech.kws.VoiceCommandModels
+import io.github.skm0078.audora.speech.kws.sizeOnDisk
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
+import io.github.skm0078.audora.speech.ocr.sizeOnDisk
 import io.github.skm0078.audora.speech.punct.PunctuationModels
+import io.github.skm0078.audora.speech.punct.sizeOnDisk
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.ui.AppDestination
 import io.github.skm0078.audora.ui.AppTab
@@ -126,12 +129,12 @@ import io.github.skm0078.audora.ui.reader.KeepScreenOn
 import io.github.skm0078.audora.ui.reader.LibraryReaderBooks
 import io.github.skm0078.audora.ui.reader.LocatorReaderResume
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
-import io.github.skm0078.audora.ui.reader.ParagraphSkipNotice
-import io.github.skm0078.audora.ui.reader.PlayerConnectionEffect
 import io.github.skm0078.audora.ui.reader.NotesState
 import io.github.skm0078.audora.ui.reader.PREVIEW_WIDTH
 import io.github.skm0078.audora.ui.reader.PageThumbnails
+import io.github.skm0078.audora.ui.reader.ParagraphSkipNotice
 import io.github.skm0078.audora.ui.reader.PlaybackPort
+import io.github.skm0078.audora.ui.reader.PlayerConnectionEffect
 import io.github.skm0078.audora.ui.reader.PlayerScreen
 import io.github.skm0078.audora.ui.reader.ReaderActions
 import io.github.skm0078.audora.ui.reader.ReaderDocumentOpener
@@ -149,17 +152,16 @@ import io.github.skm0078.audora.ui.reader.ViewPreference
 import io.github.skm0078.audora.ui.reader.VolumeKeySkips
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.reader.rememberSpokenWord
-import io.github.skm0078.audora.ui.settings.OcrModelsAction
 import io.github.skm0078.audora.ui.settings.SettingsScreen
+import io.github.skm0078.audora.ui.settings.rememberPronunciationSettings
 import io.github.skm0078.audora.ui.settings.rememberVoiceCommandsSettings
 import io.github.skm0078.audora.ui.settings.runModelAction
 import io.github.skm0078.audora.ui.shell.AppShell
 import io.github.skm0078.audora.ui.shell.ReadableWidth
 import io.github.skm0078.audora.ui.storage.StorageKind
-import io.github.skm0078.audora.ui.storage.StorageScreen
+import io.github.skm0078.audora.ui.storage.StorageOwner
+import io.github.skm0078.audora.ui.storage.StorageRoute
 import io.github.skm0078.audora.ui.storage.directoryBytes
-import io.github.skm0078.audora.ui.storage.kindLabel
-import io.github.skm0078.audora.ui.storage.storageRows
 import io.github.skm0078.audora.ui.theme.Appearance
 import io.github.skm0078.audora.ui.theme.AppearancePreferences
 import io.github.skm0078.audora.ui.theme.AudoraTheme
@@ -177,7 +179,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -442,6 +443,8 @@ class MainActivity : ComponentActivity() {
 
             AppDestination.Storage -> ReadableWidth {
                 StorageRoute(
+                    voices = remember { voiceManager.rows() },
+                    owners = remember { storageOwners() },
                     onOpenVoices = { nav.navigate(AppDestination.Voices(fromStorage = true)) },
                     onBack = { nav.navigate(AppDestination.Settings) },
                 )
@@ -590,11 +593,7 @@ class MainActivity : ComponentActivity() {
             },
             ocrModels = ocrState,
             onOcrModels = { action ->
-                when (action) {
-                    OcrModelsAction.DOWNLOAD -> ocrModels.download()
-                    OcrModelsAction.CANCEL -> ocrModels.cancel()
-                    OcrModelsAction.DELETE -> scope.launch { ocrModels.delete() }
-                }
+                scope.runModelAction(action, ocrModels::download, ocrModels::cancel) { ocrModels.delete() }
             },
             skipCitations = skipCitations,
             onSkipCitationsChange = { skip ->
@@ -615,6 +614,7 @@ class MainActivity : ComponentActivity() {
                 }
             },
             voiceCommands = rememberVoiceCommandsSettings(voiceCommandModels, screenPreference),
+            pronunciation = rememberPronunciationSettings(pronunciationStore),
             appearance = appearance,
             onAppearanceChange = { changed -> scope.launch { appearancePreferences.save(changed) } },
             onKidsMode = onKidsMode,
@@ -729,55 +729,29 @@ class MainActivity : ComponentActivity() {
             override fun onMessageShown() = controller.messageShown()
         }
 
-    /**
-     * Settings → Storage (UI plan): sizes from each owner (voices, the model packs) and the page pictures folder,
-     * measured off the main thread and again after a clear; each row frees space through its owner's own call.
-     */
-    @Composable
-    private fun StorageRoute(onOpenVoices: () -> Unit, onBack: () -> Unit) {
-        val scope = rememberCoroutineScope()
-        val snackbar = remember { SnackbarHostState() }
-        // Each owner's size is read on its own; one that throws is logged and its row says so, the rest still show.
-        var failed by remember { mutableStateOf(emptySet<StorageKind>()) }
-        fun <T> Flow<T>.orFailed(kind: StorageKind): Flow<T> = loggingFailures(STORAGE_TAG, "the size of $kind") {
-            failed = failed + kind
-        }
-        val voiceRows by remember { voiceManager.rows().orFailed(StorageKind.VOICES) }
-            .collectAsStateWithLifecycle(initialValue = null)
-        val ocr by remember { ocrModels.state().orFailed(StorageKind.OCR) }
-            .collectAsStateWithLifecycle(initialValue = null)
-        val punctuation by remember { punctuationModels.state().orFailed(StorageKind.PUNCTUATION) }
-            .collectAsStateWithLifecycle(initialValue = null)
-        val pictures = remember { File(cacheDir, THUMBNAILS_DIR) }
-        var pictureBytes by remember { mutableStateOf<Long?>(null) }
-        LaunchedEffect(pictures) { pictureBytes = withContext(Dispatchers.IO) { directoryBytes(pictures) } }
-        // A failed delete is logged with what failed and told to the listener; the row keeps its size.
-        val freed: suspend (StorageKind, Outcome<Unit, String>) -> Unit = { kind, outcome ->
-            outcome.errorOrNull()?.let { error ->
-                AudoraLog.w(STORAGE_TAG, "Could not free $kind: $error")
-                snackbar.showSnackbar(getString(R.string.storage_free_failed, getString(kindLabel(kind))))
-            }
-        }
-        StorageScreen(
-            rows = storageRows(voiceRows, ocr, punctuation, pictureBytes, failed),
-            onAction = { row ->
-                when (row.kind) {
-                    StorageKind.VOICES -> onOpenVoices()
-
-                    StorageKind.OCR -> scope.launch { freed(row.kind, ocrModels.delete()) }
-
-                    StorageKind.PUNCTUATION -> scope.launch { freed(row.kind, punctuationModels.delete()) }
-
-                    StorageKind.PAGE_PICTURES -> scope.launch {
-                        val cleared = withContext(Dispatchers.IO) { pictures.deleteRecursively() }
-                        pictureBytes = withContext(Dispatchers.IO) { directoryBytes(pictures) }
-                        val outcome = if (cleared) Outcome.Success(Unit) else Outcome.Failure("files left behind")
-                        freed(row.kind, outcome)
-                    }
-                }
-            },
-            onBack = onBack,
-            snackbar = snackbar,
+    /** Settings → Storage (UI plan): each kind's size and free call, from the owner that keeps it. */
+    private fun storageOwners(): Map<StorageKind, StorageOwner> {
+        val context = applicationContext
+        val pictures = File(cacheDir, THUMBNAILS_DIR)
+        return mapOf(
+            StorageKind.OCR to StorageOwner({ ocrModels.sizeOnDisk() }, ocrModels::delete),
+            StorageKind.PUNCTUATION to StorageOwner({ punctuationModels.sizeOnDisk() }, punctuationModels::delete),
+            StorageKind.VOICE_COMMANDS to StorageOwner({ voiceCommandModels.sizeOnDisk() }, voiceCommandModels::delete),
+            StorageKind.PAGE_PICTURES to StorageOwner(
+                measure = { withContext(Dispatchers.IO) { directoryBytes(pictures) } },
+                free = {
+                    val cleared = withContext(Dispatchers.IO) { pictures.deleteRecursively() }
+                    if (cleared) Outcome.Success(Unit) else Outcome.Failure("files left behind")
+                },
+            ),
+            StorageKind.OCR_TEXT to
+                StorageOwner({ OcrTextCacheFiles.sizeBytes(context) }, { OcrTextCacheFiles.clear(context) }),
+            StorageKind.COVERS to StorageOwner(bookCovers::sizeBytes, bookCovers::clear),
+            StorageKind.VOICE_BLENDS to StorageOwner(
+                measure = { SpeechEngines.blendCacheBytes(context) },
+                free = { SpeechEngines.clearBlendCache(context) },
+            ),
+            StorageKind.SHARED_PDFS to StorageOwner(sharedCopies::sizeBytes),
         )
     }
 
@@ -847,21 +821,7 @@ class MainActivity : ComponentActivity() {
         // The reader and the player share the model, so back must follow the screen now shown, not the first one.
         val back by rememberUpdatedState(onBack)
         val actions = remember(model) { readerActions(model, notes, playWithPermission) { back() } }
-        val keepScreenOn by remember {
-            screenPreference.keepScreenOn()
-        }.collectAsStateWithLifecycle(initialValue = false)
-        // While this book's screen animates out, the arriving screen owns the window's flag and keys.
-        val shown = !isLeavingScreen()
-        KeepScreenOn(shown && keepScreenOn && state.playback.wantsToPlay)
-        val volumeKeys by remember { screenPreference.volumeKeysSkip() }.collectAsStateWithLifecycle(false)
-        VolumeKeySkips(shown && volumeKeys && state.playback.wantsToPlay, model::skipForward, model::skipBack)
-        // One of each at a time: a book screen leaving in a transition lets go of the microphone and the notice at once.
-        if (shown) {
-            ParagraphSkipNotice(state.skipRefused, model::skipRefusalShown)
-            ReaderVoiceCommands(model, screenPreference, voiceCommandModels, readerConfig) {
-                listeningInBackground.value = it
-            }
-        }
+        BookWindowEffects(model, state, listeningInBackground)
         val opened = state.document is DocumentState.Open
         LaunchedEffect(model, opened, openBookmark) {
             if (opened && openBookmark != null) {
@@ -871,6 +831,25 @@ class MainActivity : ComponentActivity() {
         }
         val screen = BookScreen(target, books, onShowPage, onOtherBookPlaying)
         ReaderContent(screen, state, actions, ocrState, notesState, notes, voiceRows, port, thumbs)
+    }
+
+    /**
+     * What this book's screen holds outside its own layout: the screen kept on, the volume keys, the paragraph-skip
+     * notice and the voice-command microphone. While the screen animates out, the arriving one owns them all, so a
+     * transition never keeps the screen on twice, shows two notices or opens two microphones.
+     */
+    @Composable
+    private fun BookWindowEffects(model: ReaderModel, state: ReaderState, listening: MutableStateFlow<Boolean>) {
+        val shown = !isLeavingScreen()
+        val playing = shown && state.playback.wantsToPlay
+        val keepScreenOn by remember { screenPreference.keepScreenOn() }.collectAsStateWithLifecycle(false)
+        KeepScreenOn(playing && keepScreenOn)
+        val volumeKeys by remember { screenPreference.volumeKeysSkip() }.collectAsStateWithLifecycle(false)
+        VolumeKeySkips(playing && volumeKeys, model::skipForward, model::skipBack)
+        if (shown) {
+            ParagraphSkipNotice(state.skipRefused, model::skipRefusalShown)
+            ReaderVoiceCommands(model, screenPreference, voiceCommandModels, readerConfig) { listening.value = it }
+        }
     }
 
     /** The book's page pictures for the scrubber (plan item 17), drawn by its reader model. */
@@ -1013,6 +992,10 @@ class MainActivity : ComponentActivity() {
         override fun onSkipBack() = model.skipBack()
 
         override fun onSkipForward() = model.skipForward()
+
+        override fun onSkipParagraph(forward: Boolean) = model.skipParagraph(forward)
+
+        override fun onReplayPrevious() = model.replayPrevious()
 
         override fun onSpeed(speed: Float) = model.setSpeed(speed)
 
@@ -1171,7 +1154,6 @@ private fun SharedPdfEffect(
     }
 }
 
-private const val STORAGE_TAG = "Audora.Storage"
 private const val SETTINGS_TAG = "Audora.Settings"
 private const val READER_TAG = "Audora.Reader"
 

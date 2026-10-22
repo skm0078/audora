@@ -74,6 +74,7 @@ fun SettingsScreen(
     onLanguageChange: (AppLanguage) -> Unit = {},
     onOpenStorage: () -> Unit = {},
     voiceCommands: VoiceCommandsSettings? = null,
+    pronunciation: PronunciationSettings? = null,
 ) {
     Column(
         modifier = modifier
@@ -100,6 +101,7 @@ fun SettingsScreen(
             ReaderSwitches(keepScreenOn, onKeepScreenOnChange, volumeKeysSkip, onVolumeKeysSkipChange)
             voiceCommands?.let { VoiceCommandsItems(it) }
         }
+        pronunciation?.let { PronunciationGroup(it) }
         AppearanceGroup(appearance, onAppearanceChange, language, onLanguageChange)
         AppGroup(
             AppLinks(onOpenBatterySetup, onShareLogs, onOpenLicences, onKidsMode, onOpenStorage),

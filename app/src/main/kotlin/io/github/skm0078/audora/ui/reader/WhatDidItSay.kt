@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/WhatDidItSay.kt
-// Purpose: "What did it say?" (plan item 5): one tap replays the last sentence slower, shows it, then carries on.
+// Purpose: "What did it say?" (plan item 5): one tap has the player replay the last sentence slower and shows it.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -15,37 +15,29 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import io.github.skm0078.audora.R
-import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.ui.theme.Dimens
 
 /**
- * A replay in progress: [unit] plays at [replaySpeed], then the listener's [restoreSpeed] comes back.
+ * A replay in progress: the player service reads [unit] again a little slower, then reads on at the listener's speed
+ * (ReaderModel.replayPrevious); this only follows it, to show the sentence while it plays.
  *
  * @property from where reading was when the button was tapped; a move anywhere else before the replay starts (a tap
  *   on another sentence, a page turn) cancels it.
  * @property started the player has reached [unit].
  */
-internal data class Replay(
-    val unit: ReadingUnit,
-    val from: ReadingPosition?,
-    val restoreSpeed: Float,
-    val replaySpeed: Float,
-    val started: Boolean = false,
-) {
-    /** The replay after the player moved to [position]; null once it is over (or cancelled) and the speed returns. */
+internal data class Replay(val unit: ReadingUnit, val from: ReadingPosition?, val started: Boolean = false) {
+    /** The replay after the player moved to [position]; null once it is over (or cancelled). */
     fun advance(position: ReadingPosition?): Replay? {
         val inside = position != null && position.page == unit.page &&
             position.charStart in unit.charStart until unit.charEnd
@@ -59,22 +51,15 @@ internal data class Replay(
 
     companion object {
         /**
-         * The replay for a tap while [spokenIndex] of [units] is read: the sentence before it, which the listener
-         * just heard (the one being read follows anyway), or the spoken one at the top of a page. A unit with no
-         * text (a continued table's summary) is passed over: it would replay nothing. Null when nothing is being read
-         * on the page.
+         * The sentence the player replays for a tap while [spokenIndex] of [units] is read: the one before it, which
+         * the listener just heard. A unit with no length (charEnd == charStart, a continued table's summary) is passed
+         * over, as the player never plays one. Null when nothing is being read, or at the top of the page: the
+         * player then replays the previous page's last sentence, and the card stays away rather than show the wrong
+         * one.
          */
-        fun start(
-            units: List<ReadingUnit>,
-            spokenIndex: Int?,
-            from: ReadingPosition?,
-            speed: Float,
-            config: ReaderConfig,
-        ): Replay? {
-            val unit = spokenIndex?.let { spoken ->
-                units.take(spoken).lastOrNull { it.text.isNotBlank() } ?: units.getOrNull(spoken)
-            } ?: return null
-            return Replay(unit, from, restoreSpeed = speed, replaySpeed = config.nearestSpeed(speed * REPLAY_FACTOR))
+        fun start(units: List<ReadingUnit>, spokenIndex: Int?, from: ReadingPosition?): Replay? {
+            val unit = spokenIndex?.let { spoken -> units.take(spoken).lastOrNull { it.charEnd > it.charStart } }
+            return unit?.let { Replay(it, from) }
         }
     }
 }
@@ -83,34 +68,18 @@ internal data class Replay(
 @Stable
 internal class WhatDidItSayState(val replaying: ReadingUnit?, val onTap: (() -> Unit)?)
 
-/**
- * Drives one replay at a time: slows the voice, reads the sentence, and restores the speed when the player moves on,
- * when the replay is cancelled, or when the player closes. The speed is left alone if the listener changed it
- * meanwhile.
- */
+/** Shows one replay at a time: from the tap until the player moves on from the replayed sentence (or elsewhere). */
 @Composable
-internal fun rememberWhatDidItSay(state: ReaderState, config: ReaderConfig, actions: ReaderActions): WhatDidItSayState {
+internal fun rememberWhatDidItSay(state: ReaderState, actions: ReaderActions): WhatDidItSayState {
     var replay by remember { mutableStateOf<Replay?>(null) }
-    val currentSpeed by rememberUpdatedState(state.playback.speed)
-    val currentActions by rememberUpdatedState(actions)
-    fun finish(over: Replay) {
-        if (currentSpeed == over.replaySpeed) currentActions.onSpeed(over.restoreSpeed)
-    }
     LaunchedEffect(state.readingPosition) {
-        val before = replay ?: return@LaunchedEffect
-        val after = before.advance(state.readingPosition)
-        replay = after
-        if (after == null) finish(before)
+        replay = replay?.advance(state.readingPosition)
     }
-    DisposableEffect(Unit) { onDispose { replay?.let(::finish) } }
     val units = (state.content as? PageContent.Ready)?.units.orEmpty()
     val canStart = replay == null && state.playerReady && state.spokenUnitIndex != null
     val tap: () -> Unit = {
-        Replay.start(units, state.spokenUnitIndex, state.readingPosition, state.playback.speed, config)?.let {
-            replay = it
-            actions.onSpeed(it.replaySpeed)
-            actions.onSentenceTapped(it.unit)
-        }
+        replay = Replay.start(units, state.spokenUnitIndex, state.readingPosition)
+        actions.onReplayPrevious()
     }
     return WhatDidItSayState(replaying = replay?.unit, onTap = tap.takeIf { canStart })
 }
@@ -143,6 +112,3 @@ internal fun WhatDidItSay(control: WhatDidItSayState) {
         }
     }
 }
-
-/** How much slower the replay reads than the listener's speed (plan item 5). */
-internal const val REPLAY_FACTOR = 0.85f

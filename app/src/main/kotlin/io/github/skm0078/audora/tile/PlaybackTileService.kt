@@ -12,6 +12,7 @@ import android.service.quicksettings.TileService
 import io.github.skm0078.audora.MainActivity
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.playback.contract.PendingIntentCodes
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
 import io.github.skm0078.audora.widget.ResumeWidgetProvider
@@ -100,7 +101,7 @@ class PlaybackTileService : TileService() {
             startActivityAndCollapse(
                 PendingIntent.getActivity(
                     this,
-                    0,
+                    PendingIntentCodes.OPEN_FROM_TILE,
                     intent,
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                 ),

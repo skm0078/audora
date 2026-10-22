@@ -65,6 +65,12 @@ interface ReaderActions {
 
     fun onSkipForward()
 
+    /** Long-press on next / previous: a paragraph on, or back. */
+    fun onSkipParagraph(forward: Boolean) = Unit
+
+    /** "What did it say?" (plan item 5): the sentence just heard again, a little slower. */
+    fun onReplayPrevious() = Unit
+
     fun onSpeed(speed: Float)
 
     fun onPace(pace: Pace) = Unit

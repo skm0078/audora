@@ -91,6 +91,8 @@
     <string name="reader_pause">পজ</string>
     <string name="reader_skip_back">আগের বাক্য</string>
     <string name="reader_skip_forward">পরের বাক্য</string>
+    <string name="reader_paragraph_back">আগের অনুচ্ছেদ</string>
+    <string name="reader_paragraph_forward">পরের অনুচ্ছেদ</string>
     <string name="reader_speed">গতি %1$s×</string>
     <string name="speech_sheet_speed">গতি %1$s×</string>
     <string name="speech_sheet_slower">ধীরে</string>
@@ -171,6 +173,10 @@
     <string name="fix_every_book">সব বই</string>
     <string name="fix_this_book_short">এই বই</string>
     <string name="fix_rule">%1$s → %2$s (%3$s)</string>
+    <string name="settings_group_pronunciation">উচ্চারণ</string>
+    <string name="settings_pronunciation_title">সব বইয়ের শব্দ</string>
+    <string name="settings_pronunciation_body">সব বইয়ে একটি শব্দের উচ্চারণ ঠিক করুন। শুধু একটি বইয়ের জন্য সংশোধন কোনো বাক্যের মেনু থেকে করুন।</string>
+    <string name="pronunciation_save_failed">সংশোধনটি সেভ হয়নি। আবার চেষ্টা করুন।</string>
     <string name="notes_delete">মুছুন</string>
     <string name="notes_done">হয়ে গেছে</string>
     <string name="notes_ok">ঠিক আছে</string>
@@ -488,6 +494,11 @@
     <string name="storage_ocr">স্ক্যান করা পৃষ্ঠার লেখা চেনা</string>
     <string name="storage_punctuation">যতিচিহ্ন মডেল</string>
     <string name="storage_page_pictures">পৃষ্ঠার ছবি (স্ক্রাবার)</string>
+    <string name="storage_voice_commands">ভয়েস কমান্ড মডেল</string>
+    <string name="storage_ocr_text">স্ক্যান করা পৃষ্ঠা থেকে পড়া লেখা</string>
+    <string name="storage_covers">বইয়ের প্রচ্ছদ</string>
+    <string name="storage_voice_blends">ন্যারেটরের মেশানো ভয়েস</string>
+    <string name="storage_shared_pdfs">Audora-তে শেয়ার করা PDF</string>
     <string name="storage_measuring">মাপা হচ্ছে…</string>
     <string name="storage_measure_failed">মাপা গেল না</string>
     <string name="storage_free_failed">%1$s খালি করা গেল না। আবার চেষ্টা করুন।</string>

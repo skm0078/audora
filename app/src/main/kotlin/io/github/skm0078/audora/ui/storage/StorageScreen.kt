@@ -137,7 +137,12 @@ internal fun kindLabel(kind: StorageKind): Int = when (kind) {
     StorageKind.VOICES -> R.string.storage_voices
     StorageKind.OCR -> R.string.storage_ocr
     StorageKind.PUNCTUATION -> R.string.storage_punctuation
+    StorageKind.VOICE_COMMANDS -> R.string.storage_voice_commands
     StorageKind.PAGE_PICTURES -> R.string.storage_page_pictures
+    StorageKind.OCR_TEXT -> R.string.storage_ocr_text
+    StorageKind.COVERS -> R.string.storage_covers
+    StorageKind.VOICE_BLENDS -> R.string.storage_voice_blends
+    StorageKind.SHARED_PDFS -> R.string.storage_shared_pdfs
 }
 
 @StringRes

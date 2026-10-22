@@ -6,7 +6,6 @@ package io.github.skm0078.audora.ui.storage
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
-import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.speech.voices.VoiceStatus
@@ -20,31 +19,48 @@ class StorageRowsTest {
         VoiceRow(VoiceId(EngineId.SHERPA, name), name, Lang.HI, "MIT", bytes, kind, status, readsLanguage = false)
 
     @Test
-    fun `counts downloaded voices and ready packs only`() {
+    fun `counts downloaded voices and every measured kind`() {
         val voices = listOf(
             voice("built-in", 60L, VoiceStatus.BuiltIn, VoiceKind.BUILT_IN),
             voice("installed", 100L, VoiceStatus.Installed),
             voice("old", 50L, VoiceStatus.UpdateAvailable),
             voice("not-yet", 70L, VoiceStatus.NotDownloaded),
         )
-        val rows = storageRows(voices, OcrModelsState.Ready(30L), OcrModelsState.NotDownloaded(9L), 5L)
-        assertEquals(listOf(150L, 30L, 0L, 5L), rows.map { it.bytes })
-        assertEquals(185L, storageTotal(rows))
+        val sizes = StorageKind.entries.filter { it != StorageKind.VOICES }.associateWith { 1L }
+        val rows = storageRows(voices, sizes)
+        assertEquals(StorageKind.entries, rows.map { it.kind })
+        assertEquals(150L, rows.first().bytes)
+        assertEquals(150L + sizes.size, storageTotal(rows))
+    }
+
+    @Test
+    fun `models are deleted, caches cleared, and a shared PDF's copy only sized`() {
+        val actions = storageRows(null, emptyMap()).associate { it.kind to it.action }
+        assertEquals(StorageAction.MANAGE_VOICES, actions[StorageKind.VOICES])
+        listOf(StorageKind.OCR, StorageKind.PUNCTUATION, StorageKind.VOICE_COMMANDS).forEach {
+            assertEquals("$it", StorageAction.DELETE, actions[it])
+        }
+        listOf(StorageKind.PAGE_PICTURES, StorageKind.OCR_TEXT, StorageKind.COVERS, StorageKind.VOICE_BLENDS).forEach {
+            assertEquals("$it", StorageAction.CLEAR, actions[it])
+        }
+        assertNull(actions[StorageKind.SHARED_PDFS])
     }
 
     @Test
     fun `an owner that failed says so, one still loading does not`() {
-        val rows = storageRows(null, null, null, 5L, failed = setOf(StorageKind.VOICES, StorageKind.OCR))
-        assertEquals(
-            listOf(true, true, false, false),
-            rows.map { it.failed },
+        val rows = storageRows(
+            null,
+            mapOf(StorageKind.PAGE_PICTURES to 5L),
+            failed = setOf(StorageKind.VOICES, StorageKind.OCR),
         )
+        val failed = rows.filter { it.failed }.map { it.kind }
+        assertEquals(listOf(StorageKind.VOICES, StorageKind.OCR), failed)
         assertEquals(5L, storageTotal(rows))
     }
 
     @Test
     fun `a size that arrives after all is shown, not the failure`() {
-        val rows = storageRows(null, OcrModelsState.Ready(3L), null, null, failed = setOf(StorageKind.OCR))
+        val rows = storageRows(null, mapOf(StorageKind.OCR to 3L), failed = setOf(StorageKind.OCR))
         val ocr = rows.first { it.kind == StorageKind.OCR }
         assertEquals(3L, ocr.bytes)
         assertEquals(false, ocr.failed)
@@ -52,8 +68,9 @@ class StorageRowsTest {
 
     @Test
     fun `rows still loading are measuring and leave the total`() {
-        val rows = storageRows(null, null, OcrModelsState.Ready(4L), null)
+        val rows = storageRows(null, mapOf(StorageKind.PUNCTUATION to 4L))
         assertNull(rows.first { it.kind == StorageKind.VOICES }.bytes)
+        assertNull(rows.first { it.kind == StorageKind.COVERS }.bytes)
         assertEquals(4L, storageTotal(rows))
     }
 

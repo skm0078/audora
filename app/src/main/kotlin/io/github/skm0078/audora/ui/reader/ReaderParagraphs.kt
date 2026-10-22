@@ -60,8 +60,8 @@ internal fun paragraphs(
 }
 
 /**
- * Indices of the [units] the text view draws: every one with text. A continued table opens with a summary unit that
- * has none (playback speaks "Table continues" from its table info); drawn, it would be a blank row.
+ * Indices of the [units] the text view draws: every one with text. A table summary with no length (charEnd ==
+ * charStart, empty text; playback speaks it from its table info) is left out: drawn, it would be a blank row.
  */
 internal fun drawnUnits(units: List<ReadingUnit>): List<Int> = units.indices.filter { units[it].text.isNotBlank() }
 

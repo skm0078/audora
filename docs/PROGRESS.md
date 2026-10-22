@@ -2,6 +2,14 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## UI pass landing on the player pack (2026-10-22, ADR-036 §11-12)
+- **What did it say? (5):** now the player's own replay (`ReaderModel.replayPrevious`, `ReaderConfig.replayFactor`): the speed is never saved, which closes the known gap; the card follows the replayed sentence.
+- **Paragraph skip:** long-press on next or previous sentence skips a paragraph; the pack's notice says when there is none that way.
+- **Word highlight (14):** the timing is matched on the unit index too, so a continued table's empty summary never takes its first row's highlight.
+- **Storage:** adds the voice-command model, the scanned pages' text, book covers, narrator blends and shared PDF copies (size only); model packs count what is on disk.
+- **Settings → Pronunciation (1):** the every-book fixes, added and removed in one dialog; a book's own fixes stay in its sentence menu.
+- **Widget and tile:** request codes moved into `PendingIntentCodes` (10-12).
+
 ## UI wave 5 — predictive back, cover into the player, large screens, edge to edge, accessibility (UI plan Look and feel, targetSdk 36 pass; 2026-10-17, ADR-036 consequences)
 - **Predictive back:** a back swipe on the reader, player and Settings pages shrinks the screen and shows where back leads; letting go finishes, cancelling springs back (`AnimatedScreens`). Every screen change animates.
 - **Cover into the player:** the mini player's cover grows into the full player's (`sharedCover`).

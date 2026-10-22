@@ -10,6 +10,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameMillis
+import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.playback.contract.SentenceTiming
 
 /**
@@ -32,14 +33,14 @@ internal fun spokenWord(text: String, fraction: Float?): IntRange? {
 }
 
 /**
- * How far the voice is through the speech of the sentence at [position], from the player's [positionMs] in its clip;
- * null when [timing] belongs to another sentence (or none is known yet) and during a cue before the voice.
+ * How far the voice is through the speech of [unit], from the player's [positionMs] in its clip; null when [timing]
+ * belongs to another sentence (or none is known yet) and during a cue before the voice. The unit's index is matched
+ * too: a continued table's summary has no length (charEnd == charStart) and shares its first row's charStart.
  */
-internal fun speechFraction(timing: SentenceTiming?, position: ReadingPosition?, positionMs: Long?): Float? {
+internal fun speechFraction(timing: SentenceTiming?, unit: ReadingUnit?, positionMs: Long?): Float? {
     val ms = positionMs ?: return null
     val sameSentence = timing?.takeIf {
-        position != null && it.page == position.page &&
-            it.charStart == position.charStart
+        unit != null && it.page == unit.page && it.charStart == unit.charStart && it.unitIndex == unit.index
     }
     return sameSentence?.takeIf { ms >= it.leadMs && it.speechMs > 0 }?.speechFraction(ms)
 }
@@ -60,7 +61,7 @@ internal fun rememberSpokenWord(state: ReaderState, port: PlaybackPort, enabled:
         if (!active || unit == null) return@LaunchedEffect
         while (true) {
             withFrameMillis {
-                val fraction = speechFraction(playback.sentenceTiming, playback.position, port.positionInSentenceMs())
+                val fraction = speechFraction(playback.sentenceTiming, unit, port.positionInSentenceMs())
                 word.value = spokenWord(unit.text, fraction)
             }
         }

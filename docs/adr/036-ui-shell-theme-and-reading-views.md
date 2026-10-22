@@ -49,17 +49,19 @@ warm "reading lamp" look; this ADR records what was built from them and why.
     (a far one is jumped to, a near one glides). *Follow along* off leaves the text where the listener put it. The
     spoken sentence is marked by a tinted band, an underline or bold type; all three are per listener, in the
     reading look.
-11. **What did it say? (item 5).** In the full player. The sentence just heard (the one before the spoken one, or
-    the spoken one at a page's top) plays again at 0.85× the listener's speed, snapped to a slider step, and its
-    text shows in a card TalkBack announces; reading then carries on into the next sentence. Built on the reader's
-    own actions (speed, read from a sentence), so playback is untouched. The speed comes back when the player moves
-    past the sentence, when the replay is cancelled by a jump elsewhere, or when the player closes, and is left
-    alone if the listener changed it meanwhile. Known gap: the slower speed is saved like any speed change, so if
-    Android kills Audora mid-replay it comes back slower; a speed change that is not saved needs a playback hook.
+11. **What did it say? (item 5).** In the full player. One tap asks the player service to replay the sentence just
+    heard (`ReaderModel.replayPrevious`): it plays again at `ReaderConfig.replayFactor` times the listener's speed,
+    then reading goes on at their speed. Only the player's speed changes, so nothing is saved and leaving or losing
+    the app mid-replay changes nothing. The sentence shows in a card (no live region: the replay is spoken already)
+    until the player moves past it. At a page's top the service replays the previous page's last sentence, and the
+    card stays away rather than show the wrong one. A summary unit with no length (charEnd == charStart) is never
+    shown, as the player never plays one. Long-press on next or previous skips a paragraph
+    (`ReaderModel.skipParagraph`); with none that way the player says so.
 12. **Word highlight, version one (item 14).** Playback publishes each sentence's timing (`SentenceTiming`: cue,
     speech and trailing silence, in the clip's time) and the controller's position in the clip. The reader polls
     that position once a frame while the voice plays, turns it into a share of the speech (`speechFraction`; nothing
-    during a cue, and only for the sentence the timing names), and spreads that share evenly over the sentence's
+    during a cue, and only for the sentence the timing names: page, char start and unit index, since a continued
+    table's empty summary shares its first row's char start), and spreads that share evenly over the sentence's
     non-space characters (`spokenWord`), about ±150 ms off where the voice pauses at commas. Words are what spaces
     separate, so a Hindi or Bengali word is never split inside a conjunct. The reader and the full player both mark
     the word; *Highlight each word* turns it off. Version two would use per-clause timings or the voice's own word
@@ -136,8 +138,10 @@ warm "reading lamp" look; this ADR records what was built from them and why.
   chapter (not in kids mode); a Details sheet from each book's menu gathers its pages, size, dates and actions;
   first-run screens (languages, one voice per language with size and speed, background reading, the first PDF)
   show once to an empty library, and an update with books marks them done unseen; Settings → Storage lists
-  downloaded voices, the OCR and punctuation packs and the page pictures, each freed through its owner's call. The
-  render cache and exports join Storage when playback and studio expose their sizes. No bundled sample PDF.
+  downloaded voices, the OCR, punctuation and voice-command models (what is on disk, so a half download can be
+  deleted too), the page pictures, the scanned pages' text, the book covers, the narrator blends and the copies of
+  PDFs shared to Audora (size only: a copy goes with its book), each freed through its owner's call and measured
+  again after. Studio's data joins Storage when studio lands. No bundled sample PDF.
 - Platform fit: MainActivity is singleTop and the widget body uses the launcher's intent (no second screen); the
   system bar icons follow the app's Light or Dark choice; the full player scrolls below 420 dp of height
   (landscape, large fonts) instead of squeezing the sentence; menu and speech-sheet switches announce their state.

@@ -212,7 +212,7 @@ private fun PlayerPanes(parts: PlayerParts, voices: List<VoiceRow>, spokenWord: 
 private fun ReplayAndProgress(parts: PlayerParts) {
     val state = parts.state
     if (state.document is DocumentState.Open && !LocalKidsMode.current) {
-        WhatDidItSay(rememberWhatDidItSay(state, parts.config, parts.actions))
+        WhatDidItSay(rememberWhatDidItSay(state, parts.actions))
     }
     state.undoJumpTo?.let { target ->
         TextButton(onClick = parts.actions::onUndoJump) {

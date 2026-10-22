@@ -15,6 +15,7 @@ import android.widget.RemoteViews
 import io.github.skm0078.audora.MainActivity
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.playback.contract.PendingIntentCodes
 import kotlin.math.roundToInt
 
 /**
@@ -82,7 +83,7 @@ class ResumeWidgetProvider : AppWidgetProvider() {
         // The launcher's own intent, so a tap brings Audora's task forward instead of stacking a second screen on it.
         private fun openApp(context: Context): PendingIntent = PendingIntent.getActivity(
             context,
-            REQUEST_OPEN,
+            PendingIntentCodes.OPEN_FROM_WIDGET,
             Intent(Intent.ACTION_MAIN)
                 .addCategory(Intent.CATEGORY_LAUNCHER)
                 .setClass(context, MainActivity::class.java)
@@ -93,7 +94,7 @@ class ResumeWidgetProvider : AppWidgetProvider() {
         /** Opens Audora on the book and starts reading it: a tap on Resume is the user's own action. */
         private fun resume(context: Context, book: ResumeWidgetBook): PendingIntent = PendingIntent.getActivity(
             context,
-            REQUEST_RESUME,
+            PendingIntentCodes.RESUME_FROM_WIDGET,
             continueIntent(context, book.bookId),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
@@ -104,8 +105,6 @@ class ResumeWidgetProvider : AppWidgetProvider() {
             .putExtra(EXTRA_BOOK_ID, bookId)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
-        private const val REQUEST_OPEN = 0
-        private const val REQUEST_RESUME = 1
         private const val LOG_ID_LENGTH = 8
     }
 }
