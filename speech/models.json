@@ -54,6 +54,27 @@
       "sizeBytes": 28778024
     },
     {
+      "id": "kitten-en-nano-male",
+      "label": "English, KittenTTS nano, male",
+      "lang": "en",
+      "family": "kitten",
+      "model": "model.int8.onnx",
+      "voices": "voices.bin",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 0,
+      "licence": "KittenTTS v0.8 (Apache-2.0)",
+      "credit": "KittenTTS v0.8 nano by KittenML, male voice expr-voice-2-m. Packaged for sherpa-onnx by k2-fsa; files unchanged.",
+      "licenceUrl": "https://www.apache.org/licenses/LICENSE-2.0",
+      "sourceUrl": "https://github.com/KittenML/KittenTTS",
+      "source": {
+        "archive": "kitten-nano-en-v0_8-int8",
+        "sha256": "6fa5be852612ce761094ba74ee6123b4fc4acfefa79bf64dc63acae4a83af2fd"
+      },
+      "file": "kitten-en-nano-male-9b9a3d2b8697.zip",
+      "sha256": "9b9a3d2b8697fb8d95acc8f41fd0b7ec37b3a8699c72ca31ac3d2520e77a2da0",
+      "sizeBytes": 28778024
+    },
+    {
       "id": "kokoro-en-heart",
       "label": "English (US), Kokoro Heart (premium)",
       "lang": "en",
@@ -73,6 +94,29 @@
         "sha256": "4c3052abaa60943a341f193888cf6abd68787dae6ab8ae5c925a706caa247e4e"
       },
       "file": "kokoro-en-heart-5bade7e6fb72.zip",
+      "sha256": "5bade7e6fb72265288ab73838c93742f44452302fc792d619117b44fc0e9db1d",
+      "sizeBytes": 149491614
+    },
+    {
+      "id": "kokoro-en-michael",
+      "label": "English (US), Kokoro Michael, male (premium)",
+      "lang": "en",
+      "family": "kokoro",
+      "model": "model.int8.onnx",
+      "voices": "voices.bin",
+      "lexicon": "lexicon-us-en.txt",
+      "dataDir": "espeak-ng-data",
+      "speakerId": 16,
+      "engineLang": "en-us",
+      "licence": "Kokoro v1.0 (Apache-2.0)",
+      "credit": "Kokoro-82M v1.0 by hexgrad, voice am_michael. Packaged for sherpa-onnx by k2-fsa (int8); files unchanged.",
+      "licenceUrl": "https://www.apache.org/licenses/LICENSE-2.0",
+      "sourceUrl": "https://huggingface.co/hexgrad/Kokoro-82M",
+      "source": {
+        "archive": "kokoro-int8-multi-lang-v1_0",
+        "sha256": "4c3052abaa60943a341f193888cf6abd68787dae6ab8ae5c925a706caa247e4e"
+      },
+      "file": "kokoro-en-michael-5bade7e6fb72.zip",
       "sha256": "5bade7e6fb72265288ab73838c93742f44452302fc792d619117b44fc0e9db1d",
       "sizeBytes": 149491614
     },
