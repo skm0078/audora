@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -34,12 +37,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.PronunciationRule
+import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.switchRow
 
 /** Top bar: opens the bookmarks sheet; filled while this book has bookmarks. */
 @Composable
@@ -110,8 +116,9 @@ private fun SentenceMenuDialog(rows: List<MenuEntry>, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.sentence_menu_title)) },
         text = {
-            Column {
-                rows.forEach { MenuRow(stringResource(it.label), it.onClick) }
+            // Eight rows with a line each can be taller than a small phone's dialog: it scrolls.
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                rows.forEach { MenuRow(it.label, it.onClick) }
             }
         },
         confirmButton = {},
@@ -119,10 +126,35 @@ private fun SentenceMenuDialog(rows: List<MenuEntry>, onDismiss: () -> Unit) {
     )
 }
 
+/** What each sentence-menu row does, in one plain line under it. */
+private val SENTENCE_HINTS = mapOf(
+    R.string.sentence_menu_bookmark to R.string.sentence_hint_bookmark,
+    R.string.sentence_menu_highlight to R.string.sentence_hint_highlight,
+    R.string.sentence_menu_unhighlight to R.string.sentence_hint_unhighlight,
+    R.string.sentence_menu_voice_note to R.string.sentence_hint_voice_note,
+    R.string.sentence_menu_look_up to R.string.sentence_hint_look_up,
+    R.string.sentence_menu_fix to R.string.sentence_hint_fix,
+    R.string.report_title to R.string.sentence_hint_report,
+    R.string.sentence_menu_share_clip to R.string.sentence_hint_share_clip,
+)
+
 @Composable
-private fun MenuRow(label: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Text(label, modifier = Modifier.fillMaxWidth())
+private fun MenuRow(@StringRes label: Int, onClick: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = Dimens.TouchTarget)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(vertical = Dimens.SpaceS),
+    ) {
+        Text(stringResource(label), style = MaterialTheme.typography.bodyLarge)
+        SENTENCE_HINTS[label]?.let {
+            Text(
+                stringResource(it),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -268,9 +300,9 @@ private fun PronunciationDialog(unit: ReadingUnit, rules: List<PronunciationRule
 
 @Composable
 private fun FixSwitch(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.switchRow(checked, onChange = onChange), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-        Switch(checked = checked, onCheckedChange = onChange)
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 

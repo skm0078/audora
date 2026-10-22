@@ -25,6 +25,7 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.AfterSentence
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.playback.contract.StudyAction
+import io.github.skm0078.audora.ui.theme.switchRow
 
 /**
  * Repeats and "after each sentence" are reading modes, saved like the rest; the A–B range lasts until cleared or
@@ -82,17 +83,14 @@ private fun StudyLoopRows(controls: StudyControls) {
             Text(stringResource(R.string.study_clear))
         }
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    val onLoop: (Boolean) -> Unit = { controls.onStudy(StudyAction.SET_LOOP, it) }
+    Row(Modifier.switchRow(loop, range != null, onLoop), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(stringResource(R.string.study_loop), style = MaterialTheme.typography.bodyLarge)
             Detail(stringResource(R.string.study_loop_detail))
         }
         // Nothing to loop until A is marked; the A and B taps carry the switch's value with them.
-        Switch(
-            checked = loop,
-            onCheckedChange = { controls.onStudy(StudyAction.SET_LOOP, it) },
-            enabled = range != null,
-        )
+        Switch(checked = loop, onCheckedChange = null, enabled = range != null)
     }
 }
 

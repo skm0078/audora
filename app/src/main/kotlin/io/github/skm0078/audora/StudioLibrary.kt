@@ -23,9 +23,11 @@ import io.github.skm0078.audora.playback.documents.WatchedFolders
 import io.github.skm0078.audora.playback.epub.BookCopies
 import io.github.skm0078.audora.playback.epub.CopyKind
 import io.github.skm0078.audora.playback.export.MarkStores
+import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.photo.PhotoBooks
 import io.github.skm0078.audora.playback.studio.StudioMode
 import io.github.skm0078.audora.ui.guide.CharacterGuideRoute
+import io.github.skm0078.audora.ui.jobs.startLongJob
 import io.github.skm0078.audora.ui.library.BackupRoute
 import io.github.skm0078.audora.ui.library.BookAction
 import io.github.skm0078.audora.ui.library.LibraryAction
@@ -56,14 +58,26 @@ internal class StudioLibrary(
 ) {
     private val context: Context get() = parts.activity.applicationContext
 
-    // Studio mode and the copies report in a notification, so they ask for that permission first.
+    // Studio mode and the copies report on the library's card and in a notification, so they ask for that
+    // permission first; one already running of the same kind is said at once instead.
     fun onBookAction(book: Book, action: BookAction) = when (action) {
-        BookAction.STUDIO -> playWithPermission { StudioMode.start(context, book.id) }
-        BookAction.ACCESSIBLE_COPY -> playWithPermission { BookCopies.start(context, book.id, CopyKind.ACCESSIBLE) }
-        BookAction.TALKING_BOOK -> playWithPermission { BookCopies.start(context, book.id, CopyKind.TALKING_BOOK) }
+        BookAction.STUDIO -> longJob(LongJobKind.STUDIO) { StudioMode.start(context, book.id) }
+
+        BookAction.ACCESSIBLE_COPY -> longJob(LongJobKind.COPY) {
+            BookCopies.start(context, book.id, CopyKind.ACCESSIBLE)
+        }
+
+        BookAction.TALKING_BOOK -> longJob(LongJobKind.COPY) {
+            BookCopies.start(context, book.id, CopyKind.TALKING_BOOK)
+        }
+
         BookAction.EXPORT_NOTES -> parts.activity.exportNotes(parts.activity.lifecycleScope, parts.notes, book)
+
         BookAction.CHARACTER_GUIDE -> guideBookId.value = book.id.value
     }
+
+    private fun longJob(kind: LongJobKind, start: () -> Unit) =
+        parts.activity.startLongJob(kind) { playWithPermission(start) }
 
     fun onLibraryAction(action: LibraryAction) = when (action) {
         LibraryAction.POINT_AND_READ -> parts.activity.pointAndRead(parts.photoBooks, takePhoto)

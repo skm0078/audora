@@ -45,6 +45,7 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.voices.VoiceRow
+import io.github.skm0078.audora.ui.jobs.BookJobsOnTop
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -127,6 +128,7 @@ fun ReaderScreen(
                     NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)
                 }
             }
+            BookJobsOnTop(state.bookId)
         }
     }
 }

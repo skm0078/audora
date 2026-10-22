@@ -73,7 +73,7 @@
     <string name="reader_pick_page_label">Page (1–%1$d)</string>
     <string name="reader_pick_page_go">Go</string>
     <string name="reader_back_to_reading">Back to page %1$d, where reading is</string>
-    <string name="reader_page_no_text">No text on this page. Scanned pages are read with OCR in a later update.</string>
+    <string name="reader_page_no_text">No readable text on this page. If it is a scanned page, download Scanned pages (OCR) in Settings and Audora reads it.</string>
     <string name="reader_page_failed">This page could not be read. Please share the logs.</string>
     <string name="reader_tap_hint">Tap a sentence to read from there. Long-press one that sounded wrong.</string>
     <string name="reader_read_from_here">Read from here</string>
@@ -276,7 +276,7 @@
     <string name="voices_status_installed">Downloaded · %1$d MB</string>
     <string name="voices_status_imported">Imported · %1$d MB</string>
     <string name="voices_status_update">A newer version is available</string>
-    <string name="voices_status_failed">Download failed: %1$s</string>
+    <string name="voices_status_failed">Download failed: %1$s. Check your internet connection and free space, then try again.</string>
     <string name="voices_speed_ok">On this phone it renders %1$s× faster than it speaks</string>
     <string name="voices_speed_slow">Too slow on this phone: it takes %1$s s to render each second of speech, so reading would pause</string>
     <string name="voices_download">Download</string>
@@ -328,7 +328,7 @@
     <string name="ocr_models_delete">Delete</string>
     <string name="ocr_models_queued">Waiting to download (needs a connection)…</string>
     <string name="ocr_models_downloading">Downloading %1$d of %2$d MB</string>
-    <string name="ocr_models_failed">Download failed: %1$s</string>
+    <string name="ocr_models_failed">Download failed: %1$s. Check your internet connection and free space, then tap Try again.</string>
     <string name="settings_ocr_title">Scanned pages (OCR)</string>
     <string name="settings_ocr_missing">Reads scanned and garbled pages aloud. Needs %1$d MB of text recognition files.</string>
     <string name="settings_ocr_ready">Ready for English, Hindi and Bengali · %1$d MB</string>

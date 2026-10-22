@@ -27,6 +27,8 @@ import io.github.skm0078.audora.playback.book.BookText
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.export.JobSlots
+import io.github.skm0078.audora.playback.jobs.LongJobKind
+import io.github.skm0078.audora.playback.jobs.LongJobs
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -116,7 +118,8 @@ class StudioService : Service() {
             id == null -> AudoraLog.w(TAG, "Studio request without a book")
 
             // The restart that applies a restore would cut the run off.
-            Backups.restoreUnderWay -> notifications.showFailed(untitled, getString(R.string.long_job_restoring))
+            Backups.restoreUnderWay ->
+                notifications.showFailed(untitled, getString(R.string.long_job_restoring), publish = false)
 
             // This instance's run goes on (a second tap, or Start now's start): never refuse it into a stop.
             mine -> AudoraLog.i(TAG, "Studio mode already running here; book=${id.logLabel} not started")
@@ -124,6 +127,12 @@ class StudioService : Service() {
             else -> {
                 // Set first: the job may end (and clear it) before launch returns.
                 mine = true
+                LongJobs.begin(
+                    LongJobKind.STUDIO,
+                    id,
+                    getString(R.string.studio_preparing_title),
+                    getString(R.string.studio_preparing),
+                )
                 if (!JobSlots.STUDIO.launch(THREAD_NAME) { runStudio(id) }) {
                     mine = false
                     AudoraLog.w(TAG, "Studio mode already running; book=${id.logLabel} not started")

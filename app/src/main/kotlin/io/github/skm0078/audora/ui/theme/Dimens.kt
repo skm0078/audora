@@ -30,6 +30,9 @@ object Dimens {
     val CoverSmall = 48.dp
     val CoverMedium = 72.dp
 
+    /** A menu whose entries carry a line of explanation wraps it at this width instead of spanning a tablet. */
+    val MenuMaxWidth = 320.dp
+
     /** Mini player height; it sits above the tabs on every tab. */
     val MiniPlayerHeight = 64.dp
 }

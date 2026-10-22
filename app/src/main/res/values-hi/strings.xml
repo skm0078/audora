@@ -77,7 +77,7 @@
     <string name="reader_pick_page_label">पेज (1–%1$d)</string>
     <string name="reader_pick_page_go">जाएँ</string>
     <string name="reader_back_to_reading">पेज %1$d पर वापस जाएँ, जहाँ पढ़ाई चल रही है</string>
-    <string name="reader_page_no_text">इस पेज पर कोई टेक्स्ट नहीं है। स्कैन किए गए पेज बाद के अपडेट में OCR से पढ़े जाएँगे।</string>
+    <string name="reader_page_no_text">इस पेज पर पढ़ने लायक टेक्स्ट नहीं है। अगर यह स्कैन किया हुआ पेज है, तो सेटिंग्स में स्कैन किए गए पेज (OCR) डाउनलोड करें, फिर Audora इसे पढ़ेगा।</string>
     <string name="reader_page_failed">यह पेज पढ़ा नहीं जा सका। कृपया लॉग शेयर करें।</string>
     <string name="reader_tap_hint">किसी वाक्य पर टैप करें, वहीं से पढ़ना शुरू होगा। जो वाक्य गलत लगा, उसे देर तक दबाएँ।</string>
     <string name="reader_read_from_here">यहाँ से पढ़ें</string>
@@ -280,7 +280,7 @@
     <string name="voices_status_installed">डाउनलोड की गई · %1$d MB</string>
     <string name="voices_status_imported">इंपोर्ट की गई · %1$d MB</string>
     <string name="voices_status_update">नया वर्शन उपलब्ध है</string>
-    <string name="voices_status_failed">डाउनलोड नहीं हो सका: %1$s</string>
+    <string name="voices_status_failed">डाउनलोड नहीं हो सका: %1$s। इंटरनेट कनेक्शन और खाली जगह देखें, फिर दोबारा कोशिश करें।</string>
     <string name="voices_speed_ok">इस फ़ोन पर यह बोलने से %1$s× तेज़ी से तैयार होती है</string>
     <string name="voices_speed_slow">इस फ़ोन पर बहुत धीमी: हर सेकंड की आवाज़ तैयार करने में %1$s सेकंड लगते हैं, इसलिए पढ़ते समय रुकावट आएगी</string>
     <string name="voices_download">डाउनलोड करें</string>
@@ -332,7 +332,7 @@
     <string name="ocr_models_delete">हटाएँ</string>
     <string name="ocr_models_queued">डाउनलोड का इंतज़ार (इंटरनेट चाहिए)…</string>
     <string name="ocr_models_downloading">%2$d में से %1$d MB डाउनलोड हो रहा है</string>
-    <string name="ocr_models_failed">डाउनलोड नहीं हो सका: %1$s</string>
+    <string name="ocr_models_failed">डाउनलोड नहीं हो सका: %1$s। इंटरनेट कनेक्शन और खाली जगह देखें, फिर “फिर से कोशिश करें” दबाएँ।</string>
     <string name="settings_ocr_title">स्कैन किए गए पेज (OCR)</string>
     <string name="settings_ocr_missing">स्कैन किए गए और गड़बड़ पेज पढ़कर सुनाता है। इसके लिए %1$d MB की टेक्स्ट पहचानने वाली फ़ाइलें चाहिए।</string>
     <string name="settings_ocr_ready">अंग्रेज़ी, हिंदी और बांग्ला के लिए तैयार · %1$d MB</string>

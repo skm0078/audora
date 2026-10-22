@@ -23,6 +23,8 @@ import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
+import io.github.skm0078.audora.playback.jobs.LongJobKind
+import io.github.skm0078.audora.playback.jobs.LongJobs
 import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.VoiceEngines
@@ -107,28 +109,35 @@ class AudiobookExportService : Service() {
     }
 
     private fun start(id: BookId?) {
+        val untitled = getString(R.string.export_untitled)
         // Foreground first, always: Android requires it within seconds of startForegroundService.
         startForeground(
             ExportNotifications.RUNNING_ID,
-            notifications.running(getString(R.string.export_untitled), chapter = null, chapterCount = 0, percent = 0),
+            notifications.running(untitled, chapter = null, chapterCount = 0, percent = 0),
             foregroundType(),
         )
-        val untitled = getString(R.string.export_untitled)
         // Taken first, whatever happens next, so a refused start never leaves the password behind.
         val password = id?.let(PasswordHandoff.shared::take)
         when {
             id == null -> AudoraLog.w(TAG, "Export request without a book")
 
             // The restart that applies a restore would cut the export off.
-            Backups.restoreUnderWay -> notifications.showFailed(untitled, getString(R.string.long_job_restoring))
+            Backups.restoreUnderWay ->
+                notifications.showFailed(untitled, getString(R.string.long_job_restoring), publish = false)
 
             // This instance's export goes on: exporting another book is refused without stopping it.
-            mine -> notifications.showFailed(untitled, getString(R.string.export_busy))
+            mine -> notifications.showFailed(untitled, getString(R.string.export_busy), publish = false)
 
             else -> {
                 timedOut = false
                 // Set first: the job may end (and clear it) before launch returns.
                 mine = true
+                LongJobs.begin(
+                    LongJobKind.AUDIOBOOK,
+                    id,
+                    getString(R.string.export_running_title, untitled),
+                    getString(R.string.export_preparing),
+                )
                 if (!JobSlots.EXPORT.launch(THREAD_NAME) { runExport(id, password) }) {
                     mine = false
                     AudoraLog.w(TAG, "Export already running; book=${id.logLabel} not started")

@@ -18,9 +18,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.FocusSound
 import io.github.skm0078.audora.core.model.FocusSoundOptions
+import kotlin.math.roundToInt
 
 /**
  * The volume is sent when the slider is let go, not on every step, since each change is saved. Plain Material
@@ -46,8 +50,14 @@ fun FocusSoundSection(options: FocusSoundOptions, onOptions: (FocusSoundOptions)
     }
     if (options.sound == FocusSound.OFF) return
     var level by remember(options.level) { mutableFloatStateOf(options.level) }
-    Text(stringResource(R.string.focus_level), style = MaterialTheme.typography.bodyLarge)
+    val title = stringResource(R.string.focus_level)
+    val percent = stringResource(R.string.slider_percent, (level * PERCENT).roundToInt())
+    Text(title, style = MaterialTheme.typography.bodyLarge)
     Slider(
+        modifier = Modifier.semantics {
+            contentDescription = title
+            stateDescription = percent
+        },
         value = level,
         onValueChange = { level = it },
         onValueChangeFinished = { onOptions(options.copy(level = level)) },
@@ -60,3 +70,6 @@ private fun soundLabel(sound: FocusSound): Int = when (sound) {
     FocusSound.CAFE -> R.string.focus_cafe
     FocusSound.BROWN_NOISE -> R.string.focus_brown_noise
 }
+
+/** The level is 0-1; TalkBack reads it as a percentage. */
+private const val PERCENT = 100

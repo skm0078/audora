@@ -50,6 +50,7 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.speech.voices.VoiceRow
+import io.github.skm0078.audora.ui.jobs.LongJobsPanel
 import io.github.skm0078.audora.ui.kids.KidsControls
 import io.github.skm0078.audora.ui.kids.LocalKidsMode
 import io.github.skm0078.audora.ui.library.BookCover
@@ -162,6 +163,7 @@ private fun PlayerBody(parts: PlayerParts, spokenWord: () -> IntRange?, compact:
     ) {
         PlayerTopBar(parts.state, parts.actions, parts.onShowPage, parts.onOpenUpNext)
         BookLine(parts.title, parts.book.takeUnless { compact }, parts.covers)
+        LongJobsPanel(book = parts.state.bookId)
         SentencesAround(
             parts.state,
             spokenWord,
@@ -186,6 +188,7 @@ private fun PlayerPanes(parts: PlayerParts, voices: List<VoiceRow>, spokenWord: 
         ) {
             PlayerTopBar(parts.state, parts.actions, parts.onShowPage, parts.onOpenUpNext)
             BookLine(parts.title, parts.book, parts.covers)
+            LongJobsPanel(book = parts.state.bookId)
             ReplayAndProgress(parts)
         }
         // The controls' navigation-bar padding must not add the start side here: that side is the other pane's.
