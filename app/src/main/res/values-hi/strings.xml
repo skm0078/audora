@@ -102,10 +102,10 @@
     <string name="speech_pace_normal">सामान्य</string>
     <string name="speech_pace_relaxed">ज़्यादा</string>
     <string name="speech_clause_pauses">विराम चिह्नों पर रुकें</string>
-    <string name="speech_clause_pauses_detail">डैश, कोलन, ब्रैकेट और उद्धरण चिह्नों पर थोड़ा रुकें; ब्रैकेट वाला हिस्सा थोड़ा धीमी आवाज़ में</string>
+    <string name="speech_clause_pauses_detail">चालू: डैश, कोलन, कोष्ठक और उद्धरण पर छोटा ठहराव, जैसे कोई इंसान पढ़ता है। बंद: बिना रुके पढ़ता है।</string>
     <string name="reading_modes_title">क्या पढ़ें</string>
     <string name="reading_skip_unreadable">न पढ़ने लायक टेक्स्ट छोड़ें</string>
-    <string name="reading_skip_unreadable_detail">गड़बड़ स्कैन और टूटे फ़ॉन्ट की जगह एक हल्की आवाज़ बजती है</string>
+    <string name="reading_skip_unreadable_detail">चालू: स्कैन का बिगड़ा टेक्स्ट बेतुके शब्दों की जगह हल्की आवाज़ बजाता है। बंद: सब कुछ पढ़ा जाता है, कचरा भी।</string>
     <string name="reading_tables">टेबल</string>
     <string name="reading_tables_summary">सिर्फ़ आकार</string>
     <string name="reading_tables_rows">पंक्ति-दर-पंक्ति</string>
@@ -146,14 +146,14 @@
     <string name="duration_minutes">%1$d मिनट</string>
     <string name="duration_under_minute">एक मिनट से कम</string>
     <string name="reader_undo_jump">जंप वापस लें (पेज %1$d)</string>
-    <string name="speech_sheet_hint">आवाज़ खुद तेज़ या धीमे बोलती है, ताकि शब्द साफ़ रहें। चल रहा वाक्य नई सेटिंग के साथ फिर से शुरू होता है।</string>
+    <string name="speech_sheet_hint">बदलाव तुरंत लागू होते हैं: चल रहा वाक्य नई सेटिंग के साथ फिर से शुरू होता है, इसलिए वह दो बार सुनाई दे सकता है।</string>
     <string name="reader_sleep_timer">स्लीप टाइमर</string>
     <string name="reader_sleep_off">बंद</string>
     <string name="reader_sleep_minutes">%1$d मिनट</string>
     <string name="reader_sleep_end_of_page">पेज के अंत में</string>
     <string name="reader_sleep_end_of_chapter">अध्याय के अंत में</string>
     <string name="speech_own_settings">सिर्फ़ इस किताब के लिए</string>
-    <string name="speech_own_settings_detail">स्पीड, रुकना और आवाज़ें इसी किताब के साथ रहती हैं; बाकी किताबों की अपनी सेटिंग रहती है</string>
+    <string name="speech_own_settings_detail">चालू: यह किताब अपनी गति, ठहराव और आवाज़ें याद रखती है; बाकी किताबें सामान्य सेटिंग रखती हैं। बंद: यह किताब सामान्य सेटिंग इस्तेमाल करती है।</string>
     <string name="bookmarks_title">बुकमार्क</string>
     <string name="bookmarks_add_here">यहाँ बुकमार्क करें</string>
     <string name="bookmarks_empty">अभी कोई बुकमार्क नहीं। किसी वाक्य को देर तक दबाएँ, या “यहाँ बुकमार्क करें” पर टैप करें।</string>
@@ -184,14 +184,14 @@
     <string name="speech_book_voices">इस किताब की आवाज़ें</string>
     <string name="speech_sound">साउंड</string>
     <string name="speech_even_loudness">एक जैसा वॉल्यूम</string>
-    <string name="speech_even_loudness_detail">हर वाक्य और हर आवाज़ एक ही वॉल्यूम पर</string>
+    <string name="speech_even_loudness_detail">चालू: हर वाक्य और हर आवाज़ एक जैसी ऊँचाई पर, ताकि कुछ भी अचानक तेज़ या धीमा न लगे।</string>
     <string name="speech_trim_pauses">लंबे ठहराव छोटे करें</string>
-    <string name="speech_trim_pauses_detail">आवाज़ की अपनी चुप्पी छोटी करता है; Audora के ठहराव बने रहते हैं</string>
+    <string name="speech_trim_pauses_detail">चालू: आवाज़ की अपनी लंबी चुप्पियाँ छोटी करता है, ताकि पढ़ना तेज़ी से बहे। ऊपर चुने गए ठहराव बने रहते हैं।</string>
     <string name="speech_boost">आवाज़ बढ़ाएँ</string>
     <string name="speech_boost_off">बंद</string>
     <string name="speech_boost_db">+%1$d dB</string>
     <string name="speech_expressiveness">भाव</string>
-    <string name="speech_expressiveness_detail">Piper और MMS आवाज़ों के लिए। इसे बदलने से आवाज़ फिर से लोड होती है, लगभग एक सेकंड</string>
+    <string name="speech_expressiveness_detail">बाएँ: शांत और एक-सा, समाचार वाचक जैसा। दाएँ: ज़्यादा उतार-चढ़ाव, कहानी सुनाने वाले जैसा। सिर्फ़ Piper और MMS आवाज़ों पर असर; बदलने पर आवाज़ लगभग एक सेकंड में फिर लोड होती है।</string>
     <string name="speech_expressiveness_newsreader">समाचार वाचक</string>
     <string name="speech_expressiveness_storyteller">कहानी सुनाने वाला</string>
     <string name="reader_sleep_chapters">%1$d अध्याय के बाद</string>
@@ -343,7 +343,7 @@
 
     <!-- Reading text (P2-03) -->
     <string name="settings_skip_citations_title">संदर्भ नंबर छोड़ें</string>
-    <string name="settings_skip_citations_body">बंद होने पर “[12]” और “[4–7]” जैसे निशान पढ़े जाते हैं। आगे खोली जाने वाली किताबों पर लागू होता है।</string>
+    <string name="settings_skip_citations_body">चालू: “[12]” और “[4–7]” जैसे संदर्भ अंक छोड़ देता है। बंद: उन्हें पढ़ता है। अगली बार किताब खोलने पर लागू होता है।</string>
     <string name="settings_keep_screen_on_title">पढ़कर सुनाते समय स्क्रीन चालू रखें</string>
     <string name="settings_volume_keys_title">वॉल्यूम बटन से वाक्य बदलें</string>
     <string name="settings_volume_keys_body">जब Audora रीडर में पढ़कर सुना रहा हो, वॉल्यूम कम करने वाला बटन अगले वाक्य पर और बढ़ाने वाला बटन एक वाक्य पीछे ले जाता है। पॉज़ होने पर या रीडर के बाहर, बटन हमेशा की तरह वॉल्यूम बदलते हैं।</string>

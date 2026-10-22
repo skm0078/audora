@@ -278,7 +278,12 @@ class SessionCallback(
         style.set(if (bookOwnsSpeed) requested.copy(rate = global.rate, pace = global.pace) else requested)
         val after = book.style(style.current)
         val heard = style.config::asHeard
-        if (heard(after) != heard(before)) bookSession().onSpeechStyleChanged(style.config.playerSpeed(after))
+        // A change nobody hears yet (smart speed below the model's top speed) is still shown: the switch follows it.
+        if (heard(after) != heard(before)) {
+            bookSession().onSpeechStyleChanged(style.config.playerSpeed(after))
+        } else {
+            bookSession().onListeningOptionsChanged()
+        }
         return SessionResult(SessionResult.RESULT_SUCCESS)
     }
 

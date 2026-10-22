@@ -143,11 +143,7 @@ private fun AppGroup(links: AppLinks, batteryExempt: Boolean, shareState: ShareL
         SettingsDivider()
         ShareLogsItem(shareState, links.onShareLogs)
         SettingsDivider()
-        SettingsRow(
-            stringResource(R.string.settings_kids_title),
-            summary = { Text(stringResource(R.string.settings_kids_body)) },
-            onClick = links.onKidsMode,
-        )
+        KidsModeItem(links.onKidsMode)
         SettingsDivider()
         SettingsRow(
             stringResource(R.string.licences_title),
@@ -213,7 +209,9 @@ private fun ListeningGroup(
             onClick = onOpenVoices,
         )
         ModelPackRow(ocr, ModelPackTexts.OCR)
-        ModelPackRow(punctuation, ModelPackTexts.PUNCTUATION)
+        // The punctuation model only touches scanned pages, so it says so while scanned pages cannot be read yet.
+        val ocrReady = ocr.state is OcrModelsState.Ready
+        ModelPackRow(punctuation, if (ocrReady) ModelPackTexts.PUNCTUATION else ModelPackTexts.PUNCTUATION_NEEDS_OCR)
         SettingsDivider()
         SwitchItem(
             R.string.settings_skip_citations_title,

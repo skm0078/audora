@@ -116,6 +116,8 @@ data class StudyRangeState(val start: ReadingPosition, val end: ReadingPosition?
  *   blend (plan item 75) changes nothing else, so the speech sheet offers it only then.
  * @property blendNeedsBytes the last narrator blend could not be built and needed this much free (0: the voice
  *   refused it); null when it was built.
+ * @property voiceExpressive whether a voice reading now honours expressiveness (plan item 8: Piper and MMS only);
+ *   null until one is known.
  */
 data class PlaybackSnapshot(
     val connection: Connection,
@@ -142,6 +144,7 @@ data class PlaybackSnapshot(
     val errorCode: String? = null,
     val blendOwnSpeaker: Int? = null,
     val blendNeedsBytes: Long? = null,
+    val voiceExpressive: Boolean? = null,
 ) {
     enum class Connection { CONNECTING, CONNECTED, UNAVAILABLE }
 

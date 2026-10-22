@@ -20,6 +20,7 @@ import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.AfterSentence
+import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SpeechStyle
@@ -77,6 +78,7 @@ import io.github.skm0078.audora.playback.voice.VoiceEngines
 import io.github.skm0078.audora.playback.voice.forReading
 import io.github.skm0078.audora.playback.voice.narratorBlend
 import io.github.skm0078.audora.speech.sherpa.blendableSpeaker
+import io.github.skm0078.audora.speech.sherpa.isExpressive
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -384,7 +386,10 @@ private fun speechPlayer(context: Context, registry: QueueRegistry, config: Queu
 private fun blendAvailability(engines: VoiceEngines, voices: SpeechVoices): BlendAvailability {
     val bundled = engines.bundledIfBuilt() ?: return BlendAvailability()
     val narrator = voices.knownVoice(Lang.EN)
-    return BlendAvailability(narrator?.let(bundled.engine::blendableSpeaker), bundled.blends.neededBytes)
+    val known = Lang.entries.mapNotNull(voices::knownVoice)
+    val expressive = known.takeIf { it.isNotEmpty() }
+        ?.any { it.engine == EngineId.SHERPA && bundled.engine.isExpressive(it) }
+    return BlendAvailability(narrator?.let(bundled.engine::blendableSpeaker), bundled.blends.neededBytes, expressive)
 }
 
 /** The session's threads and clocks, on the service's [scope]. */

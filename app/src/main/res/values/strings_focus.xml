@@ -3,7 +3,7 @@
 <!-- Purpose: Strings for the focus sound under the voice (plan item 72). -->
 <resources>
     <string name="focus_title">Focus sound</string>
-    <string name="focus_detail">Plays quietly under the voice and dips whenever it speaks. Made on your phone, nothing to download.</string>
+    <string name="focus_detail">Plays quietly under the voice and gets softer whenever it speaks. You hear it only while reading plays. Made on your phone, nothing to download.</string>
     <string name="focus_off">Off</string>
     <string name="focus_rain">Rain</string>
     <string name="focus_cafe">Café</string>

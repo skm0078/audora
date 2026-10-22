@@ -68,7 +68,7 @@ fun ReaderControls(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             val study = StudyControls(state.study, canMark = state.readingPosition != null, onStudy = actions::onStudy)
-            SpeedButton(state.playback, config, enabled, actions, voices, study)
+            SpeedButton(state.playback, config, enabled, actions, voices, study, state.readingPosition != null)
             SkipButton(
                 forward = false,
                 enabled = enabled && loaded && state.playback.canSkipBack,
@@ -143,6 +143,7 @@ private fun SpeedButton(
     actions: ReaderActions,
     voices: List<VoiceRow>,
     study: StudyControls,
+    bookInPlayer: Boolean,
 ) {
     var open by remember { mutableStateOf(false) }
     TextButton(onClick = { open = true }, enabled = enabled) {
@@ -168,6 +169,8 @@ private fun SpeedButton(
             focusSound = playback.focusSound,
             onFocusSound = actions::onFocusSound,
             blend = NarratorBlendState(playback.blendOwnSpeaker, playback.blendNeedsBytes),
+            bookInPlayer = bookInPlayer,
+            expressive = playback.voiceExpressive != false,
             onDismiss = { open = false },
         )
     }

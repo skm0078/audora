@@ -7,6 +7,7 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.speech.sherpa.CastSpeakers
 import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import kotlinx.coroutines.CoroutineScope
@@ -81,8 +82,14 @@ class VoicesController(private val voices: VoiceManager, private val scope: Coro
 
     fun cancel(row: VoiceRow) = voices.cancel(row.id.name)
 
-    /** Reading voice for the row's language. Choosing the built-in voice is the same as the default. */
-    fun use(row: VoiceRow) = voices.choose(row.lang, row.id.takeIf { row.kind != VoiceKind.BUILT_IN })
+    /**
+     * Reading voice for the row's language. Choosing the built-in voice is the same as the default; one of its other
+     * speakers is a choice of its own.
+     */
+    fun use(row: VoiceRow) = voices.choose(
+        row.lang,
+        row.id.takeIf { row.kind != VoiceKind.BUILT_IN || CastSpeakers.parse(it).second != null },
+    )
 
     /** Back to the default voice of [lang] (built-in for English, the phone's for Hindi and Bengali). */
     fun useDefault(lang: Lang) = voices.choose(lang, null)

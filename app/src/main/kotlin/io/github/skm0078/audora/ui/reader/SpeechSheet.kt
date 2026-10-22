@@ -71,6 +71,8 @@ fun SpeechSheet(
     focusSound: FocusSoundOptions = FocusSoundOptions(),
     onFocusSound: (FocusSoundOptions) -> Unit = {},
     blend: NarratorBlendState = NarratorBlendState(),
+    bookInPlayer: Boolean = true,
+    expressive: Boolean = true,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -80,12 +82,12 @@ fun SpeechSheet(
                 .padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            OwnSettingsRow(ownSettings, onOwnSettings)
+            OwnSettingsRow(ownSettings, enabled = bookInPlayer || ownSettings, onOwnSettings)
             if (ownSettings) BookVoicesSection(voices.rows, voices.chosen, voices.onVoice)
             SpeedSection(speed, config, onSpeed)
             PaceSection(pace, onPace)
             ClausePausesRow(clausePauses, onClausePauses)
-            VoiceShapingSection(voiceShaping, config.voiceShaping, onVoiceShaping)
+            VoiceShapingSection(voiceShaping, config.voiceShaping, expressive, onVoiceShaping)
             blend.ownSpeaker?.let { own ->
                 NarratorBlendSection(voiceShaping, own, blend.neededBytes, onVoiceShaping)
             }
@@ -173,19 +175,23 @@ private fun ClausePausesRow(on: Boolean, onChange: (Boolean) -> Unit) {
     }
 }
 
-/** Plan item 4: speed, pace and voices become this book's own; off, it follows the settings of every book. */
+/**
+ * Plan item 4: speed, pace and voices become this book's own; off, it follows the settings of every book. The player
+ * keeps them for the book it holds, so until this book has been played ([enabled] false) the switch waits for play.
+ */
 @Composable
-private fun OwnSettingsRow(on: Boolean, onChange: (Boolean) -> Unit) {
+private fun OwnSettingsRow(on: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(stringResource(R.string.speech_own_settings), style = MaterialTheme.typography.titleMedium)
+            val detail = if (enabled) R.string.speech_own_settings_detail else R.string.speech_own_settings_play_first
             Text(
-                stringResource(R.string.speech_own_settings_detail),
+                stringResource(detail),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Switch(checked = on, onCheckedChange = onChange)
+        Switch(checked = on, onCheckedChange = onChange, enabled = enabled)
     }
 }
 

@@ -87,7 +87,12 @@ private fun StudyLoopRows(controls: StudyControls) {
             Text(stringResource(R.string.study_loop), style = MaterialTheme.typography.bodyLarge)
             Detail(stringResource(R.string.study_loop_detail))
         }
-        Switch(checked = loop, onCheckedChange = { controls.onStudy(StudyAction.SET_LOOP, it) })
+        // Nothing to loop until A is marked; the A and B taps carry the switch's value with them.
+        Switch(
+            checked = loop,
+            onCheckedChange = { controls.onStudy(StudyAction.SET_LOOP, it) },
+            enabled = range != null,
+        )
     }
 }
 

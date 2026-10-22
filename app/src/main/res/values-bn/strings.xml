@@ -102,10 +102,10 @@
     <string name="speech_pace_normal">সাধারণ</string>
     <string name="speech_pace_relaxed">লম্বা</string>
     <string name="speech_clause_pauses">যতিচিহ্নে বিরতি</string>
-    <string name="speech_clause_pauses_detail">ড্যাশ, কোলন, বন্ধনী আর উদ্ধৃতিতে ছোট বিরতি; বন্ধনীর ভেতরটা একটু আস্তে</string>
+    <string name="speech_clause_pauses_detail">চালু: ড্যাশ, কোলন, বন্ধনী আর উদ্ধৃতিতে ছোট বিরতি, মানুষ যেমন পড়ে। বন্ধ: না থেমে পড়ে যায়।</string>
     <string name="reading_modes_title">কী পড়া হবে</string>
     <string name="reading_skip_unreadable">অপাঠ্য লেখা বাদ দিন</string>
-    <string name="reading_skip_unreadable_detail">জট পাকানো স্ক্যান আর ভাঙা ফন্টের জায়গায় একটি মৃদু শব্দ বাজে</string>
+    <string name="reading_skip_unreadable_detail">চালু: স্ক্যানের গোলমেলে লেখা অর্থহীন শব্দের বদলে হালকা আওয়াজ বাজায়। বন্ধ: সব পড়া হয়, আবর্জনাও।</string>
     <string name="reading_tables">টেবিল</string>
     <string name="reading_tables_summary">শুধু আকার</string>
     <string name="reading_tables_rows">সারি ধরে ধরে</string>
@@ -146,14 +146,14 @@
     <string name="duration_minutes">%1$d মিনিট</string>
     <string name="duration_under_minute">এক মিনিটেরও কম</string>
     <string name="reader_undo_jump">ফিরে যান (পৃষ্ঠা %1$d)</string>
-    <string name="speech_sheet_hint">ভয়েস নিজেই দ্রুত বা ধীরে বলে, তাই শব্দগুলো স্পষ্ট থাকে। যে বাক্যটি চলছে সেটি নতুন সেটিংয়ে আবার শুরু হয়।</string>
+    <string name="speech_sheet_hint">পরিবর্তন সঙ্গে সঙ্গে চালু হয়: চলতি বাক্যটি নতুন সেটিং নিয়ে আবার শুরু হয়, তাই সেটি দুবার শুনতে পারেন।</string>
     <string name="reader_sleep_timer">স্লিপ টাইমার</string>
     <string name="reader_sleep_off">বন্ধ</string>
     <string name="reader_sleep_minutes">%1$d মিনিট</string>
     <string name="reader_sleep_end_of_page">পৃষ্ঠার শেষে</string>
     <string name="reader_sleep_end_of_chapter">অধ্যায়ের শেষে</string>
     <string name="speech_own_settings">শুধু এই বইয়ের জন্য</string>
-    <string name="speech_own_settings_detail">গতি, বিরতি আর ভয়েস এই বইয়ের সাথে থাকে; অন্য বইগুলো নিজেদেরটা রাখে</string>
+    <string name="speech_own_settings_detail">চালু: এই বই নিজের গতি, বিরতি আর ভয়েস মনে রাখে; অন্য বইগুলো সাধারণ সেটিং রাখে। বন্ধ: এই বই সাধারণ সেটিং ব্যবহার করে।</string>
     <string name="bookmarks_title">বুকমার্ক</string>
     <string name="bookmarks_add_here">এখানে বুকমার্ক করুন</string>
     <string name="bookmarks_empty">এখনো কোনো বুকমার্ক নেই। কোনো বাক্য চেপে ধরে রাখুন, অথবা \"এখানে বুকমার্ক করুন\"-এ ট্যাপ করুন।</string>
@@ -184,14 +184,14 @@
     <string name="speech_book_voices">এই বইয়ের ভয়েস</string>
     <string name="speech_sound">শব্দ</string>
     <string name="speech_even_loudness">সমান আওয়াজ</string>
-    <string name="speech_even_loudness_detail">প্রতিটি বাক্য আর প্রতিটি ভয়েস একই মাত্রায়</string>
+    <string name="speech_even_loudness_detail">চালু: প্রতিটি বাক্য আর প্রতিটি ভয়েস একই জোরে বাজে, তাই কিছুই হঠাৎ জোরে বা আস্তে শোনায় না।</string>
     <string name="speech_trim_pauses">লম্বা বিরতি ছোট করুন</string>
-    <string name="speech_trim_pauses_detail">ভয়েসের নিজের নীরবতা ছোট করে; Audora-র বিরতি থাকে</string>
+    <string name="speech_trim_pauses_detail">চালু: ভয়েসের নিজের লম্বা নীরবতা ছোট করে, তাই পড়া দ্রুত এগোয়। ওপরে বেছে নেওয়া বিরতিগুলো থাকে।</string>
     <string name="speech_boost">ভয়েস বুস্ট</string>
     <string name="speech_boost_off">বন্ধ</string>
     <string name="speech_boost_db">+%1$d dB</string>
     <string name="speech_expressiveness">অভিব্যক্তি</string>
-    <string name="speech_expressiveness_detail">Piper ও MMS ভয়েসের জন্য। বদলালে ভয়েস আবার লোড হয়, প্রায় এক সেকেন্ড লাগে</string>
+    <string name="speech_expressiveness_detail">বাঁয়ে: শান্ত, একটানা, খবর পাঠকের মতো। ডানে: বেশি ওঠানামা, গল্প বলার মতো। শুধু Piper আর MMS ভয়েসে কাজ করে; বদলালে ভয়েস প্রায় এক সেকেন্ডে আবার লোড হয়।</string>
     <string name="speech_expressiveness_newsreader">সংবাদপাঠক</string>
     <string name="speech_expressiveness_storyteller">গল্পকথক</string>
     <string name="reader_sleep_chapters">%1$dটি অধ্যায়ের পরে</string>
@@ -343,7 +343,7 @@
 
     <!-- Reading text (P2-03) -->
     <string name="settings_skip_citations_title">সূত্র নম্বর বাদ দিন</string>
-    <string name="settings_skip_citations_body">বন্ধ থাকলে “[12]” আর “[4–7]” চিহ্নগুলো জোরে পড়া হয়। এরপর যে বই খুলবেন তাতে কাজ করবে।</string>
+    <string name="settings_skip_citations_body">চালু: “[12]” আর “[4–7]”-এর মতো সূত্র সংখ্যা বাদ দেয়। বন্ধ: সেগুলো পড়ে। পরের বার বই খুললে চালু হয়।</string>
     <string name="settings_keep_screen_on_title">জোরে পড়ার সময় স্ক্রিন চালু রাখুন</string>
     <string name="settings_volume_keys_title">ভলিউম বোতামে বাক্য বদল</string>
     <string name="settings_volume_keys_body">রিডারে Audora জোরে পড়ার সময় ভলিউম কমানোর বোতাম পরের বাক্যে যায় আর বাড়ানোর বোতাম এক বাক্য পিছনে। পজ থাকলে বা রিডারের বাইরে বোতামগুলো স্বাভাবিকভাবে ভলিউম বদলায়।</string>

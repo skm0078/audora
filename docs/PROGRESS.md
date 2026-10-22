@@ -2,6 +2,14 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## A male built-in voice and options that explain themselves (2026-10-22, ADR-052)
+- **Built-in English voice:** KittenTTS v0.8 micro read by Bruno (male) replaces Piper ljspeech. Its seven other speakers are on the Voices screen as built-in voices, with no download, and also give character, quote and heading voices out of the box.
+- **Options that stayed off now work or say why:** "Use for this book only" waits for play with a note; Smart speed's switch follows taps at normal speed; the A–B Loop switch waits for A; Expressiveness hides for voices that ignore it; Kids mode asks first and says how to leave; a microphone refused for good opens Audora's app page; the punctuation model says it needs Scanned pages.
+- **Clearer texts** in English, Hindi and Bengali for the speech sheet, Study and Settings options: what each does, when, and what it costs.
+- Tests: `VoiceRowsTest` (built-in speakers as voices), `CharacterCastTest` (a narrator that is another speaker). No new dependency.
+
+**Real-device checks:** the first sentence starts quickly with the new voice; pick Jasper, Bella and Bruno in Settings → Voices and hear each; quotes in a second voice with nothing downloaded; Expressiveness hidden with Kitten, shown with a Piper voice.
+
 ## Studio landing on dev (2026-10-22)
 - **One voice builder:** studio, the talking book, clips and the audiobook export read through `BookVoice` with playback's renderer factory, narrator blend and per-book character cast, and feed every page to the quote and speaker tracking first, so studio audio is what playback would render; a replayed sentence ("What did it say?") renders live with its replay style, and studio audio still leaves the "Leave a gap" pause.
 - **Export:** Continue after Android's time limit, saved-again replacement, and the character-voice note (plan item 63) on the pack's exporter; the talking book records the pages the exporter reads, so the copy's text is read once.

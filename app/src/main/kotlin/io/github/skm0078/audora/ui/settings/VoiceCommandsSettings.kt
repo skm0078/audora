@@ -4,9 +4,14 @@
 package io.github.skm0078.audora.ui.settings
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -128,8 +133,14 @@ fun rememberVoiceCommandsSettings(models: VoiceCommandModels, preference: Screen
     val askMicrophone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         AudoraLog.i(TAG, "Microphone permission for voice commands granted=$granted")
         when {
-            !granted -> toast(context, R.string.commands_permission_denied)
+            !granted -> {
+                toast(context, R.string.commands_permission_denied)
+                // After "Don't ask again" Android shows no prompt at all; its app page is the only way left.
+                if (microphoneRefusedForGood(context)) openAppSettings(context)
+            }
+
             asked == VoiceCommandsMode.SCREEN_OFF && needsNotifications() -> askNotifications.launch(NOTIFICATIONS)
+
             else -> save(asked)
         }
     }
@@ -168,3 +179,22 @@ private const val TAG = "UI.VoiceCommands"
 
 /** The idle limit the screen-off row names; the listener's own config. */
 private val IDLE_MINUTES = VoiceCommandConfig().screenOffIdleMinutes
+
+/** Android stopped asking for the microphone ("Don't ask again", or two refusals): no prompt will show. */
+private fun microphoneRefusedForGood(context: Context): Boolean {
+    val activity = context.findActivity() ?: return false
+    return !activity.shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)
+}
+
+/** Audora's page in the phone's settings, where a permission refused for good can still be allowed. */
+private fun openAppSettings(context: Context) {
+    val app = Uri.fromParts("package", context.packageName, null)
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, app)
+    context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
