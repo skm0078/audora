@@ -21,6 +21,8 @@
     <!-- Point and read (item 62) uses the camera app, which needs no permission; a declared but ungranted CAMERA
          permission (merged from a library) would make that intent throw, so none may be merged in. -->
     <uses-permission android:name="android.permission.CAMERA" tools:node="remove" />
+    <!-- No camera needed: the camera app takes the photo, and phones without one never see Point and read fail. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:name=".AudoraApplication"

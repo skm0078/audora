@@ -26,6 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,6 +48,7 @@ private enum class BackupStep { CHOOSE, CONFIRM_RESTORE }
 @Composable
 fun BackupRoute(backups: Backups, open: Boolean, onClose: () -> Unit, onRestart: () -> Unit) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val state by backups.state.collectAsStateWithLifecycle()
     var step by rememberSaveable { mutableStateOf(BackupStep.CHOOSE) }
     var sizeBytes by remember { mutableStateOf<Long?>(null) }
@@ -80,7 +82,7 @@ fun BackupRoute(backups: Backups, open: Boolean, onClose: () -> Unit, onRestart:
             step = step,
             working = state.working,
             sizeBytes = sizeBytes,
-            onSave = { saver.launch(context.getString(R.string.backup_file_name, LocalDate.now().toString())) },
+            onSave = { saver.launch(resources.getString(R.string.backup_file_name, LocalDate.now().toString())) },
             onRestore = { step = BackupStep.CONFIRM_RESTORE },
             onConfirmRestore = { picker.launch(PICKABLE_TYPES) },
             onDismiss = { if (!state.working) close() },
