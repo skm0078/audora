@@ -12,7 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.logging.AudoraLog
@@ -35,7 +35,7 @@ fun StorageRoute(
     onOpenVoices: () -> Unit,
     onBack: () -> Unit,
 ) {
-    val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     var failed by remember { mutableStateOf(emptySet<StorageKind>()) }
@@ -63,7 +63,7 @@ fun StorageRoute(
                     outcome.errorOrNull()?.let { error ->
                         AudoraLog.w(TAG, "Could not free ${row.kind}: $error")
                         snackbar.showSnackbar(
-                            context.getString(R.string.storage_free_failed, context.getString(kindLabel(row.kind))),
+                            resources.getString(R.string.storage_free_failed, resources.getString(kindLabel(row.kind))),
                         )
                     }
                 }
