@@ -1,5 +1,5 @@
 // File: pdf/src/test/kotlin/io/github/skm0078/audora/pdf/units/IndicSentenceSplitterTest.kt
-// Purpose: Table-driven tests for Hindi and Bengali sentence splitting: danda, abbreviations, initials, verses.
+// Purpose: Table-driven sentence splitting tests: danda, Indic and English abbreviations and initials, verses.
 
 package io.github.skm0078.audora.pdf.units
 
@@ -52,6 +52,14 @@ class IndicSentenceSplitterTest {
             Case("Bengali doctor", Lang.BN, listOf("ডা. রায় আসবেন। ", "তিনি কলকাতায় থাকেন।")),
             Case("Bengali initials", Lang.BN, listOf("এ. কে. ফজলুল হক বক্তৃতা দেন। ", "সবাই শুনল।")),
             Case("Bengali Mohammad", Lang.BN, listOf("মো. রহিম এসেছেন। ", "বসুন।")),
+            Case("Hindi titles", Lang.HI, listOf("श्री. राम और डा. सीता आए। ", "बैठिए।")),
+            // Before a word: the JDK breaks there without the entries, where before a digit it does not.
+            Case("Hindi references", Lang.HI, listOf("सं. रामचंद्र शुक्ल, पृ. सं. १२, ५०० ई.पू. में। ", "बस।")),
+            Case("Bengali titles", Lang.BN, listOf("ড. রহমান, ডঃ. সেন ও শ্রী. বসু এলেন। ", "বসুন।")),
+            Case("Bengali era", Lang.BN, listOf("খ্রি.পূ. যুগে এটি তৈরি। ", "বসুন।")),
+            Case("Vikram Samvat", Lang.HI, listOf("वि. सं. 2050 में मेला लगा। ", "ठीक।")),
+            Case("dotted words", Lang.HI, listOf("स्कूल कॉलेज वि.वि. बंद हैं और प्रा.लि. कंपनी खुली है। ", "ठीक।")),
+            Case("morning", Lang.HI, listOf("समय 10:30 a.m. है। ", "वह 10:30 P.M. पर आया। ", "ठीक।")),
             // A full stop used as the sentence end after an ordinary word still splits.
             Case("full stop as sentence end", Lang.HI, listOf("यह वाक्य है. ", "दूसरा वाक्य है.")),
         ),
@@ -74,6 +82,102 @@ class IndicSentenceSplitterTest {
             Case("quote after the full stop", Lang.EN, listOf("He said \"Stop.\" ", "Then he left.")),
             Case("decimal", Lang.EN, listOf("Pi is 3.14 roughly. ", "Yes.")),
         ),
+    )
+
+    @Test
+    fun `English titles, Latin abbreviations and initials do not end a sentence`() = check(
+        listOf(
+            Case("doctor", Lang.EN, listOf("Dr. Smith went home. ", "He slept.")),
+            Case("Mr and Mrs", Lang.EN, listOf("Mr. and Mrs. Rao came. ", "Then they left.")),
+            Case("professor", Lang.EN, listOf("Prof. Iyer et al. found it. ", "Yes.")),
+            Case("Indian titles", Lang.EN, listOf("Shri Ram and Smt. Sita spoke. ", "Sh. Gupta agreed.")),
+            Case("ranks", Lang.EN, listOf("Lt. Col. Singh and Capt. Rao met Gen. Bose. ", "Fine.")),
+            Case("saint", Lang.EN, listOf("St. Xavier's College is old. ", "It is in Mumbai.")),
+            Case("initials", Lang.EN, listOf("A. P. J. Abdul Kalam spoke. ", "M. K. Gandhi listened.")),
+            Case("dotted initialism", Lang.EN, listOf("The U.S. Army left. ", "It rained.")),
+            Case("Latin", Lang.EN, listOf("Fruit, e.g. Apples, i.e. Red ones, viz. Fuji. ", "Done.")),
+            Case("bracketed title", Lang.EN, listOf("The author (Dr. Rao) wrote it. ", "Good.")),
+            Case("author list", Lang.EN, listOf("By Abbott B. P., Smith, J. A. Jones and Dr. A. Rao. ", "Fine.")),
+            Case("reference", Lang.EN, listOf("See Fig. (A) and No. 5 on p. 7. ", "Done.")),
+            Case("rupees", Lang.EN, listOf("Pay Rs. 500 (Rupees Five Hundred) and Re. 1 only. ", "Done.")),
+            Case(
+                "initials after a small word",
+                Lang.EN,
+                listOf("Written by S. K. Mukherjee and A. P. J. Kalam. ", "Fine."),
+            ),
+            Case(
+                "offices",
+                Lang.EN,
+                listOf(
+                    "The Govt. Order went to Dy. Director, Addl. Secretary and Asstt. Engineer of X Pvt. Ltd. ",
+                    "Ok.",
+                ),
+            ),
+            // Ordinary words, a lone lower-case letter and "etc." still end a sentence.
+            Case("etc ends", Lang.EN, listOf("We bought pens, paper etc. ", "Then we went home.")),
+            Case("No as an answer", Lang.EN, listOf("Was it him? ", "No. ", "It was her.")),
+            // A capital letter that ends a sentence is not an initial: a pronoun, a variable, a label.
+            Case("pronoun", Lang.EN, listOf("So says I. ", "Where now?")),
+            Case("variable", Lang.EN, listOf("Take the matrix Q. ", "The keys follow.")),
+            Case("symbol", Lang.EN, listOf("Write B\u2227 A. ", "But not B.")),
+            Case("label", Lang.EN, listOf("See Appendix A. ", "Annexure B. ", "Class X. ", "Plan B. ", "Then stop.")),
+            Case(
+                "labels shared with the voice",
+                Lang.EN,
+                listOf("See Article V. ", "Team A. ", "World War I. ", "Then."),
+            ),
+            // A lone initial after a small word reads like a variable ending a sentence, so it still splits.
+            Case("lone initial after a small word", Lang.EN, listOf("Work with K. ", "Rao agreed.")),
+            // Initials written without stops: the last author's stop ends the list, before the title.
+            Case(
+                "Vancouver authors",
+                Lang.EN,
+                listOf("Warntjes JB, Leinhard OD, West J, Lundberg P. ", "Rapid magnetic resonance imaging."),
+            ),
+            // Dotted initials after an undotted author, and a single author, stay whole.
+            Case("dotted after undotted", Lang.EN, listOf("Smith AB, Jones C. D., Brown E. F. Rapid imaging.")),
+            Case("single author", Lang.EN, listOf("Lundberg P. Rapid imaging of the brain.")),
+            // A capitalised word that opens sentences after an initial's stop ends the sentence there.
+            Case(
+                "sentence after an initial",
+                Lang.EN,
+                listOf(
+                    "Henry V. ", "The king spoke. ", "Malcolm X. ", "The man spoke. ", "Sample A. ", "The rest. ",
+                    "Born in the U.S. ", "The economy grew. ", "In Washington, D.C. ", "The rain fell.",
+                ),
+            ),
+            Case("serial number heading", Lang.EN, listOf("Market S. No. 5 is closed.")),
+        ),
+    )
+
+    // A closing bracket or quote after an initial does not hide the opener after it; "a.m." before English may end
+    // a sentence, where before Hindi it does not; a lone "A" or "I" opens one only before a small word.
+    @Test
+    fun `an opener after a closer and a meridiem before an English capital end the sentence`() = check(
+        listOf(
+            Case(
+                "closer before an opener",
+                Lang.EN,
+                listOf("Made in the (U.S.) ", "The end. ", "\"U.S.\" ", "The end."),
+            ),
+            Case("a.m. before English", Lang.EN, listOf("We met at 10 a.m. ", "The rest left.")),
+            // A lone capital opens a sentence before a small word; before a capitalised word it is a name's initial.
+            Case(
+                "lone capital opener",
+                Lang.EN,
+                listOf("Made in the U.S. ", "A new law passed. ", "Henry V. ", "A king."),
+            ),
+            Case("undotted next initial", Lang.EN, listOf("Dr. M. A Khan spoke. ", "J. I Packer agreed.")),
+        ),
+    )
+
+    // As with a plain space, a no-break, narrow no-break or thin space after the comma keeps the authors' split,
+    // as Android's ICU regex reads it too.
+    @Test
+    fun `undotted authors split before the title whatever space follows the comma`() = check(
+        listOf(' ', '\u00A0', '\u202F', '\u2009').map { space ->
+            Case("space U+%04X".format(space.code), Lang.EN, listOf("West J,${space}Lundberg P. ", "Rapid imaging."))
+        },
     )
 
     @Test

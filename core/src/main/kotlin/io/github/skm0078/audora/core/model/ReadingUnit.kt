@@ -7,7 +7,9 @@ package io.github.skm0078.audora.core.model
  * @property page zero-based page index in the document.
  * @property index sentence index within the page. Display only, NOT the resume key (that is [charStart]).
  * @property charStart start offset (inclusive) into the page's reading-order text (layout output, ADR-018). Units
- *   of a page ascend by [charStart] in reading order and do not overlap.
+ *   of a page do not decrease by [charStart] in reading order and do not overlap; a unit of no length
+ *   ([charEnd] == [charStart]: the summary of a continued table, "Table continues", or of a table with no header row
+ *   of its own, "N rows, M columns", whose first row is read as data) shares its start with the unit after it.
  * @property charEnd end offset (exclusive) into the same text.
  * @property text the extracted text, whitespace collapsed. What the reader shows and resume fingerprints hash; the
  *   voice gets it normalized at render time (ADR-019).
@@ -26,6 +28,10 @@ package io.github.skm0078.audora.core.model
  *   other kind.
  * @property noteRef the note number a [UnitKind.FOOTNOTE] unit holds (its marker in the body text points to it);
  *   null for every other kind.
+ * @property boldTerms the words of [text] set in a bold font, as spans in order (plan item 64: skim reads the bold
+ *   terms); bold words with only spaces between them are one span, and a sentence set wholly bold is one span over
+ *   it. Empty on headings, table units, scanned pages (OCR gives no font) and when nothing is bold. Display and
+ *   playback only: never part of a fingerprint, an anchor or anything saved.
  */
 data class ReadingUnit(
     val page: Int,
@@ -40,6 +46,7 @@ data class ReadingUnit(
     val speakScore: Float? = null,
     val table: TableRowInfo? = null,
     val noteRef: Int? = null,
+    val boldTerms: List<TermSpan> = emptyList(),
 ) {
     init {
         require(page >= 0) { "page must be >= 0, was $page" }
@@ -50,6 +57,7 @@ data class ReadingUnit(
             require(info.cells.all { it.end <= text.length }) { "table cells must lie inside the unit's text" }
         }
         require(noteRef == null || kind == UnitKind.FOOTNOTE) { "noteRef is only for footnotes, kind was $kind" }
+        require(boldTerms.all { it.end <= text.length }) { "bold terms must lie inside the unit's text" }
     }
 }
 
@@ -100,6 +108,9 @@ enum class UnitKind {
  * @property headers the header row's cell texts, one per column; empty when the table has no header row.
  * @property cells this row's cells as spans of the unit's text, one per column in order (an empty cell is an empty
  *   span); on the summary unit, the header row's cells.
+ * @property continued the table carries over from the page before (its header row printed there): the summary is
+ *   read as "Table continues", not as a new table.
+ * @property rowsBefore data rows of this table on earlier pages, so its rows are numbered on from them.
  */
 data class TableRowInfo(
     val tableIndex: Int,
@@ -108,8 +119,11 @@ data class TableRowInfo(
     val columnCount: Int,
     val headers: List<String>,
     val cells: List<CellSpan>,
+    val continued: Boolean = false,
+    val rowsBefore: Int = 0,
 ) {
     init {
+        require(rowsBefore >= 0) { "rowsBefore must be >= 0, was $rowsBefore" }
         require(tableIndex >= 0) { "tableIndex must be >= 0, was $tableIndex" }
         require(rowCount > 0 && columnCount > 0) { "a table has rows and columns, was $rowCount × $columnCount" }
         require(row == null || row in 0 until rowCount) { "row ($row) must be in 0 until $rowCount" }
@@ -122,5 +136,12 @@ data class TableRowInfo(
 data class CellSpan(val start: Int, val end: Int) {
     init {
         require(start in 0..end) { "start ($start) must be in 0..end ($end)" }
+    }
+}
+
+/** A stretch of a unit's `text` (a bold term): [start] inclusive, [end] exclusive, never empty. */
+data class TermSpan(val start: Int, val end: Int) {
+    init {
+        require(start in 0 until end) { "start ($start) must be in 0 until end ($end)" }
     }
 }

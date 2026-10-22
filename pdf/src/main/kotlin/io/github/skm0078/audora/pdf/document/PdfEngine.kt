@@ -23,6 +23,12 @@ interface PdfDocumentHandle : Closeable {
     fun outline(): List<OutlineEntry> = emptyList()
 
     /**
+     * The page's printed label from the document's page labels ("iv", "A-3"), as the PDF spells it; null when it
+     * has none or the engine cannot read labels. Loads no page: labels live in the document catalog.
+     */
+    fun pageLabel(pageIndex: Int): String? = null
+
+    /**
      * Maps the page's boxes onto the page as displayed, exactly as the reader draws it: OCR'd words, found on the
      * drawn page, are mapped back through it to get page-space highlight boxes (ADR-032). Null when the engine
      * cannot tell (desktop page dumps in tests): OCR'd sentences then have no highlight.

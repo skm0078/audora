@@ -19,6 +19,8 @@ class NoteFinderTest {
 
     private fun units(sketch: PageSketch): List<ReadingUnit> = builder.build(sketch.build())
 
+    private val englishBody = List(4) { "Body text set in the regular size of this page, line $it." }
+
     /** A page of body text (it sets the body size), then [pieces] as one line, then body text below it. */
     private fun withLine(pieces: List<Triple<String, Float, Float>>): String {
         val sketch = PageSketch()
@@ -46,6 +48,21 @@ class NoteFinderTest {
             val text =
                 withLine(listOf(Triple(before, BODY, 0f), Triple(marker, SMALL, RISE), Triple(" Next", BODY, 0f)))
             assertTrue("$before^$marker: $text", heard in text.replace('\n', ' '))
+        }
+    }
+
+    @Test
+    fun `a raised digit beside a maths operator is an exponent, and a raised plus is a charge`() {
+        listOf(
+            listOf("so E = mc", "2", " holds") to "so E = mc2 holds",
+            listOf("solve ax", "2", " + bx + c") to "solve ax2 + bx + c",
+            listOf("where ds", "2", " = dt") to "where ds2 = dt",
+            listOf("the ion Na", "+", " binds") to "the ion Na+ binds",
+        ).forEach { (pieces, heard) ->
+            val text = withLine(
+                listOf(Triple(pieces[0], BODY, 0f), Triple(pieces[1], SMALL, RISE), Triple(pieces[2], BODY, 0f)),
+            )
+            assertTrue("$pieces: $text", heard in text.replace('\n', ' '))
         }
     }
 
@@ -101,6 +118,28 @@ class NoteFinderTest {
     }
 
     @Test
+    fun `a corresponding author's short lines with the page's only e-mail addresses are a note`() {
+        /** A page of [body] lines, then [contact] at the column's foot in [size]; the footnote text, or "". */
+        fun note(contact: List<String>, size: Float = NOTE, body: List<String> = englishBody): String {
+            val sketch = PageSketch()
+            val notes = sketch.lines(body, LEFT, TOP) - PITCH
+            contact.forEachIndexed { i, line -> sketch.line(line, LEFT, notes - size * 1.2f * i, size) }
+            return units(sketch).filter { it.kind == UnitKind.FOOTNOTE }.joinToString(" ") { it.text }
+        }
+        val author = listOf("B Nora M. Gilbertson", "nmg421@uw.edu", "Department of Mathematics")
+        assertEquals(author.joinToString(" "), note(author))
+        val two = listOf("Ravi Rao: ravi@iitb.ac.in", "Asha Sen: asha@iitb.ac.in", "IIT Bombay")
+        assertEquals("two addresses in one block", two.joinToString(" "), note(two))
+        val hindi = listOf("संपर्क: राम शर्मा", "ram.sharma@du.ac.in", "गणित विभाग")
+        val hindiBody = List(4) { "यह इस पृष्ठ के सामान्य आकार में लिखी गई पंक्ति संख्या $it है।" }
+        assertEquals("Hindi", hindi.joinToString(" "), note(hindi, body = hindiBody))
+        // Set at the body's size it is body text; a page with addresses in its body too is a directory.
+        assertEquals("body size", "", note(author, size = BODY))
+        val directory = englishBody + "Write to the office at office@example.org for a form."
+        assertEquals("directory", "", note(author, body = directory))
+    }
+
+    @Test
     fun `small text that is not at the foot of its column, or a stray cell, stays body text`() {
         val stray = PageSketch()
         val below = stray.lines(List(4) { "Body text set in the regular size of this page, line $it." }, LEFT, TOP)
@@ -122,6 +161,21 @@ class NoteFinderTest {
             "टिप्पणी: यह शुल्क वापस नहीं होगा।" to UnitKind.ASIDE,
             "দ্রষ্টব্য: এই ফি ফেরত দেওয়া হবে না।" to UnitKind.ASIDE,
             "Note that the fee is not refundable." to UnitKind.BODY,
+            "N.B. The fee is not refundable." to UnitKind.ASIDE,
+            "Note - The fee is not refundable." to UnitKind.ASIDE,
+            "नोट - यह शुल्क वापस नहीं होगा।" to UnitKind.ASIDE,
+            "বিঃদ্রঃ এই ফি ফেরত দেওয়া হবে না।" to UnitKind.ASIDE,
+            "बि:द्र: यह शुल्क वापस नहीं होगा।" to UnitKind.ASIDE,
+            "বি:দ্র: এই ফি ফেরত দেওয়া হবে না।" to UnitKind.ASIDE,
+            "नोट्स: यह शुल्क वापस नहीं होगा।" to UnitKind.ASIDE,
+            "N.B.— The fee is not refundable." to UnitKind.ASIDE,
+            "N.B., the fee is not refundable." to UnitKind.ASIDE,
+            "Note\u00A0: The fee is not refundable." to UnitKind.ASIDE,
+            // A word joined to "note" by a hyphen is not a label.
+            "Note-taking helps you keep up in class." to UnitKind.BODY,
+            "नोट-बुक में अपना नाम लिखें।" to UnitKind.BODY,
+            "নোট-বই খুলে প্রথম পাতা পড়ো।" to UnitKind.BODY,
+            "Notes.txt holds the list of files." to UnitKind.BODY,
         ).forEach { (text, kind) ->
             val sketch = PageSketch()
             val below = sketch.lines(List(3) { "Body text set in the regular size of this page, line $it." }, LEFT, TOP)

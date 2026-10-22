@@ -30,5 +30,43 @@ package io.github.skm0078.audora.pdf
  *     corrected against the word lists (same version).
  *     RI-4a part 2: tables on scanned pages read as a header unit and row units, ruled ones from the rules found in
  *     the page image, borderless ones from OCR's rows (same version).
+ * 11 = RI-10 on scanned pages: headings from OCR's line sizes and list items from bullets OCR misread as letters,
+ *     zeros or signs, which are no longer read aloud (ADR-035). RI-5a: note signs OCR glued to words left out
+ *     (same version). RI-4a: two table columns set close together split (same version). RI-3: Bengali dandas and
+ *     vowel signs OCR misread as "৷", "|" or "!" restored (same version). Review fixes: tables split at their intro
+ *     line, side-by-side tables kept apart (also when layout joins their rows), one-character cells by a rule
+ *     kept, `/Rotate` on scanned pages, exponents beside operators kept, retried margin strips (same version).
+ *     RI-5a: footnotes at the foot of scanned pages tagged, their opening markers left out, "Note:" asides tagged
+ *     (same version).
+ *     RI-4a: a table carried over a page break continues there; its first row of data is no longer a header row
+ *     (same version).
+ *     Further review fixes (same version): printers' slugs dropped from scanned pages' margins; short unmarked note
+ *     runs held to stricter signs; side-by-side tables judged by one rule for finder and grid, with figures as
+ *     accounts write them; Hindi and Bengali sentences carried by the column's layout; a "Note:" paragraph that OCR
+ *     merged with the next one split at its short last line; header years decided against their column's figures; a
+ *     headless table's first row read as data row 0 under a summary of no length; scanned pages binarized with
+ *     Sauvola instead of Otsu (ADR-025 amendment), so photos with shadows or uneven light keep their text; an unsure
+ *     page with unevenly lit paper read again with its light evened out (a hard shadow across a photo); words set
+ *     in a bold font tagged as each unit's bold terms (`ReadingUnit.boldTerms`, plan item 64); a table's own first
+ *     row demoted only on a running serial number or figures like its rows with no year, two years a header again;
+ *     English titles, Latin abbreviations, capital initials and references before a number no longer end a sentence
+ *     ("Dr. Rao", "e.g. Apples", "Abbott B. P.", "Eq. (A1)"); list items opened by "b.", "iv.", "ii)", "(A)",
+ *     "B)" or "(IV)"; a corresponding author's block at a column's foot (short small lines with the page's only
+ *     e-mail address) tagged as a footnote; printer's slugs in a page's margin dropped (a line ending with a layout
+ *     file's name, a bare print stamp to the second, or a print time another page's margin shares to the minute);
+ *     a word header opening the next page starts a table of its own, and numbers that name the columns ("041",
+ *     "1 | 2 | 3") stay a header; "S. K. Mukherjee", "Govt. Order", "Rs. 500" and dotted Hindi and Bengali words
+ *     held whole on Android too; "x." opening an item only in sequence, "(क)" and "(ক)" labels; an evened OCR read
+ *     kept only with as many words; dot leaders, blanks and rules of five marks or more read as a pause; the last
+ *     initial of an author list written without stops ("West J, Lundberg P.") ends the sentence; a printer's slug at
+ *     a page's edge is outside its text area, so the page number above it goes too; dotted Hindi words with
+ *     punctuation or brackets and Hindi initials without spaces held whole; rows numbering every column are headers
+ *     and carry a table on; letter items in nested flush lists; "(अ)" labels; a leader reads as one ellipsis
+ *     (left out at a unit's or cell's end, a dash for a cell holding only a rule) and keeps a contents line whole;
+ *     a stop glued between Indic letters holds; "Henry V. The" ends a sentence; column numbers in brackets; each
+ *     contents entry its own unit; only a rule is a dash in a cell; an author list's split kept after a no-break
+ *     space; a bare print stamp repeats only its own time; "वि. सं.", "वि.वि. बंद", "a.m. है" and a dotted Indic word
+ *     with a joiner after its stop held whole; "(U.S.) The" and "the U.S. A new law" end a sentence; a math sign's
+ *     tall box no longer joins two lines of words; text set wholly in a monospace font is never cut into columns.
  */
-const val PIPELINE_VERSION: Int = 10
+const val PIPELINE_VERSION: Int = 11

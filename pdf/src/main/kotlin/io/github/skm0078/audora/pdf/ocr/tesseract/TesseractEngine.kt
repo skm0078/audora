@@ -4,6 +4,8 @@
 package io.github.skm0078.audora.pdf.ocr.tesseract
 
 import com.googlecode.tesseract.android.TessBaseAPI
+import io.github.skm0078.audora.core.config.OcrConfig
+import io.github.skm0078.audora.core.config.OcrThreshold
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
@@ -32,14 +34,34 @@ interface TessdataSource {
  * serialized; the player reads about a page ahead and the reader rarely asks at the same time.
  *
  * Settings: LSTM only (`tessdata_best` has no legacy model), automatic page segmentation (columns and paragraphs),
- * and the image's real resolution so Tesseract does not guess the text size.
+ * the image's real resolution so Tesseract does not guess the text size, and [threshold] (Sauvola by default, so a
+ * phone photo's shadows and uneven light keep their text). A Tesseract without `thresholding_method` (before 5.0)
+ * keeps its own Otsu; the method applied is what the log and the cache key name.
  */
-class TesseractEngine(private val models: TessdataSource) : OcrEngine {
+class TesseractEngine(
+    private val models: TessdataSource,
+    private val threshold: OcrThreshold = OcrConfig().threshold,
+) : OcrEngine {
     private val lock = Any()
     private var api: TessBaseAPI? = null
     private var loaded: String? = null
 
-    override val cacheTag: String get() = "tess-${models.revision}"
+    /** [threshold] if this Tesseract takes it, else the Otsu it always uses; asked once, before any page is read. */
+    private val applied: OcrThreshold by lazy {
+        val probe = TessBaseAPI()
+        try {
+            if (probe.setVariable(THRESHOLD_VARIABLE, threshold.tesseractValue.toString())) {
+                threshold
+            } else {
+                AudoraLog.w(TAG, "Tesseract ${probe.getVersion()} lacks $THRESHOLD_VARIABLE; reading with OTSU")
+                OcrThreshold.OTSU
+            }
+        } finally {
+            probe.recycle()
+        }
+    }
+
+    override val cacheTag: String get() = "tess-${models.revision}-${applied.name.lowercase()}"
 
     override fun installedLangs(): Set<Lang> = models.installed()
 
@@ -80,7 +102,10 @@ class TesseractEngine(private val models: TessdataSource) : OcrEngine {
             false
         }
         return if (ok) {
-            AudoraLog.i(TAG, "Tesseract ${tess.getVersion()} loaded $codes")
+            if (!tess.setVariable(THRESHOLD_VARIABLE, applied.tesseractValue.toString())) {
+                AudoraLog.w(TAG, "Tesseract ${tess.getVersion()} refused $THRESHOLD_VARIABLE=${applied.name}")
+            }
+            AudoraLog.i(TAG, "Tesseract ${tess.getVersion()} loaded $codes threshold=${applied.name}")
             api = tess
             loaded = key
             tess
@@ -99,6 +124,7 @@ class TesseractEngine(private val models: TessdataSource) : OcrEngine {
     companion object {
         private const val TAG = "Audora.Tesseract"
         private const val DPI_VARIABLE = "user_defined_dpi"
+        private const val THRESHOLD_VARIABLE = "thresholding_method"
         private const val GRAY_BYTES_PER_PIXEL = 1
 
         /** Tesseract's codes, main language first: an Indic script before English on a bilingual page. */

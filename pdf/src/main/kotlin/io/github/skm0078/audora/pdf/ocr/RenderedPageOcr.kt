@@ -37,12 +37,15 @@ interface OcrEngine {
  * book), so the second one waits and reads the first one's result instead of recognising the page again.
  *
  * A page that reads with a low confidence may be a sideways or upside-down scan: a shrunk copy is read turned each
- * way and, when one turn reads clearly better, the page is read again turned that way ([OcrText.quarterTurns]).
+ * way and, when one turn reads clearly better, the page is read again turned that way ([OcrText.quarterTurns]). A
+ * page that still reads unsure with its paper unevenly lit (a shadow across a photo) is read again with its light
+ * evened out, kept when that reads clearly better ([evenlyLit]).
  *
  * Logs one line per recognised page with the time spent drawing and recognising it (done-when: per-page time on
  * the test phones), never the text.
  */
-@Suppress("LongParameterList") // The book, its renderer and logs, the engine, the cache and two configs.
+// The book, its renderer and logs, the engine, the cache, two configs and cache-only; PageOcr calls and steps.
+@Suppress("LongParameterList", "TooManyFunctions")
 class RenderedPageOcr(
     private val pages: PageRenderer,
     private val engine: OcrEngine,
@@ -51,13 +54,17 @@ class RenderedPageOcr(
     private val logContext: String,
     private val config: OcrConfig = OcrConfig(),
     private val qualityConfig: QualityConfig = QualityConfig(),
+    private val cacheOnly: Boolean = false,
 ) : PageOcr {
     private val lineRetry = OcrLineRetry(engine, config, logContext)
     private val ruleFinder = RuleFinder(config.rules)
 
+    override fun cachedOnly(): PageOcr =
+        RenderedPageOcr(pages, engine, cache, bookKey, logContext, config, qualityConfig, cacheOnly = true)
+
     override fun recognize(pageIndex: Int, langs: Set<Lang>): Outcome<OcrText, OcrError> {
         if (langs.isEmpty()) return Outcome.Failure(OcrError.Failed("no language to recognise page $pageIndex in"))
-        val key = OcrKey(bookKey, pageIndex, langs, config.renderDpi, engine.cacheTag, PAGE_VARIANT)
+        val key = OcrKey(bookKey, pageIndex, langs, config.renderDpi, engine.cacheTag, retried(PAGE_VARIANT, langs))
         return cached(key) { image -> readUpright(image, key.langs) }
     }
 
@@ -86,7 +93,7 @@ class RenderedPageOcr(
         share: Float,
     ): Outcome<OcrMargins, OcrError> {
         if (langs.isEmpty()) return Outcome.Failure(OcrError.Failed("no language to read page $pageIndex's margins in"))
-        val variant = String.format(Locale.ROOT, "margins%d-%.3f", quarterTurns, share)
+        val variant = retried(String.format(Locale.ROOT, "%s%d-%.3f", MARGIN_VARIANT, quarterTurns, share), langs)
         val key = OcrKey(bookKey, pageIndex, langs, config.marginDpi, engine.cacheTag, variant)
         val strips = cached(key) { image -> readStrips(image.turned(quarterTurns), langs, share) }
         return strips.map { text ->
@@ -104,7 +111,9 @@ class RenderedPageOcr(
             BOTTOM_STRIP to image.strip(1 - share, 1f),
         )) {
             if (strip == null) continue
-            when (val read = engine.recognize(strip, langs)) {
+            // Retried like the page itself, or a running header the page's retry cleaned up never matches the
+            // neighbours' garbled reads of it.
+            when (val read = engine.recognize(strip, langs).map { lineRetry.improve(it, strip, langs) }) {
                 is Outcome.Success -> read.value.lines.mapTo(lines) { line ->
                     OcrLine(line.words.map { OcrWord(it.text, null) }, paragraph)
                 }
@@ -123,13 +132,65 @@ class RenderedPageOcr(
     private fun readUpright(image: PageImage, langs: Set<Lang>): Outcome<OcrText, OcrError> =
         engine.recognize(image, langs).flatMap { asDrawn ->
             val turns = if (asDrawn.meanConfidence >= config.orientationCheckBelow) 0 else bestTurn(image, langs)
-            if (turns == 0) {
-                Outcome.Success(finished(asDrawn, image, langs, 0))
-            } else {
-                val upright = image.turned(turns)
-                engine.recognize(upright, langs).map { finished(it, upright, langs, turns) }
+            val upright = image.turned(turns)
+            val read = if (turns == 0) Outcome.Success(asDrawn) else engine.recognize(upright, langs)
+            read.map { page ->
+                val (best, from) = evenlyLit(page, upright, langs)
+                finished(best, from, langs, turns)
             }
         }
+
+    /**
+     * [page], read from [upright], or the page read again with its light evened out ([PaperLight]) when it read
+     * unsure, its paper is unevenly lit (a shadow across a photo) and the evened read is clearly better with as many
+     * words ([io.github.skm0078.audora.core.config.LightingConfig]); with the image it was read from.
+     */
+    private fun evenlyLit(page: RecognizedPage, upright: PageImage, langs: Set<Lang>): Pair<RecognizedPage, PageImage> {
+        val lighting = config.lighting
+        val unsure = lighting.enabled && page.meanConfidence < lighting.readAgainBelow
+        val light = if (unsure) PaperLight.of(upright, lighting, page.lineHeight) else null
+        if (light == null || light.evenness >= lighting.unevenBelow) return page to upright
+        val evened = light.evened()
+        return when (val read = engine.recognize(evened, langs)) {
+            is Outcome.Success -> if (keepsEvened(page, read.value, light)) read.value to evened else page to upright
+
+            is Outcome.Failure -> {
+                AudoraLog.w(TAG, "OCR evened read failed $logContext page=${upright.pageIndex}: ${read.error}")
+                page to upright
+            }
+        }
+    }
+
+    /**
+     * [again], read evened, reads clearly surer than [page], sure enough on its own, with as many words and more
+     * confidence over all its characters; logged either way.
+     */
+    private fun keepsEvened(page: RecognizedPage, again: RecognizedPage, light: PaperLight): Boolean {
+        val lighting = config.lighting
+        val words = page.lines.sumOf { it.words.size }
+        val againWords = again.lines.sumOf { it.words.size }
+        val better = again.meanConfidence >= page.meanConfidence + lighting.minGain &&
+            again.meanConfidence >= lighting.minEvenedConfidence &&
+            againWords >= words * lighting.minWordShare &&
+            confidenceTotal(again) > confidenceTotal(page)
+        AudoraLog.i(
+            TAG,
+            "OCR lighting $logContext page=${light.pageIndex} evenness=${"%.2f".format(Locale.ROOT, light.evenness)} " +
+                "confidence=${page.meanConfidence}->${again.meanConfidence} words=$words->$againWords " +
+                "kept=${if (better) "evened" else "as drawn"}",
+        )
+        return better
+    }
+
+    private fun confidenceTotal(page: RecognizedPage): Long =
+        page.lines.sumOf { line -> line.words.sumOf { it.conf.toLong() * it.text.length } }
+
+    /**
+     * [variant] with the models the line retry may use: a page read before another model was installed is read again
+     * (the language probe's key already holds every installed model).
+     */
+    private fun retried(variant: String, langs: Set<Lang>): String =
+        lineRetry.otherModels(langs).joinToString("") { "+" + it.bcp47Tag }.let { variant + it }
 
     /** [page], read from [upright], with its unsure lines read again and the rules found in [upright]. */
     private fun finished(page: RecognizedPage, upright: PageImage, langs: Set<Lang>, turns: Int): OcrText {
@@ -155,12 +216,21 @@ class RenderedPageOcr(
         return if (scores[best] >= scores[0] + config.orientationMinGain) best else 0
     }
 
+    /**
+     * [key]'s text from the cache, else read now and cached. Cache-only, the cache is read without the page's lock
+     * (pages are written whole, through a rename) and without refreshing the page's date: a look, not a use.
+     */
     private fun cached(key: OcrKey, read: (PageImage) -> Outcome<OcrText, OcrError>): Outcome<OcrText, OcrError> =
-        synchronized(lockFor(key)) {
-            cache?.get(key)?.let(OcrTextCodec::decode)?.let { return Outcome.Success(it) }
-            val result = recognizeNow(key, read)
-            if (result is Outcome.Success) cache?.put(key, OcrTextCodec.encode(result.value))
-            result
+        if (cacheOnly) {
+            cache?.peek(key)?.let(OcrTextCodec::decode)?.let { Outcome.Success(it) }
+                ?: Outcome.Failure(OcrError.Failed("page ${key.page} is not in the OCR cache"))
+        } else {
+            synchronized(lockFor(key)) {
+                cache?.get(key)?.let(OcrTextCodec::decode)?.let { return Outcome.Success(it) }
+                val result = recognizeNow(key, read)
+                if (result is Outcome.Success) cache?.put(key, OcrTextCodec.encode(result.value))
+                result
+            }
         }
 
     private fun recognizeNow(key: OcrKey, read: (PageImage) -> Outcome<OcrText, OcrError>): Outcome<OcrText, OcrError> {
@@ -192,8 +262,15 @@ class RenderedPageOcr(
         private const val TOP_STRIP = 0
         private const val BOTTOM_STRIP = 1
 
-        /** Pages read with the line retry (RI-3) and their rules found (RI-4a part 2); older text is not reused. */
-        private const val PAGE_VARIANT = "page-r2"
+        /**
+         * Pages with the line retry (RI-3), rules (RI-4a part 2), line sizes (RI-10) and evened light; older text is
+         * not reused. [io.github.skm0078.audora.core.config.LightingConfig] is not in the key: bump this when it
+         * changes.
+         */
+        private const val PAGE_VARIANT = "page-r6"
+
+        /** Margin strips with the line retry, like the page they are compared with. */
+        private const val MARGIN_VARIANT = "margins-r2-"
 
         /** Striped, so the locks stay few however many pages a session reads. */
         private val locks = Array(LOCK_STRIPES) { Any() }

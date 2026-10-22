@@ -167,3 +167,37 @@ Java_io_github_skm0078_audora_pdf_pdfium_PdfiumExtNative_nativeReadPage(JNIEnv* 
     // On failure a Java exception (usually OutOfMemoryError) is pending and propagates to Kotlin.
     return ok ? result : nullptr;
 }
+
+namespace {
+
+// A page label is a short prefix and number ("A-12", "iv"); anything longer is a damaged /PageLabels tree.
+constexpr unsigned long kMaxPageLabelBytes = 1024;
+
+}  // namespace
+
+// Whether the loaded libpdfium.so can read page labels (FPDF_GetPageLabel is optional).
+extern "C" JNIEXPORT jboolean JNICALL
+Java_io_github_skm0078_audora_pdf_pdfium_PdfiumExtNative_nativeHasPageLabels(JNIEnv*, jclass) {
+    return gInitError.empty() && gApi.getPageLabel != nullptr ? JNI_TRUE : JNI_FALSE;
+}
+
+// The page's label from the document's /PageLabels tree, or null when it has none, the build cannot read
+// labels, or it cannot be read; an empty string when it is longer than kMaxPageLabelBytes (a damaged tree), so
+// the caller can say so. Caller holds PdfiumAndroidKt's lock and keeps the document open.
+extern "C" JNIEXPORT jstring JNICALL
+Java_io_github_skm0078_audora_pdf_pdfium_PdfiumExtNative_nativePageLabel(JNIEnv* env, jclass, jlong documentPtr,
+                                                                           jint pageIndex) {
+    auto document = reinterpret_cast<audora::FpdfDocument>(static_cast<intptr_t>(documentPtr));
+    if (!gInitError.empty() || gApi.getPageLabel == nullptr || document == nullptr) return nullptr;
+    // Bytes of UTF-16LE including the two-byte terminator; 0 when the page has no label.
+    unsigned long bytes = gApi.getPageLabel(document, pageIndex, nullptr, 0);
+    if (bytes <= sizeof(char16_t)) return nullptr;
+    if (bytes > kMaxPageLabelBytes) {
+        static const jchar kNone = 0;
+        return env->NewString(&kNone, 0);
+    }
+    std::u16string label(bytes / sizeof(char16_t), u'\0');
+    if (gApi.getPageLabel(document, pageIndex, label.data(), bytes) != bytes) return nullptr;
+    label.resize(label.size() - 1);  // the terminator
+    return env->NewString(reinterpret_cast<const jchar*>(label.data()), static_cast<jsize>(label.size()));
+}

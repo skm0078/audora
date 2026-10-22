@@ -20,17 +20,20 @@ import io.github.skm0078.audora.pdf.render.ViewRect
  *   a single edit away (delete, insert, replace or swap a character); confusions cost less, so they win ties.
  *   Ambiguous words (two candidates about as common), short words, compounds and words with digits are kept. Capitals
  *   are kept as printed.
- * - **Signs read as punctuation.** A colon read for a visarga, and in Bengali "!" or "৷" read for the vowel sign aa,
- *   when the word with the sign is known and the word without it is not.
+ * - **Signs read as punctuation.** A colon read for a visarga, and in Bengali "!", "|" or "৷" read for the vowel sign
+ *   aa, when the word with the sign is known and the word without it is not.
+ * - **A bar running on.** In Bengali, a bar glued to a word that runs on to the next word is the vowel sign aa
+ *   ([OcrAaBars]), short and known words included.
  *
  * Punctuation around a word is kept. A language without a word list is left as read.
  */
 internal class OcrRepair(private val config: OcrRepairConfig, private val models: WordModels) {
     private val alphabets = HashMap<Lang, CharArray>()
+    private val aaBars = OcrAaBars(config, models)
 
     fun repair(ocr: OcrText): OcrText {
         if (!config.enabled) return ocr
-        val lines = ocr.lines.map { line -> OcrLine(repairLine(line.words), line.paragraph) }
+        val lines = ocr.lines.map { line -> OcrLine(repairLine(line.words), line.paragraph, line.size) }
         return OcrText(lines, ocr.quarterTurns, ocr.rules)
     }
 
@@ -43,7 +46,7 @@ internal class OcrRepair(private val config: OcrRepairConfig, private val models
                 out.add(joined)
                 i += 2
             } else {
-                out.add(corrected(words[i], isLineEnd = i == words.lastIndex))
+                out.add(corrected(words[i], next = words.getOrNull(i + 1)))
                 i++
             }
         }
@@ -74,9 +77,10 @@ internal class OcrRepair(private val config: OcrRepairConfig, private val models
         }
     }
 
-    private fun corrected(word: OcrWord, isLineEnd: Boolean): OcrWord {
+    private fun corrected(word: OcrWord, next: OcrWord?): OcrWord {
         val token = Token.of(word.text)
-        val fixed = if (mayBeMisread(word, token, isLineEnd)) fixedText(token) else null
+        val fixed = aaBars.runningOn(word.text, word.confidence, next?.text)
+            ?: if (mayBeMisread(word, token, isLineEnd = next == null)) fixedText(token) else null
         return if (fixed == null) word else OcrWord(fixed, word.box, word.confidence)
     }
 

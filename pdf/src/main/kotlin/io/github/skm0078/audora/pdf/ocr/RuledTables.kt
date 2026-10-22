@@ -14,16 +14,19 @@ import kotlin.math.abs
  * Tesseract reads a ruled table cell by cell, often a column at a time and out of order, so the table comes from its
  * rules instead (in the table frame: PDF points, y up, text upright).
  *
- * 1. **Edges.** Rules within `TableConfig.ruleSnapEm` of each other across their length are one edge (a rule broken
- *    by the scan, a double rule).
+ * 1. **Edges.** Rules within `TableConfig.ruleSnapEm` of each other across their length, with less than
+ *    `ruleBreakEm` between them along it, are one edge (a rule broken by the scan, a double rule). Rules at the same
+ *    height farther apart stay apart: two tables side by side share row heights, not rules.
  * 2. **Grids.** A horizontal and a vertical edge meet when each reaches the other (give or take the snap). Edges that
  *    meet, directly or through others, are one grid; a grid of at least three of each (two rows, two columns) is a
- *    table. A box around a title has two of each and is not.
+ *    table. A box around a title has two of each and is not. Within a grid, edges at one position are one again (a
+ *    rule the scan broke wider than the snap).
  * 3. **Cells.** Neighbouring slots between the edges are one cell where no rule runs between them (a cell spanning
  *    columns or rows); slots that join into anything but a rectangle are the space around a box inside a frame, not a
  *    cell. Each word goes to the cell holding its centre; a cell spanning rows belongs to its first.
- * 4. **Rule glyphs.** A word no wider than the snap on a vertical edge is a rule Tesseract read as "|" or "।": taken
- *    from the text but kept out of the cells.
+ * 4. **Rule glyphs.** A word no wider than the snap on a vertical edge, made only of strokes a rule reads as
+ *    ([RULE_STROKES]: "|", "।", "৷", "!", "l", "I", "[", ":"), is a rule Tesseract read as text: taken from the text
+ *    but kept out of the cells. A narrow cell's one character ("5", "✓") stays.
  * 5. **Runs of rows.** Rows go where no word is (the gap of a double border), and the grid is cut where a row is split
  *    differently from the one above (`MIN_SAME_WALLS`): a footer or title across the grid is text, not a row.
  * 6. **Header.** The rows before the first with a number ([headerRowCount]). Fewer than `minFilledShare` of a run's
@@ -31,6 +34,7 @@ import kotlin.math.abs
  */
 internal class RuledTables(private val config: TableConfig, em: Float) {
     private val snap = config.ruleSnapEm * em
+    private val breakGap = config.ruleBreakEm * em
 
     /** The ruled tables on [page], and the words of every row of cells side by side in a ruled grid. */
     fun find(page: PageText, words: List<TableWord>, rules: List<TextBox>): RuledPage {
@@ -54,14 +58,43 @@ internal class RuledTables(private val config: TableConfig, em: Float) {
         return RuledPage(found.flatMap { it.tables }, found.flatMapTo(HashSet()) { it.claimed })
     }
 
-    /** [parts] grouped into edges: parts whose positions are within the snap of the edge's last one. */
+    /**
+     * [parts] grouped into edges: parts whose positions are within the snap of the group's last one, split where
+     * their stretches stop touching.
+     */
     private fun edges(parts: List<Edge.Part>): List<Edge> {
-        val edges = ArrayList<MutableList<Edge.Part>>()
+        val lines = ArrayList<MutableList<Edge.Part>>()
         for (part in parts.sortedBy { it.at }) {
-            val last = edges.lastOrNull()
-            if (last != null && part.at - last.last().at <= snap) last.add(part) else edges.add(mutableListOf(part))
+            val last = lines.lastOrNull()
+            if (last != null && part.at - last.last().at <= snap) last.add(part) else lines.add(mutableListOf(part))
         }
-        return edges.map { Edge(it.map { p -> p.at }.average().toFloat(), it.map { p -> p.span }) }
+        return lines.flatMap { line -> touching(line).map(Edge::of) }
+    }
+
+    /** [parts] in runs whose stretches overlap or lie less than `TableConfig.ruleBreakEm` apart along their length. */
+    private fun touching(parts: List<Edge.Part>): List<List<Edge.Part>> {
+        val runs = ArrayList<MutableList<Edge.Part>>()
+        var reach = Float.NEGATIVE_INFINITY
+        for (part in parts.sortedBy { it.span.start }) {
+            if (runs.isEmpty() || part.span.start > reach + breakGap) {
+                runs.add(mutableListOf(part))
+                reach = part.span.endInclusive
+            } else {
+                runs.last().add(part)
+                reach = maxOf(reach, part.span.endInclusive)
+            }
+        }
+        return runs
+    }
+
+    /** [edges] of one grid within the snap of each other across joined again: one rule broken wider than the snap. */
+    private fun rejoined(edges: List<Edge>): List<Edge> {
+        val groups = ArrayList<MutableList<Edge>>()
+        for (edge in edges.sortedBy { it.at }) {
+            val last = groups.lastOrNull()
+            if (last != null && edge.at - last.last().at <= snap) last.add(edge) else groups.add(mutableListOf(edge))
+        }
+        return groups.map { group -> Edge.of(group.flatMap { edge -> edge.spans.map { Edge.Part(edge.at, it) } }) }
     }
 
     /** Groups of edges that meet: each its horizontal edges top to bottom and vertical ones left to right. */
@@ -77,10 +110,12 @@ internal class RuledTables(private val config: TableConfig, em: Float) {
         }
         val groups = parent.indices.groupBy(::root).values
         return groups.map { group ->
-            val rows = group.filter { it < horizontal.size }.map { horizontal[it] }.sortedByDescending { it.at }
-            val columns = group.filter {
-                it >= horizontal.size
-            }.map { vertical[it - horizontal.size] }.sortedBy { it.at }
+            val rows = rejoined(
+                group.filter {
+                    it < horizontal.size
+                }.map { horizontal[it] },
+            ).sortedByDescending { it.at }
+            val columns = rejoined(group.filter { it >= horizontal.size }.map { vertical[it - horizontal.size] })
             rows to columns
         }.filter { (rows, columns) -> rows.size >= MIN_EDGES && columns.size >= MIN_EDGES }
     }
@@ -94,7 +129,9 @@ internal class RuledTables(private val config: TableConfig, em: Float) {
     private fun tables(page: PageText, words: List<TableWord>, rows: List<Edge>, columns: List<Edge>): RuledPage {
         val slots = Slots(rows, columns, snap)
         val inGrid = words.filter { slots.cellOf(it.box) != null }
-        val placed = inGrid.filterNot { isRuleGlyph(it.box, columns) }.groupBy { requireNotNull(slots.cellOf(it.box)) }
+        val placed = inGrid.filterNot {
+            isRuleGlyph(page, it, columns)
+        }.groupBy { requireNotNull(slots.cellOf(it.box)) }
         val usedRows = (0 until slots.rows).filter { r ->
             (0 until slots.columns).any { c -> placed.containsKey(slots.anchorOf(r, c)) }
         }
@@ -132,13 +169,16 @@ internal class RuledTables(private val config: TableConfig, em: Float) {
     }
 
     /**
-     * A "|", "।" or "!" Tesseract read from a rule: no wider than the snap, its centre within the snap of a vertical
-     * edge. It is still taken from the text, but kept out of the cells.
+     * A "|", "।" or "!" Tesseract read from a rule: only [RULE_STROKES], no wider than the snap, its centre within the
+     * snap of a vertical edge. It is still taken from the text, but kept out of the cells.
      */
-    private fun isRuleGlyph(box: TextBox, columns: List<Edge>): Boolean {
+    private fun isRuleGlyph(page: PageText, word: TableWord, columns: List<Edge>): Boolean {
+        val box = word.box
         val x = (box.left + box.right) / 2
         val y = (box.top + box.bottom) / 2
-        return box.width <= snap && columns.any { abs(it.at - x) <= snap && it.covers(y, snap) }
+        val text = page.text.substring(word.span.start, word.span.end).trim()
+        return text.isNotEmpty() && text.all { it in RULE_STROKES } && box.width <= snap &&
+            columns.any { abs(it.at - x) <= snap && it.covers(y, snap) }
     }
 
     /** The table of [rows] of [slots], or null when it holds too few words to be one. */
@@ -177,6 +217,11 @@ internal class RuledTables(private val config: TableConfig, em: Float) {
         }
 
         class Part(val at: Float, val span: ClosedFloatingPointRange<Float>)
+
+        companion object {
+            /** One edge of [parts]: at their mean position, running along all their stretches. */
+            fun of(parts: List<Part>) = Edge(parts.map { it.at }.average().toFloat(), parts.map { it.span })
+        }
     }
 
     /** The slots between consecutive edges, joined into cells where no rule separates them. */
@@ -257,6 +302,9 @@ internal class RuledTables(private val config: TableConfig, em: Float) {
 
         /** Rows whose walls overlap less than this (Jaccard) are not rows of one table. */
         const val MIN_SAME_WALLS = 0.5f
+
+        /** What Tesseract reads a vertical rule as: a bar, a danda (or Bengali "৷"), "!", "l", "I", a bracket, ":". */
+        const val RULE_STROKES = "|\u0964\u09F7!lI[]:"
 
         /** A cell's words line by line, top to bottom, then left to right. */
         val READING = compareByDescending<TableWord> { it.lineTop }.thenBy { it.box.left }

@@ -10,8 +10,16 @@ import io.github.skm0078.audora.pdf.layout.TableCells
 import io.github.skm0078.audora.pdf.layout.TextLine
 import io.github.skm0078.audora.pdf.layout.TextSpan
 
-/** A cell that is a number: "12", "-2.98", "4.00", "98,62,767", "৩.৯১", "45%", "12." (a serial number). */
-private val NUMBER = Regex("[-−+]?\\p{Nd}[\\p{Nd},]*(?:\\.\\p{Nd}+)?[.%]?")
+/**
+ * A cell that is a number: "12", "-2.98", "4.00", "98,62,767", "৩.৯১", "45%", "12 %", "12." (a serial number), and as
+ * accounts write them: "₹12", "Rs. 12", "RS.12", "500/-", "12*" (a note on the figure), "(1,234)" or "(-1,234)" (a
+ * loss). A bracketed number needs three characters at least: "(1)", "(12)" number a table's columns or a list's
+ * items. Spaces are plain spaces (`\\s` would also take a no-break space on Android's ICU regex, not on the JVM).
+ */
+internal val NUMBER_CELL = Regex(
+    "(?:₹ ?|(?i:rs)\\.? ?)?[-−+]?\\p{Nd}[\\p{Nd},]*(?:\\.\\p{Nd}+)?(?: ?%|/-|\\*{1,3}|\\.)?|" +
+        "\\((?:₹ ?|(?i:rs)\\.? ?)?[-−]?(?=[\\p{Nd},.]{3})\\p{Nd}[\\p{Nd},]*(?:\\.\\p{Nd}+)?\\)",
+)
 
 /**
  * How many leading rows of [rows] (each its cells' text) make the header: the rows before the first one with a
@@ -19,7 +27,7 @@ private val NUMBER = Regex("[-−+]?\\p{Nd}[\\p{Nd},]*(?:\\.\\p{Nd}+)?[.%]?")
  * first row when no row has a number (a truth table) or the first one does.
  */
 internal fun headerRowCount(rows: List<List<String>>, maxHeaderRows: Int): Int {
-    val firstWithNumber = rows.indexOfFirst { row -> row.any { NUMBER.matches(it.trim()) } }
+    val firstWithNumber = rows.indexOfFirst { row -> row.any { NUMBER_CELL.matches(it.trim()) } }
     return if (firstWithNumber < 1) 1 else minOf(firstWithNumber, maxHeaderRows, rows.size - 1)
 }
 

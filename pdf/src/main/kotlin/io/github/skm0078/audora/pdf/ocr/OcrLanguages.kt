@@ -36,12 +36,21 @@ internal class OcrLanguages(private val config: QualityConfig) {
     /** Remembers the languages of OCR output. */
     fun learnFrom(ocrText: CharSequence) = learn(ocrLangs(ocrText, config))
 
-    /** @param pageLangs the languages of the page's own (converted) text layer. */
-    fun forPage(pageIndex: Int, reason: RouteReason, pageLangs: Set<Lang>, ocr: PageOcr): Outcome<Set<Lang>, OcrError> {
+    /**
+     * @param pageLangs the languages of the page's own (converted) text layer.
+     * @param remember whether detected languages become the book's; false for a look that must change nothing.
+     */
+    fun forPage(
+        pageIndex: Int,
+        reason: RouteReason,
+        pageLangs: Set<Lang>,
+        ocr: PageOcr,
+        remember: Boolean = true,
+    ): Outcome<Set<Lang>, OcrError> {
         val trusted = pageLangs.takeIf { reason !in UNTRUSTED_LAYER && it.isNotEmpty() } ?: known
         if (trusted != null) return Outcome.Success(trusted)
         val detected = ocr.detectLangs(pageIndex)
-        if (detected is Outcome.Success && detected.value.isNotEmpty()) known = detected.value
+        if (remember && detected is Outcome.Success && detected.value.isNotEmpty()) known = detected.value
         return detected
     }
 
