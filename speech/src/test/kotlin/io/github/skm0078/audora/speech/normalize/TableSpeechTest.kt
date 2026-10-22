@@ -70,6 +70,8 @@ class TableSpeechTest {
             Triple(row("Wheat | …", emptyList()), Lang.EN, "Row 1. Wheat."),
             // A header ruled through gives the cell no header.
             Triple(row("Revenue | 5", listOf("–", "Units")), Lang.EN, "Row 1. Revenue. Units: 5."),
+            // So does a header of dots only.
+            Triple(row("Wheat | 12", listOf("Crop", "...")), Lang.EN, "Row 1. Crop: Wheat. 12."),
             // A dash inside a value stays as written.
             Triple(row("2019 | 10–12", listOf("Year", "Range")), Lang.EN, "Row 1. Year: 2019. Range: 10–12."),
         )

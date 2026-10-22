@@ -24,8 +24,10 @@ internal object VoiceChoice {
 internal class FixedChoices {
     @Volatile private var fixed: Map<Lang, VoiceId?>? = null
 
-    /** Reads [live] for every language once and answers with that from now on; returns what was fixed. */
-    fun fix(live: (Lang) -> VoiceId?): Map<Lang, VoiceId?> = Lang.entries.associateWith(live).also { fixed = it }
+    /** Reads [live] for every language on the first call and answers with that from now on; returns what was fixed. */
+    @Synchronized
+    fun fix(live: (Lang) -> VoiceId?): Map<Lang, VoiceId?> =
+        fixed ?: Lang.entries.associateWith(live).also { fixed = it }
 
     fun choiceFor(lang: Lang, live: (Lang) -> VoiceId?): VoiceId? {
         val run = fixed

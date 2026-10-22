@@ -46,4 +46,13 @@ class VoiceChoiceTest {
         assertEquals(book, choices.choiceFor(Lang.EN) { live[it] })
         assertNull(choices.choiceFor(Lang.HI) { live[it] })
     }
+
+    @Test
+    fun `fixing a second time keeps the first run's choices`() {
+        val choices = FixedChoices()
+        val first = choices.fix { book }
+
+        assertEquals(first, choices.fix { session })
+        assertEquals(book, choices.choiceFor(Lang.EN) { session })
+    }
 }

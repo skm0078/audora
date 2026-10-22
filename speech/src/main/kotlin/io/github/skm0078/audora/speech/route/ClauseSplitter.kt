@@ -220,7 +220,8 @@ object ClauseSplitter {
      */
     private fun colonCuts(text: String, i: Int): Boolean {
         val spaced = i + 1 >= text.length || text[i + 1].isWhitespace()
-        val labelsATime = TIME_LABEL.containsMatchIn(text.take(i)) && CLOCK_AHEAD.containsMatchIn(text.substring(i + 1))
+        val labelsATime = TIME_LABEL.containsMatchIn(text.take(i)) &&
+            CLOCK_AHEAD.containsMatchIn(text.substring(i + 1).trimStart())
         return spaced && !labelsATime
     }
 }

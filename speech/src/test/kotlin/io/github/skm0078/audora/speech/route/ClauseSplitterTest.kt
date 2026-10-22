@@ -78,6 +78,7 @@ class ClauseSplitterTest {
             Lang.HI to ("बैठक का समय: 10:30 PM है।" to "बैठक का समय: 10:30 PM है।"),
             Lang.BN to ("সময়: ৯:৩০ PM" to "সময়: ৯:৩০ PM"),
             Lang.HI to ("समय : 10:30 बजे" to "समय : 10:30 बजे"),
+            Lang.HI to ("समय:\u00A010:30 बजे" to "समय:\u00A010:30 बजे"),
             Lang.HI to ("समय: 3 घंटे" to "समय |COLON| 3 घंटे"),
             Lang.BN to ("প্রথম অংশ; দ্বিতীয় অংশ।" to "প্রথম অংশ |SEMICOLON| দ্বিতীয় অংশ।"),
             Lang.BN to ("তিনি বললেন “এখন যাও” এবং গেলেন।" to "তিনি বললেন |QUOTE| এখন যাও |QUOTE| এবং গেলেন।"),

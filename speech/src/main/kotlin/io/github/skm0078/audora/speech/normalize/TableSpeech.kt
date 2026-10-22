@@ -50,7 +50,7 @@ object TableSpeech {
                 val header = table.headers.getOrNull(column)?.trim()?.trimEnd(':', '：')?.trim().orEmpty()
                 when {
                     cell.isEmpty() -> null
-                    header.isEmpty() || RULE_ONLY.matches(header) -> cell
+                    header.isEmpty() || RULE_ONLY.matches(header) || DOTS_ONLY.matches(header) -> cell
                     else -> "$header: $cell"
                 }
             }

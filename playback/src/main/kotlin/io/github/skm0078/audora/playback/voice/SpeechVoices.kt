@@ -83,8 +83,12 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
         val known = knownVoice(lang)
         if (known != null) return Outcome.Success(known)
         val resolved = if (lang == Lang.EN) engines.bundled().map { it.voice.id } else engines.system().bestVoice(lang)
-        if (resolved is Outcome.Success) defaults.putIfAbsent(lang, resolved.value)
-        return resolved
+        // Two calls racing on a cold start answer alike: the first voice stored wins.
+        return if (resolved is Outcome.Success) {
+            Outcome.Success(defaults.putIfAbsent(lang, resolved.value) ?: resolved.value)
+        } else {
+            resolved
+        }
     }
 
     override fun engine(id: EngineId): Outcome<SpeechEngine, SpeechError> = when (id) {
