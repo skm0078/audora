@@ -17,14 +17,16 @@ import io.github.skm0078.audora.core.model.Lang
  * plain numbers. Grouping follows the text (1,50,000 and 150,000 are both one lakh fifty thousand: Hindi and Bengali
  * count in lakh and crore); a decimal reads its digits one by one; leading zeros and runs longer than
  * [NormalizerConfig.maxCardinalDigits] read digit by digit; a bare year from 1100 to 1999 reads as "उन्नीस सौ
- * सैंतालीस". Text without digits is returned unchanged.
+ * सैंतालीस". A slash between words reads "या"/"বা" and "&" reads "और"/"এবং" (RI-6). Text with none of these is
+ * returned unchanged.
  */
 class IndicNormalizer internal constructor(private val words: IndicNumberWords, private val config: NormalizerConfig) :
     TextNormalizer {
 
     override fun normalize(text: String, role: TextRole): String {
-        val ascii = asciiDigits(text)
-        if (ascii.none(Char::isAsciiDigit)) return text
+        val spoken = speakSymbols(text)
+        val ascii = asciiDigits(spoken)
+        if (ascii.none(Char::isAsciiDigit)) return if (spoken === text) text else tidy(spoken)
         var result = CURRENCY.replace(ascii) { match -> money(match.groupValues[1]) }
         result = PERCENT.replace(result) { match -> "${read(match.groupValues[1])} ${words.percent}" }
         result = RANGE.replace(result) { match ->
@@ -35,7 +37,16 @@ class IndicNormalizer internal constructor(private val words: IndicNumberWords, 
             match.value.split('-').joinToString(", ", transform = words::digits)
         }
         result = PLAIN.replace(result) { match -> read(match.value) }
-        return EXTRA_SPACES.replace(result, " ").trim()
+        return tidy(result)
+    }
+
+    private fun tidy(text: String): String = EXTRA_SPACES.replace(text, " ").trim()
+
+    /** "हाँ/नहीं" → "हाँ या नहीं", "&" → "और"; the text itself when it has neither. */
+    private fun speakSymbols(text: String): String {
+        if ('/' !in text && '&' !in text) return text
+        val slashed = WORD_SLASH.replace(text, " ${words.or} ")
+        return AMPERSAND.replace(slashed, " ${words.and} ")
     }
 
     private fun read(token: String, allowYear: Boolean = true): String {
@@ -84,6 +95,10 @@ class IndicNormalizer internal constructor(private val words: IndicNumberWords, 
         private val HYPHENATED_CODE = Regex("""(?<![\w.,-])\d+(?:-\d+)+(?![\w-])""")
         private val PLAIN = Regex("""(?<![\w.])$NUMBER(?![\w])""")
         private val EXTRA_SPACES = Regex("""[ \t]{2,}""")
+
+        /** A slash between two words, Indic or Latin, two letters or more a side ("w/o" stays). */
+        private val WORD_SLASH = Regex("""(?<=[\p{L}\p{M}]{2})/(?=[\p{L}\p{M}]{2})""")
+        private val AMPERSAND = Regex("""\s*&\s*""")
 
         /** The normalizer for [lang]'s parts, or null for a language the Indic rules do not cover. */
         fun forLang(lang: Lang, config: NormalizerConfig = NormalizerConfig()): IndicNormalizer? = when (lang) {

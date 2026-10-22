@@ -41,6 +41,16 @@ class PcmAudio(val samples: ShortArray, val sampleRate: Int) {
         return PcmAudio(samples.copyOf(samples.size + padding), sampleRate)
     }
 
+    /** This audio [factor] times as loud (0..1: quieter), clipped to 16 bits. Itself when [factor] is 1. */
+    fun withGain(factor: Float): PcmAudio {
+        require(factor >= 0f && factor.isFinite()) { "factor must be >= 0, was $factor" }
+        if (factor == 1f) return this
+        val out = ShortArray(samples.size) { i ->
+            (samples[i] * factor).roundToInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        return PcmAudio(out, sampleRate)
+    }
+
     override fun toString(): String = "PcmAudio(${samples.size} samples @ $sampleRate Hz, $durationMs ms)"
 
     companion object {
@@ -48,6 +58,9 @@ class PcmAudio(val samples: ShortArray, val sampleRate: Int) {
         private const val PCM16_MAX = Short.MAX_VALUE.toFloat()
 
         fun silence(sampleRate: Int): PcmAudio = PcmAudio(ShortArray(0), sampleRate)
+
+        /** [ms] of silence at [sampleRate]: a pause inside a sentence (RI-6). */
+        fun silence(sampleRate: Int, ms: Int): PcmAudio = silence(sampleRate).withSilenceAfter(ms)
 
         /** Converts float samples in [-1, 1] (sherpa-onnx's output) to 16-bit, clipping anything outside. */
         fun fromFloats(samples: FloatArray, sampleRate: Int): PcmAudio = PcmAudio(

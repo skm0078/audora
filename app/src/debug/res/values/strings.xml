@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/debug/res/values/strings.xml -->
+<!-- Purpose: The dev build's launcher name, so it is not mistaken for the release app installed beside it. -->
+<resources>
+    <string name="app_name">Audora Dev</string>
+</resources>

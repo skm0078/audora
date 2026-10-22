@@ -41,10 +41,21 @@ The research behind the choices below is in the project's `research/05-read-alou
    the sentence that was cut off, 5 min or more also replays the one before (`ResumeRewindConfig`). A pause at a
    sentence end (sleep timer) steps one sentence less; a seek while paused, or a new position, cancels it.
 
+9. **Punctuation you can hear (RI-6; ADR-035's speakability layer records it too once it lands).** A sentence is
+   cut after script routing at strong marks only: em dash, a spaced dash, a colon or semicolon followed by a space,
+   brackets, double quotes, an ellipsis and a danda inside the text. Commas never cut, so the voice keeps its
+   sentence intonation; a dash between digits stays a range. Each piece is voiced on its own and the mark's pause
+   (`SpeechStyleConfig.clausePausesMs`, scaled by the pace and speed like the sentence pauses) goes between them;
+   bracketed pieces are 3 dB quieter. The marks are dropped, "?" and "!" never. A "Pause at punctuation" switch
+   (part of the style, default on) lets the listener compare by ear; it stays only if it sounds better. The
+   normalizers also read "and/or", "yes/no", "24/7" and a bare "°C", and "/" and "&" between Hindi or Bengali words.
+
 ## Consequences
 - A speed change costs a restart of the current sentence (a short gap) instead of being instant. Accepted: clear
   words matter more, and the slider sends once per drag.
 - PIPELINE_VERSION is unchanged: `:pdf` output is the same; only rendering changed.
+- Clause pauses cost one engine call per piece; each call adds the voice's own short trailing silence, which the
+  pause table was sized around. Render speed is measured without the inserted pauses.
 - Shared PDFs that cannot be kept use storage twice (the other app's and Audora's copy). Accepted: otherwise the
   book is lost on the next restart.
 - External controllers (a car, a watch) still see and may set the player's speed; Audora's own controls do not use it.

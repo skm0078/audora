@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/SpeechSheet.kt
-// Purpose: The player's speed and pace sheet: a fine speed slider with presets, and the pause between sentences.
+// Purpose: The player's speed and pace sheet: a speed slider with presets, sentence pauses and clause pauses.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -21,6 +21,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,6 +51,8 @@ fun SpeechSheet(
     onSpeed: (Float) -> Unit,
     onPace: (Pace) -> Unit,
     onDismiss: () -> Unit,
+    clausePauses: Boolean = true,
+    onClausePauses: (Boolean) -> Unit = {},
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -58,6 +61,7 @@ fun SpeechSheet(
         ) {
             SpeedSection(speed, config, onSpeed)
             PaceSection(pace, onPace)
+            ClausePausesRow(clausePauses, onClausePauses)
             Text(
                 stringResource(R.string.speech_sheet_hint),
                 style = MaterialTheme.typography.bodySmall,
@@ -119,6 +123,22 @@ private fun PaceSection(pace: Pace, onPace: (Pace) -> Unit) {
                 shape = SegmentedButtonDefaults.itemShape(index, Pace.entries.size),
             ) { Text(stringResource(paceLabel(option))) }
         }
+    }
+}
+
+/** A switch so the listener can hear the sentence with and without the clause pauses (RI-6). */
+@Composable
+private fun ClausePausesRow(on: Boolean, onChange: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.speech_clause_pauses), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.speech_clause_pauses_detail),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = on, onCheckedChange = onChange)
     }
 }
 

@@ -21,6 +21,16 @@ class EnglishNormalizerTest {
     private val normalizer = EnglishNormalizer()
 
     private val cases = listOf(
+        // Punctuation you can hear (RI-6)
+        Case("punctuation", "Tick yes/no and/or sign.", "Tick yes or no and or sign."),
+        Case("punctuation", "Store below °C levels", "Store below degrees Celsius levels"),
+        Case("punctuation", "Is it ready? Yes!", "Is it ready? Yes!"),
+        Case("punctuation", "w/o sugar, A/C on", "w/o sugar, A/C on"),
+        Case("punctuation", "Open 24/7", "Open twenty-four slash seven"),
+        Case("punctuation", "Top speed 60 km/h", "Top speed sixty kilometres per hour"),
+        Case("punctuation", "Read pages 10–20 and 10-20.", "Read pages ten to twenty and ten to twenty."),
+        Case("punctuation", "Born 15/08/1947.", "Born fifteenth August nineteen forty-seven."),
+        Case("punctuation", "It was 37°C.", "It was thirty-seven degrees Celsius."),
         // Plain numbers
         Case("number", "I have 3 cats.", "I have three cats."),
         Case("number", "There were 42 of them", "There were forty-two of them"),
@@ -166,7 +176,7 @@ class EnglishNormalizerTest {
         Case("date", "dated 15.08.1947 the", "dated fifteenth August nineteen forty-seven the"),
         Case("date", "on 3/4/07 we", "on third April oh seven we"),
         Case("date", "on 1947-08-15 India", "on fifteenth August nineteen forty-seven India"),
-        Case("date", "31/14/2020 is not", "thirty-one/fourteen/twenty twenty is not"),
+        Case("date", "31/14/2020 is not", "thirty-one slash fourteen slash twenty twenty is not"),
         Case("date", "you may 5 times", "you may five times"),
         // Abbreviations
         Case("abbreviation", "Dr. Rao said", "Doctor Rao said"),
