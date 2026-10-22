@@ -59,13 +59,14 @@ class EngineRenderer(
         val started = System.nanoTime()
         val now = style()
         val rate = styleConfig.modelRate(now.rate)
+        val text = TablePlaceholder.spokenText(unit)
         val prosody = if (now.clausePauses) {
             ClauseProsody({ mark -> styleConfig.clauseSilenceMs(mark, now) }, styleConfig.asideGainDb)
         } else {
             null
         }
-        return runBlocking { speech.render(unit.text, unit.lang, roleOf(unit.kind), rate, prosody) }.map { routed ->
-            speed?.onRendered(unit.text.trim().length, routed, System.nanoTime() - started, rate)
+        return runBlocking { speech.render(text, unit.lang, roleOf(unit.kind), rate, prosody) }.map { routed ->
+            speed?.onRendered(text.trim().length, routed, System.nanoTime() - started, rate)
             log(unit, routed)
             routed.audio.withSilenceAfter(styleConfig.silenceAfterMs(unit.pauseAfterMs, now))
         }
@@ -73,7 +74,10 @@ class EngineRenderer(
 
     private fun roleOf(kind: UnitKind): TextRole = when (kind) {
         UnitKind.HEADING -> TextRole.HEADING
-        UnitKind.BODY, UnitKind.LIST_ITEM -> TextRole.BODY
+
+        UnitKind.BODY, UnitKind.LIST_ITEM, UnitKind.TABLE_SUMMARY, UnitKind.TABLE_ROW, UnitKind.FOOTNOTE,
+        UnitKind.CAPTION, UnitKind.EQUATION, UnitKind.ASIDE,
+        -> TextRole.BODY
     }
 
     /** Context only (page, sentence, languages), never the sentence's text. */

@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.pdf.ocr
 
+import io.github.skm0078.audora.core.config.SpeakabilityConfig
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.pdf.render.PageTransform
 import io.github.skm0078.audora.pdf.render.ViewRect
@@ -54,6 +55,28 @@ class OcrPageTextTest {
             assertEquals(Lang.HI, unit.lang)
             assertEquals(unit.text, text.substring(unit.charStart, unit.charEnd))
         }
+    }
+
+    @Test
+    fun `word confidences reach the units as a speakability score`() {
+        fun line(paragraph: Int, confidence: Int, vararg words: String) =
+            OcrLine(words.map { OcrWord(it, null, confidence) }, paragraph)
+        val ocr = OcrText(
+            listOf(
+                line(0, 95, "The", "old", "man", "lived", "near", "the", "river."),
+                line(1, 15, "Tbe", "olb", "rnan", "livcd", "ncar", "tbe", "rivcr."),
+            ),
+        )
+        val reading = builder.ocrReadingText(PAGE, ocr)
+        val units = builder.build(reading)
+        assertEquals(0.95f, reading.ocrConfidence(units[0].charStart, units[0].charEnd)!!, 1e-6f)
+        assertEquals(0.15f, reading.ocrConfidence(units[1].charStart, units[1].charEnd)!!, 1e-6f)
+        val skipBelow = SpeakabilityConfig().skipBelow
+        assertTrue(units[0].speakScore!! >= skipBelow)
+        assertTrue(units[1].speakScore!! < skipBelow)
+        // Text without confidences (plain OCR text, a text layer) has none.
+        val plain = builder.ocrReadingText(PAGE, "No confidence here.")
+        assertNull(plain.ocrConfidence(0, plain.text.length))
     }
 
     @Test

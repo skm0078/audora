@@ -43,6 +43,8 @@ package io.github.skm0078.audora.core.config
  *   words; with fewer steps than this it is not judged (ADR-032).
  * @property minTurnedShare a page is laid out turned when at least this share of its steps go up, down or left.
  * @property maxGlyphStepEm a step longer than this many glyph sizes is a jump to another line or cell, not counted.
+ * @property furniture captions and display equations, tagged after cleanup (RI-7a).
+ * @property notes note markers silenced, footnotes and "Note:" asides tagged after that (RI-5a).
  */
 data class LayoutConfig(
     val minFontSize: Float = 2f,
@@ -66,6 +68,8 @@ data class LayoutConfig(
     val minDirectionSteps: Int = 20,
     val minTurnedShare: Float = 0.6f,
     val maxGlyphStepEm: Float = 2f,
+    val furniture: FurnitureConfig = FurnitureConfig(),
+    val notes: NoteConfig = NoteConfig(),
 ) {
     init {
         require(minFontSize >= 0f) { "minFontSize must be >= 0, was $minFontSize" }

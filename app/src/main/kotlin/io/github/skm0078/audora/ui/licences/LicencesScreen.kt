@@ -202,6 +202,7 @@ private val SPEECH_SOFTWARE = listOf(
     Software("ONNX Runtime (Microsoft)", R.string.licences_mit, "https://github.com/microsoft/onnxruntime"),
     Software("eSpeak NG", R.string.licences_gpl3, "https://github.com/espeak-ng/espeak-ng"),
     Software("Tesseract OCR and its data", R.string.licences_apache, "https://github.com/tesseract-ocr/tesseract"),
+    Software("wordfreq (Robyn Speer), word lists", R.string.licences_cc_by_sa, "https://github.com/rspeer/wordfreq"),
     Software("Audora", R.string.licences_gpl3, "https://github.com/skm0078/audora"),
 )
 

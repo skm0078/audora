@@ -7,9 +7,20 @@ import io.github.skm0078.audora.pdf.render.ViewRect
 
 /**
  * A word and where it is on the page as displayed, in fractions of the page's width and height from its top-left
- * corner ([ViewRect], the same frame the reader draws in); null when the engine gave no box.
+ * corner ([ViewRect], the same frame the reader draws in); null when the engine gave no box. [confidence] is the
+ * engine's confidence in the word, 0–100, or null when it gave none (the speakability score reads it, ADR-035).
  */
-class OcrWord(val text: String, val box: ViewRect?)
+class OcrWord(val text: String, val box: ViewRect?, val confidence: Int? = null) {
+    init {
+        require(confidence == null || confidence in 0..MAX_CONFIDENCE) {
+            "confidence must be in 0..100, was $confidence"
+        }
+    }
+
+    companion object {
+        const val MAX_CONFIDENCE = 100
+    }
+}
 
 /** One line of words, left to right in reading order; [paragraph] numbers the page's paragraphs from 0. */
 class OcrLine(val words: List<OcrWord>, val paragraph: Int) {
@@ -21,8 +32,10 @@ class OcrLine(val words: List<OcrWord>, val paragraph: Int) {
  *
  * @property quarterTurns how many quarter turns clockwise the page image was turned before it read upright (a
  *   sideways scan): 0 to 3. Word boxes are always on the page as displayed, never in the turned image.
+ * @property rules the lines ruled on the page (a ruled table's grid, [RuleFinder]), each the box of its ink, on the
+ *   page as displayed like the words.
  */
-class OcrText(val lines: List<OcrLine>, val quarterTurns: Int = 0) {
+class OcrText(val lines: List<OcrLine>, val quarterTurns: Int = 0, val rules: List<ViewRect> = emptyList()) {
     init {
         require(quarterTurns in 0 until FULL_TURN) { "quarterTurns must be in 0..3, was $quarterTurns" }
     }

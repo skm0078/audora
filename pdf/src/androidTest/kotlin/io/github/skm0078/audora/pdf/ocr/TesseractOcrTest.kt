@@ -67,7 +67,8 @@ class TesseractOcrTest {
         Log.i(TAG, "OCR $lang: source=${reading.source} units=${reading.units.size} cer=$cer firstReadMs=$ms")
         assertEquals(PageRoute.OCR, reading.routing.route)
         assertEquals(PageSource.Ocr(setOf(expected)), reading.source)
-        assertTrue("$lang CER $cer over $MAX_CER", cer <= MAX_CER)
+        val max = MAX_CER.getValue(expected)
+        assertTrue("$lang CER $cer over $max", cer <= max)
     }
 
     private fun openScan(lang: String, engine: TesseractEngine): PdfBook {
@@ -97,9 +98,18 @@ class TesseractOcrTest {
         private const val TAG = "TesseractOcrTest"
         private const val NANOS_PER_MS = 1_000_000L
 
-        /** Desktop Tesseract 5 with the same models scores 2.6 % (en) to 4.6 % (hi, bn) on these pages. */
-        private const val MAX_CER = 0.10
-        private val FOOTER = Regex("Audora S2 test corpus\\s*-\\s*\\S+\\s+\\d+")
+        /**
+         * RI-3's done-when (ADR-035). Desktop Tesseract 5 with the same models, the line retry and the word repair
+         * scores 0.1 % (en), 0.4 % (hi) and 1.2 % (bn) on these pages; before RI-3 the Hindi page read its English
+         * header as Devanagari noise (3.9 %).
+         */
+        private val MAX_CER = mapOf(Lang.EN to 0.020, Lang.HI to 0.035, Lang.BN to 0.035)
+
+        /**
+         * The header printed on every page, "Audora S2 test corpus - hi-udhr-noto", which the ground truth leaves
+         * out. It has no page number: the old pattern required one, never matched, and counted the header as errors.
+         */
+        private val FOOTER = Regex("Audora\\s+\\S+\\s+test corpus\\s*\\S?\\s*\\S+(?:\\s+\\d+)?")
 
         private lateinit var root: File
 

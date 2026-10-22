@@ -1,0 +1,9 @@
+id	category	source	pages	text	status
+en-udhr-p0-1	clean-en	generated/en-udhr-noto.pdf	0-1	en-udhr-p0-1	draft
+hi-udhr-p0-1	clean-hi	generated/hi-udhr-noto.pdf	0-1	hi-udhr-p0-1	draft
+bn-udhr-p0-1	clean-bn	generated/bn-udhr-noto.pdf	0-1	bn-udhr-p0-1	draft
+hi-udhr-scan200bad-p0-1	scan-hi	generated/hi-udhr-noto-scan200bad.pdf	0-1	hi-udhr-p0-1	draft
+en-physimaging-tables-p2-3	table-en	english/en-2col-physimaging-radonc-ccby.pdf	2-3	en-physimaging-tables-p2-3	draft
+en-forallx-footnotes-p22-23	footnotes-en	english/en-textbook-forallx-yyc-logic.pdf	22-23	en-forallx-footnotes-p22-23	draft
+en-jmathbiol-math-p6-7	math-en	english/en-math-jmathbiol-integrodifference-ccby.pdf	6-7	en-jmathbiol-math-p6-7	draft
+hi-udhr-krutidev	legacy-hi	golden:hi-udhr-krutidev	all	hi-udhr-krutidev	draft

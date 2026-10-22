@@ -258,6 +258,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 030 | Hindi/Bengali catalog voices (pratham, priyamvada, Piper bn google, MMS ben); provisional defaults pratham and Piper google as a one-line `recommended` map; first download of a language becomes its reader; credits in the catalog; "Voices & licences" screen | Accepted (P3-06); defaults pending S0 + phone run |
 | 031 | Debug APKs signed with one dev key restored from the repository secret `AUDORA_DEBUG_KEYSTORE_B64` (password `android`), APK certificate checked against it in CI; without the secret CI is unchanged | Accepted (CI) |
 | 032 | Known gaps: Chanakya supplement glyphs by context; turned pages laid out in their reading frame; OCR via hOCR with word boxes mapped through the page transform (highlight), orientation by confidence, running headers on scans against neighbours' margin strips; citation switch; `PIPELINE_VERSION` 9 | Accepted |
+| 035 | Speakability layer: `:pdf` tags tables, footnotes, captions, equations and asides (`UnitKind`) and scores each unit (`speakScore`, `SpeakabilityConfig`) instead of dropping them; `:playback` decides by setting, `:speech` voices; golden filter leaves out table rows; listening score gated in CI | Accepted (RI-1, RI-8a) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

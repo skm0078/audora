@@ -199,6 +199,7 @@
     <string name="licences_apache">Apache License 2.0</string>
     <string name="licences_mit">MIT License</string>
     <string name="licences_gpl3">GNU General Public License v3.0</string>
+    <string name="licences_cc_by_sa">Creative Commons Attribution-ShareAlike 4.0 (word lists built from it)</string>
     <string name="voices_imported">Imported %1$s. Pick it below to read with it.</string>
 
     <!-- OCR of scanned pages (P3-05) -->

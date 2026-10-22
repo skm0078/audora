@@ -20,7 +20,8 @@ package io.github.skm0078.audora.core.config
  * @property tableGapEm a line whose runs are at least this far apart (in em of the line's size) may be a table row.
  *   Above the layout's run gap (`LayoutConfig.columnGapEm`): Bengali glyph boxes leave gaps of up to ~1.2 em.
  * @property tableAlignEm two rows share a column when cells start within this distance of each other.
- * @property minTableRows a run of at least this many aligned rows is a table interior. Its caption is kept.
+ * @property minTableRows a run of at least this many aligned rows is a table. Its caption is kept.
+ * @property tables how a found table becomes a header and rows of cells (RI-4a).
  * @property skipCitationMarkers drop bracketed numeric citations ("[4–7]"): the spec's default. Settings → "Skip
  *   citation numbers" turns it off for books opened afterwards (`ReadingTextPreferences` in :playback, read by both
  *   the reader and the playback service); the expected text of the golden corpus skips them.
@@ -47,6 +48,7 @@ data class CleanupConfig(
     val tableGapEm: Float = 1.5f,
     val tableAlignEm: Float = 1f,
     val minTableRows: Int = 3,
+    val tables: TableConfig = TableConfig(),
     val skipCitationMarkers: Boolean = true,
     val profileCachePages: Int = 64,
     val analyzedCachePages: Int = 6,

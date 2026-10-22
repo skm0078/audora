@@ -21,8 +21,11 @@ class RecognizedPage(val lines: List<RecognizedLine>, val width: Int, val height
         if (chars == 0) 0 else (words.sumOf { it.conf.toLong() * it.text.length } / chars).toInt()
     }
 
-    /** Words with boxes in fractions of the image, turned back by [quarterTurns] onto the page as displayed. */
-    fun toOcrText(quarterTurns: Int): OcrText = OcrText(
+    /**
+     * Words with boxes in fractions of the image, turned back by [quarterTurns] onto the page as displayed, and the
+     * page's [rules] (pixels of the same image) likewise.
+     */
+    internal fun toOcrText(quarterTurns: Int, rules: List<PixelRule> = emptyList()): OcrText = OcrText(
         lines = lines.map { line ->
             OcrLine(
                 words = line.words.map { word ->
@@ -32,13 +35,34 @@ class RecognizedPage(val lines: List<RecognizedLine>, val width: Int, val height
                         right = word.right.toFloat() / width,
                         bottom = word.bottom.toFloat() / height,
                     )
-                    OcrWord(word.text, turnView(rect, OcrText.FULL_TURN - quarterTurns))
+                    OcrWord(
+                        text = word.text,
+                        box = turnView(rect, OcrText.FULL_TURN - quarterTurns),
+                        confidence = word.conf.coerceIn(0, OcrWord.MAX_CONFIDENCE),
+                    )
                 },
                 paragraph = line.paragraph,
             )
         },
         quarterTurns = quarterTurns,
+        rules = rules.map { rule ->
+            val rect = ViewRect(
+                left = rule.left.toFloat() / width,
+                top = rule.top.toFloat() / height,
+                right = (rule.right + 1).toFloat() / width,
+                bottom = (rule.bottom + 1).toFloat() / height,
+            )
+            turnView(rect, OcrText.FULL_TURN - quarterTurns)
+        },
     )
+
+    /** The median height of the page's lines in pixels (its text's em); 0 when it has none. */
+    internal val lineHeight: Float by lazy {
+        val heights = lines.filter { it.words.isNotEmpty() }.map { line ->
+            line.words.maxOf { it.bottom } - line.words.minOf { it.top }
+        }.sorted()
+        if (heights.isEmpty()) 0f else heights[heights.size / 2].toFloat()
+    }
 }
 
 /**

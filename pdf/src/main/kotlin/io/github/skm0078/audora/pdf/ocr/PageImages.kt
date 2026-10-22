@@ -63,4 +63,17 @@ internal fun PageImage.strip(fromShare: Float, toShare: Float): PageImage? {
     return PageImage(pageIndex, width, bottom - top, dpi, gray.copyOfRange(top * width, bottom * width))
 }
 
+/** The pixels from [left] to [right] and [top] to [bottom] (exclusive), clipped to the image; null if empty. */
+internal fun PageImage.crop(left: Int, top: Int, right: Int, bottom: Int): PageImage? {
+    val x0 = left.coerceIn(0, width)
+    val x1 = right.coerceIn(x0, width)
+    val y0 = top.coerceIn(0, height)
+    val y1 = bottom.coerceIn(y0, height)
+    if (x1 == x0 || y1 == y0) return null
+    val cropWidth = x1 - x0
+    val out = ByteArray(cropWidth * (y1 - y0))
+    for (y in y0 until y1) System.arraycopy(gray, y * width + x0, out, (y - y0) * cropWidth, cropWidth)
+    return PageImage(pageIndex, cropWidth, y1 - y0, dpi, out)
+}
+
 private const val BYTE_MASK = 0xFF

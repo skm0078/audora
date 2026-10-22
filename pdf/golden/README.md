@@ -35,6 +35,26 @@ CI fails when: a dump is stale; the corpus score is lower than `dev`'s on the do
 same way the playback service runs it, then runs `goldenTest` and commits the new scores. Keep its signature and the
 `scores.tsv` columns stable: other branches and CI read them.
 
+Since ADR-035 `:pdf` tags page furniture instead of dropping it. `GoldenPipeline.UNSCORED_KINDS` leaves out the kinds
+the expected-text rules below skip (a table's header and rows, RI-4a); captions, footnote text and equations stay
+scored. A ticket that starts emitting a new kind checks the rules and extends that set only for kinds the expected
+texts leave out. Table cells are scored against hand labels instead (`tables/README.md`).
+
+What the voice is given (normalizers, playback's reading modes) is scored by the listening corpus next door:
+[listening/README.md](listening/README.md).
+How well the gibberish gate tells junk from real sentences is checked on the labelled lines in
+[speakability/README.md](speakability/README.md) (RI-2a). Which units are captions and display equations is checked
+on the labelled units in [furniture/README.md](furniture/README.md) (RI-7a), and which markers fall silent and which
+units are footnotes in [notes/README.md](notes/README.md) (RI-5a).
+
+`kinds.tsv` labels every document of the test-pdfs corpus (and the two legacy-font UDHR files generated here) with
+its page count and kind: NOVEL, PAPER, TEXTBOOK, GAZETTE, FORM or GENERAL (RI-10, `DocumentKind`). Only file names
+and kinds: the local-only PDFs stay outside the repository. The label is what the book is for a listener (a
+statistics press release of mostly tables is a FORM; a manual or guide is a TEXTBOOK; a magazine, a leaflet or an
+exam paper is GENERAL). `KindLabelsTest` checks the golden excerpts against it with each book's real page count;
+the full measure (a dozen pages of each of the 57 books, scanned and broken-font pages OCR'd as the app would) runs
+locally and its result is in ADR-035.
+
 `GoldenRoutingTest` reads the same documents through `PdfBook.readPage` and checks page routing (P3-03): Unicode
 Indic documents keep their text layer and pass the OCR sample, broken-map documents go to OCR.
 

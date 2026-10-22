@@ -1,0 +1,12 @@
+corpus	document	page	kind	ref	text
+golden	bn-us-hud-fairlending-guide-pd	2	FOOTNOTE		HUD3_25_09Single-Bengali-BE.indd UD3_25_09Single-Bengali-BE.indd Sec1:6 Sec1:6
+golden	en-2col-physimaging-radonc-ccby	0	FOOTNOTE		Available online 1 June 2023 2405-6316/© 2023 The Author(s).
+golden	en-2col-physimaging-radonc-ccby	0	FOOTNOTE		Published by Elsevier B.V. on behalf of European Society of Radiotherapy & Oncology.
+golden	en-2col-physimaging-radonc-ccby	0	FOOTNOTE		This is an open access article under the CC BY license (http://creativecommons.org/licenses/by/4.0/).
+listening	en-forallx-footnotes-p22-23	0	FOOTNOTE	1	Even if these assumptions seem common-sensical to you, they are controversial among philosophers of logic.
+listening	en-forallx-footnotes-p22-23	0	FOOTNOTE	1	First of all, there are logicians who want to consider cases where sentences are neither true nor false, but have some kind of intermediate level of truth.
+listening	en-forallx-footnotes-p22-23	0	FOOTNOTE	1	More controversially, some philosophers think
+listening	en-forallx-footnotes-p22-23	0	MARKER	1	but never both.1
+listening	en-forallx-footnotes-p22-23	0	MARKER	1	lse but never both.
+listening	en-forallx-footnotes-p22-23	1	FOOTNOTE		There are systems of logic in which sentences can be neither true nor false, or both, but we will not discuss them in this book.
+listening	en-forallx-footnotes-p22-23	1	FOOTNOTE		we should allow for the possibility of sentences to be both true and false at the same time.

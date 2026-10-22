@@ -6,6 +6,7 @@ package io.github.skm0078.audora.pdf.cleanup
 import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.AnchorMatch
 import io.github.skm0078.audora.core.resume.ReAnchoring
@@ -50,7 +51,9 @@ class CleanupGoldenTest {
         builder.build(ReadingTextBuilder().build(page, PageLayoutAnalyzer().analyze(page)))
     }
 
-    private fun spoken(id: String) = units(id).map { page -> page.joinToString(" ") { it.text } }
+    /** The text of each page outside tables, which are kept as table units (RI-4a) and read by setting. */
+    private fun spoken(id: String) =
+        units(id).map { page -> page.filterNot { it.kind.isTable }.joinToString(" ") { it.text } }
 
     @Test
     fun `running headers and page numbers go on every page`() {
@@ -71,7 +74,7 @@ class CleanupGoldenTest {
     }
 
     @Test
-    fun `tables go, their captions and the text around them stay`() {
+    fun `tables leave the running text, their captions and the text around them stay`() {
         val connectives = spoken("en-textbook-forallx-yyc-logic")[1]
         assertFalse(connectives, "biconditional" in connectives || "rough meaning" in connectives)
         assertTrue(connectives, "This table summarizes them" in connectives)
@@ -81,6 +84,12 @@ class CleanupGoldenTest {
         assertTrue(paper, "Table 1 Characteristics of evaluated patients." in paper)
         assertFalse(paper, "Glioblastoma Glioblastoma" in paper || "2 Gy" in paper)
         assertFalse(paper, "[4" in paper)
+
+        val table = units("en-2col-physimaging-radonc-ccby")[1].filter { it.kind.isTable }
+        assertEquals(UnitKind.TABLE_SUMMARY, table.first().kind)
+        assertTrue(table.first().text, table.first().text.startsWith("Pat. Age Gender"))
+        assertEquals(listOf(10, 7), listOf(table.first().table?.rowCount, table.first().table?.columnCount))
+        assertEquals(11, table.size)
     }
 
     @Test
@@ -117,7 +126,9 @@ class CleanupGoldenTest {
         // whose cut points move when a bullet or citation goes.
         val unmatched = point.match == AnchorMatch.OFFSET_UNVERIFIED || point.match == AnchorMatch.PAGE_START
         val judged = words(unit.text).size >= 2 && unit.text.length < maxUnitChars - CUT_SLACK
-        val stillSpoken = containsRun(words(current.joinToString(" ") { it.text }), words(unit.text))
+        // A table cell now sits in a row unit with its neighbours (RI-4a); it resumes like removed text did.
+        val running = current.filterNot { it.kind.isTable }
+        val stillSpoken = containsRun(words(running.joinToString(" ") { it.text }), words(unit.text))
         return if (unmatched && judged && stillSpoken) "$id p$page u${unit.index}: ${unit.text.take(60)}" else null
     }
 
