@@ -209,6 +209,8 @@ class RenderAheadQueueTest {
             assertEquals(UnitKey(0, 0), e.key)
             assertSame(error, e.error)
         }
+        // The listener runs after readers are woken, so the reader can get here first.
+        waitUntil { failures.isNotEmpty() }
         assertEquals(listOf(UnitKey(0, 0)), failures.toList())
     }
 

@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/voice/SpeechStyleStore.kt
-// Purpose: The listener's speaking rate and pace (ADR-033), kept by the playback service in a small properties file.
+// Purpose: The listener's speaking rate, pace and clause pauses (ADR-033), kept by the playback service in a file.
 
 package io.github.skm0078.audora.playback.voice
 
@@ -37,7 +37,8 @@ class SpeechStyleStore(private val file: File, val config: SpeechStyleConfig = S
         val properties = readProperties() ?: return SpeechStyle()
         val rate = properties.getProperty(KEY_RATE)?.toFloatOrNull() ?: SpeechStyle.NORMAL_RATE
         val pace = Pace.entries.firstOrNull { it.name == properties.getProperty(KEY_PACE) } ?: Pace.NORMAL
-        return SpeechStyle(config.clampRate(rate), pace)
+        val clausePauses = properties.getProperty(KEY_CLAUSE_PAUSES)?.toBooleanStrictOrNull() ?: true
+        return SpeechStyle(config.clampRate(rate), pace, clausePauses)
     }
 
     /** Null when there is no file or it cannot be read; logged. */
@@ -57,13 +58,14 @@ class SpeechStyleStore(private val file: File, val config: SpeechStyleConfig = S
         val properties = Properties().apply {
             setProperty(KEY_RATE, applied.rate.toString())
             setProperty(KEY_PACE, applied.pace.name)
+            setProperty(KEY_CLAUSE_PAUSES, applied.clausePauses.toString())
         }
         val temp = File(file.path + ".tmp")
         try {
             file.parentFile?.mkdirs()
             temp.writer(Charsets.UTF_8).use { properties.store(it, null) }
             if (!temp.renameTo(file)) throw IOException("cannot replace ${file.name}")
-            AudoraLog.i(TAG, "Speech style set: rate=${applied.rate} pace=${applied.pace}")
+            AudoraLog.i(TAG, "Speech style set: ${applied.rate} ${applied.pace} clauses=${applied.clausePauses}")
         } catch (e: IOException) {
             AudoraLog.e(TAG, "Could not save the speech style; it applies until the service stops", e)
         }
@@ -74,6 +76,7 @@ class SpeechStyleStore(private val file: File, val config: SpeechStyleConfig = S
         private const val FILE_NAME = "speech-style.properties"
         private const val KEY_RATE = "rate"
         private const val KEY_PACE = "pace"
+        private const val KEY_CLAUSE_PAUSES = "clausePauses"
 
         fun forContext(context: Context): SpeechStyleStore =
             SpeechStyleStore(File(context.applicationContext.filesDir, FILE_NAME))
