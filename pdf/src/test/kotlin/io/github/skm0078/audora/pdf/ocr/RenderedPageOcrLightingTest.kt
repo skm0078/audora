@@ -5,6 +5,7 @@ package io.github.skm0078.audora.pdf.ocr
 
 import io.github.skm0078.audora.core.config.LightingConfig
 import io.github.skm0078.audora.core.config.OcrConfig
+import io.github.skm0078.audora.core.config.WornPrintConfig
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.getOrNull
@@ -42,9 +43,18 @@ class RenderedPageOcrLightingTest {
     }
 
     private val engine = FakeEngine()
+    private val noWornPrint = WornPrintConfig(enabled = false)
 
     private fun read(lighting: LightingConfig = LightingConfig()): String? =
-        RenderedPageOcr(pages, engine, null, "book", "book=test", OcrConfig(lighting = lighting))
+        // Worn print off: the evenly lit page is all paper, so black and white, and would be read again softened.
+        RenderedPageOcr(
+            pages,
+            engine,
+            null,
+            "book",
+            "book=test",
+            OcrConfig(lighting = lighting, wornPrint = noWornPrint),
+        )
             .recognize(0, setOf(Lang.EN)).getOrNull()?.text
 
     @Test

@@ -33,6 +33,7 @@ package io.github.skm0078.audora.core.config
  * @property rules how the lines ruled between a scanned table's cells are found (RI-4a part 2).
  * @property threshold how a page is split into ink and paper before recognition ([OcrThreshold]).
  * @property lighting when a photographed page is read again with its light evened out (a hard shadow).
+ * @property wornPrint when a black and white scan of worn print is read again softened.
  */
 data class OcrConfig(
     val renderDpi: Int = 300,
@@ -50,6 +51,7 @@ data class OcrConfig(
     val rules: RuleConfig = RuleConfig(),
     val threshold: OcrThreshold = OcrThreshold.SAUVOLA,
     val lighting: LightingConfig = LightingConfig(),
+    val wornPrint: WornPrintConfig = WornPrintConfig(),
 ) {
     init {
         require(renderDpi > 0) { "renderDpi must be > 0, was $renderDpi" }

@@ -2,6 +2,14 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Worn print on scanned Bengali and Hindi books (2026-10-22)
+- **Softened second read:** a scanned page that reads unsure (mean confidence under 88) and is almost wholly black and white (most Bengali and Hindi books online) is read again with each pixel averaged with its neighbours, twice; the softened read is kept only when it reads clearly surer, holds as many words and more confidence over all its characters. Grey photos and clean pages are never touched (`WornPrintConfig`, `WornPrint`).
+- Measured with tessdata_best on worn re-scans: Bengali pages 74 and 62 % of words right to 79 and 74 %, Hindi 78 and 81 % to 88 and 87 %; grey pages read worse softened and are left out by the black and white check.
+- Cost: one more Tesseract pass only on unsure black and white pages (about as long as the first read); no new dependency or download. PIPELINE_VERSION 12; OCR cache variant page-r7, so scanned books are read again once.
+- Tests: `WornPrintTest`, `RenderedPageOcrWornPrintTest`. Golden and listening scores unchanged (recorded OCR does not pass through rendering).
+
+**Real-device checks:** open a scanned Bengali novel; logcat `OCR worn print` lines show which pages were kept softened, and those pages read fewer wrong conjuncts.
+
 ## A male built-in voice and options that explain themselves (2026-10-22, ADR-052)
 - **Built-in English voice:** KittenTTS v0.8 micro read by Bruno (male) replaces Piper ljspeech. Its seven other speakers are on the Voices screen as built-in voices, with no download, and also give character, quote and heading voices out of the box.
 - **Options that stayed off now work or say why:** "Use for this book only" waits for play with a note; Smart speed's switch follows taps at normal speed; the A–B Loop switch waits for A; Expressiveness hides for voices that ignore it; Kids mode asks first and says how to leave; a microphone refused for good opens Audora's app page; the punctuation model says it needs Scanned pages.
