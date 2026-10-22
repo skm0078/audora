@@ -1,11 +1,12 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/PdfReaderDocumentOpener.kt
-// Purpose: Opens a book's PDF with :pdf (PDFium) for the reader; all native work runs off the main thread.
+// Purpose: Opens a book for the reader off the main thread: PDFs with :pdf (PDFium), EPUB and text with TextBooks.
 
 package io.github.skm0078.audora.ui.reader
 
 import android.content.Context
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import io.github.skm0078.audora.core.library.DocumentFormat
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
@@ -24,6 +25,9 @@ import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.ocr.BookOcr
+import io.github.skm0078.audora.playback.text.TextBookError
+import io.github.skm0078.audora.playback.text.TextBookText
+import io.github.skm0078.audora.playback.text.TextBooks
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 
@@ -35,17 +39,42 @@ class PdfReaderDocumentOpener(
     private val context: Context,
     private val io: CoroutineDispatcher,
     private val textPreferences: ReadingTextPreferences = ReadingTextPreferences.forContext(context),
+    private val textBooks: TextBooks = TextBooks(context),
 ) : ReaderDocumentOpener {
     override suspend fun open(
         documentUri: String,
         password: String?,
         logContext: String,
     ): Outcome<ReaderDocument, PdfOpenError> = withContext(io) {
+        // EPUB and text books (items 42, 43, ADR-042): the same TextBooks the playback service opens them with.
+        when (val format = textBooks.formatOf(documentUri)) {
+            DocumentFormat.EPUB, DocumentFormat.TEXT -> openText(documentUri, format)
+            DocumentFormat.PDF, null -> openPdf(documentUri, password, logContext)
+        }
+    }
+
+    private fun openText(documentUri: String, format: DocumentFormat): Outcome<ReaderDocument, PdfOpenError> =
+        when (val opened = textBooks.open(documentUri, format)) {
+            is Outcome.Success -> Outcome.Success(TextReaderDocument(opened.value))
+
+            is Outcome.Failure -> Outcome.Failure(
+                when (opened.error) {
+                    is TextBookError.Unreadable -> PdfOpenError.Unreadable(opened.error.message)
+                    else -> PdfOpenError.Damaged(opened.error.message)
+                },
+            )
+        }
+
+    private fun openPdf(
+        documentUri: String,
+        password: String?,
+        logContext: String,
+    ): Outcome<ReaderDocument, PdfOpenError> {
         val engine = PdfiumEngine.forUri(context, SharedPdfCopies.readableUri(context, documentUri))
         // Same OCR, models and text cache as the playback service, so a page is recognised once for both.
         val ocr = BookOcr.factory(context, documentUri, logContext)
         val builder = ReadingUnitBuilder(cleanupConfig = textPreferences.cleanupConfig())
-        when (val opened = PdfBook.open(engine, password, logContext = logContext, ocr = ocr)) {
+        return when (val opened = PdfBook.open(engine, password, logContext = logContext, ocr = ocr)) {
             is Outcome.Success -> Outcome.Success(
                 PdfReaderDocument(opened.value, engine, password, logContext, io, builder),
             )
@@ -53,6 +82,24 @@ class PdfReaderDocumentOpener(
             is Outcome.Failure -> opened
         }
     }
+}
+
+/** An EPUB or text book: sentences straight from its pages, chapters from its contents, no page images. */
+private class TextReaderDocument(private val text: TextBookText) : ReaderDocument {
+    override val pageCount: Int get() = text.pageCount
+
+    override val hasPageImages: Boolean get() = false
+
+    override suspend fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError> = text.units(page)
+
+    override suspend fun outline(): List<OutlineEntry> = text.contents.map { (title, page) ->
+        OutlineEntry(title, page)
+    }
+
+    override suspend fun render(page: Int, widthPx: Int, maxPixels: Int): Outcome<PageImage, PdfPageError> =
+        Outcome.Failure(PdfPageError.ExtractionFailed(page, "a text book has no page images"))
+
+    override fun close() = text.close()
 }
 
 /**

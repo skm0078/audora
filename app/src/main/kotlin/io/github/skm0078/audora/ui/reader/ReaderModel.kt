@@ -69,7 +69,10 @@ class ReaderModel(
     private var book: Book? = null
     private var document: ReaderDocument? = null
     private var password: String? = null
+
+    /** The password the book was opened with, for a job that reopens it (a clip, plan item 41); never stored. */
     val openPassword: String? get() = password
+
     private var openJob: Job? = null
     private var pageJob: Job? = null
     private var renderJob: Job? = null
@@ -194,6 +197,16 @@ class ReaderModel(
                 showPage(point.page)
             }
         }
+    }
+
+    /**
+     * A page's sentences for the search index (plan item 16), from the reader's own document so scanned pages come
+     * from the OCR cache; null when the page cannot be read now (no document, OCR models missing or OCR failed).
+     */
+    suspend fun sentencesForSearch(page: Int): List<ReadingUnit>? {
+        val opened = document ?: return null
+        val read = (opened.page(page) as? Outcome.Success)?.value
+        return read?.units?.takeIf { read.origin == PageOrigin.TEXT || read.origin == PageOrigin.OCR }
     }
 
     /** What "Bookmark here" marks: the sentence being read on the shown page, else the page's first sentence. */
@@ -378,6 +391,7 @@ class ReaderModel(
         document = opened
         this.password = password
         mutableState.update { it.copy(document = DocumentState.Open(opened.pageCount)) }
+        if (!opened.hasPageImages) applyView(ReaderView.TEXT)
         val playing = state.value.readingPosition
         if (playing == null) {
             savedPosition =
@@ -483,7 +497,9 @@ class ReaderModel(
     }
 
     private fun applyView(view: ReaderView) {
-        mutableState.update { it.copy(view = view) }
+        // An EPUB or text book has no page images (ADR-042): it always shows as text, the saved choice is kept.
+        val shown = if (document?.hasPageImages == false) ReaderView.TEXT else view
+        mutableState.update { it.copy(view = shown) }
         renderPage(state.value.page)
     }
 

@@ -34,10 +34,14 @@ enum class StorageKind {
     OCR,
     PUNCTUATION,
     VOICE_COMMANDS,
+    DICTIONARIES,
+    READING_TUTOR,
     PAGE_PICTURES,
     OCR_TEXT,
     COVERS,
     VOICE_BLENDS,
+    STUDIO_AUDIO,
+    SEARCH_INDEXES,
     SHARED_PDFS,
 }
 
@@ -48,10 +52,13 @@ enum class StorageKind {
 fun actionOf(kind: StorageKind): StorageAction? = when (kind) {
     StorageKind.VOICES -> StorageAction.MANAGE_VOICES
 
-    StorageKind.OCR, StorageKind.PUNCTUATION, StorageKind.VOICE_COMMANDS -> StorageAction.DELETE
+    StorageKind.OCR, StorageKind.PUNCTUATION, StorageKind.VOICE_COMMANDS, StorageKind.DICTIONARIES,
+    StorageKind.READING_TUTOR,
+    -> StorageAction.DELETE
 
-    StorageKind.PAGE_PICTURES, StorageKind.OCR_TEXT, StorageKind.COVERS, StorageKind.VOICE_BLENDS ->
-        StorageAction.CLEAR
+    StorageKind.PAGE_PICTURES, StorageKind.OCR_TEXT, StorageKind.COVERS, StorageKind.VOICE_BLENDS,
+    StorageKind.STUDIO_AUDIO, StorageKind.SEARCH_INDEXES,
+    -> StorageAction.CLEAR
 
     StorageKind.SHARED_PDFS -> null
 }

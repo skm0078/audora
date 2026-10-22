@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings → Storage rows for studio's data (dictionaries, reading tutor, studio audio, search indexes). -->
+<resources>
+    <string name="storage_dictionaries">অভিধান</string>
+    <string name="storage_reading_tutor">রিডিং টিউটরের স্পিচ মডেল</string>
+    <string name="storage_studio_audio">স্টুডিও মোডের অডিও</string>
+    <string name="storage_search_indexes">খোঁজার ইনডেক্স</string>
+</resources>

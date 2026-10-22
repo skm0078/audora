@@ -1,5 +1,5 @@
 // File: core/src/test/kotlin/io/github/skm0078/audora/core/library/BookFingerprinterTest.kt
-// Purpose: Fingerprints tell PDFs apart by size and head bytes, read only the head, and reject non-PDFs.
+// Purpose: Fingerprints tell books apart by size and head bytes, read only the head, and reject other files.
 
 package io.github.skm0078.audora.core.library
 
@@ -29,6 +29,17 @@ class BookFingerprinterTest {
         assertNotNull(first)
         assertEquals(first, fingerprintOf(pdfBytes("a")).getOrNull())
         assertTrue(requireNotNull(first).startsWith("v1:"))
+    }
+
+    /** Books, positions, notes and studio audio are keyed by it: a PDF's fingerprint must never change (ADR-042). */
+    @Test
+    fun `a PDF's fingerprint is pinned`() {
+        val pdf = "%PDF-1.7\n1 0 obj << /Type /Catalog >> endobj\n".toByteArray(Charsets.US_ASCII)
+
+        assertEquals(
+            "v1:cfda1a0d5f6170130e27093b39f543566670a9d9598840649914a727f9327614",
+            fingerprintOf(pdf).getOrNull(),
+        )
     }
 
     @Test
@@ -71,6 +82,13 @@ class BookFingerprinterTest {
             Outcome.Failure(FingerprintError.NotAPdf),
             fingerprintOf(ByteArray(20) + pdfBytes("a")),
         )
+    }
+
+    @Test
+    fun `EPUB and text books are accepted`() {
+        val epub = byteArrayOf(0x50, 0x4B, 0x03, 0x04) + ByteArray(26) + "mimetypeapplication/epub+zip".toByteArray()
+        assertTrue(fingerprintOf(epub) is Outcome.Success)
+        assertTrue(fingerprintOf("Chapter 1\n\nOnce upon a time.".toByteArray()) is Outcome.Success)
     }
 
     @Test

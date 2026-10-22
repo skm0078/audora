@@ -15,6 +15,8 @@ class BookTitlesTest {
             "  spaced name .pdf  " to "spaced name",
             "no extension" to "no extension",
             "archive.pdf.zip" to "archive.pdf.zip",
+            "Gitanjali.epub" to "Gitanjali",
+            "notes.TXT" to "notes",
             "गीता.pdf" to "गीता",
             "রবীন্দ্র_রচনা.pdf" to "রবীন্দ্র_রচনা",
             ".pdf" to BookTitles.UNTITLED,

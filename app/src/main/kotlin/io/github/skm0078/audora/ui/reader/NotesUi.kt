@@ -1,8 +1,9 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/NotesUi.kt
-// Purpose: The sentence menu, bookmarks sheet, bookmark note and pronunciation fix dialogs (plan items 29, 1).
+// Purpose: The sentence menu, bookmarks sheet, bookmark note and pronunciation fix dialogs (items 29, 1, 30, 32, 33).
 
 package io.github.skm0078.audora.ui.reader
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -51,19 +52,44 @@ fun BookmarksButton(notes: NotesState, actions: BookNotesActions) {
 
 /** Everything the notes put over the reader, each shown while its state is set. */
 @Composable
-fun NotesOverlays(notes: NotesState, actions: BookNotesActions, reader: ReaderActions) {
+fun NotesOverlays(
+    notes: NotesState,
+    actions: BookNotesActions,
+    reader: ReaderActions,
+    voice: VoiceNotesBinding = VoiceNotesBinding.None,
+    lookUp: LookUpBinding = LookUpBinding.None,
+) {
     notes.menuFor?.let { unit ->
-        SentenceMenuDialog(
-            onBookmark = { actions.bookmark(unit) },
-            onFix = { actions.fix(unit) },
-            onReport = {
+        val highlighted = notes.highlightsOn(unit).isNotEmpty()
+        val rows = listOfNotNull(
+            MenuEntry(R.string.sentence_menu_bookmark) { actions.bookmark(unit) },
+            // A sentence with no words ("* * *") can never show a band, so it is not offered.
+            MenuEntry(if (highlighted) R.string.sentence_menu_unhighlight else R.string.sentence_menu_highlight) {
+                actions.toggleHighlight(unit)
+            }.takeIf { highlighted || unit.text.any(Char::isLetterOrDigit) },
+            MenuEntry(R.string.sentence_menu_voice_note) {
+                actions.dismissMenu()
+                voice.askToRecord(unit)
+            }.takeIf { voice.enabled },
+            MenuEntry(R.string.sentence_menu_look_up) {
+                actions.dismissMenu()
+                lookUp.actions.open(unit)
+            }.takeIf { lookUp.enabled },
+            MenuEntry(R.string.sentence_menu_fix) { actions.fix(unit) },
+            MenuEntry(R.string.report_title) {
                 actions.dismissMenu()
                 reader.onReportSentence(unit)
             },
-            onDismiss = actions::dismissMenu,
+            MenuEntry(R.string.sentence_menu_share_clip) {
+                actions.dismissMenu()
+                reader.onShareClip(unit)
+            },
         )
+        SentenceMenuDialog(rows, onDismiss = actions::dismissMenu)
     }
-    if (notes.listOpen) BookmarksSheet(notes.bookmarks, actions, reader)
+    if (notes.listOpen) BookmarksSheet(notes.bookmarks, actions, reader, voice)
+    VoiceNotesOverlays(voice)
+    LookUpOverlay(lookUp)
     notes.editing?.let { BookmarkNoteDialog(it, actions::saveNote, actions::dismissNote) }
     notes.fixing?.let { PronunciationDialog(it, notes.rules, actions) }
     if (notes.failed) {
@@ -75,16 +101,17 @@ fun NotesOverlays(notes: NotesState, actions: BookNotesActions, reader: ReaderAc
     }
 }
 
+/** One row of the sentence menu. */
+private class MenuEntry(@StringRes val label: Int, val onClick: () -> Unit)
+
 @Composable
-private fun SentenceMenuDialog(onBookmark: () -> Unit, onFix: () -> Unit, onReport: () -> Unit, onDismiss: () -> Unit) {
+private fun SentenceMenuDialog(rows: List<MenuEntry>, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.sentence_menu_title)) },
         text = {
             Column {
-                MenuRow(stringResource(R.string.sentence_menu_bookmark), onBookmark)
-                MenuRow(stringResource(R.string.sentence_menu_fix), onFix)
-                MenuRow(stringResource(R.string.report_title), onReport)
+                rows.forEach { MenuRow(stringResource(it.label), it.onClick) }
             }
         },
         confirmButton = {},
@@ -101,7 +128,12 @@ private fun MenuRow(label: String, onClick: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BookmarksSheet(bookmarks: List<Bookmark>, actions: BookNotesActions, reader: ReaderActions) {
+private fun BookmarksSheet(
+    bookmarks: List<Bookmark>,
+    actions: BookNotesActions,
+    reader: ReaderActions,
+    voice: VoiceNotesBinding,
+) {
     ModalBottomSheet(onDismissRequest = actions::hideList) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
             Row(
@@ -135,6 +167,11 @@ private fun BookmarksSheet(bookmarks: List<Bookmark>, actions: BookNotesActions,
                         onDelete = { actions.delete(bookmark) },
                     )
                     HorizontalDivider()
+                }
+                // A voice note opens where it was recorded, found again the way a bookmark is.
+                voiceNoteItems(voice) { note ->
+                    actions.hideList()
+                    reader.onBookmark(Bookmark(0, note.anchor))
                 }
             }
         }

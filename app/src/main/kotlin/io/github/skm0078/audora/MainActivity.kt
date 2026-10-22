@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.battery.BatteryExemption
 import io.github.skm0078.audora.battery.OnboardingPreferences
@@ -55,7 +56,6 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.library.LibraryQuery
-import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
@@ -66,8 +66,9 @@ import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.BookmarkStore
+import io.github.skm0078.audora.core.notes.HighlightStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
-import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.notes.VoiceNoteStore
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.diagnostics.LogSharer
@@ -77,20 +78,22 @@ import io.github.skm0078.audora.language.AppLanguages
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
+import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
 import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
+import io.github.skm0078.audora.playback.documents.WatchedFolders
+import io.github.skm0078.audora.playback.export.AudioClips
 import io.github.skm0078.audora.playback.export.AudiobookExport
-import io.github.skm0078.audora.playback.ocr.OcrTextCacheFiles
+import io.github.skm0078.audora.playback.export.MarkStores
+import io.github.skm0078.audora.playback.notes.VoiceNoteAudio
+import io.github.skm0078.audora.playback.photo.PhotoBooks
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
-import io.github.skm0078.audora.speech.SpeechEngines
+import io.github.skm0078.audora.playback.search.SearchIndexes
 import io.github.skm0078.audora.speech.kws.VoiceCommandModels
-import io.github.skm0078.audora.speech.kws.sizeOnDisk
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
-import io.github.skm0078.audora.speech.ocr.sizeOnDisk
 import io.github.skm0078.audora.speech.punct.PunctuationModels
-import io.github.skm0078.audora.speech.punct.sizeOnDisk
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.ui.AppDestination
 import io.github.skm0078.audora.ui.AppTab
@@ -107,7 +110,9 @@ import io.github.skm0078.audora.ui.kids.KidsModePreferences
 import io.github.skm0078.audora.ui.kids.LocalKidsMode
 import io.github.skm0078.audora.ui.kids.kidsDestination
 import io.github.skm0078.audora.ui.kids.kidsSpeed
+import io.github.skm0078.audora.ui.library.BookAction
 import io.github.skm0078.audora.ui.library.BookCovers
+import io.github.skm0078.audora.ui.library.LibraryAction
 import io.github.skm0078.audora.ui.library.LibraryActions
 import io.github.skm0078.audora.ui.library.LibraryController
 import io.github.skm0078.audora.ui.library.LibraryListState
@@ -115,6 +120,8 @@ import io.github.skm0078.audora.ui.library.LibraryScreen
 import io.github.skm0078.audora.ui.library.MiniPlayer
 import io.github.skm0078.audora.ui.library.PDF_MIME_TYPES
 import io.github.skm0078.audora.ui.library.nowPlaying
+import io.github.skm0078.audora.ui.library.restoreMessageOf
+import io.github.skm0078.audora.ui.library.showFinishRestoringIfNeeded
 import io.github.skm0078.audora.ui.licences.LicenceSource
 import io.github.skm0078.audora.ui.licences.LicencesController
 import io.github.skm0078.audora.ui.licences.LicencesScreen
@@ -129,6 +136,7 @@ import io.github.skm0078.audora.ui.reader.KeepScreenOn
 import io.github.skm0078.audora.ui.reader.LibraryReaderBooks
 import io.github.skm0078.audora.ui.reader.LocatorReaderResume
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
+import io.github.skm0078.audora.ui.reader.NoteStores
 import io.github.skm0078.audora.ui.reader.NotesState
 import io.github.skm0078.audora.ui.reader.PREVIEW_WIDTH
 import io.github.skm0078.audora.ui.reader.PageThumbnails
@@ -158,13 +166,11 @@ import io.github.skm0078.audora.ui.settings.rememberVoiceCommandsSettings
 import io.github.skm0078.audora.ui.settings.runModelAction
 import io.github.skm0078.audora.ui.shell.AppShell
 import io.github.skm0078.audora.ui.shell.ReadableWidth
-import io.github.skm0078.audora.ui.storage.StorageKind
-import io.github.skm0078.audora.ui.storage.StorageOwner
 import io.github.skm0078.audora.ui.storage.StorageRoute
-import io.github.skm0078.audora.ui.storage.directoryBytes
 import io.github.skm0078.audora.ui.theme.Appearance
 import io.github.skm0078.audora.ui.theme.AppearancePreferences
 import io.github.skm0078.audora.ui.theme.AudoraTheme
+import io.github.skm0078.audora.ui.tutor.ReaderTutorRoute
 import io.github.skm0078.audora.ui.upnext.UpNextPort
 import io.github.skm0078.audora.ui.upnext.UpNextSheet
 import io.github.skm0078.audora.ui.upnext.libraryBooks
@@ -225,6 +231,12 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var pronunciationStore: PronunciationStore
 
+    @Inject
+    lateinit var highlightStore: HighlightStore
+
+    @Inject
+    lateinit var voiceNoteStore: VoiceNoteStore
+
     /** Audora's own copies of PDFs another app only lends for a moment ("Open with Audora", ADR-033). */
     private val sharedCopies: SharedPdfCopies by lazy { SharedPdfCopies(applicationContext) }
 
@@ -233,6 +245,9 @@ class MainActivity : ComponentActivity() {
 
     /** A book the home-screen widget's Resume asked to continue (plan item 35), until it is opened. */
     private var widgetResume by mutableStateOf<String?>(null)
+
+    /** Text shared from another app (plan item 42), until it is saved as a book. */
+    private var sharedText by mutableStateOf<SharedText?>(null)
 
     @Inject
     lateinit var voiceManager: VoiceManager
@@ -246,7 +261,17 @@ class MainActivity : ComponentActivity() {
     lateinit var licenceSource: LicenceSource
 
     @Inject
-    lateinit var upNext: UpNextPort
+    lateinit var upNextLazy: dagger.Lazy<UpNextPort>
+
+    // Lazy: StoredUpNext reads Room and rewrites files/up-next.txt (a backup unit) when built, which must not happen
+    // before onCreate's "Finish restoring" check (ADR-046 §6-7).
+    private val upNext: UpNextPort get() = upNextLazy.get()
+
+    @Inject
+    lateinit var backups: Backups
+
+    @Inject
+    lateinit var photoBooks: PhotoBooks
 
     private val appearancePreferences: AppearancePreferences by lazy { AppearancePreferences(applicationContext) }
 
@@ -262,12 +287,30 @@ class MainActivity : ComponentActivity() {
         super.attachBaseContext(AppLanguages.wrap(newBase, appLanguageStore.load()))
     }
 
+    private val searchIndexes: SearchIndexes by lazy { SearchIndexes(applicationContext) }
+
+    private val voiceNoteParts by lazy {
+        VoiceNoteParts(voiceNoteStore, VoiceNoteAudio(applicationContext), lifecycleScope)
+    }
+
+    private val studioParts by lazy {
+        val notes = MarkStores(highlightStore, bookmarkStore, voiceNoteStore)
+        val watched = WatchedFolders(applicationContext, library)
+        StudioLibraryParts(this, photoBooks, watched, backups, resumeAnchors, notes)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        // Nothing that opens the library, prunes or resumes runs until a half-undone restore is finished (ADR-046).
+        if (showFinishRestoringIfNeeded()) return
         if (savedInstanceState == null) {
             sharedPdf = SharedPdfIntent.uriOf(intent)
+            sharedText = SharedPdfIntent.textOf(intent)
             widgetResume = ResumeWidgetProvider.bookIdOf(intent)
+            continueStudioJobs(intent)
+            Backups.takeStartResult()?.let { Toast.makeText(this, restoreMessageOf(it), Toast.LENGTH_LONG).show() }
+            photoBooks.resumePending()
         }
         setContent {
             val appearance by remember {
@@ -334,7 +377,10 @@ class MainActivity : ComponentActivity() {
         // cover has somewhere to shrink back into.
         val miniPort = rememberConnectedPlaybackPort()
         LaunchedEffect(Unit) { diagnostics.checkUnfinishedSession() }
+        LaunchedEffect(Unit) { dropStaleBookFiles(applicationContext, library, searchIndexes, voiceNoteParts) }
         SharedPdfEffect(sharedPdf, { sharedPdf = null }, libraryController::addShared, nav::navigate)
+        SharedTextEffect(sharedText, sharedCopies, onTaken = { sharedText = null }) { sharedPdf = it }
+        PhotoBookEffect(photoBooks, nav::navigate)
         ResumeWidgetEffect(libraryController.listState, widgetResume, { widgetResume = null }, nav::continueReading)
         val books = libraryBooks(libraryController.listState)
         if (firstRunShowing(libraryController, voicesController, battery, kids.on)) return
@@ -444,7 +490,7 @@ class MainActivity : ComponentActivity() {
             AppDestination.Storage -> ReadableWidth {
                 StorageRoute(
                     voices = remember { voiceManager.rows() },
-                    owners = remember { storageOwners() },
+                    owners = remember { storageOwners(applicationContext, bookCovers, sharedCopies, searchIndexes) },
                     onOpenVoices = { nav.navigate(AppDestination.Voices(fromStorage = true)) },
                     onBack = { nav.navigate(AppDestination.Settings) },
                 )
@@ -642,6 +688,8 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         SharedPdfIntent.uriOf(intent)?.let { sharedPdf = it }
+        SharedPdfIntent.textOf(intent)?.let { sharedText = it }
+        continueStudioJobs(intent)
         ResumeWidgetProvider.bookIdOf(intent)?.let { widgetResume = it }
     }
 
@@ -654,6 +702,7 @@ class MainActivity : ComponentActivity() {
     ) {
         val context = LocalContext.current.applicationContext
         val playWithPermission = rememberPlayWithNotificationPermission()
+        val studio = rememberStudioLibrary(studioParts, playWithPermission)
         val actions = remember(controller) {
             object : LibraryActions {
                 override fun onAddPdf(documentUri: Uri) = controller.add(documentUri.toString())
@@ -682,6 +731,10 @@ class MainActivity : ComponentActivity() {
                 override fun onQuery(query: LibraryQuery) = controller.setQuery(query)
 
                 override fun onAddToUpNext(book: Book) = upNext.add(book.id)
+
+                override fun onBookAction(book: Book, action: BookAction) = studio.onBookAction(book, action)
+
+                override fun onLibraryAction(action: LibraryAction) = studio.onLibraryAction(action)
             }
         }
         val books = (controller.listState as? LibraryListState.Loaded)?.all?.mapTo(HashSet()) { it.book.id }
@@ -696,6 +749,7 @@ class MainActivity : ComponentActivity() {
             banner = banner,
             covers = bookCovers,
         )
+        studio.Sheets((controller.listState as? LibraryListState.Loaded)?.all?.map { it.book })
     }
 
     @Composable
@@ -728,32 +782,6 @@ class MainActivity : ComponentActivity() {
 
             override fun onMessageShown() = controller.messageShown()
         }
-
-    /** Settings → Storage (UI plan): each kind's size and free call, from the owner that keeps it. */
-    private fun storageOwners(): Map<StorageKind, StorageOwner> {
-        val context = applicationContext
-        val pictures = File(cacheDir, THUMBNAILS_DIR)
-        return mapOf(
-            StorageKind.OCR to StorageOwner({ ocrModels.sizeOnDisk() }, ocrModels::delete),
-            StorageKind.PUNCTUATION to StorageOwner({ punctuationModels.sizeOnDisk() }, punctuationModels::delete),
-            StorageKind.VOICE_COMMANDS to StorageOwner({ voiceCommandModels.sizeOnDisk() }, voiceCommandModels::delete),
-            StorageKind.PAGE_PICTURES to StorageOwner(
-                measure = { withContext(Dispatchers.IO) { directoryBytes(pictures) } },
-                free = {
-                    val cleared = withContext(Dispatchers.IO) { pictures.deleteRecursively() }
-                    if (cleared) Outcome.Success(Unit) else Outcome.Failure("files left behind")
-                },
-            ),
-            StorageKind.OCR_TEXT to
-                StorageOwner({ OcrTextCacheFiles.sizeBytes(context) }, { OcrTextCacheFiles.clear(context) }),
-            StorageKind.COVERS to StorageOwner(bookCovers::sizeBytes, bookCovers::clear),
-            StorageKind.VOICE_BLENDS to StorageOwner(
-                measure = { SpeechEngines.blendCacheBytes(context) },
-                free = { SpeechEngines.clearBlendCache(context) },
-            ),
-            StorageKind.SHARED_PDFS to StorageOwner(sharedCopies::sizeBytes),
-        )
-    }
 
     /** Loaded on each visit: a voice downloaded since then shows its licence files. */
     @Composable
@@ -813,9 +841,11 @@ class MainActivity : ComponentActivity() {
         }
         val playWithPermission = rememberPlayWithNotificationPermission()
         val notes = remember(id) {
-            BookNotesModel(id, bookmarkStore, pronunciationStore, scope, PIPELINE_VERSION).also { it.start() }
+            BookNotesModel(id, NoteStores(bookmarkStore, pronunciationStore, highlightStore), scope, PIPELINE_VERSION)
+                .also { it.start() }
         }
         val notesState by notes.state.collectAsStateWithLifecycle()
+        val studio = rememberReaderStudio(id, model, scope, notes, port, searchIndexes, voiceNoteParts)
         val voiceRows by remember { voiceManager.rows().loggingFailures(READER_TAG, "the voices") }
             .collectAsStateWithLifecycle(initialValue = emptyList())
         // The reader and the player share the model, so back must follow the screen now shown, not the first one.
@@ -830,7 +860,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         val screen = BookScreen(target, books, onShowPage, onOtherBookPlaying)
-        ReaderContent(screen, state, actions, ocrState, notesState, notes, voiceRows, port, thumbs)
+        ReaderContent(screen, state, actions, ocrState, notesState, notes, voiceRows, port, thumbs, studio)
     }
 
     /**
@@ -873,11 +903,14 @@ class MainActivity : ComponentActivity() {
         voiceRows: List<VoiceRow>,
         port: PlaybackPort,
         thumbnails: PageThumbnails,
+        studio: ReaderStudio,
     ) {
         val (target, books, onShowPage) = screen
         if (target.asPlayer) FollowPlayingBook(target.id, state.playback.position?.bookId, screen.onOtherBookPlaying)
         val scope = rememberCoroutineScope()
         var upNextOpen by rememberSaveable { mutableStateOf(false) }
+        var searchOpen by rememberSaveable { mutableStateOf(false) }
+        var tutorOpen by rememberSaveable { mutableStateOf(false) }
         val document = state.document
         val look by remember { readingLookPreferences.look }.collectAsStateWithLifecycle(ReadingLook())
         val spokenWord = rememberSpokenWord(state, port, look.wordHighlight)
@@ -908,11 +941,17 @@ class MainActivity : ComponentActivity() {
                 spokenWord = { spokenWord.value },
                 thumbnails = thumbnails,
                 onOpenUpNext = { upNextOpen = true },
+                onSearch = { searchOpen = true },
+                voiceNotes = studio.voiceNotes,
+                lookUp = studio.lookUp,
+                onTutor = { tutorOpen = true },
             )
         }
         // What is playing, not the book on screen: with A playing, B's reader must not hide B from the sheet.
         val playing = state.playback.position?.bookId ?: target.id
         if (upNextOpen) UpNextRoute(books, playing) { upNextOpen = false }
+        if (searchOpen) SearchRoute(studio.search, onGoToPage = actions::onGoToPage) { searchOpen = false }
+        if (tutorOpen) ReaderTutorRoute(state, port::pause, actions::onGoToPage) { tutorOpen = false }
     }
 
     @Composable
@@ -960,6 +999,16 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun onReportSentence(unit: ReadingUnit) = model.askReport(unit)
+
+        // The clip's progress and its Share button are in a notification, so it asks for that permission first.
+        override fun onShareClip(unit: ReadingUnit) = playWithPermission {
+            AudioClips.share(applicationContext, model.state.value.bookId, unit.page, unit.index, model.openPassword)
+        }
+
+        // From the reader, a password-protected PDF can be saved too: its password goes along in memory (ADR-034).
+        override fun onSaveAudiobook() = playWithPermission {
+            AudiobookExport.start(applicationContext, model.state.value.bookId, model.openPassword)
+        }
 
         override fun onBookmark(bookmark: Bookmark) = model.goToBookmark(bookmark)
 
@@ -1158,7 +1207,7 @@ private const val SETTINGS_TAG = "Audora.Settings"
 private const val READER_TAG = "Audora.Reader"
 
 /** cacheDir subfolder for the page scrubber's thumbnails (plan item 17), one folder per book. */
-private const val THUMBNAILS_DIR = "thumbnails"
+internal const val THUMBNAILS_DIR = "thumbnails"
 
 /** Edge-to-edge's own three-button navigation bar scrims (androidx.activity's defaults), kept explicit here. */
 private const val LIGHT_NAV_SCRIM = 0xE6FFFFFF.toInt()

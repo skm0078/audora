@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings → Storage rows for studio's data (dictionaries, reading tutor, studio audio, search indexes). -->
+<resources>
+    <string name="storage_dictionaries">Dictionaries</string>
+    <string name="storage_reading_tutor">Reading tutor speech models</string>
+    <string name="storage_studio_audio">Studio mode audio</string>
+    <string name="storage_search_indexes">Search indexes</string>
+</resources>

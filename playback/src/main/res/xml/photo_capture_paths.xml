@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: playback/src/main/res/xml/photo_capture_paths.xml
+  Purpose: The only folder the photo FileProvider hands out: where the camera app writes "Point and read"'s photo (item 62).
+-->
+<paths>
+    <cache-path name="photo_capture" path="photo-capture/" />
+</paths>

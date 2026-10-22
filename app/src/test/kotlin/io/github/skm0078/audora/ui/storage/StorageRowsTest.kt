@@ -37,10 +37,13 @@ class StorageRowsTest {
     fun `models are deleted, caches cleared, and a shared PDF's copy only sized`() {
         val actions = storageRows(null, emptyMap()).associate { it.kind to it.action }
         assertEquals(StorageAction.MANAGE_VOICES, actions[StorageKind.VOICES])
-        listOf(StorageKind.OCR, StorageKind.PUNCTUATION, StorageKind.VOICE_COMMANDS).forEach {
+        val models = listOf(StorageKind.OCR, StorageKind.PUNCTUATION, StorageKind.VOICE_COMMANDS)
+        (models + StorageKind.DICTIONARIES + StorageKind.READING_TUTOR).forEach {
             assertEquals("$it", StorageAction.DELETE, actions[it])
         }
-        listOf(StorageKind.PAGE_PICTURES, StorageKind.OCR_TEXT, StorageKind.COVERS, StorageKind.VOICE_BLENDS).forEach {
+        val caches =
+            listOf(StorageKind.PAGE_PICTURES, StorageKind.OCR_TEXT, StorageKind.COVERS, StorageKind.VOICE_BLENDS)
+        (caches + StorageKind.STUDIO_AUDIO + StorageKind.SEARCH_INDEXES).forEach {
             assertEquals("$it", StorageAction.CLEAR, actions[it])
         }
         assertNull(actions[StorageKind.SHARED_PDFS])

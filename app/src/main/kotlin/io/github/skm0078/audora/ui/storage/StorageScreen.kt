@@ -138,10 +138,14 @@ internal fun kindLabel(kind: StorageKind): Int = when (kind) {
     StorageKind.OCR -> R.string.storage_ocr
     StorageKind.PUNCTUATION -> R.string.storage_punctuation
     StorageKind.VOICE_COMMANDS -> R.string.storage_voice_commands
+    StorageKind.DICTIONARIES -> R.string.storage_dictionaries
+    StorageKind.READING_TUTOR -> R.string.storage_reading_tutor
     StorageKind.PAGE_PICTURES -> R.string.storage_page_pictures
     StorageKind.OCR_TEXT -> R.string.storage_ocr_text
     StorageKind.COVERS -> R.string.storage_covers
     StorageKind.VOICE_BLENDS -> R.string.storage_voice_blends
+    StorageKind.STUDIO_AUDIO -> R.string.storage_studio_audio
+    StorageKind.SEARCH_INDEXES -> R.string.storage_search_indexes
     StorageKind.SHARED_PDFS -> R.string.storage_shared_pdfs
 }
 

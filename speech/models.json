@@ -269,5 +269,174 @@
       "sha256": "325100325fc0b984169e2654d3b4fa01194df28bf8182a0b98d0b1d3f5c68dfa",
       "sizeBytes": 5254988
     }
+  ],
+  "dictionaries": [
+    {
+      "id": "dict-en-oewn-2025",
+      "label": "English dictionary (Open English Wordnet 2025)",
+      "lang": "en",
+      "file": "dictionary.tsv",
+      "licence": "CC-BY-4.0 AND WordNet",
+      "credit": "Open English Wordnet 2025 by the Open English Wordnet team (CC BY 4.0), derived from Princeton WordNet (WordNet License, Princeton University). Definitions and synonyms kept; examples and relations left out.",
+      "licenceUrl": "https://github.com/globalwordnet/english-wordnet/blob/2025-edition/LICENSE.md",
+      "sourceUrl": "https://en-word.net/",
+      "source": {
+        "url": "https://github.com/globalwordnet/english-wordnet/releases/download/2025-edition/english-wordnet-2025.xml.gz",
+        "sha256": "9ca6d1dcb75f822fdd66617f7d9da48142ace38dd544d6ad5e2feca1674ad3fe"
+      },
+      "zip": "dict-en-oewn-2025-12568d7b873e.zip",
+      "sha256": "12568d7b873ed3af24f00eb6b04bb14bedfa0680253c186a62aec7e5a522d8bd",
+      "sizeBytes": 5352460,
+      "unpackedBytes": 16206552,
+      "licenceFiles": [
+        "speech/licences/open-english-wordnet-LICENSE.md",
+        "speech/licences/princeton-wordnet-LICENSE.txt"
+      ]
+    },
+    {
+      "id": "dict-hi-wiktionary",
+      "label": "Hindi dictionary (Wiktionary)",
+      "lang": "hi",
+      "file": "dictionary.tsv",
+      "licence": "CC-BY-SA-4.0",
+      "credit": "Hindi entries from Wiktionary by Wiktionary contributors (CC BY-SA 4.0), extracted by Wiktextract (kaikki.org). English glosses, parts of speech, synonyms and inflected forms kept; examples, etymology and translations left out.",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "sourceUrl": "https://kaikki.org/dictionary/Hindi/",
+      "source": {
+        "format": "kaikki",
+        "url": "https://kaikki.org/dictionary/Hindi/kaikki.org-dictionary-Hindi.jsonl",
+        "sha256": "be3d671a9f2335b64eaf6fd938e41b9790484daf3d330d0f5c3941cfe82a79dd",
+        "sizeBytes": 165746593,
+        "extracted": "2026-10-03 from the enwiktionary dump of 2026-09-02"
+      },
+      "zip": "dict-hi-wiktionary-b2bc32c39cfd.zip",
+      "sha256": "b2bc32c39cfdca09acb81c0468e04022eafe084a554f3699581b7e9e8946f469",
+      "sizeBytes": 1792646,
+      "unpackedBytes": 15563758,
+      "licenceFiles": [
+        "speech/licences/wiktionary-CC-BY-SA-4.0.txt"
+      ]
+    },
+    {
+      "id": "dict-bn-wiktionary",
+      "label": "Bengali dictionary (Wiktionary)",
+      "lang": "bn",
+      "file": "dictionary.tsv",
+      "licence": "CC-BY-SA-4.0",
+      "credit": "Bengali entries from Wiktionary by Wiktionary contributors (CC BY-SA 4.0), extracted by Wiktextract (kaikki.org). English glosses, parts of speech, synonyms and inflected forms kept; examples, etymology and translations left out.",
+      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "sourceUrl": "https://kaikki.org/dictionary/Bengali/",
+      "source": {
+        "format": "kaikki",
+        "url": "https://kaikki.org/dictionary/Bengali/kaikki.org-dictionary-Bengali.jsonl",
+        "sha256": "9d84efb81b17de254db0d8f33ecac6f50f19efba105b8b6c01cd7a7211e6caae",
+        "sizeBytes": 39482695,
+        "extracted": "2026-10-03 from the enwiktionary dump of 2026-09-02"
+      },
+      "zip": "dict-bn-wiktionary-a50babce19ad.zip",
+      "sha256": "a50babce19ad1123f715b43199f2312117762d4aef63091bd6fe16c014e8019b",
+      "sizeBytes": 556861,
+      "unpackedBytes": 3341270,
+      "licenceFiles": [
+        "speech/licences/wiktionary-CC-BY-SA-4.0.txt"
+      ]
+    }
+  ],
+  "asr": [
+    {
+      "id": "asr-en-zipformer-20m",
+      "label": "English reading tutor (follows word by word)",
+      "lang": "en",
+      "kind": "streaming-transducer",
+      "licence": "Apache-2.0",
+      "credit": "Streaming Zipformer transducer (20M) trained on LibriSpeech with icefall by desh2608 and k2-fsa (Apache-2.0), converted for sherpa-onnx by k2-fsa; only the int8 weights and tokens are kept, unchanged.",
+      "licenceUrl": "https://www.apache.org/licenses/LICENSE-2.0",
+      "sourceUrl": "https://github.com/k2-fsa/icefall/pull/903",
+      "sources": [
+        {
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17.tar.bz2",
+          "files": {
+            "sherpa-onnx-streaming-zipformer-en-20M-2023-02-17/encoder-epoch-99-avg-1.int8.onnx": "encoder.onnx",
+            "sherpa-onnx-streaming-zipformer-en-20M-2023-02-17/decoder-epoch-99-avg-1.int8.onnx": "decoder.onnx",
+            "sherpa-onnx-streaming-zipformer-en-20M-2023-02-17/joiner-epoch-99-avg-1.int8.onnx": "joiner.onnx",
+            "sherpa-onnx-streaming-zipformer-en-20M-2023-02-17/tokens.txt": "tokens.txt"
+          },
+          "sha256": "9c559283e8498d3fe95913c79ca1cb454bb26281ac2b102b41306c7d752765d9"
+        }
+      ],
+      "licenceFiles": [
+        "speech/licences/apache-2.0.txt"
+      ],
+      "file": "asr-en-zipformer-20m-896cc6625975.zip",
+      "sha256": "896cc6625975bbd1dd3d280f37b6bfb575c5cb03120acba4807e0fcc33e47343",
+      "sizeBytes": 43661165,
+      "unpackedBytes": 43660659
+    },
+    {
+      "id": "asr-bn-zipformer-vosk",
+      "label": "Bengali reading tutor (follows word by word)",
+      "lang": "bn",
+      "kind": "streaming-transducer",
+      "licence": "Apache-2.0",
+      "credit": "Vosk small streaming Bengali model, a Zipformer2 transducer trained with icefall by Alpha Cephei (Apache-2.0), converted for sherpa-onnx by k2-fsa; weights and tokens kept unchanged.",
+      "licenceUrl": "https://huggingface.co/alphacep/vosk-model-small-streaming-bn",
+      "licenceCheck": {
+        "url": "https://huggingface.co/api/models/alphacep/vosk-model-small-streaming-bn",
+        "license": "apache-2.0"
+      },
+      "sourceUrl": "https://huggingface.co/alphacep/vosk-model-small-streaming-bn",
+      "sources": [
+        {
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-bn-vosk-2026-02-09.tar.bz2",
+          "files": {
+            "sherpa-onnx-streaming-zipformer-bn-vosk-2026-02-09/encoder.onnx": "encoder.onnx",
+            "sherpa-onnx-streaming-zipformer-bn-vosk-2026-02-09/decoder.onnx": "decoder.onnx",
+            "sherpa-onnx-streaming-zipformer-bn-vosk-2026-02-09/joiner.onnx": "joiner.onnx",
+            "sherpa-onnx-streaming-zipformer-bn-vosk-2026-02-09/tokens.txt": "tokens.txt"
+          },
+          "sha256": "1bc89d81ee33ba7ddef8454736aeeb55e3cc1593274272485c6da342202b4b18"
+        }
+      ],
+      "licenceFiles": [
+        "speech/licences/apache-2.0.txt"
+      ],
+      "file": "asr-bn-zipformer-vosk-c108226b561f.zip",
+      "sha256": "c108226b561fe6d6c854ec9bc3d7fd6079d22a8a352f350217f5f503caa4f8a5",
+      "sizeBytes": 94131803,
+      "unpackedBytes": 94131297
+    },
+    {
+      "id": "asr-hi-dolphin-base",
+      "label": "Hindi reading tutor (follows phrase by phrase)",
+      "lang": "hi",
+      "kind": "phrase-ctc",
+      "licence": "Apache-2.0 AND MIT",
+      "credit": "Dolphin base multilingual speech recognition by DataoceanAI and Tsinghua University (Apache-2.0), CTC branch converted to int8 for sherpa-onnx by k2-fsa; Silero VAD by the Silero team (MIT) finds the phrases. Both kept unchanged.",
+      "licenceUrl": "https://github.com/DataoceanAI/Dolphin/blob/main/LICENSE",
+      "sourceUrl": "https://github.com/DataoceanAI/Dolphin",
+      "sources": [
+        {
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-dolphin-base-ctc-multi-lang-int8-2025-04-02.tar.bz2",
+          "files": {
+            "sherpa-onnx-dolphin-base-ctc-multi-lang-int8-2025-04-02/model.int8.onnx": "model.onnx",
+            "sherpa-onnx-dolphin-base-ctc-multi-lang-int8-2025-04-02/tokens.txt": "tokens.txt"
+          },
+          "sha256": "6f23da2303c3c2e5fa6445c450fa2a7133cd57e3da070ae5f97ab9e0dfbb4a54"
+        },
+        {
+          "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx",
+          "sha256": "9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6",
+          "as": "vad.onnx"
+        }
+      ],
+      "licenceFiles": [
+        "speech/licences/apache-2.0.txt",
+        "speech/licences/silero-vad-LICENSE.txt"
+      ],
+      "file": "asr-hi-dolphin-base-6036b50ffc67.zip",
+      "sha256": "6036b50ffc677114c768c28368ec51c12aa7fe7a00bff02d9c11f1ee08d09a50",
+      "sizeBytes": 104891149,
+      "unpackedBytes": 104890753
+    }
   ]
 }

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali: Read aloud to me, the reading tutor (plan item 67, ADR-050). -->
+<resources>
+    <string name="tutor_menu">আমাকে পড়ে শোনান</string>
+    <string name="tutor_title">আমাকে পড়ে শোনান</string>
+    <string name="tutor_mode_words">পাতাটি জোরে পড়ুন। Audora প্রতিটি শব্দ শোনে, শুধু এই ফোনেই।</string>
+    <string name="tutor_mode_phrases">পাতাটি জোরে পড়ুন। Audora একবারে একটি বাক্যাংশ শোনে, তাই প্রতিটি বিরতির পরে চিহ্ন দেখা যায়। শুধু এই ফোনেই।</string>
+    <string name="tutor_needs_model">%1$s শুনতে Audora-র একটি স্পিচ মডেল দরকার: একবার %2$s ডাউনলোড, ফোনে %3$s। তারপর ইন্টারনেট ছাড়াই চলে।</string>
+    <string name="tutor_download">ডাউনলোড করুন</string>
+    <string name="tutor_queued">ডাউনলোডের জন্য সংযোগের অপেক্ষা…</string>
+    <string name="tutor_download_failed">ডাউনলোড থেমে গেছে (%1$s)। আবার চেষ্টা করুন।</string>
+    <string name="tutor_cancel_download">ডাউনলোড বাতিল করুন</string>
+    <string name="tutor_preparing">শোনার প্রস্তুতি চলছে…</string>
+    <string name="tutor_listening">শুনছে…</string>
+    <string name="tutor_start">পড়া শুরু করুন</string>
+    <string name="tutor_continue">পড়তে থাকুন</string>
+    <string name="tutor_stop">থামান</string>
+    <string name="tutor_start_over">আবার শুরু করুন</string>
+    <string name="tutor_close">বন্ধ করুন</string>
+    <string name="tutor_next_page">পরের পাতা</string>
+    <string name="tutor_no_text">এই পাতায় জোরে পড়ার মতো কোনো লেখা নেই।</string>
+    <string name="tutor_legend">রঙিন: পড়া হয়েছে। লাল ও নিচে দাগ: দেখে নিন। কাটা দাগ: বাদ গেছে।</string>
+    <plurals name="tutor_score">
+        <item quantity="one">আপনি %2$d-টির মধ্যে %1$d-টি শব্দ ঠিক পড়েছেন (%3$d%%)।</item>
+        <item quantity="other">আপনি %2$d-টির মধ্যে %1$d-টি শব্দ ঠিক পড়েছেন (%3$d%%)।</item>
+    </plurals>
+    <string name="tutor_score_none">এই পাতায় কিছুই যাচাই করা গেল না (সংখ্যা, চিহ্ন ও অন্য লিপি যাচাই হয় না)।</string>
+    <string name="tutor_to_check">দেখে নিন (শুনতে ট্যাপ করুন):</string>
+    <plurals name="tutor_skipped">
+        <item quantity="one">বাদ গেছে: %1$d-টি শব্দ।</item>
+        <item quantity="other">বাদ গেছে: %1$d-টি শব্দ।</item>
+    </plurals>
+    <string name="tutor_check_note">দেখে নেওয়ার জন্য চিহ্নিত শব্দটি এমনও হতে পারে যা স্পিচ মডেল ভুল শুনেছে।</string>
+    <string name="tutor_hear_word">“%1$s” শুনুন</string>
+    <string name="tutor_failed_model">স্পিচ মডেল লোড হয়নি; এর ফাইলগুলো নষ্ট হয়ে থাকতে পারে।</string>
+    <string name="tutor_try_again">আবার চেষ্টা করুন</string>
+    <string name="tutor_download_again">আবার ডাউনলোড করুন</string>
+    <string name="tutor_failed_permission">শোনার জন্য Audora-র মাইক্রোফোন দরকার। ফোনের সেটিংসে এটি চালু করতে পারেন।</string>
+    <string name="tutor_open_settings">সেটিংস খুলুন</string>
+    <string name="tutor_failed_microphone">মাইক্রোফোন ব্যবহার করা গেল না। হয়তো অন্য কোনো অ্যাপ এটি ব্যবহার করছে।</string>
+    <string name="tutor_lang_en">ইংরেজি</string>
+    <string name="tutor_lang_hi">হিন্দি</string>
+    <string name="tutor_lang_bn">বাংলা</string>
+</resources>

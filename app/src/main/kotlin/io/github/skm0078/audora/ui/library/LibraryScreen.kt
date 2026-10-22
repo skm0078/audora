@@ -208,6 +208,7 @@ private class BookCallbacks(
     val onExport: (Book) -> Unit = actions::onExportAudiobook
     val onContinue: (Book) -> Unit = actions::onContinue
     val onAddToUpNext: (Book) -> Unit = actions::onAddToUpNext
+    val onAction: (Book, BookAction) -> Unit = actions::onBookAction
 }
 
 @Composable
@@ -242,6 +243,7 @@ private fun BookGrid(list: LibraryListState.Loaded, books: BookCallbacks, covers
                 covers = covers,
                 onAddToUpNext = { books.onAddToUpNext(item.book) },
                 onDetails = { books.onDetails(item) },
+                onAction = { action -> books.onAction(item.book, action) },
             )
         }
     }
@@ -274,6 +276,7 @@ private fun BookList(list: LibraryListState.Loaded, books: BookCallbacks, covers
                     covers = covers,
                     onAddToUpNext = { books.onAddToUpNext(item.book) },
                     onDetails = { books.onDetails(item) },
+                    onAction = { action -> books.onAction(item.book, action) },
                 )
                 HorizontalDivider()
             }
@@ -343,10 +346,10 @@ private const val LARGE_TEXT_SCALE = 1.5f
 private const val CONTINUE_KEY = "continue-reading"
 
 /**
- * OpenDocument filters by MIME type; providers that mislabel PDFs are caught by the header check. The first-run
- * screens' picker uses it too.
+ * OpenDocument filters by MIME type; providers that mislabel files are caught by the header check. PDFs, EPUBs and
+ * text files (items 42 and 43, ADR-042). The first-run screens' picker uses it too.
  */
-internal val PDF_MIME_TYPES = arrayOf("application/pdf")
+internal val PDF_MIME_TYPES = arrayOf("application/pdf", "application/epub+zip", "text/plain")
 
 @Preview(showBackground = true)
 @Composable

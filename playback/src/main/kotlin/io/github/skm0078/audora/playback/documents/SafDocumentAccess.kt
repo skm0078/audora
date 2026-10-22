@@ -28,7 +28,8 @@ class SafDocumentAccess(context: Context, private val copies: SharedPdfCopies = 
 
     override fun keepAccess(documentUri: String): Outcome<Unit, DocumentError> {
         val uri = Uri.parse(documentUri)
-        if (copies.owns(uri)) return Outcome.Success(Unit) // Audora's own file: nothing to keep.
+        // Audora's own file, or a file in a watched folder (item 26), read through the folder's grant: nothing to keep.
+        if (copies.owns(uri) || resolver.inGrantedFolder(uri)) return Outcome.Success(Unit)
         return try {
             resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             Outcome.Success(Unit)
@@ -40,6 +41,7 @@ class SafDocumentAccess(context: Context, private val copies: SharedPdfCopies = 
     override fun releaseAccess(documentUri: String) {
         val uri = Uri.parse(documentUri)
         if (copies.owns(uri)) return copies.delete(uri)
+        if (resolver.inGrantedFolder(uri)) return // The folder grant goes on the next scan once nothing needs it.
         try {
             resolver.releasePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         } catch (e: SecurityException) {
@@ -73,7 +75,8 @@ class SafDocumentAccess(context: Context, private val copies: SharedPdfCopies = 
         return when {
             copies.owns(uri) -> if (copies.fileOf(uri).isFile) BookAvailability.AVAILABLE else BookAvailability.MISSING
 
-            resolver.persistedUriPermissions.none { it.uri == uri && it.isReadPermission } ->
+            resolver.persistedUriPermissions.none { it.uri == uri && it.isReadPermission } &&
+                !resolver.inGrantedFolder(uri) ->
                 BookAvailability.ACCESS_LOST
 
             else -> providerAvailability(uri)
@@ -136,3 +139,9 @@ class SafDocumentAccess(context: Context, private val copies: SharedPdfCopies = 
 }
 
 private fun detail(e: Exception, uri: Uri): String = "${e.javaClass.simpleName} authority=${uri.authority}"
+
+/** A document opened through a folder (tree) URI whose folder Audora holds a lasting read grant on (item 26). */
+private fun ContentResolver.inGrantedFolder(uri: Uri): Boolean {
+    val folder = WatchedFolders.folderOf(uri) ?: return false
+    return persistedUriPermissions.any { it.uri == folder && it.isReadPermission }
+}

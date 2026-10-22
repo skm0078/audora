@@ -3,11 +3,22 @@
 
 package io.github.skm0078.audora.playback.export
 
+import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.speech.SpeechError
+import io.github.skm0078.audora.speech.audio.PcmAudio
 
-/** A finished chapter file. [name] is its file name, safe to show; [durationMs] is the audio written to it. */
-data class ExportedChapter(val chapter: AudioChapter, val name: String, val durationMs: Long)
+/**
+ * A finished chapter file. [name] is its file name as saved (shared storage may have added " (1)"), safe to show;
+ * [durationMs] is the audio written to it; [location] finds it again (a MediaStore URI; null for plain files), never
+ * logged.
+ */
+data class ExportedChapter(
+    val chapter: AudioChapter,
+    val name: String,
+    val durationMs: Long,
+    val location: String? = null,
+)
 
 /**
  * @property skippedSentences sentences the voice failed on, each left out (as playback skips them).
@@ -46,6 +57,9 @@ sealed interface ExportError {
 /** Progress callbacks, on the exporter's thread. Keep them cheap: post to the UI, don't do work here. */
 interface ExportListener {
     fun onPageDone(chapter: AudioChapter, page: Int) = Unit
+
+    /** [unit]'s audio went into [chapter]'s file, as [audio] (at the file's rate); the talking book times it. */
+    fun onSentenceWritten(chapter: AudioChapter, unit: ReadingUnit, audio: PcmAudio) = Unit
 
     fun onChapterDone(chapter: ExportedChapter) = Unit
 

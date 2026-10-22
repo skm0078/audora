@@ -21,6 +21,7 @@ import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.AfterSentence
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.BookmarkStore
@@ -30,6 +31,7 @@ import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.core.resume.ResumeRecorder
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.playback.R
+import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.browse.BrowseLookup
 import io.github.skm0078.audora.playback.browse.BrowseSources
@@ -38,12 +40,15 @@ import io.github.skm0078.audora.playback.browse.LibraryBrowser
 import io.github.skm0078.audora.playback.browse.OutlineChapters
 import io.github.skm0078.audora.playback.browse.ResourceBrowseTexts
 import io.github.skm0078.audora.playback.contract.PendingIntentCodes
+import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.focus.FocusRenderersFactory
 import io.github.skm0078.audora.playback.focus.FocusSoundCues
 import io.github.skm0078.audora.playback.focus.FocusSoundProcessor
 import io.github.skm0078.audora.playback.focus.FocusSoundStore
 import io.github.skm0078.audora.playback.notes.BookContext
 import io.github.skm0078.audora.playback.queue.MeasuredRenderAhead
+import io.github.skm0078.audora.playback.queue.SentenceRenderer
+import io.github.skm0078.audora.playback.queue.UnitKey
 import io.github.skm0078.audora.playback.reading.ReadingSource
 import io.github.skm0078.audora.playback.session.BookSession
 import io.github.skm0078.audora.playback.session.ItemTexts
@@ -55,6 +60,10 @@ import io.github.skm0078.audora.playback.session.SessionSources
 import io.github.skm0078.audora.playback.session.ShakeSource
 import io.github.skm0078.audora.playback.session.SleepOptionsStore
 import io.github.skm0078.audora.playback.session.SpeechPlayer
+import io.github.skm0078.audora.playback.studio.StudioClip
+import io.github.skm0078.audora.playback.studio.StudioKey
+import io.github.skm0078.audora.playback.studio.StudioMode
+import io.github.skm0078.audora.playback.studio.StudioSentenceRenderer
 import io.github.skm0078.audora.playback.upnext.QueueAdvance
 import io.github.skm0078.audora.playback.upnext.UpNextStore
 import io.github.skm0078.audora.playback.voice.BookRenderers
@@ -129,8 +138,14 @@ class AudoraPlaybackService : MediaLibraryService() {
     // The sentence "What did it say?" renders again slower, with smart speed on (ADR-049).
     private val replayRender = ReplayRender()
 
+    /** Set when this process started with a restore half undone: no session, no stores (ADR-046). */
+    private var restoring = false
+
     override fun onCreate() {
         super.onCreate() // Hilt injects fields here.
+        // The tile, Android Auto and the system media controls bind the session; with none they get nothing.
+        restoring = Backups.restoreUnfinishedAtStart.also { if (it) AudoraLog.w(TAG, "Restore unfinished: no session") }
+        if (restoring) return
         val style = SpeechStyleStore.forContext(this)
         // Expressiveness (plan item 8) is global, like the rest of the voice shaping; a change reloads the voice.
         // The narrator blend (plan item 75) goes to the voice reading English now, nothing else.
@@ -240,14 +255,15 @@ class AudoraPlaybackService : MediaLibraryService() {
         }
     }
 
+    /** The live voice, with studio audio in front of it: a sentence rendered ahead plays at once (ADR-039). */
     private fun renderer(
         engines: VoiceEngines,
         stores: SessionStores,
         reading: ReadingSource,
         heard: () -> SpeechStyle,
         characters: CharacterCast,
-    ) = StudyGapRenderer(
-        BookRenderers.create(
+    ): SentenceRenderer {
+        val live = BookRenderers.create(
             this,
             voices,
             style = heard,
@@ -257,10 +273,22 @@ class AudoraPlaybackService : MediaLibraryService() {
             speed = RenderSpeedTracker(engines::speeds),
             timings = timings,
             replay = replayRender,
-        ),
-        // Live playback only: "Leave a gap to say it back" (plan item 31).
-        gaps = { heard().modes.afterSentence == AfterSentence.GAP },
-    )
+        )
+        val book = stores.book
+        val played = { unit: ReadingUnit, clip: StudioClip ->
+            timings.record(
+                UnitKey.of(unit),
+                SentenceTiming(unit.page, unit.charStart, unit.index, clip.leadMs, clip.speechMs, clip.durationMs),
+            )
+        }
+        val studio = StudioSentenceRenderer(live, StudioMode.store(this), replay = replayRender, played = played) {
+            book.bookId?.let { id ->
+                StudioKey(id, StudioMode.signature(this, heard(), voices::choiceFor, book.fixer.signature))
+            }
+        }
+        // Outermost, so studio audio still leaves the "Leave a gap to say it back" pause (plan item 31).
+        return StudyGapRenderer(studio, gaps = { heard().modes.afterSentence == AfterSentence.GAP })
+    }
 
     private fun publisher(
         mediaSession: MediaSession,
@@ -284,6 +312,13 @@ class AudoraPlaybackService : MediaLibraryService() {
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = session
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // A headset's play starts this as a foreground service: Android requires startForeground before stopping.
+        if (restoring) RestoreRefusal.refuse(this)
+        val sticky = super.onStartCommand(intent, flags, startId) // With no session it finds nothing to play.
+        return if (restoring) START_NOT_STICKY else sticky
+    }
+
     /**
      * Gives back the neural models not in use (P4-02). Since API 34 Android delivers only UI_HIDDEN and BACKGROUND
      * (the RUNNING_* levels are deprecated and no longer sent). UI_HIDDEN just means the user left the app, which
@@ -292,6 +327,7 @@ class AudoraPlaybackService : MediaLibraryService() {
      */
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
+        if (restoring) return
         if (level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
             AudoraLog.i(TAG, "Trim memory level=$level, book=${bookSession.bookId?.logLabel}")
             voices.trimMemory()
@@ -299,6 +335,10 @@ class AudoraPlaybackService : MediaLibraryService() {
     }
 
     override fun onDestroy() {
+        if (restoring) {
+            super.onDestroy()
+            return
+        }
         AudoraLog.i(TAG, "Service destroyed, book=${bookSession.bookId?.logLabel}")
         bookSession.release()
         speed.release()
@@ -310,17 +350,6 @@ class AudoraPlaybackService : MediaLibraryService() {
         super.onDestroy()
     }
 
-    /** Tapping the notification opens the app; :playback does not know its activity, the launcher does. */
-    private fun sessionActivity(): PendingIntent? {
-        val launch: Intent = packageManager.getLaunchIntentForPackage(packageName) ?: return null
-        return PendingIntent.getActivity(
-            this,
-            PendingIntentCodes.OPEN_FROM_PLAYBACK,
-            launch.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-    }
-
     private inner class ResourceTexts : ItemTexts {
         override fun pageOf(page: Int, pageCount: Int): String = getString(R.string.playback_page_of, page, pageCount)
 
@@ -330,6 +359,17 @@ class AudoraPlaybackService : MediaLibraryService() {
     private companion object {
         const val TAG = "Playback.Service"
     }
+}
+
+/** Tapping the notification opens the app; :playback does not know its activity, the launcher does. */
+private fun Context.sessionActivity(): PendingIntent? {
+    val launch: Intent = packageManager.getLaunchIntentForPackage(packageName) ?: return null
+    return PendingIntent.getActivity(
+        this,
+        PendingIntentCodes.OPEN_FROM_PLAYBACK,
+        launch.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
 }
 
 /** The player, with the focus sound in its audio and told of seeks, stalls and the book's end. */

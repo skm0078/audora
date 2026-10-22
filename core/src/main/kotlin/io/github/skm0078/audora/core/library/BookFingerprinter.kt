@@ -1,5 +1,5 @@
 // File: core/src/main/kotlin/io/github/skm0078/audora/core/library/BookFingerprinter.kt
-// Purpose: Recognizes a PDF by its content, so a moved or re-picked file is matched to the same book.
+// Purpose: Recognizes a book file by its content, so a moved or re-picked file is matched to the same book.
 
 package io.github.skm0078.audora.core.library
 
@@ -17,16 +17,14 @@ import java.security.MessageDigest
  * same first megabyte to collide; PDFs put the per-file document ID and page objects there, so it does not happen
  * in practice. A PDF edited in place gets a new fingerprint, which is right: its pages may have changed.
  *
- * Also rejects files that are not PDFs, by the `%PDF-` header.
+ * Also rejects files that are not PDFs, EPUBs or plain text ([DocumentFormats.sniff]; ADR-042). A PDF's
+ * fingerprint is the same as before EPUB and text were accepted.
  */
 class BookFingerprinter(private val config: LibraryConfig = LibraryConfig()) {
     /** Reads up to the configured head of [stream]; does not close it. [sizeBytes] null when unknown. */
     fun fingerprint(stream: InputStream, sizeBytes: Long?): Outcome<String, FingerprintError> =
         readHead(stream).flatMap { head ->
-            if (hasPdfHeader(
-                    head,
-                )
-            ) {
+            if (DocumentFormats.sniff(head, config.pdfHeaderWindowBytes) != null) {
                 Outcome.Success(digest(head, sizeBytes))
             } else {
                 Outcome.Failure(FingerprintError.NotAPdf)
@@ -47,12 +45,6 @@ class BookFingerprinter(private val config: LibraryConfig = LibraryConfig()) {
         return VERSION_PREFIX + digest.digest().toHex()
     }
 
-    private fun hasPdfHeader(head: ByteArray): Boolean {
-        val window = minOf(head.size, config.pdfHeaderWindowBytes)
-        val last = window - PDF_MAGIC.size
-        return (0..last).any { start -> PDF_MAGIC.indices.all { head[start + it] == PDF_MAGIC[it] } }
-    }
-
     private fun ByteArray.toHex(): String = joinToString(separator = "") { "%02x".format(it) }
 
     private companion object {
@@ -62,11 +54,11 @@ class BookFingerprinter(private val config: LibraryConfig = LibraryConfig()) {
         /** Bump if the recipe changes, so old and new fingerprints never compare equal by accident. */
         const val VERSION_PREFIX = "v1:"
         val SEPARATOR = byteArrayOf(0)
-        val PDF_MAGIC = "%PDF-".toByteArray(Charsets.US_ASCII)
     }
 }
 
 sealed interface FingerprintError {
+    /** Not a PDF, EPUB or text file (the name predates EPUB and text support). */
     data object NotAPdf : FingerprintError
 
     data class ReadFailed(val detail: String) : FingerprintError
