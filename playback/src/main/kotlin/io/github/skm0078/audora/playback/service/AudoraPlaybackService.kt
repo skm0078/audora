@@ -285,7 +285,9 @@ class AudoraPlaybackService : MediaLibraryService() {
         }
         val studio = StudioSentenceRenderer(live, StudioMode.store(this), replay = replayRender, played = played) {
             book.bookId?.let { id ->
-                StudioKey(id, StudioMode.signature(this, heard(), voices::choiceFor, book.fixer.signature))
+                // Studio mode reads Hindi with the acted voice once installed (ADR-059): look its audio up under it.
+                val studioVoice = { lang: Lang -> StudioMode.actedVoice(this, lang) ?: voices.choiceFor(lang) }
+                StudioKey(id, StudioMode.signature(this, heard(), studioVoice, book.fixer.signature))
             }
         }
         // Outermost, so studio audio still leaves the "Leave a gap to say it back" pause (plan item 31).

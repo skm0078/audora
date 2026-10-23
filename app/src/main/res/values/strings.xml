@@ -505,6 +505,7 @@
     <string name="storage_total">Audora uses %1$s</string>
     <string name="storage_voices">Downloaded voices</string>
     <string name="storage_ocr">Text recognition for scanned pages</string>
+    <string name="storage_acted_voice">Acted Hindi voice</string>
     <string name="storage_punctuation">Punctuation model</string>
     <string name="storage_page_pictures">Page pictures (scrubber)</string>
     <string name="storage_voice_commands">Voice commands model</string>

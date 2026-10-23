@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_acted.xml -->
+<!-- Purpose: The acted Hindi voice's Settings row (ADR-059). -->
+<resources>
+    <string name="acted_model_title">अभिनय वाली हिंदी आवाज़ (स्टूडियो मोड)</string>
+    <string name="acted_model_missing">ज़्यादा भाव वाली हिंदी आवाज़, जो भावनाओं और संवादों को अभिनय के साथ पढ़ती है। इसे सिर्फ़ स्टूडियो मोड इस्तेमाल करता है, फ़ोन चार्ज होते समय, और यह धीमी है: चार्जर पर एक रात में लगभग दो घंटे का हिंदी सुनना तैयार होता है। सब कुछ आपके फ़ोन पर, ऑफ़लाइन चलता है। स्टूडियो मोड के बिना सुनने पर आपकी सामान्य हिंदी आवाज़ ही रहती है। सिर्फ़ Wi-Fi पर डाउनलोड होती है। %1$d MB चाहिए।</string>
+    <string name="acted_model_ready">स्टूडियो मोड हिंदी इसी आवाज़ में पढ़ता है · %1$d MB</string>
+</resources>

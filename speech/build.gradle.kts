@@ -11,6 +11,7 @@ plugins {
 
 android {
     namespace = "io.github.skm0078.audora.speech"
+    ndkVersion = libs.versions.ndk.get()
 
     defaultConfig {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -19,6 +20,13 @@ android {
             // arm64-v8a ships (D5). x86_64 only so the instrumented tests run on CI's emulator; the app's own
             // abiFilters keep it out of the APK.
             abiFilters += listOf("arm64-v8a", "x86_64")
+        }
+    }
+
+    // libaudora_acted.so, the acted Hindi voice (ADR-059), on the ONNX Runtime sherpa-onnx already ships.
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
         }
     }
 

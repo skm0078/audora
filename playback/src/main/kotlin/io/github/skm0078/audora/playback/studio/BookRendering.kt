@@ -85,7 +85,13 @@ class BookRendering private constructor(
             val (normalRate, global, characters) = run
             val own = settings.get(id)
             val fixer = PronunciationFixer(pronunciations.observe(id).first())
-            voices.bookVoice = BookSound.voices(own)
+            val bookVoices = BookSound.voices(own)
+            // Studio mode reads Hindi with the acted voice once installed (ADR-059); the key names it either way.
+            voices.bookVoice = if (run.acted) {
+                { lang -> StudioMode.actedVoice(context, lang) ?: bookVoices(lang) }
+            } else {
+                bookVoices
+            }
             val styleStore = SpeechStyleStore.forContext(context)
             val style = BookSound.style(own, global ?: styleStore.current, normalRate)
             val chapterPages = text.chapterStarts().toSet()
@@ -132,9 +138,12 @@ class BookRendering private constructor(
  *   style file renders and keys with that same read; null reads it now.
  * @property characters the book's character voices (plan item 63), as playback casts them; null reads every character
  *   in the dialogue voice.
+ * @property acted read Hindi with the acted voice when it is installed (ADR-059): studio mode's run only, the one
+ *   run slow enough for it. Others key their lookups the same way and read Hindi with the reading voice.
  */
 data class RunSettings(
     val normalRate: Boolean = false,
     val global: SpeechStyle? = null,
     val characters: CharacterVoices? = null,
+    val acted: Boolean = false,
 )

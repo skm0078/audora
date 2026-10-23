@@ -505,6 +505,7 @@
     <string name="storage_total">Audora %1$s ব্যবহার করছে</string>
     <string name="storage_voices">ডাউনলোড করা ভয়েস</string>
     <string name="storage_ocr">স্ক্যান করা পৃষ্ঠার লেখা চেনা</string>
+    <string name="storage_acted_voice">অভিনয়ের হিন্দি ভয়েস</string>
     <string name="storage_punctuation">যতিচিহ্ন মডেল</string>
     <string name="storage_page_pictures">পৃষ্ঠার ছবি (স্ক্রাবার)</string>
     <string name="storage_voice_commands">ভয়েস কমান্ড মডেল</string>

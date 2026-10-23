@@ -13,6 +13,7 @@ import io.github.skm0078.audora.core.result.getOrNull
 import io.github.skm0078.audora.playback.book.BookText
 import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.studio.BookVoice
+import io.github.skm0078.audora.playback.studio.RunSettings
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.speech.sherpa.castSpeakers
@@ -32,7 +33,7 @@ internal class ExportVoice(
     id: BookId,
     text: BookText,
 ) : AutoCloseable {
-    private val book = BookVoice(context, factory, id, text, normalRate = true, style = style)
+    private val book = BookVoice(context, factory, id, text, RunSettings(normalRate = true), style = style)
     private val languages: MutableSet<Lang> = ConcurrentHashMap.newKeySet()
     private val castSizes = ConcurrentHashMap<Lang, Int>()
     val voices: SpeechVoices get() = book.voices

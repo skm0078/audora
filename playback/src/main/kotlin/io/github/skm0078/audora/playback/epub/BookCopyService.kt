@@ -30,6 +30,7 @@ import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.jobs.LongJobs
 import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.studio.BookVoice
+import io.github.skm0078.audora.playback.studio.RunSettings
 import io.github.skm0078.audora.playback.studio.StudioMode
 import javax.inject.Inject
 import kotlinx.coroutines.runBlocking
@@ -206,7 +207,7 @@ class BookCopyService : Service() {
 
     private fun talkingBook(book: OpenedBook, job: CopyJob, keepAwake: () -> Unit): Outcome<SavedCopy, CopyError> {
         val factory = BookRendering.Factory(this, bookSettings, pronunciations)
-        return BookVoice(this, factory, book.book.id, book.text, normalRate = true).use { voice ->
+        return BookVoice(this, factory, book.book.id, book.text, RunSettings(normalRate = true)).use { voice ->
             job.talkingBook(voice.rendering, StudioMode.store(this), onChapter = keepAwake)
         }
     }

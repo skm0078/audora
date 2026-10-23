@@ -88,6 +88,10 @@ class CastSpeech(
         quotePauseMs: Int = 0,
         level: (PcmAudio) -> PcmAudio = { it },
     ): Outcome<RoutedAudio, SpeechError> {
+        // An acting voice (ADR-059) reads the sentence whole, quotes and headings in its own voice.
+        if (narratorEngine(lang)?.let { (engine, voice) -> engine.keepsSentencesWhole(voice) } == true) {
+            return narrator.render(text, lang, request)
+        }
         val heading = request.role == TextRole.HEADING && cast.headings.isNotEmpty()
         // Split only when the quotes get a voice of their own: pieces joined with pauses would change the prosody
         // of a sentence read by the narrator alone anyway (an unknown speaker with no dialogue voice, say).
@@ -108,10 +112,14 @@ class CastSpeech(
     }
 
     /** Whether [lang]'s narrator voice reads feelings in a style of its own ([SpeechEngine.actsFeelings]). */
-    private suspend fun narratorActs(lang: Lang): Boolean {
-        val voice = (voices.voiceFor(lang) as? Outcome.Success)?.value ?: return false
-        return (voices.engine(voice.engine) as? Outcome.Success)?.value?.actsFeelings(voice) == true
-    }
+    private suspend fun narratorActs(lang: Lang): Boolean =
+        narratorEngine(lang)?.let { (engine, voice) -> engine.actsFeelings(voice) } == true
+
+    /** [lang]'s narrator voice and its engine; null when either cannot be had. */
+    private suspend fun narratorEngine(lang: Lang): Pair<SpeechEngine, VoiceId>? =
+        (voices.voiceFor(lang) as? Outcome.Success)?.value?.let { voice ->
+            (voices.engine(voice.engine) as? Outcome.Success)?.value?.let { engine -> engine to voice }
+        }
 
     /** The character's voice for this sentence's quotes when known, else the dialogue voice. */
     private fun quoteVoices(lang: Lang, request: SpeechRequest, cast: Cast): Map<Lang, VoiceId> {

@@ -332,6 +332,55 @@
       "file": "kws-en-zipformer-gigaspeech-325100325fc0.zip",
       "sha256": "325100325fc0b984169e2654d3b4fa01194df28bf8182a0b98d0b1d3f5c68dfa",
       "sizeBytes": 5254988
+    },
+    {
+      "id": "acted-hi-chatterbox-core",
+      "label": "Acted Hindi voice for studio mode (part 1 of 2)",
+      "lang": "hi",
+      "family": "acted-chatterbox",
+      "model": "conditional_decoder.onnx",
+      "tokens": null,
+      "extraFiles": [
+        "conditional_decoder.onnx_data",
+        "embed_tokens.onnx",
+        "embed_tokens.onnx_data",
+        "voice.bin"
+      ],
+      "licence": "MIT",
+      "credit": "Chatterbox Multilingual by Resemble AI (MIT), ONNX export by onnx-community; Chatterbox Turbo's decoder by Resemble AI (MIT). The text embedder and Turbo's decoder unchanged, with the default reference voice encoded once (scripts/build_acted_pack.py).",
+      "licenceUrl": "https://github.com/resemble-ai/chatterbox/blob/master/LICENSE",
+      "sourceUrl": "https://huggingface.co/onnx-community/chatterbox-multilingual-ONNX",
+      "source": {
+        "archive": "chatterbox-hi-fp32-turbo-core",
+        "sha256": "cf4c315319d9c1478b269738eae557958c47dd50244910d5c1dbe7258e4ca2bf",
+        "url": "https://github.com/skm0078/audora/releases/download/indic-voices/chatterbox-hi-fp32-turbo-core.zip"
+      },
+      "file": "acted-hi-chatterbox-core-7987e6a33727.zip",
+      "sha256": "7987e6a3372764e0ac1fcb475fce29d6e12807727bddf27e1f4f3a867adb5a37",
+      "sizeBytes": 839162865
+    },
+    {
+      "id": "acted-hi-chatterbox-lm",
+      "label": "Acted Hindi voice for studio mode (part 2 of 2)",
+      "lang": "hi",
+      "family": "acted-chatterbox",
+      "model": "language_model.onnx",
+      "tokens": null,
+      "extraFiles": [
+        "language_model.onnx_data"
+      ],
+      "licence": "MIT",
+      "credit": "Chatterbox Multilingual's language model by Resemble AI (MIT), ONNX export by onnx-community, unchanged at full precision.",
+      "licenceUrl": "https://github.com/resemble-ai/chatterbox/blob/master/LICENSE",
+      "sourceUrl": "https://huggingface.co/onnx-community/chatterbox-multilingual-ONNX",
+      "source": {
+        "archive": "chatterbox-hi-fp32-turbo-lm",
+        "sha256": "78e79138d4a5c6729851a552578bdd69216dc19521e94414c2a24eb7965a8570",
+        "url": "https://github.com/skm0078/audora/releases/download/indic-voices/chatterbox-hi-fp32-turbo-lm.zip"
+      },
+      "file": "acted-hi-chatterbox-lm-17c5351e0071.zip",
+      "sha256": "17c5351e0071f3c27d695203144636a1a58b5607ab735f8caae7635d97b93583",
+      "sizeBytes": 2080822670
     }
   ],
   "dictionaries": [

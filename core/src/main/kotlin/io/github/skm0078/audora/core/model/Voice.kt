@@ -10,6 +10,9 @@ enum class EngineId {
 
     /** The phone's own text-to-speech engine (usually Google), through Android's `TextToSpeech`. */
     SYSTEM,
+
+    /** The acted Hindi voice (Chatterbox, ADR-059): too slow to read live, so only studio mode renders with it. */
+    ACTED,
 }
 
 /**

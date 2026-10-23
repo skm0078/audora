@@ -55,7 +55,7 @@ class Voice:
     id: str
     family: str
     model: str
-    tokens: str
+    tokens: str | None
     voices: str | None
     lexicon: str | None
     data_dir: str | None
@@ -77,7 +77,8 @@ class Voice:
         optional = [self.voices, self.lexicon]
         if self.family == SUPERTONIC:
             return [self.model, *SUPERTONIC_PARTS, *[name for name in optional if name]]
-        return [self.model, self.tokens, *[name for name in optional if name], *self.extra_files]
+        # "tokens": null for a model with no token table in its zip (the acted voice's tokenizer is an app asset).
+        return [self.model, *[name for name in (self.tokens, *optional) if name], *self.extra_files]
 
 
 @dataclass(frozen=True)

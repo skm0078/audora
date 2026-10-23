@@ -93,6 +93,7 @@ import io.github.skm0078.audora.playback.notes.VoiceNoteAudio
 import io.github.skm0078.audora.playback.photo.PhotoBooks
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.search.SearchIndexes
+import io.github.skm0078.audora.speech.acted.ActedVoices
 import io.github.skm0078.audora.speech.kws.VoiceCommandModels
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
@@ -167,6 +168,7 @@ import io.github.skm0078.audora.ui.reader.VolumeKeySkips
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.reader.rememberSpokenWord
 import io.github.skm0078.audora.ui.settings.SettingsScreen
+import io.github.skm0078.audora.ui.settings.rememberActedVoiceSettings
 import io.github.skm0078.audora.ui.settings.rememberPronunciationSettings
 import io.github.skm0078.audora.ui.settings.rememberVoiceCommandsSettings
 import io.github.skm0078.audora.ui.settings.runModelAction
@@ -677,6 +679,7 @@ class MainActivity : ComponentActivity() {
             },
             voiceCommands = rememberVoiceCommandsSettings(voiceCommandModels, screenPreference),
             pronunciation = rememberPronunciationSettings(pronunciationStore),
+            actedVoice = rememberActedVoiceSettings(ActedVoices.get(applicationContext)),
             appearance = appearance,
             onAppearanceChange = { changed -> scope.launch { appearancePreferences.save(changed) } },
             onKidsMode = onKidsMode,

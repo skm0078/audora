@@ -52,6 +52,12 @@ interface SpeechEngine {
     /** Whether [voice] reads a feeling in a style of its own (ADR-057), so the caller can choose which words get it. */
     fun actsFeelings(voice: VoiceId): Boolean = false
 
+    /**
+     * Whether [voice] performs a sentence as a whole (ADR-059): its language then gets no dialogue, heading or
+     * character voices, and its sentences are never split at quotes.
+     */
+    fun keepsSentencesWhole(voice: VoiceId): Boolean = false
+
     /** Frees native models and engine connections. Later renders fail with [SpeechError.EngineUnavailable]. */
     fun release()
 }

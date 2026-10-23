@@ -77,6 +77,7 @@ fun SettingsScreen(
     onOpenStorage: () -> Unit = {},
     voiceCommands: VoiceCommandsSettings? = null,
     pronunciation: PronunciationSettings? = null,
+    actedVoice: ActedVoiceSettings? = null,
 ) {
     Column(
         modifier = modifier
@@ -92,7 +93,13 @@ fun SettingsScreen(
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(top = Dimens.SpaceL).semantics { heading() },
         )
-        ListeningGroup(onOpenVoices, ModelPack(ocrModels, onOcrModels), skipCitations, onSkipCitationsChange)
+        ListeningGroup(
+            onOpenVoices,
+            ModelPack(ocrModels, onOcrModels),
+            actedVoice?.let { ModelPack(it.state, it.onAction) },
+            skipCitations,
+            onSkipCitationsChange,
+        )
         SettingsGroup(stringResource(R.string.settings_group_reading)) {
             SwitchItem(
                 R.string.settings_keep_screen_on_title,
@@ -228,6 +235,7 @@ internal fun ModelPackRow(
 private fun ListeningGroup(
     onOpenVoices: () -> Unit,
     ocr: ModelPack,
+    acted: ModelPack?,
     skipCitations: Boolean,
     onSkipCitationsChange: (Boolean) -> Unit,
 ) {
@@ -237,6 +245,8 @@ private fun ListeningGroup(
             summary = { Text(stringResource(R.string.settings_voices_body)) },
             onClick = onOpenVoices,
         )
+        // Studio mode's slow Hindi voice (ADR-059), next to the voices it stands in for.
+        acted?.let { ModelPackRow(it, ModelPackTexts.ACTED) }
         ModelPackRow(ocr, ModelPackTexts.OCR)
         SettingsDivider()
         SwitchItem(
