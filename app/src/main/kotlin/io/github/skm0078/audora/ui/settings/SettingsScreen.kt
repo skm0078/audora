@@ -1,8 +1,8 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/SettingsScreen.kt
 // Purpose: Settings tab: Voices (P4-01), OCR models (P3-05), citation numbers (P2-03), keep screen on, appearance
 //          and app language (ADR-036, plan item 44), background reading (P1-06), kids mode (plan item 71), licences
-//          (P3-06); under a closed "Advanced" (ADR-056): punctuation, volume keys, voice commands, pronunciation,
-//          Share logs (P1-07) and the debug tool.
+//          (P3-06), privacy and security (ADR-061); under a closed "Advanced" (ADR-056): punctuation, volume keys,
+//          voice commands, pronunciation, Share logs (P1-07) and the debug tool.
 
 package io.github.skm0078.audora.ui.settings
 
@@ -36,6 +36,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.language.AppLanguage
+import io.github.skm0078.audora.privacy.PrivacyControls
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.ui.diagnostics.ShareLogsState
 import io.github.skm0078.audora.ui.theme.Appearance
@@ -78,6 +79,7 @@ fun SettingsScreen(
     voiceCommands: VoiceCommandsSettings? = null,
     pronunciation: PronunciationSettings? = null,
     actedVoice: ActedVoiceSettings? = null,
+    privacy: PrivacyControls? = null,
 ) {
     Column(
         modifier = modifier
@@ -114,6 +116,7 @@ fun SettingsScreen(
             batteryExempt,
             versionName,
         )
+        PrivacyGroup(privacy)
         AdvancedSection(
             ModelPack(punctuationModel, onPunctuationModel),
             ocrReady = ocrModels is OcrModelsState.Ready,
@@ -202,8 +205,6 @@ private fun AppGroup(links: AppLinks, batteryExempt: Boolean, versionName: Strin
             summary = { Text(stringResource(R.string.settings_licences_body)) },
             onClick = links.onOpenLicences,
         )
-        SettingsDivider()
-        PrivacyPolicyItem()
         SettingsDivider()
         SettingsRow(stringResource(R.string.settings_version_title), summary = { Text(versionName) })
     }

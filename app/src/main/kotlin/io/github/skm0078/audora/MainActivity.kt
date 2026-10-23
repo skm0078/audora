@@ -93,6 +93,7 @@ import io.github.skm0078.audora.playback.notes.VoiceNoteAudio
 import io.github.skm0078.audora.playback.photo.PhotoBooks
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.search.SearchIndexes
+import io.github.skm0078.audora.privacy.PrivacyHost
 import io.github.skm0078.audora.speech.acted.ActedVoices
 import io.github.skm0078.audora.speech.kws.VoiceCommandModels
 import io.github.skm0078.audora.speech.ocr.OcrModels
@@ -291,6 +292,8 @@ class MainActivity : ComponentActivity() {
 
     private val kidsModePreferences: KidsModePreferences by lazy { KidsModePreferences(applicationContext) }
 
+    private val privacy: PrivacyHost by lazy { PrivacyHost(this) }
+
     // Built from the base context in attachBaseContext, before applicationContext can be relied on.
     private lateinit var appLanguageStore: AppLanguageStore
 
@@ -314,6 +317,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        lifecycle.addObserver(privacy)
         // Nothing that opens the library, prunes or resumes runs until a half-undone restore is finished (ADR-046).
         if (showFinishRestoringIfNeeded()) return
         if (savedInstanceState == null) {
@@ -330,22 +334,7 @@ class MainActivity : ComponentActivity() {
             }.collectAsStateWithLifecycle(initialValue = Appearance())
             val dark = appearance.isDark(isSystemInDarkTheme())
             SystemBarsFollow(dark)
-            AudoraTheme(appearance, darkTheme = dark) { AppContent(appearance) }
-        }
-    }
-
-    /**
-     * The status and navigation bar icons follow the app's own Light or Dark choice, not the phone's night mode, so
-     * Dark on a light phone does not leave dark icons on a dark app. The scrims are edge-to-edge's defaults.
-     */
-    @Composable
-    private fun SystemBarsFollow(dark: Boolean) {
-        DisposableEffect(dark) {
-            enableEdgeToEdge(
-                statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
-                navigationBarStyle = SystemBarStyle.auto(LIGHT_NAV_SCRIM, DARK_NAV_SCRIM) { dark },
-            )
-            onDispose {}
+            AudoraTheme(appearance, darkTheme = dark) { privacy.Gate { AppContent(appearance) } }
         }
     }
 
@@ -685,6 +674,7 @@ class MainActivity : ComponentActivity() {
             onKidsMode = onKidsMode,
             language = appLanguageStore.load(),
             onLanguageChange = ::switchLanguage,
+            privacy = privacy.controls(),
         )
     }
 
@@ -1208,6 +1198,21 @@ private const val READER_TAG = "Audora.Reader"
 
 /** cacheDir subfolder for the page scrubber's thumbnails (plan item 17), one folder per book. */
 internal const val THUMBNAILS_DIR = "thumbnails"
+
+/**
+ * The status and navigation bar icons follow the app's own Light or Dark choice, not the phone's night mode, so
+ * Dark on a light phone does not leave dark icons on a dark app. The scrims are edge-to-edge's defaults.
+ */
+@Composable
+private fun ComponentActivity.SystemBarsFollow(dark: Boolean) {
+    DisposableEffect(dark) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
+            navigationBarStyle = SystemBarStyle.auto(LIGHT_NAV_SCRIM, DARK_NAV_SCRIM) { dark },
+        )
+        onDispose {}
+    }
+}
 
 /** Edge-to-edge's own three-button navigation bar scrims (androidx.activity's defaults), kept explicit here. */
 private const val LIGHT_NAV_SCRIM = 0xE6FFFFFF.toInt()

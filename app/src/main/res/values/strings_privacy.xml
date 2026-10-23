@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Privacy and security: what stays on the phone, the app lock and hiding app content (ADR-061). -->
+<resources>
+    <string name="settings_group_privacy">Privacy and security</string>
+    <string name="privacy_statement_title">Your data stays on your phone</string>
+    <string name="privacy_statement_body">Your books, notes, recordings and settings are kept only on this phone. ListenLock has no account, no ads, no analytics and no server of its own, and it never uploads anything. It goes online only to download the voices and language packs you choose.\n\nThey are your files, so keeping them safe is up to you: backups and exports are saved where you choose, and anyone who can open those files or this app can read them.</string>
+    <string name="app_lock_title">App lock</string>
+    <string name="app_lock_body">Ask for your fingerprint, face or phone PIN when you come back to ListenLock after 30 seconds away. The playback controls in the notification still work.</string>
+    <string name="app_lock_needs_screen_lock">Set a screen lock (PIN, pattern or password) in your phone\'s settings first.</string>
+    <string name="app_lock_prompt_title">Unlock ListenLock</string>
+    <string name="app_lock_prompt_subtitle">Use your fingerprint, face or phone screen lock</string>
+    <string name="app_lock_locked_title">ListenLock is locked</string>
+    <string name="app_lock_unlock">Unlock</string>
+    <string name="hide_content_title">Hide app content</string>
+    <string name="hide_content_body">Blocks screenshots and screen recording of ListenLock, and hides its preview in recent apps.</string>
+</resources>
