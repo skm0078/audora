@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_settings_more.xml -->
+<!-- Purpose: Hindi copy of strings_settings_more.xml. -->
+<resources>
+    <string name="settings_advanced_title">उन्नत</string>
+    <string name="settings_advanced_summary">स्कैन के लिए विराम चिह्न, वॉल्यूम बटन, आवाज़ से आदेश, उच्चारण, लॉग भेजना</string>
+    <string name="settings_group_advanced_reading">पढ़ने के और विकल्प</string>
+    <string name="settings_group_help">मदद</string>
+</resources>

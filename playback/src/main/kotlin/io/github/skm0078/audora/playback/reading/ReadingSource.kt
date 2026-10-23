@@ -5,6 +5,7 @@ package io.github.skm0078.audora.playback.reading
 
 import io.github.skm0078.audora.core.config.SpeakabilityConfig
 import io.github.skm0078.audora.core.model.ReadingModes
+import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.playback.voice.RenderBook
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
 import io.github.skm0078.audora.speech.route.CharacterVoices
@@ -29,10 +30,31 @@ class ReadingSource(
     /** Which sentences start inside a quote opened earlier in their paragraph (plan item 7); fed a page at a time. */
     val quotes: QuoteCarry = QuoteCarry()
 
+    /** What the open book is (a story, a poem, the news), told from its pages as they are read (ADR-056). */
+    val intent: BookIntent = BookIntent(readableFrom = speakability.skipBelow)
+
+    /** One extracted page, before any of its sentences renders: to the quote tracking and the book's intent. */
+    fun page(units: List<ReadingUnit>, continuesPreviousPage: Boolean) {
+        quotes.page(units, continuesPreviousPage)
+        intent.page(units)
+    }
+
+    /** A new book opened: forget the last one's quotes and intent. */
+    fun clearBook() {
+        quotes.clear()
+        intent.clear()
+    }
+
     /** What the renderer reads about the open book, live: set again each time a book opens. */
-    fun book(fixer: () -> PronunciationFixer, characters: CharacterVoices? = null): RenderBook = RenderBook({
-        chapterPages
-    }, { page -> scanned(page) }, fixer, quotes::startsInQuote, quotes::speakerOf, characters)
+    fun book(fixer: () -> PronunciationFixer, characters: CharacterVoices? = null): RenderBook = RenderBook(
+        chapterPages = { chapterPages },
+        scanned = { page -> scanned(page) },
+        fixer = fixer,
+        startsInQuote = quotes::startsInQuote,
+        speakerOf = quotes::speakerOf,
+        characters = characters,
+        intent = { intent.current },
+    )
 
     /** The modes as they are now, for one render epoch's playlist. */
     fun current(): UnitReading = UnitReading(modes(), speakability, chapterPages)

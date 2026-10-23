@@ -11,6 +11,7 @@ import androidx.media3.session.MediaSession
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.ContentIntent
 import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SleepOptions
@@ -34,7 +35,7 @@ import kotlinx.coroutines.launch
  * Main thread. The sentence playing's timing ([timings], plan item 14) joins the extras when it starts, or when its
  * render finishes if it started first (the player waits for it then).
  */
-@Suppress("LongParameterList") // The session, two bridges and what the extras show; the last five are optional.
+@Suppress("LongParameterList") // The session, two bridges and what the extras show; the last six are optional.
 class SessionPublisher(
     private val session: MediaSession,
     private val diagnostics: DiagnosticsBridge,
@@ -45,6 +46,7 @@ class SessionPublisher(
     private val timings: SentenceTimings? = null,
     private val focusSound: () -> FocusSoundOptions = { FocusSoundOptions() },
     private val blend: () -> BlendAvailability = { BlendAvailability() },
+    private val intent: () -> ContentIntent? = { null },
 ) : SessionEvents {
     private val main = Handler(Looper.getMainLooper())
     private var lastState: SessionState? = null
@@ -118,6 +120,7 @@ class SessionPublisher(
                     putString(PlaybackContract.SESSION_ERROR_MESSAGE, it.message)
                 }
                 putSpeech(style())
+                intent()?.let { putString(PlaybackContract.SESSION_READING_INTENT, it.name) }
                 timing?.let { putString(PlaybackContract.SESSION_SENTENCE_TIMING, it.encode()) }
                 putBlend(blend())
             },

@@ -60,7 +60,7 @@ internal class BookVoice(
      * One page, before any of its units renders: which start inside a quote and who speaks them. A quote left open at
      * the foot of the previous page carries on only when [reading] continues it, as in playback.
      */
-    fun page(reading: PageReading) = rendering.quotes.page(reading.units, reading.continuesPreviousPage)
+    fun page(reading: PageReading) = rendering.page(reading.units, reading.continuesPreviousPage)
 
     override fun close() = voices.release()
 }

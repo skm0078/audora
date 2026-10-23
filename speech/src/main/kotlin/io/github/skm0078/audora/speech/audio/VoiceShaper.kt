@@ -20,10 +20,13 @@ class VoiceShaper(private val config: VoiceShapingConfig = VoiceShapingConfig())
     private val ceiling = PCM16_FULL_SCALE * dbToLinear(config.ceilingDbfs)
     private val knee = ceiling * dbToLinear(-config.kneeDb)
 
-    /** [audio] brought to the target loudness when [evenLoudness], plus [boostDb]; itself when nothing changes. */
-    fun level(audio: PcmAudio, evenLoudness: Boolean, boostDb: Int): PcmAudio {
+    /**
+     * [audio] brought to the target loudness when [evenLoudness], plus [boostDb] and a sentence's own [deliveryDb]
+     * (louder when shouted, softer when whispered, ADR-056); itself when nothing changes.
+     */
+    fun level(audio: PcmAudio, evenLoudness: Boolean, boostDb: Int, deliveryDb: Float = 0f): PcmAudio {
         val evenDb = if (evenLoudness) evenGainDb(audio) else 0f
-        val gainDb = evenDb + boostDb
+        val gainDb = evenDb + boostDb + deliveryDb
         if (gainDb == 0f) return audio
         val gain = dbToLinear(gainDb)
         val out = ShortArray(audio.samples.size) { i ->

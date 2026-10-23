@@ -290,6 +290,12 @@ object PlaybackContract {
      */
     const val SESSION_VOICE_EXPRESSIVE = "voice_expressive"
 
+    /**
+     * The open book's intent (`ContentIntent` name: STORY, POETRY, NEWS…), once enough of it was read to tell
+     * (ADR-056); absent before that, with no book, or with "Read to suit the book" off.
+     */
+    const val SESSION_READING_INTENT = "reading_intent"
+
     /** Int pair: where "Undo jump" goes back to in the book being read (plan item 78); absent with nothing to undo. */
     const val SESSION_UNDO_PAGE = "undo_page"
     const val SESSION_UNDO_CHAR = "undo_char"

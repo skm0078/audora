@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_settings_more.xml -->
+<!-- Purpose: Bengali copy of strings_settings_more.xml. -->
+<resources>
+    <string name="settings_advanced_title">উন্নত</string>
+    <string name="settings_advanced_summary">স্ক্যানের জন্য যতিচিহ্ন, ভলিউম বোতাম, ভয়েস কমান্ড, উচ্চারণ, লগ পাঠানো</string>
+    <string name="settings_group_advanced_reading">পড়ার আরও বিকল্প</string>
+    <string name="settings_group_help">সাহায্য</string>
+</resources>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_voice_packs.xml -->
+<!-- Purpose: Bengali copy of strings_voice_packs.xml. -->
+<resources>
+    <string name="voice_packs_title">ভাষা প্যাক</string>
+    <string name="voice_packs_body">প্রতিটি ভাষার জন্য একটি ডাউনলোডে সেই ভাষার বই স্বাভাবিক ভয়েসে, ইন্টারনেট ছাড়াই পড়া হয়। এটি ছাড়া ফোনের নিজের ভয়েস পড়ে।</string>
+    <string name="voice_pack_offer">%1$s · %2$d MB</string>
+    <string name="voice_pack_downloading">ডাউনলোড হচ্ছে: %1$d%% · %3$d-এর মধ্যে %2$d MB</string>
+    <string name="voice_pack_waiting">ইন্টারনেট সংযোগের অপেক্ষায়…</string>
+    <string name="voice_pack_ready">তৈরি: %1$s বই স্বাভাবিক ভয়েসে পড়া হবে</string>
+    <string name="voice_pack_failed">ডাউনলোড থেমে গেছে। সংযোগ আর খালি জায়গা দেখে আবার চেষ্টা করুন।</string>
+    <string name="voice_pack_download">ডাউনলোড করুন</string>
+    <string name="voices_all_title">সব ভয়েস</string>
+    <string name="voices_all_summary">অন্য ভয়েস বাছুন, নমুনা শুনুন, ডাউনলোড মুছুন</string>
+    <string name="reader_voice_pack_title">এই বইটি %1$s ভাষায়</string>
+    <string name="reader_voice_pack_body">এখন ফোনের ভয়েস এটি পড়ছে। %1$s ভাষা প্যাক (%2$d MB) এটি ইন্টারনেট ছাড়াই স্বাভাবিক ভয়েসে পড়ে।</string>
+    <string name="reader_voice_pack_later">এখন নয়</string>
+</resources>

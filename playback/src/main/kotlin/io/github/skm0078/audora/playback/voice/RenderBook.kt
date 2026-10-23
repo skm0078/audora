@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.playback.voice
 
+import io.github.skm0078.audora.core.model.ContentIntent
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
 import io.github.skm0078.audora.speech.route.CharacterVoices
@@ -12,8 +13,10 @@ import io.github.skm0078.audora.speech.route.Speaker
  * What a renderer reads about the open book, each read on the render thread for every sentence, so each must be
  * thread-safe: its chapter start pages (cue before a chapter's heading), whether a page was read by OCR (run-on
  * punctuation, RI-11), its pronunciation fixes (plan item 1) and whether a sentence starts inside a quote opened
- * earlier in its paragraph (cast voices, plan item 7), who speaks it and the book's character voices (item 63).
+ * earlier in its paragraph (cast voices, plan item 7), who speaks it and the book's character voices (item 63), and
+ * what the book is (a story, a poem, the news; ADR-056), which sets how it is delivered.
  */
+@Suppress("LongParameterList") // All optional: each caller sets what it knows about the book.
 class RenderBook(
     val chapterPages: () -> Set<Int> = { emptySet() },
     val scanned: (Int) -> Boolean = { false },
@@ -21,4 +24,5 @@ class RenderBook(
     val startsInQuote: (ReadingUnit) -> Boolean = { false },
     val speakerOf: (ReadingUnit) -> Speaker? = { null },
     val characters: CharacterVoices? = null,
+    val intent: () -> ContentIntent = { ContentIntent.GENERAL },
 )

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_voice_packs.xml -->
+<!-- Purpose: One voice download per language (ADR-056), in Settings → Voices and offered by the reader. -->
+<resources>
+    <string name="voice_packs_title">Language packs</string>
+    <string name="voice_packs_body">One download per language gives its books a natural voice that reads offline. Without it, the phone\'s own voice reads them.</string>
+    <string name="voice_pack_offer">%1$s · %2$d MB</string>
+    <string name="voice_pack_downloading">Downloading: %1$d%% · %2$d of %3$d MB</string>
+    <string name="voice_pack_waiting">Waiting for an internet connection…</string>
+    <string name="voice_pack_ready">Ready: %1$s books read with a natural voice</string>
+    <string name="voice_pack_failed">The download stopped. Check the connection and free space, then try again.</string>
+    <string name="voice_pack_download">Download</string>
+    <string name="voices_all_title">All voices</string>
+    <string name="voices_all_summary">Pick another voice, hear samples, delete downloads</string>
+    <string name="reader_voice_pack_title">This book is in %1$s</string>
+    <string name="reader_voice_pack_body">The phone\'s voice reads it now. The %1$s language pack (%2$d MB) reads it with a natural voice, offline.</string>
+    <string name="reader_voice_pack_later">Not now</string>
+</resources>

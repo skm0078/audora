@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_voice_packs.xml -->
+<!-- Purpose: Hindi copy of strings_voice_packs.xml. -->
+<resources>
+    <string name="voice_packs_title">भाषा पैक</string>
+    <string name="voice_packs_body">हर भाषा के लिए एक डाउनलोड से उसकी किताबें स्वाभाविक आवाज़ में, बिना इंटरनेट के पढ़ी जाती हैं। इसके बिना फ़ोन की अपनी आवाज़ पढ़ती है।</string>
+    <string name="voice_pack_offer">%1$s · %2$d MB</string>
+    <string name="voice_pack_downloading">डाउनलोड हो रहा है: %1$d%% · %3$d में से %2$d MB</string>
+    <string name="voice_pack_waiting">इंटरनेट कनेक्शन का इंतज़ार…</string>
+    <string name="voice_pack_ready">तैयार: %1$s की किताबें स्वाभाविक आवाज़ में पढ़ी जाएँगी</string>
+    <string name="voice_pack_failed">डाउनलोड रुक गया। कनेक्शन और खाली जगह जाँचें, फिर दोबारा कोशिश करें।</string>
+    <string name="voice_pack_download">डाउनलोड करें</string>
+    <string name="voices_all_title">सभी आवाज़ें</string>
+    <string name="voices_all_summary">दूसरी आवाज़ चुनें, नमूने सुनें, डाउनलोड हटाएँ</string>
+    <string name="reader_voice_pack_title">यह किताब %1$s में है</string>
+    <string name="reader_voice_pack_body">अभी इसे फ़ोन की आवाज़ पढ़ रही है। %1$s भाषा पैक (%2$d MB) इसे बिना इंटरनेट के स्वाभाविक आवाज़ में पढ़ता है।</string>
+    <string name="reader_voice_pack_later">अभी नहीं</string>
+</resources>

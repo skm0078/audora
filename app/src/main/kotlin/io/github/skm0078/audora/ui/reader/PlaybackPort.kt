@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import io.github.skm0078.audora.core.model.ContentIntent
 import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
@@ -118,6 +119,8 @@ data class StudyRangeState(val start: ReadingPosition, val end: ReadingPosition?
  *   refused it); null when it was built.
  * @property voiceExpressive whether a voice reading now honours expressiveness (plan item 8: Piper and MMS only);
  *   null until one is known.
+ * @property readingIntent what the book being read reads as (ADR-056), once its first pages were read and while
+ *   "Read to suit the book" is on; null otherwise.
  */
 data class PlaybackSnapshot(
     val connection: Connection,
@@ -145,6 +148,7 @@ data class PlaybackSnapshot(
     val blendOwnSpeaker: Int? = null,
     val blendNeedsBytes: Long? = null,
     val voiceExpressive: Boolean? = null,
+    val readingIntent: ContentIntent? = null,
 ) {
     enum class Connection { CONNECTING, CONNECTED, UNAVAILABLE }
 

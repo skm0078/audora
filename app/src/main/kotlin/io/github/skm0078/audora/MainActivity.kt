@@ -181,10 +181,12 @@ import io.github.skm0078.audora.ui.tutor.ReaderTutorRoute
 import io.github.skm0078.audora.ui.upnext.UpNextPort
 import io.github.skm0078.audora.ui.upnext.UpNextSheet
 import io.github.skm0078.audora.ui.upnext.libraryBooks
+import io.github.skm0078.audora.ui.voices.BUILD_VOICE_LIST
 import io.github.skm0078.audora.ui.voices.SpokenVoiceSampler
 import io.github.skm0078.audora.ui.voices.VoiceManager
 import io.github.skm0078.audora.ui.voices.VoicesController
 import io.github.skm0078.audora.ui.voices.VoicesRoute
+import io.github.skm0078.audora.ui.voices.voicePackActions
 import io.github.skm0078.audora.ui.voices.voicesActions
 import io.github.skm0078.audora.widget.ResumeWidgetEffect
 import io.github.skm0078.audora.widget.ResumeWidgetProvider
@@ -380,7 +382,10 @@ class MainActivity : ComponentActivity() {
         val battery = rememberBatterySetup(scope)
         // Activity-wide too, so an import keeps going when the user leaves the screen; created on first visit.
         val voicesController = remember {
-            lazy { VoicesController(voiceManager, scope, SpokenVoiceSampler(applicationContext)).also { it.start() } }
+            lazy {
+                val sampler = SpokenVoiceSampler(applicationContext)
+                VoicesController(voiceManager, scope, sampler, BUILD_VOICE_LIST).also { it.start() }
+            }
         }
         val destination = nav.destination
         // Above the screens, so the mini player is there from the first frame of a back swipe to the tabs and the
@@ -934,6 +939,7 @@ class MainActivity : ComponentActivity() {
                 voiceNotes = studio.voiceNotes,
                 lookUp = studio.lookUp,
                 onTutor = { tutorOpen = true },
+                voicePacks = remember { voicePackActions(voiceManager) },
             )
         }
         // What is playing, not the book on screen: with A playing, B's reader must not hide B from the sheet.

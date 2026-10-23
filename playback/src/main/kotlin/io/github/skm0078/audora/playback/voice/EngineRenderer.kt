@@ -8,6 +8,8 @@ import io.github.skm0078.audora.core.config.SpeakabilityConfig
 import io.github.skm0078.audora.core.config.SpeechStyleConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ClauseMark
+import io.github.skm0078.audora.core.model.ContentIntent
+import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SpeechStyle
@@ -24,6 +26,8 @@ import io.github.skm0078.audora.speech.audio.Earcon
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.audio.SmartStretch
 import io.github.skm0078.audora.speech.audio.VoiceShaper
+import io.github.skm0078.audora.speech.delivery.Delivery
+import io.github.skm0078.audora.speech.delivery.DeliveryPlanner
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
 import io.github.skm0078.audora.speech.normalize.TextNormalizer
 import io.github.skm0078.audora.speech.normalize.TextRole
@@ -38,6 +42,7 @@ import io.github.skm0078.audora.speech.route.Speaker
 import io.github.skm0078.audora.speech.route.SpeechRequest
 import io.github.skm0078.audora.speech.route.VoiceSource
 import io.github.skm0078.audora.speech.route.speechNormalizers
+import kotlin.math.roundToInt
 import kotlinx.coroutines.runBlocking
 
 /**
@@ -77,6 +82,10 @@ import kotlinx.coroutines.runBlocking
  * ([CastSpeech]), the quote's clause pause where the voice changes, each part evened before the join.
  *
  * The sentence "What did it say?" renders again ([replay]) uses the slower style the session gave it.
+ *
+ * With "Read to suit the book" on ([io.github.skm0078.audora.core.model.VoiceShaping.suitBook], ADR-056), each
+ * sentence's [Delivery] scales all of the above: the book's intent ([ReadingSetup.intent]) sets the speed and pauses,
+ * and a story's line is read with the feeling its words ask for, louder or softer by [Delivery.gainDb] after leveling.
  */
 @Suppress("LongParameterList") // All optional: the app passes the speed tracker, style, reading setup and timings.
 class EngineRenderer(
@@ -94,7 +103,8 @@ class EngineRenderer(
 
     override fun render(unit: ReadingUnit): Outcome<PcmAudio, SpeechError> {
         val now = replay?.styleFor(UnitKey.of(unit)) ?: style()
-        val pauseAfterMs = styleConfig.silenceAfterMs(unit.pauseAfterMs, now)
+        val delivery = deliveryOf(unit, now)
+        val pauseAfterMs = (styleConfig.silenceAfterMs(unit.pauseAfterMs, now) * delivery.pauseScale).roundToInt()
         return when (val speech = UnitReading(now.modes, reading.speakability, reading.chapterPages()).speechOf(unit)) {
             Speech.Cue -> {
                 AudoraLog.d(TAG, "${UnitKey.of(unit)}: unreadable, cue instead")
@@ -104,7 +114,7 @@ class EngineRenderer(
                 Outcome.Success(clip)
             }
 
-            is Speech.Text -> speak(unit, speech, now).map { voice ->
+            is Speech.Text -> speak(unit, speech, now, delivery).map { voice ->
                 val cued = if (speech.cueBefore) reading.earcon.before(voice) else voice
                 val clip = cued.withSilenceAfter(pauseAfterMs)
                 record(unit, leadMs = cued.durationMs - voice.durationMs, speechMs = voice.durationMs, clip)
@@ -123,16 +133,40 @@ class EngineRenderer(
         timings.record(UnitKey.of(unit), timing)
     }
 
-    private fun speak(unit: ReadingUnit, speech: Speech.Text, now: SpeechStyle): Outcome<PcmAudio, SpeechError> {
+    /** How [unit] is delivered for [now]: plain when "Read to suit the book" is off (ADR-056). */
+    private fun deliveryOf(unit: ReadingUnit, now: SpeechStyle): Delivery {
+        if (!now.shaping.suitBook) return Delivery.PLAIN
+        val quoted = reading.startsInQuote(unit) || unit.text.any { it in QUOTE_MARKS }
+        val delivery = reading.planner.plan(unit, reading.intent(), quoted)
+        if (delivery.feeling != Feeling.NEUTRAL) AudoraLog.d(TAG, "${UnitKey.of(unit)}: feeling ${delivery.feeling}")
+        return delivery
+    }
+
+    private fun speak(
+        unit: ReadingUnit,
+        speech: Speech.Text,
+        now: SpeechStyle,
+        delivery: Delivery,
+    ): Outcome<PcmAudio, SpeechError> {
         val started = System.nanoTime()
-        val rate = styleConfig.modelRate(now.rate)
+        // The delivery nudges the model's own speed, so words stay whole; never past the model's cap (ADR-033).
+        val rate = (
+            styleConfig.modelRate(
+                now.rate,
+            ) * delivery.rate
+            ).coerceIn(styleConfig.minRate, styleConfig.maxModelRate)
+        val clauseMs: (ClauseMark) -> Int = { mark ->
+            (styleConfig.clauseSilenceMs(mark, now) * delivery.clauseScale).roundToInt()
+        }
         // An equation is never cut at its marks: its "-", "|" and brackets are operators for MathSymbols, not pauses.
         val prosody = if (now.clausePauses && speech.role != TextRole.EQUATION) {
-            ClauseProsody({ mark -> styleConfig.clauseSilenceMs(mark, now) }, styleConfig.asideGainDb)
+            ClauseProsody(clauseMs, styleConfig.asideGainDb)
         } else {
             null
         }
-        val text = reading.punctuated(reading.fixer().apply(speech.text), unit)
+        val written = reading.punctuated(reading.fixer().apply(speech.text), unit)
+        // A sentence the page cut ends on a comma, so the voice keeps it rising into the next unit (ADR-056).
+        val text = if (delivery.openEnd && written.trimEnd().lastOrNull()?.isLetter() == true) "$written," else written
         val shaping = now.shaping
         val shaper = reading.shaper
         val trim: (PcmAudio) -> PcmAudio = if (shaping.trimPauses) shaper::trimPauses else { audio -> audio }
@@ -140,14 +174,14 @@ class EngineRenderer(
         val shape: (PcmAudio) -> PcmAudio = { audio -> reading.smartStretch.stretch(trim(audio), stretch) }
         val characters = reading.characters?.takeIf { shaping.characterVoices }?.current()
         val cast = Cast(shaping.dialogueVoices, shaping.headingVoices, characters)
-        val quotePauseMs = if (now.clausePauses) styleConfig.clauseSilenceMs(ClauseMark.QUOTE, now) else 0
+        val quotePauseMs = if (now.clausePauses) clauseMs(ClauseMark.QUOTE) else 0
         val level: (PcmAudio) -> PcmAudio = { shaper.level(it, shaping.evenLoudness, boostDb = 0) }
         val speaker = characters?.let { reading.speakerOf(unit) }
         val request = SpeechRequest(speech.role, rate, prosody, shape, reading.startsInQuote(unit), speaker)
         return runBlocking { castSpeech.render(text, unit.lang, request, cast, quotePauseMs, level) }.map { routed ->
             speed?.onRendered(text.trim().length, routed, System.nanoTime() - started, rate * stretch)
             log(unit, routed)
-            shaper.level(routed.audio, shaping.evenLoudness, shaping.boostDb)
+            shaper.level(routed.audio, shaping.evenLoudness, shaping.boostDb, delivery.gainDb)
         }
     }
 
@@ -164,6 +198,9 @@ class EngineRenderer(
 
     private companion object {
         const val TAG = "Playback.Render"
+
+        /** Marks that open or close quoted speech, as `QuoteSplitter` reads them. */
+        const val QUOTE_MARKS = "“”\"«»"
     }
 }
 
@@ -180,6 +217,8 @@ class EngineRenderer(
  * @property speakerOf who says a sentence's quotes, from the same carry (plan item 63); null when unknown.
  * @property characters the open book's character voices, used when the style's shaping turns them on.
  * @property smartStretch smart speed's uneven stretch (plan item 10), used when the style's shaping turns it on.
+ * @property intent what the open book is (ADR-056), read on the render thread for each sentence.
+ * @property planner each sentence's delivery from that intent, used when the style's shaping turns it on.
  */
 @Suppress("LongParameterList") // All optional: each caller sets the few it has.
 class ReadingSetup(
@@ -194,6 +233,8 @@ class ReadingSetup(
     val speakerOf: (ReadingUnit) -> Speaker? = { null },
     val characters: CharacterVoices? = null,
     val smartStretch: SmartStretch = SmartStretch(),
+    val intent: () -> ContentIntent = { ContentIntent.GENERAL },
+    val planner: DeliveryPlanner = DeliveryPlanner(),
 ) {
     /** [text] with the model's pauses when it is a run-on on a scanned page, else [text]. */
     fun punctuated(text: String, unit: ReadingUnit): String = when {

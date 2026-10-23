@@ -12,6 +12,7 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
+import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.getOrNull
 import io.github.skm0078.audora.pdf.document.PdfBook
@@ -63,9 +64,11 @@ class MixedScriptVoicesTest {
     fun bilingualBookSwitchesVoicesCorrectly() {
         val units = bookUnits()
         val voices = RecordingVoices()
-        // Without normalizers or clause pauses (which drop the marks they pause at, RI-6), so the parts add up to the
-        // sentence as printed; numbers are checked below, the clause cuts in ClauseSplitterTest.
-        val renderer = EngineRenderer(voices, normalizers = emptyMap(), style = { SpeechStyle(clausePauses = false) })
+        // Without normalizers or clause pauses (which drop the marks they pause at, RI-6), and without reading to suit
+        // the book (which ends a sentence the page cut with a comma, ADR-056), so the parts add up to the sentence as
+        // printed; numbers are checked below, the clause cuts in ClauseSplitterTest, the comma in OpenEndTest.
+        val plain = SpeechStyle(clausePauses = false, shaping = VoiceShaping(suitBook = false))
+        val renderer = EngineRenderer(voices, normalizers = emptyMap(), style = { plain })
         var mixedSentences = 0
 
         for (unit in units) {
