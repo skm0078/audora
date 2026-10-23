@@ -137,7 +137,7 @@ class EngineRenderer(
     private fun deliveryOf(unit: ReadingUnit, now: SpeechStyle): Delivery {
         if (!now.shaping.suitBook) return Delivery.PLAIN
         val quoted = reading.startsInQuote(unit) || unit.text.any { it in QUOTE_MARKS }
-        val delivery = reading.planner.plan(unit, reading.intent(), quoted)
+        val delivery = reading.planner.plan(unit, reading.intent(), quoted, reading.moodOf(unit))
         if (delivery.feeling != Feeling.NEUTRAL) AudoraLog.d(TAG, "${UnitKey.of(unit)}: feeling ${delivery.feeling}")
         return delivery
     }
@@ -177,7 +177,15 @@ class EngineRenderer(
         val quotePauseMs = if (now.clausePauses) clauseMs(ClauseMark.QUOTE) else 0
         val level: (PcmAudio) -> PcmAudio = { shaper.level(it, shaping.evenLoudness, boostDb = 0) }
         val speaker = characters?.let { reading.speakerOf(unit) }
-        val request = SpeechRequest(speech.role, rate, prosody, shape, reading.startsInQuote(unit), speaker)
+        val request = SpeechRequest(
+            speech.role,
+            rate,
+            prosody,
+            shape,
+            reading.startsInQuote(unit),
+            speaker,
+            delivery.feeling,
+        )
         return runBlocking { castSpeech.render(text, unit.lang, request, cast, quotePauseMs, level) }.map { routed ->
             speed?.onRendered(text.trim().length, routed, System.nanoTime() - started, rate * stretch)
             log(unit, routed)
@@ -215,6 +223,7 @@ class EngineRenderer(
  * @property startsInQuote whether a sentence starts inside a quote an earlier sentence of its paragraph opened
  *   ([io.github.skm0078.audora.playback.reading.QuoteCarry], plan item 7).
  * @property speakerOf who says a sentence's quotes, from the same carry (plan item 63); null when unknown.
+ * @property moodOf the mood a sentence carries from the one before, from the same carry (ADR-058); null for none.
  * @property characters the open book's character voices, used when the style's shaping turns them on.
  * @property smartStretch smart speed's uneven stretch (plan item 10), used when the style's shaping turns it on.
  * @property intent what the open book is (ADR-056), read on the render thread for each sentence.
@@ -231,6 +240,7 @@ class ReadingSetup(
     val runOn: RunOnPunctuation? = null,
     val startsInQuote: (ReadingUnit) -> Boolean = { false },
     val speakerOf: (ReadingUnit) -> Speaker? = { null },
+    val moodOf: (ReadingUnit) -> Feeling? = { null },
     val characters: CharacterVoices? = null,
     val smartStretch: SmartStretch = SmartStretch(),
     val intent: () -> ContentIntent = { ContentIntent.GENERAL },

@@ -17,6 +17,12 @@ enum class Feeling {
     /** "sobbed", "रो पड़ी", "কেঁদে": slower, a little softer, a longer pause after. */
     SAD,
 
+    /** "trembled", "डरकर", "ভয়ে": a little quicker and quieter, held back. */
+    SCARED,
+
+    /** "gasped", "चौंककर", "অবাক হয়ে": a little brighter. */
+    SURPRISED,
+
     /** An exclamation, "laughed", "हँसकर", "হেসে": a touch quicker and brighter. */
     LIVELY,
 

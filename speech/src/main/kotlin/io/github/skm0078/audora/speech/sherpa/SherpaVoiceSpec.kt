@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.speech.sherpa
 
 import io.github.skm0078.audora.core.model.EngineId
+import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
@@ -57,6 +58,9 @@ data class VitsNoise(val scale: Float, val width: Float)
  *   as any change to the spec does.
  * @property blend a Kokoro voice's narrator blend (plan item 75), set by the engine's voice source the same way;
  *   null: the voice as installed.
+ * @property styles a VITS model's speaking style (its `emotion_id` input) per feeling (ADR-057), such as AI4Bharat
+ *   Rasa's BOOK, SAD and HAPPY; [Feeling.NEUTRAL] is the style of every feeling not listed. Empty: a model without
+ *   styles.
  */
 data class SherpaVoiceSpec(
     val id: String,
@@ -76,6 +80,7 @@ data class SherpaVoiceSpec(
     val threads: Int? = null,
     val noise: VitsNoise? = null,
     val blend: StyleBlend? = null,
+    val styles: Map<Feeling, Int> = emptyMap(),
 ) {
     val voiceId: VoiceId get() = VoiceId(EngineId.SHERPA, id)
 
@@ -86,6 +91,9 @@ data class SherpaVoiceSpec(
     }
 
     fun toVoiceInfo(): VoiceInfo = VoiceInfo(voiceId, lang, label, licence)
+
+    /** The style [feeling] is read in, the neutral one when it has none of its own; null for a model without styles. */
+    fun styleFor(feeling: Feeling): Int? = styles[feeling] ?: styles[Feeling.NEUTRAL]
 }
 
 /**
@@ -106,14 +114,13 @@ object SherpaVoiceManifest {
         val engineLang = text(KEY_ENGINE_LANG)
         val numSteps = positive(text(KEY_NUM_STEPS))
         val threads = positive(text(KEY_THREADS))
+        val styles = text(KEY_STYLES).let { raw -> if (raw == null) emptyMap() else styles(raw) }
         val problem = when {
             missing.isNotEmpty() -> "is missing $missing"
             lang == null -> "has unknown lang '${text(KEY_LANG)}'"
             family == null -> "has unknown family '${text(KEY_FAMILY)}'"
             speakerId == null -> "has invalid speakerId '${text(KEY_SPEAKER)}'"
-            numSteps == INVALID -> "has invalid $KEY_NUM_STEPS '${text(KEY_NUM_STEPS)}'"
-            threads == INVALID -> "has invalid $KEY_THREADS '${text(KEY_THREADS)}'"
-            else -> familyProblem(family, voices, engineLang)
+            else -> optionProblem(numSteps, threads, styles, ::text) ?: familyProblem(family, voices, engineLang)
         }
         if (problem != null) return Outcome.Failure("$FILE_NAME $problem")
 
@@ -134,9 +141,35 @@ object SherpaVoiceManifest {
                 engineLang = engineLang,
                 numSteps = numSteps,
                 threads = threads,
+                styles = requireNotNull(styles),
             ),
         )
     }
+
+    /** `NEUTRAL:3,SAD:12`: feelings by name, each a style id of 0 or more; null when any entry is not. */
+    private fun styles(raw: String): Map<Feeling, Int>? {
+        val entries = raw.split(',')
+        val styles = entries.mapNotNull { entry ->
+            val parts = entry.split(':').map { it.trim() }
+            val feeling = Feeling.entries.firstOrNull { it.name == parts.first() }
+            val id = parts.getOrNull(1)?.toIntOrNull()?.takeIf { it >= 0 }
+            if (parts.size == 2 && feeling != null && id != null) feeling to id else null
+        }.toMap()
+        return styles.takeIf { it.size == entries.size }
+    }
+
+    /** [styles] as [parse] reads them, in [Feeling] order. */
+    fun stylesText(styles: Map<Feeling, Int>): String? =
+        styles.entries.sortedBy { it.key }.joinToString(",") { "${it.key.name}:${it.value}" }.ifEmpty { null }
+
+    /** The optional tuning keys: [INVALID] numbers, styles that did not parse (null). */
+    private fun optionProblem(numSteps: Int?, threads: Int?, styles: Map<Feeling, Int>?, text: (String) -> String?) =
+        when {
+            numSteps == INVALID -> "has invalid $KEY_NUM_STEPS '${text(KEY_NUM_STEPS)}'"
+            threads == INVALID -> "has invalid $KEY_THREADS '${text(KEY_THREADS)}'"
+            styles == null -> "has invalid $KEY_STYLES '${text(KEY_STYLES)}'"
+            else -> null
+        }
 
     /** A whole number above 0, [INVALID] for anything else, null when the key is absent. */
     private fun positive(raw: String?): Int? = raw?.let { it.toIntOrNull()?.takeIf { value -> value > 0 } ?: INVALID }
@@ -166,6 +199,7 @@ object SherpaVoiceManifest {
     private const val KEY_ENGINE_LANG = "engineLang"
     private const val KEY_NUM_STEPS = "numSteps"
     private const val KEY_THREADS = "threads"
+    const val KEY_STYLES = "styles"
     private const val INVALID = -1
     private val NEEDS_VOICES = setOf(SherpaFamily.KITTEN, SherpaFamily.KOKORO, SherpaFamily.SUPERTONIC)
     private val NEEDS_ENGINE_LANG = setOf(SherpaFamily.KOKORO, SherpaFamily.SUPERTONIC)

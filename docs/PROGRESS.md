@@ -2,6 +2,22 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Act the quotes, keep the mood, check pronunciation (2026-10-23, ADR-058)
+- **Emotion:** with Rasa, only the quoted words take the line's emotion; "সে অবাক হয়ে বলল" is said plainly around them (`CastSpeech`, `SpeechEngine.actsFeelings`). A sad or scared line carries into the next plain sentence of its paragraph (`SceneMoods`, `QuoteCarry.moodOf`). Other voices read as before.
+- **Pronunciation check:** `scripts/pronunciation_check.py` and `research/pronunciation/` read rule-dense sentences with every voice and transcribe them back. First fix: Piper Hindi garbled ग़, ख़, क़ ("ग़ज़ल" heard as "ओजल"); those voices now get them without the nukta (`VoiceRespellings`).
+- No `:pdf` change (PIPELINE_VERSION 12). Tests: `SceneMoodsTest`, `DeliveryPlannerTest`, `CastSpeechTest`, `QuoteCarryTest`, `VoiceRespellingsTest`. No new dependency.
+
+**Real-device checks (Moto):** a Bengali story with dialogue on Rasa (narration around a quote stays calm); a sad paragraph keeps its tone for the next sentence; a Hindi page with "ग़ज़ल" or "क़ानून" on Pratham.
+
+## Bengali emotion voices (2026-10-23, ADR-057)
+- **New download:** "Bengali, Rasa expressive (female and male)", 123 MB, CC BY 4.0 (AI4Bharat). Opt-in under All voices; SYSPIN male stays the Bengali pack. Shown in the Play build.
+- **A style per sentence:** in stories, Rasa reads narration in its book style and a line's feeling in its own style: shouted angry, sad sad, scared fearful, surprised, laughing happy, questions conversational (`SherpaVoiceSpec.styles`, `SpeechEngine.render(…, feeling)`). Two new feeling cues in English, Hindi and Bengali: scared ("trembled", "डरकर", "ভয়ে") and surprised ("gasped", "चौंककर", "অবাক হয়ে").
+- **Fixed before it shipped:** a final ".", "?" or "!" made Rasa add a short noise after the sentence; it now ends on the danda (`StyledText`).
+- **Characters:** with Rasa narrating, characters can use its male speaker (`CastSpeakers`).
+- No `:pdf` change (PIPELINE_VERSION 12). Tests: `StyledTextTest`, `SherpaVoiceManifestTest`, `SherpaModelConfigTest`, `SherpaSpeechEngineTest`, `CastSpeechTest`, `CastSpeakersTest`, `SentenceFeelingsTest`. No new dependency.
+
+**Real-device checks (Moto):** download Rasa, pick it for Bengali, play a Bengali story with dialogue (listen for a different colour on shouted, sad and surprised lines, and no click after "?"); turn "Read to suit the book" off (book style only); check render speed keeps up.
+
 ## Read each book to suit it, and a simpler Play build (2026-10-23, ADR-056)
 - **What a book is:** the first pages tell a story, children's story, poem, scripture, news, report, textbook or anything else, in English, Hindi and Bengali (`IntentClassifier`, `IntentSignals`, `BookIntent`). Golden excerpts: Moby-Dick reads as a story, the KJV as scripture, the three papers as study, the UDHR and the factsheets as general or report (`IntentLabelsTest`).
 - **How it is read:** each kind has its pace and pauses (children's stories and verse slower with longer pauses, news a little brisker, headings in reports and textbooks with more room). In stories and general books a line's own words colour it: whispered softer, shouted louder, sad slower, a trailing line held (`DeliveryPlanner`, `SentenceFeelings`). News, reports, textbooks and scripture are never acted.

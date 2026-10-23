@@ -262,6 +262,8 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 053 | Bengali default becomes SYSPIN male (studio VITS, clearest by ASR round trip); SYSPIN female added; optional per-voice `threads` (4 for these) | Accepted (2026-10-23) |
 | 055 | Battery onboarding opens Android's optimization list; `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` dropped for Google Play policy (amends ADR-015) | Accepted (2026-10-23) |
 | 056 | Read each book to suit it (content intent, sentence delivery, page-cut sentences); one language pack per language and a simpler Play build | Accepted (2026-10-23) |
+| 057 | Bengali emotion voices: AI4Bharat Rasa read in a style per sentence feeling (book, happy, sad, angry, scared, surprised, conversational), male speaker for characters | Accepted (2026-10-23) |
+| 058 | Act only the quoted words, carry a sad or scared mood one sentence, pronunciation check and per-voice respellings | Accepted (2026-10-23) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

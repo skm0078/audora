@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.speech.sherpa
 
 import io.github.skm0078.audora.core.model.EngineId
+import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
@@ -138,6 +139,24 @@ class SherpaVoiceManifestTest {
         speakerId=2
         voices=voice.bin
     """.trimIndent()
+
+    @Test
+    fun `reads a styled voice's style per feeling and writes it back the same way`() {
+        val spec = requireNotNull(parse("$piper\nstyles=NEUTRAL:3,SAD:12,LIVELY:8").getOrNull())
+
+        assertEquals(mapOf(Feeling.NEUTRAL to 3, Feeling.SAD to 12, Feeling.LIVELY to 8), spec.styles)
+        assertEquals(12, spec.styleFor(Feeling.SAD))
+        assertEquals(3, spec.styleFor(Feeling.LOUD))
+        assertEquals("SAD:12,LIVELY:8,NEUTRAL:3", SherpaVoiceManifest.stylesText(spec.styles))
+        assertNull(requireNotNull(parse(piper).getOrNull()).styleFor(Feeling.SAD))
+    }
+
+    @Test
+    fun `rejects styles it cannot read`() {
+        listOf("NEUTRAL", "NEUTRAL:-1", "CALM:3", "NEUTRAL:3,,SAD:1", "NEUTRAL:x", "NEUTRAL:3,NEUTRAL:4").forEach {
+            assertTrue(it, parse("$piper\nstyles=$it").errorOrNull().orEmpty().contains("styles"))
+        }
+    }
 
     private fun parse(text: String): Outcome<SherpaVoiceSpec, String> =
         SherpaVoiceManifest.parse(Properties().apply { load(StringReader(text)) })

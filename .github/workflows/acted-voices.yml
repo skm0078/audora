@@ -1,0 +1,79 @@
+# File: .github/workflows/acted-voices.yml
+# Purpose: Acted-voice spike (research/spikes/acted-voices, no app change): renders Hindi story lines with Chatterbox
+#          Multilingual on the runner's CPU, times them, prints IndicF5's model card for its licence, and publishes the
+#          samples to the "acted-voices" pre-release for the maintainer to judge by ear.
+
+name: Acted voices
+
+on:
+  push:
+    branches: ["feat/**"]
+    paths:
+      - research/spikes/acted-voices/**
+      - .github/workflows/acted-voices.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: acted-voices
+  cancel-in-progress: true
+
+env:
+  SPIKE: research/spikes/acted-voices
+  TAG: acted-voices
+
+jobs:
+  render:
+    name: Render and time Chatterbox Hindi
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install Chatterbox (CPU)
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+          python3 -m pip install --upgrade pip
+          # pkuseg (a Chinese word splitter Chatterbox imports) builds against numpy, so numpy goes first and pkuseg
+          # builds without isolation; torch comes from the CPU index to skip the CUDA wheels.
+          python3 -m pip install "numpy==1.25.2" cython setuptools wheel
+          python3 -m pip install "torch==2.6.0" "torchaudio==2.6.0" --index-url https://download.pytorch.org/whl/cpu
+          python3 -m pip install --no-build-isolation "pkuseg==0.0.25"
+          python3 -m pip install "chatterbox-tts==0.1.4"
+          python3 -m pip list | grep -iE "torch|chatterbox|transformers"
+          nproc; free -g
+
+      - name: Render and time
+        run: |
+          python3 "$SPIKE/render_chatterbox.py" --out out --threads "$(nproc)"
+          cat out/results.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: IndicF5 licence (Bengali candidate)
+        continue-on-error: true
+        run: |
+          curl -fsS https://huggingface.co/api/models/ai4bharat/IndicF5 | python3 -c "import sys,json; d=json.load(sys.stdin); print({k: d.get(k) for k in ('gated','cardData','tags')})"
+
+      - name: Publish samples
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p mp3
+          for f in out/*.wav; do ffmpeg -loglevel error -y -i "$f" -b:a 96k "mp3/$(basename "${f%.wav}").mp3"; done
+          cp out/results.md mp3/chatterbox-hindi-results.md
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            gh release create "$TAG" --prerelease --target "$GITHUB_SHA" --title "Acted voice spike" \
+              --notes "Hindi lines from Chatterbox Multilingual (MIT) rendered on a CI CPU, for listening. Not shipped."
+          fi
+          gh release upload "$TAG" mp3/* --clobber

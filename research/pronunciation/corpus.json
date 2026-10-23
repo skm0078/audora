@@ -1,0 +1,21 @@
+{
+  "comment": "Pronunciation check (scripts/pronunciation_check.py, .github/workflows/pronunciation.yml). Each sentence is dense with words of one rule; 'words' are the words scored in the ASR round trip. Text is what the voice is given, already as the app's normalizers leave it. Add a sentence for every word a listener reports read wrong.",
+  "texts": [
+    {"id": "hi-schwa-1", "lang": "hi", "rule": "schwa", "text": "कमला ने समझदारी से अपनी बहन को समझाया कि धड़कन तेज़ होना डर की निशानी है।", "words": ["कमला", "समझदारी", "बहन", "समझाया", "धड़कन", "निशानी"]},
+    {"id": "hi-schwa-2", "lang": "hi", "rule": "schwa", "text": "रचना और सरला बगीचे में चलते-चलते पहचान की बातें करने लगीं।", "words": ["रचना", "सरला", "बगीचे", "चलते-चलते", "पहचान", "बातें"]},
+    {"id": "hi-nukta-1", "lang": "hi", "rule": "nukta", "text": "ज़िंदगी में फ़ायदा और नुक़सान दोनों आते हैं, पर ज़रूरत सब्र की होती है।", "words": ["ज़िंदगी", "फ़ायदा", "नुक़सान", "ज़रूरत", "सब्र"]},
+    {"id": "hi-nukta-2", "lang": "hi", "rule": "nukta", "text": "बड़ी सड़क के पास पेड़ के नीचे वह ग़ज़ल गा रहा था।", "words": ["बड़ी", "सड़क", "पेड़", "ग़ज़ल"]},
+    {"id": "hi-conjunct-1", "lang": "hi", "rule": "conjunct", "text": "क्षत्रिय राजा ने ज्ञान और श्रद्धा से प्रजा की रक्षा की।", "words": ["क्षत्रिय", "ज्ञान", "श्रद्धा", "प्रजा", "रक्षा"]},
+    {"id": "hi-conjunct-2", "lang": "hi", "rule": "conjunct", "text": "विद्यार्थी ने स्वास्थ्य, अर्थव्यवस्था और विज्ञान पर निबंध लिखा।", "words": ["विद्यार्थी", "स्वास्थ्य", "अर्थव्यवस्था", "विज्ञान", "निबंध"]},
+    {"id": "hi-loan-1", "lang": "hi", "rule": "loanword", "text": "डॉक्टर ने कॉलेज के ऑफ़िस में कंप्यूटर पर रिपोर्ट देखी।", "words": ["डॉक्टर", "कॉलेज", "ऑफ़िस", "कंप्यूटर", "रिपोर्ट"]},
+    {"id": "bn-inherent-1", "lang": "bn", "rule": "inherent-vowel", "text": "কলম হাতে নিয়ে মন দিয়ে সে অতিথির জন্য চিঠি লিখল।", "words": ["কলম", "মন", "অতিথির", "জন্য", "চিঠি", "লিখল"]},
+    {"id": "bn-inherent-2", "lang": "bn", "rule": "inherent-vowel", "text": "বড় ঘরের এক কোণে বসে বাবা খবরের কাগজ পড়ছিলেন।", "words": ["বড়", "ঘরের", "কোণে", "খবরের", "কাগজ", "পড়ছিলেন"]},
+    {"id": "bn-phala-1", "lang": "bn", "rule": "ja-ba-phala", "text": "পদ্মা নদীর ধারে লক্ষ্মী পূজার দিন আত্মীয়রা বিশ্বাস নিয়ে এলেন।", "words": ["পদ্মা", "লক্ষ্মী", "আত্মীয়রা", "বিশ্বাস"]},
+    {"id": "bn-phala-2", "lang": "bn", "rule": "ja-ba-phala", "text": "ব্যাপারটা সত্যি বিস্ময়কর, বিদ্যালয়ের সব ছাত্র অবাক হয়ে গেল।", "words": ["ব্যাপারটা", "সত্যি", "বিস্ময়কর", "বিদ্যালয়ের", "ছাত্র"]},
+    {"id": "bn-conjunct-1", "lang": "bn", "rule": "conjunct", "text": "জ্ঞান আর শ্রদ্ধা নিয়ে ক্ষত্রিয় রাজা প্রজাদের রক্ষা করতেন।", "words": ["জ্ঞান", "শ্রদ্ধা", "ক্ষত্রিয়", "প্রজাদের", "রক্ষা"]},
+    {"id": "bn-loan-1", "lang": "bn", "rule": "loanword", "text": "ডাক্তার কলেজের অফিসে কম্পিউটারে রিপোর্ট দেখলেন।", "words": ["ডাক্তার", "কলেজের", "অফিসে", "কম্পিউটারে", "রিপোর্ট"]},
+    {"id": "en-names-1", "lang": "en", "rule": "names", "text": "Siobhan and Nguyen met Joaquin in Worcester, then drove to Leicester with Saoirse.", "words": ["siobhan", "nguyen", "joaquin", "worcester", "leicester", "saoirse"]},
+    {"id": "en-heteronym-1", "lang": "en", "rule": "heteronym", "text": "She will read the record she read last year, then record a new one and lead the band.", "words": ["read", "record", "lead"]},
+    {"id": "en-indic-1", "lang": "en", "rule": "indic-names", "text": "Rabindranath Tagore wrote Gitanjali in Santiniketan, and Kolkata still sings his songs.", "words": ["rabindranath", "tagore", "gitanjali", "santiniketan", "kolkata"]}
+  ]
+}

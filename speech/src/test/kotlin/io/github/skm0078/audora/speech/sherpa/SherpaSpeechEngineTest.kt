@@ -5,6 +5,7 @@
 package io.github.skm0078.audora.speech.sherpa
 
 import io.github.skm0078.audora.core.model.EngineId
+import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
@@ -57,6 +58,24 @@ class SherpaSpeechEngineTest {
         assertEquals(listOf("Hello there." to 3), loaded.single().second.calls)
         assertEquals(listOf(1f), loaded.single().second.rates)
     }
+
+    @Test
+    fun `a styled model reads each feeling in its style and ends on a danda, others ignore the feeling`() =
+        runBlocking {
+            val rasa = spec("rasa-bn", Lang.BN, speakerId = 2)
+                .copy(styles = mapOf(Feeling.NEUTRAL to 3, Feeling.SAD to 12))
+            val styled = SherpaSpeechEngine(listOf(rasa, english), factory, Dispatchers.IO.limitedParallelism(1), 2)
+
+            styled.render("সে কাঁদল!", rasa.voiceId, 1f, Feeling.SAD)
+            styled.render("সে হাসল?", rasa.voiceId, 1f, Feeling.LOUD)
+            styled.render("সে এল।", rasa.voiceId)
+            styled.render("She cried!", english.voiceId, 1f, Feeling.SAD)
+
+            assertEquals(listOf(12, 3, 3), synthesizerOf("rasa-bn").styles)
+            assertEquals(listOf("সে কাঁদল।", "সে হাসল।", "সে এল।"), synthesizerOf("rasa-bn").calls.map { it.first })
+            assertEquals(listOf(null), synthesizerOf("piper-en-ljspeech").styles)
+            assertEquals("She cried!", synthesizerOf("piper-en-ljspeech").calls.single().first)
+        }
 
     @Test
     fun `the speaking rate goes to the model`() = runBlocking {

@@ -167,6 +167,7 @@ internal object InstalledVoiceManifest {
         "engineLang" to spec.engineLang,
         "numSteps" to spec.numSteps?.toString(),
         "threads" to spec.threads?.toString(),
+        SherpaVoiceManifest.KEY_STYLES to SherpaVoiceManifest.stylesText(spec.styles),
         KEY_ORIGIN to origin.name,
     )
 }

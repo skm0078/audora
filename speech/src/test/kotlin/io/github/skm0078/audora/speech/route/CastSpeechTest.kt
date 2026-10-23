@@ -5,6 +5,7 @@
 package io.github.skm0078.audora.speech.route
 
 import io.github.skm0078.audora.core.model.EngineId
+import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
@@ -21,9 +22,11 @@ import org.junit.Test
 
 class CastSpeechTest {
     /** One sample per character; [broken] voices fail, like an uninstalled model. */
-    private class RecordingEngine(private val broken: Set<String> = emptySet()) : SpeechEngine {
+    private class RecordingEngine(private val broken: Set<String> = emptySet(), private val acts: Boolean = false) :
+        SpeechEngine {
         override val id = EngineId.SHERPA
         val calls = mutableListOf<Pair<String, String>>()
+        val feelings = mutableListOf<Feeling>()
 
         override fun supports(lang: Lang): Boolean = true
 
@@ -39,6 +42,13 @@ class CastSpeechTest {
             return Outcome.Success(PcmAudio(ShortArray(text.length) { 1 }, SAMPLE_RATE))
         }
 
+        override fun actsFeelings(voice: VoiceId): Boolean = acts
+
+        override suspend fun render(text: String, voice: VoiceId, rate: Float, feeling: Feeling): RenderResult {
+            feelings.add(feeling)
+            return render(text, voice, rate)
+        }
+
         override fun release() = Unit
     }
 
@@ -50,6 +60,43 @@ class CastSpeechTest {
 
     private fun speech(engine: RecordingEngine) =
         CastSpeech(FakeVoices(engine), ScriptRouter(), normalizers = emptyMap())
+
+    @Test
+    fun `the feeling goes to the quoted words, the narration around them is said plainly (ADR-058)`() = runTest {
+        val engine = RecordingEngine()
+
+        speech(engine).render(
+            "“Come here at once,” she sobbed.",
+            Lang.EN,
+            SpeechRequest(feeling = Feeling.SAD),
+            Cast(dialogue = mapOf(Lang.EN to DIALOGUE)),
+        )
+
+        assertEquals(listOf(Feeling.SAD, Feeling.NEUTRAL), engine.feelings)
+    }
+
+    @Test
+    fun `a voice that acts feelings gets the quote split out even without a dialogue voice`() = runTest {
+        val acting = RecordingEngine(acts = true)
+        val plain = RecordingEngine()
+        val text = "“Come here at once,” she sobbed."
+
+        speech(acting).render(text, Lang.EN, SpeechRequest(feeling = Feeling.SAD))
+        speech(plain).render(text, Lang.EN, SpeechRequest(feeling = Feeling.SAD))
+        speech(acting).render("She sobbed into her hands.", Lang.EN, SpeechRequest(feeling = Feeling.SAD))
+
+        assertEquals(
+            listOf(
+                NARRATOR.name to "Come here at once,",
+                NARRATOR.name to "she sobbed.",
+                NARRATOR.name to
+                    "She sobbed into her hands.",
+            ),
+            acting.calls,
+        )
+        assertEquals(listOf(Feeling.SAD, Feeling.NEUTRAL, Feeling.SAD), acting.feelings)
+        assertEquals(listOf(NARRATOR.name to text), plain.calls)
+    }
 
     @Test
     fun `quotes go to the dialogue voice with the quote pause between`() = runTest {

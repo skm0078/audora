@@ -104,6 +104,7 @@ class BookRendering private constructor(
                     fixer = { fixer },
                     startsInQuote = quotes::startsInQuote,
                     speakerOf = quotes::speakerOf,
+                    moodOf = quotes::moodOf,
                     characters = characters,
                     intent = { intent.current },
                 ),

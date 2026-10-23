@@ -264,6 +264,28 @@
       "file": "syspin-bn-female-ba96293e3199.zip",
       "sha256": "ba96293e3199160995b46130c349af3d905319efbcca7b69d646e6f0c8cbdd93",
       "sizeBytes": 114188846
+    },
+    {
+      "id": "rasa-bn",
+      "label": "Bengali, Rasa expressive (female and male)",
+      "lang": "bn",
+      "family": "vits",
+      "model": "model.onnx",
+      "speakerId": 2,
+      "threads": 4,
+      "styles": {"NEUTRAL": 3, "LOUD": 1, "SAD": 12, "SCARED": 7, "SURPRISED": 14, "LIVELY": 8, "ASKING": 4},
+      "licence": "CC-BY-4.0: AI4Bharat Rasa",
+      "credit": "Rasa expressive Indic voices (VITS, vits_rasa_13) by AI4Bharat at IIT Madras, trained on the Rasa emotional speech dataset; Bengali female and male speakers, read in Rasa's book, happy, sad, angry, fearful, surprised and conversational styles. Exported to the sherpa-onnx format by MatiasLin; weights unchanged.",
+      "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "sourceUrl": "https://huggingface.co/ai4bharat/vits_rasa_13",
+      "source": {
+        "archive": "sherpa-onnx-vits-rasa-13",
+        "sha256": "f93b3d439fcfc23c9914d60a5d1ebf474ead14862795df2f5cea245ab72589ae",
+        "url": "https://github.com/skm0078/audora/releases/download/indic-voices/sherpa-onnx-vits-rasa-13.zip"
+      },
+      "file": "rasa-bn-3cbab81c1696.zip",
+      "sha256": "3cbab81c1696e2e71c5377fe4f3ad968dc435e522b19d1c9af7969931566f50b",
+      "sizeBytes": 123351888
     }
   ],
   "models": [
