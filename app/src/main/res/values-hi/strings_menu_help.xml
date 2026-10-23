@@ -49,4 +49,8 @@
     <string name="confirm_keep">रहने दें</string>
     <string name="slider_percent">%1$d प्रतिशत</string>
     <string name="slider_step_of">%2$d में से %1$d</string>
+    <string name="gesture_tips_title">दो छिपे हुए इशारे</string>
+    <string name="gesture_tips_sentence">किसी वाक्य को देर तक दबाएँ: बुकमार्क, हाइलाइट, नोट या किसी शब्द का अर्थ।</string>
+    <string name="gesture_tips_skip">पिछला या अगला बटन देर तक दबाएँ, तो पूरा अनुच्छेद आगे-पीछे होगा।</string>
+    <string name="gesture_tips_got_it">ठीक है</string>
 </resources>

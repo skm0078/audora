@@ -22,3 +22,16 @@ fun shouldShowFirstRun(done: Boolean, library: LibraryListState): Boolean? = whe
 
 /** The languages a new listener starts with: English, which has a voice inside the app. */
 val FIRST_RUN_LANGUAGES: Set<Lang> = setOf(Lang.EN)
+
+/**
+ * [FIRST_RUN_LANGUAGES] plus the phone's own language when Audora reads it ([languageTag] is a BCP 47 tag such as
+ * "bn-IN"), so a Hindi or Bengali phone is offered a voice for its language without having to know to tick it.
+ */
+fun firstRunLanguages(languageTag: String): Set<Lang> {
+    val phone = when (languageTag.substringBefore('-').lowercase()) {
+        "hi" -> Lang.HI
+        "bn" -> Lang.BN
+        else -> null
+    }
+    return FIRST_RUN_LANGUAGES + listOfNotNull(phone)
+}

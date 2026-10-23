@@ -156,7 +156,7 @@
     <string name="speech_own_settings_detail">चालू: यह किताब अपनी गति, ठहराव और आवाज़ें याद रखती है; बाकी किताबें सामान्य सेटिंग रखती हैं। बंद: यह किताब सामान्य सेटिंग इस्तेमाल करती है।</string>
     <string name="bookmarks_title">बुकमार्क</string>
     <string name="bookmarks_add_here">यहाँ बुकमार्क करें</string>
-    <string name="bookmarks_empty">अभी कोई बुकमार्क नहीं। किसी वाक्य को देर तक दबाएँ, या “यहाँ बुकमार्क करें” पर टैप करें।</string>
+    <string name="bookmarks_empty">अभी कोई नोट नहीं। किसी वाक्य को देर तक दबाएँ, या “यहाँ बुकमार्क करें” पर टैप करें।</string>
     <string name="bookmarks_page">पेज %1$d</string>
     <string name="bookmarks_note">नोट</string>
     <string name="bookmarks_note_title">पेज %1$d पर नोट</string>
@@ -202,6 +202,8 @@
     <string name="sleep_options_bedtime">सोने के समय अपने-आप टाइमर लगाएँ</string>
     <string name="sleep_options_from">सोने का समय शुरू</string>
     <string name="sleep_options_to">सोने का समय खत्म</string>
+    <string name="sleep_options_earlier">%1$s: %2$d मिनट पहले</string>
+    <string name="sleep_options_later">%1$s: %2$d मिनट बाद</string>
     <string name="sleep_options_bedtime_timer">सोने के समय का टाइमर</string>
     <string name="sleep_options_save">सेव करें</string>
     <string name="reader_player_unavailable">प्लेयर उपलब्ध नहीं है। कृपया लॉग शेयर करें।</string>
@@ -280,7 +282,7 @@
     <string name="voices_status_installed">डाउनलोड की गई · %1$d MB</string>
     <string name="voices_status_imported">इंपोर्ट की गई · %1$d MB</string>
     <string name="voices_status_update">नया वर्शन उपलब्ध है</string>
-    <string name="voices_status_failed">डाउनलोड नहीं हो सका: %1$s। इंटरनेट कनेक्शन और खाली जगह देखें, फिर दोबारा कोशिश करें।</string>
+    <string name="voices_status_failed">डाउनलोड नहीं हो सका। इंटरनेट कनेक्शन और खाली जगह देखें, फिर दोबारा कोशिश करें।</string>
     <string name="voices_speed_ok">इस फ़ोन पर यह बोलने से %1$s× तेज़ी से तैयार होती है</string>
     <string name="voices_speed_slow">इस फ़ोन पर बहुत धीमी: हर सेकंड की आवाज़ तैयार करने में %1$s सेकंड लगते हैं, इसलिए पढ़ते समय रुकावट आएगी</string>
     <string name="voices_download">डाउनलोड करें</string>
@@ -291,6 +293,9 @@
     <string name="voices_delete_body">इस आवाज़ की फ़ाइलें इस फ़ोन से हटा दी जाएँगी। आप इसे बाद में फिर से डाउनलोड या इंपोर्ट कर सकते हैं।</string>
     <string name="voices_deleted">%1$s हटा दी गई</string>
     <string name="voices_delete_failed">%1$s हटाई नहीं जा सकी। कृपया फिर से कोशिश करें।</string>
+    <string name="voices_sample_play">%1$s का नमूना सुनें</string>
+    <string name="voices_sample_stop">%1$s का नमूना रोकें</string>
+    <string name="voices_sample_failed">यह आवाज़ नमूना नहीं चला सकी। फिर से कोशिश करें, या बार-बार हो तो इसे दोबारा डाउनलोड करें।</string>
     <string name="voices_import_title">आवाज़ इंपोर्ट करें</string>
     <string name="voices_import_body">sherpa-onnx आवाज़ का फ़ोल्डर: एक .onnx मॉडल, tokens.txt और, Piper और KittenTTS के लिए, espeak-ng-data।</string>
     <string name="voices_import_action">इंपोर्ट करें</string>
@@ -332,7 +337,7 @@
     <string name="ocr_models_delete">हटाएँ</string>
     <string name="ocr_models_queued">डाउनलोड का इंतज़ार (इंटरनेट चाहिए)…</string>
     <string name="ocr_models_downloading">%2$d में से %1$d MB डाउनलोड हो रहा है</string>
-    <string name="ocr_models_failed">डाउनलोड नहीं हो सका: %1$s। इंटरनेट कनेक्शन और खाली जगह देखें, फिर “फिर से कोशिश करें” दबाएँ।</string>
+    <string name="ocr_models_failed">डाउनलोड नहीं हो सका। इंटरनेट कनेक्शन और खाली जगह देखें, फिर “फिर से कोशिश करें” दबाएँ।</string>
     <string name="settings_ocr_title">स्कैन किए गए पेज (OCR)</string>
     <string name="settings_ocr_missing">स्कैन किए गए और गड़बड़ पेज पढ़कर सुनाता है। इसके लिए %1$d MB की टेक्स्ट पहचानने वाली फ़ाइलें चाहिए।</string>
     <string name="settings_ocr_ready">अंग्रेज़ी, हिंदी और बांग्ला के लिए तैयार · %1$d MB</string>
@@ -364,9 +369,14 @@
     <string name="library_duplicate_open">इसे खोलें</string>
     <string name="library_duplicate_close">बंद करें</string>
     <!-- Notes tab -->
-    <string name="notes_empty_title">अभी कोई बुकमार्क नहीं</string>
-    <string name="notes_empty_body">पढ़ते समय आप जो बुकमार्क और नोट जोड़ते हैं, वे सभी किताबों के लिए यहाँ इकट्ठा होते हैं। जोड़ने के लिए किसी वाक्य को देर तक दबाएँ।</string>
+    <string name="notes_empty_title">अभी कोई नोट नहीं</string>
+    <string name="notes_empty_body">पढ़ते समय आप जो बुकमार्क, हाइलाइट और वॉइस नोट जोड़ते हैं, वे सभी किताबों के लिए यहाँ इकट्ठा होते हैं। जोड़ने के लिए किसी वाक्य को देर तक दबाएँ।</string>
     <string name="notes_page">पेज %1$d</string>
+    <string name="notes_kind_bookmark">बुकमार्क</string>
+    <string name="notes_kind_highlight">हाइलाइट</string>
+    <string name="notes_kind_voice">वॉइस नोट</string>
+    <string name="notes_voice_length">%1$s लंबा</string>
+    <string name="notes_open">किताब में यह जगह खोलें</string>
     <!-- Up next (plan item 25) -->
     <string name="up_next_title">आगे सुनें</string>
     <string name="up_next_empty">कतार में कुछ नहीं है। कोई किताब जोड़ें, यह खत्म होते ही वह शुरू होगी।</string>

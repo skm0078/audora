@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_watched.xml -->
+<!-- Purpose: Hindi copy of values/strings_watched.xml. -->
+<resources>
+    <string name="library_watched_folders">देखे जा रहे फ़ोल्डर</string>
+    <string name="watched_explain">इन फ़ोल्डरों और उनके सब-फ़ोल्डरों में आई नई PDF और EPUB फ़ाइलें, लाइब्रेरी खुलने पर हर बार उसमें जुड़ जाती हैं। फ़ोल्डर हटाने पर पहले से जुड़ी किताबें बनी रहती हैं। Android ऐप्स को Download फ़ोल्डर खुद देखने नहीं देता: उसके अंदर का कोई फ़ोल्डर चुनें।</string>
+    <string name="watched_empty">अभी कोई फ़ोल्डर नहीं देखा जा रहा।</string>
+    <string name="watched_add">फ़ोल्डर जोड़ें</string>
+    <string name="watched_remove">हटाएँ</string>
+    <string name="watched_done">हो गया</string>
+    <string name="watched_unnamed">फ़ोल्डर</string>
+    <string name="watched_pick_again">फिर से चुनें</string>
+    <string name="watched_unreachable_row">खुल नहीं रहा। देखते रहने के लिए इसे फिर से चुनें।</string>
+    <string name="watched_not_saved">फ़ोल्डरों की सूची सेव नहीं हो सकी। खाली जगह देखें और फिर से कोशिश करें।</string>
+    <string name="watched_no_grant">यह फ़ोल्डर देखा नहीं जा सकता: जिस ऐप का यह है, वह स्थायी पहुँच नहीं देता।</string>
+    <plurals name="watched_added">
+        <item quantity="one">देखे जा रहे फ़ोल्डरों से %d किताब जुड़ी</item>
+        <item quantity="other">देखे जा रहे फ़ोल्डरों से %d किताबें जुड़ीं</item>
+    </plurals>
+    <plurals name="watched_unreachable">
+        <item quantity="one">%d देखा जा रहा फ़ोल्डर खुल नहीं रहा। देखे जा रहे फ़ोल्डर में जाकर इसे फिर से चुनें।</item>
+        <item quantity="other">%d देखे जा रहे फ़ोल्डर खुल नहीं रहे। देखे जा रहे फ़ोल्डर में जाकर इन्हें फिर से चुनें।</item>
+    </plurals>
+</resources>

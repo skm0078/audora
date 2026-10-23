@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_studio.xml -->
+<!-- Purpose: Hindi copy of values/strings_studio.xml. -->
+<resources>
+    <string name="library_studio_mode">स्टूडियो मोड में तैयार करें</string>
+</resources>

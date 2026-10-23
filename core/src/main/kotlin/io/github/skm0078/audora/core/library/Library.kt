@@ -7,8 +7,10 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.firstOrNull
@@ -114,11 +116,20 @@ class Library(
         }
     }
 
-    /** Takes the lasting grant, then reads what identifies the document. Gives the grant back on failure. */
+    /**
+     * Takes the lasting grant, then reads what identifies the document. Gives the grant back on failure, and when the
+     * add is cancelled mid-scan (the screen that started it went away), so no grant is left behind for a book that
+     * never arrived.
+     */
     private suspend fun scan(documentUri: String): Outcome<ScannedDocument, LibraryError> {
         val kept = documents.keepAccess(documentUri)
         if (kept is Outcome.Failure) return Outcome.Failure(kept.error.toLibraryError())
-        val scanned = scanner.scan(documentUri)
+        val scanned = try {
+            scanner.scan(documentUri)
+        } catch (e: CancellationException) {
+            withContext(NonCancellable) { placement.releaseIfUnused(documentUri) }
+            throw e
+        }
         if (scanned is Outcome.Failure) {
             AudoraLog.w(TAG, "Could not add a picked file: ${scanned.error}")
             placement.releaseIfUnused(documentUri)

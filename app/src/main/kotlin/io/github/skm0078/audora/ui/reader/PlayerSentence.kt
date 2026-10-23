@@ -37,8 +37,10 @@ internal fun SentencesAround(state: ReaderState, spokenWord: () -> IntRange?, mo
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL, Alignment.CenterVertically),
     ) {
         when {
-            state.content == PageContent.Loading || state.document == DocumentState.Loading ->
+            state.content == PageContent.Loading || state.document == DocumentState.Loading -> {
                 CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
+                SlowPageLine(state.page)
+            }
 
             spoken == null -> Text(
                 stringResource(R.string.player_idle),

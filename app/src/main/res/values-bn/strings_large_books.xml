@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Large and scanned books: what the reader says while a slow page is read. -->
+<resources>
+    <string name="reader_page_slow">এই পৃষ্ঠাটি এখনও পড়া হচ্ছে। স্ক্যান করা পৃষ্ঠা টেক্সট শনাক্তকরণ (OCR) দিয়ে পড়া হয়, এতে এক মিনিট পর্যন্ত লাগতে পারে। আপনি পৃষ্ঠা উল্টাতে থাকতে পারেন।</string>
+</resources>

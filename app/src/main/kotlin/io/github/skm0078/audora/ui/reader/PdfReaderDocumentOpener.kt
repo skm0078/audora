@@ -12,6 +12,7 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.map
 import io.github.skm0078.audora.pdf.document.OutlineEntry
+import io.github.skm0078.audora.pdf.document.PageReading
 import io.github.skm0078.audora.pdf.document.PageSource
 import io.github.skm0078.audora.pdf.document.PdfBook
 import io.github.skm0078.audora.pdf.document.PdfOpenError
@@ -29,6 +30,9 @@ import io.github.skm0078.audora.playback.text.TextBookError
 import io.github.skm0078.audora.playback.text.TextBookText
 import io.github.skm0078.audora.playback.text.TextBooks
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 
 /**
@@ -105,6 +109,10 @@ private class TextReaderDocument(private val text: TextBookText) : ReaderDocumen
 /**
  * The page renderer is a second PDFium document over the same file, opened on the first [render] so the text
  * view never pays for it. It cannot fail on a password: the book's own open already checked it.
+ *
+ * Page reads are interruptible: a scanned page can take a minute of OCR, and a listener who turns the page (the
+ * reader cancels the old load) must not wait behind it. [close] never blocks the main thread: the book closes once
+ * the page being read lets go, and the renderer closes on [io].
  */
 private class PdfReaderDocument(
     private val book: PdfBook,
@@ -115,17 +123,23 @@ private class PdfReaderDocument(
     private val builder: ReadingUnitBuilder,
 ) : ReaderDocument {
     private var renderer: PdfiumPageRenderer? = null
+
+    @Volatile
     private var closed = false
 
     override val pageCount: Int get() = book.pageCount
 
     override suspend fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError> =
-        withContext(io) { book.readingUnits(page, builder) }
+        runInterruptible(io) { book.readingUnits(page, builder) }
 
     override suspend fun page(page: Int): Outcome<ReaderPage, PdfPageError> =
-        withContext(io) { book.readPage(page, builder) }.map { reading ->
-            ReaderPage(reading.units, originOf(reading.source), reading.ocrConfidence)
-        }
+        runInterruptible(io) { book.readPage(page, builder) }.map(::readerPage)
+
+    override suspend fun pageIfReady(page: Int): Outcome<ReaderPage?, PdfPageError> =
+        runInterruptible(io) { book.readPageIfReady(page, builder) }.map { it?.let(::readerPage) }
+
+    private fun readerPage(reading: PageReading) =
+        ReaderPage(reading.units, originOf(reading.source), reading.ocrConfidence)
 
     override suspend fun outline(): List<OutlineEntry> = withContext(io) {
         when (val outline = book.outline()) {
@@ -161,12 +175,17 @@ private class PdfReaderDocument(
         }
     }
 
-    @Synchronized
     override fun close() {
         closed = true
+        book.close()
+        // A page may be drawing (a heavy scan takes seconds under PDFium's lock): the renderer waits for it on io.
+        CoroutineScope(io).launch { closeRenderer() }
+    }
+
+    @Synchronized
+    private fun closeRenderer() {
         renderer?.close()
         renderer = null
-        book.close()
     }
 }
 

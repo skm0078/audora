@@ -9,6 +9,7 @@
     <string name="backup_restore_warning">This replaces the library, notes and settings on this phone with the ones in the backup. Audora restarts to finish.</string>
     <string name="backup_restore_pick">Choose a backup</string>
     <string name="backup_cancel">Cancel</string>
+    <string name="backup_close">Close</string>
     <string name="backup_file_name">audora-backup-%1$s.zip</string>
     <string name="backup_saved">Backup saved</string>
     <string name="backup_save_failed">The backup couldn\'t be saved. Check there is space where you saved it and try again.</string>

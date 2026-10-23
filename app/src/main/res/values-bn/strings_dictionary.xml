@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_dictionary.xml -->
+<!-- Purpose: Bengali copy of values/strings_dictionary.xml. -->
+<resources>
+    <string name="sentence_menu_look_up">শব্দের মানে দেখুন</string>
+    <string name="dictionary_title">শব্দের মানে দেখুন</string>
+    <string name="dictionary_offer">ইংরেজি অভিধান (Open English Wordnet) থেকে ইন্টারনেট ছাড়াই শব্দের মানে দেখুন। এটি %1$s ডাউনলোড, ফোনে %2$s জায়গা নেয়।</string>
+    <string name="dictionary_offer_hi">Wiktionary থেকে ইন্টারনেট ছাড়াই হিন্দি শব্দের মানে ইংরেজিতে দেখুন। এটি %1$s ডাউনলোড, ফোনে %2$s জায়গা নেয়।</string>
+    <string name="dictionary_offer_bn">Wiktionary থেকে ইন্টারনেট ছাড়াই বাংলা শব্দের মানে ইংরেজিতে দেখুন। এটি %1$s ডাউনলোড, ফোনে %2$s জায়গা নেয়।</string>
+    <string name="dictionary_download">অভিধান ডাউনলোড করুন</string>
+    <string name="dictionary_cancel">বাতিল</string>
+    <string name="dictionary_waiting">ইন্টারনেট সংযোগের অপেক্ষায়…</string>
+    <string name="dictionary_failed">ডাউনলোড হয়নি: %1$s</string>
+    <string name="dictionary_type">অথবা একটি শব্দ লিখুন</string>
+    <string name="dictionary_look_up">মানে দেখুন</string>
+    <string name="dictionary_not_found">এই শব্দের কোনো ভুক্তি নেই।</string>
+    <string name="dictionary_synonyms">আরও: %1$s</string>
+    <string name="dictionary_noun">বিশেষ্য</string>
+    <string name="dictionary_verb">ক্রিয়া</string>
+    <string name="dictionary_adjective">বিশেষণ</string>
+    <string name="dictionary_adverb">ক্রিয়াবিশেষণ</string>
+    <string name="dictionary_pronoun">সর্বনাম</string>
+    <string name="dictionary_postposition">অনুসর্গ</string>
+    <string name="dictionary_conjunction">সংযোজক অব্যয়</string>
+    <string name="dictionary_interjection">আবেগসূচক অব্যয়</string>
+    <string name="dictionary_number">সংখ্যা</string>
+    <string name="dictionary_other">শব্দ</string>
+    <string name="dictionary_back">ফিরে যান</string>
+    <string name="dictionary_close">বন্ধ করুন</string>
+</resources>

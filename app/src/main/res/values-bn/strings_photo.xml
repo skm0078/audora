@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_photo.xml -->
+<!-- Purpose: Bengali copy of values/strings_photo.xml. -->
+<resources>
+    <string name="library_point_and_read">ছবি তুলে পড়ান</string>
+    <string name="photo_book_title">ছবি %1$s</string>
+    <string name="photo_no_camera">ছবি তোলার মতো কোনো ক্যামেরা অ্যাপ নেই।</string>
+    <string name="photo_busy">আগের ছবিটি এখনও বই হয়ে উঠছে। একটু পরেই খুলবে; পরের ছবি তার পরে তুলুন।</string>
+    <string name="photo_failed">Audora ছবিটি পড়তে পারল না। আরও ভালো আলোয় আবার চেষ্টা করুন।</string>
+</resources>

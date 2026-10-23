@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_quiz.xml -->
+<!-- Purpose: Hindi copy of values/strings_quiz.xml. -->
+<resources>
+    <string name="library_quiz">मुझसे सवाल पूछें</string>
+    <string name="quiz_title">मुझसे सवाल पूछें</string>
+    <string name="quiz_no_cards">सुनते समय कुछ हिस्से हाइलाइट करें, फिर यहाँ आएँ: हर हाइलाइट एक सवाल बनेगा, जिसमें एक शब्द छूटा होगा।</string>
+    <string name="quiz_nothing_due">अभी कोई सवाल बाकी नहीं। जिनका जवाब दिया, वे एक दिन बाद, फिर तीन दिन, एक हफ़्ते और उससे ज़्यादा बाद लौटेंगे।</string>
+    <string name="quiz_practise">फिर भी अभ्यास करें</string>
+    <string name="quiz_next">अगला</string>
+    <string name="quiz_show_answer">जवाब दिखाएँ</string>
+    <string name="quiz_done">हो गया</string>
+    <string name="quiz_hear_again">फिर से सुनें</string>
+    <string name="quiz_progress">सवाल %1$d / %2$d</string>
+    <string name="quiz_score">%2$d में से %1$d सही। छूटे हुए सवाल जल्दी लौटेंगे।</string>
+    <string name="quiz_answer_was">शब्द था “%1$s”।</string>
+    <string name="quiz_knew_it">मुझे पता था</string>
+    <string name="quiz_did_not">नहीं पता था</string>
+    <string name="quiz_right">सही: “%1$s”।</string>
+    <string name="quiz_wrong">पूरा सही नहीं। शब्द था “%1$s”।</string>
+</resources>

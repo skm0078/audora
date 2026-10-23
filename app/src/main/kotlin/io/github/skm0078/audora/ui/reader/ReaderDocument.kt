@@ -31,6 +31,12 @@ interface ReaderDocument : Closeable {
 
     /** [units] with where the page's words came from (P3-05); documents that cannot tell say the text layer. */
     suspend fun page(page: Int): Outcome<ReaderPage, PdfPageError> = units(page).map { ReaderPage(it, PageOrigin.TEXT) }
+
+    /**
+     * [page] without starting OCR: null for a scanned page not recognised yet. For whole-book work such as search,
+     * which must not queue hundreds of pages of OCR in front of the page the listener is on.
+     */
+    suspend fun pageIfReady(page: Int): Outcome<ReaderPage?, PdfPageError> = page(page)
 }
 
 /** [ocrConfidence]: how sure OCR was of the page, 0–100, for a page read by OCR; else null (RI-9). */

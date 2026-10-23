@@ -37,6 +37,7 @@ import kotlinx.coroutines.withContext
  *
  * Network: only [downloads] uses it, through WorkManager, and only for URLs from the catalog inside the APK.
  */
+@Suppress("TooManyFunctions") // The single owner of installed voices: install, import, delete and lookups.
 class VoiceLibrary private constructor(
     context: Context,
     val config: VoiceDownloadConfig,
@@ -109,12 +110,20 @@ class VoiceLibrary private constructor(
             val result = try {
                 VoiceImporter(files, config).import(SafImportTree(appContext.contentResolver, treeUri), lang, label)
             } catch (e: SecurityException) {
-                AudoraLog.e(TAG, "Import lost access to the picked folder", e)
-                Outcome.Failure(ImportError.Failed("Audora lost access to the folder; pick it again", e))
+                lostFolder(e)
+            } catch (e: IllegalArgumentException) {
+                lostFolder(e) // the folder was deleted or unmounted mid-import, or its provider failed
+            } catch (e: IllegalStateException) {
+                lostFolder(e)
             }
             synchronized(lock) { refreshLocked() }
             result
         }
+
+    private fun lostFolder(e: Exception): Outcome<InstalledVoice, ImportError> {
+        AudoraLog.e(TAG, "Import lost access to the picked folder", e)
+        return Outcome.Failure(ImportError.Failed("Audora lost access to the folder; pick it again", e))
+    }
 
     internal fun downloadJob(): VoiceDownloadJob = VoiceDownloadJob(
         catalog = catalog,

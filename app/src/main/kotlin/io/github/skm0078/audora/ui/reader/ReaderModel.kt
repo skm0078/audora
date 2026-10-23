@@ -20,6 +20,7 @@ import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.progress.TimeLeft
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ReAnchoring
+import io.github.skm0078.audora.core.resume.ResumeAnchor
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
@@ -184,13 +185,15 @@ class ReaderModel(
      * A bookmark (plan item 29), found again on the current pages the way resume is: reads from its sentence while
      * this book is being read, else shows its page.
      */
-    fun goToBookmark(bookmark: Bookmark) {
+    fun goToBookmark(bookmark: Bookmark) = goToPlace(bookmark.anchor)
+
+    /** Goes to a saved place (a bookmark, highlight or voice note), found again the way resume finds its sentence. */
+    fun goToPlace(anchor: ResumeAnchor) {
         val opened = document ?: return
-        val anchor = bookmark.anchor
         scope.launch {
             val units = (opened.units(anchor.page) as? Outcome.Success)?.value.orEmpty()
             val point = reAnchoring.locate(anchor, pipelineVersion, units)
-            AudoraLog.i(TAG, "Bookmark, $logContext page=${anchor.page} match=${point.match}")
+            AudoraLog.i(TAG, "Saved place, $logContext page=${anchor.page} match=${point.match}")
             if (state.value.isReading) {
                 startReading(ReadingPosition(bookId, point.page, point.charStart))
             } else {
@@ -205,7 +208,8 @@ class ReaderModel(
      */
     suspend fun sentencesForSearch(page: Int): List<ReadingUnit>? {
         val opened = document ?: return null
-        val read = (opened.page(page) as? Outcome.Success)?.value
+        // Never OCR for search: a scanned page not read yet is left out (the index retries it next time).
+        val read = (opened.pageIfReady(page) as? Outcome.Success)?.value
         return read?.units?.takeIf { read.origin == PageOrigin.TEXT || read.origin == PageOrigin.OCR }
     }
 

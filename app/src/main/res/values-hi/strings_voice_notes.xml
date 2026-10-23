@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_voice_notes.xml -->
+<!-- Purpose: Hindi copy of values/strings_voice_notes.xml. -->
+<resources>
+    <string name="sentence_menu_voice_note">वॉइस नोट रिकॉर्ड करें</string>
+    <string name="voice_notes_title">वॉइस नोट</string>
+    <string name="voice_note_recording">पेज %1$d पर वॉइस नोट रिकॉर्ड हो रहा है</string>
+    <string name="voice_note_save">सेव करें</string>
+    <string name="voice_note_discard">हटा दें</string>
+    <string name="voice_note_play">चलाएँ</string>
+    <string name="voice_note_stop">रोकें</string>
+    <string name="voice_note_failed_microphone">माइक्रोफ़ोन शुरू नहीं हो सका। शायद कोई दूसरा ऐप या कॉल उसे इस्तेमाल कर रहा है।</string>
+    <string name="voice_note_failed_permission">वॉइस नोट के लिए माइक्रोफ़ोन चाहिए। आप ऐप की सेटिंग में इसकी अनुमति दे सकते हैं।</string>
+    <string name="voice_note_failed_short">रिकॉर्डिंग बहुत छोटी थी, इसलिए रखी नहीं गई।</string>
+    <string name="voice_note_failed_play">यह वॉइस नोट चल नहीं सका।</string>
+</resources>

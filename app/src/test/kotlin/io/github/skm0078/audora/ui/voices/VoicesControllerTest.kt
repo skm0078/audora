@@ -1,5 +1,5 @@
 // File: app/src/test/kotlin/io/github/skm0078/audora/ui/voices/VoicesControllerTest.kt
-// Purpose: Voices screen rules: the list, choosing a reading voice, confirming deletes, imports and their messages.
+// Purpose: Voices screen rules: the list, choosing a reading voice, confirming deletes, imports, samples and messages.
 
 package io.github.skm0078.audora.ui.voices
 
@@ -57,6 +57,46 @@ class VoicesControllerTest {
 
             assertEquals(listOf(Lang.EN to CORI.id, Lang.EN to null, Lang.HI to null), manager.choices)
         }
+
+    @Test
+    fun `a sample loads, plays for its length, and a second tap stops it`() = runTest(UnconfinedTestDispatcher()) {
+        val sampler = FakeSampler()
+        val controller = VoicesController(manager, backgroundScope, sampler).also { it.start() }
+
+        controller.toggleSample(CORI)
+        assertEquals(VoiceSample(CORI.id.name, playing = false), controller.state.value.sample)
+        sampler.plays.complete(SAMPLE_MS)
+        assertEquals(VoiceSample(CORI.id.name, playing = true), controller.state.value.sample)
+        testScheduler.advanceTimeBy(SAMPLE_MS + 1)
+        assertNull(controller.state.value.sample)
+
+        controller.toggleSample(CORI)
+        controller.toggleSample(CORI)
+        assertNull(controller.state.value.sample)
+        assertEquals(3, sampler.stops) // each start stops what was before, then the second tap
+    }
+
+    @Test
+    fun `a sample that cannot play says so`() = runTest(UnconfinedTestDispatcher()) {
+        val sampler = FakeSampler().apply { plays.complete(null) }
+        val controller = VoicesController(manager, backgroundScope, sampler).also { it.start() }
+
+        controller.toggleSample(BUILT_IN)
+
+        assertNull(controller.state.value.sample)
+        assertEquals(VoicesMessage.SampleFailed, controller.state.value.message)
+    }
+
+    private class FakeSampler : VoiceSampler {
+        val plays = CompletableDeferred<Long?>()
+        var stops = 0
+
+        override suspend fun play(row: VoiceRow): Long? = plays.await()
+
+        override fun stop() {
+            stops++
+        }
+    }
 
     @Test
     fun `download and cancel pass the voice id`() = runTest(UnconfinedTestDispatcher()) {
@@ -149,6 +189,7 @@ class VoicesControllerTest {
     }
 
     private companion object {
+        const val SAMPLE_MS = 2_000L
         val BUILT_IN = row("kitten-en-nano", "Nano", VoiceKind.BUILT_IN, VoiceStatus.BuiltIn)
         val CORI = row("piper-en-cori", "Cori", VoiceKind.CATALOG, VoiceStatus.Installed)
 

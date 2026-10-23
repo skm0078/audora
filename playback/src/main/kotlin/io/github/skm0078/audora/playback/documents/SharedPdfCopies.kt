@@ -10,6 +10,8 @@ import android.provider.OpenableColumns
 import io.github.skm0078.audora.core.logging.AudoraLog
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
@@ -53,8 +55,7 @@ class SharedPdfCopies(context: Context, private val maxBytes: Long = DEFAULT_MAX
         try {
             target.parentFile?.mkdirs()
             val input = resolver.openInputStream(source) ?: throw IOException("provider returned no stream")
-            val copied = input.use { from -> target.outputStream().use { to -> from.copyTo(to) } }
-            if (copied > maxBytes) throw IOException("$copied bytes is over the $maxBytes limit")
+            val copied = input.use { from -> target.outputStream().use { to -> copyAtMost(from, to, maxBytes) } }
             AudoraLog.i(TAG, "Copied a shared PDF from authority=${source.authority} bytes=$copied")
             Uri.fromFile(target).toString()
         } catch (e: IOException) {
@@ -179,6 +180,31 @@ private fun ContentResolver.displayName(uri: Uri): String? = try {
         if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getString(0) else null
     }
 } catch (e: IllegalArgumentException) {
+    noName(uri, e)
+} catch (e: IllegalStateException) {
+    noName(uri, e)
+} catch (e: SecurityException) {
+    // A share without a read grant: the copy below fails the same way and is reported there; this must not crash.
+    noName(uri, e)
+}
+
+private fun noName(uri: Uri, e: Exception): String? {
     AudoraLog.d(TAG, "No name from authority=${uri.authority}: ${e.javaClass.simpleName}")
-    null
+    return null
+}
+
+/**
+ * Copies [from] into [to] and returns the byte count, stopping as soon as it passes [limit]: a huge file shared by
+ * mistake never fills the phone before the size check.
+ */
+private fun copyAtMost(from: InputStream, to: OutputStream, limit: Long): Long {
+    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+    var copied = 0L
+    while (true) {
+        val read = from.read(buffer)
+        if (read < 0) return copied
+        copied += read
+        if (copied > limit) throw IOException("over the $limit-byte limit")
+        to.write(buffer, 0, read)
+    }
 }

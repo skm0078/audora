@@ -2,6 +2,26 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Large scanned books never hang the app (2026-10-23, ADR-054)
+- **Root cause:** a scanned page's OCR (up to a minute) ran under the book's lock, and leaving the reader or stopping playback closed the book on the main thread, which waited for that lock: an "isn't responding" dialog. Turned pages queued behind the old pages' OCR, and search OCR'd the whole book.
+- **Fixes:** `PdfBook.close()` never waits (the document closes as the page being read lets go); page reads in the reader and the player are interruptible and OCR stops between its steps; one OCR page in memory at a time across the app; running out of memory on a page fails that page instead of crashing; search never runs OCR (scanned pages join it once shown or read aloud).
+- **Feedback:** a page still loading after 3 s says it is being read with OCR and that pages can still be turned (English, Hindi, Bengali).
+- **Guards:** debug builds log a main thread stuck for 2 s with its stack to the shared logs (`StallWatchdog`), plus StrictMode in logcat. Tests: `PdfBookCloseTest`, `RenderedPageOcrStopTest`, `StallWatchdogTest`, and the emulator's `LargeScannedBookTest` on a generated 700-page scanned PDF. No `:pdf` output change (PIPELINE_VERSION 12, golden unchanged).
+
+**Real-device checks (Moto):** open the 700-page scanned book, flip quickly through ten pages, open search, leave the reader while a page shows the OCR notice, then play and stop from the notification. Nothing should freeze; Share logs should show no `Main thread stuck` lines.
+## Final polish before the Play release (2026-10-23)
+- **Four UI gaps closed:** the backup dialog has a Close button; every voice that can speak has a play/stop sample on the Voices screen and on first run (one line in the voice's own language, with the listener's speed and style, outside the book player; `VoiceSampler`, `QuizSpeaker.speakFor`); a one-time card above the reader's controls names the two long-press gestures; the Notes tab lists highlights and voice notes next to bookmarks, in reading order, and a tap opens each place (`NoteEntry`, `ReaderModel.goToPlace`).
+- **Persona review (code and strings, no device):** a TalkBack listener, a first-time Bengali user, a crash hunter and an exam student walked the flows. Fixed from it:
+  - Crashes: a share with no read grant crashed in `SharedPdfCopies.displayName`; a voice folder unmounted mid-import crashed in `VoiceLibrary.import`. A shared file is now copied with a bounded loop, so a huge file never fills the phone first. An add cancelled mid-scan gives its file grant back (`Library.scan`).
+  - Hindi and Bengali copies of the 11 string files that had none (backup, search, watched folders, voice notes, export, dictionary, character guide, quiz, photo, text books, studio). Licence texts stay English.
+  - Download errors no longer put raw English ("HTTP 404") into the sentence; the detail stays in the log.
+  - First run ticks the phone's language when it is Hindi or Bengali, so its voice is offered.
+  - TalkBack: bedtime "−"/"+" say what they change and the time is announced; a voice's download outcome is announced; Notes rows say they open the place.
+  - Reading: "₹500 करोड़" reads "पाँच सौ करोड़ रुपये" (was "रुपये करोड़"), "₹1.5 lakh crore" and "Rs. 10-15 crore" read in order, "Rs. 500/-" drops the "/-", "2005-06" reads "two thousand five to two thousand six" (was "zero six"), and "10-15%" reads "दस से पंद्रह प्रतिशत" in Hindi and Bengali. :pdf is untouched, so PIPELINE_VERSION and the golden score are unchanged.
+- Tests: `VoicesControllerTest` (sample states, failure), `NotesFilterTest` (every kind merged in reading order), `FirstRunTest` (phone language), `EnglishNormalizerTest` and `IndicNormalizerTest` (new cases). No new dependency.
+
+**Real-device checks:** play a sample of two voices and leave the screen mid-sample (it stops); dismiss the long-press card once (it never returns); the Notes tab shows a highlight and a voice note and opens each; share a PDF from WhatsApp and from Files.
+
 ## Clearer Bengali voice: SYSPIN studio voices (2026-10-23, ADR-053)
 - **Two new Bengali downloads:** "Bengali, SYSPIN male" (now the recommended Bengali voice) and "Bengali, SYSPIN female", 114 MB each, MIT. These are IISc studio voices, converted to sherpa-onnx in CI and pinned from the `indic-voices` pre-release. Piper google and MMS stay available.
 - **Why:** an ASR round trip over the same texts gives Bengali CER 5.1% (male) and 8.1% (female), against 13.8% for Piper google and 10.3% for MMS. Coqui Bangla (8.1% to 10.1%) and AI4Bharat Rasa in BOOK style (about 9%) were also trialled. Full table and samples: `research/spikes/indic-voices/README.md` and the `indic-voices` release.

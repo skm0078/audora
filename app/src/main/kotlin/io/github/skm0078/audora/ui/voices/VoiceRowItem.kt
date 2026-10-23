@@ -1,16 +1,22 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/voices/VoiceRowItem.kt
 // Purpose: One voice in the Voices list (status, licence, actions), the phone-voice row and the import dialog.
+@file:Suppress("TooManyFunctions") // Small private composables for one row's parts.
 
 package io.github.skm0078.audora.ui.voices
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -26,7 +32,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.Lang
@@ -39,9 +49,8 @@ import io.github.skm0078.audora.speech.voices.VoiceStatus
  * on this phone (P4-02). A too-slow voice that already reads its language stays selected.
  */
 @Composable
-internal fun VoiceRowItem(row: VoiceRow, actions: VoicesActions) {
-    val canSpeak = row.status is VoiceStatus.BuiltIn || row.status is VoiceStatus.Installed ||
-        row.status is VoiceStatus.UpdateAvailable
+internal fun VoiceRowItem(row: VoiceRow, actions: VoicesActions, sample: VoiceSample? = null) {
+    val canSpeak = row.canSpeak
     val usable = canSpeak && (!row.tooSlow || row.readsLanguage)
     ListItem(
         leadingContent = {
@@ -66,9 +75,38 @@ internal fun VoiceRowItem(row: VoiceRow, actions: VoicesActions) {
                 )
             }
         },
-        trailingContent = { RowAction(row, actions) },
+        trailingContent = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (canSpeak) SampleButton(row, sample?.takeIf { it.id == row.id.name }, actions)
+                RowAction(row, actions)
+            }
+        },
         modifier = Modifier.clickable(enabled = usable && !row.readsLanguage) { actions.onUse(row) },
     )
+}
+
+private val VoiceRow.canSpeak: Boolean
+    get() = status is VoiceStatus.BuiltIn || status is VoiceStatus.Installed || status is VoiceStatus.UpdateAvailable
+
+/** Play a sample; while the voice loads a spinner shows, while it plays a stop button. Either tap stops it. */
+@Composable
+private fun SampleButton(row: VoiceRow, sample: VoiceSample?, actions: VoicesActions) {
+    val label = stringResource(
+        if (sample == null) R.string.voices_sample_play else R.string.voices_sample_stop,
+        row.label,
+    )
+    IconButton(onClick = { actions.onSample(row) }) {
+        when {
+            sample == null -> Icon(painterResource(R.drawable.ic_play), contentDescription = label)
+
+            sample.playing -> Icon(painterResource(R.drawable.ic_stop), contentDescription = label)
+
+            else -> Box(contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(Modifier.size(SAMPLE_SPINNER), strokeWidth = SAMPLE_SPINNER_STROKE)
+                Icon(painterResource(R.drawable.ic_stop), contentDescription = label, Modifier.size(SAMPLE_STOP_ICON))
+            }
+        }
+    }
 }
 
 @Composable
@@ -86,12 +124,14 @@ private fun StatusLine(row: VoiceRow) {
             }
         }
 
+        // A download's outcomes are announced as they appear; its progress ticks are not, so TalkBack is not flooded.
         is VoiceStatus.Failed -> Text(
-            stringResource(R.string.voices_status_failed, status.message),
+            stringResource(R.string.voices_status_failed),
             color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
 
-        else -> Text(statusText(row))
+        else -> Text(statusText(row), Modifier.semantics { liveRegion = LiveRegionMode.Polite })
     }
 }
 
@@ -225,6 +265,9 @@ internal fun megabytes(bytes: Long): Long = if (bytes <= 0) 0 else maxOf(1, (byt
 internal val HORIZONTAL_PADDING = 16.dp
 internal val HEADER_PADDING = 8.dp
 private val PROGRESS_TOP = 4.dp
+private val SAMPLE_SPINNER = 28.dp
+private val SAMPLE_SPINNER_STROKE = 2.dp
+private val SAMPLE_STOP_ICON = 14.dp
 private const val MAX_LABEL_INPUT = 60
 private const val ONE_DECIMAL = "%.1f"
 private const val BYTES_PER_MB = 1024L * 1024

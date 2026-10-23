@@ -7,7 +7,8 @@ import android.net.Uri
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.speech.voices.VoiceRow
 
-/** What the Voices screen can ask for; MainActivity forwards each to [VoicesController]. */
+/** What the Voices screen can ask for; [voicesActions] forwards each to [VoicesController]. */
+@Suppress("TooManyFunctions") // One callback per user action on the screen.
 interface VoicesActions {
     fun onBack()
 
@@ -28,4 +29,7 @@ interface VoicesActions {
     fun onImport(treeUri: Uri, lang: Lang, label: String)
 
     fun onMessageShown()
+
+    /** Plays a sample of [row]'s voice, or stops it if it is playing; screens without samples ignore it. */
+    fun onSample(row: VoiceRow) = Unit
 }

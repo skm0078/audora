@@ -15,20 +15,34 @@ internal class CurrencyRule(private val config: NormalizerConfig, private val nu
     private data class Currency(val one: String, val many: String, val minorOne: String, val minorMany: String)
 
     override fun apply(text: String, role: TextRole): String = AMOUNT.replace(text) { match ->
-        val (symbol, amount, magnitudeWritten) = match.destructured
+        val groups = match.groupValues
+        val symbol = groups[SYMBOL_GROUP]
+        val amount = groups[AMOUNT_GROUP]
+        val rangeEnd = groups[RANGE_END_GROUP]
+        val magnitudeWritten = groups[MAGNITUDE_GROUP]
+        val secondMagnitude = groups[SECOND_MAGNITUDE_GROUP]
         val currency = currencyFor(symbol)
-        val magnitude = MAGNITUDES[magnitudeWritten.lowercase()] ?: magnitudeWritten.lowercase()
+        // "₹1.5 lakh crore": both words, in the order written.
+        val magnitude = listOf(magnitudeWritten, secondMagnitude)
+            .filter(String::isNotEmpty)
+            .joinToString(" ") { MAGNITUDES[it.lowercase()] ?: it.lowercase() }
         val ungrouped = if (currency === RUPEE && config.rupeesInIndianSystem) {
             NumberSystem.INDIAN
         } else {
             NumberSystem.INTERNATIONAL
         }
         val fraction = amount.substringAfter('.', missingDelimiterValue = "")
-        val spoken = if (magnitude.isEmpty() && fraction.length == MINOR_DIGITS) {
+        val spoken = if (magnitude.isEmpty() && rangeEnd.isEmpty() && fraction.length == MINOR_DIGITS) {
             withMinorUnit(amount.substringBefore('.'), fraction.toInt(), currency, ungrouped)
         } else {
-            val count = numbers.read(amount, allowYear = false, ungrouped = ungrouped)
-            val isOne = magnitude.isEmpty() && numbers.valueOf(amount) == 1L
+            val from = numbers.read(amount, allowYear = false, ungrouped = ungrouped)
+            // "Rs. 10-15 crore" is "ten to fifteen crore rupees", the currency word once, after the range.
+            val count = if (rangeEnd.isEmpty()) {
+                from
+            } else {
+                "$from to ${numbers.read(rangeEnd, allowYear = false, ungrouped = ungrouped)}"
+            }
+            val isOne = magnitude.isEmpty() && rangeEnd.isEmpty() && numbers.valueOf(amount) == 1L
             listOf(count, magnitude, if (isOne) currency.one else currency.many)
                 .filter(String::isNotEmpty)
                 .joinToString(" ")
@@ -65,6 +79,13 @@ internal class CurrencyRule(private val config: NormalizerConfig, private val nu
     }
 
     private companion object {
+        // Capture groups of [AMOUNT], in order.
+        const val SYMBOL_GROUP = 1
+        const val AMOUNT_GROUP = 2
+        const val RANGE_END_GROUP = 3
+        const val MAGNITUDE_GROUP = 4
+        const val SECOND_MAGNITUDE_GROUP = 5
+
         const val MINOR_DIGITS = 2
 
         val RUPEE = Currency("rupee", "rupees", "paisa", "paise")
@@ -84,10 +105,15 @@ internal class CurrencyRule(private val config: NormalizerConfig, private val nu
             "bn" to "billion",
         )
 
-        // "Rs" and "INR" must start a word; "Rs." may hug the number ("Rs.500").
+        /**
+         * "Rs" and "INR" must start a word; "Rs." may hug the number ("Rs.500"). An optional range end ("10-15"), up to
+         * two magnitude words ("lakh crore") and the "/-" Indian forms write after a whole amount ("Rs. 500/-").
+         */
         val AMOUNT = Regex(
             """(?<![\w$])(₹|Rs\.?|INR|US\$|\$|£|€)\s?(${NumberPatterns.NUMBER})""" +
-                """(?:\s?(thousand|lakhs?|lacs?|crores?|cr|million|mn|billion|bn|trillion|k)\b)?""",
+                """(?:\s?[-–—]\s?(${NumberPatterns.NUMBER})(?![\w-]))?""" +
+                """(?:\s?(thousand|lakhs?|lacs?|crores?|cr|million|mn|billion|bn|trillion|k)\b)?""" +
+                """(?:\s(crores?|cr)\b)?(?:/-)?""",
         )
     }
 }

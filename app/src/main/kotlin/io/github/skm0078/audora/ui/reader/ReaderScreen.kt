@@ -165,9 +165,7 @@ private fun OpenBook(
         }
         PlayerStatus(state.playback)
         when (val content = state.content) {
-            PageContent.Loading -> Box(Modifier.fillMaxSize()) {
-                CircularProgressIndicator(Modifier.align(Alignment.Center))
-            }
+            PageContent.Loading -> PageLoading(state.page, config.slowPageNoticeMs)
 
             PageContent.Failed -> Message(stringResource(R.string.reader_page_failed))
 

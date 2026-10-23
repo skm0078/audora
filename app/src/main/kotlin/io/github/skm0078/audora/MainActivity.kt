@@ -70,6 +70,7 @@ import io.github.skm0078.audora.core.notes.BookmarkStore
 import io.github.skm0078.audora.core.notes.HighlightStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.notes.VoiceNoteStore
+import io.github.skm0078.audora.core.resume.ResumeAnchor
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.diagnostics.LogSharer
@@ -132,6 +133,7 @@ import io.github.skm0078.audora.ui.licences.LicencesScreen
 import io.github.skm0078.audora.ui.loggingFailures
 import io.github.skm0078.audora.ui.motion.AnimatedScreens
 import io.github.skm0078.audora.ui.motion.isLeavingScreen
+import io.github.skm0078.audora.ui.notes.NoteSources
 import io.github.skm0078.audora.ui.notes.NotesScreen
 import io.github.skm0078.audora.ui.notes.bookNotes
 import io.github.skm0078.audora.ui.reader.BookNotesModel
@@ -179,10 +181,11 @@ import io.github.skm0078.audora.ui.tutor.ReaderTutorRoute
 import io.github.skm0078.audora.ui.upnext.UpNextPort
 import io.github.skm0078.audora.ui.upnext.UpNextSheet
 import io.github.skm0078.audora.ui.upnext.libraryBooks
+import io.github.skm0078.audora.ui.voices.SpokenVoiceSampler
 import io.github.skm0078.audora.ui.voices.VoiceManager
-import io.github.skm0078.audora.ui.voices.VoicesActions
 import io.github.skm0078.audora.ui.voices.VoicesController
-import io.github.skm0078.audora.ui.voices.VoicesScreen
+import io.github.skm0078.audora.ui.voices.VoicesRoute
+import io.github.skm0078.audora.ui.voices.voicesActions
 import io.github.skm0078.audora.widget.ResumeWidgetEffect
 import io.github.skm0078.audora.widget.ResumeWidgetProvider
 import java.io.File
@@ -376,7 +379,9 @@ class MainActivity : ComponentActivity() {
         }
         val battery = rememberBatterySetup(scope)
         // Activity-wide too, so an import keeps going when the user leaves the screen; created on first visit.
-        val voicesController = remember { lazy { VoicesController(voiceManager, scope).also { it.start() } } }
+        val voicesController = remember {
+            lazy { VoicesController(voiceManager, scope, SpokenVoiceSampler(applicationContext)).also { it.start() } }
+        }
         val destination = nav.destination
         // Above the screens, so the mini player is there from the first frame of a back swipe to the tabs and the
         // cover has somewhere to shrink back into.
@@ -409,7 +414,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        AppTab.NOTES -> ReadableWidth { NotesRoute(books, nav::openBookmark) }
+                        AppTab.NOTES -> ReadableWidth { NotesRoute(books, nav::openPlace) }
 
                         AppTab.SETTINGS -> ReadableWidth {
                             SettingsRoute(diagnostics, battery, nav::navigate, appearance) {
@@ -460,6 +465,7 @@ class MainActivity : ComponentActivity() {
         if (show == true) {
             val voicesState by voices.value.state.collectAsStateWithLifecycle()
             val voiceActions = remember { voicesActions(voices.value) {} }
+            DisposableEffect(Unit) { onDispose { voices.value.stopSample() } }
             ReadableWidth {
                 FirstRunScreen(
                     voices = voicesState,
@@ -531,8 +537,8 @@ class MainActivity : ComponentActivity() {
                 books,
                 onBack = { nav.navigate(destination.parent ?: AppDestination.Library) },
                 onShowPage = { nav.navigate(AppDestination.Reader(id, from, viaPlayer = true)) },
-                openBookmark = nav.pendingBookmark?.takeIf { it.bookId == id && !asPlayer },
-                onBookmarkOpened = { nav.pendingBookmark = null },
+                openPlace = nav.pendingPlace?.takeIf { it.bookId == id && !asPlayer },
+                onPlaceOpened = { nav.pendingPlace = null },
                 onOtherBookPlaying = { other -> nav.navigate(AppDestination.Player(other, from)) },
                 // Taken once, so opening the book again later never starts reading by itself.
                 onAutoResumeTaken = { nav.autoResumeBook = null },
@@ -573,8 +579,8 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun NotesRoute(books: List<Book>, onOpen: (Bookmark) -> Unit) {
-        val groups by remember(books) { bookNotes(bookmarkStore, books) }
+    private fun NotesRoute(books: List<Book>, onOpen: (ResumeAnchor) -> Unit) {
+        val groups by remember(books) { bookNotes(NoteSources(bookmarkStore, highlightStore, voiceNoteStore), books) }
             .collectAsStateWithLifecycle(initialValue = emptyList())
         NotesScreen(groups, onOpen)
     }
@@ -766,37 +772,6 @@ class MainActivity : ComponentActivity() {
         studio.Sheets((controller.listState as? LibraryListState.Loaded)?.all?.map { it.book })
     }
 
-    @Composable
-    private fun VoicesRoute(controller: VoicesController, navigateBack: () -> Unit) {
-        val state by controller.state.collectAsStateWithLifecycle()
-        val actions = remember(controller) { voicesActions(controller, navigateBack) }
-        VoicesScreen(state = state, actions = actions)
-    }
-
-    private fun voicesActions(controller: VoicesController, navigateBack: () -> Unit): VoicesActions =
-        object : VoicesActions {
-            override fun onBack() = navigateBack()
-
-            override fun onDownload(row: VoiceRow) = controller.download(row)
-
-            override fun onCancel(row: VoiceRow) = controller.cancel(row)
-
-            override fun onUse(row: VoiceRow) = controller.use(row)
-
-            override fun onUseDefault(lang: Lang) = controller.useDefault(lang)
-
-            override fun onRequestDelete(row: VoiceRow) = controller.proposeDelete(row)
-
-            override fun onConfirmDelete() = controller.confirmDelete()
-
-            override fun onCancelDelete() = controller.proposeDelete(null)
-
-            override fun onImport(treeUri: Uri, lang: Lang, label: String) =
-                controller.import(treeUri.toString(), lang, label)
-
-            override fun onMessageShown() = controller.messageShown()
-        }
-
     /** Loaded on each visit: a voice downloaded since then shows its licence files. */
     @Composable
     private fun LicencesRoute(navigateBack: () -> Unit) {
@@ -817,8 +792,8 @@ class MainActivity : ComponentActivity() {
         books: List<Book>,
         onBack: () -> Unit,
         onShowPage: () -> Unit = {},
-        openBookmark: Bookmark? = null,
-        onBookmarkOpened: () -> Unit = {},
+        openPlace: ResumeAnchor? = null,
+        onPlaceOpened: () -> Unit = {},
         onOtherBookPlaying: (BookId) -> Unit = {},
         onAutoResumeTaken: () -> Unit = {},
     ) {
@@ -867,10 +842,10 @@ class MainActivity : ComponentActivity() {
         val actions = remember(model) { readerActions(model, notes, playWithPermission) { back() } }
         BookWindowEffects(model, state, listeningInBackground)
         val opened = state.document is DocumentState.Open
-        LaunchedEffect(model, opened, openBookmark) {
-            if (opened && openBookmark != null) {
-                model.goToBookmark(openBookmark)
-                onBookmarkOpened()
+        LaunchedEffect(model, opened, openPlace) {
+            if (opened && openPlace != null) {
+                model.goToPlace(openPlace)
+                onPlaceOpened()
             }
         }
         val screen = BookScreen(target, books, onShowPage, onOtherBookPlaying)
@@ -1106,8 +1081,8 @@ internal class AppNavigation(routeState: MutableState<String>) {
     /** "Continue" was pressed: the reader opened next reads on from where the book was left. */
     var autoResumeBook by mutableStateOf<BookId?>(null)
 
-    /** A bookmark tapped in the Notes tab, opened once its book's reader has the PDF open. */
-    var pendingBookmark by mutableStateOf<Bookmark?>(null)
+    /** A note tapped in the Notes tab, opened once its book's reader has the PDF open. */
+    var pendingPlace by mutableStateOf<ResumeAnchor?>(null)
 
     /** Kids mode (plan item 71) is on: only the library and the player can be reached. */
     var kids by mutableStateOf(false)
@@ -1121,9 +1096,9 @@ internal class AppNavigation(routeState: MutableState<String>) {
         navigate(AppDestination.Reader(id))
     }
 
-    fun openBookmark(bookmark: Bookmark) {
-        pendingBookmark = bookmark
-        navigate(AppDestination.Reader(bookmark.bookId, AppTab.NOTES))
+    fun openPlace(anchor: ResumeAnchor) {
+        pendingPlace = anchor
+        navigate(AppDestination.Reader(anchor.bookId, AppTab.NOTES))
     }
 }
 
