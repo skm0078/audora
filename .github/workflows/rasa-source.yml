@@ -51,12 +51,11 @@ jobs:
         continue-on-error: true
         run: |
           curl -fsSL "$HF/api/models/ai4bharat/vits_rasa_13" | head -c 3000; echo
-          for f in config.json speaker_ids.json emotion_ids.json; do
-            echo "== $f"; curl -fsSL "$HF/ai4bharat/vits_rasa_13/resolve/main/$f" | head -c 20000; echo
-          done
+          echo "== upstream model card"
+          curl -fsSL "$HF/ai4bharat/vits_rasa_13/raw/main/README.md" | head -c 30000 || true; echo
           git clone -q --depth 1 https://github.com/matiaslin/sherpa-onnx-vits-rasa-13-exporter exporter
           (cd exporter && git log -1 --format=%H && find . -type f -not -path './.git/*' | head -50)
-          grep -rn -i -E "emotion|speaker|BEN|BOOK|SAD" exporter --include=*.py --include=*.json --include=*.md | head -150
+          sed -n '55,100p' exporter/README.md
 
       - name: Zip reproducibly
         run: |
