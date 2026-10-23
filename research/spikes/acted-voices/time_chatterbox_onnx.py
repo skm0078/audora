@@ -48,7 +48,13 @@ LINES = [
     ("angry", "दरवाज़ा बंद करो, आँधी अंदर आ रही है!"),
 ]
 STRENGTHS = (0.5, 0.7)
-LM_FILES = {"fp32": "language_model", "q4": "language_model_q4", "int8": "language_model_int8"}
+LM_FILES = {"fp32": "language_model", "q4": "language_model_q4", "int8": "language_model_int8",
+            "int8h": "language_model_int8h", "fp16": "language_model_fp16"}
+# Chatterbox Turbo (MIT) ships a decoder distilled to one step. Speech tokens are shared across Chatterbox models,
+# so it may decode the multilingual model's Hindi tokens far faster: tried on the narration and the paragraph.
+TURBO_ID = "ResembleAI/chatterbox-turbo-ONNX"
+TURBO_REVISION = "d21799bd0354adb85e348b8a0442a8405110a2cf"
+TURBO_SILENCE = 4299  # Turbo's reference script ends the tokens with three of these
 SHORT_PROMPT_S = 3.0  # a shorter reference clip: the decoder re-renders the whole prompt on every call
 
 
@@ -121,7 +127,8 @@ def generate(models: dict, voice: tuple, tokenizer: Tokenizer, text: str, streng
                 for i in kv_inputs
             }
             mask = np.ones((1, embeds.shape[1]), dtype=np.int64)
-        logits, *present = lm.run(None, {"inputs_embeds": embeds, "attention_mask": mask, **past})
+        feed = embeds.astype(np.float16) if lm.get_inputs()[0].type == "tensor(float16)" else embeds
+        logits, *present = lm.run(None, {"inputs_embeds": feed, "attention_mask": mask, **past})
         next_token = np.argmax(penalise(logits[:, -1, :].astype(np.float32), tokens), axis=-1, keepdims=True)
         tokens = np.concatenate((tokens, next_token.astype(np.int64)), axis=-1)
         if int(next_token[0, 0]) == STOP_SPEECH_TOKEN:
@@ -149,16 +156,56 @@ def decode(models: dict, voice: tuple, speech: np.ndarray) -> np.ndarray:
     })[0].squeeze(axis=0)
 
 
-def quantize_int8(root: Path) -> None:
-    """Dynamic int8 (per channel) from the fp32 language model; the export ships no 8-bit model."""
+def head_nodes(model_path: Path) -> list[str]:
+    """The MatMul nodes that make the logits (the speech head), walking back from the 'logits' output."""
+    import onnx
+
+    graph = onnx.load(str(model_path), load_external_data=False).graph
+    producer = {out: node for node in graph.node for out in node.output}
+    found, frontier = [], ["logits"]
+    for _ in range(4):
+        nodes = [producer[name] for name in frontier if name in producer]
+        found += [n.name for n in nodes if n.op_type in ("MatMul", "Gemm")]
+        if found:
+            break
+        frontier = [i for n in nodes for i in n.input]
+    print(f"Speech head kept in fp32: {found}", flush=True)
+    return found
+
+
+def quantize_int8(root: Path, keep_head: bool) -> None:
+    """Dynamic int8 (per channel) from the fp32 language model; the export ships no 8-bit model. [keep_head] leaves
+    the logits' MatMul in fp32: greedy decoding picks the top logit, so the head's rounding flips tokens."""
     from onnxruntime.quantization import QuantType, quantize_dynamic
 
-    target = root / "onnx" / "language_model_int8.onnx"
+    source = root / "onnx" / "language_model.onnx"
+    target = root / "onnx" / f"{LM_FILES['int8h' if keep_head else 'int8']}.onnx"
     if not target.exists():
         start = time.perf_counter()
-        quantize_dynamic(root / "onnx" / "language_model.onnx", target, weight_type=QuantType.QInt8, per_channel=True,
-                         use_external_data_format=True)
+        quantize_dynamic(source, target, weight_type=QuantType.QInt8, per_channel=True, use_external_data_format=True,
+                         nodes_to_exclude=head_nodes(source) if keep_head else [])
         print(f"Quantized to int8 in {time.perf_counter() - start:.0f} s", flush=True)
+
+
+def turbo_trial(models_dir: Path, threads: int, reference: np.ndarray, speech: list, out: Path) -> list[str]:
+    """Decodes the multilingual model's speech tokens with Turbo's one-step decoder, conditioned by Turbo's encoder."""
+    root = Path(snapshot_download(TURBO_ID, revision=TURBO_REVISION, local_dir=models_dir / "turbo",
+                                  allow_patterns=["onnx/speech_encoder.onnx*", "onnx/conditional_decoder.onnx*"]))
+    encoder = session(root / "onnx" / "speech_encoder.onnx", threads)
+    decoder = session(root / "onnx" / "conditional_decoder.onnx", threads)
+    lines = [describe("turbo decoder", decoder, root / "onnx" / "conditional_decoder.onnx")]
+    for label, clip in (("full", reference), ("3 s", reference[:, : int(SHORT_PROMPT_S * SAMPLE_RATE)])):
+        _, prompt, embedding, features = encoder.run(None, {"audio_values": clip})
+        for name, tokens in speech:
+            silence = np.full((1, 3), TURBO_SILENCE, dtype=np.int64)
+            wav, took = timed(lambda: decoder.run(None, {
+                "speech_tokens": np.concatenate([prompt, tokens, silence], axis=1),
+                "speaker_embeddings": embedding, "speaker_features": features})[0].squeeze(axis=0))
+            audio_s = len(wav) / SAMPLE_RATE
+            sf.write(out / f"hi-{name}-turbo-{'short' if label == '3 s' else 'full'}-5.wav", wav, SAMPLE_RATE)
+            lines.append(f"- Turbo decoder, {label} reference, {name}: {took:.1f} s for {audio_s:.1f} s "
+                         f"(decoder RTF {took / audio_s:.2f}).")
+    return lines
 
 
 def timed(fn):
@@ -180,10 +227,10 @@ def main() -> int:
     root = Path(snapshot_download(
         REPO_ID, revision=REVISION, local_dir=args.models,
         allow_patterns=["tokenizer*.json", "default_voice.wav", "onnx/speech_encoder.onnx*", "onnx/embed_tokens.onnx*",
-                        "onnx/conditional_decoder.onnx*", f"onnx/{LM_FILES['fp32' if args.lm == 'int8' else args.lm]}.onnx*"],
+                        "onnx/conditional_decoder.onnx*", f"onnx/{LM_FILES['fp32' if args.lm.startswith('int8') else args.lm]}.onnx*"],
     ))
-    if args.lm == "int8":
-        quantize_int8(root)
+    if args.lm in ("int8", "int8h"):
+        quantize_int8(root, keep_head=args.lm == "int8h")
     paths = {
         "encoder": root / "onnx" / "speech_encoder.onnx",
         "embed": root / "onnx" / "embed_tokens.onnx",
@@ -233,7 +280,10 @@ def main() -> int:
     sf.write(out / "hi-paragraph-5.wav", batch_wav, SAMPLE_RATE)
     batch_audio = len(batch_wav) / SAMPLE_RATE
     reference = load_voice(root / "default_voice.wav")[:, : int(SHORT_PROMPT_S * SAMPLE_RATE)]
-    short_voice = tuple(models["encoder"].run(None, {"audio_values": reference}))
+    short = models["encoder"].run(None, {"audio_values": reference})
+    # Only the decoder's prompt shrinks: the language model keeps the full reference's conditioning (a 3 s one made
+    # the 4-bit model run on), and the speaker embedding stays the full clip's.
+    short_voice = (voice[0], short[1], voice[2], short[3])
     narration = generate(models, short_voice, tokenizer, LINES[0][1], STRENGTHS[0])
     sf.write(out / "hi-narration-short-prompt-5.wav", narration["wav"], SAMPLE_RATE)
     extra = [
@@ -244,6 +294,15 @@ def main() -> int:
         f"narration decoder {narration['decode_s']:.1f} s, LM {narration['lm_s']:.1f} s, "
         f"{len(narration['wav']) / SAMPLE_RATE:.1f} s of audio.",
     ]
+    short_joined, short_s = timed(lambda: decode(models, short_voice, joined))
+    extra.append(f"- Paragraph with the {SHORT_PROMPT_S:.0f} s reference: {short_s:.1f} s for "
+                 f"{len(short_joined) / SAMPLE_RATE:.1f} s (decoder RTF {short_s / (len(short_joined) / SAMPLE_RATE):.2f}).")
+    sf.write(out / "hi-paragraph-short-prompt-5.wav", short_joined, SAMPLE_RATE)
+    try:
+        extra += turbo_trial(args.models, args.threads, load_voice(root / "default_voice.wav"),
+                             [("narration", firsts[0]["speech"]), ("paragraph", joined)], out)
+    except Exception as e:  # noqa: BLE001 (a trial: its failure is a finding, not a reason to lose the rest)
+        extra.append(f"- Turbo decoder trial failed: {type(e).__name__}: {e}")
 
     audio = sum(r["audio_s"] for r in records)
     work = sum(r["lm_s"] + r["decode_s"] for r in records)
