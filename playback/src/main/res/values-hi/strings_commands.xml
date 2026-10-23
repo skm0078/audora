@@ -3,7 +3,7 @@
 <!-- Purpose: Hindi copy of values/strings_commands.xml: The notifications shown while voice commands listen with the screen off, and when that ends (item 38). -->
 <resources>
     <string name="commands_channel">वॉइस कमांड</string>
-    <string name="commands_channel_description">जब Audora स्क्रीन बंद होने पर वॉइस कमांड सुनता है, और जब वह रुकता है, तब दिखती है।</string>
+    <string name="commands_channel_description">जब ListenLock स्क्रीन बंद होने पर वॉइस कमांड सुनता है, और जब वह रुकता है, तब दिखती है।</string>
     <string name="commands_listening_title">वॉइस कमांड सुन रहा है</string>
     <string name="commands_listening_text">सिर्फ़ इसी फ़ोन पर सुना जाता है। बंद करने के लिए सुनना बंद करें पर टैप करें, या इसे स्वाइप करके हटाएँ।</string>
     <string name="commands_listening_silenced">Android ने माइक्रोफ़ोन म्यूट कर दिया है (कोई कॉल, या माइक्रोफ़ोन स्विच)। उसके वापस आने पर सुनना फिर शुरू होगा।</string>

@@ -251,7 +251,7 @@ private val SPEECH_SOFTWARE = listOf(
         R.string.licences_mit,
         "https://github.com/snakers4/silero-vad",
     ),
-    Software("Audora", R.string.licences_gpl3, "https://github.com/skm0078/audora"),
+    Software("ListenLock", R.string.licences_gpl3, "https://github.com/skm0078/audora"),
 )
 
 private const val TAG = "UI.Licences"

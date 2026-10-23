@@ -6,7 +6,7 @@
     <path fill="#A8520E" d="M76,62 C69,60 61,61 55.5,65 L55.5,79 C61,75.5 69,74.5 76,76.5 Z"/>
     <path fill="none" stroke="#A8520E" stroke-width="5" stroke-linecap="round" d="M38,43 L38,49 M46,39 L46,53 M54,35 L54,57 M62,39 L62,53 M70,43 L70,49"/>
   </g>
-  <text x="470" y="225" font-family="DejaVu Serif" font-weight="bold" font-size="92" fill="#24190F">Audora</text>
+  <text x="470" y="225" font-family="DejaVu Serif" font-weight="bold" font-size="80" fill="#24190F">ListenLock</text>
   <text x="474" y="290" font-family="DejaVu Sans" font-size="34" fill="#5E4F41">Books read aloud, offline</text>
   <text x="474" y="345" font-family="FreeSerif, DejaVu Sans" font-size="34" fill="#A8520E">English · हिन्दी · বাংলা</text>
 </svg>

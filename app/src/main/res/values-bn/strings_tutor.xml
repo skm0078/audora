@@ -3,9 +3,9 @@
 <resources>
     <string name="tutor_menu">আমাকে পড়ে শোনান</string>
     <string name="tutor_title">আমাকে পড়ে শোনান</string>
-    <string name="tutor_mode_words">পাতাটি জোরে পড়ুন। Audora প্রতিটি শব্দ শোনে, শুধু এই ফোনেই।</string>
-    <string name="tutor_mode_phrases">পাতাটি জোরে পড়ুন। Audora একবারে একটি বাক্যাংশ শোনে, তাই প্রতিটি বিরতির পরে চিহ্ন দেখা যায়। শুধু এই ফোনেই।</string>
-    <string name="tutor_needs_model">%1$s শুনতে Audora-র একটি স্পিচ মডেল দরকার: একবার %2$s ডাউনলোড, ফোনে %3$s। তারপর ইন্টারনেট ছাড়াই চলে।</string>
+    <string name="tutor_mode_words">পাতাটি জোরে পড়ুন। ListenLock প্রতিটি শব্দ শোনে, শুধু এই ফোনেই।</string>
+    <string name="tutor_mode_phrases">পাতাটি জোরে পড়ুন। ListenLock একবারে একটি বাক্যাংশ শোনে, তাই প্রতিটি বিরতির পরে চিহ্ন দেখা যায়। শুধু এই ফোনেই।</string>
+    <string name="tutor_needs_model">%1$s শুনতে ListenLock-র একটি স্পিচ মডেল দরকার: একবার %2$s ডাউনলোড, ফোনে %3$s। তারপর ইন্টারনেট ছাড়াই চলে।</string>
     <string name="tutor_download">ডাউনলোড করুন</string>
     <string name="tutor_queued">ডাউনলোডের জন্য সংযোগের অপেক্ষা…</string>
     <string name="tutor_download_failed">ডাউনলোড থেমে গেছে (%1$s)। আবার চেষ্টা করুন।</string>
@@ -35,7 +35,7 @@
     <string name="tutor_failed_model">স্পিচ মডেল লোড হয়নি; এর ফাইলগুলো নষ্ট হয়ে থাকতে পারে।</string>
     <string name="tutor_try_again">আবার চেষ্টা করুন</string>
     <string name="tutor_download_again">আবার ডাউনলোড করুন</string>
-    <string name="tutor_failed_permission">শোনার জন্য Audora-র মাইক্রোফোন দরকার। ফোনের সেটিংসে এটি চালু করতে পারেন।</string>
+    <string name="tutor_failed_permission">শোনার জন্য ListenLock-র মাইক্রোফোন দরকার। ফোনের সেটিংসে এটি চালু করতে পারেন।</string>
     <string name="tutor_open_settings">সেটিংস খুলুন</string>
     <string name="tutor_failed_microphone">মাইক্রোফোন ব্যবহার করা গেল না। হয়তো অন্য কোনো অ্যাপ এটি ব্যবহার করছে।</string>
     <string name="tutor_lang_en">ইংরেজি</string>

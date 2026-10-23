@@ -4,22 +4,29 @@
 package io.github.skm0078.audora.speech.kws
 
 /**
- * Every command starts with "Audora", so the book being read aloud (which says "pause" or "next" often enough) does
- * not drive the player; a made-up name is rare in any text. [tokens] are each phrase in the model's BPE pieces,
- * produced once with the model's own `bpe.model` (sentencepiece), so the phone needs no tokenizer. Two phrases can
- * mean one command ("pause" and "stop").
+ * Every command starts with the app's name, "ListenLock", so the book being read aloud (which says "pause" or "next"
+ * often enough) does not drive the player; a made-up name is rare in any text. The name is spotted as one word and
+ * as two ("listen lock"), since people say it both ways. [commandTokens] are each command word in the model's BPE
+ * pieces and [tokens] the full phrases, produced once with the model's own `bpe.model` (sentencepiece), so the phone
+ * needs no tokenizer. Two phrases can mean one command ("pause" and "stop").
  */
-enum class VoiceCommand(vararg val tokens: String) {
-    PAUSE("▁A U D OR A ▁PA U SE", "▁A U D OR A ▁ST O P"),
-    PLAY("▁A U D OR A ▁PLAY", "▁A U D OR A ▁RE S U ME"),
-    NEXT("▁A U D OR A ▁NEXT"),
-    BACK("▁A U D OR A ▁BACK", "▁A U D OR A ▁GO ▁BACK"),
-    REPEAT("▁A U D OR A ▁RE PE AT"),
-    FASTER("▁A U D OR A ▁FA S TER"),
-    SLOWER("▁A U D OR A ▁S LO W ER"),
+enum class VoiceCommand(private vararg val commandTokens: String) {
+    PAUSE("▁PA U SE", "▁ST O P"),
+    PLAY("▁PLAY", "▁RE S U ME"),
+    NEXT("▁NEXT"),
+    BACK("▁BACK", "▁GO ▁BACK"),
+    REPEAT("▁RE PE AT"),
+    FASTER("▁FA S TER"),
+    SLOWER("▁S LO W ER"),
     ;
 
+    /** Every phrase for this command: each spelling of the app's name followed by each command word. */
+    val tokens: List<String> get() = WAKE_TOKENS.flatMap { wake -> commandTokens.map { "$wake $it" } }
+
     companion object {
+        /** "ListenLock" as one word and as "listen lock", in the model's pieces. */
+        val WAKE_TOKENS = listOf("▁LI S T EN LO CK", "▁LI S T EN ▁LO CK")
+
         /**
          * The keywords file: one phrase per line, tagged with its command's name (`@PAUSE`), which is what the
          * spotter reports back when it hears the phrase.

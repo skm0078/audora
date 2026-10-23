@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Audora</string>
+    <string name="app_name">ListenLock</string>
 
     <!-- Library (P1-01) -->
     <string name="library_title">Library</string>
     <string name="library_add_pdf">Add PDF</string>
     <string name="library_empty_title">Your library is empty</string>
-    <string name="library_empty_body">Add a PDF from your phone, or open one from Files, WhatsApp or mail with Audora. Audora remembers where a file is; it copies only PDFs another app lends for a moment.</string>
-    <string name="library_load_failed">Audora could not load your library. Please share the logs from Settings.</string>
+    <string name="library_empty_body">Add a PDF from your phone, or open one from Files, WhatsApp or mail with ListenLock. ListenLock remembers where a file is; it copies only PDFs another app lends for a moment.</string>
+    <string name="library_load_failed">ListenLock could not load your library. Please share the logs from Settings.</string>
     <string name="library_untitled">Untitled PDF</string>
     <string name="library_book_menu">More options</string>
     <plurals name="library_pages">
@@ -23,7 +23,7 @@
     <string name="library_opened_ago">opened %1$s</string>
     <string name="library_added_ago">added %1$s</string>
     <string name="library_file_missing">File moved or deleted. Tap to find it.</string>
-    <string name="library_access_lost">Audora can no longer open this file. Tap to pick it again.</string>
+    <string name="library_access_lost">ListenLock can no longer open this file. Tap to pick it again.</string>
     <string name="library_added">Added “%1$s”</string>
     <string name="library_already">“%1$s” is already in your library</string>
     <string name="library_found_again">Found “%1$s” again</string>
@@ -52,19 +52,19 @@
     <string name="library_shelf_reading">Reading</string>
     <string name="library_no_match">No book matches. Change the search or the filter.</string>
     <string name="library_error_cannot_keep">The app you picked from only lends the file for a moment. Save the PDF to your phone first, then add it from there.</string>
-    <string name="library_error_unreadable">Audora could not read that file. It may have been moved or deleted.</string>
+    <string name="library_error_unreadable">ListenLock could not read that file. It may have been moved or deleted.</string>
     <string name="library_error_not_pdf">That file is not a PDF, EPUB or text file.</string>
     <string name="library_error_different_file">That is a different PDF. Pick the same file, or remove this book and add the new one.</string>
     <string name="library_error_not_in_library">That book is no longer in your library.</string>
-    <string name="library_error_storage">Audora could not save your library. Is your phone\'s storage full?</string>
+    <string name="library_error_storage">ListenLock could not save your library. Is your phone\'s storage full?</string>
 
     <!-- Reader (P1-05) -->
     <string name="book_not_in_library">This book is no longer in your library.</string>
     <string name="reader_retry">Open again</string>
-    <string name="reader_damaged">This file is damaged or is not a PDF Audora can open.</string>
-    <string name="reader_unreadable">Audora could not read this file. It may have been moved or deleted.</string>
+    <string name="reader_damaged">This file is damaged or is not a PDF ListenLock can open.</string>
+    <string name="reader_unreadable">ListenLock could not read this file. It may have been moved or deleted.</string>
     <string name="reader_engine">The PDF engine failed to start. Please share the logs.</string>
-    <string name="reader_locked">This PDF needs its password before Audora can read it.</string>
+    <string name="reader_locked">This PDF needs its password before ListenLock can read it.</string>
     <string name="reader_enter_password">Enter password</string>
     <string name="reader_page_of">Page %1$d of %2$d</string>
     <string name="reader_previous_page">Previous page</string>
@@ -73,7 +73,7 @@
     <string name="reader_pick_page_label">Page (1–%1$d)</string>
     <string name="reader_pick_page_go">Go</string>
     <string name="reader_back_to_reading">Back to page %1$d, where reading is</string>
-    <string name="reader_page_no_text">No readable text on this page. If it is a scanned page, download Scanned pages (OCR) in Settings and Audora reads it.</string>
+    <string name="reader_page_no_text">No readable text on this page. If it is a scanned page, download Scanned pages (OCR) in Settings and ListenLock reads it.</string>
     <string name="reader_page_failed">This page could not be read. Please share the logs.</string>
     <string name="reader_tap_hint">Tap a sentence to read from there. Long-press one that sounded wrong.</string>
     <string name="reader_read_from_here">Read from here</string>
@@ -217,27 +217,27 @@
     <string name="navigate_back">Back</string>
     <string name="settings_version_title">Version</string>
     <string name="share_logs_title">Share logs</string>
-    <string name="share_logs_body_hint">Send Audora\'s log to whoever is helping you. It never contains text from your PDFs.</string>
+    <string name="share_logs_body_hint">Send ListenLock\'s log to whoever is helping you. It never contains text from your PDFs.</string>
     <string name="share_logs_failed">Could not prepare the logs. Please try again.</string>
-    <string name="share_logs_chooser_title">Send Audora logs with</string>
-    <string name="share_logs_subject">Audora logs (%1$s, %2$s)</string>
-    <string name="share_logs_body">Audora logs attached. What happened, and roughly when?</string>
+    <string name="share_logs_chooser_title">Send ListenLock logs with</string>
+    <string name="share_logs_subject">ListenLock logs (%1$s, %2$s)</string>
+    <string name="share_logs_body">ListenLock logs attached. What happened, and roughly when?</string>
     <string name="unfinished_title">Reading stopped unexpectedly</string>
-    <string name="unfinished_body">Audora stopped while reading page %1$d. Resume where it stopped?</string>
+    <string name="unfinished_body">ListenLock stopped while reading page %1$d. Resume where it stopped?</string>
     <string name="unfinished_resume">Resume</string>
     <string name="unfinished_not_now">Not now</string>
     <string name="debug_simulate_title">Simulate a reading session</string>
-    <string name="debug_simulate_body">Marks a book as playing without sound. Then force-stop Audora in App info and reopen it: the resume prompt should appear and the log should name the stop.</string>
-    <string name="debug_simulate_done">Marked as reading. Now force-stop Audora and reopen it.</string>
+    <string name="debug_simulate_body">Marks a book as playing without sound. Then force-stop ListenLock in App info and reopen it: the resume prompt should appear and the log should name the stop.</string>
+    <string name="debug_simulate_done">Marked as reading. Now force-stop ListenLock and reopen it.</string>
     <!-- Background reading / battery onboarding (P1-06) -->
     <string name="battery_title">Background reading</string>
-    <string name="battery_intro">To keep reading with the screen off or while you use other apps, Android\'s battery saver must leave Audora alone. Audora only uses the battery while it is reading.</string>
-    <string name="battery_status_allowed">Battery optimization is off for Audora.</string>
+    <string name="battery_intro">To keep reading with the screen off or while you use other apps, Android\'s battery saver must leave ListenLock alone. ListenLock only uses the battery while it is reading.</string>
+    <string name="battery_status_allowed">Battery optimization is off for ListenLock.</string>
     <string name="battery_status_limited">Battery optimization is on: Android may stop reading when the screen is off.</string>
     <string name="battery_allow">Allow background reading</string>
-    <string name="battery_allow_hint">Android opens its battery list. If Audora is not shown, switch the list to All apps, then tap Audora and choose Don\'t optimize.</string>
-    <string name="battery_open_app_settings">Open Audora\'s app info</string>
-    <string name="battery_footer">If reading still stops with the screen off, share the logs from Settings: they record why Android stopped Audora.</string>
+    <string name="battery_allow_hint">Android opens its battery list. If ListenLock is not shown, switch the list to All apps, then tap ListenLock and choose Don\'t optimize.</string>
+    <string name="battery_open_app_settings">Open ListenLock\'s app info</string>
+    <string name="battery_footer">If reading still stops with the screen off, share the logs from Settings: they record why Android stopped ListenLock.</string>
     <string name="battery_step_number">%1$d. %2$s</string>
     <string name="battery_brand_motorola">On your Motorola phone</string>
     <string name="battery_brand_oneplus">On your OnePlus phone</string>
@@ -247,19 +247,19 @@
     <string name="battery_brand_realme">On your realme phone</string>
     <string name="battery_brand_vivo">On your vivo or iQOO phone</string>
     <string name="battery_brand_other">On your phone</string>
-    <string name="battery_step_unrestricted">In Audora\'s app info, open App battery usage (or Battery), turn on Allow background usage and choose Unrestricted.</string>
-    <string name="battery_step_background_activity">In Audora\'s app info, open Battery usage and turn on Allow background activity.</string>
-    <string name="battery_step_auto_launch">In Audora\'s app info, turn on Auto launch (also called Autostart).</string>
-    <string name="battery_step_samsung_never_sleeping">In Settings, open Battery, then Background usage limits, then Never sleeping apps, and add Audora.</string>
-    <string name="battery_step_xiaomi_no_restrictions">In Audora\'s app info, open Battery saver and choose No restrictions.</string>
-    <string name="battery_step_vivo_background_power">In Settings, open Battery, then Background power consumption management, and set Audora to Allow.</string>
-    <string name="battery_step_lock_recents">Open recent apps, then long-press Audora\'s card (or tap its menu) and choose Lock, so clearing recent apps does not stop reading.</string>
+    <string name="battery_step_unrestricted">In ListenLock\'s app info, open App battery usage (or Battery), turn on Allow background usage and choose Unrestricted.</string>
+    <string name="battery_step_background_activity">In ListenLock\'s app info, open Battery usage and turn on Allow background activity.</string>
+    <string name="battery_step_auto_launch">In ListenLock\'s app info, turn on Auto launch (also called Autostart).</string>
+    <string name="battery_step_samsung_never_sleeping">In Settings, open Battery, then Background usage limits, then Never sleeping apps, and add ListenLock.</string>
+    <string name="battery_step_xiaomi_no_restrictions">In ListenLock\'s app info, open Battery saver and choose No restrictions.</string>
+    <string name="battery_step_vivo_background_power">In Settings, open Battery, then Background power consumption management, and set ListenLock to Allow.</string>
+    <string name="battery_step_lock_recents">Open recent apps, then long-press ListenLock\'s card (or tap its menu) and choose Lock, so clearing recent apps does not stop reading.</string>
     <string name="battery_card_title">Keep reading with the screen off</string>
-    <string name="battery_card_body">This phone may stop Audora in the background. It takes a minute to set up.</string>
+    <string name="battery_card_body">This phone may stop ListenLock in the background. It takes a minute to set up.</string>
     <string name="battery_card_set_up">Set up</string>
     <string name="battery_card_not_now">Not now</string>
     <string name="settings_battery_title">Background reading</string>
-    <string name="settings_battery_allowed">Battery optimization is off for Audora</string>
+    <string name="settings_battery_allowed">Battery optimization is off for ListenLock</string>
     <string name="settings_battery_limited">Android may stop reading with the screen off. Tap to set up.</string>
 
     <!-- Voices (P4-01): Settings → Voices -->
@@ -298,16 +298,16 @@
     <string name="voices_import_action">Import</string>
     <string name="voices_import_language">Language it speaks</string>
     <string name="voices_import_name">Name (optional)</string>
-    <string name="voices_import_hint">Next, pick the folder that holds the voice\'s files. Audora copies them; the folder stays as it is.</string>
+    <string name="voices_import_hint">Next, pick the folder that holds the voice\'s files. ListenLock copies them; the folder stays as it is.</string>
     <string name="voices_import_choose_folder">Choose folder</string>
     <string name="voices_recommended">Recommended for this language</string>
     <string name="settings_licences_body">Who made each voice, its licence and where it comes from.</string>
     <string name="settings_privacy_title">Privacy policy</string>
-    <string name="settings_privacy_body">Audora collects nothing about you. Opens the full policy in your browser.</string>
+    <string name="settings_privacy_body">ListenLock collects nothing about you. Opens the full policy in your browser.</string>
     <string name="licences_title">Voices &amp; licences</string>
     <string name="licences_load_failed">Could not load the licences. Share logs from Settings if this keeps happening.</string>
-    <string name="licences_intro">Audora reads with voices made and shared by other people. Each one is listed with its licence and credit, as its licence asks.</string>
-    <string name="licences_kind_built_in">Built into Audora</string>
+    <string name="licences_intro">ListenLock reads with voices made and shared by other people. Each one is listed with its licence and credit, as its licence asks.</string>
+    <string name="licences_kind_built_in">Built into ListenLock</string>
     <string name="licences_kind_download">Available to download</string>
     <string name="licences_kind_downloaded">Downloaded</string>
     <string name="licences_kind_imported">Imported by you</string>
@@ -327,8 +327,8 @@
     <!-- OCR of scanned pages (P3-05) -->
     <string name="reader_ocr_badge">OCR</string>
     <string name="reader_ocr_badge_body">Read from the page image; a few words may be wrong.</string>
-    <string name="reader_ocr_needs_models">This page is scanned. To read it aloud, Audora needs its text recognition files for English, Hindi and Bengali, downloaded once.</string>
-    <string name="reader_ocr_failed">Audora could not read this scanned page. Share logs from Settings if this keeps happening.</string>
+    <string name="reader_ocr_needs_models">This page is scanned. To read it aloud, ListenLock needs its text recognition files for English, Hindi and Bengali, downloaded once.</string>
+    <string name="reader_ocr_failed">ListenLock could not read this scanned page. Share logs from Settings if this keeps happening.</string>
     <string name="ocr_models_download">Download (%1$d MB)</string>
     <string name="ocr_models_download_short">Download</string>
     <string name="ocr_models_retry">Try again</string>
@@ -350,8 +350,8 @@
     <string name="settings_skip_citations_body">On: leaves out reference numbers such as “[12]” and “[4–7]”. Off: reads them aloud. Takes effect the next time you open a book.</string>
     <string name="settings_keep_screen_on_title">Keep screen on while reading aloud</string>
     <string name="settings_volume_keys_title">Volume keys skip sentences</string>
-    <string name="settings_volume_keys_body">While Audora reads aloud in the reader, volume down goes to the next sentence and volume up back one. Paused, or outside the reader, the keys change the volume as usual.</string>
-    <string name="settings_keep_screen_on_body">The reader stays lit while Audora reads, so you can follow along. Uses more battery; the screen times out as usual when paused.</string>
+    <string name="settings_volume_keys_body">While ListenLock reads aloud in the reader, volume down goes to the next sentence and volume up back one. Paused, or outside the reader, the keys change the volume as usual.</string>
+    <string name="settings_keep_screen_on_body">The reader stays lit while ListenLock reads, so you can follow along. Uses more battery; the screen times out as usual when paused.</string>
     <!-- App shell and screens (ADR-036) -->
     <string name="tab_library">Library</string>
     <string name="tab_notes">Notes</string>
@@ -363,7 +363,7 @@
     <string name="library_tile_description">%1$s, %2$s</string>
     <!-- Duplicate check (plan item 27): the picked PDF is a book the library already has. -->
     <string name="library_duplicate_title">You already have this PDF</string>
-    <string name="library_duplicate_same">“%1$s” is already in your library. Audora keeps one copy, so your place in it stays the same.</string>
+    <string name="library_duplicate_same">“%1$s” is already in your library. ListenLock keeps one copy, so your place in it stays the same.</string>
     <string name="library_duplicate_moved">This is the same PDF as “%1$s”, so that book now opens from this file. Your place in it is kept.</string>
     <string name="library_duplicate_open">Open it</string>
     <string name="library_duplicate_close">Close</string>
@@ -439,7 +439,7 @@
     <string name="settings_group_app">App</string>
     <string name="settings_group_debug">Debug</string>
     <string name="settings_wallpaper_colors_title">Wallpaper colours</string>
-    <string name="settings_wallpaper_colors_body">Match the colours of your wallpaper. Off uses Audora\'s warm reading colours.</string>
+    <string name="settings_wallpaper_colors_body">Match the colours of your wallpaper. Off uses ListenLock\'s warm reading colours.</string>
     <string name="settings_dark_mode_title">Theme</string>
     <string name="settings_dark_mode_system">System</string>
     <string name="settings_dark_mode_light">Light</string>
@@ -482,17 +482,17 @@
 
     <!-- First run (UI plan, wave 4) -->
     <string name="first_run_step">Step %1$d of %2$d</string>
-    <string name="first_run_welcome_title">Welcome to Audora</string>
-    <string name="first_run_languages_body">Which languages are your books in? Audora reads English, Hindi and Bengali aloud.</string>
-    <string name="first_run_privacy">Audora works offline: no account, no ads, no tracking. It only downloads the voices and models you choose.</string>
+    <string name="first_run_welcome_title">Welcome to ListenLock</string>
+    <string name="first_run_languages_body">Which languages are your books in? ListenLock reads English, Hindi and Bengali aloud.</string>
+    <string name="first_run_privacy">ListenLock works offline: no account, no ads, no tracking. It only downloads the voices and models you choose.</string>
     <string name="first_run_voices_title">Pick a voice</string>
     <string name="first_run_voices_body">Each language reads with a voice stored on your phone. Download one now, or later in Settings → Voices.</string>
     <string name="first_run_background_title">Keep reading with the screen off</string>
-    <string name="first_run_background_body">Android may stop apps in the background to save battery. Allow Audora to keep running so a chapter is not cut short.</string>
+    <string name="first_run_background_body">Android may stop apps in the background to save battery. Allow ListenLock to keep running so a chapter is not cut short.</string>
     <string name="first_run_background_allow">Allow background reading</string>
-    <string name="first_run_background_done">Allowed. Audora can keep reading with the screen off.</string>
+    <string name="first_run_background_done">Allowed. ListenLock can keep reading with the screen off.</string>
     <string name="first_run_book_title">Add your first book</string>
-    <string name="first_run_book_body">Pick a PDF on your phone. Audora remembers your place in every book.</string>
+    <string name="first_run_book_body">Pick a PDF on your phone. ListenLock remembers your place in every book.</string>
     <string name="first_run_add_pdf">Add a PDF</string>
     <string name="first_run_next">Next</string>
     <string name="first_run_back">Back</string>
@@ -501,8 +501,8 @@
 
     <!-- Storage (UI plan, wave 4) -->
     <string name="storage_title">Storage</string>
-    <string name="settings_storage_body">What Audora keeps on your phone, and how to free space.</string>
-    <string name="storage_total">Audora uses %1$s</string>
+    <string name="settings_storage_body">What ListenLock keeps on your phone, and how to free space.</string>
+    <string name="storage_total">ListenLock uses %1$s</string>
     <string name="storage_voices">Downloaded voices</string>
     <string name="storage_ocr">Text recognition for scanned pages</string>
     <string name="storage_acted_voice">Acted Hindi voice</string>
@@ -512,7 +512,7 @@
     <string name="storage_ocr_text">Text read from scanned pages</string>
     <string name="storage_covers">Book covers</string>
     <string name="storage_voice_blends">Narrator blends</string>
-    <string name="storage_shared_pdfs">PDFs shared to Audora</string>
+    <string name="storage_shared_pdfs">PDFs shared to ListenLock</string>
     <string name="storage_measuring">Measuring…</string>
     <string name="storage_measure_failed">Couldn\'t measure</string>
     <string name="storage_free_failed">Couldn\'t free %1$s. Try again.</string>

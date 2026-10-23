@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/export/NotesExport.kt
-// Purpose: Saves a book's highlights and notes to Documents/Audora as Markdown and plain text (plan item 30).
+// Purpose: Saves a book's highlights and notes to Documents/ListenLock as Markdown and plain text (plan item 30).
 
 package io.github.skm0078.audora.playback.export
 

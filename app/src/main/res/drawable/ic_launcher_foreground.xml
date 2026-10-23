@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- File: app/src/main/res/drawable/ic_launcher_foreground.xml -->
-<!-- Purpose: Audora's mark: a voice's sound bars over an open book, inside the adaptive-icon safe zone (66dp of
+<!-- Purpose: ListenLock's mark: a voice's sound bars over an open book, inside the adaptive-icon safe zone (66dp of
      108dp). One colour, so it also serves as the themed (monochrome) icon. docs/store/icon.svg draws the same. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"

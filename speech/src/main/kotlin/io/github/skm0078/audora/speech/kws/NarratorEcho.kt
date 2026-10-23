@@ -1,5 +1,5 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/kws/NarratorEcho.kt
-// Purpose: Keeps the narrator from giving voice commands: none act while the book itself says "Audora" (plan item 38).
+// Purpose: Keeps the narrator from giving voice commands: none act while the book says "ListenLock" (plan item 38).
 
 package io.github.skm0078.audora.speech.kws
 
@@ -7,7 +7,7 @@ import io.github.skm0078.audora.core.config.VoiceCommandConfig
 
 /**
  * The spotter hears the speaker too. The echo canceller removes most of the book's voice, and every command starts
- * with "Audora", which books almost never say; this covers the book that does. The playback service reports each
+ * with "ListenLock", which books almost never say; this covers the book that does. The playback service reports each
  * sentence as it starts ([sentenceStarted]) and when reading stops ([stopped]); while the sentence playing names the
  * app, and for [holdMs] after it (the spotter reports a phrase a moment after it ends), commands are ignored.
  *
@@ -30,7 +30,7 @@ class NarratorEcho(private val holdMs: Long) {
         mentionsNow = mentionsWakeWord(text)
     }
 
-    /** Paused, stopped or finished: nothing is being said, so "Audora, play" works at once after the hold. */
+    /** Paused, stopped or finished: nothing is being said, so "ListenLock, play" works at once after the hold. */
     fun stopped(nowMs: Long) = endMention(nowMs)
 
     /** True while a command heard at [nowMs] may be the narrator's own voice. */
@@ -42,8 +42,8 @@ class NarratorEcho(private val holdMs: Long) {
     }
 
     companion object {
-        /** The app's name as a book could print it: English, and as Hindi and Bengali would spell it. */
-        private val WAKE_WORDS = listOf("audora", "ऑडोरा", "অডোরা")
+        /** The app's name as a book could print it: English, and as Hindi and Bengali would spell it, joined or not. */
+        private val WAKE_WORDS = listOf("listenlock", "listen lock", "लिसनलॉक", "लिसन लॉक", "লিসেনলক", "লিসেন লক")
 
         val shared = NarratorEcho(VoiceCommandConfig().narratorHoldMs)
 

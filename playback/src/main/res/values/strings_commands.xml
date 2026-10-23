@@ -3,7 +3,7 @@
 <!-- Purpose: The notifications shown while voice commands listen with the screen off, and when that ends (item 38). -->
 <resources>
     <string name="commands_channel">Voice commands</string>
-    <string name="commands_channel_description">Shown while Audora listens for voice commands with the screen off, and when it stops.</string>
+    <string name="commands_channel_description">Shown while ListenLock listens for voice commands with the screen off, and when it stops.</string>
     <string name="commands_listening_title">Listening for voice commands</string>
     <!-- No command is spelled out here: a screen reader speaking it would give the command. -->
     <string name="commands_listening_text">Heard only on this phone. Tap Stop listening, or swipe this away, to end it.</string>

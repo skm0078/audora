@@ -6,5 +6,5 @@
     <string name="photo_book_title">फ़ोटो %1$s</string>
     <string name="photo_no_camera">फ़ोटो लेने के लिए कोई कैमरा ऐप नहीं है।</string>
     <string name="photo_busy">पिछली फ़ोटो अभी किताब बन रही है। वह थोड़ी देर में खुलेगी; अगली फ़ोटो उसके बाद लें।</string>
-    <string name="photo_failed">Audora यह फ़ोटो पढ़ नहीं सका। बेहतर रोशनी में फिर से कोशिश करें।</string>
+    <string name="photo_failed">ListenLock यह फ़ोटो पढ़ नहीं सका। बेहतर रोशनी में फिर से कोशिश करें।</string>
 </resources>

@@ -3,15 +3,15 @@
 <!-- Purpose: Hindi copy of values/strings_commands.xml: Strings for spoken commands in the reader (plan item 38). -->
 <resources>
     <string name="commands_model_title">वॉइस कमांड मॉडल (अंग्रेज़ी)</string>
-    <string name="commands_model_missing">रीडर खुला होने पर आप “Audora, pause”, “play”, “next”, “back”, “repeat”, “faster” या “slower” कह सकते हैं। सब कुछ आपके फ़ोन पर ही सुना जाता है; कुछ भी रिकॉर्ड या भेजा नहीं जाता। %1$d MB चाहिए।</string>
+    <string name="commands_model_missing">रीडर खुला होने पर आप “ListenLock, pause”, “play”, “next”, “back”, “repeat”, “faster” या “slower” कह सकते हैं। सब कुछ आपके फ़ोन पर ही सुना जाता है; कुछ भी रिकॉर्ड या भेजा नहीं जाता। %1$d MB चाहिए।</string>
     <string name="commands_model_ready">इंस्टॉल है · %1$d MB</string>
     <string name="commands_switch_title">वॉइस कमांड सुनें</string>
-    <string name="commands_switch_body">जब रीडर स्क्रीन पर हो, Audora “Audora” और उसके बाद कोई कमांड सुनता है, और Android माइक्रोफ़ोन का संकेत दिखाता है। सुनते समय थोड़ी बैटरी लगती है।</string>
+    <string name="commands_switch_body">जब रीडर स्क्रीन पर हो, ListenLock “ListenLock” और उसके बाद कोई कमांड सुनता है, और Android माइक्रोफ़ोन का संकेत दिखाता है। सुनते समय थोड़ी बैटरी लगती है।</string>
     <string name="commands_switch_needs_model">पहले वॉइस कमांड मॉडल डाउनलोड करें।</string>
     <string name="commands_screen_off_title">स्क्रीन बंद होने पर भी सुनते रहें</string>
     <plurals name="commands_screen_off_body">
-        <item quantity="one">जब रीडर में कोई किताब खुली हो, Audora स्क्रीन बंद होने पर या किसी दूसरे ऐप में भी सुनता है, और एक सूचना दिखाता है जिससे आप इसे रोक सकते हैं। बैटरी बचाने के लिए, पढ़ना %1$d मिनट रुका रहने और रीडर स्क्रीन पर न होने पर यह बंद हो जाता है।</item>
-        <item quantity="other">जब रीडर में कोई किताब खुली हो, Audora स्क्रीन बंद होने पर या किसी दूसरे ऐप में भी सुनता है, और एक सूचना दिखाता है जिससे आप इसे रोक सकते हैं। बैटरी बचाने के लिए, पढ़ना %1$d मिनट रुका रहने और रीडर स्क्रीन पर न होने पर यह बंद हो जाता है।</item>
+        <item quantity="one">जब रीडर में कोई किताब खुली हो, ListenLock स्क्रीन बंद होने पर या किसी दूसरे ऐप में भी सुनता है, और एक सूचना दिखाता है जिससे आप इसे रोक सकते हैं। बैटरी बचाने के लिए, पढ़ना %1$d मिनट रुका रहने और रीडर स्क्रीन पर न होने पर यह बंद हो जाता है।</item>
+        <item quantity="other">जब रीडर में कोई किताब खुली हो, ListenLock स्क्रीन बंद होने पर या किसी दूसरे ऐप में भी सुनता है, और एक सूचना दिखाता है जिससे आप इसे रोक सकते हैं। बैटरी बचाने के लिए, पढ़ना %1$d मिनट रुका रहने और रीडर स्क्रीन पर न होने पर यह बंद हो जाता है।</item>
     </plurals>
     <string name="commands_notifications_denied">स्क्रीन बंद होने पर सुनने के लिए सूचनाएँ चाहिए, ताकि आप इसे हमेशा देख और रोक सकें। आप इन्हें Android की ऐप सेटिंग्स में चालू कर सकते हैं।</string>
     <string name="commands_permission_denied">वॉइस कमांड के लिए माइक्रोफ़ोन चाहिए। आप इसे Android की ऐप सेटिंग्स में चालू कर सकते हैं।</string>

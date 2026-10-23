@@ -3,28 +3,28 @@
 <!-- Purpose: Hindi copy of values/strings_backup.xml. -->
 <resources>
     <string name="library_backup">बैकअप और रीस्टोर</string>
-    <string name="backup_explain">बैकअप एक फ़ाइल है, जिसमें आपकी लाइब्रेरी, पढ़ने की जगहें, बुकमार्क, हाइलाइट, वॉइस नोट, उच्चारण सुधार, अप नेक्स्ट, पढ़ने की सेटिंग और Audora में शेयर की गई किताबें होती हैं। इसे किसी सुरक्षित जगह रखें, जैसे Drive या कंप्यूटर।\n\nआवाज़ें और शब्दकोश इसमें नहीं होते: नए फ़ोन पर इन्हें फिर से डाउनलोड करें। फ़ोन की स्टोरेज से खोली गई किताबें वही फ़ाइल फिर से जोड़ते ही अपनी जगहों और नोट्स के साथ लौट आती हैं; देखे जा रहे फ़ोल्डर फिर से चुनने होंगे।</string>
+    <string name="backup_explain">बैकअप एक फ़ाइल है, जिसमें आपकी लाइब्रेरी, पढ़ने की जगहें, बुकमार्क, हाइलाइट, वॉइस नोट, उच्चारण सुधार, अप नेक्स्ट, पढ़ने की सेटिंग और ListenLock में शेयर की गई किताबें होती हैं। इसे किसी सुरक्षित जगह रखें, जैसे Drive या कंप्यूटर।\n\nआवाज़ें और शब्दकोश इसमें नहीं होते: नए फ़ोन पर इन्हें फिर से डाउनलोड करें। फ़ोन की स्टोरेज से खोली गई किताबें वही फ़ाइल फिर से जोड़ते ही अपनी जगहों और नोट्स के साथ लौट आती हैं; देखे जा रहे फ़ोल्डर फिर से चुनने होंगे।</string>
     <string name="backup_save">बैकअप सेव करें</string>
     <string name="backup_restore">रीस्टोर करें</string>
     <string name="backup_restore_title">बैकअप रीस्टोर करें?</string>
-    <string name="backup_restore_warning">इससे इस फ़ोन की लाइब्रेरी, नोट्स और सेटिंग बैकअप वाली से बदल जाएँगी। पूरा करने के लिए Audora फिर से शुरू होगा।</string>
+    <string name="backup_restore_warning">इससे इस फ़ोन की लाइब्रेरी, नोट्स और सेटिंग बैकअप वाली से बदल जाएँगी। पूरा करने के लिए ListenLock फिर से शुरू होगा।</string>
     <string name="backup_restore_pick">बैकअप चुनें</string>
     <string name="backup_cancel">रद्द करें</string>
     <string name="backup_close">बंद करें</string>
     <string name="backup_saved">बैकअप सेव हो गया</string>
     <string name="backup_save_failed">बैकअप सेव नहीं हो सका। जहाँ सेव किया, वहाँ जगह है या नहीं देखें और फिर से कोशिश करें।</string>
-    <string name="backup_not_a_backup">यह फ़ाइल Audora का बैकअप नहीं है।</string>
-    <string name="backup_from_newer_app">यह बैकअप Audora के नए संस्करण का है। पहले ऐप अपडेट करें, फिर रीस्टोर करें।</string>
-    <string name="backup_too_large">यह बैकअप इतना बड़ा है कि Audora इसे रीस्टोर नहीं कर सकता।</string>
+    <string name="backup_not_a_backup">यह फ़ाइल ListenLock का बैकअप नहीं है।</string>
+    <string name="backup_from_newer_app">यह बैकअप ListenLock के नए संस्करण का है। पहले ऐप अपडेट करें, फिर रीस्टोर करें।</string>
+    <string name="backup_too_large">यह बैकअप इतना बड़ा है कि ListenLock इसे रीस्टोर नहीं कर सकता।</string>
     <string name="backup_restore_failed">बैकअप पढ़ा नहीं जा सका। फ़ोन में खाली जगह देखें और फिर से कोशिश करें।</string>
     <string name="backup_size">यह बैकअप कंप्रेस होने से पहले लगभग %1$s का होगा।</string>
     <string name="backup_no_space">यह बैकअप रीस्टोर करने के लिए फ़ोन में पर्याप्त जगह नहीं है। कुछ जगह खाली करें और फिर से कोशिश करें।</string>
-    <string name="backup_busy">Audora अभी ऑडियोबुक, कॉपी या क्लिप सेव कर रहा है, या स्टूडियो मोड चल रहा है। उसे पूरा होने दें या रोकें, फिर रीस्टोर करें। अगर कुछ नहीं चल रहा, तो Audora पूरी तरह बंद करके फिर खोलें।</string>
+    <string name="backup_busy">ListenLock अभी ऑडियोबुक, कॉपी या क्लिप सेव कर रहा है, या स्टूडियो मोड चल रहा है। उसे पूरा होने दें या रोकें, फिर रीस्टोर करें। अगर कुछ नहीं चल रहा, तो ListenLock पूरी तरह बंद करके फिर खोलें।</string>
     <string name="backup_restored">बैकअप रीस्टोर हो गया।</string>
-    <string name="backup_unfinished">पिछला रीस्टोर अभी वापस लिया जा रहा है। Audora पूरी तरह बंद करके फिर खोलें, फिर एक बार और कोशिश करें।</string>
-    <string name="backup_restore_incomplete">बैकअप लागू नहीं हो सका, और आपकी लाइब्रेरी का कुछ हिस्सा अभी वापस रखा जा रहा है। पूरा करने के लिए Audora पूरी तरह बंद करके फिर खोलें।</string>
+    <string name="backup_unfinished">पिछला रीस्टोर अभी वापस लिया जा रहा है। ListenLock पूरी तरह बंद करके फिर खोलें, फिर एक बार और कोशिश करें।</string>
+    <string name="backup_restore_incomplete">बैकअप लागू नहीं हो सका, और आपकी लाइब्रेरी का कुछ हिस्सा अभी वापस रखा जा रहा है। पूरा करने के लिए ListenLock पूरी तरह बंद करके फिर खोलें।</string>
     <string name="backup_restore_rolled_back">बैकअप लागू नहीं हो सका, इसलिए आपकी लाइब्रेरी पहले जैसी है। रीस्टोर फिर से करके देखें।</string>
     <string name="backup_finish_title">रीस्टोर पूरा करें</string>
-    <string name="backup_finish_body">एक असफल रीस्टोर के बाद Audora आपकी लाइब्रेरी पूरी तरह वापस नहीं रख सका। आपकी किताबें और नोट्स सुरक्षित हैं; पूरा करने के लिए Audora फिर से शुरू करें। अगर यह स्क्रीन बार-बार आए, तो पहले फ़ोन में कुछ जगह खाली करें।</string>
-    <string name="backup_finish_restart">Audora फिर से शुरू करें</string>
+    <string name="backup_finish_body">एक असफल रीस्टोर के बाद ListenLock आपकी लाइब्रेरी पूरी तरह वापस नहीं रख सका। आपकी किताबें और नोट्स सुरक्षित हैं; पूरा करने के लिए ListenLock फिर से शुरू करें। अगर यह स्क्रीन बार-बार आए, तो पहले फ़ोन में कुछ जगह खाली करें।</string>
+    <string name="backup_finish_restart">ListenLock फिर से शुरू करें</string>
 </resources>

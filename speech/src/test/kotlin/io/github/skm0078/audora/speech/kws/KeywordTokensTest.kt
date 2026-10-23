@@ -37,7 +37,7 @@ class KeywordTokensTest {
     @Test
     fun `a missing piece is reported once, in phrase order`() {
         val vocabulary = KeywordTokens.vocabulary(tokensFile(pieces - setOf("▁PA", "U")))
-        assertEquals(listOf("U", "▁PA"), KeywordTokens.unknown(vocabulary))
+        assertEquals(listOf("▁PA", "U"), KeywordTokens.unknown(vocabulary))
     }
 
     @Test

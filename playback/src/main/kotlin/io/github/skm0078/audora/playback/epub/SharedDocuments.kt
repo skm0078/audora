@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/epub/SharedDocuments.kt
-// Purpose: Writes a copy into Documents/Audora/ on shared storage, hidden from other apps until it is complete.
+// Purpose: Writes a copy into Documents/ListenLock/ on shared storage, hidden from other apps until it is complete.
 
 package io.github.skm0078.audora.playback.epub
 

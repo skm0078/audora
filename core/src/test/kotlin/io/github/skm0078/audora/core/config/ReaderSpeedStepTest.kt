@@ -1,5 +1,5 @@
 // File: core/src/test/kotlin/io/github/skm0078/audora/core/config/ReaderSpeedStepTest.kt
-// Purpose: "Audora, faster" and "slower" (plan item 38) move one offered speed, and stop at the ends.
+// Purpose: "ListenLock, faster" and "slower" (plan item 38) move one offered speed, and stop at the ends.
 
 package io.github.skm0078.audora.core.config
 

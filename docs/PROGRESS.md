@@ -2,6 +2,14 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## The app is called ListenLock (2026-10-23, ADR-060)
+- **What:** the name people see is now ListenLock: the launcher label ("ListenLock Dev" for debug builds), every English, Hindi and Bengali string, the licences screen, README, `docs/index.html`, `docs/privacy.html` and the Play feature graphic (`docs/store/feature-graphic.svg`, PNG re-rendered).
+- **Voice commands** start with "ListenLock" ("ListenLock, pause"), spotted as one word and as "listen lock"; the pieces come from the keyword model's own `bpe.model` and are all in the shipped `tokens.txt` (`KeywordTokensTest`). The narrator guard looks for the name in English, Hindi and Bengali spellings.
+- **Files:** exports go to `Documents/ListenLock/`; backups are saved as `listenlock-backup-<date>.zip` (old ones still restore).
+- Unchanged: application id `io.github.skm0078.audora`, repository, release file names (Obtainium links), packages, classes, log tags, database and preference names. No `:pdf` change (PIPELINE_VERSION 12). Tests: `VoiceCommandTest`, `KeywordTokensTest`, `ListenLoopTest`.
+
+**Real-device checks (Moto):** the launcher, recents and notification show ListenLock; "ListenLock, pause" and "listen lock, next" work with the reader open; a talking book lands in Documents/ListenLock.
+
 ## Acted Hindi voice for studio mode (2026-10-23, ADR-059)
 - **What:** an optional download (Settings → Listening, "Acted Hindi voice (studio mode)", Wi-Fi only, about 2.9 GB in two parts, offered on phones with 8 GB of memory). Once installed, studio mode reads Hindi with Chatterbox Multilingual (Resemble AI, MIT), which acts feelings and dialogue; playback plays that audio and still reads live with the usual Hindi voice. Clips, talking books and exports are unchanged.
 - **How:** `libaudora_acted.so` (C++ over the ONNX Runtime sherpa-onnx ships, no second runtime), the language model at full precision and Chatterbox Turbo's one-step decoder (about 6× faster than the multilingual one), a Kotlin port of its tokenizer, a take guard (token cap, one plainer retry). Packs: `scripts/build_acted_pack.py`, `acted-source.yml`, pinned in `speech/models.json`.

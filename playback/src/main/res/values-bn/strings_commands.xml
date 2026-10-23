@@ -3,7 +3,7 @@
 <!-- Purpose: Bengali copy of values/strings_commands.xml: The notifications shown while voice commands listen with the screen off, and when that ends (item 38). -->
 <resources>
     <string name="commands_channel">ভয়েস কমান্ড</string>
-    <string name="commands_channel_description">Audora স্ক্রিন বন্ধ থাকা অবস্থায় ভয়েস কমান্ড শোনার সময় আর থামলে দেখানো হয়।</string>
+    <string name="commands_channel_description">ListenLock স্ক্রিন বন্ধ থাকা অবস্থায় ভয়েস কমান্ড শোনার সময় আর থামলে দেখানো হয়।</string>
     <string name="commands_listening_title">ভয়েস কমান্ড শুনছে</string>
     <string name="commands_listening_text">শুধু এই ফোনেই শোনা হয়। বন্ধ করতে শোনা বন্ধ করুন-এ ট্যাপ করুন, বা এটি সোয়াইপ করে সরিয়ে দিন।</string>
     <string name="commands_listening_silenced">Android মাইক্রোফোন মিউট করেছে (কোনো কল, বা মাইক্রোফোন সুইচ)। সেটি ফিরে এলে শোনা আবার শুরু হবে।</string>

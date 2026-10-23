@@ -4,14 +4,14 @@
   Purpose: Hindi app text (plan item 44); same keys as values/strings.xml.
 -->
 <resources>
-    <string name="app_name">Audora</string>
+    <string name="app_name">ListenLock</string>
 
     <!-- Library (P1-01) -->
     <string name="library_title">लाइब्रेरी</string>
     <string name="library_add_pdf">PDF जोड़ें</string>
     <string name="library_empty_title">आपकी लाइब्रेरी खाली है</string>
-    <string name="library_empty_body">अपने फ़ोन से PDF जोड़ें, या Files, WhatsApp या मेल से कोई PDF Audora में खोलें। Audora याद रखता है कि फ़ाइल कहाँ है; वह सिर्फ़ वही PDF कॉपी करता है जो कोई दूसरा ऐप थोड़ी देर के लिए देता है।</string>
-    <string name="library_load_failed">Audora आपकी लाइब्रेरी लोड नहीं कर सका। कृपया सेटिंग्स से लॉग शेयर करें।</string>
+    <string name="library_empty_body">अपने फ़ोन से PDF जोड़ें, या Files, WhatsApp या मेल से कोई PDF ListenLock में खोलें। ListenLock याद रखता है कि फ़ाइल कहाँ है; वह सिर्फ़ वही PDF कॉपी करता है जो कोई दूसरा ऐप थोड़ी देर के लिए देता है।</string>
+    <string name="library_load_failed">ListenLock आपकी लाइब्रेरी लोड नहीं कर सका। कृपया सेटिंग्स से लॉग शेयर करें।</string>
     <string name="library_untitled">बिना नाम की PDF</string>
     <string name="library_book_menu">और विकल्प</string>
     <plurals name="library_pages">
@@ -27,7 +27,7 @@
     <string name="library_opened_ago">%1$s खोली गई</string>
     <string name="library_added_ago">%1$s जोड़ी गई</string>
     <string name="library_file_missing">फ़ाइल हटा दी गई या कहीं और चली गई। ढूँढने के लिए टैप करें।</string>
-    <string name="library_access_lost">Audora अब यह फ़ाइल नहीं खोल सकता। इसे फिर से चुनने के लिए टैप करें।</string>
+    <string name="library_access_lost">ListenLock अब यह फ़ाइल नहीं खोल सकता। इसे फिर से चुनने के लिए टैप करें।</string>
     <string name="library_added">“%1$s” जोड़ी गई</string>
     <string name="library_already">“%1$s” पहले से आपकी लाइब्रेरी में है</string>
     <string name="library_found_again">“%1$s” फिर से मिल गई</string>
@@ -56,19 +56,19 @@
     <string name="library_shelf_reading">पढ़ रहे हैं</string>
     <string name="library_no_match">कोई किताब नहीं मिली। खोज या फ़िल्टर बदलें।</string>
     <string name="library_error_cannot_keep">जिस ऐप से आपने फ़ाइल चुनी, वह इसे सिर्फ़ थोड़ी देर के लिए देता है। पहले PDF को अपने फ़ोन में सेव करें, फिर वहाँ से जोड़ें।</string>
-    <string name="library_error_unreadable">Audora वह फ़ाइल नहीं पढ़ सका। हो सकता है वह हटा दी गई हो या कहीं और चली गई हो।</string>
+    <string name="library_error_unreadable">ListenLock वह फ़ाइल नहीं पढ़ सका। हो सकता है वह हटा दी गई हो या कहीं और चली गई हो।</string>
     <string name="library_error_not_pdf">वह फ़ाइल PDF, EPUB या टेक्स्ट फ़ाइल नहीं है।</string>
     <string name="library_error_different_file">यह कोई दूसरी PDF है। वही फ़ाइल चुनें, या यह किताब हटाकर नई वाली जोड़ें।</string>
     <string name="library_error_not_in_library">वह किताब अब आपकी लाइब्रेरी में नहीं है।</string>
-    <string name="library_error_storage">Audora आपकी लाइब्रेरी सेव नहीं कर सका। क्या आपके फ़ोन का स्टोरेज भर गया है?</string>
+    <string name="library_error_storage">ListenLock आपकी लाइब्रेरी सेव नहीं कर सका। क्या आपके फ़ोन का स्टोरेज भर गया है?</string>
 
     <!-- Reader (P1-05) -->
     <string name="book_not_in_library">यह किताब अब आपकी लाइब्रेरी में नहीं है।</string>
     <string name="reader_retry">फिर से खोलें</string>
-    <string name="reader_damaged">यह फ़ाइल खराब है, या ऐसी PDF नहीं है जिसे Audora खोल सके।</string>
-    <string name="reader_unreadable">Audora यह फ़ाइल नहीं पढ़ सका। हो सकता है वह हटा दी गई हो या कहीं और चली गई हो।</string>
+    <string name="reader_damaged">यह फ़ाइल खराब है, या ऐसी PDF नहीं है जिसे ListenLock खोल सके।</string>
+    <string name="reader_unreadable">ListenLock यह फ़ाइल नहीं पढ़ सका। हो सकता है वह हटा दी गई हो या कहीं और चली गई हो।</string>
     <string name="reader_engine">PDF इंजन शुरू नहीं हो सका। कृपया लॉग शेयर करें।</string>
-    <string name="reader_locked">Audora इस PDF को पढ़ सके, इसके लिए इसका पासवर्ड चाहिए।</string>
+    <string name="reader_locked">ListenLock इस PDF को पढ़ सके, इसके लिए इसका पासवर्ड चाहिए।</string>
     <string name="reader_enter_password">पासवर्ड डालें</string>
     <string name="reader_page_of">पेज %1$d / %2$d</string>
     <string name="reader_previous_page">पिछला पेज</string>
@@ -77,7 +77,7 @@
     <string name="reader_pick_page_label">पेज (1–%1$d)</string>
     <string name="reader_pick_page_go">जाएँ</string>
     <string name="reader_back_to_reading">पेज %1$d पर वापस जाएँ, जहाँ पढ़ाई चल रही है</string>
-    <string name="reader_page_no_text">इस पेज पर पढ़ने लायक टेक्स्ट नहीं है। अगर यह स्कैन किया हुआ पेज है, तो सेटिंग्स में स्कैन किए गए पेज (OCR) डाउनलोड करें, फिर Audora इसे पढ़ेगा।</string>
+    <string name="reader_page_no_text">इस पेज पर पढ़ने लायक टेक्स्ट नहीं है। अगर यह स्कैन किया हुआ पेज है, तो सेटिंग्स में स्कैन किए गए पेज (OCR) डाउनलोड करें, फिर ListenLock इसे पढ़ेगा।</string>
     <string name="reader_page_failed">यह पेज पढ़ा नहीं जा सका। कृपया लॉग शेयर करें।</string>
     <string name="reader_tap_hint">किसी वाक्य पर टैप करें, वहीं से पढ़ना शुरू होगा। जो वाक्य गलत लगा, उसे देर तक दबाएँ।</string>
     <string name="reader_read_from_here">यहाँ से पढ़ें</string>
@@ -221,27 +221,27 @@
     <string name="navigate_back">वापस</string>
     <string name="settings_version_title">वर्शन</string>
     <string name="share_logs_title">लॉग शेयर करें</string>
-    <string name="share_logs_body_hint">Audora का लॉग उसे भेजें जो आपकी मदद कर रहा है। इसमें आपकी PDF का टेक्स्ट कभी नहीं होता।</string>
+    <string name="share_logs_body_hint">ListenLock का लॉग उसे भेजें जो आपकी मदद कर रहा है। इसमें आपकी PDF का टेक्स्ट कभी नहीं होता।</string>
     <string name="share_logs_failed">लॉग तैयार नहीं हो सके। कृपया फिर से कोशिश करें।</string>
-    <string name="share_logs_chooser_title">Audora के लॉग इससे भेजें</string>
-    <string name="share_logs_subject">Audora लॉग (%1$s, %2$s)</string>
-    <string name="share_logs_body">Audora के लॉग साथ में हैं। क्या हुआ, और लगभग कब?</string>
+    <string name="share_logs_chooser_title">ListenLock के लॉग इससे भेजें</string>
+    <string name="share_logs_subject">ListenLock लॉग (%1$s, %2$s)</string>
+    <string name="share_logs_body">ListenLock के लॉग साथ में हैं। क्या हुआ, और लगभग कब?</string>
     <string name="unfinished_title">पढ़ना अचानक रुक गया</string>
-    <string name="unfinished_body">पेज %1$d पढ़ते समय Audora रुक गया। जहाँ रुका था, वहीं से जारी रखें?</string>
+    <string name="unfinished_body">पेज %1$d पढ़ते समय ListenLock रुक गया। जहाँ रुका था, वहीं से जारी रखें?</string>
     <string name="unfinished_resume">जारी रखें</string>
     <string name="unfinished_not_now">अभी नहीं</string>
     <string name="debug_simulate_title">पढ़ने का सेशन सिम्युलेट करें</string>
-    <string name="debug_simulate_body">किसी किताब को बिना आवाज़ के चलता हुआ मार्क करता है। फिर ऐप की जानकारी में Audora को फ़ोर्स-स्टॉप करें और दोबारा खोलें: जारी रखने का संदेश दिखना चाहिए और लॉग में रुकने का कारण होना चाहिए।</string>
-    <string name="debug_simulate_done">पढ़ रहा है, ऐसा मार्क किया गया। अब Audora को फ़ोर्स-स्टॉप करके दोबारा खोलें।</string>
+    <string name="debug_simulate_body">किसी किताब को बिना आवाज़ के चलता हुआ मार्क करता है। फिर ऐप की जानकारी में ListenLock को फ़ोर्स-स्टॉप करें और दोबारा खोलें: जारी रखने का संदेश दिखना चाहिए और लॉग में रुकने का कारण होना चाहिए।</string>
+    <string name="debug_simulate_done">पढ़ रहा है, ऐसा मार्क किया गया। अब ListenLock को फ़ोर्स-स्टॉप करके दोबारा खोलें।</string>
     <!-- Background reading / battery onboarding (P1-06) -->
     <string name="battery_title">बैकग्राउंड में पढ़ना</string>
-    <string name="battery_intro">स्क्रीन बंद होने पर या दूसरे ऐप इस्तेमाल करते समय भी पढ़ना जारी रहे, इसके लिए Android के बैटरी सेवर को Audora को नहीं रोकना चाहिए। Audora बैटरी सिर्फ़ तभी इस्तेमाल करता है जब वह पढ़ रहा हो।</string>
-    <string name="battery_status_allowed">Audora के लिए बैटरी ऑप्टिमाइज़ेशन बंद है।</string>
+    <string name="battery_intro">स्क्रीन बंद होने पर या दूसरे ऐप इस्तेमाल करते समय भी पढ़ना जारी रहे, इसके लिए Android के बैटरी सेवर को ListenLock को नहीं रोकना चाहिए। ListenLock बैटरी सिर्फ़ तभी इस्तेमाल करता है जब वह पढ़ रहा हो।</string>
+    <string name="battery_status_allowed">ListenLock के लिए बैटरी ऑप्टिमाइज़ेशन बंद है।</string>
     <string name="battery_status_limited">बैटरी ऑप्टिमाइज़ेशन चालू है: स्क्रीन बंद होने पर Android पढ़ना रोक सकता है।</string>
     <string name="battery_allow">बैकग्राउंड में पढ़ने दें</string>
-    <string name="battery_allow_hint">Android अपनी बैटरी सूची खोलेगा। अगर Audora न दिखे, तो सूची को सभी ऐप पर बदलें, फिर Audora पर टैप करके ऑप्टिमाइज़ न करें चुनें।</string>
-    <string name="battery_open_app_settings">Audora की ऐप जानकारी खोलें</string>
-    <string name="battery_footer">अगर स्क्रीन बंद होने पर अब भी पढ़ना रुकता है, तो सेटिंग्स से लॉग शेयर करें: उनमें लिखा होता है कि Android ने Audora को क्यों रोका।</string>
+    <string name="battery_allow_hint">Android अपनी बैटरी सूची खोलेगा। अगर ListenLock न दिखे, तो सूची को सभी ऐप पर बदलें, फिर ListenLock पर टैप करके ऑप्टिमाइज़ न करें चुनें।</string>
+    <string name="battery_open_app_settings">ListenLock की ऐप जानकारी खोलें</string>
+    <string name="battery_footer">अगर स्क्रीन बंद होने पर अब भी पढ़ना रुकता है, तो सेटिंग्स से लॉग शेयर करें: उनमें लिखा होता है कि Android ने ListenLock को क्यों रोका।</string>
     <string name="battery_step_number">%1$d. %2$s</string>
     <string name="battery_brand_motorola">आपके Motorola फ़ोन पर</string>
     <string name="battery_brand_oneplus">आपके OnePlus फ़ोन पर</string>
@@ -251,19 +251,19 @@
     <string name="battery_brand_realme">आपके realme फ़ोन पर</string>
     <string name="battery_brand_vivo">आपके vivo या iQOO फ़ोन पर</string>
     <string name="battery_brand_other">आपके फ़ोन पर</string>
-    <string name="battery_step_unrestricted">Audora की ऐप जानकारी में App battery usage (या Battery) खोलें, Allow background usage चालू करें और Unrestricted चुनें।</string>
-    <string name="battery_step_background_activity">Audora की ऐप जानकारी में Battery usage खोलें और Allow background activity चालू करें।</string>
-    <string name="battery_step_auto_launch">Audora की ऐप जानकारी में Auto launch (जिसे Autostart भी कहते हैं) चालू करें।</string>
-    <string name="battery_step_samsung_never_sleeping">सेटिंग्स में Battery खोलें, फिर Background usage limits, फिर Never sleeping apps, और Audora जोड़ें।</string>
-    <string name="battery_step_xiaomi_no_restrictions">Audora की ऐप जानकारी में Battery saver खोलें और No restrictions चुनें।</string>
-    <string name="battery_step_vivo_background_power">सेटिंग्स में Battery खोलें, फिर Background power consumption management, और Audora को Allow पर सेट करें।</string>
-    <string name="battery_step_lock_recents">हाल के ऐप खोलें, फिर Audora के कार्ड को देर तक दबाएँ (या उसका मेन्यू टैप करें) और Lock चुनें, ताकि हाल के ऐप साफ़ करने पर पढ़ना न रुके।</string>
+    <string name="battery_step_unrestricted">ListenLock की ऐप जानकारी में App battery usage (या Battery) खोलें, Allow background usage चालू करें और Unrestricted चुनें।</string>
+    <string name="battery_step_background_activity">ListenLock की ऐप जानकारी में Battery usage खोलें और Allow background activity चालू करें।</string>
+    <string name="battery_step_auto_launch">ListenLock की ऐप जानकारी में Auto launch (जिसे Autostart भी कहते हैं) चालू करें।</string>
+    <string name="battery_step_samsung_never_sleeping">सेटिंग्स में Battery खोलें, फिर Background usage limits, फिर Never sleeping apps, और ListenLock जोड़ें।</string>
+    <string name="battery_step_xiaomi_no_restrictions">ListenLock की ऐप जानकारी में Battery saver खोलें और No restrictions चुनें।</string>
+    <string name="battery_step_vivo_background_power">सेटिंग्स में Battery खोलें, फिर Background power consumption management, और ListenLock को Allow पर सेट करें।</string>
+    <string name="battery_step_lock_recents">हाल के ऐप खोलें, फिर ListenLock के कार्ड को देर तक दबाएँ (या उसका मेन्यू टैप करें) और Lock चुनें, ताकि हाल के ऐप साफ़ करने पर पढ़ना न रुके।</string>
     <string name="battery_card_title">स्क्रीन बंद होने पर भी पढ़ते रहें</string>
-    <string name="battery_card_body">यह फ़ोन बैकग्राउंड में Audora को रोक सकता है। सेट करने में एक मिनट लगता है।</string>
+    <string name="battery_card_body">यह फ़ोन बैकग्राउंड में ListenLock को रोक सकता है। सेट करने में एक मिनट लगता है।</string>
     <string name="battery_card_set_up">सेट करें</string>
     <string name="battery_card_not_now">अभी नहीं</string>
     <string name="settings_battery_title">बैकग्राउंड में पढ़ना</string>
-    <string name="settings_battery_allowed">Audora के लिए बैटरी ऑप्टिमाइज़ेशन बंद है</string>
+    <string name="settings_battery_allowed">ListenLock के लिए बैटरी ऑप्टिमाइज़ेशन बंद है</string>
     <string name="settings_battery_limited">स्क्रीन बंद होने पर Android पढ़ना रोक सकता है। सेट करने के लिए टैप करें।</string>
 
     <!-- Voices (P4-01): Settings → Voices -->
@@ -302,16 +302,16 @@
     <string name="voices_import_action">इंपोर्ट करें</string>
     <string name="voices_import_language">यह कौन-सी भाषा बोलती है</string>
     <string name="voices_import_name">नाम (ज़रूरी नहीं)</string>
-    <string name="voices_import_hint">अब वह फ़ोल्डर चुनें जिसमें आवाज़ की फ़ाइलें हैं। Audora उन्हें कॉपी करता है; फ़ोल्डर जैसा है वैसा ही रहता है।</string>
+    <string name="voices_import_hint">अब वह फ़ोल्डर चुनें जिसमें आवाज़ की फ़ाइलें हैं। ListenLock उन्हें कॉपी करता है; फ़ोल्डर जैसा है वैसा ही रहता है।</string>
     <string name="voices_import_choose_folder">फ़ोल्डर चुनें</string>
     <string name="voices_recommended">इस भाषा के लिए सुझाई गई</string>
     <string name="settings_licences_body">हर आवाज़ किसने बनाई, उसका लाइसेंस और वह कहाँ से आई।</string>
     <string name="settings_privacy_title">गोपनीयता नीति</string>
-    <string name="settings_privacy_body">Audora आपके बारे में कुछ भी इकट्ठा नहीं करता। पूरी नीति आपके ब्राउज़र में खुलती है।</string>
+    <string name="settings_privacy_body">ListenLock आपके बारे में कुछ भी इकट्ठा नहीं करता। पूरी नीति आपके ब्राउज़र में खुलती है।</string>
     <string name="licences_title">आवाज़ें और लाइसेंस</string>
     <string name="licences_load_failed">लाइसेंस लोड नहीं हो सके। अगर ऐसा बार-बार हो, तो सेटिंग्स से लॉग शेयर करें।</string>
-    <string name="licences_intro">Audora उन आवाज़ों से पढ़ता है जिन्हें दूसरे लोगों ने बनाया और साझा किया है। हर आवाज़ उसके लाइसेंस और श्रेय के साथ दी गई है, जैसा उसका लाइसेंस कहता है।</string>
-    <string name="licences_kind_built_in">Audora में शामिल</string>
+    <string name="licences_intro">ListenLock उन आवाज़ों से पढ़ता है जिन्हें दूसरे लोगों ने बनाया और साझा किया है। हर आवाज़ उसके लाइसेंस और श्रेय के साथ दी गई है, जैसा उसका लाइसेंस कहता है।</string>
+    <string name="licences_kind_built_in">ListenLock में शामिल</string>
     <string name="licences_kind_download">डाउनलोड के लिए उपलब्ध</string>
     <string name="licences_kind_downloaded">डाउनलोड की गई</string>
     <string name="licences_kind_imported">आपके द्वारा इंपोर्ट की गई</string>
@@ -331,8 +331,8 @@
     <!-- OCR of scanned pages (P3-05) -->
     <string name="reader_ocr_badge">OCR</string>
     <string name="reader_ocr_badge_body">पेज की इमेज से पढ़ा गया; कुछ शब्द गलत हो सकते हैं।</string>
-    <string name="reader_ocr_needs_models">यह पेज स्कैन किया हुआ है। इसे पढ़कर सुनाने के लिए Audora को अंग्रेज़ी, हिंदी और बांग्ला की टेक्स्ट पहचानने वाली फ़ाइलें चाहिए, जो एक बार डाउनलोड होती हैं।</string>
-    <string name="reader_ocr_failed">Audora यह स्कैन किया हुआ पेज नहीं पढ़ सका। अगर ऐसा बार-बार हो, तो सेटिंग्स से लॉग शेयर करें।</string>
+    <string name="reader_ocr_needs_models">यह पेज स्कैन किया हुआ है। इसे पढ़कर सुनाने के लिए ListenLock को अंग्रेज़ी, हिंदी और बांग्ला की टेक्स्ट पहचानने वाली फ़ाइलें चाहिए, जो एक बार डाउनलोड होती हैं।</string>
+    <string name="reader_ocr_failed">ListenLock यह स्कैन किया हुआ पेज नहीं पढ़ सका। अगर ऐसा बार-बार हो, तो सेटिंग्स से लॉग शेयर करें।</string>
     <string name="ocr_models_download">डाउनलोड करें (%1$d MB)</string>
     <string name="ocr_models_download_short">डाउनलोड करें</string>
     <string name="ocr_models_retry">फिर से कोशिश करें</string>
@@ -354,8 +354,8 @@
     <string name="settings_skip_citations_body">चालू: “[12]” और “[4–7]” जैसे संदर्भ अंक छोड़ देता है। बंद: उन्हें पढ़ता है। अगली बार किताब खोलने पर लागू होता है।</string>
     <string name="settings_keep_screen_on_title">पढ़कर सुनाते समय स्क्रीन चालू रखें</string>
     <string name="settings_volume_keys_title">वॉल्यूम बटन से वाक्य बदलें</string>
-    <string name="settings_volume_keys_body">जब Audora रीडर में पढ़कर सुना रहा हो, वॉल्यूम कम करने वाला बटन अगले वाक्य पर और बढ़ाने वाला बटन एक वाक्य पीछे ले जाता है। पॉज़ होने पर या रीडर के बाहर, बटन हमेशा की तरह वॉल्यूम बदलते हैं।</string>
-    <string name="settings_keep_screen_on_body">Audora पढ़ते समय रीडर की स्क्रीन चालू रहती है, ताकि आप साथ-साथ पढ़ सकें। इससे बैटरी ज़्यादा लगती है; पॉज़ होने पर स्क्रीन हमेशा की तरह बंद हो जाती है।</string>
+    <string name="settings_volume_keys_body">जब ListenLock रीडर में पढ़कर सुना रहा हो, वॉल्यूम कम करने वाला बटन अगले वाक्य पर और बढ़ाने वाला बटन एक वाक्य पीछे ले जाता है। पॉज़ होने पर या रीडर के बाहर, बटन हमेशा की तरह वॉल्यूम बदलते हैं।</string>
+    <string name="settings_keep_screen_on_body">ListenLock पढ़ते समय रीडर की स्क्रीन चालू रहती है, ताकि आप साथ-साथ पढ़ सकें। इससे बैटरी ज़्यादा लगती है; पॉज़ होने पर स्क्रीन हमेशा की तरह बंद हो जाती है।</string>
     <!-- App shell and screens (ADR-036) -->
     <string name="tab_library">लाइब्रेरी</string>
     <string name="tab_notes">नोट्स</string>
@@ -367,7 +367,7 @@
     <string name="library_tile_description">%1$s, %2$s</string>
     <!-- Duplicate check (plan item 27): the picked PDF is a book the library already has. -->
     <string name="library_duplicate_title">यह PDF आपके पास पहले से है</string>
-    <string name="library_duplicate_same">“%1$s” पहले से आपकी लाइब्रेरी में है। Audora एक ही कॉपी रखता है, इसलिए आप जहाँ तक पढ़ चुके हैं, वह वैसा ही रहता है।</string>
+    <string name="library_duplicate_same">“%1$s” पहले से आपकी लाइब्रेरी में है। ListenLock एक ही कॉपी रखता है, इसलिए आप जहाँ तक पढ़ चुके हैं, वह वैसा ही रहता है।</string>
     <string name="library_duplicate_moved">यह वही PDF है जो “%1$s” है, इसलिए वह किताब अब इसी फ़ाइल से खुलती है। आप जहाँ तक पढ़ चुके हैं, वह बना रहता है।</string>
     <string name="library_duplicate_open">इसे खोलें</string>
     <string name="library_duplicate_close">बंद करें</string>
@@ -443,7 +443,7 @@
     <string name="settings_group_app">ऐप</string>
     <string name="settings_group_debug">डीबग</string>
     <string name="settings_wallpaper_colors_title">वॉलपेपर के रंग</string>
-    <string name="settings_wallpaper_colors_body">आपके वॉलपेपर के रंगों से मेल खाएँ। बंद होने पर Audora के गर्म पढ़ने वाले रंग इस्तेमाल होते हैं।</string>
+    <string name="settings_wallpaper_colors_body">आपके वॉलपेपर के रंगों से मेल खाएँ। बंद होने पर ListenLock के गर्म पढ़ने वाले रंग इस्तेमाल होते हैं।</string>
     <string name="settings_dark_mode_title">थीम</string>
     <string name="settings_dark_mode_system">सिस्टम</string>
     <string name="settings_dark_mode_light">लाइट</string>
@@ -482,17 +482,17 @@
 
     <!-- First run (UI plan, wave 4) -->
     <string name="first_run_step">चरण %1$d / %2$d</string>
-    <string name="first_run_welcome_title">Audora में आपका स्वागत है</string>
-    <string name="first_run_languages_body">आपकी किताबें किन भाषाओं में हैं? Audora अंग्रेज़ी, हिन्दी और बांग्ला पढ़कर सुनाता है।</string>
-    <string name="first_run_privacy">Audora ऑफ़लाइन चलता है: न खाता, न विज्ञापन, न ट्रैकिंग। यह सिर्फ़ वही आवाज़ें और मॉडल डाउनलोड करता है जो आप चुनें।</string>
+    <string name="first_run_welcome_title">ListenLock में आपका स्वागत है</string>
+    <string name="first_run_languages_body">आपकी किताबें किन भाषाओं में हैं? ListenLock अंग्रेज़ी, हिन्दी और बांग्ला पढ़कर सुनाता है।</string>
+    <string name="first_run_privacy">ListenLock ऑफ़लाइन चलता है: न खाता, न विज्ञापन, न ट्रैकिंग। यह सिर्फ़ वही आवाज़ें और मॉडल डाउनलोड करता है जो आप चुनें।</string>
     <string name="first_run_voices_title">एक आवाज़ चुनें</string>
     <string name="first_run_voices_body">हर भाषा आपके फ़ोन में रखी एक आवाज़ से पढ़ी जाती है। अभी एक डाउनलोड करें, या बाद में सेटिंग्स → आवाज़ें में।</string>
     <string name="first_run_background_title">स्क्रीन बंद होने पर भी सुनते रहें</string>
-    <string name="first_run_background_body">बैटरी बचाने के लिए Android बैकग्राउंड में चल रहे ऐप रोक सकता है। Audora को चलते रहने दें ताकि कोई अध्याय बीच में न कटे।</string>
+    <string name="first_run_background_body">बैटरी बचाने के लिए Android बैकग्राउंड में चल रहे ऐप रोक सकता है। ListenLock को चलते रहने दें ताकि कोई अध्याय बीच में न कटे।</string>
     <string name="first_run_background_allow">बैकग्राउंड में पढ़ने दें</string>
-    <string name="first_run_background_done">अनुमति मिल गई। Audora स्क्रीन बंद होने पर भी पढ़ता रहेगा।</string>
+    <string name="first_run_background_done">अनुमति मिल गई। ListenLock स्क्रीन बंद होने पर भी पढ़ता रहेगा।</string>
     <string name="first_run_book_title">अपनी पहली किताब जोड़ें</string>
-    <string name="first_run_book_body">अपने फ़ोन से एक PDF चुनें। Audora हर किताब में आपकी जगह याद रखता है।</string>
+    <string name="first_run_book_body">अपने फ़ोन से एक PDF चुनें। ListenLock हर किताब में आपकी जगह याद रखता है।</string>
     <string name="first_run_add_pdf">PDF जोड़ें</string>
     <string name="first_run_next">आगे</string>
     <string name="first_run_back">पीछे</string>
@@ -501,8 +501,8 @@
 
     <!-- Storage (UI plan, wave 4) -->
     <string name="storage_title">स्टोरेज</string>
-    <string name="settings_storage_body">Audora आपके फ़ोन में क्या रखता है, और जगह कैसे खाली करें।</string>
-    <string name="storage_total">Audora %1$s इस्तेमाल करता है</string>
+    <string name="settings_storage_body">ListenLock आपके फ़ोन में क्या रखता है, और जगह कैसे खाली करें।</string>
+    <string name="storage_total">ListenLock %1$s इस्तेमाल करता है</string>
     <string name="storage_voices">डाउनलोड की गई आवाज़ें</string>
     <string name="storage_ocr">स्कैन किए पेजों की टेक्स्ट पहचान</string>
     <string name="storage_acted_voice">अभिनय वाली हिंदी आवाज़</string>
@@ -512,7 +512,7 @@
     <string name="storage_ocr_text">स्कैन किए पेजों से पढ़ा गया टेक्स्ट</string>
     <string name="storage_covers">किताबों के कवर</string>
     <string name="storage_voice_blends">नैरेटर की मिलाई गई आवाज़ें</string>
-    <string name="storage_shared_pdfs">Audora में शेयर की गई PDF</string>
+    <string name="storage_shared_pdfs">ListenLock में शेयर की गई PDF</string>
     <string name="storage_measuring">माप रहे हैं…</string>
     <string name="storage_measure_failed">नाप नहीं सके</string>
     <string name="storage_free_failed">%1$s खाली नहीं हो सका। फिर से कोशिश करें।</string>

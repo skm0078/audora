@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/epub/CopyJob.kt
-// Purpose: Makes one book's accessible copy or talking book and saves it to Documents/Audora (items 69, 76).
+// Purpose: Makes one book's accessible copy or talking book and saves it to Documents/ListenLock (items 69, 76).
 
 package io.github.skm0078.audora.playback.epub
 

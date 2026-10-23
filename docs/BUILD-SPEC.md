@@ -266,6 +266,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 057 | Bengali emotion voices: AI4Bharat Rasa read in a style per sentence feeling (book, happy, sad, angry, scared, surprised, conversational), male speaker for characters | Accepted (2026-10-23) |
 | 058 | Act only the quoted words, carry a sad or scared mood one sentence, pronunciation check and per-voice respellings | Accepted (2026-10-23) |
 | 059 | Acted Hindi voice for studio mode only: Chatterbox Multilingual (MIT) with Turbo's one-step decoder, a native engine on sherpa-onnx's ONNX Runtime, downloaded on Wi-Fi, offered on phones with 8 GB of memory | Accepted (2026-10-23) |
+| 060 | The app's name is ListenLock (label, strings, voice commands, export folder, public pages); package and repository keep "audora" | Accepted (2026-10-23) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

@@ -20,7 +20,7 @@ data class EpubConfig(
     val keepAtLeast: Float = SpeakabilityConfig().skipBelow,
     val chapterTitleMaxChars: Int = 80,
     val fileNameMaxChars: Int = AudiobookConfig().folderNameMaxChars,
-    val folder: String = "Documents/Audora/",
+    val folder: String = "Documents/ListenLock/",
     val progressStepPercent: Int = 1,
     val wakeLockMs: Long = 1_800_000L, // 30 min
 ) {
