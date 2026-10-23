@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/strings_export.xml
+  Purpose: Clip, accessible copy and talking-book strings (plan items 41, 69, 76, ADR-040).
+-->
+<resources>
+    <!-- Plan items 69 and 76 (ADR-040): saved to Documents/Audora. -->
+    <string name="library_accessible_copy">Save an accessible copy (EPUB and text)</string>
+    <string name="library_talking_book">Save as a talking book (EPUB 3)</string>
+    <!-- Plan item 41: this sentence to the end of its paragraph, as an audio clip for WhatsApp and the like. -->
+    <string name="sentence_menu_share_clip">Share as audio</string>
+    <!-- Plan item 30: highlights, bookmarks and voice notes to Documents/Audora. -->
+    <string name="library_export_notes">Export highlights and notes</string>
+    <!-- %1$s is the saved file names. -->
+    <string name="notes_export_done">Saved to Documents/Audora: %1$s</string>
+    <string name="notes_export_empty">This book has no highlights, bookmarks or voice notes yet</string>
+    <string name="notes_export_failed">Could not save the notes</string>
+    <!-- Sentence menu (plan item 30). -->
+    <string name="sentence_menu_highlight">Highlight</string>
+    <string name="sentence_menu_unhighlight">Remove the highlight</string>
+</resources>

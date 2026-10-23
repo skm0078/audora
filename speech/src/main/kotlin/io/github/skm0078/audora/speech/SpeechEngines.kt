@@ -13,11 +13,17 @@ import io.github.skm0078.audora.core.result.flatMap
 import io.github.skm0078.audora.core.result.getOrNull
 import io.github.skm0078.audora.speech.SpeechError.VoiceUnavailable.Reason
 import io.github.skm0078.audora.speech.sherpa.AssetSherpaSynthesizerFactory
+import io.github.skm0078.audora.speech.sherpa.BlendCache
+import io.github.skm0078.audora.speech.sherpa.BlendReport
 import io.github.skm0078.audora.speech.sherpa.FileSherpaSynthesizerFactory
+import io.github.skm0078.audora.speech.sherpa.NarratorBlend
 import io.github.skm0078.audora.speech.sherpa.RoutingSynthesizerFactory
+import io.github.skm0078.audora.speech.sherpa.SherpaFamily
 import io.github.skm0078.audora.speech.sherpa.SherpaSpeechEngine
 import io.github.skm0078.audora.speech.sherpa.SherpaVoiceManifest
 import io.github.skm0078.audora.speech.sherpa.SherpaVoiceSpec
+import io.github.skm0078.audora.speech.sherpa.VitsNoise
+import io.github.skm0078.audora.speech.sherpa.withNarratorBlend
 import io.github.skm0078.audora.speech.system.AndroidSystemTtsClient
 import io.github.skm0078.audora.speech.system.SystemSpeechEngine
 import io.github.skm0078.audora.speech.voices.VoiceCredits
@@ -25,9 +31,14 @@ import io.github.skm0078.audora.speech.voices.VoiceLibrary
 import java.io.File
 import java.io.IOException
 import java.util.Properties
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-/** The neural engine together with the voice the APK ships, which is the English default (ADR-012, ADR-014). */
-class BundledSpeech(val engine: SherpaSpeechEngine, val voice: VoiceInfo)
+/**
+ * The neural engine together with the voice the APK ships, which is the English default (ADR-012, ADR-014).
+ * [blends]: whether the narrator blend (plan item 75) could be used, for the speech sheet.
+ */
+class BundledSpeech(val engine: SherpaSpeechEngine, val voice: VoiceInfo, val blends: BlendReport = BlendReport())
 
 object SpeechEngines {
     /** Where the build puts the bundled voice inside the APK's assets (speech/build.gradle.kts). */
@@ -36,13 +47,23 @@ object SpeechEngines {
     private const val TAG = "Speech.Engines"
     private const val BUNDLED_DATA_DIR = "voices/bundled"
     private const val SYSTEM_WORK_DIR = "tts-system"
+    private const val BLEND_DIR = "voice-blends"
 
     /**
      * The neural engine: the English voice packed into the APK plus every voice downloaded or imported in Settings →
      * Voices (P4-01), seen as they come and go. Cheap: reads one small properties file; a model loads on its first
      * render. Fails only when the APK was built without its voice, which is a build bug worth surfacing.
+     *
+     * [noise] is read on every render and given to the Piper and MMS (VITS) voices, so an expressiveness change
+     * (plan item 8) reloads the voice on its next sentence; the other families have no such values. [blend] is
+     * read the same way and given to the narrator's Kokoro voice only (narrator blend, plan item 75).
      */
-    fun bundled(context: Context, config: SpeechConfig = SpeechConfig()): Outcome<BundledSpeech, SpeechError> {
+    fun bundled(
+        context: Context,
+        config: SpeechConfig = SpeechConfig(),
+        blend: () -> NarratorBlend? = { null },
+        noise: () -> VitsNoise? = { null },
+    ): Outcome<BundledSpeech, SpeechError> {
         val assets = context.assets
         val spec = when (val read = readBundledSpec(assets)) {
             is Outcome.Success -> read.value
@@ -64,15 +85,36 @@ object SpeechEngines {
             threads = config.sherpaThreads,
         )
         val library = VoiceLibrary.get(context)
-        val fromDisk = FileSherpaSynthesizerFactory(library::voiceDir, config.sherpaThreads)
+        val blends = blendCache(context, config)
+        val fromDisk = FileSherpaSynthesizerFactory(library::voiceDir, config.sherpaThreads, blends)
         // The bundled voice first: it wins if a downloaded voice ever shares its id (after a bundled-voice swap).
         val engine = SherpaSpeechEngine(
-            source = { listOf(spec) + library.installedSpecs() },
+            source = { (listOf(spec) + library.installedSpecs()).withNoise(noise()).withNarratorBlend(blend()) },
             factory = RoutingSynthesizerFactory(spec.id, fromAssets, fromDisk),
             maxLoadedVoices = config.maxLoadedVoices,
         )
         AudoraLog.i(TAG, "Bundled voice ${spec.voiceId} (${spec.family}, ${spec.lang})")
-        return Outcome.Success(BundledSpeech(engine, spec.toVoiceInfo()))
+        return Outcome.Success(BundledSpeech(engine, spec.toVoiceInfo(), blends.report))
+    }
+
+    private fun List<SherpaVoiceSpec>.withNoise(noise: VitsNoise?): List<SherpaVoiceSpec> =
+        if (noise == null) this else map { if (it.family == SherpaFamily.VITS) it.copy(noise = noise) else it }
+
+    /** Where the narrator blends' copies live (plan item 75): a cache, rebuilt when missing. */
+    fun blendCache(context: Context, config: SpeechConfig = SpeechConfig()): BlendCache =
+        BlendCache(File(context.cacheDir, BLEND_DIR), config.blendHeadroomBytes)
+
+    /** Bytes of the narrator blends' voices files (plan item 75), for the Storage screen. */
+    suspend fun blendCacheBytes(context: Context): Long = withContext(Dispatchers.IO) {
+        blendCache(context).sizeBytes()
+    }
+
+    /**
+     * Deletes the blends' voices files (logged). A blend in use is rebuilt the next time its voice loads, so this
+     * frees the space for as long as no blend is chosen.
+     */
+    suspend fun clearBlendCache(context: Context): Outcome<Unit, String> = withContext(Dispatchers.IO) {
+        blendCache(context).clearAll()
     }
 
     /** The phone's own TTS engine. Connects lazily on first use. */

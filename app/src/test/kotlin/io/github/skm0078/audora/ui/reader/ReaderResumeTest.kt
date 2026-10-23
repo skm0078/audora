@@ -106,4 +106,27 @@ class ReaderResumeTest {
 
         assertTrue(port.starts.isEmpty())
     }
+
+    @Test
+    fun `a resume asked while the reader is open starts reading once`() = runTest(UnconfinedTestDispatcher()) {
+        val model = model()
+        port.connect()
+        assertTrue(port.starts.isEmpty())
+
+        model.requestAutoResume()
+        port.connect()
+
+        assertEquals(listOf(ReadingPosition(BOOK, 7, 40) to null), port.starts)
+    }
+
+    @Test
+    fun `a resume asked before the player connects waits for it`() = runTest(UnconfinedTestDispatcher()) {
+        val model = model()
+
+        model.requestAutoResume()
+        assertTrue(port.starts.isEmpty())
+        port.connect()
+
+        assertEquals(listOf(ReadingPosition(BOOK, 7, 40) to null), port.starts)
+    }
 }

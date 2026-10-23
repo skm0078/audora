@@ -21,6 +21,17 @@ class EnglishNormalizerTest {
     private val normalizer = EnglishNormalizer()
 
     private val cases = listOf(
+        // Punctuation you can hear (RI-6)
+        Case("punctuation", "Tick yes/no and/or sign.", "Tick yes or no and or sign."),
+        Case("punctuation", "Drive at 60 km/hr; give 5 mg/kg.", "Drive at sixty km per hr; give five mg per kg."),
+        Case("punctuation", "Store below °C levels", "Store below degrees Celsius levels"),
+        Case("punctuation", "Is it ready? Yes!", "Is it ready? Yes!"),
+        Case("punctuation", "w/o sugar, A/C on", "w/o sugar, A/C on"),
+        Case("punctuation", "Open 24/7", "Open twenty-four slash seven"),
+        Case("punctuation", "Top speed 60 km/h", "Top speed sixty kilometres per hour"),
+        Case("punctuation", "Read pages 10–20 and 10-20.", "Read pages ten to twenty and ten to twenty."),
+        Case("punctuation", "Born 15/08/1947.", "Born fifteenth August nineteen forty-seven."),
+        Case("punctuation", "It was 37°C.", "It was thirty-seven degrees Celsius."),
         // Plain numbers
         Case("number", "I have 3 cats.", "I have three cats."),
         Case("number", "There were 42 of them", "There were forty-two of them"),
@@ -166,7 +177,7 @@ class EnglishNormalizerTest {
         Case("date", "dated 15.08.1947 the", "dated fifteenth August nineteen forty-seven the"),
         Case("date", "on 3/4/07 we", "on third April oh seven we"),
         Case("date", "on 1947-08-15 India", "on fifteenth August nineteen forty-seven India"),
-        Case("date", "31/14/2020 is not", "thirty-one/fourteen/twenty twenty is not"),
+        Case("date", "31/14/2020 is not", "thirty-one slash fourteen slash twenty twenty is not"),
         Case("date", "you may 5 times", "you may five times"),
         // Abbreviations
         Case("abbreviation", "Dr. Rao said", "Doctor Rao said"),
@@ -225,6 +236,33 @@ class EnglishNormalizerTest {
         Case("symbol", "~10 km away", "about ten kilometres away"),
         Case("symbol", "5 ± 0.5 mm", "five plus or minus zero point five millimetres"),
         Case("symbol", "C++ code", "C++ code"),
+        // Initials read as letters, not as sentence ends (item 57)
+        Case("initials", "Dr. A. P. J. Abdul Kalam spoke.", "Doctor A P J Abdul Kalam spoke."),
+        Case("initials", "A.P.J. Abdul Kalam spoke.", "A P J Abdul Kalam spoke."),
+        Case("initials", "The U.S. Army, then the U.K. fleet.", "The U S Army, then the U K fleet."),
+        Case("initials", "She moved to the U.S.", "She moved to the U S."),
+        Case("initials", "J. R. R. Tolkien wrote it.", "J R R Tolkien wrote it."),
+        Case("initials", "President George W. Bush said", "President George W Bush said"),
+        Case("initials", "Mr. M. Gandhi arrived.", "Mister M Gandhi arrived."),
+        Case("initials", "A. Introduction", "A. Introduction"),
+        Case("initials", "See Part C. Results follow.", "See Part C. Results follow."),
+        Case("initials", "See Article V. The court agreed.", "See Article five. The court agreed."),
+        Case("initials", "Ask Team B. They know.", "Ask Team B. They know."),
+        // One of RI's numbering words, before a word that opens no sentence: only NumberingWords keeps the stop.
+        Case("initials", "See Annexure B. Rules follow.", "See Annexure B. Rules follow."),
+        Case("initials", "Read Vitamin D. Sunlight helps.", "Read Vitamin D. Sunlight helps."),
+        Case("initials", "Ph.D. holders", "Ph.D. holders"),
+        Case("initials", "the U.S.A and Europe", "the U.S.A and Europe"),
+        Case("initials", "Henry V. The king rode.", "Henry the fifth. The king rode."),
+        Case("initials", "Elizabeth I. The queen ruled.", "Elizabeth the first. The queen ruled."),
+        Case("initials", "under Henry I. Then he left.", "under Henry the first. Then he left."),
+        Case("initials", "Malcolm X. The man spoke.", "Malcolm X. The man spoke."),
+        Case("initials", "Sample A. The rest failed.", "Sample A. The rest failed."),
+        Case("initials", "Not I. The others did.", "Not I. The others did."),
+        Case("initials", "in the U.S. The economy grew.", "in the U S. The economy grew."),
+        Case("initials", "Washington, D.C. The city", "Washington, D C. The city"),
+        Case("initials", "He said, \"I moved to the U.S.\"", "He said, \"I moved to the U S.\""),
+        Case("initials", "(born in the U.K.)", "(born in the U K.)"),
         // Text that must pass through untouched
         Case("untouched", "", ""),
         Case("untouched", "No digits here.", "No digits here."),

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_cast.xml -->
+<!-- Purpose: Bengali copy of values/strings_cast.xml: Strings for the cast voices: quotes and headings in their own voices (plan item 7). -->
+<resources>
+    <string name="speech_cast">সংলাপ আর শিরোনামের জন্য ভয়েস</string>
+    <string name="speech_cast_dialogue">সংলাপ দ্বিতীয় ভয়েসে</string>
+    <string name="speech_cast_dialogue_detail">উদ্ধৃতিচিহ্নের ভেতরের কথা দ্বিতীয় একটি ভয়েস পড়ে, যেন দ্বিতীয় পাঠক। সেই ভয়েস নিচে বেছে নিন।</string>
+    <string name="speech_cast_headings">শিরোনাম তৃতীয় ভয়েসে</string>
+    <string name="speech_cast_headings_detail">শিরোনাম আর অধ্যায়ের নাম নিজস্ব ভয়েসে, তাই শোনা যায় নতুন অংশ কোথায় শুরু। সেই ভয়েস নিচে বেছে নিন।</string>
+    <string name="speech_cast_needs_voice">এই ভাষার দ্বিতীয় একটি ভয়েস দরকার: সেটিংস, ভয়েস-এ নিন</string>
+</resources>

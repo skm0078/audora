@@ -38,6 +38,9 @@ object SupertonicParts {
     val ALL = listOf(DURATION_PREDICTOR, TEXT_ENCODER, VECTOR_ESTIMATOR, VOCODER, UNICODE_INDEXER)
 }
 
+/** Piper's `noise_scale` (pitch and energy variation) and `noise_w` (length variation), set when a model loads. */
+data class VitsNoise(val scale: Float, val width: Float)
+
 /**
  * One voice's files, relative to its folder.
  *
@@ -47,6 +50,13 @@ object SupertonicParts {
  * @property engineLang the language code the model itself is told: Kokoro's `lang` ("en-us"), Supertonic's `lang`
  *   generation option ("hi"). Required for those two families.
  * @property numSteps Supertonic's flow-matching steps per render (speed against quality); null: sherpa's default.
+ * @property threads ONNX Runtime threads for this voice; null: SpeechConfig.sherpaThreads. Set for the heavier
+ *   character VITS voices (ADR-053), which keep up on the Moto only with its four big cores.
+ * @property noise a VITS voice's noise values (expressiveness, plan item 8); null: sherpa's defaults. Not in
+ *   `voice.properties`: the engine's voice source sets it from the listener's style, and a change reloads the model,
+ *   as any change to the spec does.
+ * @property blend a Kokoro voice's narrator blend (plan item 75), set by the engine's voice source the same way;
+ *   null: the voice as installed.
  */
 data class SherpaVoiceSpec(
     val id: String,
@@ -63,6 +73,9 @@ data class SherpaVoiceSpec(
     val lexicon: String? = null,
     val engineLang: String? = null,
     val numSteps: Int? = null,
+    val threads: Int? = null,
+    val noise: VitsNoise? = null,
+    val blend: StyleBlend? = null,
 ) {
     val voiceId: VoiceId get() = VoiceId(EngineId.SHERPA, id)
 
@@ -91,13 +104,15 @@ object SherpaVoiceManifest {
         val speakerId = (text(KEY_SPEAKER) ?: "0").toIntOrNull()?.takeIf { it >= 0 }
         val voices = text(KEY_VOICES)
         val engineLang = text(KEY_ENGINE_LANG)
-        val numSteps = text(KEY_NUM_STEPS)?.let { raw -> raw.toIntOrNull()?.takeIf { it > 0 } ?: INVALID }
+        val numSteps = positive(text(KEY_NUM_STEPS))
+        val threads = positive(text(KEY_THREADS))
         val problem = when {
             missing.isNotEmpty() -> "is missing $missing"
             lang == null -> "has unknown lang '${text(KEY_LANG)}'"
             family == null -> "has unknown family '${text(KEY_FAMILY)}'"
             speakerId == null -> "has invalid speakerId '${text(KEY_SPEAKER)}'"
             numSteps == INVALID -> "has invalid $KEY_NUM_STEPS '${text(KEY_NUM_STEPS)}'"
+            threads == INVALID -> "has invalid $KEY_THREADS '${text(KEY_THREADS)}'"
             else -> familyProblem(family, voices, engineLang)
         }
         if (problem != null) return Outcome.Failure("$FILE_NAME $problem")
@@ -118,9 +133,13 @@ object SherpaVoiceManifest {
                 lexicon = text(KEY_LEXICON),
                 engineLang = engineLang,
                 numSteps = numSteps,
+                threads = threads,
             ),
         )
     }
+
+    /** A whole number above 0, [INVALID] for anything else, null when the key is absent. */
+    private fun positive(raw: String?): Int? = raw?.let { it.toIntOrNull()?.takeIf { value -> value > 0 } ?: INVALID }
 
     /** Kitten, Kokoro and Supertonic need a voices file; Kokoro and Supertonic need their model's language. */
     private fun familyProblem(family: SherpaFamily, voices: String?, engineLang: String?): String? {
@@ -146,6 +165,7 @@ object SherpaVoiceManifest {
     private const val KEY_LEXICON = "lexicon"
     private const val KEY_ENGINE_LANG = "engineLang"
     private const val KEY_NUM_STEPS = "numSteps"
+    private const val KEY_THREADS = "threads"
     private const val INVALID = -1
     private val NEEDS_VOICES = setOf(SherpaFamily.KITTEN, SherpaFamily.KOKORO, SherpaFamily.SUPERTONIC)
     private val NEEDS_ENGINE_LANG = setOf(SherpaFamily.KOKORO, SherpaFamily.SUPERTONIC)

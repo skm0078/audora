@@ -16,7 +16,8 @@ import io.github.skm0078.audora.pdf.quality.IndicOrderEvidence
  * only a handful of whole pages. In memory only and never logged: signatures are the PDF's own words.
  *
  * @property extent union of the page's line boxes; null when no line has a box.
- * @property top the page's topmost lines, highest first; [bottom] its lowest, lowest first.
+ * @property top the page's topmost lines, highest first; [bottom] its lowest, lowest first: printer's slugs at the
+ *   edge, then up to `CleanupConfig.maxMarginLines` other lines.
  * @property hyphenated words printed with a hyphen inside a line on this page, as lower-case pairs ("block-pulse"),
  *   so a word broken at that hyphen at a line end keeps it.
  * @property bodySignatures hashes of the signatures of the page's other lines (empty when every line is a margin
@@ -41,6 +42,9 @@ class PageProfile internal constructor(
  * @property letters how many letters the signature holds.
  * @property folios page numbers the line carries (Folios).
  * @property standaloneFolio the whole line is a page number ("12", "Page 3 of 50", "– 7 –").
+ * @property slug the line is a printer's slug by itself ([PrintSlugs.standsAlone]: it ends with a layout file's
+ *   name, or is a bare print stamp to the second).
+ * @property printTimes the print times it carries, to the minute: a slug when a neighbour's margin has one too.
  */
 internal data class MarginLine(
     val line: TextLine,
@@ -49,15 +53,34 @@ internal data class MarginLine(
     val letters: Int,
     val folios: List<Int>,
     val standaloneFolio: Boolean,
+    val slug: Boolean = false,
+    val printTimes: Set<String> = emptySet(),
 )
 
 internal class PageProfiler(private val config: CleanupConfig) {
+    /**
+     * A printer's slug set outside the page ([PrintSlugs]: a line ending with a layout file's name, or a print time
+     * alone; a dated line with words, such as a date sheet's row, is not one here) is no part of the text area: the
+     * lines at either edge that are slugs (at most [CleanupConfig.maxMarginLines]) are left out of
+     * [PageProfile.extent] and take no margin slot of their own, so the band and the margin lines start at the
+     * page's own header or footer ("6" above "HUD3.indd Sec1:6" and "5/13/11 6:45 AM").
+     */
     fun profile(page: PageText, layout: PageLayout, indicOrder: IndicOrderEvidence): PageProfile {
         val lines = layout.blocks.flatMap { block -> block.paragraphs.flatMap { it.lines } }.filter { it.box != null }
-        val extent = lines.mapNotNull { it.box }.reduceOrNull(TextBox::union)
+        val isSlug = { line: TextLine ->
+            val text = spanTexts(page, line).joinToString(" ")
+            PrintSlugs.standsAlone(text) || PrintSlugs.isBareStamp(text)
+        }
+        val byTop = lines.sortedByDescending { requireNotNull(it.box).top }
+        val byBottom = lines.sortedBy { requireNotNull(it.box).bottom }
         val k = config.maxMarginLines
-        val top = lines.sortedByDescending { requireNotNull(it.box).top }.take(k).map { marginLine(page, it) }
-        val bottom = lines.sortedBy { requireNotNull(it.box).bottom }.take(k).map { marginLine(page, it) }
+        val topSlugs = byTop.take(k).takeWhile(isSlug)
+        val bottomSlugs = byBottom.take(k).takeWhile(isSlug)
+        val slugs = (topSlugs + bottomSlugs).toSet()
+        val inner = lines.filter { it !in slugs }.ifEmpty { lines }
+        val extent = inner.mapNotNull { it.box }.reduceOrNull(TextBox::union)
+        val top = (topSlugs + byTop.filter { it !in slugs }.take(k)).map { marginLine(page, it) }
+        val bottom = (bottomSlugs + byBottom.filter { it !in slugs }.take(k)).map { marginLine(page, it) }
         val margin = (top + bottom).mapTo(HashSet()) { it.line }
         val body = lines.filter { it !in margin }.mapTo(HashSet()) { signature(spanTexts(page, it)).hashCode() }
         return PageProfile(page.pageIndex, extent, top, bottom, hyphenatedPairs(page.text), body, indicOrder)
@@ -69,6 +92,7 @@ internal class PageProfiler(private val config: CleanupConfig) {
 
     private fun marginLine(page: PageText, line: TextLine): MarginLine {
         val spans = spanTexts(page, line)
+        val text = spans.joinToString(" ")
         val folios = Folios.of(spans, config.maxFolioDigits)
         val signature = signature(spans)
         return MarginLine(
@@ -78,6 +102,8 @@ internal class PageProfiler(private val config: CleanupConfig) {
             letters = signature.count { it != SIGNATURE_DIGITS },
             folios = folios.values,
             standaloneFolio = folios.standalone,
+            slug = PrintSlugs.standsAlone(text),
+            printTimes = PrintSlugs.times(text),
         )
     }
 

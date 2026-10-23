@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hindi: Read aloud to me, the reading tutor (plan item 67, ADR-050). -->
+<resources>
+    <string name="tutor_menu">मुझे पढ़कर सुनाइए</string>
+    <string name="tutor_title">मुझे पढ़कर सुनाइए</string>
+    <string name="tutor_mode_words">पेज ज़ोर से पढ़िए। Audora हर शब्द सुनता है, सिर्फ़ इसी फ़ोन पर।</string>
+    <string name="tutor_mode_phrases">पेज ज़ोर से पढ़िए। Audora एक बार में एक वाक्यांश सुनता है, इसलिए हर ठहराव के बाद निशान दिखते हैं। सिर्फ़ इसी फ़ोन पर।</string>
+    <string name="tutor_needs_model">%1$s में सुनने के लिए Audora को एक स्पीच मॉडल चाहिए: एक बार %2$s डाउनलोड, फ़ोन पर %3$s। उसके बाद यह बिना इंटरनेट के चलता है।</string>
+    <string name="tutor_download">डाउनलोड करें</string>
+    <string name="tutor_queued">डाउनलोड के लिए कनेक्शन का इंतज़ार…</string>
+    <string name="tutor_download_failed">डाउनलोड रुक गया (%1$s)। फिर से कोशिश करें।</string>
+    <string name="tutor_cancel_download">डाउनलोड रद्द करें</string>
+    <string name="tutor_preparing">सुनने की तैयारी हो रही है…</string>
+    <string name="tutor_listening">सुन रहा है…</string>
+    <string name="tutor_start">पढ़ना शुरू करें</string>
+    <string name="tutor_continue">आगे पढ़ें</string>
+    <string name="tutor_stop">रोकें</string>
+    <string name="tutor_start_over">फिर से शुरू करें</string>
+    <string name="tutor_close">बंद करें</string>
+    <string name="tutor_next_page">अगला पेज</string>
+    <string name="tutor_no_text">इस पेज पर ज़ोर से पढ़ने के लिए कोई टेक्स्ट नहीं है।</string>
+    <string name="tutor_legend">रंगीन: पढ़ा गया। लाल और रेखांकित: जाँच लें। कटा हुआ: छूट गया।</string>
+    <plurals name="tutor_score">
+        <item quantity="one">आपने %2$d में से %1$d शब्द सही पढ़े (%3$d%%)।</item>
+        <item quantity="other">आपने %2$d में से %1$d शब्द सही पढ़े (%3$d%%)।</item>
+    </plurals>
+    <string name="tutor_score_none">इस पेज पर कुछ भी जाँचा नहीं जा सका (अंक, चिह्न और दूसरी लिपियाँ नहीं जाँची जातीं)।</string>
+    <string name="tutor_to_check">जाँच लें (सुनने के लिए टैप करें):</string>
+    <plurals name="tutor_skipped">
+        <item quantity="one">छूटे: %1$d शब्द।</item>
+        <item quantity="other">छूटे: %1$d शब्द।</item>
+    </plurals>
+    <string name="tutor_check_note">जाँचने के लिए चिह्नित शब्द ऐसा भी हो सकता है जिसे स्पीच मॉडल ने ग़लत सुना।</string>
+    <string name="tutor_hear_word">“%1$s” सुनें</string>
+    <string name="tutor_failed_model">स्पीच मॉडल लोड नहीं हुआ; उसकी फ़ाइलें ख़राब हो सकती हैं।</string>
+    <string name="tutor_try_again">फिर से कोशिश करें</string>
+    <string name="tutor_download_again">फिर से डाउनलोड करें</string>
+    <string name="tutor_failed_permission">सुनने के लिए Audora को माइक्रोफ़ोन चाहिए। आप इसे फ़ोन की सेटिंग में चालू कर सकते हैं।</string>
+    <string name="tutor_open_settings">सेटिंग खोलें</string>
+    <string name="tutor_failed_microphone">माइक्रोफ़ोन इस्तेमाल नहीं हो सका। शायद कोई दूसरा ऐप उसे इस्तेमाल कर रहा है।</string>
+    <string name="tutor_lang_en">अंग्रेज़ी</string>
+    <string name="tutor_lang_hi">हिंदी</string>
+    <string name="tutor_lang_bn">बांग्ला</string>
+</resources>

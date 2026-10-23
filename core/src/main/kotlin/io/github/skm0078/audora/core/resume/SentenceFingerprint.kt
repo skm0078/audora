@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.core.resume
 
 import io.github.skm0078.audora.core.config.ResumeConfig
+import io.github.skm0078.audora.core.model.ReadingUnit
 import java.text.Normalizer
 import java.util.Locale
 
@@ -26,7 +27,14 @@ class SentenceFingerprint(private val config: ResumeConfig = ResumeConfig()) {
     /** Fingerprint of its last [ResumeConfig.fingerprintChars] normalized characters. */
     fun tail(text: String): Long = hash(normalized(text).takeLast(config.fingerprintChars))
 
-    private fun normalized(text: String): String {
+    /** [head] of the unit's [anchorText]: what every anchor saver uses. */
+    fun head(unit: ReadingUnit): Long = head(unit.anchorText)
+
+    /** [tail] of the unit's [anchorText]. */
+    fun tail(unit: ReadingUnit): Long = tail(unit.anchorText)
+
+    /** [text] as the fingerprints see it: NFKC, lower case, letters, digits and combining marks only. */
+    internal fun normalized(text: String): String {
         val folded = Normalizer.normalize(text, Normalizer.Form.NFKC).lowercase(Locale.ROOT)
         val kept = StringBuilder(folded.length)
         folded.codePoints().filter(::isKept).forEach { kept.appendCodePoint(it) }

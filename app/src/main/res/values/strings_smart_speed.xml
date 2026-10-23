@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_smart_speed.xml -->
+<!-- Purpose: Strings for smart speed in the speech sheet (plan item 10, ADR-049). -->
+<resources>
+    <string name="speech_smart_speed">Smart speed</string>
+    <string name="speech_smart_speed_detail">Only matters above %1$s×: shortens silences and long sounds but keeps consonants, so fast speech stays clear. At normal speeds it changes nothing.</string>
+</resources>

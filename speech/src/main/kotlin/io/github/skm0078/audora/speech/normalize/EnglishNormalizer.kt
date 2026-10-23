@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.speech.normalize
 
 import io.github.skm0078.audora.core.config.NormalizerConfig
+import io.github.skm0078.audora.core.model.Lang
 
 /**
  * Applies the English rules in a fixed order. Each rule turns digits and symbols into words, so a later, more
@@ -22,16 +23,19 @@ class EnglishNormalizer(config: NormalizerConfig = NormalizerConfig()) : TextNor
         CurrencyRule(config, numbers),
         TimeRule(),
         AbbreviationRule(),
+        InitialsRule(),
         DateRule(config),
         SignRule(),
         SymbolRule(),
         QuantityRule(numbers),
+        PunctuationRule(),
         RomanNumeralRule(),
         NumberRule(numbers),
     )
 
     override fun normalize(text: String, role: TextRole): String {
-        val rewritten = rules.fold(text) { result, rule -> rule.apply(result, role) }
+        val symbols = if (role == TextRole.EQUATION) MathSymbols.speak(text, Lang.EN) else text
+        val rewritten = rules.fold(symbols) { result, rule -> rule.apply(result, role) }
         return EXTRA_SPACES.replace(rewritten, " ").trim()
     }
 

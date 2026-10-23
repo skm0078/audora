@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_smart_speed.xml -->
+<!-- Purpose: Hindi copy of values/strings_smart_speed.xml: Strings for smart speed in the speech sheet (plan item 10, ADR-049). -->
+<resources>
+    <string name="speech_smart_speed">स्मार्ट स्पीड</string>
+    <string name="speech_smart_speed_detail">सिर्फ़ %1$s× से ऊपर असर: चुप्पियाँ और लंबी ध्वनियाँ छोटी करता है पर व्यंजन बनाए रखता है, ताकि तेज़ पढ़ाई साफ़ रहे। सामान्य गति पर कुछ नहीं बदलता।</string>
+</resources>

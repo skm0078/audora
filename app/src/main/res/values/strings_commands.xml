@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_commands.xml -->
+<!-- Purpose: Strings for spoken commands in the reader (plan item 38). -->
+<resources>
+    <string name="commands_model_title">Voice commands model (English)</string>
+    <string name="commands_model_missing">Lets you say \"Audora, pause\", \"play\", \"next\", \"back\", \"repeat\", \"faster\" or \"slower\" with the reader open. Everything is heard on your phone; nothing is recorded or sent. Needs %1$d MB.</string>
+    <string name="commands_model_ready">Installed · %1$d MB</string>
+    <string name="commands_switch_title">Listen for voice commands</string>
+    <string name="commands_switch_body">While the reader is on screen, Audora listens for \"Audora\" and a command, and Android shows the microphone indicator. Uses a little battery while it listens.</string>
+    <string name="commands_switch_needs_model">Download the voice commands model first.</string>
+    <string name="commands_screen_off_title">Keep listening with the screen off</string>
+    <plurals name="commands_screen_off_body">
+        <item quantity="one">While a book is open in the reader, Audora also listens with the screen off or in another app, and shows a notification you can stop it from. To save battery it stops once reading has been paused for %1$d minute and the reader is off screen.</item>
+        <item quantity="other">While a book is open in the reader, Audora also listens with the screen off or in another app, and shows a notification you can stop it from. To save battery it stops once reading has been paused for %1$d minutes and the reader is off screen.</item>
+    </plurals>
+    <string name="commands_notifications_denied">Listening with the screen off needs notifications, so you can always see it and stop it. You can allow them in Android\'s app settings.</string>
+    <string name="commands_permission_denied">Voice commands need the microphone. You can allow it in Android\'s app settings.</string>
+</resources>

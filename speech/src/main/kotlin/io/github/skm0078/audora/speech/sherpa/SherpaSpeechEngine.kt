@@ -46,7 +46,7 @@ import kotlinx.coroutines.withContext
  * @param maxLoadedVoices models kept loaded at once ([SpeechConfig.maxLoadedVoices]).
  */
 class SherpaSpeechEngine(
-    private val source: SherpaVoiceSource,
+    internal val source: SherpaVoiceSource,
     private val factory: SherpaSynthesizerFactory,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(1),
     private val maxLoadedVoices: Int = SpeechConfig().maxLoadedVoices,
@@ -77,13 +77,15 @@ class SherpaSpeechEngine(
     override suspend fun voices(): Outcome<List<VoiceInfo>, SpeechError> =
         Outcome.Success(source.byId().values.map { it.toVoiceInfo() })
 
+    /** [voice] may name another speaker of an installed model ([CastSpeakers.variant]): same model, its speaker. */
     override suspend fun render(text: String, voice: VoiceId, rate: Float): RenderResult {
-        val spec = source.byId()[voice]
+        val (base, requested) = CastSpeakers.parse(voice)
+        val spec = source.byId()[base]
             ?: return Outcome.Failure(
                 SpeechError.VoiceUnavailable(id, SpeechError.VoiceUnavailable.Reason.UNKNOWN_VOICE, voice),
             )
         return try {
-            mutex.withLock { withContext(dispatcher) { renderLocked(spec, text, rate) } }
+            mutex.withLock { withContext(dispatcher) { renderLocked(spec, text, rate, requested) } }
         } finally {
             // release() or trimMemory() may have found the lock taken by this render and left their work to whoever
             // holds it next.
@@ -125,15 +127,17 @@ class SherpaSpeechEngine(
         }
     }
 
-    private suspend fun renderLocked(spec: SherpaVoiceSpec, text: String, rate: Float): RenderResult {
+    /** [requested]: another speaker of [spec]'s model, checked against the model once loaded. */
+    private suspend fun renderLocked(spec: SherpaVoiceSpec, text: String, rate: Float, requested: Int?): RenderResult {
         if (released.get()) return Outcome.Failure(SpeechError.EngineUnavailable(id, "engine was released"))
         return synthesizerFor(spec).flatMap { synthesizer ->
+            val speaker = CastSpeakers.speakerFor(spec, requested, synthesizer.speakerCount)
             if (text.isBlank()) {
                 Outcome.Success(
                     PcmAudio.silence(synthesizer.sampleRate),
                 )
             } else {
-                generate(spec, synthesizer, text, rate)
+                generate(spec, synthesizer, text, rate, speaker)
             }
         }
     }
@@ -143,11 +147,12 @@ class SherpaSpeechEngine(
         synthesizer: SherpaSynthesizer,
         text: String,
         rate: Float,
+        speaker: Int,
     ): RenderResult {
         val job = coroutineContext[Job]
         val started = System.nanoTime()
         val samples: Outcome<FloatArray, SpeechError> = try {
-            Outcome.Success(synthesizer.generate(text, spec.speakerId, rate) { job?.isActive != false })
+            Outcome.Success(synthesizer.generate(text, speaker, rate) { job?.isActive != false })
         } catch (e: IllegalStateException) {
             failed(spec, e)
         } catch (e: IllegalArgumentException) {
@@ -163,8 +168,8 @@ class SherpaSpeechEngine(
             } else {
                 AudoraLog.d(
                     TAG,
-                    "Rendered voice=${spec.voiceId} rate=$rate chars=${text.length} audioMs=${audio.durationMs} " +
-                        "renderMs=$renderMs",
+                    "Rendered voice=${spec.voiceId} speaker=$speaker rate=$rate chars=${text.length} " +
+                        "audioMs=${audio.durationMs} renderMs=$renderMs",
                 )
             }
             audio
@@ -185,6 +190,13 @@ class SherpaSpeechEngine(
                     "Loaded voice=${spec.voiceId} sampleRate=${result.value.sampleRate} loadMs=$loadMs " +
                         "loaded=${loaded.size}",
                 )
+                if (!CastSpeakers.tableFits(spec, result.value.speakerCount)) {
+                    AudoraLog.w(
+                        TAG,
+                        "voice=${spec.voiceId} holds ${result.value.speakerCount} speakers, not the ones its " +
+                            "character table lists; characters read with the voice's own speaker",
+                    )
+                }
                 result
             }
 
@@ -208,7 +220,8 @@ class SherpaSpeechEngine(
 
         /**
          * The model loaded for exactly [spec], now the most recently used; null if there is none. A model of the
-         * same voice with other files (an update) is released, not kept beside the new one.
+         * same voice with other files (an update) or other noise values (expressiveness) is released, not kept
+         * beside the new one.
          */
         fun take(spec: SherpaVoiceSpec): SherpaSynthesizer? {
             val cached = voices.remove(spec.voiceId)
@@ -216,7 +229,7 @@ class SherpaSpeechEngine(
                 cached == null -> null
 
                 cached.spec != spec -> {
-                    release(cached, "voice files changed")
+                    release(cached, "voice files or expressiveness changed")
                     null
                 }
 
@@ -279,3 +292,27 @@ fun interface SherpaVoiceSource {
 private fun SherpaVoiceSource.byId(): Map<VoiceId, SherpaVoiceSpec> = buildMap {
     voices().forEach { if (it.voiceId !in this) put(it.voiceId, it) }
 }
+
+/**
+ * The other speakers [voice]'s model holds, its own speaker left out, for character voices (plan item 63); empty for
+ * a one-speaker model or a voice not installed. Cheap: reads the voice list, never loads a model.
+ */
+fun SherpaSpeechEngine.castSpeakers(voice: VoiceId): List<CastSpeaker> {
+    val spec = source.byId()[CastSpeakers.parse(voice).first] ?: return emptyList()
+    return CastSpeakers.of(spec).filter { it.speakerId != spec.speakerId }
+}
+
+/**
+ * Whether [voice] honours expressiveness (plan item 8): only Piper and MMS (VITS) voices have noise values to change.
+ * False for any other voice, or one not installed. Cheap: reads the voice list, never loads a model.
+ */
+fun SherpaSpeechEngine.isExpressive(voice: VoiceId): Boolean =
+    source.byId()[CastSpeakers.parse(voice).first]?.family == SherpaFamily.VITS
+
+/**
+ * [voice]'s own speaker when a narrator blend can change it (plan item 75): a Kokoro voice with English speakers to
+ * mix in; null for any other voice, or one not installed. Cheap: reads the voice list, never loads a model.
+ */
+fun SherpaSpeechEngine.blendableSpeaker(voice: VoiceId): Int? = source.byId()[CastSpeakers.parse(voice).first]
+    ?.takeIf { it.family == SherpaFamily.KOKORO && CastSpeakers.of(it).isNotEmpty() }
+    ?.speakerId

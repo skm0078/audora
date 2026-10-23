@@ -33,6 +33,8 @@ models/
 !playback/src/androidTest/assets/pdfs/*.pdf
 # The golden corpus (P2-01): redistributable excerpts only, licences in pdf/golden/README.md
 !pdf/golden/pdfs/*.pdf
+# The listening corpus (RI-8a): redistributable excerpts only, licences in pdf/golden/listening/README.md
+!pdf/golden/listening/pdfs/*.pdf
 
 # Python
 __pycache__/

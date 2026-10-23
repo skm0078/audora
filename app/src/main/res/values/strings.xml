@@ -34,9 +34,26 @@
     <string name="library_remove_title">Remove “%1$s”?</string>
     <string name="library_remove_body">The PDF stays on your phone. You can add it again later.</string>
     <string name="library_cancel">Cancel</string>
+    <string name="library_search">Search library</string>
+    <string name="library_search_hint">Search titles</string>
+    <string name="library_search_close">Close search</string>
+    <string name="library_sort_filter">Sort and filter</string>
+    <string name="library_sort_by">Sort by</string>
+    <string name="library_sort_recent">Recently opened</string>
+    <string name="library_sort_title">Title</string>
+    <string name="library_sort_added">Recently added</string>
+    <string name="library_sort_progress">Progress</string>
+    <string name="library_show">Show</string>
+    <string name="library_filter_all">All books</string>
+    <string name="library_filter_in_progress">In progress</string>
+    <string name="library_filter_not_started">Not started</string>
+    <string name="library_filter_finished">Finished</string>
+    <string name="library_shelf">%1$s · %2$d</string>
+    <string name="library_shelf_reading">Reading</string>
+    <string name="library_no_match">No book matches. Change the search or the filter.</string>
     <string name="library_error_cannot_keep">The app you picked from only lends the file for a moment. Save the PDF to your phone first, then add it from there.</string>
     <string name="library_error_unreadable">Audora could not read that file. It may have been moved or deleted.</string>
-    <string name="library_error_not_pdf">That file is not a PDF.</string>
+    <string name="library_error_not_pdf">That file is not a PDF, EPUB or text file.</string>
     <string name="library_error_different_file">That is a different PDF. Pick the same file, or remove this book and add the new one.</string>
     <string name="library_error_not_in_library">That book is no longer in your library.</string>
     <string name="library_error_storage">Audora could not save your library. Is your phone\'s storage full?</string>
@@ -58,7 +75,9 @@
     <string name="reader_back_to_reading">Back to page %1$d, where reading is</string>
     <string name="reader_page_no_text">No text on this page. Scanned pages are read with OCR in a later update.</string>
     <string name="reader_page_failed">This page could not be read. Please share the logs.</string>
-    <string name="reader_tap_hint">Tap a sentence to read from there.</string>
+    <string name="reader_tap_hint">Tap a sentence to read from there. Long-press one that sounded wrong.</string>
+    <string name="reader_read_from_here">Read from here</string>
+    <string name="reader_sentence_options">Options for this sentence</string>
     <string name="reader_show_page">Show the page</string>
     <string name="reader_show_text">Show the text</string>
     <string name="reader_page_image">Page %1$d. Tap a line to read from there.</string>
@@ -68,6 +87,8 @@
     <string name="reader_pause">Pause</string>
     <string name="reader_skip_back">Previous sentence</string>
     <string name="reader_skip_forward">Next sentence</string>
+    <string name="reader_paragraph_back">Previous paragraph</string>
+    <string name="reader_paragraph_forward">Next paragraph</string>
     <string name="reader_speed">Speed %1$s×</string>
     <string name="speech_sheet_speed">Speed %1$s×</string>
     <string name="speech_sheet_slower">Slower</string>
@@ -76,13 +97,109 @@
     <string name="speech_pace_tight">Short</string>
     <string name="speech_pace_normal">Normal</string>
     <string name="speech_pace_relaxed">Long</string>
-    <string name="speech_sheet_hint">The voice itself speaks faster or slower, so words stay clear. The sentence playing restarts at the new setting.</string>
+    <string name="speech_clause_pauses">Pause at punctuation</string>
+    <string name="speech_clause_pauses_detail">On: a short breath at dashes, colons, brackets and quotes, like a person reading. Off: reads straight through them.</string>
+    <string name="reading_modes_title">What to read</string>
+    <string name="reading_skip_unreadable">Skip unreadable text</string>
+    <string name="reading_skip_unreadable_detail">On: garbled scan text plays a soft sound instead of nonsense words. Off: everything is read, even junk.</string>
+    <string name="reading_tables">Tables</string>
+    <string name="reading_tables_summary">Size only</string>
+    <string name="reading_tables_rows">Row by row</string>
+    <string name="reading_footnotes">Footnotes</string>
+    <string name="reading_footnotes_read">End of page</string>
+    <string name="reading_equations">Equations</string>
+    <string name="reading_equations_as_written">As written</string>
+    <string name="reading_captions">Figure captions</string>
+    <string name="reading_skip_parentheses">Skip (asides)</string>
+    <string name="reading_skip_parentheses_detail">Leaves out text in parentheses; f(x) and 2(a) are kept</string>
+    <string name="reading_skip_brackets">Skip [notes]</string>
+    <string name="reading_skip_brackets_detail">Leaves out text in square brackets, such as [sic] or [3]</string>
+    <string name="reading_skip_links">Skip links</string>
+    <string name="reading_skip_links_detail">Leaves out web and e-mail addresses instead of saying “link”</string>
+    <string name="reading_announce_pages">Say page numbers</string>
+    <string name="reading_announce_pages_detail">Says “Page 12” as each page starts</string>
+    <string name="reading_announce">Announce</string>
+    <string name="reading_skip">Skip</string>
+    <string name="reader_ocr_quality_good">Scanned page, OCR quality good.</string>
+    <string name="reader_ocr_quality_fair">Scanned page, OCR quality fair: some words may be wrong.</string>
+    <string name="reader_ocr_quality_poor">Scanned page, OCR quality poor: many words may be wrong.</string>
+    <string name="report_title">This sounded wrong</string>
+    <string name="report_body">What went wrong? It goes to the app\'s log (Settings, Share logs) with where this sentence is, never its words.</string>
+    <string name="report_junk_read">Garbage was read out</string>
+    <string name="report_wrong_word">A word was wrong</string>
+    <string name="report_table">A table</string>
+    <string name="report_note">A note or footnote</string>
+    <string name="report_pause">A pause was wrong</string>
+    <string name="report_other">Something else</string>
+    <string name="unreadable_title">Skipped as unreadable</string>
+    <string name="unreadable_body">This line looks like scan noise or a broken font, so a soft sound plays instead of it. Reading it anyway turns off Skip unreadable text; turn it back on under What to read.</string>
+    <string name="unreadable_read">Read it anyway</string>
+    <string name="chapters_title">Chapters</string>
+    <string name="chapters_untitled">Page %1$d</string>
+    <string name="reader_time_left">About %1$s left at %2$s×</string>
+    <string name="reader_time_left_chapter">About %1$s left at %2$s×, %3$s in this chapter</string>
+    <string name="duration_hours_minutes">%1$d h %2$d min</string>
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_under_minute">under a minute</string>
+    <string name="reader_undo_jump">Undo jump (page %1$d)</string>
+    <string name="speech_sheet_hint">Changes apply at once: the sentence playing starts again with the new setting, so you may hear it twice.</string>
     <string name="reader_sleep_timer">Sleep timer</string>
     <string name="reader_sleep_off">Off</string>
     <string name="reader_sleep_minutes">%1$d minutes</string>
     <string name="reader_sleep_end_of_page">End of page</string>
     <string name="reader_sleep_end_of_chapter">End of chapter</string>
-    <string name="reader_player_connecting">Connecting to the player…</string>
+    <string name="speech_own_settings">Use for this book only</string>
+    <string name="speech_own_settings_detail">On: this book remembers its own speed, pause and voices; other books keep the usual ones. Off: this book uses the usual ones.</string>
+    <string name="bookmarks_title">Bookmarks</string>
+    <string name="bookmarks_add_here">Bookmark here</string>
+    <string name="bookmarks_empty">No bookmarks yet. Long-press a sentence, or tap Bookmark here.</string>
+    <string name="bookmarks_page">Page %1$d</string>
+    <string name="bookmarks_note">Note</string>
+    <string name="bookmarks_note_title">Note on page %1$d</string>
+    <string name="bookmarks_note_hint">What you want to remember here</string>
+    <string name="sentence_menu_title">This sentence</string>
+    <string name="sentence_menu_bookmark">Bookmark it</string>
+    <string name="sentence_menu_fix">Fix how a word sounds</string>
+    <string name="fix_title">Fix how a word sounds</string>
+    <string name="fix_written">Word as written</string>
+    <string name="fix_spoken">Say it like</string>
+    <string name="fix_whole_word">Whole word only</string>
+    <string name="fix_this_book">Only in this book</string>
+    <string name="fix_add">Add fix</string>
+    <string name="fix_every_book">every book</string>
+    <string name="fix_this_book_short">this book</string>
+    <string name="fix_rule">%1$s → %2$s (%3$s)</string>
+    <string name="settings_group_pronunciation">Pronunciation</string>
+    <string name="settings_pronunciation_title">Words in every book</string>
+    <string name="settings_pronunciation_body">Fix how a word sounds in every book. A fix for one book is made from a sentence\'s menu.</string>
+    <string name="pronunciation_save_failed">Couldn\'t save the fix. Try again.</string>
+    <string name="notes_delete">Delete</string>
+    <string name="notes_done">Done</string>
+    <string name="notes_ok">OK</string>
+    <string name="notes_save_failed">That could not be saved. The phone may be out of storage.</string>
+    <string name="speech_book_voices">Voices for this book</string>
+    <string name="speech_sound">Sound</string>
+    <string name="speech_even_loudness">Even loudness</string>
+    <string name="speech_even_loudness_detail">On: every sentence and every voice plays at the same volume, so nothing is suddenly loud or quiet.</string>
+    <string name="speech_trim_pauses">Trim long pauses</string>
+    <string name="speech_trim_pauses_detail">On: cuts the voice\'s own long silences, so reading flows faster. The pauses you set above are kept.</string>
+    <string name="speech_boost">Voice boost</string>
+    <string name="speech_boost_off">Off</string>
+    <string name="speech_boost_db">+%1$d dB</string>
+    <string name="speech_expressiveness">Expressiveness</string>
+    <string name="speech_expressiveness_detail">Left: calm and even, like a newsreader. Right: more rise and fall, like a storyteller. Only Piper and MMS voices use it; the voice reloads after a change, about a second.</string>
+    <string name="speech_expressiveness_newsreader">Newsreader</string>
+    <string name="speech_expressiveness_storyteller">Storyteller</string>
+    <string name="reader_sleep_chapters">After %1$d chapters</string>
+    <string name="sleep_options_menu">Sleep options…</string>
+    <string name="sleep_options_title">Sleep options</string>
+    <string name="sleep_options_shake">Shake the phone to restart the timer</string>
+    <string name="sleep_options_fade">Fade the voice out at the end</string>
+    <string name="sleep_options_bedtime">Set a timer by itself at bedtime</string>
+    <string name="sleep_options_from">Bedtime starts</string>
+    <string name="sleep_options_to">Bedtime ends</string>
+    <string name="sleep_options_bedtime_timer">Timer at bedtime</string>
+    <string name="sleep_options_save">Save</string>
     <string name="reader_player_unavailable">The player is not available. Please share the logs.</string>
     <string name="reader_player_error">Reading stopped because of an error. Tap play to try again, or share the logs.</string>
 
@@ -107,7 +224,6 @@
     <string name="unfinished_body">Audora stopped while reading page %1$d. Resume where it stopped?</string>
     <string name="unfinished_resume">Resume</string>
     <string name="unfinished_not_now">Not now</string>
-    <string name="debug_tools_label">Debug build only</string>
     <string name="debug_simulate_title">Simulate a reading session</string>
     <string name="debug_simulate_body">Marks a book as playing without sound. Then force-stop Audora in App info and reopen it: the resume prompt should appear and the log should name the stop.</string>
     <string name="debug_simulate_done">Marked as reading. Now force-stop Audora and reopen it.</string>
@@ -197,6 +313,7 @@
     <string name="licences_apache">Apache License 2.0</string>
     <string name="licences_mit">MIT License</string>
     <string name="licences_gpl3">GNU General Public License v3.0</string>
+    <string name="licences_cc_by_sa">Creative Commons Attribution-ShareAlike 4.0 (word lists built from it)</string>
     <string name="voices_imported">Imported %1$s. Pick it below to read with it.</string>
 
     <!-- OCR of scanned pages (P3-05) -->
@@ -215,9 +332,181 @@
     <string name="settings_ocr_title">Scanned pages (OCR)</string>
     <string name="settings_ocr_missing">Reads scanned and garbled pages aloud. Needs %1$d MB of text recognition files.</string>
     <string name="settings_ocr_ready">Ready for English, Hindi and Bengali · %1$d MB</string>
+    <string name="settings_punct_title">Pauses in unpunctuated scans (English)</string>
+    <string name="settings_punct_missing">Some scanned pages lose their full stops, so a long passage runs together. This adds pauses there, only in English sentences of 40 words or more with no full stop. Text that has its punctuation is never changed. Needs %1$d MB.</string>
+    <string name="settings_punct_ready">On for long English scanned sentences with no full stop · %1$d MB</string>
     <string name="settings_ocr_unavailable">Not available in this build.</string>
 
     <!-- Reading text (P2-03) -->
     <string name="settings_skip_citations_title">Skip citation numbers</string>
-    <string name="settings_skip_citations_body">Reads “[12]” and “[4–7]” markers aloud when off. Applies to books you open next.</string>
+    <string name="settings_skip_citations_body">On: leaves out reference numbers such as “[12]” and “[4–7]”. Off: reads them aloud. Takes effect the next time you open a book.</string>
+    <string name="settings_keep_screen_on_title">Keep screen on while reading aloud</string>
+    <string name="settings_volume_keys_title">Volume keys skip sentences</string>
+    <string name="settings_volume_keys_body">While Audora reads aloud in the reader, volume down goes to the next sentence and volume up back one. Paused, or outside the reader, the keys change the volume as usual.</string>
+    <string name="settings_keep_screen_on_body">The reader stays lit while Audora reads, so you can follow along. Uses more battery; the screen times out as usual when paused.</string>
+    <!-- App shell and screens (ADR-036) -->
+    <string name="tab_library">Library</string>
+    <string name="tab_notes">Notes</string>
+    <string name="tab_settings">Settings</string>
+    <string name="library_add_to_up_next">Add to Up next</string>
+    <string name="library_status_new">New</string>
+    <string name="library_status_finished">Finished</string>
+    <string name="library_status_percent">%1$d%% read</string>
+    <string name="library_tile_description">%1$s, %2$s</string>
+    <!-- Duplicate check (plan item 27): the picked PDF is a book the library already has. -->
+    <string name="library_duplicate_title">You already have this PDF</string>
+    <string name="library_duplicate_same">“%1$s” is already in your library. Audora keeps one copy, so your place in it stays the same.</string>
+    <string name="library_duplicate_moved">This is the same PDF as “%1$s”, so that book now opens from this file. Your place in it is kept.</string>
+    <string name="library_duplicate_open">Open it</string>
+    <string name="library_duplicate_close">Close</string>
+    <!-- Notes tab -->
+    <string name="notes_empty_title">No bookmarks yet</string>
+    <string name="notes_empty_body">Bookmarks and notes you add while reading gather here, for every book. Long-press a sentence to add one.</string>
+    <string name="notes_page">Page %1$d</string>
+    <!-- Up next (plan item 25) -->
+    <string name="up_next_title">Up next</string>
+    <string name="up_next_empty">Nothing queued. Add a book and it starts when this one ends.</string>
+    <string name="up_next_add">Add a book</string>
+    <string name="up_next_done_adding">Done adding</string>
+    <string name="up_next_add_one">add to Up next</string>
+    <string name="up_next_move_up">Move %1$s up</string>
+    <string name="up_next_remove">Remove %1$s from Up next</string>
+    <string name="up_next_clear">Clear</string>
+    <string name="up_next_from">From %1$s</string>
+    <string name="up_next_from_page">From page %1$d</string>
+    <string name="up_next_time_left">About %1$s</string>
+    <string name="up_next_keep_going">Keep going to the next chapter</string>
+    <string name="up_next_keep_going_body">Off, reading stops at the end of each chapter.</string>
+    <string name="up_next_play_queue">Then play the queue</string>
+    <string name="up_next_play_queue_body">When this book ends, the first book in the queue starts.</string>
+    <!-- Reader look (plan item 77) -->
+    <string name="reader_more">More options</string>
+    <string name="reader_focus_view">Focus view</string>
+    <string name="reader_bold_word_starts">Bold word starts (English)</string>
+    <string name="reader_follow_along">Follow along</string>
+    <string name="reader_word_highlight">Highlight each word</string>
+    <string name="reader_highlight_fill">Highlight: band</string>
+    <string name="reader_highlight_underline">Highlight: underline</string>
+    <string name="reader_highlight_bold">Highlight: bold</string>
+    <string name="reader_tone_original">Page: as printed</string>
+    <string name="reader_tone_sepia">Page: sepia</string>
+    <string name="reader_tone_dark">Page: dark</string>
+    <string name="reader_fit_width">Fit width</string>
+    <!-- Text view type (plan item 15) -->
+    <string name="reader_text_look">Text and spacing…</string>
+    <string name="text_look_title">Text and spacing</string>
+    <string name="text_look_sample">It is not down in any map; true places never are. सभी मनुष्यों को गौरव। সকল মানুষ স্বাধীন।</string>
+    <string name="text_look_font">Font</string>
+    <string name="text_look_font_serif">Book (serif)</string>
+    <string name="text_look_font_sans">Clean (sans)</string>
+    <string name="text_look_size">Size</string>
+    <string name="text_look_size_value">%1$d %%</string>
+    <string name="text_look_spacing">Line spacing</string>
+    <string name="text_look_spacing_compact">Tight</string>
+    <string name="text_look_spacing_normal">Normal</string>
+    <string name="text_look_spacing_relaxed">Airy</string>
+    <string name="text_look_reflow">Running paragraphs</string>
+    <string name="text_look_reflow_body">Sentences flow together like a book. Off: one sentence per row, easier to step through with TalkBack.</string>
+    <!-- Full player -->
+    <string name="player_close">Close player</string>
+    <string name="player_what_did_it_say">What did it say?</string>
+    <string name="player_replaying">Saying it again, a little slower</string>
+    <string name="player_show_page">Show the page</string>
+    <string name="player_idle">Press play to start reading.</string>
+    <string name="player_page">Page %1$d</string>
+    <string name="player_chapter_action">Read from %1$s</string>
+    <plurals name="player_pages">
+        <item quantity="one">%1$d page</item>
+        <item quantity="other">%1$d pages</item>
+    </plurals>
+    <!-- Settings groups and appearance -->
+    <string name="settings_group_listening">Listening</string>
+    <string name="settings_group_reading">Reading</string>
+    <string name="settings_group_appearance">Appearance</string>
+    <string name="settings_group_app">App</string>
+    <string name="settings_group_debug">Debug</string>
+    <string name="settings_wallpaper_colors_title">Wallpaper colours</string>
+    <string name="settings_wallpaper_colors_body">Match the colours of your wallpaper. Off uses Audora\'s warm reading colours.</string>
+    <string name="settings_dark_mode_title">Theme</string>
+    <string name="settings_dark_mode_system">System</string>
+    <string name="settings_dark_mode_light">Light</string>
+    <string name="settings_dark_mode_dark">Dark</string>
+    <string name="settings_true_black_title">True black at night</string>
+    <string name="settings_true_black_body">Pure black behind the text in dark mode. Saves battery on OLED screens.</string>
+    <!-- Home-screen widget (plan item 35) -->
+    <string name="widget_description">Pick up your book where you left off</string>
+    <string name="widget_empty_body">Open a PDF to start listening</string>
+    <string name="widget_resume">Resume</string>
+    <string name="widget_resume_label">Resume %1$s</string>
+    <!-- Quick Settings tile (plan item 36) -->
+    <string name="tile_playing">Reading aloud</string>
+    <string name="tile_paused">Paused</string>
+    <string name="tile_resume">Pick up your book</string>
+
+    <!-- Kids mode (plan item 71) -->
+    <string name="settings_kids_title">Kids mode</string>
+    <string name="settings_kids_body">Just the books and three big buttons, read a little slower. Settings stay locked until a grown-up holds the banner on the library.</string>
+    <string name="kids_leave">Kids mode is on. Grown-ups: hold here to leave.</string>
+
+    <!-- App language (plan item 44); each language is named in its own script, so those names are not translated -->
+    <string name="settings_language_title">Language</string>
+    <string name="settings_language_cancel">Cancel</string>
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_hindi" translatable="false">हिन्दी</string>
+    <string name="language_bengali" translatable="false">বাংলা</string>
+    <string name="language_phone">Phone\'s language</string>
+
+    <!-- Notes tab filter by book (UI plan, wave 4) -->
+    <string name="notes_filter_all">All books</string>
+    <string name="notes_filter_book" translatable="false">%1$s · %2$d</string>
+
+    <!-- Book details (UI plan, wave 4) -->
+    <string name="book_details_title">Details</string>
+    <string name="book_details_open">Open</string>
+    <string name="book_details_size">File size: %1$s</string>
+    <string name="book_details_added">Added %1$s</string>
+    <string name="book_details_opened">Last read %1$s</string>
+
+    <!-- First run (UI plan, wave 4) -->
+    <string name="first_run_step">Step %1$d of %2$d</string>
+    <string name="first_run_welcome_title">Welcome to Audora</string>
+    <string name="first_run_languages_body">Which languages are your books in? Audora reads English, Hindi and Bengali aloud.</string>
+    <string name="first_run_privacy">Audora works offline: no account, no ads, no tracking. It only downloads the voices and models you choose.</string>
+    <string name="first_run_voices_title">Pick a voice</string>
+    <string name="first_run_voices_body">Each language reads with a voice stored on your phone. Download one now, or later in Settings → Voices.</string>
+    <string name="first_run_background_title">Keep reading with the screen off</string>
+    <string name="first_run_background_body">Android may stop apps in the background to save battery. Allow Audora to keep running so a chapter is not cut short.</string>
+    <string name="first_run_background_allow">Allow background reading</string>
+    <string name="first_run_background_done">Allowed. Audora can keep reading with the screen off.</string>
+    <string name="first_run_book_title">Add your first book</string>
+    <string name="first_run_book_body">Pick a PDF on your phone. Audora remembers your place in every book.</string>
+    <string name="first_run_add_pdf">Add a PDF</string>
+    <string name="first_run_next">Next</string>
+    <string name="first_run_back">Back</string>
+    <string name="first_run_skip">Skip</string>
+    <string name="first_run_later">Not now</string>
+
+    <!-- Storage (UI plan, wave 4) -->
+    <string name="storage_title">Storage</string>
+    <string name="settings_storage_body">What Audora keeps on your phone, and how to free space.</string>
+    <string name="storage_total">Audora uses %1$s</string>
+    <string name="storage_voices">Downloaded voices</string>
+    <string name="storage_ocr">Text recognition for scanned pages</string>
+    <string name="storage_punctuation">Punctuation model</string>
+    <string name="storage_page_pictures">Page pictures (scrubber)</string>
+    <string name="storage_voice_commands">Voice commands model</string>
+    <string name="storage_ocr_text">Text read from scanned pages</string>
+    <string name="storage_covers">Book covers</string>
+    <string name="storage_voice_blends">Narrator blends</string>
+    <string name="storage_shared_pdfs">PDFs shared to Audora</string>
+    <string name="storage_measuring">Measuring…</string>
+    <string name="storage_measure_failed">Couldn\'t measure</string>
+    <string name="storage_free_failed">Couldn\'t free %1$s. Try again.</string>
+    <string name="storage_manage">Manage</string>
+    <string name="storage_delete">Delete</string>
+    <string name="storage_action_on" translatable="false">%1$s: %2$s</string>
+    <string name="storage_clear">Clear</string>
+    <string name="storage_cancel">Cancel</string>
+    <string name="storage_delete_title">Delete %1$s?</string>
+    <string name="storage_delete_body">Books that need it will ask you to download it again.</string>
 </resources>

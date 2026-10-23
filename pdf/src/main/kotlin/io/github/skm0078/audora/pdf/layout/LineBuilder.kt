@@ -13,7 +13,7 @@ internal class LineBuilder(private val config: LayoutConfig) {
         var lineBox: TextBox? = null
         for (run in runs.sortedByDescending { it.box.top }) {
             val current = lineBox
-            if (current != null && sameLine(current, run.box)) {
+            if (current != null && sameLine(current, run.box) && lines.last().none { stacked(it, run) }) {
                 lines.last().add(run)
                 lineBox = current.union(run.box)
             } else {
@@ -28,6 +28,15 @@ internal class LineBuilder(private val config: LayoutConfig) {
         val overlap = minOf(line.top, box.top) - maxOf(line.bottom, box.bottom)
         val minHeight = minOf(line.height, box.height)
         return minHeight <= 0f || overlap >= minHeight * config.lineOverlapRatio
+    }
+
+    /**
+     * [a] and [b] are runs of words on different rows, one above the other: their cores ([GlyphRun.core]) do not
+     * share a row though their boxes do, through a tall glyph's box.
+     */
+    private fun stacked(a: GlyphRun, b: GlyphRun): Boolean {
+        val across = minOf(a.core.right, b.core.right) > maxOf(a.core.left, b.core.left)
+        return a.prose && b.prose && across && !sameLine(a.core, b.core)
     }
 
     private fun lineOf(runs: List<GlyphRun>, styles: GlyphStyles): TextLine {

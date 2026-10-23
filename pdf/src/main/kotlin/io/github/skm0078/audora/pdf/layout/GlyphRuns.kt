@@ -9,9 +9,25 @@ import io.github.skm0078.audora.pdf.extract.PageText
 
 /**
  * A run of glyphs in extraction order on one line, with no column-sized gap inside. [start] and [end] are
- * offsets into the page text, trimmed of whitespace. [boxedGlyphs] counts the glyphs that had a box.
+ * offsets into the page text, trimmed of whitespace. [boxedGlyphs] counts the glyphs that had a box. [core] is
+ * [box] as tall as its glyphs of usual height ([LayoutConfig.tallGlyphRatio]): a math font's "≳" has a box that
+ * reaches into the line below. [prose] tells a run of words ([LayoutConfig.proseLetterShare]) from a formula's.
+ * [monospace] runs are mostly set in a monospace font ([LayoutConfig.monospaceFontMarkers]): preformatted text.
  */
-internal class GlyphRun(val start: Int, val end: Int, val box: TextBox, val boxedGlyphs: Int)
+internal class GlyphRun(
+    val start: Int,
+    val end: Int,
+    val box: TextBox,
+    val boxedGlyphs: Int,
+    val core: TextBox = box,
+    val traits: RunTraits = RunTraits(),
+) {
+    val prose: Boolean get() = traits.prose
+    val monospace: Boolean get() = traits.monospace
+}
+
+/** What a [GlyphRun]'s glyphs are: mostly letters ([GlyphRun.prose]), mostly monospace ([GlyphRun.monospace]). */
+internal data class RunTraits(val prose: Boolean = false, val monospace: Boolean = false)
 
 internal class GlyphRunSplitter(private val config: LayoutConfig) {
     /** Result of [split]: the runs, and how many non-space glyphs the page has and how many had a box. */
@@ -24,7 +40,7 @@ internal class GlyphRunSplitter(private val config: LayoutConfig) {
      */
     fun split(page: PageText, styles: GlyphStyles): Result {
         val text = page.text
-        val out = RunCollector()
+        val out = RunCollector(page, styles)
         var glyphs = 0
         var offset = 0
         while (offset < text.length) {
@@ -37,7 +53,7 @@ internal class GlyphRunSplitter(private val config: LayoutConfig) {
 
                 else -> {
                     glyphs++
-                    out.addGlyph(offset, next, page.boxAt(offset), styles.sizeAt(offset))
+                    out.addGlyph(offset, next, page.boxAt(offset), styles.sizeAt(offset), Character.isLetter(codePoint))
                 }
             }
             offset = next
@@ -46,26 +62,29 @@ internal class GlyphRunSplitter(private val config: LayoutConfig) {
         return Result(out.runs, glyphs, out.boxedGlyphs)
     }
 
-    private inner class RunCollector {
+    private inner class RunCollector(private val page: PageText, private val styles: GlyphStyles) {
         val runs = ArrayList<GlyphRun>()
         var boxedGlyphs = 0
         private var start = NONE
         private var end = NONE
         private var box: TextBox? = null
+        private val glyphBoxes = ArrayList<TextBox>()
         private var last: TextBox? = null
         private var boxed = 0
+        private var letters = 0
 
         /** Unboxed glyphs seen while no run was open: they join the next run, or the last one at the end. */
         private var pendingStart = NONE
         private var pendingEnd = NONE
 
-        fun addGlyph(from: Int, to: Int, box: TextBox?, size: Float) {
+        fun addGlyph(from: Int, to: Int, box: TextBox?, size: Float, letter: Boolean) {
             if (box == null) {
                 addUnboxed(from, to)
                 return
             }
             if (!continuesWith(box, em = if (size > 0f) size else box.height)) close()
             addBoxed(from, to, box)
+            if (letter) letters++
         }
 
         private fun continuesWith(next: TextBox, em: Float): Boolean {
@@ -84,6 +103,7 @@ internal class GlyphRunSplitter(private val config: LayoutConfig) {
             }
             end = to
             box = box?.union(glyph) ?: glyph
+            glyphBoxes.add(glyph)
             last = glyph
             boxed++
             boxedGlyphs++
@@ -100,11 +120,18 @@ internal class GlyphRunSplitter(private val config: LayoutConfig) {
 
         fun close() {
             val runBox = box
-            if (start != NONE && runBox != null) runs.add(GlyphRun(start, end, runBox, boxed))
+            if (start != NONE && runBox != null) {
+                val prose = boxed >= config.proseMinGlyphs && letters >= boxed * config.proseLetterShare
+                val monospace = styles.isMostlyMonospace(start until end, page.text)
+                val traits = RunTraits(prose, monospace)
+                runs.add(GlyphRun(start, end, runBox, boxed, coreOf(glyphBoxes) ?: runBox, traits))
+            }
             start = NONE
             box = null
+            glyphBoxes.clear()
             last = null
             boxed = 0
+            letters = 0
         }
 
         fun finish() {
@@ -112,8 +139,18 @@ internal class GlyphRunSplitter(private val config: LayoutConfig) {
             if (pendingStart == NONE) return
             // A page with no boxed glyph at all keeps the extraction order (minBoxedShare), so dropping is moot.
             val tail = runs.removeLastOrNull() ?: return
-            runs.add(GlyphRun(tail.start, pendingEnd, tail.box, tail.boxedGlyphs))
+            runs.add(
+                GlyphRun(tail.start, pendingEnd, tail.box, tail.boxedGlyphs, tail.core, tail.traits),
+            )
         }
+    }
+
+    /** The union of [glyphs] within [LayoutConfig.tallGlyphRatio] of their typical height, or null for none. */
+    private fun coreOf(glyphs: List<TextBox>): TextBox? {
+        if (glyphs.isEmpty()) return null
+        val heights = glyphs.map { it.height }.sorted()
+        val typical = heights[((heights.size - 1) * config.typicalGlyphQuantile).toInt()]
+        return glyphs.filter { it.height <= typical * config.tallGlyphRatio }.reduceOrNull(TextBox::union)
     }
 
     private companion object {

@@ -1,0 +1,11 @@
+# Listening scores (RI-8a). Written by ./gradlew :playback:listeningTest; do not edit by hand.
+document	category	status	units	similarity	word_recall	word_precision
+en-udhr-p0-1	clean-en	draft	24	1.0000	1.0000	1.0000
+hi-udhr-p0-1	clean-hi	draft	13	0.9987	0.9940	0.9940
+bn-udhr-p0-1	clean-bn	draft	9	1.0000	1.0000	1.0000
+hi-udhr-scan200bad-p0-1	scan-hi	draft	13	0.9946	0.9940	0.9940
+bn-udhr-scan200bad-p4-5	scan-bn	draft	28	0.9820	0.9539	0.9539
+en-physimaging-tables-p2-3	table-en	draft	123	0.9471	0.9767	0.9313
+en-forallx-footnotes-p22-23	footnotes-en	draft	42	0.9912	0.9956	1.0000
+en-jmathbiol-math-p6-7	math-en	draft	47	0.9619	0.9235	0.9709
+hi-udhr-krutidev	legacy-hi	draft	39	0.9989	0.9894	0.9929

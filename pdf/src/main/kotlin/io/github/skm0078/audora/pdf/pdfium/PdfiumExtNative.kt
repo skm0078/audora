@@ -1,5 +1,5 @@
 // File: pdf/src/main/kotlin/io/github/skm0078/audora/pdf/pdfium/PdfiumExtNative.kt
-// Purpose: Kotlin side of libaudora_pdfium_ext.so (src/main/cpp): font info, flags and /ActualText per page.
+// Purpose: Kotlin side of libaudora_pdfium_ext.so (src/main/cpp): per-page font info, flags, /ActualText; labels.
 
 package io.github.skm0078.audora.pdf.pdfium
 
@@ -19,6 +19,18 @@ internal object PdfiumExtNative {
      */
     @JvmStatic
     external fun nativeReadPage(pagePtr: Long, textPagePtr: Long, maxFormDepth: Int): Array<Any?>
+
+    /** Whether the loaded libpdfium.so can read page labels (FPDF_GetPageLabel is optional). */
+    @JvmStatic
+    external fun nativeHasPageLabels(): Boolean
+
+    /**
+     * The page's label from the document's page labels; null when it has none, libpdfium.so cannot read labels,
+     * or it cannot be read; empty when it is too long to be a label (a damaged label tree). Caller holds
+     * PdfiumAndroidKt's lock and keeps the document open for the call.
+     */
+    @JvmStatic
+    external fun nativePageLabel(documentPtr: Long, pageIndex: Int): String?
 
     private const val CODE_POINTS = 0
     private const val GENERATED = 1

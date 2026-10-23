@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_blend.xml -->
+<!-- Purpose: Hindi copy of values/strings_blend.xml: Strings for the narrator blend (plan item 75). -->
+<resources>
+    <string name="speech_blend">नैरेटर की आवाज़ मिलाएँ</string>
+    <string name="speech_blend_detail">अपनी पसंद की आवाज़ के लिए Kokoro नैरेटर में कोई और आवाज़ मिलाएँ। सिर्फ़ Kokoro आवाज़ें। हर बदलाव के बाद आवाज़ करीब एक सेकंड में फिर से लोड होती है, और हर मिश्रण कैश में 28 MB की कॉपी रखता है।</string>
+    <string name="speech_blend_off">बंद</string>
+    <string name="speech_blend_amount">मिलाया गया: %1$d%%</string>
+    <string name="speech_blend_needs_space">लागू नहीं हुआ: मिश्रण के लिए %1$d MB खाली जगह चाहिए। जगह होने तक नैरेटर इंस्टॉल की गई आवाज़ में पढ़ेगा।</string>
+    <string name="speech_blend_refused">लागू नहीं हुआ: यह आवाज़ मिश्रण के साथ लोड नहीं हुई, इसलिए बिना मिश्रण के पढ़ी जा रही है।</string>
+</resources>

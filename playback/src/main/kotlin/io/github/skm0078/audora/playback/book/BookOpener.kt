@@ -1,13 +1,13 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/book/BookOpener.kt
-// Purpose: Turns a library book id (+ optional password) into an open BookText, with a typed failure.
+// Purpose: Turns a library book id (+ optional password) into an open BookText (PDF, EPUB or text), typed failure.
 
 package io.github.skm0078.audora.playback.book
 
 import android.content.Context
-import android.net.Uri
 import io.github.skm0078.audora.core.config.CleanupConfig
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.library.DocumentFormat
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
@@ -16,7 +16,10 @@ import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.pdfium.PdfiumEngine
 import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
+import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.ocr.BookOcr
+import io.github.skm0078.audora.playback.text.TextBookError
+import io.github.skm0078.audora.playback.text.TextBooks
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -47,13 +50,27 @@ class LibraryBookSource(
     private val library: Library,
     private val io: CoroutineDispatcher = Dispatchers.IO,
     private val textPreferences: ReadingTextPreferences = ReadingTextPreferences.forContext(context),
+    private val textBooks: TextBooks = TextBooks(context),
 ) : BookSource {
     override suspend fun open(id: BookId, password: String?): Outcome<OpenedBook, OpenFailure> {
         val book = library.book(id) ?: return Outcome.Failure(
             OpenFailure(PlaybackErrorCode.BOOK_NOT_FOUND, "This book is no longer in the library"),
         )
         val cleanup = withContext(io) { textPreferences.cleanupConfig() }
-        val engine = PdfiumEngine.forUri(context, Uri.parse(book.documentUri))
+        // EPUB and text books (items 42, 43, ADR-042) open beside PDFs; an unreadable head falls through to PDFium.
+        return when (val format = withContext(io) { textBooks.formatOf(book.documentUri) }) {
+            DocumentFormat.EPUB, DocumentFormat.TEXT -> openText(book, format, cleanup)
+            DocumentFormat.PDF, null -> openPdf(book, password, cleanup)
+        }
+    }
+
+    private suspend fun openPdf(
+        book: Book,
+        password: String?,
+        cleanup: CleanupConfig,
+    ): Outcome<OpenedBook, OpenFailure> {
+        val id = book.id
+        val engine = PdfiumEngine.forUri(context, SharedPdfCopies.readableUri(context, book.documentUri))
         val logContext = "book=${id.logLabel}"
         val ocr = BookOcr.factory(context, book.documentUri, logContext)
         val opened = withContext(io) { PdfBook.open(engine, password, logContext = logContext, ocr = ocr) }
@@ -74,6 +91,36 @@ class LibraryBookSource(
                 AudoraLog.w(TAG, "Could not open book=${id.logLabel}: ${opened.error}")
             }
         }
+    }
+
+    private suspend fun openText(
+        book: Book,
+        format: DocumentFormat,
+        cleanup: CleanupConfig,
+    ): Outcome<OpenedBook, OpenFailure> = when (
+        val opened = withContext(io) {
+            textBooks.open(book.documentUri, format)
+        }
+    ) {
+        is Outcome.Success -> {
+            val marked = library.markOpened(book.id, opened.value.pageCount)
+            if (marked is Outcome.Failure) {
+                AudoraLog.w(
+                    TAG,
+                    "Could not record the open, book=${book.id.logLabel}: ${marked.error}",
+                )
+            }
+            Outcome.Success(OpenedBook(book, opened.value, cleanup))
+        }
+
+        is Outcome.Failure -> Outcome.Failure(OpenFailure(PlaybackErrorCode.BOOK_UNREADABLE, textFailure(opened.error)))
+    }
+
+    private fun textFailure(error: TextBookError): String = when (error) {
+        is TextBookError.NotAnEpub -> "This EPUB looks damaged"
+        is TextBookError.TooLarge -> "This book is too large to read"
+        is TextBookError.Unreadable -> "The book was moved, deleted or is protected"
+        TextBookError.NoText -> "This book has no text to read"
     }
 
     override suspend fun isCurrent(opened: OpenedBook): Boolean =

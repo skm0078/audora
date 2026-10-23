@@ -1,10 +1,13 @@
 # File: .github/workflows/voice-mirror.yml
-# Purpose: Publishes the downloadable voices of speech/models.json to the "voices" release (P4-01, ADR-022).
+# Purpose: Publishes the downloadable voices, models and dictionaries of speech/models.json to the "voices" release
+#          (P4-01, ADR-022; the dictionaries, ADR-045, ADR-047; the reading tutor's models, ADR-050).
 #
 # scripts/build_voice_mirror.py rebuilds each zip from its SHA-pinned upstream archive and fails unless the bytes
 # match the catalog's pin, so what lands on the release is exactly what the app checks for. Assets are only ever
 # added, never replaced or deleted: an APK in someone's hands keeps working after the catalog moves on.
-# On feature branches it only builds and checks; publishing happens from dev.
+# On feature branches a push only builds and checks; publishing happens from dev, or from any branch when the
+# workflow is started by hand (so a branch's test APK can download the models it adds before they reach dev).
+# Every asset is pinned by sha256 and never replaced, so a branch can only add what its catalog pins.
 
 name: Voice mirror
 
@@ -13,6 +16,9 @@ on:
     paths:
       - speech/models.json
       - scripts/build_voice_mirror.py
+      - scripts/build_dictionary.py
+      - scripts/build_asr_mirror.py
+      - speech/licences/**
       - .github/workflows/voice-mirror.yml
   workflow_dispatch:
 
@@ -26,7 +32,8 @@ concurrency:
 jobs:
   mirror:
     name: Build, check and publish voices
-    runs-on: ubuntu-latest
+    # Pinned: deflated dictionary zips depend on the runner's zlib (1.3 on 24.04), and their pins on those bytes.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       contents: write
@@ -41,19 +48,35 @@ jobs:
           # The pins were computed with 3.13; zipfile's stored output is stable, but there is no reason to vary it.
           python-version: "3.13"
 
-      - name: Test the mirror script
-        run: python3 -m unittest scripts/tests/test_build_voice_mirror.py -v
+      - name: Test the mirror scripts
+        run: >-
+          python3 -m unittest scripts/tests/test_build_voice_mirror.py scripts/tests/test_build_dictionary.py
+          scripts/tests/test_build_asr_mirror.py -v
 
       - name: Build and check every voice against its pin
         run: python3 scripts/build_voice_mirror.py --out dist
 
+      - name: Build and check the reading tutor's speech recognition models against their pins
+        # Kept apart (its own folder, failure deferred) so a Hugging Face outage or pin drift here never stops the
+        # dictionaries building or the voices publishing; the last step still turns the run red.
+        id: asr
+        continue-on-error: true
+        run: python3 scripts/build_asr_mirror.py --out dist-asr
+
+      - name: Build and check the dictionaries against their pins
+        # A dictionary already on the release is kept as published: Wiktionary snapshots are replaced upstream.
+        run: >-
+          python3 scripts/build_dictionary.py --out dist
+          --published "https://github.com/${{ github.repository }}/releases/download/voices/"
+
       - name: Publish new assets to the voices release
-        if: github.ref == 'refs/heads/dev'
+        if: github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: voices
         run: |
+          if [ "${{ steps.asr.outcome }}" = success ]; then cp dist-asr/*.zip dist/; fi
           if ! gh release view "$TAG" > /dev/null 2>&1; then
             gh release create "$TAG" --prerelease --latest=false --target "$GITHUB_SHA" \
               --title "Downloadable voices" \
@@ -69,3 +92,9 @@ jobs:
               echo "Published $name"
             fi
           done
+
+      - name: Fail the run if the reading tutor's models did not build
+        if: steps.asr.outcome == 'failure'
+        run: |
+          echo "The speech recognition models failed to build or match their pins; see the step above."
+          exit 1

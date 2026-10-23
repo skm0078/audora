@@ -91,8 +91,10 @@ class LibraryTest {
     }
 
     @Test
-    fun `a file not a PDF is refused and its grant given back`() = runTest(dispatcher) {
-        docs.put(URI_A, "photo.pdf", "\u0089PNG".toByteArray())
+    fun `a file not a PDF, EPUB or text is refused and its grant given back`() = runTest(dispatcher) {
+        // A real PNG head: binary, with NUL bytes (EPUB and text books are accepted since ADR-042).
+        val png = byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0x0D)
+        docs.put(URI_A, "photo.pdf", png)
 
         assertEquals(LibraryError.NotAPdf, library.add(URI_A).errorOrNull())
         assertTrue(store.all.isEmpty())
@@ -214,6 +216,54 @@ class LibraryTest {
         assertEquals(listOf(a.id, b.id), books.map(Book::id))
         assertEquals(574, books.first().pageCount)
         assertEquals(3_000L, books.first().lastOpenedAtMillis)
+    }
+
+    @Test
+    fun `a move that cannot be saved gives back the new grant and keeps the old`() = runTest(dispatcher) {
+        docs.put(URI_A, "a.pdf", pdfBytes("a"))
+        addOk(URI_A)
+        docs.put(URI_B, "a copy.pdf", pdfBytes("a"))
+        store.failWrites = true
+
+        assertTrue(library.add(URI_B) is Outcome.Failure)
+
+        assertEquals(listOf(URI_A), store.all.map(Book::documentUri))
+        assertTrue(URI_A in docs.granted)
+        assertFalse(URI_B in docs.granted)
+    }
+
+    @Test
+    fun `pruning hands every book's file to the documents, so unused copies can go`() = runTest(dispatcher) {
+        docs.put(URI_A, "a.pdf", pdfBytes("a"))
+        docs.put(URI_B, "b.pdf", pdfBytes("b"))
+        addOk(URI_A)
+        addOk(URI_B)
+
+        library.pruneDocuments()
+
+        assertEquals(listOf(setOf(URI_A, URI_B)), docs.pruned)
+    }
+
+    @Test
+    fun `pruning runs once per process, so a recreated screen does not prune again`() = runTest(dispatcher) {
+        docs.put(URI_A, "a.pdf", pdfBytes("a"))
+        addOk(URI_A)
+
+        library.pruneDocuments()
+        library.pruneDocuments()
+
+        assertEquals(1, docs.pruned.size)
+    }
+
+    @Test
+    fun `when the books cannot be read nothing is pruned`() = runTest(dispatcher) {
+        docs.put(URI_A, "a.pdf", pdfBytes("a"))
+        addOk(URI_A)
+        store.failReads = true
+
+        library.pruneDocuments()
+
+        assertTrue(docs.pruned.isEmpty())
     }
 
     @Test

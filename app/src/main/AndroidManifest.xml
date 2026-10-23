@@ -5,7 +5,8 @@
   (FGS media playback in S3/P1-04, notifications on first play). Never SMS, accessibility
   or notification-listener permissions (AGENTS.md).
 -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Asked on the first play (P1-05) so the media notification and lock-screen controls show. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -13,6 +14,15 @@
     <!-- Battery onboarding (P1-06): the system "always run in background" prompt. Reading stops with the screen
          off on several brands without it (Build Spec §6). -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- Voice notes (plan item 32, ADR-041): asked the first time the listener records one, never otherwise. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Point and read (item 62) uses the camera app, which needs no permission; a declared but ungranted CAMERA
+         permission (merged from a library) would make that intent throw, so none may be merged in. -->
+    <uses-permission android:name="android.permission.CAMERA" tools:node="remove" />
+    <!-- No camera needed: the camera app takes the photo, and phones without one never see Point and read fail. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:name=".AudoraApplication"
@@ -25,24 +35,57 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- "Open with Audora" and "Share to Audora" for PDFs from Files, Downloads, WhatsApp or mail (ADR-033). -->
+            <!-- "Open with Audora" and "Share to Audora" for PDFs from Files, Downloads, WhatsApp or mail (ADR-033),
+                 EPUB and text books (items 42 and 43, ADR-042), and shared text from a browser or chat. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="content" />
                 <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/epub+zip" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/epub+zip" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
+        <!-- The Resume widget (plan item 35): draws what the app saved; Resume opens MainActivity. -->
+        <receiver
+            android:name=".widget.ResumeWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_resume_info" />
+        </receiver>
+
+        <!-- Quick Settings tile (plan item 36): play or pause through the media session, or resume the last book. -->
+        <service
+            android:name=".tile.PlaybackTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_play"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
 
         <!-- Hands the Share logs zip (cacheDir/shared-logs only) to the app the user picks (P1-07). -->
         <provider

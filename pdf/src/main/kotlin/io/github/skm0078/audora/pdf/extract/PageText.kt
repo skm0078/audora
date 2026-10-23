@@ -17,10 +17,16 @@ class PageText internal constructor(
     private val boxes: FloatArray,
     val fontRuns: List<FontRun>,
     val stats: PageTextStats,
+    /** OCR pages only (ADR-035): the engine's confidence in the word behind each UTF-16 unit, 0–100; -1 for none. */
+    private val ocrConfidences: ByteArray? = null,
 ) {
     init {
         require(boxes.size == text.length * RawChars.BOX_FLOATS) { "boxes must hold 4 floats per UTF-16 unit" }
+        require(ocrConfidences == null || ocrConfidences.size == text.length) { "one OCR confidence per UTF-16 unit" }
     }
+
+    /** The OCR engine's confidence (0–100) in the word holding [offset]; null on a text layer and for separators. */
+    fun ocrConfidenceAt(offset: Int): Int? = ocrConfidences?.get(offset)?.toInt()?.takeIf { it >= 0 }
 
     fun boxAt(offset: Int): TextBox? {
         val o = offset * RawChars.BOX_FLOATS
@@ -35,7 +41,7 @@ class PageText internal constructor(
         for (offset in text.indices) {
             boxAt(offset)?.let(transform)?.let { mapped.putBox(offset, it) }
         }
-        return PageText(pageIndex, text, mapped, fontRuns, stats)
+        return PageText(pageIndex, text, mapped, fontRuns, stats, ocrConfidences)
     }
 }
 

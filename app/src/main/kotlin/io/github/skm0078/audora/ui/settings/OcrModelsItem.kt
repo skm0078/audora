@@ -1,8 +1,9 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/OcrModelsItem.kt
-// Purpose: Settings row for the OCR models (P3-05): their state, and download, cancel or delete.
+// Purpose: Settings row for a downloadable model pack (OCR, punctuation, voice commands): state, download, delete.
 
 package io.github.skm0078.audora.ui.settings
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
@@ -15,11 +16,16 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.ui.voices.megabytes
 
+/** The OCR models' row by default; [texts] names another pack (the punctuation model, RI-11). */
 @Composable
-internal fun OcrModelsItem(state: OcrModelsState, onAction: (OcrModelsAction) -> Unit) {
+internal fun OcrModelsItem(
+    state: OcrModelsState,
+    onAction: (OcrModelsAction) -> Unit,
+    texts: ModelPackTexts = ModelPackTexts.OCR,
+) {
     ListItem(
-        headlineContent = { Text(stringResource(R.string.settings_ocr_title)) },
-        supportingContent = { Column { OcrModelsStatus(state) } },
+        headlineContent = { Text(stringResource(texts.title)) },
+        supportingContent = { Column { OcrModelsStatus(state, texts) } },
         trailingContent = {
             val action = when (state) {
                 is OcrModelsState.NotDownloaded, is OcrModelsState.Failed ->
@@ -35,14 +41,15 @@ internal fun OcrModelsItem(state: OcrModelsState, onAction: (OcrModelsAction) ->
             }
             action?.let { (what, label) -> TextButton(onClick = { onAction(what) }) { Text(stringResource(label)) } }
         },
+        colors = settingsRowColors(),
     )
 }
 
 @Composable
-private fun OcrModelsStatus(state: OcrModelsState) {
+private fun OcrModelsStatus(state: OcrModelsState, texts: ModelPackTexts) {
     when (state) {
         is OcrModelsState.NotDownloaded -> Text(
-            stringResource(R.string.settings_ocr_missing, megabytes(state.missingBytes)),
+            stringResource(texts.missing, megabytes(state.missingBytes)),
         )
 
         OcrModelsState.Queued -> Text(stringResource(R.string.ocr_models_queued))
@@ -52,11 +59,36 @@ private fun OcrModelsStatus(state: OcrModelsState) {
             LinearProgressIndicator(progress = { if (state.total > 0) state.bytes.toFloat() / state.total else 0f })
         }
 
-        is OcrModelsState.Ready -> Text(stringResource(R.string.settings_ocr_ready, megabytes(state.bytes)))
+        is OcrModelsState.Ready -> Text(stringResource(texts.ready, megabytes(state.bytes)))
 
         is OcrModelsState.Failed ->
             Text(stringResource(R.string.ocr_models_failed, state.message), color = MaterialTheme.colorScheme.error)
 
         OcrModelsState.Unavailable -> Text(stringResource(R.string.settings_ocr_unavailable))
+    }
+}
+
+/** A pack's row title, what a download fetches (`%1$d` MB) and what it is once ready (`%1$d` MB). */
+internal data class ModelPackTexts(@StringRes val title: Int, @StringRes val missing: Int, @StringRes val ready: Int) {
+    companion object {
+        val OCR =
+            ModelPackTexts(R.string.settings_ocr_title, R.string.settings_ocr_missing, R.string.settings_ocr_ready)
+        val PUNCTUATION = ModelPackTexts(
+            R.string.settings_punct_title,
+            R.string.settings_punct_missing,
+            R.string.settings_punct_ready,
+        )
+
+        /** [PUNCTUATION] while scanned pages (OCR) are not downloaded: ready, but nothing for it to work on yet. */
+        val PUNCTUATION_NEEDS_OCR = ModelPackTexts(
+            R.string.settings_punct_title,
+            R.string.settings_punct_missing,
+            R.string.settings_punct_ready_needs_ocr,
+        )
+        val VOICE_COMMANDS = ModelPackTexts(
+            R.string.commands_model_title,
+            R.string.commands_model_missing,
+            R.string.commands_model_ready,
+        )
     }
 }

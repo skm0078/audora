@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_option_help.xml -->
+<!-- Purpose: Strings that say why an option waits (play first, scanned pages) and confirm Kids mode before it locks Settings. -->
+<resources>
+    <string name="speech_own_settings_play_first">Press play first: this keeps settings for the book being read</string>
+    <string name="settings_punct_ready_needs_ocr">Downloaded · %1$d MB. Works once Scanned pages (OCR) is downloaded too</string>
+    <string name="kids_confirm_title">Turn on Kids mode?</string>
+    <string name="kids_confirm_body">Settings will be hidden and reading slows down. To leave, press and hold the Kids mode banner at the top of the library.</string>
+    <string name="kids_confirm_turn_on">Turn on</string>
+    <string name="kids_confirm_cancel">Cancel</string>
+</resources>

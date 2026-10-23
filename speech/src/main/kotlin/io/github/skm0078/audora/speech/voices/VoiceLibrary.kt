@@ -16,6 +16,7 @@ import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.getOrNull
 import io.github.skm0078.audora.speech.SpeechEngines
+import io.github.skm0078.audora.speech.sherpa.CastSpeakers
 import io.github.skm0078.audora.speech.sherpa.SherpaVoiceSpec
 import java.io.File
 import java.io.IOException
@@ -67,8 +68,15 @@ class VoiceLibrary private constructor(
     fun voiceDir(id: String): File = files.voiceDir(id)
 
     /** The voice picked for [lang] in Settings → Voices if it can still speak, else null (the default reads). */
-    fun preferredVoice(lang: Lang): VoiceId? = readingVoices.preferred(lang) { voice ->
-        voice.engine != EngineId.SHERPA || voice.name == bundled?.id || installedNow().any { it.spec.id == voice.name }
+    fun preferredVoice(lang: Lang): VoiceId? = readingVoices.preferred(lang, canSpeak)
+
+    /**
+     * Whether a voice can read now: a phone TTS voice always may; a neural one only while bundled or installed.
+     * Another speaker of a model ([CastSpeakers.variant], as a built-in voice's other speakers) reads while it does.
+     */
+    val canSpeak: (VoiceId) -> Boolean = { voice ->
+        val model = CastSpeakers.parse(voice).first.name
+        voice.engine != EngineId.SHERPA || model == bundled?.id || installedNow().any { it.spec.id == model }
     }
 
     /** Everything the Voices screen lists, updated as downloads progress. The work runs on the IO dispatcher. */
@@ -89,6 +97,7 @@ class VoiceLibrary private constructor(
     suspend fun delete(id: String): Outcome<Unit, String> = withContext(Dispatchers.IO) {
         downloads.cancel(id)
         val result = synchronized(lock) { files.delete(id).also { refreshLocked() } }
+        SpeechEngines.blendCache(appContext).clear(id) // a Kokoro voice's narrator blend copy (plan item 75)
         readingVoices.forget(VoiceId(EngineId.SHERPA, id))
         speeds.forget(VoiceId(EngineId.SHERPA, id))
         result

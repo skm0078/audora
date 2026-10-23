@@ -10,6 +10,9 @@ import io.github.skm0078.audora.speech.SpeechError
 interface SherpaSynthesizer {
     val sampleRate: Int
 
+    /** How many speakers the loaded model holds, as it reports; null when unknown (a test fake). */
+    val speakerCount: Int? get() = null
+
     /**
      * Renders [text] at [rate] (1.0 = the voice's own speed) and returns float samples in [-1, 1]. Blocking.
      *

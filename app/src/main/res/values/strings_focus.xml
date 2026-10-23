@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_focus.xml -->
+<!-- Purpose: Strings for the focus sound under the voice (plan item 72). -->
+<resources>
+    <string name="focus_title">Focus sound</string>
+    <string name="focus_detail">Plays quietly under the voice and gets softer whenever it speaks. You hear it only while reading plays. Made on your phone, nothing to download.</string>
+    <string name="focus_off">Off</string>
+    <string name="focus_rain">Rain</string>
+    <string name="focus_cafe">Café</string>
+    <string name="focus_brown_noise">Brown noise</string>
+    <string name="focus_level">Volume</string>
+</resources>

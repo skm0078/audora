@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_study.xml -->
+<!-- Purpose: Hindi copy of values/strings_study.xml: Strings for the study modes (plan item 31): repeats, pause after each sentence, A–B loops. -->
+<resources>
+    <string name="study_title">अध्ययन</string>
+    <string name="study_repeats">हर वाक्य पढ़ें (1× सामान्य पढ़ाई है)</string>
+    <string name="study_repeats_times">%1$d×</string>
+    <string name="study_after">हर वाक्य के बाद</string>
+    <string name="study_after_continue">पढ़ते रहें</string>
+    <string name="study_after_gap">दोहराने के लिए अंतराल</string>
+    <string name="study_after_stop">रुकें</string>
+    <string name="study_after_detail">“पढ़ते रहें” सामान्य है। “दोहराने के लिए अंतराल” हर वाक्य के बाद चुप्पी छोड़ता है ताकि आप उसे दोहरा सकें। “रुकें” हर वाक्य के बाद तब तक रुकता है जब तक आप प्ले न दबाएँ।</string>
+    <string name="study_loop_title">एक हिस्सा दोहराएँ (A–B)</string>
+    <string name="study_loop_hint">A लगाने तक बंद। पढ़ते समय पहले वाक्य पर “A लगाएँ” और आख़िरी पर “B लगाएँ” दबाएँ; फिर पढ़ाई उन्हीं के बीच रहती है। सामान्य पढ़ाई पर लौटने के लिए “हटाएँ” दबाएँ।</string>
+    <string name="study_loop_a_only">A पेज %1$d पर लगा है। आखिरी वाक्य पर B लगाएँ।</string>
+    <string name="study_loop_range">पेज %1$d से पेज %2$d तक</string>
+    <string name="study_mark_a">A लगाएँ</string>
+    <string name="study_mark_b">B लगाएँ</string>
+    <string name="study_clear">हटाएँ</string>
+    <string name="study_loop">लूप</string>
+    <string name="study_loop_detail">चालू: B के बाद फिर A पर लौटता है, बार-बार, जब तक आप “हटाएँ” न दबाएँ। बंद: A से B एक बार पढ़कर रुकता है।</string>
+</resources>

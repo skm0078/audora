@@ -16,6 +16,7 @@ internal class IndicNumberWords private constructor(
     private val hundredOf: (String) -> String,
     scale: Scale,
     terms: Terms,
+    conjunctions: Conjunctions,
 ) {
     /** The words for 10³, 10⁵ and 10⁷. */
     class Scale(val thousand: String, val lakh: String, val crore: String)
@@ -26,6 +27,9 @@ internal class IndicNumberWords private constructor(
      */
     class Terms(val point: String, val percent: String, val to: String, val currency: String, val paise: String)
 
+    /** Words for "/" and "&" between words (RI-6), and for "/" in a rate after a number ("60 किमी/घंटा"). */
+    class Conjunctions(val or: String, val and: String, val per: String)
+
     private val belowHundred = belowHundred.map(::nfc)
     private val thousand = nfc(scale.thousand)
     private val lakh = nfc(scale.lakh)
@@ -35,6 +39,9 @@ internal class IndicNumberWords private constructor(
     val to = nfc(terms.to)
     val currency = nfc(terms.currency)
     val paise = nfc(terms.paise)
+    val or = nfc(conjunctions.or)
+    val and = nfc(conjunctions.and)
+    val per = nfc(conjunctions.per)
 
     init {
         require(this.belowHundred.size == HUNDRED.toInt()) { "one word for each of 0..99" }
@@ -96,7 +103,14 @@ internal class IndicNumberWords private constructor(
                 ).split(' '),
             hundredOf = { "$it सौ" },
             scale = Scale(thousand = "हज़ार", lakh = "लाख", crore = "करोड़"),
-            terms = Terms(point = "दशमलव", percent = "प्रतिशत", to = "से", currency = "रुपये", paise = "पैसे"),
+            terms = Terms(
+                point = "दशमलव",
+                percent = "प्रतिशत",
+                to = "से",
+                currency = "रुपये",
+                paise = "पैसे",
+            ),
+            conjunctions = Conjunctions(or = "या", and = "और", per = "प्रति"),
         )
 
         val BENGALI = IndicNumberWords(
@@ -116,7 +130,14 @@ internal class IndicNumberWords private constructor(
             // Bengali writes the hundred joined to its count: একশো, দুইশো, উনিশশো.
             hundredOf = { "${it}শো" },
             scale = Scale(thousand = "হাজার", lakh = "লাখ", crore = "কোটি"),
-            terms = Terms(point = "দশমিক", percent = "শতাংশ", to = "থেকে", currency = "টাকা", paise = "পয়সা"),
+            terms = Terms(
+                point = "দশমিক",
+                percent = "শতাংশ",
+                to = "থেকে",
+                currency = "টাকা",
+                paise = "পয়সা",
+            ),
+            conjunctions = Conjunctions(or = "বা", and = "এবং", per = "প্রতি"),
         )
     }
 }

@@ -1,9 +1,12 @@
 // File: pdf/src/main/kotlin/io/github/skm0078/audora/pdf/units/IndicSentenceRules.kt
-// Purpose: Corrects BreakIterator's sentence breaks for Hindi and Bengali: danda, abbreviations, verse numbers.
+// Purpose: Corrects BreakIterator's sentence breaks: danda, Indic and English abbreviations, verse numbers.
 
 package io.github.skm0078.audora.pdf.units
 
 import io.github.skm0078.audora.core.config.SentenceConfig
+import io.github.skm0078.audora.pdf.units.SentenceScan.leaderDotsBefore
+import io.github.skm0078.audora.pdf.units.SentenceScan.skipSpaces
+import io.github.skm0078.audora.pdf.units.SentenceScan.tokenEnd
 import java.text.Normalizer
 
 /**
@@ -16,12 +19,21 @@ import java.text.Normalizer
  * 3. **Abbreviations and initials.** No break after "डॉ." or "ए." ([SentenceConfig]): Indic text ends sentences with
  *    the danda, so a full stop after one of these words is part of a name. When unsure, two sentences become one
  *    unit, which is cheaper than a name cut in half.
+ *    The same holds in English after a title or Latin abbreviation ("Dr.", "e.g.", [SentenceConfig]) and after
+ *    capital initials ("A. P. J.", "U.S."): both platforms break "Dr. | Smith" before a capital, ICU because
+ *    Android does not turn on its abbreviation suppressions.
  * 4. **Verse numbers.** "॥ १ ॥" after a verse is read with that verse, not as a unit of its own.
+ * 5. **Dot leaders.** No break between a dot leader of at least [minLeaderRun] dots and the number after it
+ *    ("Introduction ........ 5", "भूमिका ..... ७"): ICU breaks there, the JDK does not.
  *
  * The rules move breaks only; the ranges still cover the text in order.
  */
-internal class IndicSentenceRules(config: SentenceConfig) {
-    private val nonBreaking: Set<String> = (config.abbreviations + config.initials).mapTo(HashSet(), ::nfc)
+internal class IndicSentenceRules(config: SentenceConfig, private val minLeaderRun: Int) {
+    private val nonBreaking: Set<String> =
+        (config.abbreviations + config.initials + config.englishAbbreviations).mapTo(HashSet(), ::nfc)
+    private val openers = config.sentenceOpeners
+    private val references = config.referenceAbbreviations
+    private val labels = config.letterLabels
 
     /** [breaks]: the iterator's sentence ends inside [text] (not 0 or its length). Returns the corrected ones. */
     fun refine(text: String, breaks: Collection<Int>): List<Int> {
@@ -29,7 +41,7 @@ internal class IndicSentenceRules(config: SentenceConfig) {
         breaks.mapTo(corrected) { moveAfterClosers(text, it) }
         dandaBreaks(text).forEach(corrected::add)
         corrected.removeAll {
-            it <= 0 || it >= text.length || text[skipSpaces(text, it)] in CONTINUERS || followsNonBreakingWord(text, it)
+            it <= 0 || it >= text.length || continuesAt(text, it, minLeaderRun) || followsNonBreakingWord(text, it)
         }
         removeVerseNumberBreaks(text, corrected)
         return corrected.toList()
@@ -61,14 +73,72 @@ internal class IndicSentenceRules(config: SentenceConfig) {
         return if (end == text.length || text[end].isWhitespace()) skipSpaces(text, end) else at
     }
 
-    /** The text before [at] ends with "word." where the word is a listed abbreviation or initial. */
+    /**
+     * The text before [at] ends with "word." where the word is a listed abbreviation or initial, a run of listed
+     * initials ("ए.पी.जे.", "पी.एच.डी.") or a dotted Indic abbreviation ("वि.वि.", "बी.ए."); closing brackets,
+     * quotes and joiners may follow the full stop ("(कि.मी.) में", "कि.\u200Dमी.").
+     */
     private fun followsNonBreakingWord(text: String, at: Int): Boolean {
         var stop = at - 1
-        while (stop >= 0 && text[stop].isWhitespace()) stop--
+        while (stop >= 0 && (text[stop].isWhitespace() || text[stop] in BEFORE_STOP)) stop--
         if (stop < 1 || text[stop] != '.') return false
         var start = stop
         while (start > 0 && !text[start - 1].isWhitespace() && text[start - 1] !in OPENERS) start--
-        return nfc(text.substring(start, stop)) in nonBreaking
+        val word = text.substring(start, stop)
+        val listed = nfc(word) in nonBreaking || isIndicInitials(word, nonBreaking)
+        return listed || IndicStops.holds(text, start, stop, at) || isInitial(text, start, word) ||
+            isReference(text, at, word) ||
+            insideListedWord(text, start, at)
+    }
+
+    /**
+     * [at] falls inside a dotted word that starts at [start]: ICU (Android) breaks "कि.|मी." and "उ.|प्र." at the
+     * inner full stop, where the JDK does not, so with no space after [at] the word's letters, marks and full stops
+     * are looked up whole, whatever punctuation is stuck to its end ("कि.मी.।", "उ.प्र.,", "कि.मी./घंटा"): a
+     * listed word, or a run of initials ("ए.|पी.जे.").
+     */
+    private fun insideListedWord(text: String, start: Int, at: Int): Boolean {
+        if (at >= text.length || text[at].isWhitespace()) return false
+        var end = at
+        while (end < text.length && inDottedWord(text[end])) end++
+        val word = text.substring(start, end).trimEnd('.')
+        return nfc(word) in nonBreaking || isIndicInitials(word, nonBreaking)
+    }
+
+    /** [word] points at a number or bracket that starts the next piece at [at]: "No. 5", "Fig. (a)". */
+    private fun isReference(text: String, at: Int, word: String): Boolean {
+        val next = text.getOrNull(skipSpaces(text, at))
+        return word in references && next != null && (next.isDigit() || next == '(')
+    }
+
+    /**
+     * [word] (before its full stop, starting at [start]) is capital initials: "U.S" or "A.P.J" always; a single
+     * capital only after nothing, a full stop or comma ("Dr. A.", "J. A.", "Smith, J."), or a name ("Abbott B."), or
+     * before another initial ("by S. K. Mukherjee"), so "says I.", "matrix Q.", "size N." and "Appendix A."
+     * ([SentenceConfig.letterLabels]) still end a sentence. A lone initial after a small word before a surname
+     * ("with K. Rao") still splits: it reads like "matrix Q. The". So does the last author's initial in a list that
+     * writes initials without stops ("West J, Lundberg P. Rapid imaging"): there the stop ends the list.
+     */
+    private fun isInitial(text: String, start: Int, word: String): Boolean {
+        val opensNext = opensSentence(text, start + word.length + 1, openers)
+        if (!LATIN_INITIALS.matches(word) || word == "I" || opensNext) return false
+        val before = wordBefore(text, start)
+        val name = before != null && isName(before) && !followsUndottedAuthor(text, start, before)
+        return word.length > 1 || before == null || before.last() in ".," || name ||
+            initialFollows(text, start + word.length + 1)
+    }
+
+    private fun isName(word: String): Boolean =
+        word.first().isUpperCase() && word.all { it.isLetter() || it in NAME_JOINERS } && word !in labels
+
+    /** The whitespace-separated word before [start], or null at the start of the text or after an opening bracket. */
+    private fun wordBefore(text: String, start: Int): String? {
+        var stop = start
+        while (stop > 0 && text[stop - 1].isWhitespace()) stop--
+        var from = stop
+        while (from > 0 && !text[from - 1].isWhitespace()) from--
+        val afterOpener = stop == start && start > 0
+        return text.substring(from, stop).takeUnless { it.isEmpty() || afterOpener }
     }
 
     /** Merges a piece made only of a verse number between dandas ("॥ १ ॥") into the piece before it. */
@@ -82,12 +152,6 @@ internal class IndicSentenceRules(config: SentenceConfig) {
         }
     }
 
-    private fun skipSpaces(text: String, from: Int): Int {
-        var i = from
-        while (i < text.length && text[i].isWhitespace()) i++
-        return i
-    }
-
     private companion object {
         /** Danda and double danda (U+0964, U+0965), shared by Devanagari and Bengali. */
         const val DANDAS = "\u0964\u0965"
@@ -98,6 +162,9 @@ internal class IndicSentenceRules(config: SentenceConfig) {
         /** Closing quotes and brackets; the straight quotes count only when a space follows them. */
         const val CLOSERS = "\"'\u2019\u201D\u00BB)]"
 
+        /** What may stand between a word's full stop and a break: closers, and the joiners ICU breaks after. */
+        const val BEFORE_STOP = "$CLOSERS${IndicStops.JOINERS}"
+
         /** Opening quotes and brackets before a word: "(डॉ." is still the word "डॉ". */
         const val OPENERS = "\"'\u2018\u201C\u00AB(["
 
@@ -106,6 +173,87 @@ internal class IndicSentenceRules(config: SentenceConfig) {
 
         const val VERSE_BRACKETS = "()[]"
 
-        fun nfc(text: String): String = Normalizer.normalize(text, Normalizer.Form.NFC)
+        /** "A", "U.S", "A.P.J": capital Latin letters, each but the last with its full stop. */
+        val LATIN_INITIALS = Regex("(?:[A-Z]\\.)*[A-Z]")
+
+        /** Inside a name before an initial: "O'Brien", "Smith-Jones". */
+        const val NAME_JOINERS = "'\u2019-"
+
+        /** Capital initials as the next word, with any closing punctuation stuck to them: "K.", "P.J.", "K.,". */
+        val NEXT_INITIALS = Regex("(?:[A-Z]\\.)+[,;:)\\]\u2019\u201D]*")
+
+        /** NFC, without the zero-width joiners some fonts' text puts inside Indic words ("र\u200D्य"). */
+        fun nfc(text: String): String =
+            Normalizer.normalize(text, Normalizer.Form.NFC).filterNot { it in IndicStops.JOINERS }
+
+        /**
+         * [word] is two or more [listed] words (initials and abbreviations) joined by full stops: "ए.पी.जे",
+         * "पी.एच.डी", "डॉ.ए.पी.जे".
+         */
+        fun isIndicInitials(word: String, listed: Set<String>): Boolean {
+            val parts = word.split('.')
+            return parts.size > 1 && parts.all { nfc(it) in listed }
+        }
+
+        /**
+         * After an initial's stop at [from] and any closing brackets or quotes after it, no initial follows and the
+         * next word is one of [openers] without a stop of its own, written as a word ("The", "It"; [SentenceOpeners])
+         * or a lone capital before a small word ("A new", "I think"): "Henry V. The king", "in the U.S. The economy",
+         * "the U.S. A new law" and "(U.S.) The end." end a sentence; "S. No.", "M. A Khan" and "J. I Packer" do not.
+         */
+        fun opensSentence(text: String, from: Int, openers: Set<String>): Boolean {
+            var closed = from
+            while (closed < text.length && text[closed] in CLOSERS) closed++
+            val begin = skipSpaces(text, closed)
+            var end = begin
+            while (end < text.length && text[end].isLetter()) end++
+            val next = text.substring(begin, end)
+            // "S. No." is a serial number's heading: an opener with its own stop is an abbreviation.
+            val ownStop = text.getOrNull(end) == '.'
+            // A lone capital ("A", "I") opens a sentence before a small word: "the U.S. A new law", not "M. A Khan".
+            val asWord = OPENER_WORD.matches(next) || text.getOrNull(skipSpaces(text, end))?.isLowerCase() == true
+            return !initialFollows(text, from) && asWord && next in openers && !ownStop
+        }
+
+        /** A capital and small letters: an opener written as a word. */
+        private val OPENER_WORD = Regex("""\p{Lu}\p{Ll}+""")
+
+        /** A letter, vowel sign, joiner or full stop: what a dotted word ("कि.मी.") is written with. */
+        fun inDottedWord(c: Char): Boolean = c.isLetter() || isCombiningMark(c) || c == '.' || IndicStops.isIndic(c)
+
+        /**
+         * The sentence carries on at the break [at]: a comma-like mark follows it, or a number follows a dot leader
+         * of at least [minRun] dots, perhaps one space apart ([Leaders]).
+         */
+        fun continuesAt(text: String, at: Int, minRun: Int): Boolean {
+            val next = text.getOrNull(skipSpaces(text, at)) ?: return false
+            return next in CONTINUERS || (next.isDigit() && leaderDotsBefore(text, at) >= minRun)
+        }
+
+        /**
+         * An author written with initials without stops, then a comma, at the end of the text before a name ("West J,",
+         * "Persson AB,"): any space between, a no-break one too, and the text's trailing spaces trimmed with
+         * Char.isWhitespace, so Android's ICU regex and the JVM's read "West J,\u00A0Lundberg P." alike.
+         */
+        val UNDOTTED_AUTHOR = Regex("""\p{Lu}[\p{L}'’-]+\p{Zs}\p{Lu}{1,4},$""")
+
+        /** How far before a name [followsUndottedAuthor] looks for the author before it. */
+        const val AUTHOR_LOOKBACK = 40
+
+        /** The name [name] that ends before [start] (and its spaces) comes after an [UNDOTTED_AUTHOR]. */
+        fun followsUndottedAuthor(text: String, start: Int, name: String): Boolean {
+            var stop = start
+            while (stop > 0 && text[stop - 1].isWhitespace()) stop--
+            val from = stop - name.length
+            return UNDOTTED_AUTHOR.containsMatchIn(
+                text.substring(maxOf(0, from - AUTHOR_LOOKBACK), maxOf(0, from)).trimEnd(),
+            )
+        }
+
+        /** The word after the spaces at [from] is capital initials ([NEXT_INITIALS]). */
+        fun initialFollows(text: String, from: Int): Boolean {
+            val begin = skipSpaces(text, from)
+            return NEXT_INITIALS.matches(text.substring(begin, tokenEnd(text, begin)))
+        }
     }
 }

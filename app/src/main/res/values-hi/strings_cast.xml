@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_cast.xml -->
+<!-- Purpose: Hindi copy of values/strings_cast.xml: Strings for the cast voices: quotes and headings in their own voices (plan item 7). -->
+<resources>
+    <string name="speech_cast">संवाद और शीर्षकों के लिए आवाज़ें</string>
+    <string name="speech_cast_dialogue">संवाद दूसरी आवाज़ में</string>
+    <string name="speech_cast_dialogue_detail">उद्धरण चिह्नों के अंदर के शब्द दूसरी आवाज़ पढ़ती है, जैसे कोई दूसरा पाठक। वह आवाज़ नीचे चुनें।</string>
+    <string name="speech_cast_headings">शीर्षक तीसरी आवाज़ में</string>
+    <string name="speech_cast_headings_detail">शीर्षक और अध्याय के नाम अपनी अलग आवाज़ में, ताकि सुनाई दे कि नया हिस्सा कहाँ शुरू होता है। वह आवाज़ नीचे चुनें।</string>
+    <string name="speech_cast_needs_voice">इस भाषा की दूसरी आवाज़ चाहिए: सेटिंग्स, आवाज़ें में लें</string>
+</resources>

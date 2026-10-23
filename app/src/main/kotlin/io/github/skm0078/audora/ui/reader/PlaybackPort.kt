@@ -3,16 +3,26 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import io.github.skm0078.audora.core.model.FocusSoundOptions
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.ReadingModes
+import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.core.model.VoiceId
+import io.github.skm0078.audora.core.model.VoiceShaping
+import io.github.skm0078.audora.playback.contract.SentenceTiming
+import io.github.skm0078.audora.playback.contract.StudyAction
+import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.flow.StateFlow
 
 /** Implemented over a Media3 `MediaController` by [MediaControllerPlaybackPort]; faked in tests. */
+@Suppress("TooManyFunctions") // One per player control.
 interface PlaybackPort {
     val state: StateFlow<PlaybackSnapshot>
 
     /** Replaces whatever is playing with this book from [position] and plays. Only ever on a user action (C7). */
-    fun start(position: ReadingPosition, password: String?)
+    fun start(position: ReadingPosition, password: String?, unitIndex: Int? = null)
 
     fun play()
 
@@ -28,8 +38,63 @@ interface PlaybackPort {
     /** The silences between sentences (ADR-033). */
     fun setPace(pace: Pace)
 
+    /** Pauses at dashes, colons, brackets and the like inside a sentence (RI-6). */
+    fun setClausePauses(on: Boolean)
+
+    /** What is read, announced or skipped: tables, footnotes, equations, captions, unreadable text (ADR-035). */
+    fun setReadingModes(modes: ReadingModes)
+
+    /** Even loudness, voice boost and pause trim (plan items 9, 10), from the next sentence rendered. */
+    fun setVoiceShaping(shaping: VoiceShaping)
+
     fun setSleepTimer(setting: SleepTimerSetting)
+
+    /** Shake to extend, fade-out and bedtime auto-on (plan item 37); the service keeps them. */
+    fun setSleepOptions(options: SleepOptions)
+
+    /** Rain, café or brown noise under the voice, and how loud (plan item 72); the service keeps it. */
+    fun setFocusSound(options: FocusSoundOptions)
+
+    /** The open book keeps its own speed, pace and voices (plan item 4), or follows the global ones again. */
+    fun setOwnSettings(on: Boolean)
+
+    /** The voice reading [lang] in the open book, while it has its own settings (plan item 4). */
+    fun setBookVoice(lang: Lang, voice: VoiceId)
+
+    /** Back to where reading was before the last jump (plan item 78), playing or paused as now. */
+    fun undoJump()
+
+    /**
+     * "What did it say?": the last sentence heard again at [factor] times the listener's speed, then reading goes on at
+     * their speed. One shot: nothing is saved.
+     */
+    fun replayPrevious(factor: Float)
+
+    /**
+     * Long-press on next / previous: the next paragraph, or back to this one's start (the one before at its start).
+     * [onRefused] runs on the main thread when there is none that way (the book's end, or already at its start).
+     */
+    fun skipParagraph(forward: Boolean, onRefused: () -> Unit = {})
+
+    /** The A–B study range (plan item 31): mark A or B at the sentence playing, loop on or off, or clear it. */
+    fun study(action: StudyAction, loop: Boolean = true)
+
+    /** "Read a selection only": plays [start] through [end] (its last character) once, or looping (plan item 31). */
+    fun playRange(start: ReadingPosition, end: ReadingPosition, loop: Boolean, password: String?)
+
+    /** "This sounded wrong" (RI-8b): the service logs it with the voice that reads its language. */
+    fun reportSoundedWrong(report: SoundedWrongReport)
+
+    /**
+     * How far into the sentence playing the player is, in the clip's own time (plan item 14, word highlight); null
+     * with nothing loaded. Cheap and current on every call (the controller runs the clock itself), so a highlight
+     * can poll it once a frame and map it through [PlaybackSnapshot.sentenceTiming].
+     */
+    fun positionInSentenceMs(): Long? = null
 }
+
+/** The A–B marks (plan item 31): [end] null while only A is set. */
+data class StudyRangeState(val start: ReadingPosition, val end: ReadingPosition?, val loop: Boolean)
 
 /**
  * The player as the reader sees it.
@@ -38,20 +103,48 @@ interface PlaybackPort {
  *   or the item is not an Audora position.
  * @property wantsToPlay play was pressed and not paused since: true while buffering the next sentence too.
  * @property hasChapters the book being read has chapters, so [SleepTimerSetting.EndOfChapter] can be offered.
+ * @property sleepOptions the sleep timer extras the service has saved.
+ * @property focusSound the focus sound the service has saved.
+ * @property ownSettings the book being read has its own speed, pace and voices; changes to them are its own.
+ * @property bookVoices the voices the book being read keeps for itself, by language, while [ownSettings].
+ * @property undoJumpTo where "Undo jump" goes back to in the book being read (plan item 78); null with nothing to undo.
+ * @property study the A–B study range of the book being read (plan item 31); null with no A set.
+ * @property sentenceTiming where the voice speaks in the sentence playing (plan item 14), once it is rendered; use it
+ *   only while its page and char start match [position].
  * @property errorCode Media3's error code name of the last playback error, for the log and a generic message.
+ * @property blendOwnSpeaker the narrator's own Kokoro English speaker, only while such a voice narrates: the narrator
+ *   blend (plan item 75) changes nothing else, so the speech sheet offers it only then.
+ * @property blendNeedsBytes the last narrator blend could not be built and needed this much free (0: the voice
+ *   refused it); null when it was built.
+ * @property voiceExpressive whether a voice reading now honours expressiveness (plan item 8: Piper and MMS only);
+ *   null until one is known.
  */
 data class PlaybackSnapshot(
     val connection: Connection,
     val position: ReadingPosition? = null,
     val wantsToPlay: Boolean = false,
     val buffering: Boolean = false,
+    val styleKnown: Boolean = false,
     val speed: Float = SpeechStyle.NORMAL_RATE,
     val pace: Pace = Pace.NORMAL,
+    val clausePauses: Boolean = true,
+    val readingModes: ReadingModes = ReadingModes(),
+    val voiceShaping: VoiceShaping = VoiceShaping(),
     val canSkipBack: Boolean = false,
     val canSkipForward: Boolean = false,
     val sleepTimer: SleepTimerState = SleepTimerState.Off,
     val hasChapters: Boolean = false,
+    val sleepOptions: SleepOptions = SleepOptions(),
+    val focusSound: FocusSoundOptions = FocusSoundOptions(),
+    val ownSettings: Boolean = false,
+    val bookVoices: Map<Lang, VoiceId> = emptyMap(),
+    val undoJumpTo: ReadingPosition? = null,
+    val study: StudyRangeState? = null,
+    val sentenceTiming: SentenceTiming? = null,
     val errorCode: String? = null,
+    val blendOwnSpeaker: Int? = null,
+    val blendNeedsBytes: Long? = null,
+    val voiceExpressive: Boolean? = null,
 ) {
     enum class Connection { CONNECTING, CONNECTED, UNAVAILABLE }
 

@@ -1,5 +1,5 @@
 // File: playback/src/androidTest/kotlin/io/github/skm0078/audora/playback/storage/AudoraDatabaseMigrationTest.kt
-// Purpose: A version 1 database (P1-01) upgrades to version 2 keeping every book, and anchors work afterwards.
+// Purpose: A version 1 database (P1-01) upgrades to the current version keeping every book; new tables work after.
 
 package io.github.skm0078.audora.playback.storage
 
@@ -8,11 +8,21 @@ import android.database.sqlite.SQLiteDatabase
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.notes.BookSettings
+import io.github.skm0078.audora.core.notes.Bookmark
+import io.github.skm0078.audora.core.notes.Highlight
+import io.github.skm0078.audora.core.notes.PronunciationRule
+import io.github.skm0078.audora.core.notes.VoiceNote
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeAnchor
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -43,6 +53,41 @@ class AudoraDatabaseMigrationTest {
             val anchor = ResumeAnchor(BookId(BOOK_ID), 12, 345, 1L, 2L, 1, 3L)
             assertEquals(Outcome.Success(Unit), storage.resumeAnchors.put(anchor))
             assertEquals(anchor, storage.resumeAnchors.get(BookId(BOOK_ID)))
+        }
+    }
+
+    @Test
+    fun notesSettingsFixesHighlightsAndVoiceNotesWorkAfterTheUpgradeAndGoWithTheirBook() = runBlocking {
+        writeVersion1Database()
+
+        AudoraStorage.open(context, NAME).use { storage ->
+            val book = BookId(BOOK_ID)
+            val anchor = ResumeAnchor(book, 3, 40, 5L, 6L, 1, 7L)
+            val id = (storage.bookmarks.add(Bookmark(0, anchor, "note")) as Outcome.Success).value
+            assertEquals(listOf(Bookmark(id, anchor, "note")), storage.bookmarks.observe(book).first())
+
+            val settings = BookSettings(book, rate = 0.9f, pace = Pace.RELAXED)
+            assertEquals(Outcome.Success(Unit), storage.bookSettings.put(settings))
+            assertEquals(settings, storage.bookSettings.get(book))
+
+            val rule = PronunciationRule(0, book, Lang.EN, "US", "you ess")
+            assertTrue(storage.pronunciations.add(rule) is Outcome.Success)
+            assertEquals(listOf("US"), storage.pronunciations.observe(book).first().map { it.written })
+
+            val highlight = Highlight(0, anchor, endPage = 3, endChar = 90, quote = "Call me Ishmael.", note = "start")
+            val highlightId = (storage.highlights.add(highlight) as Outcome.Success).value
+            assertEquals(listOf(highlight.copy(id = highlightId)), storage.highlights.observe(book).first())
+
+            val voiceNote = VoiceNote(0, anchor, fileName = "1.m4a", durationMs = 4_200)
+            val voiceNoteId = (storage.voiceNotes.add(voiceNote) as Outcome.Success).value
+            assertEquals(listOf(voiceNote.copy(id = voiceNoteId)), storage.voiceNotes.observe(book).first())
+
+            assertEquals(Outcome.Success(Unit), storage.books.delete(book))
+            assertTrue(storage.highlights.observe(book).first().isEmpty())
+            assertTrue(storage.voiceNotes.observe(book).first().isEmpty())
+            assertTrue(storage.bookmarks.observe(book).first().isEmpty())
+            assertNull(storage.bookSettings.get(book))
+            assertTrue(storage.pronunciations.observe(book).first().isEmpty())
         }
     }
 

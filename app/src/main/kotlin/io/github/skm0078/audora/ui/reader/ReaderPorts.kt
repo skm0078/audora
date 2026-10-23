@@ -11,6 +11,8 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.core.resume.ResumePoint
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 interface ReaderBooks {
     suspend fun find(id: BookId): Book?
@@ -54,6 +56,50 @@ interface ViewPreference {
 
             override suspend fun saveView(view: ReaderView) = Unit
         }
+    }
+}
+
+/** "Keep screen on while reading aloud": off by default, since a lit screen costs battery. */
+interface ScreenPreference {
+    fun keepScreenOn(): Flow<Boolean>
+
+    suspend fun saveKeepScreenOn(on: Boolean)
+
+    /** Volume keys move by sentence while reading aloud in the reader (plan item 20); off by default. */
+    fun volumeKeysSkip(): Flow<Boolean> = flowOf(false)
+
+    suspend fun saveVolumeKeysSkip(on: Boolean) = Unit
+
+    /** "Audora, pause" and the other spoken commands in the reader (plan item 38); off by default (battery). */
+    fun voiceCommands(): Flow<VoiceCommandsMode> = flowOf(VoiceCommandsMode.OFF)
+
+    suspend fun saveVoiceCommands(mode: VoiceCommandsMode) = Unit
+}
+
+/** When voice commands listen (plan item 38). */
+enum class VoiceCommandsMode {
+    OFF,
+
+    /** While the reader is on screen; Android shows the microphone indicator meanwhile. */
+    WHILE_VISIBLE,
+
+    /** Also with the screen off, from a microphone foreground service with its own notification (opt-in). */
+    SCREEN_OFF,
+    ;
+
+    /**
+     * What actually listens: nothing without the microphone (a mode restored from a backup, or a permission taken
+     * back), and only on screen without notifications, since the screen-off notification is where Stop lives.
+     */
+    fun effective(microphone: Boolean, notifications: Boolean): VoiceCommandsMode = when {
+        this == OFF || !microphone -> OFF
+        this == SCREEN_OFF && !notifications -> WHILE_VISIBLE
+        else -> this
+    }
+
+    companion object {
+        /** The mode saved under [name]; null for nothing saved or a name this build doesn't know. */
+        fun fromSaved(name: String?): VoiceCommandsMode? = entries.firstOrNull { it.name == name }
     }
 }
 

@@ -1,6 +1,6 @@
 # File: .github/workflows/android.yml
-# Purpose: On every push and PR: style, static analysis, unit tests, golden corpus score, debug APKs, 16 KB alignment
-#          check.
+# Purpose: On every push and PR: style, static analysis, unit tests, golden corpus and listening scores, debug APKs, 16 KB
+#          alignment check.
 #          The debug APKs (Audora, the S3 playback spike and the S1 voices spike) are uploaded as one artifact
 #          (Build Spec §7).
 #          A second job runs the instrumented tests (real PDFium on real PDFs, P1-02) on an x86_64 emulator.
@@ -94,14 +94,26 @@ jobs:
           git fetch --no-tags --depth=1 origin dev
           git show FETCH_HEAD:pdf/golden/scores.tsv > "$baseline" 2>/dev/null || : > "$baseline"
           echo "GOLDEN_BASELINE=$baseline" >> "$GITHUB_ENV"
+          # The listening score (RI-8a) is gated the same way; dev has no listening scores until RI-8a merges.
+          listening="$RUNNER_TEMP/listening-baseline.tsv"
+          git show FETCH_HEAD:pdf/golden/listening/scores.tsv > "$listening" 2>/dev/null || : > "$listening"
+          echo "LISTENING_BASELINE=$listening" >> "$GITHUB_ENV"
 
-      - name: ktlint, detekt, unit tests, golden scores, debug APKs, unsigned release APK
+      - name: ktlint, detekt, unit tests, golden and listening scores, debug APKs, unsigned release APK, lint
         # assembleDebugAndroidTest only compiles the instrumented tests; the device-tests job runs them.
-        # :pdf:goldenTest rewrites docs/QUALITY.md and pdf/golden/scores.tsv; the next step checks they were committed.
+        # :pdf:goldenTest rewrites docs/QUALITY.md and pdf/golden/scores.tsv, :playback:listeningTest docs/LISTENING.md
+        # and pdf/golden/listening/scores.tsv; the next step checks they were committed.
         run: >-
           ./gradlew ktlintCheck detekt test :pdf:goldenTest -Pgolden.baseline="$GOLDEN_BASELINE"
-          assembleDebug :app:assembleRelease
-          :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest --stacktrace
+          :playback:listeningTest -Plistening.baseline="$LISTENING_BASELINE"
+          assembleDebug :app:assembleRelease :app:lintDebug
+          :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest
+          :app:assembleUiTestAndroidTest --stacktrace
+
+      - name: Lint report
+        # Android lint over the app and every module it depends on (API levels above minSdk among them).
+        if: failure()
+        run: cat app/build/reports/lint-results.txt 2>/dev/null || echo "No lint report (lint did not run)."
 
       - name: Golden scores are committed
         # docs/QUALITY.md and scores.tsv depend only on the code and the corpus, so a difference means the commit
@@ -111,6 +123,16 @@ jobs:
           if [ -n "$changes" ]; then
             echo "::error::Golden scores changed. Run ./gradlew :pdf:goldenTest and commit docs/QUALITY.md and pdf/golden/scores.tsv."
             git --no-pager diff -- docs/QUALITY.md pdf/golden/scores.tsv
+            exit 1
+          fi
+
+      - name: Listening scores are committed
+        # Same rule for the listening score (RI-8a): what the voice is given changed without recording its score.
+        run: |
+          changes="$(git status --porcelain -- docs/LISTENING.md pdf/golden/listening/scores.tsv)"
+          if [ -n "$changes" ]; then
+            echo "::error::Listening scores changed. Run ./gradlew :playback:listeningTest and commit docs/LISTENING.md and pdf/golden/listening/scores.tsv."
+            git --no-pager diff -- docs/LISTENING.md pdf/golden/listening/scores.tsv
             exit 1
           fi
 
@@ -179,6 +201,7 @@ jobs:
             build/reports/
             */build/reports/
             pdf/build/golden/
+            playback/build/listening/
           if-no-files-found: ignore
           retention-days: 14
 
@@ -216,7 +239,9 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Build the test APK
-        run: ./gradlew :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest --stacktrace
+        run: >-
+          ./gradlew :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest
+          :app:assembleUiTestAndroidTest --stacktrace
 
       - name: Start the emulator
         timeout-minutes: 15
@@ -254,11 +279,11 @@ jobs:
           [ "$booted" = "1" ] || fail "Emulator did not finish booting"
           echo "Emulator booted"
 
-      - name: Instrumented tests (:pdf, :playback, :speech)
+      - name: Instrumented tests (:pdf, :playback, :speech, :app)
         timeout-minutes: 20
         run: >-
           ./gradlew :pdf:connectedDebugAndroidTest :playback:connectedDebugAndroidTest
-          :speech:connectedDebugAndroidTest --stacktrace
+          :speech:connectedDebugAndroidTest :app:connectedUiTestAndroidTest --stacktrace
 
       - name: Failed device tests
         if: failure()

@@ -13,6 +13,8 @@ import io.github.skm0078.audora.core.config.QueueConfig
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.SleepOptions
+import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.pdf.document.PdfPageError
@@ -20,6 +22,7 @@ import io.github.skm0078.audora.playback.book.BookSource
 import io.github.skm0078.audora.playback.book.OpenFailure
 import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.book.PageCursor
+import io.github.skm0078.audora.playback.book.spokenEnd
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.playlist.PlaybackItem
@@ -27,9 +30,13 @@ import io.github.skm0078.audora.playback.playlist.PlaylistFeeder
 import io.github.skm0078.audora.playback.queue.RenderAheadPolicy
 import io.github.skm0078.audora.playback.queue.RenderAheadQueue
 import io.github.skm0078.audora.playback.queue.SentenceRenderer
+import io.github.skm0078.audora.playback.queue.UnitKey
+import io.github.skm0078.audora.playback.reading.ReadingSource
 import io.github.skm0078.audora.playback.recovery.PlaybackRecovery
 import io.github.skm0078.audora.playback.recovery.PlayerFault
 import io.github.skm0078.audora.playback.recovery.RecoveryAction
+import io.github.skm0078.audora.playback.voice.ReplayRender
+import java.time.LocalTime
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -40,23 +47,36 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /** What the session reads, how it speaks, and how far ahead it renders (P4-02: from each voice's measured speed). */
+@Suppress("LongParameterList") // All but the first three optional, with the defaults tests need.
 class SessionSources(
     val renderer: SentenceRenderer,
     val books: BookSource,
     val texts: ItemTexts,
     val renderAhead: RenderAheadPolicy = RenderAheadPolicy.FIXED,
+    val reading: ReadingSource = ReadingSource(),
+    val sleepOptions: () -> SleepOptions = { SleepOptions() },
+    val onBook: suspend (BookId) -> Unit = {},
+    val keepGoingToNextChapter: () -> Boolean = { true },
+    val onBookFinished: (BookId) -> Unit = {},
+    val replayRender: ReplayRender? = null,
+    val replayStyle: (factor: Float) -> SpeechStyle? = { null },
 )
 
 /**
  * Where the session runs. [scope] is main-thread; [extraction] is one thread (PDFium, P1-02);
- * [elapsedRealtime] keeps counting in deep sleep (sleep timer); [wallClock] is for what the UI shows.
+ * [elapsedRealtime] keeps counting in deep sleep (sleep timer); [wallClock] is for what the UI shows;
+ * [minuteOfDay] is the local time (0 = midnight) for bedtime auto-on; [shakes] feeds "shake to extend".
  */
 class SessionEnvironment(
     val scope: CoroutineScope,
     val extraction: CoroutineDispatcher,
     val elapsedRealtime: () -> Long,
     val wallClock: () -> Long,
+    val minuteOfDay: () -> Int = { LocalTime.now().let { it.hour * MINUTES_PER_HOUR + it.minute } },
+    val shakes: ShakeSource = ShakeSource.NONE,
 )
+
+private const val MINUTES_PER_HOUR = 60
 
 /**
  * Owns the playback of one book at a time on the service's [player] (main thread only).
@@ -80,13 +100,47 @@ class BookSession(
     private val opening = Mutex()
     private val playlist = PlaylistView(player)
     private val reporter = ReadingReporter(events)
-    private val loader = PageLoader(env.scope, env.extraction, LoaderEvents())
+    private val loader = PageLoader(env.scope, env.extraction, LoaderEvents(), sources.reading.quotes::page)
     private val faults = FaultHandler()
     private val sleep = SleepControl()
+
+    /** "Keep going to the next chapter" off (plan item 25): an end-of-chapter rule that never runs out. */
+    private val chapterStop = SleepTimer(env.elapsedRealtime)
     private val rewind = ResumeRewind(config.resumeRewind, env.elapsedRealtime)
     private val playerListener = PlayerListener()
+    private val jumps = JumpHistory(config.jumps)
+
+    /** The item a seek the session makes itself goes to (resume rewind, replay): not the listener's jump. */
+    private var ownSeekTarget: Int? = null
+
+    /** "What did it say?": one sentence replayed slower, nothing saved. */
+    private val replay = ReplaySpeed()
+
+    /** Study modes (plan item 31): repeats, pause after each sentence, A–B loops. */
+    private val study = StudyLoop()
+
+    /** The sleep timer wants this sentence's end-of-item pause: study modes leave it alone. */
+    private var stopForSleep = false
+
+    /**
+     * "Keep going to the next chapter" is off and this sentence ends a chapter: reading stops there, unless a study
+     * step reads on inside the chapter first (a repeat, or an A–B loop back).
+     */
+    private var atChapterEnd = false
+
+    /**
+     * A study step is starting play again by itself (repeat, go on, loop back): not the listener pressing play, so
+     * no rewind and no bedtime timer. Taken by the next play, cleared by any pause before it.
+     */
+    private var studyResume = false
+
+    /** Playback reached a page not loaded yet straight from a sentence: the range check waits for that page. */
+    private var overshootPending = false
 
     private var book: OpenedBook? = null
+
+    // The book the player's playlist was built for; differs from [book] between a book switch and its rebuild.
+    private var playlistBook: BookId? = null
     private var bookPassword: String? = null
     private var epoch = 0
     private var queue: RenderAheadQueue? = null
@@ -103,34 +157,46 @@ class BookSession(
     val bookId: BookId? get() = book?.book?.id
 
     /**
-     * Starts reading [id] at the first sentence of [page] that ends after [charStart]. Reuses the open book
-     * when it is the same one (a seek), unless the reading text settings changed since it was opened. Plays at
-     * once: callers send this only from a user action (C7).
+     * Starts reading [id] at the first sentence of [page] that ends after [charStart], and at or after [unitIndex]
+     * when the start is a known unit (a tap: a continued table's first row then starts at that row, not at the
+     * summary sharing its offset; see [PageCursor]). Reuses the open book when it is the same one (a seek), unless
+     * the reading text settings changed since it was opened. Plays at once: callers send this only from a user
+     * action (C7).
      */
-    suspend fun playFrom(id: BookId, page: Int, charStart: Int, password: String?): Outcome<Unit, OpenFailure> =
-        opening.withLock {
-            fun fail(failure: OpenFailure): Outcome<Unit, OpenFailure> {
-                error = SessionError(failure.code, failure.message)
-                publishState()
-                return Outcome.Failure(failure)
-            }
-            val same = book?.takeIf { it.book.id == id && (password == null || password == bookPassword) }
-            // A same book opened again (settings changed) keeps the password it was opened with.
-            val openPassword = password ?: same?.let { bookPassword }
-            val opened = same?.takeIf { current(it) }
-                ?: when (val result = sources.books.open(id, openPassword)) {
-                    is Outcome.Success -> result.value.also { replaceBook(it, openPassword) }
-                    is Outcome.Failure -> return@withLock fail(result.error)
-                }
-            val pageCount = opened.text.pageCount
-            if (page !in 0 until pageCount || charStart < 0) {
-                return@withLock fail(OpenFailure(PlaybackErrorCode.BAD_REQUEST, "Page ${page + 1} is not in this book"))
-            }
-            error = null
-            AudoraLog.i(TAG, "Play book=${id.logLabel} page=$page char=$charStart pages=$pageCount")
-            rebuild(page, charStart, play = true)
-            Outcome.Success(Unit)
+    suspend fun playFrom(
+        id: BookId,
+        page: Int,
+        charStart: Int,
+        password: String?,
+        unitIndex: Int? = null,
+    ): Outcome<Unit, OpenFailure> = opening.withLock {
+        fun fail(failure: OpenFailure): Outcome<Unit, OpenFailure> {
+            error = SessionError(failure.code, failure.message)
+            publishState()
+            return Outcome.Failure(failure)
         }
+        val same = book?.takeIf { it.book.id == id && (password == null || password == bookPassword) }
+        // A same book opened again (settings changed) keeps the password it was opened with.
+        val openPassword = password ?: same?.let { bookPassword }
+        val opened = same?.takeIf { current(it) }
+            ?: when (val result = sources.books.open(id, openPassword)) {
+                is Outcome.Success -> result.value.also { replaceBook(it, openPassword) }
+                is Outcome.Failure -> return@withLock fail(result.error)
+            }
+        val pageCount = opened.text.pageCount
+        if (page !in 0 until pageCount || charStart < 0) {
+            return@withLock fail(OpenFailure(PlaybackErrorCode.BAD_REQUEST, "Page ${page + 1} is not in this book"))
+        }
+        error = null
+        AudoraLog.i(TAG, "Play book=${id.logLabel} page=$page char=$charStart pages=$pageCount")
+        // Only a jump within the book: after a book switch the player still holds the old book's playlist.
+        if (playlistBook == id) {
+            currentSpot()?.let { from -> recordJump(from, Spot(page, charStart, unitIndex), JumpOrigin.START) }
+        }
+        rebuild(page, charStart, play = true, index = unitIndex)
+        sleep.onStarted()
+        Outcome.Success(Unit)
+    }
 
     /**
      * Playback resumption (P1-06): reopens [id] without a password and plays from its saved anchor, re-anchored
@@ -155,11 +221,27 @@ class BookSession(
         return playFrom(id, point?.page ?: 0, point?.charStart ?: 0, password = bookPassword)
     }
 
+    /**
+     * "Undo jump" (plan item 78): back to where reading was before the last jump (a burst of skips counts as one),
+     * playing or paused as now. False when there is nothing to undo.
+     */
+    fun undoJump(): Boolean {
+        val pageCount = book?.text?.pageCount ?: 0
+        // Never outside the open book, whatever the history holds.
+        val spot = jumps.undo()?.takeIf { it.page in 0 until pageCount } ?: return false
+        AudoraLog.i(TAG, "Undo jump to page=${spot.page} char=${spot.charStart}, book=${bookId?.logLabel}")
+        rebuild(spot.page, spot.charStart, play = player.playWhenReady, index = spot.index)
+        return true
+    }
+
+    /** The sentence playing, or the last one heard while between sentences; null with no book. */
+    fun currentSentence(): ReadingUnit? = (playlist.current() as? PlaybackItem.Sentence)?.unit ?: lastSentence
+
     /** The voice changed: the current sentence restarts in the new voice (Build Spec §6). */
     fun restartRendering() {
-        val (page, char) = resumePoint() ?: return
-        AudoraLog.i(TAG, "Restart rendering book=${bookId?.logLabel} page=$page char=$char")
-        rebuild(page, char, play = player.playWhenReady)
+        val at = resumePoint() ?: return
+        AudoraLog.i(TAG, "Restart rendering book=${bookId?.logLabel} page=${at.page} char=${at.char}")
+        rebuild(at.page, at.char, play = player.playWhenReady, index = at.index)
     }
 
     /**
@@ -168,19 +250,171 @@ class BookSession(
      * were spoken at the old rate. With nothing loaded, only the session extras change.
      */
     fun onSpeechStyleChanged(playerSpeed: Float) {
+        replay.forget()
+        sources.replayRender?.clear()
         player.setPlaybackSpeed(playerSpeed)
-        val (page, char) = resumePoint() ?: return publishState()
-        AudoraLog.i(TAG, "Speech style changed, restart book=${bookId?.logLabel} page=$page char=$char")
-        rebuild(page, char, play = player.playWhenReady)
+        val at = resumePoint() ?: return publishState()
+        AudoraLog.i(TAG, "Speech style changed, restart book=${bookId?.logLabel} page=${at.page} char=${at.char}")
+        rebuild(at.page, at.char, play = player.playWhenReady, index = at.index)
     }
 
-    /** False when [mode] cannot apply to the open book: end of chapter in a book without chapters. */
-    fun setSleepTimer(mode: SleepTimerMode, minutes: Int): Boolean = sleep.set(mode, minutes)
+    /**
+     * "What did it say?": plays the sentence before the current one again, [factor] times the listener's speed (a
+     * little slower), then goes on at their speed from the next sentence. Only the player's speed changes, so nothing
+     * is saved: leaving the reader, rotating or locking the phone mid-replay cannot keep the slower speed. The sentence
+     * is one the reading modes play (the playlist holds no other), from the recent-audio cache when it is still there.
+     * With smart speed stretching the voice ([SessionSources.replayStyle] gives a style), the sentence is rendered
+     * again at the slower speed instead and reading rebuilds from it: one time-stretch is never run over another, at
+     * the cost of that sentence's render time (ADR-049). False when no sentence was played before this one.
+     */
+    fun replayPrevious(factor: Float): Boolean {
+        val current = player.currentMediaItemIndex
+        val target = (current - 1 downTo 0).firstOrNull { playlist.itemAt(it) is PlaybackItem.Sentence } ?: return false
+        val unit = (playlist.itemAt(target) as PlaybackItem.Sentence).unit
+        if (!replayRendered(unit, factor)) replayFromCache(target, unit, factor)
+        return true
+    }
+
+    /** With smart speed stretching the voice: renders [unit] again slower and rebuilds from it; false otherwise. */
+    private fun replayRendered(unit: ReadingUnit, factor: Float): Boolean {
+        val render = sources.replayRender
+        val slower = render?.let { sources.replayStyle(factor) }
+        if (render == null || slower == null) return false
+        AudoraLog.i(
+            TAG,
+            "Replay page=${unit.page} unit=${unit.index} factor=$factor re-rendered, book=${bookId?.logLabel}",
+        )
+        render.set(UnitKey.of(unit), slower)
+        rebuild(unit.page, unit.charStart, play = true, index = unit.index)
+        return true
+    }
+
+    /** The cached sentence at [target], through the player at [factor] times the listener's speed. */
+    private fun replayFromCache(target: Int, unit: ReadingUnit, factor: Float) {
+        player.setPlaybackSpeed(replay.start(UnitKey.of(unit), player.playbackParameters.speed, factor))
+        AudoraLog.i(TAG, "Replay page=${unit.page} unit=${unit.index} factor=$factor, book=${bookId?.logLabel}")
+        ownSeekTarget = target
+        player.seekTo(target, 0L)
+        player.play()
+    }
+
+    /**
+     * "Next paragraph" / "previous paragraph" (long-press on the skip buttons): to the next paragraph's first
+     * sentence, or back to the start of this one (the one before when already at its start), playing or paused as
+     * now. A sentence already in the playlist is a seek (its audio may be rendered); otherwise reading rebuilds
+     * there. Counts as a jump for "Undo jump". [ParagraphSkipResult.NONE_THAT_WAY] at the book's end or start (the
+     * listener is told); [ParagraphSkipResult.DROPPED] with no sentence playing, or when reading moved on meanwhile.
+     */
+    suspend fun skipParagraph(forward: Boolean): ParagraphSkipResult {
+        val found = paragraphTarget(forward)?.takeIf { (from, _) -> currentSentence() == from }
+        val target = found?.second
+        val result = when {
+            found == null -> ParagraphSkipResult.DROPPED
+            target == null -> ParagraphSkipResult.NONE_THAT_WAY
+            else -> moveToParagraph(found.first, target, forward)
+        }
+        if (result != ParagraphSkipResult.MOVED) {
+            AudoraLog.i(TAG, "Paragraph skip forward=$forward not moved: $result, book=${bookId?.logLabel}")
+        }
+        return result
+    }
+
+    /** A seek when [target] is in the playlist (its audio may be rendered), else a rebuild there. */
+    private fun moveToParagraph(from: ReadingUnit, target: Spot, forward: Boolean): ParagraphSkipResult {
+        val index = (0 until player.mediaItemCount).firstOrNull { i ->
+            val at = (playlist.itemAt(i) as? PlaybackItem.Sentence)?.unit
+            at != null && at.spot().sameSentence(target)
+        }
+        // Already there (the book's first paragraph): nothing to skip, nor to undo.
+        if (index == player.currentMediaItemIndex) return ParagraphSkipResult.NONE_THAT_WAY
+        AudoraLog.i(
+            TAG,
+            "Paragraph forward=$forward to page=${target.page} char=${target.charStart}, book=${bookId?.logLabel}",
+        )
+        if (index == null) {
+            recordJump(from.spot(), target, JumpOrigin.SKIP)
+            rebuild(target.page, target.charStart, play = player.playWhenReady, index = target.index)
+        } else {
+            // The seek is recorded as a jump by the transition, like any skip.
+            player.seekTo(index, 0L)
+        }
+        return ParagraphSkipResult.MOVED
+    }
+
+    /**
+     * The sentence playing and where a paragraph skip goes (null: no paragraph that way); null with no sentence
+     * playing, or when the book changed meanwhile.
+     */
+    private suspend fun paragraphTarget(forward: Boolean): Pair<ReadingUnit, Spot?>? {
+        val opened = book
+        val unit = currentSentence()
+        if (opened == null || unit == null) return null
+        val text = opened.text
+        val target = withContext(env.extraction) {
+            val skip = ParagraphSkip({ page -> (text.units(page) as? Outcome.Success)?.value }, text.pageCount)
+            if (forward) skip.next(unit) else skip.previous(unit)
+        }
+        return (unit to target).takeIf { book === opened }
+    }
+
+    /**
+     * Sets A or B of a study loop at the sentence playing (plan item 31); [loop] false reads the range once and stops.
+     * False with no sentence playing.
+     */
+    fun markStudy(mark: StudyMark, loop: Boolean): Boolean = study.mark(mark, currentSentence(), loop).also { marked ->
+        if (marked) onStudyChanged("Study mark $mark loop=$loop")
+    }
+
+    /** Loop on or off for the A–B range. */
+    fun setStudyLoop(loop: Boolean) {
+        study.setLoop(loop)
+        onStudyChanged("Study loop=$loop")
+    }
+
+    fun clearStudy() {
+        study.clear()
+        onStudyChanged("Study range cleared")
+    }
+
+    /**
+     * "Read a selection only": plays [range] of [id] from its start, once or looping. A user action (C7), like
+     * [playFrom].
+     */
+    suspend fun playRange(id: BookId, range: StudyRange, password: String?): Outcome<Unit, OpenFailure> =
+        playFrom(id, range.start.page, range.start.charStart, password).also { played ->
+            if (played is Outcome.Success) {
+                study.set(range)
+                onStudyChanged("Study range set loop=${range.loop}")
+            }
+        }
+
+    private fun onStudyChanged(what: String) {
+        AudoraLog.i(TAG, "$what, book=${bookId?.logLabel}")
+        updateWindow()
+        publishState()
+    }
+
+    /**
+     * False when [mode] cannot apply to the open book: end of chapter in a book without chapters. [chapters] is how
+     * many chapter ends an end-of-chapter timer waits for.
+     */
+    fun setSleepTimer(mode: SleepTimerMode, minutes: Int, chapters: Int = 1): Boolean =
+        sleep.set(mode, minutes, chapters)
+
+    /** The sleep options changed: shake listening follows at once; bedtime and fade apply from the next timer. */
+    fun onSleepOptionsChanged() {
+        sleep.updateShakes()
+        publishState()
+    }
+
+    /** A listening option the session only shows (the focus sound) changed: the extras carry it at once. */
+    fun onListeningOptionsChanged() = publishState()
 
     fun release() {
         player.removeListener(playerListener)
         loader.cancel()
         sleep.cancel()
+        env.shakes.stop()
         queue?.close()
         queue = null
         registry.clear()
@@ -200,17 +434,30 @@ class BookSession(
         book = opened
         bookPassword = password
         lastSentence = null
+        jumps.clear()
+        // The new book's speed is set next (onBook); a replay of the old book must not restore over it.
+        replay.forget()
+        study.clear()
         // On the extraction thread, after any page read still running there.
         val chapters = withContext(env.extraction) {
             old?.text?.close()
             opened.text.chapterStarts()
         }
         sleep.onBookChanged(chapters)
+        chapterStop.chapterStarts = chapters
+        sources.reading.chapterPages = chapters.toSet()
+        sources.reading.scanned = opened.text::isScanned
+        sources.reading.quotes.clear()
+        // The book's own speed, voices and pronunciation fixes, before its first sentence is rendered.
+        sources.onBook(opened.book.id)
         AudoraLog.i(TAG, "Opened book=${opened.book.id.logLabel} chapters=${chapters.size}")
     }
 
-    private fun rebuild(page: Int, charStart: Int, play: Boolean) {
+    /** [index]: the start unit's index on [page] when known (see [PageCursor]); null starts at [charStart] alone. */
+    private fun rebuild(page: Int, charStart: Int, play: Boolean, index: Int? = null) {
         val opened = book ?: return
+        playlistBook = opened.book.id
+        replay.finish()?.let(player::setPlaybackSpeed)
         loader.cancel()
         // A new position: a pause before it says nothing about where the listener lost the thread.
         rewind.forget()
@@ -221,9 +468,9 @@ class BookSession(
         queue = newQueue
         registry.publish(epoch, newQueue)
         val items = PlaylistItems(opened.book.id.value, epoch, opened.book.title, opened.text.pageCount, sources.texts)
-        val newFeeder = PlaylistFeeder(PlayerPlaylist(player, items), config)
+        val newFeeder = PlaylistFeeder(PlayerPlaylist(player, items), config, sources.reading.current())
         feeder = newFeeder
-        cursor = PageCursor(opened.text.pageCount, page, charStart)
+        cursor = PageCursor(opened.text.pageCount, page, charStart, index)
         player.setMediaItems(newFeeder.initialItems().map(items::toMediaItem), 0, 0L)
         player.prepare()
         if (play) player.play()
@@ -248,13 +495,36 @@ class BookSession(
         val currentFeeder = feeder ?: return
         val candidates = currentFeeder.window(1 + config.renderAhead.maxAheadUnits)
         queue?.setWindow(sources.renderAhead.window(candidates, config))
-        player.pauseAtEndOfMediaItems = sleep.pauseAfter(playlist.current(), playlist.next())
+        val current = playlist.current()
+        val next = playlist.next()
+        stopForSleep = sleep.pauseAfter(current, next)
+        // An A–B range that spans a chapter's end reads on to its B; the chapter stop applies outside ranges only.
+        atChapterEnd = stopsAtChapterEnd(current, next) && !study.runsOnAfter(current, next)
+        player.pauseAtEndOfMediaItems =
+            stopForSleep || atChapterEnd || study.pausesAfter(current, next, sources.reading.modes())
     }
 
-    /** Where a rebuild restarts: the current sentence, or just after the last one while waiting for a page. */
-    private fun resumePoint(): Pair<Int, Int>? = when (val item = playlist.current()) {
-        is PlaybackItem.Sentence -> item.unit.page to item.unit.charStart
-        is PlaybackItem.More -> lastSentence?.let { it.page to it.charEnd } ?: cursor?.let { it.startPage to 0 }
+    /** With "Keep going to the next chapter" off, reading pauses where a chapter ends (the book's end included). */
+    private fun stopsAtChapterEnd(current: PlaybackItem?, next: PlaybackItem?): Boolean {
+        if (sources.keepGoingToNextChapter() || chapterStop.chapterStarts.isEmpty()) return false
+        if (chapterStop.mode != SleepTimerMode.END_OF_CHAPTER) chapterStop.set(SleepTimerMode.END_OF_CHAPTER, 0)
+        return chapterStop.pauseAfter(current, next)
+    }
+
+    /** Where an in-session rebuild restarts: a page, an offset on it, and the unit's index when known. */
+    private class Restart(val page: Int, val char: Int, val index: Int?)
+
+    /**
+     * The current sentence (by its index too, so a rebuild on a continued table's first row restarts that row, not
+     * the summary sharing its offset), or just after the last one while waiting for a page.
+     */
+    private fun resumePoint(): Restart? = when (val item = playlist.current()) {
+        is PlaybackItem.Sentence -> Restart(item.unit.page, item.unit.charStart, item.unit.index)
+
+        is PlaybackItem.More ->
+            lastSentence?.let { Restart(it.page, it.spokenEnd, it.index + 1) }
+                ?: cursor?.let { Restart(it.startPage, 0, null) }
+
         null -> null
     }
 
@@ -271,11 +541,98 @@ class BookSession(
                 index
             }
         AudoraLog.i(TAG, "Resume rewind $step to item $target, book=${bookId?.logLabel}")
+        ownSeekTarget = target
         player.seekTo(target, 0L)
     }
 
+    /** The sentence playing, or the one last played while waiting for a page. */
+    private fun currentSpot(): Spot? = ((playlist.current() as? PlaybackItem.Sentence)?.unit ?: lastSentence)?.spot()
+
+    /** A seek to another sentence (skip buttons, headset, notification, car) is a jump, unless it is the rewind. */
+    private fun noteSeek(reason: Int, now: ReadingUnit?) {
+        val rewound = ownSeekTarget != null && ownSeekTarget == player.currentMediaItemIndex
+        ownSeekTarget = null
+        if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_SEEK || rewound) return
+        val from = lastSentence
+        if (from != null && now != null) {
+            recordJump(from.spot(), now.spot(), JumpOrigin.SKIP)
+        }
+    }
+
+    private fun recordJump(from: Spot, to: Spot, origin: JumpOrigin) {
+        val before = jumps.last
+        jumps.record(from, to, origin, env.elapsedRealtime())
+        if (jumps.last == before) return
+        AudoraLog.i(
+            TAG,
+            "Jump origin=$origin from page=${from.page} char=${from.charStart} to page=${to.page} " +
+                "char=${to.charStart}, book=${bookId?.logLabel}",
+        )
+        publishState()
+    }
+
+    /** The player paused at a sentence end for a study mode: true when playback went on (repeat, next, loop). */
+    private fun onStudySentenceEnd(): Boolean {
+        val unit = (playlist.current() as? PlaybackItem.Sentence)?.unit ?: return false
+        val step = study.onSentenceEnd(unit, playlist.next(), sources.reading.modes())
+            .let { if (it == StudyStep.Continue && atChapterEnd) StudyStep.Stop else it }
+        studyStep(step)
+        return step != StudyStep.Stop
+    }
+
+    private fun studyStep(step: StudyStep) {
+        when (step) {
+            StudyStep.Repeat -> {
+                player.seekTo(player.currentMediaItemIndex, 0L)
+                resumeForStudy()
+            }
+
+            StudyStep.Continue -> resumeForStudy()
+
+            StudyStep.Stop -> {
+                if (player.playWhenReady) player.pause()
+                AudoraLog.i(TAG, "Study stop, book=${bookId?.logLabel}")
+                publishState()
+            }
+
+            is StudyStep.LoopTo -> loopTo(step.start)
+        }
+    }
+
+    /** Back to the range's first sentence: a seek when it is still in the playlist, else a rebuild from it. */
+    private fun loopTo(start: Spot) {
+        val index = (0 until player.mediaItemCount).firstOrNull { i ->
+            (playlist.itemAt(i) as? PlaybackItem.Sentence)?.unit?.let(study::startsRange) == true
+        }
+        AudoraLog.i(TAG, "Study loop to page=${start.page} char=${start.charStart} seek=${index != null}")
+        studyResume = true
+        if (index == null) {
+            rebuild(start.page, start.charStart, play = true, index = start.index)
+            return
+        }
+        ownSeekTarget = index
+        player.seekTo(index, 0L)
+        player.play()
+    }
+
+    private fun resumeForStudy() {
+        studyResume = true
+        player.play()
+    }
+
     private fun publishState() {
-        events.onStateChanged(SessionState(bookId?.value, error, sleep.mode, sleep.endsAtWall, sleep.hasChapters))
+        events.onStateChanged(
+            SessionState(
+                bookId?.value,
+                error,
+                sleep.mode,
+                sleep.endsAtWall,
+                sleep.hasChapters,
+                jumps.last?.from,
+                sleep.chapters,
+                study.marks(),
+            ),
+        )
     }
 
     /** Errors: classify, ask [PlaybackRecovery], act. */
@@ -296,8 +653,8 @@ class BookSession(
             when (action) {
                 RecoveryAction.Retry -> player.prepare()
 
-                RecoveryAction.RestartRendering -> resumePoint()?.let { (page, char) ->
-                    rebuild(page, char, play = true)
+                RecoveryAction.RestartRendering -> resumePoint()?.let { at ->
+                    rebuild(at.page, at.char, play = true, index = at.index)
                 }
 
                 RecoveryAction.SkipSentence -> skip(fault)
@@ -332,7 +689,10 @@ class BookSession(
         }
     }
 
-    /** Sleep timer: minutes on a coroutine, end of page or chapter through the player's pause-at-end-of-item. */
+    /**
+     * Sleep timer: minutes on a coroutine, end of page or chapter through the player's pause-at-end-of-item. Extras
+     * (plan item 37): the minutes fade out, a shake starts the timer again, and starting to read at bedtime sets one.
+     */
     private inner class SleepControl {
         private val timer = SleepTimer(env.elapsedRealtime)
         private var job: Job? = null
@@ -340,25 +700,60 @@ class BookSession(
         /** The minutes ran out: reading stops at the end of the sentence playing, not mid-word. */
         private var finishingSentence = false
 
+        /** The last timer set, which a shake starts again. */
+        private var lastSet: Triple<SleepTimerMode, Int, Int>? = null
+
         val mode: SleepTimerMode get() = timer.mode
         var endsAtWall: Long? = null
             private set
 
+        /** Chapter ends an end-of-chapter timer waits for (1 for any other mode). */
+        var chapters: Int = 1
+            private set
+
         val hasChapters: Boolean get() = timer.chapterStarts.isNotEmpty()
 
-        fun set(mode: SleepTimerMode, minutes: Int): Boolean {
+        fun set(mode: SleepTimerMode, minutes: Int, chapters: Int = 1): Boolean {
             if (mode == SleepTimerMode.END_OF_CHAPTER && !hasChapters) {
                 AudoraLog.w(TAG, "Sleep timer $mode refused: no chapters, book=${bookId?.logLabel}")
                 return false
             }
             cancel()
-            timer.set(mode, minutes)
+            val page = (playlist.current() as? PlaybackItem.Sentence)?.unit?.page ?: lastSentence?.page
+            timer.set(mode, minutes, chapters, page)
+            this.chapters = if (mode == SleepTimerMode.END_OF_CHAPTER) chapters else 1
+            lastSet = Triple(mode, minutes, chapters).takeIf { mode != SleepTimerMode.OFF }
             endsAtWall = timer.remainingMs()?.let { env.wallClock() + it }
             if (mode == SleepTimerMode.MINUTES) job = env.scope.launch { runMinutes() }
-            AudoraLog.i(TAG, "Sleep timer $mode minutes=$minutes book=${bookId?.logLabel}")
+            AudoraLog.i(TAG, "Sleep timer $mode minutes=$minutes chapters=$chapters book=${bookId?.logLabel}")
+            updateShakes()
             updateWindow()
             publishState()
             return true
+        }
+
+        /** Reading started: at bedtime with no timer set, the bedtime timer starts (plan item 37). */
+        fun onStarted() {
+            val options = sources.sleepOptions()
+            if (!options.bedtime || timer.mode != SleepTimerMode.OFF || !options.inBedtime(env.minuteOfDay())) return
+            AudoraLog.i(TAG, "Bedtime: sleep timer on for ${options.bedtimeMinutes} min, book=${bookId?.logLabel}")
+            set(SleepTimerMode.MINUTES, options.bedtimeMinutes)
+        }
+
+        /** Listens for shakes while a timer runs with "shake to extend" on. */
+        fun updateShakes() {
+            if (timer.mode != SleepTimerMode.OFF && sources.sleepOptions().shakeToExtend) {
+                env.shakes.start(::onShake)
+            } else {
+                env.shakes.stop()
+            }
+        }
+
+        private fun onShake() {
+            val (mode, minutes, chapterCount) = lastSet ?: return
+            if (timer.mode == SleepTimerMode.OFF) return
+            AudoraLog.i(TAG, "Shake: sleep timer $mode started again, book=${bookId?.logLabel}")
+            set(mode, minutes, chapterCount)
         }
 
         /** A new book: its chapters replace the old ones, and an end-of-chapter timer without any is dropped. */
@@ -374,6 +769,7 @@ class BookSession(
             job?.cancel()
             job = null
             finishingSentence = false
+            player.volume = FULL_VOLUME
         }
 
         fun pauseAfter(current: PlaybackItem?, next: PlaybackItem?): Boolean =
@@ -394,12 +790,15 @@ class BookSession(
         }
 
         private suspend fun runMinutes() {
+            val fadeMs = if (sources.sleepOptions().fadeOut) config.sleep.fadeOutMs else 0L
             var remaining = timer.remainingMs() ?: return
-            while (remaining > 0) {
-                delay(remaining)
+            while (remaining > fadeMs) {
+                delay(remaining - fadeMs)
                 remaining = timer.remainingMs() ?: return
             }
-            if (player.isPlaying && playlist.current() is PlaybackItem.Sentence) {
+            if (fadeMs > 0 && player.isPlaying) {
+                fadeOut(fadeMs)
+            } else if (player.isPlaying && playlist.current() is PlaybackItem.Sentence) {
                 AudoraLog.i(TAG, "Sleep timer ended, finishing the sentence, book=${bookId?.logLabel}")
                 finishingSentence = true
                 updateWindow()
@@ -410,9 +809,29 @@ class BookSession(
             }
         }
 
+        /** Fades the voice to silence over the timer's last [fadeMs], then pauses and restores the volume. */
+        private suspend fun fadeOut(fadeMs: Long) {
+            AudoraLog.i(TAG, "Sleep timer fading out, book=${bookId?.logLabel}")
+            try {
+                var remaining = timer.remainingMs() ?: 0L
+                while (remaining > 0) {
+                    player.volume = (remaining.toFloat() / fadeMs).coerceIn(0f, FULL_VOLUME)
+                    delay(config.sleep.fadeStepMs.coerceAtMost(remaining))
+                    remaining = timer.remainingMs() ?: 0L
+                }
+                AudoraLog.i(TAG, "Sleep timer ended after the fade, pausing book=${bookId?.logLabel}")
+                player.pause()
+                clearAndPublish()
+            } finally {
+                player.volume = FULL_VOLUME
+            }
+        }
+
         private fun clearAndPublish() {
             timer.clear()
             endsAtWall = null
+            chapters = 1
+            updateShakes()
             publishState()
         }
     }
@@ -430,6 +849,17 @@ class BookSession(
     private inner class PlayerListener : Player.Listener {
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) faults.onSentenceCompleted()
+            val started = (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.unit
+            val previous = lastSentence
+            noteSeek(reason, started)
+            study.onNewSentence()
+            checkOvershoot(reason, mediaItem, previous, started)
+            replay.onSentence(started?.let(UnitKey::of))?.let(player::setPlaybackSpeed)
+            // A replay's slower render ended: drop it, so skipping back plays the sentence at the listener's speed.
+            // Only a sentence ends it: a rebuild's placeholder (More) starts first, before the replayed sentence loads.
+            started?.let { sentence ->
+                sources.replayRender?.onSentence(UnitKey.of(sentence))?.let { queue?.forget(it) }
+            }
             (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.let { sentence ->
                 lastSentence = sentence.unit
                 bookId?.let { events.onSentenceStarted(it, sentence.unit) }
@@ -439,13 +869,38 @@ class BookSession(
             pump()
         }
 
+        /**
+         * Played on from inside a study range to outside it: the range's end was missed (a seek, or the next page
+         * loading late). Arriving on a page not loaded yet ([PlaybackItem.More]) waits for the page: the playlist
+         * change that replaces it brings the sentence to check.
+         */
+        private fun checkOvershoot(reason: Int, mediaItem: MediaItem?, previous: ReadingUnit?, started: ReadingUnit?) {
+            val auto = reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO
+            val waited = overshootPending && reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED
+            if ((auto || waited) && started != null) study.onOvershoot(previous, started)?.let(::studyStep)
+            overshootPending = when {
+                auto -> PlaylistItems.itemOf(mediaItem) is PlaybackItem.More
+                started != null -> false
+                else -> overshootPending
+            }
+        }
+
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
             if (playWhenReady) {
-                rewindOnResume()
+                if (studyResume) {
+                    studyResume = false
+                } else {
+                    rewindOnResume()
+                    sleep.onStarted()
+                }
                 return
             }
+            studyResume = false
             val atItemEnd = reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM
-            sleep.onPaused(atItemEnd = atItemEnd)
+            // A study mode's stop at a sentence end goes on by itself unless it is a real stop.
+            if (atItemEnd && !stopForSleep && onStudySentenceEnd()) return
+            // Only the timer's own stop ends an end-of-page or end-of-chapter timer, not a study pause.
+            sleep.onPaused(atItemEnd = atItemEnd && stopForSleep)
             rewind.onPaused(atSentenceEnd = atItemEnd)
         }
 
@@ -470,8 +925,12 @@ class BookSession(
                         ?: cursor?.startPage
                 reporter.update(bookId?.value, player, page)
             }
-            if (events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED) && player.playbackState == Player.STATE_ENDED) {
+            // Only a book read to its end while playing: an ENDED reached while paused (a seek past the last item,
+            // a replaced playlist) is not the listener finishing it, so Up next must not move on.
+            val ended = player.playbackState == Player.STATE_ENDED && player.playWhenReady
+            if (events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED) && ended) {
                 AudoraLog.i(TAG, "Book finished, book=${bookId?.logLabel}")
+                bookId?.let(sources.onBookFinished)
             }
             // A faster speed drains the queue sooner (ADR-027): resize the window now, not at the next sentence.
             if (events.contains(Player.EVENT_PLAYBACK_PARAMETERS_CHANGED)) {
@@ -488,5 +947,6 @@ class BookSession(
 
         /** Timer modes that end by pausing at the end of a sentence (pause-at-end-of-item). */
         val ITEM_END_MODES = setOf(SleepTimerMode.END_OF_PAGE, SleepTimerMode.END_OF_CHAPTER)
+        const val FULL_VOLUME = 1f
     }
 }

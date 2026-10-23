@@ -183,7 +183,27 @@ class RenderAheadQueueTest {
         q.setWindow(units)
         assertSame(first, q.awaitPcm(UnitKey(0, 0)))
         Thread.sleep(SETTLE_MS)
-        assertEquals("unit 0 is rendered once", 1, renders.count { it == UnitKey(0, 0) })
+        assertEquals("unit 0 is rendered once", 1, renders.toList().count { it == UnitKey(0, 0) })
+    }
+
+    @Test
+    fun aForgottenSentenceIsRenderedAgainWhenPlayedAgain() {
+        val renders = Collections.synchronizedList(ArrayList<UnitKey>())
+        val q = start { unit ->
+            renders.add(UnitKey.of(unit))
+            Outcome.Success(pcm(10 + renders.size))
+        }
+        val units = page(0, 6)
+        q.setWindow(units)
+        val first = q.awaitPcm(UnitKey(0, 0))
+        q.setWindow(units.drop(3))
+        q.awaitPcm(UnitKey(0, 3))
+        q.forget(UnitKey(0, 0))
+        q.setWindow(units)
+
+        val again = q.awaitPcm(UnitKey(0, 0))
+        assertTrue("a fresh render, not the cached one", again !== first)
+        assertEquals(2, renders.toList().count { it == UnitKey(0, 0) })
     }
 
     @Test
@@ -209,6 +229,8 @@ class RenderAheadQueueTest {
             assertEquals(UnitKey(0, 0), e.key)
             assertSame(error, e.error)
         }
+        // The listener runs after readers are woken, so the reader can get here first.
+        waitUntil { failures.isNotEmpty() }
         assertEquals(listOf(UnitKey(0, 0)), failures.toList())
     }
 

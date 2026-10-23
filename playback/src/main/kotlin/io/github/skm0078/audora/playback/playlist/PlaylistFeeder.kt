@@ -4,7 +4,9 @@
 package io.github.skm0078.audora.playback.playlist
 
 import io.github.skm0078.audora.core.config.QueueConfig
+import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.playback.reading.UnitReading
 
 /** One playlist entry: a sentence, or the placeholder that stands for the pages not extracted yet. */
 sealed interface PlaybackItem {
@@ -39,9 +41,14 @@ interface Playlist {
  * go after it and the placeholder is removed, which moves playback straight on to them. At the end of the book
  * the placeholder is removed, so the last sentence's end is the only ENDED the player ever sees.
  *
- * Main thread only (the player's thread).
+ * Only the units [reading] plays go in (ADR-035): the reading modes leave out skipped tables, footnotes, equation
+ * lines and runs of unreadable text. Main thread only (the player's thread).
  */
-class PlaylistFeeder(private val playlist: Playlist, private val config: QueueConfig) {
+class PlaylistFeeder(
+    private val playlist: Playlist,
+    private val config: QueueConfig,
+    private val reading: UnitReading = UnitReading(ReadingModes()),
+) {
     private var nextSerial = 0
 
     /** True once the last page has been appended. */
@@ -63,11 +70,18 @@ class PlaylistFeeder(private val playlist: Playlist, private val config: QueueCo
 
     fun wantsMore(): Boolean = !finished && sentencesAhead() < config.minUnitsAhead
 
-    /** Appends one extracted page. An empty page (no speakable text) changes nothing. */
-    fun append(units: List<ReadingUnit>) {
-        if (finished || units.isEmpty()) return
-        val more = moreIndex() ?: return
-        val sentences = units.map { PlaybackItem.Sentence(it) }
+    /**
+     * Appends one extracted page; returns how many of its units were unreadable junk (each run plays one cue). A page
+     * with nothing to play changes nothing.
+     */
+    fun append(units: List<ReadingUnit>): Int {
+        val spoken = reading.plays(units)
+        val more = moreIndex()
+        if (!finished && spoken.isNotEmpty() && more != null) insert(more, spoken.map { PlaybackItem.Sentence(it) })
+        return reading.unreadableCount(units)
+    }
+
+    private fun insert(more: Int, sentences: List<PlaybackItem>) {
         if (more == playlist.currentIndex) {
             playlist.add(more + 1, sentences + newMore())
             playlist.remove(more, more + 1)

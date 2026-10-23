@@ -133,18 +133,23 @@ private class PdfiumDocumentHandle(private val document: PdfDocumentU, private v
     // A broken outline must not stop the book from being read: log it and read on without chapters.
     @Suppress("TooGenericExceptionCaught") // PdfiumAndroidKt and JNI report failures as RuntimeExceptions.
     override fun outline(): List<OutlineEntry> = try {
-        pdfiumLocked { document.getTableOfContents() }.map(::entryOf)
+        pdfiumLocked { document.getTableOfContents() }.map { entryOf(it, pageCount) }
     } catch (e: RuntimeException) {
         AudoraLog.w(TAG, "Could not read the outline, pages=$pageCount", e)
         emptyList()
     }
 
-    private fun entryOf(bookmark: Bookmark): OutlineEntry = OutlineEntry(
-        title = bookmark.title.orEmpty(),
-        // PDFium returns -1 for a bookmark without a page destination (a URI or named action).
-        page = bookmark.pageIdx.takeIf { it in 0L until pageCount }?.toInt(),
-        children = bookmark.children.map(::entryOf),
-    )
+    // A damaged label tree must not stop the book from being read: log it and read on with plain page numbers.
+    @Suppress("TooGenericExceptionCaught") // PdfiumAndroidKt and JNI report failures as RuntimeExceptions.
+    override fun pageLabel(pageIndex: Int): String? = try {
+        pdfiumLocked { PdfiumExtNative.nativePageLabel(document.mNativeDocPtr, pageIndex) }?.ifEmpty {
+            AudoraLog.w(TAG, "Page label too long to be one (damaged label tree), page=$pageIndex")
+            null
+        }
+    } catch (e: RuntimeException) {
+        AudoraLog.w(TAG, "Could not read the page label, page=$pageIndex", e)
+        null
+    }
 
     // No transform means no highlight on an OCR'd page, never an unreadable one: log it and read on.
     @Suppress("TooGenericExceptionCaught") // PdfiumAndroidKt reports page failures as RuntimeExceptions.
@@ -247,3 +252,10 @@ private class PdfiumDocumentHandle(private val document: PdfDocumentU, private v
         const val LUMA_SCALE = 1000
     }
 }
+
+private fun entryOf(bookmark: Bookmark, pageCount: Int): OutlineEntry = OutlineEntry(
+    title = bookmark.title.orEmpty(),
+    // PDFium returns -1 for a bookmark without a page destination (a URI or named action).
+    page = bookmark.pageIdx.takeIf { it in 0L until pageCount }?.toInt(),
+    children = bookmark.children.map { entryOf(it, pageCount) },
+)

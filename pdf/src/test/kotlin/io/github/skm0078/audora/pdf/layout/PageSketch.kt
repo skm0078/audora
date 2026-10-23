@@ -37,6 +37,32 @@ class PageSketch(private val boxes: Boolean = true) {
         return this
     }
 
+    /**
+     * One line of [pieces] set side by side, each a text, a size and a rise: how far its glyphs' bottoms sit above
+     * the line's baseline (a superscript; negative for a subscript). The baseline is where a [BODY]-sized glyph
+     * topped at [top] ends.
+     */
+    fun mixed(pieces: List<Triple<String, Float, Float>>, left: Float, top: Float): PageSketch {
+        val baseline = top - BODY * BOX_HEIGHT
+        var x = left
+        for ((text, size, rise) in pieces) {
+            for (ch in text) {
+                if (ch == ' ') {
+                    generated(' ')
+                    x += size * SPACE_WIDTH
+                    continue
+                }
+                val right = x + size * CHAR_WIDTH
+                val bottom = baseline + rise
+                add(ch.code, floatArrayOf(x, bottom + size * BOX_HEIGHT, right, bottom), size, REGULAR)
+                x = right
+            }
+        }
+        generated('\r')
+        generated('\n')
+        return this
+    }
+
     /** Glyphs at explicit left edges, in storage order: for scripts drawn out of storage order. */
     fun glyphs(placed: List<Pair<Char, Float>>, top: Float, size: Float = BODY): PageSketch {
         for ((ch, left) in placed) {
@@ -63,19 +89,20 @@ class PageSketch(private val boxes: Boolean = true) {
         return top - texts.size * pitch
     }
 
-    fun build(pageIndex: Int = 0): PageText = PageTextAssembler().assemble(
-        RawPage(
-            pageIndex = pageIndex,
-            chars = RawChars(
-                codePoints = codePoints.toIntArray(),
-                flags = flags.toIntArray(),
-                boxes = boxFloats.toFloatArray(),
-                fontSizes = sizes.toFloatArray(),
-                fontIds = fontIds.toIntArray(),
-                fontNames = FONT_NAMES,
-            ),
-            textObjects = emptyList(),
+    fun build(pageIndex: Int = 0): PageText = PageTextAssembler().assemble(raw(pageIndex))
+
+    /** The page as PDFium hands it over, for a fake engine. */
+    fun raw(pageIndex: Int = 0): RawPage = RawPage(
+        pageIndex = pageIndex,
+        chars = RawChars(
+            codePoints = codePoints.toIntArray(),
+            flags = flags.toIntArray(),
+            boxes = boxFloats.toFloatArray(),
+            fontSizes = sizes.toFloatArray(),
+            fontIds = fontIds.toIntArray(),
+            fontNames = FONT_NAMES,
         ),
+        textObjects = emptyList(),
     )
 
     private fun add(codePoint: Int, box: FloatArray, size: Float, font: Int) {
@@ -98,9 +125,10 @@ class PageSketch(private val boxes: Boolean = true) {
         const val BODY = 10f
         const val REGULAR = 0
         const val BOLD = 1
+        const val MONO = 2
         const val CHAR_WIDTH = 0.5f
         const val SPACE_WIDTH = 0.25f
         const val BOX_HEIGHT = 1.15f
-        val FONT_NAMES = listOf("ABCDEF+NotoSerif-Regular", "GHIJKL+NotoSerif-Bold")
+        val FONT_NAMES = listOf("ABCDEF+NotoSerif-Regular", "GHIJKL+NotoSerif-Bold", "MNOPQR+DejaVuSansMono")
     }
 }

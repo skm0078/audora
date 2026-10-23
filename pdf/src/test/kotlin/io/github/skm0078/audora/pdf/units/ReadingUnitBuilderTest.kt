@@ -173,6 +173,111 @@ class ReadingUnitBuilderTest {
     }
 
     @Test
+    fun `letter items follow their letter across a list nested flush, a paragraph opening with c dot is prose`() {
+        val sketch = PageSketch()
+        val lines = listOf("Choose one:", "a. Rice", "(i) white", "(ii) brown", "b. Wheat", "c. Maize")
+        lines.forEachIndexed { i, line -> sketch.line(line, left = 50f, top = 720f - i * 12f) }
+        val units = ReadingUnitBuilder().build(sketch.build())
+        assertEquals(lines, units.map { it.text })
+        assertEquals(listOf(UnitKind.BODY) + List(lines.size - 1) { UnitKind.LIST_ITEM }, units.map { it.kind })
+        // A paragraph whose first line opens with a circa date, no list before it.
+        val circa = PageSketch()
+        circa.line("The old town grew slowly.", left = 50f, top = 720f)
+        circa.line("c. 1900 the mill opened.", left = 50f, top = 680f)
+        assertEquals(
+            listOf(UnitKind.BODY, UnitKind.BODY),
+            ReadingUnitBuilder().build(circa.build()).map { it.kind },
+        )
+    }
+
+    @Test
+    fun `a contents line reads its leader as a pause, a blank keeps its place, a rule at the end goes`() {
+        val lines = listOf("Introduction ........ 5", "The answer is ______.", "Signed: ____________")
+        val texts = lines.map { line ->
+            ReadingUnitBuilder().build(PageSketch().apply { line(line, left = 50f, top = 720f) }.build()).single().text
+        }
+        assertEquals(listOf("Introduction \u2026 5", "The answer is \u2026.", "Signed:"), texts)
+    }
+
+    @Test
+    fun `each contents entry is its own unit, cut after its page number`() {
+        val entries = listOf(
+            "Foreword ........ V",
+            "Preface ........ ix",
+            "Introduction ........ 5",
+            "Methods . . . . . . 12-14",
+            "भूमिका ..... ७",
+            "Appendix ..... A-1",
+        )
+        assertEquals(
+            listOf(
+                "Foreword \u2026 V",
+                "Preface \u2026 ix",
+                "Introduction \u2026 5",
+                "Methods \u2026 12-14",
+                "भूमिका \u2026 ७",
+                "Appendix \u2026 A-1",
+            ),
+            ReadingUnitBuilder().build(PageSketch().apply { lines(entries, 50f, 720f) }.build()).map { it.text },
+        )
+    }
+
+    @Test
+    fun `a word in Roman letters is no page number, a page number in brackets is`() {
+        val paragraphs = listOf(
+            listOf("She asked...... did", "he know? He paused...... mild", "surprise showed."),
+            listOf("Foreword ........ (i)", "Preface ........ (iii)", "Introduction ........ (5)"),
+        )
+        val texts = paragraphs.map { lines ->
+            ReadingUnitBuilder().build(PageSketch().apply { lines(lines, 50f, 720f) }.build()).map { it.text }
+        }
+        assertEquals(
+            listOf(
+                listOf("She asked\u2026 did he know?", "He paused\u2026 mild surprise showed."),
+                listOf("Foreword \u2026 (i)", "Preface \u2026 (iii)", "Introduction \u2026 (5)"),
+            ),
+            texts,
+        )
+    }
+
+    @Test
+    fun `a contents entry set apart as its own paragraph keeps its page label`() {
+        val texts = listOf("Foreword ........ V", "Appendix ..... A-1").map { line ->
+            ReadingUnitBuilder().build(PageSketch().apply { line(line, 50f, 720f) }.build()).map { it.text }
+        }
+        assertEquals(listOf(listOf("Foreword \u2026 V"), listOf("Appendix \u2026 A-1")), texts)
+    }
+
+    @Test
+    fun `an entry keeps its page number after a no-break space`() {
+        val entries = listOf("Introduction ........\u00A05", "Methods ........\u00A09")
+        assertEquals(
+            listOf("Introduction \u2026 5", "Methods \u2026 9"),
+            ReadingUnitBuilder().build(PageSketch().apply { lines(entries, 50f, 720f) }.build()).map { it.text },
+        )
+    }
+
+    @Test
+    fun `prose with one leader in it is not cut at its line ends`() {
+        val paragraphs = listOf(
+            listOf("He waited...... then", "he left the room."),
+            listOf("वह चला गया...... २", "दिन बाद वह लौटा।"),
+            listOf("The capital of India is ______ which", "is in the north."),
+        )
+        val texts = paragraphs.map { lines ->
+            ReadingUnitBuilder().build(PageSketch().apply { lines(lines, 50f, 720f) }.build()).map { it.text }
+        }
+        assertEquals(
+            listOf(
+                listOf("He waited\u2026 then he left the room."),
+                listOf("वह चला गया\u2026 २ दिन बाद वह लौटा।"),
+                listOf("The capital of India is \u2026 which is in the north."),
+            ),
+            texts,
+        )
+    }
+
+    @Test
     fun `headings carry their kind and default pauses follow the spec`() {
         val sketch = PageSketch()
         sketch.line("Introduction", left = 50f, top = 720f, size = 14f)
@@ -180,5 +285,26 @@ class ReadingUnitBuilderTest {
         val units = ReadingUnitBuilder().build(sketch.build())
         assertEquals(listOf(UnitKind.HEADING, UnitKind.BODY), units.map { it.kind })
         assertEquals(listOf(600, 400), units.map { it.pauseAfterMs })
+    }
+
+    @Test
+    fun `words in a bold font are the unit's bold terms, as spans of its text`() {
+        val marked = "Water moves by osmosis. The [Krebs cycle] makes ATP in the [mitochondria]."
+        val chars = ArrayList<SyntheticChar>()
+        var bold = false
+        for (c in marked) {
+            when (c) {
+                '[' -> bold = true
+                ']' -> bold = false
+                else -> chars.add(RawPageFixture.chars(c.toString()).single().copy(fontId = if (bold) 2 else 0))
+            }
+        }
+        val fonts = listOf("Body", "Heading", "ABCDEF+Times-Bold")
+        val page = PageTextAssembler().assemble(RawPageFixture.page(chars, fontNames = fonts))
+        val units = builder.build(page)
+        assertEquals(
+            listOf(emptyList(), listOf("Krebs cycle", "mitochondria")),
+            units.map { unit -> unit.boldTerms.map { unit.text.substring(it.start, it.end) } },
+        )
     }
 }

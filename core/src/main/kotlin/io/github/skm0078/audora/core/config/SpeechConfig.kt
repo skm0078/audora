@@ -8,22 +8,28 @@ package io.github.skm0078.audora.core.config
  *   Kitten rule is stated in; more threads leave less CPU for the player, UI and PDF pipeline.
  * @property maxLoadedVoices sherpa-onnx models kept loaded at once, least recently used dropped first (P4-02). A
  *   premium model is ~150 MB on disk and more in RAM once ONNX Runtime has its arenas, so each extra slot costs
- *   that much memory; two covers a bilingual book (English + Hindi with both premium voices) without reloading a
- *   model at every language switch. The service drops all but the voice in use when Android asks it to trim.
+ *   that much memory, but only once a third voice is actually used; three covers a bilingual book (English + Hindi
+ *   with both premium voices) or one read by a narrator, a voice for quotes and one for headings (plan item 7)
+ *   without reloading a model at every switch. The service drops all but the voice in use when Android asks it to
+ *   trim.
  * @property systemConnectTimeoutMs how long to wait for the phone's TTS engine to bind and initialise.
  * @property systemChunkTimeoutMs how long one `synthesizeToFile` call may take before it counts as hung. Generous:
  *   a chunk can be up to `getMaxSpeechInputLength()` (4000) characters on a slow engine.
+ * @property blendHeadroomBytes free space a narrator blend's copy (plan item 75, ~28 MB) must leave on top of its
+ *   own size, so the copy never fills the phone.
  */
 data class SpeechConfig(
     val sherpaThreads: Int = 2,
-    val maxLoadedVoices: Int = 2,
+    val maxLoadedVoices: Int = 3,
     val systemConnectTimeoutMs: Long = 15_000,
     val systemChunkTimeoutMs: Long = 120_000,
+    val blendHeadroomBytes: Long = 67_108_864, // 64 MB
 ) {
     init {
         require(sherpaThreads > 0) { "sherpaThreads must be > 0, was $sherpaThreads" }
         require(maxLoadedVoices >= 1) { "maxLoadedVoices must be >= 1, was $maxLoadedVoices" }
         require(systemConnectTimeoutMs > 0) { "systemConnectTimeoutMs must be > 0, was $systemConnectTimeoutMs" }
         require(systemChunkTimeoutMs > 0) { "systemChunkTimeoutMs must be > 0, was $systemChunkTimeoutMs" }
+        require(blendHeadroomBytes >= 0) { "blendHeadroomBytes must be >= 0, was $blendHeadroomBytes" }
     }
 }

@@ -76,6 +76,22 @@ class SleepTimerTest {
     }
 
     @Test
+    fun stopAfterTwoChaptersPausesBeforeTheSecondChapterStart() {
+        timer.chapterStarts = listOf(0, 5, 9, 14)
+        timer.set(SleepTimerMode.END_OF_CHAPTER, 0, chapters = 2, fromPage = 3)
+        assertEquals(9, timer.chapterTarget)
+        assertFalse("the first chapter end is passed", timer.pauseAfter(lastOf(4), firstOf(5)))
+        assertTrue(timer.pauseAfter(lastOf(8), firstOf(9)))
+        timer.set(SleepTimerMode.END_OF_CHAPTER, 0, chapters = 9, fromPage = 3)
+        assertFalse("fewer chapters left: the end of the book ends it", timer.pauseAfter(lastOf(13), firstOf(14)))
+        assertTrue(timer.pauseAfter(lastOf(13), null))
+    }
+
+    private fun lastOf(page: Int) = PlaybackItem.Sentence(unit(page, 3))
+
+    private fun firstOf(page: Int) = PlaybackItem.Sentence(unit(page, 0))
+
+    @Test
     fun otherModesNeverPauseAtItemEnds() {
         val last = PlaybackItem.Sentence(unit(4, 1))
         assertFalse(timer.pauseAfter(last, null))

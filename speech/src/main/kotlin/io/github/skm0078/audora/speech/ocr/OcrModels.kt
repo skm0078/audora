@@ -19,9 +19,11 @@ import io.github.skm0078.audora.core.config.VoiceDownloadConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.speech.voices.InstallGate
 import io.github.skm0078.audora.speech.voices.JobResult
 import io.github.skm0078.audora.speech.voices.ResumableDownloader
 import io.github.skm0078.audora.speech.voices.UrlConnectionHttpSource
+import io.github.skm0078.audora.speech.voices.cancelAndAwait
 import java.io.File
 import java.io.IOException
 import java.util.Properties
@@ -60,9 +62,12 @@ sealed interface OcrModelsState {
  */
 class OcrModels private constructor(context: Context, private val config: VoiceDownloadConfig) {
     private val appContext = context.applicationContext
-    private val files = TessdataFiles(File(appContext.noBackupFilesDir, ROOT_DIR))
+    internal val files = TessdataFiles(File(appContext.noBackupFilesDir, ROOT_DIR))
     private val installedState = MutableStateFlow<Set<Lang>?>(null)
     private val lock = Any()
+
+    /** Installs and deletes under [lock]; a download started before a delete does not install. */
+    private val gate = InstallGate(lock)
 
     /** Null for a broken build (logged). */
     val catalog: TessdataCatalog? by lazy { readCatalog() }
@@ -89,9 +94,10 @@ class OcrModels private constructor(context: Context, private val config: VoiceD
         AudoraLog.i(TAG, "OCR model download cancelled")
     }
 
+    /** Clears everything in any state, leftovers included. */
     suspend fun delete(): Outcome<Unit, String> = withContext(Dispatchers.IO) {
-        workManager().cancelUniqueWork(WORK_NAME)
-        synchronized(lock) { files.deleteAll().also { refreshLocked() } }
+        workManager().cancelAndAwait(WORK_NAME, config.stopWaitMs)
+        gate.delete { files.deleteAll().also { refreshLocked() } }
     }
 
     fun state(): Flow<OcrModelsState> {
@@ -109,6 +115,7 @@ class OcrModels private constructor(context: Context, private val config: VoiceD
             downloader = ResumableDownloader(UrlConnectionHttpSource(config, USER_AGENT), config),
             config = config,
             onInstalled = { synchronized(lock) { refreshLocked() } },
+            gate = gate,
         )
     }
 
@@ -201,3 +208,6 @@ class OcrModelDownloadWorker(context: Context, params: WorkerParameters) : Corou
         const val KEY_MESSAGE = "message"
     }
 }
+
+/** Bytes on disk in any state, a cancelled or failed download's leftovers included (the Storage screen). */
+suspend fun OcrModels.sizeOnDisk(): Long = withContext(Dispatchers.IO) { files.sizeOnDisk() }

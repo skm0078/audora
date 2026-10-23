@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Voice notes on a sentence (plan item 32). -->
+<resources>
+    <string name="sentence_menu_voice_note">Record a voice note</string>
+    <string name="voice_notes_title">Voice notes</string>
+    <string name="voice_note_recording">Recording a voice note on page %1$d</string>
+    <string name="voice_note_save">Save</string>
+    <string name="voice_note_discard">Discard</string>
+    <string name="voice_note_play">Play</string>
+    <string name="voice_note_stop">Stop</string>
+    <string name="voice_note_failed_microphone">The microphone could not start. Another app or a call may be using it.</string>
+    <string name="voice_note_failed_permission">Voice notes need the microphone. You can allow it in the app\'s settings.</string>
+    <string name="voice_note_failed_short">That recording was too short, so it was not kept.</string>
+    <string name="voice_note_failed_play">This voice note could not be played.</string>
+</resources>

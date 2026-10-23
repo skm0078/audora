@@ -7,7 +7,9 @@ package io.github.skm0078.audora.core.model
  * @property page zero-based page index in the document.
  * @property index sentence index within the page. Display only, NOT the resume key (that is [charStart]).
  * @property charStart start offset (inclusive) into the page's reading-order text (layout output, ADR-018). Units
- *   of a page ascend by [charStart] in reading order and do not overlap.
+ *   of a page do not decrease by [charStart] in reading order and do not overlap; a unit of no length
+ *   ([charEnd] == [charStart]: the summary of a continued table, "Table continues", or of a table with no header row
+ *   of its own, "N rows, M columns", whose first row is read as data) shares its start with the unit after it.
  * @property charEnd end offset (exclusive) into the same text.
  * @property text the extracted text, whitespace collapsed. What the reader shows and resume fingerprints hash; the
  *   voice gets it normalized at render time (ADR-019).
@@ -15,7 +17,21 @@ package io.github.skm0078.audora.core.model
  *   (prosody, P2-04, ADR-029).
  * @property bounds one box per line the sentence covers, in page space; null when no glyph has a position (OCR without
  *   word boxes, generated text).
- * @property kind what the sentence is part of on the page; some readings depend on it ("IV." in a heading).
+ * @property kind what the sentence is part of on the page; some readings depend on it ("IV." in a heading), and
+ *   playback decides by setting whether some kinds are read, announced or skipped (ADR-035). `:pdf` tags, it never
+ *   drops: a table row stays a unit, so resume and highlight can land on it whatever the setting.
+ * @property speakScore how likely the sentence is real language a voice can read, 0–1 (higher is better), from
+ *   OCR confidence, dictionary words, letter statistics and symbol soup (RI-2, ADR-035); null when not scored.
+ *   Playback skips units below [io.github.skm0078.audora.core.config.SpeakabilityConfig.skipBelow] when
+ *   "Skip unreadable text" is on.
+ * @property table where a [UnitKind.TABLE_SUMMARY] or [UnitKind.TABLE_ROW] unit sits in its table; null for every
+ *   other kind.
+ * @property noteRef the note number a [UnitKind.FOOTNOTE] unit holds (its marker in the body text points to it);
+ *   null for every other kind.
+ * @property boldTerms the words of [text] set in a bold font, as spans in order (plan item 64: skim reads the bold
+ *   terms); bold words with only spaces between them are one span, and a sentence set wholly bold is one span over
+ *   it. Empty on headings, table units, scanned pages (OCR gives no font) and when nothing is bold. Display and
+ *   playback only: never part of a fingerprint, an anchor or anything saved.
  */
 data class ReadingUnit(
     val page: Int,
@@ -27,12 +43,105 @@ data class ReadingUnit(
     val pauseAfterMs: Int,
     val bounds: List<TextBox>?,
     val kind: UnitKind = UnitKind.BODY,
+    val speakScore: Float? = null,
+    val table: TableRowInfo? = null,
+    val noteRef: Int? = null,
+    val boldTerms: List<TermSpan> = emptyList(),
 ) {
     init {
         require(page >= 0) { "page must be >= 0, was $page" }
         require(charStart in 0..charEnd) { "charStart ($charStart) must be in 0..charEnd ($charEnd)" }
+        require(speakScore == null || speakScore in 0f..1f) { "speakScore ($speakScore) must be in 0..1" }
+        require((table != null) == kind.isTable) { "table info must be set exactly on table units, kind was $kind" }
+        table?.let { info ->
+            require(info.cells.all { it.end <= text.length }) { "table cells must lie inside the unit's text" }
+        }
+        require(noteRef == null || kind == UnitKind.FOOTNOTE) { "noteRef is only for footnotes, kind was $kind" }
+        require(boldTerms.all { it.end <= text.length }) { "bold terms must lie inside the unit's text" }
     }
 }
 
-/** The page element a [ReadingUnit] comes from, as layout detected it (P2-02 headings, P2-04 list items). */
-enum class UnitKind { BODY, HEADING, LIST_ITEM }
+/**
+ * The page element a [ReadingUnit] comes from, as layout detected it (P2-02 headings, P2-04 list items, ADR-035 for
+ * the rest). The golden corpus scores every kind except the table kinds (pdf/golden/README.md: tables are not in
+ * the expected text; their cells are scored against hand labels).
+ */
+enum class UnitKind {
+    BODY,
+    HEADING,
+    LIST_ITEM,
+
+    /**
+     * Opens a table: its header row as text, the header cells and the table's size in [ReadingUnit.table]. The
+     * caption, when it has one, is the [CAPTION] unit before it.
+     */
+    TABLE_SUMMARY,
+
+    /** One row of a table, cells in reading order; the header texts and cell spans in [ReadingUnit.table]. */
+    TABLE_ROW,
+
+    /** A footnote or endnote entry, read where it is printed (the bottom of the page). */
+    FOOTNOTE,
+
+    /** "Figure 2. …", "Table 3 …", "चित्र …": announced, then read. */
+    CAPTION,
+
+    /** A display equation, which reads as symbol soup character by character. */
+    EQUATION,
+
+    /** A "Note:" box or sidebar set apart from the body text. */
+    ASIDE,
+    ;
+
+    val isTable: Boolean get() = this == TABLE_SUMMARY || this == TABLE_ROW
+}
+
+/**
+ * Where a table unit sits in its table (RI-4, ADR-035). Header texts are copies of the header row's cells, kept so
+ * a row can be read as "Name: Ram. Age: 34." without the header row in view; nothing here is added to the unit's
+ * `text` (ADR-018: text is what the page says).
+ *
+ * @property tableIndex the table's place among the page's tables, from 0.
+ * @property row the data row's index from 0; null on the [UnitKind.TABLE_SUMMARY] unit, which holds the header row.
+ * @property rowCount the table's data rows, header row not included.
+ * @property columnCount columns in the table.
+ * @property headers the header row's cell texts, one per column; empty when the table has no header row.
+ * @property cells this row's cells as spans of the unit's text, one per column in order (an empty cell is an empty
+ *   span); on the summary unit, the header row's cells.
+ * @property continued the table carries over from the page before (its header row printed there): the summary is
+ *   read as "Table continues", not as a new table.
+ * @property rowsBefore data rows of this table on earlier pages, so its rows are numbered on from them.
+ */
+data class TableRowInfo(
+    val tableIndex: Int,
+    val row: Int?,
+    val rowCount: Int,
+    val columnCount: Int,
+    val headers: List<String>,
+    val cells: List<CellSpan>,
+    val continued: Boolean = false,
+    val rowsBefore: Int = 0,
+) {
+    init {
+        require(rowsBefore >= 0) { "rowsBefore must be >= 0, was $rowsBefore" }
+        require(tableIndex >= 0) { "tableIndex must be >= 0, was $tableIndex" }
+        require(rowCount > 0 && columnCount > 0) { "a table has rows and columns, was $rowCount × $columnCount" }
+        require(row == null || row in 0 until rowCount) { "row ($row) must be in 0 until $rowCount" }
+        require(headers.isEmpty() || headers.size == columnCount) { "headers must be empty or one per column" }
+        require(cells.size <= columnCount) { "at most one cell per column, was ${cells.size} for $columnCount" }
+    }
+}
+
+/** A cell's text as offsets into its row unit's `text`: [start] inclusive, [end] exclusive. */
+data class CellSpan(val start: Int, val end: Int) {
+    init {
+        require(start in 0..end) { "start ($start) must be in 0..end ($end)" }
+    }
+}
+
+/** A stretch of a unit's `text` (a bold term): [start] inclusive, [end] exclusive, never empty. */
+data class TermSpan(val start: Int, val end: Int) {
+    init {
+        require(start in 0 until end) { "start ($start) must be in 0 until end ($end)" }
+    }
+}

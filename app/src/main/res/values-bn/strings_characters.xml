@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_characters.xml -->
+<!-- Purpose: Bengali copy of values/strings_characters.xml: Strings for a voice per character (plan item 63). -->
+<resources>
+    <string name="speech_cast_characters">প্রতিটি চরিত্রের নিজস্ব ভয়েস</string>
+    <string name="speech_cast_characters_detail">যে লাইনে বক্তা স্পষ্ট (\"মীরা বলল\") সেটি সেই চরিত্রের নিজস্ব ভয়েস পায়, পুরো বইয়ের জন্য। ইংরেজির বিল্ট-ইন ভয়েস, Kokoro আর Kitten-এর সঙ্গে কাজ করে। বাকি উদ্ধৃতি উদ্ধৃতির ভয়েসেই থাকে।</string>
+</resources>

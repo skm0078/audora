@@ -10,6 +10,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.getOrNull
@@ -62,8 +63,9 @@ class MixedScriptVoicesTest {
     fun bilingualBookSwitchesVoicesCorrectly() {
         val units = bookUnits()
         val voices = RecordingVoices()
-        // Without normalizers, so the parts add up to the sentence as printed; numbers are checked below.
-        val renderer = EngineRenderer(voices, normalizers = emptyMap())
+        // Without normalizers or clause pauses (which drop the marks they pause at, RI-6), so the parts add up to the
+        // sentence as printed; numbers are checked below, the clause cuts in ClauseSplitterTest.
+        val renderer = EngineRenderer(voices, normalizers = emptyMap(), style = { SpeechStyle(clausePauses = false) })
         var mixedSentences = 0
 
         for (unit in units) {

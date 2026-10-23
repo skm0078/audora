@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Quiz me: fill-in-the-blank cards from your highlights, read aloud (plan item 70, ADR-048). -->
+<resources>
+    <string name="library_quiz">Quiz me</string>
+    <string name="quiz_title">Quiz me</string>
+    <string name="quiz_no_cards">Highlight a few passages while you listen, then come back: each highlight becomes a question with one word left out.</string>
+    <string name="quiz_nothing_due">You\'re up to date. Questions you answered come back after a day, then three days, a week and longer.</string>
+    <string name="quiz_practise">Practise anyway</string>
+    <string name="quiz_next">Next</string>
+    <string name="quiz_show_answer">Show answer</string>
+    <string name="quiz_done">Done</string>
+    <string name="quiz_hear_again">Hear again</string>
+    <string name="quiz_progress">Question %1$d of %2$d</string>
+    <string name="quiz_score">%1$d of %2$d right. Missed ones come back sooner.</string>
+    <string name="quiz_answer_was">The word was “%1$s”.</string>
+    <string name="quiz_knew_it">I knew it</string>
+    <string name="quiz_did_not">I didn\'t</string>
+    <string name="quiz_right">Right: “%1$s”.</string>
+    <string name="quiz_wrong">Not quite. The word was “%1$s”.</string>
+</resources>

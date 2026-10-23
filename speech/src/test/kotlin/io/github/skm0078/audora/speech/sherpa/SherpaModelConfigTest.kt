@@ -1,5 +1,5 @@
 // File: speech/src/test/kotlin/io/github/skm0078/audora/speech/sherpa/SherpaModelConfigTest.kt
-// Purpose: The sherpa-onnx configs built for Kokoro and Supertonic voices match what S1 measured (P4-02).
+// Purpose: The sherpa-onnx configs built for Kokoro and Supertonic voices match what S1 measured (P4-02); VITS noise.
 
 package io.github.skm0078.audora.speech.sherpa
 
@@ -36,6 +36,27 @@ class SherpaModelConfigTest {
         engineLang = "hi",
         numSteps = 5,
     )
+
+    @Test
+    fun `a vits voice takes the expressiveness noise values, or sherpa's own without them`() {
+        val plain = sherpaModelConfig(base, threads = 2, dataDir = "") { "/v/$it" }.vits
+        val lively = sherpaModelConfig(base.copy(noise = VitsNoise(0.9f, 1.05f)), 2, "") { "/v/$it" }.vits
+
+        assertEquals("/v/m.onnx", lively.model)
+        assertEquals(0.9f, lively.noiseScale)
+        assertEquals(1.05f, lively.noiseScaleW)
+        assertEquals(SHERPA_NOISE_SCALE, plain.noiseScale)
+        assertEquals(SHERPA_NOISE_W, plain.noiseScaleW)
+    }
+
+    @Test
+    fun `a voice's own thread count wins over the default`() {
+        val plain = sherpaModelConfig(base, threads = 2, dataDir = "") { "/v/$it" }
+        val heavy = sherpaModelConfig(base.copy(threads = 4), threads = 2, dataDir = "") { "/v/$it" }
+
+        assertEquals(2, plain.numThreads)
+        assertEquals(4, heavy.numThreads)
+    }
 
     @Test
     fun `kokoro gets its lexicon and language in the model config`() {
@@ -83,5 +104,10 @@ class SherpaModelConfigTest {
         assertEquals(0.75f, kokoroConfig.speed)
         assertEquals(1f, supertonicConfig.silenceScale)
         assertEquals(1f, kokoroConfig.silenceScale)
+    }
+
+    private companion object {
+        const val SHERPA_NOISE_SCALE = 0.667f
+        const val SHERPA_NOISE_W = 0.8f
     }
 }

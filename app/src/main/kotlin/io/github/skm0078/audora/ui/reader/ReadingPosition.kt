@@ -33,6 +33,13 @@ sealed interface SleepTimerSetting {
     data object EndOfPage : SleepTimerSetting
 
     data object EndOfChapter : SleepTimerSetting
+
+    /** Stops at the end of the [count]th chapter from here (plan item 37); 1 is [EndOfChapter]. */
+    data class AfterChapters(val count: Int) : SleepTimerSetting {
+        init {
+            require(count > 1) { "count must be > 1, was $count" }
+        }
+    }
 }
 
 /** The timer as the playback service reports it; it runs there so it works with the screen off. */
@@ -45,4 +52,6 @@ sealed interface SleepTimerState {
     data object EndOfPage : SleepTimerState
 
     data object EndOfChapter : SleepTimerState
+
+    data class AfterChapters(val count: Int) : SleepTimerState
 }

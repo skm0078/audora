@@ -1,6 +1,7 @@
 # ADR-034: Offline audiobook export, one AAC file per chapter
 
-**Status:** Accepted (2026-10-17). Engine 2026-10-16; entry point, service and notifications 2026-10-17.
+**Status:** Accepted (2026-10-17). Engine 2026-10-16; entry point, service and notifications 2026-10-17; resume,
+replace and passwords 2026-10-17 (section 9).
 
 ## Context
 Paid PDF readers (Speechify, ElevenReader, Voice Dream) sell "download as audio" in their premium tiers. Audora
@@ -39,6 +40,29 @@ which is how this feature was scoped. Nothing in this ADR was taken from another
 8. **Rate and pace.** Files use the listener's pace (ADR-033) at the voice's own rate: audiobook players have their
    own speed control, and a faster model rate costs clarity.
 
+9. **Resume, replace and passwords** (added with studio mode and the copies, ADR-039 and ADR-040).
+   - *A record per book* (`ExportRecords`, `filesDir/audiobook-exports/<hash of book id>.txt`) lists the chapter files
+     written so far: number, duration, saved name and MediaStore URI, under a key hashed from the rendering signature
+     (style at the voice's rate, voices, :pdf pipeline, punctuation model, app build; ADR-039's), the folder and the
+     chapter plan. Each finished chapter is added at once, replacing the file whole (temp file, then rename). No
+     text and no title is stored.
+   - *Going on* (`ExportSession`): an export of the same book with the same key that did not finish (Cancel, Android's
+     limit, a crash, a failure) renders only the chapters whose files are missing. Android's 6-hour limit now shows
+     "paused" with **Continue**, which opens Audora (resetting the limit) and starts the export again; after Cancel,
+     saving the book again goes on the same way.
+   - *Replacing* (closes the re-saving gap): another key (new voice, style, title, chapters or app build), or saving
+     a finished export again, deletes the earlier files first, so the folder holds one audiobook, not "(1)" copies.
+     File names reported in the notification are the names shared storage actually gave (queried `DISPLAY_NAME`).
+     Files an earlier install of Audora wrote belong to no app it can speak for; their deletion fails (logged) and
+     they stay.
+   - *Passwords* (closes the password gap): "Save as audiobook" in the reader's ⋮ menu passes the password the book
+     was opened with through `PasswordHandoff`: in memory only, never in an Intent, on disk or in the log, taken
+     once by the service and expiring after a minute (removed at once if the service cannot start). From the
+     library, and after Continue, there is no password: a protected book is refused with "needs its password", and
+     opening it in the reader and saving from there goes on from the saved chapters.
+   - *Wake lock*: a 30-minute timeout renewed on every finished page (`AudiobookConfig.wakeLockMs`) instead of one
+     6-hour hold, so a stuck export lets go within 30 minutes.
+
 ## Alternatives considered
 - **One .m4b with chapter marks:** the single-file audiobook format, but `MediaMuxer` cannot write chapter atoms;
   it would need FFmpeg or a hand-written MP4 box writer. A folder of files works in every player today. Revisit if
@@ -48,6 +72,11 @@ which is how this feature was scoped. Nothing in this ADR was taken from another
 - **WAV:** no encoder needed, but about 150 MB per hour of 22 kHz speech. Rejected.
 - **WorkManager job:** AGENTS.md keeps WorkManager for downloads; a long user-started render is a foreground
   service's job, like playback.
+- **Keeping the password for Continue** (encrypted in the keystore): would let Continue and the library open a
+  protected book, but puts the password on disk, which nothing else in Audora does. Rejected; the reader route
+  covers it.
+- **Asking before replacing**: a dialog on every re-save, for a folder the listener asked to have again. Rejected;
+  the notification names the files.
 
 ## Consequences
 - Rendering a book takes about as long as the voice's render speed allows (Piper is several times faster than
@@ -55,5 +84,6 @@ which is how this feature was scoped. Nothing in this ADR was taken from another
 - Exporting while listening loads a second copy of the voice model (separate engines, no shared state); fine for
   Piper, to be watched with Kokoro on the Moto.
 - Opening the book for export marks it opened in the library, like opening it in the reader.
-- Open: password-protected PDFs (the service has no password), chapter titles from the outline in file names and
-  MP4 metadata, and a single .m4b.
+- A resumed chapter sequence starts quote voices (`QuoteCarry`) fresh at the first chapter rendered; a quote
+  running across a chapter boundary at that point is read in the narrator's voice.
+- Open: chapter titles from the outline in file names and MP4 metadata, and a single .m4b.

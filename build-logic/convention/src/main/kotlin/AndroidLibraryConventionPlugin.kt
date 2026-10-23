@@ -21,6 +21,10 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                 sourceCompatibility = javaVersion
                 targetCompatibility = javaVersion
             }
+            lint {
+                // TEMPORARY until the last landing (studio): the v0.1.0 gate makes this an error again.
+                warning += "MissingTranslation"
+            }
         }
 
         dependencies {

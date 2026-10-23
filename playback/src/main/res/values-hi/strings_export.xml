@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="export_cast_needs_built_in_voice">सभी पात्र एक ही आवाज़ में पढ़े जाते हैं: पात्रों की अलग आवाज़ों के लिए Kokoro या Kitten की अंतर्निहित अंग्रेज़ी आवाज़ चाहिए।</string>
+    <string name="export_cast_english_only">पात्रों की अलग आवाज़ें केवल अंग्रेज़ी में काम करती हैं, इसलिए हिंदी और बांग्ला पात्र एक ही आवाज़ में हैं।</string>
+</resources>

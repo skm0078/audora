@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: playback/src/main/res/xml/clip_share_paths.xml
+  Purpose: The only folder the clip FileProvider may hand out: the clip made by "Share as audio" (plan item 41).
+-->
+<paths>
+    <cache-path name="shared_clips" path="shared-clips/" />
+</paths>

@@ -1,22 +1,16 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReaderScreen.kt
-// Purpose: The reader: a page drawn or as sentences (tap to read from there), page picker, playback controls.
+// Purpose: The reader: a page drawn or as sentences (tap to read, long-press for the sentence menu), controls;
+//          Focus view and bold word starts in the text view (plan item 77).
 
 package io.github.skm0078.audora.ui.reader
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,15 +25,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -51,6 +44,7 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
+import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,21 +55,49 @@ fun ReaderScreen(
     actions: ReaderActions,
     modifier: Modifier = Modifier,
     ocrModels: OcrModelsState? = null,
+    notes: NotesState = NotesState(),
+    notesActions: BookNotesActions = BookNotesActions.None,
+    voices: List<VoiceRow> = emptyList(),
+    look: ReadingLook = ReadingLook(),
+    onLookChange: (ReadingLook) -> Unit = {},
+    onOpenUpNext: (() -> Unit)? = null,
+    spokenWord: () -> IntRange? = { null },
+    thumbnails: PageThumbnails? = null,
+    onSearch: (() -> Unit)? = null,
+    voiceNotes: VoiceNotesBinding = VoiceNotesBinding.None,
+    lookUp: LookUpBinding = LookUpBinding.None,
+    onTutor: (() -> Unit)? = null,
 ) {
+    var textLookOpen by rememberSaveable { mutableStateOf(false) }
+    if (textLookOpen) TextLookSheet(look, onLookChange) { textLookOpen = false }
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(state.title.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = {
-                    IconButton(onClick = actions::onBack) {
-                        Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.navigate_back))
+                title = { ReaderTitle(state.title.orEmpty()) },
+                navigationIcon = { BackButton(actions::onBack) },
+                actions = {
+                    if (state.document is DocumentState.Open) {
+                        BookmarksButton(notes, notesActions)
+                        ChaptersButton(state, actions)
+                        ViewToggle(state.view, actions)
+                        MoreMenu(
+                            textView = state.view == ReaderView.TEXT,
+                            look = look,
+                            onLookChange = onLookChange,
+                            onOpenUpNext = onOpenUpNext,
+                            onOpenTextLook = { textLookOpen = true },
+                            onSearch = onSearch,
+                            onSaveAudiobook = actions::onSaveAudiobook,
+                            onReadAloudToMe = onTutor,
+                        )
                     }
                 },
-                actions = { if (state.document is DocumentState.Open) ViewToggle(state.view, actions) },
             )
         },
-        bottomBar = { if (state.document is DocumentState.Open) ReaderControls(state, config, actions) },
+        bottomBar = {
+            if (state.document is DocumentState.Open) ReaderControls(state, config, actions, voices = voices)
+        },
     ) { innerPadding ->
         Box(Modifier.padding(innerPadding).fillMaxSize()) {
             when (val document = state.document) {
@@ -97,23 +119,46 @@ fun ReaderScreen(
                     Button(onClick = actions::onRetry) { Text(stringResource(R.string.reader_retry)) }
                 }
 
-                is DocumentState.Open -> OpenBook(state, document.pageCount, actions, ocrModels)
+                is DocumentState.Open -> {
+                    PlaceHighlights(state, notesActions)
+                    OpenBook(state, document.pageCount, config, actions, ocrModels, look, spokenWord, thumbnails) {
+                        notes.highlightsOn(it).isNotEmpty()
+                    }
+                    NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun OpenBook(state: ReaderState, pageCount: Int, actions: ReaderActions, ocrModels: OcrModelsState?) {
+private fun OpenBook(
+    state: ReaderState,
+    pageCount: Int,
+    config: ReaderConfig,
+    actions: ReaderActions,
+    ocrModels: OcrModelsState?,
+    look: ReadingLook,
+    spokenWord: () -> IntRange?,
+    thumbnails: PageThumbnails?,
+    isHighlighted: (ReadingUnit) -> Boolean,
+) {
     var picking by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
         PageBar(state.page, pageCount, actions, onPick = { picking = true })
-        state.readingPosition?.takeIf { state.readingElsewhere }?.let { position ->
-            TextButton(
-                onClick = actions::onShowReadingPosition,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-            ) {
-                Text(stringResource(R.string.reader_back_to_reading, position.page + 1))
+        PageScrubber(state.page, pageCount, thumbnails, actions::onGoToPage)
+        state.timeLeft?.let { TimeLeftLine(it, state.playback.speed) }
+        Row(Modifier.align(Alignment.CenterHorizontally)) {
+            state.readingPosition?.takeIf { state.readingElsewhere }?.let { position ->
+                TextButton(onClick = actions::onShowReadingPosition) {
+                    Text(stringResource(R.string.reader_back_to_reading, position.page + 1))
+                }
+            }
+            state.undoJumpTo?.let { target ->
+                TextButton(onClick = actions::onUndoJump) {
+                    Icon(painterResource(R.drawable.ic_undo), contentDescription = null)
+                    Text(stringResource(R.string.reader_undo_jump, target.page + 1))
+                }
             }
         }
         PlayerStatus(state.playback)
@@ -125,15 +170,21 @@ private fun OpenBook(state: ReaderState, pageCount: Int, actions: ReaderActions,
             PageContent.Failed -> Message(stringResource(R.string.reader_page_failed))
 
             is PageContent.Ready -> {
-                PageOriginNotice(content.origin, ocrModels, actions::onDownloadOcrModels)
+                val badge = ocrBadgeText(content.origin, content.ocrConfidence, config)
+                PageOriginNotice(content.origin, ocrModels, badge, actions::onDownloadOcrModels)
                 when {
-                    state.view == ReaderView.PAGE -> PageView(state, content.units, actions)
-                    content.units.isNotEmpty() -> Sentences(state, content.units, actions)
+                    state.view == ReaderView.PAGE -> PageView(state, content.units, actions, look.tone)
+
+                    content.units.isNotEmpty() ->
+                        Sentences(state, content.units, actions, look, spokenWord, isHighlighted)
+
                     content.origin == PageOrigin.TEXT -> Message(stringResource(R.string.reader_page_no_text))
                 }
             }
         }
     }
+    if (state.reporting != null) SoundedWrongDialog(actions::onReport, actions::onReportDismissed)
+    if (state.unreadableTapped != null) UnreadableLineDialog(actions::onReadUnreadable, actions::onUnreadableDismissed)
     if (picking) {
         PagePickerDialog(
             pageCount = pageCount,
@@ -179,52 +230,6 @@ private fun PlayerStatus(playback: PlaybackSnapshot) {
 }
 
 @Composable
-private fun Sentences(state: ReaderState, units: List<ReadingUnit>, actions: ReaderActions) {
-    // A new list state per page, so every page opens at its top.
-    val listState = remember(state.page) { LazyListState() }
-    val spoken = state.spokenUnitIndex
-    LaunchedEffect(spoken, state.page) {
-        if (spoken != null && state.following && !listState.isFullyVisible(spoken + HEADER_ITEMS)) {
-            listState.animateScrollToItem(spoken + HEADER_ITEMS)
-        }
-    }
-    LazyColumn(
-        state = listState,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        item {
-            Text(
-                stringResource(R.string.reader_tap_hint),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            )
-        }
-        itemsIndexed(units, key = { _, unit -> unit.charStart }) { index, unit ->
-            Sentence(unit, spoken = index == spoken, enabled = state.playerReady, onTap = actions::onSentenceTapped)
-        }
-    }
-}
-
-@Composable
-private fun Sentence(unit: ReadingUnit, spoken: Boolean, enabled: Boolean, onTap: (ReadingUnit) -> Unit) {
-    val background = if (spoken) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
-    val color = if (spoken) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
-    Text(
-        text = unit.text,
-        style = MaterialTheme.typography.bodyLarge,
-        color = color,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(background)
-            .clickable(enabled = enabled) { onTap(unit) }
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-    )
-}
-
-@Composable
 private fun Message(text: String, action: (@Composable () -> Unit)? = null) {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -241,15 +246,6 @@ private fun failureText(reason: ReaderFailure): Int = when (reason) {
     ReaderFailure.UNREADABLE -> R.string.reader_unreadable
     ReaderFailure.ENGINE_UNAVAILABLE -> R.string.reader_engine
 }
-
-private fun LazyListState.isFullyVisible(index: Int): Boolean {
-    val info = layoutInfo
-    val item = info.visibleItemsInfo.firstOrNull { it.index == index } ?: return false
-    return item.offset >= info.viewportStartOffset && item.offset + item.size <= info.viewportEndOffset
-}
-
-/** The hint above the sentences. */
-private const val HEADER_ITEMS = 1
 
 @Preview(showBackground = true)
 @Composable
@@ -298,4 +294,30 @@ private object PreviewActions : ReaderActions {
     override fun onPasswordDismissed() = Unit
     override fun onAskForPassword() = Unit
     override fun onRetry() = Unit
+}
+
+/** The book's title in the top bar, one line; TalkBack's heading, so a swipe by headings lands on it. */
+@Composable
+private fun BackButton(onBack: () -> Unit) {
+    IconButton(onClick = onBack) {
+        Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.navigate_back))
+    }
+}
+
+@Composable
+private fun ReaderTitle(title: String) {
+    Text(
+        title,
+        style = MaterialTheme.typography.titleMedium,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.semantics { heading() },
+    )
+}
+
+/** Tells the notes which sentences show, so highlights land on them after a pipeline change (plan item 30). */
+@Composable
+private fun PlaceHighlights(state: ReaderState, notes: BookNotesActions) {
+    val units = (state.content as? PageContent.Ready)?.units.orEmpty()
+    LaunchedEffect(units) { notes.showing(units) }
 }

@@ -1,0 +1,37 @@
+corpus	document	page	kind	text
+golden	en-2col-physimaging-radonc-ccby	1	CAPTION	Characteristics of evaluated patients.
+golden	en-2col-physimaging-radonc-ccby	1	CAPTION	Example of qMRI-maps for one patient.
+golden	en-2col-physimaging-radonc-ccby	1	CAPTION	Fig. 1.
+golden	en-2col-physimaging-radonc-ccby	1	CAPTION	From top to bottom is the qMRI-maps for R1, R2, PD and cMy and from left to right is the images from before and after surgery and the three first follow-up images after RT completion, with approximately three months interval.
+golden	en-2col-physimaging-radonc-ccby	1	CAPTION	Table 1
+golden	en-math-jmathbiol-integrodifference-ccby	0	EQUATION	nt+1 (x) = k (x, y) g [nt (y)] dy, (1)
+listening	en-jmathbiol-math-p6-7	0	EQUATION	+ (g2 − g1) F x + r1, t − F x − r1, t +···
+listening	en-jmathbiol-math-p6-7	0	EQUATION	+ (gm − gm−1) F x + rm−1, t − F x − rm−1, t , (9)
+listening	en-jmathbiol-math-p6-7	0	EQUATION	+ i=1 (gi+1 − gi) F x + ri, t − F x − ri, t , (10)
+listening	en-jmathbiol-math-p6-7	0	EQUATION	= i=1 m gi L/2 −L/2 k (x − y) φi [nt (y)] dy. (8)
+listening	en-jmathbiol-math-p6-7	0	EQUATION	m −1
+listening	en-jmathbiol-math-p6-7	0	EQUATION	nt+1 (x) = L/2 −L/2 k (x − y) i=1 m gi φi [nt (y)] dy
+listening	en-jmathbiol-math-p6-7	0	EQUATION	nt+1 (x) = g1 [F (x + L/2) − F (x − L/2)]
+listening	en-jmathbiol-math-p6-7	0	EQUATION	nt+1 (x) = g1 [F (x + L/2) − F (x − L/2)]
+listening	en-jmathbiol-math-p6-7	1	EQUATION	F (x) = x −∞ k (z) dz. (11)
+listening	en-jmathbiol-math-p6-7	1	EQUATION	k (z) = 1 2 αe−α|z| , (12)
+listening	en-physimaging-tables-p2-3	0	CAPTION	Fig. 2.
+listening	en-physimaging-tables-p2-3	0	CAPTION	In a) there is an example of ROI placements in a synthetic T2-weighted image of a patient.
+listening	en-physimaging-tables-p2-3	0	CAPTION	In b) the same T2-weighted image is displayed, but with an overlay of the isodose lines of 10, 20, 30, 40, 50 and 57 Gy.
+listening	en-physimaging-tables-p2-3	0	CAPTION	ROIs are placed in the lower part of the parietal lobe (left and right), in the genu and splenium of the corpus callosum.
+listening	en-physimaging-tables-p2-3	0	CAPTION	Significant changes in PD, cMy and R2 were observed during the first follow-up after RT completion.
+listening	en-physimaging-tables-p2-3	0	CAPTION	Student’s t-test of differences from baseline for immediate post-operative examination and 1st follow-up after RT.
+listening	en-physimaging-tables-p2-3	0	CAPTION	Synthetic T2-weighted image with ROI and dose distribution.
+listening	en-physimaging-tables-p2-3	0	CAPTION	Table 2
+listening	en-physimaging-tables-p2-3	0	CAPTION	The difference is expressed as the arithmetic difference between the two percentages, percent point (p.p.), for PD and cMy and in per second for the relaxation rates.
+listening	en-physimaging-tables-p2-3	0	CAPTION	There was no significant difference between baseline and the first post-operative MRI.
+listening	en-physimaging-tables-p2-3	1	CAPTION	(i) A decrease of 2% was observed for cMy, during the first follow-up.
+listening	en-physimaging-tables-p2-3	1	CAPTION	Fig. 3.
+listening	en-physimaging-tables-p2-3	1	CAPTION	In panel a) the difference in percent points in myelin concentration is displayed, b) contains the difference of percent points in proton density, and c) and d) are the difference per second of relaxation rates R1 and R2.
+listening	en-physimaging-tables-p2-3	1	CAPTION	Mean difference for different time period and absorbed dose.
+listening	en-physimaging-tables-p2-3	1	CAPTION	Mean differences for doses less (yellow square) or more (blue circle) than 30 Gy for different examination times.
+listening	en-physimaging-tables-p2-3	1	CAPTION	PD and cMy are expressed as 10− 3 and the arithmetic difference between the two percentages, percent point (p.p.) and the relaxation rates are expressed as 10− 3 per second.
+listening	en-physimaging-tables-p2-3	1	CAPTION	Table 3
+listening	en-physimaging-tables-p2-3	1	CAPTION	The covariate factors and the significance of the mixed model test, the time factor is per month and the dose factor per Gray.
+listening	en-physimaging-tables-p2-3	1	CAPTION	The error bars indicate the 95% confidence interval for mean value of ROIs differences.
+listening	en-physimaging-tables-p2-3	1	CAPTION	This was then returned to baseline for low doses, but not for higher doses during the follow-up period.

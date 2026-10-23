@@ -84,7 +84,9 @@ class RenderAheadQueue(
             if (closed) return
             window = units.take(1 + config.renderAhead.maxAheadUnits)
             windowKeys = window.mapTo(HashSet(), UnitKey::of)
-            retireOutsideWindow()
+            // Rendered sentences leaving the window move to the recent cache; their failures are forgotten.
+            ready.keys.filter { it !in windowKeys }.forEach { key -> ready.remove(key)?.let { recent.put(key, it) } }
+            failed.keys.retainAll(windowKeys)
             changed.signalAll()
             rendering?.takeIf { it !in windowKeys }?.let { worker }
         }
@@ -113,6 +115,18 @@ class RenderAheadQueue(
     }
 
     /**
+     * Drops [key]'s audio, ready or recent, and any failure, so it renders afresh if it is played again: a replay's
+     * slower render must not come back when the listener skips back to that sentence.
+     */
+    fun forget(key: UnitKey) {
+        lock.withLock {
+            ready.remove(key)
+            recent.take(key)
+            failed.remove(key)
+        }
+    }
+
+    /**
      * Blocks until the queue closes, then throws [QueueClosedException]; [InterruptedException] when cancelled.
      * The playlist's "more is coming" placeholder waits here while the next page is being extracted.
      */
@@ -137,13 +151,6 @@ class RenderAheadQueue(
             worker.also { worker = null }
         }
         thread?.interrupt()
-    }
-
-    /** Caller holds [lock]. */
-    private fun retireOutsideWindow() {
-        val leaving = ready.keys.filter { it !in windowKeys }
-        for (key in leaving) ready.remove(key)?.let { recent.put(key, it) }
-        failed.keys.retainAll(windowKeys)
     }
 
     private fun workerLoop() {

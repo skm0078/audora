@@ -5,6 +5,7 @@ package io.github.skm0078.audora.playback.export
 
 import io.github.skm0078.audora.core.config.AudiobookConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.errorOrNull
@@ -13,6 +14,7 @@ import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.playback.book.BookText
 import io.github.skm0078.audora.playback.queue.SentenceRenderer
 import io.github.skm0078.audora.playback.queue.UnitKey
+import io.github.skm0078.audora.playback.reading.UnitReading
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.audio.PcmAudio
 
@@ -22,13 +24,16 @@ import io.github.skm0078.audora.speech.audio.PcmAudio
  * chapters already finished stay, so a cancelled export of a long book still leaves its first chapters.
  *
  * Sentences go through the same [SentenceRenderer] as playback (`EngineRenderer`), so the files sound exactly
- * like listening in the app: same voices per language, normalizer and pauses.
+ * like listening in the app: same voices per language, normalizer and pauses; [reading] (the listener's reading modes)
+ * picks the units the same way the playlist does.
  * Failures follow playback's rules: a sentence that fails is skipped, [AudiobookConfig.renderRetryLimit] in a row
  * stop the export; a page that cannot be extracted is skipped, a book that can no longer be opened stops it.
  */
 class AudiobookExporter(
     private val renderer: SentenceRenderer,
     private val config: AudiobookConfig = AudiobookConfig(),
+    private val reading: UnitReading = UnitReading(ReadingModes()),
+    private val onPage: (units: List<ReadingUnit>, continuesPreviousPage: Boolean) -> Unit = { _, _ -> },
 ) {
     fun export(
         text: BookText,
@@ -86,8 +91,16 @@ class AudiobookExporter(
         }
 
         private fun page(chapter: AudioChapter, page: Int): ExportError? {
-            val stop = when (val loaded = text.units(page)) {
-                is Outcome.Success -> loaded.value.firstNotNullOfOrNull { unit -> sentence(chapter, unit) }
+            fun sentenceOf(unit: ReadingUnit) = sentence(chapter, unit)
+            // The units playback reads with the listener's reading modes, so the file sounds like the player.
+            // As playback's page loader: the page's units with whether it opens inside the page before's sentence,
+            // so a quote left open across the break keeps its dialogue voice.
+            val stop = when (val loaded = text.reading(page)) {
+                is Outcome.Success -> {
+                    onPage(loaded.value.units, loaded.value.continuesPreviousPage)
+                    reading.plays(loaded.value.units).firstNotNullOfOrNull(::sentenceOf)
+                }
+
                 is Outcome.Failure -> pageFailed(page, loaded.error)
             }
             if (stop == null) listener.onPageDone(chapter, page)
@@ -109,7 +122,7 @@ class AudiobookExporter(
             return when (val rendered = renderer.render(unit)) {
                 is Outcome.Success -> {
                     failuresInARow = 0
-                    write(chapter, rendered.value)
+                    write(chapter, unit, rendered.value)
                 }
 
                 is Outcome.Failure -> renderFailed(unit, rendered.error)
@@ -123,11 +136,17 @@ class AudiobookExporter(
             return if (failuresInARow >= config.renderRetryLimit) ExportError.VoiceFailed(error) else null
         }
 
-        private fun write(chapter: AudioChapter, audio: PcmAudio): ExportError? {
+        private fun write(chapter: AudioChapter, unit: ReadingUnit, audio: PcmAudio): ExportError? {
             if (audio.samples.isEmpty()) return null
             // Voices differ in rate (Piper 22.05 kHz, Kokoro 24 kHz); a file has one, set by its first sentence.
             return when (val open = writerFor(chapter, audio.sampleRate)) {
-                is Outcome.Success -> open.value.write(audio.resampled(open.value.sampleRate)).errorOrNull()
+                is Outcome.Success -> {
+                    val written = audio.resampled(open.value.sampleRate)
+                    val error = open.value.write(written).errorOrNull()
+                    if (error == null) listener.onSentenceWritten(chapter, unit, written)
+                    error
+                }
+
                 is Outcome.Failure -> open.error
             }
         }

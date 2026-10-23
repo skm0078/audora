@@ -30,6 +30,19 @@ class ReaderFormatTest {
     }
 
     @Test
+    fun `listening time left is whole hours and minutes, rounded up`() {
+        val cases = mapOf(
+            0L to HoursMinutes(0, 0),
+            1L to HoursMinutes(0, 1),
+            60_000L to HoursMinutes(0, 1),
+            60_001L to HoursMinutes(0, 2),
+            (2 * 60 + 10) * 60_000L to HoursMinutes(2, 10),
+            -1L to HoursMinutes(0, 0),
+        )
+        cases.forEach { (ms, expected) -> assertEquals("for $ms ms", expected, hoursMinutes(ms)) }
+    }
+
+    @Test
     fun `typed page numbers must exist in the book`() {
         val cases = mapOf("1" to 1, "574" to 574, "575" to null, "0" to null, "" to null, "12a" to null, "007" to 7)
         cases.forEach { (text, page) -> assertEquals("for '$text'", page, parsePageNumber(text, pageCount = 574)) }

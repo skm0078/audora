@@ -9,7 +9,8 @@ package io.github.skm0078.audora.core.config
  * @property marginBandShare a line is a header or footer candidate when it lies within this share of the text
  *   area's height from its top or bottom. The text area is the union of the line boxes on the neighbouring
  *   pages (the page size is not extracted), so the band follows where the text actually is.
- * @property maxMarginLines at most this many lines from each end of a page are header or footer candidates.
+ * @property maxMarginLines at most this many lines from each end of a page are header or footer candidates, besides
+ *   as many printer's slugs at the very edge, which take no slot of their own.
  * @property neighbourPages pages on each side looked at for repeated headers and running page numbers. 3 keeps
  *   both pages of the same parity two steps away in the window, so alternating left/right headers still repeat.
  * @property minRepeatPages a margin line is a running header when it repeats on at least this many pages of the
@@ -20,7 +21,8 @@ package io.github.skm0078.audora.core.config
  * @property tableGapEm a line whose runs are at least this far apart (in em of the line's size) may be a table row.
  *   Above the layout's run gap (`LayoutConfig.columnGapEm`): Bengali glyph boxes leave gaps of up to ~1.2 em.
  * @property tableAlignEm two rows share a column when cells start within this distance of each other.
- * @property minTableRows a run of at least this many aligned rows is a table interior. Its caption is kept.
+ * @property minTableRows a run of at least this many aligned rows is a table. Its caption is kept.
+ * @property tables how a found table becomes a header and rows of cells (RI-4a).
  * @property skipCitationMarkers drop bracketed numeric citations ("[4–7]"): the spec's default. Settings → "Skip
  *   citation numbers" turns it off for books opened afterwards (`ReadingTextPreferences` in :playback, read by both
  *   the reader and the playback service); the expected text of the golden corpus skips them.
@@ -36,6 +38,7 @@ package io.github.skm0078.audora.core.config
  *   share of the page's height (scans keep the page's own margins, so the band is wider than [marginBandShare]).
  * @property ocrMatchSimilarity two OCR'd lines match when their signatures are at least this similar (1 − edit
  *   distance / length): OCR misreads a letter or two of the same header on different pages.
+ * @property carry how a table or a sentence is carried over a page break (RI-4a, plan item 7).
  */
 data class CleanupConfig(
     val marginBandShare: Float = 0.08f,
@@ -47,12 +50,14 @@ data class CleanupConfig(
     val tableGapEm: Float = 1.5f,
     val tableAlignEm: Float = 1f,
     val minTableRows: Int = 3,
+    val tables: TableConfig = TableConfig(),
     val skipCitationMarkers: Boolean = true,
     val profileCachePages: Int = 64,
     val analyzedCachePages: Int = 6,
     val ocrNeighbourPages: Int = 2,
     val ocrMarginShare: Float = 0.12f,
     val ocrMatchSimilarity: Float = 0.8f,
+    val carry: PageCarryConfig = PageCarryConfig(),
 ) {
     init {
         require(marginBandShare in 0f..1f) { "marginBandShare must be in 0..1, was $marginBandShare" }

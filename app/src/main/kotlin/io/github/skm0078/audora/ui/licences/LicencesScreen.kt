@@ -31,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import io.github.skm0078.audora.R
@@ -75,7 +77,7 @@ fun LicencesScreen(
 @Composable
 private fun LicencesTopBar(onBack: () -> Unit) {
     TopAppBar(
-        title = { Text(stringResource(R.string.licences_title)) },
+        title = { Text(stringResource(R.string.licences_title), Modifier.semantics { heading() }) },
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.navigate_back))
@@ -202,6 +204,48 @@ private val SPEECH_SOFTWARE = listOf(
     Software("ONNX Runtime (Microsoft)", R.string.licences_mit, "https://github.com/microsoft/onnxruntime"),
     Software("eSpeak NG", R.string.licences_gpl3, "https://github.com/espeak-ng/espeak-ng"),
     Software("Tesseract OCR and its data", R.string.licences_apache, "https://github.com/tesseract-ocr/tesseract"),
+    Software("wordfreq (Robyn Speer), word lists", R.string.licences_cc_by_sa, "https://github.com/rspeer/wordfreq"),
+    Software(
+        "Edge-Punct-Casing punctuation model (frankyoujian), if downloaded",
+        R.string.licences_apache,
+        "https://github.com/frankyoujian/Edge-Punct-Casing",
+    ),
+    Software(
+        "Zipformer keyword spotter (k2-fsa, GigaSpeech), voice commands, if downloaded",
+        R.string.licences_apache,
+        "https://github.com/k2-fsa/icefall",
+    ),
+    Software(
+        "Open English Wordnet 2025 (Open English Wordnet team, from Princeton WordNet), dictionary, if downloaded",
+        R.string.licences_cc_by_wordnet,
+        "https://en-word.net/",
+    ),
+    Software(
+        "Wiktionary (Wiktionary contributors), Hindi and Bengali entries converted via Wiktextract (kaikki.org), " +
+            "dictionaries, if downloaded",
+        R.string.licences_cc_by_sa_wiktionary,
+        "https://en.wiktionary.org/",
+    ),
+    Software(
+        "Streaming Zipformer English model (k2-fsa icefall), reading tutor, if downloaded",
+        R.string.licences_apache,
+        "https://github.com/k2-fsa/icefall",
+    ),
+    Software(
+        "Vosk small streaming Bengali model (Alpha Cephei), reading tutor, if downloaded",
+        R.string.licences_apache,
+        "https://huggingface.co/alphacep/vosk-model-small-streaming-bn",
+    ),
+    Software(
+        "Dolphin speech recognition (DataoceanAI, Tsinghua University), Hindi reading tutor, if downloaded",
+        R.string.licences_apache,
+        "https://github.com/DataoceanAI/Dolphin",
+    ),
+    Software(
+        "Silero VAD (Silero team), Hindi reading tutor, if downloaded",
+        R.string.licences_mit,
+        "https://github.com/snakers4/silero-vad",
+    ),
     Software("Audora", R.string.licences_gpl3, "https://github.com/skm0078/audora"),
 )
 

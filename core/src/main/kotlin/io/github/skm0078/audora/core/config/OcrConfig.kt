@@ -24,6 +24,15 @@ package io.github.skm0078.audora.core.config
  *   it is, so a merely poor scan is never turned.
  * @property marginDpi the strips at the top and bottom of neighbouring pages, read to find running headers on
  *   scanned pages (ADR-032), are drawn at this resolution: enough for 8 pt header text, cheaper than [renderDpi].
+ * @property retryLineBelow a line read with a mean confidence (0–100) below this is read again on its own with each
+ *   other installed model (RI-3): an English line in a Hindi book reads as noise with the Hindi model alone. 0 turns
+ *   the retry off. Clean print reads at 85–95.
+ * @property retryMinGain a retry replaces the line only when it reads at least this much more confidently.
+ * @property retryMaxLines at most this many lines of a page are retried, the least confident first.
+ * @property retryBudgetMs retries stop once a page has spent this long on them (done-when: at most 3 s extra a page).
+ * @property rules how the lines ruled between a scanned table's cells are found (RI-4a part 2).
+ * @property threshold how a page is split into ink and paper before recognition ([OcrThreshold]).
+ * @property lighting when a photographed page is read again with its light evened out (a hard shadow).
  */
 data class OcrConfig(
     val renderDpi: Int = 300,
@@ -34,6 +43,13 @@ data class OcrConfig(
     val orientationDpi: Int = 150,
     val orientationMinGain: Int = 10,
     val marginDpi: Int = 200,
+    val retryLineBelow: Int = 60,
+    val retryMinGain: Int = 10,
+    val retryMaxLines: Int = 8,
+    val retryBudgetMs: Long = 2_000L,
+    val rules: RuleConfig = RuleConfig(),
+    val threshold: OcrThreshold = OcrThreshold.SAUVOLA,
+    val lighting: LightingConfig = LightingConfig(),
 ) {
     init {
         require(renderDpi > 0) { "renderDpi must be > 0, was $renderDpi" }
@@ -45,6 +61,8 @@ data class OcrConfig(
             "probe resolutions must be in 1..renderDpi"
         }
         require(orientationMinGain >= 0) { "orientationMinGain must be >= 0, was $orientationMinGain" }
+        require(retryLineBelow in 0..MAX_CONFIDENCE) { "retryLineBelow must be in 0..100, was $retryLineBelow" }
+        require(retryMinGain >= 0 && retryMaxLines >= 0 && retryBudgetMs >= 0) { "retry limits must be >= 0" }
     }
 
     companion object {
@@ -52,4 +70,20 @@ data class OcrConfig(
         const val DEFAULT_CACHE_MAX_BYTES = 16L shl 20 // 16 MiB
         const val MAX_CONFIDENCE = 100
     }
+}
+
+/**
+ * Tesseract's `thresholding_method`: how a grey page becomes black ink on white paper before recognition. One
+ * threshold for the whole page (Otsu) loses the dark half of a phone photo with a shadow or uneven light; Sauvola
+ * picks one per neighbourhood. Measured on UDHR pages in English, Hindi and Bengali with photo-like light: Sauvola
+ * cut the character error under a gradient from 12-19 % to 3-8 %, under blur, noise and JPEG from 34-80 % to 3-8 %,
+ * under a hard shadow from 45-49 % to 15-33 %; on clean and degraded scans it stayed within half a point of Otsu,
+ * at the same speed.
+ *
+ * @property tesseractValue the value Tesseract takes for `thresholding_method`.
+ */
+enum class OcrThreshold(val tesseractValue: Int) {
+    OTSU(0),
+    LEPTONICA_OTSU(1),
+    SAUVOLA(2),
 }

@@ -1,12 +1,17 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/BookRow.kt
-// Purpose: One library row: title, pages, last use and progress, a clear warning when the file is gone, and its menu.
+// Purpose: A library book as a list row or a grid tile: cover, title, progress, a warning when the file is gone, menu.
 
 package io.github.skm0078.audora.ui.library
 
 import android.text.format.DateUtils
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -17,23 +22,39 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.library.LibraryError
+import io.github.skm0078.audora.ui.kids.LocalKidsMode
 
 @Composable
-internal fun BookRow(item: LibraryItem, onTap: () -> Unit, onRemove: () -> Unit, onExport: () -> Unit) {
-    var menuOpen by remember { mutableStateOf(false) }
+internal fun BookRow(
+    item: LibraryItem,
+    onTap: () -> Unit,
+    onRemove: () -> Unit,
+    onExport: () -> Unit,
+    covers: CoverSource = CoverSource.None,
+    onAddToUpNext: () -> Unit = {},
+    onDetails: () -> Unit = {},
+    onAction: (BookAction) -> Unit = {},
+) {
     ListItem(
+        leadingContent = { BookCover(item.book, covers, Modifier.size(COVER_WIDTH, COVER_HEIGHT)) },
         headlineContent = {
             Text(displayTitle(item.book), maxLines = TITLE_LINES, overflow = TextOverflow.Ellipsis)
         },
@@ -48,41 +69,65 @@ internal fun BookRow(item: LibraryItem, onTap: () -> Unit, onRemove: () -> Unit,
                 }
             }
         },
-        trailingContent = {
-            Box {
-                IconButton(onClick = { menuOpen = true }) {
-                    Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.library_book_menu))
-                }
-                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    // Only a book Audora can still open can be read into audio files (ADR-034).
-                    if (item.availability == BookAvailability.AVAILABLE) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.library_export_audiobook)) },
-                            onClick = {
-                                menuOpen = false
-                                onExport()
-                            },
-                        )
-                    }
+        trailingContent = { BookMenu(item, onRemove, onExport, onAddToUpNext, onDetails, onAction) },
+        modifier = Modifier.clickable(onClick = onTap),
+    )
+}
+
+/**
+ * A book's menu: Details, then Up next, Save as audiobook and the [BookAction]s while the file can be opened, and
+ * Remove. None in kids mode.
+ */
+@Composable
+internal fun BookMenu(
+    item: LibraryItem,
+    onRemove: () -> Unit,
+    onExport: () -> Unit,
+    onAddToUpNext: () -> Unit,
+    onDetails: () -> Unit = {},
+    onAction: (BookAction) -> Unit = {},
+) {
+    if (LocalKidsMode.current) return
+    var menuOpen by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { menuOpen = true }) {
+            Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.library_book_menu))
+        }
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            val choose = { action: () -> Unit ->
+                menuOpen = false
+                action()
+            }
+            DropdownMenuItem(text = {
+                Text(stringResource(R.string.book_details_title))
+            }, onClick = { choose(onDetails) })
+            // Only a book Audora can still open can be queued or read into audio files (ADR-034).
+            if (item.availability == BookAvailability.AVAILABLE) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.library_add_to_up_next)) },
+                    onClick = { choose(onAddToUpNext) },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.library_export_audiobook)) },
+                    onClick = { choose(onExport) },
+                )
+                BookAction.entries.forEach { action ->
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.library_remove)) },
-                        onClick = {
-                            menuOpen = false
-                            onRemove()
-                        },
+                        text = { Text(stringResource(action.label)) },
+                        onClick = { choose { onAction(action) } },
                     )
                 }
             }
-        },
-        modifier = Modifier.clickable(onClick = onTap),
-    )
+            DropdownMenuItem(text = { Text(stringResource(R.string.library_remove)) }, onClick = { choose(onRemove) })
+        }
+    }
 }
 
 @Composable
 internal fun displayTitle(book: Book): String = titleOrUntitled(book.title)
 
 @Composable
-private fun availabilityWarning(availability: BookAvailability?): String? = when (availability) {
+internal fun availabilityWarning(availability: BookAvailability?): String? = when (availability) {
     BookAvailability.MISSING -> stringResource(R.string.library_file_missing)
     BookAvailability.ACCESS_LOST -> stringResource(R.string.library_access_lost)
     BookAvailability.AVAILABLE, null -> null
@@ -121,7 +166,7 @@ internal fun messageText(message: LibraryMessage): String = when (message) {
 }
 
 @Composable
-private fun titleOrUntitled(title: String): String =
+internal fun titleOrUntitled(title: String): String =
     title.takeUnless { it == BookTitles.UNTITLED } ?: stringResource(R.string.library_untitled)
 
 private fun errorText(error: LibraryError): Int = when (error) {
@@ -133,4 +178,30 @@ private fun errorText(error: LibraryError): Int = when (error) {
     is LibraryError.Storage -> R.string.library_error_storage
 }
 
-private const val TITLE_LINES = 2
+internal const val TITLE_LINES = 2
+
+/** The first page once drawn (plan item 21); until then, or without one, a paper-coloured card with the initial. */
+@Composable
+internal fun BookCover(book: Book, covers: CoverSource, modifier: Modifier = Modifier) {
+    val cover by produceState<ImageBitmap?>(null, book.id, book.documentUri) { value = covers.cover(book) }
+    val shape = RoundedCornerShape(COVER_CORNER)
+    Box(
+        modifier = modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        val image = cover
+        if (image != null) {
+            Image(image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        } else {
+            Text(
+                displayTitle(book).take(1).uppercase(),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+private val COVER_WIDTH = 40.dp
+private val COVER_HEIGHT = 56.dp
+private val COVER_CORNER = 4.dp

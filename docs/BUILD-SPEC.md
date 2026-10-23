@@ -64,8 +64,8 @@ All neural models run through **sherpa-onnx 1.13.8** (Apache-2.0 runtime). Syste
 | English | Fallback | Android system TTS | `TextToSpeech` | 0 | device | — |
 | Hindi | Default | Google hi-IN system voice until a voice is downloaded; recommended download Piper hi_IN **pratham** (priyamvada offered) | system / sherpa VITS | 0 / 64 MB | device / CC BY-NC-SA 4.0 | S0 + S1; provisional by S1 desktop (ADR-030) |
 | Hindi | Premium | Supertonic-3 hi | sherpa Supertonic | 145 MB (shared with en) | OpenRAIL-M | S1 |
-| Bengali | Default | Google bn-IN system voice until a voice is downloaded; recommended download Piper bn_BD **google** medium (converted, speaker 0) | system / sherpa VITS | 0 / 78 MB | device / CC BY-SA 4.0 | S0 + S1; provisional by S1 desktop (ADR-030) |
-| Bengali | Fallback | MMS-TTS ben (converted) | sherpa VITS | 114 MB | CC-BY-NC 4.0 | — (offered as a download) |
+| Bengali | Default | Google bn-IN system voice until a voice is downloaded; recommended download **SYSPIN Bengali male** (IISc studio VITS, converted, 4 threads) | system / sherpa VITS | 0 / 114 MB | device / MIT | Indic voice spike; ADR-053 (replaces ADR-030's Piper google) |
+| Bengali | Alternatives | SYSPIN Bengali female (MIT); Piper bn_BD google medium (CC BY-SA 4.0, fastest); MMS-TTS ben (CC-BY-NC 4.0) | sherpa VITS | 114 / 78 / 114 MB | as listed | offered as downloads |
 | Any | Advanced | Import any sherpa-onnx model folder (`.onnx` + `tokens.txt` [+ espeak data]) | sherpa | — | user's | — |
 
 **Script routing (ADR-005, unchanged).** Each sentence is tagged by Unicode script: Latin → English, Devanagari U+0900–097F → Hindi, Bengali U+0980–09FF → Bengali. Deterministic, instant. v1 splits English runs of ≥3 words inside Indic sentences; the split happens at render time, one clip per sentence (ADR-026).
@@ -258,6 +258,8 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 030 | Hindi/Bengali catalog voices (pratham, priyamvada, Piper bn google, MMS ben); provisional defaults pratham and Piper google as a one-line `recommended` map; first download of a language becomes its reader; credits in the catalog; "Voices & licences" screen | Accepted (P3-06); defaults pending S0 + phone run |
 | 031 | Debug APKs signed with one dev key restored from the repository secret `AUDORA_DEBUG_KEYSTORE_B64` (password `android`), APK certificate checked against it in CI; without the secret CI is unchanged | Accepted (CI) |
 | 032 | Known gaps: Chanakya supplement glyphs by context; turned pages laid out in their reading frame; OCR via hOCR with word boxes mapped through the page transform (highlight), orientation by confidence, running headers on scans against neighbours' margin strips; citation switch; `PIPELINE_VERSION` 9 | Accepted |
+| 035 | Speakability layer: `:pdf` tags tables, footnotes, captions, equations and asides (`UnitKind`) and scores each unit (`speakScore`, `SpeakabilityConfig`) instead of dropping them; `:playback` decides by setting, `:speech` voices; golden filter leaves out table rows; listening score gated in CI | Accepted (RI-1, RI-8a) |
+| 053 | Bengali default becomes SYSPIN male (studio VITS, clearest by ASR round trip); SYSPIN female added; optional per-voice `threads` (4 for these) | Accepted (2026-10-23) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

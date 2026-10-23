@@ -31,6 +31,9 @@ internal object PdfiumRuntime {
         val missing = pdfiumLocked { PdfiumExtNative.nativeInit() }
         if (missing == null) {
             AudoraLog.i(TAG, "PDFium and $EXT_LIBRARY loaded")
+            if (!pdfiumLocked { PdfiumExtNative.nativeHasPageLabels() }) {
+                AudoraLog.w(TAG, "libpdfium.so has no FPDF_GetPageLabel: printed page labels are not read")
+            }
             Outcome.Success(pdfium)
         } else {
             AudoraLog.e(TAG, "$EXT_LIBRARY could not bind to libpdfium.so: $missing")

@@ -39,6 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.EngineId
@@ -99,7 +101,7 @@ fun VoicesScreen(state: VoicesState, actions: VoicesActions, modifier: Modifier 
 @Composable
 private fun VoicesTopBar(onBack: () -> Unit) {
     TopAppBar(
-        title = { Text(stringResource(R.string.voices_title)) },
+        title = { Text(stringResource(R.string.voices_title), Modifier.semantics { heading() }) },
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.navigate_back))
@@ -159,7 +161,7 @@ private fun LanguageHeader(lang: Lang) {
 }
 
 @Composable
-private fun DeleteDialog(row: VoiceRow, actions: VoicesActions) {
+internal fun DeleteDialog(row: VoiceRow, actions: VoicesActions) {
     AlertDialog(
         onDismissRequest = actions::onCancelDelete,
         title = { Text(stringResource(R.string.voices_delete_title, row.label)) },

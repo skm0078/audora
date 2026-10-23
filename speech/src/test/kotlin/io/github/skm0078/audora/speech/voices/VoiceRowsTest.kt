@@ -4,8 +4,11 @@
 package io.github.skm0078.audora.speech.voices
 
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.speech.sherpa.CastSpeakers
+import io.github.skm0078.audora.speech.sherpa.SherpaFamily
 import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VoiceRowsTest {
@@ -36,6 +39,22 @@ class VoiceRowsTest {
         assertEquals(VoiceStatus.NotDownloaded, rows[1].status)
         assertEquals(cori.sizeBytes, rows[1].sizeBytes)
         assertEquals(Lang.HI, rows[2].lang)
+    }
+
+    @Test
+    fun `a built-in voice with other speakers lists each as a voice to pick, with no download`() {
+        val micro = voiceSpec("kitten-en-micro", family = SherpaFamily.KITTEN).copy(label = "English, Jasper (male)")
+        val luna = CastSpeakers.variant(micro.voiceId, 3)
+
+        val builtIn = VoiceRows.build(micro, catalog, emptyList(), emptyMap(), mapOf(Lang.EN to luna))
+            .filter { it.kind == VoiceKind.BUILT_IN }
+
+        assertEquals(8, builtIn.size)
+        assertEquals(micro.voiceId, builtIn.single { it.recommended }.id)
+        assertTrue(builtIn.all { it.status == VoiceStatus.BuiltIn && it.sizeBytes == 0L })
+        assertEquals(listOf(luna), builtIn.filter { it.readsLanguage }.map { it.id })
+        assertEquals("English, Luna (female)", builtIn.single { it.id == luna }.label)
+        assertEquals("English, Bruno (male)", builtIn.single { it.id == CastSpeakers.variant(micro.voiceId, 2) }.label)
     }
 
     @Test
