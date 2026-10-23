@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -86,6 +87,7 @@ import io.github.skm0078.audora.playback.documents.WatchedFolders
 import io.github.skm0078.audora.playback.export.AudioClips
 import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.playback.export.MarkStores
+import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.notes.VoiceNoteAudio
 import io.github.skm0078.audora.playback.photo.PhotoBooks
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
@@ -104,6 +106,8 @@ import io.github.skm0078.audora.ui.diagnostics.DiagnosticsController
 import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
 import io.github.skm0078.audora.ui.firstrun.FirstRunScreen
 import io.github.skm0078.audora.ui.firstrun.shouldShowFirstRun
+import io.github.skm0078.audora.ui.jobs.LongJobsPanel
+import io.github.skm0078.audora.ui.jobs.startLongJob
 import io.github.skm0078.audora.ui.kids.KidsBanner
 import io.github.skm0078.audora.ui.kids.KidsMode
 import io.github.skm0078.audora.ui.kids.KidsModePreferences
@@ -170,6 +174,7 @@ import io.github.skm0078.audora.ui.storage.StorageRoute
 import io.github.skm0078.audora.ui.theme.Appearance
 import io.github.skm0078.audora.ui.theme.AppearancePreferences
 import io.github.skm0078.audora.ui.theme.AudoraTheme
+import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.tutor.ReaderTutorRoute
 import io.github.skm0078.audora.ui.upnext.UpNextPort
 import io.github.skm0078.audora.ui.upnext.UpNextSheet
@@ -715,9 +720,10 @@ class MainActivity : ComponentActivity() {
 
                 override fun onRequestRemoval(book: Book) = controller.proposeRemoval(book)
 
-                // Its progress, Cancel and result are in a notification, so it asks for that permission first.
-                override fun onExportAudiobook(book: Book) = playWithPermission {
-                    AudiobookExport.start(context, book.id)
+                // Its progress, Cancel and result are on the library's card and in a notification, so it asks for
+                // that permission first.
+                override fun onExportAudiobook(book: Book) = context.startLongJob(LongJobKind.AUDIOBOOK) {
+                    playWithPermission { AudiobookExport.start(context, book.id) }
                 }
 
                 override fun onConfirmRemoval() = controller.confirmRemoval()
@@ -730,7 +736,11 @@ class MainActivity : ComponentActivity() {
 
                 override fun onQuery(query: LibraryQuery) = controller.setQuery(query)
 
-                override fun onAddToUpNext(book: Book) = upNext.add(book.id)
+                override fun onAddToUpNext(book: Book) {
+                    upNext.add(book.id)
+                    // Nothing on the library screen changes, so say it was done.
+                    Toast.makeText(context, R.string.up_next_added, Toast.LENGTH_SHORT).show()
+                }
 
                 override fun onBookAction(book: Book, action: BookAction) = studio.onBookAction(book, action)
 
@@ -746,7 +756,11 @@ class MainActivity : ComponentActivity() {
             message = controller.message,
             pendingRemoval = controller.pendingRemoval,
             actions = actions,
-            banner = banner,
+            // The long jobs' progress and results sit under the activity's own banner, above the books.
+            banner = {
+                banner()
+                LongJobsPanel(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS))
+            },
             covers = bookCovers,
         )
         studio.Sheets((controller.listState as? LibraryListState.Loaded)?.all?.map { it.book })
@@ -1006,8 +1020,10 @@ class MainActivity : ComponentActivity() {
         }
 
         // From the reader, a password-protected PDF can be saved too: its password goes along in memory (ADR-034).
-        override fun onSaveAudiobook() = playWithPermission {
-            AudiobookExport.start(applicationContext, model.state.value.bookId, model.openPassword)
+        override fun onSaveAudiobook() = startLongJob(LongJobKind.AUDIOBOOK) {
+            playWithPermission {
+                AudiobookExport.start(applicationContext, model.state.value.bookId, model.openPassword)
+            }
         }
 
         override fun onBookmark(bookmark: Bookmark) = model.goToBookmark(bookmark)

@@ -77,7 +77,7 @@
     <string name="reader_pick_page_label">পৃষ্ঠা (1–%1$d)</string>
     <string name="reader_pick_page_go">যান</string>
     <string name="reader_back_to_reading">যেখানে পড়া চলছে, সেই পৃষ্ঠা %1$d-এ ফিরুন</string>
-    <string name="reader_page_no_text">এই পৃষ্ঠায় কোনো লেখা নেই। স্ক্যান করা পৃষ্ঠা পরের কোনো আপডেটে OCR দিয়ে পড়া হবে।</string>
+    <string name="reader_page_no_text">এই পৃষ্ঠায় পড়ার মতো লেখা নেই। এটি স্ক্যান করা পৃষ্ঠা হলে সেটিংসে স্ক্যান করা পৃষ্ঠা (OCR) ডাউনলোড করুন, তারপর Audora এটি পড়বে।</string>
     <string name="reader_page_failed">এই পৃষ্ঠাটি পড়া যায়নি। লগ শেয়ার করুন।</string>
     <string name="reader_tap_hint">যেখান থেকে শুনতে চান সেই বাক্যে ট্যাপ করুন। ভুল শোনালে বাক্যটি চেপে ধরে রাখুন।</string>
     <string name="reader_read_from_here">এখান থেকে পড়ুন</string>
@@ -280,7 +280,7 @@
     <string name="voices_status_installed">ডাউনলোড হয়েছে · %1$d MB</string>
     <string name="voices_status_imported">ইমপোর্ট করা · %1$d MB</string>
     <string name="voices_status_update">নতুন ভার্সন পাওয়া যাচ্ছে</string>
-    <string name="voices_status_failed">ডাউনলোড ব্যর্থ: %1$s</string>
+    <string name="voices_status_failed">ডাউনলোড ব্যর্থ: %1$s। ইন্টারনেট সংযোগ আর ফাঁকা জায়গা দেখে নিয়ে আবার চেষ্টা করুন।</string>
     <string name="voices_speed_ok">এই ফোনে এটি বলার চেয়ে %1$s× দ্রুত তৈরি হয়</string>
     <string name="voices_speed_slow">এই ফোনে খুব ধীর: প্রতি সেকেন্ডের কথা তৈরি করতে %1$s সেকেন্ড লাগে, তাই পড়া মাঝে মাঝে থেমে যাবে</string>
     <string name="voices_download">ডাউনলোড</string>
@@ -332,7 +332,7 @@
     <string name="ocr_models_delete">মুছুন</string>
     <string name="ocr_models_queued">ডাউনলোডের অপেক্ষায় (ইন্টারনেট সংযোগ লাগবে)…</string>
     <string name="ocr_models_downloading">%2$d MB-এর মধ্যে %1$d ডাউনলোড হচ্ছে</string>
-    <string name="ocr_models_failed">ডাউনলোড ব্যর্থ: %1$s</string>
+    <string name="ocr_models_failed">ডাউনলোড ব্যর্থ: %1$s। ইন্টারনেট সংযোগ আর ফাঁকা জায়গা দেখে নিয়ে “আবার চেষ্টা করুন” চাপুন।</string>
     <string name="settings_ocr_title">স্ক্যান করা পৃষ্ঠা (OCR)</string>
     <string name="settings_ocr_missing">স্ক্যান করা ও জট পাকানো পৃষ্ঠা জোরে পড়ে। %1$d MB লেখা চেনার ফাইল লাগবে।</string>
     <string name="settings_ocr_ready">ইংরেজি, হিন্দি ও বাংলার জন্য তৈরি · %1$d MB</string>

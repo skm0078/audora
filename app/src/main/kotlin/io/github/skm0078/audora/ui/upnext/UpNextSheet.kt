@@ -47,6 +47,7 @@ import io.github.skm0078.audora.ui.library.CoverSource
 import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.titleOrUntitled
 import io.github.skm0078.audora.ui.reader.durationText
+import io.github.skm0078.audora.ui.theme.ConfirmedTextButton
 import io.github.skm0078.audora.ui.theme.Dimens
 
 /**
@@ -125,7 +126,13 @@ private fun Header(canClear: Boolean, onClear: () -> Unit) {
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.weight(1f).semantics { heading() },
         )
-        if (canClear) TextButton(onClick = onClear) { Text(stringResource(R.string.up_next_clear)) }
+        if (canClear) {
+            ConfirmedTextButton(
+                stringResource(R.string.up_next_clear),
+                stringResource(R.string.up_next_clear_question),
+                onClear,
+            )
+        }
     }
 }
 

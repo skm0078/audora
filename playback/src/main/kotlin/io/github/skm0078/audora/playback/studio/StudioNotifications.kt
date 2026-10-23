@@ -10,6 +10,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import io.github.skm0078.audora.playback.R
+import io.github.skm0078.audora.playback.jobs.LongJobEnd
+import io.github.skm0078.audora.playback.jobs.LongJobKind
+import io.github.skm0078.audora.playback.jobs.LongJobs
 
 /** Platform notifications, like the audiobook export's: no androidx dependency for a handful of plain notifications. */
 internal class StudioNotifications(private val context: Context) {
@@ -48,6 +51,13 @@ internal class StudioNotifications(private val context: Context) {
             ChargingGate.Wait.AUDIO -> context.getString(R.string.studio_waiting_audio, ready)
         }
         val percent = (readyMs * PERCENT / aheadMs).toInt().coerceIn(0, PERCENT)
+        LongJobs.progress(
+            LongJobKind.STUDIO,
+            context.getString(R.string.studio_running_title, title),
+            text,
+            percent,
+            waitingForCharger = waiting == ChargingGate.Wait.CHARGER,
+        )
         val notification = builder()
             .setContentTitle(context.getString(R.string.studio_running_title, title))
             .setContentText(text)
@@ -70,18 +80,25 @@ internal class StudioNotifications(private val context: Context) {
             if (summary.endOfBook) R.string.studio_done_end_text else R.string.studio_done_text,
             context.duration(summary.readyMs),
         )
-        showResult(context.getString(R.string.studio_done_title, title), text)
+        showResult(context.getString(R.string.studio_done_title, title), text, LongJobEnd.DONE)
     }
 
-    fun showFailed(title: String, reason: String) =
-        showResult(context.getString(R.string.studio_failed_title, title), reason)
+    /** [publish] off for a refused start: the run that is going on stays what the app shows. */
+    fun showFailed(title: String, reason: String, publish: Boolean = true) = showResult(
+        context.getString(R.string.studio_failed_title, title),
+        reason,
+        LongJobEnd.FAILED.takeIf { publish },
+    )
 
     fun showStopped(title: String) = showResult(
         context.getString(R.string.studio_stopped_title, title),
         context.getString(R.string.studio_stopped_text),
+        LongJobEnd.STOPPED,
     )
 
-    private fun showResult(title: String, text: String) {
+    /** [end] set: the result is also the app's view of the run ([LongJobs]). */
+    private fun showResult(title: String, text: String, end: LongJobEnd?) {
+        end?.let { LongJobs.finish(LongJobKind.STUDIO, it, title, text) }
         val notification = builder()
             .setContentTitle(title)
             .setContentText(text)

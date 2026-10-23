@@ -6,6 +6,9 @@ package io.github.skm0078.audora.ui.library
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,6 +40,7 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.LibraryFilter
 import io.github.skm0078.audora.core.library.LibraryQuery
 import io.github.skm0078.audora.core.library.LibrarySort
+import io.github.skm0078.audora.ui.theme.Dimens
 
 @Composable
 internal fun LibraryTopBar(listState: LibraryListState, actions: LibraryActions) {
@@ -154,10 +158,23 @@ private fun LibraryActionsMenu(onAction: (LibraryAction) -> Unit) {
         IconButton(onClick = { open = true }) {
             Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.reader_more))
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        DropdownMenu(
+            expanded = open,
+            onDismissRequest = { open = false },
+            modifier = Modifier.widthIn(max = Dimens.MenuMaxWidth),
+        ) {
             LibraryAction.entries.forEach { action ->
                 DropdownMenuItem(
-                    text = { Text(stringResource(action.label)) },
+                    text = {
+                        Column(Modifier.padding(vertical = Dimens.SpaceXs)) {
+                            Text(stringResource(action.label))
+                            Text(
+                                stringResource(action.hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
                     onClick = {
                         open = false
                         onAction(action)

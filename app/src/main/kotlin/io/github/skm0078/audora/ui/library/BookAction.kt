@@ -6,20 +6,23 @@ package io.github.skm0078.audora.ui.library
 import androidx.annotation.StringRes
 import io.github.skm0078.audora.R
 
-/** Each entry shows in a book's menu while its file can be opened, in this order; the activity starts the work. */
-enum class BookAction(@StringRes val label: Int) {
+/**
+ * Each entry shows in a book's menu while its file can be opened, in this order; the activity starts the work.
+ * [hint] is the line under the label: what it does, where the result goes and what it costs.
+ */
+enum class BookAction(@StringRes val label: Int, @StringRes val hint: Int) {
     /** Renders the book ahead while the phone charges (plan item 6, ADR-039). */
-    STUDIO(R.string.library_studio_mode),
+    STUDIO(R.string.library_studio_mode, R.string.menu_hint_studio),
 
     /** Clean text as EPUB 3 and plain text for screen readers and other apps (plan item 69, ADR-040). */
-    ACCESSIBLE_COPY(R.string.library_accessible_copy),
+    ACCESSIBLE_COPY(R.string.library_accessible_copy, R.string.menu_hint_accessible),
 
     /** EPUB 3 with every sentence's audio synced to its text (plan item 76, ADR-040). */
-    TALKING_BOOK(R.string.library_talking_book),
+    TALKING_BOOK(R.string.library_talking_book, R.string.menu_hint_talking_book),
 
     /** The book's highlights, bookmarks and voice notes as Markdown and text (plan item 30). */
-    EXPORT_NOTES(R.string.library_export_notes),
+    EXPORT_NOTES(R.string.library_export_notes, R.string.menu_hint_export_notes),
 
     /** The listener's own list of who is who, shown up to where they are (plan item 80). */
-    CHARACTER_GUIDE(R.string.library_character_guide),
+    CHARACTER_GUIDE(R.string.library_character_guide, R.string.menu_hint_character_guide),
 }

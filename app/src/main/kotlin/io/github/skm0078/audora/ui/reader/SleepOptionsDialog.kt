@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.model.SleepOptions
+import io.github.skm0078.audora.ui.theme.switchRow
 import java.util.Locale
 
 /** Edits a copy of [options]; Save sends it to the service, which keeps it across restarts. */
@@ -90,9 +91,9 @@ private fun BedtimeSection(draft: SleepOptions, config: ReaderConfig, onChange: 
 
 @Composable
 private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.switchRow(checked, onChange = onChange), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f))
-        Switch(checked = checked, onCheckedChange = onChange)
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 

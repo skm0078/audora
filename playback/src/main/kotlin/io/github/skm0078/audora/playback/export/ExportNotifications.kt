@@ -11,6 +11,9 @@ import android.content.Context
 import android.content.Intent
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.playback.R
+import io.github.skm0078.audora.playback.jobs.LongJobEnd
+import io.github.skm0078.audora.playback.jobs.LongJobKind
+import io.github.skm0078.audora.playback.jobs.LongJobs
 
 /** Platform notifications: no androidx dependency for four plain notifications. */
 internal class ExportNotifications(private val context: Context) {
@@ -25,13 +28,20 @@ internal class ExportNotifications(private val context: Context) {
         manager.createNotificationChannel(channel)
     }
 
-    /** [note]: a line under the progress for the whole export, such as [exportCastNote]. */
+    /**
+     * [note]: a line under the progress for the whole export, such as [exportCastNote]. Once a chapter is under way
+     * it is also the app's view of the export; the "preparing" one is posted before the request is read, so a refused
+     * second request never resets what the app shows of the export that is running.
+     */
     fun running(title: String, chapter: Int?, chapterCount: Int, percent: Int, note: String? = null): Notification {
         val text = if (chapter == null) {
             context.getString(R.string.export_preparing)
         } else {
             context.getString(R.string.export_running_text, chapter, chapterCount, percent)
         }
+        val shown = note?.let { "$text$NOTE_BREAK$it" }
+        val heading = context.getString(R.string.export_running_title, title)
+        if (chapter != null) LongJobs.progress(LongJobKind.AUDIOBOOK, heading, shown ?: text, percent)
         val cancel = PendingIntent.getService(
             context,
             0,
@@ -39,12 +49,12 @@ internal class ExportNotifications(private val context: Context) {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         return builder()
-            .setContentTitle(context.getString(R.string.export_running_title, title))
+            .setContentTitle(heading)
             .setContentText(text)
             .setProgress(PERCENT, percent, chapter == null)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .apply { note?.let { setStyle(Notification.BigTextStyle().bigText("$text$NOTE_BREAK$it")) } }
+            .apply { shown?.let { setStyle(Notification.BigTextStyle().bigText(it)) } }
             .addAction(
                 Notification.Action.Builder(null, context.getString(R.string.export_cancel), cancel).build(),
             )
@@ -62,15 +72,24 @@ internal class ExportNotifications(private val context: Context) {
         )
         val files = summary.chapters.size
         val text = context.resources.getQuantityString(R.plurals.export_done_text, files, files, duration, folder)
-        showResult(context.getString(R.string.export_done_title, title), note?.let { "$text$NOTE_BREAK$it" } ?: text)
+        showResult(
+            context.getString(R.string.export_done_title, title),
+            note?.let { "$text$NOTE_BREAK$it" } ?: text,
+            end = LongJobEnd.DONE,
+        )
     }
 
-    fun showFailed(title: String, reason: String) =
-        showResult(context.getString(R.string.export_failed_title, title), reason)
+    /** [publish] off for a refused start: the export that is running goes on, and the app keeps showing it. */
+    fun showFailed(title: String, reason: String, publish: Boolean = true) = showResult(
+        context.getString(R.string.export_failed_title, title),
+        reason,
+        end = LongJobEnd.FAILED.takeIf { publish },
+    )
 
     fun showCancelled(title: String, folder: String) = showResult(
         context.getString(R.string.export_cancelled_title, title),
         context.getString(R.string.export_cancelled_resume, folder),
+        end = LongJobEnd.STOPPED,
     )
 
     /** Android's 6-hour limit stopped it: Continue opens Audora, which starts the export again where it stopped. */
@@ -89,10 +108,13 @@ internal class ExportNotifications(private val context: Context) {
             context.getString(R.string.export_timed_out_title, title),
             context.getString(R.string.export_timed_out_text),
             action,
+            end = LongJobEnd.STOPPED,
         )
     }
 
-    private fun showResult(title: String, text: String, action: Notification.Action? = null) {
+    /** [end] set: the result is also the app's view of the job ([LongJobs]). */
+    private fun showResult(title: String, text: String, action: Notification.Action? = null, end: LongJobEnd? = null) {
+        end?.let { LongJobs.finish(LongJobKind.AUDIOBOOK, it, title, text) }
         val notification = builder()
             .setContentTitle(title)
             .setContentText(text)

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_menu_help.xml -->
+<!-- Purpose: Hindi copy of values/strings_menu_help.xml. -->
+<resources>
+    <string name="menu_hint_details">पेज, फ़ाइल का साइज़, कब जोड़ी और आख़िरी बार कब खोली।</string>
+    <string name="menu_hint_up_next">आप जो किताब सुन रहे हैं, उसके ख़त्म होने के बाद यह किताब चलेगी।</string>
+    <string name="menu_hint_audiobook">पूरी किताब को ऑडियो फ़ाइलों में पढ़ता है, हर अध्याय की एक फ़ाइल, फ़ोन के Audiobooks फ़ोल्डर में, ताकि किसी भी ऐप में या ऑफ़लाइन सुन सकें। बैकग्राउंड में चलता है; लंबी किताब में कई घंटे लगते हैं।</string>
+    <string name="menu_hint_studio">फ़ोन चार्ज होते समय किताब की आवाज़ पहले से तैयार करता है, एक बार में लगभग 6 घंटे की, ताकि सुनना तुरंत शुरू हो और बैटरी कम लगे।</string>
+    <string name="menu_hint_accessible">किताब का साफ़ टेक्स्ट EPUB और टेक्स्ट फ़ाइल के रूप में Documents/Audora में, स्क्रीन रीडर, ब्रेल डिस्प्ले और दूसरे पढ़ने वाले ऐप के लिए।</string>
+    <string name="menu_hint_talking_book">Documents/Audora में एक EPUB 3, जिसमें आवाज़ टेक्स्ट के साथ चलती है, साथ-साथ पढ़ने वाले ई-बुक ऐप के लिए। लगभग उतना समय लगता है जितना किताब को ज़ोर से पढ़ने में।</string>
+    <string name="menu_hint_export_notes">इस किताब की आपकी हाइलाइट, बुकमार्क और वॉइस नोट, Documents/Audora में Markdown और टेक्स्ट फ़ाइल के रूप में।</string>
+    <string name="menu_hint_character_guide">इस कहानी में कौन कौन है, सिर्फ़ वहाँ तक जहाँ तक आप पहुँचे हैं, ताकि आगे की बात पता न चले।</string>
+    <string name="menu_hint_remove">किताब को Audora से हटाता है। PDF आपके फ़ोन में रहती है।</string>
+    <string name="menu_hint_point_and_read">छपे हुए पेज की फ़ोटो लें; Audora उसे एक पेज की किताब की तरह पढ़कर सुनाता है।</string>
+    <string name="menu_hint_watched_folders">फ़ोल्डर चुनें; Audora खोलने पर उनमें आई नई PDF आपकी लाइब्रेरी में जुड़ जाती हैं।</string>
+    <string name="menu_hint_backup">आपकी लाइब्रेरी, पढ़ने की जगह, नोट और सेटिंग एक फ़ाइल में सेव करता है, या नए फ़ोन पर उसे वापस लाता है।</string>
+    <string name="menu_hint_quiz">सभी किताबों की आपकी हाइलाइट से ख़ाली जगह भरने वाले सवाल, पढ़कर सुनाए गए।</string>
+    <string name="book_actions_title">%1$s के साथ क्या करें</string>
+    <string name="long_job_audiobook">ऑडियोबुक सेव हो रही है</string>
+    <string name="long_job_copy">कॉपी सेव हो रही है</string>
+    <string name="long_job_studio">स्टूडियो मोड</string>
+    <string name="long_job_status_percent">%1$s · %2$d%%</string>
+    <string name="long_job_cancel">रद्द करें</string>
+    <string name="long_job_stop">रोकें</string>
+    <string name="long_job_start_now">अभी शुरू करें</string>
+    <string name="long_job_dismiss">ठीक है</string>
+    <string name="long_job_failed_next">किताब के मेन्यू से इसे फिर शुरू करें। फिर से न हो, तो सेटिंग → लॉग शेयर करें से कारण पता चलता है।</string>
+    <string name="long_job_stopped_next">जितना हुआ, वह रखा गया है; आगे बढ़ाने के लिए किताब के मेन्यू से फिर शुरू करें।</string>
+    <string name="long_job_busy">एक और काम अभी चल रहा है। उसका इंतज़ार करें, या लाइब्रेरी में ऊपर के कार्ड से उसे रद्द करें।</string>
+    <string name="reader_hint_follow_along">पढ़ा जा रहा वाक्य दिखता रहे, इसलिए पेज अपने आप खिसकता है।</string>
+    <string name="reader_hint_word_highlight">सिर्फ़ वाक्य नहीं, बोला जा रहा हर शब्द भी चिह्नित होता है।</string>
+    <string name="reader_hint_focus_view">बड़ा टेक्स्ट, और पढ़े जा रहे वाक्य के अलावा सब धुँधला। ADHD और डिस्लेक्सिया में मदद करता है।</string>
+    <string name="reader_hint_bold_word_starts">अंग्रेज़ी शब्दों के शुरुआती अक्षर मोटे होते हैं, ताकि नज़र तेज़ी से चले।</string>
+    <string name="reader_hint_text_look">टेक्स्ट का आकार, फ़ॉन्ट, पंक्ति और अक्षरों के बीच की जगह।</string>
+    <string name="reader_hint_up_next">इस किताब के बाद क्रम से चलने वाली किताबें।</string>
+    <string name="reader_hint_tutor">आप पेज ज़ोर से पढ़ें; Audora इसी फ़ोन पर सुनता है और सही पढ़े शब्द चिह्नित करता है।</string>
+    <string name="reader_hint_search">इस किताब में कहीं भी कोई शब्द या वाक्यांश ढूँढता है।</string>
+    <string name="sentence_hint_bookmark">यह जगह सहेजता है। नोट्स में फिर से मिलेगी।</string>
+    <string name="sentence_hint_highlight">इस वाक्य को रंग देता है और नोट्स में रखता है।</string>
+    <string name="sentence_hint_unhighlight">इस वाक्य से रंग हटाता है।</string>
+    <string name="sentence_hint_voice_note">इस वाक्य पर अपना बोला हुआ नोट रिकॉर्ड करें।</string>
+    <string name="sentence_hint_look_up">फ़ोन पर रखे शब्दकोश से यहाँ के किसी शब्द का अर्थ दिखाता है।</string>
+    <string name="sentence_hint_fix">जो शब्द Audora ग़लत बोलता है, उसका सही उच्चारण सिखाएँ।</string>
+    <string name="sentence_hint_report">बताएँ कि क्या ग़लत पढ़ा गया, ताकि उसे ठीक किया जा सके। लॉग में सिर्फ़ जगह जाती है, शब्द कभी नहीं।</string>
+    <string name="sentence_hint_share_clip">यह वाक्य छोटी ऑडियो क्लिप बनाकर किसी भी ऐप पर भेजता है।</string>
+    <string name="up_next_added">आगे सुनें में जोड़ा गया</string>
+    <string name="up_next_clear_question">आगे सुनें से सारी किताबें हटाएँ? किताबें आपकी लाइब्रेरी में रहेंगी।</string>
+    <string name="model_delete_question">%1$s मिटाएँ? आप इसे कभी भी फिर से डाउनलोड कर सकते हैं।</string>
+    <string name="confirm_keep">रहने दें</string>
+    <string name="slider_percent">%1$d प्रतिशत</string>
+    <string name="slider_step_of">%2$d में से %1$d</string>
+</resources>

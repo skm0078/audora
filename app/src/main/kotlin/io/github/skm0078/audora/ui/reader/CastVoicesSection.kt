@@ -24,6 +24,7 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.speech.voices.VoiceRow
+import io.github.skm0078.audora.ui.theme.switchRow
 
 /**
  * Only languages with a second voice to pick from show up; with none, the switches say to add one in Settings →
@@ -56,7 +57,7 @@ fun CastVoicesSection(rows: List<VoiceRow>, shaping: VoiceShaping, onChange: (Vo
 /** Always offered: the narrator's own model supplies the voices, so no voice needs adding first. */
 @Composable
 private fun CharacterVoicesRow(on: Boolean, onChange: (Boolean) -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.switchRow(on, onChange = onChange), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(stringResource(R.string.speech_cast_characters), style = MaterialTheme.typography.bodyLarge)
             Text(
@@ -65,7 +66,7 @@ private fun CharacterVoicesRow(on: Boolean, onChange: (Boolean) -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Switch(checked = on, onCheckedChange = onChange)
+        Switch(checked = on, onCheckedChange = null)
     }
 }
 
@@ -77,16 +78,15 @@ private fun CastRole(
     cast: Map<Lang, VoiceId>,
     onCast: (Map<Lang, VoiceId>) -> Unit,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    val castOn = cast.isNotEmpty()
+    val castable = choices.isNotEmpty() || castOn
+    val onCastChange: (Boolean) -> Unit = { on -> onCast(if (on) firstCast(choices) else emptyMap()) }
+    Row(Modifier.switchRow(castOn, castable, onCastChange), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
             Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Switch(
-            checked = cast.isNotEmpty(),
-            onCheckedChange = { on -> onCast(if (on) firstCast(choices) else emptyMap()) },
-            enabled = choices.isNotEmpty() || cast.isNotEmpty(),
-        )
+        Switch(checked = castOn, onCheckedChange = null, enabled = castable)
     }
     if (cast.isEmpty()) return
     choices.forEach { (lang, voices) ->

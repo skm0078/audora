@@ -25,6 +25,9 @@ import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.export.JobSlots
+import io.github.skm0078.audora.playback.jobs.LongJobEnd
+import io.github.skm0078.audora.playback.jobs.LongJobKind
+import io.github.skm0078.audora.playback.jobs.LongJobs
 import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.studio.BookVoice
 import io.github.skm0078.audora.playback.studio.StudioMode
@@ -113,7 +116,8 @@ class BookCopyService : Service() {
     private fun start(id: BookId?, kind: CopyKind?) {
         // Foreground first, always: Android requires it within seconds of startForegroundService.
         val preparing = getString(R.string.copy_preparing)
-        val notice = lastRunning?.takeIf { mine } ?: notifications.running(preparing, preparing, percent = null)
+        val notice =
+            lastRunning?.takeIf { mine } ?: notifications.running(preparing, preparing, percent = null, publish = false)
         startForeground(CopyNotifications.RUNNING_ID, notice, foregroundType())
         when {
             id == null || kind == null -> AudoraLog.w(TAG, "Copy request without a book or kind")
@@ -128,9 +132,10 @@ class BookCopyService : Service() {
                 timedOut = false
                 // Set first: the job may end (and clear it) before launch returns.
                 mine = true
+                LongJobs.begin(LongJobKind.COPY, id, preparing, preparing)
                 if (!JobSlots.COPY.launch(THREAD_NAME) { runCopy(id, kind) }) {
                     mine = false
-                    notifications.showResult(preparing, getString(R.string.copy_busy))
+                    notifications.showResult(preparing, getString(R.string.copy_busy), LongJobEnd.FAILED)
                 }
             }
         }

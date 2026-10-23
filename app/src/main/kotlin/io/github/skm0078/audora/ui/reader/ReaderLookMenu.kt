@@ -6,12 +6,15 @@ package io.github.skm0078.audora.ui.reader
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +36,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.ui.theme.Dimens
 
 /** [text] with the starts of its English words bolded (plan item 77). */
 internal fun boldWordStarts(text: String): AnnotatedString = buildAnnotatedString {
@@ -64,12 +68,12 @@ internal fun MoreMenu(
         IconButton(onClick = { open = true }) {
             Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.reader_more))
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        DropdownMenu(open, { open = false }, Modifier.widthIn(max = Dimens.MenuMaxWidth)) {
             ToneItems(look, onLookChange)
             if (textView) {
                 LookItems(look, onLookChange)
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.reader_text_look)) },
+                    text = { MenuText(R.string.reader_text_look, R.string.reader_hint_text_look) },
                     onClick = {
                         open = false
                         onOpenTextLook()
@@ -78,7 +82,7 @@ internal fun MoreMenu(
             }
             onOpenUpNext?.let { openUpNext ->
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.up_next_title)) },
+                    text = { MenuText(R.string.up_next_title, R.string.reader_hint_up_next) },
                     leadingIcon = { Icon(painterResource(R.drawable.ic_queue), contentDescription = null) },
                     onClick = {
                         open = false
@@ -88,7 +92,7 @@ internal fun MoreMenu(
             }
             onSaveAudiobook?.let { save ->
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.library_export_audiobook)) },
+                    text = { MenuText(R.string.library_export_audiobook, R.string.menu_hint_audiobook) },
                     onClick = {
                         open = false
                         save()
@@ -97,7 +101,7 @@ internal fun MoreMenu(
             }
             onReadAloudToMe?.let { tutor ->
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.tutor_menu)) },
+                    text = { MenuText(R.string.tutor_menu, R.string.reader_hint_tutor) },
                     onClick = {
                         open = false
                         tutor()
@@ -106,7 +110,7 @@ internal fun MoreMenu(
             }
             onSearch?.let { search ->
                 DropdownMenuItem(
-                    text = { Text(stringResource(R.string.search_action)) },
+                    text = { MenuText(R.string.search_action, R.string.reader_hint_search) },
                     leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null) },
                     onClick = {
                         open = false
@@ -136,14 +140,22 @@ private val PageTone.label: Int
 
 @Composable
 private fun LookItems(look: ReadingLook, onLookChange: (ReadingLook) -> Unit) {
-    LookItem(R.string.reader_follow_along, look.followAlong) { onLookChange(look.copy(followAlong = it)) }
-    LookItem(R.string.reader_word_highlight, look.wordHighlight) { onLookChange(look.copy(wordHighlight = it)) }
+    LookItem(R.string.reader_follow_along, R.string.reader_hint_follow_along, look.followAlong) {
+        onLookChange(look.copy(followAlong = it))
+    }
+    LookItem(R.string.reader_word_highlight, R.string.reader_hint_word_highlight, look.wordHighlight) {
+        onLookChange(look.copy(wordHighlight = it))
+    }
     HighlightStyle.entries.forEach { style ->
         StyleItem(style.label, selected = look.highlight == style) { onLookChange(look.copy(highlight = style)) }
     }
     HorizontalDivider()
-    LookItem(R.string.reader_focus_view, look.focus) { onLookChange(look.copy(focus = it)) }
-    LookItem(R.string.reader_bold_word_starts, look.boldWordStarts) { onLookChange(look.copy(boldWordStarts = it)) }
+    LookItem(R.string.reader_focus_view, R.string.reader_hint_focus_view, look.focus) {
+        onLookChange(look.copy(focus = it))
+    }
+    LookItem(R.string.reader_bold_word_starts, R.string.reader_hint_bold_word_starts, look.boldWordStarts) {
+        onLookChange(look.copy(boldWordStarts = it))
+    }
 }
 
 private val HighlightStyle.label: Int
@@ -167,9 +179,9 @@ private fun StyleItem(@StringRes label: Int, selected: Boolean, onSelect: () -> 
 }
 
 @Composable
-private fun LookItem(@StringRes label: Int, checked: Boolean, onChange: (Boolean) -> Unit) {
+private fun LookItem(@StringRes label: Int, @StringRes hint: Int, checked: Boolean, onChange: (Boolean) -> Unit) {
     DropdownMenuItem(
-        text = { Text(stringResource(label)) },
+        text = { MenuText(label, hint) },
         leadingIcon = { Checkbox(checked = checked, onCheckedChange = null) },
         onClick = { onChange(!checked) },
         modifier = Modifier.semantics {
@@ -177,4 +189,17 @@ private fun LookItem(@StringRes label: Int, checked: Boolean, onChange: (Boolean
             toggleableState = ToggleableState(checked)
         },
     )
+}
+
+/** A menu item's name with one plain line under it that says what it does. */
+@Composable
+private fun MenuText(@StringRes label: Int, @StringRes hint: Int) {
+    Column {
+        Text(stringResource(label))
+        Text(
+            stringResource(hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }

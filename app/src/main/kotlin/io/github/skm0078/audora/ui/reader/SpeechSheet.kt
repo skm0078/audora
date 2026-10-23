@@ -33,6 +33,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
@@ -43,6 +45,7 @@ import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.speech.voices.VoiceRow
+import io.github.skm0078.audora.ui.theme.switchRow
 import kotlin.math.roundToInt
 
 /**
@@ -110,10 +113,8 @@ private fun SpeedSection(speed: Float, config: ReaderConfig, onSpeed: (Float) ->
     val step = config.speech.rateStep
     // Follows the player's speed, but shows the finger's position while dragging.
     var dragged by remember(speed) { mutableFloatStateOf(speed) }
-    Text(
-        stringResource(R.string.speech_sheet_speed, speedLabel(config.nearestSpeed(dragged))),
-        style = MaterialTheme.typography.titleMedium,
-    )
+    val shown = stringResource(R.string.speech_sheet_speed, speedLabel(config.nearestSpeed(dragged)))
+    Text(shown, style = MaterialTheme.typography.titleMedium)
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = { onSpeed(config.nearestSpeed(speed - step)) }, enabled = speed > range.start) {
             Icon(painterResource(R.drawable.ic_remove), stringResource(R.string.speech_sheet_slower))
@@ -124,7 +125,8 @@ private fun SpeedSection(speed: Float, config: ReaderConfig, onSpeed: (Float) ->
             onValueChangeFinished = { onSpeed(config.nearestSpeed(dragged)) },
             valueRange = range,
             steps = stepsBetween(range, step),
-            modifier = Modifier.weight(1f),
+            // TalkBack reads the speed ("Speed 1.25×"), not the thumb's share of the track.
+            modifier = Modifier.weight(1f).semantics { stateDescription = shown },
         )
         IconButton(onClick = { onSpeed(config.nearestSpeed(speed + step)) }, enabled = speed < range.endInclusive) {
             Icon(painterResource(R.drawable.ic_add), stringResource(R.string.speech_sheet_faster))
@@ -162,7 +164,7 @@ private fun PaceSection(pace: Pace, onPace: (Pace) -> Unit) {
 /** A switch so the listener can hear the sentence with and without the clause pauses (RI-6). */
 @Composable
 private fun ClausePausesRow(on: Boolean, onChange: (Boolean) -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.switchRow(on, onChange = onChange), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(stringResource(R.string.speech_clause_pauses), style = MaterialTheme.typography.titleMedium)
             Text(
@@ -171,7 +173,7 @@ private fun ClausePausesRow(on: Boolean, onChange: (Boolean) -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Switch(checked = on, onCheckedChange = onChange)
+        Switch(checked = on, onCheckedChange = null)
     }
 }
 
@@ -181,7 +183,7 @@ private fun ClausePausesRow(on: Boolean, onChange: (Boolean) -> Unit) {
  */
 @Composable
 private fun OwnSettingsRow(on: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.switchRow(on, enabled, onChange), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(stringResource(R.string.speech_own_settings), style = MaterialTheme.typography.titleMedium)
             val detail = if (enabled) R.string.speech_own_settings_detail else R.string.speech_own_settings_play_first
@@ -191,7 +193,7 @@ private fun OwnSettingsRow(on: Boolean, enabled: Boolean, onChange: (Boolean) ->
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Switch(checked = on, onCheckedChange = onChange, enabled = enabled)
+        Switch(checked = on, onCheckedChange = null, enabled = enabled)
     }
 }
 

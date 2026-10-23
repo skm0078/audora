@@ -12,25 +12,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,7 +32,9 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.library.LibraryError
-import io.github.skm0078.audora.ui.kids.LocalKidsMode
+import io.github.skm0078.audora.ui.jobs.JobProgressBar
+import io.github.skm0078.audora.ui.jobs.jobStatus
+import io.github.skm0078.audora.ui.jobs.runningJobFor
 
 @Composable
 internal fun BookRow(
@@ -66,61 +60,16 @@ internal fun BookRow(
                 Column {
                     Text(bookDetails(item.book))
                     item.progress?.let { ProgressLine(it) }
+                    runningJobFor(item.book.id)?.let { job ->
+                        Text(jobStatus(job), color = MaterialTheme.colorScheme.primary)
+                        JobProgressBar(job)
+                    }
                 }
             }
         },
         trailingContent = { BookMenu(item, onRemove, onExport, onAddToUpNext, onDetails, onAction) },
         modifier = Modifier.clickable(onClick = onTap),
     )
-}
-
-/**
- * A book's menu: Details, then Up next, Save as audiobook and the [BookAction]s while the file can be opened, and
- * Remove. None in kids mode.
- */
-@Composable
-internal fun BookMenu(
-    item: LibraryItem,
-    onRemove: () -> Unit,
-    onExport: () -> Unit,
-    onAddToUpNext: () -> Unit,
-    onDetails: () -> Unit = {},
-    onAction: (BookAction) -> Unit = {},
-) {
-    if (LocalKidsMode.current) return
-    var menuOpen by remember { mutableStateOf(false) }
-    Box {
-        IconButton(onClick = { menuOpen = true }) {
-            Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.library_book_menu))
-        }
-        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-            val choose = { action: () -> Unit ->
-                menuOpen = false
-                action()
-            }
-            DropdownMenuItem(text = {
-                Text(stringResource(R.string.book_details_title))
-            }, onClick = { choose(onDetails) })
-            // Only a book Audora can still open can be queued or read into audio files (ADR-034).
-            if (item.availability == BookAvailability.AVAILABLE) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.library_add_to_up_next)) },
-                    onClick = { choose(onAddToUpNext) },
-                )
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.library_export_audiobook)) },
-                    onClick = { choose(onExport) },
-                )
-                BookAction.entries.forEach { action ->
-                    DropdownMenuItem(
-                        text = { Text(stringResource(action.label)) },
-                        onClick = { choose { onAction(action) } },
-                    )
-                }
-            }
-            DropdownMenuItem(text = { Text(stringResource(R.string.library_remove)) }, onClick = { choose(onRemove) })
-        }
-    }
 }
 
 @Composable

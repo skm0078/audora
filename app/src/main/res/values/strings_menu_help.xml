@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_menu_help.xml -->
+<!-- Purpose: One-line explanations of each menu entry, and the long-job cards in the library and the reader. -->
+<resources>
+    <string name="menu_hint_details">Pages, file size, when you added it and opened it last.</string>
+    <string name="menu_hint_up_next">Plays this book after the one you are listening to ends.</string>
+    <string name="menu_hint_audiobook">Reads the whole book into audio files, one per chapter, in Audiobooks on your phone, to play in any app or offline. Runs in the background; a long book takes hours.</string>
+    <string name="menu_hint_studio">Records the book\'s voice ahead of time while your phone charges, about 6 hours at a time, so listening starts at once and uses less battery.</string>
+    <string name="menu_hint_accessible">The book\'s clean text as an EPUB and a text file in Documents/Audora, for screen readers, braille displays and other reading apps.</string>
+    <string name="menu_hint_talking_book">An EPUB 3 in Documents/Audora with the voice in sync with the text, for e-book apps that read along. Takes about as long as reading the book aloud.</string>
+    <string name="menu_hint_export_notes">Your highlights, bookmarks and voice notes for this book as a Markdown and a text file in Documents/Audora.</string>
+    <string name="menu_hint_character_guide">Who is who in this story, only up to where you are, so nothing is spoiled.</string>
+    <string name="menu_hint_remove">Takes the book out of Audora. The PDF stays on your phone.</string>
+    <string name="menu_hint_point_and_read">Take a photo of a printed page; Audora reads it aloud as a one-page book.</string>
+    <string name="menu_hint_watched_folders">Pick folders; new PDFs in them join your library each time you open Audora.</string>
+    <string name="menu_hint_backup">Saves your library, places, notes and settings to one file you keep, or restores one on a new phone.</string>
+    <string name="menu_hint_quiz">Fill-in-the-blank questions from your highlights in every book, read aloud.</string>
+    <string name="book_actions_title">What to do with %1$s</string>
+    <string name="long_job_audiobook">Saving as audiobook</string>
+    <string name="long_job_copy">Saving a copy</string>
+    <string name="long_job_studio">Studio mode</string>
+    <string name="long_job_status_percent">%1$s · %2$d%%</string>
+    <string name="long_job_cancel">Cancel</string>
+    <string name="long_job_stop">Stop</string>
+    <string name="long_job_start_now">Start now</string>
+    <string name="long_job_dismiss">OK</string>
+    <string name="long_job_failed_next">Start it again from the book\'s menu. If it fails again, Settings → Share logs helps find out why.</string>
+    <string name="long_job_stopped_next">What was done is kept; start it again from the book\'s menu to go on.</string>
+    <string name="long_job_busy">Another one is still running. Wait for it, or cancel it on the card at the top of the library.</string>
+    <string name="reader_hint_follow_along">The page scrolls by itself to keep the sentence being read in view.</string>
+    <string name="reader_hint_word_highlight">Marks each word as it is spoken, not only the sentence.</string>
+    <string name="reader_hint_focus_view">Larger text with everything but the sentence being read dimmed. Helps with ADHD and dyslexia.</string>
+    <string name="reader_hint_bold_word_starts">Bolds the first letters of English words so the eye moves faster.</string>
+    <string name="reader_hint_text_look">Text size, font, line and letter spacing.</string>
+    <string name="reader_hint_up_next">The books that play after this one, in order.</string>
+    <string name="reader_hint_tutor">You read the page aloud; Audora listens on this phone and marks the words you got right.</string>
+    <string name="reader_hint_search">Finds a word or phrase anywhere in this book.</string>
+    <string name="sentence_hint_bookmark">Saves this place. Find it again under Notes.</string>
+    <string name="sentence_hint_highlight">Colours this sentence and keeps it in Notes.</string>
+    <string name="sentence_hint_unhighlight">Takes the colour off this sentence.</string>
+    <string name="sentence_hint_voice_note">Records your own spoken note on this sentence.</string>
+    <string name="sentence_hint_look_up">Shows what a word here means, from the dictionary on your phone.</string>
+    <string name="sentence_hint_fix">Teach Audora how to say a word it reads wrongly.</string>
+    <string name="sentence_hint_report">Tell Audora what was read wrongly, so it can be fixed. Only the place goes in the log, never the words.</string>
+    <string name="sentence_hint_share_clip">Sends this sentence as a short audio clip to any app.</string>
+    <string name="up_next_added">Added to Up next</string>
+    <string name="up_next_clear_question">Remove every book from Up next? The books stay in your library.</string>
+    <string name="model_delete_question">Delete %1$s? You can download it again at any time.</string>
+    <string name="confirm_keep">Keep</string>
+    <string name="slider_percent">%1$d percent</string>
+    <string name="slider_step_of">%1$d of %2$d</string>
+</resources>

@@ -24,6 +24,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookProgress
+import io.github.skm0078.audora.ui.jobs.JobProgressBar
+import io.github.skm0078.audora.ui.jobs.jobStatus
+import io.github.skm0078.audora.ui.jobs.runningJobFor
 import io.github.skm0078.audora.ui.theme.Dimens
 import kotlin.math.roundToInt
 
@@ -44,7 +47,10 @@ internal fun BookTile(
 ) {
     val title = displayTitle(item.book)
     val status = availabilityWarning(item.availability) ?: tileStatus(item.progress)
-    val description = stringResource(R.string.library_tile_description, title, status)
+    val job = runningJobFor(item.book.id)
+    val jobLine = job?.let { jobStatus(it) }
+    val described = stringResource(R.string.library_tile_description, title, status)
+    val description = jobLine?.let { "$described. $it" } ?: described
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
         Box(
             modifier = Modifier
@@ -79,6 +85,16 @@ internal fun BookTile(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (job != null && jobLine != null) {
+                    Text(
+                        jobLine,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    JobProgressBar(job, Modifier.padding(top = Dimens.SpaceXs))
+                }
             }
             BookMenu(item, onRemove, onExport, onAddToUpNext, onDetails, onAction)
         }

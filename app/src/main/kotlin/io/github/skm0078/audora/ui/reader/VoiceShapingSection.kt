@@ -22,11 +22,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.SpeechStyleConfig
 import io.github.skm0078.audora.core.config.VoiceShapingConfig
 import io.github.skm0078.audora.core.model.VoiceShaping
+import io.github.skm0078.audora.ui.theme.switchRow
 import kotlin.math.roundToInt
 
 /**
@@ -83,6 +86,7 @@ fun VoiceShapingSection(
 @Composable
 private fun ExpressivenessSlider(step: Int, maxStep: Int, onChange: (Int) -> Unit) {
     var dragged by remember(step) { mutableFloatStateOf(step.toFloat()) }
+    val stepOf = stringResource(R.string.slider_step_of, dragged.roundToInt(), maxStep)
     Text(stringResource(R.string.speech_expressiveness), style = MaterialTheme.typography.bodyLarge)
     Text(
         stringResource(R.string.speech_expressiveness_detail),
@@ -95,6 +99,7 @@ private fun ExpressivenessSlider(step: Int, maxStep: Int, onChange: (Int) -> Uni
         valueRange = 0f..maxStep.toFloat(),
         steps = (maxStep - 1).coerceAtLeast(0),
         onValueChangeFinished = { dragged.roundToInt().takeIf { it != step }?.let(onChange) },
+        modifier = Modifier.semantics { stateDescription = stepOf },
     )
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(stringResource(R.string.speech_expressiveness_newsreader), style = MaterialTheme.typography.bodySmall)
@@ -104,7 +109,7 @@ private fun ExpressivenessSlider(step: Int, maxStep: Int, onChange: (Int) -> Uni
 
 @Composable
 private fun ShapingSwitch(title: String, detail: String, on: Boolean, onChange: (Boolean) -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.switchRow(on, onChange = onChange), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
             Text(
@@ -113,7 +118,7 @@ private fun ShapingSwitch(title: String, detail: String, on: Boolean, onChange: 
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Switch(checked = on, onCheckedChange = onChange)
+        Switch(checked = on, onCheckedChange = null)
     }
 }
 

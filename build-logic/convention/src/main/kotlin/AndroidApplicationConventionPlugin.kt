@@ -31,8 +31,8 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 buildConfig = true
             }
             lint {
-                // One run covers every module the app depends on, :core included, so NewApi checks their calls
-                // against the app's minSdk (the Android 12 URLEncoder crash was a JVM-module call lint never saw).
+                // One run covers every module the app depends on. NewApi does not reach the plain-Kotlin :core
+                // (readNBytes passed this lint and crashed on Android 12), so :core prefers Kotlin stdlib calls.
                 checkDependencies = true
                 // Errors fail CI; warnings are listed in the report only.
                 abortOnError = true

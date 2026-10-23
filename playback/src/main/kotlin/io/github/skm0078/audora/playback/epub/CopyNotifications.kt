@@ -11,6 +11,9 @@ import android.content.Context
 import android.content.Intent
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.playback.R
+import io.github.skm0078.audora.playback.jobs.LongJobEnd
+import io.github.skm0078.audora.playback.jobs.LongJobKind
+import io.github.skm0078.audora.playback.jobs.LongJobs
 
 /** Platform notifications, like the audiobook export's. */
 internal class CopyNotifications(private val context: Context) {
@@ -21,8 +24,12 @@ internal class CopyNotifications(private val context: Context) {
         manager.createNotificationChannel(NotificationChannel(CHANNEL, name, NotificationManager.IMPORTANCE_LOW))
     }
 
-    /** [percent] null while it is still preparing. */
-    fun running(title: String, step: String, percent: Int?): Notification {
+    /**
+     * [percent] null while it is still preparing. [publish] off for the notification posted before the job is
+     * known, so the app's view of a running copy is never reset by it.
+     */
+    fun running(title: String, step: String, percent: Int?, publish: Boolean = true): Notification {
+        if (publish) LongJobs.progress(LongJobKind.COPY, title, step, percent)
         val cancel = PendingIntent.getService(
             context,
             0,
@@ -46,7 +53,7 @@ internal class CopyNotifications(private val context: Context) {
         val text = context.getString(R.string.copy_done_text, names, folder.trimEnd('/'))
         val skipped = context.getString(R.string.copy_skipped, saved.skippedPages)
         val body = if (saved.skippedPages == 0) text else "$text $skipped"
-        showResult(context.getString(R.string.copy_done_title, title), body)
+        showResult(context.getString(R.string.copy_done_title, title), body, LongJobEnd.DONE)
     }
 
     fun showFailed(error: CopyError) {
@@ -57,11 +64,14 @@ internal class CopyNotifications(private val context: Context) {
             is CopyError.VoiceFailed -> error.detail
             is CopyError.NotOpened -> error.reason
         }
-        showResult(context.getString(R.string.copy_failed_title), reason)
+        showResult(context.getString(R.string.copy_failed_title), reason, LongJobEnd.FAILED)
     }
 
-    fun showCancelled() =
-        showResult(context.getString(R.string.copy_cancelled_title), context.getString(R.string.copy_cancelled_text))
+    fun showCancelled() = showResult(
+        context.getString(R.string.copy_cancelled_title),
+        context.getString(R.string.copy_cancelled_text),
+        LongJobEnd.STOPPED,
+    )
 
     /**
      * Android's daily time limit stopped the copy; finished chapters are kept. Continue opens Audora (which resets
@@ -69,6 +79,7 @@ internal class CopyNotifications(private val context: Context) {
      */
     fun showTimedOut(id: BookId, kind: CopyKind) {
         val text = context.getString(R.string.copy_timed_out_text)
+        LongJobs.finish(LongJobKind.COPY, LongJobEnd.STOPPED, context.getString(R.string.copy_timed_out_title), text)
         val open = context.packageManager.getLaunchIntentForPackage(context.packageName)
             ?.putExtra(BookCopies.EXTRA_CONTINUE_BOOK, id.value)
             ?.putExtra(BookCopies.EXTRA_CONTINUE_KIND, kind.name)
@@ -99,7 +110,9 @@ internal class CopyNotifications(private val context: Context) {
         manager.notify(RESULT_ID, notification)
     }
 
-    fun showResult(title: String, text: String) {
+    /** [end] set: the result is also the app's view of the copy ([LongJobs]); a refused start leaves it unset. */
+    fun showResult(title: String, text: String, end: LongJobEnd? = null) {
+        end?.let { LongJobs.finish(LongJobKind.COPY, it, title, text) }
         val notification = builder()
             .setContentTitle(title)
             .setContentText(text)

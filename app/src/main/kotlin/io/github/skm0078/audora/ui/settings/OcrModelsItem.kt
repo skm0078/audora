@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
+import io.github.skm0078.audora.ui.theme.ConfirmedTextButton
 import io.github.skm0078.audora.ui.voices.megabytes
 
 /** The OCR models' row by default; [texts] names another pack (the punctuation model, RI-11). */
@@ -28,8 +29,9 @@ internal fun OcrModelsItem(
         supportingContent = { Column { OcrModelsStatus(state, texts) } },
         trailingContent = {
             val action = when (state) {
-                is OcrModelsState.NotDownloaded, is OcrModelsState.Failed ->
-                    OcrModelsAction.DOWNLOAD to R.string.ocr_models_download_short
+                is OcrModelsState.NotDownloaded -> OcrModelsAction.DOWNLOAD to R.string.ocr_models_download_short
+
+                is OcrModelsState.Failed -> OcrModelsAction.DOWNLOAD to R.string.ocr_models_retry
 
                 OcrModelsState.Queued, is OcrModelsState.Downloading ->
                     OcrModelsAction.CANCEL to
@@ -39,7 +41,17 @@ internal fun OcrModelsItem(
 
                 OcrModelsState.Unavailable -> null
             }
-            action?.let { (what, label) -> TextButton(onClick = { onAction(what) }) { Text(stringResource(label)) } }
+            action?.let { (what, label) ->
+                if (what == OcrModelsAction.DELETE) {
+                    // Deleting means a download of tens of megabytes to get it back: ask first.
+                    ConfirmedTextButton(
+                        stringResource(label),
+                        stringResource(R.string.model_delete_question, stringResource(texts.title)),
+                    ) { onAction(what) }
+                } else {
+                    TextButton(onClick = { onAction(what) }) { Text(stringResource(label)) }
+                }
+            }
         },
         colors = settingsRowColors(),
     )
