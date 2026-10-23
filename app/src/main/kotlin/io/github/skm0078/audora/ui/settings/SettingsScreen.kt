@@ -1,15 +1,15 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/SettingsScreen.kt
 // Purpose: Settings tab: Voices (P4-01), OCR models (P3-05), citation numbers (P2-03), keep screen on, appearance
 //          and app language (ADR-036, plan item 44), background reading (P1-06), kids mode (plan item 71), licences
-//          (P3-06), privacy and security (ADR-061); under a closed "Advanced" (ADR-056): punctuation, volume keys,
-//          voice commands, pronunciation, Share logs (P1-07) and the debug tool.
+//          (P3-06); privacy and security (ADR-061) and Advanced (ADR-056: punctuation, volume keys, voice commands,
+//          pronunciation, Share logs (P1-07), the debug tool) each on a page of their own (ADR-062).
 
 package io.github.skm0078.audora.ui.settings
 
-import androidx.annotation.StringRes
-import androidx.compose.foundation.clickable
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,17 +19,23 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,11 +48,15 @@ import io.github.skm0078.audora.ui.diagnostics.ShareLogsState
 import io.github.skm0078.audora.ui.theme.Appearance
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import io.github.skm0078.audora.ui.theme.Dimens
-import io.github.skm0078.audora.ui.theme.MoreOptions
+import io.github.skm0078.audora.ui.theme.LinkOption
+import io.github.skm0078.audora.ui.theme.OptionDivider
+import io.github.skm0078.audora.ui.theme.OptionGroup
+import io.github.skm0078.audora.ui.theme.SwitchOption
+import io.github.skm0078.audora.ui.theme.optionRowColors
 
 /**
- * The Settings tab (ADR-036): rows grouped as Listening, Reading, Appearance and App, each group a card. Rows keep
- * their own composables, so a new setting is one more row in its group.
+ * The Settings tab (ADR-036, ADR-062): what most listeners change, in groups of rows that each show their control and
+ * current value; Privacy and Advanced open as pages of their own, and Back returns from them.
  */
 @Composable
 fun SettingsScreen(
@@ -81,62 +91,109 @@ fun SettingsScreen(
     actedVoice: ActedVoiceSettings? = null,
     privacy: PrivacyControls? = null,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = Dimens.ScreenPadding)
-            .padding(bottom = Dimens.SpaceXl),
-        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXl),
-    ) {
-        Text(
-            stringResource(R.string.settings_title),
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(top = Dimens.SpaceL).semantics { heading() },
-        )
-        ListeningGroup(
-            onOpenVoices,
-            ModelPack(ocrModels, onOcrModels),
-            actedVoice?.let { ModelPack(it.state, it.onAction) },
-            skipCitations,
-            onSkipCitationsChange,
-        )
-        SettingsGroup(stringResource(R.string.settings_group_reading)) {
-            SwitchItem(
-                R.string.settings_keep_screen_on_title,
-                R.string.settings_keep_screen_on_body,
-                keepScreenOn,
-                onKeepScreenOnChange,
-            )
+    var page by rememberSaveable { mutableStateOf(SettingsPage.MAIN) }
+    BackHandler(enabled = page != SettingsPage.MAIN) { page = SettingsPage.MAIN }
+    // Each page opens at its top, not where the last one was scrolled to.
+    key(page) {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+                )
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Dimens.ScreenPadding)
+                .padding(bottom = Dimens.SpaceXl),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
+        ) {
+            PageHeader(page) { page = SettingsPage.MAIN }
+            when (page) {
+                SettingsPage.MAIN -> {
+                    ListeningGroup(
+                        onOpenVoices,
+                        ModelPack(ocrModels, onOcrModels),
+                        actedVoice?.let { ModelPack(it.state, it.onAction) },
+                        skipCitations,
+                        onSkipCitationsChange,
+                    )
+                    AppearanceGroup(appearance, onAppearanceChange, language, onLanguageChange, keepScreenOn) {
+                        onKeepScreenOnChange(it)
+                    }
+                    AppGroup(
+                        AppLinks(onOpenBatterySetup, onOpenLicences, onKidsMode, onOpenStorage),
+                        batteryExempt,
+                        versionName,
+                    )
+                    PagesGroup { page = it }
+                }
+
+                SettingsPage.PRIVACY -> PrivacyGroup(privacy)
+
+                SettingsPage.ADVANCED -> AdvancedPage(
+                    ModelPack(punctuationModel, onPunctuationModel),
+                    ocrReady = ocrModels is OcrModelsState.Ready,
+                    volumeKeysSkip,
+                    onVolumeKeysSkipChange,
+                    voiceCommands,
+                    pronunciation,
+                    shareState,
+                    onShareLogs,
+                    onSimulateReadingSession.takeIf { showDebugTools },
+                )
+            }
         }
-        AppearanceGroup(appearance, onAppearanceChange, language, onLanguageChange)
-        AppGroup(
-            AppLinks(onOpenBatterySetup, onOpenLicences, onKidsMode, onOpenStorage),
-            batteryExempt,
-            versionName,
+    }
+}
+
+/** The tab's own page and the two it opens. */
+private enum class SettingsPage { MAIN, PRIVACY, ADVANCED }
+
+/** The rows that open Settings' other pages. */
+@Composable
+private fun PagesGroup(onOpen: (SettingsPage) -> Unit) {
+    OptionGroup(title = null) {
+        LinkOption(
+            stringResource(R.string.settings_group_privacy),
+            onClick = { onOpen(SettingsPage.PRIVACY) },
+            subtitle = stringResource(R.string.settings_privacy_short),
         )
-        PrivacyGroup(privacy)
-        AdvancedSection(
-            ModelPack(punctuationModel, onPunctuationModel),
-            ocrReady = ocrModels is OcrModelsState.Ready,
-            volumeKeysSkip,
-            onVolumeKeysSkipChange,
-            voiceCommands,
-            pronunciation,
-            shareState,
-            onShareLogs,
-            onSimulateReadingSession.takeIf { showDebugTools },
+        OptionDivider()
+        LinkOption(
+            stringResource(R.string.settings_advanced_title),
+            onClick = { onOpen(SettingsPage.ADVANCED) },
+            subtitle = stringResource(R.string.settings_advanced_summary),
+        )
+    }
+}
+
+/** "Settings" on the main page; a back arrow and the page's name on the others. */
+@Composable
+private fun PageHeader(page: SettingsPage, onBack: () -> Unit) {
+    val title = when (page) {
+        SettingsPage.MAIN -> R.string.settings_title
+        SettingsPage.PRIVACY -> R.string.settings_group_privacy
+        SettingsPage.ADVANCED -> R.string.settings_advanced_title
+    }
+    Row(Modifier.padding(top = Dimens.SpaceL), verticalAlignment = Alignment.CenterVertically) {
+        if (page != SettingsPage.MAIN) {
+            IconButton(onClick = onBack) {
+                Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.navigate_back))
+            }
+        }
+        Text(
+            stringResource(title),
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.semantics { heading() },
         )
     }
 }
 
 /**
- * Options few people change wait here, closed, so the screen opens on what most listeners need (ADR-056).
+ * Options few people change wait on their own page, so Settings opens on what most listeners need (ADR-056).
  * [onSimulateReadingSession] is null outside debug builds, and its group is then left out.
  */
 @Composable
-private fun AdvancedSection(
+private fun AdvancedPage(
     punctuation: ModelPack,
     ocrReady: Boolean,
     volumeKeysSkip: Boolean,
@@ -147,34 +204,27 @@ private fun AdvancedSection(
     onShareLogs: () -> Unit,
     onSimulateReadingSession: (() -> Unit)?,
 ) {
-    MoreOptions(
-        stringResource(R.string.settings_advanced_title),
-        stringResource(R.string.settings_advanced_summary),
-        headerPadding = Dimens.SpaceXs,
-    ) {
-        SettingsGroup(stringResource(R.string.settings_group_advanced_reading)) {
-            // It only touches scanned pages, so it says so while scanned pages cannot be read yet.
-            val texts = if (ocrReady) ModelPackTexts.PUNCTUATION else ModelPackTexts.PUNCTUATION_NEEDS_OCR
-            ModelPackRow(punctuation, texts, divider = false)
-            if (punctuation.state != null) SettingsDivider()
-            SwitchItem(
-                R.string.settings_volume_keys_title,
-                R.string.settings_volume_keys_body,
-                volumeKeysSkip,
-                onVolumeKeysSkipChange,
+    OptionGroup(stringResource(R.string.settings_group_advanced_reading)) {
+        SwitchOption(
+            stringResource(R.string.settings_volume_keys_title),
+            volumeKeysSkip,
+            onVolumeKeysSkipChange,
+            help = stringResource(R.string.settings_volume_keys_body),
+        )
+        voiceCommands?.let { VoiceCommandsItems(it) }
+        // It only touches scanned pages, so it says so while scanned pages cannot be read yet.
+        val texts = if (ocrReady) ModelPackTexts.PUNCTUATION else ModelPackTexts.PUNCTUATION_NEEDS_OCR
+        ModelPackRow(punctuation, texts)
+    }
+    pronunciation?.let { PronunciationGroup(it) }
+    OptionGroup(stringResource(R.string.settings_group_help)) { ShareLogsItem(shareState, onShareLogs) }
+    onSimulateReadingSession?.let { simulate ->
+        OptionGroup(stringResource(R.string.settings_group_debug)) {
+            LinkOption(
+                stringResource(R.string.debug_simulate_title),
+                onClick = simulate,
+                help = stringResource(R.string.debug_simulate_body),
             )
-            voiceCommands?.let { VoiceCommandsItems(it) }
-        }
-        pronunciation?.let { PronunciationGroup(it) }
-        SettingsGroup(stringResource(R.string.settings_group_help)) { ShareLogsItem(shareState, onShareLogs) }
-        onSimulateReadingSession?.let { simulate ->
-            SettingsGroup(stringResource(R.string.settings_group_debug)) {
-                SettingsRow(
-                    stringResource(R.string.debug_simulate_title),
-                    summary = { Text(stringResource(R.string.debug_simulate_body)) },
-                    onClick = simulate,
-                )
-            }
         }
     }
 }
@@ -189,24 +239,27 @@ private class AppLinks(
 
 @Composable
 private fun AppGroup(links: AppLinks, batteryExempt: Boolean, versionName: String) {
-    SettingsGroup(stringResource(R.string.settings_group_app)) {
-        BatteryItem(batteryExempt, links.onOpenBatterySetup)
-        SettingsDivider()
-        SettingsRow(
+    OptionGroup(stringResource(R.string.settings_group_app)) {
+        LinkOption(
+            stringResource(R.string.settings_battery_title),
+            onClick = links.onOpenBatterySetup,
+            subtitle = stringResource(
+                if (batteryExempt) R.string.settings_battery_allowed else R.string.settings_battery_limited,
+            ),
+            subtitleIsError = !batteryExempt,
+        )
+        OptionDivider()
+        LinkOption(
             stringResource(R.string.storage_title),
-            summary = { Text(stringResource(R.string.settings_storage_body)) },
             onClick = links.onOpenStorage,
+            subtitle = stringResource(R.string.settings_storage_body),
         )
-        SettingsDivider()
+        OptionDivider()
         KidsModeItem(links.onKidsMode)
-        SettingsDivider()
-        SettingsRow(
-            stringResource(R.string.licences_title),
-            summary = { Text(stringResource(R.string.settings_licences_body)) },
-            onClick = links.onOpenLicences,
-        )
-        SettingsDivider()
-        SettingsRow(stringResource(R.string.settings_version_title), summary = { Text(versionName) })
+        OptionDivider()
+        LinkOption(stringResource(R.string.licences_title), onClick = links.onOpenLicences)
+        OptionDivider()
+        LinkOption(stringResource(R.string.settings_version_title), onClick = null, value = versionName)
     }
 }
 
@@ -215,8 +268,7 @@ private class ModelPack(val state: OcrModelsState?, val onAction: (OcrModelsActi
 
 /** A model pack's row with the divider before it; nothing while its state is still loading. */
 @Composable
-private fun ModelPackRow(pack: ModelPack, texts: ModelPackTexts, divider: Boolean = true) =
-    ModelPackRow(pack.state, pack.onAction, texts, divider)
+private fun ModelPackRow(pack: ModelPack, texts: ModelPackTexts) = ModelPackRow(pack.state, pack.onAction, texts)
 
 /** A model pack's row with the divider before it, for rows inside a group; nothing while its state still loads. */
 @Composable
@@ -227,7 +279,7 @@ internal fun ModelPackRow(
     divider: Boolean = true,
 ) {
     state?.let {
-        if (divider) SettingsDivider()
+        if (divider) OptionDivider()
         OcrModelsItem(it, onAction, texts)
     }
 }
@@ -240,73 +292,43 @@ private fun ListeningGroup(
     skipCitations: Boolean,
     onSkipCitationsChange: (Boolean) -> Unit,
 ) {
-    SettingsGroup(stringResource(R.string.settings_group_listening)) {
-        SettingsRow(
+    OptionGroup(stringResource(R.string.settings_group_listening)) {
+        LinkOption(
             stringResource(R.string.settings_voices_title),
-            summary = { Text(stringResource(R.string.settings_voices_body)) },
             onClick = onOpenVoices,
+            subtitle = stringResource(R.string.settings_voices_body),
         )
         // Studio mode's slow Hindi voice (ADR-059), next to the voices it stands in for.
         acted?.let { ModelPackRow(it, ModelPackTexts.ACTED) }
         ModelPackRow(ocr, ModelPackTexts.OCR)
-        SettingsDivider()
-        SwitchItem(
-            R.string.settings_skip_citations_title,
-            R.string.settings_skip_citations_body,
+        OptionDivider()
+        SwitchOption(
+            stringResource(R.string.settings_skip_citations_title),
             skipCitations,
             onSkipCitationsChange,
+            subtitle = stringResource(R.string.settings_skip_citations_short),
+            help = stringResource(R.string.settings_skip_citations_body),
         )
     }
-}
-
-/** The whole row toggles; the switch only shows the state (no onCheckedChange), so it is not a second target. */
-@Composable
-internal fun SwitchItem(@StringRes title: Int, @StringRes body: Int, checked: Boolean, onChange: (Boolean) -> Unit) {
-    ListItem(
-        headlineContent = { Text(stringResource(title)) },
-        supportingContent = { Text(stringResource(body)) },
-        trailingContent = { Switch(checked = checked, onCheckedChange = null) },
-        colors = settingsRowColors(),
-        modifier = Modifier.toggleable(value = checked, role = Role.Switch, onValueChange = onChange),
-    )
-}
-
-@Composable
-private fun BatteryItem(exempt: Boolean, onOpen: () -> Unit) {
-    ListItem(
-        headlineContent = { Text(stringResource(R.string.settings_battery_title)) },
-        supportingContent = {
-            if (exempt) {
-                Text(stringResource(R.string.settings_battery_allowed))
-            } else {
-                Text(stringResource(R.string.settings_battery_limited), color = MaterialTheme.colorScheme.error)
-            }
-        },
-        colors = settingsRowColors(),
-        modifier = Modifier.clickable(onClick = onOpen),
-    )
 }
 
 @Composable
 private fun ShareLogsItem(state: ShareLogsState, onShareLogs: () -> Unit) {
     val preparing = state == ShareLogsState.Preparing
-    val progress: (@Composable () -> Unit)? = if (preparing) {
-        { CircularProgressIndicator(modifier = Modifier.size(PROGRESS_SIZE)) }
-    } else {
-        null
+    if (preparing) {
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.share_logs_title)) },
+            trailingContent = { CircularProgressIndicator(modifier = Modifier.size(PROGRESS_SIZE)) },
+            colors = optionRowColors(),
+        )
+        return
     }
-    ListItem(
-        headlineContent = { Text(stringResource(R.string.share_logs_title)) },
-        supportingContent = {
-            if (state == ShareLogsState.Failed) {
-                Text(stringResource(R.string.share_logs_failed), color = MaterialTheme.colorScheme.error)
-            } else {
-                Text(stringResource(R.string.share_logs_body_hint))
-            }
-        },
-        trailingContent = progress,
-        colors = settingsRowColors(),
-        modifier = Modifier.clickable(enabled = !preparing, onClick = onShareLogs),
+    val failed = state == ShareLogsState.Failed
+    LinkOption(
+        stringResource(R.string.share_logs_title),
+        onClick = onShareLogs,
+        subtitle = stringResource(if (failed) R.string.share_logs_failed else R.string.share_logs_body_hint),
+        subtitleIsError = failed,
     )
 }
 

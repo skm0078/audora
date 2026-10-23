@@ -171,7 +171,7 @@
     <string name="fix_rule">%1$s → %2$s (%3$s)</string>
     <string name="settings_group_pronunciation">Pronunciation</string>
     <string name="settings_pronunciation_title">Words in every book</string>
-    <string name="settings_pronunciation_body">Fix how a word sounds in every book. A fix for one book is made from a sentence\'s menu.</string>
+    <string name="settings_pronunciation_body">Fix how a word sounds in every book</string>
     <string name="pronunciation_save_failed">Couldn\'t save the fix. Try again.</string>
     <string name="notes_delete">Delete</string>
     <string name="notes_done">Done</string>
@@ -217,7 +217,7 @@
     <string name="navigate_back">Back</string>
     <string name="settings_version_title">Version</string>
     <string name="share_logs_title">Share logs</string>
-    <string name="share_logs_body_hint">Send ListenLock\'s log to whoever is helping you. It never contains text from your PDFs.</string>
+    <string name="share_logs_body_hint">Never includes text from your PDFs</string>
     <string name="share_logs_failed">Could not prepare the logs. Please try again.</string>
     <string name="share_logs_chooser_title">Send ListenLock logs with</string>
     <string name="share_logs_subject">ListenLock logs (%1$s, %2$s)</string>
@@ -264,7 +264,7 @@
 
     <!-- Voices (P4-01): Settings → Voices -->
     <string name="settings_voices_title">Voices</string>
-    <string name="settings_voices_body">Download more voices, import your own, and pick the voice for each language.</string>
+    <string name="settings_voices_body">Download, import and choose voices</string>
     <string name="voices_title">Voices</string>
     <string name="voices_load_failed">Could not load the voices. Share logs from Settings if this keeps happening.</string>
     <string name="voices_lang_en">English</string>
@@ -398,16 +398,8 @@
     <string name="reader_bold_word_starts">Bold word starts (English)</string>
     <string name="reader_follow_along">Follow along</string>
     <string name="reader_word_highlight">Highlight each word</string>
-    <string name="reader_highlight_fill">Highlight: band</string>
-    <string name="reader_highlight_underline">Highlight: underline</string>
-    <string name="reader_highlight_bold">Highlight: bold</string>
-    <string name="reader_tone_original">Page: as printed</string>
-    <string name="reader_tone_sepia">Page: sepia</string>
-    <string name="reader_tone_dark">Page: dark</string>
     <string name="reader_fit_width">Fit width</string>
     <!-- Text view type (plan item 15) -->
-    <string name="reader_text_look">Text and spacing…</string>
-    <string name="text_look_title">Text and spacing</string>
     <string name="text_look_sample">It is not down in any map; true places never are. सभी मनुष्यों को गौरव। সকল মানুষ স্বাধীন।</string>
     <string name="text_look_font">Font</string>
     <string name="text_look_font_serif">Book (serif)</string>
@@ -434,8 +426,7 @@
     </plurals>
     <!-- Settings groups and appearance -->
     <string name="settings_group_listening">Listening</string>
-    <string name="settings_group_reading">Reading</string>
-    <string name="settings_group_appearance">Appearance</string>
+    <string name="settings_group_reading">Reading and look</string>
     <string name="settings_group_app">App</string>
     <string name="settings_group_debug">Debug</string>
     <string name="settings_wallpaper_colors_title">Wallpaper colours</string>
@@ -463,7 +454,6 @@
 
     <!-- App language (plan item 44); each language is named in its own script, so those names are not translated -->
     <string name="settings_language_title">Language</string>
-    <string name="settings_language_cancel">Cancel</string>
     <string name="language_english" translatable="false">English</string>
     <string name="language_hindi" translatable="false">हिन्दी</string>
     <string name="language_bengali" translatable="false">বাংলা</string>
@@ -501,7 +491,7 @@
 
     <!-- Storage (UI plan, wave 4) -->
     <string name="storage_title">Storage</string>
-    <string name="settings_storage_body">What ListenLock keeps on your phone, and how to free space.</string>
+    <string name="settings_storage_body">Voices, scans and downloads</string>
     <string name="storage_total">ListenLock uses %1$s</string>
     <string name="storage_voices">Downloaded voices</string>
     <string name="storage_ocr">Text recognition for scanned pages</string>

@@ -4,45 +4,31 @@
 package io.github.skm0078.audora.ui.reader
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.ContentIntent
-import io.github.skm0078.audora.ui.theme.switchRow
+import io.github.skm0078.audora.ui.theme.SwitchOption
 
 /**
  * On, the book's intent sets its pace and a story's lines get their feeling; the line under it says what the book
  * reads as, so the listener knows why a poem sounds slower than a news report. [intent] is null until the first pages
- * were read (or with no book in the player), which the line says too.
+ * were read (or with no book in the player), which the line says too. The full story waits behind its info button.
  */
 @Composable
 fun ReadingStyleRow(on: Boolean, intent: ContentIntent?, bookInPlayer: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.switchRow(on, onChange = onChange), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.reading_style_title), style = MaterialTheme.typography.titleMedium)
-            Text(
-                stringResource(R.string.reading_style_detail),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (on && bookInPlayer) {
-                val now = intent?.let { stringResource(R.string.reading_style_as, stringResource(intentLabel(it))) }
-                Text(
-                    now ?: stringResource(R.string.reading_style_telling),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
-        Switch(checked = on, onCheckedChange = null)
+    val now = when {
+        !on || !bookInPlayer -> null
+        intent == null -> stringResource(R.string.reading_style_telling)
+        else -> stringResource(R.string.reading_style_as, stringResource(intentLabel(intent)))
     }
+    SwitchOption(
+        stringResource(R.string.reading_style_title),
+        on,
+        onChange,
+        subtitle = now,
+        help = stringResource(R.string.reading_style_detail),
+    )
 }
 
 @StringRes

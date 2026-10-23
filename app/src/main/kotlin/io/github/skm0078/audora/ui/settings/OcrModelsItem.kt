@@ -5,19 +5,27 @@ package io.github.skm0078.audora.ui.settings
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.ui.theme.ConfirmedTextButton
+import io.github.skm0078.audora.ui.theme.HelpButton
+import io.github.skm0078.audora.ui.theme.optionRowColors
 import io.github.skm0078.audora.ui.voices.megabytes
 
-/** The OCR models' row by default; [texts] names another pack (the punctuation model, RI-11). */
+/**
+ * The OCR models' row by default; [texts] names another pack (the punctuation model, RI-11). The row says its state
+ * in one line; what the pack does waits behind the info button while it can still be downloaded, when it matters.
+ */
 @Composable
 internal fun OcrModelsItem(
     state: OcrModelsState,
@@ -28,40 +36,56 @@ internal fun OcrModelsItem(
         headlineContent = { Text(stringResource(texts.title)) },
         supportingContent = { Column { OcrModelsStatus(state, texts) } },
         trailingContent = {
-            val action = when (state) {
-                is OcrModelsState.NotDownloaded -> OcrModelsAction.DOWNLOAD to R.string.ocr_models_download_short
-
-                is OcrModelsState.Failed -> OcrModelsAction.DOWNLOAD to R.string.ocr_models_retry
-
-                OcrModelsState.Queued, is OcrModelsState.Downloading ->
-                    OcrModelsAction.CANCEL to
-                        R.string.ocr_models_cancel
-
-                is OcrModelsState.Ready -> OcrModelsAction.DELETE to R.string.ocr_models_delete
-
-                OcrModelsState.Unavailable -> null
-            }
-            action?.let { (what, label) ->
-                if (what == OcrModelsAction.DELETE) {
-                    // Deleting means a download of tens of megabytes to get it back: ask first.
-                    ConfirmedTextButton(
-                        stringResource(label),
-                        stringResource(R.string.model_delete_question, stringResource(texts.title)),
-                    ) { onAction(what) }
-                } else {
-                    TextButton(onClick = { onAction(what) }) { Text(stringResource(label)) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (state is OcrModelsState.NotDownloaded) {
+                    HelpButton(
+                        stringResource(texts.title),
+                        stringResource(texts.missing, megabytes(state.missingBytes)),
+                    )
                 }
+                PackActionButton(state, texts, onAction)
             }
         },
-        colors = settingsRowColors(),
+        colors = optionRowColors(),
     )
+}
+
+/** Download and Retry are filled, so the next step stands out; Cancel and Delete stay quiet text buttons. */
+@Composable
+private fun PackActionButton(state: OcrModelsState, texts: ModelPackTexts, onAction: (OcrModelsAction) -> Unit) {
+    val action = when (state) {
+        is OcrModelsState.NotDownloaded -> OcrModelsAction.DOWNLOAD to R.string.ocr_models_download_short
+
+        is OcrModelsState.Failed -> OcrModelsAction.DOWNLOAD to R.string.ocr_models_retry
+
+        OcrModelsState.Queued, is OcrModelsState.Downloading ->
+            OcrModelsAction.CANCEL to
+                R.string.ocr_models_cancel
+
+        is OcrModelsState.Ready -> OcrModelsAction.DELETE to R.string.ocr_models_delete
+
+        OcrModelsState.Unavailable -> null
+    }
+    action?.let { (what, label) ->
+        when (what) {
+            // Deleting means a download of tens of megabytes to get it back: ask first.
+            OcrModelsAction.DELETE -> ConfirmedTextButton(
+                stringResource(label),
+                stringResource(R.string.model_delete_question, stringResource(texts.title)),
+            ) { onAction(what) }
+
+            OcrModelsAction.DOWNLOAD -> FilledTonalButton(onClick = { onAction(what) }) { Text(stringResource(label)) }
+
+            OcrModelsAction.CANCEL -> TextButton(onClick = { onAction(what) }) { Text(stringResource(label)) }
+        }
+    }
 }
 
 @Composable
 private fun OcrModelsStatus(state: OcrModelsState, texts: ModelPackTexts) {
     when (state) {
         is OcrModelsState.NotDownloaded -> Text(
-            stringResource(texts.missing, megabytes(state.missingBytes)),
+            stringResource(R.string.pack_not_downloaded, megabytes(state.missingBytes)),
         )
 
         OcrModelsState.Queued -> Text(stringResource(R.string.ocr_models_queued))
@@ -80,7 +104,7 @@ private fun OcrModelsStatus(state: OcrModelsState, texts: ModelPackTexts) {
     }
 }
 
-/** A pack's row title, what a download fetches (`%1$d` MB) and what it is once ready (`%1$d` MB). */
+/** A pack's row title, what it does and fetches (`%1$d` MB, its help) and what it is once ready (`%1$d` MB). */
 internal data class ModelPackTexts(@StringRes val title: Int, @StringRes val missing: Int, @StringRes val ready: Int) {
     companion object {
         val OCR =

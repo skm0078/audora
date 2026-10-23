@@ -4,102 +4,78 @@
 
 package io.github.skm0078.audora.ui.reader
 
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.speech.voices.VoiceRow
-import io.github.skm0078.audora.ui.theme.switchRow
+import io.github.skm0078.audora.ui.theme.ChoiceOption
+import io.github.skm0078.audora.ui.theme.OptionDivider
+import io.github.skm0078.audora.ui.theme.OptionGroup
+import io.github.skm0078.audora.ui.theme.SwitchOption
 
 /**
  * Only languages with a second voice to pick from show up; with none, the switches say to add one in Settings →
- * Voices. Switching a role on picks, per language, the first voice that is not the language's usual one; a chip
- * changes it. Every voice used costs its model's memory while the book plays.
+ * Voices. Switching a role on picks, per language, the first voice that is not the language's usual one; the row
+ * under it shows that voice and changes it. Every voice used costs its model's memory while the book plays.
  */
 @Composable
 fun CastVoicesSection(rows: List<VoiceRow>, shaping: VoiceShaping, onChange: (VoiceShaping) -> Unit) {
     val choices = bookVoiceChoices(rows).filterValues { it.size > 1 }
-    Text(stringResource(R.string.speech_cast), style = MaterialTheme.typography.titleMedium)
     CastRole(
         stringResource(R.string.speech_cast_dialogue),
-        stringResource(
-            if (choices.isEmpty()) R.string.speech_cast_needs_voice else R.string.speech_cast_dialogue_detail,
-        ),
+        stringResource(R.string.speech_cast_dialogue_detail),
         choices,
         shaping.dialogueVoices,
     ) { onChange(shaping.copy(dialogueVoices = it)) }
     CastRole(
         stringResource(R.string.speech_cast_headings),
-        stringResource(
-            if (choices.isEmpty()) R.string.speech_cast_needs_voice else R.string.speech_cast_headings_detail,
-        ),
+        stringResource(R.string.speech_cast_headings_detail),
         choices,
         shaping.headingVoices,
     ) { onChange(shaping.copy(headingVoices = it)) }
-    CharacterVoicesRow(shaping.characterVoices) { onChange(shaping.copy(characterVoices = it)) }
-}
-
-/** Always offered: the narrator's own model supplies the voices, so no voice needs adding first. */
-@Composable
-private fun CharacterVoicesRow(on: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.switchRow(on, onChange = onChange), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.speech_cast_characters), style = MaterialTheme.typography.bodyLarge)
-            Text(
-                stringResource(R.string.speech_cast_characters_detail),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Switch(checked = on, onCheckedChange = null)
+    // Always offered: the narrator's own model supplies the voices, so no voice needs adding first.
+    OptionGroup(title = null) {
+        SwitchOption(
+            stringResource(R.string.speech_cast_characters),
+            shaping.characterVoices,
+            { onChange(shaping.copy(characterVoices = it)) },
+            help = stringResource(R.string.speech_cast_characters_detail),
+        )
     }
 }
 
 @Composable
 private fun CastRole(
     title: String,
-    detail: String,
+    help: String,
     choices: Map<Lang, List<VoiceRow>>,
     cast: Map<Lang, VoiceId>,
     onCast: (Map<Lang, VoiceId>) -> Unit,
 ) {
     val castOn = cast.isNotEmpty()
     val castable = choices.isNotEmpty() || castOn
-    val onCastChange: (Boolean) -> Unit = { on -> onCast(if (on) firstCast(choices) else emptyMap()) }
-    Row(Modifier.switchRow(castOn, castable, onCastChange), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Switch(checked = castOn, onCheckedChange = null, enabled = castable)
-    }
-    if (cast.isEmpty()) return
-    choices.forEach { (lang, voices) ->
-        Text(stringResource(castLangLabel(lang)), style = MaterialTheme.typography.bodyMedium)
-        Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            voices.forEach { voice ->
-                FilterChip(
-                    selected = voice.id == cast[lang],
-                    onClick = { onCast(cast + (lang to voice.id)) },
-                    label = { Text(voice.label) },
+    OptionGroup(title = null) {
+        SwitchOption(
+            title,
+            castOn,
+            { on -> onCast(if (on) firstCast(choices) else emptyMap()) },
+            subtitle = if (choices.isEmpty()) stringResource(R.string.speech_cast_needs_voice) else null,
+            help = help,
+            enabled = castable,
+        )
+        if (castOn) {
+            choices.forEach { (lang, voices) ->
+                OptionDivider()
+                val names = voices.associate { it.id to it.label }
+                ChoiceOption(
+                    stringResource(R.string.speech_cast_voice_for, stringResource(castLangLabel(lang))),
+                    voices.map { it.id },
+                    cast[lang] ?: voices.first().id,
+                    label = { names[it].orEmpty() },
+                    onPick = { onCast(cast + (lang to it)) },
                 )
             }
         }

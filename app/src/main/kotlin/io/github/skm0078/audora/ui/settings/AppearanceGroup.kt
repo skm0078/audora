@@ -1,67 +1,61 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/AppearanceGroup.kt
-// Purpose: Settings → Appearance: wallpaper colours or Audora's palette, light/dark/system, true black, and the
-//          app's language (plan item 44).
+// Purpose: Settings → Reading and look: keep the screen on, light/dark/system, wallpaper colours or ListenLock's
+//          palette, true black, and the app's language (plan item 44).
 
 package io.github.skm0078.audora.ui.settings
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.language.AppLanguage
 import io.github.skm0078.audora.ui.theme.Appearance
+import io.github.skm0078.audora.ui.theme.ChoiceOption
 import io.github.skm0078.audora.ui.theme.DarkMode
-import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.OptionDivider
+import io.github.skm0078.audora.ui.theme.OptionGroup
+import io.github.skm0078.audora.ui.theme.SwitchOption
 
+/** Theme and language show their current value at the row's end; a tap opens the choices (ADR-062). */
 @Composable
 internal fun AppearanceGroup(
     appearance: Appearance,
     onChange: (Appearance) -> Unit,
     language: AppLanguage,
     onLanguageChange: (AppLanguage) -> Unit,
+    keepScreenOn: Boolean,
+    onKeepScreenOnChange: (Boolean) -> Unit,
 ) {
-    SettingsGroup(stringResource(R.string.settings_group_appearance)) {
-        SwitchItem(
-            R.string.settings_wallpaper_colors_title,
-            R.string.settings_wallpaper_colors_body,
+    OptionGroup(stringResource(R.string.settings_group_reading)) {
+        SwitchOption(
+            stringResource(R.string.settings_keep_screen_on_title),
+            keepScreenOn,
+            onKeepScreenOnChange,
+            help = stringResource(R.string.settings_keep_screen_on_body),
+        )
+        OptionDivider()
+        ChoiceOption(
+            stringResource(R.string.settings_dark_mode_title),
+            DarkMode.entries,
+            appearance.darkMode,
+            label = { stringResource(darkModeLabel(it)) },
+            onPick = { onChange(appearance.copy(darkMode = it)) },
+        )
+        OptionDivider()
+        SwitchOption(
+            stringResource(R.string.settings_wallpaper_colors_title),
             appearance.wallpaperColors,
-        ) { onChange(appearance.copy(wallpaperColors = it)) }
-        SettingsDivider()
-        DarkModeRow(appearance.darkMode) { onChange(appearance.copy(darkMode = it)) }
-        SettingsDivider()
-        SwitchItem(
-            R.string.settings_true_black_title,
-            R.string.settings_true_black_body,
+            { onChange(appearance.copy(wallpaperColors = it)) },
+            help = stringResource(R.string.settings_wallpaper_colors_body),
+        )
+        OptionDivider()
+        SwitchOption(
+            stringResource(R.string.settings_true_black_title),
             appearance.trueBlack,
-        ) { onChange(appearance.copy(trueBlack = it)) }
-        SettingsDivider()
+            { onChange(appearance.copy(trueBlack = it)) },
+            help = stringResource(R.string.settings_true_black_body),
+        )
+        OptionDivider()
         LanguageItem(language, onLanguageChange)
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DarkModeRow(mode: DarkMode, onChange: (DarkMode) -> Unit) {
-    Column(Modifier.padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceM)) {
-        Text(stringResource(R.string.settings_dark_mode_title), style = MaterialTheme.typography.bodyLarge)
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(top = Dimens.SpaceS)) {
-            DarkMode.entries.forEachIndexed { index, option ->
-                SegmentedButton(
-                    selected = option == mode,
-                    onClick = { onChange(option) },
-                    shape = SegmentedButtonDefaults.itemShape(index, DarkMode.entries.size),
-                ) { Text(stringResource(darkModeLabel(option))) }
-            }
-        }
     }
 }
 

@@ -116,7 +116,7 @@ private fun SentenceMenuDialog(rows: List<MenuEntry>, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.sentence_menu_title)) },
         text = {
-            // Eight rows with a line each can be taller than a small phone's dialog: it scrolls.
+            // Eight rows can be taller than a small phone's dialog: it scrolls.
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 rows.forEach { MenuRow(it.label, it.onClick) }
             }
@@ -126,18 +126,6 @@ private fun SentenceMenuDialog(rows: List<MenuEntry>, onDismiss: () -> Unit) {
     )
 }
 
-/** What each sentence-menu row does, in one plain line under it. */
-private val SENTENCE_HINTS = mapOf(
-    R.string.sentence_menu_bookmark to R.string.sentence_hint_bookmark,
-    R.string.sentence_menu_highlight to R.string.sentence_hint_highlight,
-    R.string.sentence_menu_unhighlight to R.string.sentence_hint_unhighlight,
-    R.string.sentence_menu_voice_note to R.string.sentence_hint_voice_note,
-    R.string.sentence_menu_look_up to R.string.sentence_hint_look_up,
-    R.string.sentence_menu_fix to R.string.sentence_hint_fix,
-    R.string.report_title to R.string.sentence_hint_report,
-    R.string.sentence_menu_share_clip to R.string.sentence_hint_share_clip,
-)
-
 @Composable
 private fun MenuRow(@StringRes label: Int, onClick: () -> Unit) {
     Column(
@@ -146,15 +134,9 @@ private fun MenuRow(@StringRes label: Int, onClick: () -> Unit) {
             .heightIn(min = Dimens.TouchTarget)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(vertical = Dimens.SpaceS),
+        verticalArrangement = Arrangement.Center,
     ) {
         Text(stringResource(label), style = MaterialTheme.typography.bodyLarge)
-        SENTENCE_HINTS[label]?.let {
-            Text(
-                stringResource(it),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
     }
 }
 

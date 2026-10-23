@@ -70,8 +70,10 @@ fun ReaderScreen(
     onTutor: (() -> Unit)? = null,
     voicePacks: VoicePackActions = VoicePackActions(),
 ) {
-    var textLookOpen by rememberSaveable { mutableStateOf(false) }
-    if (textLookOpen) TextLookSheet(look, onLookChange) { textLookOpen = false }
+    var pageTextOpen by rememberSaveable { mutableStateOf(false) }
+    if (pageTextOpen) {
+        PageTextSheet(look, onLookChange, textView = state.view == ReaderView.TEXT) { pageTextOpen = false }
+    }
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -84,11 +86,8 @@ fun ReaderScreen(
                         ChaptersButton(state, actions)
                         ViewToggle(state.view, actions)
                         MoreMenu(
-                            textView = state.view == ReaderView.TEXT,
-                            look = look,
-                            onLookChange = onLookChange,
+                            onOpenPageText = { pageTextOpen = true },
                             onOpenUpNext = onOpenUpNext,
-                            onOpenTextLook = { textLookOpen = true },
                             onSearch = onSearch,
                             onSaveAudiobook = actions::onSaveAudiobook,
                             onReadAloudToMe = onTutor,

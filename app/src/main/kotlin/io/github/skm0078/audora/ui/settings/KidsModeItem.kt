@@ -13,15 +13,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.ui.theme.LinkOption
 
 /** Kids mode hides Settings at once, so it asks first and says how to leave (hold the banner on the library). */
 @Composable
 internal fun KidsModeItem(onKidsMode: () -> Unit) {
     var asking by remember { mutableStateOf(false) }
-    SettingsRow(
+    LinkOption(
         stringResource(R.string.settings_kids_title),
-        summary = { Text(stringResource(R.string.settings_kids_body)) },
         onClick = { asking = true },
+        subtitle = stringResource(R.string.settings_kids_short),
+        help = stringResource(R.string.settings_kids_body),
     )
     if (asking) {
         AlertDialog(

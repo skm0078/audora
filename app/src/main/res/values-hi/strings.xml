@@ -175,7 +175,7 @@
     <string name="fix_rule">%1$s → %2$s (%3$s)</string>
     <string name="settings_group_pronunciation">उच्चारण</string>
     <string name="settings_pronunciation_title">हर किताब के शब्द</string>
-    <string name="settings_pronunciation_body">किसी शब्द का उच्चारण हर किताब में ठीक करें। सिर्फ़ एक किताब के लिए सुधार किसी वाक्य के मेन्यू से करें।</string>
+    <string name="settings_pronunciation_body">हर किताब में किसी शब्द का उच्चारण ठीक करें</string>
     <string name="pronunciation_save_failed">सुधार सेव नहीं हुआ। फिर से कोशिश करें।</string>
     <string name="notes_delete">हटाएँ</string>
     <string name="notes_done">हो गया</string>
@@ -221,7 +221,7 @@
     <string name="navigate_back">वापस</string>
     <string name="settings_version_title">वर्शन</string>
     <string name="share_logs_title">लॉग शेयर करें</string>
-    <string name="share_logs_body_hint">ListenLock का लॉग उसे भेजें जो आपकी मदद कर रहा है। इसमें आपकी PDF का टेक्स्ट कभी नहीं होता।</string>
+    <string name="share_logs_body_hint">इसमें आपकी PDF का टेक्स्ट कभी नहीं होता</string>
     <string name="share_logs_failed">लॉग तैयार नहीं हो सके। कृपया फिर से कोशिश करें।</string>
     <string name="share_logs_chooser_title">ListenLock के लॉग इससे भेजें</string>
     <string name="share_logs_subject">ListenLock लॉग (%1$s, %2$s)</string>
@@ -268,7 +268,7 @@
 
     <!-- Voices (P4-01): Settings → Voices -->
     <string name="settings_voices_title">आवाज़ें</string>
-    <string name="settings_voices_body">और आवाज़ें डाउनलोड करें, अपनी आवाज़ इंपोर्ट करें, और हर भाषा के लिए आवाज़ चुनें।</string>
+    <string name="settings_voices_body">आवाज़ें डाउनलोड, इंपोर्ट करें और चुनें</string>
     <string name="voices_title">आवाज़ें</string>
     <string name="voices_load_failed">आवाज़ें लोड नहीं हो सकीं। अगर ऐसा बार-बार हो, तो सेटिंग्स से लॉग शेयर करें।</string>
     <string name="voices_lang_en">अंग्रेज़ी</string>
@@ -402,16 +402,8 @@
     <string name="reader_bold_word_starts">शब्दों की शुरुआत बोल्ड (अंग्रेज़ी)</string>
     <string name="reader_follow_along">साथ-साथ पढ़ें</string>
     <string name="reader_word_highlight">हर शब्द हाइलाइट करें</string>
-    <string name="reader_highlight_fill">हाइलाइट: पट्टी</string>
-    <string name="reader_highlight_underline">हाइलाइट: अंडरलाइन</string>
-    <string name="reader_highlight_bold">हाइलाइट: बोल्ड</string>
-    <string name="reader_tone_original">पेज: जैसा छपा है</string>
-    <string name="reader_tone_sepia">पेज: सीपिया</string>
-    <string name="reader_tone_dark">पेज: डार्क</string>
     <string name="reader_fit_width">चौड़ाई में फ़िट करें</string>
     <!-- Text view type (plan item 15) -->
-    <string name="reader_text_look">टेक्स्ट और स्पेसिंग…</string>
-    <string name="text_look_title">टेक्स्ट और स्पेसिंग</string>
     <string name="text_look_sample">It is not down in any map; true places never are. सभी मनुष्यों को गौरव। সকল মানুষ স্বাধীন।</string>
     <string name="text_look_font">फ़ॉन्ट</string>
     <string name="text_look_font_serif">किताबी (serif)</string>
@@ -438,8 +430,7 @@
     </plurals>
     <!-- Settings groups and appearance -->
     <string name="settings_group_listening">सुनना</string>
-    <string name="settings_group_reading">पढ़ना</string>
-    <string name="settings_group_appearance">रूप-रंग</string>
+    <string name="settings_group_reading">पढ़ना और रूप</string>
     <string name="settings_group_app">ऐप</string>
     <string name="settings_group_debug">डीबग</string>
     <string name="settings_wallpaper_colors_title">वॉलपेपर के रंग</string>
@@ -467,7 +458,6 @@
 
     <!-- App language (plan item 44); each language is named in its own script, so those names are not translated -->
     <string name="settings_language_title">भाषा</string>
-    <string name="settings_language_cancel">रद्द करें</string>
     <string name="language_phone">फ़ोन की भाषा</string>
 
     <!-- Notes tab filter by book (UI plan, wave 4) -->
@@ -501,7 +491,7 @@
 
     <!-- Storage (UI plan, wave 4) -->
     <string name="storage_title">स्टोरेज</string>
-    <string name="settings_storage_body">ListenLock आपके फ़ोन में क्या रखता है, और जगह कैसे खाली करें।</string>
+    <string name="settings_storage_body">आवाज़ें, स्कैन और डाउनलोड</string>
     <string name="storage_total">ListenLock %1$s इस्तेमाल करता है</string>
     <string name="storage_voices">डाउनलोड की गई आवाज़ें</string>
     <string name="storage_ocr">स्कैन किए पेजों की टेक्स्ट पहचान</string>

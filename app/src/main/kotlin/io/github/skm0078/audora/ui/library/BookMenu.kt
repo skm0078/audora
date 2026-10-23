@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/BookMenu.kt
-// Purpose: A library book's actions in a sheet, each with a line saying what it does, where it saves and its cost.
+// Purpose: A library book's actions in a sheet, one line each, with what each does behind an info button.
 
 package io.github.skm0078.audora.ui.library
 
@@ -35,11 +35,12 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.ui.kids.LocalKidsMode
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.HelpButton
 
 /**
  * A book's actions, in a sheet: Details, then Up next, Save as audiobook and the [BookAction]s while the file can be
- * opened, and Remove. Each says under its name what it does, where the result goes and what it costs, which a menu
- * of bare labels could not. None in kids mode.
+ * opened, and Remove. Each is one line; its info button says what it does, where the result goes and what it costs,
+ * which a menu of bare labels could not. None in kids mode.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,9 +90,11 @@ internal fun BookMenu(
 
 @Composable
 private fun ActionRow(@StringRes label: Int, @StringRes hint: Int, onClick: () -> Unit) {
+    // One line per action; what it does, where it saves and its cost wait behind the info button (ADR-062).
+    val title = stringResource(label)
     ListItem(
-        headlineContent = { Text(stringResource(label)) },
-        supportingContent = { Text(stringResource(hint)) },
+        headlineContent = { Text(title) },
+        trailingContent = { HelpButton(title, stringResource(hint)) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.clickable(role = Role.Button, onClick = onClick),
     )

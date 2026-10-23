@@ -1,37 +1,46 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/PrivacyGroup.kt
-// Purpose: Settings' "Privacy and security" group (ADR-061): what stays on the phone, the app lock, hiding app
-//          content from screenshots and recents, and the privacy policy.
+// Purpose: Settings' "Privacy and security" page (ADR-061, ADR-062): what stays on the phone, the app lock, hiding
+//          app content from screenshots and recents, and the privacy policy.
 
 package io.github.skm0078.audora.ui.settings
 
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.privacy.PrivacyControls
+import io.github.skm0078.audora.ui.theme.LinkOption
+import io.github.skm0078.audora.ui.theme.OptionDivider
+import io.github.skm0078.audora.ui.theme.OptionGroup
+import io.github.skm0078.audora.ui.theme.SwitchOption
 
-/** The statement leads, so the promise and the person's own part in it are read before any switch. */
+/** The promise leads, as a row whose info button holds the whole statement, so it is one tap from every switch. */
 @Composable
 internal fun PrivacyGroup(controls: PrivacyControls?) {
-    SettingsGroup(stringResource(R.string.settings_group_privacy)) {
-        ListItem(
-            headlineContent = { Text(stringResource(R.string.privacy_statement_title)) },
-            supportingContent = { Text(stringResource(R.string.privacy_statement_body)) },
-            colors = settingsRowColors(),
+    OptionGroup(title = null) {
+        LinkOption(
+            stringResource(R.string.privacy_statement_title),
+            onClick = null,
+            help = stringResource(R.string.privacy_statement_body),
         )
         controls?.let {
-            SettingsDivider()
-            SwitchItem(R.string.app_lock_title, R.string.app_lock_body, it.settings.appLock, it.onAppLock)
-            SettingsDivider()
-            SwitchItem(
-                R.string.hide_content_title,
-                R.string.hide_content_body,
+            OptionDivider()
+            SwitchOption(
+                stringResource(R.string.app_lock_title),
+                it.settings.appLock,
+                it.onAppLock,
+                subtitle = stringResource(R.string.app_lock_short),
+                help = stringResource(R.string.app_lock_body),
+            )
+            OptionDivider()
+            SwitchOption(
+                stringResource(R.string.hide_content_title),
                 it.settings.hideContent,
                 it.onHideContent,
+                subtitle = stringResource(R.string.hide_content_short),
+                help = stringResource(R.string.hide_content_body),
             )
         }
-        SettingsDivider()
+        OptionDivider()
         PrivacyPolicyItem()
     }
 }

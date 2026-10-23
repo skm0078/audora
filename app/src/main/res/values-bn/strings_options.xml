@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_options.xml -->
+<!-- Purpose: Bengali copy of values/strings_options.xml. -->
+<resources>
+    <string name="option_help_about">%1$s সম্পর্কে</string>
+    <string name="option_help_ok">ঠিক আছে</string>
+    <string name="option_choice_cancel">বাতিল</string>
+    <string name="speech_sheet_title">কণ্ঠ আর গতি</string>
+    <string name="speech_speed_title">গতি</string>
+    <string name="speech_speed_value">%1$s×</string>
+    <string name="reading_skim_short">শুধু শিরোনাম আর মূল বাক্য</string>
+    <string name="reading_skip_unreadable_short">এলোমেলো স্ক্যান লেখা হালকা শব্দ হয়ে যায়</string>
+    <string name="settings_skip_citations_short">[12] আর [4–7] বাদ দেয়</string>
+    <string name="settings_kids_short">বড় বোতাম, সেটিংস বন্ধ</string>
+    <string name="settings_privacy_short">অ্যাপ লক, বিষয়বস্তু লুকানো, গোপনীয়তা নীতি</string>
+    <string name="app_lock_short">ফিরে এলে আঙুলের ছাপ, মুখ বা PIN</string>
+    <string name="hide_content_short">স্ক্রিনশট বা সাম্প্রতিক অ্যাপে ঝলক নয়</string>
+    <string name="pack_not_downloaded">ডাউনলোড হয়নি · %1$d MB</string>
+    <string name="study_loop_short">পড়ার সময় A আর B ঠিক করুন</string>
+    <string name="page_text_title">পৃষ্ঠা আর লেখা</string>
+    <string name="page_tone_title">পৃষ্ঠার রং</string>
+    <string name="page_tone_original">ছাপা যেমন</string>
+    <string name="page_tone_sepia">সেপিয়া</string>
+    <string name="page_tone_dark">গাঢ়</string>
+    <string name="highlight_style_title">হাইলাইটের ধরন</string>
+    <string name="highlight_style_band">রঙিন পটি</string>
+    <string name="highlight_style_underline">নিচে দাগ</string>
+    <string name="highlight_style_bold">মোটা অক্ষর</string>
+    <string name="page_text_group_reading">পড়ার সময়</string>
+    <string name="page_text_group_aids">পড়ার সহায়তা</string>
+    <string name="page_text_group_text">লেখা</string>
+    <string name="reader_follow_along_short">যে বাক্য পড়া হচ্ছে সেখানে স্ক্রল করে</string>
+    <string name="reader_focus_view_short">পড়া বাক্য ছাড়া সব ঝাপসা</string>
+    <string name="speech_blend_voice">মেশানো ভয়েস</string>
+    <string name="speech_blend_amount_title">কতটা</string>
+    <string name="speech_blend_percent">%1$d%%</string>
+    <string name="focus_level_value">%1$d%%</string>
+    <string name="option_value_pair">%1$s: %2$s</string>
+    <string name="speech_cast_voice_for">%1$s ভয়েস</string>
+</resources>
