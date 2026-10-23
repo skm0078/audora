@@ -15,6 +15,8 @@ package io.github.skm0078.audora.core.config
  *   breath, and no more, so a runaway stops within seconds instead of babbling to the model's limit.
  * @property maxPieceChars longer text is read in pieces split at clause marks, each within the model's reach.
  * @property pieceGapMs silence between such pieces, like a comma's pause.
+ * @property minPhoneMemoryBytes the voice is offered only on phones with this much memory: it needs about 4.5 GB
+ *   while it renders. An "8 GB" phone reports about 7.3 GB.
  */
 data class ActedConfig(
     val threads: Int = 4,
@@ -28,6 +30,7 @@ data class ActedConfig(
     val capExtraSeconds: Float = 1.5f,
     val maxPieceChars: Int = 220,
     val pieceGapMs: Int = 180,
+    val minPhoneMemoryBytes: Long = 7_000_000_000L,
 ) {
     init {
         require(threads >= 1) { "threads must be >= 1, was $threads" }
@@ -42,6 +45,7 @@ data class ActedConfig(
         require(capExtraSeconds >= 0f) { "capExtraSeconds must be >= 0, was $capExtraSeconds" }
         require(maxPieceChars >= MIN_PIECE) { "maxPieceChars must be >= $MIN_PIECE, was $maxPieceChars" }
         require(pieceGapMs >= 0) { "pieceGapMs must be >= 0, was $pieceGapMs" }
+        require(minPhoneMemoryBytes >= 0) { "minPhoneMemoryBytes must be >= 0, was $minPhoneMemoryBytes" }
     }
 
     private companion object {

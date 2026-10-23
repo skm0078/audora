@@ -64,6 +64,7 @@ All neural models run through **sherpa-onnx 1.13.8** (Apache-2.0 runtime). Syste
 | English | Fallback | Android system TTS | `TextToSpeech` | 0 | device | — |
 | Hindi | Default | Google hi-IN system voice until a voice is downloaded; recommended download Piper hi_IN **pratham** (priyamvada offered) | system / sherpa VITS | 0 / 64 MB | device / CC BY-NC-SA 4.0 | S0 + S1; provisional by S1 desktop (ADR-030) |
 | Hindi | Premium | Supertonic-3 hi | sherpa Supertonic | 145 MB (shared with en) | OpenRAIL-M | S1 |
+| Hindi | Studio mode (download) | Chatterbox Multilingual, acted (Resemble AI), Turbo decoder | native ONNX Runtime | see ADR-059 | MIT | ADR-059 |
 | Bengali | Default | Google bn-IN system voice until a voice is downloaded; recommended download **SYSPIN Bengali male** (IISc studio VITS, converted, 4 threads) | system / sherpa VITS | 0 / 114 MB | device / MIT | Indic voice spike; ADR-053 (replaces ADR-030's Piper google) |
 | Bengali | Alternatives | SYSPIN Bengali female (MIT); Piper bn_BD google medium (CC BY-SA 4.0, fastest); MMS-TTS ben (CC-BY-NC 4.0) | sherpa VITS | 114 / 78 / 114 MB | as listed | offered as downloads |
 | Any | Advanced | Import any sherpa-onnx model folder (`.onnx` + `tokens.txt` [+ espeak data]) | sherpa | — | user's | — |
@@ -264,6 +265,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 056 | Read each book to suit it (content intent, sentence delivery, page-cut sentences); one language pack per language and a simpler Play build | Accepted (2026-10-23) |
 | 057 | Bengali emotion voices: AI4Bharat Rasa read in a style per sentence feeling (book, happy, sad, angry, scared, surprised, conversational), male speaker for characters | Accepted (2026-10-23) |
 | 058 | Act only the quoted words, carry a sad or scared mood one sentence, pronunciation check and per-voice respellings | Accepted (2026-10-23) |
+| 059 | Acted Hindi voice for studio mode only: Chatterbox Multilingual (MIT) with Turbo's one-step decoder, a native engine on sherpa-onnx's ONNX Runtime, downloaded on Wi-Fi, offered on phones with 8 GB of memory | Accepted (2026-10-23) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

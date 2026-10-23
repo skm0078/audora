@@ -44,9 +44,11 @@ struct Generation {
 
 class Chatterbox {
 public:
-    // [dir] holds embed_tokens.onnx, language_model.onnx, conditional_decoder.onnx (each with its _data file) and
-    // voice.bin. Null with [error] on failure.
-    static std::unique_ptr<Chatterbox> Load(const OrtApi* api, const std::string& dir, int threads, std::string* error);
+    // [dir] holds embed_tokens.onnx, conditional_decoder.onnx (each with its _data file) and voice.bin; [lm_dir]
+    // holds language_model.onnx and its data (a download of its own: over GitHub's 2 GiB file limit with the rest).
+    // Null with [error] on failure.
+    static std::unique_ptr<Chatterbox> Load(const OrtApi* api, const std::string& dir, const std::string& lm_dir,
+                                            int threads, std::string* error);
 
     ~Chatterbox();
     Chatterbox(const Chatterbox&) = delete;

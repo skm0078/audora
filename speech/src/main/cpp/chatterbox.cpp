@@ -169,8 +169,8 @@ std::vector<int64_t> Shape(const OrtApi* api, const OrtValue* value, std::string
 
 }  // namespace
 
-std::unique_ptr<Chatterbox> Chatterbox::Load(const OrtApi* api, const std::string& dir, int threads,
-                                             std::string* error) {
+std::unique_ptr<Chatterbox> Chatterbox::Load(const OrtApi* api, const std::string& dir, const std::string& lm_dir,
+                                             int threads, std::string* error) {
     std::unique_ptr<Chatterbox> model(new Chatterbox(api));
     auto load = [&]() -> bool {
         const OrtApi* api_ = api;
@@ -182,7 +182,7 @@ std::unique_ptr<Chatterbox> Chatterbox::Load(const OrtApi* api, const std::strin
         AUDORA_ORT(api_->SetSessionGraphOptimizationLevel(model->options_, ORT_ENABLE_ALL));
         AUDORA_ORT(api_->CreateSession(model->env_, (dir + "/embed_tokens.onnx").c_str(), model->options_,
                                        &model->embed_));
-        AUDORA_ORT(api_->CreateSession(model->env_, (dir + "/language_model.onnx").c_str(), model->options_,
+        AUDORA_ORT(api_->CreateSession(model->env_, (lm_dir + "/language_model.onnx").c_str(), model->options_,
                                        &model->lm_));
         AUDORA_ORT(api_->CreateSession(model->env_, (dir + "/conditional_decoder.onnx").c_str(), model->options_,
                                        &model->decoder_));

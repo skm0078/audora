@@ -23,23 +23,31 @@ void Throw(JNIEnv* env, const std::string& message) {
 
 Chatterbox* From(jlong handle) { return reinterpret_cast<Chatterbox*>(handle); }
 
+// [value] as UTF-8; false with an OutOfMemoryError pending.
+bool ReadString(JNIEnv* env, jstring value, std::string* out) {
+    const char* chars = env->GetStringUTFChars(value, nullptr);
+    if (chars == nullptr) return false;
+    out->assign(chars);
+    env->ReleaseStringUTFChars(value, chars);
+    return true;
+}
+
 }  // namespace
 
 extern "C" {
 
 JNIEXPORT jlong JNICALL Java_io_github_skm0078_audora_speech_acted_ChatterboxNative_nativeLoad(
-    JNIEnv* env, jclass, jstring dir, jint threads) {
+    JNIEnv* env, jclass, jstring dir, jstring lm_dir, jint threads) {
     std::string error;
     const OrtApi* api = audora::LoadOrtApi(kRuntime, &error);
     if (api == nullptr) {
         Throw(env, error);
         return 0;
     }
-    const char* chars = env->GetStringUTFChars(dir, nullptr);
-    if (chars == nullptr) return 0;  // OutOfMemoryError pending
-    std::string path(chars);
-    env->ReleaseStringUTFChars(dir, chars);
-    std::unique_ptr<Chatterbox> model = Chatterbox::Load(api, path, threads, &error);
+    std::string path;
+    std::string lm_path;
+    if (!ReadString(env, dir, &path) || !ReadString(env, lm_dir, &lm_path)) return 0;  // OutOfMemoryError pending
+    std::unique_ptr<Chatterbox> model = Chatterbox::Load(api, path, lm_path, threads, &error);
     if (model == nullptr) {
         Throw(env, error);
         return 0;
