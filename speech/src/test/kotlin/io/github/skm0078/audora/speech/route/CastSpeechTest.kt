@@ -22,10 +22,8 @@ import org.junit.Test
 
 class CastSpeechTest {
     /** One sample per character; [broken] voices fail, like an uninstalled model. */
-    private class RecordingEngine(
-        private val broken: Set<String> = emptySet(),
-        private val acts: Boolean = false,
-    ) : SpeechEngine {
+    private class RecordingEngine(private val broken: Set<String> = emptySet(), private val acts: Boolean = false) :
+        SpeechEngine {
         override val id = EngineId.SHERPA
         val calls = mutableListOf<Pair<String, String>>()
         val feelings = mutableListOf<Feeling>()
@@ -88,8 +86,12 @@ class CastSpeechTest {
         speech(acting).render("She sobbed into her hands.", Lang.EN, SpeechRequest(feeling = Feeling.SAD))
 
         assertEquals(
-            listOf(NARRATOR.name to "Come here at once,", NARRATOR.name to "she sobbed.", NARRATOR.name to
-                "She sobbed into her hands."),
+            listOf(
+                NARRATOR.name to "Come here at once,",
+                NARRATOR.name to "she sobbed.",
+                NARRATOR.name to
+                    "She sobbed into her hands.",
+            ),
             acting.calls,
         )
         assertEquals(listOf(Feeling.SAD, Feeling.NEUTRAL, Feeling.SAD), acting.feelings)

@@ -33,6 +33,9 @@ def main() -> int:
     parser.add_argument("--threads", type=int, default=4)
     args = parser.parse_args()
     torch.set_num_threads(args.threads)
+    # The released checkpoint was saved on a GPU; on a CPU-only runner every torch.load must map it to the CPU.
+    gpu_load = torch.load
+    torch.load = lambda *a, **k: gpu_load(*a, **{**k, "map_location": torch.device("cpu")})
     args.out.mkdir(parents=True, exist_ok=True)
 
     start = time.perf_counter()

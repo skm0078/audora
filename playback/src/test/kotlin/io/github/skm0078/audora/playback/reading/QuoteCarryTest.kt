@@ -258,5 +258,4 @@ class QuoteCarryTest {
         assertEquals(true, carry.startsInQuote(next.single()))
         assertEquals(false, carry.startsInQuote(fresh.single()))
     }
-
 }
