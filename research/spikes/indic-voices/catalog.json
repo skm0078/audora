@@ -1,0 +1,218 @@
+{
+  "comment": "Indic voice comparison (bn + hi) for the user's listening test; see research/spikes/indic-voices/README.md",
+  "texts": [
+    {
+      "id": "hi-first",
+      "lang": "hi",
+      "kind": "first",
+      "text": "अध्याय एक। वह घर एक शांत गली के आखिर में खड़ा था।"
+    },
+    {
+      "id": "hi-prose",
+      "lang": "hi",
+      "kind": "prose",
+      "text": "सुबह की हल्की धूप खिड़की से अंदर आ रही थी। रीना ने चाय का कप उठाया और पुरानी किताब के पन्ने पलटने लगी। हर पन्ने पर किसी भूली हुई कहानी की खुशबू थी, और वह धीरे-धीरे उसमें खो गई।"
+    },
+    {
+      "id": "hi-formal",
+      "lang": "hi",
+      "kind": "formal",
+      "text": "सभी मनुष्यों को गौरव और अधिकारों के मामले में जन्मजात स्वतन्त्रता और समानता प्राप्त है। उन्हें बुद्धि और अन्तरात्मा की देन प्राप्त है और परस्पर उन्हें भाईचारे के भाव से बर्ताव करना चाहिए।"
+    },
+    {
+      "id": "bn-first",
+      "lang": "bn",
+      "kind": "first",
+      "text": "প্রথম অধ্যায়। বাড়িটা একটা শান্ত গলির শেষ মাথায় দাঁড়িয়ে ছিল।"
+    },
+    {
+      "id": "bn-prose",
+      "lang": "bn",
+      "kind": "prose",
+      "text": "সকালের নরম রোদ জানালা দিয়ে ঘরে ঢুকছিল। মিতা চায়ের কাপটা হাতে নিয়ে পুরনো বইটার পাতা ওলটাতে লাগল। প্রতিটি পাতায় কোনো এক ভুলে যাওয়া গল্পের গন্ধ ছিল, আর সে ধীরে ধীরে তাতে হারিয়ে গেল।"
+    },
+    {
+      "id": "bn-formal",
+      "lang": "bn",
+      "kind": "formal",
+      "text": "সমস্ত মানুষ স্বাধীনভাবে সমান মর্যাদা এবং অধিকার নিয়ে জন্মগ্রহণ করে। তাঁদের বিবেক এবং বুদ্ধি আছে; সুতরাং সকলেরই একে অপরের প্রতি ভ্রাতৃত্বসুলভ মনোভাব নিয়ে আচরণ করা উচিত।"
+    },
+    {
+      "id": "bn-story",
+      "lang": "bn",
+      "kind": "prose",
+      "text": "সন্ধ্যা নামার আগেই গ্রামের পথে ঘরে ফেরার তাড়া পড়ে গেল। নদীর ধারে বসে থাকা ছেলেটি হঠাৎ দেখল, আকাশে কালো মেঘ জমেছে, আর বাতাসে বৃষ্টির গন্ধ। সে ভাবল, আজ আর মাছ ধরা হবে না। মা নিশ্চয়ই অপেক্ষা করছেন, তাই সে তাড়াতাড়ি পা চালাল। পথে দেখা হলো পুরনো বন্ধু রতনের সঙ্গে। রতন হেসে বলল, চল, একসঙ্গে যাই, আজ রাতে দাদু ভূতের গল্প শোনাবেন।"
+    },
+    {
+      "id": "bn-dialogue",
+      "lang": "bn",
+      "kind": "prose",
+      "text": "তুমি কি সত্যিই একা যাবে? মা জিজ্ঞেস করলেন। না, আমি রতনকে সঙ্গে নেব, ছেলেটি উত্তর দিল। তাহলে ঠিক আছে, কিন্তু অন্ধকার হওয়ার আগেই ফিরে এসো!"
+    },
+    {
+      "id": "hi-story",
+      "lang": "hi",
+      "kind": "prose",
+      "text": "शाम ढलते ही गाँव की गलियों में लालटेनें जलने लगीं। नदी किनारे बैठा लड़का अचानक उठ खड़ा हुआ, क्योंकि आसमान में काले बादल घिर आए थे। उसने सोचा, आज मछली पकड़ना नहीं हो पाएगा। माँ इंतज़ार कर रही होंगी, इसलिए वह तेज़ क़दमों से घर की ओर चल पड़ा। रास्ते में उसका पुराना दोस्त रमेश मिला, जिसने हँसकर कहा, चलो, साथ चलते हैं, आज रात दादी भूतों की कहानी सुनाएँगी।"
+    },
+    {
+      "id": "hi-dialogue",
+      "lang": "hi",
+      "kind": "prose",
+      "text": "क्या तुम सचमुच अकेले जाओगे? माँ ने पूछा। नहीं, मैं रमेश को साथ ले जाऊँगा, लड़के ने जवाब दिया। तो ठीक है, लेकिन अँधेरा होने से पहले लौट आना!"
+    }
+  ],
+  "voices": [
+    {
+      "id": "piper-bn-google",
+      "label": "Piper google, speaker 0 (today's default)",
+      "lang": "bn",
+      "family": "vits",
+      "archive": "vits-piper-bn_BD-google-medium",
+      "model": "bn_BD-google-medium.onnx",
+      "dataDir": "espeak-ng-data",
+      "sid": 0
+    },
+    {
+      "id": "mms-bn",
+      "label": "Meta MMS (today's other voice)",
+      "lang": "bn",
+      "family": "vits",
+      "archive": "vits-mms-ben",
+      "model": "model.onnx"
+    },
+    {
+      "id": "coqui-bn-female",
+      "label": "Coqui Bangla female",
+      "lang": "bn",
+      "family": "vits",
+      "archive": "vits-coqui-bn-custom_female",
+      "model": "model.onnx"
+    },
+    {
+      "id": "coqui-bn-male",
+      "label": "Coqui Bangla male",
+      "lang": "bn",
+      "family": "vits",
+      "archive": "coqui-bn-male",
+      "model": "model.onnx"
+    },
+    {
+      "id": "syspin-bn-female",
+      "label": "SYSPIN Bengali female (IISc studio, 30 h)",
+      "lang": "bn",
+      "family": "vits",
+      "archive": "syspin-bn-female",
+      "model": "model.onnx"
+    },
+    {
+      "id": "syspin-bn-male",
+      "label": "SYSPIN Bengali male (IISc studio, 30 h)",
+      "lang": "bn",
+      "family": "vits",
+      "archive": "syspin-bn-male",
+      "model": "model.onnx"
+    },
+    {
+      "id": "rasa-bn-female",
+      "label": "AI4Bharat Rasa Bengali female, BOOK style",
+      "lang": "bn",
+      "family": "vits",
+      "archive": "sherpa-onnx-vits-rasa-13",
+      "model": "model.onnx",
+      "sid": 2,
+      "extra": {
+        "emotion_id": "3"
+      }
+    },
+    {
+      "id": "rasa-bn-male",
+      "label": "AI4Bharat Rasa Bengali male, BOOK style",
+      "lang": "bn",
+      "family": "vits",
+      "archive": "sherpa-onnx-vits-rasa-13",
+      "model": "model.onnx",
+      "sid": 3,
+      "extra": {
+        "emotion_id": "3"
+      }
+    },
+    {
+      "id": "rasa-bn-female-conv",
+      "label": "AI4Bharat Rasa Bengali female, CONV style",
+      "lang": "bn",
+      "family": "vits",
+      "archive": "sherpa-onnx-vits-rasa-13",
+      "model": "model.onnx",
+      "sid": 2,
+      "extra": {
+        "emotion_id": "4"
+      }
+    },
+    {
+      "id": "rasa-bn-female-sad",
+      "label": "AI4Bharat Rasa Bengali female, SAD style",
+      "lang": "bn",
+      "family": "vits",
+      "archive": "sherpa-onnx-vits-rasa-13",
+      "model": "model.onnx",
+      "sid": 2,
+      "extra": {
+        "emotion_id": "12"
+      }
+    },
+    {
+      "id": "piper-hi-pratham",
+      "label": "Piper pratham (today's default)",
+      "lang": "hi",
+      "family": "vits",
+      "archive": "vits-piper-hi_IN-pratham-medium",
+      "model": "hi_IN-pratham-medium.onnx",
+      "dataDir": "espeak-ng-data"
+    },
+    {
+      "id": "piper-hi-priyamvada",
+      "label": "Piper priyamvada",
+      "lang": "hi",
+      "family": "vits",
+      "archive": "vits-piper-hi_IN-priyamvada-medium",
+      "model": "hi_IN-priyamvada-medium.onnx",
+      "dataDir": "espeak-ng-data"
+    },
+    {
+      "id": "piper-hi-rohan",
+      "label": "Piper rohan",
+      "lang": "hi",
+      "family": "vits",
+      "archive": "vits-piper-hi_IN-rohan-medium",
+      "model": "hi_IN-rohan-medium.onnx",
+      "dataDir": "espeak-ng-data"
+    },
+    {
+      "id": "supertonic-hi",
+      "label": "Supertonic 3, speaker 2 (premium)",
+      "lang": "hi",
+      "family": "supertonic",
+      "archive": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+      "sid": 2,
+      "numSteps": 5,
+      "extraLang": "hi"
+    },
+    {
+      "id": "syspin-hi-female",
+      "label": "SYSPIN Hindi female (IISc studio, 30 h)",
+      "lang": "hi",
+      "family": "vits",
+      "archive": "syspin-hi-female",
+      "model": "model.onnx"
+    },
+    {
+      "id": "syspin-hi-male",
+      "label": "SYSPIN Hindi male (IISc studio, 30 h)",
+      "lang": "hi",
+      "family": "vits",
+      "archive": "syspin-hi-male",
+      "model": "model.onnx"
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+# File: .github/workflows/indic-voices.yml
+# Purpose: Bengali and Hindi voice comparison (research/spikes/indic-voices). Converts the candidate voices that
+#          sherpa-onnx does not ship prebuilt (SYSPIN's IISc studio voices, Coqui's Bangla male), fetches the rest,
+#          renders the same texts with every voice, scores them with an ASR round trip and publishes the samples and
+#          converted models to the "indic-voices" pre-release.
+#
+# Converted model zips are uploaded once and never replaced (an export is not byte-reproducible, and the catalog
+# may pin a zip by sha256 through source.url, as it does for the s1-voices Bengali zips). Samples and results are
+# replaced on every run. Hugging Face downloads are pinned to a commit.
+
+name: Indic voices
+
+on:
+  push:
+    branches: ["feat/p3-06-**"]
+    paths:
+      - research/spikes/indic-voices/**
+      - research/spikes/S1-voice-benchmark/scripts/bench_desktop.py
+      - .github/workflows/indic-voices.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: indic-voices
+  cancel-in-progress: false
+
+env:
+  SPIKE: research/spikes/indic-voices
+  BENCH: research/spikes/S1-voice-benchmark/scripts/bench_desktop.py
+  SHERPA_TTS: https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models
+  SHERPA_ASR: https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models
+  ASR_INDIC: sherpa-onnx-omnilingual-asr-1600-languages-300M-ctc-int8-2025-11-12
+  S1_VOICES: https://github.com/skm0078/audora/releases/download/s1-voices
+  HF: https://huggingface.co
+  RASA_REPO: MatiasLin/sherpa-onnx-vits-rasa-13
+  RASA_REV: b5afd4e991e3bdd6195528de650e2ed219d47506
+  COQUI_BN_MALE: https://github.com/coqui-ai/TTS/releases/download/v0.13.3_models/tts_models--bn--custom--vits_male.zip
+  TAG: indic-voices
+
+jobs:
+  compare:
+    name: Convert, render and score
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q ffmpeg zip
+          python3 -m pip install --upgrade pip
+          python3 -m pip install "torch==2.14.1" "torchaudio==2.11.0" --index-url https://download.pytorch.org/whl/cpu
+          python3 -m pip install "coqui-tts[codec]==0.28.0" "sherpa-onnx==1.13.8" "onnx==1.23.2" "onnxscript==0.7.2"
+
+      - name: Download prebuilt voices
+        run: |
+          mkdir -p models
+          for archive in vits-coqui-bn-custom_female vits-piper-hi_IN-pratham-medium vits-piper-hi_IN-priyamvada-medium \
+                         vits-piper-hi_IN-rohan-medium sherpa-onnx-supertonic-3-tts-int8-2026-05-11; do
+            curl -fsSL --retry 5 --retry-all-errors "$SHERPA_TTS/$archive.tar.bz2" | tar -xj -C models
+            test -d "models/$archive"
+          done
+          for archive in vits-piper-bn_BD-google-medium vits-mms-ben; do
+            curl -fsSL --retry 5 --retry-all-errors -o "$archive.zip" "$S1_VOICES/$archive.zip"
+            unzip -q "$archive.zip" -d models && rm "$archive.zip"
+          done
+
+      - name: Download AI4Bharat Rasa (sherpa-onnx export)
+        run: |
+          dir=models/sherpa-onnx-vits-rasa-13
+          mkdir -p "$dir"
+          for f in model.onnx tokens.txt README.md; do
+            curl -fsSL --retry 5 --retry-all-errors -o "$dir/$f" "$HF/$RASA_REPO/resolve/$RASA_REV/$f"
+          done
+          python3 -c "import onnx,sys; m=onnx.load(sys.argv[1]); print({p.key: p.value for p in m.metadata_props}); print([i.name for i in m.graph.input])" "$dir/model.onnx"
+
+      - name: Convert Coqui Bangla male
+        run: |
+          mkdir -p src/coqui-bn-male
+          curl -fsSL --retry 5 --retry-all-errors -o coqui-bn-male.zip "$COQUI_BN_MALE"
+          unzip -q -j coqui-bn-male.zip -d src/coqui-bn-male && rm coqui-bn-male.zip
+          python3 "$SPIKE/export_coqui_vits.py" --src src/coqui-bn-male --checkpoint model_file.pth --out models/coqui-bn-male
+          rm -rf src/coqui-bn-male
+
+      - name: Convert SYSPIN studio voices
+        run: |
+          convert() {  # <out dir> <repo> <commit>
+            mkdir -p "src/$1"
+            for f in config.json best_model.pth README.md; do
+              curl -fsSL --retry 5 --retry-all-errors -o "src/$1/$f" "$HF/$2/resolve/$3/$f"
+            done
+            python3 "$SPIKE/export_coqui_vits.py" --src "src/$1" --checkpoint best_model.pth --out "models/$1"
+            cp "src/$1/README.md" "models/$1/README.md"
+            rm -rf "src/$1"
+          }
+          convert syspin-bn-female SYSPIN/vits_Bengali_Female fcda79fca653ae8965fcd108b322883d6cfec2ed
+          convert syspin-bn-male   SYSPIN/vits_Bengali_Male   3d84e48bfcc1649d9dd3c6e1e876b41905c99d6f
+          convert syspin-hi-female SYSPIN/vits_Hindi_Female   642cf11cddef10061aaabd79685e16661bca9037
+          convert syspin-hi-male   SYSPIN/vits_Hindi_Male     7cc1ad298110c97adec25e520a83321c377df5a6
+
+      - name: Download the ASR model for the round trip
+        run: |
+          mkdir -p asr
+          curl -fsSL --retry 5 --retry-all-errors "$SHERPA_ASR/$ASR_INDIC.tar.bz2" | tar -xj -C asr
+
+      - name: Render and score every voice (2 threads)
+        run: |
+          python3 "$BENCH" --catalog "$SPIKE/catalog.json" --models-dir models --out out \
+            --asr-indic "asr/$ASR_INDIC" --threads 2 --mp3
+          cat out/desktop-results.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Package
+        run: |
+          mkdir -p dist/models dist/samples
+          for archive in coqui-bn-male syspin-bn-female syspin-bn-male syspin-hi-female syspin-hi-male; do
+            # -X drops extra file attributes so the same files give the same zip.
+            (cd models && zip -q -r -X "../dist/models/$archive.zip" "$archive")
+          done
+          cp out/mp3/*.mp3 dist/samples/
+          (cd out && zip -q -r -X ../dist/samples/indic-voices-wav.zip wav)
+          cp out/desktop-results.md out/desktop-results.json dist/samples/
+          (cd dist/models && sha256sum -- *.zip > ../samples/MODELS-SHA256SUMS.txt)
+          ls -l dist/models dist/samples
+
+      - name: Publish to the indic-voices pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            gh release create "$TAG" --prerelease --target "$GITHUB_SHA" --title "Indic voice comparison" \
+              --notes "Bengali and Hindi voice candidates converted for sherpa-onnx, with samples and an ASR round trip. Licences per voice are in research/spikes/indic-voices/README.md. Model zips are never replaced; samples are refreshed on every run."
+          fi
+          existing=$(gh release view "$TAG" --json assets --jq '.assets[].name')
+          for f in dist/models/*.zip; do
+            if grep -qxF "$(basename "$f")" <<< "$existing"; then
+              echo "Keeping published $(basename "$f")"
+            else
+              gh release upload "$TAG" "$f"
+            fi
+          done
+          gh release upload "$TAG" dist/samples/* --clobber

@@ -166,6 +166,7 @@ internal object InstalledVoiceManifest {
         "lexicon" to spec.lexicon,
         "engineLang" to spec.engineLang,
         "numSteps" to spec.numSteps?.toString(),
+        "threads" to spec.threads?.toString(),
         KEY_ORIGIN to origin.name,
     )
 }

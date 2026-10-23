@@ -85,6 +85,12 @@ class SherpaVoiceManifestTest {
     }
 
     @Test
+    fun `reads a voice's own thread count, absent by default`() {
+        assertEquals(4, parse("$piper\nthreads=4").getOrNull()?.threads)
+        assertNull(parse(piper).getOrNull()?.threads)
+    }
+
+    @Test
     fun `tokens and speaker default, data dir is optional`() {
         val minimal = piper.lines().filterNot { it.startsWith("tokens=") || it.startsWith("speakerId=") }
             .filterNot { it.startsWith("dataDir=") }.joinToString("\n")
@@ -109,6 +115,7 @@ class SherpaVoiceManifestTest {
             "zero steps" to supertonic.replace("numSteps=5", "numSteps=0"),
             "steps not a number" to supertonic.replace("numSteps=5", "numSteps=five"),
             "bad speaker" to piper.replace("speakerId=0", "speakerId=-1"),
+            "zero threads" to "$piper\nthreads=0",
             "kitten without voices" to piper.replace("family=vits", "family=kitten"),
         )
         for ((name, text) in cases) {

@@ -2,6 +2,14 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Clearer Bengali voice: SYSPIN studio voices (2026-10-23, ADR-053)
+- **Two new Bengali downloads:** "Bengali, SYSPIN male" (now the recommended Bengali voice) and "Bengali, SYSPIN female", 114 MB each, MIT. These are IISc studio voices, converted to sherpa-onnx in CI and pinned from the `indic-voices` pre-release. Piper google and MMS stay available.
+- **Why:** an ASR round trip over the same texts gives Bengali CER 5.1% (male) and 8.1% (female), against 13.8% for Piper google and 10.3% for MMS. Coqui Bangla (8.1% to 10.1%) and AI4Bharat Rasa in BOOK style (about 9%) were also trialled. Full table and samples: `research/spikes/indic-voices/README.md` and the `indic-voices` release.
+- **Speed:** a voice can set its own ONNX Runtime thread count (`threads` in `models.json`, read into `SherpaVoiceSpec.threads`). The SYSPIN voices use 4, giving a desktop RTF of 0.22 against 0.39 at 2. Every other voice keeps `SpeechConfig.sherpaThreads`.
+- **Tests:** `SherpaVoiceManifestTest` (thread count read, 0 rejected) and `SherpaModelConfigTest` (the voice's count wins). The voice mirror script built both zips against their pins. ktlint and detekt are clean on the changed files.
+
+**Real-device checks (Moto):** download "Bengali, SYSPIN male" and pick it under Bengali, then play a Bengali PDF for 5 minutes. Check that there are no gaps between sentences and that the Voices screen does not mark it "Too slow on this phone". Listen to the female voice too, and say which reads better; `recommended` changes in one line.
+
 ## A male built-in voice and options that explain themselves (2026-10-22, ADR-052)
 - **Built-in English voice:** KittenTTS v0.8 micro read by Bruno (male) replaces Piper ljspeech. Its seven other speakers are on the Voices screen as built-in voices, with no download, and also give character, quote and heading voices out of the box.
 - **Options that stayed off now work or say why:** "Use for this book only" waits for play with a note; Smart speed's switch follows taps at normal speed; the A–B Loop switch waits for A; Expressiveness hides for voices that ignore it; Kids mode asks first and says how to leave; a microphone refused for good opens Audora's app page; the punctuation model says it needs Scanned pages.
