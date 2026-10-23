@@ -94,6 +94,11 @@ private fun ExemptionStatus(exempt: Boolean, onAllow: () -> Unit) {
                 Button(onClick = onAllow, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.battery_allow))
                 }
+                Text(
+                    stringResource(R.string.battery_allow_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

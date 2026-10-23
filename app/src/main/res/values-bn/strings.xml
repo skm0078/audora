@@ -239,6 +239,7 @@
     <string name="battery_status_allowed">Audora-র জন্য ব্যাটারি অপটিমাইজেশন বন্ধ আছে।</string>
     <string name="battery_status_limited">ব্যাটারি অপটিমাইজেশন চালু আছে: স্ক্রিন বন্ধ হলে Android পড়া থামিয়ে দিতে পারে।</string>
     <string name="battery_allow">ব্যাকগ্রাউন্ডে পড়ার অনুমতি দিন</string>
+    <string name="battery_allow_hint">Android তার ব্যাটারি তালিকা খুলবে। Audora না দেখালে তালিকাটি সব অ্যাপে বদলান, তারপর Audora-তে ট্যাপ করে অপ্টিমাইজ করবেন না বেছে নিন।</string>
     <string name="battery_open_app_settings">Audora-র অ্যাপ ইনফো খুলুন</string>
     <string name="battery_footer">স্ক্রিন বন্ধ থাকলে এখনো পড়া থেমে গেলে, সেটিংস থেকে লগ শেয়ার করুন: Android কেন Audora বন্ধ করেছে তা সেখানে লেখা থাকে।</string>
     <string name="battery_step_number">%1$d. %2$s</string>
@@ -305,6 +306,8 @@
     <string name="voices_import_choose_folder">ফোল্ডার বেছে নিন</string>
     <string name="voices_recommended">এই ভাষার জন্য প্রস্তাবিত</string>
     <string name="settings_licences_body">প্রতিটি ভয়েস কে তৈরি করেছেন, তার লাইসেন্স এবং সেটি কোথা থেকে এসেছে।</string>
+    <string name="settings_privacy_title">গোপনীয়তা নীতি</string>
+    <string name="settings_privacy_body">Audora আপনার সম্পর্কে কিছুই সংগ্রহ করে না। পুরো নীতি আপনার ব্রাউজারে খোলে।</string>
     <string name="licences_title">ভয়েস ও লাইসেন্স</string>
     <string name="licences_load_failed">লাইসেন্সগুলো লোড করা যায়নি। বারবার এমন হলে সেটিংস থেকে লগ শেয়ার করুন।</string>
     <string name="licences_intro">Audora অন্যদের তৈরি ও শেয়ার করা ভয়েস দিয়ে পড়ে। লাইসেন্সের শর্ত মেনে প্রতিটির লাইসেন্স ও কৃতিত্ব এখানে দেওয়া আছে।</string>

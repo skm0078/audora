@@ -3,7 +3,6 @@
 
 package io.github.skm0078.audora.battery
 
-import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -26,14 +25,13 @@ class BatteryExemption(private val context: Context) {
         context.getSystemService(PowerManager::class.java)?.isIgnoringBatteryOptimizations(context.packageName) == true
 
     /**
-     * The system's one-tap "Let app always run in background?" prompt. Allowed for media playback apps; Audora is
-     * sideloaded, so Play's policy on this permission does not apply either way.
+     * Android's battery optimization list, where the user picks Audora and "Don't optimize" (the hint under the
+     * button says how). Not the one-tap REQUEST_IGNORE_BATTERY_OPTIMIZATIONS prompt: Google Play allows that only
+     * when Doze breaks an app's core function, and a media player's foreground service already keeps playing.
      */
-    @SuppressLint("BatteryLife")
     fun requestExemption(start: (Intent) -> Unit) = startFirst(
         start,
-        "request",
-        Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, packageUri()),
+        "optimization list",
         Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS),
         appDetailsIntent(),
     )

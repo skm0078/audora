@@ -151,6 +151,8 @@ private fun AppGroup(links: AppLinks, batteryExempt: Boolean, shareState: ShareL
             onClick = links.onOpenLicences,
         )
         SettingsDivider()
+        PrivacyPolicyItem()
+        SettingsDivider()
         SettingsRow(stringResource(R.string.settings_version_title), summary = { Text(versionName) })
     }
 }

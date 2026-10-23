@@ -235,6 +235,7 @@
     <string name="battery_status_allowed">Battery optimization is off for Audora.</string>
     <string name="battery_status_limited">Battery optimization is on: Android may stop reading when the screen is off.</string>
     <string name="battery_allow">Allow background reading</string>
+    <string name="battery_allow_hint">Android opens its battery list. If Audora is not shown, switch the list to All apps, then tap Audora and choose Don\'t optimize.</string>
     <string name="battery_open_app_settings">Open Audora\'s app info</string>
     <string name="battery_footer">If reading still stops with the screen off, share the logs from Settings: they record why Android stopped Audora.</string>
     <string name="battery_step_number">%1$d. %2$s</string>
@@ -301,6 +302,8 @@
     <string name="voices_import_choose_folder">Choose folder</string>
     <string name="voices_recommended">Recommended for this language</string>
     <string name="settings_licences_body">Who made each voice, its licence and where it comes from.</string>
+    <string name="settings_privacy_title">Privacy policy</string>
+    <string name="settings_privacy_body">Audora collects nothing about you. Opens the full policy in your browser.</string>
     <string name="licences_title">Voices &amp; licences</string>
     <string name="licences_load_failed">Could not load the licences. Share logs from Settings if this keeps happening.</string>
     <string name="licences_intro">Audora reads with voices made and shared by other people. Each one is listed with its licence and credit, as its licence asks.</string>
