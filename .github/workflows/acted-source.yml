@@ -1,0 +1,68 @@
+# File: .github/workflows/acted-source.yml
+# Purpose: Builds the acted Hindi voice's source zip (ADR-059, scripts/build_acted_pack.py) from the pinned
+#          onnx-community export of Chatterbox Multilingual and publishes it once to the indic-voices pre-release,
+#          where speech/models.json pins it by sha256 for the voice mirror. A zip already published is kept, never
+#          replaced. The tokenizer and its reference ids go to the acted-voices pre-release for the Kotlin port.
+
+name: Acted source
+
+on:
+  push:
+    paths:
+      - scripts/build_acted_pack.py
+      - .github/workflows/acted-source.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: acted-source
+  cancel-in-progress: false
+
+env:
+  ARCHIVE: chatterbox-hi-onnx
+  TAG: indic-voices
+
+jobs:
+  publish:
+    name: Build and publish the acted Hindi source zip
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install ONNX Runtime
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install "onnxruntime==1.22.1" "onnx==1.19.1" "numpy==2.2.6" "tokenizers==0.20.3" \
+            "huggingface_hub==0.34.4" "soundfile==0.13.1" "scipy==1.14.1"
+
+      - name: Build
+        run: |
+          python3 scripts/build_acted_pack.py --work work --out dist
+          sha256sum dist/*
+          ls -l dist
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          existing=$(gh release view "$TAG" --json assets --jq '.assets[].name')
+          if grep -qxF "$ARCHIVE.zip" <<< "$existing"; then
+            echo "Keeping published $ARCHIVE.zip"
+          else
+            gh release upload "$TAG" "dist/$ARCHIVE.zip"
+          fi
+          cp work/hf/tokenizer.json dist/chatterbox-tokenizer.json
+          gh release upload acted-voices dist/chatterbox-tokenizer.json dist/tokenizer_cases.json --clobber
