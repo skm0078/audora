@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/VoiceCommands.kt
-// Purpose: "Audora, pause" and the other spoken commands, heard while the reader is open (plan item 38).
+// Purpose: "ListenLock, pause" and the other spoken commands, heard while the reader is open (plan item 38).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -38,7 +38,7 @@ import kotlinx.coroutines.flow.map
  * Listens per [mode] (already [VoiceCommandsMode.effective]) while this reader is open. Commands reach [onCommand] on
  * the main thread, in the order heard, each confirmed by a short tone.
  * - [VoiceCommandsMode.WHILE_VISIBLE]: from onStart to onStop, so the microphone is never open with the app in the
- *   background. Paused counts too, so "Audora, play" works.
+ *   background. Paused counts too, so "ListenLock, play" works.
  * - [VoiceCommandsMode.SCREEN_OFF]: [ScreenOffListening], with [VoiceCommandService]; [inBackground] is told while a
  *   session runs, so the reader keeps its player connected with the screen off.
  */
@@ -166,7 +166,7 @@ private class CommandTone(private val config: VoiceCommandConfig) {
 
 /**
  * What each command does in the reader: the same as its button. Play and pause act only when they change something,
- * so "Audora, pause" said twice never starts reading again. A speed changed by voice is not saved: a command heard
+ * so "ListenLock, pause" said twice never starts reading again. A speed changed by voice is not saved: a command heard
  * by mistake changes this listen only.
  */
 fun ReaderModel.onVoiceCommand(command: VoiceCommand, config: ReaderConfig) {

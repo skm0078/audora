@@ -167,7 +167,7 @@ class ListenLoopTest {
     @Test
     fun `the narrator saying the app's name and a repeat within the gap act on nothing`() = runTest {
         val narrator = NarratorEcho(holdMs = 0)
-        narrator.sentenceStarted("Audora said", 0)
+        narrator.sentenceStarted("ListenLock said", 0)
         val heard = mutableListOf<VoiceCommand>()
         val microphone = FakeMicrophone(listOf(LOUD, LOUD, LOUD, null), after = { if (it == 2) narrator.stopped(now) })
 

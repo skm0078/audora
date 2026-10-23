@@ -6,5 +6,5 @@
     <string name="photo_book_title">Photo %1$s</string>
     <string name="photo_no_camera">No camera app is available to take the photo.</string>
     <string name="photo_busy">The last photo is still becoming a book. It opens in a moment; take the next one then.</string>
-    <string name="photo_failed">Audora could not read that photo. Try again in better light.</string>
+    <string name="photo_failed">ListenLock could not read that photo. Try again in better light.</string>
 </resources>

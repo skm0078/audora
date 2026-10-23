@@ -66,7 +66,7 @@ data class ReaderConfig(
     fun nearestSpeed(speed: Float): Float = speech.clampRate(speed)
 
     /**
-     * The offered speed one step above (or below) [current], for "Audora, faster" (plan item 38); a speed between
+     * The offered speed one step above (or below) [current], for "ListenLock, faster" (plan item 38); a speed between
      * two offered ones moves to the next one in that direction. Null at the end of [speeds].
      */
     fun speedStep(current: Float, faster: Boolean): Float? =

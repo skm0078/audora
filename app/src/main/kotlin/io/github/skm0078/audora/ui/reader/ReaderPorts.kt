@@ -70,7 +70,7 @@ interface ScreenPreference {
 
     suspend fun saveVolumeKeysSkip(on: Boolean) = Unit
 
-    /** "Audora, pause" and the other spoken commands in the reader (plan item 38); off by default (battery). */
+    /** "ListenLock, pause" and the other spoken commands in the reader (plan item 38); off by default (battery). */
     fun voiceCommands(): Flow<VoiceCommandsMode> = flowOf(VoiceCommandsMode.OFF)
 
     suspend fun saveVoiceCommands(mode: VoiceCommandsMode) = Unit

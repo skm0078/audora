@@ -1,5 +1,5 @@
 // File: core/src/main/kotlin/io/github/skm0078/audora/core/config/VoiceCommandConfig.kt
-// Purpose: Tunables for spoken commands ("Audora, pause") heard by the on-phone keyword spotter (plan item 38).
+// Purpose: Tunables for spoken commands ("ListenLock, pause") heard by the on-phone keyword spotter (plan item 38).
 
 package io.github.skm0078.audora.core.config
 
@@ -24,7 +24,7 @@ package io.github.skm0078.audora.core.config
  *   only the read. Above a quiet room's noise floor with VOICE_RECOGNITION (no gain), below speech a metre away.
  * @property preRollChunks quiet chunks kept and decoded first when sound starts, so a softly spoken "Au-" is heard.
  * @property hangoverMs chunks keep being decoded this long after the last loud one, so the spotter sees a phrase's
- *   tail and the pause between "Audora" and the command.
+ *   tail and the pause between "ListenLock" and the command.
  * @property silenceCheckMs how often the listener asks Android whether its capture is silenced (a call, the
  *   microphone toggle); a binder call, so not every chunk.
  * @property toneVolume the short tone that confirms each command heard (ToneGenerator's 0..100).

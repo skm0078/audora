@@ -2,6 +2,6 @@
 <!-- File: app/src/main/res/values-hi/strings_text_books.xml -->
 <!-- Purpose: Hindi copy of values/strings_text_books.xml. -->
 <resources>
-    <string name="shared_text_link">Audora शेयर किया गया टेक्स्ट पढ़ता है, वेब लिंक नहीं। पेज पर टेक्स्ट चुनें और उसे शेयर करें।</string>
+    <string name="shared_text_link">ListenLock शेयर किया गया टेक्स्ट पढ़ता है, वेब लिंक नहीं। पेज पर टेक्स्ट चुनें और उसे शेयर करें।</string>
     <string name="shared_text_failed">शेयर किया गया टेक्स्ट सेव नहीं हो सका।</string>
 </resources>

@@ -30,7 +30,7 @@
     <string name="copy_cancel">Cancel</string>
     <string name="copy_busy">Another copy is being made; cancel it from its notification first</string>
     <string name="copy_done_title">Saved: “%1$s”</string>
-    <!-- %1$s the file names, %2$s the folder, e.g. "Book.epub and Book.txt in Documents/Audora". -->
+    <!-- %1$s the file names, %2$s the folder, e.g. "Book.epub and Book.txt in Documents/ListenLock". -->
     <string name="copy_done_text">%1$s in %2$s</string>
     <string name="copy_name_separator">" and "</string>
     <!-- %1$d is a number of pages. -->
@@ -42,7 +42,7 @@
     <string name="copy_cancelled_title">Copy cancelled</string>
     <string name="copy_cancelled_text">Nothing was saved</string>
     <string name="copy_timed_out_title">Copy paused by Android\'s time limit</string>
-    <string name="copy_timed_out_text">Android stops long jobs after 6 hours. Tap Continue to open Audora and go on; a talking book keeps its finished chapters and renders only the rest.</string>
+    <string name="copy_timed_out_text">Android stops long jobs after 6 hours. Tap Continue to open ListenLock and go on; a talking book keeps its finished chapters and renders only the rest.</string>
     <string name="copy_continue">Continue</string>
     <!-- File name of a talking book: %1$s the title, e.g. "Moby Dick - talking book". -->
     <string name="copy_talking_book_file">%1$s - talking book</string>
@@ -64,7 +64,7 @@
     <string name="notes_note">Note</string>
     <!-- Save as audiobook goes on where it stopped (ADR-034). %1$s is the book's title. -->
     <string name="export_timed_out_title">Saving “%1$s” paused by Android\'s time limit</string>
-    <string name="export_timed_out_text">Android stops long jobs after 6 hours. Tap Continue to open Audora and go on; chapters already saved are kept.</string>
+    <string name="export_timed_out_text">Android stops long jobs after 6 hours. Tap Continue to open ListenLock and go on; chapters already saved are kept.</string>
     <string name="export_continue">Continue</string>
     <!-- %1$s is the folder, e.g. "Audiobooks/Moby Dick". -->
     <string name="export_cancelled_resume">Chapters already saved are kept in %1$s. Save the book as an audiobook again to go on from there.</string>

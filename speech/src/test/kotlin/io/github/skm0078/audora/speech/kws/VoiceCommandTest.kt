@@ -12,21 +12,22 @@ import org.junit.Test
 
 class VoiceCommandTest {
     @Test
-    fun `every phrase is one line starting with Audora and tagged with its command`() {
+    fun `every phrase is one line starting with ListenLock and tagged with its command`() {
         val lines = VoiceCommand.keywordsFile().trimEnd('\n').lines()
         assertEquals(VoiceCommand.entries.sumOf { it.tokens.size }, lines.size)
         lines.forEach { line ->
-            assertTrue(line, line.startsWith("▁A U D OR A ▁"))
+            assertTrue(line, VoiceCommand.WAKE_TOKENS.any { line.startsWith("$it ▁") })
             val tag = line.substringAfterLast(' ')
             assertTrue(line, tag.startsWith("@"))
             assertTrue(line, VoiceCommand.of(tag) != null)
         }
-        assertTrue("▁A U D OR A ▁ST O P @PAUSE" in lines)
+        assertTrue("▁LI S T EN LO CK ▁ST O P @PAUSE" in lines)
+        assertTrue("▁LI S T EN ▁LO CK ▁ST O P @PAUSE" in lines)
     }
 
     @Test
     fun `no two commands share a phrase`() {
-        val phrases = VoiceCommand.entries.flatMap { it.tokens.toList() }
+        val phrases = VoiceCommand.entries.flatMap { it.tokens }
         assertEquals(phrases.size, phrases.toSet().size)
     }
 
@@ -52,12 +53,12 @@ class VoiceCommandTest {
     fun `commands are ignored while the book says the app's name and for the hold after`() {
         val echo = NarratorEcho(holdMs = 2_000)
         assertFalse(echo.suppresses(0))
-        echo.sentenceStarted("Then AUDORA said: pause the music.", 1_000)
+        echo.sentenceStarted("Then LISTENLOCK said: pause the music.", 1_000)
         assertTrue(echo.suppresses(1_500))
         echo.sentenceStarted("The next sentence.", 4_000)
         assertTrue(echo.suppresses(5_999))
         assertFalse(echo.suppresses(6_000))
-        echo.sentenceStarted("ऑडोरा ने कहा", 7_000)
+        echo.sentenceStarted("লিসেন লক বলল", 7_000)
         echo.stopped(8_000)
         assertTrue(echo.suppresses(9_000))
         assertFalse(echo.suppresses(10_000))

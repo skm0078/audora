@@ -37,7 +37,7 @@ internal fun Context.continueStudioJobs(intent: Intent) {
     AudiobookExport.continueFrom(this, intent)
 }
 
-/** Plan item 30: the book's highlights, bookmarks and voice notes to Documents/Audora; a toast says where. */
+/** Plan item 30: the book's highlights, bookmarks and voice notes to Documents/ListenLock; a toast says where. */
 internal fun Context.exportNotes(scope: CoroutineScope, stores: MarkStores, book: Book) {
     scope.launch {
         val message = when (val saved = NotesExport.export(applicationContext, book.id, book.title, stores)) {
