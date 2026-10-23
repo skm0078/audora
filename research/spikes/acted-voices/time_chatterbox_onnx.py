@@ -48,7 +48,8 @@ LINES = [
     ("angry", "दरवाज़ा बंद करो, आँधी अंदर आ रही है!"),
 ]
 STRENGTHS = (0.5, 0.7)
-LM_FILES = {"fp32": "language_model", "q4": "language_model_q4"}
+LM_FILES = {"fp32": "language_model", "q4": "language_model_q4", "int8": "language_model_int8"}
+SHORT_PROMPT_S = 3.0  # a shorter reference clip: the decoder re-renders the whole prompt on every call
 
 
 def peak_rss_mb() -> float:
@@ -133,14 +134,37 @@ def generate(models: dict, voice: tuple, tokenizer: Tokenizer, text: str, streng
     lm_s = time.perf_counter() - start
     speech = tokens[:, 1:-1] if stopped else tokens[:, 1:]
     start = time.perf_counter()
-    wav = models["decoder"].run(None, {
+    wav = decode(models, voice, speech)
+    decode_s = time.perf_counter() - start
+    return {"wav": wav, "speech": speech, "tokens": int(speech.shape[1]), "cap": cap, "capped": not stopped,
+            "lm_s": lm_s, "decode_s": decode_s}
+
+
+def decode(models: dict, voice: tuple, speech: np.ndarray) -> np.ndarray:
+    _, prompt_token, speaker_embeddings, speaker_features = voice
+    return models["decoder"].run(None, {
         "speech_tokens": np.concatenate([prompt_token, speech], axis=1),
         "speaker_embeddings": speaker_embeddings,
         "speaker_features": speaker_features,
     })[0].squeeze(axis=0)
-    decode_s = time.perf_counter() - start
-    return {"wav": wav, "tokens": int(speech.shape[1]), "cap": cap, "capped": not stopped,
-            "lm_s": lm_s, "decode_s": decode_s}
+
+
+def quantize_int8(root: Path) -> None:
+    """Dynamic int8 (per channel) from the fp32 language model; the export ships no 8-bit model."""
+    from onnxruntime.quantization import QuantType, quantize_dynamic
+
+    target = root / "onnx" / "language_model_int8.onnx"
+    if not target.exists():
+        start = time.perf_counter()
+        quantize_dynamic(root / "onnx" / "language_model.onnx", target, weight_type=QuantType.QInt8, per_channel=True,
+                         use_external_data_format=True)
+        print(f"Quantized to int8 in {time.perf_counter() - start:.0f} s", flush=True)
+
+
+def timed(fn):
+    start = time.perf_counter()
+    value = fn()
+    return value, time.perf_counter() - start
 
 
 def main() -> int:
@@ -156,8 +180,10 @@ def main() -> int:
     root = Path(snapshot_download(
         REPO_ID, revision=REVISION, local_dir=args.models,
         allow_patterns=["tokenizer*.json", "default_voice.wav", "onnx/speech_encoder.onnx*", "onnx/embed_tokens.onnx*",
-                        "onnx/conditional_decoder.onnx*", f"onnx/{LM_FILES[args.lm]}.onnx*"],
+                        "onnx/conditional_decoder.onnx*", f"onnx/{LM_FILES['fp32' if args.lm == 'int8' else args.lm]}.onnx*"],
     ))
+    if args.lm == "int8":
+        quantize_int8(root)
     paths = {
         "encoder": root / "onnx" / "speech_encoder.onnx",
         "embed": root / "onnx" / "embed_tokens.onnx",
@@ -183,10 +209,11 @@ def main() -> int:
     notes.append("- voice.npz: " + ", ".join(f"{k}{v.shape}:{v.dtype}" for k, v in zip(
         ("cond_emb", "prompt_token", "speaker_embeddings", "speaker_features"), voice)))
 
-    rows, records = [], []
+    rows, records, results = [], [], []
     for strength in STRENGTHS:
         for name, text in LINES:
             result = generate(models, voice, tokenizer, text, strength)
+            results.append({**result, "strength": strength})
             audio_s = len(result["wav"]) / SAMPLE_RATE
             total = result["lm_s"] + result["decode_s"]
             sf.write(out / f"hi-{name}-{int(strength * 10)}.wav", result["wav"], SAMPLE_RATE)
@@ -198,6 +225,26 @@ def main() -> int:
                         f"{total / audio_s:.2f} | {result['tokens']}/{result['cap']}{' CAPPED' if result['capped'] else ''} |")
             print(rows[-1], flush=True)
 
+    # The decoder re-renders the reference prompt on every call, so its cost has a fixed part. Two ways around it:
+    # decode a paragraph (all lines at the first strength) in one call, and a shorter reference clip.
+    firsts = [r for r in results if r["strength"] == STRENGTHS[0]]
+    joined = np.concatenate([r["speech"] for r in firsts], axis=1)
+    batch_wav, batch_s = timed(lambda: decode(models, voice, joined))
+    sf.write(out / "hi-paragraph-5.wav", batch_wav, SAMPLE_RATE)
+    batch_audio = len(batch_wav) / SAMPLE_RATE
+    reference = load_voice(root / "default_voice.wav")[:, : int(SHORT_PROMPT_S * SAMPLE_RATE)]
+    short_voice = tuple(models["encoder"].run(None, {"audio_values": reference}))
+    narration = generate(models, short_voice, tokenizer, LINES[0][1], STRENGTHS[0])
+    sf.write(out / "hi-narration-short-prompt-5.wav", narration["wav"], SAMPLE_RATE)
+    extra = [
+        f"- One decoder call for the {len(firsts)} lines at {STRENGTHS[0]}: {batch_s:.1f} s for {batch_audio:.1f} s "
+        f"(decoder RTF {batch_s / batch_audio:.2f}; one call per line took "
+        f"{sum(r['decode_s'] for r in firsts):.1f} s).",
+        f"- {SHORT_PROMPT_S:.0f} s reference ({short_voice[1].shape[1]} prompt tokens instead of {voice[1].shape[1]}): "
+        f"narration decoder {narration['decode_s']:.1f} s, LM {narration['lm_s']:.1f} s, "
+        f"{len(narration['wav']) / SAMPLE_RATE:.1f} s of audio.",
+    ]
+
     audio = sum(r["audio_s"] for r in records)
     work = sum(r["lm_s"] + r["decode_s"] for r in records)
     summary = [
@@ -205,7 +252,7 @@ def main() -> int:
         f"Load {load_s:.1f} s; voice encoder {encode_s:.1f} s (once per voice); peak memory {peak_rss_mb():.0f} MB; "
         f"overall RTF {work / audio:.2f} ({work:.0f} s of work for {audio:.0f} s of audio).", "",
         "| Line | Strength | Audio s | LM s | Decoder s | RTF | Tokens/cap |", "|---|---:|---:|---:|---:|---:|---|",
-        *rows, "", *notes, "",
+        *rows, "", *extra, *notes, "",
     ]
     (out / "results.md").write_text("\n".join(summary), encoding="utf-8")
     (out / "results.json").write_text(json.dumps({"load_s": load_s, "encode_s": encode_s, "peak_mb": peak_rss_mb(),
