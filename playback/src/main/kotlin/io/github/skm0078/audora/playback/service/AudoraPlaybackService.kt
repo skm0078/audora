@@ -194,7 +194,7 @@ class AudoraPlaybackService : MediaLibraryService() {
                 replayStyle = { factor -> style.config.replayStyle(heard(), factor) },
             ),
             config = config,
-            events = publisher(mediaSession, stores, heard, engines).also { it.publishInitial() },
+            events = publisher(mediaSession, stores, heard, engines, reading).also { it.publishInitial() },
             env = sessionEnvironment(scope, AccelerometerShakes(this, config.sleep)),
         )
         resumption = PlaybackResumption(
@@ -297,6 +297,7 @@ class AudoraPlaybackService : MediaLibraryService() {
         stores: SessionStores,
         heard: () -> SpeechStyle,
         engines: VoiceEngines,
+        reading: ReadingSource,
     ): SessionPublisher {
         val recorder = ResumeRecorder(resumeAnchors, resumeScope, PIPELINE_VERSION, System::currentTimeMillis)
         return SessionPublisher(
@@ -309,6 +310,8 @@ class AudoraPlaybackService : MediaLibraryService() {
             timings = timings,
             focusSound = stores.focusSound::current,
             blend = { blendAvailability(engines, voices) },
+            // The speech sheet says what the book reads as (ADR-056), only while that shapes the reading.
+            intent = { reading.intent.takeIf { it.told && heard().shaping.suitBook }?.current },
         )
     }
 

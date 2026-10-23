@@ -122,7 +122,7 @@ internal class CopyJob(
         }
         val renderer = StudioSentenceRenderer(rendering.live, store) { rendering.key }
         val sink = AacAudioSink(LocalChapterFiles(staging), chapters.size)
-        val exported = AudiobookExporter(renderer, AudiobookConfig(), rendering.reading, rendering.quotes::page)
+        val exported = AudiobookExporter(renderer, AudiobookConfig(), rendering.reading, rendering::page)
             .export(text, remaining, sink, recorder, logContext)
         return when (exported) {
             is Outcome.Failure -> Outcome.Failure(exported.error.toCopyError())

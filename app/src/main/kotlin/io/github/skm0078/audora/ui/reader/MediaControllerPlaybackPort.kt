@@ -13,6 +13,7 @@ import androidx.media3.session.SessionResult
 import com.google.common.util.concurrent.ListenableFuture
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.ContentIntent
 import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
@@ -268,6 +269,7 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
                 ?.let(extras::getLong),
             voiceExpressive = PlaybackContract.SESSION_VOICE_EXPRESSIVE.takeIf(extras::containsKey)
                 ?.let(extras::getBoolean),
+            readingIntent = ContentIntent.of(extras.getString(PlaybackContract.SESSION_READING_INTENT)),
             // A skipped sentence is reported in the extras while reading goes on; only a stop is an error.
             errorCode = player.playerError?.errorCodeName
                 ?: extras.getString(PlaybackContract.SESSION_ERROR)?.takeUnless { player.playWhenReady },

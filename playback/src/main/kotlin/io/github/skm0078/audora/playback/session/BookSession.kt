@@ -100,7 +100,7 @@ class BookSession(
     private val opening = Mutex()
     private val playlist = PlaylistView(player)
     private val reporter = ReadingReporter(events)
-    private val loader = PageLoader(env.scope, env.extraction, LoaderEvents(), sources.reading.quotes::page)
+    private val loader = PageLoader(env.scope, env.extraction, LoaderEvents(), sources.reading::page)
     private val faults = FaultHandler()
     private val sleep = SleepControl()
 
@@ -447,7 +447,7 @@ class BookSession(
         chapterStop.chapterStarts = chapters
         sources.reading.chapterPages = chapters.toSet()
         sources.reading.scanned = opened.text::isScanned
-        sources.reading.quotes.clear()
+        sources.reading.clearBook()
         // The book's own speed, voices and pronunciation fixes, before its first sentence is rendered.
         sources.onBook(opened.book.id)
         AudoraLog.i(TAG, "Opened book=${opened.book.id.logLabel} chapters=${chapters.size}")

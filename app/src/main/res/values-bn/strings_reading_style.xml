@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_reading_style.xml -->
+<!-- Purpose: Bengali copies of the reading style and "More options" strings (ADR-056). -->
+<resources>
+    <string name="reading_style_title">বই অনুযায়ী পড়ুন</string>
+    <string name="reading_style_detail">গল্প, কবিতা, ধর্মগ্রন্থ, খবর আর পাঠ্যবই, প্রত্যেকের নিজের গতি আছে। গল্পের লাইন পড়া হয় তার শব্দ যেমন বলে: ফিসফিস আস্তে, চিৎকার জোরে, দুঃখের লাইন ধীরে।</string>
+    <string name="reading_style_as">এই বইটি পড়া হচ্ছে: %1$s।</string>
+    <string name="reading_style_telling">প্রথম পাতাগুলো পড়ে বোঝা হচ্ছে এটি কেমন বই।</string>
+    <string name="reading_style_story">গল্প, অনুভূতি দিয়ে, সংলাপ একটু দ্রুত</string>
+    <string name="reading_style_children">ছোটদের গল্প, ধীর আর আদরমাখা, অনুভূতি দিয়ে</string>
+    <string name="reading_style_poetry">কবিতা, ধীরে, লম্বা বিরতি দিয়ে</string>
+    <string name="reading_style_scripture">ধর্মগ্রন্থ, শান্ত আর সমান</string>
+    <string name="reading_style_news">খবর, দ্রুত আর সমান</string>
+    <string name="reading_style_report">সরকারি লেখা, সমান আর স্পষ্ট</string>
+    <string name="reading_style_study">পড়াশোনার বই, স্পষ্ট, শিরোনামের পরে বিরতি</string>
+    <string name="reading_style_general">সাধারণ গদ্য, স্বাভাবিক পড়া</string>
+
+    <string name="more_options_expanded">খোলা</string>
+    <string name="more_options_collapsed">বন্ধ</string>
+    <string name="speech_more_title">বলার আরও বিকল্প</string>
+    <string name="speech_more_summary">যতিচিহ্নে বিরতি, শব্দ, সংলাপ আর চরিত্রের কণ্ঠ, অনুশীলন আর ফোকাস শব্দ</string>
+</resources>
