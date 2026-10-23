@@ -305,6 +305,8 @@
     <string name="voices_import_choose_folder">ফোল্ডার বেছে নিন</string>
     <string name="voices_recommended">এই ভাষার জন্য প্রস্তাবিত</string>
     <string name="settings_licences_body">প্রতিটি ভয়েস কে তৈরি করেছেন, তার লাইসেন্স এবং সেটি কোথা থেকে এসেছে।</string>
+    <string name="settings_privacy_title">গোপনীয়তা নীতি</string>
+    <string name="settings_privacy_body">Audora আপনার সম্পর্কে কিছুই সংগ্রহ করে না। পুরো নীতি আপনার ব্রাউজারে খোলে।</string>
     <string name="licences_title">ভয়েস ও লাইসেন্স</string>
     <string name="licences_load_failed">লাইসেন্সগুলো লোড করা যায়নি। বারবার এমন হলে সেটিংস থেকে লগ শেয়ার করুন।</string>
     <string name="licences_intro">Audora অন্যদের তৈরি ও শেয়ার করা ভয়েস দিয়ে পড়ে। লাইসেন্সের শর্ত মেনে প্রতিটির লাইসেন্স ও কৃতিত্ব এখানে দেওয়া আছে।</string>

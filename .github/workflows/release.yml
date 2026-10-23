@@ -1,5 +1,6 @@
 # File: .github/workflows/release.yml
-# Purpose: Builds the signed release APK and publishes it to GitHub Releases as audora-vX.Y.Z-arm64.apk
+# Purpose: Builds the signed release APK and publishes it to GitHub Releases as audora-vX.Y.Z-arm64.apk; also
+#          builds the signed Play bundle (.aab) as a run artifact for upload in Play Console
 #          (Build Spec §7, ticket P0-02). Runbook: docs/RELEASING.md.
 #
 # Two ways to start it, both only from the prod branch:
@@ -115,13 +116,13 @@ jobs:
           umask 077
           printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/release.p12"
 
-      - name: ktlint, detekt, unit tests, signed release APK
+      - name: ktlint, detekt, unit tests, signed release APK and Play bundle
         env:
           AUDORA_KEYSTORE_PATH: ${{ runner.temp }}/release.p12
           AUDORA_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           AUDORA_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           AUDORA_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew ktlintCheck detekt test :app:assembleRelease --stacktrace
+        run: ./gradlew ktlintCheck detekt test :app:assembleRelease :app:bundleRelease --stacktrace
 
       - name: Delete the keystore
         if: always()
@@ -159,6 +160,27 @@ jobs:
           fi
           echo "cert-sha256=$cert" >> "$GITHUB_OUTPUT"
 
+      # Play App Signing holds a copy of this same key and it is also the upload key (RELEASING.md, "Google Play"),
+      # so the bundle must carry the pinned certificate too, or Play refuses the upload.
+      - name: Verify the Play bundle signature
+        run: |
+          shopt -s nullglob
+          aabs=(app/build/outputs/bundle/release/*.aab)
+          if (( ${#aabs[@]} != 1 )); then
+            echo "::error::Expected exactly one release bundle, found: ${aabs[*]:-none}"
+            exit 1
+          fi
+          keytool -printcert -jarfile "${aabs[0]}" | tee aab-cert.txt
+          certs="$(grep -oE 'SHA256: [0-9A-F:]{95}' aab-cert.txt | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f' | sort -u)"
+          if [[ -z "$certs" || "$(wc -l <<< "$certs")" -ne 1 ]]; then
+            echo "::error::Expected exactly one signer certificate on the bundle, keytool printed: ${certs:-none}"
+            exit 1
+          fi
+          if [[ -n "$EXPECTED_CERT_SHA256" && "$certs" != "$EXPECTED_CERT_SHA256" ]]; then
+            echo "::error::Bundle signed with certificate $certs, but releases must use $EXPECTED_CERT_SHA256."
+            exit 1
+          fi
+
       - name: Name the APK
         env:
           TAG: ${{ steps.version.outputs.tag }}
@@ -174,6 +196,15 @@ jobs:
           path: dist/*
           if-no-files-found: error
           retention-days: 30
+
+      # For upload in Play Console by hand. Kept out of the GitHub release, which carries exactly one APK for Obtainium.
+      - name: Upload the Play bundle
+        uses: actions/upload-artifact@v5
+        with:
+          name: audora-play-${{ steps.version.outputs.tag }}
+          path: app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          retention-days: 90
 
   # Separate job so only this one holds write access, and it never sees the signing secrets.
   publish:

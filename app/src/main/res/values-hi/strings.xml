@@ -305,6 +305,8 @@
     <string name="voices_import_choose_folder">फ़ोल्डर चुनें</string>
     <string name="voices_recommended">इस भाषा के लिए सुझाई गई</string>
     <string name="settings_licences_body">हर आवाज़ किसने बनाई, उसका लाइसेंस और वह कहाँ से आई।</string>
+    <string name="settings_privacy_title">गोपनीयता नीति</string>
+    <string name="settings_privacy_body">Audora आपके बारे में कुछ भी इकट्ठा नहीं करता। पूरी नीति आपके ब्राउज़र में खुलती है।</string>
     <string name="licences_title">आवाज़ें और लाइसेंस</string>
     <string name="licences_load_failed">लाइसेंस लोड नहीं हो सके। अगर ऐसा बार-बार हो, तो सेटिंग्स से लॉग शेयर करें।</string>
     <string name="licences_intro">Audora उन आवाज़ों से पढ़ता है जिन्हें दूसरे लोगों ने बनाया और साझा किया है। हर आवाज़ उसके लाइसेंस और श्रेय के साथ दी गई है, जैसा उसका लाइसेंस कहता है।</string>

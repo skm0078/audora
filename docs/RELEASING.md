@@ -9,7 +9,8 @@ How a signed APK gets from `prod` to friends' phones, and how the signing key is
   updates an older one.
 - `.github/workflows/release.yml` builds `:app:assembleRelease`, signs it with the release key, checks
   16 KB alignment and the signature, and publishes `audora-vX.Y.Z-arm64.apk` plus `SHA256SUMS.txt` to
-  GitHub Releases under the tag `vX.Y.Z`.
+  GitHub Releases under the tag `vX.Y.Z`. It also builds the signed Play bundle (`:app:bundleRelease`) and keeps it
+  as the run's `audora-play-vX.Y.Z` artifact for upload in Play Console (see "Google Play").
 - It refuses to run unless the commit is on `prod` and the tag matches `audora.versionName`.
 - The key lives in the GitHub environment **release**, which only `prod` and `v*` tags may use. A workflow
   changed on any other branch cannot read it. The build job that holds the key has read-only access to the
@@ -161,6 +162,28 @@ to keep the backups in step 4.
 The dev build (`io.github.skm0078.audora.debug`) is not registered. On a phone where verification is enforced it
 installs with `adb install` or after Android's one-time "advanced flow" (Developer options, a one-day wait).
 
+## Google Play
+
+Audora is published on Google Play from a personal Play Console account (developer name TelosMind). Play installs
+and GitHub/Obtainium installs carry the **same signature**, so either one updates the other and nobody loses their
+library when they switch.
+
+- **Play App Signing uses this release key.** Before the first upload, Play Console → the app → Test and release →
+  App integrity → change the app signing key → *Export and upload a key from Java keystore*, using the `pepk.jar`
+  command the console shows, run in `D:\AUDORA\signing`. The same key is the upload key. A separate upload key
+  would add a second secret without removing the signing key from CI, where the APK job already needs it.
+- **Getting the bundle:** after a Release run, open it under
+  https://github.com/skm0078/audora/actions/workflows/release.yml, scroll to **Artifacts**, download
+  `audora-play-vX.Y.Z`, unzip it, and upload the `.aab` in Play Console. Artifacts are kept for 90 days. Play refuses
+  a versionCode it has already seen, so every upload needs a new `audora.versionName`.
+- **Language splits are off** (`bundle.language.enableSplit = false` in `app/build.gradle.kts`): the in-app
+  language switch needs the Hindi and Bengali strings on every phone.
+- **Privacy policy:** `docs/privacy.html`, served by GitHub Pages at https://skm0078.github.io/audora/privacy.html
+  and linked from Settings → Privacy policy. Pages setup (once): https://github.com/skm0078/audora/settings/pages →
+  *Source* **Deploy from a branch** → branch **dev**, folder **/docs** → **Save**. `docs/.nojekyll` makes Pages
+  serve the files as they are, without building the Markdown docs. Update the date on the page with every change,
+  and update Play Console's Data safety form in the same release if what Audora sends or keeps changes.
+
 ## When something fails
 
 | Error in the Release run | Meaning | Fix |
@@ -174,6 +197,7 @@ installs with `adb install` or after Android's one-time "advanced flow" (Develop
 | `AUDORA_DEBUG_KEYSTORE_B64 is not a keystore ...` (Android CI) | The secret was cut short or is another file | Repeat steps 2 to 4 of "Add the dev key" |
 | `Debug APK signed with ..., not with the dev key ...` (Android CI) | The build did not pick up the restored keystore | Check the "Stable debug signing key" step's log; the keystore path may have moved in a new AGP |
 | `Signed with certificate ... but releases must use ...` | The secrets hold a different key | Restore the original key from backup and re-add the secrets |
+| `Bundle signed with certificate ...` | The bundle was signed with another key than the APK | Same fix as the line above; Play would refuse this upload |
 
 ## If the key is lost or leaked
 

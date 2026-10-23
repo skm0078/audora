@@ -44,6 +44,12 @@ android {
         noCompress += "onnx"
     }
 
+    bundle {
+        // Settings can switch the app to Hindi or Bengali whatever the phone's language is (ADR-036). Play's
+        // language splits would install only the phone's languages, so the switch would show English.
+        language { enableSplit = false }
+    }
+
     packaging {
         jniLibs {
             // sherpa-onnx's Kotlin API loads only libsherpa-onnx-jni.so and libonnxruntime.so (ADR-012).
