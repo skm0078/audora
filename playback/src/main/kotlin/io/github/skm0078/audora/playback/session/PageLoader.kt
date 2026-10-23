@@ -14,15 +14,16 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runInterruptible
 
 /**
  * Main-thread object; only the PDF reads run on [extraction] (one thread: PDFium documents must not be used
  * from two threads, P1-02). Pages load while the feeder wants more (Build Spec §6: lazily, about two pages
- * ahead). [cancel] on every rebuild: a cancelled load never appends, because `withContext` re-checks
- * cancellation before returning. Every loaded page goes whole to [onPage] first, with whether it opens inside the
- * sentence the page before broke off, before the resume point trims it (the quote carry, plan item 7, reads the
- * sentences before the one playing).
+ * ahead). [cancel] on every rebuild: a cancelled load never appends, because `runInterruptible` re-checks
+ * cancellation before returning, and it interrupts the read: a scanned page's OCR (up to a minute) stops between its
+ * steps, so a jump elsewhere does not wait for a page nobody will hear. Every loaded page goes whole to [onPage]
+ * first, with whether it opens inside the sentence the page before broke off, before the resume point trims it
+ * (the quote carry, plan item 7, reads the sentences before the one playing).
  */
 class PageLoader(
     private val scope: CoroutineScope,
@@ -72,7 +73,7 @@ class PageLoader(
         feeder: PlaylistFeeder,
         page: Int,
         logContext: String,
-    ): Boolean = when (val loaded = withContext(extraction) { text.reading(page) }) {
+    ): Boolean = when (val loaded = runInterruptible(extraction) { text.reading(page) }) {
         is Outcome.Success -> {
             val reading = loaded.value
             onPage(reading.units, reading.continuesPreviousPage)

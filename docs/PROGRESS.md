@@ -2,6 +2,13 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Large scanned books never hang the app (2026-10-23, ADR-054)
+- **Root cause:** a scanned page's OCR (up to a minute) ran under the book's lock, and leaving the reader or stopping playback closed the book on the main thread, which waited for that lock: an "isn't responding" dialog. Turned pages queued behind the old pages' OCR, and search OCR'd the whole book.
+- **Fixes:** `PdfBook.close()` never waits (the document closes as the page being read lets go); page reads in the reader and the player are interruptible and OCR stops between its steps; one OCR page in memory at a time across the app; running out of memory on a page fails that page instead of crashing; search never runs OCR (scanned pages join it once shown or read aloud).
+- **Feedback:** a page still loading after 3 s says it is being read with OCR and that pages can still be turned (English, Hindi, Bengali).
+- **Guards:** debug builds log a main thread stuck for 2 s with its stack to the shared logs (`StallWatchdog`), plus StrictMode in logcat. Tests: `PdfBookCloseTest`, `RenderedPageOcrStopTest`, `StallWatchdogTest`, and the emulator's `LargeScannedBookTest` on a generated 700-page scanned PDF. No `:pdf` output change (PIPELINE_VERSION 12, golden unchanged).
+
+**Real-device checks (Moto):** open the 700-page scanned book, flip quickly through ten pages, open search, leave the reader while a page shows the OCR notice, then play and stop from the notification. Nothing should freeze; Share logs should show no `Main thread stuck` lines.
 ## Final polish before the Play release (2026-10-23)
 - **Four UI gaps closed:** the backup dialog has a Close button; every voice that can speak has a play/stop sample on the Voices screen and on first run (one line in the voice's own language, with the listener's speed and style, outside the book player; `VoiceSampler`, `QuizSpeaker.speakFor`); a one-time card above the reader's controls names the two long-press gestures; the Notes tab lists highlights and voice notes next to bookmarks, in reading order, and a tap opens each place (`NoteEntry`, `ReaderModel.goToPlace`).
 - **Persona review (code and strings, no device):** a TalkBack listener, a first-time Bengali user, a crash hunter and an exam student walked the flows. Fixed from it:

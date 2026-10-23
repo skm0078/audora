@@ -17,6 +17,8 @@ import io.github.skm0078.audora.pdf.quality.PageOcrFactory
 import io.github.skm0078.audora.pdf.quality.PageRenderer
 import io.github.skm0078.audora.pdf.quality.ocrLangs
 import java.util.Locale
+import java.util.concurrent.Semaphore
+import java.util.concurrent.locks.ReentrantLock
 
 /** Recognizes text in a page image. Tesseract on Android (`TesseractEngine`); fakes in tests. */
 interface OcrEngine {
@@ -44,6 +46,11 @@ interface OcrEngine {
  *
  * Logs one line per recognised page with the time spent drawing and recognising it (done-when: per-page time on
  * the test phones), never the text.
+ *
+ * Bounded and stoppable, because a scanned book is hundreds of these: one page is drawn and read at a time in the
+ * whole process ([PAGE_PERMIT]: one page's images in memory, whichever book or screen asked), a page that runs out
+ * of memory fails instead of crashing the app, and between its steps a page stops when its thread is interrupted
+ * ([InterruptedException], the reader turned away) or its book is closing ([PageRenderer.abandoned], a failure).
  */
 // The book, its renderer and logs, the engine, the cache, two configs and cache-only; PageOcr calls and steps.
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -112,6 +119,7 @@ class RenderedPageOcr(
             BOTTOM_STRIP to image.strip(1 - share, 1f),
         )) {
             if (strip == null) continue
+            checkpoint()
             // Retried like the page itself, or a running header the page's retry cleaned up never matches the
             // neighbours' garbled reads of it.
             when (val read = engine.recognize(strip, langs).map { lineRetry.improve(it, strip, langs) }) {
@@ -132,12 +140,16 @@ class RenderedPageOcr(
      */
     private fun readUpright(image: PageImage, langs: Set<Lang>): Outcome<OcrText, OcrError> =
         engine.recognize(image, langs).flatMap { asDrawn ->
+            checkpoint()
             val turns = if (asDrawn.meanConfidence >= config.orientationCheckBelow) 0 else bestTurn(image, langs)
             val upright = image.turned(turns)
             val read = if (turns == 0) Outcome.Success(asDrawn) else engine.recognize(upright, langs)
             read.map { page ->
+                checkpoint()
                 val (lit, litFrom) = evenlyLit(page, upright, langs)
+                checkpoint()
                 val (best, from) = softenedIfWorn(lit, litFrom, langs)
+                checkpoint()
                 finished(best, from, langs, turns)
             }
         }
@@ -265,6 +277,7 @@ class RenderedPageOcr(
     private fun bestTurn(image: PageImage, langs: Set<Lang>): Int {
         val small = image.shrunkTo(config.orientationDpi)
         val scores = IntArray(OcrText.FULL_TURN) { turns ->
+            checkpoint()
             (engine.recognize(small.turned(turns), langs) as? Outcome.Success)?.value?.meanConfidence ?: 0
         }
         val best = scores.indices.maxBy { scores[it] }
@@ -281,20 +294,60 @@ class RenderedPageOcr(
             cache?.peek(key)?.let(OcrTextCodec::decode)?.let { Outcome.Success(it) }
                 ?: Outcome.Failure(OcrError.Failed("page ${key.page} is not in the OCR cache"))
         } else {
-            synchronized(lockFor(key)) {
+            val pageLock = lockFor(key)
+            pageLock.lockInterruptibly()
+            try {
                 cache?.get(key)?.let(OcrTextCodec::decode)?.let { return Outcome.Success(it) }
-                val result = recognizeNow(key, read)
+                val result = withPagePermit { recognizeNow(key, read) }
                 if (result is Outcome.Success) cache?.put(key, OcrTextCodec.encode(result.value))
                 result
+            } finally {
+                pageLock.unlock()
             }
         }
 
-    private fun recognizeNow(key: OcrKey, read: (PageImage) -> Outcome<OcrText, OcrError>): Outcome<OcrText, OcrError> {
+    /** [block] holding the process's one OCR page permit; a closing book's page ends as a failure here. */
+    private fun withPagePermit(block: () -> Outcome<OcrText, OcrError>): Outcome<OcrText, OcrError> {
+        PAGE_PERMIT.acquire()
+        return try {
+            checkpoint()
+            block()
+        } catch (abandoned: OcrAbandoned) {
+            AudoraLog.d(TAG, "OCR stopped, the book is closing, $logContext: ${abandoned.message}")
+            Outcome.Failure(OcrError.Failed("stopped: the book is closing"))
+        } finally {
+            PAGE_PERMIT.release()
+        }
+    }
+
+    /**
+     * Between OCR steps: stops a page nobody waits for. An interrupted thread (the reader turned away) gets
+     * [InterruptedException], the interrupt consumed as Java does; a closing book gets [OcrAbandoned].
+     */
+    private fun checkpoint() {
+        if (Thread.interrupted()) throw InterruptedException("OCR cancelled, $logContext")
+        if (pages.abandoned()) throw OcrAbandoned(logContext)
+    }
+
+    /**
+     * A page's images are the largest allocations in the app (`OcrConfig.maxRenderPixels`): running out of memory on
+     * one costs that page its OCR, never the app.
+     */
+    private fun recognizeNow(key: OcrKey, read: (PageImage) -> Outcome<OcrText, OcrError>): Outcome<OcrText, OcrError> =
+        try {
+            drawAndRead(key, read)
+        } catch (e: OutOfMemoryError) {
+            AudoraLog.e(TAG, "OCR ran out of memory, $logContext page=${key.page} dpi=${key.dpi} ${key.variant}", e)
+            Outcome.Failure(OcrError.Failed("out of memory reading the page", e))
+        }
+
+    private fun drawAndRead(key: OcrKey, read: (PageImage) -> Outcome<OcrText, OcrError>): Outcome<OcrText, OcrError> {
         val started = System.nanoTime()
         val image = when (val drawn = pages.render(key.page, key.dpi, config.maxRenderPixels)) {
             is Outcome.Success -> drawn.value
             is Outcome.Failure -> return Outcome.Failure(OcrError.Failed("could not draw the page: ${drawn.error}"))
         }
+        checkpoint()
         val drawnAt = System.nanoTime()
         val result = read(image)
         val done = System.nanoTime()
@@ -309,6 +362,11 @@ class RenderedPageOcr(
                 "recognizeMs=${(done - drawnAt) / NANOS_PER_MS} $outcome",
         )
         return result
+    }
+
+    /** A closing book's page, stopped between steps; [withPagePermit] turns it into a failure. No stack trace. */
+    private class OcrAbandoned(logContext: String) : Exception("abandoned, $logContext") {
+        override fun fillInStackTrace(): Throwable = this
     }
 
     companion object {
@@ -328,10 +386,20 @@ class RenderedPageOcr(
         /** Margin strips with the line retry, like the page they are compared with. */
         private const val MARGIN_VARIANT = "margins-r2-"
 
-        /** Striped, so the locks stay few however many pages a session reads. */
-        private val locks = Array(LOCK_STRIPES) { Any() }
+        /**
+         * Striped, so the locks stay few however many pages a session reads. Interruptible: a reader that turned the
+         * page stops waiting for another screen's read of it.
+         */
+        private val locks = Array(LOCK_STRIPES) { ReentrantLock() }
 
-        private fun lockFor(key: OcrKey): Any = locks[Math.floorMod(key.hashCode(), LOCK_STRIPES)]
+        /**
+         * One page drawn and read at a time in the process: a 300 dpi page is a 12 M pixel bitmap plus grey, turned,
+         * evened and softened copies, and the reader, the player and studio mode may each be reading one. Fair, so
+         * the page the listener waits for queues behind at most the pages already waiting.
+         */
+        private val PAGE_PERMIT = Semaphore(1, true)
+
+        private fun lockFor(key: OcrKey): ReentrantLock = locks[Math.floorMod(key.hashCode(), LOCK_STRIPES)]
 
         /** What `PdfBook.open(ocr = …)` takes: this OCR bound to the book being opened. */
         @Suppress("LongParameterList") // Everything the constructor takes except the renderer.

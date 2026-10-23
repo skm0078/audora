@@ -208,7 +208,8 @@ class ReaderModel(
      */
     suspend fun sentencesForSearch(page: Int): List<ReadingUnit>? {
         val opened = document ?: return null
-        val read = (opened.page(page) as? Outcome.Success)?.value
+        // Never OCR for search: a scanned page not read yet is left out (the index retries it next time).
+        val read = (opened.pageIfReady(page) as? Outcome.Success)?.value
         return read?.units?.takeIf { read.origin == PageOrigin.TEXT || read.origin == PageOrigin.OCR }
     }
 

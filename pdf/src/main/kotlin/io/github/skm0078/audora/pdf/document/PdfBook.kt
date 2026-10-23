@@ -35,6 +35,7 @@ import io.github.skm0078.audora.pdf.units.ReadingUnitBuilder
 import io.github.skm0078.audora.pdf.units.opensWithProse
 import io.github.skm0078.audora.pdf.units.opensWithTable
 import java.io.Closeable
+import java.util.concurrent.locks.ReentrantLock
 
 /**
  * One book, read a page at a time around the playhead, so books of any length fit in memory. Header and footer
@@ -53,9 +54,15 @@ import java.io.Closeable
  * the document is closed and opened again with the same password. Thread-safe: calls are serialized, because
  * a PDFium document must not be used from two threads at once.
  *
+ * Never blocks a caller for long on someone else's page: a scanned page can take a minute of OCR under the book's
+ * lock. [close] returns at once (the page being read finishes, then the document closes, and every later call fails
+ * with [PdfPageError.BookClosed]); OCR stops between its steps once the book is closing. A caller whose thread is
+ * interrupted while it waits for the lock or between OCR steps gets an [InterruptedException]: the reader's page
+ * loads run through `runInterruptible`, so a page the listener has turned away from stops being read.
+ *
  * @param logContext identifies the book in logs (e.g. "book=3f2a"); never the title or the PDF's text.
  */
-@Suppress("TooManyFunctions") // Reading, rendering, the neighbour caches and the reopen rule share one lock.
+@Suppress("TooManyFunctions") // Reading, rendering, the neighbour caches, the reopen rule and closing share one lock.
 class PdfBook private constructor(
     private val engine: PdfEngine,
     private val password: String?,
@@ -69,40 +76,52 @@ class PdfBook private constructor(
     private var textLayerCheck: TextLayerCheck? = null
     private var pageLabels: List<String?>? = null
     private var ocrLanguages: OcrLanguages? = null
-    private val ocr: PageOcr? = ocrFactory?.create(PageRenderer(::render))
+
+    /** Every call but [close] holds it; interruptible, so a reader that gave up on a page stops waiting. */
+    private val lock = ReentrantLock()
+
+    /** Set by [close] (or a failed reopen) from any thread: the document closes as soon as nobody is reading it. */
+    @Volatile
+    private var closing = false
+
+    private val ocr: PageOcr? = ocrFactory?.create(
+        object : PageRenderer {
+            override fun render(pageIndex: Int, dpi: Int, maxPixels: Long) =
+                this@PdfBook.render(pageIndex, dpi, maxPixels)
+
+            override fun abandoned(): Boolean = closing
+        },
+    )
 
     /** What the book's OCR sample said about its Hindi/Bengali text layer. Diagnostics. */
-    @get:Synchronized
     val textLayerVerdict: TextLayerVerdict
-        get() = textLayerCheck?.verdict ?: TextLayerVerdict.UNCHECKED
+        get() = locked { verdictNow() }
 
     /** The character error rate of the book's last OCR sample; null before one ran. Diagnostics. */
-    @get:Synchronized
     val textLayerSampleCer: Float?
-        get() = textLayerCheck?.lastSampleCer
+        get() = locked { textLayerCheck?.lastSampleCer }
 
     /** Fixed for the book's lifetime: the source does not change between reopens. */
     val pageCount: Int = requireNotNull(handle).pageCount
 
     /** How many times the document has been opened, the first open included. Diagnostics and tests. */
-    @get:Synchronized
     var opens: Int = 1
+        get() = locked { field }
         private set
 
     /**
      * Pages extracted since the book was opened, neighbours read for cleanup included (ADR-020). Diagnostics and
      * tests: the reopen rule counts these, so [opens] follows from it.
      */
-    @get:Synchronized
     var pagesRead: Int = 0
+        get() = locked { field }
         private set
 
     private var readsSinceOpen = 0
 
-    @Synchronized
-    fun pageText(pageIndex: Int): Outcome<PageText, PdfPageError> {
-        if (pageIndex !in 0 until pageCount) return Outcome.Failure(PdfPageError.PageOutOfRange(pageIndex, pageCount))
-        return currentHandle().flatMap { open ->
+    fun pageText(pageIndex: Int): Outcome<PageText, PdfPageError> = locked {
+        if (pageIndex !in 0 until pageCount) return@locked outOfRange(pageIndex)
+        currentHandle().flatMap { open ->
             readsSinceOpen++
             pagesRead++
             open.readPage(pageIndex).map(assembler::assemble)
@@ -110,9 +129,7 @@ class PdfBook private constructor(
     }
 
     /** The bookmarks. Does not count as a page read: PDFium's outline walk loads no pages. */
-    @Synchronized
-    fun outline(): Outcome<List<OutlineEntry>, PdfPageError> =
-        handle?.let { Outcome.Success(it.outline()) } ?: Outcome.Failure(PdfPageError.BookClosed)
+    fun outline(): Outcome<List<OutlineEntry>, PdfPageError> = locked { openHandle().map { it.outline() } }
 
     /**
      * Each page's printed label ("iv", "A-3"), so a copy or a "Go to page" can use the numbers printed on the
@@ -120,28 +137,45 @@ class PdfBook private constructor(
      * Does not count as a page read: labels live in the document catalog. Read once per book (an older PDFium walks
      * the label tree for every page).
      */
-    @Synchronized
-    fun pageLabels(): Outcome<List<String?>, PdfPageError> = handle?.let { open ->
-        val labels = pageLabels ?: List(pageCount) { page -> open.pageLabel(page)?.let(::cleanLabel) }
-        pageLabels = labels
-        Outcome.Success(labels)
-    } ?: Outcome.Failure(PdfPageError.BookClosed)
+    fun pageLabels(): Outcome<List<String?>, PdfPageError> = locked {
+        openHandle().map { open ->
+            val labels = pageLabels ?: List(pageCount) { page -> open.pageLabel(page)?.let(::cleanLabel) }
+            pageLabels = labels
+            labels
+        }
+    }
 
     /**
      * The page's units after layout and cleanup. A neighbour that fails to read is left out (logged): the page
      * is still read, at worst with a header the missing neighbour would have confirmed.
      */
-    @Synchronized
     fun readingUnits(pageIndex: Int, builder: ReadingUnitBuilder): Outcome<List<ReadingUnit>, PdfPageError> =
         readPage(pageIndex, builder).map { it.units }
 
     /** [readingUnits] with the page's route (P3-03) and where its words came from (P3-05). */
-    @Synchronized
-    fun readPage(pageIndex: Int, builder: ReadingUnitBuilder): Outcome<PageReading, PdfPageError> {
+    fun readPage(pageIndex: Int, builder: ReadingUnitBuilder): Outcome<PageReading, PdfPageError> = locked {
         val cache = cachesFor(builder)
-        return analyzedPage(pageIndex, cache).map { page ->
+        analyzedPage(pageIndex, cache).map { page ->
             val read = checkNotNull(read(page, builder, cache, quiet = false)) { "only a quiet read leaves a page out" }
             joined(pageIndex, read, builder, cache)
+        }
+    }
+
+    /**
+     * [readPage] without running OCR: a scanned page OCR has not read yet is null, one it has read comes from its
+     * cache (unjoined to the page before, its running headers removed only as far as the neighbours' cached margins
+     * allow). For whole-book work beside listening (search), which must never queue a book's worth of OCR in front
+     * of the page being read.
+     */
+    fun readPageIfReady(pageIndex: Int, builder: ReadingUnitBuilder): Outcome<PageReading?, PdfPageError> = locked {
+        val cache = cachesFor(builder)
+        analyzedPage(pageIndex, cache).flatMap { page ->
+            val quiet = read(page, builder, cache, quiet = true)
+            when (quiet?.source) {
+                null -> Outcome.Success(null)
+                PageSource.TextLayer -> readPage(pageIndex, builder)
+                else -> Outcome.Success(quiet)
+            }
         }
     }
 
@@ -225,7 +259,7 @@ class PdfBook private constructor(
         needsTable: Boolean,
     ): HandOn {
         val before = pageIndex - 1
-        val known = cache.tails[before]?.takeIf { it.verdict == textLayerVerdict }
+        val known = cache.tails[before]?.takeIf { it.verdict == verdictNow() }
         return when {
             before < 0 -> HandOn.NONE
             known != null && !known.provisional -> HandOn(known.tail, Chain.COMPLETE)
@@ -271,16 +305,17 @@ class PdfBook private constructor(
 
     /** Keeps [tail] unless its [chain] is missing a page; a provisional one never replaces a complete one. */
     private fun keep(pageIndex: Int, tail: PageTail, chain: Chain, cache: PageCaches) {
-        val known = cache.tails[pageIndex]?.takeIf { it.verdict == textLayerVerdict && !it.provisional }
+        val verdict = verdictNow()
+        val known = cache.tails[pageIndex]?.takeIf { it.verdict == verdict && !it.provisional }
         when {
             chain == Chain.MISSING || (chain == Chain.PROVISIONAL && known != null) -> Unit
 
             chain == Chain.COMPLETE -> {
                 cache.completeKept++
-                cache.tails[pageIndex] = KnownTail(tail, textLayerVerdict, provisional = false, cache.completeKept)
+                cache.tails[pageIndex] = KnownTail(tail, verdict, provisional = false, cache.completeKept)
             }
 
-            else -> cache.tails[pageIndex] = KnownTail(tail, textLayerVerdict, provisional = true, cache.completeKept)
+            else -> cache.tails[pageIndex] = KnownTail(tail, verdict, provisional = true, cache.completeKept)
         }
     }
 
@@ -288,10 +323,9 @@ class PdfBook private constructor(
      * The page's own picture, drawn for OCR. Counts towards the periodic reopen like a page read: drawing fills
      * PDFium's caches too.
      */
-    @Synchronized
-    fun render(pageIndex: Int, dpi: Int, maxPixels: Long): Outcome<PageImage, PdfPageError> {
-        if (pageIndex !in 0 until pageCount) return Outcome.Failure(PdfPageError.PageOutOfRange(pageIndex, pageCount))
-        return currentHandle().flatMap { open ->
+    fun render(pageIndex: Int, dpi: Int, maxPixels: Long): Outcome<PageImage, PdfPageError> = locked {
+        if (pageIndex !in 0 until pageCount) return@locked outOfRange(pageIndex)
+        currentHandle().flatMap { open ->
             readsSinceOpen++
             open.render(pageIndex, dpi, maxPixels)
         }
@@ -367,12 +401,46 @@ class PdfBook private constructor(
         }
         .toMap()
 
-    @Synchronized
+    /**
+     * Never waits: safe on the main thread. Closes the document now when nobody is reading it, else marks the book
+     * closing so the page being read stops at its next step and the reader closes the document as it lets go.
+     */
     override fun close() {
-        handle?.close()
-        handle = null
-        caches = null
+        closing = true
+        if (lock.isHeldByCurrentThread) return // The outermost call closes it on its way out.
+        if (!closeIfFree()) AudoraLog.d(TAG, "Close deferred until the page being read lets go, $logContext")
     }
+
+    /**
+     * Runs [block] holding the book's lock, then closes the document if [close] was called meanwhile. The flag is
+     * read after unlocking: either [close] saw the lock free, or this sees the flag (it was set before [close] tried).
+     */
+    private inline fun <T> locked(block: () -> T): T {
+        lock.lockInterruptibly()
+        try {
+            return block()
+        } finally {
+            lock.unlock()
+            if (closing && !lock.isHeldByCurrentThread) closeIfFree()
+        }
+    }
+
+    /** Closes the document if the lock is free now; false when someone else holds it (they close it on unlock). */
+    private fun closeIfFree(): Boolean {
+        if (!lock.tryLock()) return false
+        try {
+            handle?.close()
+            handle = null
+            caches = null
+        } finally {
+            lock.unlock()
+        }
+        return true
+    }
+
+    private fun outOfRange(pageIndex: Int) = Outcome.Failure(PdfPageError.PageOutOfRange(pageIndex, pageCount))
+
+    private fun verdictNow(): TextLayerVerdict = textLayerCheck?.verdict ?: TextLayerVerdict.UNCHECKED
 
     /** Profiles depend on the builder's configuration, so a different builder starts empty caches. */
     private fun cachesFor(builder: ReadingUnitBuilder): PageCaches =
@@ -409,13 +477,23 @@ class PdfBook private constructor(
         return start until start + size
     }
 
+    /** The document for a page read: opened again after [ExtractionConfig.reopenEveryPages] reads. */
     private fun currentHandle(): Outcome<PdfDocumentHandle, PdfPageError> {
-        val open = handle ?: return Outcome.Failure(PdfPageError.BookClosed)
-        return if (readsSinceOpen < config.reopenEveryPages) Outcome.Success(open) else reopen(open)
+        val open = handle
+        return if (open != null && readsSinceOpen >= config.reopenEveryPages) reopen(open) else openHandle()
     }
 
-    private fun reopen(old: PdfDocumentHandle): Outcome<PdfDocumentHandle, PdfPageError> {
-        old.close()
+    /**
+     * The open document. Null between closing the old document and opening the new one only when that open was
+     * interrupted (a reader that gave up on its page): it is opened again here, so the book stays readable.
+     */
+    private fun openHandle(): Outcome<PdfDocumentHandle, PdfPageError> {
+        if (closing) return Outcome.Failure(PdfPageError.BookClosed)
+        return handle?.let { Outcome.Success(it) } ?: reopen(old = null)
+    }
+
+    private fun reopen(old: PdfDocumentHandle?): Outcome<PdfDocumentHandle, PdfPageError> {
+        old?.close()
         handle = null
         return when (val reopened = engine.open(password)) {
             is Outcome.Success -> {
@@ -428,6 +506,7 @@ class PdfBook private constructor(
 
             is Outcome.Failure -> {
                 AudoraLog.e(TAG, "Reopen failed, $logContext error=${reopened.error}")
+                closing = true // The source is gone: every later call says the book is closed.
                 Outcome.Failure(PdfPageError.ReopenFailed(reopened.error))
             }
         }
