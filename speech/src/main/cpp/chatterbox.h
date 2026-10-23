@@ -28,9 +28,10 @@ struct ActedVoice {
     HostTensor prompt_token;        // [1, prompt tokens]: the reference's speech tokens, which the decoder continues
     HostTensor speaker_embeddings;  // [1, 192]
     HostTensor speaker_features;    // [1, mel frames, 80]
+    HostTensor decoder_tail;        // optional [1, n]: tokens the decoder needs after the speech (Turbo's silence)
 };
 
-// Reads voice.bin: "ACTVOIC1", then the four tensors in ActedVoice's order, each as int32 type (1 float32, 7 int64,
+// Reads voice.bin: "ACTVOIC1", then the four tensors in ActedVoice's order (and the optional fifth), each as int32 type (1 float32, 7 int64,
 // ONNX's numbering), int32 rank, int64 dims, then the data, all little-endian. False with [error] if malformed.
 bool ReadActedVoice(const std::string& path, ActedVoice* voice, std::string* error);
 

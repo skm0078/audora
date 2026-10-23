@@ -49,7 +49,7 @@ LINES = [
 ]
 STRENGTHS = (0.5, 0.7)
 LM_FILES = {"fp32": "language_model", "q4": "language_model_q4", "int8": "language_model_int8",
-            "int8h": "language_model_int8h", "fp16": "language_model_fp16"}
+            "int8h": "language_model_int8h", "int8mlp": "language_model_int8mlp", "fp16": "language_model_fp16"}
 # Chatterbox Turbo (MIT) ships a decoder distilled to one step. Speech tokens are shared across Chatterbox models,
 # so it may decode the multilingual model's Hindi tokens far faster: tried on the narration and the paragraph.
 TURBO_ID = "ResembleAI/chatterbox-turbo-ONNX"
@@ -173,17 +173,31 @@ def head_nodes(model_path: Path) -> list[str]:
     return found
 
 
-def quantize_int8(root: Path, keep_head: bool) -> None:
-    """Dynamic int8 (per channel) from the fp32 language model; the export ships no 8-bit model. [keep_head] leaves
-    the logits' MatMul in fp32: greedy decoding picks the top logit, so the head's rounding flips tokens."""
+def mlp_nodes(model_path: Path) -> list[str]:
+    """The feed-forward MatMuls (about two thirds of the weights): attention and the speech head stay fp32."""
+    import onnx
+
+    graph = onnx.load(str(model_path), load_external_data=False).graph
+    matmuls = [n.name for n in graph.node if n.op_type == "MatMul"]
+    found = [name for name in matmuls if "/mlp/" in name]
+    print(f"{len(found)} of {len(matmuls)} MatMuls are feed-forward; e.g. {found[:3]} / others {matmuls[:3]}", flush=True)
+    if not found:
+        raise SystemExit("no feed-forward MatMuls found by name")
+    return found
+
+
+def quantize_int8(root: Path, variant: str) -> None:
+    """Dynamic int8 (per channel) from the fp32 language model; the export ships no 8-bit model. int8h leaves the
+    logits' MatMul in fp32 (greedy decoding picks the top logit); int8mlp quantizes only the feed-forward layers."""
     from onnxruntime.quantization import QuantType, quantize_dynamic
 
     source = root / "onnx" / "language_model.onnx"
-    target = root / "onnx" / f"{LM_FILES['int8h' if keep_head else 'int8']}.onnx"
+    target = root / "onnx" / f"{LM_FILES[variant]}.onnx"
     if not target.exists():
         start = time.perf_counter()
         quantize_dynamic(source, target, weight_type=QuantType.QInt8, per_channel=True, use_external_data_format=True,
-                         nodes_to_exclude=head_nodes(source) if keep_head else [])
+                         nodes_to_exclude=head_nodes(source) if variant == "int8h" else [],
+                         nodes_to_quantize=mlp_nodes(source) if variant == "int8mlp" else None)
         print(f"Quantized to int8 in {time.perf_counter() - start:.0f} s", flush=True)
 
 
@@ -229,8 +243,8 @@ def main() -> int:
         allow_patterns=["tokenizer*.json", "default_voice.wav", "onnx/speech_encoder.onnx*", "onnx/embed_tokens.onnx*",
                         "onnx/conditional_decoder.onnx*", f"onnx/{LM_FILES['fp32' if args.lm.startswith('int8') else args.lm]}.onnx*"],
     ))
-    if args.lm in ("int8", "int8h"):
-        quantize_int8(root, keep_head=args.lm == "int8h")
+    if args.lm.startswith("int8"):
+        quantize_int8(root, args.lm)
     paths = {
         "encoder": root / "onnx" / "speech_encoder.onnx",
         "embed": root / "onnx" / "embed_tokens.onnx",

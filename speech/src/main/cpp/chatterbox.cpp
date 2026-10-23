@@ -62,8 +62,10 @@ bool ReadActedVoice(const std::string& path, ActedVoice* voice, std::string* err
     size_t at = sizeof(kVoiceMagic) - 1;
     bool ok = bytes.size() >= at && std::memcmp(bytes.data(), kVoiceMagic, at) == 0 &&
               ReadTensor(bytes, &at, &voice->cond_emb) && ReadTensor(bytes, &at, &voice->prompt_token) &&
-              ReadTensor(bytes, &at, &voice->speaker_embeddings) && ReadTensor(bytes, &at, &voice->speaker_features) &&
-              at == bytes.size();
+              ReadTensor(bytes, &at, &voice->speaker_embeddings) && ReadTensor(bytes, &at, &voice->speaker_features);
+    // A decoder tail is optional: Turbo's one-step decoder wants silence tokens after the speech.
+    if (ok && at < bytes.size()) ok = ReadTensor(bytes, &at, &voice->decoder_tail) && !voice->decoder_tail.longs.empty();
+    ok = ok && at == bytes.size();
     ok = ok && voice->cond_emb.shape.size() == 3 && !voice->cond_emb.floats.empty() &&
          !voice->prompt_token.longs.empty() && !voice->speaker_embeddings.floats.empty() &&
          !voice->speaker_features.floats.empty();
@@ -396,6 +398,7 @@ bool Chatterbox::Decode(const std::vector<int64_t>& speech_tokens, std::vector<f
     TakeError(api_, api_->RunOptionsUnsetTerminate(run_options_));
     std::vector<int64_t> tokens = voice_.prompt_token.longs;
     tokens.insert(tokens.end(), speech_tokens.begin(), speech_tokens.end());
+    tokens.insert(tokens.end(), voice_.decoder_tail.longs.begin(), voice_.decoder_tail.longs.end());
     std::vector<int64_t> token_shape = {1, static_cast<int64_t>(tokens.size())};
     Value token_value(api_, nullptr);
     Value embedding_value(api_, nullptr);
