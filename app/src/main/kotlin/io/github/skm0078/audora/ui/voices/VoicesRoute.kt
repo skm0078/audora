@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/voices/VoicesRoute.kt
-// Purpose: Wires the Voices screen to its controller: state collection, actions, and stopping a sample on leave.
+// Purpose: Wires the Voices screen to its controller: state, actions, stopping a sample on leave; the build's list.
 
 package io.github.skm0078.audora.ui.voices
 
@@ -9,8 +9,20 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.skm0078.audora.BuildConfig
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.speech.voices.VoiceListConfig
 import io.github.skm0078.audora.speech.voices.VoiceRow
+import io.github.skm0078.audora.ui.reader.VoicePackActions
+
+/** The Play build's shorter voice list (ADR-056); the dev build lists every voice. */
+internal val BUILD_VOICE_LIST = VoiceListConfig(simple = BuildConfig.SIMPLE_VOICES)
+
+/** The reader's language-pack card downloads the same way this screen does. */
+internal fun voicePackActions(manager: VoiceManager) = VoicePackActions(
+    onDownload = { manager.download(it.id.name) },
+    onCancel = { manager.cancel(it.id.name) },
+)
 
 @Composable
 internal fun VoicesRoute(controller: VoicesController, navigateBack: () -> Unit) {

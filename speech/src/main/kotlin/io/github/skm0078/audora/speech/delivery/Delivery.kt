@@ -65,9 +65,9 @@ class DeliveryPlanner(private val config: DeliveryConfig = DeliveryConfig()) {
      */
     private fun breaksOff(text: String): Boolean {
         val end = text.trimEnd()
-        val last = end.lastOrNull() ?: return false
-        if (!last.isLowerCase() && last != ',') return false
-        return WORD.findAll(end).count() >= config.openEndWords
+        val last = end.lastOrNull()
+        val open = last != null && (last.isLowerCase() || last == ',')
+        return open && WORD.findAll(end).count() >= config.openEndWords
     }
 
     /** Verse and scripture are printed in lines that end without a stop; each line keeps its own fall. */

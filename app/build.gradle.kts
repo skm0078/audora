@@ -62,8 +62,11 @@ android {
             // Lets a debug build sit next to a release build on the same phone.
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            buildConfigField("boolean", "SIMPLE_VOICES", simpleVoices(release = false))
         }
         release {
+            // The Play build lists one download per language and hides voices still being judged (ADR-056).
+            buildConfigField("boolean", "SIMPLE_VOICES", simpleVoices(release = true))
             if (releaseSigningConfigured) {
                 signingConfig = signingConfigs.getByName("release")
             }
@@ -83,6 +86,10 @@ android {
 
 // The UI-test variant's unit tests are the debug ones again; skip the second run.
 tasks.matching { it.name == "testUiTestUnitTest" }.configureEach { enabled = false }
+
+/** `-Paudora.simpleVoices=true|false` overrides the build type's default: simple in release, everything in debug. */
+fun simpleVoices(release: Boolean): String =
+    (providers.gradleProperty("audora.simpleVoices").orNull?.toBooleanStrict() ?: release).toString()
 
 /**
  * MAJOR.MINOR.PATCH → MAJOR * 1_000_000 + MINOR * 1_000 + PATCH, so every newer release has a higher

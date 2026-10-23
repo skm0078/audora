@@ -20,9 +20,9 @@ object LanguagePacks {
     /** [lang]'s pack, or null when it has no recommended download (English: its voice is built in). */
     fun pack(rows: List<VoiceRow>, lang: Lang): LanguagePack? {
         val own = rows.filter { it.lang == lang }
-        if (own.any { it.kind == VoiceKind.BUILT_IN }) return null
-        val voice = own.firstOrNull { it.recommended && it.kind == VoiceKind.CATALOG } ?: return null
-        return LanguagePack(lang, voice, ready = own.any { it.speaks })
+        val voice = own.firstOrNull { it.recommended && it.kind == VoiceKind.CATALOG }
+        val builtIn = own.any { it.kind == VoiceKind.BUILT_IN }
+        return voice?.takeIf { !builtIn }?.let { LanguagePack(lang, it, ready = own.any { row -> row.speaks }) }
     }
 
     private val VoiceRow.speaks: Boolean
@@ -34,10 +34,7 @@ object LanguagePacks {
  * judged, or whose licence is unsettled. A hidden voice already on the phone, or reading its language, stays listed,
  * so nobody loses a voice they chose. [canImport]: the "Import a voice" row, for people who bring their own.
  */
-data class VoiceListConfig(
-    val simple: Boolean = false,
-    val hiddenIds: Set<String> = SIMPLE_HIDDEN,
-) {
+data class VoiceListConfig(val simple: Boolean = false, val hiddenIds: Set<String> = SIMPLE_HIDDEN) {
     val canImport: Boolean get() = !simple
 
     fun visible(rows: List<VoiceRow>): List<VoiceRow> = if (!simple) {

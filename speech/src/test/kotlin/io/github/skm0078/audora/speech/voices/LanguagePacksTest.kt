@@ -13,6 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LanguagePacksTest {
+    @Suppress("LongParameterList") // Every field a test row varies, each with a default.
     private fun row(
         name: String,
         lang: Lang,
