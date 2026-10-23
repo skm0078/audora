@@ -239,6 +239,7 @@
     <string name="battery_status_allowed">Audora के लिए बैटरी ऑप्टिमाइज़ेशन बंद है।</string>
     <string name="battery_status_limited">बैटरी ऑप्टिमाइज़ेशन चालू है: स्क्रीन बंद होने पर Android पढ़ना रोक सकता है।</string>
     <string name="battery_allow">बैकग्राउंड में पढ़ने दें</string>
+    <string name="battery_allow_hint">Android अपनी बैटरी सूची खोलेगा। अगर Audora न दिखे, तो सूची को सभी ऐप पर बदलें, फिर Audora पर टैप करके ऑप्टिमाइज़ न करें चुनें।</string>
     <string name="battery_open_app_settings">Audora की ऐप जानकारी खोलें</string>
     <string name="battery_footer">अगर स्क्रीन बंद होने पर अब भी पढ़ना रुकता है, तो सेटिंग्स से लॉग शेयर करें: उनमें लिखा होता है कि Android ने Audora को क्यों रोका।</string>
     <string name="battery_step_number">%1$d. %2$s</string>
