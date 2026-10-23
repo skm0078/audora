@@ -36,6 +36,17 @@ class ReAnchoringTest {
     }
 
     @Test
+    fun `a sentence heard a moment ago is found again after a text setting moved its offsets`() {
+        // "Skip citation numbers" turned off: "[12] " is now read before the first sentence.
+        val kept = unitsOf(4, FIRST, SECOND, THIRD, startOffset = 5)
+
+        val point = reAnchoring.relocate(BOOK, page[2], V1, kept)
+
+        assertEquals(4, point.page)
+        assertEquals(kept[2].charStart, point.charStart)
+    }
+
+    @Test
     fun `same pipeline resumes exactly`() {
         val point = reAnchoring.locate(anchorAt(1), V1, page)
 

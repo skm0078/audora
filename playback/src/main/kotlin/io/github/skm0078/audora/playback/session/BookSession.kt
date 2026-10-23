@@ -16,7 +16,9 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.resume.ReAnchoring
 import io.github.skm0078.audora.core.resume.ResumeLocator
+import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import io.github.skm0078.audora.playback.book.BookSource
 import io.github.skm0078.audora.playback.book.OpenFailure
@@ -242,6 +244,33 @@ class BookSession(
         val at = resumePoint() ?: return
         AudoraLog.i(TAG, "Restart rendering book=${bookId?.logLabel} page=${at.page} char=${at.char}")
         rebuild(at.page, at.char, play = player.playWhenReady, index = at.index)
+    }
+
+    /**
+     * The reading text settings changed (Settings, "Skip citation numbers"): the open book is read again with them at
+     * once, from the sentence playing, found by its words since its offsets moved; playing or paused as now (ADR-064).
+     * Nothing happens with no book, or one already read with these settings.
+     */
+    suspend fun onReadingTextChanged() = opening.withLock {
+        val opened = book ?: return@withLock
+        if (current(opened)) return@withLock
+        val heard = currentSentence()
+        val play = player.playWhenReady
+        val reopened = when (val result = sources.books.open(opened.book.id, bookPassword)) {
+            is Outcome.Success -> result.value
+
+            is Outcome.Failure -> {
+                AudoraLog.w(TAG, "Book not reopened with the new text settings: ${result.error.message}")
+                return@withLock
+            }
+        }
+        replaceBook(reopened, bookPassword)
+        val at = heard?.let { unit ->
+            withContext(env.extraction) { (reopened.text.units(unit.page) as? Outcome.Success)?.value }
+                ?.let { units -> ReAnchoring().relocate(reopened.book.id, unit, PIPELINE_VERSION, units) }
+        }
+        AudoraLog.i(TAG, "Reopened with new text settings, page=${at?.page} char=${at?.charStart} play=$play")
+        if (heard != null) rebuild(at?.page ?: heard.page, at?.charStart ?: 0, play)
     }
 
     /**

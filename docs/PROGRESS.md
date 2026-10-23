@@ -2,6 +2,14 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Studio audio survives updates; reading settings apply at once (2026-10-23, ADR-064)
+- **Studio audio** is keyed by `STUDIO_AUDIO_VERSION` instead of the app's install time, so an update no longer deletes it. Bump the version when the sound can change (AGENTS.md). This build drops older, unversioned studio audio once.
+- **Skip citation numbers** applies at once: the playback service reads the open book again from the sentence playing (found by its words), playing or paused; the reader reopens on the page shown.
+- **Settings → Voices** says so when the open book keeps its own voice for that language, and names the switch to turn off.
+- No `:pdf` change (PIPELINE_VERSION 12). Tests: `StudioStoreTest` (versions), `ReAnchoringTest` (relocate).
+
+**Real-device checks (Moto):** render some studio audio, install the next dev APK over it, open the Studio mode dialog (audio still there); toggle Skip citation numbers while a paper with "[12]" plays, and while paused (continues from the same sentence, highlight right); give a book its own voice, then pick another English voice in Settings → Voices while it plays (toast).
+
 ## Options that look like controls (2026-10-23, ADR-062)
 - **Why:** options did not read as controls, and long hints sat under each. 66 option texts were over 70 characters.
 - **What:** one set of option rows (`ui/theme/OptionRows.kt`): titled cards; switch, value-and-choice, slider and link rows; one line under a title at most; longer help behind an ⓘ button (the old hint text, kept). Settings: Listening, Reading and look, App, then Privacy and Advanced as pages (Back returns). Speech sheet: speed, pace, Read to suit the book and This book only on top; What to read, Sound, Cast voices, Study and Focus sound each open their own sheet. Reader ⋮ menu: five one-line actions with icons; all look options in a new Page and text sheet. Sentence, book and library menus: one line each, help behind ⓘ. First run: progress bar, "Free and offline" up front. Empty states shortened.

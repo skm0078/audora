@@ -351,7 +351,7 @@
 
     <!-- Reading text (P2-03) -->
     <string name="settings_skip_citations_title">संदर्भ नंबर छोड़ें</string>
-    <string name="settings_skip_citations_body">चालू: “[12]” और “[4–7]” जैसे संदर्भ अंक छोड़ देता है। बंद: उन्हें पढ़ता है। अगली बार किताब खोलने पर लागू होता है।</string>
+    <string name="settings_skip_citations_body">चालू: “[12]” और “[4–7]” जैसे संदर्भ अंक छोड़ देता है। बंद: उन्हें पढ़ता है। तुरंत लागू होता है, उसी वाक्य से।</string>
     <string name="settings_keep_screen_on_title">पढ़कर सुनाते समय स्क्रीन चालू रखें</string>
     <string name="settings_volume_keys_title">वॉल्यूम बटन से वाक्य बदलें</string>
     <string name="settings_volume_keys_body">जब ListenLock रीडर में पढ़कर सुना रहा हो, वॉल्यूम कम करने वाला बटन अगले वाक्य पर और बढ़ाने वाला बटन एक वाक्य पीछे ले जाता है। पॉज़ होने पर या रीडर के बाहर, बटन हमेशा की तरह वॉल्यूम बदलते हैं।</string>

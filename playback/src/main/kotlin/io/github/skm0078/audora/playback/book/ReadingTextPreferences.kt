@@ -9,11 +9,16 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import java.io.File
 import java.io.IOException
 import java.util.Properties
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 /**
  * Read by both the reader and the playback service when they open a book, so both build their sentences with the
- * same [CleanupConfig] and their `charStart` offsets agree. A change applies to books opened afterwards; resume
- * anchors re-anchor by fingerprint when offsets move. A missing or unreadable file means the defaults, never an
+ * same [CleanupConfig] and their `charStart` offsets agree. A saved change is announced on [changes], and both read
+ * an open book again at once from the same sentence (ADR-064); resume anchors re-anchor by fingerprint when offsets
+ * move. A missing or unreadable file means the defaults, never an
  * error. Blocking file I/O: call off the main thread.
  */
 class ReadingTextPreferences(private val file: File) {
@@ -30,6 +35,7 @@ class ReadingTextPreferences(private val file: File) {
             temp.writer(Charsets.UTF_8).use { properties.store(it, null) }
             if (!temp.renameTo(file)) throw IOException("cannot replace ${file.name}")
             AudoraLog.i(TAG, "Skip citation markers set to $skip")
+            savedChanges.update { it + 1 }
             true
         } catch (e: IOException) {
             AudoraLog.e(TAG, "Could not save the reading text settings", e)
@@ -62,6 +68,10 @@ class ReadingTextPreferences(private val file: File) {
         private const val TAG = "Playback.TextPrefs"
         private const val KEY_SKIP_CITATIONS = "skipCitationMarkers"
         private val DEFAULTS = CleanupConfig()
+        private val savedChanges = MutableStateFlow(0)
+
+        /** Counts the changes saved in this process (one process: reader and service share it). */
+        val changes: StateFlow<Int> = savedChanges.asStateFlow()
 
         /** The one place that knows where the file lives. */
         fun forContext(context: Context): ReadingTextPreferences =

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Purpose: Playback's notices about voice choices (ADR-064). -->
+<resources>
+    <string name="voice_book_keeps_own">ভয়েস সেভ হয়েছে। আপনি যে বইটি পড়ছেন সেটি নিজের ভয়েসই রাখে: এই ভয়েসটি চাইলে তার বলার বিকল্পে \"শুধু এই বইয়ের জন্য\" বন্ধ করুন।</string>
+</resources>

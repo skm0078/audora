@@ -28,9 +28,9 @@ class StudioStoreTest {
         root.deleteRecursively()
     }
 
-    private fun key(book: String, rate: Float = 1f) = StudioKey(
+    private fun key(book: String, rate: Float = 1f, audioVersion: Int = 1) = StudioKey(
         BookId(book),
-        StudioSignature(1, 0L, SpeechStyle(rate = rate), emptyMap(), fixes = ""),
+        StudioSignature(1, audioVersion, SpeechStyle(rate = rate), emptyMap(), fixes = ""),
     )
 
     private fun write(key: StudioKey, page: Int, samples: Int = 100): Long {
@@ -48,6 +48,27 @@ class StudioStoreTest {
         assertNull(store.page(key("a", rate = 1.2f), 0))
         assertNull(store.page(key("b"), 0))
         assertNull(store.page(key("a"), 1))
+    }
+
+    @Test
+    fun `an app update keeps audio of the same version and drops other versions and unversioned folders`() {
+        write(key("a"), 0)
+        write(key("b", audioVersion = 2), 0)
+        val legacy = File(File(root, StudioKeys.bookFolder(BookId("c"))), "0123456789abcdef").apply { mkdirs() }
+        File(legacy, "p0.studio").writeText("old")
+
+        store.dropOtherVersions(1)
+
+        assertNotNull(store.page(key("a"), 0))
+        assertNull(store.page(key("b", audioVersion = 2), 0))
+        assertFalse(legacy.exists())
+    }
+
+    @Test
+    fun `the audio version is part of the key`() {
+        assertTrue(key("a").signature.hash != key("a", audioVersion = 2).signature.hash)
+        assertTrue(StudioSignature.isFolderOf(key("a").signature.folder, 1))
+        assertFalse(StudioSignature.isFolderOf(key("a").signature.folder, 2))
     }
 
     @Test

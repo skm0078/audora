@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Purpose: Playback's notices about voice choices (ADR-064). -->
+<resources>
+    <string name="voice_book_keeps_own">Voice saved. The book you are reading keeps its own voice: to use this one, turn off \"Use for this book only\" in its speech options.</string>
+</resources>

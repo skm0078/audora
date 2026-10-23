@@ -23,7 +23,7 @@ class StudioSentenceRendererTest {
     private val root: File = Files.createTempDirectory("studio").toFile()
     private val store = StudioStore(root)
     private val codec = LosslessPcm(256)
-    private val key = StudioKey(BookId("book"), StudioSignature(1, 0L, SpeechStyle(), emptyMap(), fixes = ""))
+    private val key = StudioKey(BookId("book"), StudioSignature(1, 1, SpeechStyle(), emptyMap(), fixes = ""))
     private var liveCalls = 0
     private val live = SentenceRenderer {
         liveCalls++

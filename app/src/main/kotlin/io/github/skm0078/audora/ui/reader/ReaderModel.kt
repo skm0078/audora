@@ -33,9 +33,12 @@ import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -62,6 +65,7 @@ class ReaderModel(
     autoResume: Boolean = false,
     private val views: ViewPreference = ViewPreference.None,
     private val pipelineVersion: Int = PIPELINE_VERSION,
+    private val textSettings: Flow<Int> = emptyFlow(),
 ) {
     private val mutableState = MutableStateFlow(ReaderState(bookId))
     val state: StateFlow<ReaderState> = mutableState.asStateFlow()
@@ -84,6 +88,9 @@ class ReaderModel(
     /** The page view's width in pixels, once the screen has laid it out; pages are drawn at this width. */
     private var pageWidthPx: Int? = null
     private var started = false
+
+    /** The page shown when the book was opened again for new text settings, to show it again. */
+    private var keepPage: Int? = null
 
     /** Where this book was left (its resume anchor), when the player is not already on this book. */
     private var savedPosition: ReadingPosition? = null
@@ -108,6 +115,8 @@ class ReaderModel(
         started = true
         scope.launch { player.state.collect(::onPlayback) }
         scope.launch { views.loadView()?.let(::applyView) }
+        // Skip citation numbers changed (ADR-064): the sentences are built again, as the playback service does.
+        scope.launch { textSettings.drop(1).collect { reopenForTextSettings() } }
         open(password = null)
     }
 
@@ -371,6 +380,14 @@ class ReaderModel(
         if (position.page != state.value.page) loadPage(position.page)
     }
 
+    private fun reopenForTextSettings() {
+        if (document == null) return
+        AudoraLog.i(TAG, "Reading text settings changed, reopening, $logContext")
+        keepPage = state.value.page
+        samples.clear()
+        open(password)
+    }
+
     private fun open(password: String?) {
         openJob?.cancel()
         mutableState.update { it.copy(document = DocumentState.Loading) }
@@ -402,7 +419,7 @@ class ReaderModel(
                 resume.locate(bookId, opened.pageCount) { page -> (opened.units(page) as? Outcome.Success)?.value }
                     ?.let { ReadingPosition(bookId, it.page, it.charStart) }
         }
-        val startPage = playing?.page ?: savedPosition?.page ?: 0
+        val startPage = keepPage?.also { keepPage = null } ?: playing?.page ?: savedPosition?.page ?: 0
         loadPage(startPage.coerceIn(0, opened.pageCount - 1))
         loadChapters(opened)
         books.markOpened(bookId, opened.pageCount)
