@@ -42,6 +42,7 @@ import kotlinx.coroutines.withContext
  * rendering, and nothing plays after [close]. Its voices are a second copy of the playback service's (a neural model
  * is 60-150 MB), so they are freed after [idleMs] without a line and loaded again (a second or two) on the next one.
  */
+@Suppress("TooManyFunctions") // Render, play, idle release and close are one lifecycle; splitting scatters it.
 class QuizSpeaker(context: Context, private val idleMs: Long = QuizConfig().speakerIdleMs) : Closeable {
     private val appContext = context.applicationContext
     private val style = SpeechStyleStore.forContext(appContext)

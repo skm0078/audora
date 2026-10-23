@@ -181,11 +181,11 @@ import io.github.skm0078.audora.ui.tutor.ReaderTutorRoute
 import io.github.skm0078.audora.ui.upnext.UpNextPort
 import io.github.skm0078.audora.ui.upnext.UpNextSheet
 import io.github.skm0078.audora.ui.upnext.libraryBooks
-import io.github.skm0078.audora.ui.voices.VoiceManager
 import io.github.skm0078.audora.ui.voices.SpokenVoiceSampler
-import io.github.skm0078.audora.ui.voices.VoicesActions
+import io.github.skm0078.audora.ui.voices.VoiceManager
 import io.github.skm0078.audora.ui.voices.VoicesController
-import io.github.skm0078.audora.ui.voices.VoicesScreen
+import io.github.skm0078.audora.ui.voices.VoicesRoute
+import io.github.skm0078.audora.ui.voices.voicesActions
 import io.github.skm0078.audora.widget.ResumeWidgetEffect
 import io.github.skm0078.audora.widget.ResumeWidgetProvider
 import java.io.File
@@ -771,41 +771,6 @@ class MainActivity : ComponentActivity() {
         )
         studio.Sheets((controller.listState as? LibraryListState.Loaded)?.all?.map { it.book })
     }
-
-    @Composable
-    private fun VoicesRoute(controller: VoicesController, navigateBack: () -> Unit) {
-        val state by controller.state.collectAsStateWithLifecycle()
-        val actions = remember(controller) { voicesActions(controller, navigateBack) }
-        // A sample never plays on after the screen is left.
-        DisposableEffect(controller) { onDispose { controller.stopSample() } }
-        VoicesScreen(state = state, actions = actions)
-    }
-
-    private fun voicesActions(controller: VoicesController, navigateBack: () -> Unit): VoicesActions =
-        object : VoicesActions {
-            override fun onBack() = navigateBack()
-
-            override fun onDownload(row: VoiceRow) = controller.download(row)
-
-            override fun onCancel(row: VoiceRow) = controller.cancel(row)
-
-            override fun onUse(row: VoiceRow) = controller.use(row)
-
-            override fun onUseDefault(lang: Lang) = controller.useDefault(lang)
-
-            override fun onRequestDelete(row: VoiceRow) = controller.proposeDelete(row)
-
-            override fun onConfirmDelete() = controller.confirmDelete()
-
-            override fun onCancelDelete() = controller.proposeDelete(null)
-
-            override fun onImport(treeUri: Uri, lang: Lang, label: String) =
-                controller.import(treeUri.toString(), lang, label)
-
-            override fun onMessageShown() = controller.messageShown()
-
-            override fun onSample(row: VoiceRow) = controller.toggleSample(row)
-        }
 
     /** Loaded on each visit: a voice downloaded since then shows its licence files. */
     @Composable

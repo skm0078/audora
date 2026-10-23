@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/voices/VoiceRowItem.kt
 // Purpose: One voice in the Voices list (status, licence, actions), the phone-voice row and the import dialog.
+@file:Suppress("TooManyFunctions") // Small private composables for one row's parts.
 
 package io.github.skm0078.audora.ui.voices
 

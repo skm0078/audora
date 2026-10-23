@@ -75,6 +75,7 @@ data class VoicesState(
 )
 
 /** Plain state holder (no Compose here), like the other controllers. Call [start] once. */
+@Suppress("TooManyFunctions") // One entry point per screen action, plus the sample player.
 class VoicesController(
     private val voices: VoiceManager,
     private val scope: CoroutineScope,

@@ -15,7 +15,12 @@ internal class CurrencyRule(private val config: NormalizerConfig, private val nu
     private data class Currency(val one: String, val many: String, val minorOne: String, val minorMany: String)
 
     override fun apply(text: String, role: TextRole): String = AMOUNT.replace(text) { match ->
-        val (symbol, amount, rangeEnd, magnitudeWritten, secondMagnitude) = match.destructured
+        val groups = match.groupValues
+        val symbol = groups[SYMBOL_GROUP]
+        val amount = groups[AMOUNT_GROUP]
+        val rangeEnd = groups[RANGE_END_GROUP]
+        val magnitudeWritten = groups[MAGNITUDE_GROUP]
+        val secondMagnitude = groups[SECOND_MAGNITUDE_GROUP]
         val currency = currencyFor(symbol)
         // "₹1.5 lakh crore": both words, in the order written.
         val magnitude = listOf(magnitudeWritten, secondMagnitude)
@@ -74,6 +79,13 @@ internal class CurrencyRule(private val config: NormalizerConfig, private val nu
     }
 
     private companion object {
+        // Capture groups of [AMOUNT], in order.
+        const val SYMBOL_GROUP = 1
+        const val AMOUNT_GROUP = 2
+        const val RANGE_END_GROUP = 3
+        const val MAGNITUDE_GROUP = 4
+        const val SECOND_MAGNITUDE_GROUP = 5
+
         const val MINOR_DIGITS = 2
 
         val RUPEE = Currency("rupee", "rupees", "paisa", "paise")

@@ -37,6 +37,7 @@ import kotlinx.coroutines.withContext
  *
  * Network: only [downloads] uses it, through WorkManager, and only for URLs from the catalog inside the APK.
  */
+@Suppress("TooManyFunctions") // The single owner of installed voices: install, import, delete and lookups.
 class VoiceLibrary private constructor(
     context: Context,
     val config: VoiceDownloadConfig,
