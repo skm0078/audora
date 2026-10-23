@@ -59,15 +59,18 @@ class DeliveryPlanner(private val config: DeliveryConfig = DeliveryConfig()) {
     }
 
     /**
-     * Ends mid-sentence: on a lowercase letter, or a comma. A caseless script (Hindi, Bengali) only counts its
+     * Ends mid-sentence: on a lowercase word, or a comma. A caseless script (Hindi, Bengali) only counts its
      * comma: its sentences can lack a danda after OCR, and running two whole sentences together is worse than a
      * falling cut. Short pieces ("see also") are left alone.
      */
     private fun breaksOff(text: String): Boolean {
         val end = text.trimEnd()
-        val last = end.lastOrNull()
-        val open = last != null && (last.isLowerCase() || last == ',')
-        return open && WORD.findAll(end).count() >= config.openEndWords
+        val words = WORD.findAll(end).map { it.value }.toList()
+        // A title in capitals ("Declaration of Human Rights") ends on a lowercase letter too; a cut sentence's last
+        // word starts lowercase ("…in old times must").
+        val lowercaseEnd = words.lastOrNull()?.first()?.isLowerCase() == true && end.last().isLetter()
+        val cut = end.lastOrNull() == ',' || lowercaseEnd
+        return cut && words.size >= config.openEndWords
     }
 
     /** Verse and scripture are printed in lines that end without a stop; each line keeps its own fall. */

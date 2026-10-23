@@ -31,7 +31,15 @@ class OpenEndTest {
 
     @Test
     fun `whole sentences, short pieces, headings and verse keep their fall`() {
-        listOf("It rained.", "Where now?", "Is it so!", "see also", "He said: “Go”").forEach {
+        listOf(
+            "It rained.",
+            "Where now?",
+            "Is it so!",
+            "see also",
+            "He said: “Go”",
+            "Universal Declaration of Human Rights",
+            "the year it was written was 1948",
+        ).forEach {
             assertFalse(it, plan(it).openEnd)
         }
         assertFalse(plan("the history of the old town hall", UnitKind.HEADING).openEnd)
