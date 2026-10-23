@@ -9,7 +9,7 @@ on:
   push:
     branches: ["feat/**"]
     paths:
-      - research/spikes/acted-voices/**
+      - research/spikes/acted-voices/render_chatterbox.py
       - .github/workflows/acted-voices.yml
   workflow_dispatch:
 

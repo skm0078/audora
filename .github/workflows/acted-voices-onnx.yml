@@ -1,0 +1,77 @@
+# File: .github/workflows/acted-voices-onnx.yml
+# Purpose: Acted-voice spike, phone path (research/spikes/acted-voices, no app change): times the ONNX export of
+#          Chatterbox Multilingual with ONNX Runtime on an ARM runner, once per language-model precision, and publishes
+#          the Hindi samples, timings and the reference voice's encoder outputs to the "acted-voices" pre-release.
+
+name: Acted voices ONNX
+
+on:
+  push:
+    branches: ["feat/**"]
+    paths:
+      - research/spikes/acted-voices/time_chatterbox_onnx.py
+      - .github/workflows/acted-voices-onnx.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: acted-voices-onnx
+  cancel-in-progress: true
+
+env:
+  SPIKE: research/spikes/acted-voices
+  TAG: acted-voices
+
+jobs:
+  time:
+    name: Time Chatterbox ONNX (${{ matrix.lm }}, ARM)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      max-parallel: 1  # both jobs publish to one release
+      matrix:
+        lm: [q4, fp32]
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install ONNX Runtime
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+          python3 -m pip install --upgrade pip
+          python3 -m pip install "onnxruntime==1.22.1" "numpy==2.2.6" "tokenizers==0.20.3" "huggingface_hub==0.34.4" \
+            "soundfile==0.13.1" "scipy==1.14.1"
+          nproc; free -g; lscpu | grep -iE "model name|flags" | cut -c1-200
+
+      - name: Time
+        run: |
+          python3 "$SPIKE/time_chatterbox_onnx.py" --models models --out out --lm "${{ matrix.lm }}" --threads 4
+          cat "out/${{ matrix.lm }}/results.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          LM: ${{ matrix.lm }}
+        run: |
+          mkdir -p pub
+          for f in out/$LM/*.wav; do ffmpeg -loglevel error -y -i "$f" -b:a 96k "pub/onnx-$LM-$(basename "${f%.wav}").mp3"; done
+          cp "out/$LM/results.md" "pub/onnx-$LM-results.md"
+          cp "out/$LM/results.json" "pub/onnx-$LM-results.json"
+          cp "out/$LM/voice.npz" "pub/onnx-$LM-voice.npz"
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            gh release create "$TAG" --prerelease --target "$GITHUB_SHA" --title "Acted voice spike" \
+              --notes "Hindi lines from Chatterbox Multilingual (MIT) rendered on CI, for listening. Not shipped."
+          fi
+          gh release upload "$TAG" pub/* --clobber
