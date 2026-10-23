@@ -41,6 +41,7 @@ import io.github.skm0078.audora.core.library.LibraryFilter
 import io.github.skm0078.audora.core.library.LibraryQuery
 import io.github.skm0078.audora.core.library.LibrarySort
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.HelpButton
 
 @Composable
 internal fun LibraryTopBar(listState: LibraryListState, actions: LibraryActions) {
@@ -161,20 +162,13 @@ private fun LibraryActionsMenu(onAction: (LibraryAction) -> Unit) {
         DropdownMenu(
             expanded = open,
             onDismissRequest = { open = false },
-            modifier = Modifier.widthIn(max = Dimens.MenuMaxWidth),
         ) {
             LibraryAction.entries.forEach { action ->
+                // One line per tool; what it does waits behind its info button (ADR-062).
+                val label = stringResource(action.label)
                 DropdownMenuItem(
-                    text = {
-                        Column(Modifier.padding(vertical = Dimens.SpaceXs)) {
-                            Text(stringResource(action.label))
-                            Text(
-                                stringResource(action.hint),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    },
+                    text = { Text(label) },
+                    trailingIcon = { HelpButton(label, stringResource(action.hint)) },
                     onClick = {
                         open = false
                         onAction(action)

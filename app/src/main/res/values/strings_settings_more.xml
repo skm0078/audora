@@ -3,7 +3,7 @@
 <!-- Purpose: Settings' closed "Advanced" section, for options few listeners change (ADR-056). -->
 <resources>
     <string name="settings_advanced_title">Advanced</string>
-    <string name="settings_advanced_summary">Punctuation for scans, volume keys, voice commands, pronunciation, sharing logs</string>
+    <string name="settings_advanced_summary">Volume keys, voice commands, pronunciation, logs</string>
     <string name="settings_group_advanced_reading">More reading options</string>
     <string name="settings_group_help">Help</string>
 </resources>

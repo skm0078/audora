@@ -40,6 +40,8 @@ import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.ui.loggingFailures
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.LinkOption
+import io.github.skm0078.audora.ui.theme.OptionGroup
 import io.github.skm0078.audora.ui.voices.languageName
 import kotlinx.coroutines.launch
 
@@ -85,11 +87,12 @@ private fun Outcome<*, *>.reportFailure(context: Context, what: String, rule: Pr
 @Composable
 internal fun PronunciationGroup(settings: PronunciationSettings) {
     var open by rememberSaveable { mutableStateOf(false) }
-    SettingsGroup(stringResource(R.string.settings_group_pronunciation)) {
-        SettingsRow(
+    OptionGroup(stringResource(R.string.settings_group_pronunciation)) {
+        LinkOption(
             stringResource(R.string.settings_pronunciation_title),
-            summary = { Text(stringResource(R.string.settings_pronunciation_body)) },
             onClick = { open = true },
+            subtitle = stringResource(R.string.settings_pronunciation_body),
+            value = settings.rules?.size?.toString(),
         )
     }
     if (open) PronunciationDialog(settings) { open = false }

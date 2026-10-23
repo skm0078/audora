@@ -313,6 +313,11 @@ private fun DuplicateDialog(notice: DuplicateNotice, listState: LibraryListState
 @Composable
 private fun EmptyLibrary(enabled: Boolean, onAddPdf: () -> Unit) {
     Centered {
+        Icon(
+            painterResource(R.drawable.ic_library),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
         Text(stringResource(R.string.library_empty_title), style = MaterialTheme.typography.titleLarge)
         Text(
             stringResource(R.string.library_empty_body),

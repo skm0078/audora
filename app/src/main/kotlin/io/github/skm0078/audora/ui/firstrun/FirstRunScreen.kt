@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -68,12 +69,7 @@ fun FirstRunScreen(
                 modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
             ) {
-                Text(
-                    stringResource(R.string.first_run_step, step.ordinal + 1, FirstRunStep.entries.size),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = Dimens.SpaceXl),
-                )
+                StepProgress(step)
                 when (step) {
                     FirstRunStep.LANGUAGES -> LanguagesStep(chosen) { languages = it.map(Lang::name) }
 
@@ -95,6 +91,23 @@ fun FirstRunScreen(
                 onSkip = onFinish,
             )
         }
+    }
+}
+
+/** "Step 2 of 4" over a bar, so how much is left shows at a glance. */
+@Composable
+private fun StepProgress(step: FirstRunStep) {
+    val total = FirstRunStep.entries.size
+    Column(
+        Modifier.padding(top = Dimens.SpaceXl),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+    ) {
+        Text(
+            stringResource(R.string.first_run_step, step.ordinal + 1, total),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        LinearProgressIndicator(progress = { (step.ordinal + 1f) / total }, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -122,10 +135,11 @@ private fun LanguagesStep(chosen: Set<Lang>, onChange: (Set<Lang>) -> Unit) {
             )
         }
     }
+    // Said plainly, since paywalls are what listeners complain about most in other read-aloud apps.
     Text(
         stringResource(R.string.first_run_privacy),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
     )
 }
 

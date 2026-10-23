@@ -10,7 +10,7 @@
     <string name="library_title">লাইব্রেরি</string>
     <string name="library_add_pdf">PDF যোগ করুন</string>
     <string name="library_empty_title">আপনার লাইব্রেরি খালি</string>
-    <string name="library_empty_body">ফোন থেকে একটি PDF যোগ করুন, অথবা Files, WhatsApp বা মেল থেকে ListenLock দিয়ে খুলুন। ফাইল কোথায় আছে ListenLock মনে রাখে; শুধু অন্য অ্যাপ অল্প সময়ের জন্য যে PDF দেয়, সেগুলোই কপি করে রাখে।</string>
+    <string name="library_empty_body">আপনার ফোন থেকে PDF যোগ করুন, বা Files, WhatsApp বা মেল থেকে কোনো PDF ListenLock-এ পাঠান।</string>
     <string name="library_load_failed">ListenLock আপনার লাইব্রেরি লোড করতে পারেনি। সেটিংস থেকে লগ শেয়ার করুন।</string>
     <string name="library_untitled">নামহীন PDF</string>
     <string name="library_book_menu">আরও অপশন</string>
@@ -175,7 +175,7 @@
     <string name="fix_rule">%1$s → %2$s (%3$s)</string>
     <string name="settings_group_pronunciation">উচ্চারণ</string>
     <string name="settings_pronunciation_title">সব বইয়ের শব্দ</string>
-    <string name="settings_pronunciation_body">সব বইয়ে একটি শব্দের উচ্চারণ ঠিক করুন। শুধু একটি বইয়ের জন্য সংশোধন কোনো বাক্যের মেনু থেকে করুন।</string>
+    <string name="settings_pronunciation_body">সব বইয়ে একটি শব্দের উচ্চারণ ঠিক করুন</string>
     <string name="pronunciation_save_failed">সংশোধনটি সেভ হয়নি। আবার চেষ্টা করুন।</string>
     <string name="notes_delete">মুছুন</string>
     <string name="notes_done">হয়ে গেছে</string>
@@ -221,7 +221,7 @@
     <string name="navigate_back">পিছনে</string>
     <string name="settings_version_title">ভার্সন</string>
     <string name="share_logs_title">লগ শেয়ার করুন</string>
-    <string name="share_logs_body_hint">যিনি আপনাকে সাহায্য করছেন, তাঁকে ListenLock-র লগ পাঠান। এতে আপনার PDF-এর কোনো লেখা থাকে না।</string>
+    <string name="share_logs_body_hint">এতে আপনার PDF-এর লেখা থাকে না</string>
     <string name="share_logs_failed">লগ তৈরি করা যায়নি। আবার চেষ্টা করুন।</string>
     <string name="share_logs_chooser_title">ListenLock-র লগ পাঠান যা দিয়ে</string>
     <string name="share_logs_subject">ListenLock লগ (%1$s, %2$s)</string>
@@ -268,7 +268,7 @@
 
     <!-- Voices (P4-01): Settings → Voices -->
     <string name="settings_voices_title">ভয়েস</string>
-    <string name="settings_voices_body">আরও ভয়েস ডাউনলোড করুন, নিজের ভয়েস ইমপোর্ট করুন, এবং প্রতিটি ভাষার জন্য ভয়েস বেছে নিন।</string>
+    <string name="settings_voices_body">ভয়েস ডাউনলোড, ইমপোর্ট করুন আর বেছে নিন</string>
     <string name="voices_title">ভয়েস</string>
     <string name="voices_load_failed">ভয়েসগুলো লোড করা যায়নি। বারবার এমন হলে সেটিংস থেকে লগ শেয়ার করুন।</string>
     <string name="voices_lang_en">ইংরেজি</string>
@@ -373,7 +373,7 @@
     <string name="library_duplicate_close">বন্ধ করুন</string>
     <!-- Notes tab -->
     <string name="notes_empty_title">এখনো কোনো নোট নেই</string>
-    <string name="notes_empty_body">পড়ার সময় যোগ করা বুকমার্ক, হাইলাইট আর ভয়েস নোট, সব বইয়ের, এখানে জমা হয়। যোগ করতে কোনো বাক্য চেপে ধরে রাখুন।</string>
+    <string name="notes_empty_body">পড়ার সময় কোনো বাক্য চেপে ধরে বুকমার্ক, হাইলাইট বা ভয়েস নোট যোগ করুন।</string>
     <string name="notes_page">পৃষ্ঠা %1$d</string>
     <string name="notes_kind_bookmark">বুকমার্ক</string>
     <string name="notes_kind_highlight">হাইলাইট</string>
@@ -402,16 +402,8 @@
     <string name="reader_bold_word_starts">শব্দের শুরু বোল্ড (ইংরেজি)</string>
     <string name="reader_follow_along">সাথে সাথে পড়ুন</string>
     <string name="reader_word_highlight">প্রতিটি শব্দ হাইলাইট করুন</string>
-    <string name="reader_highlight_fill">হাইলাইট: রঙিন পটি</string>
-    <string name="reader_highlight_underline">হাইলাইট: আন্ডারলাইন</string>
-    <string name="reader_highlight_bold">হাইলাইট: বোল্ড</string>
-    <string name="reader_tone_original">পৃষ্ঠা: যেমন ছাপা</string>
-    <string name="reader_tone_sepia">পৃষ্ঠা: সেপিয়া</string>
-    <string name="reader_tone_dark">পৃষ্ঠা: ডার্ক</string>
     <string name="reader_fit_width">প্রস্থে মানানসই</string>
     <!-- Text view type (plan item 15) -->
-    <string name="reader_text_look">লেখা ও ব্যবধান…</string>
-    <string name="text_look_title">লেখা ও ব্যবধান</string>
     <string name="text_look_sample">It is not down in any map; true places never are. सभी मनुष्यों को गौरव। সকল মানুষ স্বাধীন।</string>
     <string name="text_look_font">ফন্ট</string>
     <string name="text_look_font_serif">বইয়ের মতো (সেরিফ)</string>
@@ -438,8 +430,7 @@
     </plurals>
     <!-- Settings groups and appearance -->
     <string name="settings_group_listening">শোনা</string>
-    <string name="settings_group_reading">পড়া</string>
-    <string name="settings_group_appearance">চেহারা</string>
+    <string name="settings_group_reading">পড়া আর চেহারা</string>
     <string name="settings_group_app">অ্যাপ</string>
     <string name="settings_group_debug">ডিবাগ</string>
     <string name="settings_wallpaper_colors_title">ওয়ালপেপারের রং</string>
@@ -467,7 +458,6 @@
 
     <!-- App language (plan item 44); each language is named in its own script, so those names are not translated -->
     <string name="settings_language_title">ভাষা</string>
-    <string name="settings_language_cancel">বাতিল</string>
     <string name="language_phone">ফোনের ভাষা</string>
 
     <!-- Notes tab filter by book (UI plan, wave 4) -->
@@ -484,7 +474,7 @@
     <string name="first_run_step">ধাপ %1$d / %2$d</string>
     <string name="first_run_welcome_title">ListenLock-তে স্বাগতম</string>
     <string name="first_run_languages_body">আপনার বইগুলো কোন ভাষায়? ListenLock ইংরেজি, হিন্দি আর বাংলা পড়ে শোনায়।</string>
-    <string name="first_run_privacy">ListenLock অফলাইনে চলে: কোনো অ্যাকাউন্ট, বিজ্ঞাপন বা ট্র্যাকিং নেই। আপনি যে ভয়েস আর মডেল বেছে নেন, শুধু সেগুলোই ডাউনলোড হয়।</string>
+    <string name="first_run_privacy">বিনামূল্যে আর অফলাইনে: অ্যাকাউন্ট নেই, বিজ্ঞাপন নেই, ট্র্যাকিং নেই।</string>
     <string name="first_run_voices_title">একটি ভয়েস বেছে নিন</string>
     <string name="first_run_voices_body">প্রতিটি ভাষা আপনার ফোনে রাখা একটি ভয়েসে পড়া হয়। এখনই একটি ডাউনলোড করুন, বা পরে সেটিংস → ভয়েস থেকে।</string>
     <string name="first_run_background_title">স্ক্রিন বন্ধ থাকলেও শুনতে থাকুন</string>
@@ -501,7 +491,7 @@
 
     <!-- Storage (UI plan, wave 4) -->
     <string name="storage_title">স্টোরেজ</string>
-    <string name="settings_storage_body">ListenLock আপনার ফোনে কী রাখে, আর কীভাবে জায়গা খালি করবেন।</string>
+    <string name="settings_storage_body">ভয়েস, স্ক্যান আর ডাউনলোড</string>
     <string name="storage_total">ListenLock %1$s ব্যবহার করছে</string>
     <string name="storage_voices">ডাউনলোড করা ভয়েস</string>
     <string name="storage_ocr">স্ক্যান করা পৃষ্ঠার লেখা চেনা</string>

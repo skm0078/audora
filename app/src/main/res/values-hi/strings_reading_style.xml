@@ -17,6 +17,4 @@
 
     <string name="more_options_expanded">खुला है</string>
     <string name="more_options_collapsed">बंद है</string>
-    <string name="speech_more_title">बोलने के और विकल्प</string>
-    <string name="speech_more_summary">विराम चिह्नों पर ठहराव, आवाज़, संवाद और पात्रों की आवाज़ें, अभ्यास और फ़ोकस ध्वनियाँ</string>
 </resources>

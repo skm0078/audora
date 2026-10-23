@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_options.xml -->
+<!-- Purpose: Hindi copy of values/strings_options.xml. -->
+<resources>
+    <string name="option_help_about">%1$s के बारे में</string>
+    <string name="option_help_ok">ठीक है</string>
+    <string name="option_choice_cancel">रद्द करें</string>
+    <string name="speech_sheet_title">आवाज़ और रफ़्तार</string>
+    <string name="speech_speed_title">रफ़्तार</string>
+    <string name="speech_speed_value">%1$s×</string>
+    <string name="reading_skim_short">सिर्फ़ शीर्षक और मुख्य वाक्य</string>
+    <string name="reading_skip_unreadable_short">बिगड़ा स्कैन टेक्स्ट हल्की ध्वनि बन जाता है</string>
+    <string name="settings_skip_citations_short">[12] और [4–7] छोड़ देता है</string>
+    <string name="settings_kids_short">बड़े बटन, सेटिंग्स बंद</string>
+    <string name="settings_privacy_short">ऐप लॉक, सामग्री छिपाएँ, निजता नीति</string>
+    <string name="app_lock_short">लौटने पर फ़िंगरप्रिंट, चेहरा या PIN</string>
+    <string name="hide_content_short">न स्क्रीनशॉट, न हाल के ऐप्स में झलक</string>
+    <string name="pack_not_downloaded">डाउनलोड नहीं हुआ · %1$d MB</string>
+    <string name="study_loop_short">पढ़ते समय A और B तय करें</string>
+    <string name="page_text_title">पेज और टेक्स्ट</string>
+    <string name="page_tone_title">पेज का रंग</string>
+    <string name="page_tone_original">जैसा छपा</string>
+    <string name="page_tone_sepia">सीपिया</string>
+    <string name="page_tone_dark">गहरा</string>
+    <string name="highlight_style_title">हाइलाइट का तरीका</string>
+    <string name="highlight_style_band">पट्टी</string>
+    <string name="highlight_style_underline">रेखांकन</string>
+    <string name="highlight_style_bold">मोटे अक्षर</string>
+    <string name="page_text_group_reading">पढ़ते समय</string>
+    <string name="page_text_group_aids">पढ़ने में मदद</string>
+    <string name="page_text_group_text">टेक्स्ट</string>
+    <string name="reader_follow_along_short">पढ़े जा रहे वाक्य तक स्क्रॉल करता है</string>
+    <string name="reader_focus_view_short">पढ़े जा रहे वाक्य के सिवा सब धुंधला</string>
+    <string name="speech_blend_voice">मिलाई गई आवाज़</string>
+    <string name="speech_blend_amount_title">कितना</string>
+    <string name="speech_blend_percent">%1$d%%</string>
+    <string name="focus_level_value">%1$d%%</string>
+    <string name="option_value_pair">%1$s: %2$s</string>
+    <string name="speech_cast_voice_for">%1$s आवाज़</string>
+</resources>

@@ -44,6 +44,8 @@ import io.github.skm0078.audora.ui.reader.VoiceCommandsMode
 import io.github.skm0078.audora.ui.reader.microphoneAllowed
 import io.github.skm0078.audora.ui.reader.notificationsAllowed
 import io.github.skm0078.audora.ui.reader.rememberEffectiveVoiceCommands
+import io.github.skm0078.audora.ui.theme.OptionDivider
+import io.github.skm0078.audora.ui.theme.SwitchOption
 import kotlinx.coroutines.launch
 
 /**
@@ -61,7 +63,7 @@ data class VoiceCommandsSettings(
 /**
  * The model row, the switch (only once the model is installed), and under it, while on, the screen-off opt-in: it
  * keeps a microphone notification up while the reader is open, and costs battery for as long as it listens. Rows of
- * Settings' Reading group, each with the group's divider before it.
+ * Advanced's first group, each with the group's divider before it.
  */
 @Composable
 internal fun VoiceCommandsItems(settings: VoiceCommandsSettings) {
@@ -69,45 +71,26 @@ internal fun VoiceCommandsItems(settings: VoiceCommandsSettings) {
     val ready = settings.model is OcrModelsState.Ready
     // Shown as off without the model, whatever was saved: nothing listens then.
     val on = settings.mode != VoiceCommandsMode.OFF && ready
-    SettingsDivider()
-    SwitchRow(
-        title = R.string.commands_switch_title,
-        body = stringResource(if (ready) R.string.commands_switch_body else R.string.commands_switch_needs_model),
-        checked = on,
+    OptionDivider()
+    SwitchOption(
+        stringResource(R.string.commands_switch_title),
+        on,
+        { turnOn -> settings.onChange(if (turnOn) VoiceCommandsMode.WHILE_VISIBLE else VoiceCommandsMode.OFF) },
+        subtitle = if (ready) null else stringResource(R.string.commands_switch_needs_model),
+        help = stringResource(R.string.commands_switch_body),
         enabled = ready,
-    ) { turnOn -> settings.onChange(if (turnOn) VoiceCommandsMode.WHILE_VISIBLE else VoiceCommandsMode.OFF) }
-    if (on) {
-        SettingsDivider()
-        SwitchRow(
-            title = R.string.commands_screen_off_title,
-            body = pluralStringResource(R.plurals.commands_screen_off_body, IDLE_MINUTES, IDLE_MINUTES),
-            checked = settings.mode == VoiceCommandsMode.SCREEN_OFF,
-            enabled = true,
-        ) { screenOff ->
-            settings.onChange(if (screenOff) VoiceCommandsMode.SCREEN_OFF else VoiceCommandsMode.WHILE_VISIBLE)
-        }
-    }
-}
-
-@Composable
-private fun SwitchRow(
-    @StringRes title: Int,
-    body: String,
-    checked: Boolean,
-    enabled: Boolean,
-    onChange: (Boolean) -> Unit,
-) {
-    ListItem(
-        headlineContent = { Text(stringResource(title)) },
-        supportingContent = { Text(body) },
-        trailingContent = { Switch(checked = checked, onCheckedChange = null, enabled = enabled) },
-        modifier = Modifier.toggleable(
-            value = checked,
-            enabled = enabled,
-            role = Role.Switch,
-            onValueChange = onChange,
-        ),
     )
+    if (on) {
+        OptionDivider()
+        SwitchOption(
+            stringResource(R.string.commands_screen_off_title),
+            settings.mode == VoiceCommandsMode.SCREEN_OFF,
+            { screenOff ->
+                settings.onChange(if (screenOff) VoiceCommandsMode.SCREEN_OFF else VoiceCommandsMode.WHILE_VISIBLE)
+            },
+            help = pluralStringResource(R.plurals.commands_screen_off_body, IDLE_MINUTES, IDLE_MINUTES),
+        )
+    }
 }
 
 /**

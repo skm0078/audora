@@ -17,6 +17,4 @@
 
     <string name="more_options_expanded">Expanded</string>
     <string name="more_options_collapsed">Collapsed</string>
-    <string name="speech_more_title">More speech options</string>
-    <string name="speech_more_summary">Pauses at punctuation, sound, a voice for dialogue and characters, study and focus sounds</string>
 </resources>
