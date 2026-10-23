@@ -54,6 +54,10 @@ class PdfiumPageRenderer internal constructor(
         } catch (e: RuntimeException) {
             AudoraLog.w(TAG, "Render failed, $logContext page=$pageIndex", e)
             Outcome.Failure(PdfPageError.ExtractionFailed(pageIndex, e.toString(), e))
+        } catch (e: OutOfMemoryError) {
+            // The bitmap is bounded by maxPixels, but a phone short of memory must lose the picture, not the app.
+            AudoraLog.e(TAG, "No memory to draw the page, $logContext page=$pageIndex", e)
+            Outcome.Failure(PdfPageError.ExtractionFailed(pageIndex, "no memory to draw the page: $e", e))
         }
     }
 

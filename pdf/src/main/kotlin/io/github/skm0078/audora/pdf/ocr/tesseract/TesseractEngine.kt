@@ -16,6 +16,7 @@ import io.github.skm0078.audora.pdf.ocr.OcrEngine
 import io.github.skm0078.audora.pdf.ocr.RecognizedPage
 import io.github.skm0078.audora.pdf.quality.OcrError
 import java.io.File
+import java.util.concurrent.locks.ReentrantLock
 
 /** Where the downloaded `*.traineddata` files are (the model manager in :speech owns them). */
 interface TessdataSource {
@@ -31,7 +32,8 @@ interface TessdataSource {
 /**
  * One Tesseract instance per process, kept loaded between pages and reloaded only when the languages change
  * (loading the `best` models takes a moment and tens of megabytes). Tesseract is not thread-safe, so calls are
- * serialized; the player reads about a page ahead and the reader rarely asks at the same time.
+ * serialized, fairly and interruptibly: a reader that turned away from its page stops waiting, and the page the
+ * listener waits for is never starved by a long queue of other pages.
  *
  * Settings: LSTM only (`tessdata_best` has no legacy model), automatic page segmentation (columns and paragraphs),
  * the image's real resolution so Tesseract does not guess the text size, and [threshold] (Sauvola by default, so a
@@ -42,7 +44,7 @@ class TesseractEngine(
     private val models: TessdataSource,
     private val threshold: OcrThreshold = OcrConfig().threshold,
 ) : OcrEngine {
-    private val lock = Any()
+    private val lock = ReentrantLock(true)
     private var api: TessBaseAPI? = null
     private var loaded: String? = null
 
@@ -66,7 +68,14 @@ class TesseractEngine(
     override fun installedLangs(): Set<Lang> = models.installed()
 
     override fun recognize(image: PageImage, langs: Set<Lang>): Outcome<RecognizedPage, OcrError> =
-        models.dataRoot(langs).flatMap { root -> synchronized(lock) { recognizeLocked(root, image, langs) } }
+        models.dataRoot(langs).flatMap { root ->
+            lock.lockInterruptibly()
+            try {
+                recognizeLocked(root, image, langs)
+            } finally {
+                lock.unlock()
+            }
+        }
 
     @Suppress("TooGenericExceptionCaught") // The JNI wrapper reports native failures as RuntimeExceptions.
     private fun recognizeLocked(root: File, image: PageImage, langs: Set<Lang>): Outcome<RecognizedPage, OcrError> {

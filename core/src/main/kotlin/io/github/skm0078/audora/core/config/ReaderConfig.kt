@@ -25,6 +25,8 @@ package io.github.skm0078.audora.core.config
  * @property voiceShaping the voice boost steps the speech sheet offers (plan item 9); the service shapes with the same.
  * @property replayFactor "What did it say?" replays the last sentence at this times the listener's speed: slower enough
  *   to catch a word, not so slow that the stretched audio smears it.
+ * @property slowPageNoticeMs a page still loading after this long gets a line saying why (a scanned page is being
+ *   read with OCR, up to a minute) under its spinner, so a slow page never looks like a hang.
  */
 data class ReaderConfig(
     val speeds: List<Float> = DEFAULT_SPEEDS,
@@ -41,6 +43,7 @@ data class ReaderConfig(
     val timeLeft: TimeLeftConfig = TimeLeftConfig(),
     val voiceShaping: VoiceShapingConfig = VoiceShapingConfig(),
     val replayFactor: Float = DEFAULT_REPLAY_FACTOR,
+    val slowPageNoticeMs: Long = DEFAULT_SLOW_PAGE_NOTICE_MS,
 ) {
     init {
         require(speeds.isNotEmpty() && speeds == speeds.sorted()) { "speeds must be non-empty and ascending" }
@@ -51,6 +54,7 @@ data class ReaderConfig(
         require(bedtimeStepMinutes > 0) { "bedtimeStepMinutes must be positive" }
         require(pageMaxPixels > 0) { "pageMaxPixels must be positive" }
         require(pageTapSlopPoints >= 0f) { "pageTapSlopPoints must not be negative" }
+        require(slowPageNoticeMs >= 0) { "slowPageNoticeMs must not be negative, was $slowPageNoticeMs" }
         require(replayFactor in MIN_REPLAY_FACTOR..1f) { "replayFactor must be in 0.5..1, was $replayFactor" }
         require(chapterListDepth > 0) { "chapterListDepth must be > 0, was $chapterListDepth" }
         require(ocrFairFrom in 0..ocrGoodFrom && ocrGoodFrom <= MAX_OCR_CONFIDENCE) {
@@ -81,6 +85,7 @@ data class ReaderConfig(
         private const val MAX_OCR_CONFIDENCE = 100
         private const val DEFAULT_CHAPTER_LIST_DEPTH = 3
         private const val DEFAULT_REPLAY_FACTOR = 0.85f
+        private const val DEFAULT_SLOW_PAGE_NOTICE_MS = 3_000L
         private const val MIN_REPLAY_FACTOR = 0.5f
     }
 }

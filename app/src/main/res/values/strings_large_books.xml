@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Large and scanned books: what the reader says while a slow page is read. -->
+<resources>
+    <string name="reader_page_slow">Still reading this page. A scanned page is read with text recognition (OCR), which can take up to a minute. You can keep turning pages.</string>
+</resources>

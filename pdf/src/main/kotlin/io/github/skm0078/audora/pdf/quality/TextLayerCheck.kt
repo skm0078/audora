@@ -53,6 +53,9 @@ fun interface PageOcrFactory {
 /** Draws a page of the open book for OCR, at most [dpi] and [maxPixels] (`PdfDocumentHandle.render`). */
 fun interface PageRenderer {
     fun render(pageIndex: Int, dpi: Int, maxPixels: Long): Outcome<PageImage, PdfPageError>
+
+    /** True once nobody wants the book's pages any more (it is closing): OCR stops between its steps. */
+    fun abandoned(): Boolean = false
 }
 
 sealed interface OcrError {
