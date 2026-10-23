@@ -45,6 +45,11 @@ jobs:
         run: |
           sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
           python3 -m pip install --upgrade pip
+          # pkuseg (a Chinese word splitter Chatterbox imports) builds against numpy, so numpy goes first and pkuseg
+          # builds without isolation; torch comes from the CPU index to skip the CUDA wheels.
+          python3 -m pip install "numpy==1.25.2" cython setuptools wheel
+          python3 -m pip install "torch==2.6.0" "torchaudio==2.6.0" --index-url https://download.pytorch.org/whl/cpu
+          python3 -m pip install --no-build-isolation "pkuseg==0.0.25"
           python3 -m pip install "chatterbox-tts==0.1.4"
           python3 -m pip list | grep -iE "torch|chatterbox|transformers"
           nproc; free -g
