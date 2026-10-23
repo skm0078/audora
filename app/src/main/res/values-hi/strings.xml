@@ -239,6 +239,7 @@
     <string name="battery_status_allowed">Audora के लिए बैटरी ऑप्टिमाइज़ेशन बंद है।</string>
     <string name="battery_status_limited">बैटरी ऑप्टिमाइज़ेशन चालू है: स्क्रीन बंद होने पर Android पढ़ना रोक सकता है।</string>
     <string name="battery_allow">बैकग्राउंड में पढ़ने दें</string>
+    <string name="battery_allow_hint">Android अपनी बैटरी सूची खोलेगा। अगर Audora न दिखे, तो सूची को सभी ऐप पर बदलें, फिर Audora पर टैप करके ऑप्टिमाइज़ न करें चुनें।</string>
     <string name="battery_open_app_settings">Audora की ऐप जानकारी खोलें</string>
     <string name="battery_footer">अगर स्क्रीन बंद होने पर अब भी पढ़ना रुकता है, तो सेटिंग्स से लॉग शेयर करें: उनमें लिखा होता है कि Android ने Audora को क्यों रोका।</string>
     <string name="battery_step_number">%1$d. %2$s</string>
@@ -305,6 +306,8 @@
     <string name="voices_import_choose_folder">फ़ोल्डर चुनें</string>
     <string name="voices_recommended">इस भाषा के लिए सुझाई गई</string>
     <string name="settings_licences_body">हर आवाज़ किसने बनाई, उसका लाइसेंस और वह कहाँ से आई।</string>
+    <string name="settings_privacy_title">गोपनीयता नीति</string>
+    <string name="settings_privacy_body">Audora आपके बारे में कुछ भी इकट्ठा नहीं करता। पूरी नीति आपके ब्राउज़र में खुलती है।</string>
     <string name="licences_title">आवाज़ें और लाइसेंस</string>
     <string name="licences_load_failed">लाइसेंस लोड नहीं हो सके। अगर ऐसा बार-बार हो, तो सेटिंग्स से लॉग शेयर करें।</string>
     <string name="licences_intro">Audora उन आवाज़ों से पढ़ता है जिन्हें दूसरे लोगों ने बनाया और साझा किया है। हर आवाज़ उसके लाइसेंस और श्रेय के साथ दी गई है, जैसा उसका लाइसेंस कहता है।</string>

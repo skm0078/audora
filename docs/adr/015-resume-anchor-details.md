@@ -28,7 +28,8 @@ the saved sentence changes, whether the anchor carries the voice (the §4 sample
    throttled to one per 2 s (`ResumeConfig`), the newest sentence written when the interval ends and at once on
    pause/stop; a kill loses at most 2 s, i.e. resumes at most one sentence early.
 5. **Brand onboarding uses only public intents:** the system "ignore battery optimization" prompt
-   (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, declared in the manifest) and the app info page. Each maker's own steps
+   (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, declared in the manifest; since ADR-055 the optimization list instead)
+   and the app info page. Each maker's own steps
    (Motorola, OnePlus, Samsung, Xiaomi, OPPO, realme, vivo, generic) are shown as text. Brand-specific settings
    activities (`com.miui.securitycenter/...`, `com.coloros.safecenter/...`) are private, change between OS versions
    and crash when missing, so they are not opened directly.
