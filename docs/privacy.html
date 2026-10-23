@@ -28,15 +28,35 @@ you.</strong> Everything it does happens on your phone.</p>
   <li>The app's own logs. They leave the phone only if you choose <em>Share logs</em> in Settings and pick where
     to send them.</li>
 </ul>
-<p>ListenLock has no account, no ads, no analytics and no crash-reporting service. Backups and exports are files you
-create and save where you choose.</p>
+<p>ListenLock has no account, no ads, no analytics and no crash-reporting service, and no server of its own: it never
+uploads anything. Android's cloud backup and its phone-to-phone transfer are both turned off for the app, so its data
+does not reach Google's backup either.</p>
+
+<h2>Your files, your responsibility</h2>
+<p>Because nothing is kept anywhere but your phone, nobody else holds a copy, and nobody can recover it for you.</p>
+<ul>
+  <li><strong>Backups</strong> (Settings, <em>Back up and restore</em>) are one unencrypted file with your library,
+    notes and voice notes, saved where you choose. Wherever you put it (a cloud drive, a computer, a chat), it is
+    covered by that place's own terms, and anyone who can open it can read it.</li>
+  <li><strong>Exports</strong> (talking books, clips, notes) are saved in your phone's shared folders or sent with the
+    share sheet to an app you pick. Other apps with access to those folders can read them.</li>
+  <li>If you lose your phone or uninstall the app without a backup, your library and notes are gone.</li>
+  <li>The books you open are your own; you are responsible for having the right to use them.</li>
+</ul>
+<p>To keep the app private on a shared or lost phone, turn on <em>App lock</em> (your fingerprint, face or phone
+screen lock opens it) and <em>Hide app content</em> (no screenshots, screen recording or recent-apps preview) in
+Settings, under <em>Privacy and security</em>. ListenLock keeps no password of its own; Android checks the unlock and
+tells the app only that it worked.</p>
 
 <h2>What ListenLock downloads</h2>
 <p>When you choose to download a voice, a text-recognition model or another language pack, ListenLock fetches the file
-over HTTPS from GitHub (github.com) or Hugging Face (huggingface.co). These requests send no information about you
-or your documents. Like any web request, the server sees your IP address, under
-<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's</a> and
-<a href="https://huggingface.co/privacy">Hugging Face's</a> own privacy policies.</p>
+over HTTPS from GitHub (github.com and its download servers, such as raw.githubusercontent.com). Each file is checked
+against a fingerprint built into the app before it is used. These requests carry only the file's address and the
+app's name, never anything about you or your documents. Like any web request, GitHub sees your IP address, under
+<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's own
+privacy statement</a>. Nothing else in the app uses the internet.</p>
+<p>Languages without a downloaded voice can be read by your phone's own text-to-speech engine. ListenLock only uses
+that engine's voices that work offline, so the text stays on the phone.</p>
 
 <h2>Google Play</h2>
 <p>If you install ListenLock from Google Play, Google may share anonymous install statistics and crash reports with the
@@ -48,6 +68,7 @@ developer, as it does for every Play app, under
   <li><strong>Notifications:</strong> to show the playback controls and the progress of long jobs.</li>
   <li><strong>Microphone:</strong> only for voice commands, voice notes and listening features you use.</li>
   <li><strong>Internet:</strong> only for the downloads described above.</li>
+  <li><strong>Fingerprint and face:</strong> only if you turn on App lock; Android shows the prompt and checks it.</li>
 </ul>
 
 <h2>Children</h2>

@@ -183,6 +183,11 @@ library when they switch.
   *Source* **Deploy from a branch** → branch **dev**, folder **/docs** → **Save**. `docs/.nojekyll` makes Pages
   serve the files as they are, without building the Markdown docs. Update the date on the page with every change,
   and update Play Console's Data safety form in the same release if what Audora sends or keeps changes.
+- **Data safety form** (answers from the audit in ADR-061): *Does your app collect or share any of the required user
+  data types?* **No**. The app sends nothing about the person or their books anywhere; the only network use is a
+  download the person starts, of public files from GitHub, carrying the file's address and the app's name. No
+  account, so no deletion request flow. Re-check ADR-061's table before every release: a new dependency, a new
+  network call or a new upload of any kind makes this answer wrong.
 
 ## When something fails
 

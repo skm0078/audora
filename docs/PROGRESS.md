@@ -2,6 +2,14 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Privacy and security: app lock, hide app content, no Android backup (2026-10-23, ADR-061)
+- **Audit:** the only network use is the user-chosen downloads (HTTPS, SHA-256 pinned, GitHub only); no analytics, crash reporting, ads or account; the phone's TTS engine is used only with offline voices. The privacy page wrongly named Hugging Face; fixed. Full table in ADR-061.
+- **New in Settings → Privacy and security:** a statement ("Your data stays on your phone", and that backups and exports are the person's own files to keep safe), **App lock** (the phone's own fingerprint, face or screen lock, through Android's prompt, after 30 s away; off by default) and **Hide app content** (`FLAG_SECURE`; off by default). The privacy policy row moved here.
+- **Backup:** `data_extraction_rules.xml` turns off Android's device-to-device transfer as well as cloud backup (Android 12+ ignores `allowBackup="false"` for transfers). Back up and restore is the way to move phones.
+- `docs/privacy.html` gains "Your files, your responsibility"; `docs/RELEASING.md` has the Data safety answers. No new dependency; `USE_BIOMETRIC` (normal permission). No `:pdf` change (PIPELINE_VERSION 12). Tests: `AppLockSessionTest`.
+
+**Real-device checks (Moto):** turn App lock on (asks first), leave for over 30 s, come back (asks; cancel shows Unlock); rotate (does not ask); play with the app locked (notification controls work); recents shows a blank preview; Hide app content blocks a screenshot; remove the phone's screen lock with App lock on (the app opens, no lockout).
+
 ## The app is called ListenLock (2026-10-23, ADR-060)
 - **What:** the name people see is now ListenLock: the launcher label ("ListenLock Dev" for debug builds), every English, Hindi and Bengali string, the licences screen, README, `docs/index.html`, `docs/privacy.html` and the Play feature graphic (`docs/store/feature-graphic.svg`, PNG re-rendered).
 - **Voice commands** start with "ListenLock" ("ListenLock, pause"), spotted as one word and as "listen lock"; the pieces come from the keyword model's own `bpe.model` and are all in the shipped `tokens.txt` (`KeywordTokensTest`). The narrator guard looks for the name in English, Hindi and Bengali spellings.

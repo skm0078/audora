@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Privacy and security: what stays on the phone, the app lock and hiding app content (ADR-061). -->
+<resources>
+    <string name="settings_group_privacy">निजता और सुरक्षा</string>
+    <string name="privacy_statement_title">आपका डेटा आपके फ़ोन पर ही रहता है</string>
+    <string name="privacy_statement_body">आपकी किताबें, नोट्स, रिकॉर्डिंग और सेटिंग्स सिर्फ़ इसी फ़ोन पर रहती हैं। ListenLock में न कोई खाता है, न विज्ञापन, न एनालिटिक्स और न उसका अपना कोई सर्वर, और यह कभी कुछ अपलोड नहीं करता। यह सिर्फ़ आपकी चुनी हुई आवाज़ें और भाषा पैक डाउनलोड करने के लिए ऑनलाइन जाता है।\n\nये आपकी फ़ाइलें हैं, इसलिए इन्हें सुरक्षित रखना आपकी ज़िम्मेदारी है: बैकअप और एक्सपोर्ट वहीं सेव होते हैं जहाँ आप चुनते हैं, और जो भी उन फ़ाइलों या इस ऐप को खोल सकता है, वह उन्हें पढ़ सकता है।</string>
+    <string name="app_lock_title">ऐप लॉक</string>
+    <string name="app_lock_body">30 सेकंड से ज़्यादा दूर रहने के बाद ListenLock पर लौटने पर आपका फ़िंगरप्रिंट, चेहरा या फ़ोन का PIN माँगें। नोटिफ़िकेशन के प्लेबैक कंट्रोल चलते रहते हैं।</string>
+    <string name="app_lock_needs_screen_lock">पहले फ़ोन की सेटिंग्स में स्क्रीन लॉक (PIN, पैटर्न या पासवर्ड) सेट करें।</string>
+    <string name="app_lock_prompt_title">ListenLock अनलॉक करें</string>
+    <string name="app_lock_prompt_subtitle">अपना फ़िंगरप्रिंट, चेहरा या फ़ोन का स्क्रीन लॉक इस्तेमाल करें</string>
+    <string name="app_lock_locked_title">ListenLock लॉक है</string>
+    <string name="app_lock_unlock">अनलॉक करें</string>
+    <string name="hide_content_title">ऐप की सामग्री छिपाएँ</string>
+    <string name="hide_content_body">ListenLock के स्क्रीनशॉट और स्क्रीन रिकॉर्डिंग रोकता है, और हाल के ऐप्स में इसका प्रीव्यू छिपाता है।</string>
+</resources>
