@@ -1,9 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   File: app/src/main/res/values/strings_studio.xml
-  Purpose: Studio mode strings (plan item 6, ADR-039).
+  Purpose: Studio mode strings (plan item 6, ADR-039; the per-book dialog, ADR-062).
 -->
 <resources>
-    <!-- Studio mode (plan item 6, ADR-039): renders the book ahead while the phone charges. -->
-    <string name="library_studio_mode">Prepare in studio mode</string>
+    <string name="library_studio_mode">Studio mode</string>
+    <string name="studio_sheet_title">Studio mode: “%1$s”</string>
+    <string name="studio_sheet_what">Studio mode records this book\'s speech ahead of time, from where you are, with the voice and speed you listen with, up to 6 hours at a time. Listening then plays the recording instead of waiting for the voice. It matters most for slow voices (downloaded Kokoro voices, acted Hindi); the built-in voice is fast enough to read live. It renders only while the phone is plugged in, unless you tap Start now.</string>
+    <string name="studio_sheet_running">Now</string>
+    <string name="studio_sheet_last_run">Last run</string>
+    <string name="studio_sheet_other_book">Studio mode is preparing another book right now. It does one book at a time: stop that one on its card in the library first.</string>
+    <string name="studio_sheet_on_phone">On this phone</string>
+    <string name="studio_sheet_ready">%1$s ready, pages %2$d to %3$d · %4$s</string>
+    <string name="studio_sheet_nothing_ready">Nothing ready yet.</string>
+    <string name="studio_sheet_where">Kept inside ListenLock (not in your Files app) and played by itself when you listen to this book. Changing the voice, speed, pace or pronunciation fixes makes it stop matching; the next run makes it again. Updating the app or removing the book deletes it. Save as audio file puts a copy in Audiobooks on your phone.</string>
+    <string name="studio_sheet_listen">Listen from where you left off</string>
+    <string name="studio_sheet_save">Save as audio file</string>
+    <string name="studio_sheet_saving">Saving the audio file…</string>
+    <string name="studio_sheet_delete">Delete studio audio</string>
+    <string name="studio_sheet_delete_question">Delete %1$s of studio audio? Making it again takes hours.</string>
+    <string name="studio_sheet_delete_confirm">Delete</string>
+    <string name="studio_sheet_deleted">Deleted. This book reads with the live voice until studio mode runs again.</string>
+    <string name="studio_sheet_delete_refused">Not deleted: studio mode is still preparing this book. Stop it first.</string>
+    <string name="studio_sheet_start">Start</string>
+    <string name="studio_sheet_more">Prepare more</string>
+    <string name="long_job_details">Details</string>
+    <string name="studio_file_saving">Saving the studio audio as a file. Keep ListenLock open; hours of audio take a few minutes.</string>
+    <string name="studio_file_saved">Saved “%1$s” (%2$s) in %3$s. Open it from any audiobook or music app, or your Files app.</string>
 </resources>

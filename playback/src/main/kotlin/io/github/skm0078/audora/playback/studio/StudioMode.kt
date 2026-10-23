@@ -13,6 +13,8 @@ import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.playback.export.JobSlots
+import io.github.skm0078.audora.playback.jobs.LongJobKind
+import io.github.skm0078.audora.playback.jobs.LongJobs
 import io.github.skm0078.audora.speech.acted.ActedSpeechEngine
 import io.github.skm0078.audora.speech.acted.ActedVoices
 import io.github.skm0078.audora.speech.punct.PunctuationModels
@@ -65,6 +67,25 @@ object StudioMode {
         store(context).dropBooksNotIn(emptySet())
         AudoraLog.i(TAG, "Studio audio cleared")
         return true
+    }
+
+    /** What [id] has ready on the phone (ADR-062); null when nothing. Reads the folder: call it off the main thread. */
+    fun bookAudio(context: Context, id: BookId): StudioBookAudio? = store(context).bookAudio(id)
+
+    /** True while studio mode is rendering [id]. */
+    fun isRendering(id: BookId): Boolean =
+        LongJobs.jobs.value[LongJobKind.STUDIO]?.takeIf { it.running }?.bookId == id && JobSlots.STUDIO.busy
+
+    /**
+     * Deletes [id]'s studio audio (ADR-062); playback reads that book live until studio mode runs again. Refused
+     * (false) while studio mode renders that book, which would write into the folder being deleted. Blocking.
+     */
+    fun deleteBook(context: Context, id: BookId): Boolean {
+        if (isRendering(id)) {
+            AudoraLog.i(TAG, "Studio audio not deleted: studio mode is rendering book=${id.logLabel}")
+            return false
+        }
+        return store(context).deleteBook(id).also { AudoraLog.i(TAG, "Studio audio deleted=$it, book=${id.logLabel}") }
     }
 
     /** The audio key for a book read with [style], [voices] and pronunciation [fixes] (ADR-039). */

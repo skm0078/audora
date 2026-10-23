@@ -10,6 +10,7 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.os.SystemClock
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.core.config.StudioConfig
 import io.github.skm0078.audora.core.library.BookId
@@ -75,7 +76,7 @@ class StudioService : Service() {
 
     override fun onCreate() {
         super.onCreate() // Hilt injects fields here.
-        notifications = StudioNotifications(this).apply { createChannel() }
+        notifications = StudioNotifications(this, config).apply { createChannel() }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -197,7 +198,9 @@ class StudioService : Service() {
         val store = StudioMode.store(this)
         store.dropBooksNotIn(runBlocking { library.books().first() }.mapTo(HashSet()) { it.id })
         val fromPage = runBlocking { resumeAnchors.get(id) }?.page ?: 0
-        val progress = Progress(title)
+        val progress = Progress(title, StudioProgress(0L, 0L, fromPage, fromPage, text.pageCount, 0L, 0L))
+        // At once, not at the first finished sentence: the card says which page it starts on and that it measures.
+        progress.show()
         val chargingGate = ChargingGate(this, config, wakeLock, progress::onWaiting).also { gate = it }
         val run = StudioRun(
             voice = rendering.studioVoice(),
@@ -234,13 +237,17 @@ class StudioService : Service() {
         }
     }
 
-    private inner class Progress(private val title: String) : StudioListener {
-        private var readyMs = 0L
+    /** On the worker thread: the gate and the run both call in from it. */
+    private inner class Progress(private val title: String, private var latest: StudioProgress) : StudioListener {
         private var waiting: ChargingGate.Wait? = null
+        private var shownPage = -1
+        private var shownAt = 0L
 
-        override fun onPageDone(page: Int, readyMs: Long) {
-            this.readyMs = readyMs
-            show()
+        /** Every sentence; shown when the page changes or [StudioConfig.progressEveryMs] passed. */
+        override fun onProgress(progress: StudioProgress) {
+            latest = progress
+            val due = SystemClock.elapsedRealtime() - shownAt >= config.progressEveryMs
+            if (progress.page != shownPage || due) show()
         }
 
         fun onWaiting(wait: ChargingGate.Wait?) {
@@ -248,8 +255,10 @@ class StudioService : Service() {
             show()
         }
 
-        private fun show() {
-            if (!stopping) notifications.showRunning(title, readyMs, config.aheadMs, waiting)
+        fun show() {
+            shownPage = latest.page
+            shownAt = SystemClock.elapsedRealtime()
+            if (!stopping) notifications.showRunning(title, latest, waiting)
         }
     }
 

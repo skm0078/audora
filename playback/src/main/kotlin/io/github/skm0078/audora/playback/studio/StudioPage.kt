@@ -88,6 +88,7 @@ class StudioPage(val page: Int, val clips: List<StudioClip>) {
         private const val MAGIC = 0x41535455 // "ASTU"
         private const val VERSION = 2 // 2: the voice's place in each clip, for the word highlight
         private const val CHECKSUM_BYTES = Long.SIZE_BYTES
+        private const val MS_PER_SECOND = 1_000L
 
         /** Throws [CorruptStudioData] on a truncated, damaged or foreign file. */
         fun fromBytes(bytes: ByteArray): StudioPage {
@@ -100,6 +101,44 @@ class StudioPage(val page: Int, val clips: List<StudioClip>) {
                 DataInputStream(ByteArrayInputStream(bytes, 0, bodySize)).use(::readBody)
             } catch (e: EOFException) {
                 throw CorruptStudioData("file ends early", e)
+            }
+        }
+
+        /**
+         * The page's speech length, from the clip headers only (their audio is skipped, the checksum not checked):
+         * for the per-book summary, which must not read hundreds of megabytes. Throws [CorruptStudioData] on a
+         * foreign or truncated file; [java.io.IOException] on a read error.
+         */
+        fun durationOf(input: DataInputStream): Long = try {
+            corruptUnless(input.readInt() == MAGIC) { "not a studio page" }
+            corruptUnless(input.readByte().toInt() == VERSION) { "unknown version" }
+            input.readInt() // The page number.
+            val count = input.readInt()
+            corruptUnless(count >= 0) { "negative clip count" }
+            var durationMs = 0L
+            repeat(count) {
+                input.readInt() // Index.
+                input.readLong() // Text key.
+                val sampleRate = input.readInt()
+                val sampleCount = input.readInt()
+                input.readLong() // Lead.
+                input.readLong() // Speech.
+                val size = input.readInt()
+                corruptUnless(sampleRate > 0 && sampleCount >= 0 && size >= 0) { "bad clip format" }
+                durationMs += sampleCount * MS_PER_SECOND / sampleRate
+                skipFully(input, size)
+            }
+            durationMs
+        } catch (e: EOFException) {
+            throw CorruptStudioData("file ends early", e)
+        }
+
+        private fun skipFully(input: DataInputStream, bytes: Int) {
+            var left = bytes
+            while (left > 0) {
+                val skipped = input.skipBytes(left)
+                if (skipped <= 0) throw EOFException("clip audio cut short")
+                left -= skipped
             }
         }
 

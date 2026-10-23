@@ -2,5 +2,27 @@
 <!-- File: app/src/main/res/values-bn/strings_studio.xml -->
 <!-- Purpose: Bengali copy of values/strings_studio.xml. -->
 <resources>
-    <string name="library_studio_mode">স্টুডিও মোডে তৈরি করুন</string>
+    <string name="library_studio_mode">স্টুডিও মোড</string>
+    <string name="studio_sheet_title">স্টুডিও মোড: “%1$s”</string>
+    <string name="studio_sheet_what">স্টুডিও মোড এই বইয়ের কথা আগে থেকে রেকর্ড করে রাখে, আপনি যেখানে আছেন সেখান থেকে, যে ভয়েস আর গতিতে আপনি শোনেন সেভাবেই, একবারে ৬ ঘণ্টা পর্যন্ত। তারপর শোনার সময় ভয়েসের জন্য অপেক্ষা না করে রেকর্ডিং চলে। ধীর ভয়েসের জন্য এটি সবচেয়ে কাজের (ডাউনলোড করা Kokoro ভয়েস, অভিনয়ের হিন্দি); বিল্ট-ইন ভয়েস সরাসরি পড়ার মতো যথেষ্ট দ্রুত। ফোন চার্জে থাকলেই এটি চলে, যদি না আপনি এখনই শুরু করুন টেপেন।</string>
+    <string name="studio_sheet_running">এখন</string>
+    <string name="studio_sheet_last_run">শেষবার</string>
+    <string name="studio_sheet_other_book">স্টুডিও মোড এখন আরেকটি বই তৈরি করছে। এটি একবারে একটি বই করে: আগে লাইব্রেরিতে সেটির কার্ড থেকে থামান।</string>
+    <string name="studio_sheet_on_phone">এই ফোনে</string>
+    <string name="studio_sheet_ready">%1$s তৈরি, পৃষ্ঠা %2$d থেকে %3$d · %4$s</string>
+    <string name="studio_sheet_nothing_ready">এখনও কিছু তৈরি হয়নি।</string>
+    <string name="studio_sheet_where">এটি ListenLock-এর ভেতরে রাখা থাকে (আপনার Files অ্যাপে নয়) আর এই বই শোনার সময় নিজেই চলে। ভয়েস, গতি, বিরতি বা উচ্চারণ সংশোধন বদলালে এটি আর মেলে না; পরের বার আবার তৈরি হয়। অ্যাপ আপডেট করলে বা বইটি সরালে এটি মুছে যায়। অডিও ফাইল হিসেবে সেভ করুন দিলে একটি কপি ফোনের Audiobooks-এ যায়।</string>
+    <string name="studio_sheet_listen">যেখানে ছেড়েছিলেন সেখান থেকে শুনুন</string>
+    <string name="studio_sheet_save">অডিও ফাইল হিসেবে সেভ করুন</string>
+    <string name="studio_sheet_saving">অডিও ফাইল সেভ হচ্ছে…</string>
+    <string name="studio_sheet_delete">স্টুডিও অডিও মুছুন</string>
+    <string name="studio_sheet_delete_question">%1$s স্টুডিও অডিও মুছবেন? আবার তৈরি করতে কয়েক ঘণ্টা লাগে।</string>
+    <string name="studio_sheet_delete_confirm">মুছুন</string>
+    <string name="studio_sheet_deleted">মুছে ফেলা হয়েছে। স্টুডিও মোড আবার না চলা পর্যন্ত এই বই সরাসরি ভয়েসে পড়া হবে।</string>
+    <string name="studio_sheet_delete_refused">মোছা হয়নি: স্টুডিও মোড এখনও এই বইটি তৈরি করছে। আগে সেটি থামান।</string>
+    <string name="studio_sheet_start">শুরু করুন</string>
+    <string name="studio_sheet_more">আরও তৈরি করুন</string>
+    <string name="long_job_details">বিস্তারিত</string>
+    <string name="studio_file_saving">স্টুডিও অডিও ফাইল হিসেবে সেভ হচ্ছে। ListenLock খোলা রাখুন; কয়েক ঘণ্টার অডিওতে কয়েক মিনিট লাগে।</string>
+    <string name="studio_file_saved">“%1$s” (%2$s) %3$s-এ সেভ হয়েছে। যেকোনো অডিওবুক বা মিউজিক অ্যাপ, বা Files অ্যাপ থেকে খুলুন।</string>
 </resources>

@@ -18,6 +18,10 @@ package io.github.skm0078.audora.core.config
  * @property maxRunMs the run's wake lock is held at most this long; Android 15+ also stops long foreground jobs after
  *   6 hours a day.
  * @property blockSamples the lossless codec predicts and codes audio in blocks of this many samples.
+ * @property measureMs the voice renders this long before the time left is shown: the first sentences include loading
+ *   the model, which would make the estimate far too slow.
+ * @property progressEveryMs the notification and the library card update at most this often while sentences render;
+ *   a finished page or a change of wait always updates them.
  */
 data class StudioConfig(
     val hoursAhead: Int = 6,
@@ -28,6 +32,8 @@ data class StudioConfig(
     val waitPollMs: Long = 30_000L,
     val maxRunMs: Long = 21_600_000L, // 6 h
     val blockSamples: Int = 4_096,
+    val measureMs: Long = 20_000L,
+    val progressEveryMs: Long = 2_000L,
 ) {
     init {
         require(hoursAhead >= 1) { "hoursAhead must be >= 1, was $hoursAhead" }
@@ -37,6 +43,8 @@ data class StudioConfig(
         require(renderRetryLimit >= 1) { "renderRetryLimit must be >= 1, was $renderRetryLimit" }
         require(waitPollMs > 0) { "waitPollMs must be > 0, was $waitPollMs" }
         require(maxRunMs > 0) { "maxRunMs must be > 0, was $maxRunMs" }
+        require(measureMs >= 0) { "measureMs must be >= 0, was $measureMs" }
+        require(progressEveryMs >= 0) { "progressEveryMs must be >= 0, was $progressEveryMs" }
         require(blockSamples in MIN_BLOCK..MAX_BLOCK) {
             "blockSamples must be in $MIN_BLOCK..$MAX_BLOCK, was $blockSamples"
         }

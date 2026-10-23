@@ -45,17 +45,24 @@ fun interface StudioGate {
     fun await()
 }
 
-/** Progress, on the run's thread. Keep it cheap. */
+/** Progress after every sentence and page, on the run's thread. Keep it cheap. */
 fun interface StudioListener {
-    fun onPageDone(page: Int, readyMs: Long)
+    fun onProgress(progress: StudioProgress)
 }
 
 /**
+ * @property fromPage the zero-based page the run started on (the listener's place).
  * @property readyMs audio ready from the start page on, whether rendered now or found from an earlier run.
  * @property renderedPages pages rendered in this run.
  * @property endOfBook the book's end came before [StudioConfig.hoursAhead] were ready.
  */
-data class StudioSummary(val readyMs: Long, val renderedPages: Int, val skippedSentences: Int, val endOfBook: Boolean)
+data class StudioSummary(
+    val readyMs: Long,
+    val renderedPages: Int,
+    val skippedSentences: Int,
+    val endOfBook: Boolean,
+    val fromPage: Int = 0,
+)
 
 /**
  * Blocking, on one worker thread. A page already rendered with the same [StudioKey] is kept and counted; a page
@@ -71,7 +78,7 @@ class StudioRun(
     private val gate: StudioGate,
     private val config: StudioConfig = StudioConfig(),
     private val freeBytes: () -> Long = { Long.MAX_VALUE },
-    private val listener: StudioListener = StudioListener { _, _ -> },
+    private val listener: StudioListener = StudioListener { },
 ) {
     private val codec = LosslessPcm(config.blockSamples)
 
@@ -79,7 +86,7 @@ class StudioRun(
         val start = fromPage.coerceIn(0, maxOf(0, book.pageCount - 1))
         store.prune(key, keepFromPage = start - config.keepBehindPages)
         if (!store.fitWithin(config.maxBytes, key.book)) return Outcome.Failure(StudioError.NoSpace)
-        val pass = Pass(key)
+        val pass = Pass(key, start, book.pageCount)
         // Lazy: the target is checked again before each page, after the pages before it added their audio.
         val stop = (start until book.pageCount).asSequence()
             .takeWhile { pass.readyMs < config.aheadMs }
@@ -90,19 +97,44 @@ class StudioRun(
     }
 
     /** One run's mutable state. */
-    private inner class Pass(private val key: StudioKey) {
+    private inner class Pass(private val key: StudioKey, private val fromPage: Int, private val pageCount: Int) {
         var readyMs = 0L
         private var renderedPages = 0
         private var skippedSentences = 0
         private var failuresInARow = 0
 
-        fun summary(endOfBook: Boolean) = StudioSummary(readyMs, renderedPages, skippedSentences, endOfBook)
+        /** The page being worked on, and its audio rendered so far (not yet in [readyMs]). */
+        private var page = fromPage
+        private var pageSoFarMs = 0L
+
+        /** What this run has measured: audio made and the time the voice took to make it, waits left out. */
+        private var renderedMs = 0L
+        private var renderingNs = 0L
+
+        fun summary(endOfBook: Boolean) =
+            StudioSummary(readyMs, renderedPages, skippedSentences, endOfBook, fromPage)
+
+        private fun report() = listener.onProgress(
+            StudioProgress(
+                readyMs = readyMs + pageSoFarMs,
+                pagesReadyMs = readyMs,
+                page = page,
+                fromPage = fromPage,
+                pageCount = pageCount,
+                renderedMs = renderedMs,
+                renderingMs = renderingNs / NS_PER_MS,
+            ),
+        )
 
         /** Null when the page is ready (or skipped, as playback skips it); the reason to stop otherwise. */
-        fun page(page: Int, plays: StudioPagePlays): StudioError? = when (plays) {
-            is StudioPagePlays.Units -> units(page, plays.units)
-            StudioPagePlays.Skipped -> null
-            StudioPagePlays.BookUnreadable -> StudioError.BookUnreadable(page)
+        fun page(page: Int, plays: StudioPagePlays): StudioError? {
+            this.page = page
+            pageSoFarMs = 0L
+            return when (plays) {
+                is StudioPagePlays.Units -> units(page, plays.units)
+                StudioPagePlays.Skipped -> null
+                StudioPagePlays.BookUnreadable -> StudioError.BookUnreadable(page)
+            }
         }
 
         private fun units(page: Int, plays: List<ReadingUnit>): StudioError? {
@@ -110,6 +142,7 @@ class StudioRun(
             return when {
                 existing != null && existing.covers(plays) -> {
                     readyMs += plays.sumOf { existing.clipFor(it)?.durationMs ?: 0L }
+                    report()
                     null
                 }
 
@@ -123,7 +156,11 @@ class StudioRun(
         private fun renderPage(page: Int, plays: List<ReadingUnit>, existing: StudioPage?): StudioError? {
             val clips = ArrayList<StudioClip>(plays.size)
             for (unit in plays) {
-                (existing?.clipFor(unit) ?: render(unit))?.let(clips::add)
+                (existing?.clipFor(unit) ?: render(unit))?.let { clip ->
+                    clips.add(clip)
+                    pageSoFarMs += clip.durationMs
+                    report()
+                }
                 if (failuresInARow >= config.renderRetryLimit) return StudioError.VoiceFailed("the voice failed")
             }
             return save(page, clips)
@@ -132,9 +169,13 @@ class StudioRun(
         private fun render(unit: ReadingUnit): StudioClip? {
             gate.await()
             if (Thread.interrupted()) throw InterruptedException("Studio mode stopped")
-            return when (val rendered = voice.render(unit)) {
+            val started = System.nanoTime()
+            val rendered = voice.render(unit)
+            renderingNs += System.nanoTime() - started
+            return when (rendered) {
                 is Outcome.Success -> {
                     failuresInARow = 0
+                    renderedMs += rendered.value.audio.durationMs
                     StudioClip.of(unit, rendered.value, codec)
                 }
 
@@ -159,12 +200,20 @@ class StudioRun(
             }
             renderedPages++
             readyMs += studioPage.durationMs
-            listener.onPageDone(page, readyMs)
+            pageSoFarMs = 0L
+            // The measured speed, for the logs a listener shares when the time left looks wrong.
+            AudoraLog.i(
+                TAG,
+                "Studio page $page ready, book=${key.book.logLabel}: readyMs=$readyMs renderedMs=$renderedMs " +
+                    "renderingMs=${renderingNs / NS_PER_MS}",
+            )
+            report()
             return if (store.fitWithin(config.maxBytes, key.book)) null else StudioError.NoSpace
         }
     }
 
     private companion object {
         const val TAG = "Studio.Run"
+        const val NS_PER_MS = 1_000_000L
     }
 }

@@ -5,7 +5,7 @@
     <string name="menu_hint_details">Pages, file size, when you added it and opened it last.</string>
     <string name="menu_hint_up_next">Plays this book after the one you are listening to ends.</string>
     <string name="menu_hint_audiobook">Reads the whole book into audio files, one per chapter, in Audiobooks on your phone, to play in any app or offline. Runs in the background; a long book takes hours.</string>
-    <string name="menu_hint_studio">Records the book\'s voice ahead of time while your phone charges, about 6 hours at a time, so listening starts at once and uses less battery.</string>
+    <string name="menu_hint_studio">Prepares this book\'s speech ahead of time with your voice and speed, so listening never waits for the voice. Shows the time left, what is ready and where it is kept, and saves it as a file or deletes it.</string>
     <string name="menu_hint_accessible">The book\'s clean text as an EPUB and a text file in Documents/ListenLock, for screen readers, braille displays and other reading apps.</string>
     <string name="menu_hint_talking_book">An EPUB 3 in Documents/ListenLock with the voice in sync with the text, for e-book apps that read along. Takes about as long as reading the book aloud.</string>
     <string name="menu_hint_export_notes">Your highlights, bookmarks and voice notes for this book as a Markdown and a text file in Documents/ListenLock.</string>
