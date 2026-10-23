@@ -31,6 +31,7 @@ import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.queue.UnitKey
 import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.studio.BookVoice
+import io.github.skm0078.audora.playback.studio.RunSettings
 import io.github.skm0078.audora.playback.studio.StudioMode
 import io.github.skm0078.audora.playback.studio.StudioSentenceRenderer
 import java.io.File
@@ -140,7 +141,7 @@ class ClipService : Service() {
     private fun clipOf(book: OpenedBook, start: UnitKey) {
         val text = book.text
         val factory = BookRendering.Factory(this, bookSettings, pronunciations)
-        BookVoice(this, factory, book.book.id, text, normalRate = false).use { voice ->
+        BookVoice(this, factory, book.book.id, text, RunSettings()).use { voice ->
             val rendering = voice.rendering
             val renderer = StudioSentenceRenderer(rendering.live, StudioMode.store(this)) { rendering.key }
             val made = ClipMaker(renderer).make(

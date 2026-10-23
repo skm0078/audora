@@ -13,6 +13,8 @@ import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.playback.export.JobSlots
+import io.github.skm0078.audora.speech.acted.ActedSpeechEngine
+import io.github.skm0078.audora.speech.acted.ActedVoices
 import io.github.skm0078.audora.speech.punct.PunctuationModels
 import java.io.File
 
@@ -75,6 +77,13 @@ object StudioMode {
             fixes = fixes,
             punctuation = PunctuationModels.get(context).isInstalled(),
         )
+
+    /**
+     * The voice studio mode reads [lang] with in place of the reading voice: the acted one, once installed (ADR-059).
+     * Playback looks its studio audio up under this voice too, while it reads live with its own.
+     */
+    fun actedVoice(context: Context, lang: Lang): VoiceId? =
+        ActedSpeechEngine.HINDI.takeIf { lang == Lang.HI && ActedVoices.get(context).isInstalled() }
 
     /**
      * The app's last install or update time: every new build may render differently, so its audio is not reused.

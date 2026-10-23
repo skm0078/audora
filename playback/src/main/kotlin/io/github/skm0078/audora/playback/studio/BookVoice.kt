@@ -26,14 +26,15 @@ import kotlinx.coroutines.runBlocking
  * keep the narrator's voice. Built on the worker thread (it reads the book's
  * settings); close it to free the voices.
  *
- * @param normalRate the voice's own rate instead of any speed, for files played in apps with their own speed control.
+ * @param run how the run reads: [RunSettings.normalRate] and [RunSettings.acted]; the style and the characters are
+ *   filled in here.
  */
 internal class BookVoice(
     context: Context,
     factory: BookRendering.Factory,
     id: BookId,
     text: BookText,
-    normalRate: Boolean,
+    run: RunSettings,
     style: SpeechStyleStore = SpeechStyleStore.forContext(context),
 ) : AutoCloseable {
     private val heard = style.current
@@ -52,7 +53,7 @@ internal class BookVoice(
         val characters = CharacterCast.forReading(context, engines, { voices }) { shaping }.apply { open(id) }
         // Frees the voices if reading the book's settings fails or is interrupted: close() is never reached then.
         rendering = runCatching {
-            runBlocking { factory.prepare(id, text, voices, RunSettings(normalRate, heard, characters)) }
+            runBlocking { factory.prepare(id, text, voices, run.copy(global = heard, characters = characters)) }
         }.onFailure { voices.release() }.getOrThrow()
     }
 

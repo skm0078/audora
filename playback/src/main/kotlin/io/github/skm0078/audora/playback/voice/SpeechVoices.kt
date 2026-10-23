@@ -18,6 +18,8 @@ import io.github.skm0078.audora.speech.BundledSpeech
 import io.github.skm0078.audora.speech.SpeechEngine
 import io.github.skm0078.audora.speech.SpeechEngines
 import io.github.skm0078.audora.speech.SpeechError
+import io.github.skm0078.audora.speech.acted.ActedSpeechEngine
+import io.github.skm0078.audora.speech.acted.ActedVoices
 import io.github.skm0078.audora.speech.route.VoiceSource
 import io.github.skm0078.audora.speech.sherpa.NarratorBlend
 import io.github.skm0078.audora.speech.sherpa.StyleBlend
@@ -94,6 +96,7 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
     override fun engine(id: EngineId): Outcome<SpeechEngine, SpeechError> = when (id) {
         EngineId.SHERPA -> engines.bundled().map { it.engine }
         EngineId.SYSTEM -> Outcome.Success(engines.system())
+        EngineId.ACTED -> Outcome.Success(engines.acted())
     }
 
     /** Android asked for memory back: keep only the neural model in use (P4-02). Main thread. */
@@ -127,13 +130,18 @@ class VoiceEngines(
         }
     }
     private val system = lazy { SpeechEngines.system(appContext, config) }
+    private val acted = lazy { ActedVoices.get(appContext).engine() }
     private val library = lazy { VoiceLibrary.get(appContext) }
 
     /** The voice picked for [lang] in Settings → Voices, if it is still installed. */
     fun preferred(lang: Lang): VoiceId? = library.value.preferredVoice(lang)
 
     /** Whether [voice] is still on the phone; a book's own voice that was deleted falls back to the reading voice. */
-    fun canSpeak(voice: VoiceId): Boolean = library.value.canSpeak(voice)
+    fun canSpeak(voice: VoiceId): Boolean = if (voice.engine == EngineId.ACTED) {
+        voice == ActedSpeechEngine.HINDI && ActedVoices.get(appContext).isInstalled()
+    } else {
+        library.value.canSpeak(voice)
+    }
 
     fun bundled(): Outcome<BundledSpeech, SpeechError> = bundled.value
 
@@ -145,6 +153,9 @@ class VoiceEngines(
 
     fun system(): SystemSpeechEngine = system.value
 
+    /** The acted Hindi voice (ADR-059), for studio mode's own voices; loads its model on first render. */
+    fun acted(): ActedSpeechEngine = acted.value
+
     /** Drops all but the most recently used neural model, if the neural engine was ever created; never creates it. */
     fun trimMemory() {
         if (bundled.isInitialized()) bundled.value.getOrNull()?.engine?.trimMemory()
@@ -154,6 +165,7 @@ class VoiceEngines(
         if (library.isInitialized()) library.value.speeds.save()
         if (bundled.isInitialized()) bundled.value.getOrNull()?.engine?.release()
         if (system.isInitialized()) system.value.release()
+        if (acted.isInitialized()) acted.value.release()
     }
 }
 
