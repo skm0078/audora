@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.speech.voices.VoiceRow
 
 @Composable
 internal fun VoicesRoute(controller: VoicesController, navigateBack: () -> Unit) {
