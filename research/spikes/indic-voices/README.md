@@ -38,3 +38,30 @@ CER is the mean over the prose and formal texts; lower is clearer.
 | MMS ben | 0.31 | 11.4% |
 | Coqui Bangla female | 0.36 | 10.6% |
 | Coqui Bangla male | 0.39 | 7.1% |
+
+## CI run (GitHub runner, 2 threads, 2026-10-23)
+
+CER is over the prose and formal texts; numbers and abbreviations are not in this set (the app's normalizer
+handles those before the voice). Samples: `indic-voices` release, one MP3 per voice.
+
+| Voice | Lang | MB | RTF | CER |
+|---|---|---|---|---|
+| Piper google, speaker 0 | bn | 95 | 0.059 | 13.8% |
+| MMS ben | bn | 114 | 0.299 | 10.3% |
+| Coqui Bangla female | bn | 114 | 0.335 | 10.1% |
+| Coqui Bangla male | bn | 114 | 0.376 | 8.1% |
+| **SYSPIN Bengali female** | bn | 114 | 0.393 | 8.1% |
+| **SYSPIN Bengali male** | bn | 114 | 0.389 | **5.1%** |
+| Rasa BEN_F, BOOK | bn | 123 | 0.403 | 8.9% |
+| Rasa BEN_M, BOOK | bn | 123 | 0.396 | 9.1% |
+| Rasa BEN_F, CONV / SAD | bn | 123 | 0.39 / 0.41 | 8.9% / 8.3% (some texts unscored) |
+| Piper pratham | hi | 81 | 0.051 | 4.5% |
+| Piper priyamvada | hi | 81 | 0.048 | 9.7% |
+| Piper rohan (comparison only: Lessac-derived, never shipped) | hi | 81 | 0.055 | 5.1% |
+| Supertonic 3, speaker 2 | hi | 145 | 0.128 | 4.7% |
+| SYSPIN Hindi female | hi | 114 | 0.372 | 15.7% |
+| SYSPIN Hindi male | hi | 114 | 0.356 | 9.3% |
+
+Outcome (ADR-053): SYSPIN Bengali male becomes the recommended Bengali voice, female is offered too; both load with
+4 threads (local: RTF 0.71 / 0.39 / 0.22 at 1 / 2 / 4 threads). Dynamic int8 was tried and dropped (38 MB but RTF
+1.44). Hindi stays on pratham: SYSPIN Hindi is less clear here.

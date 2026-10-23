@@ -9,7 +9,7 @@
   ],
   "recommended": {
     "hi": "piper-hi-pratham",
-    "bn": "piper-bn-google"
+    "bn": "syspin-bn-male"
   },
   "voices": [
     {
@@ -222,6 +222,48 @@
       "file": "mms-bn-43bfe7db9d7a.zip",
       "sha256": "43bfe7db9d7a92b2985c3d2d673db1262b399b68330e18ed81fe97dc435241bd",
       "sizeBytes": 114392967
+    },
+    {
+      "id": "syspin-bn-male",
+      "label": "Bengali, SYSPIN male",
+      "lang": "bn",
+      "family": "vits",
+      "model": "model.onnx",
+      "speakerId": 0,
+      "threads": 4,
+      "licence": "MIT: SYSPIN VITS voice",
+      "credit": "SYSPIN Bengali male voice (VITS, Coqui TTS) by the SYSPIN project at the Indian Institute of Science, Bengaluru, trained on its studio-recorded Bengali speech. Converted to the sherpa-onnx format by Audora; weights unchanged.",
+      "licenceUrl": "https://huggingface.co/SYSPIN/vits_Bengali_Male/blob/main/README.md",
+      "sourceUrl": "https://huggingface.co/SYSPIN/vits_Bengali_Male",
+      "source": {
+        "archive": "syspin-bn-male",
+        "sha256": "c5c2cb15fe13e2c5994cd910a810bdf1fbdf3a65a5f05e641bcac58ca1c6e3ea",
+        "url": "https://github.com/skm0078/audora/releases/download/indic-voices/syspin-bn-male.zip"
+      },
+      "file": "syspin-bn-male-5897bfd3a5bd.zip",
+      "sha256": "5897bfd3a5bdf745942d080c6defaa2d68f286ec00e973b2593161571c17a9a0",
+      "sizeBytes": 114188846
+    },
+    {
+      "id": "syspin-bn-female",
+      "label": "Bengali, SYSPIN female",
+      "lang": "bn",
+      "family": "vits",
+      "model": "model.onnx",
+      "speakerId": 0,
+      "threads": 4,
+      "licence": "MIT: SYSPIN VITS voice",
+      "credit": "SYSPIN Bengali female voice (VITS, Coqui TTS) by the SYSPIN project at the Indian Institute of Science, Bengaluru, trained on its studio-recorded Bengali speech. Converted to the sherpa-onnx format by Audora; weights unchanged.",
+      "licenceUrl": "https://huggingface.co/SYSPIN/vits_Bengali_Female/blob/main/README.md",
+      "sourceUrl": "https://huggingface.co/SYSPIN/vits_Bengali_Female",
+      "source": {
+        "archive": "syspin-bn-female",
+        "sha256": "a730bda57376478c80d0510f4c50b74d1517cbeee882b7adc909389217253a9e",
+        "url": "https://github.com/skm0078/audora/releases/download/indic-voices/syspin-bn-female.zip"
+      },
+      "file": "syspin-bn-female-ba96293e3199.zip",
+      "sha256": "ba96293e3199160995b46130c349af3d905319efbcca7b69d646e6f0c8cbdd93",
+      "sizeBytes": 114188846
     }
   ],
   "models": [
