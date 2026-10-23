@@ -55,7 +55,7 @@ internal class ExportVoice(
     private fun read(units: List<ReadingUnit>, continuesPreviousPage: Boolean, onCast: (CastInExport) -> Unit) {
         // As playback's PageLoader: a quote left open at the foot of the page before goes on when this page continues
         // that sentence.
-        rendering.quotes.page(units, continuesPreviousPage)
+        rendering.page(units, continuesPreviousPage)
         val before = cast()
         // Only the units the export speaks: a skipped heading in another script says nothing about the book.
         val spoken = rendering.reading.plays(units).map { it.lang }

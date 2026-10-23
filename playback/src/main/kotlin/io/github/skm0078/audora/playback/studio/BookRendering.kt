@@ -6,12 +6,14 @@ package io.github.skm0078.audora.playback.studio
 import android.content.Context
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.book.BookText
 import io.github.skm0078.audora.playback.queue.UnitKey
+import io.github.skm0078.audora.playback.reading.BookIntent
 import io.github.skm0078.audora.playback.reading.QuoteCarry
 import io.github.skm0078.audora.playback.reading.UnitReading
 import io.github.skm0078.audora.playback.session.SentenceTimings
@@ -34,15 +36,24 @@ import kotlinx.coroutines.flow.first
  * @property reading which units playback plays.
  * @property quotes which sentences start inside a quote and who speaks them; feed it each page before rendering it
  *   (as AudiobookExporter's onPage does), or quotes keep the narrator's voice.
+ * @property intent what the book is (ADR-056), told from the pages fed the same way; [page] feeds both.
  */
+@Suppress("LongParameterList") // What a run renders with: key, style, voice, modes, the two page trackers, timings.
 class BookRendering private constructor(
     val key: StudioKey,
     val style: SpeechStyle,
     val live: EngineRenderer,
     val reading: UnitReading,
     val quotes: QuoteCarry,
+    val intent: BookIntent,
     private val timings: SentenceTimings,
 ) {
+    /** One page, before any of its units renders: to the quote tracking and the book's intent, as in playback. */
+    fun page(units: List<ReadingUnit>, continuesPreviousPage: Boolean) {
+        quotes.page(units, continuesPreviousPage)
+        intent.page(units)
+    }
+
     /** [live] with each sentence's voice placement, which studio mode stores for the word highlight. */
     fun studioVoice(): StudioVoice = StudioVoice { unit ->
         when (val rendered = live.render(unit)) {
@@ -80,6 +91,7 @@ class BookRendering private constructor(
             val chapterPages = text.chapterStarts().toSet()
             val timings = SentenceTimings()
             val quotes = QuoteCarry()
+            val intent = BookIntent()
             // BookRenderers builds playback's renderer too, so studio audio is the audio playback would render.
             val live = BookRenderers.create(
                 context,
@@ -93,6 +105,7 @@ class BookRendering private constructor(
                     startsInQuote = quotes::startsInQuote,
                     speakerOf = quotes::speakerOf,
                     characters = characters,
+                    intent = { intent.current },
                 ),
                 timings = timings,
             )
@@ -105,7 +118,7 @@ class BookRendering private constructor(
             // first sentence already has its character voices.
             if (chosen[Lang.EN] == null) voices.voiceFor(Lang.EN)
             val reading = UnitReading(style.modes, chapterPages = chapterPages)
-            return BookRendering(key, style, live, reading, quotes, timings)
+            return BookRendering(key, style, live, reading, quotes, intent, timings)
         }
     }
 }

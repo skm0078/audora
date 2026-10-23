@@ -18,8 +18,16 @@ class VoiceShapingTest {
             blendWith = 11,
             blendPercent = 40,
             smartSpeed = true,
+            suitBook = false,
         )
         assertEquals(shaping, VoiceShaping.decode(shaping.encode()))
+    }
+
+    @Test
+    fun `a line saved before reading to suit the book existed turns it on`() {
+        assertEquals(true, VoiceShaping.decode("even=true;boost=3;trim=true").suitBook)
+        assertEquals(true, VoiceShaping.decode("suitBook=perhaps").suitBook)
+        assertEquals(false, VoiceShaping.decode("suitBook=false").suitBook)
     }
 
     @Test

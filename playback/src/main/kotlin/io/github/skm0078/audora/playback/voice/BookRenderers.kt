@@ -43,6 +43,7 @@ object BookRenderers {
             startsInQuote = book.startsInQuote,
             speakerOf = book.speakerOf,
             characters = book.characters,
+            intent = book.intent,
         ),
         timings = timings,
         replay = replay,

@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/SpeechSheet.kt
-// Purpose: The player's speech sheet: speed, pauses, sound, cast voices (item 7) and what to read (ADR-035).
+// Purpose: The player's speech sheet: speed, pace, reading to suit the book (ADR-056) and what to read (ADR-035) first;
+//          pauses, sound, cast voices (item 7), study and focus sounds under "More speech options".
 
 package io.github.skm0078.audora.ui.reader
 
@@ -38,6 +39,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
+import io.github.skm0078.audora.core.model.ContentIntent
 import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
@@ -45,12 +47,16 @@ import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.speech.voices.VoiceRow
+import io.github.skm0078.audora.ui.theme.MoreOptions
 import io.github.skm0078.audora.ui.theme.switchRow
 import kotlin.math.roundToInt
 
 /**
  * The slider only sends its speed when the finger lifts: every change restarts the sentence playing at the new
  * speed (ADR-033), so sending while dragging would restart it many times a second.
+ *
+ * What most listeners change comes first: this book's own settings, speed, pace, reading to suit the book (with what
+ * the book reads as, [readingIntent]) and what is read. The finer controls wait under "More speech options", closed.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,6 +82,7 @@ fun SpeechSheet(
     blend: NarratorBlendState = NarratorBlendState(),
     bookInPlayer: Boolean = true,
     expressive: Boolean = true,
+    readingIntent: ContentIntent? = null,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -89,15 +96,20 @@ fun SpeechSheet(
             if (ownSettings) BookVoicesSection(voices.rows, voices.chosen, voices.onVoice)
             SpeedSection(speed, config, onSpeed)
             PaceSection(pace, onPace)
-            ClausePausesRow(clausePauses, onClausePauses)
-            VoiceShapingSection(voiceShaping, config.voiceShaping, expressive, onVoiceShaping)
-            blend.ownSpeaker?.let { own ->
-                NarratorBlendSection(voiceShaping, own, blend.neededBytes, onVoiceShaping)
+            ReadingStyleRow(voiceShaping.suitBook, readingIntent, bookInPlayer) {
+                onVoiceShaping(voiceShaping.copy(suitBook = it))
             }
-            CastVoicesSection(voices.rows, voiceShaping, onVoiceShaping)
             ReadingModesSection(readingModes, onReadingModes)
-            StudySection(readingModes, study, onReadingModes)
-            FocusSoundSection(focusSound, onFocusSound)
+            MoreOptions(stringResource(R.string.speech_more_title), stringResource(R.string.speech_more_summary)) {
+                ClausePausesRow(clausePauses, onClausePauses)
+                VoiceShapingSection(voiceShaping, config.voiceShaping, expressive, onVoiceShaping)
+                blend.ownSpeaker?.let { own ->
+                    NarratorBlendSection(voiceShaping, own, blend.neededBytes, onVoiceShaping)
+                }
+                CastVoicesSection(voices.rows, voiceShaping, onVoiceShaping)
+                StudySection(readingModes, study, onReadingModes)
+                FocusSoundSection(focusSound, onFocusSound)
+            }
             Text(
                 stringResource(R.string.speech_sheet_hint),
                 style = MaterialTheme.typography.bodySmall,

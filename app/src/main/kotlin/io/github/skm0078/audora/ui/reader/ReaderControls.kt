@@ -180,6 +180,7 @@ private fun SpeedButton(
             blend = NarratorBlendState(playback.blendOwnSpeaker, playback.blendNeedsBytes),
             bookInPlayer = bookInPlayer,
             expressive = playback.voiceExpressive != false,
+            readingIntent = playback.readingIntent,
             onDismiss = { open = false },
         )
     }

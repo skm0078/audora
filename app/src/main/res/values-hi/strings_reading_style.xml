@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_reading_style.xml -->
+<!-- Purpose: Hindi copies of the reading style and "More options" strings (ADR-056). -->
+<resources>
+    <string name="reading_style_title">किताब के अनुसार पढ़ें</string>
+    <string name="reading_style_detail">कहानी, कविता, धार्मिक पाठ, समाचार और पाठ्यपुस्तक, हर एक की अपनी गति होती है। कहानी की पंक्तियाँ वैसे पढ़ी जाती हैं जैसा उनके शब्द कहते हैं: फुसफुसाहट धीमी, चीख ऊँची, दुख भरी पंक्तियाँ धीरे।</string>
+    <string name="reading_style_as">यह किताब ऐसे पढ़ी जा रही है: %1$s।</string>
+    <string name="reading_style_telling">पहले पन्ने पढ़कर पहचाना जा रहा है कि यह किस तरह की किताब है।</string>
+    <string name="reading_style_story">कहानी, पंक्तियाँ भाव के साथ, संवाद थोड़ा तेज़</string>
+    <string name="reading_style_children">बच्चों की कहानी, धीमी और स्नेह भरी, भाव के साथ</string>
+    <string name="reading_style_poetry">कविता, धीमी, लंबे विरामों के साथ</string>
+    <string name="reading_style_scripture">धार्मिक पाठ, शांत और एक समान</string>
+    <string name="reading_style_news">समाचार, तेज़ और एक समान</string>
+    <string name="reading_style_report">सरकारी पाठ, एक समान और साफ़</string>
+    <string name="reading_style_study">पढ़ाई की सामग्री, साफ़, शीर्षकों के बाद ठहराव</string>
+    <string name="reading_style_general">सामान्य गद्य, हमेशा की तरह</string>
+
+    <string name="more_options_expanded">खुला है</string>
+    <string name="more_options_collapsed">बंद है</string>
+    <string name="speech_more_title">बोलने के और विकल्प</string>
+    <string name="speech_more_summary">विराम चिह्नों पर ठहराव, आवाज़, संवाद और पात्रों की आवाज़ें, अभ्यास और फ़ोकस ध्वनियाँ</string>
+</resources>
