@@ -4,6 +4,8 @@
 
 package io.github.skm0078.audora.ui.storage
 
+import androidx.annotation.StringRes
+import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.speech.voices.VoiceStatus
@@ -29,20 +31,21 @@ enum class StorageAction {
 data class StorageRow(val kind: StorageKind, val bytes: Long?, val action: StorageAction?, val failed: Boolean = false)
 
 /** Which data a row is; the order is the screen's: downloads first, then caches, then the copies books keep. */
-enum class StorageKind {
-    VOICES,
-    OCR,
-    PUNCTUATION,
-    VOICE_COMMANDS,
-    DICTIONARIES,
-    READING_TUTOR,
-    PAGE_PICTURES,
-    OCR_TEXT,
-    COVERS,
-    VOICE_BLENDS,
-    STUDIO_AUDIO,
-    SEARCH_INDEXES,
-    SHARED_PDFS,
+enum class StorageKind(@StringRes val label: Int) {
+    VOICES(R.string.storage_voices),
+    ACTED_VOICE(R.string.storage_acted_voice),
+    OCR(R.string.storage_ocr),
+    PUNCTUATION(R.string.storage_punctuation),
+    VOICE_COMMANDS(R.string.storage_voice_commands),
+    DICTIONARIES(R.string.storage_dictionaries),
+    READING_TUTOR(R.string.storage_reading_tutor),
+    PAGE_PICTURES(R.string.storage_page_pictures),
+    OCR_TEXT(R.string.storage_ocr_text),
+    COVERS(R.string.storage_covers),
+    VOICE_BLENDS(R.string.storage_voice_blends),
+    STUDIO_AUDIO(R.string.storage_studio_audio),
+    SEARCH_INDEXES(R.string.storage_search_indexes),
+    SHARED_PDFS(R.string.storage_shared_pdfs),
 }
 
 /**
@@ -52,8 +55,8 @@ enum class StorageKind {
 fun actionOf(kind: StorageKind): StorageAction? = when (kind) {
     StorageKind.VOICES -> StorageAction.MANAGE_VOICES
 
-    StorageKind.OCR, StorageKind.PUNCTUATION, StorageKind.VOICE_COMMANDS, StorageKind.DICTIONARIES,
-    StorageKind.READING_TUTOR,
+    StorageKind.ACTED_VOICE, StorageKind.OCR, StorageKind.PUNCTUATION, StorageKind.VOICE_COMMANDS,
+    StorageKind.DICTIONARIES, StorageKind.READING_TUTOR,
     -> StorageAction.DELETE
 
     StorageKind.PAGE_PICTURES, StorageKind.OCR_TEXT, StorageKind.COVERS, StorageKind.VOICE_BLENDS,

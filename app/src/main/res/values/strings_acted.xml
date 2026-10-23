@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_acted.xml -->
+<!-- Purpose: The acted Hindi voice's Settings row (ADR-059). -->
+<resources>
+    <string name="acted_model_title">Acted Hindi voice (studio mode)</string>
+    <string name="acted_model_missing">A more expressive Hindi voice that acts out feelings and dialogue. Only studio mode uses it, while the phone charges, and it is slow: a night on the charger gives roughly an hour of Hindi listening. Everything runs on your phone, offline. Listening without studio mode keeps your usual Hindi voice. Downloads on Wi-Fi only. Needs %1$d MB.</string>
+    <string name="acted_model_ready">Studio mode reads Hindi with it · %1$d MB</string>
+</resources>

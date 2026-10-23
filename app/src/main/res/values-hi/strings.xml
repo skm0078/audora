@@ -505,6 +505,7 @@
     <string name="storage_total">Audora %1$s इस्तेमाल करता है</string>
     <string name="storage_voices">डाउनलोड की गई आवाज़ें</string>
     <string name="storage_ocr">स्कैन किए पेजों की टेक्स्ट पहचान</string>
+    <string name="storage_acted_voice">अभिनय वाली हिंदी आवाज़</string>
     <string name="storage_punctuation">विराम चिह्न मॉडल</string>
     <string name="storage_page_pictures">पेज की तस्वीरें (स्क्रबर)</string>
     <string name="storage_voice_commands">वॉइस कमांड मॉडल</string>

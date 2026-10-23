@@ -127,7 +127,8 @@ std::vector<std::string> Names(const OrtApi* api, OrtSession* session, OrtAlloca
                                        : api->SessionGetOutputName(session, i, allocator, &name));
         if (name != nullptr) {
             names.emplace_back(name);
-            api->AllocatorFree(allocator, name);
+            // Freeing a name the allocator handed out cannot fail in practice; its status is released all the same.
+            TakeError(api, api->AllocatorFree(allocator, name));
         }
     }
     return names;

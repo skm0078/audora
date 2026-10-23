@@ -206,6 +206,11 @@ private val SPEECH_SOFTWARE = listOf(
     Software("Tesseract OCR and its data", R.string.licences_apache, "https://github.com/tesseract-ocr/tesseract"),
     Software("wordfreq (Robyn Speer), word lists", R.string.licences_cc_by_sa, "https://github.com/rspeer/wordfreq"),
     Software(
+        "Chatterbox Multilingual (Resemble AI), ONNX export by onnx-community, acted Hindi voice, if downloaded",
+        R.string.licences_mit,
+        "https://github.com/resemble-ai/chatterbox",
+    ),
+    Software(
         "Edge-Punct-Casing punctuation model (frankyoujian), if downloaded",
         R.string.licences_apache,
         "https://github.com/frankyoujian/Edge-Punct-Casing",
