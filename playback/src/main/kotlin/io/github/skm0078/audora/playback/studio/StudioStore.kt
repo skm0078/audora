@@ -69,7 +69,7 @@ class StudioStore(private val root: File) {
     fun prune(key: StudioKey, keepFromPage: Int) {
         val folders = bookFolder(key.book).listFiles { file -> file.isDirectory }.orEmpty()
         for (folder in folders) {
-            if (folder.name != key.signature.hash) {
+            if (folder.name != key.signature.folder) {
                 folder.deleteRecursively()
                 continue
             }
@@ -89,15 +89,15 @@ class StudioStore(private val root: File) {
     }
 
     /**
-     * Deletes every signature folder last written before [stamp], the app's install or update time: each signature
-     * carries that time ([StudioSignature.appStamp]), so audio written before an update can never play again.
+     * Deletes every signature folder of another [StudioSignature.audioVersion] than [version], and those from before
+     * versions were kept (ADR-064): their audio can never play again.
      */
-    fun dropWrittenBefore(stamp: Long) {
+    fun dropOtherVersions(version: Int) {
         root.listFiles { file -> file.isDirectory }.orEmpty().forEach { book ->
             book.listFiles { file -> file.isDirectory }.orEmpty()
-                .filter { newestWrite(it) < stamp }
+                .filterNot { StudioSignature.isFolderOf(it.name, version) }
                 .forEach { folder ->
-                    AudoraLog.i(TAG, "Studio audio of an older build deleted (${book.name}/${folder.name})")
+                    AudoraLog.i(TAG, "Studio audio of another audio version deleted (${book.name}/${folder.name})")
                     folder.deleteRecursively()
                 }
         }
@@ -171,7 +171,7 @@ class StudioStore(private val root: File) {
 
     private fun bookFolder(book: BookId) = File(root, StudioKeys.bookFolder(book))
 
-    private fun signatureFolder(key: StudioKey) = File(bookFolder(key.book), key.signature.hash)
+    private fun signatureFolder(key: StudioKey) = File(bookFolder(key.book), key.signature.folder)
 
     private fun pageFile(key: StudioKey, page: Int) = File(signatureFolder(key), "$PAGE_PREFIX$page$PAGE_SUFFIX")
 

@@ -816,6 +816,7 @@ class MainActivity : ComponentActivity() {
                 resume = LocatorReaderResume(resumeLocator),
                 autoResume = target.autoResume,
                 views = viewPreference,
+                textSettings = ReadingTextPreferences.changes,
             ).also { it.start() }
         }
         val thumbs = rememberPageThumbnails(id, model)

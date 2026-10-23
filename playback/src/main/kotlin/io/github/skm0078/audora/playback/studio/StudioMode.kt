@@ -5,7 +5,6 @@ package io.github.skm0078.audora.playback.studio
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
@@ -44,13 +43,13 @@ object StudioMode {
     fun store(context: Context): StudioStore = StudioStore(File(context.applicationContext.noBackupFilesDir, FOLDER))
 
     /**
-     * Frees studio audio that can never play again: removed books' and every folder written before this build was
-     * installed (ADR-039 §6). Blocking file work: call it off the main thread, when the app opens.
+     * Frees studio audio that can never play again: removed books' and every folder of another audio version
+     * (ADR-064). Blocking file work: call it off the main thread, when the app opens.
      */
     fun reclaim(context: Context, library: Set<BookId>) {
         val store = store(context)
         store.dropBooksNotIn(library)
-        store.dropWrittenBefore(appStamp(context))
+        store.dropOtherVersions(STUDIO_AUDIO_VERSION)
     }
 
     /** Bytes of studio audio on the phone (Settings → Storage). Walks the folder: call it off the main thread. */
@@ -93,7 +92,7 @@ object StudioMode {
     fun signature(context: Context, style: SpeechStyle, voices: (Lang) -> VoiceId?, fixes: String): StudioSignature =
         StudioSignature(
             pipelineVersion = PIPELINE_VERSION,
-            appStamp = appStamp(context),
+            audioVersion = STUDIO_AUDIO_VERSION,
             style = style,
             voices = Lang.entries.associateWith(voices),
             fixes = fixes,
@@ -106,18 +105,4 @@ object StudioMode {
      */
     fun actedVoice(context: Context, lang: Lang): VoiceId? =
         ActedSpeechEngine.HINDI.takeIf { lang == Lang.HI && ActedVoices.get(context).isInstalled() }
-
-    /**
-     * The app's last install or update time: every new build may render differently, so its audio is not reused.
-     * Read once per process (an update restarts the process); playback asks for every sentence.
-     */
-    private fun appStamp(context: Context): Long = stamp ?: try {
-        context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime
-    } catch (e: PackageManager.NameNotFoundException) {
-        AudoraLog.w(TAG, "Own package not found; studio audio keyed without the build", e)
-        0L
-    }.also { stamp = it }
-
-    @Volatile
-    private var stamp: Long? = null
 }

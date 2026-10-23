@@ -8,6 +8,7 @@ import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
+import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -34,6 +35,7 @@ import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.LibraryBookSource
+import io.github.skm0078.audora.playback.book.ReadingTextPreferences
 import io.github.skm0078.audora.playback.browse.BrowseLookup
 import io.github.skm0078.audora.playback.browse.BrowseSources
 import io.github.skm0078.audora.playback.browse.BrowseTree
@@ -204,7 +206,7 @@ class AudoraPlaybackService : MediaLibraryService() {
             events = publisher(mediaSession, stores, heard, engines, reading).also { it.publishInitial() },
             env = sessionEnvironment(scope, AccelerometerShakes(this, config.sleep)),
         )
-        followVoiceChoices()
+        followReadingChanges()
         resumption = PlaybackResumption(
             anchors = resumeAnchors,
             library = library,
@@ -219,17 +221,37 @@ class AudoraPlaybackService : MediaLibraryService() {
      * A voice picked in Settings → Voices or the reader, or a language pack's first voice, reads from the sentence
      * playing now: the sentences rendered ahead in the old voice are redone, playing or paused. Without this the old
      * voice went on for every sentence already rendered, until some other setting happened to restart reading.
+     * Likewise a reading text setting (skip citation numbers) reads the open book again at once (ADR-064).
      */
-    private fun followVoiceChoices() {
+    private fun followReadingChanges() {
         val context = applicationContext
         scope.launch {
             // Read first (off the main thread), so the first value seen is the saved state and only changes follow.
             val reading = withContext(Dispatchers.IO) { VoiceLibrary.get(context).readingVoices.also { it.current() } }
-            reading.choices.filterNotNull().distinctUntilChanged().drop(1).collect {
+            var before = reading.choices.value.orEmpty()
+            reading.choices.filterNotNull().distinctUntilChanged().drop(1).collect { now ->
                 AudoraLog.i(TAG, "Reading voices changed; restarting the sentence with the new voice")
                 bookSession.restartRendering()
+                sayIfBookKeepsItsVoice(Lang.entries.filter { before[it] != now[it] })
+                before = now
             }
         }
+        scope.launch {
+            ReadingTextPreferences.changes.drop(1).collect {
+                AudoraLog.i(TAG, "Reading text settings changed; reading the open book again")
+                bookSession.onReadingTextChanged()
+            }
+        }
+    }
+
+    /**
+     * A voice picked in Settings → Voices for a language the open book reads with its own voice changes nothing
+     * audible: say so at once instead of leaving the listener to think the setting is broken (ADR-064).
+     */
+    private fun sayIfBookKeepsItsVoice(changed: List<Lang>) {
+        if (bookSession.bookId == null || changed.none(voices::bookOverrides)) return
+        AudoraLog.i(TAG, "Voice picked for ${changed.map { it.name }}, but the open book keeps its own voice")
+        Toast.makeText(this, R.string.voice_book_keeps_own, Toast.LENGTH_LONG).show()
     }
 
     private fun mediaSession(stores: SessionStores): MediaLibrarySession {

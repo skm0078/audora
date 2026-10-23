@@ -24,6 +24,7 @@ Dependencies: app → playback → (speech, pdf) → core. Never the reverse.
 - The player never reaches ENDED while text remains (TtsDataSource blocks instead).
 - Playback starts only from a user action. No boot auto-start.
 - Resume uses ResumeAnchor (page + charStart + fingerprint + pipelineVersion). Bump PIPELINE_VERSION when :pdf output can change.
+- Studio audio is kept across app updates, keyed by STUDIO_AUDIO_VERSION (playback/studio/StudioAudioVersion.kt). Bump it when a change can make the same sentence, voice and settings sound different (engine or model upgrade, speech text shaping, clip format); ADR-064.
 - Never declare SMS, accessibility, or notification-listener permissions.
 - APK is arm64-v8a only and every native library is 16 KB aligned (CI enforces with scripts/check_16kb_alignment.py).
 

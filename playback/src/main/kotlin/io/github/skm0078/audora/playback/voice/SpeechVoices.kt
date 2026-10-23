@@ -58,6 +58,9 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
         AudoraLog.i(TAG, "Voice for ${lang.name} set to $voice")
     }
 
+    /** True when the open book reads [lang] with its own installed voice: a Settings → Voices pick does not apply. */
+    fun bookOverrides(lang: Lang): Boolean = bookVoice(lang)?.let(engines::canSpeak) == true
+
     /**
      * The voice that reads [lang] now if it is already known, without binding the phone's TTS: what the render-ahead
      * window sizes for. Null before the language's default was first resolved.

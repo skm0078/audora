@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.core.resume
 
+import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.ReadingUnit
 import kotlin.math.abs
 
@@ -42,6 +43,23 @@ data class ResumePoint(val page: Int, val charStart: Int, val match: AnchorMatch
  * (P1-01) but not its sentences.
  */
 class ReAnchoring(private val fingerprint: SentenceFingerprint = SentenceFingerprint()) {
+    /**
+     * Where [unit], a sentence of [book] read a moment ago, is among [units]: the same page read again with other
+     * text settings (citation numbers skipped or kept), so its offsets may have moved but its words have not (ADR-064).
+     */
+    fun relocate(book: BookId, unit: ReadingUnit, pipelineVersion: Int, units: List<ReadingUnit>): ResumePoint {
+        val anchor = ResumeAnchor(
+            book,
+            unit.page,
+            unit.charStart,
+            fingerprint.head(unit),
+            fingerprint.tail(unit),
+            pipelineVersion,
+            savedAtMillis = 0L,
+        )
+        return locate(anchor, pipelineVersion, units)
+    }
+
     /** [units] are the current units of [ResumeAnchor.page], in reading order. */
     fun locate(anchor: ResumeAnchor, currentPipelineVersion: Int, units: List<ReadingUnit>): ResumePoint {
         if (units.isEmpty()) return ResumePoint(anchor.page, 0, AnchorMatch.PAGE_START)

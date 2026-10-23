@@ -11,21 +11,23 @@ import io.github.skm0078.audora.core.model.VoiceId
 import java.security.MessageDigest
 
 /**
- * Everything a sentence's audio depends on besides its own text. Studio audio is stored under [hash] of it; a change
- * to any part (another voice, rate or pace, reading mode, pronunciation fix, a new :pdf pipeline or app build) gives
- * another folder, so playback simply finds nothing and renders live until studio mode runs again.
+ * Everything a sentence's audio depends on besides its own text. Studio audio is stored under [folder] of it; a
+ * change to any part (another voice, rate or pace, reading mode, pronunciation fix, a new :pdf pipeline or
+ * [STUDIO_AUDIO_VERSION]) gives another folder, so playback simply finds nothing and renders live until studio mode
+ * runs again.
  *
  * @property voices the voice chosen for each language, null = the language's default voice. The default is not
  *   resolved here (that binds the phone's TTS), so a new system voice installed in between is the one thing this
  *   does not notice.
  * @property fixes the book's pronunciation fixes (`PronunciationFixer.signature`): the listener's own words, so only
  *   the hash is ever written or logged.
- * @property appStamp the app's install or update time: a new build may render differently.
+ * @property audioVersion [STUDIO_AUDIO_VERSION] when it was rendered: an app update keeps audio that still sounds the
+ *   same and drops the rest (ADR-064).
  * @property punctuation whether the punctuation model is installed: it changes how scanned run-ons are read (RI-11).
  */
 data class StudioSignature(
     val pipelineVersion: Int,
-    val appStamp: Long,
+    val audioVersion: Int,
     val style: SpeechStyle,
     val voices: Map<Lang, VoiceId?>,
     val fixes: String,
@@ -36,7 +38,7 @@ data class StudioSignature(
         val voiceLine = Lang.entries.joinToString(",") { lang -> "${lang.name}=${voices[lang] ?: DEFAULT_VOICE}" }
         val line = listOf(
             "pv=$pipelineVersion",
-            "app=$appStamp",
+            "audio=$audioVersion",
             "rate=${style.rate}",
             "pace=${style.pace.name}",
             "clauses=${style.clausePauses}",
@@ -49,11 +51,18 @@ data class StudioSignature(
         StudioKeys.hex(line, HASH_CHARS)
     }
 
+    /** The folder its audio is kept in: the version first, so a folder of another version is known by its name. */
+    val folder: String get() = "$FOLDER_PREFIX$audioVersion-$hash"
+
     override fun toString(): String = "StudioSignature($hash)"
 
-    private companion object {
-        const val DEFAULT_VOICE = "default"
-        const val HASH_CHARS = 16
+    companion object {
+        private const val DEFAULT_VOICE = "default"
+        private const val HASH_CHARS = 16
+        private const val FOLDER_PREFIX = "v"
+
+        /** True when [name] is a folder of [version]'s audio; folders from before ADR-064 carry no version. */
+        fun isFolderOf(name: String, version: Int): Boolean = name.startsWith("$FOLDER_PREFIX$version-")
     }
 }
 

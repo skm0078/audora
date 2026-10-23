@@ -347,7 +347,7 @@
 
     <!-- Reading text (P2-03) -->
     <string name="settings_skip_citations_title">Skip citation numbers</string>
-    <string name="settings_skip_citations_body">On: leaves out reference numbers such as “[12]” and “[4–7]”. Off: reads them aloud. Takes effect the next time you open a book.</string>
+    <string name="settings_skip_citations_body">On: leaves out reference numbers such as “[12]” and “[4–7]”. Off: reads them aloud. Applies at once, from the sentence you are on.</string>
     <string name="settings_keep_screen_on_title">Keep screen on while reading aloud</string>
     <string name="settings_volume_keys_title">Volume keys skip sentences</string>
     <string name="settings_volume_keys_body">While ListenLock reads aloud in the reader, volume down goes to the next sentence and volume up back one. Paused, or outside the reader, the keys change the volume as usual.</string>

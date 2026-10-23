@@ -351,7 +351,7 @@
 
     <!-- Reading text (P2-03) -->
     <string name="settings_skip_citations_title">সূত্র নম্বর বাদ দিন</string>
-    <string name="settings_skip_citations_body">চালু: “[12]” আর “[4–7]”-এর মতো সূত্র সংখ্যা বাদ দেয়। বন্ধ: সেগুলো পড়ে। পরের বার বই খুললে চালু হয়।</string>
+    <string name="settings_skip_citations_body">চালু: “[12]” আর “[4–7]”-এর মতো সূত্র সংখ্যা বাদ দেয়। বন্ধ: সেগুলো পড়ে। সঙ্গে সঙ্গে চালু হয়, এই বাক্য থেকেই।</string>
     <string name="settings_keep_screen_on_title">জোরে পড়ার সময় স্ক্রিন চালু রাখুন</string>
     <string name="settings_volume_keys_title">ভলিউম বোতামে বাক্য বদল</string>
     <string name="settings_volume_keys_body">রিডারে ListenLock জোরে পড়ার সময় ভলিউম কমানোর বোতাম পরের বাক্যে যায় আর বাড়ানোর বোতাম এক বাক্য পিছনে। পজ থাকলে বা রিডারের বাইরে বোতামগুলো স্বাভাবিকভাবে ভলিউম বদলায়।</string>
