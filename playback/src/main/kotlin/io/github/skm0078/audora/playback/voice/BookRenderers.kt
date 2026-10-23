@@ -42,6 +42,7 @@ object BookRenderers {
             runOn = RunOnPunctuation(punctuator = PunctuationModels.get(context)::punctuator),
             startsInQuote = book.startsInQuote,
             speakerOf = book.speakerOf,
+            moodOf = book.moodOf,
             characters = book.characters,
             intent = book.intent,
         ),

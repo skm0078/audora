@@ -5,6 +5,7 @@
 package io.github.skm0078.audora.playback.reading
 
 import io.github.skm0078.audora.core.config.DialogueConfig
+import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.playback.unit
 import io.github.skm0078.audora.speech.sherpa.SpeakerGender
@@ -17,6 +18,21 @@ class QuoteCarryTest {
 
     private fun sentence(index: Int, text: String, pause: Int = 0, page: Int = 0, kind: UnitKind = UnitKind.BODY) =
         unit(page, index).copy(text = text, pauseAfterMs = pause, kind = kind)
+
+    @Test
+    fun `a sad line's mood reaches the next sentence of its paragraph, not across a paragraph break`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "She wept."),
+            sentence(1, "It had been so long.", pause = paragraphPauseMs),
+            sentence(2, "She sobbed again.", pause = paragraphPauseMs),
+            sentence(3, "Morning came."),
+        )
+
+        carry.page(units)
+
+        assertEquals(listOf(null, Feeling.SAD, null, null), units.map(carry::moodOf))
+    }
 
     @Test
     fun `a long speech stays quoted to its closing mark, within the paragraph`() {
@@ -242,4 +258,5 @@ class QuoteCarryTest {
         assertEquals(true, carry.startsInQuote(next.single()))
         assertEquals(false, carry.startsInQuote(fresh.single()))
     }
+
 }

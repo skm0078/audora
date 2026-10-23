@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.playback.voice
 
 import io.github.skm0078.audora.core.model.ContentIntent
+import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
 import io.github.skm0078.audora.speech.route.CharacterVoices
@@ -23,6 +24,7 @@ class RenderBook(
     val fixer: () -> PronunciationFixer = { PronunciationFixer(emptyList()) },
     val startsInQuote: (ReadingUnit) -> Boolean = { false },
     val speakerOf: (ReadingUnit) -> Speaker? = { null },
+    val moodOf: (ReadingUnit) -> Feeling? = { null },
     val characters: CharacterVoices? = null,
     val intent: () -> ContentIntent = { ContentIntent.GENERAL },
 )

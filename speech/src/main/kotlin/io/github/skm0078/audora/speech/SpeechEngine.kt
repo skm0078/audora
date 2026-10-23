@@ -49,6 +49,9 @@ interface SpeechEngine {
     suspend fun render(text: String, voice: VoiceId, rate: Float, feeling: Feeling): RenderResult =
         render(text, voice, rate)
 
+    /** Whether [voice] reads a feeling in a style of its own (ADR-057), so the caller can choose which words get it. */
+    fun actsFeelings(voice: VoiceId): Boolean = false
+
     /** Frees native models and engine connections. Later renders fail with [SpeechError.EngineUnavailable]. */
     fun release()
 }

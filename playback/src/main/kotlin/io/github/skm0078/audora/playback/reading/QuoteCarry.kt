@@ -1,13 +1,16 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/reading/QuoteCarry.kt
-// Purpose: Which sentences start inside a quote opened earlier in their paragraph, and who speaks them (items 7, 63).
+// Purpose: Which sentences start inside a quote opened earlier in their paragraph, who speaks them (items 7, 63),
+//          and the mood a sentence carries from the one before (ADR-058).
 
 package io.github.skm0078.audora.playback.reading
 
 import io.github.skm0078.audora.core.config.DialogueConfig
 import io.github.skm0078.audora.core.config.ReadingUnitConfig
+import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.playback.queue.UnitKey
+import io.github.skm0078.audora.speech.delivery.SceneMoods
 import io.github.skm0078.audora.speech.route.QuoteSplitter
 import io.github.skm0078.audora.speech.route.Speaker
 import io.github.skm0078.audora.speech.route.SpeakerTags
@@ -43,6 +46,7 @@ class QuoteCarry(
         val speakers: Map<Int, Speaker>,
         val end: Turns,
         val endsOpen: Boolean,
+        val moods: Map<Int, Feeling>,
     )
 
     /**
@@ -56,7 +60,7 @@ class QuoteCarry(
         val spoken = turns.page(paragraphs, before?.end ?: Turns())
         val opened = paragraphs.flatMap { it.sentences }.filter { it.carried }
             .mapTo(HashSet()) { UnitKey.of(it.unit).index }
-        pages[page] = PageQuotes(opened, spoken.speakers, spoken.end, endsOpen)
+        pages[page] = PageQuotes(opened, spoken.speakers, spoken.end, endsOpen, moods(paragraphs))
         synchronized(order) {
             order.remove(page)
             order.addLast(page)
@@ -68,6 +72,9 @@ class QuoteCarry(
 
     /** Who says this sentence's quotes, when known (plan item 63). */
     fun speakerOf(unit: ReadingUnit): Speaker? = pages[unit.page]?.speakers?.get(unit.index)
+
+    /** The mood the sentence before leaves on this one ([SceneMoods]); null for none. */
+    fun moodOf(unit: ReadingUnit): Feeling? = pages[unit.page]?.moods?.get(unit.index)
 
     /** A new book opened. */
     fun clear() {
@@ -99,6 +106,16 @@ class QuoteCarry(
             open = unit.kind in PROSE && splitter.endsInQuote(unit.text, open && same)
         }
         return paragraphs.map { (sentences, speech) -> Paragraph(sentences, speech) } to open
+    }
+
+    /** Each prose paragraph's carried moods, by unit index; a heading or table row never carries one. */
+    private fun moods(paragraphs: List<Paragraph>): Map<Int, Feeling> = buildMap {
+        paragraphs.forEach { paragraph ->
+            val units = paragraph.sentences.map { it.unit }.filter { it.kind in PROSE }
+            SceneMoods.of(units.map { it.text }).forEachIndexed { i, mood ->
+                if (mood != null) put(UnitKey.of(units[i]).index, mood)
+            }
+        }
     }
 
     private fun sameParagraph(previous: ReadingUnit, unit: ReadingUnit): Boolean =

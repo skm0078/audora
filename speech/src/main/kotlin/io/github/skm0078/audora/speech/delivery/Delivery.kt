@@ -33,12 +33,15 @@ data class Delivery(
  * coloured: headings, tables, captions, footnotes and equations keep the profile's pace with no feeling. Pure.
  */
 class DeliveryPlanner(private val config: DeliveryConfig = DeliveryConfig()) {
-    /** [quoted]: the sentence holds quoted speech, or starts inside a quote an earlier sentence opened. */
-    fun plan(unit: ReadingUnit, intent: ContentIntent, quoted: Boolean): Delivery {
+    /**
+     * [quoted]: the sentence holds quoted speech, or starts inside a quote an earlier sentence opened. [carried]: the
+     * mood the sentence before left ([SceneMoods]), used when this one asks for none.
+     */
+    fun plan(unit: ReadingUnit, intent: ContentIntent, quoted: Boolean, carried: Feeling? = null): Delivery {
         val profile = config.profile(intent)
         val prose = unit.kind == UnitKind.BODY || unit.kind == UnitKind.LIST_ITEM || unit.kind == UnitKind.ASIDE
         val feeling = if (prose && intent.feelings && profile.feelingScale > 0f) {
-            SentenceFeelings.of(unit.text)
+            SentenceFeelings.of(unit.text).takeIf { it != Feeling.NEUTRAL } ?: carried ?: Feeling.NEUTRAL
         } else {
             Feeling.NEUTRAL
         }

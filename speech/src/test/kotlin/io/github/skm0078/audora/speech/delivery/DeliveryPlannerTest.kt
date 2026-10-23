@@ -73,4 +73,14 @@ class DeliveryPlannerTest {
     private companion object {
         const val DELTA = 1e-4f
     }
+
+    @Test
+    fun `a carried mood colours a plain story sentence, never a fact book or one with its own feeling`() {
+        val plain = unit("The house was dark.")
+
+        assertEquals(Feeling.SAD, planner.plan(plain, ContentIntent.STORY, false, carried = Feeling.SAD).feeling)
+        assertEquals(Feeling.NEUTRAL, planner.plan(plain, ContentIntent.STUDY, false, carried = Feeling.SAD).feeling)
+        val laugh = planner.plan(unit("He laughed."), ContentIntent.STORY, false, carried = Feeling.SAD)
+        assertEquals(Feeling.LIVELY, laugh.feeling)
+    }
 }

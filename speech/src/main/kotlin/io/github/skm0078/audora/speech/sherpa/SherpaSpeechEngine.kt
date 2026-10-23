@@ -102,6 +102,9 @@ class SherpaSpeechEngine(
         }
     }
 
+    override fun actsFeelings(voice: VoiceId): Boolean =
+        source.byId()[CastSpeakers.parse(voice).first]?.styles?.isNotEmpty() == true
+
     override fun release() {
         if (!released.compareAndSet(false, true)) return
         AudoraLog.i(TAG, "Released")

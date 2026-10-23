@@ -56,7 +56,10 @@ class SpeechRequest(
     val startsInQuote: Boolean = false,
     val speaker: Speaker? = null,
     val feeling: Feeling = Feeling.NEUTRAL,
-)
+) {
+    fun copy(feeling: Feeling): SpeechRequest =
+        SpeechRequest(role, rate, prosody, shape, startsInQuote, speaker, feeling)
+}
 
 /**
  * Wraps [RoutedSpeech]: a heading is read whole by the heading voice; a sentence with quoted speech
@@ -89,7 +92,10 @@ class CastSpeech(
         // Split only when the quotes get a voice of their own: pieces joined with pauses would change the prosody
         // of a sentence read by the narrator alone anyway (an unknown speaker with no dialogue voice, say).
         val dialogue = if (heading) emptyMap() else quoteVoices(lang, request, cast)
-        val parts = if (lang in dialogue) {
+        // A voice that acts feelings (ADR-057) acts only the quoted words: "she sobbed" is said plainly, the plea in
+        // its quotes sadly, as a reader does. The sentence is split for it even with no dialogue voice.
+        val acted = !heading && request.feeling != Feeling.NEUTRAL && narratorActs(lang)
+        val parts = if (lang in dialogue || acted) {
             quotes.split(text, request.startsInQuote).takeIf { split -> split.any { it.quoted } }
         } else {
             null
@@ -99,6 +105,12 @@ class CastSpeech(
             parts != null -> renderParts(parts, lang, request, dialogue, Join(quotePauseMs, level))
             else -> narrator.render(text, lang, request)
         }
+    }
+
+    /** Whether [lang]'s narrator voice reads feelings in a style of its own ([SpeechEngine.actsFeelings]). */
+    private suspend fun narratorActs(lang: Lang): Boolean {
+        val voice = (voices.voiceFor(lang) as? Outcome.Success)?.value ?: return false
+        return (voices.engine(voice.engine) as? Outcome.Success)?.value?.actsFeelings(voice) == true
     }
 
     /** The character's voice for this sentence's quotes when known, else the dialogue voice. */
@@ -115,11 +127,12 @@ class CastSpeech(
         join: Join,
     ): Outcome<RoutedAudio, SpeechError> {
         val rendered = ArrayList<RoutedAudio>(parts.size)
+        val narration = request.copy(feeling = Feeling.NEUTRAL)
         for (part in parts) {
             val audio = if (part.quoted) {
                 castOrNarrator(part.text, lang, request, dialogue)
             } else {
-                narrator.render(part.text, lang, request)
+                narrator.render(part.text, lang, narration)
             }
             when (audio) {
                 is Outcome.Success -> rendered.add(audio.value)

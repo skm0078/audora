@@ -2,6 +2,13 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Act the quotes, keep the mood, check pronunciation (2026-10-23, ADR-058)
+- **Emotion:** with Rasa, only the quoted words take the line's emotion; "সে অবাক হয়ে বলল" is said plainly around them (`CastSpeech`, `SpeechEngine.actsFeelings`). A sad or scared line carries into the next plain sentence of its paragraph (`SceneMoods`, `QuoteCarry.moodOf`). Other voices read as before.
+- **Pronunciation check:** `scripts/pronunciation_check.py` and `research/pronunciation/` read rule-dense sentences with every voice and transcribe them back. First fix: Piper Hindi garbled ग़, ख़, क़ ("ग़ज़ल" heard as "ओजल"); those voices now get them without the nukta (`VoiceRespellings`).
+- No `:pdf` change (PIPELINE_VERSION 12). Tests: `SceneMoodsTest`, `DeliveryPlannerTest`, `CastSpeechTest`, `QuoteCarryTest`, `VoiceRespellingsTest`. No new dependency.
+
+**Real-device checks (Moto):** a Bengali story with dialogue on Rasa (narration around a quote stays calm); a sad paragraph keeps its tone for the next sentence; a Hindi page with "ग़ज़ल" or "क़ानून" on Pratham.
+
 ## Bengali emotion voices (2026-10-23, ADR-057)
 - **New download:** "Bengali, Rasa expressive (female and male)", 123 MB, CC BY 4.0 (AI4Bharat). Opt-in under All voices; SYSPIN male stays the Bengali pack. Shown in the Play build.
 - **A style per sentence:** in stories, Rasa reads narration in its book style and a line's feeling in its own style: shouted angry, sad sad, scared fearful, surprised, laughing happy, questions conversational (`SherpaVoiceSpec.styles`, `SpeechEngine.render(…, feeling)`). Two new feeling cues in English, Hindi and Bengali: scared ("trembled", "डरकर", "ভয়ে") and surprised ("gasped", "चौंककर", "অবাক হয়ে").

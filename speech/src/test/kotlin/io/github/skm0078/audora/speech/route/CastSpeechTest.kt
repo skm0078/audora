@@ -22,7 +22,10 @@ import org.junit.Test
 
 class CastSpeechTest {
     /** One sample per character; [broken] voices fail, like an uninstalled model. */
-    private class RecordingEngine(private val broken: Set<String> = emptySet()) : SpeechEngine {
+    private class RecordingEngine(
+        private val broken: Set<String> = emptySet(),
+        private val acts: Boolean = false,
+    ) : SpeechEngine {
         override val id = EngineId.SHERPA
         val calls = mutableListOf<Pair<String, String>>()
         val feelings = mutableListOf<Feeling>()
@@ -40,6 +43,8 @@ class CastSpeechTest {
             calls.add(voice.name to text)
             return Outcome.Success(PcmAudio(ShortArray(text.length) { 1 }, SAMPLE_RATE))
         }
+
+        override fun actsFeelings(voice: VoiceId): Boolean = acts
 
         override suspend fun render(text: String, voice: VoiceId, rate: Float, feeling: Feeling): RenderResult {
             feelings.add(feeling)
@@ -59,7 +64,7 @@ class CastSpeechTest {
         CastSpeech(FakeVoices(engine), ScriptRouter(), normalizers = emptyMap())
 
     @Test
-    fun `the sentence's feeling reaches every part, narrator's and quote's (ADR-057)`() = runTest {
+    fun `the feeling goes to the quoted words, the narration around them is said plainly (ADR-058)`() = runTest {
         val engine = RecordingEngine()
 
         speech(engine).render(
@@ -69,7 +74,26 @@ class CastSpeechTest {
             Cast(dialogue = mapOf(Lang.EN to DIALOGUE)),
         )
 
-        assertEquals(listOf(Feeling.SAD, Feeling.SAD), engine.feelings)
+        assertEquals(listOf(Feeling.SAD, Feeling.NEUTRAL), engine.feelings)
+    }
+
+    @Test
+    fun `a voice that acts feelings gets the quote split out even without a dialogue voice`() = runTest {
+        val acting = RecordingEngine(acts = true)
+        val plain = RecordingEngine()
+        val text = "“Come here at once,” she sobbed."
+
+        speech(acting).render(text, Lang.EN, SpeechRequest(feeling = Feeling.SAD))
+        speech(plain).render(text, Lang.EN, SpeechRequest(feeling = Feeling.SAD))
+        speech(acting).render("She sobbed into her hands.", Lang.EN, SpeechRequest(feeling = Feeling.SAD))
+
+        assertEquals(
+            listOf(NARRATOR.name to "Come here at once,", NARRATOR.name to "she sobbed.", NARRATOR.name to
+                "She sobbed into her hands."),
+            acting.calls,
+        )
+        assertEquals(listOf(Feeling.SAD, Feeling.NEUTRAL, Feeling.SAD), acting.feelings)
+        assertEquals(listOf(NARRATOR.name to text), plain.calls)
     }
 
     @Test
