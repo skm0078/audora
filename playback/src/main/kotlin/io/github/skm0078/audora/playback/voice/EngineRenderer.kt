@@ -164,7 +164,9 @@ class EngineRenderer(
         } else {
             null
         }
-        val text = reading.punctuated(reading.fixer().apply(speech.text), unit)
+        val written = reading.punctuated(reading.fixer().apply(speech.text), unit)
+        // A sentence the page cut ends on a comma, so the voice keeps it rising into the next unit (ADR-056).
+        val text = if (delivery.openEnd && written.trimEnd().lastOrNull()?.isLetter() == true) "$written," else written
         val shaping = now.shaping
         val shaper = reading.shaper
         val trim: (PcmAudio) -> PcmAudio = if (shaping.trimPauses) shaper::trimPauses else { audio -> audio }

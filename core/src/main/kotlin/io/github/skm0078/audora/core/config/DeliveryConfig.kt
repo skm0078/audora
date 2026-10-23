@@ -75,6 +75,8 @@ data class FeelingEffect(val rate: Float = 1f, val gainDb: Float = 0f, val pause
  * @property effects each feeling's effect; every feeling needs one.
  * @property minRate the slowest a delivery may make the voice, whatever the multipliers.
  * @property maxGainDb the loudest a feeling may make a sentence; the shaper's soft limiter catches the peaks.
+ * @property openEndWords a prose sentence of at least this many words that breaks off (a page or column cut it,
+ *   "…in old times must") is read as unfinished: rising, not falling, and with only [openEndPauseScale] of its pause.
  */
 data class DeliveryConfig(
     val minWords: Int = 120,
@@ -100,6 +102,8 @@ data class DeliveryConfig(
     val effects: Map<Feeling, FeelingEffect> = DEFAULT_EFFECTS,
     val minRate: Float = 0.75f,
     val maxGainDb: Float = 3f,
+    val openEndWords: Int = 4,
+    val openEndPauseScale: Float = 0.2f,
 ) {
     init {
         require(minWords >= 0 && settleWords >= minWords) { "need 0 <= minWords <= settleWords" }
@@ -115,6 +119,7 @@ data class DeliveryConfig(
         require(profiles.keys == ContentIntent.entries.toSet()) { "every intent needs a delivery profile" }
         require(effects.keys == Feeling.entries.toSet()) { "every feeling needs an effect" }
         require(minRate > 0f && maxGainDb >= 0f) { "minRate must be > 0 and maxGainDb >= 0" }
+        require(openEndWords >= 1 && openEndPauseScale in 0f..1f) { "need openEndWords >= 1, pause scale in 0..1" }
     }
 
     fun profile(intent: ContentIntent): DeliveryProfile = profiles.getValue(intent)
