@@ -34,7 +34,7 @@ jobs:
     name: Build, check and publish voices
     # Pinned: deflated dictionary zips depend on the runner's zlib (1.3 on 24.04), and their pins on those bytes.
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     permissions:
       contents: write
 

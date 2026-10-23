@@ -29,9 +29,9 @@ data class ActedVoiceModel(
          */
         val CORE = ActedVoiceModel(
             id = "acted-hi-chatterbox-core",
-            fileName = "acted-hi-chatterbox-core-PENDING.zip",
-            sha256 = "0000000000000000000000000000000000000000000000000000000000000000",
-            sizeBytes = 1L,
+            fileName = "acted-hi-chatterbox-core-7987e6a33727.zip",
+            sha256 = "7987e6a3372764e0ac1fcb475fce29d6e12807727bddf27e1f4f3a867adb5a37",
+            sizeBytes = 839_162_865L,
             files = listOf(
                 "embed_tokens.onnx",
                 "embed_tokens.onnx_data",
@@ -45,9 +45,9 @@ data class ActedVoiceModel(
         /** Its language model at full precision, on its own: over GitHub's 2 GiB file limit together with [CORE]. */
         val LANGUAGE_MODEL = ActedVoiceModel(
             id = "acted-hi-chatterbox-lm",
-            fileName = "acted-hi-chatterbox-lm-PENDING.zip",
-            sha256 = "0000000000000000000000000000000000000000000000000000000000000000",
-            sizeBytes = 1L,
+            fileName = "acted-hi-chatterbox-lm-17c5351e0071.zip",
+            sha256 = "17c5351e0071f3c27d695203144636a1a58b5607ab735f8caae7635d97b93583",
+            sizeBytes = 2_080_822_670L,
             files = listOf("language_model.onnx", "language_model.onnx_data"),
             baseUrl = MIRROR,
         )

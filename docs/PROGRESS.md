@@ -2,6 +2,14 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Acted Hindi voice for studio mode (2026-10-23, ADR-059)
+- **What:** an optional download (Settings → Listening, "Acted Hindi voice (studio mode)", Wi-Fi only, about 2.9 GB in two parts, offered on phones with 8 GB of memory). Once installed, studio mode reads Hindi with Chatterbox Multilingual (Resemble AI, MIT), which acts feelings and dialogue; playback plays that audio and still reads live with the usual Hindi voice. Clips, talking books and exports are unchanged.
+- **How:** `libaudora_acted.so` (C++ over the ONNX Runtime sherpa-onnx ships, no second runtime), the language model at full precision and Chatterbox Turbo's one-step decoder (about 6× faster than the multilingual one), a Kotlin port of its tokenizer, a take guard (token cap, one plainer retry). Packs: `scripts/build_acted_pack.py`, `acted-source.yml`, pinned in `speech/models.json`.
+- **Measured:** every one of 12 Hindi test lines read right at full precision; every 4- or 8-bit model garbled about a third. About 1.5 s of work per second of audio on CI's ARM runner. Known model limit: some aspirated consonants after a nasal soften (आँधी heard as "आंदी"); respelling does not help.
+- No `:pdf` change (PIPELINE_VERSION 12). Tests: `ChatterboxTokenizerTest`, `ActedTakesTest`, `ActedSpeechEngineTest`, `ActedVoiceModelTest`, `CastSpeechTest`, `StorageRowsTest`.
+
+**Real-device checks (Moto):** download on Wi-Fi; a Hindi book in studio mode overnight on the charger (memory, heat, how much renders by morning); the rendered pages play with acting; delete from Settings and Storage.
+
 ## Act the quotes, keep the mood, check pronunciation (2026-10-23, ADR-058)
 - **Emotion:** with Rasa, only the quoted words take the line's emotion; "সে অবাক হয়ে বলল" is said plainly around them (`CastSpeech`, `SpeechEngine.actsFeelings`). A sad or scared line carries into the next plain sentence of its paragraph (`SceneMoods`, `QuoteCarry.moodOf`). Other voices read as before.
 - **Pronunciation check:** `scripts/pronunciation_check.py` and `research/pronunciation/` read rule-dense sentences with every voice and transcribe them back. First fix: Piper Hindi garbled ग़, ख़, क़ ("ग़ज़ल" heard as "ओजल"); those voices now get them without the nukta (`VoiceRespellings`).
