@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: playback/src/main/res/values-hi/strings_studio.xml -->
+<!-- Purpose: Hindi copy of values/strings_studio.xml. -->
+<resources>
+    <string name="studio_channel">स्टूडियो मोड</string>
+    <string name="studio_channel_description">किताब को सुनने के लिए पहले से तैयार करते समय की प्रगति</string>
+    <string name="studio_preparing_title">स्टूडियो मोड</string>
+    <string name="studio_preparing">किताब और उसकी आवाज़ लोड हो रही है…</string>
+    <string name="studio_running_title">स्टूडियो मोड: “%1$s”</string>
+    <string name="studio_running_text">%2$s में से %1$s तैयार</string>
+    <string name="studio_time_left">%1$s · लगभग %2$s बाकी</string>
+    <string name="studio_measuring">%1$s · इस फ़ोन की गति मापी जा रही है…</string>
+    <string name="studio_page_of">पेज %1$d / %2$d</string>
+    <string name="studio_speed_keeps_up">इस आवाज़ से इस फ़ोन पर 1 मिनट की बोली बनाने में %1$s लगते हैं। सीधे सुनने पर भी यह साथ चलती है, इसलिए स्टूडियो मोड मुख्य रूप से बैटरी और शुरू होने का समय बचाता है।</string>
+    <string name="studio_speed_slow">इस आवाज़ से इस फ़ोन पर 1 मिनट की बोली बनाने में %1$s लगते हैं: यह बोलने से धीमा है, इसलिए स्टूडियो मोड से ही यह आवाज़ बिना रुके चलती है।</string>
+    <string name="studio_waiting_charger">चार्जर का इंतज़ार · %1$s</string>
+    <string name="studio_waiting_charger_how">यह सिर्फ़ फ़ोन चार्ज पर लगे होने पर तैयार करता है। चार्जर लगाएँ, या बैटरी से चलाने के लिए अभी शुरू करें दबाएँ।</string>
+    <string name="studio_waiting_audio">ऑडियो चलने तक रुका है · %1$s</string>
+    <string name="studio_start_now">अभी शुरू करें</string>
+    <string name="studio_stop">रोकें</string>
+    <string name="studio_done_title">सुनने के लिए तैयार: “%1$s”</string>
+    <string name="studio_done_text">पेज %2$d से %1$s तैयार</string>
+    <string name="studio_done_end_text">पेज %2$d से किताब के अंत तक %1$s तैयार</string>
+    <string name="studio_done_how">बस किताब चलाएँ: आवाज़ और गति वही रहने तक ListenLock इसे अपने आप इस्तेमाल करता है। किताब का मेन्यू → स्टूडियो मोड में इसे देख सकते हैं, फ़ाइल के रूप में सेव या डिलीट कर सकते हैं।</string>
+    <string name="studio_failed_title">स्टूडियो मोड रुक गया: “%1$s”</string>
+    <string name="studio_stopped_title">स्टूडियो मोड रुक गया: “%1$s”</string>
+    <string name="studio_stopped_text">जो तैयार हो चुका है वह रहता है और तुरंत चलता है</string>
+    <string name="studio_busy">स्टूडियो मोड पहले से दूसरी किताब तैयार कर रहा है; पहले उसकी सूचना से उसे रोकें</string>
+    <string name="studio_untitled">किताब</string>
+    <string name="studio_seconds">%1$d से.</string>
+    <string name="studio_minutes">%1$d मिनट</string>
+    <string name="studio_file_name">स्टूडियो ऑडियो, पेज %1$d-%2$d</string>
+    <string name="studio_file_nothing">इस किताब के लिए अभी कोई स्टूडियो ऑडियो तैयार नहीं है</string>
+    <string name="studio_file_failed">फ़ाइल सेव नहीं हो सकी। देखें कि फ़ोन में खाली जगह है, फिर दोबारा कोशिश करें।</string>
+</resources>

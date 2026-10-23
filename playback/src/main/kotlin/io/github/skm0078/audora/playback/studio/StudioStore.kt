@@ -6,8 +6,11 @@ package io.github.skm0078.audora.playback.studio
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
+import java.io.BufferedInputStream
+import java.io.DataInputStream
 import java.io.File
 import java.io.IOException
+import java.util.SortedMap
 
 /**
  * Layout: `<root>/<book hash>/<signature hash>/p<page>.studio`, and `<root>/<book hash>/book` holding the library id
@@ -122,6 +125,50 @@ class StudioStore(private val root: File) {
 
     fun totalBytes(): Long = sizeOf(root)
 
+    /**
+     * What [book] has on the phone (ADR-063): the pages of its newest signature, the one the last run wrote. Older
+     * signatures are dropped when a run starts. Reads only the clip headers. Null when it has none.
+     */
+    fun bookAudio(book: BookId): StudioBookAudio? {
+        val pages = newestPages(book)
+        if (pages.isEmpty()) return null
+        val durationMs = pages.values.sumOf { file -> pageDuration(book, file) }
+        return StudioBookAudio(pages.firstKey(), pages.lastKey(), pages.size, durationMs, sizeOf(bookFolder(book)))
+    }
+
+    /** [book]'s newest pages in reading order, each read when asked for; damaged ones are skipped (and logged). */
+    fun readyPages(book: BookId): Sequence<StudioPage> = newestPages(book).asSequence().mapNotNull { (page, file) ->
+        try {
+            StudioPage.fromBytes(file.readBytes()).takeIf { it.page == page }
+        } catch (e: IOException) {
+            AudoraLog.w(TAG, "Studio page unreadable, book=${book.logLabel} page=$page", e)
+            null
+        } catch (e: CorruptStudioData) {
+            AudoraLog.w(TAG, "Studio page damaged, book=${book.logLabel} page=$page: ${e.message}")
+            null
+        }
+    }
+
+    /** Deletes all of [book]'s studio audio; playback reads it live until studio mode runs again. */
+    fun deleteBook(book: BookId): Boolean = bookFolder(book).let { !it.exists() || it.deleteRecursively() }
+
+    private fun newestPages(book: BookId): SortedMap<Int, File> {
+        val newest = bookFolder(book).listFiles { file -> file.isDirectory }.orEmpty().maxByOrNull { newestWrite(it) }
+        return newest?.listFiles().orEmpty()
+            .mapNotNull { file -> pageNumber(file)?.let { it to file } }
+            .toMap().toSortedMap()
+    }
+
+    private fun pageDuration(book: BookId, file: File): Long = try {
+        DataInputStream(BufferedInputStream(file.inputStream())).use { StudioPage.durationOf(it) }
+    } catch (e: IOException) {
+        AudoraLog.w(TAG, "Studio page unreadable, book=${book.logLabel} (${file.name})", e)
+        0L
+    } catch (e: CorruptStudioData) {
+        AudoraLog.w(TAG, "Studio page damaged, book=${book.logLabel} (${file.name}): ${e.message}")
+        0L
+    }
+
     private fun bookFolder(book: BookId) = File(root, StudioKeys.bookFolder(book))
 
     private fun signatureFolder(key: StudioKey) = File(bookFolder(key.book), key.signature.hash)
@@ -143,6 +190,12 @@ class StudioStore(private val root: File) {
         fun newestWrite(folder: File): Long = folder.walkBottomUp().maxOfOrNull { it.lastModified() } ?: 0L
     }
 }
+
+/**
+ * One book's studio audio on the phone (ADR-063). Pages are zero-based; [pages] can be fewer than the range when a
+ * page had nothing to read.
+ */
+data class StudioBookAudio(val firstPage: Int, val lastPage: Int, val pages: Int, val durationMs: Long, val bytes: Long)
 
 /** Why studio mode stopped early. */
 sealed interface StudioError {

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_feedback.xml -->
+<!-- Purpose: Confirmations for actions that used to give no sign they worked (ADR-062's options audit). -->
+<resources>
+    <string name="report_noted">Noted in the app\'s log, with where this sentence is. To send it, use Settings → Advanced → Share logs.</string>
+</resources>

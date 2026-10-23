@@ -711,7 +711,9 @@ class MainActivity : ComponentActivity() {
     ) {
         val context = LocalContext.current.applicationContext
         val playWithPermission = rememberPlayWithNotificationPermission()
-        val studio = rememberStudioLibrary(studioParts, playWithPermission)
+        val studio = rememberStudioLibrary(studioParts, playWithPermission) { book ->
+            playWithPermission { onContinue(book.id) }
+        }
         val actions = remember(controller) {
             object : LibraryActions {
                 override fun onAddPdf(documentUri: Uri) = controller.add(documentUri.toString())
@@ -763,7 +765,10 @@ class MainActivity : ComponentActivity() {
             // The long jobs' progress and results sit under the activity's own banner, above the books.
             banner = {
                 banner()
-                LongJobsPanel(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS))
+                LongJobsPanel(
+                    Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+                    onStudioDetails = studio::openStudio,
+                )
             },
             covers = bookCovers,
         )
@@ -1010,7 +1015,11 @@ class MainActivity : ComponentActivity() {
 
         override fun onBookVoice(lang: Lang, voice: VoiceId) = model.setBookVoice(lang, voice)
 
-        override fun onReport(reason: SoundedWrongReason) = model.report(reason)
+        // Said at once, so the report never seems to vanish: where it went and how it leaves the phone.
+        override fun onReport(reason: SoundedWrongReason) {
+            model.report(reason)
+            Toast.makeText(applicationContext, R.string.report_noted, Toast.LENGTH_LONG).show()
+        }
 
         override fun onReportDismissed() = model.dismissReport()
 

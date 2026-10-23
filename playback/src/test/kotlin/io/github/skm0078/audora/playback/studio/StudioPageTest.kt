@@ -5,6 +5,7 @@ package io.github.skm0078.audora.playback.studio
 
 import io.github.skm0078.audora.playback.pcm
 import io.github.skm0078.audora.playback.unit
+import java.io.DataInputStream
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -43,6 +44,23 @@ class StudioPageTest {
         assertNotNull(clip)
         val audio = clip!!.audio(codec)
         assertArrayEquals(pcm(1_500, fill = 5).samples, audio.samples)
+    }
+
+    @Test
+    fun `the length is read from the headers alone`() {
+        val input = DataInputStream(page().toBytes().inputStream())
+        assertEquals(2_000L, StudioPage.durationOf(input))
+    }
+
+    @Test
+    fun `a cut-short file reads as damaged, not as shorter`() {
+        val bytes = page().toBytes()
+        try {
+            StudioPage.durationOf(DataInputStream(bytes.copyOf(bytes.size / 2).inputStream()))
+            fail("A truncated page must not have a length")
+        } catch (expected: CorruptStudioData) {
+            assertNotNull(expected.message)
+        }
     }
 
     @Test

@@ -9,13 +9,15 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import io.github.skm0078.audora.core.config.StudioConfig
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.jobs.LongJobEnd
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.jobs.LongJobs
 
 /** Platform notifications, like the audiobook export's: no androidx dependency for a handful of plain notifications. */
-internal class StudioNotifications(private val context: Context) {
+@Suppress("TooManyFunctions") // One per notification state, plus the small text builders each one uses.
+internal class StudioNotifications(private val context: Context, private val config: StudioConfig) {
     private val manager = context.getSystemService(NotificationManager::class.java)
 
     fun createChannel() {
@@ -39,28 +41,44 @@ internal class StudioNotifications(private val context: Context) {
     var lastRunning: Notification? = null
         private set
 
-    fun showRunning(title: String, readyMs: Long, aheadMs: Long, waiting: ChargingGate.Wait?) {
+    /**
+     * The run's progress, here and on the app's card: what is ready, the time left at the speed measured on this
+     * phone (or that it is still measuring), the page, and what that speed means for this voice (ADR-063).
+     */
+    fun showRunning(title: String, progress: StudioProgress, waiting: ChargingGate.Wait?) {
         val ready = context.getString(
             R.string.studio_running_text,
-            context.duration(readyMs),
-            context.duration(aheadMs),
+            context.studioDuration(progress.readyMs),
+            context.studioDuration(config.aheadMs),
         )
-        val text = when (waiting) {
-            null -> ready
+        val timeLeft = progress.timeLeftMs(config.aheadMs, config.measureMs)
+        val status = when (waiting) {
+            null -> timeLeft?.let { context.getString(R.string.studio_time_left, ready, context.studioDuration(it)) }
+                ?: context.getString(R.string.studio_measuring, ready)
+
             ChargingGate.Wait.CHARGER -> context.getString(R.string.studio_waiting_charger, ready)
+
             ChargingGate.Wait.AUDIO -> context.getString(R.string.studio_waiting_audio, ready)
         }
-        val percent = (readyMs * PERCENT / aheadMs).toInt().coerceIn(0, PERCENT)
+        val detail = listOfNotNull(
+            status,
+            context.getString(R.string.studio_page_of, progress.shownPage, progress.pageCount),
+            speedLine(progress),
+            context.getString(R.string.studio_waiting_charger_how).takeIf { waiting == ChargingGate.Wait.CHARGER },
+        ).joinToString("\n")
+        val percent = progress.percent(config.aheadMs)
+        val runningTitle = context.getString(R.string.studio_running_title, title)
         LongJobs.progress(
             LongJobKind.STUDIO,
-            context.getString(R.string.studio_running_title, title),
-            text,
+            runningTitle,
+            detail,
             percent,
             waitingForCharger = waiting == ChargingGate.Wait.CHARGER,
         )
         val notification = builder()
-            .setContentTitle(context.getString(R.string.studio_running_title, title))
-            .setContentText(text)
+            .setContentTitle(runningTitle)
+            .setContentText(status)
+            .setStyle(Notification.BigTextStyle().bigText(detail))
             .setProgress(PERCENT, percent, false)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -75,11 +93,19 @@ internal class StudioNotifications(private val context: Context) {
         manager.notify(RUNNING_ID, notification)
     }
 
+    /** "1 min of speech takes 45 s to make…": the reason behind the time left, once it is measured. */
+    private fun speedLine(progress: StudioProgress): String? = progress.renderFactor(config.measureMs)?.let { factor ->
+        val perMinute = context.studioDuration((factor * MS_PER_MINUTE).toLong())
+        context.getString(if (factor < 1.0) R.string.studio_speed_keeps_up else R.string.studio_speed_slow, perMinute)
+    }
+
     fun showDone(title: String, summary: StudioSummary) {
-        val text = context.getString(
+        val ready = context.getString(
             if (summary.endOfBook) R.string.studio_done_end_text else R.string.studio_done_text,
-            context.duration(summary.readyMs),
+            context.studioDuration(summary.readyMs),
+            summary.fromPage + 1,
         )
+        val text = ready + "\n" + context.getString(R.string.studio_done_how)
         showResult(context.getString(R.string.studio_done_title, title), text, LongJobEnd.DONE)
     }
 
@@ -142,15 +168,22 @@ internal class StudioNotifications(private val context: Context) {
     }
 }
 
+private const val MS_PER_SECOND = 1_000L
 private const val MS_PER_MINUTE = 60_000L
 private const val MINUTES_PER_HOUR = 60L
 
-/** "1 h 05 min", as the audiobook export writes durations. */
-private fun Context.duration(ms: Long): String {
+/** "40 s", "12 min" or "1 h 05 min": as short as the duration allows, for progress the listener reads at a glance. */
+fun Context.studioDuration(ms: Long): String {
     val minutes = ms / MS_PER_MINUTE
-    return getString(
-        R.string.export_duration,
-        (minutes / MINUTES_PER_HOUR).toInt(),
-        (minutes % MINUTES_PER_HOUR).toInt(),
-    )
+    return when {
+        ms < MS_PER_MINUTE -> getString(R.string.studio_seconds, (ms / MS_PER_SECOND).toInt())
+
+        minutes < MINUTES_PER_HOUR -> getString(R.string.studio_minutes, minutes.toInt())
+
+        else -> getString(
+            R.string.export_duration,
+            (minutes / MINUTES_PER_HOUR).toInt(),
+            (minutes % MINUTES_PER_HOUR).toInt(),
+        )
+    }
 }

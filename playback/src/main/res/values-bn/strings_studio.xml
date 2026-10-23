@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: playback/src/main/res/values-bn/strings_studio.xml -->
+<!-- Purpose: Bengali copy of values/strings_studio.xml. -->
+<resources>
+    <string name="studio_channel">স্টুডিও মোড</string>
+    <string name="studio_channel_description">শোনার জন্য বই আগে থেকে তৈরি করার অগ্রগতি</string>
+    <string name="studio_preparing_title">স্টুডিও মোড</string>
+    <string name="studio_preparing">বই আর তার ভয়েস লোড হচ্ছে…</string>
+    <string name="studio_running_title">স্টুডিও মোড: “%1$s”</string>
+    <string name="studio_running_text">%2$s এর মধ্যে %1$s তৈরি</string>
+    <string name="studio_time_left">%1$s · আরও প্রায় %2$s</string>
+    <string name="studio_measuring">%1$s · এই ফোনের গতি মাপা হচ্ছে…</string>
+    <string name="studio_page_of">পৃষ্ঠা %1$d / %2$d</string>
+    <string name="studio_speed_keeps_up">এই ভয়েসে এই ফোনে ১ মিনিটের কথা তৈরি করতে %1$s লাগে। সরাসরি শোনার সময়ও এটি তাল রাখে, তাই স্টুডিও মোড মূলত ব্যাটারি আর শুরুর সময় বাঁচায়।</string>
+    <string name="studio_speed_slow">এই ভয়েসে এই ফোনে ১ মিনিটের কথা তৈরি করতে %1$s লাগে: এটি কথার চেয়ে ধীর, তাই স্টুডিও মোডই এই ভয়েসকে না থেমে চালায়।</string>
+    <string name="studio_waiting_charger">চার্জারের অপেক্ষায় · %1$s</string>
+    <string name="studio_waiting_charger_how">ফোন চার্জে থাকলেই এটি তৈরি করে। চার্জার লাগান, অথবা ব্যাটারিতে চালাতে এখনই শুরু করুন টিপুন।</string>
+    <string name="studio_waiting_audio">অডিও চলার সময় থেমে আছে · %1$s</string>
+    <string name="studio_start_now">এখনই শুরু করুন</string>
+    <string name="studio_stop">থামান</string>
+    <string name="studio_done_title">শোনার জন্য তৈরি: “%1$s”</string>
+    <string name="studio_done_text">পৃষ্ঠা %2$d থেকে %1$s তৈরি</string>
+    <string name="studio_done_end_text">পৃষ্ঠা %2$d থেকে বইয়ের শেষ পর্যন্ত %1$s তৈরি</string>
+    <string name="studio_done_how">শুধু বইটি চালান: ভয়েস আর গতি একই থাকলে ListenLock নিজেই এটি ব্যবহার করে। বইয়ের মেনু → স্টুডিও মোডে এটি দেখা, ফাইল হিসেবে সেভ করা বা মুছে ফেলা যায়।</string>
+    <string name="studio_failed_title">স্টুডিও মোড থেমেছে: “%1$s”</string>
+    <string name="studio_stopped_title">স্টুডিও মোড থেমেছে: “%1$s”</string>
+    <string name="studio_stopped_text">যা তৈরি হয়ে গেছে তা থাকে আর সঙ্গে সঙ্গে চলে</string>
+    <string name="studio_busy">স্টুডিও মোড আরেকটি বই তৈরি করছে; আগে তার নোটিফিকেশন থেকে সেটি থামান</string>
+    <string name="studio_untitled">বই</string>
+    <string name="studio_seconds">%1$d সে.</string>
+    <string name="studio_minutes">%1$d মিনিট</string>
+    <string name="studio_file_name">স্টুডিও অডিও, পৃষ্ঠা %1$d-%2$d</string>
+    <string name="studio_file_nothing">এই বইয়ের জন্য এখনও কোনো স্টুডিও অডিও তৈরি হয়নি</string>
+    <string name="studio_file_failed">ফাইলটি সেভ করা গেল না। ফোনে ফাঁকা জায়গা আছে কি না দেখে আবার চেষ্টা করুন।</string>
+</resources>

@@ -2,5 +2,27 @@
 <!-- File: app/src/main/res/values-hi/strings_studio.xml -->
 <!-- Purpose: Hindi copy of values/strings_studio.xml. -->
 <resources>
-    <string name="library_studio_mode">स्टूडियो मोड में तैयार करें</string>
+    <string name="library_studio_mode">स्टूडियो मोड</string>
+    <string name="studio_sheet_title">स्टूडियो मोड: “%1$s”</string>
+    <string name="studio_sheet_what">स्टूडियो मोड इस किताब की बोली पहले से रिकॉर्ड करता है, जहाँ आप हैं वहाँ से, उसी आवाज़ और गति में जिसमें आप सुनते हैं, एक बार में 6 घंटे तक। फिर सुनते समय आवाज़ का इंतज़ार नहीं होता, रिकॉर्डिंग चलती है। यह धीमी आवाज़ों के लिए सबसे काम का है (डाउनलोड की गई Kokoro आवाज़ें, अभिनय वाली हिंदी); बिल्ट-इन आवाज़ सीधे पढ़ने के लिए काफ़ी तेज़ है। यह सिर्फ़ फ़ोन चार्जर पर लगे होने पर चलता है, जब तक आप अभी शुरू करें न दबाएँ।</string>
+    <string name="studio_sheet_running">अभी</string>
+    <string name="studio_sheet_last_run">पिछली बार</string>
+    <string name="studio_sheet_other_book">स्टूडियो मोड अभी दूसरी किताब तैयार कर रहा है। यह एक बार में एक किताब करता है: पहले लाइब्रेरी में उसके कार्ड से उसे रोकें।</string>
+    <string name="studio_sheet_on_phone">इस फ़ोन पर</string>
+    <string name="studio_sheet_ready">%1$s तैयार, पेज %2$d से %3$d · %4$s</string>
+    <string name="studio_sheet_nothing_ready">अभी कुछ तैयार नहीं है।</string>
+    <string name="studio_sheet_where">यह ListenLock के अंदर रखा जाता है (आपकी Files ऐप में नहीं) और इस किताब को सुनते समय अपने आप चलता है। आवाज़, गति, ठहराव या उच्चारण सुधार बदलने पर यह मेल नहीं खाता; अगली बार यह फिर बनता है। ऐप अपडेट करने या किताब हटाने पर यह डिलीट हो जाता है। ऑडियो फ़ाइल के रूप में सेव करें से एक कॉपी आपके फ़ोन के Audiobooks में जाती है।</string>
+    <string name="studio_sheet_listen">जहाँ छोड़ा था वहाँ से सुनें</string>
+    <string name="studio_sheet_save">ऑडियो फ़ाइल के रूप में सेव करें</string>
+    <string name="studio_sheet_saving">ऑडियो फ़ाइल सेव हो रही है…</string>
+    <string name="studio_sheet_delete">स्टूडियो ऑडियो डिलीट करें</string>
+    <string name="studio_sheet_delete_question">%1$s का स्टूडियो ऑडियो डिलीट करें? इसे फिर से बनाने में घंटों लगते हैं।</string>
+    <string name="studio_sheet_delete_confirm">डिलीट करें</string>
+    <string name="studio_sheet_deleted">डिलीट हो गया। स्टूडियो मोड फिर चलने तक यह किताब सीधी आवाज़ से पढ़ी जाएगी।</string>
+    <string name="studio_sheet_delete_refused">डिलीट नहीं हुआ: स्टूडियो मोड अभी यह किताब तैयार कर रहा है। पहले उसे रोकें।</string>
+    <string name="studio_sheet_start">शुरू करें</string>
+    <string name="studio_sheet_more">और तैयार करें</string>
+    <string name="long_job_details">विवरण</string>
+    <string name="studio_file_saving">स्टूडियो ऑडियो फ़ाइल के रूप में सेव हो रहा है। ListenLock खुला रखें; घंटों के ऑडियो में कुछ मिनट लगते हैं।</string>
+    <string name="studio_file_saved">“%1$s” (%2$s) %3$s में सेव हुआ। इसे किसी भी ऑडियोबुक या म्यूज़िक ऐप, या Files ऐप से खोलें।</string>
 </resources>

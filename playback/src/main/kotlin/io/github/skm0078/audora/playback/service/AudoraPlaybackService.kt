@@ -79,12 +79,18 @@ import io.github.skm0078.audora.playback.voice.forReading
 import io.github.skm0078.audora.playback.voice.narratorBlend
 import io.github.skm0078.audora.speech.sherpa.blendableSpeaker
 import io.github.skm0078.audora.speech.sherpa.isExpressive
+import io.github.skm0078.audora.speech.voices.VoiceLibrary
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Synthesis and playback run here only (Build Spec C9). One player for the service's life; [BookSession]
@@ -97,6 +103,7 @@ import kotlinx.coroutines.flow.first
  */
 @OptIn(UnstableApi::class)
 @AndroidEntryPoint
+@Suppress("TooManyFunctions") // Service lifecycle callbacks plus one small setup step each.
 class AudoraPlaybackService : MediaLibraryService() {
     @Inject
     lateinit var library: Library
@@ -197,6 +204,7 @@ class AudoraPlaybackService : MediaLibraryService() {
             events = publisher(mediaSession, stores, heard, engines, reading).also { it.publishInitial() },
             env = sessionEnvironment(scope, AccelerometerShakes(this, config.sleep)),
         )
+        followVoiceChoices()
         resumption = PlaybackResumption(
             anchors = resumeAnchors,
             library = library,
@@ -205,6 +213,23 @@ class AudoraPlaybackService : MediaLibraryService() {
             player = player,
         ) { bookSession }
         AudoraLog.i(TAG, "Service created")
+    }
+
+    /**
+     * A voice picked in Settings → Voices or the reader, or a language pack's first voice, reads from the sentence
+     * playing now: the sentences rendered ahead in the old voice are redone, playing or paused. Without this the old
+     * voice went on for every sentence already rendered, until some other setting happened to restart reading.
+     */
+    private fun followVoiceChoices() {
+        val context = applicationContext
+        scope.launch {
+            // Read first (off the main thread), so the first value seen is the saved state and only changes follow.
+            val reading = withContext(Dispatchers.IO) { VoiceLibrary.get(context).readingVoices.also { it.current() } }
+            reading.choices.filterNotNull().distinctUntilChanged().drop(1).collect {
+                AudoraLog.i(TAG, "Reading voices changed; restarting the sentence with the new voice")
+                bookSession.restartRendering()
+            }
+        }
     }
 
     private fun mediaSession(stores: SessionStores): MediaLibrarySession {

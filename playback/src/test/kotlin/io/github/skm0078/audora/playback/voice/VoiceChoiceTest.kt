@@ -17,19 +17,18 @@ class VoiceChoiceTest {
 
     @Test
     fun `the book's voice wins while it is installed`() {
-        assertEquals(book, VoiceChoice.of(book, { true }, session) { settings })
+        assertEquals(book, VoiceChoice.of(book, { true }) { settings })
     }
 
     @Test
-    fun `a deleted book voice falls back to the session's, then Settings', then the default`() {
-        assertEquals(session, VoiceChoice.of(book, { false }, session) { settings })
-        assertEquals(settings, VoiceChoice.of(book, { false }, null) { settings })
-        assertNull(VoiceChoice.of(book, { false }, null) { null })
+    fun `a deleted book voice falls back to Settings', then the default`() {
+        assertEquals(settings, VoiceChoice.of(book, { false }) { settings })
+        assertNull(VoiceChoice.of(book, { false }) { null })
     }
 
     @Test
     fun `with no book voice the installed check is not asked`() {
-        assertEquals(settings, VoiceChoice.of(null, { error("not asked") }, null) { settings })
+        assertEquals(settings, VoiceChoice.of(null, { error("not asked") }) { settings })
     }
 
     @Test

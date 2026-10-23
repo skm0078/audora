@@ -8,6 +8,14 @@ One entry per merged ticket, newest first. Each entry: what changed, what was ve
 - Strings in en, hi and bn: new `strings_options.xml`, 25 unused strings removed. No preference, playback or `:pdf` change (PIPELINE_VERSION 12).
 
 **Real-device checks (Moto):** every Settings row toggles from anywhere on the row; ⓘ opens help without toggling; Back from Privacy and Advanced returns to Settings; speech sheet sub-sheets open over it and Back closes only the top one; Page and text in page view shows only the page colour; Hindi and Bengali subtitles fit in two lines; TalkBack reads each switch row as one control.
+## Studio mode you can see, and a new voice that applies at once (2026-10-23, ADR-063)
+- **Studio progress:** updates after every sentence (not every page) with the page, the speed measured on this phone and an honest time left (to 6 h ready or the book's end, whichever is nearer), and says what that speed means for the voice. Shown from the moment it starts; "measuring" until 20 s of rendering.
+- **Studio mode dialog** (book menu → Studio mode, or Details on the studio card): what it does, live progress, what is ready (length, pages, size), where it is kept and what deletes it, Listen, Save as audio file (`Audiobooks/<title>/Studio audio, pages a-b.m4a`), Delete, Start, Stop, Start now.
+- **Voices:** a voice picked in Settings → Voices, in the reader or by a language pack's download now restarts the sentence playing, so the old voice no longer plays on for the sentences rendered ahead. The reader's pick is saved like Settings'.
+- **Feedback:** "This sounded wrong" now confirms where the report went.
+- No `:pdf` change (PIPELINE_VERSION 12). Tests: `StudioProgressTest`, `StudioRunTest`, `StudioStoreTest`, `StudioPageTest`, `VoiceChoiceTest`.
+
+**Real-device checks (Moto):** start studio mode unplugged (waiting card with Start now and the reason), tap Start now (page and "measuring", then a time left within a minute); plug in overnight; open the dialog (numbers move), Save as audio file (opens in Files → Audiobooks), Delete; change the voice in Settings → Voices while a book plays and while paused (next sentence in the new voice).
 
 ## Privacy and security: app lock, hide app content, no Android backup (2026-10-23, ADR-061)
 - **Audit:** the only network use is the user-chosen downloads (HTTPS, SHA-256 pinned, GitHub only); no analytics, crash reporting, ads or account; the phone's TTS engine is used only with offline voices. The privacy page wrongly named Hugging Face; fixed. Full table in ADR-061.
