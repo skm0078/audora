@@ -164,7 +164,8 @@ class SherpaSpeechEngine(
     ): RenderResult {
         val job = coroutineContext[Job]
         val started = System.nanoTime()
-        val text = if (take.style != null) StyledText.ending(take.text, spec.lang) else take.text
+        val respelled = VoiceRespellings.apply(spec.id, take.text)
+        val text = if (take.style != null) StyledText.ending(respelled, spec.lang) else respelled
         val rate = take.rate
         val samples: Outcome<FloatArray, SpeechError> = try {
             Outcome.Success(synthesizer.generate(text, speaker, rate, take.style) { job?.isActive != false })
