@@ -6,7 +6,7 @@
     <string name="guide_title">कौन कौन है: %1$s</string>
     <string name="guide_empty">आप जहाँ तक पहुँचे हैं, वहाँ तक अभी कोई पात्र नहीं। हर व्यक्ति से मिलते ही उसे जोड़ें; वह उसी पेज से दिखेगा जहाँ आप उससे मिले, इसलिए सूची कभी आगे आने वालों का राज़ नहीं खोलती।</string>
     <plurals name="guide_later">
-        <item quantity="one">किताब में आगे 1 और (वहाँ पहुँचने तक छिपा)</item>
+        <item quantity="one">किताब में आगे %d और (वहाँ पहुँचने तक छिपा)</item>
         <item quantity="other">किताब में आगे %d और (वहाँ पहुँचने तक छिपे)</item>
     </plurals>
     <string name="guide_met_on">पेज %1$d पर मिले</string>

@@ -6,7 +6,7 @@
     <string name="guide_title">কে কে আছে: %1$s</string>
     <string name="guide_empty">আপনি যতদূর পড়েছেন, ততদূর এখনও কোনো চরিত্র নেই। প্রত্যেকের সঙ্গে দেখা হলেই তাকে যোগ করুন; সে দেখাবে সেই পৃষ্ঠা থেকেই, যেখানে তার সঙ্গে দেখা হয়েছে, তাই তালিকা কখনও আগে থেকে কিছু ফাঁস করে না।</string>
     <plurals name="guide_later">
-        <item quantity="one">বইয়ে পরে আরও ১ জন (সেখানে না পৌঁছনো পর্যন্ত লুকোনো)</item>
+        <item quantity="one">বইয়ে পরে আরও %d জন (সেখানে না পৌঁছনো পর্যন্ত লুকোনো)</item>
         <item quantity="other">বইয়ে পরে আরও %d জন (সেখানে না পৌঁছনো পর্যন্ত লুকোনো)</item>
     </plurals>
     <string name="guide_met_on">পৃষ্ঠা %1$d-এ দেখা</string>
