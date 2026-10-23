@@ -103,6 +103,7 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
             "lexicon" to entry["lexicon"]?.toString(),
             "engineLang" to entry["engineLang"]?.toString(),
             "numSteps" to (entry["numSteps"] as? Number)?.toInt()?.toString(),
+            "threads" to (entry["threads"] as? Number)?.toInt()?.toString(),
             "licence" to entry.text("licence"),
             "credit" to entry.text("credit"),
             "licenceUrl" to entry.text("licenceUrl"),
@@ -131,6 +132,9 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
 
             entry["numSteps"] != null && ((entry["numSteps"] as? Number)?.toInt() ?: 0) <= 0 ->
                 fail("$id: numSteps must be a number > 0")
+
+            entry["threads"] != null && ((entry["threads"] as? Number)?.toInt() ?: 0) <= 0 ->
+                fail("$id: threads must be a number > 0")
         }
     }
 

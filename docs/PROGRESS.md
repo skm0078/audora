@@ -2,6 +2,14 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Clearer Bengali voice: SYSPIN studio voices (2026-10-23, ADR-053)
+- **Two new Bengali downloads:** "Bengali, SYSPIN male" (now the recommended Bengali voice) and "Bengali, SYSPIN female", 114 MB each, MIT. These are IISc studio voices, converted to sherpa-onnx in CI and pinned from the `indic-voices` pre-release. Piper google and MMS stay available.
+- **Why:** an ASR round trip over the same texts gives Bengali CER 5.1% (male) and 8.1% (female), against 13.8% for Piper google and 10.3% for MMS. Coqui Bangla (8.1% to 10.1%) and AI4Bharat Rasa in BOOK style (about 9%) were also trialled. Full table and samples: `research/spikes/indic-voices/README.md` and the `indic-voices` release.
+- **Speed:** a voice can set its own ONNX Runtime thread count (`threads` in `models.json`, read into `SherpaVoiceSpec.threads`). The SYSPIN voices use 4, giving a desktop RTF of 0.22 against 0.39 at 2. Every other voice keeps `SpeechConfig.sherpaThreads`.
+- **Tests:** `SherpaVoiceManifestTest` (thread count read, 0 rejected) and `SherpaModelConfigTest` (the voice's count wins). The voice mirror script built both zips against their pins. ktlint and detekt are clean on the changed files.
+
+**Real-device checks (Moto):** download "Bengali, SYSPIN male" and pick it under Bengali, then play a Bengali PDF for 5 minutes. Check that there are no gaps between sentences and that the Voices screen does not mark it "Too slow on this phone". Listen to the female voice too, and say which reads better; `recommended` changes in one line.
+
 ## Worn print on scanned Bengali and Hindi books (2026-10-22)
 - **Softened second read:** a scanned page that reads unsure (mean confidence under 88) and is almost wholly black and white (most Bengali and Hindi books online) is read again with each pixel averaged with its neighbours, twice; the softened read is kept only when it reads clearly surer, holds as many words and more confidence over all its characters. Grey photos and clean pages are never touched (`WornPrintConfig`, `WornPrint`).
 - Measured with tessdata_best on worn re-scans: Bengali pages 74 and 62 % of words right to 79 and 74 %, Hindi 78 and 81 % to 88 and 87 %; grey pages read worse softened and are left out by the black and white check.
