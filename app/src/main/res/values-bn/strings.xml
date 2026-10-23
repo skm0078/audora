@@ -10,7 +10,7 @@
     <string name="library_title">লাইব্রেরি</string>
     <string name="library_add_pdf">PDF যোগ করুন</string>
     <string name="library_empty_title">আপনার লাইব্রেরি খালি</string>
-    <string name="library_empty_body">ফোন থেকে একটি PDF যোগ করুন, অথবা Files, WhatsApp বা মেল থেকে ListenLock দিয়ে খুলুন। ফাইল কোথায় আছে ListenLock মনে রাখে; শুধু অন্য অ্যাপ অল্প সময়ের জন্য যে PDF দেয়, সেগুলোই কপি করে রাখে।</string>
+    <string name="library_empty_body">আপনার ফোন থেকে PDF যোগ করুন, বা Files, WhatsApp বা মেল থেকে কোনো PDF ListenLock-এ পাঠান।</string>
     <string name="library_load_failed">ListenLock আপনার লাইব্রেরি লোড করতে পারেনি। সেটিংস থেকে লগ শেয়ার করুন।</string>
     <string name="library_untitled">নামহীন PDF</string>
     <string name="library_book_menu">আরও অপশন</string>
@@ -373,7 +373,7 @@
     <string name="library_duplicate_close">বন্ধ করুন</string>
     <!-- Notes tab -->
     <string name="notes_empty_title">এখনো কোনো নোট নেই</string>
-    <string name="notes_empty_body">পড়ার সময় যোগ করা বুকমার্ক, হাইলাইট আর ভয়েস নোট, সব বইয়ের, এখানে জমা হয়। যোগ করতে কোনো বাক্য চেপে ধরে রাখুন।</string>
+    <string name="notes_empty_body">পড়ার সময় কোনো বাক্য চেপে ধরে বুকমার্ক, হাইলাইট বা ভয়েস নোট যোগ করুন।</string>
     <string name="notes_page">পৃষ্ঠা %1$d</string>
     <string name="notes_kind_bookmark">বুকমার্ক</string>
     <string name="notes_kind_highlight">হাইলাইট</string>
@@ -474,7 +474,7 @@
     <string name="first_run_step">ধাপ %1$d / %2$d</string>
     <string name="first_run_welcome_title">ListenLock-তে স্বাগতম</string>
     <string name="first_run_languages_body">আপনার বইগুলো কোন ভাষায়? ListenLock ইংরেজি, হিন্দি আর বাংলা পড়ে শোনায়।</string>
-    <string name="first_run_privacy">ListenLock অফলাইনে চলে: কোনো অ্যাকাউন্ট, বিজ্ঞাপন বা ট্র্যাকিং নেই। আপনি যে ভয়েস আর মডেল বেছে নেন, শুধু সেগুলোই ডাউনলোড হয়।</string>
+    <string name="first_run_privacy">বিনামূল্যে আর অফলাইনে: অ্যাকাউন্ট নেই, বিজ্ঞাপন নেই, ট্র্যাকিং নেই।</string>
     <string name="first_run_voices_title">একটি ভয়েস বেছে নিন</string>
     <string name="first_run_voices_body">প্রতিটি ভাষা আপনার ফোনে রাখা একটি ভয়েসে পড়া হয়। এখনই একটি ডাউনলোড করুন, বা পরে সেটিংস → ভয়েস থেকে।</string>
     <string name="first_run_background_title">স্ক্রিন বন্ধ থাকলেও শুনতে থাকুন</string>

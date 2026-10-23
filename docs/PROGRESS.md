@@ -2,6 +2,13 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Options that look like controls (2026-10-23, ADR-062)
+- **Why:** options did not read as controls, and long hints sat under each. 66 option texts were over 70 characters.
+- **What:** one set of option rows (`ui/theme/OptionRows.kt`): titled cards; switch, value-and-choice, slider and link rows; one line under a title at most; longer help behind an ⓘ button (the old hint text, kept). Settings: Listening, Reading and look, App, then Privacy and Advanced as pages (Back returns). Speech sheet: speed, pace, Read to suit the book and This book only on top; What to read, Sound, Cast voices, Study and Focus sound each open their own sheet. Reader ⋮ menu: five one-line actions with icons; all look options in a new Page and text sheet. Sentence, book and library menus: one line each, help behind ⓘ. First run: progress bar, "Free and offline" up front. Empty states shortened.
+- Strings in en, hi and bn: new `strings_options.xml`, 25 unused strings removed. No preference, playback or `:pdf` change (PIPELINE_VERSION 12).
+
+**Real-device checks (Moto):** every Settings row toggles from anywhere on the row; ⓘ opens help without toggling; Back from Privacy and Advanced returns to Settings; speech sheet sub-sheets open over it and Back closes only the top one; Page and text in page view shows only the page colour; Hindi and Bengali subtitles fit in two lines; TalkBack reads each switch row as one control.
+
 ## Privacy and security: app lock, hide app content, no Android backup (2026-10-23, ADR-061)
 - **Audit:** the only network use is the user-chosen downloads (HTTPS, SHA-256 pinned, GitHub only); no analytics, crash reporting, ads or account; the phone's TTS engine is used only with offline voices. The privacy page wrongly named Hugging Face; fixed. Full table in ADR-061.
 - **New in Settings → Privacy and security:** a statement ("Your data stays on your phone", and that backups and exports are the person's own files to keep safe), **App lock** (the phone's own fingerprint, face or screen lock, through Android's prompt, after 30 s away; off by default) and **Hide app content** (`FLAG_SECURE`; off by default). The privacy policy row moved here.

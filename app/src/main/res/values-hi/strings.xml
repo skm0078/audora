@@ -10,7 +10,7 @@
     <string name="library_title">लाइब्रेरी</string>
     <string name="library_add_pdf">PDF जोड़ें</string>
     <string name="library_empty_title">आपकी लाइब्रेरी खाली है</string>
-    <string name="library_empty_body">अपने फ़ोन से PDF जोड़ें, या Files, WhatsApp या मेल से कोई PDF ListenLock में खोलें। ListenLock याद रखता है कि फ़ाइल कहाँ है; वह सिर्फ़ वही PDF कॉपी करता है जो कोई दूसरा ऐप थोड़ी देर के लिए देता है।</string>
+    <string name="library_empty_body">अपने फ़ोन से PDF जोड़ें, या Files, WhatsApp या मेल से कोई PDF ListenLock में भेजें।</string>
     <string name="library_load_failed">ListenLock आपकी लाइब्रेरी लोड नहीं कर सका। कृपया सेटिंग्स से लॉग शेयर करें।</string>
     <string name="library_untitled">बिना नाम की PDF</string>
     <string name="library_book_menu">और विकल्प</string>
@@ -373,7 +373,7 @@
     <string name="library_duplicate_close">बंद करें</string>
     <!-- Notes tab -->
     <string name="notes_empty_title">अभी कोई नोट नहीं</string>
-    <string name="notes_empty_body">पढ़ते समय आप जो बुकमार्क, हाइलाइट और वॉइस नोट जोड़ते हैं, वे सभी किताबों के लिए यहाँ इकट्ठा होते हैं। जोड़ने के लिए किसी वाक्य को देर तक दबाएँ।</string>
+    <string name="notes_empty_body">पढ़ते समय किसी वाक्य को देर तक दबाकर बुकमार्क, हाइलाइट या वॉइस नोट जोड़ें।</string>
     <string name="notes_page">पेज %1$d</string>
     <string name="notes_kind_bookmark">बुकमार्क</string>
     <string name="notes_kind_highlight">हाइलाइट</string>
@@ -474,7 +474,7 @@
     <string name="first_run_step">चरण %1$d / %2$d</string>
     <string name="first_run_welcome_title">ListenLock में आपका स्वागत है</string>
     <string name="first_run_languages_body">आपकी किताबें किन भाषाओं में हैं? ListenLock अंग्रेज़ी, हिन्दी और बांग्ला पढ़कर सुनाता है।</string>
-    <string name="first_run_privacy">ListenLock ऑफ़लाइन चलता है: न खाता, न विज्ञापन, न ट्रैकिंग। यह सिर्फ़ वही आवाज़ें और मॉडल डाउनलोड करता है जो आप चुनें।</string>
+    <string name="first_run_privacy">मुफ़्त और ऑफ़लाइन: न खाता, न विज्ञापन, न ट्रैकिंग।</string>
     <string name="first_run_voices_title">एक आवाज़ चुनें</string>
     <string name="first_run_voices_body">हर भाषा आपके फ़ोन में रखी एक आवाज़ से पढ़ी जाती है। अभी एक डाउनलोड करें, या बाद में सेटिंग्स → आवाज़ें में।</string>
     <string name="first_run_background_title">स्क्रीन बंद होने पर भी सुनते रहें</string>

@@ -6,7 +6,7 @@
     <string name="library_title">Library</string>
     <string name="library_add_pdf">Add PDF</string>
     <string name="library_empty_title">Your library is empty</string>
-    <string name="library_empty_body">Add a PDF from your phone, or open one from Files, WhatsApp or mail with ListenLock. ListenLock remembers where a file is; it copies only PDFs another app lends for a moment.</string>
+    <string name="library_empty_body">Add a PDF from your phone, or share one to ListenLock from Files, WhatsApp or mail.</string>
     <string name="library_load_failed">ListenLock could not load your library. Please share the logs from Settings.</string>
     <string name="library_untitled">Untitled PDF</string>
     <string name="library_book_menu">More options</string>
@@ -369,7 +369,7 @@
     <string name="library_duplicate_close">Close</string>
     <!-- Notes tab -->
     <string name="notes_empty_title">No notes yet</string>
-    <string name="notes_empty_body">Bookmarks, highlights and voice notes you add while reading gather here, for every book. Long-press a sentence to add one.</string>
+    <string name="notes_empty_body">Long-press a sentence while reading to bookmark, highlight or add a voice note.</string>
     <string name="notes_page">Page %1$d</string>
     <string name="notes_kind_bookmark">Bookmark</string>
     <string name="notes_kind_highlight">Highlight</string>
@@ -474,7 +474,7 @@
     <string name="first_run_step">Step %1$d of %2$d</string>
     <string name="first_run_welcome_title">Welcome to ListenLock</string>
     <string name="first_run_languages_body">Which languages are your books in? ListenLock reads English, Hindi and Bengali aloud.</string>
-    <string name="first_run_privacy">ListenLock works offline: no account, no ads, no tracking. It only downloads the voices and models you choose.</string>
+    <string name="first_run_privacy">Free and offline: no account, no ads, no tracking.</string>
     <string name="first_run_voices_title">Pick a voice</string>
     <string name="first_run_voices_body">Each language reads with a voice stored on your phone. Download one now, or later in Settings → Voices.</string>
     <string name="first_run_background_title">Keep reading with the screen off</string>
