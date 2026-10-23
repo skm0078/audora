@@ -1,0 +1,76 @@
+# File: .github/workflows/rasa-source.yml
+# Purpose: Publishes AI4Bharat Rasa's sherpa-onnx export (Bengali emotion voices, ADR-057) as one zip on the
+#          "indic-voices" pre-release, so speech/models.json can pin it as a source like the SYSPIN voices.
+#
+# The three files come from a pinned Hugging Face commit and are zipped byte-for-byte reproducibly (sorted, stored,
+# dated 1980-01-01), so a rerun builds the same SHA-256. An asset already published is kept, never replaced.
+
+name: Rasa source
+
+on:
+  push:
+    paths:
+      - .github/workflows/rasa-source.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rasa-source
+  cancel-in-progress: false
+
+env:
+  HF: https://huggingface.co
+  RASA_REPO: MatiasLin/sherpa-onnx-vits-rasa-13
+  RASA_REV: b5afd4e991e3bdd6195528de650e2ed219d47506
+  ARCHIVE: sherpa-onnx-vits-rasa-13
+  TAG: indic-voices
+
+jobs:
+  publish:
+    name: Fetch, zip and publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+
+    steps:
+      - name: Fetch the pinned files
+        run: |
+          mkdir -p "src/$ARCHIVE"
+          for f in model.onnx tokens.txt README.md; do
+            curl -fsSL --retry 5 --retry-all-errors -o "src/$ARCHIVE/$f" "$HF/$RASA_REPO/resolve/$RASA_REV/$f"
+          done
+          ls -l "src/$ARCHIVE"
+          sha256sum "src/$ARCHIVE"/*
+          cat "src/$ARCHIVE/README.md"
+
+      - name: Zip reproducibly
+        run: |
+          python3 - <<'PY'
+          import os, zipfile
+          archive = os.environ["ARCHIVE"]
+          root = os.path.join("src", archive)
+          with zipfile.ZipFile(f"{archive}.zip", "w", compression=zipfile.ZIP_STORED) as zf:
+              for name in sorted(os.listdir(root)):
+                  info = zipfile.ZipInfo(f"{archive}/{name}", date_time=(1980, 1, 1, 0, 0, 0))
+                  info.external_attr = 0o100644 << 16
+                  info.create_system = 3
+                  with open(os.path.join(root, name), "rb") as f:
+                      zf.writestr(info, f.read())
+          PY
+          sha256sum "$ARCHIVE.zip"
+          ls -l "$ARCHIVE.zip"
+
+      - name: Publish to the indic-voices pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          existing=$(gh release view "$TAG" --json assets --jq '.assets[].name')
+          if grep -qxF "$ARCHIVE.zip" <<< "$existing"; then
+            echo "Keeping published $ARCHIVE.zip"
+          else
+            gh release upload "$TAG" "$ARCHIVE.zip"
+          fi
