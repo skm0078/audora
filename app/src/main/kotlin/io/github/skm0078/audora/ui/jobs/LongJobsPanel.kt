@@ -39,14 +39,21 @@ import io.github.skm0078.audora.ui.theme.Dimens
 internal fun shownJobs(jobs: Map<LongJobKind, LongJob>, book: BookId?): List<LongJob> =
     LongJobKind.entries.mapNotNull { jobs[it] }.filter { book == null || it.bookId == book }
 
-/** One card per job, newest kinds in a fixed order; nothing at all while no job has run. */
+/**
+ * One card per job, newest kinds in a fixed order; nothing at all while no job has run. [onStudioDetails] opens a
+ * book's studio dialog (what is ready, where it is kept, save or delete it); where it is null, studio cards have no
+ * Details button.
+ */
 @Composable
-fun LongJobsPanel(modifier: Modifier = Modifier, book: BookId? = null) {
+fun LongJobsPanel(modifier: Modifier = Modifier, book: BookId? = null, onStudioDetails: ((BookId) -> Unit)? = null) {
     val jobs by LongJobs.jobs.collectAsStateWithLifecycle()
     val shown = shownJobs(jobs, book)
     if (shown.isEmpty()) return
     Column(modifier, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-        shown.forEach { LongJobCard(it) }
+        shown.forEach { job ->
+            val details = onStudioDetails?.takeIf { job.kind == LongJobKind.STUDIO }
+            LongJobCard(job, details?.let { open -> { open(job.bookId) } })
+        }
     }
 }
 
@@ -69,7 +76,7 @@ fun JobProgressBar(job: LongJob, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun LongJobCard(job: LongJob) {
+private fun LongJobCard(job: LongJob, onDetails: (() -> Unit)?) {
     val context = LocalContext.current
     val colors = when (job.end) {
         LongJobEnd.FAILED -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
@@ -96,6 +103,7 @@ private fun LongJobCard(job: LongJob) {
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                onDetails?.let { JobButton(R.string.long_job_details, it) }
                 if (job.running) {
                     if (job.waitingForCharger) {
                         JobButton(R.string.long_job_start_now) { LongJobs.studioStartNow(context) }

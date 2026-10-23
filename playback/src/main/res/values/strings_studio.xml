@@ -8,20 +8,37 @@
     <string name="studio_channel">Studio mode</string>
     <string name="studio_channel_description">Progress while a book is rendered ahead for listening</string>
     <string name="studio_preparing_title">Studio mode</string>
-    <string name="studio_preparing">Preparing…</string>
+    <string name="studio_preparing">Loading the book and its voice…</string>
     <!-- %1$s is the book's title. -->
     <string name="studio_running_title">Studio mode: “%1$s”</string>
-    <!-- %1$s and %2$s are durations like "1 h 05 min", e.g. "1 h 05 min of 6 h 00 min ready". -->
+    <!-- %1$s and %2$s are durations like "12 min" or "1 h 05 min", e.g. "12 min of 6 h 00 min ready". -->
     <string name="studio_running_text">%1$s of %2$s ready</string>
-    <!-- Appended to the running text while studio mode waits. -->
+    <!-- %1$s is the running text above; %2$s the rendering time still needed, like "1 h 40 min". -->
+    <string name="studio_time_left">%1$s · about %2$s left</string>
+    <string name="studio_measuring">%1$s · measuring this phone\'s speed…</string>
+    <!-- %1$d the page being rendered, %2$d the book's pages. -->
+    <string name="studio_page_of">Page %1$d of %2$d</string>
+    <!-- %1$s a short duration like "45 s" or "2 min": the time this phone takes to make one minute of speech. -->
+    <string name="studio_speed_keeps_up">1 min of speech takes %1$s to make on this phone with this voice. It keeps up when you listen live, so studio mode mainly saves battery and start-up time.</string>
+    <string name="studio_speed_slow">1 min of speech takes %1$s to make on this phone with this voice: slower than speech, so studio mode is what lets this voice play without pauses.</string>
+    <!-- Prefixed to the running text while studio mode waits. -->
     <string name="studio_waiting_charger">Waiting for the charger · %1$s</string>
+    <string name="studio_waiting_charger_how">It renders only while the phone is plugged in. Plug it in, or tap Start now to use the battery.</string>
     <string name="studio_waiting_audio">Paused while audio plays · %1$s</string>
     <string name="studio_start_now">Start now</string>
     <string name="studio_stop">Stop</string>
     <string name="studio_done_title">Ready to listen: “%1$s”</string>
-    <!-- %1$s a duration like "6 h 00 min". -->
-    <string name="studio_done_text">%1$s rendered ahead in studio quality</string>
-    <string name="studio_done_end_text">%1$s rendered ahead, to the end of the book</string>
+    <!-- %1$s a duration like "6 h 00 min", %2$d the one-based page it starts on. -->
+    <string name="studio_done_text">%1$s ready from page %2$d</string>
+    <string name="studio_done_end_text">%1$s ready from page %2$d to the end of the book</string>
+    <string name="studio_done_how">Just play the book: ListenLock uses it by itself while the voice and speed stay the same. The book\'s menu → Studio mode shows it, saves it as a file or deletes it.</string>
+    <!-- Short durations for studio progress. -->
+    <string name="studio_seconds">%1$d s</string>
+    <string name="studio_minutes">%1$d min</string>
+    <!-- Saving studio audio as a file (ADR-062). %1$d and %2$d are one-based pages. -->
+    <string name="studio_file_name">Studio audio, pages %1$d-%2$d</string>
+    <string name="studio_file_nothing">No studio audio is ready for this book yet</string>
+    <string name="studio_file_failed">The file could not be saved. Check that the phone has free space, then try again.</string>
     <string name="studio_failed_title">Studio mode stopped: “%1$s”</string>
     <string name="studio_stopped_title">Studio mode stopped: “%1$s”</string>
     <string name="studio_stopped_text">What is already rendered stays and plays at once</string>

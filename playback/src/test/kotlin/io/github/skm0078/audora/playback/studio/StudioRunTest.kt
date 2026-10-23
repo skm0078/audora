@@ -58,6 +58,7 @@ class StudioRunTest {
         assertEquals(3, summary.renderedPages)
         assertEquals(3_600_000L, summary.readyMs)
         assertEquals(false, summary.endOfBook)
+        assertEquals(2, summary.fromPage)
         assertEquals(listOf(2, 3, 4), voice.rendered.map { it.page }.distinct())
         assertNotNull(store.page(key, 4))
     }
@@ -98,6 +99,32 @@ class StudioRunTest {
         var asked = 0
         run(CountingVoice(100), FakeBook(pageCount = 2), gate = { asked++ })
         assertEquals(4, asked)
+    }
+
+    @Test
+    fun `reports progress after every sentence, so the card moves before a page is finished`() {
+        val seen = ArrayList<StudioProgress>()
+        val run = StudioRun(CountingVoice(sentenceSamples), store, {}, config, listener = { seen.add(it) })
+        run.run(key, FakeBook(pageCount = 10), 2)
+        // The first sentence of the first page: 10 minutes ready, no page finished yet.
+        assertEquals(600_000L, seen.first().readyMs)
+        assertEquals(0L, seen.first().pagesReadyMs)
+        assertEquals(2, seen.first().page)
+        assertEquals(2, seen.first().fromPage)
+        assertEquals(10, seen.first().pageCount)
+        assertEquals(3_600_000L, seen.last().readyMs)
+        assertEquals(3_600_000L, seen.last().renderedMs)
+        assertTrue(seen.size >= 6)
+    }
+
+    @Test
+    fun `pages ready from an earlier run are reported but not measured as rendering`() {
+        run(CountingVoice(sentenceSamples), FakeBook(pageCount = 10))
+        val seen = ArrayList<StudioProgress>()
+        StudioRun(CountingVoice(sentenceSamples), store, {}, config, listener = { seen.add(it) })
+            .run(key, FakeBook(pageCount = 10), 0)
+        assertEquals(3_600_000L, seen.last().readyMs)
+        assertEquals(0L, seen.last().renderedMs)
     }
 
     @Test

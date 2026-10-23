@@ -35,14 +35,13 @@ import java.util.concurrent.ConcurrentHashMap
  * voice) never outlive playback. Engines are created lazily: the bundled model loads on its first render, the phone's
  * TTS binds on first use.
  *
- * Which voice reads a language, first match wins: the open book's own voice ([bookVoice], plan item 4),
- * [select] (the SET_VOICE command, for this service's life), the
- * voice picked in Settings → Voices (P4-01; read per sentence, so a change applies from the next sentence rendered),
- * then the default (Build Spec §3): English = the bundled neural voice; Hindi and Bengali = the phone's best offline
+ * Which voice reads a language, first match wins: the open book's own voice ([bookVoice], plan item 4), the
+ * voice picked in Settings → Voices or by the reader's picker ([choose]; P4-01, read per sentence; the playback
+ * service also restarts the sentence playing when it changes, so the sentences rendered ahead are redone), then the
+ * default (Build Spec §3): English = the bundled neural voice; Hindi and Bengali = the phone's best offline
  * voice for the language. Thread-safe: the render worker resolves voices while the main thread may change them.
  */
 class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
-    private val chosen = ConcurrentHashMap<Lang, VoiceId>()
     private val defaults = ConcurrentHashMap<Lang, VoiceId>()
     private val fixedChoices = FixedChoices()
 
@@ -50,8 +49,12 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
     @Volatile
     var bookVoice: (Lang) -> VoiceId? = { null }
 
-    fun select(lang: Lang, voice: VoiceId) {
-        chosen[lang] = voice
+    /**
+     * Makes [voice] read [lang] in every book without voices of its own, saved as Settings → Voices' choice, so the
+     * reader's picker and the Voices screen never disagree and the pick outlives this service.
+     */
+    fun choose(lang: Lang, voice: VoiceId) {
+        engines.choose(lang, voice)
         AudoraLog.i(TAG, "Voice for ${lang.name} set to $voice")
     }
 
@@ -62,12 +65,12 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
     fun knownVoice(lang: Lang): VoiceId? = choiceFor(lang) ?: defaults[lang]
 
     /**
-     * The voice explicitly chosen for [lang] (the book's while still installed, the session's or Settings → Voices),
+     * The voice explicitly chosen for [lang] (the book's while still installed, or Settings → Voices),
      * null when the language reads with its default. Never binds the phone's TTS; studio mode keys its audio by it
      * (ADR-039), so a deleted book voice, which playback never reads with, is not named in a key either.
      */
     fun choiceFor(lang: Lang): VoiceId? = fixedChoices.choiceFor(lang) { live ->
-        VoiceChoice.of(bookVoice(live), engines::canSpeak, chosen[live]) { engines.preferred(live) }
+        VoiceChoice.of(bookVoice(live), engines::canSpeak) { engines.preferred(live) }
     }
 
     /**
@@ -135,6 +138,9 @@ class VoiceEngines(
 
     /** The voice picked for [lang] in Settings → Voices, if it is still installed. */
     fun preferred(lang: Lang): VoiceId? = library.value.preferredVoice(lang)
+
+    /** Saves [voice] as Settings → Voices' choice for [lang]. */
+    fun choose(lang: Lang, voice: VoiceId) = library.value.readingVoices.choose(lang, voice)
 
     /** Whether [voice] is still on the phone; a book's own voice that was deleted falls back to the reading voice. */
     fun canSpeak(voice: VoiceId): Boolean = if (voice.engine == EngineId.ACTED) {

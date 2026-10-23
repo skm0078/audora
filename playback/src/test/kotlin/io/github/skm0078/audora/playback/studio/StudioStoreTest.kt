@@ -92,6 +92,33 @@ class StudioStoreTest {
         assertEquals(1, root.listFiles()!!.size)
     }
 
+    @Test
+    fun `a book's summary counts its newest pages, their speech and its bytes`() {
+        val old = key("a", rate = 1.2f)
+        write(old, 0)
+        Thread.sleep(SLEEP_MS) // The current signature is the one written last.
+        (3..5).forEach { write(key("a"), it, samples = 2_000) }
+        val audio = store.bookAudio(BookId("a"))
+        assertNotNull(audio)
+        assertEquals(3, audio!!.firstPage)
+        assertEquals(5, audio.lastPage)
+        assertEquals(3, audio.pages)
+        assertEquals(3 * StudioClip.of(unit(0, 0), StudioVoiced(pcm(2_000)), codec).durationMs, audio.durationMs)
+        assertTrue(audio.bytes > 0)
+        assertEquals(listOf(3, 4, 5), store.readyPages(BookId("a")).map { it.page }.toList())
+        assertNull(store.bookAudio(BookId("none")))
+    }
+
+    @Test
+    fun `deleting a book's audio leaves the other books'`() {
+        write(key("a"), 0)
+        write(key("b"), 0)
+        assertTrue(store.deleteBook(BookId("a")))
+        assertNull(store.bookAudio(BookId("a")))
+        assertNotNull(store.page(key("b"), 0))
+        assertTrue(store.deleteBook(BookId("a"))) // Nothing left is not a failure.
+    }
+
     private companion object {
         const val BLOCK = 256
         const val SLEEP_MS = 20L

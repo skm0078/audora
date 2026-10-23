@@ -42,6 +42,8 @@ import io.github.skm0078.audora.playback.session.StudyMark
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Only controllers from Audora itself get the custom commands; the system UI, Bluetooth and other apps get
@@ -250,14 +252,20 @@ class SessionCallback(
             badRequest()
         }
 
-    /** A book with its own settings keeps the voice for itself (plan item 4); otherwise it is the global choice. */
+    /**
+     * A book with its own settings keeps the voice for itself (plan item 4) and restarts reading here; otherwise it is
+     * the global choice, saved as Settings → Voices', and the service restarts reading when it sees that change.
+     */
     private suspend fun setVoice(voice: VoiceId, lang: Lang): SessionResult =
         when (val own = stores.book.updateIfOwn { it.copy(voices = it.voices + (lang to voice)) }) {
             is Outcome.Failure -> failure(PlaybackErrorCode.BAD_REQUEST)
 
             is Outcome.Success -> {
-                if (!own.value) voices.select(lang, voice)
-                bookSession().restartRendering()
+                if (own.value) {
+                    bookSession().restartRendering()
+                } else {
+                    withContext(Dispatchers.IO) { voices.choose(lang, voice) }
+                }
                 SessionResult(SessionResult.RESULT_SUCCESS)
             }
         }
