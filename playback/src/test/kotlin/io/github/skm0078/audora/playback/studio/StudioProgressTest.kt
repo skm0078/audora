@@ -11,6 +11,7 @@ class StudioProgressTest {
     private val hour = 3_600_000L
     private val minute = 60_000L
 
+    @Suppress("LongParameterList") // One per field, each with a default, so a test names only what it varies.
     private fun progress(
         readyMs: Long,
         pagesReadyMs: Long = readyMs,

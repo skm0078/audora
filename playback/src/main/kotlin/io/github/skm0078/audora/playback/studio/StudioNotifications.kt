@@ -16,6 +16,7 @@ import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.jobs.LongJobs
 
 /** Platform notifications, like the audiobook export's: no androidx dependency for a handful of plain notifications. */
+@Suppress("TooManyFunctions") // One per notification state, plus the small text builders each one uses.
 internal class StudioNotifications(private val context: Context, private val config: StudioConfig) {
     private val manager = context.getSystemService(NotificationManager::class.java)
 
@@ -56,6 +57,7 @@ internal class StudioNotifications(private val context: Context, private val con
                 ?: context.getString(R.string.studio_measuring, ready)
 
             ChargingGate.Wait.CHARGER -> context.getString(R.string.studio_waiting_charger, ready)
+
             ChargingGate.Wait.AUDIO -> context.getString(R.string.studio_waiting_audio, ready)
         }
         val detail = listOfNotNull(
@@ -175,7 +177,9 @@ fun Context.studioDuration(ms: Long): String {
     val minutes = ms / MS_PER_MINUTE
     return when {
         ms < MS_PER_MINUTE -> getString(R.string.studio_seconds, (ms / MS_PER_SECOND).toInt())
+
         minutes < MINUTES_PER_HOUR -> getString(R.string.studio_minutes, minutes.toInt())
+
         else -> getString(
             R.string.export_duration,
             (minutes / MINUTES_PER_HOUR).toInt(),

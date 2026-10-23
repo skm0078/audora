@@ -103,6 +103,7 @@ import kotlinx.coroutines.withContext
  */
 @OptIn(UnstableApi::class)
 @AndroidEntryPoint
+@Suppress("TooManyFunctions") // Service lifecycle callbacks plus one small setup step each.
 class AudoraPlaybackService : MediaLibraryService() {
     @Inject
     lateinit var library: Library

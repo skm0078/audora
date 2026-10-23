@@ -20,6 +20,7 @@ import io.github.skm0078.audora.speech.acted.ActedVoices
 import io.github.skm0078.audora.speech.punct.PunctuationModels
 import java.io.File
 
+@Suppress("TooManyFunctions") // The one entry point the app uses for studio mode: start, read, delete.
 object StudioMode {
     internal const val ACTION_START = "io.github.skm0078.audora.studio.START"
     internal const val ACTION_STOP = "io.github.skm0078.audora.studio.STOP"

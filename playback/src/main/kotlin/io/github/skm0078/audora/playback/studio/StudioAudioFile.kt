@@ -29,17 +29,17 @@ data class SavedStudioFile(val folder: String, val name: String, val durationMs:
 object StudioAudioFile {
     private const val TAG = "Studio.File"
     private const val EXTENSION = "m4a"
+    private val config = AudiobookConfig()
 
     fun save(context: Context, id: BookId, title: String): Outcome<SavedStudioFile, String> {
         val store = StudioMode.store(context)
         val nothing = context.getString(R.string.studio_file_nothing)
         val ready = store.bookAudio(id) ?: return Outcome.Failure(nothing)
-        val config = AudiobookConfig()
         val folder = AudiobookFolder.relativePath(title, context.getString(R.string.studio_untitled), config)
         val name = context.getString(R.string.studio_file_name, ready.firstPage + 1, ready.lastPage + 1) + ".$EXTENSION"
         val chapter = AudioChapter(number = 1, firstPage = ready.firstPage, lastPage = ready.lastPage)
         val written = writeAll(store.readyPages(id), LosslessPcm(StudioConfig().blockSamples)) { sampleRate ->
-            create(context, folder, name, chapter, sampleRate, config)
+            create(context, folder, name, chapter, sampleRate)
         }
         return when (written) {
             null -> Outcome.Failure(nothing)
@@ -90,7 +90,6 @@ object StudioAudioFile {
         name: String,
         chapter: AudioChapter,
         sampleRate: Int,
-        config: AudiobookConfig,
     ): ChapterAudioWriter? {
         val file = MediaStoreChapterFiles(context.contentResolver, folder).create(name)
         val writer = (file as? Outcome.Success)?.value?.let { AacChapterWriter.create(chapter, it, sampleRate, config) }

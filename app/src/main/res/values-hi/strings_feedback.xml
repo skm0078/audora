@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_feedback.xml -->
+<!-- Purpose: Hindi copy of values/strings_feedback.xml. -->
+<resources>
+    <string name="report_noted">ऐप के लॉग में दर्ज हो गया, वाक्य कहाँ है उसके साथ। भेजने के लिए सेटिंग्स → उन्नत → लॉग शेयर करें इस्तेमाल करें।</string>
+</resources>

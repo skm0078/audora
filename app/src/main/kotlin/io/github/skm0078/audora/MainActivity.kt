@@ -1015,7 +1015,11 @@ class MainActivity : ComponentActivity() {
 
         override fun onBookVoice(lang: Lang, voice: VoiceId) = model.setBookVoice(lang, voice)
 
-        override fun onReport(reason: SoundedWrongReason) = model.report(reason)
+        // Said at once, so the report never seems to vanish: where it went and how it leaves the phone.
+        override fun onReport(reason: SoundedWrongReason) {
+            model.report(reason)
+            Toast.makeText(applicationContext, R.string.report_noted, Toast.LENGTH_LONG).show()
+        }
 
         override fun onReportDismissed() = model.dismissReport()
 

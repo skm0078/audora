@@ -46,17 +46,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** What the listener can do from the studio dialog; the library carries each out. */
-interface StudioAudioActions {
-    fun start(book: Book)
-
-    fun listen(book: Book)
-
-    fun saveAsFile(book: Book)
-
-    fun close()
-}
-
 /**
  * While [book] is set, its studio mode. [saving] is true while its audio is being saved as a file. What is ready is
  * read again whenever the run's progress or end changes, so the numbers move while the dialog is open.

@@ -45,11 +45,7 @@ internal fun shownJobs(jobs: Map<LongJobKind, LongJob>, book: BookId?): List<Lon
  * Details button.
  */
 @Composable
-fun LongJobsPanel(
-    modifier: Modifier = Modifier,
-    book: BookId? = null,
-    onStudioDetails: ((BookId) -> Unit)? = null,
-) {
+fun LongJobsPanel(modifier: Modifier = Modifier, book: BookId? = null, onStudioDetails: ((BookId) -> Unit)? = null) {
     val jobs by LongJobs.jobs.collectAsStateWithLifecycle()
     val shown = shownJobs(jobs, book)
     if (shown.isEmpty()) return

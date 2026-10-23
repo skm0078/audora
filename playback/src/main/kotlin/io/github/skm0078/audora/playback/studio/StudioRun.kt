@@ -111,8 +111,7 @@ class StudioRun(
         private var renderedMs = 0L
         private var renderingNs = 0L
 
-        fun summary(endOfBook: Boolean) =
-            StudioSummary(readyMs, renderedPages, skippedSentences, endOfBook, fromPage)
+        fun summary(endOfBook: Boolean) = StudioSummary(readyMs, renderedPages, skippedSentences, endOfBook, fromPage)
 
         private fun report() = listener.onProgress(
             StudioProgress(
