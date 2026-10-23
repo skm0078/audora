@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_export.xml -->
+<!-- Purpose: Bengali copy of values/strings_export.xml. -->
+<resources>
+    <string name="library_accessible_copy">সহজে পড়ার কপি সেভ করুন (EPUB আর টেক্সট)</string>
+    <string name="library_talking_book">কথা বলা বই হিসেবে সেভ করুন (EPUB 3)</string>
+    <string name="sentence_menu_share_clip">অডিও হিসেবে শেয়ার করুন</string>
+    <string name="library_export_notes">হাইলাইট আর নোট এক্সপোর্ট করুন</string>
+    <string name="notes_export_done">Documents/Audora-তে সেভ হয়েছে: %1$s</string>
+    <string name="notes_export_empty">এই বইয়ে এখনও কোনো হাইলাইট, বুকমার্ক বা ভয়েস নোট নেই</string>
+    <string name="notes_export_failed">নোট সেভ করা গেল না</string>
+    <string name="sentence_menu_highlight">হাইলাইট করুন</string>
+    <string name="sentence_menu_unhighlight">হাইলাইট সরান</string>
+</resources>

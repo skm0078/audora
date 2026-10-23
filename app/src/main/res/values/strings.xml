@@ -152,7 +152,7 @@
     <string name="speech_own_settings_detail">On: this book remembers its own speed, pause and voices; other books keep the usual ones. Off: this book uses the usual ones.</string>
     <string name="bookmarks_title">Bookmarks</string>
     <string name="bookmarks_add_here">Bookmark here</string>
-    <string name="bookmarks_empty">No bookmarks yet. Long-press a sentence, or tap Bookmark here.</string>
+    <string name="bookmarks_empty">No notes yet. Long-press a sentence, or tap Bookmark here.</string>
     <string name="bookmarks_page">Page %1$d</string>
     <string name="bookmarks_note">Note</string>
     <string name="bookmarks_note_title">Note on page %1$d</string>
@@ -198,6 +198,8 @@
     <string name="sleep_options_bedtime">Set a timer by itself at bedtime</string>
     <string name="sleep_options_from">Bedtime starts</string>
     <string name="sleep_options_to">Bedtime ends</string>
+    <string name="sleep_options_earlier">%1$s: %2$d minutes earlier</string>
+    <string name="sleep_options_later">%1$s: %2$d minutes later</string>
     <string name="sleep_options_bedtime_timer">Timer at bedtime</string>
     <string name="sleep_options_save">Save</string>
     <string name="reader_player_unavailable">The player is not available. Please share the logs.</string>
@@ -276,7 +278,7 @@
     <string name="voices_status_installed">Downloaded · %1$d MB</string>
     <string name="voices_status_imported">Imported · %1$d MB</string>
     <string name="voices_status_update">A newer version is available</string>
-    <string name="voices_status_failed">Download failed: %1$s. Check your internet connection and free space, then try again.</string>
+    <string name="voices_status_failed">Download failed. Check your internet connection and free space, then try again.</string>
     <string name="voices_speed_ok">On this phone it renders %1$s× faster than it speaks</string>
     <string name="voices_speed_slow">Too slow on this phone: it takes %1$s s to render each second of speech, so reading would pause</string>
     <string name="voices_download">Download</string>
@@ -287,6 +289,9 @@
     <string name="voices_delete_body">The voice\'s files are removed from this phone. You can download or import it again later.</string>
     <string name="voices_deleted">Deleted %1$s</string>
     <string name="voices_delete_failed">Could not delete %1$s. Please try again.</string>
+    <string name="voices_sample_play">Play a sample of %1$s</string>
+    <string name="voices_sample_stop">Stop the sample of %1$s</string>
+    <string name="voices_sample_failed">That voice couldn\'t play a sample. Try again, or download it again if it keeps failing.</string>
     <string name="voices_import_title">Import a voice</string>
     <string name="voices_import_body">A sherpa-onnx voice folder: one .onnx model, tokens.txt and, for Piper and KittenTTS, espeak-ng-data.</string>
     <string name="voices_import_action">Import</string>
@@ -328,7 +333,7 @@
     <string name="ocr_models_delete">Delete</string>
     <string name="ocr_models_queued">Waiting to download (needs a connection)…</string>
     <string name="ocr_models_downloading">Downloading %1$d of %2$d MB</string>
-    <string name="ocr_models_failed">Download failed: %1$s. Check your internet connection and free space, then tap Try again.</string>
+    <string name="ocr_models_failed">Download failed. Check your internet connection and free space, then tap Try again.</string>
     <string name="settings_ocr_title">Scanned pages (OCR)</string>
     <string name="settings_ocr_missing">Reads scanned and garbled pages aloud. Needs %1$d MB of text recognition files.</string>
     <string name="settings_ocr_ready">Ready for English, Hindi and Bengali · %1$d MB</string>
@@ -360,9 +365,14 @@
     <string name="library_duplicate_open">Open it</string>
     <string name="library_duplicate_close">Close</string>
     <!-- Notes tab -->
-    <string name="notes_empty_title">No bookmarks yet</string>
-    <string name="notes_empty_body">Bookmarks and notes you add while reading gather here, for every book. Long-press a sentence to add one.</string>
+    <string name="notes_empty_title">No notes yet</string>
+    <string name="notes_empty_body">Bookmarks, highlights and voice notes you add while reading gather here, for every book. Long-press a sentence to add one.</string>
     <string name="notes_page">Page %1$d</string>
+    <string name="notes_kind_bookmark">Bookmark</string>
+    <string name="notes_kind_highlight">Highlight</string>
+    <string name="notes_kind_voice">Voice note</string>
+    <string name="notes_voice_length">%1$s long</string>
+    <string name="notes_open">open this place in the book</string>
     <!-- Up next (plan item 25) -->
     <string name="up_next_title">Up next</string>
     <string name="up_next_empty">Nothing queued. Add a book and it starts when this one ends.</string>

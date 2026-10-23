@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_guide.xml -->
+<!-- Purpose: Bengali copy of values/strings_guide.xml. -->
+<resources>
+    <string name="library_character_guide">চরিত্রের তালিকা</string>
+    <string name="guide_title">কে কে আছে: %1$s</string>
+    <string name="guide_empty">আপনি যতদূর পড়েছেন, ততদূর এখনও কোনো চরিত্র নেই। প্রত্যেকের সঙ্গে দেখা হলেই তাকে যোগ করুন; সে দেখাবে সেই পৃষ্ঠা থেকেই, যেখানে তার সঙ্গে দেখা হয়েছে, তাই তালিকা কখনও আগে থেকে কিছু ফাঁস করে না।</string>
+    <plurals name="guide_later">
+        <item quantity="one">বইয়ে পরে আরও ১ জন (সেখানে না পৌঁছনো পর্যন্ত লুকোনো)</item>
+        <item quantity="other">বইয়ে পরে আরও %d জন (সেখানে না পৌঁছনো পর্যন্ত লুকোনো)</item>
+    </plurals>
+    <string name="guide_met_on">পৃষ্ঠা %1$d-এ দেখা</string>
+    <string name="guide_add">চরিত্র যোগ করুন</string>
+    <string name="guide_edit">চরিত্র বদলান</string>
+    <string name="guide_name">নাম</string>
+    <string name="guide_note">সে কে (চাইলে)</string>
+    <string name="guide_page">কোন পৃষ্ঠায় দেখা</string>
+    <string name="guide_delete">মুছুন</string>
+    <string name="guide_save">সেভ করুন</string>
+    <string name="guide_cancel">বাতিল</string>
+    <string name="guide_close">বন্ধ করুন</string>
+    <string name="guide_deleted">চরিত্র মুছে ফেলা হয়েছে।</string>
+    <string name="guide_undo">ফিরিয়ে আনুন</string>
+    <string name="guide_full">তালিকাটি ভরে গেছে: একটি বইয়ে বড়জোর %1$dটি চরিত্র রাখা যায়। নতুন যোগ করতে একটি মুছুন।</string>
+</resources>

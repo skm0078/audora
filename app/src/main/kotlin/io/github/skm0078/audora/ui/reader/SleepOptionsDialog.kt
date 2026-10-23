@@ -24,6 +24,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
@@ -101,9 +105,18 @@ private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Un
 private fun MinuteRow(label: String, minuteOfDay: Int, step: Int, onChange: (Int) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f))
-        TextButton(onClick = { onChange(stepMinute(minuteOfDay, -step)) }) { Text("−") }
-        Text(clockText(minuteOfDay))
-        TextButton(onClick = { onChange(stepMinute(minuteOfDay, step)) }) { Text("+") }
+        val earlier = stringResource(R.string.sleep_options_earlier, label, step)
+        val later = stringResource(R.string.sleep_options_later, label, step)
+        TextButton(
+            onClick = { onChange(stepMinute(minuteOfDay, -step)) },
+            modifier = Modifier.semantics { contentDescription = earlier },
+        ) { Text("−") }
+        // Announced as it changes, so a TalkBack listener hears the new time after each tap.
+        Text(clockText(minuteOfDay), Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+        TextButton(
+            onClick = { onChange(stepMinute(minuteOfDay, step)) },
+            modifier = Modifier.semantics { contentDescription = later },
+        ) { Text("+") }
     }
 }
 

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_export.xml -->
+<!-- Purpose: Hindi copy of values/strings_export.xml. -->
+<resources>
+    <string name="library_accessible_copy">सुलभ कॉपी सेव करें (EPUB और टेक्स्ट)</string>
+    <string name="library_talking_book">बोलती किताब के रूप में सेव करें (EPUB 3)</string>
+    <string name="sentence_menu_share_clip">ऑडियो के रूप में शेयर करें</string>
+    <string name="library_export_notes">हाइलाइट और नोट्स एक्सपोर्ट करें</string>
+    <string name="notes_export_done">Documents/Audora में सेव हुआ: %1$s</string>
+    <string name="notes_export_empty">इस किताब में अभी कोई हाइलाइट, बुकमार्क या वॉइस नोट नहीं है</string>
+    <string name="notes_export_failed">नोट्स सेव नहीं हो सके</string>
+    <string name="sentence_menu_highlight">हाइलाइट करें</string>
+    <string name="sentence_menu_unhighlight">हाइलाइट हटाएँ</string>
+</resources>

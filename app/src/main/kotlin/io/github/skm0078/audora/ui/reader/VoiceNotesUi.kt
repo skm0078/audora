@@ -158,7 +158,8 @@ private val VoiceNoteFailure.message: Int
         VoiceNoteFailure.NOT_PLAYED -> R.string.voice_note_failed_play
     }
 
-private fun clock(ms: Long): String {
+/** m:ss, for a voice note's length here and in the Notes tab. */
+internal fun clock(ms: Long): String {
     val seconds = ms / MS_PER_SECOND
     return "%d:%02d".format(seconds / SECONDS_PER_MINUTE, seconds % SECONDS_PER_MINUTE)
 }

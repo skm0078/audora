@@ -10,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -125,11 +126,17 @@ private fun BackupDialog(
                 else -> TextButton(onClick = onSave) { Text(stringResource(R.string.backup_save)) }
             }
         },
+        // Close comes first, so the way out is always the leftmost button and never only the back gesture.
         dismissButton = {
             when {
                 working -> Unit
+
                 confirming -> TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_cancel)) }
-                else -> TextButton(onClick = onRestore) { Text(stringResource(R.string.backup_restore)) }
+
+                else -> Row {
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.backup_close)) }
+                    TextButton(onClick = onRestore) { Text(stringResource(R.string.backup_restore)) }
+                }
             }
         },
     )

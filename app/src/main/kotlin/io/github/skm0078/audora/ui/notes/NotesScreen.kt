@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/notes/NotesScreen.kt
-// Purpose: Notes tab (ADR-036): every book's bookmarks and notes (plan item 29) in one list, filtered by book
-//          when there are several; a tap opens the place.
+// Purpose: Notes tab (ADR-036): every book's bookmarks, highlights and voice notes (plan items 29, 30, 32) in one
+//          list, filtered by book when there are several; a tap opens the place.
 
 package io.github.skm0078.audora.ui.notes
 
@@ -37,18 +37,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
-import io.github.skm0078.audora.core.notes.Bookmark
+import io.github.skm0078.audora.core.resume.ResumeAnchor
 import io.github.skm0078.audora.ui.library.titleOrUntitled
+import io.github.skm0078.audora.ui.reader.clock
 import io.github.skm0078.audora.ui.theme.Dimens
 
 @Composable
-fun NotesScreen(groups: List<BookNotes>, onOpen: (Bookmark) -> Unit, modifier: Modifier = Modifier) {
+fun NotesScreen(groups: List<BookNotes>, onOpen: (ResumeAnchor) -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -95,7 +97,7 @@ private fun BookFilter(groups: List<BookNotes>, selected: String?, onSelect: (St
                 onClick = { onSelect(group.book.id.value) },
                 label = {
                     Text(
-                        stringResource(R.string.notes_filter_book, title, group.bookmarks.size),
+                        stringResource(R.string.notes_filter_book, title, group.entries.size),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.widthIn(max = FILTER_CHIP_MAX_WIDTH),
@@ -107,7 +109,7 @@ private fun BookFilter(groups: List<BookNotes>, selected: String?, onSelect: (St
 }
 
 @Composable
-private fun NotesList(groups: List<BookNotes>, onOpen: (Bookmark) -> Unit) {
+private fun NotesList(groups: List<BookNotes>, onOpen: (ResumeAnchor) -> Unit) {
     LazyColumn(contentPadding = PaddingValues(bottom = Dimens.SpaceXl)) {
         groups.forEach { group ->
             item(key = BOOK_KEY_PREFIX + group.book.id.value) {
@@ -122,21 +124,39 @@ private fun NotesList(groups: List<BookNotes>, onOpen: (Bookmark) -> Unit) {
                         .semantics { heading() },
                 )
             }
-            items(group.bookmarks, key = { it.id }) { bookmark ->
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.notes_page, bookmark.anchor.page + 1)) },
-                    supportingContent = if (bookmark.note.isNotBlank()) {
-                        { Text(bookmark.note) }
-                    } else {
-                        null
-                    },
-                    leadingContent = { Icon(painterResource(R.drawable.ic_bookmark), contentDescription = null) },
-                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                    modifier = Modifier.clickable { onOpen(bookmark) },
-                )
-            }
+            items(group.entries, key = { it.key }) { entry -> NoteRow(entry, onOpen) }
         }
     }
+}
+
+@Composable
+private fun NoteRow(entry: NoteEntry, onOpen: (ResumeAnchor) -> Unit) {
+    val page = stringResource(R.string.notes_page, entry.anchor.page + 1)
+    val (icon, kind) = when (entry) {
+        is NoteEntry.Bookmark -> R.drawable.ic_bookmark to R.string.notes_kind_bookmark
+        is NoteEntry.Highlight -> R.drawable.ic_format_quote to R.string.notes_kind_highlight
+        is NoteEntry.VoiceNote -> R.drawable.ic_mic to R.string.notes_kind_voice
+    }
+    val lines = when (entry) {
+        is NoteEntry.Bookmark -> listOf(entry.note)
+        is NoteEntry.Highlight -> listOf(entry.quote, entry.note)
+        is NoteEntry.VoiceNote -> listOf(stringResource(R.string.notes_voice_length, clock(entry.durationMs)))
+    }.filter { it.isNotBlank() }
+    ListItem(
+        overlineContent = { Text(stringResource(kind)) },
+        headlineContent = { Text(page) },
+        supportingContent = if (lines.isEmpty()) {
+            null
+        } else {
+            { Text(lines.joinToString("\n"), maxLines = SUPPORTING_MAX_LINES, overflow = TextOverflow.Ellipsis) }
+        },
+        leadingContent = { Icon(painterResource(icon), contentDescription = null) },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        modifier = Modifier.clickable(
+            onClickLabel = stringResource(R.string.notes_open),
+            role = Role.Button,
+        ) { onOpen(entry.anchor) },
+    )
 }
 
 @Composable
@@ -169,7 +189,10 @@ private fun EmptyNotes() {
 /** Long titles are cut so a few chips still fit on a phone's width. */
 private val FILTER_CHIP_MAX_WIDTH = 200.dp
 
+/** A long quote and its note are cut here; the reader shows them whole. */
+private const val SUPPORTING_MAX_LINES = 4
+
 private const val ALL_BOOKS_KEY = "all-books"
 
-/** Book ids are UUIDs and bookmark ids are numbers, so these keys never clash. */
+/** Book ids are UUIDs and note keys start with their kind, so these keys never clash. */
 private const val BOOK_KEY_PREFIX = "book-"

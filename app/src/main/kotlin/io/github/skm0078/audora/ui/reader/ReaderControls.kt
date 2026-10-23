@@ -7,6 +7,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -54,41 +55,49 @@ fun ReaderControls(
     modifier: Modifier = Modifier,
     voices: List<VoiceRow> = emptyList(),
 ) {
-    val enabled = state.playerReady
-    val loaded = state.readingPosition != null
     // A raised panel with rounded top corners, so the controls read as one block under the thumb (ADR-036).
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = RoundedCornerShape(topStart = Dimens.SpaceXl, topEnd = Dimens.SpaceXl),
         modifier = modifier.fillMaxWidth(),
     ) {
-        Row(
-            modifier = Modifier.navigationBarsPadding().padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceM),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            val study = StudyControls(state.study, canMark = state.readingPosition != null, onStudy = actions::onStudy)
-            SpeedButton(state.playback, config, enabled, actions, voices, study, state.readingPosition != null)
-            SkipButton(
-                forward = false,
-                enabled = enabled && loaded && state.playback.canSkipBack,
-                onClick = actions::onSkipBack,
-                onLongClick = { actions.onSkipParagraph(forward = false) },
-            )
-            PlayPauseButton(
-                reading = state.isReading,
-                buffering = state.isReading && state.playback.buffering,
-                enabled = enabled,
-                onClick = actions::onPlayPause,
-            )
-            SkipButton(
-                forward = true,
-                enabled = enabled && loaded && state.playback.canSkipForward,
-                onClick = actions::onSkipForward,
-                onLongClick = { actions.onSkipParagraph(forward = true) },
-            )
-            SleepTimerButton(state.playback, config, enabled, actions)
+        Column(Modifier.navigationBarsPadding()) {
+            GestureTips(Modifier.padding(start = Dimens.SpaceM, end = Dimens.SpaceM, top = Dimens.SpaceM))
+            ControlsRow(state, config, actions, voices)
         }
+    }
+}
+
+@Composable
+private fun ControlsRow(state: ReaderState, config: ReaderConfig, actions: ReaderActions, voices: List<VoiceRow>) {
+    val enabled = state.playerReady
+    val loaded = state.readingPosition != null
+    Row(
+        modifier = Modifier.padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceM),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        val study = StudyControls(state.study, canMark = state.readingPosition != null, onStudy = actions::onStudy)
+        SpeedButton(state.playback, config, enabled, actions, voices, study, state.readingPosition != null)
+        SkipButton(
+            forward = false,
+            enabled = enabled && loaded && state.playback.canSkipBack,
+            onClick = actions::onSkipBack,
+            onLongClick = { actions.onSkipParagraph(forward = false) },
+        )
+        PlayPauseButton(
+            reading = state.isReading,
+            buffering = state.isReading && state.playback.buffering,
+            enabled = enabled,
+            onClick = actions::onPlayPause,
+        )
+        SkipButton(
+            forward = true,
+            enabled = enabled && loaded && state.playback.canSkipForward,
+            onClick = actions::onSkipForward,
+            onLongClick = { actions.onSkipParagraph(forward = true) },
+        )
+        SleepTimerButton(state.playback, config, enabled, actions)
     }
 }
 

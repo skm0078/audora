@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_search.xml -->
+<!-- Purpose: Hindi copy of values/strings_search.xml. -->
+<resources>
+    <string name="search_action">किताब में खोजें</string>
+    <string name="search_hint">इस किताब में शब्द खोजें</string>
+    <string name="search_opening">खोज खुल रही है…</string>
+    <string name="search_building">खोज के लिए किताब पढ़ी जा रही है: पेज %1$d / %2$d। अब तक मिले नतीजे दिखाए जा रहे हैं।</string>
+    <plurals name="search_missing">
+        <item quantity="one">%1$d स्कैन किया पेज अभी खोजा नहीं जा सका; टेक्स्ट पहचान तैयार होने पर फिर से कोशिश होगी।</item>
+        <item quantity="other">%1$d स्कैन किए पेज अभी खोजे नहीं जा सके; टेक्स्ट पहचान तैयार होने पर फिर से कोशिश होगी।</item>
+    </plurals>
+    <string name="search_no_results">किसी वाक्य में ये सभी शब्द नहीं हैं।</string>
+    <string name="search_failed">इस किताब में अभी खोज उपलब्ध नहीं है।</string>
+    <string name="search_page">पेज %1$d</string>
+</resources>

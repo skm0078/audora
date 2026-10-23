@@ -74,7 +74,7 @@ private fun OcrModelsStatus(state: OcrModelsState, texts: ModelPackTexts) {
         is OcrModelsState.Ready -> Text(stringResource(texts.ready, megabytes(state.bytes)))
 
         is OcrModelsState.Failed ->
-            Text(stringResource(R.string.ocr_models_failed, state.message), color = MaterialTheme.colorScheme.error)
+            Text(stringResource(R.string.ocr_models_failed), color = MaterialTheme.colorScheme.error)
 
         OcrModelsState.Unavailable -> Text(stringResource(R.string.settings_ocr_unavailable))
     }

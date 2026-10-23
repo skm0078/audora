@@ -28,4 +28,7 @@ interface VoicesActions {
     fun onImport(treeUri: Uri, lang: Lang, label: String)
 
     fun onMessageShown()
+
+    /** Plays a sample of [row]'s voice, or stops it if it is playing; screens without samples ignore it. */
+    fun onSample(row: VoiceRow) = Unit
 }

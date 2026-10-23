@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_quiz.xml -->
+<!-- Purpose: Bengali copy of values/strings_quiz.xml. -->
+<resources>
+    <string name="library_quiz">আমাকে প্রশ্ন করুন</string>
+    <string name="quiz_title">আমাকে প্রশ্ন করুন</string>
+    <string name="quiz_no_cards">শুনতে শুনতে কয়েকটি অংশ হাইলাইট করুন, তারপর এখানে আসুন: প্রতিটি হাইলাইট একটি প্রশ্ন হবে, যাতে একটি শব্দ বাদ থাকবে।</string>
+    <string name="quiz_nothing_due">এখন কোনো প্রশ্ন বাকি নেই। যেগুলোর উত্তর দিয়েছেন, সেগুলো এক দিন পরে, তারপর তিন দিন, এক সপ্তাহ আর আরও পরে ফিরে আসবে।</string>
+    <string name="quiz_practise">তবুও অনুশীলন করুন</string>
+    <string name="quiz_next">পরের</string>
+    <string name="quiz_show_answer">উত্তর দেখান</string>
+    <string name="quiz_done">হয়ে গেছে</string>
+    <string name="quiz_hear_again">আবার শুনুন</string>
+    <string name="quiz_progress">প্রশ্ন %1$d / %2$d</string>
+    <string name="quiz_score">%2$dটির মধ্যে %1$dটি ঠিক। ভুলগুলো তাড়াতাড়ি ফিরে আসবে।</string>
+    <string name="quiz_answer_was">শব্দটি ছিল “%1$s”।</string>
+    <string name="quiz_knew_it">জানতাম</string>
+    <string name="quiz_did_not">জানতাম না</string>
+    <string name="quiz_right">ঠিক: “%1$s”।</string>
+    <string name="quiz_wrong">পুরো ঠিক নয়। শব্দটি ছিল “%1$s”।</string>
+</resources>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_dictionary.xml -->
+<!-- Purpose: Hindi copy of values/strings_dictionary.xml. -->
+<resources>
+    <string name="sentence_menu_look_up">शब्द का अर्थ देखें</string>
+    <string name="dictionary_title">शब्द का अर्थ देखें</string>
+    <string name="dictionary_offer">अंग्रेज़ी शब्दकोश (Open English Wordnet) से बिना इंटरनेट शब्दों के अर्थ देखें। यह %1$s का डाउनलोड है और फ़ोन में %2$s जगह लेता है।</string>
+    <string name="dictionary_offer_hi">Wiktionary से बिना इंटरनेट हिंदी शब्दों के अर्थ अंग्रेज़ी में देखें। यह %1$s का डाउनलोड है और फ़ोन में %2$s जगह लेता है।</string>
+    <string name="dictionary_offer_bn">Wiktionary से बिना इंटरनेट बांग्ला शब्दों के अर्थ अंग्रेज़ी में देखें। यह %1$s का डाउनलोड है और फ़ोन में %2$s जगह लेता है।</string>
+    <string name="dictionary_download">शब्दकोश डाउनलोड करें</string>
+    <string name="dictionary_cancel">रद्द करें</string>
+    <string name="dictionary_waiting">इंटरनेट कनेक्शन का इंतज़ार है…</string>
+    <string name="dictionary_failed">डाउनलोड नहीं हो सका: %1$s</string>
+    <string name="dictionary_type">या कोई शब्द लिखें</string>
+    <string name="dictionary_look_up">अर्थ देखें</string>
+    <string name="dictionary_not_found">इस शब्द की कोई प्रविष्टि नहीं है।</string>
+    <string name="dictionary_synonyms">और भी: %1$s</string>
+    <string name="dictionary_noun">संज्ञा</string>
+    <string name="dictionary_verb">क्रिया</string>
+    <string name="dictionary_adjective">विशेषण</string>
+    <string name="dictionary_adverb">क्रियाविशेषण</string>
+    <string name="dictionary_pronoun">सर्वनाम</string>
+    <string name="dictionary_postposition">परसर्ग</string>
+    <string name="dictionary_conjunction">समुच्चयबोधक</string>
+    <string name="dictionary_interjection">विस्मयादिबोधक</string>
+    <string name="dictionary_number">संख्या</string>
+    <string name="dictionary_other">शब्द</string>
+    <string name="dictionary_back">वापस</string>
+    <string name="dictionary_close">बंद करें</string>
+</resources>

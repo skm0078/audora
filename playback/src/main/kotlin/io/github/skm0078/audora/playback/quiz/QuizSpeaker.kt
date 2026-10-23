@@ -13,6 +13,7 @@ import io.github.skm0078.audora.core.config.QuizConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.voice.EngineRenderer
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
@@ -68,21 +69,30 @@ class QuizSpeaker(context: Context, private val idleMs: Long = QuizConfig().spea
     private var track: AudioTrack? = null
 
     /** Renders and starts [text] in [lang], superseding any line before; false (logged) if not spoken. */
-    suspend fun speak(text: String, lang: Lang): Boolean = withContext(Dispatchers.IO) {
+    suspend fun speak(text: String, lang: Lang): Boolean = speakFor(text, lang, voice = null) != null
+
+    /**
+     * Like [speak], read by [voice] instead of the language's chosen one when it can speak (the Voices screen's
+     * sample); returns how long the line plays in milliseconds at 1x, or null (logged) if it was not spoken.
+     */
+    suspend fun speakFor(text: String, lang: Lang, voice: VoiceId?): Long? = withContext(Dispatchers.IO) {
         val mine = generation.incrementAndGet()
         stop()
         val rendered = rendering.withLock {
-            if (closed || mine != generation.get()) return@withContext false
+            if (closed || mine != generation.get()) return@withContext null
             idleRelease?.cancel()
             val unit = ReadingUnit(0, 0, 0, text.length, text, lang, pauseAfterMs = 0, bounds = null)
-            rendererLocked().render(unit).also { scheduleRelease() }
+            val renderer = rendererLocked()
+            // The "book voice" slot is the one that wins over every other choice, and is only taken while it can speak.
+            voices?.bookVoice = { asked -> voice?.takeIf { asked == lang } }
+            renderer.render(unit).also { scheduleRelease() }
         }
         when (rendered) {
-            is Outcome.Success -> play(rendered.value, mine)
+            is Outcome.Success -> rendered.value.takeIf { play(it, mine) }?.durationMs
 
             is Outcome.Failure -> {
-                AudoraLog.w(TAG, "Quiz line not spoken, lang=${lang.name}: ${rendered.error.message}")
-                false
+                AudoraLog.w(TAG, "Line not spoken, lang=${lang.name} voice=$voice: ${rendered.error.message}")
+                null
             }
         }
     }

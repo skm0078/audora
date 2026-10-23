@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_studio.xml -->
+<!-- Purpose: Bengali copy of values/strings_studio.xml. -->
+<resources>
+    <string name="library_studio_mode">স্টুডিও মোডে তৈরি করুন</string>
+</resources>

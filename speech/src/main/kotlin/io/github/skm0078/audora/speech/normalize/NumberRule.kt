@@ -17,7 +17,7 @@ internal class NumberRule(private val numbers: NumberReader) : NormalizationRule
         for (range in listOf(DASH_RANGE, HYPHEN_RANGE)) {
             result = range.replace(result) { match ->
                 val (from, to) = match.destructured
-                "${numbers.read(from)} to ${numbers.read(to)}"
+                "${numbers.read(from)} to ${numbers.read(NumberPatterns.rangeEnd(from, to))}"
             }
         }
         result = HYPHENATED_CODE.replace(result) { match ->

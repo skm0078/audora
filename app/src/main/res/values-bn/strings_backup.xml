@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_backup.xml -->
+<!-- Purpose: Bengali copy of values/strings_backup.xml. -->
+<resources>
+    <string name="library_backup">ব্যাকআপ আর রিস্টোর</string>
+    <string name="backup_explain">ব্যাকআপ একটি ফাইল, যাতে থাকে আপনার লাইব্রেরি, পড়ার জায়গা, বুকমার্ক, হাইলাইট, ভয়েস নোট, উচ্চারণ সংশোধন, পরের তালিকা, পড়ার সেটিংস আর Audora-তে শেয়ার করা বই। এটি নিরাপদ কোথাও রাখুন, যেমন Drive বা কম্পিউটারে।\n\nভয়েস আর অভিধান এতে থাকে না: নতুন ফোনে আবার ডাউনলোড করুন। ফোনের স্টোরেজ থেকে খোলা বই একই ফাইল আবার যোগ করলেই পড়ার জায়গা আর নোটসহ ফিরে আসে; নজরে রাখা ফোল্ডারগুলো আবার বেছে নিতে হবে।</string>
+    <string name="backup_save">ব্যাকআপ সেভ করুন</string>
+    <string name="backup_restore">রিস্টোর করুন</string>
+    <string name="backup_restore_title">ব্যাকআপ রিস্টোর করবেন?</string>
+    <string name="backup_restore_warning">এতে এই ফোনের লাইব্রেরি, নোট আর সেটিংস ব্যাকআপেরগুলো দিয়ে বদলে যাবে। শেষ করতে Audora আবার চালু হবে।</string>
+    <string name="backup_restore_pick">ব্যাকআপ বেছে নিন</string>
+    <string name="backup_cancel">বাতিল</string>
+    <string name="backup_close">বন্ধ করুন</string>
+    <string name="backup_saved">ব্যাকআপ সেভ হয়েছে</string>
+    <string name="backup_save_failed">ব্যাকআপ সেভ করা গেল না। যেখানে সেভ করছেন সেখানে জায়গা আছে কিনা দেখে আবার চেষ্টা করুন।</string>
+    <string name="backup_not_a_backup">এই ফাইলটি Audora-র ব্যাকআপ নয়।</string>
+    <string name="backup_from_newer_app">এই ব্যাকআপটি Audora-র নতুন সংস্করণের। আগে অ্যাপ আপডেট করুন, তারপর রিস্টোর করুন।</string>
+    <string name="backup_too_large">এই ব্যাকআপটি এত বড় যে Audora রিস্টোর করতে পারবে না।</string>
+    <string name="backup_restore_failed">ব্যাকআপ পড়া গেল না। ফোনে ফাঁকা জায়গা আছে কিনা দেখে আবার চেষ্টা করুন।</string>
+    <string name="backup_size">কম্প্রেস করার আগে এই ব্যাকআপ প্রায় %1$s হবে।</string>
+    <string name="backup_no_space">এই ব্যাকআপ রিস্টোর করার মতো যথেষ্ট জায়গা ফোনে নেই। কিছু জায়গা খালি করে আবার চেষ্টা করুন।</string>
+    <string name="backup_busy">Audora এখন অডিওবুক, কপি বা ক্লিপ সেভ করছে, অথবা স্টুডিও মোড চলছে। সেটা শেষ হতে দিন বা থামান, তারপর রিস্টোর করুন। কিছু না চললে Audora পুরো বন্ধ করে আবার খুলুন।</string>
+    <string name="backup_restored">ব্যাকআপ রিস্টোর হয়েছে।</string>
+    <string name="backup_unfinished">আগের একটি রিস্টোর এখনও ফিরিয়ে নেওয়া হচ্ছে। Audora পুরো বন্ধ করে আবার খুলুন, তারপর আর একবার চেষ্টা করুন।</string>
+    <string name="backup_restore_incomplete">ব্যাকআপ বসানো গেল না, আর আপনার লাইব্রেরির কিছু অংশ এখনও ফিরিয়ে রাখা হচ্ছে। শেষ করতে Audora পুরো বন্ধ করে আবার খুলুন।</string>
+    <string name="backup_restore_rolled_back">ব্যাকআপ বসানো গেল না, তাই আপনার লাইব্রেরি আগের মতোই আছে। আবার রিস্টোর করে দেখুন।</string>
+    <string name="backup_finish_title">রিস্টোর শেষ করুন</string>
+    <string name="backup_finish_body">একটি ব্যর্থ রিস্টোরের পর Audora আপনার লাইব্রেরি পুরোপুরি ফিরিয়ে রাখতে পারেনি। আপনার বই আর নোট নিরাপদ আছে; শেষ করতে Audora আবার চালু করুন। এই স্ক্রিন বারবার এলে আগে ফোনে কিছু জায়গা খালি করুন।</string>
+    <string name="backup_finish_restart">Audora আবার চালু করুন</string>
+</resources>

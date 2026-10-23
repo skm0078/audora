@@ -28,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -56,7 +57,8 @@ fun FirstRunScreen(
     onFinish: () -> Unit,
 ) {
     var step by rememberSaveable { mutableStateOf(FirstRunStep.LANGUAGES) }
-    var languages by rememberSaveable { mutableStateOf(FIRST_RUN_LANGUAGES.map { it.name }) }
+    val phoneLanguage = LocalConfiguration.current.locales[0].toLanguageTag()
+    var languages by rememberSaveable { mutableStateOf(firstRunLanguages(phoneLanguage).map { it.name }) }
     // Back steps back through the screens; on the first one it leaves the app, as the system expects.
     BackHandler(enabled = step.ordinal > 0) { FirstRunStep.entries.getOrNull(step.ordinal - 1)?.let { step = it } }
     val chosen = languages.map(Lang::valueOf).toSet()
@@ -143,7 +145,7 @@ private fun VoicesStep(chosen: Set<Lang>, voices: VoicesState, actions: VoicesAc
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
-            rows.filter { it.lang == lang }.forEach { VoiceRowItem(it, actions) }
+            rows.filter { it.lang == lang }.forEach { VoiceRowItem(it, actions, voices.sample) }
         }
     }
     // A voice downloaded here can be deleted here too, so its question shows here, not later in Settings.

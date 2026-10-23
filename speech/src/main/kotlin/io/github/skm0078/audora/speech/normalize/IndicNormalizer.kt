@@ -42,11 +42,22 @@ class IndicNormalizer internal constructor(
         val ascii = asciiDigits(spoken)
         if (ascii.none(Char::isAsciiDigit)) return if (spoken == text) text else tidy(spoken)
         var result = pack.units(pack.ordinals(pack.dates(ascii)))
-        result = CURRENCY.replace(result) { match -> money(match.groupValues[1]) }
-        result = PERCENT.replace(result) { match -> "${read(match.groupValues[1])} ${words.percent}" }
+        result = CURRENCY.replace(result) { match ->
+            val (amount, magnitude) = match.destructured
+            if (magnitude.isEmpty()) {
+                money(amount)
+            } else {
+                "${read(amount, allowYear = false)} $magnitude ${words.currency}"
+            }
+        }
+        result = PERCENT.replace(result) { match ->
+            val (from, to) = match.destructured
+            val count = if (to.isEmpty()) read(from) else "${read(from)} ${words.to} ${read(to)}"
+            "$count ${words.percent}"
+        }
         result = RANGE.replace(result) { match ->
             val (from, to) = match.destructured
-            "${read(from)} ${words.to} ${read(to)}"
+            "${read(from)} ${words.to} ${read(NumberPatterns.rangeEnd(from, to))}"
         }
         result = HYPHENATED_CODE.replace(result) { match ->
             match.value.split('-').joinToString(", ", transform = words::digits)
@@ -106,9 +117,19 @@ class IndicNormalizer internal constructor(
         private const val DIGIT_COUNT = 10
         private const val NUMBER = NumberPatterns.NUMBER
 
-        /** The rupee sign, "Rs.", "रु." or Bengali "টা." before an amount, read after it in the part's language. */
-        private val CURRENCY = Regex("""(?:₹|Rs\.?|रु\.?|টা\.)\s?($NUMBER)(?![\w])""")
-        private val PERCENT = Regex("""(?<![\w.])($NUMBER)\s?%""")
+        /** हज़ार, लाख, करोड़, अरब with or without the nukta's precomposed letters, and Bengali হাজার, লাখ, কোটি. */
+        private const val MAGNITUDE = """ह(?:\u095B|ज\u093C?)ार|लाख|करो(?:\u095C|ड\u093C?)|अरब|হাজার|লাখ|কোটি"""
+
+        /**
+         * The rupee sign, "Rs.", "रु." or Bengali "টা." before an amount, read after it in the part's language; with
+         * magnitude words ("₹500 करोड़", "₹1.5 लाख करोड़") the currency follows them, as it is said.
+         */
+        private val CURRENCY = Regex(
+            """(?:₹|Rs\.?|रु\.?|টা\.)\s?($NUMBER)(?![\w])((?:\s?(?:$MAGNITUDE)(?![\p{L}\p{M}]))*)(?:/-)?""",
+        )
+
+        /** "15%", and a range "10-15%" read "दस से पंद्रह प्रतिशत". */
+        private val PERCENT = Regex("""(?<![\w.])($NUMBER)(?:\s?[-–—]\s?($NUMBER))?\s?%""")
 
         /** Hyphen or dash, up to four digits a side: "10-12", "2019-20". Longer runs are codes. */
         private val RANGE = Regex("""(?<![\w.,-])(\d{1,4})\s?[-–—]\s?(\d{1,4})(?![\w-]|[.,]\d)""")

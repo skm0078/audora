@@ -15,6 +15,18 @@ internal object NumberPatterns {
     const val NUMBER = """(?:$INDIAN_GROUPED|$INTERNATIONAL_GROUPED|\d+)(?:\.\d+)?"""
 
     val INDIAN_GROUPING = Regex("""^$INDIAN_GROUPED$""")
+
+    /**
+     * The second year of a span written short with a leading zero, "2005-06", given its century ("2006"), so it is
+     * not read digit by digit as a code; any other range end as written ("2019-20" stays "twenty").
+     */
+    fun rangeEnd(from: String, to: String): String {
+        val shortYear = from.length == YEAR_DIGITS && to.length == SHORT_YEAR_DIGITS && to.startsWith('0')
+        return if (shortYear) from.take(2) + to else to
+    }
+
+    private const val YEAR_DIGITS = 4
+    private const val SHORT_YEAR_DIGITS = 2
 }
 
 /**

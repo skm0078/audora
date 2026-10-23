@@ -131,7 +131,7 @@ private fun VoicesContent(state: VoicesState, actions: VoicesActions, onImport: 
                     }
                 }
                 items(rows.filter { it.lang == lang }, key = { it.key }) { row ->
-                    VoiceRowItem(row, actions)
+                    VoiceRowItem(row, actions, state.sample)
                     HorizontalDivider()
                 }
             }
@@ -186,6 +186,7 @@ private fun messageText(message: VoicesMessage): String = when (message) {
     is VoicesMessage.ImportFailed -> message.reason
     is VoicesMessage.Deleted -> stringResource(R.string.voices_deleted, message.label)
     is VoicesMessage.DeleteFailed -> stringResource(R.string.voices_delete_failed, message.label)
+    VoicesMessage.SampleFailed -> stringResource(R.string.voices_sample_failed)
 }
 
 @Preview(showBackground = true)

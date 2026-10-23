@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_voice_notes.xml -->
+<!-- Purpose: Bengali copy of values/strings_voice_notes.xml. -->
+<resources>
+    <string name="sentence_menu_voice_note">ভয়েস নোট রেকর্ড করুন</string>
+    <string name="voice_notes_title">ভয়েস নোট</string>
+    <string name="voice_note_recording">পৃষ্ঠা %1$d-এ ভয়েস নোট রেকর্ড হচ্ছে</string>
+    <string name="voice_note_save">সেভ করুন</string>
+    <string name="voice_note_discard">বাদ দিন</string>
+    <string name="voice_note_play">চালান</string>
+    <string name="voice_note_stop">থামান</string>
+    <string name="voice_note_failed_microphone">মাইক্রোফোন চালু হলো না। হয়তো অন্য কোনো অ্যাপ বা কল সেটি ব্যবহার করছে।</string>
+    <string name="voice_note_failed_permission">ভয়েস নোটের জন্য মাইক্রোফোন লাগে। অ্যাপের সেটিংসে অনুমতি দিতে পারেন।</string>
+    <string name="voice_note_failed_short">রেকর্ডিংটি খুব ছোট ছিল, তাই রাখা হয়নি।</string>
+    <string name="voice_note_failed_play">এই ভয়েস নোটটি চালানো গেল না।</string>
+</resources>

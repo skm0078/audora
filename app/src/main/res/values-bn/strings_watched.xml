@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_watched.xml -->
+<!-- Purpose: Bengali copy of values/strings_watched.xml. -->
+<resources>
+    <string name="library_watched_folders">নজরে রাখা ফোল্ডার</string>
+    <string name="watched_explain">এই ফোল্ডার আর তাদের ভেতরের ফোল্ডারে নতুন PDF আর EPUB ফাইল এলে, লাইব্রেরি খোলার সময় প্রতিবার সেগুলো যোগ হয়। ফোল্ডার সরালেও আগে যোগ হওয়া বই থেকে যায়। Android অ্যাপকে Download ফোল্ডার নিজে নজরে রাখতে দেয় না: তার ভেতরের কোনো ফোল্ডার বেছে নিন।</string>
+    <string name="watched_empty">এখনও কোনো ফোল্ডার নজরে রাখা হয়নি।</string>
+    <string name="watched_add">ফোল্ডার যোগ করুন</string>
+    <string name="watched_remove">সরান</string>
+    <string name="watched_done">হয়ে গেছে</string>
+    <string name="watched_unnamed">ফোল্ডার</string>
+    <string name="watched_pick_again">আবার বেছে নিন</string>
+    <string name="watched_unreachable_row">খোলা যাচ্ছে না। নজরে রাখতে এটি আবার বেছে নিন।</string>
+    <string name="watched_not_saved">ফোল্ডারের তালিকা সেভ করা গেল না। ফাঁকা জায়গা দেখে আবার চেষ্টা করুন।</string>
+    <string name="watched_no_grant">এই ফোল্ডার নজরে রাখা যাবে না: যে অ্যাপের ফোল্ডার, সেটি স্থায়ী অনুমতি দেয় না।</string>
+    <plurals name="watched_added">
+        <item quantity="one">নজরে রাখা ফোল্ডার থেকে %dটি বই যোগ হয়েছে</item>
+        <item quantity="other">নজরে রাখা ফোল্ডার থেকে %dটি বই যোগ হয়েছে</item>
+    </plurals>
+    <plurals name="watched_unreachable">
+        <item quantity="one">নজরে রাখা %dটি ফোল্ডার খোলা যাচ্ছে না। নজরে রাখা ফোল্ডার-এ গিয়ে আবার বেছে নিন।</item>
+        <item quantity="other">নজরে রাখা %dটি ফোল্ডার খোলা যাচ্ছে না। নজরে রাখা ফোল্ডার-এ গিয়ে আবার বেছে নিন।</item>
+    </plurals>
+</resources>
