@@ -4,6 +4,8 @@
 #
 # The three files come from a pinned Hugging Face commit and are zipped byte-for-byte reproducibly (sorted, stored,
 # dated 1980-01-01), so a rerun builds the same SHA-256. An asset already published is kept, never replaced.
+# The speaker and style ids the app uses (Bengali female 2, male 3; BOOK 3, SAD 12 and so on) are the exporter's
+# table (github.com/matiaslin/sherpa-onnx-vits-rasa-13-exporter, README), recorded in ADR-057.
 
 name: Rasa source
 
@@ -45,17 +47,6 @@ jobs:
           ls -l "src/$ARCHIVE"
           sha256sum "src/$ARCHIVE"/*
           cat "src/$ARCHIVE/README.md"
-
-      - name: Print the speaker and style tables
-        # The export keeps upstream's ids; the tables live in upstream's config and the exporter's code.
-        continue-on-error: true
-        run: |
-          curl -fsSL "$HF/api/models/ai4bharat/vits_rasa_13" | head -c 3000; echo
-          echo "== upstream model card"
-          curl -fsSL "$HF/ai4bharat/vits_rasa_13/raw/main/README.md" | head -c 30000 || true; echo
-          git clone -q --depth 1 https://github.com/matiaslin/sherpa-onnx-vits-rasa-13-exporter exporter
-          (cd exporter && git log -1 --format=%H && find . -type f -not -path './.git/*' | head -50)
-          sed -n '55,100p' exporter/README.md
 
       - name: Zip reproducibly
         run: |

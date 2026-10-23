@@ -6,6 +6,7 @@ package io.github.skm0078.audora.speech.route
 import io.github.skm0078.audora.core.config.DialogueConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.EngineId
+import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
@@ -43,8 +44,10 @@ data class Cast(
 /**
  * How one sentence is spoken, beyond its text and language: the defaults of a plain read. [startsInQuote]: an earlier
  * sentence of its paragraph opened a quote that is still open ([QuoteSplitter.endsInQuote]). [speaker]: who says the
- * sentence's quotes, from its tag or the sentences around it ([SpeakerTags]); null when unknown.
+ * sentence's quotes, from its tag or the sentences around it ([SpeakerTags]); null when unknown. [feeling]: how the
+ * sentence asks to be read (ADR-056), passed to a voice with speaking styles (ADR-057).
  */
+@Suppress("LongParameterList") // All optional, with the defaults of a plain read.
 class SpeechRequest(
     val role: TextRole = TextRole.BODY,
     val rate: Float = SpeechStyle.NORMAL_RATE,
@@ -52,6 +55,7 @@ class SpeechRequest(
     val shape: (PcmAudio) -> PcmAudio = { it },
     val startsInQuote: Boolean = false,
     val speaker: Speaker? = null,
+    val feeling: Feeling = Feeling.NEUTRAL,
 )
 
 /**
@@ -184,4 +188,4 @@ private class CastVoices(private val base: VoiceSource, private val cast: Map<La
 
 /** [RoutedSpeech.render] with a [SpeechRequest]. */
 private suspend fun RoutedSpeech.render(text: String, lang: Lang, request: SpeechRequest) =
-    render(text, lang, request.role, request.rate, request.prosody, request.shape)
+    render(text, lang, request.role, request.rate, request.prosody, request.shape, request.feeling)

@@ -96,6 +96,15 @@ class SherpaModelConfigTest {
     }
 
     @Test
+    fun `a style goes to the model as its emotion id, beside Supertonic's language`() {
+        val rasa = sherpaGenerationConfig(kokoro.copy(family = SherpaFamily.VITS), speakerId = 2, rate = 1f, style = 12)
+        val styledSupertonic = sherpaGenerationConfig(supertonic, speakerId = 0, rate = 1f, style = 3)
+
+        assertEquals(mapOf("emotion_id" to "12"), rasa.extra)
+        assertEquals(mapOf("lang" to "hi", "emotion_id" to "3"), styledSupertonic.extra)
+    }
+
+    @Test
     fun `every family gets the speaking rate and keeps the voice's own pauses`() {
         val supertonicConfig = sherpaGenerationConfig(supertonic, speakerId = 0, rate = 1.5f)
         val kokoroConfig = sherpaGenerationConfig(kokoro, speakerId = 0, rate = 0.75f)

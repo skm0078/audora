@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.speech.delivery
 
 import io.github.skm0078.audora.core.model.Feeling
+import java.text.Normalizer
 
 /**
  * Rules only (stage 1 of the expressive plan): the speech verb or adverb that tells how a line is said, then the
@@ -12,13 +13,14 @@ import io.github.skm0078.audora.core.model.Feeling
  * left neutral, since a guess at it would often be wrong.
  */
 object SentenceFeelings {
-    fun of(text: String): Feeling {
+    fun of(written: String): Feeling {
+        // NFC, as the cues are written: a PDF may give Bengali "য়" as one code point or as য + nukta.
+        val text = Normalizer.normalize(written, Normalizer.Form.NFC)
         val end = text.trimEnd { it.isWhitespace() || it in CLOSERS }
+        val cued = cueRules.firstOrNull { (cues, _) -> cues.containsMatchIn(text) }?.second
         return when {
-            LOUD.containsMatchIn(text) -> Feeling.LOUD
-            SOFT.containsMatchIn(text) -> Feeling.SOFT
-            SAD.containsMatchIn(text) -> Feeling.SAD
-            LIVELY.containsMatchIn(text) || '!' in text -> Feeling.LIVELY
+            cued != null -> cued
+            '!' in text -> Feeling.LIVELY
             end.endsWith("…") || end.endsWith("...") || end.endsWith("—") || end.endsWith("--") -> Feeling.TRAILING
             end.endsWith("?") -> Feeling.ASKING
             else -> Feeling.NEUTRAL
@@ -46,10 +48,32 @@ object SentenceFeelings {
             "কেঁদে|কাঁদতে|কান্না|চোখের জল|দীর্ঘশ্বাস|দুঃখে|বিষণ্ণ",
     )
 
+    private val SCARED = cues(
+        "trembled|trembling|stammered|stuttered|shuddered|fearfully|nervously|in fear|in terror|terrified|frightened",
+        "डरकर|डर से|डरते हुए|डरते-डरते|काँप|कांप|घबराकर|घबरा गय|सहमकर|सहमी|भयभीत|" +
+            "ভয়ে|ভয় পেয়ে|কাঁপা গলায়|কাঁপতে|কেঁপে|থরথর|আতঙ্কে|ঘাবড়ে|ভীত",
+    )
+
+    private val SURPRISED = cues(
+        "gasped|gasping|in surprise|in astonishment|astonished|amazed|startled",
+        "चौंक|हैरान|हैरानी से|आश्चर्य से|अचरज से|हक्का-बक्का|" +
+            "অবাক|চমকে|বিস্মিত|বিস্ময়ে|আশ্চর্য হয়ে|হতবাক",
+    )
+
     private val LIVELY = cues(
         "laughed|laughing|exclaimed|cheered|giggled|grinned",
         "हँसकर|हंसकर|हँसते हुए|हंसते हुए|हँस पड़|खुशी से|ख़ुशी से|" +
             "হেসে|হাসতে হাসতে|আনন্দে|উল্লাসে",
+    )
+
+    /** The cue words in the order they win: a verb of how a line is said beats its exclamation mark. */
+    private val cueRules = listOf(
+        LOUD to Feeling.LOUD,
+        SOFT to Feeling.SOFT,
+        SAD to Feeling.SAD,
+        SCARED to Feeling.SCARED,
+        SURPRISED to Feeling.SURPRISED,
+        LIVELY to Feeling.LIVELY,
     )
 
     /** English cue words between word boundaries; Hindi and Bengali ones from a word's start (`\\b` knows no Indic). */

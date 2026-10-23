@@ -6,6 +6,7 @@ package io.github.skm0078.audora.speech.sherpa
 import io.github.skm0078.audora.core.config.SpeechConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.EngineId
+import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
@@ -45,6 +46,7 @@ import kotlinx.coroutines.withContext
  *   call, and two renders at once would only compete for the same cores.
  * @param maxLoadedVoices models kept loaded at once ([SpeechConfig.maxLoadedVoices]).
  */
+@Suppress("TooManyFunctions") // SpeechEngine's members (two render overloads) and the memory hooks.
 class SherpaSpeechEngine(
     internal val source: SherpaVoiceSource,
     private val factory: SherpaSynthesizerFactory,
@@ -77,15 +79,22 @@ class SherpaSpeechEngine(
     override suspend fun voices(): Outcome<List<VoiceInfo>, SpeechError> =
         Outcome.Success(source.byId().values.map { it.toVoiceInfo() })
 
-    /** [voice] may name another speaker of an installed model ([CastSpeakers.variant]): same model, its speaker. */
-    override suspend fun render(text: String, voice: VoiceId, rate: Float): RenderResult {
+    override suspend fun render(text: String, voice: VoiceId, rate: Float): RenderResult =
+        render(text, voice, rate, Feeling.NEUTRAL)
+
+    /**
+     * [voice] may name another speaker of an installed model ([CastSpeakers.variant]): same model, its speaker. A
+     * model with styles reads [feeling] in its style ([SherpaVoiceSpec.styleFor]), every other model ignores it.
+     */
+    override suspend fun render(text: String, voice: VoiceId, rate: Float, feeling: Feeling): RenderResult {
         val (base, requested) = CastSpeakers.parse(voice)
         val spec = source.byId()[base]
             ?: return Outcome.Failure(
                 SpeechError.VoiceUnavailable(id, SpeechError.VoiceUnavailable.Reason.UNKNOWN_VOICE, voice),
             )
         return try {
-            mutex.withLock { withContext(dispatcher) { renderLocked(spec, text, rate, requested) } }
+            val take = Take(text, rate, requested, spec.styleFor(feeling))
+            mutex.withLock { withContext(dispatcher) { renderLocked(spec, take) } }
         } finally {
             // release() or trimMemory() may have found the lock taken by this render and left their work to whoever
             // holds it next.
@@ -127,17 +136,22 @@ class SherpaSpeechEngine(
         }
     }
 
-    /** [requested]: another speaker of [spec]'s model, checked against the model once loaded. */
-    private suspend fun renderLocked(spec: SherpaVoiceSpec, text: String, rate: Float, requested: Int?): RenderResult {
+    /**
+     * One render's asks: [requested], another speaker of the model, checked against the model once loaded; [style],
+     * the model's style for the sentence's feeling, null for a model without styles.
+     */
+    private class Take(val text: String, val rate: Float, val requested: Int?, val style: Int?)
+
+    private suspend fun renderLocked(spec: SherpaVoiceSpec, take: Take): RenderResult {
         if (released.get()) return Outcome.Failure(SpeechError.EngineUnavailable(id, "engine was released"))
         return synthesizerFor(spec).flatMap { synthesizer ->
-            val speaker = CastSpeakers.speakerFor(spec, requested, synthesizer.speakerCount)
-            if (text.isBlank()) {
+            val speaker = CastSpeakers.speakerFor(spec, take.requested, synthesizer.speakerCount)
+            if (take.text.isBlank()) {
                 Outcome.Success(
                     PcmAudio.silence(synthesizer.sampleRate),
                 )
             } else {
-                generate(spec, synthesizer, text, rate, speaker)
+                generate(spec, synthesizer, take, speaker)
             }
         }
     }
@@ -145,14 +159,15 @@ class SherpaSpeechEngine(
     private suspend fun generate(
         spec: SherpaVoiceSpec,
         synthesizer: SherpaSynthesizer,
-        text: String,
-        rate: Float,
+        take: Take,
         speaker: Int,
     ): RenderResult {
         val job = coroutineContext[Job]
         val started = System.nanoTime()
+        val text = if (take.style != null) StyledText.ending(take.text, spec.lang) else take.text
+        val rate = take.rate
         val samples: Outcome<FloatArray, SpeechError> = try {
-            Outcome.Success(synthesizer.generate(text, speaker, rate) { job?.isActive != false })
+            Outcome.Success(synthesizer.generate(text, speaker, rate, take.style) { job?.isActive != false })
         } catch (e: IllegalStateException) {
             failed(spec, e)
         } catch (e: IllegalArgumentException) {
@@ -168,8 +183,8 @@ class SherpaSpeechEngine(
             } else {
                 AudoraLog.d(
                     TAG,
-                    "Rendered voice=${spec.voiceId} speaker=$speaker rate=$rate chars=${text.length} " +
-                        "audioMs=${audio.durationMs} renderMs=$renderMs",
+                    "Rendered voice=${spec.voiceId} speaker=$speaker style=${take.style} rate=$rate " +
+                        "chars=${text.length} audioMs=${audio.durationMs} renderMs=$renderMs",
                 )
             }
             audio

@@ -17,9 +17,9 @@ data class CastSpeaker(val speakerId: Int, val label: String, val gender: Speake
  * past a model's range is undefined behaviour in sherpa-onnx.
  *
  * The lists are the models' own speaker tables (sherpa-onnx's packaging of Kokoro v1.0 multi-lang and KittenTTS
- * v0.8 nano and micro, which share one table), English speakers only. They are keyed on the catalog voice that
- * installs that exact archive, never on the model family: a voice imported from any folder, or a family's other
- * packaging, reads with its own speaker only.
+ * v0.8 nano and micro, which share one table), English speakers only, and Rasa's two Bengali speakers. They are
+ * keyed on the catalog voice that installs that exact archive, never on the model family: a voice imported from
+ * any folder, or a family's other packaging, reads with its own speaker only.
  * A test pins each key to its archive in models.json and bundled-voices.json, so a catalog update that swaps the
  * archive under a keyed id fails the build; [tableFits] also checks the loaded model's speaker count at runtime.
  */
@@ -44,6 +44,15 @@ object CastSpeakers {
     private val KITTEN = listOf("Jasper", "Bella", "Bruno", "Luna", "Hugo", "Rosie", "Leo", "Kiki")
         .mapIndexed { i, name -> CastSpeaker(i, name, if (i % 2 == 0) SpeakerGender.MALE else SpeakerGender.FEMALE) }
 
+    /**
+     * AI4Bharat Rasa (ADR-057): its two Bengali speakers among the model's 1024 slots (the other languages' speakers
+     * are left out), so the female narrator's characters can be read by the male speaker and back.
+     */
+    private val RASA_BENGALI = listOf(
+        CastSpeaker(RASA_BENGALI_FEMALE, "Bengali female", SpeakerGender.FEMALE),
+        CastSpeaker(RASA_BENGALI_MALE, "Bengali male", SpeakerGender.MALE),
+    )
+
     /** Kokoro's English speakers, for the narrator blend's choices (plan item 75). */
     val kokoroEnglish: List<CastSpeaker> get() = KOKORO_ENGLISH
 
@@ -52,6 +61,7 @@ object CastSpeakers {
         KOKORO_VOICE to CastTable(KOKORO_ARCHIVE, KOKORO_ENGLISH, KOKORO_MODEL_SPEAKERS),
         KITTEN_VOICE to CastTable(KITTEN_ARCHIVE, KITTEN, KITTEN_SPEAKERS),
         KITTEN_MICRO_VOICE to CastTable(KITTEN_MICRO_ARCHIVE, KITTEN, KITTEN_SPEAKERS),
+        RASA_VOICE to CastTable(RASA_ARCHIVE, RASA_BENGALI, RASA_MODEL_SPEAKERS),
     )
 
     /** The archive each keyed catalog voice id was written for, so a test can check the catalogs still ship it. */
@@ -100,6 +110,11 @@ object CastSpeakers {
     /** The bundled English voice (ADR-052). */
     private const val KITTEN_MICRO_VOICE = "kitten-en-micro"
     private const val KITTEN_MICRO_ARCHIVE = "kitten-micro-en-v0_8"
+    private const val RASA_VOICE = "rasa-bn"
+    private const val RASA_ARCHIVE = "sherpa-onnx-vits-rasa-13"
+    private const val RASA_BENGALI_FEMALE = 2
+    private const val RASA_BENGALI_MALE = 3
+    private const val RASA_MODEL_SPEAKERS = 1024
     private const val KOKORO_FIRST_MALE = 11
     private const val KOKORO_FIRST_BRITISH = 20
     private const val KOKORO_FIRST_BRITISH_MALE = 24

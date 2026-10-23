@@ -15,11 +15,12 @@ interface SherpaSynthesizer {
 
     /**
      * Renders [text] at [rate] (1.0 = the voice's own speed) and returns float samples in [-1, 1]. Blocking.
+     * [style]: the model's speaking style ([SherpaVoiceSpec.styles]); null for a model without styles.
      *
      * [keepGoing] is polled each time sherpa-onnx finishes one of its internal sentences; returning false stops the
      * render early and the partial result is discarded by the caller.
      */
-    fun generate(text: String, speakerId: Int, rate: Float, keepGoing: () -> Boolean): FloatArray
+    fun generate(text: String, speakerId: Int, rate: Float, style: Int?, keepGoing: () -> Boolean): FloatArray
 
     fun release()
 }

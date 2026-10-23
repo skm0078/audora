@@ -128,16 +128,24 @@ private fun vitsConfig(spec: SherpaVoiceSpec, dataDir: String, path: (String) ->
 
 /**
  * Per-render options for [spec]: Supertonic is told its language and step count on every call (it is one
- * multilingual model); the other families ignore both. [rate] is the speaking rate every family honours: VITS and
+ * multilingual model); the other families ignore both. [style] is a styled VITS model's `emotion_id` (ADR-057),
+ * left out for every other model. [rate] is the speaking rate every family honours: VITS and
  * Piper as `1 / length_scale`, Kokoro, Kitten and Supertonic as their duration scale (ADR-033).
  *
  * [KEEP_VOICE_PAUSES]: sherpa-onnx's default silence scale (0.2) cuts every silence longer than 200 ms inside a
  * sentence (after a comma, a colon, a dash) to a fifth, which runs clauses together. Audora keeps the voice's own
  * pauses and adds its own between sentences (ADR-033).
  */
-internal fun sherpaGenerationConfig(spec: SherpaVoiceSpec, speakerId: Int, rate: Float): GenerationConfig {
+internal fun sherpaGenerationConfig(
+    spec: SherpaVoiceSpec,
+    speakerId: Int,
+    rate: Float,
+    style: Int? = null,
+): GenerationConfig {
     val defaults = GenerationConfig()
-    val extra = spec.engineLang?.takeIf { spec.family == SherpaFamily.SUPERTONIC }?.let { mapOf(EXTRA_LANG to it) }
+    val lang = spec.engineLang?.takeIf { spec.family == SherpaFamily.SUPERTONIC }?.let { mapOf(EXTRA_LANG to it) }
+    val emotion = style?.let { mapOf(EXTRA_EMOTION to it.toString()) }
+    val extra = if (lang == null && emotion == null) null else lang.orEmpty() + emotion.orEmpty()
     return GenerationConfig(
         sid = speakerId,
         speed = rate,
@@ -149,6 +157,7 @@ internal fun sherpaGenerationConfig(spec: SherpaVoiceSpec, speakerId: Int, rate:
 
 private const val SHERPA_PROVIDER = "cpu"
 private const val EXTRA_LANG = "lang"
+private const val EXTRA_EMOTION = "emotion_id"
 private const val KEEP_VOICE_PAUSES = 1f
 
 internal class OfflineTtsSynthesizer(private val tts: OfflineTts, private val spec: SherpaVoiceSpec) :
@@ -157,8 +166,14 @@ internal class OfflineTtsSynthesizer(private val tts: OfflineTts, private val sp
 
     override val speakerCount: Int = tts.numSpeakers()
 
-    override fun generate(text: String, speakerId: Int, rate: Float, keepGoing: () -> Boolean): FloatArray {
-        val config = sherpaGenerationConfig(spec, speakerId, rate)
+    override fun generate(
+        text: String,
+        speakerId: Int,
+        rate: Float,
+        style: Int?,
+        keepGoing: () -> Boolean,
+    ): FloatArray {
+        val config = sherpaGenerationConfig(spec, speakerId, rate, style)
         return tts.generateWithConfigAndCallback(text, config, SherpaStopCallback(keepGoing)).samples
     }
 

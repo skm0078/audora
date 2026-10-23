@@ -5,6 +5,7 @@
 package io.github.skm0078.audora.speech.route
 
 import io.github.skm0078.audora.core.model.EngineId
+import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
@@ -24,6 +25,7 @@ class CastSpeechTest {
     private class RecordingEngine(private val broken: Set<String> = emptySet()) : SpeechEngine {
         override val id = EngineId.SHERPA
         val calls = mutableListOf<Pair<String, String>>()
+        val feelings = mutableListOf<Feeling>()
 
         override fun supports(lang: Lang): Boolean = true
 
@@ -39,6 +41,11 @@ class CastSpeechTest {
             return Outcome.Success(PcmAudio(ShortArray(text.length) { 1 }, SAMPLE_RATE))
         }
 
+        override suspend fun render(text: String, voice: VoiceId, rate: Float, feeling: Feeling): RenderResult {
+            feelings.add(feeling)
+            return render(text, voice, rate)
+        }
+
         override fun release() = Unit
     }
 
@@ -50,6 +57,20 @@ class CastSpeechTest {
 
     private fun speech(engine: RecordingEngine) =
         CastSpeech(FakeVoices(engine), ScriptRouter(), normalizers = emptyMap())
+
+    @Test
+    fun `the sentence's feeling reaches every part, narrator's and quote's (ADR-057)`() = runTest {
+        val engine = RecordingEngine()
+
+        speech(engine).render(
+            "“Come here at once,” she sobbed.",
+            Lang.EN,
+            SpeechRequest(feeling = Feeling.SAD),
+            Cast(dialogue = mapOf(Lang.EN to DIALOGUE)),
+        )
+
+        assertEquals(listOf(Feeling.SAD, Feeling.SAD), engine.feelings)
+    }
 
     @Test
     fun `quotes go to the dialogue voice with the quote pause between`() = runTest {

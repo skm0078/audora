@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.speech
 
 import io.github.skm0078.audora.core.model.EngineId
+import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
@@ -40,6 +41,13 @@ interface SpeechEngine {
      * voice's own speed). Blank text renders silence.
      */
     suspend fun render(text: String, voice: VoiceId, rate: Float = SpeechStyle.NORMAL_RATE): RenderResult
+
+    /**
+     * [render] for a sentence that asks for a [feeling] (ADR-056). A voice with speaking styles reads it in the style
+     * that fits (ADR-057); every other voice ignores it, which is this default.
+     */
+    suspend fun render(text: String, voice: VoiceId, rate: Float, feeling: Feeling): RenderResult =
+        render(text, voice, rate)
 
     /** Frees native models and engine connections. Later renders fail with [SpeechError.EngineUnavailable]. */
     fun release()

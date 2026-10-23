@@ -38,6 +38,15 @@ class CastSpeakersTest {
     }
 
     @Test
+    fun `Rasa's Bengali female narrator has the male speaker for characters, in the 1024-speaker model`() {
+        val rasa = spec("rasa-bn", speakerId = 2)
+
+        assertEquals(listOf(SpeakerGender.MALE), CastSpeakers.of(rasa).filter { it.speakerId != 2 }.map { it.gender })
+        assertEquals(3, CastSpeakers.speakerFor(rasa, 3, RASA_SPEAKERS))
+        assertEquals(2, CastSpeakers.speakerFor(rasa, 3, RASA_SPEAKERS - 1))
+    }
+
+    @Test
     fun `Kokoro lists 27 English speakers besides the narrator`() {
         assertEquals(27, CastSpeakers.of(kokoro).count { it.speakerId != HEART })
     }
@@ -92,6 +101,7 @@ class CastSpeakersTest {
     }
 
     private companion object {
+        const val RASA_SPEAKERS = 1024
         const val HEART = 3
         const val ADAM = 11
         const val KOKORO_V1_0 = 53

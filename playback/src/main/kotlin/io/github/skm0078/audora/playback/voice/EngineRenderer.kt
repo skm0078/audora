@@ -177,7 +177,15 @@ class EngineRenderer(
         val quotePauseMs = if (now.clausePauses) clauseMs(ClauseMark.QUOTE) else 0
         val level: (PcmAudio) -> PcmAudio = { shaper.level(it, shaping.evenLoudness, boostDb = 0) }
         val speaker = characters?.let { reading.speakerOf(unit) }
-        val request = SpeechRequest(speech.role, rate, prosody, shape, reading.startsInQuote(unit), speaker)
+        val request = SpeechRequest(
+            speech.role,
+            rate,
+            prosody,
+            shape,
+            reading.startsInQuote(unit),
+            speaker,
+            delivery.feeling,
+        )
         return runBlocking { castSpeech.render(text, unit.lang, request, cast, quotePauseMs, level) }.map { routed ->
             speed?.onRendered(text.trim().length, routed, System.nanoTime() - started, rate * stretch)
             log(unit, routed)

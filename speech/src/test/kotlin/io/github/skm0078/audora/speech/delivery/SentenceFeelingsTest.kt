@@ -21,6 +21,12 @@ class SentenceFeelingsTest {
             "She sobbed into her hands." to Feeling.SAD,
             "माँ रो पड़ी।" to Feeling.SAD,
             "মেয়েটি কেঁদে ফেলল।" to Feeling.SAD,
+            "“Who's there?” she asked, trembling." to Feeling.SCARED,
+            "वह डरकर पीछे हट गया।" to Feeling.SCARED,
+            "ভয়ে তার গলা শুকিয়ে গেল।" to Feeling.SCARED,
+            "He gasped. “You!”" to Feeling.SURPRISED,
+            "वह चौंककर बोली, “तुम यहाँ!”" to Feeling.SURPRISED,
+            "সে অবাক হয়ে বলল, “তুমি এখানে!”" to Feeling.SURPRISED,
             "“We won!” cried Tom." to Feeling.LIVELY,
             "वह हँसकर बोली, “आ गए तुम।”" to Feeling.LIVELY,
             "সে হেসে বলল, “এসেছ তাহলে।”" to Feeling.LIVELY,
@@ -40,5 +46,12 @@ class SentenceFeelingsTest {
     fun `a closing quote or bracket after the mark does not hide it`() {
         assertEquals(Feeling.ASKING, SentenceFeelings.of("He asked (as always) “why?”  "))
         assertEquals(Feeling.TRAILING, SentenceFeelings.of("“If only…”"))
+    }
+
+    @Test
+    fun `a Bengali cue matches whichever way the PDF encodes its nukta letters`() {
+        val composed = "\u09DF" // য় as one code point, which NFC splits into য and the nukta
+        assertEquals(Feeling.SCARED, SentenceFeelings.of("ভ" + composed + "ে সে কাঁপছিল।"))
+        assertEquals(Feeling.SCARED, SentenceFeelings.of("ভয়ে সে কাঁপছিল।"))
     }
 }

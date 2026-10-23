@@ -104,6 +104,7 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
             "engineLang" to entry["engineLang"]?.toString(),
             "numSteps" to (entry["numSteps"] as? Number)?.toInt()?.toString(),
             "threads" to (entry["threads"] as? Number)?.toInt()?.toString(),
+            "styles" to styles(id, entry),
             "licence" to entry.text("licence"),
             "credit" to entry.text("credit"),
             "licenceUrl" to entry.text("licenceUrl"),
@@ -138,6 +139,25 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
         }
     }
 
+    /**
+     * A styled VITS model's style per feeling (ADR-057), `{"NEUTRAL": 3, "SAD": 12}` written as `NEUTRAL:3,SAD:12`.
+     * The app knows the feeling names (core's Feeling) and drops a voice whose styles it cannot read.
+     */
+    private fun styles(id: String, entry: Map<String, Any?>): String? {
+        val styles = entry["styles"] ?: return null
+        val map = styles as? Map<*, *> ?: fail("$id: styles must map feelings to style ids")
+        val pairs = map.entries.map { (feeling, style) ->
+            val number = (style as? Int)?.takeIf { it >= 0 } // JsonSlurper reads a whole number as an Int
+            when {
+                !FEELING.matches(feeling.toString()) -> fail("$id: style key '$feeling' must be a feeling name")
+                number == null -> fail("$id: style for $feeling must be a whole number >= 0")
+                else -> "$feeling:$number"
+            }
+        }
+        if (entry["family"] != "vits" || "NEUTRAL" !in map.keys) fail("$id: styles need a vits voice and NEUTRAL")
+        return pairs.joinToString(",")
+    }
+
     private fun Map<String, Any?>.text(key: String): String = this[key]?.toString()?.takeIf { it.isNotBlank() }
         ?: fail("'$key' missing in ${this["id"] ?: this}")
 
@@ -155,5 +175,6 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
         val NEEDS_VOICES = setOf("kitten", "kokoro", "supertonic")
         val NEEDS_ENGINE_LANG = setOf("kokoro", "supertonic")
         val CREDIT_LINKS = listOf("licenceUrl", "sourceUrl")
+        val FEELING = Regex("[A-Z]+")
     }
 }
