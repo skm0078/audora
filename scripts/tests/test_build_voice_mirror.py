@@ -195,7 +195,12 @@ class CatalogTest(unittest.TestCase):
     def test_models_are_loaded_after_the_voices_and_pinned_like_them(self):
         root, voices = mirror.load_catalog(Path(__file__).resolve().parents[2] / "speech" / "models.json")
         models = [v for v in voices if v.id in {entry["id"] for entry in root.get("models", [])}]
-        self.assertEqual([v.id for v in models], ["punct-en-cnn-bilstm", "kws-en-zipformer-gigaspeech"])
+        self.assertEqual(
+            [v.id for v in models],
+            ["punct-en-cnn-bilstm", "kws-en-zipformer-gigaspeech", "acted-hi-chatterbox-core", "acted-hi-chatterbox-lm"],
+        )
+        # The acted Hindi voice has no token table in its zips ("tokens": null); its tokenizer is an app asset.
+        self.assertEqual(models[3].required_files(), ["language_model.onnx", "language_model.onnx_data"])
         self.assertEqual(models[0].required_files(), ["model.int8.onnx", "bpe.vocab"])
         # The keyword spotter's decoder and joiner come in through extraFiles (plan item 38).
         self.assertEqual(
