@@ -2,6 +2,18 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Read each book to suit it, and a simpler Play build (2026-10-23, ADR-056)
+- **What a book is:** the first pages tell a story, children's story, poem, scripture, news, report, textbook or anything else, in English, Hindi and Bengali (`IntentClassifier`, `IntentSignals`, `BookIntent`). Golden excerpts: Moby-Dick reads as a story, the KJV as scripture, the three papers as study, the UDHR and the factsheets as general or report (`IntentLabelsTest`).
+- **How it is read:** each kind has its pace and pauses (children's stories and verse slower with longer pauses, news a little brisker, headings in reports and textbooks with more room). In stories and general books a line's own words colour it: whispered softer, shouted louder, sad slower, a trailing line held (`DeliveryPlanner`, `SentenceFeelings`). News, reports, textbooks and scripture are never acted.
+- **English gap fixed:** a sentence cut by a page or column break ("…in old times must" / "have been…") was read as two finished sentences, falling and with a full pause. It now rises into the next part with a short pause.
+- **One switch:** "Read to suit the book" in the speech sheet, with what the book reads as; the finer speech options are under "More speech options".
+- **Language packs:** Settings → Voices opens on Hindi and Bengali, one Download each with percent and MB; every voice is under "All voices". A Hindi or Bengali page that would use the phone's voice offers its pack in the reader. The release build hides Supertonic Hindi, MMS Bengali, Piper Google Bengali and voice import (`SIMPLE_VOICES`; the dev build shows them).
+- **Settings:** common options first; punctuation for scans, volume keys, voice commands, pronunciation, Share logs and debug under a closed "Advanced".
+- **Branding:** new amber icon (sound bars over an open book) on paper, the same in themed icons and the splash; store icon and feature graphic in `docs/store/`. The dev build keeps its orange icon.
+- No `:pdf` output change (PIPELINE_VERSION 12, golden and listening unchanged). Tests: `IntentClassifierTest`, `IntentLabelsTest`, `DeliveryConfigTest`, `DeliveryPlannerTest`, `SentenceFeelingsTest`, `OpenEndTest`, `BookIntentTest`, `LanguagePacksTest`, `VoiceShapingTest`. No new dependency. Studio audio made before renders once more.
+
+**Real-device checks (Moto):** play a children's story, a Hindi news page and a textbook chapter and open the speech sheet on each (it names the kind); switch "Read to suit the book" off and on over the same page to hear it; find a sentence split across two pages; delete the Hindi voice and open a Hindi book (the reader offers the pack and shows progress).
+
 ## Large scanned books never hang the app (2026-10-23, ADR-054)
 - **Root cause:** a scanned page's OCR (up to a minute) ran under the book's lock, and leaving the reader or stopping playback closed the book on the main thread, which waited for that lock: an "isn't responding" dialog. Turned pages queued behind the old pages' OCR, and search OCR'd the whole book.
 - **Fixes:** `PdfBook.close()` never waits (the document closes as the page being read lets go); page reads in the reader and the player are interruptible and OCR stops between its steps; one OCR page in memory at a time across the app; running out of memory on a page fails that page instead of crashing; search never runs OCR (scanned pages join it once shown or read aloud).
