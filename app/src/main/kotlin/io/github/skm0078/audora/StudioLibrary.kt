@@ -38,7 +38,6 @@ import io.github.skm0078.audora.ui.library.BookAction
 import io.github.skm0078.audora.ui.library.LibraryAction
 import io.github.skm0078.audora.ui.library.WatchedFoldersRoute
 import io.github.skm0078.audora.ui.library.restartForRestore
-import io.github.skm0078.audora.ui.library.titleOrUntitled
 import io.github.skm0078.audora.ui.quiz.QuizRoute
 import io.github.skm0078.audora.ui.studio.StudioAudioActions
 import io.github.skm0078.audora.ui.studio.StudioAudioRoute
@@ -130,8 +129,8 @@ internal class StudioLibrary(
         state.savingBookId.value = book.id.value
         Toast.makeText(context, R.string.studio_file_saving, Toast.LENGTH_LONG).show()
         parts.activity.lifecycleScope.launch {
-            val title = titleOrUntitled(book.title)
-            val saved = withContext(Dispatchers.IO) { StudioAudioFile.save(context, book.id, title) }
+            // An untitled book gets the export's fallback folder name, as an audiobook export does.
+            val saved = withContext(Dispatchers.IO) { StudioAudioFile.save(context, book.id, book.title) }
             state.savingBookId.value = null
             val message = when (saved) {
                 is Outcome.Success -> context.getString(
