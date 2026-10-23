@@ -126,7 +126,7 @@ class StudioStore(private val root: File) {
     fun totalBytes(): Long = sizeOf(root)
 
     /**
-     * What [book] has on the phone (ADR-062): the pages of its newest signature, the one the last run wrote. Older
+     * What [book] has on the phone (ADR-063): the pages of its newest signature, the one the last run wrote. Older
      * signatures are dropped when a run starts. Reads only the clip headers. Null when it has none.
      */
     fun bookAudio(book: BookId): StudioBookAudio? {
@@ -192,7 +192,7 @@ class StudioStore(private val root: File) {
 }
 
 /**
- * One book's studio audio on the phone (ADR-062). Pages are zero-based; [pages] can be fewer than the range when a
+ * One book's studio audio on the phone (ADR-063). Pages are zero-based; [pages] can be fewer than the range when a
  * page had nothing to read.
  */
 data class StudioBookAudio(val firstPage: Int, val lastPage: Int, val pages: Int, val durationMs: Long, val bytes: Long)

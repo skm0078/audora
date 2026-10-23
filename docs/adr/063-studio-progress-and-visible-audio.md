@@ -1,4 +1,4 @@
-# ADR-062: Studio mode shows its speed, time left and audio; a new voice applies at once
+# ADR-063: Studio mode shows its speed, time left and audio; a new voice applies at once
 
 **Status:** Accepted (2026-10-23). Amends ADR-039 (studio mode) and P4-01 (voice choice).
 

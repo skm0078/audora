@@ -2,7 +2,7 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
-## Studio mode you can see, and a new voice that applies at once (2026-10-23, ADR-062)
+## Studio mode you can see, and a new voice that applies at once (2026-10-23, ADR-063)
 - **Studio progress:** updates after every sentence (not every page) with the page, the speed measured on this phone and an honest time left (to 6 h ready or the book's end, whichever is nearer), and says what that speed means for the voice. Shown from the moment it starts; "measuring" until 20 s of rendering.
 - **Studio mode dialog** (book menu → Studio mode, or Details on the studio card): what it does, live progress, what is ready (length, pages, size), where it is kept and what deletes it, Listen, Save as audio file (`Audiobooks/<title>/Studio audio, pages a-b.m4a`), Delete, Start, Stop, Start now.
 - **Voices:** a voice picked in Settings → Voices, in the reader or by a language pack's download now restarts the sentence playing, so the old voice no longer plays on for the sentences rendered ahead. The reader's pick is saved like Settings'.

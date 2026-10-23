@@ -43,7 +43,7 @@ internal class StudioNotifications(private val context: Context, private val con
 
     /**
      * The run's progress, here and on the app's card: what is ready, the time left at the speed measured on this
-     * phone (or that it is still measuring), the page, and what that speed means for this voice (ADR-062).
+     * phone (or that it is still measuring), the page, and what that speed means for this voice (ADR-063).
      */
     fun showRunning(title: String, progress: StudioProgress, waiting: ChargingGate.Wait?) {
         val ready = context.getString(

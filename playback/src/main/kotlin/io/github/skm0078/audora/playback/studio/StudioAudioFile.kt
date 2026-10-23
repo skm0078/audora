@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/studio/StudioAudioFile.kt
-// Purpose: Saves a book's ready studio audio as one .m4a in Audiobooks/<title>/, to play in any app or copy (ADR-062).
+// Purpose: Saves a book's ready studio audio as one .m4a in Audiobooks/<title>/, to play in any app or copy (ADR-063).
 
 package io.github.skm0078.audora.playback.studio
 

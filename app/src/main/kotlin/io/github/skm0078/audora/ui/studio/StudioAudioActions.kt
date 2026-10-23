@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/studio/StudioAudioActions.kt
-// Purpose: The actions of a book's studio dialog (ADR-062), carried out by the library.
+// Purpose: The actions of a book's studio dialog (ADR-063), carried out by the library.
 
 package io.github.skm0078.audora.ui.studio
 

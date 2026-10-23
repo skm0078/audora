@@ -70,7 +70,7 @@ object StudioMode {
         return true
     }
 
-    /** What [id] has ready on the phone (ADR-062); null when nothing. Reads the folder: call it off the main thread. */
+    /** What [id] has ready on the phone (ADR-063); null when nothing. Reads the folder: call it off the main thread. */
     fun bookAudio(context: Context, id: BookId): StudioBookAudio? = store(context).bookAudio(id)
 
     /** True while studio mode is rendering [id]. */
@@ -78,7 +78,7 @@ object StudioMode {
         LongJobs.jobs.value[LongJobKind.STUDIO]?.takeIf { it.running }?.bookId == id && JobSlots.STUDIO.busy
 
     /**
-     * Deletes [id]'s studio audio (ADR-062); playback reads that book live until studio mode runs again. Refused
+     * Deletes [id]'s studio audio (ADR-063); playback reads that book live until studio mode runs again. Refused
      * (false) while studio mode renders that book, which would write into the folder being deleted. Blocking.
      */
     fun deleteBook(context: Context, id: BookId): Boolean {

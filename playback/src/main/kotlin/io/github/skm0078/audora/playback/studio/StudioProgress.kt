@@ -4,7 +4,7 @@
 package io.github.skm0078.audora.playback.studio
 
 /**
- * A studio run's state after a sentence or a page, for the progress the listener sees (ADR-062).
+ * A studio run's state after a sentence or a page, for the progress the listener sees (ADR-063).
  *
  * @property readyMs speech ready from the start page on, including the sentences of the page being rendered.
  * @property pagesReadyMs the part of [readyMs] on finished pages, before [page].

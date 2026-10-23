@@ -82,7 +82,7 @@ internal class StudioLibrary(
     // Studio mode and the copies report on the library's card and in a notification, so they ask for that
     // permission first; one already running of the same kind is said at once instead.
     fun onBookAction(book: Book, action: BookAction) = when (action) {
-        // One place for everything about the book's studio audio (ADR-062): progress, what is ready, where, actions.
+        // One place for everything about the book's studio audio (ADR-063): progress, what is ready, where, actions.
         BookAction.STUDIO -> openStudio(book.id)
 
         BookAction.ACCESSIBLE_COPY -> longJob(LongJobKind.COPY) {
