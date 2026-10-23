@@ -39,7 +39,8 @@ interface OcrEngine {
  * A page that reads with a low confidence may be a sideways or upside-down scan: a shrunk copy is read turned each
  * way and, when one turn reads clearly better, the page is read again turned that way ([OcrText.quarterTurns]). A
  * page that still reads unsure with its paper unevenly lit (a shadow across a photo) is read again with its light
- * evened out, kept when that reads clearly better ([evenlyLit]).
+ * evened out, kept when that reads clearly better ([evenlyLit]). A page that still reads unsure from a black and white
+ * scan (worn or speckled print) is read again softened, kept the same way ([softenedIfWorn]).
  *
  * Logs one line per recognised page with the time spent drawing and recognising it (done-when: per-page time on
  * the test phones), never the text.
@@ -135,7 +136,8 @@ class RenderedPageOcr(
             val upright = image.turned(turns)
             val read = if (turns == 0) Outcome.Success(asDrawn) else engine.recognize(upright, langs)
             read.map { page ->
-                val (best, from) = evenlyLit(page, upright, langs)
+                val (lit, litFrom) = evenlyLit(page, upright, langs)
+                val (best, from) = softenedIfWorn(lit, litFrom, langs)
                 finished(best, from, langs, turns)
             }
         }
@@ -169,10 +171,8 @@ class RenderedPageOcr(
         val lighting = config.lighting
         val words = page.lines.sumOf { it.words.size }
         val againWords = again.lines.sumOf { it.words.size }
-        val better = again.meanConfidence >= page.meanConfidence + lighting.minGain &&
-            again.meanConfidence >= lighting.minEvenedConfidence &&
-            againWords >= words * lighting.minWordShare &&
-            confidenceTotal(again) > confidenceTotal(page)
+        val bar = Bar(lighting.minGain, lighting.minEvenedConfidence, lighting.minWordShare)
+        val better = clearlyBetter(page, again, bar)
         AudoraLog.i(
             TAG,
             "OCR lighting $logContext page=${light.pageIndex} evenness=${"%.2f".format(Locale.ROOT, light.evenness)} " +
@@ -181,6 +181,62 @@ class RenderedPageOcr(
         )
         return better
     }
+
+    /**
+     * [page], read from [image], or the page read again softened ([WornPrint]) when it read unsure, [image] is a black
+     * and white scan and the softened read is clearly better with as many words
+     * ([io.github.skm0078.audora.core.config.WornPrintConfig]); with the image it was read from.
+     */
+    private fun softenedIfWorn(
+        page: RecognizedPage,
+        image: PageImage,
+        langs: Set<Lang>,
+    ): Pair<RecognizedPage, PageImage> {
+        val worn = config.wornPrint
+        val unsure = worn.enabled && page.meanConfidence < worn.readAgainBelow
+        val bilevel = if (unsure) WornPrint.bilevelShare(image, worn) else null
+        if (bilevel == null || bilevel < worn.minBilevelShare) return page to image
+        val softened = WornPrint.softened(image, WornPrint.radiusFor(image, worn), worn.passes)
+        return when (val read = engine.recognize(softened, langs)) {
+            is Outcome.Success -> if (keepsSoftened(page, read.value, image.pageIndex, bilevel)) {
+                read.value to softened
+            } else {
+                page to image
+            }
+
+            is Outcome.Failure -> {
+                AudoraLog.w(TAG, "OCR softened read failed $logContext page=${image.pageIndex}: ${read.error}")
+                page to image
+            }
+        }
+    }
+
+    /** [again], read softened, reads clearly better than [page] ([clearlyBetter]); logged either way. */
+    private fun keepsSoftened(page: RecognizedPage, again: RecognizedPage, pageIndex: Int, bilevel: Float): Boolean {
+        val worn = config.wornPrint
+        val better = clearlyBetter(page, again, Bar(worn.minGain, worn.minSoftenedConfidence, worn.minWordShare))
+        AudoraLog.i(
+            TAG,
+            "OCR worn print $logContext page=$pageIndex bilevel=${"%.2f".format(Locale.ROOT, bilevel)} " +
+                "confidence=${page.meanConfidence}->${again.meanConfidence} " +
+                "words=${page.lines.sumOf { it.words.size }}->${again.lines.sumOf { it.words.size }} " +
+                "kept=${if (better) "softened" else "as drawn"}",
+        )
+        return better
+    }
+
+    /** What a second read must reach to replace the first: a confidence gain, a confidence of its own, a word share. */
+    private class Bar(val minGain: Int, val minConfidence: Int, val minWordShare: Float)
+
+    /**
+     * [again] reads clearly surer than [page], sure enough on its own, with as many words and more confidence over all
+     * its characters.
+     */
+    private fun clearlyBetter(page: RecognizedPage, again: RecognizedPage, bar: Bar): Boolean =
+        again.meanConfidence >= page.meanConfidence + bar.minGain &&
+            again.meanConfidence >= bar.minConfidence &&
+            again.lines.sumOf { it.words.size } >= page.lines.sumOf { it.words.size } * bar.minWordShare &&
+            confidenceTotal(again) > confidenceTotal(page)
 
     private fun confidenceTotal(page: RecognizedPage): Long =
         page.lines.sumOf { line -> line.words.sumOf { it.conf.toLong() * it.text.length } }
@@ -263,11 +319,11 @@ class RenderedPageOcr(
         private const val BOTTOM_STRIP = 1
 
         /**
-         * Pages with the line retry (RI-3), rules (RI-4a part 2), line sizes (RI-10) and evened light; older text is
-         * not reused. [io.github.skm0078.audora.core.config.LightingConfig] is not in the key: bump this when it
-         * changes.
+         * Pages with the line retry (RI-3), rules (RI-4a part 2), line sizes (RI-10), evened light and softened worn
+         * print; older text is not reused. [io.github.skm0078.audora.core.config.LightingConfig] and
+         * [io.github.skm0078.audora.core.config.WornPrintConfig] are not in the key: bump this when they change.
          */
-        private const val PAGE_VARIANT = "page-r6"
+        private const val PAGE_VARIANT = "page-r7"
 
         /** Margin strips with the line retry, like the page they are compared with. */
         private const val MARGIN_VARIANT = "margins-r2-"

@@ -68,5 +68,7 @@ package io.github.skm0078.audora.pdf
  *     space; a bare print stamp repeats only its own time; "वि. सं.", "वि.वि. बंद", "a.m. है" and a dotted Indic word
  *     with a joiner after its stop held whole; "(U.S.) The" and "the U.S. A new law" end a sentence; a math sign's
  *     tall box no longer joins two lines of words; text set wholly in a monospace font is never cut into columns.
+ * 12 = worn print: a scanned black and white page that reads unsure is read again softened and the clearly better
+ *     read kept (WornPrintConfig), so its words can change.
  */
-const val PIPELINE_VERSION: Int = 11
+const val PIPELINE_VERSION: Int = 12
