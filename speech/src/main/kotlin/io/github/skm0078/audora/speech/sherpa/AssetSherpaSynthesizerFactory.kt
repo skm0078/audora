@@ -81,7 +81,7 @@ internal fun sherpaModelConfig(
     dataDir: String,
     path: (String) -> String,
 ): OfflineTtsModelConfig {
-    val base = OfflineTtsModelConfig(numThreads = threads, debug = false, provider = SHERPA_PROVIDER)
+    val base = OfflineTtsModelConfig(numThreads = spec.threads ?: threads, debug = false, provider = SHERPA_PROVIDER)
     return when (spec.family) {
         SherpaFamily.VITS -> base.copy(vits = vitsConfig(spec, dataDir, path))
 

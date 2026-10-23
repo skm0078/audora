@@ -124,6 +124,9 @@ def synthesize(tts: sherpa_onnx.OfflineTts, voice: dict, sid: int, text: str):
     if voice["family"] == "supertonic":
         gen.num_steps = int(voice.get("numSteps", 5))
         gen.extra = {"lang": voice["extraLang"]}
+    if voice.get("extra"):
+        # e.g. {"emotion_id": "3"} for AI4Bharat Rasa; sherpa-onnx reads it per call, no reload.
+        gen.extra = {**gen.extra, **voice["extra"]}
     start = time.perf_counter()
     audio = tts.generate(text, gen)
     elapsed = time.perf_counter() - start

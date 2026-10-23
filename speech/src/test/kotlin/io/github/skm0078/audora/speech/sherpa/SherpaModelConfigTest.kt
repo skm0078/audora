@@ -50,6 +50,15 @@ class SherpaModelConfigTest {
     }
 
     @Test
+    fun `a voice's own thread count wins over the default`() {
+        val plain = sherpaModelConfig(base, threads = 2, dataDir = "") { "/v/$it" }
+        val heavy = sherpaModelConfig(base.copy(threads = 4), threads = 2, dataDir = "") { "/v/$it" }
+
+        assertEquals(2, plain.numThreads)
+        assertEquals(4, heavy.numThreads)
+    }
+
+    @Test
     fun `kokoro gets its lexicon and language in the model config`() {
         val config = sherpaModelConfig(kokoro, threads = 2, dataDir = "/v/espeak-ng-data") { "/v/$it" }.kokoro
 
