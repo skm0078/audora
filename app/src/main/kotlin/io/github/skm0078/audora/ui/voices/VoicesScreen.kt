@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/voices/VoicesScreen.kt
-// Purpose: Settings → Voices (P4-01): download, cancel, delete and import voices; pick the reading voice per language.
+// Purpose: Settings → Voices (P4-01): a language pack per language first (ADR-056), then every voice to pick or delete.
 
 package io.github.skm0078.audora.ui.voices
 
@@ -31,6 +31,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -50,6 +51,7 @@ import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.speech.voices.VoiceStatus
 import io.github.skm0078.audora.ui.theme.AudoraTheme
+import io.github.skm0078.audora.ui.theme.MoreOptions
 
 @Composable
 fun VoicesScreen(state: VoicesState, actions: VoicesActions, modifier: Modifier = Modifier) {
@@ -110,6 +112,10 @@ private fun VoicesTopBar(onBack: () -> Unit) {
     )
 }
 
+/**
+ * One download per language first (ADR-056): most listeners need nothing else. Every voice, with samples, other
+ * choices and deletes, waits under "All voices", closed; the import row only where the build offers it.
+ */
 @Composable
 private fun VoicesContent(state: VoicesState, actions: VoicesActions, onImport: () -> Unit) {
     val rows = state.rows
@@ -121,32 +127,71 @@ private fun VoicesContent(state: VoicesState, actions: VoicesActions, onImport: 
         rows == null -> Centered { CircularProgressIndicator() }
 
         else -> LazyColumn {
-            Lang.entries.forEach { lang ->
-                item(key = "header:${lang.name}") { LanguageHeader(lang) }
-                if (lang != Lang.EN) {
-                    item(key = "phone:${lang.name}") {
-                        PhoneVoiceRow(selected = rows.none { it.lang == lang && it.readsLanguage }) {
-                            actions.onUseDefault(lang)
-                        }
-                    }
+            if (state.packs.isNotEmpty()) {
+                item(key = "packs") { PacksHeader() }
+                items(state.packs, key = { "pack:${it.lang.name}" }) { pack ->
+                    LanguagePackRow(pack, { actions.onDownload(pack.voice) }, { actions.onCancel(pack.voice) })
                 }
-                items(rows.filter { it.lang == lang }, key = { it.key }) { row ->
+            }
+            item(key = "all") {
+                MoreOptions(
+                    stringResource(R.string.voices_all_title),
+                    stringResource(R.string.voices_all_summary),
+                    headerPadding = HORIZONTAL_PADDING,
+                ) {
+                    AllVoices(rows, state, actions)
+                }
+            }
+            if (state.canImport) {
+                item(key = "import") {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.voices_import_title)) },
+                        supportingContent = { Text(stringResource(R.string.voices_import_body)) },
+                        trailingContent = {
+                            TextButton(onClick = onImport, enabled = !state.importing) {
+                                Text(stringResource(R.string.voices_import_action))
+                            }
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Each language's voices, the phone's voice first for Hindi and Bengali. A short list: no lazy rows needed. */
+@Composable
+private fun AllVoices(rows: List<VoiceRow>, state: VoicesState, actions: VoicesActions) {
+    Column {
+        Lang.entries.forEach { lang ->
+            LanguageHeader(lang)
+            if (lang != Lang.EN) {
+                val phone = rows.none { it.lang == lang && it.readsLanguage }
+                PhoneVoiceRow(selected = phone) { actions.onUseDefault(lang) }
+            }
+            rows.filter { it.lang == lang }.forEach { row ->
+                key(row.key) {
                     VoiceRowItem(row, actions, state.sample)
                     HorizontalDivider()
                 }
             }
-            item(key = "import") {
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.voices_import_title)) },
-                    supportingContent = { Text(stringResource(R.string.voices_import_body)) },
-                    trailingContent = {
-                        TextButton(onClick = onImport, enabled = !state.importing) {
-                            Text(stringResource(R.string.voices_import_action))
-                        }
-                    },
-                )
-            }
         }
+    }
+}
+
+@Composable
+private fun PacksHeader() {
+    Column(Modifier.padding(horizontal = HORIZONTAL_PADDING, vertical = HEADER_PADDING)) {
+        Text(
+            stringResource(R.string.voice_packs_title),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() },
+        )
+        Text(
+            stringResource(R.string.voice_packs_body),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

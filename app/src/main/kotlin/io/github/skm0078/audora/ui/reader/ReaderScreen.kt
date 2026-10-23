@@ -68,6 +68,7 @@ fun ReaderScreen(
     voiceNotes: VoiceNotesBinding = VoiceNotesBinding.None,
     lookUp: LookUpBinding = LookUpBinding.None,
     onTutor: (() -> Unit)? = null,
+    voicePacks: VoicePackActions = VoicePackActions(),
 ) {
     var textLookOpen by rememberSaveable { mutableStateOf(false) }
     if (textLookOpen) TextLookSheet(look, onLookChange) { textLookOpen = false }
@@ -122,9 +123,8 @@ fun ReaderScreen(
 
                 is DocumentState.Open -> {
                     PlaceHighlights(state, notesActions)
-                    OpenBook(state, document.pageCount, config, actions, ocrModels, look, spokenWord, thumbnails) {
-                        notes.highlightsOn(it).isNotEmpty()
-                    }
+                    val offer = VoicePackOffer(voices, voicePacks)
+                    OpenBook(state, document, config, actions, ocrModels, look, spokenWord, thumbnails, offer, notes)
                     NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)
                 }
             }
@@ -136,15 +136,18 @@ fun ReaderScreen(
 @Composable
 private fun OpenBook(
     state: ReaderState,
-    pageCount: Int,
+    document: DocumentState.Open,
     config: ReaderConfig,
     actions: ReaderActions,
     ocrModels: OcrModelsState?,
     look: ReadingLook,
     spokenWord: () -> IntRange?,
     thumbnails: PageThumbnails?,
-    isHighlighted: (ReadingUnit) -> Boolean,
+    voicePack: VoicePackOffer,
+    notes: NotesState,
 ) {
+    val isHighlighted: (ReadingUnit) -> Boolean = { notes.highlightsOn(it).isNotEmpty() }
+    val pageCount = document.pageCount
     var picking by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
         PageBar(state.page, pageCount, actions, onPick = { picking = true })
@@ -172,6 +175,7 @@ private fun OpenBook(
             is PageContent.Ready -> {
                 val badge = ocrBadgeText(content.origin, content.ocrConfidence, config)
                 PageOriginNotice(content.origin, ocrModels, badge, actions::onDownloadOcrModels)
+                VoicePackNotice(content.units, voicePack)
                 when {
                     state.view == ReaderView.PAGE -> PageView(state, content.units, actions, look.tone)
 

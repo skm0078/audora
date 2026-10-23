@@ -8,7 +8,10 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.sherpa.CastSpeakers
+import io.github.skm0078.audora.speech.voices.LanguagePack
+import io.github.skm0078.audora.speech.voices.LanguagePacks
 import io.github.skm0078.audora.speech.voices.VoiceKind
+import io.github.skm0078.audora.speech.voices.VoiceListConfig
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -62,11 +65,15 @@ sealed interface VoicesMessage {
 }
 
 /**
- * @property rows null while the list loads.
+ * @property rows null while the list loads; in a simple build, without the voices it hides ([VoiceListConfig]).
+ * @property packs each language's one-tap download, shown above the full list.
+ * @property canImport the "Import a voice" row is offered.
  * @property importing a folder is being copied; the screen blocks a second import.
  */
 data class VoicesState(
     val rows: List<VoiceRow>? = null,
+    val packs: List<LanguagePack> = emptyList(),
+    val canImport: Boolean = true,
     val loadFailed: Boolean = false,
     val importing: Boolean = false,
     val pendingDelete: VoiceRow? = null,
@@ -80,8 +87,9 @@ class VoicesController(
     private val voices: VoiceManager,
     private val scope: CoroutineScope,
     private val sampler: VoiceSampler? = null,
+    private val list: VoiceListConfig = VoiceListConfig(),
 ) {
-    private val mutable = MutableStateFlow(VoicesState())
+    private val mutable = MutableStateFlow(VoicesState(canImport = list.canImport))
     val state: StateFlow<VoicesState> = mutable.asStateFlow()
 
     private var watch: Job? = null
@@ -95,7 +103,10 @@ class VoicesController(
                     AudoraLog.e(TAG, "Voice list could not be loaded", e)
                     mutable.update { it.copy(loadFailed = true) }
                 }
-                .collect { rows -> mutable.update { it.copy(rows = rows, loadFailed = false) } }
+                .collect { rows ->
+                    val packs = LanguagePacks.of(rows)
+                    mutable.update { it.copy(rows = list.visible(rows), packs = packs, loadFailed = false) }
+                }
         }
     }
 

@@ -1,7 +1,8 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/SettingsScreen.kt
 // Purpose: Settings tab: Voices (P4-01), OCR models (P3-05), citation numbers (P2-03), keep screen on, appearance
-//          and app language (ADR-036, plan item 44), background reading (P1-06), Share logs (P1-07), kids mode
-//          (plan item 71), Voices & licences (P3-06), debug tool.
+//          and app language (ADR-036, plan item 44), background reading (P1-06), kids mode (plan item 71), licences
+//          (P3-06); under a closed "Advanced" (ADR-056): punctuation, volume keys, voice commands, pronunciation,
+//          Share logs (P1-07) and the debug tool.
 
 package io.github.skm0078.audora.ui.settings
 
@@ -40,6 +41,7 @@ import io.github.skm0078.audora.ui.diagnostics.ShareLogsState
 import io.github.skm0078.audora.ui.theme.Appearance
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.MoreOptions
 
 /**
  * The Settings tab (ADR-036): rows grouped as Listening, Reading, Appearance and App, each group a card. Rows keep
@@ -90,31 +92,77 @@ fun SettingsScreen(
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(top = Dimens.SpaceL).semantics { heading() },
         )
-        ListeningGroup(
-            onOpenVoices,
-            ModelPack(ocrModels, onOcrModels),
-            ModelPack(punctuationModel, onPunctuationModel),
-            skipCitations,
-            onSkipCitationsChange,
-        )
+        ListeningGroup(onOpenVoices, ModelPack(ocrModels, onOcrModels), skipCitations, onSkipCitationsChange)
         SettingsGroup(stringResource(R.string.settings_group_reading)) {
-            ReaderSwitches(keepScreenOn, onKeepScreenOnChange, volumeKeysSkip, onVolumeKeysSkipChange)
+            SwitchItem(
+                R.string.settings_keep_screen_on_title,
+                R.string.settings_keep_screen_on_body,
+                keepScreenOn,
+                onKeepScreenOnChange,
+            )
+        }
+        AppearanceGroup(appearance, onAppearanceChange, language, onLanguageChange)
+        AppGroup(
+            AppLinks(onOpenBatterySetup, onOpenLicences, onKidsMode, onOpenStorage),
+            batteryExempt,
+            versionName,
+        )
+        AdvancedSection(
+            ModelPack(punctuationModel, onPunctuationModel),
+            ocrReady = ocrModels is OcrModelsState.Ready,
+            volumeKeysSkip,
+            onVolumeKeysSkipChange,
+            voiceCommands,
+            pronunciation,
+            shareState,
+            onShareLogs,
+            onSimulateReadingSession.takeIf { showDebugTools },
+        )
+    }
+}
+
+/**
+ * Options few people change wait here, closed, so the screen opens on what most listeners need (ADR-056).
+ * [onSimulateReadingSession] is null outside debug builds, and its group is then left out.
+ */
+@Composable
+private fun AdvancedSection(
+    punctuation: ModelPack,
+    ocrReady: Boolean,
+    volumeKeysSkip: Boolean,
+    onVolumeKeysSkipChange: (Boolean) -> Unit,
+    voiceCommands: VoiceCommandsSettings?,
+    pronunciation: PronunciationSettings?,
+    shareState: ShareLogsState,
+    onShareLogs: () -> Unit,
+    onSimulateReadingSession: (() -> Unit)?,
+) {
+    MoreOptions(
+        stringResource(R.string.settings_advanced_title),
+        stringResource(R.string.settings_advanced_summary),
+        headerPadding = Dimens.SpaceXs,
+    ) {
+        SettingsGroup(stringResource(R.string.settings_group_advanced_reading)) {
+            // It only touches scanned pages, so it says so while scanned pages cannot be read yet.
+            val texts = if (ocrReady) ModelPackTexts.PUNCTUATION else ModelPackTexts.PUNCTUATION_NEEDS_OCR
+            ModelPackRow(punctuation, texts, divider = false)
+            if (punctuation.state != null) SettingsDivider()
+            SwitchItem(
+                R.string.settings_volume_keys_title,
+                R.string.settings_volume_keys_body,
+                volumeKeysSkip,
+                onVolumeKeysSkipChange,
+            )
             voiceCommands?.let { VoiceCommandsItems(it) }
         }
         pronunciation?.let { PronunciationGroup(it) }
-        AppearanceGroup(appearance, onAppearanceChange, language, onLanguageChange)
-        AppGroup(
-            AppLinks(onOpenBatterySetup, onShareLogs, onOpenLicences, onKidsMode, onOpenStorage),
-            batteryExempt,
-            shareState,
-            versionName,
-        )
-        if (showDebugTools) {
+        SettingsGroup(stringResource(R.string.settings_group_help)) { ShareLogsItem(shareState, onShareLogs) }
+        onSimulateReadingSession?.let { simulate ->
             SettingsGroup(stringResource(R.string.settings_group_debug)) {
                 SettingsRow(
                     stringResource(R.string.debug_simulate_title),
                     summary = { Text(stringResource(R.string.debug_simulate_body)) },
-                    onClick = onSimulateReadingSession,
+                    onClick = simulate,
                 )
             }
         }
@@ -124,14 +172,13 @@ fun SettingsScreen(
 /** What the App group's rows open. */
 private class AppLinks(
     val onOpenBatterySetup: () -> Unit,
-    val onShareLogs: () -> Unit,
     val onOpenLicences: () -> Unit,
     val onKidsMode: () -> Unit,
     val onOpenStorage: () -> Unit,
 )
 
 @Composable
-private fun AppGroup(links: AppLinks, batteryExempt: Boolean, shareState: ShareLogsState, versionName: String) {
+private fun AppGroup(links: AppLinks, batteryExempt: Boolean, versionName: String) {
     SettingsGroup(stringResource(R.string.settings_group_app)) {
         BatteryItem(batteryExempt, links.onOpenBatterySetup)
         SettingsDivider()
@@ -140,8 +187,6 @@ private fun AppGroup(links: AppLinks, batteryExempt: Boolean, shareState: ShareL
             summary = { Text(stringResource(R.string.settings_storage_body)) },
             onClick = links.onOpenStorage,
         )
-        SettingsDivider()
-        ShareLogsItem(shareState, links.onShareLogs)
         SettingsDivider()
         KidsModeItem(links.onKidsMode)
         SettingsDivider()
@@ -157,41 +202,24 @@ private fun AppGroup(links: AppLinks, batteryExempt: Boolean, shareState: ShareL
     }
 }
 
-/** The reader's own switches: keep the screen on, and volume keys that move by sentence (plan item 20). */
-@Composable
-private fun ReaderSwitches(
-    keepScreenOn: Boolean,
-    onKeepScreenOnChange: (Boolean) -> Unit,
-    volumeKeysSkip: Boolean,
-    onVolumeKeysSkipChange: (Boolean) -> Unit,
-) {
-    SwitchItem(
-        R.string.settings_keep_screen_on_title,
-        R.string.settings_keep_screen_on_body,
-        keepScreenOn,
-        onKeepScreenOnChange,
-    )
-    SettingsDivider()
-    SwitchItem(
-        R.string.settings_volume_keys_title,
-        R.string.settings_volume_keys_body,
-        volumeKeysSkip,
-        onVolumeKeysSkipChange,
-    )
-}
-
 /** A downloadable model pack's state (null while it loads) and what its buttons do. */
 private class ModelPack(val state: OcrModelsState?, val onAction: (OcrModelsAction) -> Unit)
 
 /** A model pack's row with the divider before it; nothing while its state is still loading. */
 @Composable
-private fun ModelPackRow(pack: ModelPack, texts: ModelPackTexts) = ModelPackRow(pack.state, pack.onAction, texts)
+private fun ModelPackRow(pack: ModelPack, texts: ModelPackTexts, divider: Boolean = true) =
+    ModelPackRow(pack.state, pack.onAction, texts, divider)
 
 /** A model pack's row with the divider before it, for rows inside a group; nothing while its state still loads. */
 @Composable
-internal fun ModelPackRow(state: OcrModelsState?, onAction: (OcrModelsAction) -> Unit, texts: ModelPackTexts) {
+internal fun ModelPackRow(
+    state: OcrModelsState?,
+    onAction: (OcrModelsAction) -> Unit,
+    texts: ModelPackTexts,
+    divider: Boolean = true,
+) {
     state?.let {
-        SettingsDivider()
+        if (divider) SettingsDivider()
         OcrModelsItem(it, onAction, texts)
     }
 }
@@ -200,7 +228,6 @@ internal fun ModelPackRow(state: OcrModelsState?, onAction: (OcrModelsAction) ->
 private fun ListeningGroup(
     onOpenVoices: () -> Unit,
     ocr: ModelPack,
-    punctuation: ModelPack,
     skipCitations: Boolean,
     onSkipCitationsChange: (Boolean) -> Unit,
 ) {
@@ -211,9 +238,6 @@ private fun ListeningGroup(
             onClick = onOpenVoices,
         )
         ModelPackRow(ocr, ModelPackTexts.OCR)
-        // The punctuation model only touches scanned pages, so it says so while scanned pages cannot be read yet.
-        val ocrReady = ocr.state is OcrModelsState.Ready
-        ModelPackRow(punctuation, if (ocrReady) ModelPackTexts.PUNCTUATION else ModelPackTexts.PUNCTUATION_NEEDS_OCR)
         SettingsDivider()
         SwitchItem(
             R.string.settings_skip_citations_title,

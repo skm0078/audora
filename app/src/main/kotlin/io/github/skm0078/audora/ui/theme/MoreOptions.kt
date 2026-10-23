@@ -27,18 +27,22 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 
 /**
  * The common options stay in view; the rest sit behind this row, which says what it holds ([summary]) while closed.
  * The whole row is the touch target, and TalkBack reads its title, summary and "expanded" or "collapsed" together.
- * Open or closed survives rotation and the app going to the background.
+ * Open or closed survives rotation and the app going to the background. [headerPadding] indents the row alone, for
+ * content (list items) that brings its own.
  */
 @Composable
 fun MoreOptions(
     title: String,
     summary: String,
     modifier: Modifier = Modifier,
+    headerPadding: Dp = 0.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
@@ -50,7 +54,7 @@ fun MoreOptions(
                 .heightIn(min = Dimens.TouchTarget)
                 .clickable(role = Role.Button) { open = !open }
                 .semantics { stateDescription = state }
-                .padding(vertical = Dimens.SpaceS),
+                .padding(horizontal = headerPadding, vertical = Dimens.SpaceS),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
