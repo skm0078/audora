@@ -248,6 +248,9 @@ class ReleaseJourneyTest {
     }
 
     private fun aRowTogglesFromItsTitle() {
+        // While a book plays, its highlight recomposes every frame and Compose's test sync never goes idle, so the
+        // screens are driven paused; the service acting on the setting and reading on afterwards is what is checked.
+        pause()
         backToTabs()
         tapText(R.string.tab_settings)
         val row = toggleRow(text(R.string.settings_skip_citations_title))
@@ -257,7 +260,9 @@ class ReleaseJourneyTest {
         tap(hasText(text(R.string.settings_skip_citations_title)))
         awaitTrue("the switch to flip") { toggleState(row) != before }
         awaitLog(TEXT_REREAD, rereads)
+        JourneyDevice.onMain(requireNotNull(port)::play)
         awaitReadingMovesOn("reading to go on after the book is read again")
+        pause()
         tap(hasText(text(R.string.settings_skip_citations_title)))
         awaitTrue("the switch to flip back") { toggleState(row) == before }
     }
@@ -302,6 +307,11 @@ class ReleaseJourneyTest {
         tap(hasText(text(R.string.ocr_models_download_short), substring = true) and hasClickAction())
         gone(card, OCR_DOWNLOAD_TIMEOUT_MS)
         waitForNode(hasText(text(R.string.reader_ocr_badge)), OCR_DOWNLOAD_TIMEOUT_MS)
+    }
+
+    private fun pause() {
+        JourneyDevice.onMain(requireNotNull(port)::pause)
+        awaitTrue("pause", state = { "Player: ${snapshot()}" }) { !snapshot().wantsToPlay }
     }
 
     /** False (logged, the step passes) on a build with only one English voice. */
