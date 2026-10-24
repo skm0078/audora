@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The app's paper and amber (ui/theme/AudoraColors.kt): the icon, splash and in-app colours match. -->
-    <color name="ic_launcher_background">#F8F2E8</color>
+    <!-- The icon sits on white, as the logo was drawn (ADR-065); the splash keeps the app's paper (ui/theme/AudoraColors.kt). -->
+    <color name="ic_launcher_background">#FFFFFF</color>
     <color name="splash_background">#F8F2E8</color>
 </resources>
