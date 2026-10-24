@@ -81,8 +81,10 @@ class ClipMaker(private val renderer: SentenceRenderer, private val config: Clip
         if (passage == null) unit.index >= start.index else unit.charEnd > passage.startChar
 
     /** [unit] comes after the passage: on a later page, or beginning at or after its end. */
-    private fun ClipPassage?.endsBefore(unit: ReadingUnit): Boolean =
-        this != null && (unit.page > endPage || (unit.page == endPage && unit.charStart >= endChar))
+    private fun ClipPassage?.endsBefore(unit: ReadingUnit): Boolean {
+        if (this == null) return false
+        return unit.page > endPage || (unit.page == endPage && unit.charStart >= endChar)
+    }
 
     private sealed interface Stop {
         data object Done : Stop

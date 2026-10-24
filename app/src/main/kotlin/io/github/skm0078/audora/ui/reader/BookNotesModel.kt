@@ -55,6 +55,9 @@ data class NotesState(
     fun highlightsOn(unit: ReadingUnit): List<Highlight> =
         placed.byIndex[unit.index]?.takeIf { placed.page == unit.page }.orEmpty()
 
+    /** [unit] shows as highlighted: a highlight covers it, or a passage being picked starts at it. */
+    fun showsHighlight(unit: ReadingUnit): Boolean = highlightsOn(unit).isNotEmpty() || isRangeStart(unit)
+
     /** [unit] is where the highlight being picked starts: it shows as highlighted until the end is picked. */
     fun isRangeStart(unit: ReadingUnit): Boolean =
         rangeFrom?.let { it.page == unit.page && it.index == unit.index } == true
