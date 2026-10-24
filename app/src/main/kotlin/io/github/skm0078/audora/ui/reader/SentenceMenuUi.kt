@@ -57,8 +57,7 @@ private data class MenuSources(
  * The rows for [unit]. On a highlighted sentence, Remove and Share act on the whole highlighted passage (the first,
  * when two merged into this sentence); a sentence with no words ("* * *") can never show a band, so it offers none.
  */
-private fun sentenceMenu(unit: ReadingUnit, notes: NotesState, sources: MenuSources): List<MenuEntry> {
-    val (actions, reader, voice, lookUp) = sources
+private fun MenuSources.sentenceMenu(unit: ReadingUnit, notes: NotesState): List<MenuEntry> {
     val highlight = notes.highlightsOn(unit).firstOrNull()
     val canHighlight = highlight == null && unit.text.any(Char::isLetterOrDigit)
     fun closing(action: () -> Unit): () -> Unit = {
@@ -99,7 +98,7 @@ internal fun SentenceMenu(
     voice: VoiceNotesBinding,
     lookUp: LookUpBinding,
 ) {
-    val entries = sentenceMenu(unit, notes, MenuSources(actions, reader, voice, lookUp))
+    val entries = MenuSources(actions, reader, voice, lookUp).sentenceMenu(unit, notes)
     SentenceMenuDialog(entries, onDismiss = actions::dismissMenu)
 }
 
