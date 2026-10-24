@@ -2,7 +2,7 @@
 
 ## What this is
 Offline-first Android app that reads PDFs aloud like a human (English, Hindi, Bengali) with background playback. Personal use + friends, sideloaded APK.
-Spec: docs/BUILD-SPEC.md · Tickets: docs/TICKET-PLAN.md · Progress: docs/PROGRESS.md · Decisions: docs/DECISIONS-OPEN.md, docs/adr/
+Spec: docs/BUILD-SPEC.md · Tickets: docs/TICKET-PLAN.md · Progress: docs/PROGRESS.md · Decisions: docs/DECISIONS-OPEN.md, docs/adr/ · Docs index: docs/README.md (add a line for every new doc or ADR)
 
 ## Stack (change only via an ADR)
 Kotlin 2.x, Compose, Hilt, Media3 1.11.x (ExoPlayer + MediaSessionService), sherpa-onnx 1.13.x (arm64-v8a), PdfiumAndroidKt, ICU BreakIterator, Room, DataStore, WorkManager (downloads only). Phase 3: Tesseract4Android (PaddleOCR ONNX only if P3-05 proves it, ADR-011). No proprietary SDKs (GPL-3.0).
