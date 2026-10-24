@@ -22,6 +22,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,7 +55,7 @@ import kotlinx.coroutines.withContext
 
 /** The live jobs and downloads; voice names are read from the catalog once, off the main thread. */
 @Composable
-fun JobsRoute(onBack: () -> Unit) {
+fun JobsRoute(onOpenMade: () -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current.applicationContext
     val jobs by LongJobs.jobs.collectAsStateWithLifecycle()
     val downloads by remember { DownloadJobs.observe(context) }.collectAsStateWithLifecycle(emptyList())
@@ -68,6 +69,7 @@ fun JobsRoute(onBack: () -> Unit) {
         downloads = downloads,
         voiceNames = voiceNames,
         onCancelDownload = { DownloadJobs.cancel(context, it) },
+        onOpenMade = onOpenMade,
         onBack = onBack,
     )
 }
@@ -93,6 +95,7 @@ fun JobsScreen(
     downloads: List<DownloadJob>,
     voiceNames: Map<String, String>,
     onCancelDownload: (DownloadJob) -> Unit,
+    onOpenMade: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -114,6 +117,12 @@ fun JobsScreen(
             contentPadding = PaddingValues(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
         ) {
+            // What finished jobs made is one tap away, where people look for it after a job ends (ADR-068).
+            item {
+                OutlinedButton(onClick = onOpenMade, Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.made_open_all))
+                }
+            }
             if (jobs.isEmpty() && downloads.isEmpty()) {
                 item { Text(stringResource(R.string.jobs_empty), style = MaterialTheme.typography.bodyLarge) }
             }

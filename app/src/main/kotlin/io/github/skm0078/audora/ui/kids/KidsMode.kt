@@ -47,7 +47,7 @@ fun kidsDestination(next: AppDestination): AppDestination = when (next) {
     is AppDestination.Reader -> AppDestination.Player(next.id, next.from)
 
     AppDestination.Notes, AppDestination.Settings, is AppDestination.Voices, AppDestination.Licences,
-    AppDestination.Storage, AppDestination.Jobs,
+    AppDestination.Storage, AppDestination.Jobs, AppDestination.Made, is AppDestination.MadePlayer,
     is AppDestination.BatterySetup,
     -> AppDestination.Library
 }

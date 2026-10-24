@@ -31,8 +31,10 @@ import java.io.File
 import java.time.Instant
 import java.util.UUID
 
-/** What was saved: the file names (safe to show) and the pages that had no text. */
-internal data class SavedCopy(val names: List<String>, val skippedPages: Int)
+/** What was saved: the files (their names are safe to show) and the pages that had no text. */
+internal data class SavedCopy(val files: List<SharedDocuments.Saved>, val skippedPages: Int) {
+    val names: List<String> get() = files.map { it.name }
+}
 
 /**
  * Blocking, on the service's worker thread, which owns [book] (thread-confined like its `BookText`). Cancel by

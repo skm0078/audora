@@ -9,7 +9,8 @@ package io.github.skm0078.audora.playback.contract
  * Every PendingIntent in Audora takes its code from here.
  *
  * Blocks, so branches landing apart never pick the same number: 1-9 playback and app basics, 10-19 the UI pass
- * (widgets, tile), 20-39 studio (talking books, copies, clips). PendingIntentCodesTest fails when two share a value.
+ * (widgets, tile), 20-39 studio (talking books, copies, clips), 40-49 the library's jobs and made files (ADR-067,
+ * ADR-068). PendingIntentCodesTest fails when two share a value.
  */
 object PendingIntentCodes {
     /** The playback notification and lock screen: open Audora. */
@@ -35,4 +36,10 @@ object PendingIntentCodes {
 
     /** The Quick Settings tile (plan item 36), on Android 14 and later: open Audora on the last book. */
     const val OPEN_FROM_TILE = 12
+
+    /** A long job's notification (ADR-067): open Audora on its Jobs screen. */
+    const val OPEN_JOBS = 40
+
+    /** The saved-audio player's notification and lock screen (ADR-068): open Audora. */
+    const val OPEN_FROM_MADE_AUDIO = 41
 }

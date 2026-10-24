@@ -197,7 +197,8 @@ class AudoraPlaybackService : MediaLibraryService() {
                 onBook = { id ->
                     book.open(id)
                     characters.open(id)
-                    player.setPlaybackSpeed(style.config.playerSpeed(heard()))
+                    // The book's own pitch too (ADR-068), so a book opened after another is heard at its own.
+                    player.playbackParameters = PlaybackParameters(style.config.playerSpeed(heard()), heard().pitch)
                 },
                 keepGoingToNextChapter = { upNext.queue.value.keepGoingToNextChapter },
                 onBookFinished = queueAdvance()::onBookFinished,

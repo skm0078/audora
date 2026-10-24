@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.playback.export
 
+import android.content.Context
 import io.github.skm0078.audora.core.logging.AudoraLog
 import java.io.File
 import java.io.FileOutputStream
@@ -112,22 +113,26 @@ class ExportRecords(private val folder: File) {
         return SavedChapter(number, name = parts[NAME_FIELD], durationMs, location = parts[LOCATION_FIELD])
     }
 
-    private companion object {
-        const val TAG = "Export.Records"
-        const val VERSION = "audora-audiobook-export 1"
-        const val KEY = "key"
-        const val COMPLETE = "complete"
-        const val CHAPTER = "chapter"
-        const val PENDING = "pending"
-        const val SEPARATOR = "\t"
-        const val CHAPTER_FIELDS = 4
-        const val LOCATION_FIELD = 2
-        const val NAME_FIELD = 3
-        const val RECORD_SUFFIX = ".txt"
-        const val PARTIAL_SUFFIX = ".partial"
-        const val HASH_HEX_CHARS = 16
+    companion object {
+        private const val FOLDER = "audiobook-exports"
+        private const val TAG = "Export.Records"
+        private const val VERSION = "audora-audiobook-export 1"
+        private const val KEY = "key"
+        private const val COMPLETE = "complete"
+        private const val CHAPTER = "chapter"
+        private const val PENDING = "pending"
+        private const val SEPARATOR = "\t"
+        private const val CHAPTER_FIELDS = 4
+        private const val LOCATION_FIELD = 2
+        private const val NAME_FIELD = 3
+        private const val RECORD_SUFFIX = ".txt"
+        private const val PARTIAL_SUFFIX = ".partial"
+        private const val HASH_HEX_CHARS = 16
 
-        fun hash(value: String): String = MessageDigest.getInstance("SHA-256")
+        /** The app's own records, in its files folder. */
+        fun of(context: Context) = ExportRecords(File(context.filesDir, FOLDER))
+
+        private fun hash(value: String): String = MessageDigest.getInstance("SHA-256")
             .digest(value.toByteArray())
             .joinToString("") { "%02x".format(it) }
             .take(HASH_HEX_CHARS)

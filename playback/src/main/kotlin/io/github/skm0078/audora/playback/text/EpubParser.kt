@@ -39,7 +39,7 @@ object EpubParser {
             if (document.isEmpty) Outcome.Failure(TextBookError.NoText) else Outcome.Success(document)
         }
 
-    private fun packageOf(entries: Map<String, ByteArray>): Outcome<PackageDocument, TextBookError> {
+    internal fun packageOf(entries: Map<String, ByteArray>): Outcome<PackageDocument, TextBookError> {
         val container = entries[CONTAINER]?.let(::decode)
         val opfPath = container?.let { text ->
             MarkupScanner.scan(text).filterIsInstance<Markup.Start>()
@@ -132,12 +132,16 @@ object EpubParser {
 }
 
 /** What the package document says: metadata, the manifest's navigation files, and the spine in order. */
+@Suppress("LongParameterList") // The package's own fields, each read on its own; grouping them would only rename them.
 internal class PackageDocument(
     val title: String?,
     val language: String?,
     val spine: List<SpineItem>,
     val navPath: String?,
     val ncxPath: String?,
+    val author: String? = null,
+    /** The cover picture's ZIP path: EPUB 3's `cover-image` item, else EPUB 2's `<meta name="cover">`. */
+    val coverPath: String? = null,
 ) {
     class SpineItem(val path: String, val mediaType: String)
 
@@ -145,6 +149,7 @@ internal class PackageDocument(
 
     companion object {
         private const val NCX_TYPE = "application/x-dtbncx+xml"
+        private const val IMAGE_TYPE = "image/"
 
         fun parse(markup: List<Markup>, base: String): PackageDocument {
             val reader = Reader(base)
@@ -157,6 +162,7 @@ internal class PackageDocument(
         private val manifest = HashMap<String, ManifestItem>()
         private val spineRefs = ArrayList<String>()
         private var ncxId: String? = null
+        private var coverId: String? = null
         private val metadata = HashMap<String, String>()
         private var reading: String? = null
 
@@ -174,7 +180,8 @@ internal class PackageDocument(
                 "item" -> item(attributes)
                 "spine" -> ncxId = attributes["toc"]
                 "itemref" -> attributes["idref"]?.takeIf { attributes["linear"] != "no" }?.let(spineRefs::add)
-                "title", "language" -> reading = token.localName.takeIf { token.name.startsWith("dc:") }
+                "title", "language", "creator" -> reading = token.localName.takeIf { token.name.startsWith("dc:") }
+                "meta" -> if (attributes["name"] == "cover") coverId = attributes["content"]
             }
         }
 
@@ -199,6 +206,9 @@ internal class PackageDocument(
             navPath = manifest.values.firstOrNull { "nav" in it.properties }?.path,
             ncxPath = ncxId?.let { manifest[it]?.path }
                 ?: manifest.values.firstOrNull { it.mediaType == NCX_TYPE }?.path,
+            author = metadata["creator"],
+            coverPath = (manifest.values.firstOrNull { "cover-image" in it.properties } ?: coverId?.let(manifest::get))
+                ?.takeIf { it.mediaType.startsWith(IMAGE_TYPE) }?.path,
         )
     }
 }

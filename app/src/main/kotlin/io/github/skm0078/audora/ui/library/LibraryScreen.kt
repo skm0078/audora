@@ -132,7 +132,7 @@ fun LibraryScreen(
             )
         }
     }
-    detailsItem(listState, details)?.let { BookDetailsSheet(it, actions, covers) { details = null } }
+    BookSheets(listState, actions, covers, details) { details = null }
     pendingRemoval?.let { RemovalDialog(it, actions) }
     duplicate?.let { DuplicateDialog(it, listState, actions) }
 }

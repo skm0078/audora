@@ -109,7 +109,6 @@ import io.github.skm0078.audora.ui.diagnostics.DiagnosticsController
 import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
 import io.github.skm0078.audora.ui.firstrun.FirstRunScreen
 import io.github.skm0078.audora.ui.firstrun.shouldShowFirstRun
-import io.github.skm0078.audora.ui.jobs.JobsRoute
 import io.github.skm0078.audora.ui.jobs.LongJobsPanel
 import io.github.skm0078.audora.ui.jobs.OpenJobsEffect
 import io.github.skm0078.audora.ui.jobs.rememberRunningJobCount
@@ -136,6 +135,7 @@ import io.github.skm0078.audora.ui.licences.LicenceSource
 import io.github.skm0078.audora.ui.licences.LicencesController
 import io.github.skm0078.audora.ui.licences.LicencesScreen
 import io.github.skm0078.audora.ui.loggingFailures
+import io.github.skm0078.audora.ui.made.JobsAndMadeRoute
 import io.github.skm0078.audora.ui.motion.AnimatedScreens
 import io.github.skm0078.audora.ui.motion.isLeavingScreen
 import io.github.skm0078.audora.ui.notes.NoteSources
@@ -515,7 +515,9 @@ class MainActivity : ComponentActivity() {
                 BatterySetupRoute(battery) { nav.navigate(destination.parent ?: AppDestination.Library) }
             }
 
-            AppDestination.Jobs -> ReadableWidth { JobsRoute { nav.navigate(AppDestination.Library) } }
+            AppDestination.Jobs, AppDestination.Made, is AppDestination.MadePlayer -> ReadableWidth {
+                JobsAndMadeRoute(destination, nav::navigate)
+            }
 
             is AppDestination.Reader -> BookRoute(destination, destination.id, destination.from, nav, books)
 
@@ -737,6 +739,8 @@ class MainActivity : ComponentActivity() {
                 override fun onLibraryAction(action: LibraryAction) = studio.onLibraryAction(action)
 
                 override fun onOpenJobs() = navigate(AppDestination.Jobs)
+
+                override fun onPlayMade(setKey: String) = navigate(AppDestination.MadePlayer(setKey))
             }
         }
         val books = (controller.listState as? LibraryListState.Loaded)?.all?.mapTo(HashSet()) { it.book.id }

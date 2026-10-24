@@ -68,6 +68,7 @@ ADR-013 and ADR-037 were planned (podcast mode, online AI) and have no file yet.
 - [ADR-065](adr/065-listenlock-logo.md) The app icon is the hand-drawn ListenLock logo (adaptive PNG on white, themed copy; name and logo not under the GPL)
 - [ADR-066](adr/066-more-book-formats-and-voice-choice.md) Word, ODT, RTF, web pages, Markdown and gallery pictures are books; Read aloud from a selection; the voice list shows the choice
 - [ADR-067](adr/067-jobs-screen-and-pitch.md) One Jobs screen for every long job and download (with Cancel); pitch is a listening setting applied after the voice, in playback and saved files
+- [ADR-068](adr/068-library-outputs-and-book-details.md) What the app made (audiobooks, studio files, copies) is listed per book with Play, Share and Delete and an in-app player; books carry author, language, format and a chosen cover, filled from the file and editable; pitch per book
 
 **Reading the PDF (`:pdf`)**
 

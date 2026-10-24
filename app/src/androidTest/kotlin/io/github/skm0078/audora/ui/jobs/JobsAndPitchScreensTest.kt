@@ -61,6 +61,7 @@ class JobsAndPitchScreensTest {
                     downloads = listOf(VOICE, DICTIONARY_WAITING),
                     voiceNames = mapOf("en-bruno" to "Bruno"),
                     onCancelDownload = { cancelled += it },
+                    onOpenMade = {},
                     onBack = {},
                     modifier = Modifier.testTag(SCREEN),
                 )
@@ -84,7 +85,9 @@ class JobsAndPitchScreensTest {
     @Test
     fun theJobsScreenSaysWhatShowsThereWhenNothingRuns() {
         rule.setContent {
-            Phone { JobsScreen(emptyList(), emptyList(), emptyMap(), onCancelDownload = {}, onBack = {}) }
+            Phone {
+                JobsScreen(emptyList(), emptyList(), emptyMap(), onCancelDownload = {}, onOpenMade = {}, onBack = {})
+            }
         }
         rule.onNodeWithText(context.getString(R.string.jobs_empty)).assertExists()
     }

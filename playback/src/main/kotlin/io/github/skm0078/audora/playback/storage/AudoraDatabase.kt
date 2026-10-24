@@ -1,5 +1,6 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/storage/AudoraDatabase.kt
-// Purpose: The app's Room database: library, resume anchors, bookmarks, settings, fixes, highlights, voice notes.
+// Purpose: The app's Room database: library, resume anchors, bookmarks, settings, fixes, highlights, voice notes,
+//          what was made from each book and the listener's collections.
 
 package io.github.skm0078.audora.playback.storage
 
@@ -8,7 +9,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 
 /** The schema version; a backup records it and a restore refuses a newer one (ADR-046). */
-internal const val DATABASE_VERSION = 4
+internal const val DATABASE_VERSION = 5
 
 /**
  * Schema changes need a version bump and an explicit migration, never a destructive fallback: losing the
@@ -23,6 +24,9 @@ internal const val DATABASE_VERSION = 4
         PronunciationEntity::class,
         HighlightEntity::class,
         VoiceNoteEntity::class,
+        BookOutputEntity::class,
+        CollectionEntity::class,
+        BookCollectionEntity::class,
     ],
     version = DATABASE_VERSION,
     exportSchema = true,
@@ -34,6 +38,10 @@ internal const val DATABASE_VERSION = 4
         // 3 → 4 (plan items 30, 32): adds highlights and voice_notes; existing rows untouched. Only tables are
         // added, so Room's generated migration is exact; the device test checks it against the committed schemas.
         AutoMigration(from = 3, to = 4),
+        // 4 → 5 (ADR-068): adds book_outputs, collections and book_collections, and nullable or defaulted columns
+        // (books: author, language, format, cover, edited_fields, details_version; book_settings: pitch). Existing
+        // rows keep every value; the device test checks the migration against the committed schemas.
+        AutoMigration(from = 4, to = 5),
     ],
 )
 internal abstract class AudoraDatabase : RoomDatabase() {
@@ -44,4 +52,6 @@ internal abstract class AudoraDatabase : RoomDatabase() {
     abstract fun notes(): NotesDao
 
     abstract fun marks(): MarksDao
+
+    abstract fun outputs(): OutputsDao
 }

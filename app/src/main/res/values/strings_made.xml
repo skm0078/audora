@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_made.xml -->
+<!-- Purpose: What the app made from each book, the in-app player for saved audio, and editing a book's details (ADR-068). -->
+<resources>
+    <string name="made_title">Made from your books</string>
+    <string name="made_open_all">Everything made from your books</string>
+    <string name="made_from_book">Made from this book</string>
+    <string name="made_empty">Nothing made yet. Saved audiobooks, studio audio files, accessible copies and talking books show here, with Play, Share and Delete.</string>
+    <string name="made_kind_audiobook">Audiobook</string>
+    <string name="made_kind_studio">Studio audio file</string>
+    <string name="made_kind_accessible">Accessible copy</string>
+    <string name="made_kind_talking">Talking book</string>
+    <plurals name="made_chapters">
+        <item quantity="one">%1$d chapter</item>
+        <item quantity="other">%1$d chapters</item>
+    </plurals>
+    <plurals name="made_files">
+        <item quantity="one">%1$d file</item>
+        <item quantity="other">%1$d files</item>
+    </plurals>
+    <string name="made_pitch">Pitch: %1$s</string>
+    <string name="made_missing">Deleted or moved outside the app</string>
+    <string name="made_partly_missing">%1$d of %2$d files deleted or moved outside the app</string>
+    <string name="made_play">Play</string>
+    <string name="made_open">Open</string>
+    <string name="made_share">Share</string>
+    <string name="made_delete">Delete</string>
+    <string name="made_forget">Remove from the list</string>
+    <string name="made_delete_title">Delete from your phone?</string>
+    <string name="made_delete_text">%1$s (%2$s) will be deleted from your phone. The book, its notes and where you are in it stay.</string>
+    <string name="made_delete_confirm">Delete</string>
+    <string name="made_delete_cancel">Keep</string>
+    <string name="made_deleted">Deleted</string>
+    <string name="made_not_deleted">Some files could not be deleted</string>
+    <string name="made_no_app">No app on this phone opens this file</string>
+    <string name="made_player_chapter">Chapter %1$d of %2$d</string>
+    <string name="made_player_back">Back 15 seconds</string>
+    <string name="made_player_forward">Forward 30 seconds</string>
+    <string name="made_player_previous">Previous chapter</string>
+    <string name="made_player_next">Next chapter</string>
+    <string name="made_player_play">Play</string>
+    <string name="made_player_pause">Pause</string>
+    <string name="made_player_speed">Speed %1$s×</string>
+    <string name="made_player_gone">This audio is no longer on the phone.</string>
+    <string name="made_player_position">%1$s of %2$s</string>
+    <string name="book_edit">Edit details</string>
+    <string name="book_edit_title_field">Title</string>
+    <string name="book_edit_author_field">Author</string>
+    <string name="book_edit_language">Language</string>
+    <string name="book_edit_language_auto">As the book says</string>
+    <string name="book_edit_cover">Cover</string>
+    <string name="book_edit_cover_first">First page</string>
+    <string name="book_edit_cover_page">Another page</string>
+    <string name="book_edit_cover_page_field">Page number (1 to %1$d)</string>
+    <string name="book_edit_cover_page_field_unknown">Page number</string>
+    <string name="book_edit_cover_gallery">A picture from the gallery</string>
+    <string name="book_edit_cover_book">The book\'s own cover</string>
+    <string name="book_edit_cover_picked">Picture chosen</string>
+    <string name="book_edit_fill">Fill in from the file again</string>
+    <string name="book_edit_fill_help">Forgets your changes to this book\'s details and reads them from its file again.</string>
+    <string name="book_edit_save">Save</string>
+    <string name="book_edit_cancel">Cancel</string>
+    <string name="book_edit_saved">Details saved</string>
+    <string name="book_edit_not_saved">The details could not be saved</string>
+    <string name="book_edit_picture_failed">That picture could not be used</string>
+    <string name="book_details_author">By %1$s</string>
+    <string name="book_details_format">Format: %1$s</string>
+    <string name="book_details_language">Language: %1$s</string>
+    <string name="book_format_pdf">PDF</string>
+    <string name="book_format_epub">EPUB</string>
+    <string name="book_format_text">Text</string>
+    <string name="book_format_docx">Word</string>
+    <string name="book_format_odt">OpenDocument</string>
+    <string name="book_format_rtf">RTF</string>
+    <string name="book_format_html">Web page</string>
+</resources>

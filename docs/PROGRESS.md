@@ -2,6 +2,26 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Made files in the library, in-app player, book details (2026-10-24, ADR-068)
+- **Made from your books:** Jobs → "Everything made from your books", and a book's details → "Made from this book",
+  list every saved audiobook, studio audio file, accessible copy and talking book with its length, size, date and
+  pitch, and Play, Open, Share and Delete. Earlier audiobook exports are found once after the update. Files deleted
+  in another app show as gone.
+- **In-app player:** plays a saved audiobook or studio file with the phone's media controls, chapters, seek, back
+  15 s, forward 30 s and speed, and goes on where it was left.
+- **Book details:** author, language and format are read from each file (PDF, EPUB, Word, OpenDocument, web page,
+  RTF) in the background; an EPUB's own cover is used. Book details → Edit details changes title, author, language
+  and cover (another page, a gallery picture, the book's own); "Fill in from the file again" undoes the edits. The
+  library shows the author under each title.
+- **Pitch per book:** "This book only" keeps the book's own pitch too.
+- Database v5 (automatic upgrade). No `:pdf` change (PIPELINE_VERSION 12). New strings in en, hi and bn. Tests listed
+  in ADR-068; CI's `player-screens` artifact has `made-list.png`, `made-player.png` and `edit-details.png`.
+
+**Real-device checks (Moto):** update over v4 and check every book, note and position is still there; save a short
+audiobook, open Jobs → Everything made, play it, leave and come back (it goes on where it was), share it to
+WhatsApp; delete a copy; edit a book's author and pick a gallery cover; add an EPUB with a cover and a Word file with
+an author and see both filled in within a few seconds.
+
 ## Jobs screen and pitch (2026-10-24, ADR-067)
 - **Jobs screen:** library top bar → Jobs (badge with the number running), and every long job's notification, open
   one list: audiobook export, studio mode and copies (progress, time left, Stop), then every download (voices, tutor,

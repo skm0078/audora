@@ -19,8 +19,17 @@ import io.github.skm0078.audora.playback.export.MediaStoreChapterFiles
 import io.github.skm0078.audora.playback.export.atPitch
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 
-/** A saved file: [folder] is where a file manager finds it ("Audiobooks/Title"), [name] the file's own name. */
-data class SavedStudioFile(val folder: String, val name: String, val durationMs: Long)
+/**
+ * A saved file: [folder] is where a file manager finds it ("Audiobooks/Title"), [name] the file's own name, [location]
+ * its MediaStore URI (never logged), [pitch] the pitch it was written at.
+ */
+data class SavedStudioFile(
+    val folder: String,
+    val name: String,
+    val durationMs: Long,
+    val location: String?,
+    val pitch: Float,
+)
 
 /**
  * Studio audio lives inside the app, where only ListenLock plays it. This writes what is ready, page after page, with
@@ -51,7 +60,8 @@ object StudioAudioFile {
 
             is Outcome.Success -> {
                 AudoraLog.i(TAG, "Studio audio saved as a file, book=${id.logLabel}, ms=${written.value.durationMs}")
-                Outcome.Success(SavedStudioFile(folder.trimEnd('/'), written.value.name, written.value.durationMs))
+                val file = written.value
+                Outcome.Success(SavedStudioFile(folder.trimEnd('/'), file.name, file.durationMs, file.location, pitch))
             }
 
             is Outcome.Failure -> Outcome.Failure(context.getString(R.string.studio_file_failed))

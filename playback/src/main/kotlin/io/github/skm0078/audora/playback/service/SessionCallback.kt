@@ -272,20 +272,22 @@ class SessionCallback(
         }
 
     /**
-     * Speed and pace go to the open book when it has its own settings (plan item 4), everything else (clause pauses,
-     * reading modes, sound, pitch) to the global style. The sentence restarts only when what is rendered changed: a
-     * pitch change is the player's alone and goes on from where it is (ADR-067).
+     * Speed, pace and pitch go to the open book when it has its own settings (plan item 4, ADR-068), everything
+     * else (clause pauses, reading modes, sound) to the global style. The sentence restarts only when what is rendered
+     * changed: a pitch change is the player's alone and goes on from where it is (ADR-067).
      */
     private suspend fun setSpeechStyle(requested: SpeechStyle): SessionResult {
         val style = stores.style
         val book = stores.book
         val before = book.style(style.current)
         val rate = style.config.clampRate(requested.rate)
-        val own = book.updateIfOwn { it.copy(rate = rate, pace = requested.pace) }
+        val pitch = style.config.clampPitch(requested.pitch)
+        val own = book.updateIfOwn { it.copy(rate = rate, pace = requested.pace, pitch = pitch) }
         if (own is Outcome.Failure) return failure(PlaybackErrorCode.BAD_REQUEST)
         val global = style.current
         val bookOwnsSpeed = own == Outcome.Success(true)
-        style.set(if (bookOwnsSpeed) requested.copy(rate = global.rate, pace = global.pace) else requested)
+        val kept = requested.copy(rate = global.rate, pace = global.pace, pitch = global.pitch)
+        style.set(if (bookOwnsSpeed) kept else requested)
         val after = book.style(style.current)
         val rendered = style.config::asRendered
         bookSession().onPitchChanged(after.pitch)
@@ -306,6 +308,7 @@ class SessionCallback(
         val saved = book.setOwnSettings(on, before)
         if (saved !is Outcome.Success || !saved.value) return failure(PlaybackErrorCode.BAD_REQUEST)
         val after = book.style(style.current)
+        bookSession().onPitchChanged(after.pitch)
         // Turning it off may change the speed or the voices back; either way the sentences ahead are redone.
         if (after != before) {
             bookSession().onSpeechStyleChanged(style.config.playerSpeed(after))

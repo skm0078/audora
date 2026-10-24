@@ -58,6 +58,7 @@ internal fun BookRow(
                 Text(warning, color = MaterialTheme.colorScheme.error)
             } else {
                 Column {
+                    item.book.author?.let { Text(stringResource(R.string.book_details_author, it), maxLines = 1) }
                     Text(bookDetails(item.book))
                     item.progress?.let { ProgressLine(it) }
                     runningJobFor(item.book.id)?.let { job ->
@@ -129,10 +130,16 @@ private fun errorText(error: LibraryError): Int = when (error) {
 
 internal const val TITLE_LINES = 2
 
-/** The first page once drawn (plan item 21); until then, or without one, a paper-coloured card with the initial. */
+/**
+ * The cover once made (plan item 21, ADR-068: a page, a chosen picture or the book's own); until then, or without one,
+ * a paper-coloured card with the initial.
+ */
 @Composable
 internal fun BookCover(book: Book, covers: CoverSource, modifier: Modifier = Modifier) {
-    val cover by produceState<ImageBitmap?>(null, book.id, book.documentUri) { value = covers.cover(book) }
+    val revision = covers.revision(book.id)
+    val cover by produceState<ImageBitmap?>(null, book.id, book.documentUri, book.cover, revision) {
+        value = covers.cover(book)
+    }
     val shape = RoundedCornerShape(COVER_CORNER)
     Box(
         modifier = modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceVariant),

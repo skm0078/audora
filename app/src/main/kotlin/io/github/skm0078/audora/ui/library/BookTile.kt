@@ -49,7 +49,9 @@ internal fun BookTile(
     val status = availabilityWarning(item.availability) ?: tileStatus(item.progress)
     val job = runningJobFor(item.book.id)
     val jobLine = job?.let { jobStatus(it) }
-    val described = stringResource(R.string.library_tile_description, title, status)
+    val author = item.book.author?.let { stringResource(R.string.book_details_author, it) }
+    val named = listOfNotNull(title, author).joinToString(", ")
+    val described = stringResource(R.string.library_tile_description, named, status)
     val description = jobLine?.let { "$described. $it" } ?: described
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
         Box(
@@ -74,6 +76,7 @@ internal fun BookTile(
                     maxLines = TITLE_LINES,
                     overflow = TextOverflow.Ellipsis,
                 )
+                author?.let { TileLine(it) }
                 Text(
                     status,
                     style = MaterialTheme.typography.bodySmall,
@@ -99,6 +102,11 @@ internal fun BookTile(
             BookMenu(item, onRemove, onExport, onAddToUpNext, onDetails, onAction)
         }
     }
+}
+
+@Composable
+private fun TileLine(text: String) {
+    Text(text, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
 /** "New", "42 % read" or "Finished", from the saved reading position. */

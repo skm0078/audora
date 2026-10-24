@@ -273,6 +273,27 @@ class LibraryTest {
         assertEquals(-1L, addOk(URI_A).book.sizeBytes)
     }
 
+    @Test
+    fun `details filled from the file keep the listener's edits and reach the list`() = runTest(dispatcher) {
+        docs.put(URI_A, "scan.pdf", pdfBytes("a"))
+        val id = addOk(URI_A).book.id
+
+        library.edit(id, BookEdit(author = "Me"))
+        val filled = requireNotNull(library.fill(id, FileDetails(DocumentFormat.PDF, "Real Title", "Them")).getOrNull())
+
+        assertEquals("Real Title", filled.title)
+        assertEquals("Me", filled.author)
+        assertEquals(filled, library.books().first().single())
+        val reset = requireNotNull(library.resetDetails(id).getOrNull())
+        assertTrue(reset.edited.isEmpty())
+        assertEquals(0, reset.detailsVersion)
+    }
+
+    @Test
+    fun `editing a book that is not in the library says so`() = runTest(dispatcher) {
+        assertEquals(LibraryError.NotInLibrary, library.edit(BookId("gone"), BookEdit(title = "x")).errorOrNull())
+    }
+
     private companion object {
         const val URI_A = "content://provider/document/a"
         const val URI_B = "content://provider/document/b"
