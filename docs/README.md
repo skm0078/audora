@@ -34,7 +34,8 @@ When you add a document or an ADR, add a line here in the same change.
 | Document | What it is for |
 | --- | --- |
 | [RELEASING.md](RELEASING.md) | Signing keys, cutting a release from `prod`, Obtainium, Google Play, Data safety answers |
-| [index.html](index.html) | Public home page (GitHub Pages, served from `prod` `/docs`) |
+| [index.html](index.html) | Public home page, English, Hindi and Bengali (GitHub Pages, served from `prod` `/docs`); no trackers or external requests |
+| [assets/](assets/) | The home page's stylesheet, Hindi and Bengali text (`i18n.js`), web-sized logo and icons |
 | [privacy.html](privacy.html) | Public privacy policy (the URL Play links to) |
 | [store/](store/) | Play icon and feature graphic (SVG sources and PNGs) |
 

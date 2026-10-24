@@ -2,6 +2,24 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Public website: ListenLock home page in English, Hindi and Bengali (2026-10-24)
+- **What:** `docs/index.html` is a full home page for GitHub Pages (served from `prod` `/docs`): what the app does,
+  privacy in four lines, "Google Play: coming soon" (swap for Google's official badge when the listing is public), how
+  to join the closed test, privacy and GPL source links, "by TelosMind Labs", the logo and the note that the name and
+  logo are not under the GPL. Hindi and Bengali come from `docs/assets/i18n.js` (`?lang=hi|bn`, else the browser's
+  language); English is the markup, so the page works without JavaScript.
+- **No tracking:** no cookies, analytics, third-party fonts or CDNs. A Content-Security-Policy allows only the site's
+  own files, and `no-referrer` is set. Web copies of the logo and icons in `docs/assets/` (logo 26 KB WebP).
+- **Privacy policy re-checked against the app:** still true (nothing collected; GitHub-only downloads; backup off).
+  Updated for ADR-066: documents, gallery pictures through the photo picker (no media permission), shared, selected
+  and copied text (clipboard read only on tap); developer name TelosMind Labs; a contact email (interim: the public
+  Play address, until the TelosMind Labs domain mail exists).
+- Checked in Chromium at 1280 and 390 px, light and dark, en/hi/bn: no horizontal scroll, no request leaves the site,
+  every translated key present. No app code change.
+
+**Live check (after v0.1.0 reaches prod and Pages is on):** open https://skm0078.github.io/audora/ on the phone in
+light and dark, tap हिन्दी and বাংলা, tap Email to join, and open the privacy link from the app's Settings.
+
 ## Word, ODT, RTF, web pages, Markdown and gallery pictures; the voice list shows the choice (2026-10-24, ADR-066)
 - **Formats:** `.docx`, `.odt`, `.rtf`, saved web pages (`.html`) and Markdown are books, found by content. Headings start chapters, lists and table rows read like PDF ones, footnotes go last; tracked deletions, field codes and comments are not read. Pure Kotlin parsers on the EPUB scanner, no new library. Watched folders pick up `.docx`, `.odt` and `.rtf` too.
 - **Pictures:** Library menu → **Read pictures** (Photo Picker, no permission) makes one book of up to 50 pictures, one page each, through the OCR path. Pictures shared or opened from another app do the same.
