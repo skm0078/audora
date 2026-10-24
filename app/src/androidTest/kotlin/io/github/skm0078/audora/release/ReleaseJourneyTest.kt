@@ -294,7 +294,7 @@ class ReleaseJourneyTest {
         val row = toggleRow(text(R.string.hide_content_title))
         assertEquals(ToggleableState.Off, toggleState(row))
         node(row).performScrollTo().performClick()
-        // Each link of the chain on its own, so a failure says which one broke: the switch, the saved setting, the window.
+        // One link at a time, so a failure names the broken one: the switch, the saved setting, the window.
         awaitTrue("the switch to turn on") { toggleState(row) == ToggleableState.On }
         awaitTrue("the setting to be saved", state = { "Saved: ${savedPrivacy()}" }) { savedPrivacy().hideContent }
         awaitTrue("FLAG_SECURE on the window", state = { windowState() }) { secure(activity()) }
