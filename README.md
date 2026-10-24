@@ -1,6 +1,7 @@
 # ListenLock: PDF Read Aloud
 
-A free Android app that reads PDFs aloud in natural voices, in English, Hindi and Bengali. Start from any page or
+A free Android app that reads PDFs, EPUB books, text files and photos of pages aloud in natural voices, in English,
+Hindi and Bengali. Start from any page or
 sentence, pick a voice, and keep listening with the screen off or while you use other apps. Everything happens on your
 phone: no account, no ads, no analytics, and no internet once your voices are in place. Made by TelosMind; free and
 open source under [GPL-3.0](LICENSE).
@@ -25,6 +26,8 @@ What changed and what still needs checking on a phone: [docs/PROGRESS.md](docs/P
 - Older Hindi and Bengali fonts (Kruti Dev, Chanakya, DevLys, SutonnyMJ) are read correctly.
 - Scanned pages are read with offline text recognition (OCR, a one-time 38 MB download), including worn print and
   sideways pages. A photo of a page (**Point and read**) becomes a one-page book.
+- Your own pronunciations (**Words in every book**), and a switch to skip citation numbers such as "[12]". If a
+  sentence sounds wrong, report it from the reader in one tap.
 
 **Voices** (full list and credits [below](#voices-and-credits))
 - English works straight away with the built-in male voice, Bruno. Others are optional downloads.
@@ -32,13 +35,17 @@ What changed and what still needs checking on a phone: [docs/PROGRESS.md](docs/P
   surprised) in its own style.
 - **Acted Hindi voice for studio mode:** an optional 2.9 GB download (Wi-Fi, phones with 8 GB of memory) that acts
   dialogue and feelings. It renders slowly, so it is used only by studio mode.
-- Characters can each get their own voice; quotes and headings can use a different one.
+- Characters can each get their own voice; quotes and headings can use a different one. **Blend the narrator** mixes
+  two Kokoro voices into one of your own.
 
 **Listening**
 - Picks up at the same sentence, even after a restart. Sleep timer by minutes, end of page or end of chapter.
 - Follow along on the page with the sentence (and word) highlighted, or in a clean text view.
 - Speed from 0.5× to 3× (**Smart speed** keeps fast speech clear), headset and lock-screen controls, Android Auto,
-  a home-screen widget, and screen-off voice commands ("ListenLock, pause").
+  a home-screen widget, a Quick Settings tile, volume keys that skip sentences, and screen-off voice commands
+  ("ListenLock, pause").
+- **Skim** reads only headings, captions and each paragraph's first sentence; skip by paragraph; a quiet **focus
+  sound** (such as rain) under the voice.
 - **Studio mode:** renders a book ahead of time while the phone charges, so the slower, better voices play without
   gaps. Shows progress, time left and the audio it has made, which you can listen to, save or delete.
 - **Export:** save a book as an audiobook (one audio file per chapter), share a clip, or save a talking book.
@@ -46,7 +53,11 @@ What changed and what still needs checking on a phone: [docs/PROGRESS.md](docs/P
 **Your library**
 - PDF, EPUB and plain-text books, text shared from other apps, and watched folders that add new books by themselves.
 - Bookmarks, highlights, voice notes, search in the book, and an offline dictionary on tap (English, Hindi, Bengali).
-- Study aids: quiz me from your highlights, and a reading tutor that listens while you read aloud.
+- Study aids: quiz me from your highlights, **Study** mode that repeats each sentence, a reading tutor that listens
+  while you read aloud, and a **character guide** you fill in as you meet people (who's who, no spoilers).
+- **Kids mode:** just the books and three big buttons, read a little slower, with settings locked.
+- Adding a book you already have is caught, and your place is kept. The app itself is in English, Hindi or Bengali,
+  with light, dark and true-black themes.
 - **Back up and restore** to move everything to a new phone.
 
 ## Privacy
@@ -128,7 +139,7 @@ Play installs don't need this.
 
 ## First run
 
-1. **Add a book:** tap **Add PDF** and pick one. ListenLock remembers where it is and does not copy it.
+1. **Add a book:** tap **Add book** and pick a PDF, EPUB or text file. ListenLock remembers where it is and does not copy it.
 2. **Read aloud:** open the book, tap a line on any page to start there, or tap **Read aloud**.
 3. **Keep reading with the screen off:** if the library shows **Keep reading with the screen off**, tap **Set up** and
    follow the steps for your phone's brand (also in **Settings → Background reading**). Without it, many phones stop

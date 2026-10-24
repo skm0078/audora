@@ -4,11 +4,11 @@
 
     <!-- Library (P1-01) -->
     <string name="library_title">Library</string>
-    <string name="library_add_pdf">Add PDF</string>
+    <string name="library_add_pdf">Add book</string>
     <string name="library_empty_title">Your library is empty</string>
-    <string name="library_empty_body">Add a PDF from your phone, or share one to ListenLock from Files, WhatsApp or mail.</string>
+    <string name="library_empty_body">Add a PDF, EPUB or text file from your phone, or share one to ListenLock from Files, WhatsApp or mail. Text you share from a browser or chat is read too.</string>
     <string name="library_load_failed">ListenLock could not load your library. Please share the logs from Settings.</string>
-    <string name="library_untitled">Untitled PDF</string>
+    <string name="library_untitled">Untitled book</string>
     <string name="library_book_menu">More options</string>
     <plurals name="library_pages">
         <item quantity="one">%1$d page</item>
@@ -32,7 +32,7 @@
     <!-- Book menu (ADR-034): reads the whole book into audio files in Audiobooks/<title>. -->
     <string name="library_export_audiobook">Save as audiobook</string>
     <string name="library_remove_title">Remove “%1$s”?</string>
-    <string name="library_remove_body">The PDF stays on your phone. You can add it again later.</string>
+    <string name="library_remove_body">The file stays on your phone. You can add it again later.</string>
     <string name="library_cancel">Cancel</string>
     <string name="library_search">Search library</string>
     <string name="library_search_hint">Search titles</string>
@@ -51,17 +51,17 @@
     <string name="library_shelf">%1$s · %2$d</string>
     <string name="library_shelf_reading">Reading</string>
     <string name="library_no_match">No book matches. Change the search or the filter.</string>
-    <string name="library_error_cannot_keep">The app you picked from only lends the file for a moment. Save the PDF to your phone first, then add it from there.</string>
+    <string name="library_error_cannot_keep">The app you picked from only lends the file for a moment. Save the file to your phone first, then add it from there.</string>
     <string name="library_error_unreadable">ListenLock could not read that file. It may have been moved or deleted.</string>
     <string name="library_error_not_pdf">That file is not a PDF, EPUB or text file.</string>
-    <string name="library_error_different_file">That is a different PDF. Pick the same file, or remove this book and add the new one.</string>
+    <string name="library_error_different_file">That is a different file. Pick the same file, or remove this book and add the new one.</string>
     <string name="library_error_not_in_library">That book is no longer in your library.</string>
     <string name="library_error_storage">ListenLock could not save your library. Is your phone\'s storage full?</string>
 
     <!-- Reader (P1-05) -->
     <string name="book_not_in_library">This book is no longer in your library.</string>
     <string name="reader_retry">Open again</string>
-    <string name="reader_damaged">This file is damaged or is not a PDF ListenLock can open.</string>
+    <string name="reader_damaged">This file is damaged, or ListenLock cannot open it.</string>
     <string name="reader_unreadable">ListenLock could not read this file. It may have been moved or deleted.</string>
     <string name="reader_engine">The PDF engine failed to start. Please share the logs.</string>
     <string name="reader_locked">This PDF needs its password before ListenLock can read it.</string>
@@ -217,7 +217,7 @@
     <string name="navigate_back">Back</string>
     <string name="settings_version_title">Version</string>
     <string name="share_logs_title">Share logs</string>
-    <string name="share_logs_body_hint">Never includes text from your PDFs</string>
+    <string name="share_logs_body_hint">Never includes text from your books</string>
     <string name="share_logs_failed">Could not prepare the logs. Please try again.</string>
     <string name="share_logs_chooser_title">Send ListenLock logs with</string>
     <string name="share_logs_subject">ListenLock logs (%1$s, %2$s)</string>
@@ -362,9 +362,9 @@
     <string name="library_status_percent">%1$d%% read</string>
     <string name="library_tile_description">%1$s, %2$s</string>
     <!-- Duplicate check (plan item 27): the picked PDF is a book the library already has. -->
-    <string name="library_duplicate_title">You already have this PDF</string>
+    <string name="library_duplicate_title">You already have this book</string>
     <string name="library_duplicate_same">“%1$s” is already in your library. ListenLock keeps one copy, so your place in it stays the same.</string>
-    <string name="library_duplicate_moved">This is the same PDF as “%1$s”, so that book now opens from this file. Your place in it is kept.</string>
+    <string name="library_duplicate_moved">This is the same file as “%1$s”, so that book now opens from this file. Your place in it is kept.</string>
     <string name="library_duplicate_open">Open it</string>
     <string name="library_duplicate_close">Close</string>
     <!-- Notes tab -->
@@ -439,7 +439,7 @@
     <string name="settings_true_black_body">Pure black behind the text in dark mode. Saves battery on OLED screens.</string>
     <!-- Home-screen widget (plan item 35) -->
     <string name="widget_description">Pick up your book where you left off</string>
-    <string name="widget_empty_body">Open a PDF to start listening</string>
+    <string name="widget_empty_body">Open a book to start listening</string>
     <string name="widget_resume">Resume</string>
     <string name="widget_resume_label">Resume %1$s</string>
     <!-- Quick Settings tile (plan item 36) -->
@@ -482,8 +482,8 @@
     <string name="first_run_background_allow">Allow background reading</string>
     <string name="first_run_background_done">Allowed. ListenLock can keep reading with the screen off.</string>
     <string name="first_run_book_title">Add your first book</string>
-    <string name="first_run_book_body">Pick a PDF on your phone. ListenLock remembers your place in every book.</string>
-    <string name="first_run_add_pdf">Add a PDF</string>
+    <string name="first_run_book_body">Pick a PDF, EPUB or text file on your phone. ListenLock remembers your place in every book.</string>
+    <string name="first_run_add_pdf">Add a book</string>
     <string name="first_run_next">Next</string>
     <string name="first_run_back">Back</string>
     <string name="first_run_skip">Skip</string>
@@ -502,7 +502,7 @@
     <string name="storage_ocr_text">Text read from scanned pages</string>
     <string name="storage_covers">Book covers</string>
     <string name="storage_voice_blends">Narrator blends</string>
-    <string name="storage_shared_pdfs">PDFs shared to ListenLock</string>
+    <string name="storage_shared_pdfs">Books shared to ListenLock</string>
     <string name="storage_measuring">Measuring…</string>
     <string name="storage_measure_failed">Couldn\'t measure</string>
     <string name="storage_free_failed">Couldn\'t free %1$s. Try again.</string>

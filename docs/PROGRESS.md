@@ -2,6 +2,14 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Book wording, not PDF-only wording; README lists every feature (2026-10-24)
+- **Why:** EPUB, text files, shared text and photos have been read since ADR-042 and ADR-043, but the library, first run, widget and menus still said "Add PDF" and "Pick a PDF", so nobody found them.
+- **What:** "Add book", "Untitled book", "Open a book to start listening", "Pick a PDF, EPUB or text file", and "file" or "book" wherever a message is not PDF-only (remove, duplicate, damaged, lent file, shared-books storage, logs hint), in en, hi and bn. PDF-only messages (password, PDF engine, OCR copy) keep "PDF". `PDF_MIME_TYPES` is now `BOOK_MIME_TYPES`; string keys are unchanged.
+- README: the intro names every format, and the feature list adds the Quick Settings tile, volume keys, Skim, paragraph skip, focus sound, voice blend, Study repeats, character guide, kids mode, own pronunciations, skip citations, sounded-wrong reports, duplicate check, app language and themes.
+- No preference, playback or `:pdf` change (PIPELINE_VERSION 12).
+
+**Real-device checks (Moto):** empty library and first run say "Add book"; the picker still offers PDF, EPUB and text files; Hindi and Bengali texts fit the empty-library card and the widget.
+
 ## The app icon is the ListenLock logo (2026-10-24, ADR-065)
 - **What:** the launcher icon is the designer's hand-drawn logo on white, scaled into the 66dp safe zone (PNG per density), with a one-colour copy for themed icons. The Android 12 splash shows it on the app's paper. Debug builds (the dev APK) use the same icon; the label "ListenLock Dev" tells them apart.
 - **Store:** `docs/store/logo.png` (master), `icon.png` (512 px) and `feature-graphic.png` re-made from it; `icon.svg` removed.

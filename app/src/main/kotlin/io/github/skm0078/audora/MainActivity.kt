@@ -117,6 +117,7 @@ import io.github.skm0078.audora.ui.kids.KidsModePreferences
 import io.github.skm0078.audora.ui.kids.LocalKidsMode
 import io.github.skm0078.audora.ui.kids.kidsDestination
 import io.github.skm0078.audora.ui.kids.kidsSpeed
+import io.github.skm0078.audora.ui.library.BOOK_MIME_TYPES
 import io.github.skm0078.audora.ui.library.BookAction
 import io.github.skm0078.audora.ui.library.BookCovers
 import io.github.skm0078.audora.ui.library.LibraryAction
@@ -125,7 +126,6 @@ import io.github.skm0078.audora.ui.library.LibraryController
 import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.LibraryScreen
 import io.github.skm0078.audora.ui.library.MiniPlayer
-import io.github.skm0078.audora.ui.library.PDF_MIME_TYPES
 import io.github.skm0078.audora.ui.library.nowPlaying
 import io.github.skm0078.audora.ui.library.restoreMessageOf
 import io.github.skm0078.audora.ui.library.showFinishRestoringIfNeeded
@@ -468,7 +468,7 @@ class MainActivity : ComponentActivity() {
                     voiceActions = voiceActions,
                     backgroundAllowed = battery.exempt,
                     onAllowBackground = { battery.requestExemption(::startActivity) },
-                    onAddPdf = { picker.launch(PDF_MIME_TYPES) },
+                    onAddPdf = { picker.launch(BOOK_MIME_TYPES) },
                     onFinish = finish,
                 )
             }

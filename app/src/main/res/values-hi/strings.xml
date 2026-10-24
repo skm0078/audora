@@ -8,11 +8,11 @@
 
     <!-- Library (P1-01) -->
     <string name="library_title">लाइब्रेरी</string>
-    <string name="library_add_pdf">PDF जोड़ें</string>
+    <string name="library_add_pdf">किताब जोड़ें</string>
     <string name="library_empty_title">आपकी लाइब्रेरी खाली है</string>
-    <string name="library_empty_body">अपने फ़ोन से PDF जोड़ें, या Files, WhatsApp या मेल से कोई PDF ListenLock में भेजें।</string>
+    <string name="library_empty_body">अपने फ़ोन से PDF, EPUB या टेक्स्ट फ़ाइल जोड़ें, या Files, WhatsApp या मेल से कोई फ़ाइल ListenLock में भेजें। ब्राउज़र या चैट से भेजा गया टेक्स्ट भी पढ़ा जाता है।</string>
     <string name="library_load_failed">ListenLock आपकी लाइब्रेरी लोड नहीं कर सका। कृपया सेटिंग्स से लॉग शेयर करें।</string>
-    <string name="library_untitled">बिना नाम की PDF</string>
+    <string name="library_untitled">बिना नाम की किताब</string>
     <string name="library_book_menu">और विकल्प</string>
     <plurals name="library_pages">
         <item quantity="one">%1$d पेज</item>
@@ -36,7 +36,7 @@
     <!-- Book menu (ADR-034): reads the whole book into audio files in Audiobooks/<title>. -->
     <string name="library_export_audiobook">ऑडियोबुक के रूप में सेव करें</string>
     <string name="library_remove_title">“%1$s” हटाएँ?</string>
-    <string name="library_remove_body">PDF आपके फ़ोन पर बनी रहेगी। आप इसे बाद में फिर से जोड़ सकते हैं।</string>
+    <string name="library_remove_body">फ़ाइल आपके फ़ोन पर बनी रहेगी। आप इसे बाद में फिर से जोड़ सकते हैं।</string>
     <string name="library_cancel">रद्द करें</string>
     <string name="library_search">लाइब्रेरी में खोजें</string>
     <string name="library_search_hint">शीर्षक खोजें</string>
@@ -55,17 +55,17 @@
     <string name="library_shelf">%1$s · %2$d</string>
     <string name="library_shelf_reading">पढ़ रहे हैं</string>
     <string name="library_no_match">कोई किताब नहीं मिली। खोज या फ़िल्टर बदलें।</string>
-    <string name="library_error_cannot_keep">जिस ऐप से आपने फ़ाइल चुनी, वह इसे सिर्फ़ थोड़ी देर के लिए देता है। पहले PDF को अपने फ़ोन में सेव करें, फिर वहाँ से जोड़ें।</string>
+    <string name="library_error_cannot_keep">जिस ऐप से आपने फ़ाइल चुनी, वह इसे सिर्फ़ थोड़ी देर के लिए देता है। पहले फ़ाइल को अपने फ़ोन में सेव करें, फिर वहाँ से जोड़ें।</string>
     <string name="library_error_unreadable">ListenLock वह फ़ाइल नहीं पढ़ सका। हो सकता है वह हटा दी गई हो या कहीं और चली गई हो।</string>
     <string name="library_error_not_pdf">वह फ़ाइल PDF, EPUB या टेक्स्ट फ़ाइल नहीं है।</string>
-    <string name="library_error_different_file">यह कोई दूसरी PDF है। वही फ़ाइल चुनें, या यह किताब हटाकर नई वाली जोड़ें।</string>
+    <string name="library_error_different_file">यह कोई दूसरी फ़ाइल है। वही फ़ाइल चुनें, या यह किताब हटाकर नई वाली जोड़ें।</string>
     <string name="library_error_not_in_library">वह किताब अब आपकी लाइब्रेरी में नहीं है।</string>
     <string name="library_error_storage">ListenLock आपकी लाइब्रेरी सेव नहीं कर सका। क्या आपके फ़ोन का स्टोरेज भर गया है?</string>
 
     <!-- Reader (P1-05) -->
     <string name="book_not_in_library">यह किताब अब आपकी लाइब्रेरी में नहीं है।</string>
     <string name="reader_retry">फिर से खोलें</string>
-    <string name="reader_damaged">यह फ़ाइल खराब है, या ऐसी PDF नहीं है जिसे ListenLock खोल सके।</string>
+    <string name="reader_damaged">यह फ़ाइल खराब है, या ListenLock इसे खोल नहीं सकता।</string>
     <string name="reader_unreadable">ListenLock यह फ़ाइल नहीं पढ़ सका। हो सकता है वह हटा दी गई हो या कहीं और चली गई हो।</string>
     <string name="reader_engine">PDF इंजन शुरू नहीं हो सका। कृपया लॉग शेयर करें।</string>
     <string name="reader_locked">ListenLock इस PDF को पढ़ सके, इसके लिए इसका पासवर्ड चाहिए।</string>
@@ -221,7 +221,7 @@
     <string name="navigate_back">वापस</string>
     <string name="settings_version_title">वर्शन</string>
     <string name="share_logs_title">लॉग शेयर करें</string>
-    <string name="share_logs_body_hint">इसमें आपकी PDF का टेक्स्ट कभी नहीं होता</string>
+    <string name="share_logs_body_hint">इसमें आपकी किताबों का टेक्स्ट कभी नहीं होता</string>
     <string name="share_logs_failed">लॉग तैयार नहीं हो सके। कृपया फिर से कोशिश करें।</string>
     <string name="share_logs_chooser_title">ListenLock के लॉग इससे भेजें</string>
     <string name="share_logs_subject">ListenLock लॉग (%1$s, %2$s)</string>
@@ -366,9 +366,9 @@
     <string name="library_status_percent">%1$d%% पढ़ी</string>
     <string name="library_tile_description">%1$s, %2$s</string>
     <!-- Duplicate check (plan item 27): the picked PDF is a book the library already has. -->
-    <string name="library_duplicate_title">यह PDF आपके पास पहले से है</string>
+    <string name="library_duplicate_title">यह किताब आपके पास पहले से है</string>
     <string name="library_duplicate_same">“%1$s” पहले से आपकी लाइब्रेरी में है। ListenLock एक ही कॉपी रखता है, इसलिए आप जहाँ तक पढ़ चुके हैं, वह वैसा ही रहता है।</string>
-    <string name="library_duplicate_moved">यह वही PDF है जो “%1$s” है, इसलिए वह किताब अब इसी फ़ाइल से खुलती है। आप जहाँ तक पढ़ चुके हैं, वह बना रहता है।</string>
+    <string name="library_duplicate_moved">यह वही फ़ाइल है जो “%1$s” है, इसलिए वह किताब अब इसी फ़ाइल से खुलती है। आप जहाँ तक पढ़ चुके हैं, वह बना रहता है।</string>
     <string name="library_duplicate_open">इसे खोलें</string>
     <string name="library_duplicate_close">बंद करें</string>
     <!-- Notes tab -->
@@ -443,7 +443,7 @@
     <string name="settings_true_black_body">डार्क मोड में टेक्स्ट के पीछे पूरा काला। OLED स्क्रीन पर बैटरी बचाता है।</string>
     <!-- Home-screen widget (plan item 35) -->
     <string name="widget_description">अपनी किताब वहीं से शुरू करें जहाँ छोड़ी थी</string>
-    <string name="widget_empty_body">सुनना शुरू करने के लिए कोई PDF खोलें</string>
+    <string name="widget_empty_body">सुनना शुरू करने के लिए कोई किताब खोलें</string>
     <string name="widget_resume">जारी रखें</string>
     <string name="widget_resume_label">%1$s जारी रखें</string>
     <!-- Quick Settings tile (plan item 36) -->
@@ -482,8 +482,8 @@
     <string name="first_run_background_allow">बैकग्राउंड में पढ़ने दें</string>
     <string name="first_run_background_done">अनुमति मिल गई। ListenLock स्क्रीन बंद होने पर भी पढ़ता रहेगा।</string>
     <string name="first_run_book_title">अपनी पहली किताब जोड़ें</string>
-    <string name="first_run_book_body">अपने फ़ोन से एक PDF चुनें। ListenLock हर किताब में आपकी जगह याद रखता है।</string>
-    <string name="first_run_add_pdf">PDF जोड़ें</string>
+    <string name="first_run_book_body">अपने फ़ोन से एक PDF, EPUB या टेक्स्ट फ़ाइल चुनें। ListenLock हर किताब में आपकी जगह याद रखता है।</string>
+    <string name="first_run_add_pdf">किताब जोड़ें</string>
     <string name="first_run_next">आगे</string>
     <string name="first_run_back">पीछे</string>
     <string name="first_run_skip">छोड़ें</string>
@@ -502,7 +502,7 @@
     <string name="storage_ocr_text">स्कैन किए पेजों से पढ़ा गया टेक्स्ट</string>
     <string name="storage_covers">किताबों के कवर</string>
     <string name="storage_voice_blends">नैरेटर की मिलाई गई आवाज़ें</string>
-    <string name="storage_shared_pdfs">ListenLock में शेयर की गई PDF</string>
+    <string name="storage_shared_pdfs">ListenLock में शेयर की गई किताबें</string>
     <string name="storage_measuring">माप रहे हैं…</string>
     <string name="storage_measure_failed">नाप नहीं सके</string>
     <string name="storage_free_failed">%1$s खाली नहीं हो सका। फिर से कोशिश करें।</string>
