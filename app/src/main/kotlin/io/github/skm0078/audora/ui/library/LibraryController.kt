@@ -96,7 +96,7 @@ class LibraryController(
                     }
                     books = latest
                     progress = positions.associateBy { it.bookId }
-                    this.own = own
+                    this@LibraryController.own = own
                     publish()
                     checkFiles(fresh)
                 }

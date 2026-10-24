@@ -104,7 +104,7 @@ internal fun CatalogueRow(list: LibraryListState.Loaded, onQuery: (LibraryQuery)
         AssistChip(onClick = { managing = true }, label = { Text(stringResource(manage)) })
     }
     if (filtering) {
-        FilterSheet(list.facets, list.collections, counts, narrow, setNarrow) { filtering = false }
+        FilterSheet(list.facets, list.collections, counts, narrow, setNarrow, onDismiss = { filtering = false })
     }
     if (managing) CollectionsRoute(list.collections, counts) { managing = false }
 }
@@ -140,7 +140,6 @@ internal fun FilterSheet(
                 onNarrow(narrow.copy(format = it))
             }
             choices(
-                "language",
                 R.string.catalogue_language,
                 facets.languages,
                 narrow.language,
