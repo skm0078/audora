@@ -23,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
+import io.github.skm0078.audora.ui.jobs.DownloadTimeLeft
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import io.github.skm0078.audora.ui.voices.megabytes
 
@@ -92,6 +93,7 @@ private fun NeedsModelsCard(state: OcrModelsState?, onDownload: () -> Unit) {
                     progress = { if (state.total > 0) state.bytes.toFloat() / state.total else 0f },
                     modifier = Modifier.fillMaxWidth(),
                 )
+                DownloadTimeLeft(state.bytes, state.total)
             }
 
             // Ready: the page is read again as soon as the models land (MainActivity); Unavailable: a broken build.

@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
+import io.github.skm0078.audora.ui.jobs.DownloadTimeLeft
 import io.github.skm0078.audora.ui.theme.ConfirmedTextButton
 import io.github.skm0078.audora.ui.theme.HelpButton
 import io.github.skm0078.audora.ui.theme.optionRowColors
@@ -93,6 +94,7 @@ private fun OcrModelsStatus(state: OcrModelsState, texts: ModelPackTexts) {
         is OcrModelsState.Downloading -> {
             Text(stringResource(R.string.ocr_models_downloading, megabytes(state.bytes), megabytes(state.total)))
             LinearProgressIndicator(progress = { if (state.total > 0) state.bytes.toFloat() / state.total else 0f })
+            DownloadTimeLeft(state.bytes, state.total)
         }
 
         is OcrModelsState.Ready -> Text(stringResource(texts.ready, megabytes(state.bytes)))

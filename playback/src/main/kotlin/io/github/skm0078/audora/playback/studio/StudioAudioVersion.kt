@@ -9,5 +9,6 @@ package io.github.skm0078.audora.playback.studio
  * holds. Studio audio of another version is never played and is deleted when the app opens. Until 064 the key held
  * the app's install time instead, so every update threw away hours of rendering.
  * 1 = ADR-064: first explicit version.
+ * 2 = closing quotes after a sentence's end move inside it for Kitten voices (no babble after the sentence).
  */
-const val STUDIO_AUDIO_VERSION: Int = 1
+const val STUDIO_AUDIO_VERSION: Int = 2

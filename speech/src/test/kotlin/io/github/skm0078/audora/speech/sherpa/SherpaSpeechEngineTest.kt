@@ -78,6 +78,14 @@ class SherpaSpeechEngineTest {
         }
 
     @Test
+    fun `a closing quote after the sentence's end reaches the model inside it, so no piece is just the quote`() =
+        runBlocking {
+            engine.render("He said, “I am going home.”", english.voiceId)
+
+            assertEquals("He said, “I am going home”.", loaded.single().second.calls.single().first)
+        }
+
+    @Test
     fun `the speaking rate goes to the model`() = runBlocking {
         engine.render("Hello there.", english.voiceId, rate = 1.75f)
 

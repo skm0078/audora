@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/strings_time_left.xml
+  Purpose: The time a download still needs, under its progress bar.
+-->
+<resources>
+    <!-- %1$s a duration like "12 min", "1 h 5 min" or "under a minute". -->
+    <string name="download_time_left">%1$s left</string>
+    <string name="download_time_measuring">Working out the time left…</string>
+</resources>

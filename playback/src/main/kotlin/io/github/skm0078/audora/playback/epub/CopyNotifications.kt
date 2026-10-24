@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.Intent
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.playback.R
+import io.github.skm0078.audora.playback.jobs.JobTimeLeft
 import io.github.skm0078.audora.playback.jobs.LongJobEnd
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.jobs.LongJobs
@@ -18,6 +19,10 @@ import io.github.skm0078.audora.playback.jobs.LongJobs
 /** Platform notifications, like the audiobook export's. */
 internal class CopyNotifications(private val context: Context) {
     private val manager = context.getSystemService(NotificationManager::class.java)
+    private val timeLeft = JobTimeLeft(context)
+
+    /** The step the time left was measured on: each step's percent starts again from zero. */
+    private var measuredStep: String? = null
 
     fun createChannel() {
         val name = context.getString(R.string.copy_channel)
@@ -29,7 +34,8 @@ internal class CopyNotifications(private val context: Context) {
      * known, so the app's view of a running copy is never reset by it.
      */
     fun running(title: String, step: String, percent: Int?, publish: Boolean = true): Notification {
-        if (publish) LongJobs.progress(LongJobKind.COPY, title, step, percent)
+        val line = percent?.let { stepLine(step, it) } ?: step.also { measuredStep = null }
+        if (publish) LongJobs.progress(LongJobKind.COPY, title, line, percent)
         val cancel = PendingIntent.getService(
             context,
             0,
@@ -38,12 +44,20 @@ internal class CopyNotifications(private val context: Context) {
         )
         return builder()
             .setContentTitle(title)
-            .setContentText(step)
+            .setContentText(line)
             .setProgress(PERCENT, percent ?: 0, percent == null)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .addAction(Notification.Action.Builder(null, context.getString(R.string.copy_cancel), cancel).build())
             .build()
+    }
+
+    private fun stepLine(step: String, percent: Int): String {
+        if (step != measuredStep) {
+            timeLeft.reset()
+            measuredStep = step
+        }
+        return timeLeft.line(step, percent)
     }
 
     fun showRunning(notification: Notification) = manager.notify(RUNNING_ID, notification)

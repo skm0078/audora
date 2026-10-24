@@ -2,6 +2,31 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Phone test fixes before v0.1.0: player width, time left everywhere, no babble after quotes (2026-10-24)
+- **Player:** the controls row (speed, previous, play, next, sleep timer) did not fill the panel, so `SpaceBetween` had
+  no room and the row sat at the left (seen on the Moto). It now fills the width, in the reader too.
+  `PlayerLayoutTest` checks at 411 × 914 dp (the Moto) and font scales 1, 1.3 and 2 that the row reaches both edges
+  with Play in the middle, and saves a screenshot of each; CI uploads them as the `player-screens-<run>` artifact.
+- **Time left:** every download (voices, voice packs, text recognition, dictionaries, the tutor's model) shows
+  "12 min left" under its bar, after "Working out the time left…" for its first seconds. Audiobook export and
+  accessible/talking-book copies add "about 25 min left" (or "measuring this phone's speed…") to their notification
+  and the app's job card, like studio mode (ADR-063). One rule in `:core` (`WorkTimeLeft`): measured from where the
+  job was first seen, average speed, nothing claimed until measured (`WorkTimeLeftConfig`).
+- **Quotes:** sherpa-onnx cuts text after `.`, `?` and `!`, so `He said, “I am going home.”` left a last piece of
+  just `”`, which the Kitten voices say as a short babble. Closing quotes and brackets after a sentence's last mark
+  now move inside it (`ClosingMarks`, unstyled sherpa voices; styled voices already had `StyledText`). Measured on the
+  desktop with the app's Kitten micro and nano voices (sherpa-onnx 1.13.8): about 0.2 s of sound after the sentence
+  before, silence after; Whisper hears the same words. Kokoro was not affected. STUDIO_AUDIO_VERSION 2. No `:pdf`
+  change (PIPELINE_VERSION 12).
+- **Study loop test:** `BookSessionTest` gave the session `System.nanoTime` as its millisecond clock, so the
+  30-minute bedtime timer ran out after 1.8 ms and paused the loop it watched (2 runs in 5). It now uses
+  `SystemClock.elapsedRealtime`, as the service does; the app was not affected.
+
+**Real-device checks (Moto):** open the player at normal and largest font: controls spread across the width. Download
+a voice and the text recognition files: the time left appears after a few seconds and counts down. Read an English
+dialogue page (“…,” he said. “….”): no sound after the closing quotes. Export a short audiobook: the notification
+shows the time left after the first steps.
+
 ## Public website: ListenLock home page in English, Hindi and Bengali (2026-10-24)
 - **What:** `docs/index.html` is a full home page for GitHub Pages (served from `prod` `/docs`): what the app does,
   privacy in four lines, "Google Play: coming soon" (swap for Google's official badge when the listing is public), how

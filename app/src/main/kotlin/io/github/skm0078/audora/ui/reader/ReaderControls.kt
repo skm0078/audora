@@ -72,8 +72,9 @@ fun ReaderControls(
 private fun ControlsRow(state: ReaderState, config: ReaderConfig, actions: ReaderActions, voices: List<VoiceRow>) {
     val enabled = state.playerReady
     val loaded = state.readingPosition != null
+    // Full width, or SpaceBetween has no room to spread into and the row huddles at the start (seen on a phone).
     Row(
-        modifier = Modifier.padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceM),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceM),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
