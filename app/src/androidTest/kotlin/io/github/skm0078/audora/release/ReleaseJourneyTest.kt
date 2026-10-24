@@ -19,17 +19,20 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.printToLog
+import androidx.compose.ui.test.printToString
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.skm0078.audora.MainActivity
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.privacy.PrivacyPreferences
+import io.github.skm0078.audora.privacy.PrivacySettings
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
 import io.github.skm0078.audora.speech.voices.VoiceKind
@@ -89,7 +92,7 @@ class ReleaseJourneyTest {
         try {
             block()
         } catch (failure: Throwable) {
-            runCatching { rule.onAllNodes(SemanticsMatcher("any") { true }).onFirst().printToLog(LOG_TAG) }
+            runCatching { Log.i(LOG_TAG, rule.onAllNodes(isRoot()).onFirst().printToString(Int.MAX_VALUE)) }
             throw AssertionError("Step $name failed: ${failure.message}", failure)
         }
     }
@@ -290,10 +293,14 @@ class ReleaseJourneyTest {
         node(hasText(text(R.string.settings_group_privacy))).performScrollTo().performClick()
         val row = toggleRow(text(R.string.hide_content_title))
         assertEquals(ToggleableState.Off, toggleState(row))
-        tap(hasText(text(R.string.hide_content_title)))
-        awaitTrue("FLAG_SECURE on the window") { secure(activity()) }
-        tap(hasText(text(R.string.hide_content_title)))
-        awaitTrue("FLAG_SECURE off again") { !secure(activity()) }
+        node(row).performScrollTo().performClick()
+        // Each link of the chain on its own, so a failure says which one broke: the switch, the saved setting, the window.
+        awaitTrue("the switch to turn on") { toggleState(row) == ToggleableState.On }
+        awaitTrue("the setting to be saved", state = { "Saved: ${savedPrivacy()}" }) { savedPrivacy().hideContent }
+        awaitTrue("FLAG_SECURE on the window", state = { windowState() }) { secure(activity()) }
+        node(row).performScrollTo().performClick()
+        awaitTrue("the switch to turn off") { toggleState(row) == ToggleableState.Off }
+        awaitTrue("FLAG_SECURE off again", state = { windowState() }) { !secure(activity()) }
         back()
     }
 
@@ -325,6 +332,13 @@ class ReleaseJourneyTest {
         }
         library.readingVoices.choose(Lang.EN, other.id)
         return true
+    }
+
+    private fun savedPrivacy(): PrivacySettings = runBlocking { PrivacyPreferences(app).settings.first() }
+
+    private fun windowState(): String {
+        val resumed = JourneyDevice.resumedActivity()
+        return "Resumed: $resumed, secure: ${resumed?.let(::secure)}"
     }
 
     private fun secure(activity: Activity): Boolean {
