@@ -3,12 +3,14 @@
 //          bundled voice) on CI's emulator: first run, "Open with", play without the notification permission, the
 //          media controls a notification or lock screen sends, a new voice and a reading setting applying at once,
 //          Settings rows, pages and Back, Hide app content, the ListenLock name, and a scan read after the OCR
-//          download. Steps run in name order on one fresh install, as one listener would use the app.
+//          download. One test on one fresh install, as one listener would use the app: AndroidJUnitRunner finishes
+//          every activity between tests, so the steps are named blocks inside it and the first broken one stops it.
 
 package io.github.skm0078.audora.release
 
 import android.Manifest
 import android.app.Activity
+import android.util.Log
 import android.view.WindowManager
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.state.ToggleableState
@@ -38,31 +40,57 @@ import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
 import io.github.skm0078.audora.ui.reader.ReadingPosition
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Assume.assumeTrue
-import org.junit.BeforeClass
-import org.junit.FixMethodOrder
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TestWatcher
-import org.junit.runner.Description
 import org.junit.runner.RunWith
-import org.junit.runners.MethodSorters
 
 @RunWith(AndroidJUnit4::class)
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 class ReleaseJourneyTest {
-    @get:Rule(order = 0)
+    @get:Rule
     val rule = createEmptyComposeRule()
 
-    /** On a failed step, the screen's semantics tree goes to logcat (tag ReleaseJourney) next to the app's log. */
-    @get:Rule(order = 1)
-    val dumpOnFailure = object : TestWatcher() {
-        override fun failed(e: Throwable, description: Description) {
+    private var scenario: ActivityScenario<MainActivity>? = null
+    private var port: MediaControllerPlaybackPort? = null
+
+    @Test
+    fun aListenerUsesTheAppFromFirstRunToAScan() {
+        JourneyDevice.captureLogs()
+        try {
+            step("01 first run walks through and finishes", ::firstRunWalksThroughAndFinishes)
+            step("02 the launcher says ListenLock", ::theLauncherSaysListenLock)
+            step("03 Open with adds the book and opens the reader", ::openWithAddsTheBookAndOpensTheReader)
+            step("04 play starts without the notification permission", ::playStartsWithoutTheNotificationPermission)
+            step("05 media controls pause, resume and skip", ::mediaControlsPauseResumeAndSkip)
+            step("06 a new voice applies while playing", ::aNewVoiceAppliesWhilePlaying)
+            step("07 a new voice applies while paused", ::aNewVoiceAppliesWhilePaused)
+            step("08 a Settings row toggles from its title and applies at once", ::aRowTogglesFromItsTitle)
+            step("09 help opens without toggling", ::helpOpensWithoutToggling)
+            step("10 Privacy and Advanced open and go back", ::privacyAndAdvancedOpenAndGoBack)
+            step("11 Hide app content blocks screenshots", ::hideAppContentBlocksScreenshots)
+            step("12 a scan offers OCR and reads after the download", ::aScanOffersOcrAndReadsAfterTheDownload)
+        } finally {
+            JourneyDevice.onMain {
+                port?.pause()
+                port?.release()
+            }
+            scenario?.close()
+        }
+    }
+
+    /**
+     * Runs one named step; a failure names it and dumps the screen's semantics tree to logcat (tag ReleaseJourney)
+     * next to the app's own log.
+     */
+    private fun step(name: String, block: () -> Unit) {
+        Log.i(LOG_TAG, "Step $name")
+        try {
+            block()
+        } catch (failure: Throwable) {
             runCatching { rule.onAllNodes(SemanticsMatcher("any") { true }).onFirst().printToLog(LOG_TAG) }
+            throw AssertionError("Step $name failed: ${failure.message}", failure)
         }
     }
 
@@ -92,10 +120,13 @@ class ReleaseJourneyTest {
         JourneyDevice.onMain { current.onBackPressedDispatcher.onBackPressed() }
     }
 
-    /** Off the main thread only (ActivityScenario.onActivity's rule). */
+    /** The app on screen now (MainActivity is singleTop, so "Open with" reaches the same one). */
     private fun activity(): MainActivity {
         var current: MainActivity? = null
-        requireNotNull(scenario) { "The app was never started" }.onActivity { current = it }
+        awaitTrue("the app on screen") {
+            current = JourneyDevice.resumedActivity() as? MainActivity
+            current != null
+        }
         return requireNotNull(current)
     }
 
@@ -131,8 +162,7 @@ class ReleaseJourneyTest {
         waitForNode(settingsTab)
     }
 
-    @Test
-    fun step01FirstRunWalksThroughAndFinishes() {
+    private fun firstRunWalksThroughAndFinishes() {
         scenario = ActivityScenario.launch(MainActivity::class.java)
         val stepOne = hasText(text(R.string.first_run_step, 1, firstRunSteps))
         waitForNode(stepOne)
@@ -144,15 +174,13 @@ class ReleaseJourneyTest {
         gone(stepOne)
     }
 
-    @Test
-    fun step02TheLauncherSaysListenLock() {
+    private fun theLauncherSaysListenLock() {
         val label = app.packageManager.getApplicationLabel(app.applicationInfo).toString()
         assertTrue("Launcher label was \"$label\"", label.startsWith("ListenLock"))
         assertFalse("Launcher label was \"$label\"", label.contains("Audora", ignoreCase = true))
     }
 
-    @Test
-    fun step03OpenWithAddsTheBookAndOpensTheReader() {
+    private fun openWithAddsTheBookAndOpensTheReader() {
         val uri = JourneyDevice.downloadedPdf(BOOK)
         val current = activity()
         JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri)) }
@@ -165,8 +193,7 @@ class ReleaseJourneyTest {
         }
     }
 
-    @Test
-    fun step04PlayStartsWithoutTheNotificationPermission() {
+    private fun playStartsWithoutTheNotificationPermission() {
         assertFalse(
             "A fresh install must not hold the notification permission yet",
             JourneyDevice.hasPermission(Manifest.permission.POST_NOTIFICATIONS),
@@ -183,8 +210,7 @@ class ReleaseJourneyTest {
         awaitReadingMovesOn("reading to go on to the next sentence")
     }
 
-    @Test
-    fun step05MediaControlsPauseResumeAndSkip() {
+    private fun mediaControlsPauseResumeAndSkip() {
         val player = requireNotNull(port)
         JourneyDevice.onMain(player::pause)
         awaitTrue("pause", state = { "Player: ${snapshot()}" }) { !snapshot().wantsToPlay }
@@ -198,21 +224,22 @@ class ReleaseJourneyTest {
         awaitReadingMovesOn("play after pause and skip")
     }
 
-    @Test
-    fun step06ANewVoiceAppliesWhilePlaying() {
+    private fun aNewVoiceAppliesWhilePlaying() {
         val restarts = JourneyDevice.logCount(VOICE_RESTART)
-        chooseAnotherEnglishVoice()
+        if (!chooseAnotherEnglishVoice()) return
         awaitLog(VOICE_RESTART, restarts)
         awaitReadingMovesOn("reading to go on in the new voice")
     }
 
-    @Test
-    fun step07ANewVoiceAppliesWhilePaused() {
+    private fun aNewVoiceAppliesWhilePaused() {
         val player = requireNotNull(port)
         JourneyDevice.onMain(player::pause)
         awaitTrue("pause", state = { "Player: ${snapshot()}" }) { !snapshot().wantsToPlay }
         val restarts = JourneyDevice.logCount(VOICE_RESTART)
-        chooseAnotherEnglishVoice()
+        if (!chooseAnotherEnglishVoice()) {
+            JourneyDevice.onMain(player::play)
+            return
+        }
         awaitLog(VOICE_RESTART, restarts)
         Thread.sleep(HOLD_MS)
         assertFalse("A voice change must not start a paused book", snapshot().wantsToPlay)
@@ -220,8 +247,7 @@ class ReleaseJourneyTest {
         awaitReadingMovesOn("play in the new voice")
     }
 
-    @Test
-    fun step08ASettingsRowTogglesFromItsTitleAndSkipCitationsAppliesAtOnce() {
+    private fun aRowTogglesFromItsTitle() {
         backToTabs()
         tapText(R.string.tab_settings)
         val row = toggleRow(text(R.string.settings_skip_citations_title))
@@ -236,8 +262,7 @@ class ReleaseJourneyTest {
         awaitTrue("the switch to flip back") { toggleState(row) == before }
     }
 
-    @Test
-    fun step09HelpOpensWithoutToggling() {
+    private fun helpOpensWithoutToggling() {
         val title = text(R.string.settings_skip_citations_title)
         val row = toggleRow(title)
         val before = toggleState(row)
@@ -246,8 +271,7 @@ class ReleaseJourneyTest {
         assertEquals("The help button must not toggle its row", before, toggleState(row))
     }
 
-    @Test
-    fun step10PrivacyAndAdvancedOpenAndGoBack() {
+    private fun privacyAndAdvancedOpenAndGoBack() {
         for (page in listOf(R.string.settings_advanced_title, R.string.settings_group_privacy)) {
             node(hasText(text(page))).performScrollTo().performClick()
             waitForNode(hasContentDescription(text(R.string.navigate_back)))
@@ -257,8 +281,7 @@ class ReleaseJourneyTest {
         }
     }
 
-    @Test
-    fun step11HideAppContentBlocksScreenshots() {
+    private fun hideAppContentBlocksScreenshots() {
         node(hasText(text(R.string.settings_group_privacy))).performScrollTo().performClick()
         val row = toggleRow(text(R.string.hide_content_title))
         assertEquals(ToggleableState.Off, toggleState(row))
@@ -269,8 +292,7 @@ class ReleaseJourneyTest {
         back()
     }
 
-    @Test
-    fun step12AScanOffersOcrAndReadsAfterTheDownload() {
+    private fun aScanOffersOcrAndReadsAfterTheDownload() {
         val uri = JourneyDevice.downloadedPdf(SCAN)
         val current = activity()
         JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri)) }
@@ -282,12 +304,17 @@ class ReleaseJourneyTest {
         waitForNode(hasText(text(R.string.reader_ocr_badge)), OCR_DOWNLOAD_TIMEOUT_MS)
     }
 
-    private fun chooseAnotherEnglishVoice() {
+    /** False (logged, the step passes) on a build with only one English voice. */
+    private fun chooseAnotherEnglishVoice(): Boolean {
         val library = VoiceLibrary.get(app)
         val rows = runBlocking { library.rows().first { it.isNotEmpty() } }
         val other = rows.firstOrNull { it.lang == Lang.EN && it.kind == VoiceKind.BUILT_IN && !it.readsLanguage }
-        assumeTrue("This build has only one English voice", other != null)
-        library.readingVoices.choose(Lang.EN, requireNotNull(other).id)
+        if (other == null) {
+            Log.w(LOG_TAG, "Only one English voice in this build; the voice change is not checked")
+            return false
+        }
+        library.readingVoices.choose(Lang.EN, other.id)
+        return true
     }
 
     private fun secure(activity: Activity): Boolean {
@@ -296,41 +323,22 @@ class ReleaseJourneyTest {
         return flags and WindowManager.LayoutParams.FLAG_SECURE != 0
     }
 
-    companion object {
-        private var scenario: ActivityScenario<MainActivity>? = null
-        private var port: MediaControllerPlaybackPort? = null
-
-        private const val LOG_TAG = "ReleaseJourney"
-        private const val BOOK = "en-udhr-noto.pdf"
-        private const val SCAN = "en-udhr-noto-scan200bad-p1.pdf"
-        private val firstRunSteps = FirstRunStep.entries.size
-        private const val MAX_BACKS = 4
-        private const val POLL_MS = 200L
-        private const val HOLD_MS = 2_000L
-        private const val PERMISSION_PROMPT_MS = 5_000L
-        private const val UI_TIMEOUT_MS = 15_000L
-        private const val OPEN_TIMEOUT_MS = 60_000L
-        private const val PLAY_TIMEOUT_MS = 90_000L
-        private const val OCR_DOWNLOAD_TIMEOUT_MS = 360_000L
+    private companion object {
+        const val LOG_TAG = "ReleaseJourney"
+        const val BOOK = "en-udhr-noto.pdf"
+        const val SCAN = "en-udhr-noto-scan200bad-p1.pdf"
+        val firstRunSteps = FirstRunStep.entries.size
+        const val MAX_BACKS = 4
+        const val POLL_MS = 200L
+        const val HOLD_MS = 2_000L
+        const val PERMISSION_PROMPT_MS = 5_000L
+        const val UI_TIMEOUT_MS = 15_000L
+        const val OPEN_TIMEOUT_MS = 60_000L
+        const val PLAY_TIMEOUT_MS = 90_000L
+        const val OCR_DOWNLOAD_TIMEOUT_MS = 360_000L
 
         // The service's own words when it acts on a change (AudoraPlaybackService.followReadingChanges).
-        private const val VOICE_RESTART = "Reading voices changed; restarting the sentence"
-        private const val TEXT_REREAD = "Reading text settings changed; reading the open book again"
-
-        @JvmStatic
-        @BeforeClass
-        fun startCapturing() = JourneyDevice.captureLogs()
-
-        @JvmStatic
-        @AfterClass
-        fun stopEverything() {
-            JourneyDevice.onMain {
-                port?.pause()
-                port?.release()
-            }
-            port = null
-            scenario?.close()
-            scenario = null
-        }
+        const val VOICE_RESTART = "Reading voices changed; restarting the sentence"
+        const val TEXT_REREAD = "Reading text settings changed; reading the open book again"
     }
 }
