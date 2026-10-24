@@ -267,6 +267,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 058 | Act only the quoted words, carry a sad or scared mood one sentence, pronunciation check and per-voice respellings | Accepted (2026-10-23) |
 | 059 | Acted Hindi voice for studio mode only: Chatterbox Multilingual (MIT) with Turbo's one-step decoder, a native engine on sherpa-onnx's ONNX Runtime, downloaded on Wi-Fi, offered on phones with 8 GB of memory | Accepted (2026-10-23) |
 | 060 | The app's name is ListenLock (label, strings, voice commands, export folder, public pages); package and repository keep "audora" | Accepted (2026-10-23) |
+| 065 | The app icon is the designer's hand-drawn ListenLock logo (adaptive PNG on white, inside the safe zone, themed copy); debug keeps the bars mark; name and logo are not under the GPL | Accepted (2026-10-24) |
 
 ## 12. AGENTS.md (to place at repo root in P0-01)
 

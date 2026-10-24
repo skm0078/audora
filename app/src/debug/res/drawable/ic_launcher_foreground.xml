@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- File: app/src/debug/res/drawable/ic_launcher_foreground.xml -->
-<!-- Purpose: The dev build's mark: the release bars plus a bar underneath, so it differs in themed (monochrome) icons too. -->
+<!-- Purpose: The dev build's own mark (sound bars over a line), so it differs from the release logo in themed icons too. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"

@@ -199,3 +199,6 @@ Branches: `dev` is integration, `prod` is what people install; releases are cut 
 
 ListenLock is free software under the [GNU General Public License v3.0](LICENSE). Voices and data keep their own
 licences, listed above and in the app.
+
+The GPL covers the code only. The name ListenLock™ and the ListenLock logo (`docs/store/logo.png` and the app icon)
+belong to skm0078 (TelosMind Labs); the logo is © 2026, all rights reserved. A fork must use its own name and icon.
