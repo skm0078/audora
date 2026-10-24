@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_jobs.xml -->
+<!-- Purpose: The Jobs screen (ADR-067), in Bengali. -->
+<resources>
+    <string name="jobs_title">কাজ</string>
+    <string name="jobs_open">কাজ</string>
+    <plurals name="jobs_open_running">
+        <item quantity="one">কাজ, %1$dটি চলছে</item>
+        <item quantity="other">কাজ, %1$dটি চলছে</item>
+    </plurals>
+    <string name="jobs_section_books">আপনার বই থেকে তৈরি হচ্ছে</string>
+    <string name="jobs_section_downloads">ডাউনলোড</string>
+    <string name="jobs_empty">এখন কিছু চলছে না। অডিওবুক সেভ করা, স্টুডিও মোড, কপি আর ডাউনলোড চলার সময় এখানে দেখা যায়, বাকি সময় সহ।</string>
+    <string name="jobs_download_voice">ভয়েস: %1$s</string>
+    <string name="jobs_download_voice_any">একটি ভয়েস</string>
+    <string name="jobs_download_tutor">রিডিং টিউটর মডেল: %1$s</string>
+    <string name="jobs_download_tutor_any">রিডিং টিউটর মডেল</string>
+    <string name="jobs_download_dictionary">অভিধান: %1$s</string>
+    <string name="jobs_download_dictionary_any">অভিধান</string>
+    <string name="jobs_download_waiting">ইন্টারনেট বা আগের ডাউনলোড শেষ হওয়ার অপেক্ষায়</string>
+    <string name="jobs_download_progress">%2$s-এর মধ্যে %1$s</string>
+    <string name="jobs_download_cancel">বাতিল</string>
+    <string name="jobs_download_kept">বাতিল করলে যতটা এসেছে তা থাকে: আবার ডাউনলোড করলে সেখান থেকেই চলে।</string>
+</resources>

@@ -1,7 +1,7 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/SpeechSheet.kt
-// Purpose: The player's speech sheet (ADR-062): speed, pace, reading to suit the book (ADR-056) and this book's own
-//          settings first; what to read (ADR-035), sound, cast voices (item 7), study and focus sounds each one row
-//          that opens its own sheet.
+// Purpose: The player's speech sheet (ADR-062): speed, pitch (ADR-067), pace, reading to suit the book (ADR-056)
+//          and this book's own settings first; what to read (ADR-035), sound, cast voices (item 7), study and focus
+//          sounds each one row that opens its own sheet.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -40,6 +40,7 @@ import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
+import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.speech.voices.VoiceRow
@@ -56,9 +57,10 @@ import kotlin.math.roundToInt
  * The slider only sends its speed when the finger lifts: every change restarts the sentence playing at the new
  * speed (ADR-033), so sending while dragging would restart it many times a second.
  *
- * What most listeners change comes first, each row its own control: speed, pace, reading to suit the book (with what
- * the book reads as, [readingIntent]) and this book's own settings. The finer options wait one tap away, each group
- * in a sheet of its own over this one, so this sheet stays short (ADR-062).
+ * What most listeners change comes first, each row its own control: speed, pitch, pace, reading to suit the book
+ * (with what the book reads as, [readingIntent]) and this book's own settings. Pitch is sent when the finger lifts
+ * too, though it restarts nothing (ADR-067): each change is saved by the service. The finer options wait one tap
+ * away, each group in a sheet of its own over this one, so this sheet stays short (ADR-062).
  */
 @Composable
 fun SpeechSheet(
@@ -84,6 +86,8 @@ fun SpeechSheet(
     bookInPlayer: Boolean = true,
     expressive: Boolean = true,
     readingIntent: ContentIntent? = null,
+    pitch: Float = SpeechStyle.NORMAL_PITCH,
+    onPitch: (Float) -> Unit = {},
 ) {
     var page by rememberSaveable { mutableStateOf<SpeechPage?>(null) }
     OptionSheet(
@@ -93,6 +97,8 @@ fun SpeechSheet(
     ) {
         OptionGroup(title = null) {
             SpeedBlock(speed, config, onSpeed)
+            OptionDivider()
+            PitchBlock(pitch, config.speech, onPitch)
             OptionDivider()
             PaceBlock(pace, onPace)
             OptionDivider()

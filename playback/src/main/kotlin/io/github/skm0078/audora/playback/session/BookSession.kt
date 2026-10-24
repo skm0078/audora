@@ -6,6 +6,7 @@ package io.github.skm0078.audora.playback.session
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -438,6 +439,16 @@ class BookSession(
 
     /** A listening option the session only shows (the focus sound) changed: the extras carry it at once. */
     fun onListeningOptionsChanged() = publishState()
+
+    /**
+     * The pitch changed (ADR-067). Only the player shifts it, so nothing is rendered again: the sentence playing goes
+     * on, higher or lower, from where it is. A replay's slower speed is kept, since only the pitch is replaced.
+     */
+    fun onPitchChanged(pitch: Float) {
+        if (player.playbackParameters.pitch == pitch) return
+        player.playbackParameters = PlaybackParameters(player.playbackParameters.speed, pitch)
+        AudoraLog.i(TAG, "Pitch $pitch, book=${bookId?.logLabel}")
+    }
 
     fun release() {
         player.removeListener(playerListener)

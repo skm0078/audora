@@ -1,5 +1,5 @@
 // File: playback/src/test/kotlin/io/github/skm0078/audora/playback/voice/SpeechStyleStoreTest.kt
-// Purpose: The speech style: default when missing or unreadable, clamped on set, saved and read back.
+// Purpose: The speech style: default when missing or unreadable, clamped on set (rate and pitch), saved and read back.
 
 package io.github.skm0078.audora.playback.voice
 
@@ -34,9 +34,30 @@ class SpeechStyleStoreTest {
     }
 
     @Test
+    fun `a pitch is snapped to its step, kept in range and read back`() {
+        val store = SpeechStyleStore(file)
+
+        assertEquals(1.1f, store.set(SpeechStyle(pitch = 1.12f)).pitch)
+        assertEquals(1.1f, SpeechStyleStore(file).current.pitch)
+        assertEquals(1.25f, store.set(SpeechStyle(pitch = 3f)).pitch)
+        assertEquals(0.8f, store.set(SpeechStyle(pitch = 0.1f)).pitch)
+    }
+
+    @Test
+    fun `a file saved before pitch existed reads as the voice's own pitch`() {
+        file.parentFile?.mkdirs()
+        file.writeText("rate=1.5\npace=TIGHT\n")
+
+        val read = SpeechStyleStore(file).current
+
+        assertEquals(SpeechStyle.NORMAL_PITCH, read.pitch)
+        assertEquals(1.5f, read.rate)
+    }
+
+    @Test
     fun `a corrupt file falls back to the default, value by value`() {
         file.parentFile?.mkdirs()
-        file.writeText("rate=fast\npace=SIDEWAYS\n")
+        file.writeText("rate=fast\npace=SIDEWAYS\npitch=high\n")
 
         assertEquals(SpeechStyle(), SpeechStyleStore(file).current)
     }

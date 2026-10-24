@@ -16,6 +16,8 @@ import io.github.skm0078.audora.playback.export.AudiobookFolder
 import io.github.skm0078.audora.playback.export.ChapterAudioWriter
 import io.github.skm0078.audora.playback.export.ExportedChapter
 import io.github.skm0078.audora.playback.export.MediaStoreChapterFiles
+import io.github.skm0078.audora.playback.export.atPitch
+import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 
 /** A saved file: [folder] is where a file manager finds it ("Audiobooks/Title"), [name] the file's own name. */
 data class SavedStudioFile(val folder: String, val name: String, val durationMs: Long)
@@ -24,7 +26,9 @@ data class SavedStudioFile(val folder: String, val name: String, val durationMs:
  * Studio audio lives inside the app, where only ListenLock plays it. This writes what is ready, page after page, with
  * the audiobook export's encoder (AAC in .m4a) into its folder, so the listener can play it in another app, copy it
  * to a computer or share it. Nothing is rendered: it takes as long as encoding, a few minutes for hours of audio.
- * Clips at another sample rate than the first are resampled to it. Blocking: call it off the main thread.
+ * Clips at another sample rate than the first are resampled to it. Studio audio is kept at the voice's own pitch,
+ * so the file is shifted to the listener's pitch as it is written, like playback (ADR-067). Blocking: call it off the
+ * main thread.
  */
 object StudioAudioFile {
     private const val TAG = "Studio.File"
@@ -38,8 +42,9 @@ object StudioAudioFile {
         val folder = AudiobookFolder.relativePath(title, context.getString(R.string.studio_untitled), config)
         val name = context.getString(R.string.studio_file_name, ready.firstPage + 1, ready.lastPage + 1) + ".$EXTENSION"
         val chapter = AudioChapter(number = 1, firstPage = ready.firstPage, lastPage = ready.lastPage)
+        val pitch = SpeechStyleStore.forContext(context).current.pitch
         val written = writeAll(store.readyPages(id), LosslessPcm(StudioConfig().blockSamples)) { sampleRate ->
-            create(context, folder, name, chapter, sampleRate)
+            create(context, folder, name, chapter, sampleRate)?.atPitch(pitch)
         }
         return when (written) {
             null -> Outcome.Failure(nothing)

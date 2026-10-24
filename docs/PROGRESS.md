@@ -2,6 +2,21 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Jobs screen and pitch (2026-10-24, ADR-067)
+- **Jobs screen:** library top bar → Jobs (badge with the number running), and every long job's notification, open
+  one list: audiobook export, studio mode and copies (progress, time left, Stop), then every download (voices, tutor,
+  dictionaries, text recognition, punctuation, voice commands, acted voices) with its size, time left and Cancel.
+  Cancel keeps what was received, so downloading again resumes.
+- **Pitch:** speech sheet → Pitch, 0.8 to 1.25 in 5% steps, with − and +, the value in words and "Back to the voice's
+  own". Applied by the player without restarting the sentence; audiobooks, clips, the studio audio file and talking
+  books are saved at the same pitch (Media3 Sonic before the encoder). Studio audio already rendered stays valid.
+- No `:pdf` change (PIPELINE_VERSION 12). New strings in en, hi and bn. Tests listed in ADR-067; CI's
+  `player-screens` artifact has `jobs-screen.png` and `pitch-higher.png`.
+
+**Real-device checks (Moto):** change the pitch while a book plays (the same sentence goes on, higher or deeper) and
+while paused; export a short audiobook at 1.15 and play it in Files (same pitch, same length); start a voice download
+and tap the export notification: the Jobs screen shows both; Cancel the download and start it again (it resumes).
+
 ## Phone test fixes before v0.1.0: player width, time left everywhere, no babble after quotes (2026-10-24)
 - **Player:** the controls row (speed, previous, play, next, sleep timer) did not fill the panel, so `SpaceBetween` had
   no room and the row sat at the left (seen on the Moto). It now fills the width, in the reader too.

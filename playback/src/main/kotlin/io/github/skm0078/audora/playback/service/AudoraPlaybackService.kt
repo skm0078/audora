@@ -10,6 +10,7 @@ import android.content.Intent
 import android.os.SystemClock
 import android.widget.Toast
 import androidx.annotation.OptIn
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaLibraryService
@@ -172,7 +173,8 @@ class AudoraPlaybackService : MediaLibraryService() {
         val focusSound = FocusSoundStore.forContext(this)
         val focus = FocusSoundProcessor(focusSound::current) // In the voice's audio: pauses and ducks with it (72).
         player = speechPlayer(this, registry, config, focus)
-        player.setPlaybackSpeed(style.config.playerSpeed(heard())) // ADR-033, 049: the voice speaks the rest.
+        // ADR-033, 049: the voice speaks the rest of the speed. The pitch is the player's alone (ADR-067).
+        player.playbackParameters = PlaybackParameters(style.config.playerSpeed(heard()), heard().pitch)
         speed = LivePlaybackSpeed(player)
         // The reading modes travel with the speech style; a change restarts the sentence playing (ADR-035).
         val reading = ReadingSource(modes = { style.current.modes })

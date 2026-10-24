@@ -15,6 +15,7 @@ data class SpeechStyleChange(
     val clausePauses: Boolean? = null,
     val modes: ReadingModes? = null,
     val shaping: VoiceShaping? = null,
+    val pitch: Float? = null,
 ) {
     /** [base] with this change's fields on top. */
     fun over(base: SpeechStyle): SpeechStyle = SpeechStyle(
@@ -23,5 +24,6 @@ data class SpeechStyleChange(
         clausePauses = clausePauses ?: base.clausePauses,
         modes = modes ?: base.modes,
         shaping = shaping ?: base.shaping,
+        pitch = pitch ?: base.pitch,
     )
 }

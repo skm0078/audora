@@ -23,6 +23,7 @@ import io.github.skm0078.audora.playback.export.AudiobookFolder
 import io.github.skm0078.audora.playback.export.ExportError
 import io.github.skm0078.audora.playback.export.ExportProgress
 import io.github.skm0078.audora.playback.export.LocalChapterFiles
+import io.github.skm0078.audora.playback.export.withPitch
 import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.studio.StudioSentenceRenderer
 import io.github.skm0078.audora.playback.studio.StudioStore
@@ -94,7 +95,9 @@ internal class CopyJob(
         onChapter: () -> Unit = {},
     ): Outcome<SavedCopy, CopyError> {
         val root = File(context.cacheDir, STAGING_FOLDER)
-        val staging = StagedChapters.folderFor(root, book.book.id.value, rendering.key.signature.hash)
+        // The pitch is in the folder's key too: chapters staged at another pitch are not mixed in (ADR-067).
+        val signature = withPitch(rendering.key.signature.hash, rendering.style.pitch)
+        val staging = StagedChapters.folderFor(root, book.book.id.value, signature)
         val result = voice(rendering, store, staging, onChapter)
         if (result is Outcome.Success) staging.deleteRecursively()
         return result
@@ -121,7 +124,7 @@ internal class CopyJob(
             AudoraLog.i(TAG, "Talking book goes on: ${restored.size} of ${chapters.size} chapters staged, $logContext")
         }
         val renderer = StudioSentenceRenderer(rendering.live, store) { rendering.key }
-        val sink = AacAudioSink(LocalChapterFiles(staging), chapters.size)
+        val sink = AacAudioSink(LocalChapterFiles(staging), chapters.size, pitch = rendering.style.pitch)
         val exported = AudiobookExporter(renderer, AudiobookConfig(), rendering.reading, rendering::page)
             .export(text, remaining, sink, recorder, logContext)
         return when (exported) {

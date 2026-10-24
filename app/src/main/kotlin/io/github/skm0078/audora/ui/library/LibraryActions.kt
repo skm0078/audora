@@ -45,4 +45,7 @@ interface LibraryActions {
 
     /** One of the [LibraryAction]s in the library's ⋮ menu (point and read, plan item 62). */
     fun onLibraryAction(action: LibraryAction) = Unit
+
+    /** The Jobs button in the top bar (ADR-067): every long job and download, with progress and time left. */
+    fun onOpenJobs() = Unit
 }

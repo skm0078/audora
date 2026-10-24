@@ -62,7 +62,7 @@ internal fun TutorDownloadOffer(lang: Lang, download: OcrModelsState?, onDownloa
 }
 
 @StringRes
-private fun langName(lang: Lang): Int = when (lang) {
+internal fun langName(lang: Lang): Int = when (lang) {
     Lang.EN -> R.string.tutor_lang_en
     Lang.HI -> R.string.tutor_lang_hi
     Lang.BN -> R.string.tutor_lang_bn

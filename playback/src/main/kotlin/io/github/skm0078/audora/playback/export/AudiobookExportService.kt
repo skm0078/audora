@@ -191,18 +191,19 @@ class AudiobookExportService : Service() {
         val factory = BookRendering.Factory(this, bookSettings, pronunciations)
         try {
             ExportVoice(this, SpeechStyleStore.forContext(this), factory, book.book.id, book.text).use { voice ->
+                val pitch = voice.rendering.style.pitch
                 val session = ExportSession(
                     ExportRecords(File(filesDir, RECORDS_FOLDER)),
                     MediaStoreSavedFiles(contentResolver),
                     bookId = book.book.id.value,
-                    // The book's voices and fixes are in the signature: changing either starts again, never mixes.
-                    key = exportKey(voice.rendering.key.signature.hash, folder, chapters),
+                    // The book's voices, fixes and pitch are in the key: changing any starts again, never mixes.
+                    key = exportKey(withPitch(voice.rendering.key.signature.hash, pitch), folder, chapters),
                     chapters,
                     logContext,
                 )
                 // Each file is recorded as pending once created, so a crash mid-chapter never strands a hidden file.
                 val files = MediaStoreChapterFiles(contentResolver, folder).recordedIn(session)
-                val sink = AacAudioSink(files, chapters.size, config)
+                val sink = AacAudioSink(files, chapters.size, config, pitch)
                 val listener = ProgressListener(title, chapters, session)
                 val exporter = voice.exporter(config) { cast ->
                     AudoraLog.i(TAG, "Export cast=$cast, $logContext")

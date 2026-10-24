@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_jobs.xml -->
+<!-- Purpose: The Jobs screen (ADR-067), in Hindi. -->
+<resources>
+    <string name="jobs_title">काम</string>
+    <string name="jobs_open">काम</string>
+    <plurals name="jobs_open_running">
+        <item quantity="one">काम, %1$d चल रहा है</item>
+        <item quantity="other">काम, %1$d चल रहे हैं</item>
+    </plurals>
+    <string name="jobs_section_books">आपकी किताबों से बन रहा है</string>
+    <string name="jobs_section_downloads">डाउनलोड</string>
+    <string name="jobs_empty">अभी कुछ नहीं चल रहा। ऑडियोबुक सेव करना, स्टूडियो मोड, कॉपियाँ और डाउनलोड चलते समय यहाँ दिखते हैं, बचे समय के साथ।</string>
+    <string name="jobs_download_voice">आवाज़: %1$s</string>
+    <string name="jobs_download_voice_any">एक आवाज़</string>
+    <string name="jobs_download_tutor">रीडिंग ट्यूटर मॉडल: %1$s</string>
+    <string name="jobs_download_tutor_any">रीडिंग ट्यूटर मॉडल</string>
+    <string name="jobs_download_dictionary">शब्दकोश: %1$s</string>
+    <string name="jobs_download_dictionary_any">शब्दकोश</string>
+    <string name="jobs_download_waiting">इंटरनेट का, या पिछले डाउनलोड के पूरा होने का इंतज़ार</string>
+    <string name="jobs_download_progress">%2$s में से %1$s</string>
+    <string name="jobs_download_cancel">रद्द करें</string>
+    <string name="jobs_download_kept">रद्द करने पर जितना आ चुका है वह रहता है: दोबारा डाउनलोड वहीं से आगे चलता है।</string>
+</resources>

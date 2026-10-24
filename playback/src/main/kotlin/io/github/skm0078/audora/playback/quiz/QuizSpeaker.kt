@@ -180,10 +180,15 @@ class QuizSpeaker(context: Context, private val idleMs: Long = QuizConfig().spea
         }
     }
 
-    /** The player's share of the speed, as the book player applies it; a track that refuses plays at 1x (logged). */
+    /**
+     * The player's share of the speed and the listener's pitch, as the book player applies them; a track that refuses
+     * plays at 1x and the voice's own pitch (logged).
+     */
     private fun setSpeed(made: AudioTrack) {
         try {
-            made.playbackParams = made.playbackParams.setSpeed(style.config.playerSpeed(style.current))
+            val current = style.current
+            made.playbackParams =
+                made.playbackParams.setSpeed(style.config.playerSpeed(current)).setPitch(current.pitch)
         } catch (e: IllegalArgumentException) {
             AudoraLog.w(TAG, "Quiz line speed not set: ${e.javaClass.simpleName}")
         } catch (e: IllegalStateException) {

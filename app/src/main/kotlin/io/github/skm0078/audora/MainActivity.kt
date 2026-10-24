@@ -44,12 +44,10 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import io.github.skm0078.audora.battery.BatteryExemption
 import io.github.skm0078.audora.battery.OnboardingPreferences
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
@@ -89,6 +87,7 @@ import io.github.skm0078.audora.playback.export.AudioClips
 import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.playback.export.MarkStores
 import io.github.skm0078.audora.playback.jobs.LongJobKind
+import io.github.skm0078.audora.playback.jobs.OpenJobs
 import io.github.skm0078.audora.playback.notes.VoiceNoteAudio
 import io.github.skm0078.audora.playback.photo.PhotoBooks
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
@@ -104,12 +103,16 @@ import io.github.skm0078.audora.ui.AppDestination
 import io.github.skm0078.audora.ui.AppTab
 import io.github.skm0078.audora.ui.battery.BatterySetupCard
 import io.github.skm0078.audora.ui.battery.BatterySetupController
-import io.github.skm0078.audora.ui.battery.BatterySetupScreen
+import io.github.skm0078.audora.ui.battery.BatterySetupRoute
+import io.github.skm0078.audora.ui.battery.rememberBatterySetup
 import io.github.skm0078.audora.ui.diagnostics.DiagnosticsController
 import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
 import io.github.skm0078.audora.ui.firstrun.FirstRunScreen
 import io.github.skm0078.audora.ui.firstrun.shouldShowFirstRun
+import io.github.skm0078.audora.ui.jobs.JobsRoute
 import io.github.skm0078.audora.ui.jobs.LongJobsPanel
+import io.github.skm0078.audora.ui.jobs.OpenJobsEffect
+import io.github.skm0078.audora.ui.jobs.rememberRunningJobCount
 import io.github.skm0078.audora.ui.jobs.startLongJob
 import io.github.skm0078.audora.ui.kids.KidsBanner
 import io.github.skm0078.audora.ui.kids.KidsMode
@@ -195,7 +198,6 @@ import io.github.skm0078.audora.widget.ResumeWidgetEffect
 import io.github.skm0078.audora.widget.ResumeWidgetProvider
 import java.io.File
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -258,6 +260,9 @@ class MainActivity : ComponentActivity() {
 
     /** A book the home-screen widget's Resume asked to continue (plan item 35), until it is opened. */
     private var widgetResume by mutableStateOf<String?>(null)
+
+    /** A job's notification was tapped (ADR-067): the Jobs screen opens once the screens are up. */
+    private var openJobs by mutableStateOf(false)
 
     /** Text shared from another app (plan item 42), until it is saved as a book. */
     private var sharedText by mutableStateOf<SharedText?>(null)
@@ -325,6 +330,7 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) {
             takeShared(intent)
             widgetResume = ResumeWidgetProvider.bookIdOf(intent)
+            openJobs = OpenJobs.opensJobs(intent)
             continueStudioJobs(intent)
             Backups.takeStartResult()?.let { Toast.makeText(this, restoreMessageOf(it), Toast.LENGTH_LONG).show() }
             photoBooks.resumePending()
@@ -389,6 +395,7 @@ class MainActivity : ComponentActivity() {
         SharedTextEffect(sharedText, sharedCopies, onTaken = { sharedText = null }) { sharedPdf = it }
         PhotoBookEffect(photoBooks, nav::navigate)
         ResumeWidgetEffect(libraryController.listState, widgetResume, { widgetResume = null }, nav::continueReading)
+        OpenJobsEffect(openJobs, onHandled = { openJobs = false }) { nav.navigate(AppDestination.Jobs) }
         val books = libraryBooks(libraryController.listState)
         if (firstRunShowing(libraryController, voicesController, battery, kids.on)) return
 
@@ -508,6 +515,8 @@ class MainActivity : ComponentActivity() {
                 BatterySetupRoute(battery) { nav.navigate(destination.parent ?: AppDestination.Library) }
             }
 
+            AppDestination.Jobs -> ReadableWidth { JobsRoute { nav.navigate(AppDestination.Library) } }
+
             is AppDestination.Reader -> BookRoute(destination, destination.id, destination.from, nav, books)
 
             is AppDestination.Player -> BookRoute(destination, destination.id, destination.from, nav, books)
@@ -580,35 +589,6 @@ class MainActivity : ComponentActivity() {
         val groups by remember(books) { bookNotes(NoteSources(bookmarkStore, highlightStore, voiceNoteStore), books) }
             .collectAsStateWithLifecycle(initialValue = emptyList())
         NotesScreen(groups, onOpen)
-    }
-
-    /** Re-checks the exemption on every resume: the user comes back from the system prompt or Settings. */
-    @Composable
-    private fun rememberBatterySetup(scope: CoroutineScope): BatterySetupController {
-        val battery = remember {
-            BatterySetupController(
-                BatteryExemption(applicationContext),
-                OnboardingPreferences(applicationContext),
-                scope,
-            )
-        }
-        LifecycleResumeEffect(Unit) {
-            battery.refresh()
-            onPauseOrDispose {}
-        }
-        return battery
-    }
-
-    @Composable
-    private fun BatterySetupRoute(battery: BatterySetupController, navigateBack: () -> Unit) {
-        BatterySetupScreen(
-            exempt = battery.exempt,
-            brand = battery.brand,
-            steps = battery.steps,
-            onAllow = { battery.requestExemption(::startActivity) },
-            onOpenAppSettings = { battery.openAppSettings(::startActivity) },
-            onBack = navigateBack,
-        )
     }
 
     @Composable
@@ -700,6 +680,7 @@ class MainActivity : ComponentActivity() {
         takeShared(intent)
         continueStudioJobs(intent)
         ResumeWidgetProvider.bookIdOf(intent)?.let { widgetResume = it }
+        if (OpenJobs.opensJobs(intent)) openJobs = true
     }
 
     /** What another app opened or shared: pictures, a book file or text ([receiveShared]). */
@@ -754,6 +735,8 @@ class MainActivity : ComponentActivity() {
                 override fun onBookAction(book: Book, action: BookAction) = studio.onBookAction(book, action)
 
                 override fun onLibraryAction(action: LibraryAction) = studio.onLibraryAction(action)
+
+                override fun onOpenJobs() = navigate(AppDestination.Jobs)
             }
         }
         val books = (controller.listState as? LibraryListState.Loaded)?.all?.mapTo(HashSet()) { it.book.id }
@@ -774,6 +757,7 @@ class MainActivity : ComponentActivity() {
                 )
             },
             covers = bookCovers,
+            runningJobs = rememberRunningJobCount(),
         )
         studio.Sheets((controller.listState as? LibraryListState.Loaded)?.all?.map { it.book })
     }
@@ -1064,6 +1048,8 @@ class MainActivity : ComponentActivity() {
         override fun onFocusSound(options: FocusSoundOptions) = model.setFocusSound(options)
 
         override fun onVoiceShaping(shaping: VoiceShaping) = model.setVoiceShaping(shaping)
+
+        override fun onPitch(pitch: Float) = model.setPitch(pitch)
 
         override fun onUndoJump() = model.undoJump()
 

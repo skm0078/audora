@@ -15,6 +15,7 @@ import io.github.skm0078.audora.playback.jobs.JobTimeLeft
 import io.github.skm0078.audora.playback.jobs.LongJobEnd
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.jobs.LongJobs
+import io.github.skm0078.audora.playback.jobs.OpenJobs
 
 /** Platform notifications, like the audiobook export's. */
 internal class CopyNotifications(private val context: Context) {
@@ -136,9 +137,11 @@ internal class CopyNotifications(private val context: Context) {
         manager.notify(RESULT_ID, notification)
     }
 
+    /** Tapping opens the Jobs screen (ADR-067); a timed-out result replaces it with its own Continue. */
     private fun builder(): Notification.Builder = Notification.Builder(context, CHANNEL)
         .setSmallIcon(R.drawable.ic_export_audiobook)
         .setCategory(Notification.CATEGORY_PROGRESS)
+        .apply { OpenJobs.pendingIntent(context)?.let { setContentIntent(it) } }
 
     companion object {
         const val RUNNING_ID = 0x0A3D

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_jobs.xml -->
+<!-- Purpose: The Jobs screen (ADR-067): every long job and download in one place, with progress and time left. -->
+<resources>
+    <string name="jobs_title">Jobs</string>
+    <string name="jobs_open">Jobs</string>
+    <plurals name="jobs_open_running">
+        <item quantity="one">Jobs, %1$d running</item>
+        <item quantity="other">Jobs, %1$d running</item>
+    </plurals>
+    <string name="jobs_section_books">Made from your books</string>
+    <string name="jobs_section_downloads">Downloads</string>
+    <string name="jobs_empty">Nothing is running. Saving an audiobook, studio mode, copies and downloads show here while they work, with the time left.</string>
+    <string name="jobs_download_voice">Voice: %1$s</string>
+    <string name="jobs_download_voice_any">A voice</string>
+    <string name="jobs_download_tutor">Reading tutor model: %1$s</string>
+    <string name="jobs_download_tutor_any">Reading tutor model</string>
+    <string name="jobs_download_dictionary">Dictionary: %1$s</string>
+    <string name="jobs_download_dictionary_any">Dictionary</string>
+    <string name="jobs_download_waiting">Waiting for a connection, or for the download before it</string>
+    <string name="jobs_download_progress">%1$s of %2$s</string>
+    <string name="jobs_download_cancel">Cancel</string>
+    <string name="jobs_download_kept">Cancel keeps what was received: downloading it again goes on from there.</string>
+</resources>

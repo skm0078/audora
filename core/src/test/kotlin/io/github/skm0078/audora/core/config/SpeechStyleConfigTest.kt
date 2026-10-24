@@ -1,5 +1,6 @@
 // File: core/src/test/kotlin/io/github/skm0078/audora/core/config/SpeechStyleConfigTest.kt
-// Purpose: Rates snap to the slider's steps, speed splits between model and player, paces size the silences.
+// Purpose: Rates and pitches snap to the sliders' steps, speed splits between model and player, paces size the
+//          silences.
 
 package io.github.skm0078.audora.core.config
 
@@ -8,6 +9,7 @@ import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceShaping
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
@@ -127,6 +129,29 @@ class SpeechStyleConfigTest {
     }
 
     @Test
+    fun `pitches are clamped and snapped to the step`() {
+        val cases = listOf(
+            1f to 1f,
+            1.12f to 1.1f,
+            0.83f to 0.85f,
+            0.1f to 0.8f,
+            2f to 1.25f,
+            Float.NaN to 1f,
+            Float.NEGATIVE_INFINITY to 1f,
+        )
+        cases.forEach { (pitch, expected) -> assertEquals("pitch $pitch", expected, config.clampPitch(pitch), 0f) }
+    }
+
+    @Test
+    fun `a pitch change renders nothing again, a rate change does`() {
+        val style = SpeechStyle(rate = 1.25f)
+
+        assertEquals(config.asRendered(style), config.asRendered(style.copy(pitch = 1.2f)))
+        assertNotEquals(config.asRendered(style), config.asRendered(style.copy(rate = 1.3f)))
+        assertEquals(SpeechStyle.NORMAL_PITCH, config.asRendered(style.copy(pitch = 0.9f)).pitch)
+    }
+
+    @Test
     fun `bad ranges are rejected`() {
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(minRate = 0f) }
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(minRate = 2f, maxRate = 1f) }
@@ -135,6 +160,9 @@ class SpeechStyleConfigTest {
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(maxModelRate = 0.8f) }
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(clausePausesMs = emptyMap()) }
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(asideGainDb = 3f) }
+        assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(minPitch = 0f) }
+        assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(minPitch = 1.1f) }
+        assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(pitchStep = 0f) }
     }
 
     private companion object {

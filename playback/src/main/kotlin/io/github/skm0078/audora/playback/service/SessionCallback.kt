@@ -20,6 +20,7 @@ import androidx.media3.session.SessionResult
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import io.github.skm0078.audora.core.config.asRendered
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.FocusSoundOptions
@@ -272,7 +273,8 @@ class SessionCallback(
 
     /**
      * Speed and pace go to the open book when it has its own settings (plan item 4), everything else (clause pauses,
-     * reading modes, sound) to the global style. The sentence restarts only when what is heard changed.
+     * reading modes, sound, pitch) to the global style. The sentence restarts only when what is rendered changed: a
+     * pitch change is the player's alone and goes on from where it is (ADR-067).
      */
     private suspend fun setSpeechStyle(requested: SpeechStyle): SessionResult {
         val style = stores.style
@@ -285,9 +287,10 @@ class SessionCallback(
         val bookOwnsSpeed = own == Outcome.Success(true)
         style.set(if (bookOwnsSpeed) requested.copy(rate = global.rate, pace = global.pace) else requested)
         val after = book.style(style.current)
-        val heard = style.config::asHeard
+        val rendered = style.config::asRendered
+        bookSession().onPitchChanged(after.pitch)
         // A change nobody hears yet (smart speed below the model's top speed) is still shown: the switch follows it.
-        if (heard(after) != heard(before)) {
+        if (rendered(after) != rendered(before)) {
             bookSession().onSpeechStyleChanged(style.config.playerSpeed(after))
         } else {
             bookSession().onListeningOptionsChanged()

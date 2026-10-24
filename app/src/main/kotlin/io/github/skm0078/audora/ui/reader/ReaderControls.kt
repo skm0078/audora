@@ -165,6 +165,8 @@ private fun SpeedButton(
             pace = playback.pace,
             config = config,
             onSpeed = actions::onSpeed,
+            pitch = playback.pitch,
+            onPitch = actions::onPitch,
             onPace = actions::onPace,
             clausePauses = playback.clausePauses,
             onClausePauses = actions::onClausePauses,

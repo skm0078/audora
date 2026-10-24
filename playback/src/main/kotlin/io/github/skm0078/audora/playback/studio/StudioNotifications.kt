@@ -14,6 +14,7 @@ import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.jobs.LongJobEnd
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.jobs.LongJobs
+import io.github.skm0078.audora.playback.jobs.OpenJobs
 
 /** Platform notifications, like the audiobook export's: no androidx dependency for a handful of plain notifications. */
 @Suppress("TooManyFunctions") // One per notification state, plus the small text builders each one uses.
@@ -147,18 +148,7 @@ internal class StudioNotifications(private val context: Context, private val con
     private fun builder(): Notification.Builder = Notification.Builder(context, CHANNEL)
         .setSmallIcon(R.drawable.ic_export_audiobook)
         .setCategory(Notification.CATEGORY_PROGRESS)
-        .apply { openApp()?.let { setContentIntent(it) } }
-
-    /** Tapping opens Audora; :playback does not know its activity, the launcher does. */
-    private fun openApp(): PendingIntent? {
-        val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return null
-        return PendingIntent.getActivity(
-            context,
-            0,
-            launch.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-    }
+        .apply { OpenJobs.pendingIntent(context)?.let { setContentIntent(it) } }
 
     companion object {
         const val RUNNING_ID = 0x0A1D

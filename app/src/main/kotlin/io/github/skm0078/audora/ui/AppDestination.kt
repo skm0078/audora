@@ -26,6 +26,9 @@ sealed interface AppDestination {
     /** Settings → Storage (UI plan): what Audora's data takes and how to free it. */
     data object Storage : AppDestination
 
+    /** Every long job and download with its progress (ADR-067), from the library's top bar or a job's notification. */
+    data object Jobs : AppDestination
+
     /**
      * @property from the tab it was opened over (a bookmark from Notes, a book from the library), where back returns.
      * @property viaPlayer opened from the full player's "Show the page": back returns to that player.
@@ -53,6 +56,7 @@ sealed interface AppDestination {
             is Voices -> if (fromStorage) Storage else Settings
             Licences, Storage -> Settings
             is BatterySetup -> if (fromSettings) Settings else Library
+            Jobs -> Library
             is Reader -> if (viaPlayer) Player(id, from) else from.destination
             is Player -> from.destination
             Notes, Settings -> Library
@@ -64,7 +68,7 @@ sealed interface AppDestination {
             Library -> AppTab.LIBRARY
             Notes -> AppTab.NOTES
             Settings -> AppTab.SETTINGS
-            is Voices, Licences, Storage, is BatterySetup, is Reader, is Player -> null
+            is Voices, Licences, Storage, Jobs, is BatterySetup, is Reader, is Player -> null
         }
 
     /**
@@ -76,7 +80,7 @@ sealed interface AppDestination {
             Library, Notes, Settings -> TABS_SCREEN
             is Reader -> BOOK_PREFIX + id.value
             is Player -> BOOK_PREFIX + id.value
-            is Voices, Licences, Storage, is BatterySetup -> toRoute()
+            is Voices, Licences, Storage, Jobs, is BatterySetup -> toRoute()
         }
 
     fun toRoute(): String = when (this) {
@@ -86,6 +90,7 @@ sealed interface AppDestination {
         is Voices -> if (fromStorage) VOICES_FROM_STORAGE else VOICES
         Licences -> LICENCES
         Storage -> STORAGE
+        Jobs -> JOBS
         is Reader -> bookRoute(BOOK_PREFIX, id, from, viaPlayer)
         is Player -> bookRoute(PLAYER_PREFIX, id, from, viaPlayer = false)
         is BatterySetup -> if (fromSettings) BATTERY_SETUP_FROM_SETTINGS else BATTERY_SETUP
@@ -102,6 +107,7 @@ sealed interface AppDestination {
         private const val VOICES_FROM_STORAGE = "settings/storage/voices"
         private const val LICENCES = "settings/licences"
         private const val STORAGE = "settings/storage"
+        private const val JOBS = "jobs"
         private const val BOOK_PREFIX = "book/"
         private const val PLAYER_PREFIX = "player/"
         private const val QUERY = '?'
@@ -152,6 +158,7 @@ sealed interface AppDestination {
                 VOICES_FROM_STORAGE to Voices(fromStorage = true),
                 LICENCES to Licences,
                 STORAGE to Storage,
+                JOBS to Jobs,
             )
         }
     }

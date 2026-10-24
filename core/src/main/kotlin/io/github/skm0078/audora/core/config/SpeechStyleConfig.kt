@@ -39,6 +39,10 @@ data class PaceTiming(val sentenceGapMs: Int, val pauseScale: Float) {
  * @property clausePausesMs the pause at each strong mark inside a sentence at normal speed, before the pace's
  *   scale (RI-6); tune by ear on the phone.
  * @property asideGainDb the loudness of bracketed words against the rest of the sentence, in decibels.
+ * @property minPitch lowest pitch offered (ADR-067). Further than about a fifth from the voice's own, a shifted voice
+ *   starts to sound processed, so the range stays inside that.
+ * @property maxPitch highest pitch offered.
+ * @property pitchStep the pitch slider's step; a saved pitch is snapped to it.
  */
 data class SpeechStyleConfig(
     val minRate: Float = 0.5f,
@@ -48,6 +52,9 @@ data class SpeechStyleConfig(
     val paces: Map<Pace, PaceTiming> = DEFAULT_PACES,
     val clausePausesMs: Map<ClauseMark, Int> = DEFAULT_CLAUSE_PAUSES,
     val asideGainDb: Float = DEFAULT_ASIDE_GAIN_DB,
+    val minPitch: Float = DEFAULT_MIN_PITCH,
+    val maxPitch: Float = DEFAULT_MAX_PITCH,
+    val pitchStep: Float = DEFAULT_PITCH_STEP,
 ) {
     init {
         require(minRate > 0f && maxRate > minRate) { "rates must satisfy 0 < minRate < maxRate" }
@@ -58,6 +65,17 @@ data class SpeechStyleConfig(
         require(clausePausesMs.keys == ClauseMark.entries.toSet()) { "every clause mark needs its pause" }
         require(clausePausesMs.values.all { it >= 0 }) { "clause pauses must be >= 0" }
         require(asideGainDb <= 0f && asideGainDb.isFinite()) { "asideGainDb must be <= 0, was $asideGainDb" }
+        require(minPitch > 0f && maxPitch > minPitch) { "pitches must satisfy 0 < minPitch < maxPitch" }
+        require(SpeechStyle.NORMAL_PITCH in minPitch..maxPitch) { "the normal pitch must be in range" }
+        require(pitchStep > 0f) { "pitchStep must be > 0, was $pitchStep" }
+    }
+
+    /** [pitch] within the range and on a step, 2 decimals; a non-finite value (a corrupt file) is the voice's own. */
+    fun clampPitch(pitch: Float): Float {
+        if (!pitch.isFinite()) return SpeechStyle.NORMAL_PITCH
+        val steps = ((pitch.coerceIn(minPitch, maxPitch) - minPitch) / pitchStep).roundToInt()
+        val snapped = (minPitch + steps * pitchStep).coerceIn(minPitch, maxPitch)
+        return (snapped * HUNDREDTHS).roundToInt() / HUNDREDTHS
     }
 
     /** [rate] within the range and on a step, 2 decimals; a non-finite value (a corrupt file) is normal speed. */
@@ -128,6 +146,10 @@ data class SpeechStyleConfig(
     private companion object {
         const val HUNDREDTHS = 100f
 
+        const val DEFAULT_MIN_PITCH = 0.8f
+        const val DEFAULT_MAX_PITCH = 1.25f
+        const val DEFAULT_PITCH_STEP = 0.05f
+
         /** About 70 % of the loudness: heard as an aside, still clear. */
         const val DEFAULT_ASIDE_GAIN_DB = -3f
 
@@ -150,3 +172,11 @@ data class SpeechStyleConfig(
         )
     }
 }
+
+/**
+ * [style] as the voice renders it: [SpeechStyleConfig.asHeard] without the pitch, which only the player and an
+ * exported file's encoder apply. Two styles that differ only in pitch render the same sentences, so a pitch change
+ * restarts nothing (ADR-067).
+ */
+fun SpeechStyleConfig.asRendered(style: SpeechStyle): SpeechStyle =
+    asHeard(style).copy(pitch = SpeechStyle.NORMAL_PITCH)
