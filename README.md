@@ -188,7 +188,7 @@ VAD (MIT).
 
 ## For contributors
 
-Read [AGENTS.md](AGENTS.md), then [docs/BUILD-SPEC.md](docs/BUILD-SPEC.md), [docs/TICKET-PLAN.md](docs/TICKET-PLAN.md)
+Every document is listed in [docs/README.md](docs/README.md). Read [AGENTS.md](AGENTS.md), then [docs/BUILD-SPEC.md](docs/BUILD-SPEC.md), [docs/TICKET-PLAN.md](docs/TICKET-PLAN.md)
 and the decisions in [docs/adr/](docs/adr/). Reading quality is tracked in [docs/QUALITY.md](docs/QUALITY.md) and
 [docs/LISTENING.md](docs/LISTENING.md).
 Quick check: `./gradlew ktlintCheck detekt test assembleDebug` (JDK 21 and the Android SDK).
