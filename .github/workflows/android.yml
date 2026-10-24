@@ -211,7 +211,7 @@ jobs:
   device-tests:
     name: Device tests (emulator)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       EMULATOR_IMAGE: "system-images;android-34;aosp_atd;x86_64"
 
@@ -279,8 +279,10 @@ jobs:
           [ "$booted" = "1" ] || fail "Emulator did not finish booting"
           echo "Emulator booted"
 
+      # :app includes the release journey (app/src/androidTest/.../release): the real app, end to end, on this fresh
+      # install. Its OCR step downloads the text recognition files from GitHub, as a phone would.
       - name: Instrumented tests (:pdf, :playback, :speech, :app)
-        timeout-minutes: 20
+        timeout-minutes: 30
         run: >-
           ./gradlew :pdf:connectedDebugAndroidTest :playback:connectedDebugAndroidTest
           :speech:connectedDebugAndroidTest :app:connectedUiTestAndroidTest --stacktrace
@@ -302,7 +304,7 @@ jobs:
 
       - name: Memory test numbers
         if: always()
-        run: 'timeout 30 "$ANDROID_HOME/platform-tools/adb" logcat -d -s AudoraMemoryTest:I AudoraSpeechTest:I AudoraPlaybackTest:I TesseractOcrTest:I ExoPlayerImpl:W DefaultAudioSink:W AudioTrack:W AndroidRuntime:E DEBUG:F libc:F sherpa-onnx:W TestRunner:I || true'
+        run: 'timeout 30 "$ANDROID_HOME/platform-tools/adb" logcat -d -s AudoraMemoryTest:I AudoraSpeechTest:I AudoraPlaybackTest:I TesseractOcrTest:I ReleaseJourney:I Audora.Playback.Service:I ExoPlayerImpl:W DefaultAudioSink:W AudioTrack:W AndroidRuntime:E DEBUG:F libc:F sherpa-onnx:W TestRunner:I || true'
 
       - name: Upload reports on failure
         if: failure()
