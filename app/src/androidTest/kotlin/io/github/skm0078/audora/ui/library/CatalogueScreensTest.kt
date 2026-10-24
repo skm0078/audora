@@ -137,7 +137,12 @@ class CatalogueScreensTest {
         rule.onNode(hasContentDescription(context.getString(R.string.collections_delete_named, "Bedtime")))
             .performClick()
         rule.onNodeWithText(context.getString(R.string.collections_delete_body)).assertExists()
-        rule.onNode(hasText(context.getString(R.string.collections_delete)) and hasAnyAncestor(isDialog()))
+        // The sheet is a dialog too, and its rows' Delete buttons say which collection: the confirm button does not.
+        val rowDelete =
+            hasContentDescription(context.getString(R.string.collections_delete_named, ""), substring = true)
+        rule.onNode(
+            hasText(context.getString(R.string.collections_delete)) and hasAnyAncestor(isDialog()) and !rowDelete,
+        )
             .performClick()
         rule.waitForIdle()
         assertEquals(listOf("bed"), deleted)
