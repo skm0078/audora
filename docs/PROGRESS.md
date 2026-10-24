@@ -3,11 +3,11 @@
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
 ## The app icon is the ListenLock logo (2026-10-24, ADR-065)
-- **What:** the launcher icon is the designer's hand-drawn logo on white, scaled into the 66dp safe zone (PNG per density), with a one-colour copy for themed icons. The Android 12 splash shows it on the app's paper. Debug builds keep the sound-bars mark on orange.
+- **What:** the launcher icon is the designer's hand-drawn logo on white, scaled into the 66dp safe zone (PNG per density), with a one-colour copy for themed icons. The Android 12 splash shows it on the app's paper. Debug builds (the dev APK) use the same icon; the label "ListenLock Dev" tells them apart.
 - **Store:** `docs/store/logo.png` (master), `icon.png` (512 px) and `feature-graphic.png` re-made from it; `icon.svg` removed.
 - README: the GPL covers the code; the name and logo are the owner's. No code, preference or `:pdf` change (PIPELINE_VERSION 12).
 
-**Real-device checks (Moto):** launcher (round and squircle shapes if the launcher offers them), themed icons on (Settings → Wallpaper and style), the splash at a cold start and recents; a debug install still shows the bars mark.
+**Real-device checks (Moto):** launcher (round and squircle shapes if the launcher offers them), themed icons on (Settings → Wallpaper and style), the splash at a cold start and recents, on the dev APK.
 
 ## Studio audio survives updates; reading settings apply at once (2026-10-23, ADR-064)
 - **Studio audio** is keyed by `STUDIO_AUDIO_VERSION` instead of the app's install time, so an update no longer deletes it. Bump the version when the sound can change (AGENTS.md). This build drops older, unversioned studio audio once.

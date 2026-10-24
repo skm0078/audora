@@ -16,14 +16,17 @@ developer name on Play, keeps a separate logo. The logo came as one PNG, 743 × 
 - **Themed icon (Android 13+):** `ic_launcher_logo_monochrome.png`, the logo's opaque pixels as one colour; Android
   tints it.
 - **Splash (Android 12+):** unchanged code; it shows the launcher icon on the app's paper colour (`splash_background`).
-- **Debug builds** keep the old sound-bars mark on its orange background (`src/debug/res/mipmap-anydpi`), so a debug
-  install is easy to tell from a release one on the same phone.
+- **Debug builds** use the same icon. The dev APK (`audora-dev.apk`) is the debug build and is what testers install,
+  so it must look like the app; the label "ListenLock Dev" tells the two apart. (First version kept the old orange
+  bars mark for debug, so the dev APK never showed the logo; removed 2026-10-24.)
 - **Store:** `docs/store/logo.png` is the master; `docs/store/icon.png` (512 × 512, logo on white) and
   `docs/store/feature-graphic.png` (the logo next to the name) are made from it.
 - **Rights:** the GPL covers the code, not the name or the logo. README says so: the name and logo belong to the owner,
   and forks must use their own.
 
 ## Alternatives considered
+- **A different icon for debug builds:** tells installs apart at a glance, but the dev APK is the build people test,
+  so they never see the real icon.
 - **Keep the sound-bars mark:** consistent with the old look, but generic and not the brand.
 - **Trace the logo to a vector drawable:** sharper at every size, but it alters hand-drawn lines; the PNGs at
   xxxhdpi (432 px for 108dp) are already sharper than any launcher draws them.
