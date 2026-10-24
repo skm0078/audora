@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.Intent
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.playback.R
+import io.github.skm0078.audora.playback.jobs.JobTimeLeft
 import io.github.skm0078.audora.playback.jobs.LongJobEnd
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.jobs.LongJobs
@@ -18,6 +19,7 @@ import io.github.skm0078.audora.playback.jobs.LongJobs
 /** Platform notifications: no androidx dependency for four plain notifications. */
 internal class ExportNotifications(private val context: Context) {
     private val manager = context.getSystemService(NotificationManager::class.java)
+    private val timeLeft = JobTimeLeft(context)
 
     fun createChannel() {
         val channel = NotificationChannel(
@@ -35,9 +37,10 @@ internal class ExportNotifications(private val context: Context) {
      */
     fun running(title: String, chapter: Int?, chapterCount: Int, percent: Int, note: String? = null): Notification {
         val text = if (chapter == null) {
+            timeLeft.reset()
             context.getString(R.string.export_preparing)
         } else {
-            context.getString(R.string.export_running_text, chapter, chapterCount, percent)
+            timeLeft.line(context.getString(R.string.export_running_text, chapter, chapterCount, percent), percent)
         }
         val shown = note?.let { "$text$NOTE_BREAK$it" }
         val heading = context.getString(R.string.export_running_title, title)

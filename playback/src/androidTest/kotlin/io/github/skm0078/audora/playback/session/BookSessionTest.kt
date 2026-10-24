@@ -5,6 +5,7 @@
 
 package io.github.skm0078.audora.playback.session
 
+import android.os.SystemClock
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
@@ -139,7 +140,9 @@ class BookSessionTest {
                 SessionEnvironment(
                     scope,
                     Dispatchers.IO.limitedParallelism(1),
-                    System::nanoTime,
+                    // Milliseconds, as the service passes: nanoTime made the 30-minute bedtime timer due in 1.8 ms,
+                    // so it ran out and paused the loop the test watches (2 runs in 5 failed that way).
+                    SystemClock::elapsedRealtime,
                     System::currentTimeMillis,
                     minuteOfDay = { TEST_MINUTE_OF_DAY },
                 ),

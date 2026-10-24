@@ -27,6 +27,7 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.playback.tutor.TutorError
 import io.github.skm0078.audora.speech.listen.ListenPin
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
+import io.github.skm0078.audora.ui.jobs.DownloadTimeLeft
 
 /** Offers [lang]'s model with its download and on-phone sizes; [download] null while its state loads. */
 @Composable
@@ -40,6 +41,7 @@ internal fun TutorDownloadOffer(lang: Lang, download: OcrModelsState?, onDownloa
         is OcrModelsState.Downloading -> {
             val fraction = if (download.total > 0) download.bytes.toFloat() / download.total else 0f
             LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
+            DownloadTimeLeft(download.bytes, download.total)
             TextButton(onClick = onCancel) { Text(stringResource(R.string.tutor_cancel_download)) }
         }
 

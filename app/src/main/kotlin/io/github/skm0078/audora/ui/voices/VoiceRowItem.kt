@@ -46,6 +46,7 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.speech.voices.VoiceStatus
+import io.github.skm0078.audora.ui.jobs.DownloadTimeLeft
 
 /**
  * The radio picks the reading voice; it is shown only for voices that can speak now and is enabled unless the voice
@@ -184,6 +185,7 @@ private fun StatusLine(row: VoiceRow) {
                     progress = { status.bytes.toFloat() / status.total },
                     modifier = Modifier.fillMaxWidth().padding(top = PROGRESS_TOP),
                 )
+                DownloadTimeLeft(status.bytes, status.total)
             } else {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = PROGRESS_TOP))
             }

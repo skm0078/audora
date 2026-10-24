@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.speech.voices.LanguagePack
 import io.github.skm0078.audora.speech.voices.VoiceStatus
+import io.github.skm0078.audora.ui.jobs.DownloadTimeLeft
 
 /** "Hindi": what it downloads and its size, then the percentage and megabytes while it runs, then "Ready". */
 @Composable
@@ -66,6 +67,7 @@ internal fun PackStatus(pack: LanguagePack, language: String) {
                     progress = { status.bytes.toFloat() / total },
                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 )
+                DownloadTimeLeft(status.bytes, status.total)
             }
 
             status == VoiceStatus.Queued -> Announced(stringResource(R.string.voice_pack_waiting))

@@ -35,6 +35,7 @@ import io.github.skm0078.audora.core.dictionary.PartOfSpeech
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.speech.dictionary.Dictionaries
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
+import io.github.skm0078.audora.ui.jobs.DownloadTimeLeft
 
 /** Shown while the binding's state is set: the download offer, the words, or the entries of the word picked. */
 @Composable
@@ -82,6 +83,7 @@ private fun DownloadOffer(lang: Lang, download: OcrModelsState?, actions: LookUp
         is OcrModelsState.Downloading -> {
             val fraction = if (download.total > 0) download.bytes.toFloat() / download.total else 0f
             LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth())
+            DownloadTimeLeft(download.bytes, download.total)
             TextButton(onClick = actions::cancelDownload) { Text(stringResource(R.string.dictionary_cancel)) }
         }
 

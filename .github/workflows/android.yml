@@ -287,6 +287,25 @@ jobs:
           ./gradlew :pdf:connectedDebugAndroidTest :playback:connectedDebugAndroidTest
           :speech:connectedDebugAndroidTest :app:connectedUiTestAndroidTest --stacktrace
 
+      # UI changes ship with emulator screenshots (PlayerLayoutTest saves them to Downloads, which outlives the
+      # test app's uninstall). Download the "player-screens" artifact from the run's summary page to look at them.
+      - name: Pull the screenshots
+        if: always()
+        run: |
+          mkdir -p screens
+          timeout 60 "$ANDROID_HOME/platform-tools/adb" pull /sdcard/Download/ListenLock-screens/. screens/ \
+            || echo "No screenshots on the emulator (the :app device tests did not run)"
+          ls -l screens
+
+      - name: Upload the screenshots
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: player-screens-${{ github.run_id }}
+          path: screens/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Failed device tests
         if: failure()
         run: |
