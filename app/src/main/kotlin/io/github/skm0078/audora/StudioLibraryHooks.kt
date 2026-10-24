@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.core.config.TextBookConfig
 import io.github.skm0078.audora.core.library.Book
@@ -81,6 +82,7 @@ internal fun Context.makePhotoBook(photoBooks: PhotoBooks) {
 @Composable
 internal fun PhotoBookEffect(photoBooks: PhotoBooks, navigate: (AppDestination) -> Unit) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val made by photoBooks.made.collectAsStateWithLifecycle()
     LaunchedEffect(made) {
         val result = made ?: return@LaunchedEffect
@@ -91,9 +93,9 @@ internal fun PhotoBookEffect(photoBooks: PhotoBooks, navigate: (AppDestination) 
             is Outcome.Failure -> {
                 val error = result.error
                 val message = if (error is PhotoError.TooMany) {
-                    context.getString(R.string.pictures_too_many, error.max)
+                    resources.getString(R.string.pictures_too_many, error.max)
                 } else {
-                    context.getString(R.string.photo_failed)
+                    resources.getString(R.string.photo_failed)
                 }
                 Toast.makeText(context, message, Toast.LENGTH_LONG).show()
             }
