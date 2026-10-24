@@ -65,6 +65,7 @@ ADR-013 and ADR-037 were planned (podcast mode, online AI) and have no file yet.
 - [ADR-060](adr/060-app-name-listenlock.md) The app's name is ListenLock
 - [ADR-061](adr/061-privacy-and-app-lock.md) What leaves the phone, and an optional app lock
 - [ADR-065](adr/065-listenlock-logo.md) The app icon is the hand-drawn ListenLock logo (adaptive PNG on white, themed copy; name and logo not under the GPL)
+- [ADR-066](adr/066-more-book-formats-and-voice-choice.md) Word, ODT, RTF, web pages, Markdown and gallery pictures are books; Read aloud from a selection; the voice list shows the choice
 
 **Reading the PDF (`:pdf`)**
 

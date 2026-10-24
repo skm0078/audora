@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- More kinds of book (ADR-066): pictures from the gallery, copied text and "Read aloud" from any app's selection. -->
+<resources>
+    <string name="library_read_pictures">Read pictures from the gallery</string>
+    <string name="menu_hint_read_pictures">Pick photos of pages; ListenLock reads them as one book, in the order you pick them.</string>
+    <string name="library_read_clipboard">Read copied text</string>
+    <string name="menu_hint_read_clipboard">Reads the text you copied last, from any app.</string>
+    <string name="clipboard_empty">Nothing to read yet. Copy some text first.</string>
+    <!-- Shown in other apps' text-selection menu. -->
+    <string name="process_text_label">Read aloud</string>
+    <!-- The title of a book made of several pictures; %1$s is the date and time. -->
+    <string name="pictures_book_title">Pictures %1$s</string>
+    <string name="pictures_too_many">Pick up to %1$d pictures for one book.</string>
+</resources>

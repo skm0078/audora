@@ -57,10 +57,13 @@ class LibraryBookSource(
             OpenFailure(PlaybackErrorCode.BOOK_NOT_FOUND, "This book is no longer in the library"),
         )
         val cleanup = withContext(io) { textPreferences.cleanupConfig() }
-        // EPUB and text books (items 42, 43, ADR-042) open beside PDFs; an unreadable head falls through to PDFium.
-        return when (val format = withContext(io) { textBooks.formatOf(book.documentUri) }) {
-            DocumentFormat.EPUB, DocumentFormat.TEXT -> openText(book, format, cleanup)
-            DocumentFormat.PDF, null -> openPdf(book, password, cleanup)
+        // Text books (EPUB, Word, RTF, HTML, text: ADR-042, ADR-066) open beside PDFs; an unreadable head falls
+        // through to PDFium, which says why.
+        val format = withContext(io) { textBooks.formatOf(book.documentUri) }
+        return if (format != null && format.isText) {
+            openText(book, format, cleanup)
+        } else {
+            openPdf(book, password, cleanup)
         }
     }
 
@@ -117,7 +120,7 @@ class LibraryBookSource(
     }
 
     private fun textFailure(error: TextBookError): String = when (error) {
-        is TextBookError.NotAnEpub -> "This EPUB looks damaged"
+        is TextBookError.Damaged -> "This book looks damaged"
         is TextBookError.TooLarge -> "This book is too large to read"
         is TextBookError.Unreadable -> "The book was moved, deleted or is protected"
         TextBookError.NoText -> "This book has no text to read"

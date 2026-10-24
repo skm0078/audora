@@ -10,9 +10,9 @@
     <string name="menu_hint_talking_book">An EPUB 3 in Documents/ListenLock with the voice in sync with the text, for e-book apps that read along. Takes about as long as reading the book aloud.</string>
     <string name="menu_hint_export_notes">Your highlights, bookmarks and voice notes for this book as a Markdown and a text file in Documents/ListenLock.</string>
     <string name="menu_hint_character_guide">Who is who in this story, only up to where you are, so nothing is spoiled.</string>
-    <string name="menu_hint_remove">Takes the book out of ListenLock. The PDF stays on your phone.</string>
+    <string name="menu_hint_remove">Takes the book out of ListenLock. The file stays on your phone.</string>
     <string name="menu_hint_point_and_read">Take a photo of a printed page; ListenLock reads it aloud as a one-page book.</string>
-    <string name="menu_hint_watched_folders">Pick folders; new PDFs in them join your library each time you open ListenLock.</string>
+    <string name="menu_hint_watched_folders">Pick folders; new PDF, EPUB and Word books in them join your library each time you open ListenLock.</string>
     <string name="menu_hint_backup">Saves your library, places, notes and settings to one file you keep, or restores one on a new phone.</string>
     <string name="menu_hint_quiz">Fill-in-the-blank questions from your highlights in every book, read aloud.</string>
     <string name="book_actions_title">What to do with %1$s</string>

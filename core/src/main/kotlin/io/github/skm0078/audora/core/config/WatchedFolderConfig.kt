@@ -15,7 +15,8 @@ package io.github.skm0078.audora.core.config
  *   this long, doubling with each failure up to [retryMaxMs], instead of being given up on.
  * @property retryMaxMs the longest wait between two tries of a file.
  * @property extensions file name endings taken as books when the provider's type says nothing more specific. Text
- *   files are left out: a folder of books often holds READMEs and notes that are not books.
+ *   files, Markdown, web pages and pictures are left out: a folder of books often holds READMEs, notes, saved
+ *   pages and covers that are not books. Word, OpenDocument and RTF documents are books (ADR-066).
  * @property mimeTypes provider types taken as books.
  */
 data class WatchedFolderConfig(
@@ -25,8 +26,15 @@ data class WatchedFolderConfig(
     val minScanIntervalMs: Long = 180_000L,
     val retryBaseMs: Long = 3_600_000L,
     val retryMaxMs: Long = 604_800_000L,
-    val extensions: Set<String> = setOf("pdf", "epub"),
-    val mimeTypes: Set<String> = setOf("application/pdf", "application/epub+zip"),
+    val extensions: Set<String> = setOf("pdf", "epub", "docx", "odt", "rtf"),
+    val mimeTypes: Set<String> = setOf(
+        "application/pdf",
+        "application/epub+zip",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.oasis.opendocument.text",
+        "application/rtf",
+        "text/rtf",
+    ),
 ) {
     init {
         require(maxDepth >= 0) { "maxDepth must be >= 0, was $maxDepth" }

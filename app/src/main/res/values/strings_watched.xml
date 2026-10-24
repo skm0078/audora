@@ -2,7 +2,7 @@
 <!-- Watched folders: new books in chosen folders join the library (plan item 26, ADR-044). -->
 <resources>
     <string name="library_watched_folders">Watched folders</string>
-    <string name="watched_explain">New PDF and EPUB files in these folders and their sub-folders join your library each time it opens. Removing a folder keeps the books already added. Android doesn\'t let apps watch the Download folder itself: pick a folder inside it.</string>
+    <string name="watched_explain">New PDF, EPUB, Word, OpenDocument and RTF files in these folders and their sub-folders join your library each time it opens. Removing a folder keeps the books already added. Android doesn\'t let apps watch the Download folder itself: pick a folder inside it.</string>
     <string name="watched_empty">No folder is watched yet.</string>
     <string name="watched_add">Add a folder</string>
     <string name="watched_remove">Remove</string>

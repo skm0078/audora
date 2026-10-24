@@ -10,9 +10,9 @@
     <string name="menu_hint_talking_book">Documents/ListenLock-তে একটি EPUB 3, যেখানে ভয়েস লেখার সঙ্গে মিলিয়ে চলে, সঙ্গে সঙ্গে পড়ার ই-বুক অ্যাপের জন্য। বইটি জোরে পড়তে যত সময় লাগে, প্রায় তত সময় লাগে।</string>
     <string name="menu_hint_export_notes">এই বইয়ে আপনার হাইলাইট, বুকমার্ক আর ভয়েস নোট, Documents/ListenLock-তে Markdown আর টেক্সট ফাইল হিসেবে।</string>
     <string name="menu_hint_character_guide">এই গল্পে কে কে আছে, শুধু আপনি যতদূর পড়েছেন ততদূর, যাতে আগের কথা জানা না হয়ে যায়।</string>
-    <string name="menu_hint_remove">বইটি ListenLock থেকে সরায়। PDF আপনার ফোনেই থাকে।</string>
+    <string name="menu_hint_remove">বইটি ListenLock থেকে সরায়। ফাইলটি আপনার ফোনেই থাকে।</string>
     <string name="menu_hint_point_and_read">ছাপা পৃষ্ঠার ছবি তুলুন; ListenLock সেটি এক পৃষ্ঠার বই হিসেবে পড়ে শোনায়।</string>
-    <string name="menu_hint_watched_folders">ফোল্ডার বেছে নিন; ListenLock খুললেই সেগুলোর নতুন PDF আপনার লাইব্রেরিতে যোগ হয়।</string>
+    <string name="menu_hint_watched_folders">ফোল্ডার বেছে নিন; ListenLock খুললেই সেগুলোর নতুন PDF, EPUB ও Word বই আপনার লাইব্রেরিতে যোগ হয়।</string>
     <string name="menu_hint_backup">আপনার লাইব্রেরি, পড়ার জায়গা, নোট আর সেটিং একটি ফাইলে সেভ করে, বা নতুন ফোনে সেটি ফিরিয়ে আনে।</string>
     <string name="menu_hint_quiz">সব বইয়ে আপনার হাইলাইট থেকে শূন্যস্থান পূরণের প্রশ্ন, পড়ে শোনানো।</string>
     <string name="book_actions_title">%1$s দিয়ে কী করবেন</string>

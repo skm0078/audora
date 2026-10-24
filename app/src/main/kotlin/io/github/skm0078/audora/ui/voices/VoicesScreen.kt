@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -165,14 +166,17 @@ private fun AllVoices(rows: List<VoiceRow>, state: VoicesState, actions: VoicesA
     Column {
         Lang.entries.forEach { lang ->
             LanguageHeader(lang)
-            if (lang != Lang.EN) {
-                val phone = rows.none { it.lang == lang && it.readsLanguage }
-                PhoneVoiceRow(selected = phone) { actions.onUseDefault(lang) }
-            }
-            rows.filter { it.lang == lang }.forEach { row ->
-                key(row.key) {
-                    VoiceRowItem(row, actions, state.sample)
-                    HorizontalDivider()
+            // One radio group per language: TalkBack says "1 of 4" and moves through the voices as one choice.
+            Column(Modifier.selectableGroup()) {
+                if (lang != Lang.EN) {
+                    val phone = rows.none { it.lang == lang && it.readsLanguage }
+                    PhoneVoiceRow(selected = phone) { actions.onUseDefault(lang) }
+                }
+                rows.filter { it.lang == lang }.forEach { row ->
+                    key(row.key) {
+                        VoiceRowItem(row, actions, state.sample)
+                        HorizontalDivider()
+                    }
                 }
             }
         }

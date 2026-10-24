@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/StudioLibrary.kt
-// Purpose: The library's studio actions (studio mode, copies, notes export, character guide, point and read, watched
-//          folders, backup, quiz) and the sheet each opens.
+// Purpose: The library's studio actions (studio mode, copies, notes export, character guide, point and read,
+//          pictures, clipboard, watched folders, backup, quiz) and the sheet each opens.
 
 package io.github.skm0078.audora
 
@@ -10,13 +10,16 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.lifecycleScope
+import io.github.skm0078.audora.core.config.PhotoConfig
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.result.Outcome
@@ -46,6 +49,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** What studio's library actions reach: the activity and its stores and services. */
+@Suppress("LongParameterList") // A holder of the activity's parts, each used by one or two actions.
 internal class StudioLibraryParts(
     val activity: ComponentActivity,
     val photoBooks: PhotoBooks,
@@ -53,6 +57,7 @@ internal class StudioLibraryParts(
     val backups: Backups,
     val anchors: ResumeAnchorStore,
     val notes: MarkStores,
+    val readClipboard: () -> Unit,
 )
 
 /** A studio sheet opened from the library's menu; one at a time. */
@@ -72,6 +77,7 @@ internal class StudioLibrary(
     private val playWithPermission: (() -> Unit) -> Unit,
     private val onListen: (Book) -> Unit,
     private val takePhoto: ActivityResultLauncher<Uri>,
+    private val pickPictures: ActivityResultLauncher<PickVisualMediaRequest>,
     private val state: StudioLibraryState,
 ) {
     private val sheet get() = state.sheet
@@ -148,6 +154,8 @@ internal class StudioLibrary(
 
     fun onLibraryAction(action: LibraryAction) = when (action) {
         LibraryAction.POINT_AND_READ -> parts.activity.pointAndRead(parts.photoBooks, takePhoto)
+        LibraryAction.READ_PICTURES -> pickPictures.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+        LibraryAction.READ_CLIPBOARD -> parts.readClipboard()
         LibraryAction.WATCHED_FOLDERS -> sheet.value = StudioSheet.WATCHED_FOLDERS
         LibraryAction.BACKUP -> sheet.value = StudioSheet.BACKUP
         LibraryAction.QUIZ -> sheet.value = StudioSheet.QUIZ
@@ -177,6 +185,12 @@ internal fun rememberStudioLibrary(
     val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
         if (taken) parts.activity.makePhotoBook(parts.photoBooks) else parts.photoBooks.discardCapture()
     }
+    // The photo picker needs no media permission; picked in order, they become the book's pages in that order.
+    val pickPictures = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickMultipleVisualMedia(PhotoConfig().maxImagesPerBook),
+    ) { pictures ->
+        if (pictures.isNotEmpty()) parts.activity.makePicturesBook(parts.photoBooks, pictures)
+    }
     val state = StudioLibraryState(
         sheet = rememberSaveable { mutableStateOf<StudioSheet?>(null) },
         guideBookId = rememberSaveable { mutableStateOf<String?>(null) },
@@ -184,5 +198,5 @@ internal fun rememberStudioLibrary(
         // Not saved: the save runs in the activity's scope and ends with it.
         savingBookId = remember { mutableStateOf<String?>(null) },
     )
-    return remember(parts) { StudioLibrary(parts, playWithPermission, listen, takePhoto, state) }
+    return remember(parts) { StudioLibrary(parts, playWithPermission, listen, takePhoto, pickPictures, state) }
 }

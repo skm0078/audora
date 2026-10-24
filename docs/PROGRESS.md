@@ -2,6 +2,23 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Word, ODT, RTF, web pages, Markdown and gallery pictures; the voice list shows the choice (2026-10-24, ADR-066)
+- **Formats:** `.docx`, `.odt`, `.rtf`, saved web pages (`.html`) and Markdown are books, found by content. Headings start chapters, lists and table rows read like PDF ones, footnotes go last; tracked deletions, field codes and comments are not read. Pure Kotlin parsers on the EPUB scanner, no new library. Watched folders pick up `.docx`, `.odt` and `.rtf` too.
+- **Pictures:** Library menu → **Read pictures** (Photo Picker, no permission) makes one book of up to 50 pictures, one page each, through the OCR path. Pictures shared or opened from another app do the same.
+- **Text:** **Read aloud** in any app's text selection menu, and Library menu → **Read copied text**.
+- **Voices:** each language is a radio group; the voice in use is tinted, bold and says "In use"; a voice not yet downloaded shows the download mark and cannot be picked.
+- Strings in en, hi and bn (`strings_formats.xml`). No `:pdf` change (PIPELINE_VERSION 12). Tests: `DocumentFormatTest`, `DocxParserTest`, `OdtParserTest`, `RtfParserTest`, `MarkdownParserTest`, `SavedPageTest`, `ImagePdfTest` (pages).
+
+**Real-device checks (Moto):** add a Word file with headings, a table and footnotes (chapters in the contents, notes at the end); an `.odt` from LibreOffice; an RTF in Hindi; a saved web page; a `.md` note. Read pictures with 3 screenshots (one book, three pages, OCR reads each); share one photo from Gallery. Select text in Chrome → ⋮ → Read aloud; copy text → Read copied text, and with an empty clipboard (message). Settings → Voices: the voice in use stands out, tapping another downloaded voice moves the mark, TalkBack says "radio button, selected".
+
+## Book wording, not PDF-only wording; README lists every feature (2026-10-24)
+- **Why:** EPUB, text files, shared text and photos have been read since ADR-042 and ADR-043, but the library, first run, widget and menus still said "Add PDF" and "Pick a PDF", so nobody found them.
+- **What:** "Add book", "Untitled book", "Open a book to start listening", "Pick a PDF, EPUB or text file", and "file" or "book" wherever a message is not PDF-only (remove, duplicate, damaged, lent file, shared-books storage, logs hint), in en, hi and bn. PDF-only messages (password, PDF engine, OCR copy) keep "PDF". `PDF_MIME_TYPES` is now `BOOK_MIME_TYPES`; string keys are unchanged.
+- README: the intro names every format, and the feature list adds the Quick Settings tile, volume keys, Skim, paragraph skip, focus sound, voice blend, Study repeats, character guide, kids mode, own pronunciations, skip citations, sounded-wrong reports, duplicate check, app language and themes.
+- No preference, playback or `:pdf` change (PIPELINE_VERSION 12).
+
+**Real-device checks (Moto):** empty library and first run say "Add book"; the picker still offers PDF, EPUB and text files; Hindi and Bengali texts fit the empty-library card and the widget.
+
 ## The app icon is the ListenLock logo (2026-10-24, ADR-065)
 - **What:** the launcher icon is the designer's hand-drawn logo on white, scaled into the 66dp safe zone (PNG per density), with a one-colour copy for themed icons. The Android 12 splash shows it on the app's paper. Debug builds (the dev APK) use the same icon; the label "ListenLock Dev" tells them apart.
 - **Store:** `docs/store/logo.png` (master), `icon.png` (512 px) and `feature-graphic.png` re-made from it; `icon.svg` removed.

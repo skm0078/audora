@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_formats.xml -->
+<!-- Purpose: Hindi copy of values/strings_formats.xml. -->
+<resources>
+    <string name="library_read_pictures">गैलरी से तस्वीरें पढ़वाएँ</string>
+    <string name="menu_hint_read_pictures">पन्नों की फ़ोटो चुनें; ListenLock उन्हें आपके चुने क्रम में एक किताब की तरह पढ़ता है।</string>
+    <string name="library_read_clipboard">कॉपी किया टेक्स्ट पढ़वाएँ</string>
+    <string name="menu_hint_read_clipboard">किसी भी ऐप से आख़िरी बार कॉपी किया गया टेक्स्ट पढ़ता है।</string>
+    <string name="clipboard_empty">अभी पढ़ने को कुछ नहीं है। पहले कुछ टेक्स्ट कॉपी करें।</string>
+    <string name="process_text_label">पढ़कर सुनाएँ</string>
+    <string name="pictures_book_title">तस्वीरें %1$s</string>
+    <string name="pictures_too_many">एक किताब के लिए ज़्यादा से ज़्यादा %1$d तस्वीरें चुनें।</string>
+</resources>

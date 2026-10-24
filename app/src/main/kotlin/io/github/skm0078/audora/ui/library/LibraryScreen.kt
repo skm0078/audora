@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/LibraryScreen.kt
-// Purpose: Library tab: Continue reading, a cover grid (a list at large text), Add PDF, the duplicate check (ADR-036).
+// Purpose: Library tab: Continue reading, a cover grid (a list at large text), Add book, the duplicate check (ADR-036).
 
 package io.github.skm0078.audora.ui.library
 
@@ -85,7 +85,7 @@ fun LibraryScreen(
         locating = null
         if (uri != null && id != null) actions.onLocate(BookId(id), uri)
     }
-    val pickPdf = { addPicker.launch(PDF_MIME_TYPES) }
+    val pickPdf = { addPicker.launch(BOOK_MIME_TYPES) }
 
     LifecycleResumeEffect(Unit) {
         actions.onScreenResumed()
@@ -119,7 +119,7 @@ fun LibraryScreen(
                 onTap = { item ->
                     if (item.needsLocating) {
                         locating = item.book.id.value
-                        locatePicker.launch(PDF_MIME_TYPES)
+                        locatePicker.launch(BOOK_MIME_TYPES)
                     } else {
                         actions.onOpenBook(item.book)
                     }
@@ -352,9 +352,22 @@ private const val CONTINUE_KEY = "continue-reading"
 
 /**
  * OpenDocument filters by MIME type; providers that mislabel files are caught by the header check. PDFs, EPUBs and
- * text files (items 42 and 43, ADR-042). The first-run screens' picker uses it too.
+ * text files (items 42 and 43, ADR-042); Word, OpenDocument, RTF, HTML and Markdown files, and pictures, which become
+ * a photo book (ADR-066). `text/` as a whole, since Markdown has several labels. The first-run picker uses it too.
  */
-internal val PDF_MIME_TYPES = arrayOf("application/pdf", "application/epub+zip", "text/plain")
+internal val BOOK_MIME_TYPES = arrayOf(
+    "application/pdf",
+    "application/epub+zip",
+    "text/*",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.oasis.opendocument.text",
+    "application/rtf",
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+)
 
 @Preview(showBackground = true)
 @Composable

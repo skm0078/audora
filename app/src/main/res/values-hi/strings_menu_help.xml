@@ -10,9 +10,9 @@
     <string name="menu_hint_talking_book">Documents/ListenLock में एक EPUB 3, जिसमें आवाज़ टेक्स्ट के साथ चलती है, साथ-साथ पढ़ने वाले ई-बुक ऐप के लिए। लगभग उतना समय लगता है जितना किताब को ज़ोर से पढ़ने में।</string>
     <string name="menu_hint_export_notes">इस किताब की आपकी हाइलाइट, बुकमार्क और वॉइस नोट, Documents/ListenLock में Markdown और टेक्स्ट फ़ाइल के रूप में।</string>
     <string name="menu_hint_character_guide">इस कहानी में कौन कौन है, सिर्फ़ वहाँ तक जहाँ तक आप पहुँचे हैं, ताकि आगे की बात पता न चले।</string>
-    <string name="menu_hint_remove">किताब को ListenLock से हटाता है। PDF आपके फ़ोन में रहती है।</string>
+    <string name="menu_hint_remove">किताब को ListenLock से हटाता है। फ़ाइल आपके फ़ोन में रहती है।</string>
     <string name="menu_hint_point_and_read">छपे हुए पेज की फ़ोटो लें; ListenLock उसे एक पेज की किताब की तरह पढ़कर सुनाता है।</string>
-    <string name="menu_hint_watched_folders">फ़ोल्डर चुनें; ListenLock खोलने पर उनमें आई नई PDF आपकी लाइब्रेरी में जुड़ जाती हैं।</string>
+    <string name="menu_hint_watched_folders">फ़ोल्डर चुनें; ListenLock खोलने पर उनमें आई नई PDF, EPUB और Word किताबें आपकी लाइब्रेरी में जुड़ जाती हैं।</string>
     <string name="menu_hint_backup">आपकी लाइब्रेरी, पढ़ने की जगह, नोट और सेटिंग एक फ़ाइल में सेव करता है, या नए फ़ोन पर उसे वापस लाता है।</string>
     <string name="menu_hint_quiz">सभी किताबों की आपकी हाइलाइट से ख़ाली जगह भरने वाले सवाल, पढ़कर सुनाए गए।</string>
     <string name="book_actions_title">%1$s के साथ क्या करें</string>

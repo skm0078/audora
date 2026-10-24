@@ -175,7 +175,7 @@ private fun failed(target: File, source: Uri, e: Exception): String? {
 }
 
 /** The name the providing app gives [uri], or null; never throws for a provider that cannot answer. */
-private fun ContentResolver.displayName(uri: Uri): String? = try {
+fun ContentResolver.displayName(uri: Uri): String? = try {
     query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
         if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getString(0) else null
     }

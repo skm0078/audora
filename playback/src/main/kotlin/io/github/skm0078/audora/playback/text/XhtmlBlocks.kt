@@ -15,7 +15,11 @@ object XhtmlBlocks {
         "p", "div", "li", "blockquote", "pre", "tr", "dt", "dd", "figcaption", "caption", "section", "article",
         "aside", "header", "footer", "ul", "ol", "dl", "table", "body", "hr", "address", "center",
     )
-    private val SKIPPED = setOf("head", "script", "style", "nav", "rt", "rp", "svg", "math", "title")
+    private val SKIPPED = setOf(
+        "head", "script", "style", "nav", "rt", "rp", "svg", "math", "title",
+        // In saved web pages (ADR-066): page furniture and form controls, not reading text.
+        "noscript", "template", "iframe", "button", "select",
+    )
     private val NOTE_TYPES = setOf("footnote", "endnote", "rearnote", "note")
     private val NOTE_ROLES = setOf("doc-footnote", "doc-endnote", "doc-endnotes", "doc-footnotes")
     private val CELLS = setOf("td", "th")

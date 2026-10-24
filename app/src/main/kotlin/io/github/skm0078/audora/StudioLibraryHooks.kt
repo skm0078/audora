@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.core.config.TextBookConfig
 import io.github.skm0078.audora.core.library.Book
@@ -25,6 +26,7 @@ import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.playback.export.MarkStores
 import io.github.skm0078.audora.playback.export.NotesExport
 import io.github.skm0078.audora.playback.photo.PhotoBooks
+import io.github.skm0078.audora.playback.photo.PhotoError
 import io.github.skm0078.audora.ui.AppDestination
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -80,13 +82,23 @@ internal fun Context.makePhotoBook(photoBooks: PhotoBooks) {
 @Composable
 internal fun PhotoBookEffect(photoBooks: PhotoBooks, navigate: (AppDestination) -> Unit) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val made by photoBooks.made.collectAsStateWithLifecycle()
     LaunchedEffect(made) {
         val result = made ?: return@LaunchedEffect
         photoBooks.consume()
         when (result) {
             is Outcome.Success -> navigate(AppDestination.Reader(result.value))
-            is Outcome.Failure -> Toast.makeText(context, R.string.photo_failed, Toast.LENGTH_LONG).show()
+
+            is Outcome.Failure -> {
+                val error = result.error
+                val message = if (error is PhotoError.TooMany) {
+                    resources.getString(R.string.pictures_too_many, error.max)
+                } else {
+                    resources.getString(R.string.photo_failed)
+                }
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            }
         }
     }
 }
