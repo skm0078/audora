@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/strings_sentence_menu.xml
+  Purpose: The sentence menu's hints, highlighting a passage, and the fixes "This sounded wrong" offers.
+-->
+<resources>
+    <string name="sentence_menu_highlight_range">Highlight from here…</string>
+    <string name="sentence_hint_bookmark">Saves this place to come back to; you can add a note.</string>
+    <string name="sentence_hint_highlight">Marks this sentence; find it again in your notes.</string>
+    <string name="sentence_hint_highlight_range">Then tap the sentence where it should end, on this page or a later one.</string>
+    <string name="sentence_hint_unhighlight">Removes the whole highlighted passage.</string>
+    <string name="sentence_hint_voice_note">Record yourself saying a thought about this sentence. It is kept with your bookmarks and exported with your notes.</string>
+    <string name="sentence_hint_look_up">The meaning of a word in this sentence, from the dictionary on your phone (no internet needed).</string>
+    <string name="sentence_hint_fix">Tell the voice how to say a word it gets wrong, in this book or every book.</string>
+    <string name="sentence_hint_report">Pick what went wrong; ListenLock offers a fix to try now and notes it in the app\'s log.</string>
+    <string name="sentence_hint_share_clip">An audio clip from here to the end of the paragraph, to send in any app.</string>
+    <string name="sentence_hint_share_highlight">The whole highlighted passage as an audio clip (up to 2 minutes), to send in any app.</string>
+    <string name="highlight_range_prompt">Highlighting from page %1$d. Tap the sentence where it ends.</string>
+    <string name="highlight_range_too_long">A highlight can cover up to %1$d pages. Pick an end nearer the start.</string>
+    <string name="highlight_range_unreadable">A page in this passage has not been read yet (a scanned page). Turn to it once, then try again.</string>
+    <string name="sounded_wrong_fix_title">Noted. Fix it now?</string>
+    <string name="sounded_wrong_fix_settings">Changes apply from the next sentence. Change them back any time in %1$s.</string>
+    <string name="sounded_wrong_fix_nothing">There is nothing to change for this here; it is in the log for a later fix.</string>
+    <string name="sounded_wrong_fix_word">Tell the voice how to say the word</string>
+    <string name="sounded_wrong_fix_skip_unreadable">Skip unreadable text</string>
+    <string name="sounded_wrong_fix_tables_summary">Tables: say only their size</string>
+    <string name="sounded_wrong_fix_tables_rows">Tables: read every row</string>
+    <string name="sounded_wrong_fix_tables_skip">Tables: skip them</string>
+    <string name="sounded_wrong_fix_footnotes_skip">Skip footnotes</string>
+    <string name="sounded_wrong_fix_footnotes_read">Read footnotes</string>
+    <string name="sounded_wrong_fix_skip_brackets">Skip [notes in square brackets]</string>
+    <string name="sounded_wrong_fix_clause_on">Pause at dashes, colons and brackets</string>
+    <string name="sounded_wrong_fix_clause_off">Don\'t pause inside sentences</string>
+    <string name="sounded_wrong_fix_pace_tight">Shorter pause between sentences</string>
+    <string name="sounded_wrong_fix_pace_normal">Normal pause between sentences</string>
+    <string name="sounded_wrong_fix_pace_relaxed">Longer pause between sentences</string>
+    <string name="sounded_wrong_fix_hear_again">Read this sentence again</string>
+</resources>

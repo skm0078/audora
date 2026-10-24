@@ -124,6 +124,9 @@ fun ReaderScreen(
                     PlaceHighlights(state, notesActions)
                     val offer = VoicePackOffer(voices, voicePacks)
                     OpenBook(state, document, config, actions, ocrModels, look, spokenWord, thumbnails, offer, notes)
+                    notes.rangeFrom?.let { from ->
+                        HighlightRangeBar(from, notesActions::cancelRange, Modifier.align(Alignment.BottomCenter))
+                    }
                     NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)
                 }
             }
@@ -145,7 +148,8 @@ private fun OpenBook(
     voicePack: VoicePackOffer,
     notes: NotesState,
 ) {
-    val isHighlighted: (ReadingUnit) -> Boolean = { notes.highlightsOn(it).isNotEmpty() }
+    // The start of a passage being highlighted shows as highlighted while its end is picked.
+    val isHighlighted: (ReadingUnit) -> Boolean = { notes.highlightsOn(it).isNotEmpty() || notes.isRangeStart(it) }
     val pageCount = document.pageCount
     var picking by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
@@ -187,6 +191,7 @@ private fun OpenBook(
         }
     }
     if (state.reporting != null) SoundedWrongDialog(actions::onReport, actions::onReportDismissed)
+    state.soundedWrong?.let { SoundedWrongFixDialog(it, actions::onSoundedWrongFix, actions::onSoundedWrongDone) }
     if (state.unreadableTapped != null) UnreadableLineDialog(actions::onReadUnreadable, actions::onUnreadableDismissed)
     if (picking) {
         PagePickerDialog(

@@ -2,6 +2,30 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Sentence menu fixes from phone tests: passage highlights, sharing them, a working "This sounded wrong" (2026-10-24)
+- **Highlight a passage:** the sentence menu has "Highlight from here…": a bar says "Tap the sentence where it ends",
+  and the next sentence tapped (on this page or up to 10 pages on, or before the start) ends one highlight over all of
+  them. Pages between are read without OCR, so a scanned page not read yet refuses the passage and says why.
+  `HighlightPlacement` places such a highlight on every page it covers: at the pipeline it was saved with by its
+  offsets (sentences without words such as `* * *` included), across pages by its words (the start page's tail begins
+  the quote, the end page's head ends it, pages between sit inside it). Stored as one highlight (no schema change);
+  Remove on any of its sentences removes all of it.
+- **Share as audio** on a highlighted sentence shares the whole passage (up to 2 minutes, `ClipConfig.passageMaxMs`;
+  10 pages), not the tapped sentence to its paragraph's end (`ClipPassage`).
+- **This sounded wrong** used to only write a log line. After the reason it now offers what fixes it with the
+  settings in use (`SoundedWrongFixes`): a wrong word opens "Fix how a word sounds"; a table offers the other table
+  modes; a note offers footnotes on or off and skipping [bracketed notes]; a pause offers clause pauses and the
+  sentence pause; junk offers "Skip unreadable text" when it is off. A setting applies at once; "Read this sentence
+  again" checks it. The report still goes to the log.
+- **Hints:** every sentence-menu item has one line under it saying what it is for (voice note, Look up as the offline
+  dictionary, and so on), in English, Hindi and Bengali.
+- `SentenceMenuTest` (device) checks the hints, the passage actions, the range bar and the fixes dialog, and saves
+  screenshots to the `player-screens-<run>` artifact. No `:pdf` change (PIPELINE_VERSION 12).
+
+**Real-device checks (Moto):** long-press a sentence, "Highlight from here…", turn a page, tap a sentence: the band
+covers both pages. Long-press inside it: "Share as audio" sends the passage. Long-press a table row, "This sounded
+wrong", "A table", "Tables: read every row", then "Read this sentence again".
+
 ## Phone test fixes before v0.1.0: player width, time left everywhere, no babble after quotes (2026-10-24)
 - **Player:** the controls row (speed, previous, play, next, sleep timer) did not fill the panel, so `SpaceBetween` had
   no room and the row sat at the left (seen on the Moto). It now fills the width, in the reader too.

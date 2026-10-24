@@ -67,6 +67,7 @@ import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.BookmarkStore
+import io.github.skm0078.audora.core.notes.Highlight
 import io.github.skm0078.audora.core.notes.HighlightStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.notes.VoiceNoteStore
@@ -87,6 +88,7 @@ import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.documents.WatchedFolders
 import io.github.skm0078.audora.playback.export.AudioClips
 import io.github.skm0078.audora.playback.export.AudiobookExport
+import io.github.skm0078.audora.playback.export.ClipPassage
 import io.github.skm0078.audora.playback.export.MarkStores
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.notes.VoiceNoteAudio
@@ -163,6 +165,7 @@ import io.github.skm0078.audora.ui.reader.ReadingLook
 import io.github.skm0078.audora.ui.reader.ReadingLookPreferences
 import io.github.skm0078.audora.ui.reader.ScreenPreference
 import io.github.skm0078.audora.ui.reader.SleepTimerSetting
+import io.github.skm0078.audora.ui.reader.SoundedWrongFix
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
 import io.github.skm0078.audora.ui.reader.VolumeKeySkips
@@ -837,8 +840,14 @@ class MainActivity : ComponentActivity() {
         }
         val playWithPermission = rememberPlayWithNotificationPermission()
         val notes = remember(id) {
-            BookNotesModel(id, NoteStores(bookmarkStore, pronunciationStore, highlightStore), scope, PIPELINE_VERSION)
-                .also { it.start() }
+            BookNotesModel(
+                id,
+                NoteStores(bookmarkStore, pronunciationStore, highlightStore),
+                scope,
+                PIPELINE_VERSION,
+                // Never OCRs: a passage's pages were read on the way to its end; one that was not is refused.
+                unitsOf = model::sentencesForSearch,
+            ).also { it.start() }
         }
         val notesState by notes.state.collectAsStateWithLifecycle()
         val studio = rememberReaderStudio(id, model, scope, notes, port, searchIndexes, voiceNoteParts)
@@ -973,11 +982,16 @@ class MainActivity : ComponentActivity() {
 
         override fun onShowReadingPosition() = model.showReadingPosition()
 
-        override fun onSentenceTapped(unit: ReadingUnit) = readFrom(unit)
+        override fun onSentenceTapped(unit: ReadingUnit) = tapped(unit)
 
         // Asks for the notification permission only when the tap is on a sentence.
         override fun onPageTapped(point: ViewPoint) {
-            model.sentenceAt(point)?.let { readFrom(it) }
+            model.sentenceAt(point)?.let(::tapped)
+        }
+
+        // While a highlighted passage's end is being picked, a tap picks it instead of reading.
+        private fun tapped(unit: ReadingUnit) {
+            if (notes.state.value.rangeFrom != null) notes.endRange(unit) else readFrom(unit)
         }
 
         // A greyed sentence first explains why it is skipped (RI-9); the permission is asked if it is read anyway.
@@ -1002,6 +1016,17 @@ class MainActivity : ComponentActivity() {
             AudioClips.share(applicationContext, model.state.value.bookId, unit.page, unit.index, model.openPassword)
         }
 
+        override fun onShareHighlight(highlight: Highlight) = playWithPermission {
+            val passage = ClipPassage(highlight.anchor.charStart, highlight.endPage, highlight.endChar)
+            AudioClips.sharePassage(
+                applicationContext,
+                model.state.value.bookId,
+                highlight.anchor.page,
+                passage,
+                model.openPassword,
+            )
+        }
+
         // From the reader, a password-protected PDF can be saved too: its password goes along in memory (ADR-034).
         override fun onSaveAudiobook() = startLongJob(LongJobKind.AUDIOBOOK) {
             playWithPermission {
@@ -1019,11 +1044,24 @@ class MainActivity : ComponentActivity() {
 
         override fun onBookVoice(lang: Lang, voice: VoiceId) = model.setBookVoice(lang, voice)
 
-        // Said at once, so the report never seems to vanish: where it went and how it leaves the phone.
-        override fun onReport(reason: SoundedWrongReason) {
-            model.report(reason)
-            Toast.makeText(applicationContext, R.string.report_noted, Toast.LENGTH_LONG).show()
+        // The fixes dialog that follows says where the report went and how it leaves the phone.
+        override fun onReport(reason: SoundedWrongReason) = model.report(reason)
+
+        override fun onSoundedWrongFix(fix: SoundedWrongFix) {
+            val unit = model.state.value.soundedWrong?.unit ?: return
+            when (fix) {
+                is SoundedWrongFix.Setting -> model.applySoundedWrongFix(fix)
+
+                SoundedWrongFix.FixWord -> {
+                    model.dismissSoundedWrong()
+                    notes.fix(unit)
+                }
+
+                SoundedWrongFix.HearAgain -> readFrom(unit)
+            }
         }
+
+        override fun onSoundedWrongDone() = model.dismissSoundedWrong()
 
         override fun onReportDismissed() = model.dismissReport()
 

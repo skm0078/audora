@@ -172,12 +172,33 @@ class ReaderModel(
     /** Long-press on a sentence: offer "This sounded wrong" and its reasons (RI-8b). */
     fun askReport(unit: ReadingUnit) = mutableState.update { it.copy(reporting = unit) }
 
-    /** The listener picked [reason]: the report goes to the log, with where the sentence is but never its text. */
+    /**
+     * The listener picked [reason]: the report goes to the log, with where the sentence is but never its text, and the
+     * fixes for it with the settings in use are offered ([SoundedWrongFixes]).
+     */
     fun report(reason: SoundedWrongReason) {
         val unit = state.value.reporting ?: return
-        mutableState.update { it.copy(reporting = null) }
         player.reportSoundedWrong(SoundedWrongReport.of(bookId, unit, reason))
+        val fixes = SoundedWrongFixes.offered(reason, state.value.playback)
+        mutableState.update { it.copy(reporting = null, soundedWrong = SoundedWrongOffer(unit, reason, fixes)) }
     }
+
+    /** A setting offered for a sentence that sounded wrong: changed at once, for the sentences read from now. */
+    fun applySoundedWrongFix(fix: SoundedWrongFix.Setting) {
+        val playback = state.value.playback
+        val modes = playback.readingModes
+        AudoraLog.i(TAG, "Sounded wrong fix ${fix.logName}, $logContext")
+        when (fix) {
+            SoundedWrongFix.SkipUnreadable -> setReadingModes(modes.copy(skipUnreadable = true))
+            is SoundedWrongFix.Tables -> setReadingModes(modes.copy(tables = fix.mode))
+            is SoundedWrongFix.Footnotes -> setReadingModes(modes.copy(footnotes = fix.mode))
+            SoundedWrongFix.SkipBrackets -> setReadingModes(modes.copy(skipBrackets = true))
+            is SoundedWrongFix.ClausePauses -> setClausePauses(fix.on)
+            is SoundedWrongFix.SentencePause -> setPace(fix.pace)
+        }
+    }
+
+    fun dismissSoundedWrong() = mutableState.update { it.copy(soundedWrong = null) }
 
     fun dismissReport() = mutableState.update { it.copy(reporting = null) }
 

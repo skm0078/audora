@@ -76,6 +76,7 @@ class ClipService : Service() {
         val id = intent?.getStringExtra(AudioClips.EXTRA_BOOK)?.let(::BookId)
         val page = intent?.getIntExtra(AudioClips.EXTRA_PAGE, 0) ?: 0
         val start = UnitKey(page, intent?.getIntExtra(AudioClips.EXTRA_INDEX, 0) ?: 0)
+        val passage = intent?.let(::passageOf)
         when {
             intent?.action != AudioClips.ACTION_MAKE || id == null -> AudoraLog.w(
                 TAG,
@@ -91,7 +92,7 @@ class ClipService : Service() {
             else -> {
                 // Set first: the job may end (and clear it) before launch returns.
                 mine = true
-                if (!JobSlots.CLIP.launch(THREAD_NAME) { makeClip(id, start) }) {
+                if (!JobSlots.CLIP.launch(THREAD_NAME) { makeClip(id, start, passage) }) {
                     mine = false
                     AudoraLog.w(TAG, "A clip is already being made; book=${id.logLabel} dropped")
                 }
@@ -116,8 +117,19 @@ class ClipService : Service() {
         super.onDestroy()
     }
 
+    /** A highlight's passage when the request names its end ([AudioClips.sharePassage]), else null. */
+    private fun passageOf(intent: Intent): ClipPassage? {
+        val endPage = intent.getIntExtra(AudioClips.EXTRA_END_PAGE, NO_PASSAGE)
+        if (endPage == NO_PASSAGE) return null
+        return ClipPassage(
+            startChar = intent.getIntExtra(AudioClips.EXTRA_START_CHAR, 0),
+            endPage = endPage,
+            endChar = intent.getIntExtra(AudioClips.EXTRA_END_CHAR, Int.MAX_VALUE),
+        )
+    }
+
     /** On the worker thread. */
-    private fun makeClip(id: BookId, start: UnitKey) {
+    private fun makeClip(id: BookId, start: UnitKey, passage: ClipPassage?) {
         // A long Kokoro clip renders for minutes: the CPU must not sleep when the screen times out.
         val wakeLock = getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)
@@ -125,7 +137,7 @@ class ClipService : Service() {
         try {
             val books = LibraryBookSource(this, library)
             when (val opened = runBlocking { books.open(id, PasswordHandoff.shared.take(id)) }) {
-                is Outcome.Success -> opened.value.text.use { clipOf(opened.value, start) }
+                is Outcome.Success -> opened.value.text.use { clipOf(opened.value, start, passage) }
                 is Outcome.Failure -> notices.showFailed(opened.error.message)
             }
         } catch (interrupted: InterruptedException) {
@@ -138,7 +150,7 @@ class ClipService : Service() {
         }
     }
 
-    private fun clipOf(book: OpenedBook, start: UnitKey) {
+    private fun clipOf(book: OpenedBook, start: UnitKey, passage: ClipPassage?) {
         val text = book.text
         val factory = BookRendering.Factory(this, bookSettings, pronunciations)
         BookVoice(this, factory, book.book.id, text, RunSettings()).use { voice ->
@@ -155,6 +167,7 @@ class ClipService : Service() {
                     }
                 },
                 plays = rendering.reading::plays,
+                passage = passage,
             )
             when (made) {
                 is Outcome.Success -> share(book, start, made.value)
@@ -209,6 +222,9 @@ class ClipService : Service() {
 
         const val WAKE_LOCK_TAG = "Audora:AudioClip"
         const val MIME_TYPE = "audio/mp4"
+
+        /** No [AudioClips.EXTRA_END_PAGE]: a clip to the paragraph's end, not a passage. */
+        const val NO_PASSAGE = -1
 
         /** A page with no text is skipped (as playback skips it); a book that cannot be read stops the clip. */
         fun PdfPageError.isPageOnly(): Boolean =

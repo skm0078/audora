@@ -9,6 +9,7 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.resume.AnchorMatch
 import io.github.skm0078.audora.core.resume.ReAnchoring
 import io.github.skm0078.audora.core.resume.SentenceFingerprint
+import java.util.Collections
 import kotlin.math.abs
 
 /**
@@ -29,6 +30,13 @@ import kotlin.math.abs
  *
  * A trusted sentence that the new pipeline split is covered with all its parts. A highlight whose text is gone is not
  * shown; it stays in the notes list with its quote.
+ *
+ * A passage highlighted over several sentences (a range) is placed the same way, plus two rules of its own:
+ * - On one page, at the pipeline it was saved with, it covers its first sentence through the one ending at its saved
+ *   end, sentences without words included, as long as their words are still its quote.
+ * - Across pages, each page is matched by its words alone: the start page's last sentences must begin the quote, the
+ *   end page's first sentences must end it, and every page between must sit inside it. The match is the longest
+ *   one, and one shorter than [HighlightConfig.minQuoteChars] counts only at the saved offset.
  */
 class HighlightPlacement(
     private val currentPipelineVersion: Int,
@@ -44,12 +52,14 @@ class HighlightPlacement(
      */
     fun place(highlights: List<Highlight>, units: List<ReadingUnit>): Map<Int, List<Highlight>> {
         val page = units.firstOrNull()?.page
-        val onPage = highlights.filter { it.anchor.page == page }
+        val onPage = highlights.filter { page != null && page in it.anchor.page..it.endPage }
         if (onPage.isEmpty()) return emptyMap()
         val text = PageText(units)
         val placed = LinkedHashMap<Int, MutableList<Highlight>>()
         onPage.forEach { highlight ->
-            covered(highlight, text)?.forEach { placed.getOrPut(units[it].index, ::mutableListOf).add(highlight) }
+            val spansPages = highlight.endPage > highlight.anchor.page
+            val range = if (spansPages) acrossPages(highlight, text) else covered(highlight, text)
+            range?.forEach { placed.getOrPut(units[it].index, ::mutableListOf).add(highlight) }
         }
         return placed
     }
@@ -84,6 +94,9 @@ class HighlightPlacement(
         /** [range] ends where [highlight] ended, on the same page. */
         fun endsAt(range: IntRange, highlight: Highlight): Boolean =
             highlight.endPage == highlight.anchor.page && units[range.last].charEnd == highlight.endChar
+
+        /** The words of [range]'s units, in order; units without words add none. */
+        fun wordsIn(range: IntRange): List<String> = range.flatMap { words[it] }
     }
 
     private fun covered(highlight: Highlight, page: PageText): IntRange? {
@@ -103,8 +116,56 @@ class HighlightPlacement(
             AnchorMatch.TAIL_FINGERPRINT -> fingerprintTrusted(highlight, quote, found, page.tails, page)
             AnchorMatch.OFFSET_UNVERIFIED, AnchorMatch.PAGE_START -> false
         }
-        return if (trusted) page.around(found, quote) else byQuote(highlight, quote, page)
+        val exact = found >= 0 && point.match == AnchorMatch.EXACT
+        val passage = if (exact) exactPassage(highlight, quote, found, page) else null
+        return passage ?: if (trusted) page.around(found, quote) else byQuote(highlight, quote, page)
     }
+
+    /**
+     * At the pipeline it was saved with: [found] through the unit ending at the saved end, when their words are still
+     * the quote. A range over a sentence without words ("* * *") is found only this way: a split never joins one.
+     */
+    private fun exactPassage(highlight: Highlight, quote: List<String>, found: Int, page: PageText): IntRange? {
+        val last = (found until page.units.size).firstOrNull { page.units[it].charEnd == highlight.endChar }
+        return last?.let { found..it }?.takeIf { page.wordsIn(it) == quote }
+    }
+
+    /** One page's share of a passage that runs over several pages; null when the page no longer holds its part. */
+    private fun acrossPages(highlight: Highlight, page: PageText): IntRange? {
+        val quote = wordsOf(highlight.quote)
+        val units = page.units
+        if (quote.isEmpty()) return null
+        return when (units.first().page) {
+            highlight.anchor.page -> passageStart(highlight, quote, page)?.let { it..units.lastIndex }
+            highlight.endPage -> passageEnd(highlight, quote, page)?.let { 0..it }
+            else -> units.indices.takeIf { Collections.indexOfSubList(quote, page.wordsIn(it)) >= 0 }
+        }
+    }
+
+    /** The first unit of the longest run of the page's last sentences that begins [quote]. */
+    private fun passageStart(highlight: Highlight, quote: List<String>, page: PageText): Int? {
+        val last = page.units.lastIndex
+        val first = page.units.indices.firstOrNull { index ->
+            val run = page.wordsIn(index..last)
+            page.words[index].isNotEmpty() && run.size <= quote.size && quote.subList(0, run.size) == run
+        } ?: return null
+        return first.takeIf {
+            enough(page.wordsIn(first..last)) ||
+                page.units[it].charStart == highlight.anchor.charStart
+        }
+    }
+
+    /** The last unit of the longest run of the page's first sentences that ends [quote]. */
+    private fun passageEnd(highlight: Highlight, quote: List<String>, page: PageText): Int? {
+        val last = page.units.indices.lastOrNull { index ->
+            val run = page.wordsIn(0..index)
+            page.words[index].isNotEmpty() && run.size <= quote.size &&
+                quote.subList(quote.size - run.size, quote.size) == run
+        } ?: return null
+        return last.takeIf { enough(page.wordsIn(0..last)) || page.units[it].charEnd == highlight.endChar }
+    }
+
+    private fun enough(words: List<String>) = words.sumOf { it.length } >= config.minQuoteChars
 
     /**
      * A fingerprint of part of a long sentence, unique on the page or near its saved offset with no equally near

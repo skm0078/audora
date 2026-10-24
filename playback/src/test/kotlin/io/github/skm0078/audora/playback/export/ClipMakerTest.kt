@@ -19,7 +19,8 @@ import org.junit.Test
 class ClipMakerTest {
     /** Each sentence renders to 2 s at the test rate (1 kHz). */
     private val renderer = SentenceRenderer { Outcome.Success(pcm(2_000)) }
-    private val config = ClipConfig(minMs = 5_000, maxMs = 9_000, paragraphPauseMs = 400, maxPages = 2)
+    private val config =
+        ClipConfig(minMs = 5_000, maxMs = 9_000, paragraphPauseMs = 400, maxPages = 2, passageMaxMs = 9_000)
 
     /** Page [page] with [count] sentences; those in [paragraphEnds] end a paragraph. */
     private fun page(page: Int, count: Int, paragraphEnds: Set<Int> = emptySet()): List<ReadingUnit> =
@@ -30,7 +31,8 @@ class ClipMakerTest {
         start: UnitKey,
         plays: (List<ReadingUnit>) -> List<ReadingUnit> = { it },
         render: SentenceRenderer = renderer,
-    ) = ClipMaker(render, config).make(start, pageCount = pages.size, pageUnits = { pages[it] }, plays = plays)
+        passage: ClipPassage? = null,
+    ) = ClipMaker(render, config).make(start, pages.size, pageUnits = { pages[it] }, plays = plays, passage = passage)
 
     private fun Outcome<Clip, ClipError>.keys() = (this as Outcome.Success).value.units.map { UnitKey.of(it) }
 
@@ -63,6 +65,31 @@ class ClipMakerTest {
             plays = { units -> units.filter { it.index != 1 } },
         )
         assertEquals(UnitKey(0, 2), clip.keys().first())
+    }
+
+    @Test
+    fun `a passage runs from its first sentence to its last, past paragraph ends and headings`() {
+        val next = page(1, 4, paragraphEnds = setOf(0)).toMutableList()
+            .apply { this[1] = this[1].copy(kind = UnitKind.HEADING) }
+        val long = config.copy(passageMaxMs = 60_000)
+        // Page 0 from the sentence holding offset 15 (sentence 1); page 1 up to the one starting before offset 25.
+        val clip = ClipMaker(renderer, long).make(
+            UnitKey(0, 0),
+            pageCount = 3,
+            pageUnits = { mapOf(0 to page(0, 3, paragraphEnds = setOf(1)), 1 to next, 2 to page(2, 2))[it] },
+            plays = { it },
+            passage = ClipPassage(startChar = 15, endPage = 1, endChar = 25),
+        )
+        assertEquals(
+            listOf(UnitKey(0, 1), UnitKey(0, 2), UnitKey(1, 0), UnitKey(1, 1), UnitKey(1, 2)),
+            clip.keys(),
+        )
+    }
+
+    @Test
+    fun `a passage stops before the sentence that would pass its maximum`() {
+        val clip = make(mapOf(0 to page(0, 8)), UnitKey(0, 0), passage = ClipPassage(0, endPage = 0, endChar = 80))
+        assertEquals(4, clip.keys().size) // passageMaxMs is 9 s here too: a fifth sentence would make 10 s.
     }
 
     @Test

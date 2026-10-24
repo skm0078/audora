@@ -72,6 +72,7 @@ data class TimeLeftEstimate(val bookMs: Long, val chapterMs: Long?)
  * @property view the page drawn as in the PDF, or its sentences as text; the listener's choice, remembered.
  * @property pageImage the shown page drawn, in the page view.
  * @property reporting the sentence a long-press picked for "This sounded wrong" (RI-8b), while its reasons show.
+ * @property soundedWrong the reason picked for it and the fixes offered, while they show.
  * @property chapters the chapter list (plan item 11), from the PDF outline; empty without one.
  * @property chapterStarts the pages chapters start on, as the end-of-chapter sleep timer counts them.
  * @property unreadableTapped a greyed sentence the listener tapped (RI-9), while the screen explains why it is skipped.
@@ -87,6 +88,7 @@ data class ReaderState(
     val view: ReaderView = ReaderView.PAGE,
     val pageImage: PageImageState = PageImageState.None,
     val reporting: ReadingUnit? = null,
+    val soundedWrong: SoundedWrongOffer? = null,
     val unreadableTapped: ReadingUnit? = null,
     val chapters: List<ChapterEntry> = emptyList(),
     val chapterStarts: List<Int> = emptyList(),

@@ -4,9 +4,6 @@
 
 package io.github.skm0078.audora.ui.reader
 
-import android.content.ContentValues
-import android.graphics.Bitmap
-import android.provider.MediaStore
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -34,6 +31,7 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.pdf.render.ViewPoint
+import io.github.skm0078.audora.ui.Screens
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import kotlin.math.abs
 import org.junit.Assert.assertTrue
@@ -65,7 +63,7 @@ class PlayerLayoutTest {
             rule.runOnIdle { fontScale = scale }
             rule.waitForIdle()
             val player = rule.onNodeWithTag(PLAYER)
-            save("player-font-${(scale * PERCENT).toInt()}", player.captureToImage().asAndroidBitmap())
+            Screens.save("player-font-${(scale * PERCENT).toInt()}", player.captureToImage().asAndroidBitmap())
             // The player's own bounds: the emulator's screen need not have the Moto's shape around it.
             val root = player.fetchSemanticsNode().boundsInRoot
             val speed = boundsOf(context.getString(R.string.reader_speed, speedLabel(1f)), byText = true)
@@ -96,20 +94,6 @@ class PlayerLayoutTest {
                 }
             requireNotNull(found) { "No node labelled \"$label\" on the player" }.boundsInRoot
         }
-
-    /** Into Downloads/ListenLock-screens, which outlives the test app's uninstall; CI pulls it into an artifact. */
-    private fun save(name: String, bitmap: Bitmap) {
-        val values = ContentValues().apply {
-            put(MediaStore.Downloads.DISPLAY_NAME, "$name.png")
-            put(MediaStore.Downloads.MIME_TYPE, "image/png")
-            put(MediaStore.Downloads.RELATIVE_PATH, SCREENS_FOLDER)
-        }
-        val resolver = context.contentResolver
-        val uri = requireNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)) { "No $name" }
-        requireNotNull(resolver.openOutputStream(uri)) { "Cannot write $name" }.use { out ->
-            check(bitmap.compress(Bitmap.CompressFormat.PNG, PNG_QUALITY, out)) { "PNG of $name failed" }
-        }
-    }
 
     private object NoActions : ReaderActions {
         override fun onBack() = Unit
@@ -143,8 +127,6 @@ class PlayerLayoutTest {
         /** Play may sit a little off the middle (the side buttons differ in width), never a whole button's width. */
         const val CENTRE_SHARE = 0.1f
         const val PERCENT = 100
-        const val PNG_QUALITY = 100
-        const val SCREENS_FOLDER = "Download/ListenLock-screens"
         const val PLAYER = "player"
 
         val BOOK = BookId("layout-book")
