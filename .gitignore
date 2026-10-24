@@ -31,6 +31,8 @@ models/
 !pdf/src/androidTest/assets/pdfs/*.pdf
 # The same kind of fixture for :playback's instrumented tests (P3-01)
 !playback/src/androidTest/assets/pdfs/*.pdf
+# And for the app's release journey test (copies of two :pdf fixtures)
+!app/src/androidTest/assets/pdfs/*.pdf
 # The golden corpus (P2-01): redistributable excerpts only, licences in pdf/golden/README.md
 !pdf/golden/pdfs/*.pdf
 # The listening corpus (RI-8a): redistributable excerpts only, licences in pdf/golden/listening/README.md
