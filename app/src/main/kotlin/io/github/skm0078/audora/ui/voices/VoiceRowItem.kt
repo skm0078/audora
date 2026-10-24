@@ -5,7 +5,6 @@
 package io.github.skm0078.audora.ui.voices
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +18,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemColors
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -35,8 +36,10 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.Lang
@@ -45,20 +48,24 @@ import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.speech.voices.VoiceStatus
 
 /**
- * The radio picks the reading voice; it is enabled only for voices that can speak now and were not measured too slow
- * on this phone (P4-02). A too-slow voice that already reads its language stays selected.
+ * The radio picks the reading voice; it is shown only for voices that can speak now and is enabled unless the voice
+ * was measured too slow on this phone (P4-02; a too-slow voice that already reads its language stays selected). A
+ * voice still to download shows a download mark there instead, so no greyed-out radio looks like a choice. The voice
+ * that reads its language is tinted and says "In use", so the choice is seen at a glance and not only by the small
+ * radio dot (ADR-066). The whole row is the radio for TalkBack and touch.
  */
 @Composable
 internal fun VoiceRowItem(row: VoiceRow, actions: VoicesActions, sample: VoiceSample? = null) {
     val canSpeak = row.canSpeak
     val usable = canSpeak && (!row.tooSlow || row.readsLanguage)
     ListItem(
-        leadingContent = {
-            RadioButton(selected = row.readsLanguage, onClick = { actions.onUse(row) }, enabled = usable)
+        leadingContent = { VoiceChoiceMark(selected = row.readsLanguage, canSpeak = canSpeak, enabled = usable) },
+        headlineContent = {
+            Text(row.label, fontWeight = if (row.readsLanguage) FontWeight.SemiBold else null)
         },
-        headlineContent = { Text(row.label) },
         supportingContent = {
             Column {
+                if (row.readsLanguage) InUseLabel()
                 if (row.recommended) {
                     Text(
                         stringResource(R.string.voices_recommended),
@@ -81,8 +88,66 @@ internal fun VoiceRowItem(row: VoiceRow, actions: VoicesActions, sample: VoiceSa
                 RowAction(row, actions)
             }
         },
-        modifier = Modifier.clickable(enabled = usable && !row.readsLanguage) { actions.onUse(row) },
+        colors = choiceColors(row.readsLanguage),
+        // A voice still to download is not a choice yet: its row is not a radio, and Download is its action.
+        modifier = if (canSpeak) {
+            Modifier.choiceRow(selected = row.readsLanguage, enabled = usable) { actions.onUse(row) }
+        } else {
+            Modifier
+        },
     )
+}
+
+/**
+ * The selected voice's tint; other rows stay on the screen's surface. The text keeps its usual colours, which read
+ * on the secondary container in both themes.
+ */
+@Composable
+private fun choiceColors(selected: Boolean): ListItemColors = if (selected) {
+    ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+} else {
+    ListItemDefaults.colors()
+}
+
+/**
+ * The row is one radio: [selectable] gives TalkBack "selected, radio button" and a tap anywhere on it chooses it.
+ * A tap on the voice already in use does nothing.
+ */
+private fun Modifier.choiceRow(selected: Boolean, enabled: Boolean, onSelect: () -> Unit): Modifier =
+    selectable(selected = selected, enabled = enabled, role = Role.RadioButton) { if (!selected) onSelect() }
+
+/** A radio for a voice that can read now; a download mark for one that cannot yet. */
+@Composable
+private fun VoiceChoiceMark(selected: Boolean, canSpeak: Boolean, enabled: Boolean) {
+    if (canSpeak) {
+        // onClick null: the row handles the tap, so TalkBack reads one control, not two.
+        RadioButton(selected = selected, onClick = null, enabled = enabled, modifier = Modifier.size(MARK_SIZE))
+    } else {
+        Icon(
+            painterResource(R.drawable.ic_download),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(MARK_SIZE),
+        )
+    }
+}
+
+@Composable
+private fun InUseLabel() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            painterResource(R.drawable.ic_check),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(IN_USE_ICON),
+        )
+        Text(
+            stringResource(R.string.voices_in_use),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = IN_USE_GAP),
+        )
+    }
 }
 
 private val VoiceRow.canSpeak: Boolean
@@ -202,10 +267,18 @@ private fun ActionButton(@StringRes label: Int, onClick: () -> Unit) {
 @Composable
 internal fun PhoneVoiceRow(selected: Boolean, onSelect: () -> Unit) {
     ListItem(
-        leadingContent = { RadioButton(selected = selected, onClick = onSelect) },
-        headlineContent = { Text(stringResource(R.string.voices_phone_voice)) },
-        supportingContent = { Text(stringResource(R.string.voices_phone_voice_body)) },
-        modifier = Modifier.clickable(enabled = !selected, onClick = onSelect),
+        leadingContent = { VoiceChoiceMark(selected = selected, canSpeak = true, enabled = true) },
+        headlineContent = {
+            Text(stringResource(R.string.voices_phone_voice), fontWeight = if (selected) FontWeight.SemiBold else null)
+        },
+        supportingContent = {
+            Column {
+                if (selected) InUseLabel()
+                Text(stringResource(R.string.voices_phone_voice_body))
+            }
+        },
+        colors = choiceColors(selected),
+        modifier = Modifier.choiceRow(selected = selected, enabled = true, onSelect = onSelect),
     )
 }
 
@@ -268,6 +341,10 @@ private val PROGRESS_TOP = 4.dp
 private val SAMPLE_SPINNER = 28.dp
 private val SAMPLE_SPINNER_STROKE = 2.dp
 private val SAMPLE_STOP_ICON = 14.dp
+private val MARK_SIZE = 24.dp
+private val IN_USE_ICON = 16.dp
+private val IN_USE_GAP = 4.dp
+
 private const val MAX_LABEL_INPUT = 60
 private const val ONE_DECIMAL = "%.1f"
 private const val BYTES_PER_MB = 1024L * 1024

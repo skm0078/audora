@@ -3,7 +3,7 @@
 <!-- Purpose: Hindi copy of values/strings_watched.xml. -->
 <resources>
     <string name="library_watched_folders">देखे जा रहे फ़ोल्डर</string>
-    <string name="watched_explain">इन फ़ोल्डरों और उनके सब-फ़ोल्डरों में आई नई PDF और EPUB फ़ाइलें, लाइब्रेरी खुलने पर हर बार उसमें जुड़ जाती हैं। फ़ोल्डर हटाने पर पहले से जुड़ी किताबें बनी रहती हैं। Android ऐप्स को Download फ़ोल्डर खुद देखने नहीं देता: उसके अंदर का कोई फ़ोल्डर चुनें।</string>
+    <string name="watched_explain">इन फ़ोल्डरों और उनके सब-फ़ोल्डरों में आई नई PDF, EPUB, Word, OpenDocument और RTF फ़ाइलें, लाइब्रेरी खुलने पर हर बार उसमें जुड़ जाती हैं। फ़ोल्डर हटाने पर पहले से जुड़ी किताबें बनी रहती हैं। Android ऐप्स को Download फ़ोल्डर खुद देखने नहीं देता: उसके अंदर का कोई फ़ोल्डर चुनें।</string>
     <string name="watched_empty">अभी कोई फ़ोल्डर नहीं देखा जा रहा।</string>
     <string name="watched_add">फ़ोल्डर जोड़ें</string>
     <string name="watched_remove">हटाएँ</string>

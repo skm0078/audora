@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/LibraryAction.kt
-// Purpose: The library's ⋮ menu entries, added without touching the top bar's layout (plan items 62, 26, 28).
+// Purpose: The library's ⋮ menu entries, added without touching the top bar's layout (plan items 62, 26, 28; ADR-066).
 
 package io.github.skm0078.audora.ui.library
 
@@ -10,6 +10,12 @@ import io.github.skm0078.audora.R
 enum class LibraryAction(@StringRes val label: Int, @StringRes val hint: Int) {
     /** Takes a photo of a page with the camera app and reads it as a one-page book (plan item 62, ADR-043). */
     POINT_AND_READ(R.string.library_point_and_read, R.string.menu_hint_point_and_read),
+
+    /** Pictures from the gallery (the photo picker, no media permission) read as one book (ADR-066). */
+    READ_PICTURES(R.string.library_read_pictures, R.string.menu_hint_read_pictures),
+
+    /** The text copied last, read as a text book like text shared to ListenLock (ADR-066). */
+    READ_CLIPBOARD(R.string.library_read_clipboard, R.string.menu_hint_read_clipboard),
 
     /** Lists the watched folders, whose new books join the library when it opens (plan item 26, ADR-044). */
     WATCHED_FOLDERS(R.string.library_watched_folders, R.string.menu_hint_watched_folders),

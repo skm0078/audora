@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/text/TextBooks.kt
-// Purpose: Opens EPUB and text books from their document URI (plan items 42 and 43): the seam beside BookOpener.
+// Purpose: Opens text books (EPUB, Word, OpenDocument, RTF, HTML, Markdown, text) by URI: the seam beside BookOpener.
 
 package io.github.skm0078.audora.playback.text
 
@@ -13,6 +13,7 @@ import io.github.skm0078.audora.core.library.DocumentFormat
 import io.github.skm0078.audora.core.library.DocumentFormats
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.result.flatMap
 import io.github.skm0078.audora.core.result.map
 import java.io.FileNotFoundException
 import java.io.IOException
@@ -22,8 +23,8 @@ import java.util.zip.ZipInputStream
 
 /**
  * Every book source (playback, the reader, the studio and the exports through them) asks [formatOf] first and
- * opens EPUB and text books here, PDFs through PDFium as before. Blocking: call on an IO thread. Errors name the
- * provider's authority only, never the file (its path may be in the URI).
+ * opens text books here (ADR-042, ADR-066), PDFs through PDFium as before. Blocking: call on an IO thread. Errors
+ * name the provider's authority only, never the file (its path may be in the URI).
  */
 class TextBooks(
     context: Context,
@@ -48,17 +49,21 @@ class TextBooks(
         }
     }
 
-    /** Reads and parses an EPUB or text book whole; pages and sentences are then made as they are asked for. */
+    /** Reads and parses a text book whole; pages and sentences are then made as they are asked for. */
     fun open(documentUri: String, format: DocumentFormat): Outcome<TextBookText, TextBookError> {
         val uri = Uri.parse(documentUri)
         val document = try {
             when (format) {
-                DocumentFormat.EPUB -> readEpub(uri)
+                DocumentFormat.EPUB -> readZip(uri, EpubParser::isTextEntry).flatMap(EpubParser::parse)
+                DocumentFormat.DOCX -> readZip(uri, DocxParser::isWanted).flatMap(DocxParser::parse)
+                DocumentFormat.ODT -> readZip(uri, OdtParser::isWanted).flatMap(OdtParser::parse)
                 DocumentFormat.TEXT -> readText(uri)
+                DocumentFormat.RTF -> readRtf(uri)
+                DocumentFormat.HTML -> readHtml(uri)
                 DocumentFormat.PDF -> Outcome.Failure(TextBookError.Unreadable("a PDF is not a text book"))
             }
         } catch (e: ZipException) {
-            Outcome.Failure(TextBookError.NotAnEpub(e.javaClass.simpleName))
+            Outcome.Failure(TextBookError.Damaged(e.javaClass.simpleName))
         } catch (e: IOException) {
             Outcome.Failure(TextBookError.Unreadable("${e.javaClass.simpleName} authority=${uri.authority}"))
         } catch (e: SecurityException) {
@@ -68,13 +73,16 @@ class TextBooks(
         return document.map { TextBookText(it, config) }
     }
 
-    /** The EPUB's text entries, or TooLarge; a damaged zip throws [ZipException], which [open] reports. */
-    private fun readEpub(uri: Uri): Outcome<TextDocument, TextBookError> {
+    /**
+     * The ZIP's [wanted] entries (an EPUB's markup, a Word file's text parts), or TooLarge; images, fonts and other
+     * media are never read. A damaged zip throws [ZipException], which [open] reports.
+     */
+    private fun readZip(uri: Uri, wanted: (String) -> Boolean): Outcome<Map<String, ByteArray>, TextBookError> {
         val entries = HashMap<String, ByteArray>()
         var total = 0L
         ZipInputStream(stream(uri)).use { zip ->
             generateSequence { zip.nextEntry }
-                .filter { !it.isDirectory && EpubParser.isTextEntry(it.name) }
+                .filter { !it.isDirectory && wanted(it.name) }
                 .forEach { entry ->
                     val bytes = zip.readUpTo((config.maxBookBytes - total + 1).toInt().coerceAtLeast(1))
                     total += bytes.size
@@ -86,18 +94,36 @@ class TextBooks(
                     entries[entry.name] = bytes
                 }
         }
-        return EpubParser.parse(entries)
+        return Outcome.Success(entries)
     }
 
-    private fun readText(uri: Uri): Outcome<TextDocument, TextBookError> {
+    /** A text file, or Markdown when its content shows it ([MarkdownParser.looksLikeMarkdown]). */
+    private fun readText(uri: Uri): Outcome<TextDocument, TextBookError> = readWhole(uri) { text ->
+        if (MarkdownParser.looksLikeMarkdown(text)) MarkdownParser.parse(text) else PlainTextParser(config).parse(text)
+    }
+
+    /** RTF's text read like a text file's, its footnotes as paragraphs at the end. */
+    private fun readRtf(uri: Uri): Outcome<TextDocument, TextBookError> = readWhole(uri) { source ->
+        val rtf = RtfParser.parse(source)
+        val text = (listOf(rtf.text) + rtf.notes).joinToString("\n\n")
+        PlainTextParser(config).parse(text).copy(title = rtf.title)
+    }
+
+    /** A saved page or HTML file: its body as [XhtmlBlocks] reads an EPUB chapter, one chapter titled by `<title>`. */
+    private fun readHtml(uri: Uri): Outcome<TextDocument, TextBookError> = readWhole(uri) { source ->
+        val markup = MarkupScanner.scan(source)
+        val blocks = XhtmlBlocks.blocks(markup)
+        val title = OfficeMeta.firstText(markup, "title")
+        val chapter = TextChapter(title ?: XhtmlBlocks.firstHeading(blocks), blocks)
+        TextDocument(title, language = null, chapters = if (blocks.isEmpty()) emptyList() else listOf(chapter))
+    }
+
+    /** The whole file decoded as text ([PlainTextParser.decode]) and parsed, or TooLarge or NoText. */
+    private fun readWhole(uri: Uri, parse: (String) -> TextDocument): Outcome<TextDocument, TextBookError> {
         val bytes = stream(uri).use { it.readUpTo((config.maxBookBytes + 1).toInt()) }
-        val parser = PlainTextParser(config)
-        val document = parser.parse(parser.decode(bytes))
-        return when {
-            bytes.size > config.maxBookBytes -> Outcome.Failure(TextBookError.TooLarge("file over the limit"))
-            document.isEmpty -> Outcome.Failure(TextBookError.NoText)
-            else -> Outcome.Success(document)
-        }
+        if (bytes.size > config.maxBookBytes) return Outcome.Failure(TextBookError.TooLarge("file over the limit"))
+        val document = parse(PlainTextParser(config).decode(bytes))
+        return if (document.isEmpty) Outcome.Failure(TextBookError.NoText) else Outcome.Success(document)
     }
 
     private fun stream(uri: Uri): InputStream =

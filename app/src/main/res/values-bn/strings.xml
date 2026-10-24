@@ -10,7 +10,7 @@
     <string name="library_title">লাইব্রেরি</string>
     <string name="library_add_pdf">বই যোগ করুন</string>
     <string name="library_empty_title">আপনার লাইব্রেরি খালি</string>
-    <string name="library_empty_body">আপনার ফোন থেকে PDF, EPUB বা টেক্সট ফাইল যোগ করুন, বা Files, WhatsApp বা মেল থেকে কোনো ফাইল ListenLock-এ পাঠান। ব্রাউজার বা চ্যাট থেকে পাঠানো লেখাও পড়া হয়।</string>
+    <string name="library_empty_body">ফোন থেকে বই যোগ করুন (PDF, EPUB, Word, লেখা বা পাতার ছবি), বা Files, WhatsApp বা মেল থেকে ListenLock-এ পাঠান।</string>
     <string name="library_load_failed">ListenLock আপনার লাইব্রেরি লোড করতে পারেনি। সেটিংস থেকে লগ শেয়ার করুন।</string>
     <string name="library_untitled">নামহীন বই</string>
     <string name="library_book_menu">আরও অপশন</string>
@@ -57,7 +57,7 @@
     <string name="library_no_match">কোনো বই মেলেনি। খোঁজ বা ফিল্টার বদলান।</string>
     <string name="library_error_cannot_keep">যে অ্যাপ থেকে বেছেছেন, সেটি ফাইলটি শুধু অল্প সময়ের জন্য দেয়। আগে ফাইলটি ফোনে সেভ করুন, তারপর সেখান থেকে যোগ করুন।</string>
     <string name="library_error_unreadable">ListenLock ফাইলটি পড়তে পারেনি। হয়তো সেটি সরানো বা মুছে ফেলা হয়েছে।</string>
-    <string name="library_error_not_pdf">ফাইলটি PDF, EPUB বা টেক্সট ফাইল নয়।</string>
+    <string name="library_error_not_pdf">ফাইলটি এমন বই নয় যা ListenLock পড়তে পারে: PDF, EPUB, Word, OpenDocument, RTF, ওয়েব পেজ, লেখা বা ছবি।</string>
     <string name="library_error_different_file">এটি অন্য একটি ফাইল। একই ফাইল বেছে নিন, অথবা এই বইটি সরিয়ে নতুনটি যোগ করুন।</string>
     <string name="library_error_not_in_library">বইটি আর আপনার লাইব্রেরিতে নেই।</string>
     <string name="library_error_storage">ListenLock আপনার লাইব্রেরি সেভ করতে পারেনি। ফোনের স্টোরেজ কি ভরে গেছে?</string>
@@ -305,6 +305,8 @@
     <string name="voices_import_hint">এরপর ভয়েসের ফাইলগুলো যে ফোল্ডারে আছে সেটি বেছে নিন। ListenLock সেগুলো কপি করে নেয়; ফোল্ডারটি যেমন আছে তেমনই থাকে।</string>
     <string name="voices_import_choose_folder">ফোল্ডার বেছে নিন</string>
     <string name="voices_recommended">এই ভাষার জন্য প্রস্তাবিত</string>
+    <!-- The voice that reads its language now (ADR-066). -->
+    <string name="voices_in_use">ব্যবহার হচ্ছে</string>
     <string name="settings_licences_body">প্রতিটি ভয়েস কে তৈরি করেছেন, তার লাইসেন্স এবং সেটি কোথা থেকে এসেছে।</string>
     <string name="settings_privacy_title">গোপনীয়তা নীতি</string>
     <string name="settings_privacy_body">ListenLock আপনার সম্পর্কে কিছুই সংগ্রহ করে না। পুরো নীতি আপনার ব্রাউজারে খোলে।</string>
@@ -482,7 +484,7 @@
     <string name="first_run_background_allow">ব্যাকগ্রাউন্ডে পড়তে দিন</string>
     <string name="first_run_background_done">অনুমতি দেওয়া হয়েছে। স্ক্রিন বন্ধ থাকলেও ListenLock পড়তে থাকবে।</string>
     <string name="first_run_book_title">আপনার প্রথম বই যোগ করুন</string>
-    <string name="first_run_book_body">ফোন থেকে একটি PDF, EPUB বা টেক্সট ফাইল বেছে নিন। ListenLock প্রতিটি বইয়ে আপনি কোথায় ছিলেন মনে রাখে।</string>
+    <string name="first_run_book_body">ফোন থেকে একটি বই বেছে নিন: PDF, EPUB, Word, লেখা বা পাতার ছবি। ListenLock প্রতিটি বইয়ে আপনি কোথায় ছিলেন মনে রাখে।</string>
     <string name="first_run_add_pdf">বই যোগ করুন</string>
     <string name="first_run_next">পরবর্তী</string>
     <string name="first_run_back">পিছনে</string>

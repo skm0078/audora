@@ -6,7 +6,7 @@
     <string name="library_title">Library</string>
     <string name="library_add_pdf">Add book</string>
     <string name="library_empty_title">Your library is empty</string>
-    <string name="library_empty_body">Add a PDF, EPUB or text file from your phone, or share one to ListenLock from Files, WhatsApp or mail. Text you share from a browser or chat is read too.</string>
+    <string name="library_empty_body">Add a book from your phone (PDF, EPUB, Word, text or photos of pages), or share one to ListenLock from Files, WhatsApp or mail.</string>
     <string name="library_load_failed">ListenLock could not load your library. Please share the logs from Settings.</string>
     <string name="library_untitled">Untitled book</string>
     <string name="library_book_menu">More options</string>
@@ -53,7 +53,7 @@
     <string name="library_no_match">No book matches. Change the search or the filter.</string>
     <string name="library_error_cannot_keep">The app you picked from only lends the file for a moment. Save the file to your phone first, then add it from there.</string>
     <string name="library_error_unreadable">ListenLock could not read that file. It may have been moved or deleted.</string>
-    <string name="library_error_not_pdf">That file is not a PDF, EPUB or text file.</string>
+    <string name="library_error_not_pdf">That file is not a book ListenLock can read: PDF, EPUB, Word, OpenDocument, RTF, web page, text or picture.</string>
     <string name="library_error_different_file">That is a different file. Pick the same file, or remove this book and add the new one.</string>
     <string name="library_error_not_in_library">That book is no longer in your library.</string>
     <string name="library_error_storage">ListenLock could not save your library. Is your phone\'s storage full?</string>
@@ -301,6 +301,8 @@
     <string name="voices_import_hint">Next, pick the folder that holds the voice\'s files. ListenLock copies them; the folder stays as it is.</string>
     <string name="voices_import_choose_folder">Choose folder</string>
     <string name="voices_recommended">Recommended for this language</string>
+    <!-- The voice that reads its language now (ADR-066). -->
+    <string name="voices_in_use">In use</string>
     <string name="settings_licences_body">Who made each voice, its licence and where it comes from.</string>
     <string name="settings_privacy_title">Privacy policy</string>
     <string name="settings_privacy_body">ListenLock collects nothing about you. Opens the full policy in your browser.</string>
@@ -482,7 +484,7 @@
     <string name="first_run_background_allow">Allow background reading</string>
     <string name="first_run_background_done">Allowed. ListenLock can keep reading with the screen off.</string>
     <string name="first_run_book_title">Add your first book</string>
-    <string name="first_run_book_body">Pick a PDF, EPUB or text file on your phone. ListenLock remembers your place in every book.</string>
+    <string name="first_run_book_body">Pick a book on your phone: PDF, EPUB, Word, text or photos of pages. ListenLock remembers your place in every book.</string>
     <string name="first_run_add_pdf">Add a book</string>
     <string name="first_run_next">Next</string>
     <string name="first_run_back">Back</string>

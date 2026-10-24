@@ -1,6 +1,6 @@
 # ListenLock: PDF Read Aloud
 
-A free Android app that reads PDFs, EPUB books, text files and photos of pages aloud in natural voices, in English,
+A free Android app that reads PDFs, EPUB books, Word and text files, web pages and photos of pages aloud in natural voices, in English,
 Hindi and Bengali. Start from any page or
 sentence, pick a voice, and keep listening with the screen off or while you use other apps. Everything happens on your
 phone: no account, no ads, no analytics, and no internet once your voices are in place. Made by TelosMind; free and
@@ -25,7 +25,8 @@ What changed and what still needs checking on a phone: [docs/PROGRESS.md](docs/P
 - Each part of a mixed sentence is read in its own language's voice.
 - Older Hindi and Bengali fonts (Kruti Dev, Chanakya, DevLys, SutonnyMJ) are read correctly.
 - Scanned pages are read with offline text recognition (OCR, a one-time 38 MB download), including worn print and
-  sideways pages. A photo of a page (**Point and read**) becomes a one-page book.
+  sideways pages. A photo of a page (**Point and read**) becomes a one-page book, and up to 50 pictures from the gallery
+  (**Read pictures**) become one book.
 - Your own pronunciations (**Words in every book**), and a switch to skip citation numbers such as "[12]". If a
   sentence sounds wrong, report it from the reader in one tap.
 
@@ -51,7 +52,9 @@ What changed and what still needs checking on a phone: [docs/PROGRESS.md](docs/P
 - **Export:** save a book as an audiobook (one audio file per chapter), share a clip, or save a talking book.
 
 **Your library**
-- PDF, EPUB and plain-text books, text shared from other apps, and watched folders that add new books by themselves.
+- PDF, EPUB, Word (.docx), OpenDocument (.odt), RTF, saved web pages, Markdown and plain-text books; text shared
+  from other apps, **Read aloud** on any selected text, **Read copied text**, and watched folders that add new books
+  by themselves.
 - Bookmarks, highlights, voice notes, search in the book, and an offline dictionary on tap (English, Hindi, Bengali).
 - Study aids: quiz me from your highlights, **Study** mode that repeats each sentence, a reading tutor that listens
   while you read aloud, and a **character guide** you fill in as you meet people (who's who, no spoilers).
@@ -139,7 +142,8 @@ Play installs don't need this.
 
 ## First run
 
-1. **Add a book:** tap **Add book** and pick a PDF, EPUB or text file. ListenLock remembers where it is and does not copy it.
+1. **Add a book:** tap **Add book** and pick a PDF, EPUB, Word or text file. ListenLock remembers where it is and
+   does not copy it. A picture you pick becomes a one-page book that ListenLock keeps.
 2. **Read aloud:** open the book, tap a line on any page to start there, or tap **Read aloud**.
 3. **Keep reading with the screen off:** if the library shows **Keep reading with the screen off**, tap **Set up** and
    follow the steps for your phone's brand (also in **Settings → Background reading**). Without it, many phones stop

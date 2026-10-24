@@ -311,7 +311,9 @@ class MainActivity : ComponentActivity() {
     private val studioParts by lazy {
         val notes = MarkStores(highlightStore, bookmarkStore, voiceNoteStore)
         val watched = WatchedFolders(applicationContext, library)
-        StudioLibraryParts(this, photoBooks, watched, backups, resumeAnchors, notes)
+        StudioLibraryParts(this, photoBooks, watched, backups, resumeAnchors, notes) {
+            readClipboard { sharedText = it }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -321,8 +323,7 @@ class MainActivity : ComponentActivity() {
         // Nothing that opens the library, prunes or resumes runs until a half-undone restore is finished (ADR-046).
         if (showFinishRestoringIfNeeded()) return
         if (savedInstanceState == null) {
-            sharedPdf = SharedPdfIntent.uriOf(intent)
-            sharedText = SharedPdfIntent.textOf(intent)
+            takeShared(intent)
             widgetResume = ResumeWidgetProvider.bookIdOf(intent)
             continueStudioJobs(intent)
             Backups.takeStartResult()?.let { Toast.makeText(this, restoreMessageOf(it), Toast.LENGTH_LONG).show() }
@@ -455,7 +456,7 @@ class MainActivity : ComponentActivity() {
         }
         // Registered here, not in the screens: they close before the picker returns, and the result must still land.
         val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            uri?.let { library.add(it.toString()) }
+            uri?.let { addPicked(it, photoBooks, library::add) }
         }
         if (kids) return false
         if (show == true) {
@@ -696,11 +697,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        SharedPdfIntent.uriOf(intent)?.let { sharedPdf = it }
-        SharedPdfIntent.textOf(intent)?.let { sharedText = it }
+        takeShared(intent)
         continueStudioJobs(intent)
         ResumeWidgetProvider.bookIdOf(intent)?.let { widgetResume = it }
     }
+
+    /** What another app opened or shared: pictures, a book file or text ([receiveShared]). */
+    private fun takeShared(intent: Intent) = receiveShared(intent, photoBooks, { sharedPdf = it }) { sharedText = it }
 
     @Composable
     private fun LibraryRoute(
@@ -716,7 +719,7 @@ class MainActivity : ComponentActivity() {
         }
         val actions = remember(controller) {
             object : LibraryActions {
-                override fun onAddPdf(documentUri: Uri) = controller.add(documentUri.toString())
+                override fun onAddPdf(documentUri: Uri) = addPicked(documentUri, photoBooks, controller::add)
 
                 override fun onLocate(id: BookId, documentUri: Uri) = controller.locate(id, documentUri.toString())
 

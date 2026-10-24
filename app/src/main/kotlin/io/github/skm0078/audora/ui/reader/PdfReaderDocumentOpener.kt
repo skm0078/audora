@@ -50,10 +50,12 @@ class PdfReaderDocumentOpener(
         password: String?,
         logContext: String,
     ): Outcome<ReaderDocument, PdfOpenError> = withContext(io) {
-        // EPUB and text books (items 42, 43, ADR-042): the same TextBooks the playback service opens them with.
-        when (val format = textBooks.formatOf(documentUri)) {
-            DocumentFormat.EPUB, DocumentFormat.TEXT -> openText(documentUri, format)
-            DocumentFormat.PDF, null -> openPdf(documentUri, password, logContext)
+        // Text books (ADR-042, ADR-066): the same TextBooks the playback service opens them with.
+        val format = textBooks.formatOf(documentUri)
+        if (format != null && format.isText) {
+            openText(documentUri, format)
+        } else {
+            openPdf(documentUri, password, logContext)
         }
     }
 

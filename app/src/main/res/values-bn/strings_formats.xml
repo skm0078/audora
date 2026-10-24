@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_formats.xml -->
+<!-- Purpose: Bengali copy of values/strings_formats.xml. -->
+<resources>
+    <string name="library_read_pictures">গ্যালারির ছবি পড়ান</string>
+    <string name="menu_hint_read_pictures">পাতার ছবি বেছে নিন; ListenLock সেগুলো আপনার বাছাইয়ের ক্রমে একটি বই হিসেবে পড়ে।</string>
+    <string name="library_read_clipboard">কপি করা লেখা পড়ান</string>
+    <string name="menu_hint_read_clipboard">যেকোনো অ্যাপ থেকে শেষবার কপি করা লেখা পড়ে।</string>
+    <string name="clipboard_empty">এখনও পড়ার মতো কিছু নেই। আগে কিছু লেখা কপি করুন।</string>
+    <string name="process_text_label">পড়ে শোনান</string>
+    <string name="pictures_book_title">ছবি %1$s</string>
+    <string name="pictures_too_many">একটি বইয়ের জন্য সর্বোচ্চ %1$dটি ছবি বেছে নিন।</string>
+</resources>

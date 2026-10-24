@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/text/TextDocument.kt
-// Purpose: A book that is text, not pages (EPUB, a text file, shared text): chapters of headings and paragraphs.
+// Purpose: A book that is text, not pages (EPUB, Word, OpenDocument, RTF, HTML, Markdown, text): chapters of blocks.
 
 package io.github.skm0078.audora.playback.text
 
@@ -25,8 +25,11 @@ data class TextDocument(val title: String?, val language: String?, val chapters:
 sealed interface TextBookError {
     val message: String
 
-    /** Not a well-formed EPUB (no container, no package, no readable chapter). */
-    data class NotAnEpub(override val message: String) : TextBookError
+    /**
+     * Not a well-formed EPUB, Word or OpenDocument file (a damaged ZIP, no container or package, no main document:
+     * a spreadsheet or slides saved with a Word-like package).
+     */
+    data class Damaged(override val message: String) : TextBookError
 
     /** Larger than [io.github.skm0078.audora.core.config.TextBookConfig.maxBookBytes]. */
     data class TooLarge(override val message: String) : TextBookError
