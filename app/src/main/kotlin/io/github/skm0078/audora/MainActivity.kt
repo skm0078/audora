@@ -71,6 +71,7 @@ import io.github.skm0078.audora.core.notes.VoiceNoteStore
 import io.github.skm0078.audora.core.resume.ResumeAnchor
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
+import io.github.skm0078.audora.di.LibraryEntryPoint
 import io.github.skm0078.audora.diagnostics.LogSharer
 import io.github.skm0078.audora.language.AppLanguage
 import io.github.skm0078.audora.language.AppLanguageStore
@@ -198,6 +199,7 @@ import io.github.skm0078.audora.widget.ResumeWidgetEffect
 import io.github.skm0078.audora.widget.ResumeWidgetProvider
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -368,15 +370,25 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun libraryController(scope: CoroutineScope): LibraryController {
+        val collections = LibraryEntryPoint.of(applicationContext).collections()
+        return LibraryController(
+            library,
+            scope,
+            resumeAnchors.observeAll(),
+            sharedCopies::copy,
+            collections.observe(),
+            collections.observeMembers(),
+        ).apply { start() }
+    }
+
     /** The tabs and the screens over them; kids mode only changes what they draw and where they lead. */
     @Composable
     private fun AppScreens(nav: AppNavigation, kids: KidsMode, appearance: Appearance) {
         val scope = rememberCoroutineScope()
         val diagnostics = remember { DiagnosticsController(readingSessionTracker, logSharer, scope) }
         // Activity-wide, so an add still running when the user opens Settings is not cancelled.
-        val libraryController = remember {
-            LibraryController(library, scope, resumeAnchors.observeAll(), sharedCopies::copy).apply { start() }
-        }
+        val libraryController = remember { libraryController(scope) }
         val battery = rememberBatterySetup(scope)
         // Activity-wide too, so an import keeps going when the user leaves the screen; created on first visit.
         val voicesController = remember {

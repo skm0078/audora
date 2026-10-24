@@ -10,6 +10,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import io.github.skm0078.audora.core.library.BookOutputStore
+import io.github.skm0078.audora.core.library.CollectionStore
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.ui.library.BookCovers
 
@@ -21,6 +22,8 @@ interface LibraryEntryPoint {
     fun outputs(): BookOutputStore
 
     fun covers(): BookCovers
+
+    fun collections(): CollectionStore
 
     companion object {
         fun of(context: Context): LibraryEntryPoint =

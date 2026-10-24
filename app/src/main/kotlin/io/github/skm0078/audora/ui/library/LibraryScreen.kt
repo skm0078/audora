@@ -163,6 +163,7 @@ private fun LibraryContent(
         } else {
             Column {
                 ShelfRow(listState, menu::onQuery)
+                CatalogueRow(listState, menu::onQuery)
                 if (listState.items.isEmpty()) {
                     Centered {
                         Text(

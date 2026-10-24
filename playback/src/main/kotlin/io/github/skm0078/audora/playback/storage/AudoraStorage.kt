@@ -7,6 +7,7 @@ import android.content.Context
 import androidx.room.Room
 import io.github.skm0078.audora.core.library.BookOutputStore
 import io.github.skm0078.audora.core.library.BookStore
+import io.github.skm0078.audora.core.library.CollectionStore
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.BookmarkStore
 import io.github.skm0078.audora.core.notes.HighlightStore
@@ -26,6 +27,7 @@ class AudoraStorage private constructor(private val database: AudoraDatabase) : 
     val highlights: HighlightStore = RoomHighlightStore(database.marks())
     val voiceNotes: VoiceNoteStore = RoomVoiceNoteStore(database.marks())
     val outputs: BookOutputStore = RoomBookOutputStore(database.outputs())
+    val collections: CollectionStore = RoomCollectionStore(database.collections())
 
     /**
      * Writes a consistent copy of the whole database to [target] (which must not exist) with `VACUUM INTO`, while

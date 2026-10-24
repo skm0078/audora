@@ -1,18 +1,21 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/di/LibraryModule.kt
 // Purpose: Provides the app database, Storage Access Framework access, the Library, covers, filling books in from
-//          their files and what was made from them, as app singletons.
+//          their files, what was made from them and the listener's collections, as app singletons.
 
 package io.github.skm0078.audora.di
 
+import android.app.ActivityManager
 import android.content.Context
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.github.skm0078.audora.core.config.CoverConfig
 import io.github.skm0078.audora.core.config.LibraryConfig
 import io.github.skm0078.audora.core.library.BookFingerprinter
 import io.github.skm0078.audora.core.library.BookOutputStore
+import io.github.skm0078.audora.core.library.CollectionStore
 import io.github.skm0078.audora.core.library.DocumentAccess
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.playback.details.FileDetailsReader
@@ -47,11 +50,19 @@ object LibraryModule {
 
     @Provides
     @Singleton
-    fun bookCovers(@ApplicationContext context: Context): BookCovers = BookCovers(context, Dispatchers.IO)
+    fun bookCovers(@ApplicationContext context: Context): BookCovers {
+        val memory = context.getSystemService(ActivityManager::class.java)
+        val config = CoverConfig.forDevice(memory.memoryClass, memory.isLowRamDevice)
+        return BookCovers(context, Dispatchers.IO, config)
+    }
 
     @Provides
     @Singleton
     fun bookOutputs(storage: AudoraStorage): BookOutputStore = storage.outputs
+
+    @Provides
+    @Singleton
+    fun collections(storage: AudoraStorage): CollectionStore = storage.collections
 
     @Provides
     @Singleton

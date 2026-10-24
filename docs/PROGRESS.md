@@ -2,6 +2,18 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Library collections, filters, author search and sort (2026-10-24, ADR-069)
+- **Collections:** make, rename and delete your own groups of books from the chip row under the shelves; a book's
+  details add it to a collection or take it out at once. A collection chip shows its number of books and narrows
+  the library to it.
+- **Filters:** a Filters chip opens author, file type, language and collection lists (only what the library holds,
+  with counts); a choice applies at once and combines with the shelf, search and sort.
+- **Search and sort:** search finds titles and authors; new sort by Author.
+- **Low-end phones:** search keys folded once per change of the library, search waits for a pause in typing, the
+  cover cache is sized by the phone's memory and low-RAM phones keep covers in 16-bit colour.
+- No schema change (5), no `:pdf` change (PIPELINE_VERSION 12). New strings in en, hi and bn. CI's `player-screens`
+  artifact has `filter-sheet.png`, `catalogue-row.png` and `collections-sheet.png`.
+
 ## Made files in the library, in-app player, book details (2026-10-24, ADR-068)
 - **Made from your books:** Jobs → "Everything made from your books", and a book's details → "Made from this book",
   list every saved audiobook, studio audio file, accessible copy and talking book with its length, size, date and

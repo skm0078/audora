@@ -20,6 +20,7 @@ import io.github.skm0078.audora.pdf.pdfium.PdfiumEngine
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -71,7 +72,11 @@ class BookCovers(
 
             else -> withContext(io) {
                 // Into memory under the same lock as clear(), so a cover drawn just before it is not kept after.
-                drawing.withLock { make(book)?.also { memory.put(key, it) } }?.asImageBitmap()
+                // A tile scrolled away while waiting for the lock is cancelled here, before its page is drawn.
+                drawing.withLock {
+                    ensureActive()
+                    make(book)?.also { memory.put(key, it) }
+                }?.asImageBitmap()
             }
         }
     }
@@ -160,7 +165,7 @@ class BookCovers(
             failed += failedKey
             return null
         }
-        return onWhite(drawn).also { bitmaps.writeWebp(folders.drawnFile(book.id, page), it) }
+        return onWhite(drawn, bitmaps.colours).also { bitmaps.writeWebp(folders.drawnFile(book.id, page), it) }
     }
 
     private fun pageOf(book: Book, page: Int): Bitmap? {

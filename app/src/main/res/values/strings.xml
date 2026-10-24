@@ -35,7 +35,7 @@
     <string name="library_remove_body">The file stays on your phone. You can add it again later.</string>
     <string name="library_cancel">Cancel</string>
     <string name="library_search">Search library</string>
-    <string name="library_search_hint">Search titles</string>
+    <string name="library_search_hint">Search titles and authors</string>
     <string name="library_search_close">Close search</string>
     <string name="library_sort_filter">Sort and filter</string>
     <string name="library_sort_by">Sort by</string>

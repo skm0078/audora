@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_catalogue.xml -->
+<!-- Purpose: Library collections, filters by author, file type, language and collection, and sort by author (ADR-069). -->
+<resources>
+    <string name="library_sort_author">Author</string>
+    <string name="catalogue_filters">Filters</string>
+    <string name="catalogue_filters_count">Filters · %1$d</string>
+    <string name="catalogue_filters_title">Filter books</string>
+    <string name="catalogue_any">Any</string>
+    <string name="catalogue_author">Author</string>
+    <string name="catalogue_format">File type</string>
+    <string name="catalogue_language">Language</string>
+    <string name="catalogue_collection">Collection</string>
+    <string name="catalogue_clear">Clear filters</string>
+    <string name="catalogue_done">Done</string>
+    <string name="collections_title">Collections</string>
+    <string name="collections_new">New collection</string>
+    <string name="collections_edit">Edit collections</string>
+    <string name="collections_empty">No collections yet. Make one to group books, like “For school” or “Bedtime”.</string>
+    <string name="collections_name">Collection name</string>
+    <string name="collections_save">Save</string>
+    <string name="collections_cancel">Cancel</string>
+    <string name="collections_rename">Rename</string>
+    <string name="collections_rename_named">Rename %1$s</string>
+    <string name="collections_delete">Delete</string>
+    <string name="collections_delete_named">Delete %1$s</string>
+    <string name="collections_delete_title">Delete “%1$s”?</string>
+    <string name="collections_delete_body">The books stay in your library.</string>
+    <string name="collections_failed">Could not save the collection. Try again.</string>
+    <string name="collections_in_hint">Tap a collection to put this book in it or take it out.</string>
+    <plurals name="collections_book_count">
+        <item quantity="one">%1$d book</item>
+        <item quantity="other">%1$d books</item>
+    </plurals>
+</resources>

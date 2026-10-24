@@ -233,6 +233,7 @@ private fun Choice(@StringRes label: Int, selected: Boolean, onClick: () -> Unit
 private fun sortLabel(sort: LibrarySort): Int = when (sort) {
     LibrarySort.RECENT -> R.string.library_sort_recent
     LibrarySort.TITLE -> R.string.library_sort_title
+    LibrarySort.AUTHOR -> R.string.library_sort_author
     LibrarySort.ADDED -> R.string.library_sort_added
     LibrarySort.PROGRESS -> R.string.library_sort_progress
 }

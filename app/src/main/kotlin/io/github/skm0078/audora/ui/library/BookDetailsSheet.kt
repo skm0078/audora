@@ -1,6 +1,7 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/BookDetailsSheet.kt
 // Purpose: A book's details (UI plan, Book details): cover, author, format, language, pages, file size, when it was
-//          added and last read, where reading stands, the book's actions and what was made from it (ADR-068).
+//          added and last read, where reading stands, its collections (ADR-069), the book's actions and what was made
+//          from it (ADR-068).
 
 package io.github.skm0078.audora.ui.library
 
@@ -52,8 +53,18 @@ internal fun BookSheets(
     onCloseDetails: () -> Unit,
 ) {
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
+    val writer = rememberCollectionWriter()
+    val loaded = listState as? LibraryListState.Loaded
     detailsItem(listState, details)?.let { item ->
-        BookDetailsSheet(item, actions, covers, onEdit = { editing = item.book.id.value }, onDismiss = onCloseDetails)
+        val id = item.book.id
+        BookDetailsSheet(item, actions, covers, onEdit = { editing = id.value }, onDismiss = onCloseDetails) {
+            BookCollectionChips(
+                collections = loaded?.collections.orEmpty(),
+                memberOf = loaded?.members?.get(id).orEmpty(),
+                onToggle = { collection, member -> writer.setMember(id, collection, member) },
+                onCreate = { name -> writer.create(name, add = id) },
+            )
+        }
     }
     detailsItem(listState, editing)?.let { BookEditRoute(it.book) { editing = null } }
 }
@@ -61,6 +72,7 @@ internal fun BookSheets(
 /**
  * Opened from a book's menu. Every action here also exists elsewhere (the tile, its menu), so the sheet only
  * gathers them; it dismisses itself before acting, so a removal dialog or the reader is never hidden behind it.
+ * [collections] is the book's collection chips (ADR-069), which change at once and keep the sheet open.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,6 +82,7 @@ internal fun BookDetailsSheet(
     covers: CoverSource,
     onEdit: () -> Unit,
     onDismiss: () -> Unit,
+    collections: @Composable () -> Unit = {},
 ) {
     val then = { action: () -> Unit ->
         onDismiss()
@@ -96,6 +109,7 @@ internal fun BookDetailsSheet(
                 }
             }
             DetailLines(item)
+            collections()
             DetailActions(item, actions, then)
             TextButton(onClick = { then(onEdit) }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.book_edit)) }
             MadeFromBook(item.book.id) { setKey -> then { actions.onPlayMade(setKey) } }

@@ -52,7 +52,11 @@ internal class CoverFolders(filesDir: File) {
 
 /** Decodes and writes cover pictures at [config]'s size. Blocking; the caller is on the covers' IO dispatcher. */
 internal class CoverBitmaps(private val config: CoverConfig) {
-    fun decode(file: File): Bitmap? = if (file.isFile) BitmapFactory.decodeFile(file.path) else null
+    /** 16-bit on a low-memory phone ([CoverConfig.lowMemory]): half the bytes per cover in the memory cache. */
+    val colours: Bitmap.Config = if (config.lowMemory) Bitmap.Config.RGB_565 else Bitmap.Config.ARGB_8888
+
+    fun decode(file: File): Bitmap? =
+        if (file.isFile) BitmapFactory.decodeFile(file.path, BitmapFactory.Options().withColours()) else null
 
     /** A drawn cover kept before; one that cannot be read is deleted, so it is drawn again. */
     fun decodeCached(file: File): Bitmap? {
@@ -69,7 +73,7 @@ internal class CoverBitmaps(private val config: CoverConfig) {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         image.open()?.use { BitmapFactory.decodeStream(it, null, bounds) }
         val decoded = if (bounds.outWidth > 0 && bounds.outHeight > 0) {
-            val options = BitmapFactory.Options().apply { inSampleSize = sampleSize(bounds.outWidth) }
+            val options = BitmapFactory.Options().withColours().apply { inSampleSize = sampleSize(bounds.outWidth) }
             image.open()?.use { BitmapFactory.decodeStream(it, null, options) }
         } else {
             null
@@ -92,6 +96,8 @@ internal class CoverBitmaps(private val config: CoverConfig) {
         }
     }
 
+    private fun BitmapFactory.Options.withColours() = apply { inPreferredConfig = colours }
+
     private fun sampleSize(width: Int): Int {
         var sample = 1
         while (width / (sample * 2) >= config.widthPx * 2) sample *= 2
@@ -111,9 +117,9 @@ internal class CoverBitmaps(private val config: CoverConfig) {
     }
 }
 
-/** PDFium leaves blank paper transparent; a cover is paper, so it gets white behind it. */
-internal fun onWhite(page: Bitmap): Bitmap {
-    val cover = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
+/** PDFium leaves blank paper transparent; a cover is paper, so it gets white behind it, in [colours]. */
+internal fun onWhite(page: Bitmap, colours: Bitmap.Config = Bitmap.Config.ARGB_8888): Bitmap {
+    val cover = Bitmap.createBitmap(page.width, page.height, colours)
     Canvas(cover).apply {
         drawColor(Color.WHITE)
         drawBitmap(page, 0f, 0f, null)

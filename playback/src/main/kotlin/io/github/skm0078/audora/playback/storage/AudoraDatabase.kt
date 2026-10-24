@@ -54,4 +54,6 @@ internal abstract class AudoraDatabase : RoomDatabase() {
     abstract fun marks(): MarksDao
 
     abstract fun outputs(): OutputsDao
+
+    abstract fun collections(): CollectionsDao
 }
