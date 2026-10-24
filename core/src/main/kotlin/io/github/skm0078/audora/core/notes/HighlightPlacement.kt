@@ -66,7 +66,7 @@ class HighlightPlacement(
 
     /** One page's units as placement compares them, computed once per page. */
     private inner class PageText(val units: List<ReadingUnit>) {
-        val words = units.map(::wordsOf)
+        val words = units.map { wordsOf(it.text) }
         val heads = units.map { fingerprint.head(it) }
         val tails = units.map { fingerprint.tail(it) }
 
@@ -234,8 +234,6 @@ class HighlightPlacement(
         val start = page.units[range.first].charStart
         return if (saved in start until page.units[range.last].charEnd) 0 else abs(start - saved)
     }
-
-    private fun wordsOf(unit: ReadingUnit): List<String> = wordsOf(unit.text)
 
     /** Letters, digits and marks of each word, as the fingerprints see them; words with none are dropped. */
     private fun wordsOf(text: String): List<String> =

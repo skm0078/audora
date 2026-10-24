@@ -101,8 +101,8 @@ class ClipMaker(private val renderer: SentenceRenderer, private val config: Clip
 
         /** Null to go on with the next sentence; [Stop.Done] when the clip is complete. */
         fun add(unit: ReadingUnit): Stop? {
-            val long = totalMs >= config.minMs
-            if (!passage && used.isNotEmpty() && long && unit.kind == UnitKind.HEADING) return Stop.Done
+            val headingEnds = used.isNotEmpty() && totalMs >= config.minMs && unit.kind == UnitKind.HEADING
+            if (!passage && headingEnds) return Stop.Done
             return when (val rendered = renderer.render(unit)) {
                 is Outcome.Failure -> Stop.Failed(ClipError.VoiceFailed(rendered.error.message))
                 is Outcome.Success -> append(unit, rendered.value)
