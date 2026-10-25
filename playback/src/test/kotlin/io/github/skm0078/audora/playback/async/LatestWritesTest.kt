@@ -26,7 +26,7 @@ class LatestWritesTest {
     @Test
     fun `a burst before the write runs is written once, with its last value`() {
         val executor = HeldExecutor()
-        val writes = LatestWrites(executor) { written += it }
+        val writes = LatestWrites<Int>(executor) { written += it }
 
         (1..10).forEach(writes::submit)
         executor.runAll()
@@ -37,7 +37,7 @@ class LatestWritesTest {
     @Test
     fun `a value submitted after a write started is written too`() {
         val executor = HeldExecutor()
-        val writes = LatestWrites(executor) { written += it }
+        val writes = LatestWrites<Int>(executor) { written += it }
 
         writes.submit(1)
         executor.runAll()
@@ -50,7 +50,7 @@ class LatestWritesTest {
 
     @Test
     fun `writing now saves every value at once`() {
-        val writes = LatestWrites(LatestWrites.NOW) { written += it }
+        val writes = LatestWrites<Int>(LatestWrites.NOW) { written += it }
 
         writes.submit(1)
         writes.submit(2)
