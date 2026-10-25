@@ -785,14 +785,15 @@ class MainActivity : ComponentActivity() {
         studio.Sheets((controller.listState as? LibraryListState.Loaded)?.all?.map { it.book })
     }
 
-    /** A scanned page waiting for the OCR models is read as soon as they are in. */
+    /** The OCR models' state; a scanned page waiting for them is read as soon as they are in. */
     @Composable
-    private fun ReloadWhenOcrReady(model: ReaderModel) {
+    private fun rememberOcrState(model: ReaderModel): OcrModelsState? {
         val ocrState by remember { ocrModels.state().loggingFailures(READER_TAG, "the OCR models") }
             .collectAsStateWithLifecycle(initialValue = null)
         LaunchedEffect(model, ocrState is OcrModelsState.Ready) {
             if (ocrState is OcrModelsState.Ready) model.reloadIfWaitingForOcr()
         }
+        return ocrState
     }
 
     @Composable
@@ -836,7 +837,7 @@ class MainActivity : ComponentActivity() {
         AutoResumeRequests(model, target.autoResume, onAutoResumeTaken)
         val state by model.state.collectAsStateWithLifecycle()
         PageOnScreenEffect(state) { shownPage = it }
-        ReloadWhenOcrReady(model)
+        val ocrState = rememberOcrState(model)
         val playWithPermission = rememberPlayWithNotificationPermission()
         val notes = remember(id) {
             // Never OCRs: a passage's pages were read on the way to its end; one that was not is refused.
