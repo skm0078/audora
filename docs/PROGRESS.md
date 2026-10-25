@@ -3,7 +3,7 @@
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
 ## Release hardening 9: TalkBack, voice import, release pins (2026-10-25)
-From the pre-release review's pick list (P6, P7, P12, P14, P15, P17, P18). What's new 5.
+From the pre-release review's pick list (P6, P7, P12, P14, P15, P17, P18). What's new 10.
 - **TalkBack reaches every sentence:** a paragraph in the reflowed text and the drawn page each offer "Read from: …"
   and "Options for: …" for every sentence in TalkBack's actions menu, named by the sentence's first words
   (`rememberSentenceActions`). The one-sentence-per-row text view already reached each sentence.
