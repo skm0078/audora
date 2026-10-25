@@ -2,6 +2,24 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Release hardening 3: voice installs (2026-10-25)
+From the pre-release review.
+- **A voice deleted while it downloads stays deleted:** catalog voices now install through the same gate as the
+  OCR and punctuation models (`VoiceFiles.installGate`): a delete marks every download started before it as stale,
+  so its install is skipped and its zip removed. Before, the voice came back, could become the reading voice again,
+  and kept its space.
+- **The bundled voice's espeak-ng data is copied by one engine at a time:** playback, studio and quiz each load
+  the bundled voice; two copies into one staging folder could leave a folder missing files that its marker called
+  complete (`AssetDirectoryInstaller`, one process-wide lock).
+- **A full phone keeps the downloaded voice:** when unpacking fails for lack of space, the verified zip stays and
+  the message says to free space; the next try installs it without downloading again. Any other failure still
+  deletes it.
+- **Verified in CI:** `VoiceDownloadJobTest` (delete during download), `AssetDirectoryInstallerTest` (two installs at
+  once), `VoiceArchiveInstallerTest` (full phone told apart from a broken zip).
+
+**Real-device checks (Moto):** start a Hindi voice download, delete it from Voices before it finishes: it does not
+come back.
+
 ## Release hardening 2: words read wrong (2026-10-25)
 From the pre-release review. Speech text changes, so STUDIO_AUDIO_VERSION is 3; :pdf is untouched.
 - **"the book I read" is no longer "the book one read":** after book, part, class, lesson and the other numbering

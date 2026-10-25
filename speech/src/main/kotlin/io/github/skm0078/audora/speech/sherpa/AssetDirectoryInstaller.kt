@@ -22,11 +22,17 @@ interface AssetTree {
  *
  * sherpa-onnx reads model weights straight from the APK, but espeak-ng opens its data with plain file I/O, so
  * espeak-ng-data has to exist on disk. The copy goes to a sibling temp folder first and is renamed into place, so a
- * process killed mid-copy leaves no half-installed folder that looks complete.
+ * process killed mid-copy leaves no half-installed folder that looks complete. Installs are serialised process-wide:
+ * the playback service, studio and quiz each load the bundled voice on their own thread, and two copies into one
+ * staging folder could leave a folder missing files that its marker then calls complete.
  */
 class AssetDirectoryInstaller(private val assets: AssetTree) {
     /** Returns [target], copying it first unless its marker already says [version]. */
-    fun install(source: String, target: File, version: String): Outcome<File, String> {
+    fun install(source: String, target: File, version: String): Outcome<File, String> = synchronized(INSTALLS) {
+        installLocked(source, target, version)
+    }
+
+    private fun installLocked(source: String, target: File, version: String): Outcome<File, String> {
         val marker = File(target, MARKER)
         if (marker.isFile && marker.readText() == version) return Outcome.Success(target)
 
@@ -63,5 +69,8 @@ class AssetDirectoryInstaller(private val assets: AssetTree) {
         const val MARKER = ".installed-version"
         const val STAGING_SUFFIX = ".partial"
         const val VERSION_LOG_CHARS = 12
+
+        /** One lock for every installer in the process; installs are rare and short after the first. */
+        val INSTALLS = Any()
     }
 }

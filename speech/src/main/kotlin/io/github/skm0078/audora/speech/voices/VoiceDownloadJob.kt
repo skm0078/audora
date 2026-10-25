@@ -6,6 +6,7 @@ package io.github.skm0078.audora.speech.voices
 import io.github.skm0078.audora.core.config.VoiceDownloadConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
+import java.io.File
 
 /** What the WorkManager worker should report. */
 sealed interface JobResult {
@@ -19,7 +20,8 @@ sealed interface JobResult {
 
 /**
  * The worker's logic without WorkManager, so it is JVM-tested. A stop (cancel, or Android ending the job after its
- * time limit) and network trouble keep the bytes received; a corrupt file or a full phone ends the download.
+ * time limit) and network trouble keep the bytes received; a corrupt file or a full phone ends the download. A voice
+ * deleted while it downloads is not installed when the download ends ([VoiceFiles.installGate]).
  *
  * @param onInstalled called with the voice after it is swapped in, so the voice list and the engine see it.
  */
@@ -34,14 +36,26 @@ class VoiceDownloadJob(
     /** @param attempt WorkManager's run attempt count, 0 for the first run. */
     fun run(id: String, attempt: Int, onProgress: (Long, Long) -> Unit, keepGoing: () -> Boolean): JobResult {
         val voice = catalog.find(id) ?: return JobResult.Failed("$id is not in this app's voice list")
+        val ticket = files.installGate.ticket()
         AudoraLog.i(TAG, "Download voice=$id attempt=${attempt + 1}/${config.maxAttempts}")
         return when (val downloaded = downloader.download(voice, files.partialDownload(voice), onProgress, keepGoing)) {
-            is Outcome.Success -> when (val installed = installer.install(downloaded.value, voice)) {
-                is Outcome.Success -> JobResult.Installed.also { onInstalled(voice) }
-                is Outcome.Failure -> JobResult.Failed(installed.error)
+            is Outcome.Success -> install(voice, downloaded.value, ticket, keepGoing)
+            is Outcome.Failure -> failed(id, attempt, downloaded.error)
+        }
+    }
+
+    private fun install(voice: CatalogVoice, zip: File, ticket: Long, keepGoing: () -> Boolean): JobResult {
+        val installed = if (keepGoing()) files.installGate.install(ticket) { installer.install(zip, voice) } else null
+        return when (installed) {
+            null -> {
+                zip.delete()
+                AudoraLog.i(TAG, "Voice ${voice.id} not installed: $DELETED")
+                JobResult.Failed(DELETED)
             }
 
-            is Outcome.Failure -> failed(id, attempt, downloaded.error)
+            is Outcome.Success -> JobResult.Installed.also { onInstalled(voice) }
+
+            is Outcome.Failure -> JobResult.Failed(installed.error)
         }
     }
 
@@ -62,5 +76,6 @@ class VoiceDownloadJob(
 
     private companion object {
         const val TAG = "Speech.VoiceJob"
+        const val DELETED = "deleted while it downloaded"
     }
 }

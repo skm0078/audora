@@ -20,20 +20,27 @@ import java.util.zip.ZipFile
  * against a wrong pin, and the same code path a future source with weaker guarantees would use.
  */
 class VoiceArchiveInstaller(private val files: VoiceFiles, private val config: VoiceDownloadConfig) {
-    /** Installs [voice] from [zip]; the zip is deleted afterwards whatever the outcome. */
+    /**
+     * Installs [voice] from [zip]. The zip is deleted afterwards unless the phone ran out of space while unpacking:
+     * then the verified zip stays, so a retry after freeing space installs it without downloading it again (the
+     * downloader verifies a complete file instead of fetching it).
+     */
     fun install(zip: File, voice: CatalogVoice): Outcome<InstalledVoice, String> {
         val staging = files.stagingDir(voice.id)
+        var keepZip = false
         val result = try {
             staging.deleteRecursively()
             unpack(zip, staging)
             missingFiles(staging, voice.spec)
                 .flatMap { files.commit(staging, voice.spec, VoiceOrigin.CATALOG) }
         } catch (e: IOException) {
-            AudoraLog.e(TAG, "Unpacking voice=${voice.id} failed", e)
-            Outcome.Failure("could not unpack ${voice.id}: ${e.message}")
+            keepZip = isOutOfSpace(e)
+            AudoraLog.e(TAG, "Unpacking voice=${voice.id} failed, zip kept=$keepZip", e)
+            val reason = if (keepZip) "the phone is full; free some space and try again" else e.message
+            Outcome.Failure("could not unpack ${voice.id}: $reason")
         } finally {
             staging.deleteRecursively()
-            zip.delete()
+            if (!keepZip) zip.delete()
         }
         if (result is Outcome.Success) AudoraLog.i(TAG, "Installed voice=${voice.id} (${result.value.sizeBytes} bytes)")
         return result
@@ -95,7 +102,14 @@ class VoiceArchiveInstaller(private val files: VoiceFiles, private val config: V
         return if (absent.isEmpty()) Outcome.Success(Unit) else Outcome.Failure("${spec.id} archive lacks $absent")
     }
 
-    private companion object {
-        const val TAG = "Speech.VoiceInstall"
+    internal companion object {
+        private const val TAG = "Speech.VoiceInstall"
+        private val OUT_OF_SPACE = listOf("ENOSPC", "No space left")
+
+        /** Android reports a full disk as "ENOSPC (No space left on device)" on the write that failed. */
+        internal fun isOutOfSpace(e: IOException): Boolean {
+            val message = generateSequence<Throwable>(e) { it.cause }.mapNotNull { it.message }.joinToString(" ")
+            return OUT_OF_SPACE.any { it in message }
+        }
     }
 }
