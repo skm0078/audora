@@ -1,9 +1,11 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/reader/SentenceMenuTest.kt
-// Purpose: The sentence menu says what each item is for and acts on a highlight as a whole; picking a passage's end
-//          and the fixes after "This sounded wrong" work on screen. Screenshots go to CI's "player-screens" artifact.
+// Purpose: The sentence menu says what each item is for and acts on a highlight as a whole (sharing and copying it);
+//          picking a passage's end and the fixes after "This sounded wrong" work on screen. Screenshots go to CI's
+//          "player-screens" artifact.
 
 package io.github.skm0078.audora.ui.reader
 
+import android.content.ClipboardManager
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
@@ -90,6 +92,23 @@ class SentenceMenuTest {
 
         rule.onNodeWithText(text(R.string.sentence_menu_share_clip)).performScrollTo().performClick()
         assertEquals(listOf("dismiss", "passage ${PASSAGE.anchor.page}-${PASSAGE.endPage}"), calls)
+    }
+
+    @Test
+    fun copyTextOnAHighlightCopiesTheWholePassage() {
+        val placed = PlacedHighlights(UNIT.page, mapOf(UNIT.index to listOf(PASSAGE)))
+        rule.setContent { AudoraTheme { NotesOverlays(NotesState(menuFor = UNIT, placed = placed), notes, reader) } }
+
+        rule.onNodeWithText(text(R.string.sentence_hint_copy_highlight)).performScrollTo().assertExists()
+        rule.onNodeWithText(text(R.string.sentence_hint_share_text)).performScrollTo().assertExists()
+        rule.onNodeWithText(text(R.string.sentence_menu_copy)).performScrollTo().performClick()
+        assertEquals(listOf("dismiss"), calls)
+        // The test's own window has focus, so it may read back what it copied.
+        var copied: CharSequence? = null
+        rule.runOnUiThread {
+            copied = context.getSystemService(ClipboardManager::class.java)?.primaryClip?.getItemAt(0)?.text
+        }
+        assertEquals(PASSAGE.quote, copied?.toString())
     }
 
     @Test

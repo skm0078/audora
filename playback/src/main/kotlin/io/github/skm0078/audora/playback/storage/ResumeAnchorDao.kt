@@ -23,4 +23,7 @@ internal interface ResumeAnchorDao {
     /** Throws SQLiteConstraintException when the book is gone (foreign key). */
     @Upsert
     suspend fun upsert(anchor: ResumeAnchorEntity)
+
+    @Query("DELETE FROM resume_anchors WHERE book_id = :bookId")
+    suspend fun delete(bookId: String)
 }

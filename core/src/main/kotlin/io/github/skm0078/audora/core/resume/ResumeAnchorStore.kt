@@ -20,4 +20,7 @@ interface ResumeAnchorStore {
 
     /** Replaces the book's anchor. Fails when the book is no longer in the library. */
     suspend fun put(anchor: ResumeAnchor): Outcome<Unit, StorageError>
+
+    /** Forgets the book's place, so it is "Not started" and opens on its first page ("Mark as not started"). */
+    suspend fun clear(bookId: BookId): Outcome<Unit, StorageError>
 }

@@ -95,6 +95,8 @@ data class ReaderState(
     val timeLeft: TimeLeftEstimate? = null,
     /** A paragraph skip found no paragraph that way: shown once, then cleared ([ReaderModel.skipRefusalShown]). */
     val skipRefused: ParagraphSkipRefusal? = null,
+    /** The book opened where it was left: said once, then cleared ([ReaderModel.resumedShown]). */
+    val resumedAt: ResumedAt? = null,
 ) {
     val pageCount: Int? get() = (document as? DocumentState.Open)?.pageCount
 

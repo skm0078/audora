@@ -17,6 +17,7 @@ import io.github.skm0078.audora.core.library.CoverChoice
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.pdfium.PdfiumEngine
+import io.github.skm0078.audora.playback.covers.CoverFolders
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineDispatcher

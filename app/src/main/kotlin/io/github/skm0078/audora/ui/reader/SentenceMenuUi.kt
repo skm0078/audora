@@ -1,9 +1,16 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/SentenceMenuUi.kt
-// Purpose: The sentence menu with a line under each item saying what it is for, and the bar and notice of a
-//          highlight over several sentences (phone test issues 5, 6 and 8).
+// Purpose: The sentence menu with a line under each item saying what it is for (copy and share its words too), and
+//          the bar and notice of a highlight over several sentences (phone test issues 5, 6 and 8).
 
 package io.github.skm0078.audora.ui.reader
 
+import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,8 +29,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -31,6 +43,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.HighlightConfig
+import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.notes.Highlight
 import io.github.skm0078.audora.ui.theme.Dimens
@@ -51,7 +64,35 @@ private data class MenuSources(
     val reader: ReaderActions,
     val voice: VoiceNotesBinding,
     val lookUp: LookUpBinding,
+    val words: WordsOut,
+    val haptics: HapticFeedback,
 )
+
+/** A sentence's or passage's words, to the clipboard or to another app. Only the listener's own action sends them. */
+private class WordsOut(private val context: Context) {
+    fun copy(words: String) {
+        val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return
+        clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.app_name), words))
+        // From Android 13 the phone shows its own "Copied" note; before that, say it here.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            Toast.makeText(context, R.string.sentence_copied, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun share(words: String) {
+        val send = Intent(Intent.ACTION_SEND).setType(PLAIN_TEXT).putExtra(Intent.EXTRA_TEXT, words)
+        try {
+            context.startActivity(Intent.createChooser(send, context.getString(R.string.sentence_menu_share_text)))
+        } catch (e: ActivityNotFoundException) {
+            AudoraLog.w(TAG, "No app to share text with: ${e.javaClass.simpleName}")
+        }
+    }
+
+    private companion object {
+        const val TAG = "Audora.SentenceMenu"
+        const val PLAIN_TEXT = "text/plain"
+    }
+}
 
 /**
  * The rows for [unit]. On a highlighted sentence, Remove and Share act on the whole highlighted passage (the first,
@@ -68,8 +109,14 @@ private fun MenuSources.sentenceMenu(unit: ReadingUnit, notes: NotesState): List
     val define = closing { lookUp.actions.open(unit) }
     val report = closing { reader.onReportSentence(unit) }
     val share = closing { if (highlight != null) reader.onShareHighlight(highlight) else reader.onShareClip(unit) }
+    // A highlighted passage's whole quote, else this sentence.
+    val text = highlight?.quote?.takeIf { it.isNotBlank() } ?: unit.text
+    val copyHint = if (highlight != null) R.string.sentence_hint_copy_highlight else R.string.sentence_hint_copy
     return listOfNotNull(
-        MenuEntry(R.string.sentence_menu_bookmark, R.string.sentence_hint_bookmark) { actions.bookmark(unit) },
+        MenuEntry(R.string.sentence_menu_bookmark, R.string.sentence_hint_bookmark) {
+            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+            actions.bookmark(unit)
+        },
         MenuEntry(R.string.sentence_menu_highlight, R.string.sentence_hint_highlight) { actions.toggleHighlight(unit) }
             .takeIf { canHighlight },
         MenuEntry(R.string.sentence_menu_highlight_range, R.string.sentence_hint_highlight_range) {
@@ -82,6 +129,8 @@ private fun MenuSources.sentenceMenu(unit: ReadingUnit, notes: NotesState): List
             .takeIf { voice.enabled },
         MenuEntry(R.string.sentence_menu_look_up, R.string.sentence_hint_look_up, define)
             .takeIf { lookUp.enabled },
+        MenuEntry(R.string.sentence_menu_copy, copyHint, closing { words.copy(text) }),
+        MenuEntry(R.string.sentence_menu_share_text, R.string.sentence_hint_share_text, closing { words.share(text) }),
         MenuEntry(R.string.sentence_menu_fix, R.string.sentence_hint_fix) { actions.fix(unit) },
         MenuEntry(R.string.report_title, R.string.sentence_hint_report, report),
         shareEntry(highlight, share),
@@ -98,7 +147,16 @@ internal fun SentenceMenu(
     voice: VoiceNotesBinding,
     lookUp: LookUpBinding,
 ) {
-    val entries = MenuSources(actions, reader, voice, lookUp).sentenceMenu(unit, notes)
+    val context = LocalContext.current
+    val words = remember(context) { WordsOut(context) }
+    val entries = MenuSources(
+        actions,
+        reader,
+        voice,
+        lookUp,
+        words,
+        LocalHapticFeedback.current,
+    ).sentenceMenu(unit, notes)
     SentenceMenuDialog(entries, onDismiss = actions::dismissMenu)
 }
 
@@ -122,7 +180,7 @@ private fun SentenceMenuDialog(rows: List<MenuEntry>, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.sentence_menu_title)) },
         text = {
-            // Eight rows with their hints are taller than a small phone's dialog: it scrolls.
+            // Ten rows with their hints are taller than a phone's dialog: it scrolls.
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 rows.forEach { MenuRow(it.label, it.hint, it.onClick) }
             }

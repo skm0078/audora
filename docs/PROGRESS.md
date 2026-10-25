@@ -2,6 +2,24 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Small touches testers notice (2026-10-25, ADR-070)
+- **Notification, lock screen, car screen and watch** show the book's cover (the one the library drew), and the
+  second line reads "Author · Chapter 2 of 9 · Page 14 of 300" (`ItemLook`).
+- **App icon long-press:** Resume your book, Add a book, Read copied text (dynamic shortcuts, in the app's language).
+- **"Picked up on page 42: “It was a bright cold day…”"** when a book opens where it was left (`ResumedAt`).
+- **What's new** once after an update, for someone who already has books (`WhatsNewDialog`, `WHATS_NEW_ID`).
+- **Book menu:** Mark as finished, Mark as not started (each only when it changes something).
+- **Sentence menu:** Copy text and Share text (the whole passage on a highlight).
+- **Try a sample** on the empty library and the first-run book step: a short page about the app in English, Hindi or
+  Bengali, saved and opened like shared text.
+- **Widget** shows the book's cover. **Haptics:** long-press on a page or paragraph, speed steps, bookmark, sleep timer.
+- Tests: `ItemLookTest`, `ResumedAtTest`, `WhatsNewStartTest`, `BookActionTest`, and `SentenceMenuTest` (device:
+  Copy text puts the whole passage on the clipboard). No `:pdf` change (PIPELINE_VERSION 12), no schema change.
+
+**Real-device checks (Moto):** play a PDF and lock the phone: cover and "Chapter n of m" on the lock screen. Long-press
+the app icon: three shortcuts; Read copied text reads what you copied. Reopen a book: the "Picked up" toast. Book
+menu: Mark as finished moves it to Finished. Empty library (or a fresh install): Try a sample plays in your language.
+
 ## Sentence menu fixes from phone tests: passage highlights, sharing them, a working "This sounded wrong" (2026-10-24)
 - **Highlight a passage:** the sentence menu has "Highlight from here…": a bar says "Tap the sentence where it ends",
   and the next sentence tapped (on this page or up to 10 pages on, or before the start) ends one highlight over all of

@@ -37,6 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -198,6 +200,7 @@ private fun SleepTimerButton(
 ) {
     var open by remember { mutableStateOf(false) }
     var editingOptions by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
     Box {
         TextButton(onClick = { open = true }, enabled = enabled) {
             Icon(painterResource(R.drawable.ic_timer), stringResource(R.string.reader_sleep_timer))
@@ -209,6 +212,7 @@ private fun SleepTimerButton(
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             val choose = { setting: SleepTimerSetting ->
                 open = false
+                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                 actions.onSleepTimer(setting)
             }
             sleepTimerChoices(playback.hasChapters, config).forEach { setting ->

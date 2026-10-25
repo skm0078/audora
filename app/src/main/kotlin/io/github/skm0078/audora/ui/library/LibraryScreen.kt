@@ -31,6 +31,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHost
@@ -159,7 +160,7 @@ private fun LibraryContent(
         }
 
         is LibraryListState.Loaded -> if (listState.all.isEmpty()) {
-            EmptyLibrary(enabled = !busy, onAddPdf = onAddPdf)
+            EmptyLibrary(enabled = !busy, onAddPdf = onAddPdf) { menu.onLibraryAction(LibraryAction.TRY_SAMPLE) }
         } else {
             Column {
                 ShelfRow(listState, menu::onQuery)
@@ -314,7 +315,7 @@ private fun DuplicateDialog(notice: DuplicateNotice, listState: LibraryListState
 }
 
 @Composable
-private fun EmptyLibrary(enabled: Boolean, onAddPdf: () -> Unit) {
+private fun EmptyLibrary(enabled: Boolean, onAddPdf: () -> Unit, onTrySample: () -> Unit) {
     Centered {
         Icon(
             painterResource(R.drawable.ic_library),
@@ -328,6 +329,8 @@ private fun EmptyLibrary(enabled: Boolean, onAddPdf: () -> Unit) {
             textAlign = TextAlign.Center,
         )
         Button(onClick = onAddPdf, enabled = enabled) { Text(stringResource(R.string.library_add_pdf)) }
+        // Hear the app work in one tap before finding a file: a short page that also says how to use it.
+        OutlinedButton(onClick = onTrySample, enabled = enabled) { Text(stringResource(R.string.sample_try)) }
     }
 }
 

@@ -188,7 +188,7 @@ private fun LibraryActionsMenu(onAction: (LibraryAction) -> Unit) {
             expanded = open,
             onDismissRequest = { open = false },
         ) {
-            LibraryAction.entries.forEach { action ->
+            LibraryAction.entries.filter { it.inMenu }.forEach { action ->
                 // One line per tool; what it does waits behind its info button (ADR-062).
                 val label = stringResource(action.label)
                 DropdownMenuItem(

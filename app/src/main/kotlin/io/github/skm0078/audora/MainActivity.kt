@@ -80,6 +80,8 @@ import io.github.skm0078.audora.playback.notes.VoiceNoteAudio
 import io.github.skm0078.audora.playback.photo.PhotoBooks
 import io.github.skm0078.audora.playback.search.SearchIndexes
 import io.github.skm0078.audora.privacy.PrivacyHost
+import io.github.skm0078.audora.shortcuts.AppShortcut
+import io.github.skm0078.audora.shortcuts.AppShortcutEffect
 import io.github.skm0078.audora.speech.acted.ActedVoices
 import io.github.skm0078.audora.speech.kws.VoiceCommandModels
 import io.github.skm0078.audora.speech.ocr.OcrModels
@@ -119,8 +121,7 @@ import io.github.skm0078.audora.ui.library.nowPlaying
 import io.github.skm0078.audora.ui.library.restoreMessageOf
 import io.github.skm0078.audora.ui.library.showFinishRestoringIfNeeded
 import io.github.skm0078.audora.ui.licences.LicenceSource
-import io.github.skm0078.audora.ui.licences.LicencesController
-import io.github.skm0078.audora.ui.licences.LicencesScreen
+import io.github.skm0078.audora.ui.licences.LicencesRoute
 import io.github.skm0078.audora.ui.loggingFailures
 import io.github.skm0078.audora.ui.made.JobsAndMadeRoute
 import io.github.skm0078.audora.ui.motion.AnimatedScreens
@@ -138,7 +139,6 @@ import io.github.skm0078.audora.ui.reader.NoteStores
 import io.github.skm0078.audora.ui.reader.NotesState
 import io.github.skm0078.audora.ui.reader.PREVIEW_WIDTH
 import io.github.skm0078.audora.ui.reader.PageThumbnails
-import io.github.skm0078.audora.ui.reader.ParagraphSkipNotice
 import io.github.skm0078.audora.ui.reader.PlaybackPort
 import io.github.skm0078.audora.ui.reader.PlayerConnectionEffect
 import io.github.skm0078.audora.ui.reader.PlayerScreen
@@ -147,6 +147,7 @@ import io.github.skm0078.audora.ui.reader.ReaderDocumentOpener
 import io.github.skm0078.audora.ui.reader.ReaderModel
 import io.github.skm0078.audora.ui.reader.ReaderScreen
 import io.github.skm0078.audora.ui.reader.ReaderState
+import io.github.skm0078.audora.ui.reader.ReaderToasts
 import io.github.skm0078.audora.ui.reader.ReaderVoiceCommands
 import io.github.skm0078.audora.ui.reader.ReadingLook
 import io.github.skm0078.audora.ui.reader.ReadingLookPreferences
@@ -179,6 +180,8 @@ import io.github.skm0078.audora.ui.voices.VoicesController
 import io.github.skm0078.audora.ui.voices.VoicesRoute
 import io.github.skm0078.audora.ui.voices.voicePackActions
 import io.github.skm0078.audora.ui.voices.voicesActions
+import io.github.skm0078.audora.ui.whatsnew.WHATS_NEW_ID
+import io.github.skm0078.audora.ui.whatsnew.WhatsNewDialog
 import io.github.skm0078.audora.widget.ResumeWidgetEffect
 import io.github.skm0078.audora.widget.ResumeWidgetProvider
 import java.io.File
@@ -253,6 +256,9 @@ class MainActivity : ComponentActivity() {
     /** Text shared from another app (plan item 42), until it is saved as a book. */
     private var sharedText by mutableStateOf<SharedText?>(null)
 
+    /** A long-press shortcut on the app icon (Add a book, Read copied text), until it is done. */
+    private var shortcut by mutableStateOf<AppShortcut?>(null)
+
     @Inject
     lateinit var voiceManager: VoiceManager
 
@@ -302,9 +308,7 @@ class MainActivity : ComponentActivity() {
     private val studioParts by lazy {
         val notes = MarkStores(highlightStore, bookmarkStore, voiceNoteStore)
         val watched = WatchedFolders(applicationContext, library)
-        StudioLibraryParts(this, photoBooks, watched, backups, resumeAnchors, notes) {
-            readClipboard { sharedText = it }
-        }
+        StudioLibraryParts(this, photoBooks, watched, backups, resumeAnchors, notes) { sharedText = it }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -317,6 +321,7 @@ class MainActivity : ComponentActivity() {
             takeShared(intent)
             widgetResume = ResumeWidgetProvider.bookIdOf(intent)
             openJobs = OpenJobs.opensJobs(intent)
+            shortcut = AppShortcut.of(intent)
             continueStudioJobs(intent)
             Backups.takeStartResult()?.let { Toast.makeText(this, restoreMessageOf(it), Toast.LENGTH_LONG).show() }
             photoBooks.resumePending()
@@ -389,11 +394,13 @@ class MainActivity : ComponentActivity() {
         LaunchedEffect(Unit) { dropStaleBookFiles(applicationContext, library, searchIndexes, voiceNoteParts) }
         SharedPdfEffect(sharedPdf, { sharedPdf = null }, libraryController::addShared, nav::navigate)
         SharedTextEffect(sharedText, sharedCopies, onTaken = { sharedText = null }) { sharedPdf = it }
+        AppShortcutEffect(shortcut, { shortcut = null }, photoBooks, libraryController::add) { sharedText = it }
         PhotoBookEffect(photoBooks, nav::navigate)
         ResumeWidgetEffect(libraryController.listState, widgetResume, { widgetResume = null }, nav::continueReading)
         OpenJobsEffect(openJobs, onHandled = { openJobs = false }) { nav.navigate(AppDestination.Jobs) }
         val books = libraryBooks(libraryController.listState)
         if (firstRunShowing(libraryController, voicesController, battery, kids.on)) return
+        WhatsNewDialog { libraryController.listState }
 
         // Back, with its preview, goes through AnimatedScreens; screens' own sheets and menus register after it.
         AnimatedScreens(destination, onBack = nav::navigate) { screen ->
@@ -448,6 +455,7 @@ class MainActivity : ComponentActivity() {
         val finish = {
             show = false
             onboarding.firstRunDone = true // an apply(): written in the background
+            onboarding.whatsNewSeen = WHATS_NEW_ID // a new listener has no older version to compare with
         }
         LaunchedEffect(Unit) {
             if (show != null) return@LaunchedEffect
@@ -474,6 +482,7 @@ class MainActivity : ComponentActivity() {
                     onAllowBackground = { battery.requestExemption(::startActivity) },
                     onAddPdf = { picker.launch(BOOK_MIME_TYPES) },
                     onFinish = finish,
+                    onTrySample = { sharedText = sampleBook(this) },
                 )
             }
         }
@@ -496,7 +505,9 @@ class MainActivity : ComponentActivity() {
                 VoicesRoute(voicesController.value) { nav.navigate(destination.parent ?: AppDestination.Settings) }
             }
 
-            AppDestination.Licences -> ReadableWidth { LicencesRoute { nav.navigate(AppDestination.Settings) } }
+            AppDestination.Licences -> ReadableWidth {
+                LicencesRoute(licenceSource) { nav.navigate(AppDestination.Settings) }
+            }
 
             AppDestination.Storage -> ReadableWidth {
                 StorageRoute(
@@ -679,6 +690,7 @@ class MainActivity : ComponentActivity() {
         continueStudioJobs(intent)
         ResumeWidgetProvider.bookIdOf(intent)?.let { widgetResume = it }
         if (OpenJobs.opensJobs(intent)) openJobs = true
+        AppShortcut.of(intent)?.let { shortcut = it }
     }
 
     /** What another app opened or shared: pictures, a book file or text ([receiveShared]). */
@@ -760,20 +772,6 @@ class MainActivity : ComponentActivity() {
             runningJobs = rememberRunningJobCount(),
         )
         studio.Sheets((controller.listState as? LibraryListState.Loaded)?.all?.map { it.book })
-    }
-
-    /** Loaded on each visit: a voice downloaded since then shows its licence files. */
-    @Composable
-    private fun LicencesRoute(navigateBack: () -> Unit) {
-        val scope = rememberCoroutineScope()
-        val controller = remember { LicencesController(licenceSource, scope).also { it.start() } }
-        val state by controller.state.collectAsStateWithLifecycle()
-        LicencesScreen(
-            state = state,
-            onBack = navigateBack,
-            onOpenTexts = controller::openTexts,
-            onCloseTexts = controller::closeTexts,
-        )
     }
 
     @Composable
@@ -860,7 +858,7 @@ class MainActivity : ComponentActivity() {
         val volumeKeys by remember { screenPreference.volumeKeysSkip() }.collectAsStateWithLifecycle(false)
         VolumeKeySkips(playing && volumeKeys, model::skipForward, model::skipBack)
         if (shown) {
-            ParagraphSkipNotice(state.skipRefused, model::skipRefusalShown)
+            ReaderToasts(state, model)
             ReaderVoiceCommands(model, screenPreference, voiceCommandModels, readerConfig) { listening.value = it }
         }
     }
