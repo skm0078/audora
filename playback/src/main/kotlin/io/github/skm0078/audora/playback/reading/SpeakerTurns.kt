@@ -5,6 +5,7 @@ package io.github.skm0078.audora.playback.reading
 
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.UnitKind
+import io.github.skm0078.audora.speech.route.NameGenders
 import io.github.skm0078.audora.speech.route.QuoteSplitter
 import io.github.skm0078.audora.speech.route.Speaker
 import io.github.skm0078.audora.speech.route.SpeakerTags
@@ -43,6 +44,18 @@ data class Turns(
     fun runHas(gender: SpeakerGender): Boolean = listOfNotNull(last, previous).any { it.gender == gender }
 
     fun brokenRun(): Turns = copy(last = null, previous = null, crowded = false)
+
+    /**
+     * Narration named [speaker] as a sentence's subject ("Mira came home late"): remembered for a later pronoun, and
+     * a gender it tells is learnt; the conversation's turns are unchanged.
+     */
+    fun mentioned(speaker: Speaker, remembered: Int): Turns {
+        val key = speaker.key ?: return this
+        val gender = speaker.gender.takeUnless { it == SpeakerGender.UNKNOWN } ?: genderOf(key)
+        val known = (listOf(speaker.copy(gender = gender)) + known.filter { it.key != key }).take(remembered)
+        fun learnt(who: Speaker?) = who?.takeIf { it.key == key }?.copy(gender = gender) ?: who
+        return copy(known = known, last = learnt(last), previous = learnt(previous))
+    }
 
     fun spoke(speaker: Speaker, remembered: Int): Turns {
         val known = if (speaker.key == null) known else (listOf(speaker) + known.filter { it.key != speaker.key })
@@ -93,20 +106,74 @@ class SpeakerTurns(
         return Page(speakers, turns)
     }
 
-    private fun paragraph(paragraph: Paragraph, turns: Turns, into: MutableMap<Int, Speaker>): Turns {
-        val quoted = paragraph.sentences.filter { it.unit.kind in PROSE && (it.carried || hasQuote(it.unit.text)) }
+    private fun paragraph(paragraph: Paragraph, start: Turns, into: MutableMap<Int, Speaker>): Turns {
+        val isQuoted = { it: Sentence -> it.unit.kind in PROSE && (it.carried || hasQuote(it.unit.text)) }
+        val quoted = paragraph.sentences.filter(isQuoted)
+        // Narration teaches names and genders first ("Mira came home late." then "she said").
+        val turns = paragraph.sentences.filterNot(isQuoted).fold(start) { acc, sentence ->
+            narrated(sentence, acc)?.let { acc.mentioned(it, remembered) } ?: acc
+        }
         if (quoted.isEmpty()) return turns.brokenRun()
         val tagged = ArrayList<Speaker>()
         val own = quoted.map { sentence ->
             val tag = tags.find(sentence.unit.text, sentence.unit.lang, sentence.carried)
             sentence to tag?.let { resolve(it, turns, tagged) }?.also { if (it.key != null) tagged.add(0, it) }
         }
-        val fallback = if (paragraph.continuesSpeech) turns.last else turns.nextTurn
-        val speaker = own.firstNotNullOfOrNull { it.second } ?: fallback
+        val speaker = own.firstNotNullOfOrNull { it.second } ?: untagged(paragraph, quoted, turns)
         own.forEach { (sentence, said) ->
             (said ?: speaker)?.let { into[sentence.unit.index] = it }
         }
         return speaker?.let { turns.spoke(it, remembered) } ?: turns.brokenRun()
+    }
+
+    /**
+     * A paragraph whose quotes carry no tag: the subject of the narration just before its first quote (an action
+     * beat), then the speech it goes on with, then the other one of a two-way conversation; never a name the quote
+     * itself calls out to ("My phone died, Tom."): that one is listening.
+     */
+    private fun untagged(paragraph: Paragraph, quoted: List<Sentence>, turns: Turns): Speaker? {
+        val first = paragraph.sentences.indexOf(quoted.first())
+        val beat = paragraph.sentences.take(first).lastOrNull()?.let { narrated(it, turns) }
+            ?.let { subject -> if (subject.key == null) pronoun(subject.gender, turns, emptyList()) else subject }
+        val spoken = quoted.joinToString(" ") { it.unit.text }
+        // A quote calling the beat's subject by name is said to them, most likely by the other one in the scene.
+        val other = beat?.takeIf { addressed(it, spoken) }?.let { listener ->
+            turns.known.firstOrNull { it.key != null && it.key != listener.key }
+        }
+        val candidates = listOfNotNull(
+            beat,
+            other,
+            turns.last.takeIf { paragraph.continuesSpeech },
+            turns.nextTurn,
+            turns.last.takeIf { turns.nextTurn != null },
+        )
+        return candidates.firstOrNull { !addressed(it, spoken) }
+    }
+
+    /**
+     * The subject of a sentence of narration when it can be trusted as a character: a pronoun with a gender, a name
+     * the conversation already knows, or one whose gender its name or verb tells.
+     */
+    private fun narrated(sentence: Sentence, turns: Turns): Speaker? {
+        if (sentence.unit.kind !in PROSE) return null
+        val subject = tags.subjectOf(sentence.unit.text, sentence.unit.lang) ?: return null
+        val key = subject.key ?: return subject.takeIf { it.gender != SpeakerGender.UNKNOWN }
+        val known = turns.known.firstOrNull { it.key == key }
+        val named = NameGenders.of(subject.name.orEmpty(), sentence.unit.lang) != SpeakerGender.UNKNOWN
+        // A verb's ending may teach a known name's gender ("मीना … घुसी"), but never makes a word a character:
+        // "कोई जवाब नहीं आया" opens with "no one".
+        return when {
+            named -> subject
+            known != null -> if (subject.gender != SpeakerGender.UNKNOWN) known.copy(gender = subject.gender) else known
+            else -> null
+        }
+    }
+
+    /** Whether [speech] calls [speaker] by name, as one calls a listener: "Tom," at its start or ", Tom." inside. */
+    private fun addressed(speaker: Speaker, speech: String): Boolean {
+        val name = speaker.name?.substringBefore(' ')?.takeIf { it.length > 1 } ?: return false
+        val quoted = Regex.escape(name)
+        return Regex("(?:^|[“‘\"\\s])$quoted\\s*[,!?।]|,\\s*$quoted(?![\\p{L}\\p{M}])").containsMatchIn(speech)
     }
 
     private fun hasQuote(text: String): Boolean = splitter.split(text).any { it.quoted }

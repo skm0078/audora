@@ -106,11 +106,21 @@ object ExpressiveEval {
         Feeling.SCARED -> "scared"
         Feeling.SURPRISED -> "surprised"
         Feeling.LIVELY -> "joy"
+        Feeling.EMPHATIC -> "emphatic"
         Feeling.TRAILING, Feeling.ASKING, Feeling.NEUTRAL -> "neutral"
     }
 
     /** Feelings a listener hears as near enough: an angry shout read loud, a sad line read softly. */
-    private val CLOSE = setOf("angry" to "loud", "joy" to "loud", "sad" to "soft", "scared" to "soft")
+    private val CLOSE = setOf(
+        "angry" to "loud",
+        "joy" to "loud",
+        "sad" to "soft",
+        "scared" to "soft",
+        "joy" to "emphatic",
+        "angry" to "emphatic",
+        "loud" to "emphatic",
+        "surprised" to "emphatic",
+    )
 
     /** A feeling read as its opposite, the slip a listener notices most: grief or fear read cheerfully. */
     private val OPPOSITE = setOf(

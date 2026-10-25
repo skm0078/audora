@@ -20,7 +20,7 @@ object SentenceFeelings {
         val cued = cueRules.firstOrNull { (cues, _) -> cues.containsMatchIn(text) }?.second
         return when {
             cued != null -> cued
-            '!' in text -> Feeling.LIVELY
+            '!' in text -> Feeling.EMPHATIC
             end.endsWith("…") || end.endsWith("...") || end.endsWith("—") || end.endsWith("--") -> Feeling.TRAILING
             end.endsWith("?") -> Feeling.ASKING
             else -> Feeling.NEUTRAL

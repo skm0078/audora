@@ -23,8 +23,14 @@ enum class Feeling {
     /** "gasped", "चौंककर", "অবাক হয়ে": a little brighter. */
     SURPRISED,
 
-    /** An exclamation, "laughed", "हँसकर", "হেসে": a touch quicker and brighter. */
+    /** "laughed", "हँसकर", "হেসে": a touch quicker and brighter. */
     LIVELY,
+
+    /**
+     * An exclamation with no cue word ("Get out!", "We won!"): more energy, but no feeling, since "!" alone can be
+     * joy, anger or fear and reading anger cheerfully is the slip listeners notice most.
+     */
+    EMPHATIC,
 
     /** A sentence that trails off ("…", "—"): slower, and the pause after is held. */
     TRAILING,
