@@ -17,10 +17,11 @@
     <string name="whats_new_item">• %1$s</string>
     <string name="whats_new_ok">Got it</string>
     <string-array name="whats_new_items">
-        <item>Words like “the book I read” are no longer read as “the book one read”.</item>
-        <item>Hindi and Bengali say “minus” for a minus sign before a number.</item>
-        <item>Your pronunciation fixes apply from a book\'s very first sentence.</item>
-        <item>A damaged PDF shows a message instead of closing the app.</item>
+        <item>Switching books while one plays keeps each book\'s place.</item>
+        <item>Turning the phone while a shared file is added or a studio file is saved no longer loses it.</item>
+        <item>A scanned Hindi or Bengali book with an English page keeps reading in its own language.</item>
+        <item>With TalkBack, the actions menu reads from or opens any sentence, and the page slider turns one page per swipe.</item>
+        <item>Leaving a book no longer freezes the screen while another book is being read.</item>
     </string-array>
 
     <string name="library_mark_finished">Mark as finished</string>

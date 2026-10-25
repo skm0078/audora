@@ -2,6 +2,32 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Release hardening 9: TalkBack, voice import, release pins (2026-10-25)
+From the pre-release review's pick list (P6, P7, P12, P14, P15, P17, P18). What's new 4.
+- **TalkBack reaches every sentence:** a paragraph in the reflowed text and the drawn page each offer "Read from: …"
+  and "Options for: …" for every sentence in TalkBack's actions menu, named by the sentence's first words
+  (`rememberSentenceActions`). The one-sentence-per-row text view already reached each sentence.
+- **The page slider turns one page per TalkBack swipe** instead of a twentieth of the book (`scrubberStep`).
+- **The mini player says what a double tap does:** "Open the player".
+- **Pitch help is exact:** the slider and the − and + buttons go to 15 % either way; the one-tap choices stop at 10 %.
+- **A Piper voice folder without espeak-ng-data is refused** with a reason before anything is copied, instead of
+  failing on its first sentence. An MMS voice (letter tokens) still imports without it.
+- **Release workflow:** every action is pinned to a commit. Who may use the "release" environment is a GitHub setting
+  (only prod and v* tags); see the release thread's steps.
+- **Sliders (P14):** every slider already speaks its name and its value ("Pitch: 10% higher", "4:07 of 1:05:09");
+  the swipe step stays the platform's (a twentieth of the range). The made-audio player has its skip buttons for
+  fine moves. A one-step custom swipe is only on the page slider, where a twentieth was far too coarse.
+- **Not changed (P17):** screens behind the app lock keep running. Pausing them would also disconnect the player
+  and hands-free commands, which must keep working behind the lock; nothing is shown and the cost is small.
+- **Verified in CI:** `ReaderAccessibilityTest`, `VoiceImporterTest` (Piper without espeak-ng-data, MMS with letter
+  tokens), release journey.
+- **Could affect:** TalkBack on the reader page and text views, the page slider with TalkBack, the mini player,
+  importing a voice folder, the release build (actions pinned).
+
+**Real-device checks (test phone):** with TalkBack on, open a book in page view, swipe to the page, open the actions
+menu: each sentence is listed and "Read from" starts there. Swipe up on the page slider: one page. Import a Piper
+folder without espeak-ng-data: a clear message. Without TalkBack nothing looks different.
+
 ## Release hardening 8: library and PDF reading (2026-10-25)
 From the pre-release review's pick list (P4, P5, P9, P10). `PIPELINE_VERSION` 13.
 - **OCR languages follow most of the book:** a Hindi book with one English page (a title page, a citation) keeps
