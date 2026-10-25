@@ -12,6 +12,10 @@ package io.github.skm0078.audora.core.config
  * @property paragraphPauseMs a sentence followed by at least this much silence (`ReadingUnit.pauseAfterMs`) ends a
  *   paragraph.
  * @property maxPages pages searched for the clip's sentences, from the picked one.
+ * @property passageMaxMs a highlighted passage shared as audio is cut before the sentence that would pass this (2 min:
+ *   with Kokoro it renders for about 5 minutes on the Moto; a clip much longer is a chapter, which Save as audiobook
+ *   makes).
+ * @property passageMaxPages pages a highlighted passage's clip reads at most, from its first.
  * @property wakeLockMs the clip's wake lock is held at most this long: a 44 s Kokoro clip renders in about 2 minutes on
  *   the Moto, so this is a safety limit for a stuck render, not a working limit.
  */
@@ -20,12 +24,16 @@ data class ClipConfig(
     val maxMs: Long = 44_000L,
     val paragraphPauseMs: Int = ReadingUnitConfig().paragraphPauseMs,
     val maxPages: Int = 2,
+    val passageMaxMs: Long = 120_000L,
+    val passageMaxPages: Int = 10,
     val wakeLockMs: Long = 600_000L, // 10 min
 ) {
     init {
         require(minMs in 0..maxMs) { "minMs ($minMs) must be in 0..maxMs ($maxMs)" }
         require(paragraphPauseMs >= 0) { "paragraphPauseMs must be >= 0, was $paragraphPauseMs" }
         require(maxPages >= 1) { "maxPages must be >= 1, was $maxPages" }
+        require(passageMaxMs > 0) { "passageMaxMs must be > 0, was $passageMaxMs" }
+        require(passageMaxPages >= 1) { "passageMaxPages must be >= 1, was $passageMaxPages" }
         require(wakeLockMs > 0) { "wakeLockMs must be > 0, was $wakeLockMs" }
     }
 }

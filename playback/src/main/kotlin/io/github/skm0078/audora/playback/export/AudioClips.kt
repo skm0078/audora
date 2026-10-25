@@ -14,6 +14,9 @@ object AudioClips {
     internal const val EXTRA_BOOK = "book"
     internal const val EXTRA_PAGE = "page"
     internal const val EXTRA_INDEX = "index"
+    internal const val EXTRA_START_CHAR = "startChar"
+    internal const val EXTRA_END_PAGE = "endPage"
+    internal const val EXTRA_END_CHAR = "endChar"
 
     /** The only folder [ClipFileProvider] hands out (res/xml/clip_share_paths.xml). */
     internal const val FOLDER = "shared-clips"
@@ -33,6 +36,19 @@ object AudioClips {
             .putExtra(EXTRA_BOOK, id.value)
             .putExtra(EXTRA_PAGE, page)
             .putExtra(EXTRA_INDEX, index)
+        PasswordHandoff.shared.handOver(id, password) { context.startForegroundService(intent) }
+    }
+
+    /** As [share], for a highlighted [passage] beginning on [page], whatever its paragraphs ([ClipPassage]). */
+    fun sharePassage(context: Context, id: BookId, page: Int, passage: ClipPassage, password: String? = null) {
+        AudoraLog.i(TAG, "Passage clip requested, book=${id.logLabel} pages=$page-${passage.endPage}")
+        val intent = Intent(context, ClipService::class.java)
+            .setAction(ACTION_MAKE)
+            .putExtra(EXTRA_BOOK, id.value)
+            .putExtra(EXTRA_PAGE, page)
+            .putExtra(EXTRA_START_CHAR, passage.startChar)
+            .putExtra(EXTRA_END_PAGE, passage.endPage)
+            .putExtra(EXTRA_END_CHAR, passage.endChar)
         PasswordHandoff.shared.handOver(id, password) { context.startForegroundService(intent) }
     }
 

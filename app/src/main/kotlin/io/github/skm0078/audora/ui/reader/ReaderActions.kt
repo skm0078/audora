@@ -12,6 +12,7 @@ import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.notes.Bookmark
+import io.github.skm0078.audora.core.notes.Highlight
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.contract.StudyAction
@@ -100,6 +101,14 @@ interface ReaderActions {
 
     /** "Share as audio" from the sentence menu (plan item 41): this sentence to the end of its paragraph, as a clip. */
     fun onShareClip(unit: ReadingUnit) = Unit
+
+    /** "Share as audio" on a highlighted sentence: the whole highlighted passage, as a clip. */
+    fun onShareHighlight(highlight: Highlight) = Unit
+
+    /** A fix offered after "This sounded wrong" ([SoundedWrongFixes]). */
+    fun onSoundedWrongFix(fix: SoundedWrongFix) = Unit
+
+    fun onSoundedWrongDone() = Unit
 
     /** Saves this book as audiobook files, with the password it was opened with (ADR-034). */
     fun onSaveAudiobook() = Unit

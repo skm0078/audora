@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import io.github.skm0078.audora.core.config.HighlightConfig
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.StorageError
 import io.github.skm0078.audora.core.model.Lang
@@ -70,14 +71,22 @@ class BookNotesHighlightTest {
 
     private val highlights = MemoryHighlights()
 
-    private fun TestScope.notes() =
-        BookNotesModel(BOOK, NoteStores(NoBookmarks, NoRules, highlights), backgroundScope, PIPELINE, clock = { 0L })
-            .also { it.start() }
+    /** Pages other than the one showing, as the reader reads them for a passage; absent pages cannot be read. */
+    private val otherPages = mutableMapOf<Int, List<ReadingUnit>>()
 
-    private fun unitsOf(vararg sentences: String): List<ReadingUnit> {
+    private fun TestScope.notes() = BookNotesModel(
+        BOOK,
+        NoteStores(NoBookmarks, NoRules, highlights),
+        backgroundScope,
+        PIPELINE,
+        unitsOf = { otherPages[it] },
+        clock = { 0L },
+    ).also { it.start() }
+
+    private fun unitsOf(vararg sentences: String, page: Int = PAGE): List<ReadingUnit> {
         var offset = 0
         return sentences.mapIndexed { index, text ->
-            ReadingUnit(PAGE, index, offset, offset + text.length, text, Lang.EN, 0, null).also {
+            ReadingUnit(page, index, offset, offset + text.length, text, Lang.EN, 0, null).also {
                 offset += text.length + 1
             }
         }
@@ -113,6 +122,47 @@ class BookNotesHighlightTest {
         assertEquals(emptyList<Highlight>(), notes.state.value.highlightsOn(next[1]))
         assertEquals(emptyList<Highlight>(), notes.state.value.highlightsOn(page[1]))
     }
+
+    @Test
+    fun `a passage picked end first covers every sentence between, on every page`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val notes = notes()
+            val start = unitsOf(FIRST, DR)
+            otherPages[PAGE] = start
+            otherPages[PAGE + 1] = unitsOf(HELLO, "* * *", page = PAGE + 1)
+            val end = unitsOf(FIRST, DR, page = PAGE + 2)
+            notes.showing(end)
+            notes.startRange(end[0])
+            assertEquals(true, notes.state.value.isRangeStart(end[0]))
+
+            notes.endRange(start[1])
+            val saved = highlights.rows.value.single()
+            assertEquals(null, notes.state.value.rangeFrom)
+            assertEquals("$DR $HELLO $FIRST", saved.quote)
+            assertEquals(PAGE to start[1].charStart, saved.anchor.page to saved.anchor.charStart)
+            assertEquals(PAGE + 2 to end[0].charEnd, saved.endPage to saved.endChar)
+            assertEquals(listOf(end[0]), end.filter { notes.state.value.highlightsOn(it).isNotEmpty() })
+
+            notes.showing(otherPages.getValue(PAGE + 1))
+            assertEquals(2, notes.state.value.placed.byIndex.size)
+        }
+
+    @Test
+    fun `a passage over an unreadable or too many pages is refused and said so`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val notes = notes()
+            val start = unitsOf(FIRST, DR)
+            notes.showing(start)
+            notes.startRange(start[0])
+            notes.endRange(unitsOf(HELLO, page = PAGE + 2)[0])
+            assertEquals(RangeRefusal.PAGE_UNREADABLE, notes.state.value.rangeRefused)
+
+            notes.dismissRangeRefusal()
+            notes.startRange(start[0])
+            notes.endRange(unitsOf(HELLO, page = PAGE + HighlightConfig.DEFAULT_MAX_PASSAGE_PAGES)[0])
+            assertEquals(RangeRefusal.TOO_LONG, notes.state.value.rangeRefused)
+            assertEquals(emptyList<Highlight>(), highlights.rows.value)
+        }
 
     private companion object {
         val BOOK = BookId("book")

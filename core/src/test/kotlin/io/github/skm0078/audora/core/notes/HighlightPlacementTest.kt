@@ -32,6 +32,23 @@ class HighlightPlacementTest {
         unit.text,
     )
 
+    /** A passage from [first] to [last], as the reader saves a range; [version] the pipeline it was saved with. */
+    private fun rangeOf(first: ReadingUnit, last: ReadingUnit, quote: String, version: Int = V1) = Highlight(
+        1,
+        ResumeAnchor(
+            BookId("b"),
+            first.page,
+            first.charStart,
+            fingerprint.head(first.text),
+            fingerprint.tail(first.text),
+            version,
+            0L,
+        ),
+        last.page,
+        last.charEnd,
+        quote,
+    )
+
     private fun coveredTexts(highlight: Highlight, units: List<ReadingUnit>): List<String> {
         val placed = placement.place(listOf(highlight), units)
         return units.filter { it.index in placed }.map { it.text }
@@ -188,6 +205,49 @@ class HighlightPlacementTest {
 
         assertEquals(emptyList<String>(), coveredTexts(highlightOn(saved[1]), rivals))
         assertEquals(listOf(LONG), coveredTexts(highlightOn(saved[1]), reordered))
+    }
+
+    @Test
+    fun `a range on one page covers every sentence in it, one without letters too`() {
+        val stars = unitsOf(PAGE, FIRST, DR, "* * *", HELLO, THIRD)
+        val range = rangeOf(stars[1], stars[3], "$DR $HELLO", version = V2)
+
+        assertEquals(listOf(DR, "* * *", HELLO), coveredTexts(range, stars))
+        assertEquals(listOf(FIRST, DR, SMITH), coveredTexts(rangeOf(page[0], page[2], "$FIRST $DR $SMITH"), page))
+    }
+
+    @Test
+    fun `a range whose later words changed keeps only the sentence it starts on`() {
+        val range = rangeOf(page[1], page[2], "$DR $SMITH", version = V2)
+        // The PDF was replaced in place: the first sentence is still there, the rest is new text.
+        val changed = unitsOf(PAGE, FIRST, DR, FILL, THIRD)
+
+        assertEquals(listOf(DR), coveredTexts(range, changed))
+    }
+
+    @Test
+    fun `a range over pages covers the end of the first, the pages between and the start of the last`() {
+        val first = unitsOf(PAGE, FIRST, DR)
+        val between = unitsOf(PAGE + 1, SMITH, FILL)
+        val last = unitsOf(PAGE + 2, LONG, THIRD)
+        val range = rangeOf(first[1], last[0], "$DR $SMITH $FILL $LONG")
+        // A new pipeline moved every offset (a slug dropped): the words still place it.
+        val shifted = unitsOf(PAGE, FIRST, DR, startOffset = SLUG)
+
+        assertEquals(listOf(DR), coveredTexts(range, first))
+        assertEquals(listOf(DR), coveredTexts(range, shifted))
+        assertEquals(listOf(SMITH, FILL), coveredTexts(range, between))
+        assertEquals(listOf(LONG), coveredTexts(range, last))
+    }
+
+    @Test
+    fun `a page that no longer holds its part of a range shows none of it`() {
+        val range = rangeOf(unitsOf(PAGE, FIRST, DR)[1], unitsOf(PAGE + 2, LONG)[0], "$DR $SMITH $LONG")
+
+        assertEquals(emptyList<String>(), coveredTexts(range, unitsOf(PAGE, FIRST, THIRD)))
+        assertEquals(emptyList<String>(), coveredTexts(range, unitsOf(PAGE + 1, FILL)))
+        assertEquals(emptyList<String>(), coveredTexts(range, unitsOf(PAGE + 2, THIRD, LONG)))
+        assertEquals(emptyList<String>(), coveredTexts(range, unitsOf(PAGE + 3, LONG)))
     }
 
     @Test

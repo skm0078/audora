@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-bn/strings_sentence_menu.xml
+  Purpose: The sentence menu's hints, highlighting a passage, and the fixes "This sounded wrong" offers.
+-->
+<resources>
+    <string name="sentence_menu_highlight_range">এখান থেকে হাইলাইট করুন…</string>
+    <string name="sentence_hint_bookmark">এই জায়গাটা রেখে দিন, পরে ফিরে আসতে; সাথে নোটও লিখতে পারেন।</string>
+    <string name="sentence_hint_highlight">এই বাক্যটি চিহ্নিত করুন; পরে আপনার নোটে আবার পাবেন।</string>
+    <string name="sentence_hint_highlight_range">তারপর যে বাক্যে এটি শেষ হবে সেটিতে ট্যাপ করুন, এই পাতায় বা পরের কোনো পাতায়।</string>
+    <string name="sentence_hint_unhighlight">হাইলাইট করা পুরো অংশটি সরিয়ে দেয়।</string>
+    <string name="sentence_hint_voice_note">এই বাক্য নিয়ে আপনার ভাবনা বলে রেকর্ড করুন। এটি বুকমার্কের সাথে থাকে এবং নোটের সাথে এক্সপোর্ট হয়।</string>
+    <string name="sentence_hint_look_up">এই বাক্যের কোনো শব্দের মানে, ফোনে রাখা অভিধান থেকে (ইন্টারনেট লাগে না)।</string>
+    <string name="sentence_hint_fix">যে শব্দ ভয়েস ভুল বলে, সেটি কীভাবে বলতে হবে জানান, এই বইয়ে বা সব বইয়ে।</string>
+    <string name="sentence_hint_report">কী ভুল হয়েছে বেছে নিন; ListenLock এখনই চেষ্টা করার মতো সমাধান দেয় এবং অ্যাপের লগে লিখে রাখে।</string>
+    <string name="sentence_hint_share_clip">এখান থেকে অনুচ্ছেদের শেষ পর্যন্ত একটি অডিও ক্লিপ, যেকোনো অ্যাপে পাঠাতে।</string>
+    <string name="sentence_hint_share_highlight">হাইলাইট করা পুরো অংশ অডিও ক্লিপ হিসেবে (২ মিনিট পর্যন্ত), যেকোনো অ্যাপে পাঠাতে।</string>
+    <string name="highlight_range_prompt">পাতা %1$d থেকে হাইলাইট হচ্ছে। যে বাক্যে শেষ হবে সেটিতে ট্যাপ করুন।</string>
+    <string name="highlight_range_too_long">একটি হাইলাইট সর্বোচ্চ %1$d পাতা জুড়ে হতে পারে। শুরুর কাছাকাছি একটি শেষ বেছে নিন।</string>
+    <string name="highlight_range_unreadable">এই অংশের একটি পাতা এখনও পড়া হয়নি (স্ক্যান করা পাতা)। একবার সেই পাতায় যান, তারপর আবার চেষ্টা করুন।</string>
+    <string name="sounded_wrong_fix_title">লেখা হয়েছে। এখনই ঠিক করবেন?</string>
+    <string name="sounded_wrong_fix_settings">পরিবর্তন পরের বাক্য থেকে কাজ করে। যেকোনো সময় %1$s-এ আবার বদলাতে পারেন।</string>
+    <string name="sounded_wrong_fix_nothing">এর জন্য এখানে বদলানোর কিছু নেই; পরের সংশোধনের জন্য এটি লগে আছে।</string>
+    <string name="sounded_wrong_fix_word">ভয়েসকে শব্দটি কীভাবে বলতে হবে জানান</string>
+    <string name="sounded_wrong_fix_skip_unreadable">অপাঠ্য লেখা বাদ দিন</string>
+    <string name="sounded_wrong_fix_tables_summary">টেবিল: শুধু আকার বলুন</string>
+    <string name="sounded_wrong_fix_tables_rows">টেবিল: প্রতিটি সারি পড়ুন</string>
+    <string name="sounded_wrong_fix_tables_skip">টেবিল: বাদ দিন</string>
+    <string name="sounded_wrong_fix_footnotes_skip">পাদটীকা বাদ দিন</string>
+    <string name="sounded_wrong_fix_footnotes_read">পাদটীকা পড়ুন</string>
+    <string name="sounded_wrong_fix_skip_brackets">[বর্গ বন্ধনীর নোট] বাদ দিন</string>
+    <string name="sounded_wrong_fix_clause_on">ড্যাশ, কোলন আর বন্ধনীতে থামুন</string>
+    <string name="sounded_wrong_fix_clause_off">বাক্যের মাঝে থামবেন না</string>
+    <string name="sounded_wrong_fix_pace_tight">বাক্যের মাঝে ছোট বিরতি</string>
+    <string name="sounded_wrong_fix_pace_normal">বাক্যের মাঝে স্বাভাবিক বিরতি</string>
+    <string name="sounded_wrong_fix_pace_relaxed">বাক্যের মাঝে লম্বা বিরতি</string>
+    <string name="sounded_wrong_fix_hear_again">এই বাক্যটি আবার পড়ুন</string>
+</resources>

@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import io.github.skm0078.audora.core.config.HighlightConfig
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.StorageError
 import io.github.skm0078.audora.core.logging.AudoraLog
@@ -34,6 +35,8 @@ import kotlinx.coroutines.launch
  * @property editing the bookmark whose note is being written.
  * @property listOpen the bookmarks sheet is showing.
  * @property failed the last save failed; the screen says so once.
+ * @property rangeFrom where a highlight over several sentences starts, while the listener picks where it ends.
+ * @property rangeRefused why the last such highlight was not made, shown once.
  */
 data class NotesState(
     val bookmarks: List<Bookmark> = emptyList(),
@@ -45,10 +48,28 @@ data class NotesState(
     val failed: Boolean = false,
     val highlights: List<Highlight> = emptyList(),
     val placed: PlacedHighlights = PlacedHighlights(),
+    val rangeFrom: ReadingUnit? = null,
+    val rangeRefused: RangeRefusal? = null,
 ) {
     /** The highlights covering [unit] on the page showing (plan item 30); two when sentences were merged. */
     fun highlightsOn(unit: ReadingUnit): List<Highlight> =
         placed.byIndex[unit.index]?.takeIf { placed.page == unit.page }.orEmpty()
+
+    /** [unit] shows as highlighted: a highlight covers it, or a passage being picked starts at it. */
+    fun showsHighlight(unit: ReadingUnit): Boolean = highlightsOn(unit).isNotEmpty() || isRangeStart(unit)
+
+    /** [unit] is where the highlight being picked starts: it shows as highlighted until the end is picked. */
+    fun isRangeStart(unit: ReadingUnit): Boolean =
+        rangeFrom?.let { it.page == unit.page && it.index == unit.index } == true
+}
+
+/** Why a highlight over several sentences was not made. */
+enum class RangeRefusal {
+    /** It would cover more than [HighlightConfig.maxPassagePages] pages. */
+    TOO_LONG,
+
+    /** A page in it could not be read now (a scanned page not read yet, or a page that failed). */
+    PAGE_UNREADABLE,
 }
 
 /**
@@ -68,6 +89,16 @@ interface BookNotesActions {
 
     /** Highlights [unit], or removes its highlight when it has one (plan item 30). */
     fun toggleHighlight(unit: ReadingUnit) = Unit
+
+    /** "Highlight from here": [unit] starts a highlight; the next sentence tapped ends it ([endRange]). */
+    fun startRange(unit: ReadingUnit) = Unit
+
+    /** Highlights from the start picked to [unit], on any page after it or before it. */
+    fun endRange(unit: ReadingUnit) = Unit
+
+    fun cancelRange() = Unit
+
+    fun dismissRangeRefusal() = Unit
 
     fun showList() = Unit
 
@@ -111,6 +142,9 @@ class NoteStores(
  * Plain state holder, one per open book, beside [ReaderModel]. Bookmarks are anchored like resume positions (offsets
  * and hashes, never the PDF's text) at [pipelineVersion], so a later pipeline finds them again. Notes and fixes are
  * the listener's own words: stored, never logged.
+ *
+ * [unitsOf] reads another page's sentences for a highlight over several pages (null when the page cannot be read now);
+ * it must not run OCR, which is slow on a low-end phone: the pages turned through on the way are read already.
  */
 @Suppress("TooManyFunctions") // The actions, each a one-liner or a store write.
 class BookNotesModel(
@@ -118,6 +152,7 @@ class BookNotesModel(
     stores: NoteStores,
     private val scope: CoroutineScope,
     private val pipelineVersion: Int,
+    private val unitsOf: suspend (Int) -> List<ReadingUnit>? = { null },
     private val clock: () -> Long = System::currentTimeMillis,
 ) : BookNotesActions {
     private val bookmarks = stores.bookmarks
@@ -125,6 +160,7 @@ class BookNotesModel(
     private val highlights = stores.highlights
     private val fingerprint = SentenceFingerprint()
     private val placement = HighlightPlacement(pipelineVersion)
+    private val config = HighlightConfig()
     private var pageUnits: List<ReadingUnit> = emptyList()
     private val mutableState = MutableStateFlow(NotesState())
     val state: StateFlow<NotesState> = mutableState.asStateFlow()
@@ -196,6 +232,62 @@ class BookNotesModel(
                 is Outcome.Failure -> failed("highlight", saved.error)
             }
         }
+    }
+
+    override fun startRange(unit: ReadingUnit) = mutableState.update { it.copy(menuFor = null, rangeFrom = unit) }
+
+    override fun cancelRange() = mutableState.update { it.copy(rangeFrom = null) }
+
+    override fun dismissRangeRefusal() = mutableState.update { it.copy(rangeRefused = null) }
+
+    /**
+     * One highlight from the earlier of the two sentences to the later, its quote their words (sentences without any,
+     * "* * *", are left out of it). Pages between are read through [unitsOf]; a passage longer than
+     * [HighlightConfig.maxPassagePages] pages, or one over a page that cannot be read now, is refused and said so.
+     */
+    override fun endRange(unit: ReadingUnit) {
+        val from = state.value.rangeFrom ?: return
+        mutableState.update { it.copy(rangeFrom = null) }
+        val store = highlights
+        val (first, last) = if (unit.isBefore(from)) unit to from else from to unit
+        when {
+            store == null -> Unit
+            last.page - first.page >= config.maxPassagePages -> refuse(RangeRefusal.TOO_LONG)
+            else -> highlightPassage(store, first, last)
+        }
+    }
+
+    private fun highlightPassage(store: HighlightStore, first: ReadingUnit, last: ReadingUnit) {
+        scope.launch {
+            val passage = passage(first, last) ?: return@launch refuse(RangeRefusal.PAGE_UNREADABLE)
+            val quote = passage.filter { it.hasWords() }.joinToString(" ") { it.text.trim() }
+            if (quote.isEmpty()) return@launch
+            val added = store.add(Highlight(0, anchorOf(first), last.page, last.charEnd, quote))
+            when (added) {
+                is Outcome.Success -> AudoraLog.i(
+                    TAG,
+                    "Passage highlighted, $logContext pages=${first.page}-${last.page} sentences=${passage.size}",
+                )
+
+                is Outcome.Failure -> failed("highlight", added.error)
+            }
+        }
+    }
+
+    /** The units from [first] to [last], reading order; null when a page of it cannot be read now. */
+    private suspend fun passage(first: ReadingUnit, last: ReadingUnit): List<ReadingUnit>? {
+        val showing = pageUnits
+        val pages = (first.page..last.page).map { page ->
+            (showing.takeIf { it.firstOrNull()?.page == page } ?: unitsOf(page)) ?: return null
+        }
+        return pages.flatten().filter { unit ->
+            !unit.isBefore(first) && !last.isBefore(unit)
+        }
+    }
+
+    private fun refuse(why: RangeRefusal) {
+        AudoraLog.i(TAG, "Passage highlight refused ($why), $logContext")
+        mutableState.update { it.copy(rangeRefused = why) }
     }
 
     override fun showList() = mutableState.update { it.copy(listOpen = true) }
@@ -275,5 +367,12 @@ class BookNotesModel(
 
     private companion object {
         const val TAG = "Audora.Notes"
+
+        /** Reading order: an earlier page, or the same page and an earlier sentence. */
+        fun ReadingUnit.isBefore(other: ReadingUnit): Boolean =
+            page < other.page || (page == other.page && index < other.index)
+
+        /** A sentence a highlight can mark: one with a letter or digit, not "* * *". */
+        fun ReadingUnit.hasWords(): Boolean = text.any(Char::isLetterOrDigit)
     }
 }

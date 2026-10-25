@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-hi/strings_sentence_menu.xml
+  Purpose: The sentence menu's hints, highlighting a passage, and the fixes "This sounded wrong" offers.
+-->
+<resources>
+    <string name="sentence_menu_highlight_range">यहाँ से हाइलाइट करें…</string>
+    <string name="sentence_hint_bookmark">इस जगह को सहेजें ताकि यहाँ लौट सकें; साथ में नोट भी लिख सकते हैं।</string>
+    <string name="sentence_hint_highlight">इस वाक्य को चिह्नित करें; इसे अपने नोट्स में फिर पाएँ।</string>
+    <string name="sentence_hint_highlight_range">फिर उस वाक्य पर टैप करें जहाँ इसे खत्म होना है, इसी पेज पर या आगे के किसी पेज पर।</string>
+    <string name="sentence_hint_unhighlight">पूरा हाइलाइट किया हुआ हिस्सा हटाता है।</string>
+    <string name="sentence_hint_voice_note">इस वाक्य के बारे में अपनी बात बोलकर रिकॉर्ड करें। यह आपके बुकमार्क के साथ रहती है और नोट्स के साथ एक्सपोर्ट होती है।</string>
+    <string name="sentence_hint_look_up">इस वाक्य के किसी शब्द का अर्थ, फ़ोन में रखे शब्दकोश से (इंटरनेट की ज़रूरत नहीं)।</string>
+    <string name="sentence_hint_fix">जो शब्द आवाज़ गलत बोलती है, उसे कैसे बोलना है बताएँ, इस किताब में या हर किताब में।</string>
+    <string name="sentence_hint_report">चुनें कि क्या गलत हुआ; ListenLock अभी आज़माने के लिए हल देता है और इसे ऐप के लॉग में दर्ज करता है।</string>
+    <string name="sentence_hint_share_clip">यहाँ से पैराग्राफ़ के अंत तक की ऑडियो क्लिप, किसी भी ऐप में भेजने के लिए।</string>
+    <string name="sentence_hint_share_highlight">पूरा हाइलाइट किया हुआ हिस्सा ऑडियो क्लिप के रूप में (2 मिनट तक), किसी भी ऐप में भेजने के लिए।</string>
+    <string name="highlight_range_prompt">पेज %1$d से हाइलाइट हो रहा है। जहाँ खत्म करना है उस वाक्य पर टैप करें।</string>
+    <string name="highlight_range_too_long">एक हाइलाइट ज़्यादा से ज़्यादा %1$d पेज का हो सकता है। शुरुआत के पास का अंत चुनें।</string>
+    <string name="highlight_range_unreadable">इस हिस्से का एक पेज अभी पढ़ा नहीं गया है (स्कैन किया पेज)। एक बार उस पेज पर जाएँ, फिर दोबारा कोशिश करें।</string>
+    <string name="sounded_wrong_fix_title">दर्ज हो गया। अभी ठीक करें?</string>
+    <string name="sounded_wrong_fix_settings">बदलाव अगले वाक्य से लागू होते हैं। इन्हें कभी भी %1$s में वापस बदल सकते हैं।</string>
+    <string name="sounded_wrong_fix_nothing">इसके लिए यहाँ बदलने को कुछ नहीं है; यह आगे के सुधार के लिए लॉग में है।</string>
+    <string name="sounded_wrong_fix_word">आवाज़ को शब्द बोलने का तरीका बताएँ</string>
+    <string name="sounded_wrong_fix_skip_unreadable">न पढ़ने लायक टेक्स्ट छोड़ें</string>
+    <string name="sounded_wrong_fix_tables_summary">टेबल: सिर्फ़ उनका आकार बताएँ</string>
+    <string name="sounded_wrong_fix_tables_rows">टेबल: हर पंक्ति पढ़ें</string>
+    <string name="sounded_wrong_fix_tables_skip">टेबल: छोड़ दें</string>
+    <string name="sounded_wrong_fix_footnotes_skip">फ़ुटनोट छोड़ें</string>
+    <string name="sounded_wrong_fix_footnotes_read">फ़ुटनोट पढ़ें</string>
+    <string name="sounded_wrong_fix_skip_brackets">[चौकोर कोष्ठक के नोट] छोड़ें</string>
+    <string name="sounded_wrong_fix_clause_on">डैश, कोलन और कोष्ठक पर रुकें</string>
+    <string name="sounded_wrong_fix_clause_off">वाक्य के बीच में न रुकें</string>
+    <string name="sounded_wrong_fix_pace_tight">वाक्यों के बीच छोटा विराम</string>
+    <string name="sounded_wrong_fix_pace_normal">वाक्यों के बीच सामान्य विराम</string>
+    <string name="sounded_wrong_fix_pace_relaxed">वाक्यों के बीच लंबा विराम</string>
+    <string name="sounded_wrong_fix_hear_again">यह वाक्य फिर से पढ़ें</string>
+</resources>

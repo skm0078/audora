@@ -55,15 +55,6 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.library.LibraryQuery
-import io.github.skm0078.audora.core.model.FocusSoundOptions
-import io.github.skm0078.audora.core.model.Lang
-import io.github.skm0078.audora.core.model.Pace
-import io.github.skm0078.audora.core.model.ReadingModes
-import io.github.skm0078.audora.core.model.ReadingUnit
-import io.github.skm0078.audora.core.model.SleepOptions
-import io.github.skm0078.audora.core.model.VoiceId
-import io.github.skm0078.audora.core.model.VoiceShaping
-import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.BookmarkStore
 import io.github.skm0078.audora.core.notes.HighlightStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
@@ -77,21 +68,16 @@ import io.github.skm0078.audora.language.AppLanguage
 import io.github.skm0078.audora.language.AppLanguageStore
 import io.github.skm0078.audora.language.AppLanguages
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
-import io.github.skm0078.audora.pdf.outline.ChapterEntry
-import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
-import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.documents.WatchedFolders
-import io.github.skm0078.audora.playback.export.AudioClips
 import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.playback.export.MarkStores
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.jobs.OpenJobs
 import io.github.skm0078.audora.playback.notes.VoiceNoteAudio
 import io.github.skm0078.audora.playback.photo.PhotoBooks
-import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.search.SearchIndexes
 import io.github.skm0078.audora.privacy.PrivacyHost
 import io.github.skm0078.audora.speech.acted.ActedVoices
@@ -161,12 +147,10 @@ import io.github.skm0078.audora.ui.reader.ReaderDocumentOpener
 import io.github.skm0078.audora.ui.reader.ReaderModel
 import io.github.skm0078.audora.ui.reader.ReaderScreen
 import io.github.skm0078.audora.ui.reader.ReaderState
-import io.github.skm0078.audora.ui.reader.ReaderView
 import io.github.skm0078.audora.ui.reader.ReaderVoiceCommands
 import io.github.skm0078.audora.ui.reader.ReadingLook
 import io.github.skm0078.audora.ui.reader.ReadingLookPreferences
 import io.github.skm0078.audora.ui.reader.ScreenPreference
-import io.github.skm0078.audora.ui.reader.SleepTimerSetting
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
 import io.github.skm0078.audora.ui.reader.VolumeKeySkips
@@ -837,8 +821,9 @@ class MainActivity : ComponentActivity() {
         }
         val playWithPermission = rememberPlayWithNotificationPermission()
         val notes = remember(id) {
-            BookNotesModel(id, NoteStores(bookmarkStore, pronunciationStore, highlightStore), scope, PIPELINE_VERSION)
-                .also { it.start() }
+            // Never OCRs: a passage's pages were read on the way to its end; one that was not is refused.
+            val stores = NoteStores(bookmarkStore, pronunciationStore, highlightStore)
+            BookNotesModel(id, stores, scope, PIPELINE_VERSION, unitsOf = model::sentencesForSearch).also { it.start() }
         }
         val notesState by notes.state.collectAsStateWithLifecycle()
         val studio = rememberReaderStudio(id, model, scope, notes, port, searchIndexes, voiceNoteParts)
@@ -846,7 +831,9 @@ class MainActivity : ComponentActivity() {
             .collectAsStateWithLifecycle(initialValue = emptyList())
         // The reader and the player share the model, so back must follow the screen now shown, not the first one.
         val back by rememberUpdatedState(onBack)
-        val actions = remember(model) { readerActions(model, notes, playWithPermission) { back() } }
+        val actions = remember(model) {
+            BookReaderActions(applicationContext, model, notes, playWithPermission, ocrModels) { back() }
+        }
         BookWindowEffects(model, state, listeningInBackground)
         val opened = state.document is DocumentState.Open
         LaunchedEffect(model, opened, openPlace) {
@@ -955,131 +942,6 @@ class MainActivity : ComponentActivity() {
     private fun UpNextRoute(books: List<Book>, playing: BookId, onDismiss: () -> Unit) {
         val state by upNext.state.collectAsStateWithLifecycle()
         UpNextSheet(state, books, playing, upNext, onDismiss, bookCovers)
-    }
-
-    private fun readerActions(
-        model: ReaderModel,
-        notes: BookNotesModel,
-        playWithPermission: (() -> Unit) -> Unit,
-        navigateBack: () -> Unit,
-    ): ReaderActions = object : ReaderActions {
-        override fun onBack() = navigateBack()
-
-        override fun onPreviousPage() = model.previousPage()
-
-        override fun onNextPage() = model.nextPage()
-
-        override fun onGoToPage(page: Int) = model.showPage(page)
-
-        override fun onShowReadingPosition() = model.showReadingPosition()
-
-        override fun onSentenceTapped(unit: ReadingUnit) = readFrom(unit)
-
-        // Asks for the notification permission only when the tap is on a sentence.
-        override fun onPageTapped(point: ViewPoint) {
-            model.sentenceAt(point)?.let { readFrom(it) }
-        }
-
-        // A greyed sentence first explains why it is skipped (RI-9); the permission is asked if it is read anyway.
-        private fun readFrom(unit: ReadingUnit) {
-            if (model.state.value.isUnreadable(unit)) {
-                model.readFrom(unit)
-            } else {
-                playWithPermission { model.readFrom(unit) }
-            }
-        }
-
-        override fun onSentenceLongPressed(unit: ReadingUnit) = notes.openMenu(unit)
-
-        override fun onPageLongPressed(point: ViewPoint) {
-            model.sentenceAt(point)?.let(notes::openMenu)
-        }
-
-        override fun onReportSentence(unit: ReadingUnit) = model.askReport(unit)
-
-        // The clip's progress and its Share button are in a notification, so it asks for that permission first.
-        override fun onShareClip(unit: ReadingUnit) = playWithPermission {
-            AudioClips.share(applicationContext, model.state.value.bookId, unit.page, unit.index, model.openPassword)
-        }
-
-        // From the reader, a password-protected PDF can be saved too: its password goes along in memory (ADR-034).
-        override fun onSaveAudiobook() = startLongJob(LongJobKind.AUDIOBOOK) {
-            playWithPermission {
-                AudiobookExport.start(applicationContext, model.state.value.bookId, model.openPassword)
-            }
-        }
-
-        override fun onBookmark(bookmark: Bookmark) = model.goToBookmark(bookmark)
-
-        override fun onBookmarkHere() {
-            model.sentenceHere()?.let(notes::bookmark)
-        }
-
-        override fun onOwnSettings(on: Boolean) = model.setOwnSettings(on)
-
-        override fun onBookVoice(lang: Lang, voice: VoiceId) = model.setBookVoice(lang, voice)
-
-        // Said at once, so the report never seems to vanish: where it went and how it leaves the phone.
-        override fun onReport(reason: SoundedWrongReason) {
-            model.report(reason)
-            Toast.makeText(applicationContext, R.string.report_noted, Toast.LENGTH_LONG).show()
-        }
-
-        override fun onReportDismissed() = model.dismissReport()
-
-        override fun onReadUnreadable() = playWithPermission(model::readUnreadable)
-
-        override fun onUnreadableDismissed() = model.dismissUnreadable()
-
-        override fun onChapter(chapter: ChapterEntry) = model.goToChapter(chapter)
-
-        override fun onViewChanged(view: ReaderView) = model.setView(view)
-
-        override fun onPageWidth(widthPx: Int) = model.setPageWidth(widthPx)
-
-        override fun onPlayPause() {
-            if (model.state.value.isReading) model.playOrPause() else playWithPermission(model::playOrPause)
-        }
-
-        override fun onSkipBack() = model.skipBack()
-
-        override fun onSkipForward() = model.skipForward()
-
-        override fun onSkipParagraph(forward: Boolean) = model.skipParagraph(forward)
-
-        override fun onReplayPrevious() = model.replayPrevious()
-
-        override fun onSpeed(speed: Float) = model.setSpeed(speed)
-
-        override fun onPace(pace: Pace) = model.setPace(pace)
-
-        override fun onClausePauses(on: Boolean) = model.setClausePauses(on)
-
-        override fun onReadingModes(modes: ReadingModes) = model.setReadingModes(modes)
-
-        override fun onSleepTimer(setting: SleepTimerSetting) = model.setSleepTimer(setting)
-
-        override fun onSleepOptions(options: SleepOptions) = model.setSleepOptions(options)
-
-        override fun onFocusSound(options: FocusSoundOptions) = model.setFocusSound(options)
-
-        override fun onVoiceShaping(shaping: VoiceShaping) = model.setVoiceShaping(shaping)
-
-        override fun onPitch(pitch: Float) = model.setPitch(pitch)
-
-        override fun onUndoJump() = model.undoJump()
-
-        override fun onStudy(action: StudyAction, loop: Boolean) = model.study(action, loop)
-
-        override fun onPasswordSubmitted(password: String) = model.submitPassword(password)
-
-        override fun onPasswordDismissed() = model.dismissPassword()
-
-        override fun onAskForPassword() = model.askForPassword()
-
-        override fun onRetry() = model.retry()
-
-        override fun onDownloadOcrModels() = ocrModels.download()
     }
 }
 

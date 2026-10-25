@@ -1,21 +1,18 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/NotesUi.kt
-// Purpose: The sentence menu, bookmarks sheet, bookmark note and pronunciation fix dialogs (items 29, 1, 30, 32, 33).
+// Purpose: The notes over the reader: bookmarks sheet, bookmark note and pronunciation fix dialogs, and the sentence
+//          menu (SentenceMenuUi.kt) (items 29, 1, 30, 32, 33).
 
 package io.github.skm0078.audora.ui.reader
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -37,14 +34,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.PronunciationRule
-import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.switchRow
 
 /** Top bar: opens the bookmarks sheet; filled while this book has bookmarks. */
@@ -65,34 +60,8 @@ fun NotesOverlays(
     voice: VoiceNotesBinding = VoiceNotesBinding.None,
     lookUp: LookUpBinding = LookUpBinding.None,
 ) {
-    notes.menuFor?.let { unit ->
-        val highlighted = notes.highlightsOn(unit).isNotEmpty()
-        val rows = listOfNotNull(
-            MenuEntry(R.string.sentence_menu_bookmark) { actions.bookmark(unit) },
-            // A sentence with no words ("* * *") can never show a band, so it is not offered.
-            MenuEntry(if (highlighted) R.string.sentence_menu_unhighlight else R.string.sentence_menu_highlight) {
-                actions.toggleHighlight(unit)
-            }.takeIf { highlighted || unit.text.any(Char::isLetterOrDigit) },
-            MenuEntry(R.string.sentence_menu_voice_note) {
-                actions.dismissMenu()
-                voice.askToRecord(unit)
-            }.takeIf { voice.enabled },
-            MenuEntry(R.string.sentence_menu_look_up) {
-                actions.dismissMenu()
-                lookUp.actions.open(unit)
-            }.takeIf { lookUp.enabled },
-            MenuEntry(R.string.sentence_menu_fix) { actions.fix(unit) },
-            MenuEntry(R.string.report_title) {
-                actions.dismissMenu()
-                reader.onReportSentence(unit)
-            },
-            MenuEntry(R.string.sentence_menu_share_clip) {
-                actions.dismissMenu()
-                reader.onShareClip(unit)
-            },
-        )
-        SentenceMenuDialog(rows, onDismiss = actions::dismissMenu)
-    }
+    notes.menuFor?.let { unit -> SentenceMenu(unit, notes, actions, reader, voice, lookUp) }
+    PassageOverlays(notes, actions)
     if (notes.listOpen) BookmarksSheet(notes.bookmarks, actions, reader, voice)
     VoiceNotesOverlays(voice)
     LookUpOverlay(lookUp)
@@ -104,39 +73,6 @@ fun NotesOverlays(
             text = { Text(stringResource(R.string.notes_save_failed)) },
             confirmButton = { TextButton(onClick = actions::clearFailure) { Text(stringResource(R.string.notes_ok)) } },
         )
-    }
-}
-
-/** One row of the sentence menu. */
-private class MenuEntry(@StringRes val label: Int, val onClick: () -> Unit)
-
-@Composable
-private fun SentenceMenuDialog(rows: List<MenuEntry>, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.sentence_menu_title)) },
-        text = {
-            // Eight rows can be taller than a small phone's dialog: it scrolls.
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                rows.forEach { MenuRow(it.label, it.onClick) }
-            }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.password_cancel)) } },
-    )
-}
-
-@Composable
-private fun MenuRow(@StringRes label: Int, onClick: () -> Unit) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = Dimens.TouchTarget)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = Dimens.SpaceS),
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(stringResource(label), style = MaterialTheme.typography.bodyLarge)
     }
 }
 

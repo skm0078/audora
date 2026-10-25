@@ -5,6 +5,7 @@ package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.model.ReadingModes
+import io.github.skm0078.audora.core.model.TableMode
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,6 +46,31 @@ class ReaderLineTest {
             model.dismissReport()
             model.report(SoundedWrongReason.OTHER)
             assertEquals("nothing is reported once dismissed", 1, port.reports.size)
+        }
+
+    @Test
+    fun `a report offers the fixes for its reason, and a picked setting applies at once`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val model = model()
+            port.connect()
+            val unit = model.units()[0]
+            model.askReport(unit)
+            model.report(SoundedWrongReason.TABLE)
+            val offer = requireNotNull(model.state.value.soundedWrong)
+            assertEquals(unit, offer.unit)
+            assertEquals(
+                listOf(
+                    SoundedWrongFix.Tables(TableMode.ROWS),
+                    SoundedWrongFix.Tables(TableMode.SKIP),
+                    SoundedWrongFix.HearAgain,
+                ),
+                offer.fixes,
+            )
+
+            model.applySoundedWrongFix(SoundedWrongFix.Tables(TableMode.ROWS))
+            assertEquals(listOf("reading modes ${ReadingModes(tables = TableMode.ROWS).encode()}"), port.calls)
+            model.dismissSoundedWrong()
+            assertNull(model.state.value.soundedWrong)
         }
 
     @Test
