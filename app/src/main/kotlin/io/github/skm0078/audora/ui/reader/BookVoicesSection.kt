@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/BookVoicesSection.kt
-// Purpose: The speech sheet's voice choice for the open book, while it has its own settings (plan item 4).
+// Purpose: The speech sheet's voice choice: the open book's own (plan item 4), or every book's (UI audit).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -20,10 +20,15 @@ import io.github.skm0078.audora.ui.theme.OptionGroup
  * choices. Downloads stay in Settings → Voices.
  */
 @Composable
-fun BookVoicesSection(rows: List<VoiceRow>, bookVoices: Map<Lang, VoiceId>, onVoice: (Lang, VoiceId) -> Unit) {
+fun BookVoicesSection(
+    rows: List<VoiceRow>,
+    bookVoices: Map<Lang, VoiceId>,
+    title: String,
+    onVoice: (Lang, VoiceId) -> Unit,
+) {
     val choices = bookVoiceChoices(rows).filterValues { it.size > 1 }
     if (choices.isEmpty()) return
-    OptionGroup(stringResource(R.string.speech_book_voices)) {
+    OptionGroup(title) {
         choices.entries.forEachIndexed { index, (lang, voices) ->
             if (index > 0) OptionDivider()
             val names = voices.associate { it.id to it.label }

@@ -36,8 +36,9 @@
     <string name="confirm_keep">রেখে দিন</string>
     <string name="slider_percent">%1$d শতাংশ</string>
     <string name="slider_step_of">%2$d-এর মধ্যে %1$d</string>
-    <string name="gesture_tips_title">দুটি লুকোনো ইশারা</string>
-    <string name="gesture_tips_sentence">কোনো বাক্য চেপে ধরে রাখুন: বুকমার্ক, হাইলাইট, নোট বা কোনো শব্দের মানে।</string>
+    <string name="gesture_tips_title">কয়েকটি সহজ টিপস</string>
+    <string name="gesture_tips_tap">যেখান থেকে শুনতে চান সেই বাক্যে ট্যাপ করুন।</string>
+    <string name="gesture_tips_sentence">কোনো বাক্য চেপে ধরে রাখুন: বুকমার্ক, হাইলাইট, নোট, কোনো শব্দের মানে, বা ভুল শোনালে জানান।</string>
     <string name="gesture_tips_skip">আগের বা পরের বোতাম চেপে ধরে রাখলে পুরো অনুচ্ছেদ এগোবে বা পিছোবে।</string>
     <string name="gesture_tips_got_it">বুঝেছি</string>
 </resources>

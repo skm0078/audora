@@ -12,5 +12,7 @@ package io.github.skm0078.audora.playback.studio
  * 2 = closing quotes after a sentence's end move inside it for Kitten voices (no babble after the sentence).
  * 3 = a lone "I" after book, part, class and the like stays the pronoun; Hindi and Bengali say a minus sign; "1:50,000"
  *     is not a clock time; a book's pronunciation fixes apply from its first sentence.
+ * 4 = an exclamation without a cue word reads emphatic, not lively (Bengali Rasa: CONV, not HAPPY); characters are
+ *     found in single quotes, short lines and Hindi and Bengali tags, so more lines get a character's voice.
  */
-const val STUDIO_AUDIO_VERSION: Int = 3
+const val STUDIO_AUDIO_VERSION: Int = 4

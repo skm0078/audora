@@ -16,7 +16,7 @@ import org.junit.Test
 
 class BookSoundTest {
     private val global = SpeechStyle(rate = LISTENER_RATE, pace = Pace.NORMAL)
-    private val voice = VoiceId(EngineId.SHERPA, "piper-hi-pratham")
+    private val voice = VoiceId(EngineId.SHERPA, "supertonic-hi")
     private val own = BookSettings(BookId("b"), rate = BOOK_RATE, pace = Pace.RELAXED, voices = mapOf(Lang.HI to voice))
 
     @Test

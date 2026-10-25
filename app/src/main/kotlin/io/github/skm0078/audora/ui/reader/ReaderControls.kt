@@ -57,7 +57,7 @@ fun ReaderControls(
     actions: ReaderActions,
     modifier: Modifier = Modifier,
     voices: List<VoiceRow> = emptyList(),
-    showTips: Boolean = true,
+    onTipsSeen: (() -> Unit)? = null,
 ) {
     // A raised panel with rounded top corners, so the controls read as one block under the thumb (ADR-036).
     Surface(
@@ -66,7 +66,10 @@ fun ReaderControls(
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(Modifier.navigationBarsPadding()) {
-            if (showTips) GestureTips(Modifier.padding(start = Dimens.SpaceM, end = Dimens.SpaceM, top = Dimens.SpaceM))
+            // The tips show here, near the buttons they name, when the reader's notice slot picks them.
+            onTipsSeen?.let {
+                GestureTips(it, Modifier.padding(start = Dimens.SpaceM, end = Dimens.SpaceM, top = Dimens.SpaceM))
+            }
             ControlsRow(state, config, actions, voices)
         }
     }
@@ -188,7 +191,7 @@ private fun SpeedButton(
             onVoiceShaping = actions::onVoiceShaping,
             ownSettings = playback.ownSettings,
             onOwnSettings = actions::onOwnSettings,
-            voices = BookVoices(voices, playback.bookVoices, actions::onBookVoice),
+            voices = BookVoices(voices, playback.bookVoices, actions::onBookVoice, actions::onVoice),
             study = study,
             focusSound = playback.focusSound,
             onFocusSound = actions::onFocusSound,

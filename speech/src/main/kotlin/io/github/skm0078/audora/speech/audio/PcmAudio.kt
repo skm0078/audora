@@ -33,6 +33,18 @@ class PcmAudio(val samples: ShortArray, val sampleRate: Int) {
         return PcmAudio(out, rate)
     }
 
+    /**
+     * This audio [ratio] times higher and [ratio] times shorter, as a tape played faster: read at `sampleRate *
+     * ratio`, then brought back to [sampleRate]. A feeling's small shift (ADR-076, at most about 15 %) folds little:
+     * speech has almost no energy in the top band it moves past the limit. Itself when [ratio] is 1.
+     */
+    fun pitched(ratio: Float): PcmAudio {
+        require(ratio > 0f && ratio.isFinite()) { "ratio must be > 0, was $ratio" }
+        val shifted = (sampleRate * ratio).roundToInt()
+        if (shifted == sampleRate) return this
+        return PcmAudio(samples, shifted).resampled(sampleRate)
+    }
+
     /** This audio followed by [ms] of silence: a pause after a sentence (prosody, P2-04). Itself when [ms] is 0. */
     fun withSilenceAfter(ms: Int): PcmAudio {
         require(ms >= 0) { "ms must be >= 0, was $ms" }

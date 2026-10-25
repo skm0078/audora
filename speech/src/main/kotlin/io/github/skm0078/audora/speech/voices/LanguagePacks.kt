@@ -44,10 +44,7 @@ data class VoiceListConfig(val simple: Boolean = false, val hiddenIds: Set<Strin
     }
 
     companion object {
-        /**
-         * Supertonic Hindi (its model licence file is missing upstream), MMS Bengali (non-commercial, and SYSPIN
-         * reads Bengali better) and Piper's Google Bengali (the weakest of the three Bengali voices).
-         */
-        val SIMPLE_HIDDEN = setOf("supertonic-hi", "mms-bn", "piper-bn-google")
+        /** Piper's Google Bengali: the weakest of the Bengali voices. */
+        val SIMPLE_HIDDEN = setOf("piper-bn-google")
     }
 }

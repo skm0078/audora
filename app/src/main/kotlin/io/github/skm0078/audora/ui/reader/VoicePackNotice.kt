@@ -36,13 +36,14 @@ import io.github.skm0078.audora.ui.voices.languageName
 import io.github.skm0078.audora.ui.voices.megabytes
 
 /**
- * Shown while the page is mostly in a language whose pack is not on the phone: what it is, its size, one Download
- * tap and its progress. "Not now" hides it for that language until the book is opened again; once a voice of the
- * language is in, the card goes by itself (the library picks the new voice when the language has none).
+ * Shown while the page is mostly in a language whose pack is not on the phone and nothing more urgent is up (a null
+ * [offer]): what it is, its size, one Download tap and its progress. "Not now" hides it for that language until the
+ * book is opened again; once a voice of the language is in, the card goes by itself (the library picks the new voice
+ * when the language has none).
  */
 @Composable
-internal fun VoicePackNotice(units: List<ReadingUnit>, offer: VoicePackOffer) {
-    val pack = offer.packFor(units) ?: return
+internal fun VoicePackNotice(units: List<ReadingUnit>, offer: VoicePackOffer?) {
+    val pack = offer?.packFor(units) ?: return
     val lang = pack.lang
     val language = stringResource(languageName(lang))
     Card(modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS)) {

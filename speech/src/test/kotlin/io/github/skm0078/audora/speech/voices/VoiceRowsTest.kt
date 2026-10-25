@@ -59,17 +59,17 @@ class VoiceRowsTest {
 
     @Test
     fun `the recommended download comes first among its language's downloads`() {
-        val pratham = catalogVoice(ByteArray(30), "piper-hi-pratham", Lang.HI).copy(recommended = true)
+        val supertonic = catalogVoice(ByteArray(30), "supertonic-hi", Lang.HI).copy(recommended = true)
         val rows = VoiceRows.build(
             bundled,
-            VoiceCatalog(listOf(cori, hindi, pratham)),
+            VoiceCatalog(listOf(cori, hindi, supertonic)),
             emptyList(),
             emptyMap(),
             emptyMap(),
         )
 
         val hindiRows = rows.filter { it.lang == Lang.HI }
-        assertEquals(listOf("piper-hi-pratham", "piper-hi-test"), hindiRows.map { it.id.name })
+        assertEquals(listOf("supertonic-hi", "piper-hi-test"), hindiRows.map { it.id.name })
         assertEquals(listOf(true, false), hindiRows.map { it.recommended })
     }
 

@@ -1,0 +1,24 @@
+# File: research/expressive-eval/holdout2/bn.tsv
+# Purpose: Second held-out Bengali set (original text), written before the name-finding change was scored on it.
+
+@ bn-k1-pukur
+@cast টুনি=F বিল্টু=M
+পুকুরপাড়ে টুনি বসে ছিল।	-	sad
+বিল্টু দৌড়ে এসে পাশে বসল।	-	neutral
+“কী রে, মুখ ভার কেন?”	বিল্টু	neutral
+
+টুনি চোখ মুছল।	-	sad
+“মা বকেছে।”	টুনি	sad
+
+বিল্টু পকেট থেকে একটা কাঁচা আম বের করল।	-	joy
+“এই নে, খা।”	বিল্টু	joy
+
+@ bn-k2-bazar
+@cast হরিপদ=M মালতী=F
+সকালবেলা হরিপদ বাজারে গেল।	-	neutral
+মাছের দাম শুনে হরিপদ থমকে দাঁড়াল।	-	surprised
+“এত দাম!”	হরিপদ	surprised
+বাড়ি ফিরতেই মালতী থলেটা দেখল।	-	neutral
+“মাছ আনোনি?”	মালতী	angry
+হরিপদ মাথা চুলকাল।	-	scared
+“কাল আনব, আজ টাকা কম ছিল।”	হরিপদ	scared

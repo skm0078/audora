@@ -97,7 +97,7 @@ class LicencesControllerTest {
 
     private companion object {
         val CARD = LicenceText("MODEL_CARD", "card")
-        val INSTALLED = licence("piper-hi-pratham", installed = true)
+        val INSTALLED = licence("supertonic-hi", installed = true)
         val NOT_INSTALLED = licence("piper-bn-google", installed = false)
 
         fun licence(id: String, installed: Boolean) = VoiceLicence(

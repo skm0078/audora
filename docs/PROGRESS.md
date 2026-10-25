@@ -3,7 +3,7 @@
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
 ## Release hardening 9: TalkBack, voice import, release pins (2026-10-25)
-From the pre-release review's pick list (P6, P7, P12, P14, P15, P17, P18). What's new 10.
+From the pre-release review's pick list (P6, P7, P12, P14, P15, P17, P18). What's new 11.
 - **TalkBack reaches every sentence:** a paragraph in the reflowed text and the drawn page each offer "Read from: …"
   and "Options for: …" for every sentence in TalkBack's actions menu, named by the sentence's first words
   (`rememberSentenceActions`). The one-sentence-per-row text view already reached each sentence.
@@ -95,6 +95,65 @@ From the pre-release review's pick list (P2, P3).
 file" and rotate: the done toast shows and the file is under "Made from this book". Record a voice note and rotate:
 the note is there. Browse to another page while paused and rotate: same page, no "Resumed at".
 
+## Hindi and Bengali characters found by repetition (2026-10-25, ADR-077)
+- A word that opens Hindi or Bengali narration twice on a page is taken as a character ("बिरजू", "পল্টু"), so its
+  quotes get its voice; a noun said once is not. Bengali sentences that open with a place, a participle or an owner
+  ("ছাদে উঠে", "মাছের দাম শুনে") now find the real subject.
+- Held-out Hindi right speaker 7 % to 38 %; a second held-out set: Hindi 0 to 80 %, Bengali 0 to 83 %. One wrong
+  voice in that set (see the ADR). Bengali names still get no voice of their own (no gender from the verb).
+- "What's new" (en/hi/bn) item, `WHATS_NEW_ID` 9. No `:pdf` change. No new dependency.
+- **Verified in CI:** `QuoteCarryTest` (a repeated Hindi name is a character, a noun is not), `SpeakerTagsTest`
+  (Bengali openers), `ExpressiveEvalTest` (held-out floors, new second held-out set).
+
+**Real-device checks (the test phone):** a Hindi story with Supertonic and character voices on: the two main
+characters' lines get their own voices after their names have opened two sentences.
+
+## Feelings you can hear (2026-10-25, ADR-076)
+- **Pitch per feeling on every voice:** sad lines are 1.5 semitones lower, lively and surprised 2 higher, scared 1.5,
+  loud 1, capped at 2.5. Only the quoted words move; narration around them stays plain. Voices that act feelings
+  themselves (Rasa, studio) are not shifted. Made by resampling (`PcmAudio.pitched`), with the voice asked for the
+  speed that keeps the words' length.
+- **Stronger speed, loudness and pauses** per feeling (`DeliveryConfig` effects).
+- "What's new" (en/hi/bn) leads with it, `WHATS_NEW_ID` 8. No `:pdf` change. No new dependency.
+- **Verified in CI:** `PcmAudioTest` (a 200 Hz tone comes out at 224 Hz, 1.12 times shorter), `CastSpeechTest`
+  (only the quote is shifted, its words keep their length, an acting voice is not shifted), `DeliveryPlannerTest`
+  (sad lower, lively higher, plain and news unchanged, a storybook within the cap).
+
+**Real-device checks (the test phone):** with "Read to suit the book" on, play a story with a sad and a happy line in
+English, Hindi (Supertonic) and Bengali: the sad line is clearly lower and slower, the happy one brighter, and both
+still sound like the same voice.
+
+## Commercial-use voices only; Supertonic reads Hindi (2026-10-25, ADR-074)
+- **Removed:** Piper Hindi pratham and priyamvada (CC BY-NC-SA 4.0) and MMS Bengali (CC BY-NC 4.0). A phone that
+  downloaded one deletes it at the next start and that language goes back to its default until another voice is
+  picked (`WithdrawnVoices`, `VoiceFiles.withdraw`).
+- **Hindi:** Supertonic 3 (OpenRAIL-M) is the recommended download and shows in the Play build. Its other nine voice
+  styles (four women, five men) read Hindi characters (`CastSpeakers`). `VoiceRespellings` (Piper-only fixes) is gone.
+- "What's new" (en/hi/bn) lists these two items above the character-voice ones, `WHATS_NEW_ID` 7. No `:pdf` change. No new dependency.
+- **Verified in CI:** `CatalogLicencesTest` (no NC licence, no withdrawn voice, every recommended voice offered),
+  `VoiceFilesTest` (withdraw deletes only catalog copies), `CastSpeakersTest` (Supertonic table and archive pin),
+  `LanguagePacksTest`.
+
+**Real-device checks (the test phone):** download Supertonic Hindi, read a Hindi story with dialogue: it keeps up,
+and a man's line is read by a male voice. A phone that had Piper Hindi installed: it disappears from Voices and
+Hindi reads with the phone voice until Supertonic is picked.
+## Character voices that find the characters (2026-10-25, ADR-075)
+The maintainer heard character voices fail most of the time. Measured first, then fixed.
+- **A marked story set** (`research/expressive-eval/`): 20 stories in English, Hindi and Bengali, each sentence
+  marked with its speaker and feeling, plus a held-out set never tuned on. `ExpressiveEvalTest` scores the app's
+  reading of them and fails if a score drops, a character gets the other gender's voice, or a feeling is read as
+  its opposite. Reports land in `playback/build/expressive/`.
+- **Characters found:** single-quoted dialogue, one-word lines, Hindi and Bengali tags read subject first (sadhu
+  verbs too), names and role words that tell gender, the narration's subject for an untagged line, never the person
+  a line calls by name (the one it calls answers next), English names as printed. Right speaker 17/11/26 % →
+  87/84/100 % (en/hi/bn); right-gender voice 29/11/0 % → 85/88/100 % on the tuned set, 22/0/0 % → 59/7/0 % held out. English knows ~3,000 more given names from public-domain
+  birth records.
+- **"!" alone reads emphatic, not happy.** Opposite feelings 5 → 0 on the tuned set.
+- "A voice for each character" is labelled experimental; What's new lists the changes; studio audio renders again.
+
+**Real-device checks (test phone):** a story with single-quoted dialogue in English with Kitten, a Hindi story with
+Piper Pratham and a Bengali story with Rasa: characters switch voices, men and women are not swapped, "Get out!"
+does not sound cheerful in Bengali.
 ## Speed 1: the phones run an optimised build (2026-10-25, ADR-072)
 - **The dev APK is no longer a debug build.** `audora-dev.apk` is now the new `dev` build type: release settings
   (not debuggable, R8, native code at -O2) with the dev key and the debug app id, so it updates in place. The

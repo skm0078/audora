@@ -17,6 +17,7 @@ import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
+import io.github.skm0078.audora.speech.voices.VoiceRow
 
 /** One interface instead of many lambdas keeps [ReaderScreen]'s signature readable. */
 @Suppress("TooManyFunctions") // One per control on the screen.
@@ -124,6 +125,9 @@ interface ReaderActions {
 
     /** A voice picked for this book in the speech sheet (plan item 4). */
     fun onBookVoice(lang: Lang, voice: VoiceId) = Unit
+
+    /** A voice picked in the speech sheet while this book follows the usual settings: it reads every book. */
+    fun onVoice(row: VoiceRow) = Unit
 
     fun onPasswordSubmitted(password: String)
 

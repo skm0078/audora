@@ -178,6 +178,7 @@ import io.github.skm0078.audora.ui.voices.SpokenVoiceSampler
 import io.github.skm0078.audora.ui.voices.VoiceManager
 import io.github.skm0078.audora.ui.voices.VoicesController
 import io.github.skm0078.audora.ui.voices.VoicesRoute
+import io.github.skm0078.audora.ui.voices.use
 import io.github.skm0078.audora.ui.voices.voicePackActions
 import io.github.skm0078.audora.ui.voices.voicesActions
 import io.github.skm0078.audora.ui.whatsnew.WHATS_NEW_ID
@@ -846,7 +847,11 @@ class MainActivity : ComponentActivity() {
         // The reader and the player share the model, so back must follow the screen now shown, not the first one.
         val back by rememberUpdatedState(onBack)
         val actions = remember(model) {
-            BookReaderActions(applicationContext, model, notes, playWithPermission, ocrModels) { back() }
+            val book = BookReaderActions(applicationContext, model, notes, playWithPermission, ocrModels) { back() }
+            // A voice picked in the speech sheet for every book is the same choice as Settings → Voices.
+            object : ReaderActions by book {
+                override fun onVoice(row: VoiceRow) = voiceManager.use(row)
+            }
         }
         BookWindowEffects(model, state, listeningInBackground)
         val opened = state.document is DocumentState.Open

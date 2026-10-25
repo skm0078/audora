@@ -36,8 +36,9 @@
     <string name="confirm_keep">Keep</string>
     <string name="slider_percent">%1$d percent</string>
     <string name="slider_step_of">%1$d of %2$d</string>
-    <string name="gesture_tips_title">Two hidden gestures</string>
-    <string name="gesture_tips_sentence">Hold a sentence to bookmark it, highlight it, add a note or look up a word.</string>
+    <string name="gesture_tips_title">Quick tips</string>
+    <string name="gesture_tips_tap">Tap a sentence to start reading from there.</string>
+    <string name="gesture_tips_sentence">Hold a sentence to bookmark it, highlight it, add a note, look up a word or say it sounded wrong.</string>
     <string name="gesture_tips_skip">Hold the previous or next button to jump a whole paragraph.</string>
     <string name="gesture_tips_got_it">Got it</string>
 </resources>

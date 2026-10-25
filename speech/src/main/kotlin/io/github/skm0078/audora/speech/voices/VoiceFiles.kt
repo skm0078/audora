@@ -91,6 +91,16 @@ class VoiceFiles(val root: File) {
         }
     }
 
+    /**
+     * Deletes the downloaded catalog voices among [ids] (voices taken out of the catalog, [WithdrawnVoices]) and
+     * returns the ids it deleted. A voice the user imported keeps its folder, even under one of these ids.
+     */
+    fun withdraw(ids: Set<String>): List<String> = installed()
+        .filter { it.origin == VoiceOrigin.CATALOG && it.spec.id in ids }
+        .map { it.spec.id }
+        .filter { id -> delete(id) is Outcome.Success }
+        .onEach { AudoraLog.w(TAG, "Withdrew voice=$it: no longer in the catalog") }
+
     /** Deletes an installed voice and any download of it. Renamed aside first so a half-deleted folder never lists. */
     fun delete(id: String): Outcome<Unit, String> {
         downloadsRoot.listFiles().orEmpty().filter { it.name.startsWith("$id-") }.forEach { it.delete() }
