@@ -63,12 +63,16 @@ object ExpressiveEval {
             val row = raw.trimEnd()
             when {
                 row.startsWith("@cast ") -> cast = castOf(row.removePrefix("@cast "))
+
                 row.startsWith("@ ") -> {
                     flush()
                     id = row.removePrefix("@ ").trim()
                 }
+
                 row.startsWith("#") -> Unit
+
                 row.isBlank() -> closeParagraph(lines)
+
                 else -> {
                     val (text, speaker, feeling) = row.split('\t').also { require(it.size == 3) { "bad row: $row" } }
                     lines.add(GoldLine(text, speaker.takeUnless { it == "-" }, feeling, paragraphEnd = false))
@@ -110,7 +114,12 @@ object ExpressiveEval {
 
     /** A feeling read as its opposite, the slip a listener notices most: grief or fear read cheerfully. */
     private val OPPOSITE = setOf(
-        "sad" to "joy", "scared" to "joy", "angry" to "joy", "joy" to "sad", "angry" to "soft", "loud" to "soft",
+        "sad" to "joy",
+        "scared" to "joy",
+        "angry" to "joy",
+        "joy" to "sad",
+        "angry" to "soft",
+        "loud" to "soft",
     )
 
     fun close(gold: String, heard: String): Boolean = gold == heard || (gold to heard) in CLOSE
@@ -119,7 +128,9 @@ object ExpressiveEval {
 
     /** Scores by language, then every failure, as Markdown. */
     fun report(judged: List<Judged>): String = buildString {
-        appendLine("| Lang | Lines with speech | Speech found | Right speaker | Right-gender voice | Wrong-gender voice |")
+        appendLine(
+            "| Lang | Lines with speech | Speech found | Right speaker | Right-gender voice | Wrong-gender voice |",
+        )
         appendLine("|---|---:|---:|---:|---:|---:|")
         val byLang = judged.groupBy { it.passage.lang }
         byLang.forEach { (lang, rows) ->
@@ -150,7 +161,7 @@ object ExpressiveEval {
         appendLine()
         appendLine("| Passage | Sentence | Speaker: marked / found | Feeling: marked / found |")
         appendLine("|---|---|---|---|")
-        judged.filter { !it.speakerRight && it.line.speaker != null || !close(it.line.feeling, it.feeling) }
+        judged.filter { (!it.speakerRight && it.line.speaker != null) || !close(it.line.feeling, it.feeling) }
             .forEach { row ->
                 val found = row.speaker?.let { it.name ?: "(${it.gender.name.lowercase()})" }
                     ?: if (row.heardSpeech) "?" else "no speech found"
