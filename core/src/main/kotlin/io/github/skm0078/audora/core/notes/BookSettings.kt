@@ -1,5 +1,6 @@
 // File: core/src/main/kotlin/io/github/skm0078/audora/core/notes/BookSettings.kt
-// Purpose: One book's own speed, pace and voices (plan item 4), used instead of the global ones for that book.
+// Purpose: One book's own speed, pace, pitch and voices (plan item 4, ADR-068), used instead of the global ones for
+//          that book.
 
 package io.github.skm0078.audora.core.notes
 
@@ -13,17 +14,22 @@ import io.github.skm0078.audora.core.model.VoiceMaps
 import io.github.skm0078.audora.core.result.Outcome
 
 /**
- * A book with settings reads at its own [rate] and [pace] and with its own [voices]; anything left null (or a
- * language with no voice here) follows the global setting. Reading modes and sound stay global.
+ * A book with settings reads at its own [rate], [pace] and [pitch] and with its own [voices]; anything left null (or
+ * a language with no voice here) follows the global setting. Reading modes and sound stay global.
  */
 data class BookSettings(
     val bookId: BookId,
     val rate: Float? = null,
     val pace: Pace? = null,
     val voices: Map<Lang, VoiceId> = emptyMap(),
+    val pitch: Float? = null,
 ) {
-    /** [global] with this book's rate and pace on top. */
-    fun over(global: SpeechStyle): SpeechStyle = global.copy(rate = rate ?: global.rate, pace = pace ?: global.pace)
+    /** [global] with this book's rate, pace and pitch on top. */
+    fun over(global: SpeechStyle): SpeechStyle = global.copy(
+        rate = rate ?: global.rate,
+        pace = pace ?: global.pace,
+        pitch = pitch ?: global.pitch,
+    )
 
     companion object {
         /** The voices' stored form ([VoiceMaps]); [decodeVoices] reads it back, dropping bad entries. */

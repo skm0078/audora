@@ -1,5 +1,6 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/storage/BookSettingsEntity.kt
-// Purpose: Room row for one book's own speed, pace and voices (plan item 4); deleted with its book.
+// Purpose: Room row for one book's own speed, pace, pitch (schema 5, ADR-068) and voices (plan item 4); deleted
+//          with its book.
 
 package io.github.skm0078.audora.playback.storage
 
@@ -27,12 +28,14 @@ internal data class BookSettingsEntity(
     val rate: Float?,
     val pace: String?,
     val voices: String,
+    val pitch: Float? = null,
 ) {
     fun toSettings() = BookSettings(
         bookId = BookId(bookId),
         rate = rate?.takeIf { it > 0f && it.isFinite() },
         pace = Pace.entries.firstOrNull { it.name == pace },
         voices = BookSettings.decodeVoices(voices),
+        pitch = pitch?.takeIf { it > 0f && it.isFinite() },
     )
 
     companion object {
@@ -41,6 +44,7 @@ internal data class BookSettingsEntity(
             rate = settings.rate,
             pace = settings.pace?.name,
             voices = BookSettings.encodeVoices(settings.voices),
+            pitch = settings.pitch,
         )
     }
 }

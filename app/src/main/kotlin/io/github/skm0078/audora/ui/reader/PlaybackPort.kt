@@ -36,6 +36,9 @@ interface PlaybackPort {
     /** The voice's speaking rate (ADR-033): the voice itself speaks faster or slower; the audio is never stretched. */
     fun setSpeed(speed: Float)
 
+    /** How high the voice sounds (ADR-067): the player shifts it at once; nothing is rendered again. */
+    fun setPitch(pitch: Float)
+
     /** The silences between sentences (ADR-033). */
     fun setPace(pace: Pace)
 
@@ -129,6 +132,7 @@ data class PlaybackSnapshot(
     val buffering: Boolean = false,
     val styleKnown: Boolean = false,
     val speed: Float = SpeechStyle.NORMAL_RATE,
+    val pitch: Float = SpeechStyle.NORMAL_PITCH,
     val pace: Pace = Pace.NORMAL,
     val clausePauses: Boolean = true,
     val readingModes: ReadingModes = ReadingModes(),

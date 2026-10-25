@@ -76,7 +76,7 @@ fun JobProgressBar(job: LongJob, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun LongJobCard(job: LongJob, onDetails: (() -> Unit)?) {
+internal fun LongJobCard(job: LongJob, onDetails: (() -> Unit)? = null) {
     val context = LocalContext.current
     val colors = when (job.end) {
         LongJobEnd.FAILED -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)

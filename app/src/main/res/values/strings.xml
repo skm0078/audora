@@ -35,7 +35,7 @@
     <string name="library_remove_body">The file stays on your phone. You can add it again later.</string>
     <string name="library_cancel">Cancel</string>
     <string name="library_search">Search library</string>
-    <string name="library_search_hint">Search titles</string>
+    <string name="library_search_hint">Search titles and authors</string>
     <string name="library_search_close">Close search</string>
     <string name="library_sort_filter">Sort and filter</string>
     <string name="library_sort_by">Sort by</string>
@@ -149,7 +149,7 @@
     <string name="reader_sleep_end_of_page">End of page</string>
     <string name="reader_sleep_end_of_chapter">End of chapter</string>
     <string name="speech_own_settings">Use for this book only</string>
-    <string name="speech_own_settings_detail">On: this book remembers its own speed, pause and voices; other books keep the usual ones. Off: this book uses the usual ones.</string>
+    <string name="speech_own_settings_detail">On: this book remembers its own speed, pause, pitch and voices; other books keep the usual ones. Off: this book uses the usual ones.</string>
     <string name="bookmarks_title">Bookmarks</string>
     <string name="bookmarks_add_here">Bookmark here</string>
     <string name="bookmarks_empty">No notes yet. Long-press a sentence, or tap Bookmark here.</string>

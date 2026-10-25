@@ -7,8 +7,9 @@ object BookTitles {
     /** Used when the provider gives no usable name; the UI shows its own localized text for it. */
     const val UNTITLED = ""
 
-    /** The book formats' extensions (ADR-042); any other extension is part of the name. */
-    private val BOOK_EXTENSIONS = listOf(".pdf", ".epub", ".txt")
+    /** The book formats' extensions (ADR-042, ADR-066); any other extension is part of the name. */
+    private val BOOK_EXTENSIONS =
+        listOf(".pdf", ".epub", ".txt", ".docx", ".odt", ".rtf", ".html", ".htm", ".xhtml", ".md", ".markdown")
 
     /** "Moby Dick.PDF" → "Moby Dick"; "  " or null → [UNTITLED]. Underscores stay: they may be meaningful. */
     fun fromDisplayName(displayName: String?): String {

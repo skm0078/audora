@@ -14,8 +14,10 @@ import android.os.PowerManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.core.config.EpubConfig
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.library.BookOutputStore
 import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.library.Library
+import io.github.skm0078.audora.core.library.OutputKind
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
@@ -28,6 +30,8 @@ import io.github.skm0078.audora.playback.export.JobSlots
 import io.github.skm0078.audora.playback.jobs.LongJobEnd
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.jobs.LongJobs
+import io.github.skm0078.audora.playback.outputs.MadeFile
+import io.github.skm0078.audora.playback.outputs.MadeFiles
 import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.studio.BookVoice
 import io.github.skm0078.audora.playback.studio.RunSettings
@@ -53,6 +57,9 @@ class BookCopyService : Service() {
 
     @Inject
     lateinit var pronunciations: PronunciationStore
+
+    @Inject
+    lateinit var outputs: BookOutputStore
 
     private val config = EpubConfig()
     private lateinit var notifications: CopyNotifications
@@ -196,6 +203,15 @@ class BookCopyService : Service() {
             is Outcome.Success -> {
                 AudoraLog.i(TAG, "Copy saved, book=${book.book.id.logLabel} kind=$kind")
                 notifications.showDone(title, result.value, config.folder)
+                val made = result.value.files.map { MadeFile(it.name, it.location, it.mimeType, it.sizeBytes) }
+                val outputKind = if (kind ==
+                    CopyKind.ACCESSIBLE
+                ) {
+                    OutputKind.ACCESSIBLE_COPY
+                } else {
+                    OutputKind.TALKING_BOOK
+                }
+                runBlocking { MadeFiles(outputs).copy(book.book.id, outputKind, made, style = null) }
             }
 
             is Outcome.Failure -> {

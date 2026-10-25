@@ -62,6 +62,7 @@ import io.github.skm0078.audora.ui.shell.readableSidePadding
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import io.github.skm0078.audora.ui.theme.Dimens
 
+/** [runningJobs]: how many jobs and downloads work now, for the badge on the Jobs button (ADR-067). */
 @Composable
 fun LibraryScreen(
     listState: LibraryListState,
@@ -72,6 +73,7 @@ fun LibraryScreen(
     modifier: Modifier = Modifier,
     banner: @Composable () -> Unit = {},
     covers: CoverSource = CoverSource.None,
+    runningJobs: Int = 0,
 ) {
     val snackbar = remember { SnackbarHostState() }
     // Saveable: the picker can outlive this process, and its result must still reach the right book.
@@ -97,7 +99,7 @@ fun LibraryScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         contentWindowInsets = TAB_INSETS,
-        topBar = { LibraryTopBar(listState, actions) },
+        topBar = { LibraryTopBar(listState, actions, runningJobs) },
         floatingActionButton = {
             if (!LocalKidsMode.current && listState is LibraryListState.Loaded && listState.all.isNotEmpty()) {
                 ExtendedFloatingActionButton(
@@ -130,7 +132,7 @@ fun LibraryScreen(
             )
         }
     }
-    detailsItem(listState, details)?.let { BookDetailsSheet(it, actions, covers) { details = null } }
+    BookSheets(listState, actions, covers, details) { details = null }
     pendingRemoval?.let { RemovalDialog(it, actions) }
     duplicate?.let { DuplicateDialog(it, listState, actions) }
 }
@@ -161,6 +163,7 @@ private fun LibraryContent(
         } else {
             Column {
                 ShelfRow(listState, menu::onQuery)
+                CatalogueRow(listState, menu::onQuery)
                 if (listState.items.isEmpty()) {
                     Centered {
                         Text(

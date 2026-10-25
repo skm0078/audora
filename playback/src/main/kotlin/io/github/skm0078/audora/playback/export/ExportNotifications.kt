@@ -15,6 +15,7 @@ import io.github.skm0078.audora.playback.jobs.JobTimeLeft
 import io.github.skm0078.audora.playback.jobs.LongJobEnd
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.jobs.LongJobs
+import io.github.skm0078.audora.playback.jobs.OpenJobs
 
 /** Platform notifications: no androidx dependency for four plain notifications. */
 internal class ExportNotifications(private val context: Context) {
@@ -131,18 +132,7 @@ internal class ExportNotifications(private val context: Context) {
     private fun builder(): Notification.Builder = Notification.Builder(context, CHANNEL)
         .setSmallIcon(R.drawable.ic_export_audiobook)
         .setCategory(Notification.CATEGORY_PROGRESS)
-        .apply { openApp()?.let { setContentIntent(it) } }
-
-    /** Tapping opens Audora; :playback does not know its activity, the launcher does. */
-    private fun openApp(): PendingIntent? {
-        val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return null
-        return PendingIntent.getActivity(
-            context,
-            0,
-            launch.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-    }
+        .apply { OpenJobs.pendingIntent(context)?.let { setContentIntent(it) } }
 
     companion object {
         const val RUNNING_ID = 0x0A0D

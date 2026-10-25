@@ -72,6 +72,17 @@
             android:exported="false"
             android:foregroundServiceType="dataSync|mediaProcessing" />
 
+        <!-- Saved audiobooks and studio files played in the app (ADR-068): its own session beside the book's. Not
+             exported: only the app's own screens connect; no browse action, so car and watch apps list only books. -->
+        <service
+            android:name=".outputs.MadeAudioService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
+
         <!-- Share as audio (plan item 41): renders one passage into a clip; started only from the reader (C7). -->
         <service
             android:name=".export.ClipService"

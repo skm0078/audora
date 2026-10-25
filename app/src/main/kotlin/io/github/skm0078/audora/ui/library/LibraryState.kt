@@ -5,9 +5,11 @@ package io.github.skm0078.audora.ui.library
 
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookAvailability
+import io.github.skm0078.audora.core.library.BookCollection
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.BookProgress
 import io.github.skm0078.audora.core.library.LibraryError
+import io.github.skm0078.audora.core.library.LibraryFacets
 import io.github.skm0078.audora.core.library.LibraryQuery
 
 /**
@@ -26,12 +28,17 @@ sealed interface LibraryListState {
      * [items]: the books [query] keeps, in its order. [continueReading]: the book read most recently, offered on top
      * while nothing is searched or filtered; null when none was read yet. [all]: every book in the library, so "no
      * book matches" and "the library is empty" can be told apart, and the mini player finds a filtered-out book.
+     * [collections], [members] (each book's collections) and [facets] (what the library holds to filter by) feed
+     * the collection chips and the filter sheet (ADR-069).
      */
     data class Loaded(
         val items: List<LibraryItem>,
         val continueReading: LibraryItem? = null,
         val all: List<LibraryItem> = items,
         val query: LibraryQuery = LibraryQuery(),
+        val collections: List<BookCollection> = emptyList(),
+        val members: Map<BookId, Set<String>> = emptyMap(),
+        val facets: LibraryFacets = LibraryFacets.EMPTY,
     ) : LibraryListState
 
     /** The database could not be read; the log has the cause. */

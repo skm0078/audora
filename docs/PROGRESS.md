@@ -2,6 +2,53 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Library collections, filters, author search and sort (2026-10-24, ADR-069)
+- **Collections:** make, rename and delete your own groups of books from the chip row under the shelves; a book's
+  details add it to a collection or take it out at once. A collection chip shows its number of books and narrows
+  the library to it.
+- **Filters:** a Filters chip opens author, file type, language and collection lists (only what the library holds,
+  with counts); a choice applies at once and combines with the shelf, search and sort.
+- **Search and sort:** search finds titles and authors; new sort by Author.
+- **Low-end phones:** search keys folded once per change of the library, search waits for a pause in typing, the
+  cover cache is sized by the phone's memory and low-RAM phones keep covers in 16-bit colour.
+- No schema change (5), no `:pdf` change (PIPELINE_VERSION 12). New strings in en, hi and bn. CI's `player-screens`
+  artifact has `filter-sheet.png`, `catalogue-row.png` and `collections-sheet.png`.
+
+## Made files in the library, in-app player, book details (2026-10-24, ADR-068)
+- **Made from your books:** Jobs → "Everything made from your books", and a book's details → "Made from this book",
+  list every saved audiobook, studio audio file, accessible copy and talking book with its length, size, date and
+  pitch, and Play, Open, Share and Delete. Earlier audiobook exports are found once after the update. Files deleted
+  in another app show as gone.
+- **In-app player:** plays a saved audiobook or studio file with the phone's media controls, chapters, seek, back
+  15 s, forward 30 s and speed, and goes on where it was left.
+- **Book details:** author, language and format are read from each file (PDF, EPUB, Word, OpenDocument, web page,
+  RTF) in the background; an EPUB's own cover is used. Book details → Edit details changes title, author, language
+  and cover (another page, a gallery picture, the book's own); "Fill in from the file again" undoes the edits. The
+  library shows the author under each title.
+- **Pitch per book:** "This book only" keeps the book's own pitch too.
+- Database v5 (automatic upgrade). No `:pdf` change (PIPELINE_VERSION 12). New strings in en, hi and bn. Tests listed
+  in ADR-068; CI's `player-screens` artifact has `made-list.png`, `made-player.png` and `edit-details.png`.
+
+**Real-device checks (Moto):** update over v4 and check every book, note and position is still there; save a short
+audiobook, open Jobs → Everything made, play it, leave and come back (it goes on where it was), share it to
+WhatsApp; delete a copy; edit a book's author and pick a gallery cover; add an EPUB with a cover and a Word file with
+an author and see both filled in within a few seconds.
+
+## Jobs screen and pitch (2026-10-24, ADR-067)
+- **Jobs screen:** library top bar → Jobs (badge with the number running), and every long job's notification, open
+  one list: audiobook export, studio mode and copies (progress, time left, Stop), then every download (voices, tutor,
+  dictionaries, text recognition, punctuation, voice commands, acted voices) with its size, time left and Cancel.
+  Cancel keeps what was received, so downloading again resumes.
+- **Pitch:** speech sheet → Pitch, 0.8 to 1.25 in 5% steps, with − and +, the value in words and "Back to the voice's
+  own". Applied by the player without restarting the sentence; audiobooks, clips, the studio audio file and talking
+  books are saved at the same pitch (Media3 Sonic before the encoder). Studio audio already rendered stays valid.
+- No `:pdf` change (PIPELINE_VERSION 12). New strings in en, hi and bn. Tests listed in ADR-067; CI's
+  `player-screens` artifact has `jobs-screen.png` and `pitch-higher.png`.
+
+**Real-device checks (Moto):** change the pitch while a book plays (the same sentence goes on, higher or deeper) and
+while paused; export a short audiobook at 1.15 and play it in Files (same pitch, same length); start a voice download
+and tap the export notification: the Jobs screen shows both; Cancel the download and start it again (it resumes).
+
 ## Phone test fixes before v0.1.0: player width, time left everywhere, no babble after quotes (2026-10-24)
 - **Player:** the controls row (speed, previous, play, next, sleep timer) did not fill the panel, so `SpaceBetween` had
   no room and the row sat at the left (seen on the Moto). It now fills the width, in the reader too.

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_made.xml -->
+<!-- Purpose: What the app made from each book, the in-app player and editing a book's details (ADR-068), in Bengali. -->
+<resources>
+    <string name="made_title">আপনার বই থেকে তৈরি</string>
+    <string name="made_open_all">আপনার বই থেকে তৈরি সবকিছু</string>
+    <string name="made_from_book">এই বই থেকে তৈরি</string>
+    <string name="made_empty">এখনও কিছু তৈরি হয়নি। সেভ করা অডিওবুক, স্টুডিও অডিও ফাইল, সহজপাঠ্য কপি আর কথা-বলা বই এখানে দেখা যায়, চালানো, শেয়ার আর মোছার বোতাম সহ।</string>
+    <string name="made_kind_audiobook">অডিওবুক</string>
+    <string name="made_kind_studio">স্টুডিও অডিও ফাইল</string>
+    <string name="made_kind_accessible">সহজপাঠ্য কপি</string>
+    <string name="made_kind_talking">কথা-বলা বই</string>
+    <plurals name="made_chapters">
+        <item quantity="one">%1$dটি অধ্যায়</item>
+        <item quantity="other">%1$dটি অধ্যায়</item>
+    </plurals>
+    <plurals name="made_files">
+        <item quantity="one">%1$dটি ফাইল</item>
+        <item quantity="other">%1$dটি ফাইল</item>
+    </plurals>
+    <string name="made_pitch">পিচ: %1$s</string>
+    <string name="made_missing">অ্যাপের বাইরে মোছা বা সরানো হয়েছে</string>
+    <string name="made_partly_missing">%2$dটির মধ্যে %1$dটি ফাইল অ্যাপের বাইরে মোছা বা সরানো হয়েছে</string>
+    <string name="made_play">চালান</string>
+    <string name="made_open">খুলুন</string>
+    <string name="made_share">শেয়ার করুন</string>
+    <string name="made_delete">মুছুন</string>
+    <string name="made_forget">তালিকা থেকে সরান</string>
+    <string name="made_delete_title">ফোন থেকে মুছবেন?</string>
+    <string name="made_delete_text">%1$s (%2$s) আপনার ফোন থেকে মুছে যাবে। বই, তার নোট আর আপনি কোথায় আছেন, সব থাকবে।</string>
+    <string name="made_delete_confirm">মুছুন</string>
+    <string name="made_delete_cancel">রাখুন</string>
+    <string name="made_deleted">মুছে ফেলা হয়েছে</string>
+    <string name="made_not_deleted">কিছু ফাইল মোছা যায়নি</string>
+    <string name="made_no_app">এই ফোনে কোনো অ্যাপ এই ফাইল খোলে না</string>
+    <string name="made_player_chapter">অধ্যায় %1$d / %2$d</string>
+    <string name="made_player_back">১৫ সেকেন্ড পিছনে</string>
+    <string name="made_player_forward">৩০ সেকেন্ড সামনে</string>
+    <string name="made_player_previous">আগের অধ্যায়</string>
+    <string name="made_player_next">পরের অধ্যায়</string>
+    <string name="made_player_play">চালান</string>
+    <string name="made_player_pause">থামান</string>
+    <string name="made_player_speed">গতি %1$s×</string>
+    <string name="made_player_gone">এই অডিও আর ফোনে নেই।</string>
+    <string name="made_player_position">%2$s-এর মধ্যে %1$s</string>
+    <string name="book_edit">তথ্য বদলান</string>
+    <string name="book_edit_title_field">শিরোনাম</string>
+    <string name="book_edit_author_field">লেখক</string>
+    <string name="book_edit_language">ভাষা</string>
+    <string name="book_edit_language_auto">বইয়ে যেমন লেখা</string>
+    <string name="book_edit_cover">প্রচ্ছদ</string>
+    <string name="book_edit_cover_first">প্রথম পাতা</string>
+    <string name="book_edit_cover_page">অন্য একটি পাতা</string>
+    <string name="book_edit_cover_page_field">পাতা নম্বর (১ থেকে %1$d)</string>
+    <string name="book_edit_cover_page_field_unknown">পাতা নম্বর</string>
+    <string name="book_edit_cover_gallery">গ্যালারি থেকে একটি ছবি</string>
+    <string name="book_edit_cover_book">বইয়ের নিজের প্রচ্ছদ</string>
+    <string name="book_edit_cover_picked">ছবি বাছা হয়েছে</string>
+    <string name="book_edit_fill">ফাইল থেকে আবার ভরুন</string>
+    <string name="book_edit_fill_help">এই বইয়ের তথ্যে আপনার বদল ভুলে গিয়ে ফাইল থেকে আবার পড়ে।</string>
+    <string name="book_edit_save">সেভ করুন</string>
+    <string name="book_edit_cancel">বাতিল</string>
+    <string name="book_edit_saved">তথ্য সেভ হয়েছে</string>
+    <string name="book_edit_not_saved">তথ্য সেভ করা যায়নি</string>
+    <string name="book_edit_picture_failed">ওই ছবিটি ব্যবহার করা গেল না</string>
+    <string name="book_details_author">লেখক: %1$s</string>
+    <string name="book_details_format">ফরম্যাট: %1$s</string>
+    <string name="book_details_language">ভাষা: %1$s</string>
+    <string name="book_format_pdf">PDF</string>
+    <string name="book_format_epub">EPUB</string>
+    <string name="book_format_text">টেক্সট</string>
+    <string name="book_format_docx">Word</string>
+    <string name="book_format_odt">OpenDocument</string>
+    <string name="book_format_rtf">RTF</string>
+    <string name="book_format_html">ওয়েব পেজ</string>
+</resources>

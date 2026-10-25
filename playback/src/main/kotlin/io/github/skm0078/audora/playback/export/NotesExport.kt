@@ -67,7 +67,7 @@ object NotesExport {
             .flatMap { savedMarkdown ->
                 files.save(text, TEXT_MIME) {
                     it.write(export.text(marks).toByteArray())
-                }.map { listOf(savedMarkdown, it) }
+                }.map { listOf(savedMarkdown.name, it.name) }
             }
             .also {
                 AudoraLog.i(

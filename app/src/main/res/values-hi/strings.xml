@@ -39,7 +39,7 @@
     <string name="library_remove_body">फ़ाइल आपके फ़ोन पर बनी रहेगी। आप इसे बाद में फिर से जोड़ सकते हैं।</string>
     <string name="library_cancel">रद्द करें</string>
     <string name="library_search">लाइब्रेरी में खोजें</string>
-    <string name="library_search_hint">शीर्षक खोजें</string>
+    <string name="library_search_hint">शीर्षक और लेखक खोजें</string>
     <string name="library_search_close">खोज बंद करें</string>
     <string name="library_sort_filter">क्रम और फ़िल्टर</string>
     <string name="library_sort_by">क्रम</string>
@@ -153,7 +153,7 @@
     <string name="reader_sleep_end_of_page">पेज के अंत में</string>
     <string name="reader_sleep_end_of_chapter">अध्याय के अंत में</string>
     <string name="speech_own_settings">सिर्फ़ इस किताब के लिए</string>
-    <string name="speech_own_settings_detail">चालू: यह किताब अपनी गति, ठहराव और आवाज़ें याद रखती है; बाकी किताबें सामान्य सेटिंग रखती हैं। बंद: यह किताब सामान्य सेटिंग इस्तेमाल करती है।</string>
+    <string name="speech_own_settings_detail">चालू: यह किताब अपनी गति, ठहराव, पिच और आवाज़ें याद रखती है; बाकी किताबें सामान्य सेटिंग रखती हैं। बंद: यह किताब सामान्य सेटिंग इस्तेमाल करती है।</string>
     <string name="bookmarks_title">बुकमार्क</string>
     <string name="bookmarks_add_here">यहाँ बुकमार्क करें</string>
     <string name="bookmarks_empty">अभी कोई नोट नहीं। किसी वाक्य को देर तक दबाएँ, या “यहाँ बुकमार्क करें” पर टैप करें।</string>

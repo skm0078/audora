@@ -16,6 +16,7 @@ object SchemaHashes {
         2 to "3fa4c1b0eb10585f2cf1f5ed22fece69",
         3 to "b8d414157d2d420dee72a39fe13e82b2",
         4 to "75479c918e5c90c007f54eec1431c6ef",
+        5 to "89a80ba8e811befafba8f2c7c5a74a42",
     )
 
     /** The hash Room wrote at [version]; null for a version this app never had. */

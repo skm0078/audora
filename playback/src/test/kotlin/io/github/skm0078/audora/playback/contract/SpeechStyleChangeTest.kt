@@ -18,10 +18,11 @@ class SpeechStyleChangeTest {
         clausePauses = false,
         modes = ReadingModes(tables = TableMode.ROWS, skipUnreadable = false),
         shaping = VoiceShaping(boostDb = 6),
+        pitch = 1.1f,
     )
 
     @Test
-    fun `a speed change keeps pace, clause pauses, reading modes and sound`() {
+    fun `a speed change keeps pace, clause pauses, reading modes, sound and pitch`() {
         assertEquals(saved.copy(rate = 1.5f), SpeechStyleChange(rate = 1.5f).over(saved))
     }
 
@@ -31,6 +32,7 @@ class SpeechStyleChangeTest {
         assertEquals(saved.copy(clausePauses = true), SpeechStyleChange(clausePauses = true).over(saved))
         assertEquals(saved.copy(modes = ReadingModes()), SpeechStyleChange(modes = ReadingModes()).over(saved))
         assertEquals(saved.copy(shaping = VoiceShaping()), SpeechStyleChange(shaping = VoiceShaping()).over(saved))
+        assertEquals(saved.copy(pitch = 0.9f), SpeechStyleChange(pitch = 0.9f).over(saved))
     }
 
     @Test

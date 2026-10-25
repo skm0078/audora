@@ -267,6 +267,15 @@ class ReaderModelTest {
         }
 
     @Test
+    fun `pitch goes to the player snapped to its steps and inside its range`() = runTest(UnconfinedTestDispatcher()) {
+        val model = model()
+        port.connect()
+        model.setPitch(1.12f)
+        model.setPitch(3f)
+        assertEquals(listOf("pitch 1.1", "pitch 1.25"), port.calls)
+    }
+
+    @Test
     fun `controls pass through to the player`() = runTest(UnconfinedTestDispatcher()) {
         val model = model()
         port.connect()

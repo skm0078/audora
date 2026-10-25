@@ -91,6 +91,19 @@ class Library(
     }
 
     /**
+     * [id] changed by [transform] under the library's lock, so two changes never overwrite each other; saved only when
+     * it changed. The book's details go through it ([fill], [edit], [resetDetails]).
+     */
+    suspend fun change(id: BookId, transform: (Book) -> Book): Outcome<Book, LibraryError> = changes.withLock {
+        withContext(io) {
+            val book = store.byId(id) ?: return@withContext Outcome.Failure(LibraryError.NotInLibrary)
+            val changed = transform(book)
+            if (changed == book) return@withContext Outcome.Success(book)
+            store.update(changed).toLibrary { changed }
+        }
+    }
+
+    /**
      * Once per process (later calls, from a recreated activity, do nothing): deletes Audora's own copies of shared
      * PDFs that no book uses (left by a crash between copying and adding). Under the lock, so no add or remove changes
      * the books meanwhile; unreadable books skip it (logged).

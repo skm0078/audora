@@ -19,6 +19,10 @@ class AppDestinationTest {
         AppDestination.Voices(fromStorage = true),
         AppDestination.Licences,
         AppDestination.Storage,
+        AppDestination.Jobs,
+        AppDestination.Made,
+        AppDestination.MadePlayer("set-1"),
+        AppDestination.MadePlayer("set-2", fromMade = true),
         AppDestination.Reader(book),
         AppDestination.Reader(book, AppTab.NOTES),
         AppDestination.Reader(book, AppTab.SETTINGS, viaPlayer = true),
@@ -47,6 +51,20 @@ class AppDestinationTest {
         assertNull(AppDestination.Player(book).tab)
         assertEquals(AppDestination.Library, AppDestination.Player(book).parent)
         assertEquals(AppDestination.Library, AppDestination.Notes.parent)
+    }
+
+    @Test
+    fun jobsGoBackToTheLibraryWithNoTab() {
+        assertEquals(AppDestination.Library, AppDestination.Jobs.parent)
+        assertNull(AppDestination.Jobs.tab)
+    }
+
+    @Test
+    fun madeGoesBackToJobsAndItsPlayerToWhereItWasOpened() {
+        assertEquals(AppDestination.Jobs, AppDestination.Made.parent)
+        assertEquals(AppDestination.Made, AppDestination.MadePlayer("s", fromMade = true).parent)
+        assertEquals(AppDestination.Library, AppDestination.MadePlayer("s").parent)
+        assertEquals(AppDestination.Library, AppDestination.fromRoute("made/play/"))
     }
 
     @Test

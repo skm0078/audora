@@ -22,15 +22,20 @@ import androidx.lifecycle.lifecycleScope
 import io.github.skm0078.audora.core.config.PhotoConfig
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
+import io.github.skm0078.audora.di.LibraryEntryPoint
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.documents.WatchedFolders
 import io.github.skm0078.audora.playback.epub.BookCopies
 import io.github.skm0078.audora.playback.epub.CopyKind
 import io.github.skm0078.audora.playback.export.MarkStores
 import io.github.skm0078.audora.playback.jobs.LongJobKind
+import io.github.skm0078.audora.playback.outputs.MadeFile
+import io.github.skm0078.audora.playback.outputs.MadeFiles
 import io.github.skm0078.audora.playback.photo.PhotoBooks
+import io.github.skm0078.audora.playback.studio.SavedStudioFile
 import io.github.skm0078.audora.playback.studio.StudioAudioFile
 import io.github.skm0078.audora.playback.studio.StudioMode
 import io.github.skm0078.audora.playback.studio.studioDuration
@@ -137,6 +142,7 @@ internal class StudioLibrary(
         parts.activity.lifecycleScope.launch {
             // An untitled book gets the export's fallback folder name, as an audiobook export does.
             val saved = withContext(Dispatchers.IO) { StudioAudioFile.save(context, book.id, book.title) }
+            if (saved is Outcome.Success) recordStudioFile(book, saved.value)
             state.savingBookId.value = null
             val message = when (saved) {
                 is Outcome.Success -> context.getString(
@@ -150,6 +156,14 @@ internal class StudioLibrary(
             }
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
+    }
+
+    /** In the library's "Made from this book" (ADR-068); a file MediaStore gave no address for is not listed. */
+    private suspend fun recordStudioFile(book: Book, saved: SavedStudioFile) {
+        val location = saved.location ?: return
+        val file = MadeFile(saved.name, location, MadeFiles.AUDIO_MIME, durationMs = saved.durationMs)
+        val style = SpeechStyle(pitch = saved.pitch)
+        MadeFiles(LibraryEntryPoint.of(context).outputs()).studioAudio(book.id, file, style)
     }
 
     fun onLibraryAction(action: LibraryAction) = when (action) {

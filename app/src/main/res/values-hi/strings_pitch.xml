@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_pitch.xml -->
+<!-- Purpose: The speech sheet's pitch control (ADR-067), in Hindi. -->
+<resources>
+    <string name="speech_pitch_title">पिच</string>
+    <string name="speech_pitch_own">आवाज़ की अपनी</string>
+    <string name="speech_pitch_higher">%1$d%% ऊँची</string>
+    <string name="speech_pitch_lower">%1$d%% गहरी</string>
+    <string name="speech_pitch_spoken">पिच: %1$s</string>
+    <string name="speech_pitch_down">गहरी</string>
+    <string name="speech_pitch_up">ऊँची</string>
+    <string name="speech_pitch_reset">आवाज़ की अपनी पिच पर लौटें</string>
+    <string name="speech_pitch_help">आवाज़ कितनी ऊँची या गहरी सुनाई दे। बदलते ही चल रही आवाज़ पर लागू होती है, वाक्य दोबारा शुरू नहीं होता। सेव की गई ऑडियोबुक, क्लिप, स्टूडियो फ़ाइलें और बोलती किताबें भी यही पिच लेती हैं।</string>
+</resources>
