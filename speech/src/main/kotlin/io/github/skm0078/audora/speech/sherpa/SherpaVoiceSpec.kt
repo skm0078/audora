@@ -52,7 +52,7 @@ data class VitsNoise(val scale: Float, val width: Float)
  *   generation option ("hi"). Required for those two families.
  * @property numSteps Supertonic's flow-matching steps per render (speed against quality); null: sherpa's default.
  * @property threads ONNX Runtime threads for this voice; null: SpeechConfig.sherpaThreads. Set for the heavier
- *   character VITS voices (ADR-053), which keep up on the Moto only with its four big cores.
+ *   character VITS voices (ADR-053), which keep up on the test phone only with its four big cores.
  * @property noise a VITS voice's noise values (expressiveness, plan item 8); null: sherpa's defaults. Not in
  *   `voice.properties`: the engine's voice source sets it from the listener's style, and a change reloads the model,
  *   as any change to the spec does.

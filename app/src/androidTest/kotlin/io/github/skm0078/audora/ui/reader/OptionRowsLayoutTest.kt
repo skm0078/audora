@@ -1,6 +1,6 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/reader/OptionRowsLayoutTest.kt
 // Purpose: Option rows with long values keep their titles whole at every font size (a long voice name squeezed
-//          "English voice" to one letter per line on a Moto Edge 50 Fusion), checked by no word being split across
+//          "English voice" to one letter per line on the test phone), checked by no word being split across
 //          lines, and leave screenshots of each size in CI's "player-screens" artifact.
 
 package io.github.skm0078.audora.ui.reader
@@ -60,7 +60,7 @@ class OptionRowsLayoutTest {
         var fontScale by mutableFloatStateOf(FONT_SCALES.first())
         rule.setContent {
             DeviceConfigurationOverride(
-                DeviceConfigurationOverride.ForcedSize(MOTO_EDGE_50_FUSION) then
+                DeviceConfigurationOverride.ForcedSize(TEST_PHONE_SIZE) then
                     DeviceConfigurationOverride.FontScale(fontScale),
             ) {
                 AudoraTheme {
@@ -113,7 +113,7 @@ class OptionRowsLayoutTest {
 
     private companion object {
         /** 1080 × 2400 px at about 420 dpi. */
-        val MOTO_EDGE_50_FUSION = DpSize(411.dp, 914.dp)
+        val TEST_PHONE_SIZE = DpSize(411.dp, 914.dp)
         val FONT_SCALES = listOf(1f, 1.3f, 2f)
         const val PERCENT = 100
         const val ROWS = "rows"

@@ -288,14 +288,40 @@ private fun capLength(text: String, range: IntRange, maxUnitChars: Int): List<In
         val limit = start + maxUnitChars
         var cut = limit
         while (cut > start && !text[cut].isWhitespace()) cut--
-        if (cut == start) cut = limit
-        if (Character.isLowSurrogate(text[cut]) && cut > start) cut--
+        if (cut == start) cut = clusterStart(text, start, limit)
         pieces.add(trim(text, start, cut))
         start = trim(text, cut, end).first
     }
     pieces.add(start until end)
     return pieces.filterNot { it.isEmpty() }
 }
+
+/**
+ * The nearest place at or before [limit] (and after [start]) that does not split a letter: never before a vowel sign,
+ * a mark, a joiner or a surrogate's second half, and never right after a virama, which joins the next consonant to
+ * the one before ("क्ष"). Falls back to [limit] when the whole stretch is one cluster.
+ */
+private fun clusterStart(text: String, start: Int, limit: Int): Int {
+    var cut = limit
+    while (cut > start && splitsCluster(text, cut)) cut--
+    return if (cut == start) limit else cut
+}
+
+private fun splitsCluster(text: String, at: Int): Boolean {
+    val here = text[at]
+    val type = Character.getType(here).toByte()
+    return Character.isLowSurrogate(here) ||
+        type == Character.NON_SPACING_MARK ||
+        type == Character.COMBINING_SPACING_MARK ||
+        type == Character.ENCLOSING_MARK ||
+        here == ZWJ ||
+        here == ZWNJ ||
+        text[at - 1] in VIRAMAS
+}
+
+private const val ZWJ = '\u200D'
+private const val ZWNJ = '\u200C'
+private const val VIRAMAS = "\u094D\u09CD"
 
 /** A page after scoring and layout, with the summary its neighbours use. Built by [ReadingUnitBuilder.analyze]. */
 class AnalyzedPage internal constructor(

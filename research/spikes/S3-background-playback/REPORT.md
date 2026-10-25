@@ -34,10 +34,10 @@ Pass criteria (`metrics/RunSnapshot.kt`): ≥ 60 min wall time, ≥ 50 min of it
 
 | Run | Phone | Battery settings | Verdict | Wall / screen-off | Stalls (count, longest) | ENDED w/ text | CPU sleep | Gap p50 / p95 | Exit reason if killed |
 |---|---|---|---|---|---|---|---|---|---|
-| 60-min gate | OnePlus 12, Android 16 | default | | | | | | n/a | |
-| 60-min gate | Moto Edge 50 Fusion | default | | | | | | n/a | |
-| Gap check | OnePlus 12 | default | n/a | | | | | | |
-| Gap, per-stream | OnePlus 12 | default | n/a | | | | | | |
+| 60-min gate | second test phone, Android 16 | default | | | | | | n/a | |
+| 60-min gate | test phone | default | | | | | | n/a | |
+| Gap check | second test phone | default | n/a | | | | | | |
+| Gap, per-stream | second test phone | default | n/a | | | | | | |
 
 Android 17 hardening (`adb shell cmd audio set-enable-hardening throw`): not applicable yet; both test phones run Android 16. Re-run the gate preset when either phone gets Android 17.
 

@@ -3,7 +3,7 @@
 **Status:** Accepted (2026-10-23). Amends ADR-039 (studio mode) and P4-01 (voice choice).
 
 ## Context
-On the Moto, studio mode on an English book showed "0 h 00 min of 6 h 00 min ready" with a bar at 0 % for a long
+On the test phone, studio mode on an English book showed "0 h 00 min of 6 h 00 min ready" with a bar at 0 % for a long
 time, and the listener took it for stuck. Root causes, from the code:
 - Progress moved only when a whole page was saved, in whole minutes, against a fixed 6 h target: 1 % is 3.6 minutes of
   speech, so the first page or two showed nothing at all. The "running" notice appeared only after the first page.

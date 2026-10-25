@@ -23,7 +23,7 @@ listening.
 
 - **A. Adobe Acrobat Reader** (free) on the Windows PC: open the PDF, View → Read Out Loud → Activate Read Out Loud,
   then View → Read Out Loud → Read To End of Document. Default voice and speed.
-- **B. Librera Reader** (free, open source) on the Moto: open the PDF, menu → Read aloud (TTS), with the phone's
+- **B. Librera Reader** (free, open source) on the test phone: open the PDF, menu → Read aloud (TTS), with the phone's
   Google TTS voice. For files 4 and 5, also note whether it switches to the Hindi/Bengali voice.
 
 ## What to note (one row per app per file; a few words each is enough)

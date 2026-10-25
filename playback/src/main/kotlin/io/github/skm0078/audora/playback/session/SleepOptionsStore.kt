@@ -6,21 +6,30 @@ package io.github.skm0078.audora.playback.session
 import android.content.Context
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.SleepOptions
+import io.github.skm0078.audora.playback.async.LatestWrites
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.Executor
 
 /**
  * The service owns these, like the speech style, so bedtime auto-on works for reading resumed from a headset too.
  * [current] is read and set on the main thread. A missing or unreadable file means the defaults, never an error.
  */
-class SleepOptionsStore(private val file: File) {
+class SleepOptionsStore(private val file: File, writer: Executor = LatestWrites.SETTINGS_WRITER) {
+    private val saves = LatestWrites(writer, ::save)
+
     private var options: SleepOptions? = null
 
     val current: SleepOptions
         get() = options ?: load().also { options = it }
 
+    /** Applies [requested] at once; the file is saved in the background, a failed save logged. */
     fun set(requested: SleepOptions) {
         options = requested
+        saves.submit(requested)
+    }
+
+    private fun save(requested: SleepOptions) {
         val temp = File(file.path + ".tmp")
         try {
             file.parentFile?.mkdirs()

@@ -129,7 +129,7 @@ class JobsAndPitchScreensTest {
 
     @Composable
     private fun Phone(content: @Composable () -> Unit) {
-        DeviceConfigurationOverride(DeviceConfigurationOverride.ForcedSize(MOTO_EDGE_50_FUSION)) {
+        DeviceConfigurationOverride(DeviceConfigurationOverride.ForcedSize(TEST_PHONE_SIZE)) {
             AudoraTheme { content() }
         }
     }
@@ -149,7 +149,7 @@ class JobsAndPitchScreensTest {
     }
 
     private companion object {
-        val MOTO_EDGE_50_FUSION = DpSize(411.dp, 914.dp)
+        val TEST_PHONE_SIZE = DpSize(411.dp, 914.dp)
         const val PNG_QUALITY = 100
         const val SCREENS_FOLDER = "Download/ListenLock-screens"
         const val SCREEN = "screen"

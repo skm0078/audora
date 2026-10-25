@@ -57,6 +57,13 @@ object WhatsNewEntries {
             "2026-10-25-one-reader-notice",
             "2026-10-25-large-text-fits",
         ),
+        11 to setOf(
+            "2026-10-25-switching-books-keeps-place",
+            "2026-10-25-rotation-keeps-shared-files",
+            "2026-10-25-scanned-books-keep-language",
+            "2026-10-25-talkback-sentence-actions",
+            "2026-10-25-leaving-a-book-no-freeze",
+        ),
     )
 
     /** Every entry carried over from a numbered list. */

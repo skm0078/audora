@@ -6,6 +6,7 @@ package io.github.skm0078.audora.ui.reader
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,8 +28,11 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -51,19 +55,30 @@ internal fun PageScrubber(page: Int, pageCount: Int, thumbnails: PageThumbnails?
     val name = stringResource(R.string.reader_pick_page)
     BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceL)) {
         val trackPx = constraints.maxWidth
-        Slider(
-            value = shown.toFloat(),
-            onValueChange = { dragging = it.roundToInt().coerceIn(0, pageCount - 1) },
-            onValueChangeFinished = {
-                dragging?.takeIf { it != page }?.let(onGoToPage)
-                dragging = null
-            },
-            valueRange = 0f..(pageCount - 1).toFloat(),
-            modifier = Modifier.semantics {
+        val range = 0f..(pageCount - 1).toFloat()
+        // TalkBack's own slider step is a twentieth of the book (20 pages of 400); a swipe here turns one page.
+        Box(
+            Modifier.clearAndSetSemantics {
                 contentDescription = name
                 stateDescription = where
+                progressBarRangeInfo = ProgressBarRangeInfo(shown.toFloat(), range)
+                setProgress { target ->
+                    val next = scrubberStep(shown, target, pageCount)
+                    if (next != page) onGoToPage(next)
+                    true
+                }
             },
-        )
+        ) {
+            Slider(
+                value = shown.toFloat(),
+                onValueChange = { dragging = it.roundToInt().coerceIn(0, pageCount - 1) },
+                onValueChangeFinished = {
+                    dragging?.takeIf { it != page }?.let(onGoToPage)
+                    dragging = null
+                },
+                valueRange = range,
+            )
+        }
         dragging?.let { target ->
             val density = LocalDensity.current
             val previewPx = with(density) { PREVIEW_WIDTH.roundToPx() }
@@ -101,6 +116,13 @@ private fun ScrubPreview(page: Int, label: String, thumbnails: PageThumbnails?) 
         }
     }
 }
+
+/** One page from [shown] towards [target] (an accessibility service's step), within the book's [pageCount] pages. */
+internal fun scrubberStep(shown: Int, target: Float, pageCount: Int): Int = when {
+    target > shown -> shown + 1
+    target < shown -> shown - 1
+    else -> shown
+}.coerceIn(0, pageCount - 1)
 
 /** The preview card's width; thumbnails are rendered at this width in pixels. */
 internal val PREVIEW_WIDTH = 120.dp

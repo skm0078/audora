@@ -103,6 +103,29 @@ class VoiceImporterTest {
     }
 
     @Test
+    fun `a Piper folder without espeak data is refused before anything is copied`() {
+        val folder = temp.newFolder("piper-no-espeak").apply {
+            write("hi_IN-test.onnx")
+            write("tokens.txt", "_ 0\na 14\n\u02C8 120\n\u02CC 121\n".toByteArray())
+        }
+
+        val error = importer.import(FolderTree(folder), Lang.HI, "").errorOrNull()
+
+        assertEquals(ImportError.PiperWithoutEspeak, error)
+        assertTrue(files.installed().isEmpty())
+    }
+
+    @Test
+    fun `an MMS folder with letter tokens and no espeak data imports`() {
+        val folder = temp.newFolder("mms-letters").apply {
+            write("model.onnx")
+            write("tokens.txt", "\u0995 1\n\u0996 2\n\u09BE 3\n".toByteArray())
+        }
+
+        assertTrue(importer.import(FolderTree(folder), Lang.BN, "") is Outcome.Success)
+    }
+
+    @Test
     fun `picking the folder above the voice still finds it`() {
         val parent = temp.newFolder("Download")
         piperFolder().renameTo(File(parent, "vits-piper-hi_IN-test"))

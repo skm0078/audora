@@ -47,7 +47,7 @@ When you add a document, add a line here in the same change. ADRs and progress e
 | Document | What it is for |
 | --- | --- |
 | [../research/notes/](../research/notes/) | Early research: offline TTS, PDF extraction, playback and distribution, outside-view benchmark |
-| [../research/spikes/S1-voice-benchmark/REPORT.md](../research/spikes/S1-voice-benchmark/REPORT.md) | S1: voice speed and quality on desktop and the Moto |
+| [../research/spikes/S1-voice-benchmark/REPORT.md](../research/spikes/S1-voice-benchmark/REPORT.md) | S1: voice speed and quality on desktop and the test phone |
 | [../research/spikes/S2-pdf-extraction/REPORT.md](../research/spikes/S2-pdf-extraction/REPORT.md) | S2: PDF text extraction and OCR across the test corpus |
 | [../research/spikes/S3-background-playback/REPORT.md](../research/spikes/S3-background-playback/REPORT.md) | S3: screen-off background playback |
 | [../research/spikes/indic-voices/README.md](../research/spikes/indic-voices/README.md) | Hindi and Bengali voice candidates and how they were exported |

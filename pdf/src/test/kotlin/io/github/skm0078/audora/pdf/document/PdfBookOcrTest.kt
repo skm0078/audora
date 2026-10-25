@@ -140,6 +140,30 @@ class PdfBookOcrTest {
     }
 
     @Test
+    fun `search reading a Hindi text-layer page never runs OCR, listening still samples it`() {
+        val ocr = FakeOcr(HINDI_PAGE)
+        val book = open(Engine(listOf(HINDI_PAGE)), ocr)
+
+        val searched = requireNotNull(book.readPageIfReady(0, builder).getOrNull())
+
+        assertEquals(PageSource.TextLayer, searched.source)
+        assertTrue(ocr.recognized.isEmpty())
+        book.readPage(0, builder)
+        assertEquals(listOf(0), ocr.recognized.map { it.first })
+    }
+
+    @Test
+    fun `search reading a page teaches the book no language`() {
+        val ocr = FakeOcr("The scanned page reads well.")
+        val book = open(Engine(listOf(ENGLISH_PAGE, "")), ocr)
+
+        book.readPageIfReady(0, builder)
+        book.readPage(1, builder)
+
+        assertEquals(listOf(1), ocr.probes)
+    }
+
+    @Test
     fun `a scanned book probes once and then reuses the languages its OCR showed`() {
         val ocr = FakeOcr("সব মানুষ স্বাধীনভাবে জন্মগ্রহণ করে।", detected = setOf(Lang.BN))
         val book = open(Engine(listOf("", "", "")), ocr)
@@ -185,6 +209,11 @@ class PdfBookOcrTest {
     }
 
     private companion object {
+        // Over QualityConfig.minSampleLetters, so listening samples it.
+        val HINDI_PAGE = List(2) {
+            "सभी मनुष्यों को गौरव और अधिकारों के मामले में जन्मजात स्वतंत्रता और समानता प्राप्त है। " +
+                "उन्हें बुद्धि और अन्तरात्मा की देन प्राप्त है और परस्पर उन्हें भाईचारे के भाव से बर्ताव करना चाहिए।"
+        }.joinToString(" ")
         const val ENGLISH_PAGE =
             "This page has a proper text layer with more than enough letters to be trusted as it stands."
     }

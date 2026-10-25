@@ -31,7 +31,7 @@ class BenchReportTest {
         ReportInput(
             appVersion = "0.0.1-s1",
             startedAt = "2026-10-15 20:00",
-            device = listOf("Phone" to "motorola edge 50 fusion"),
+            device = listOf("Phone" to "example phone"),
             runs = listOf(fast, slow, broken),
             listening = listOf(ListeningRow("en", BlindEntry("B", "piper-en-lessac"), "Piper", 4)),
         ),
@@ -46,7 +46,7 @@ class BenchReportTest {
 
     @Test
     fun `device and ratings are included`() {
-        assertTrue(text.contains("- Phone: motorola edge 50 fusion"))
+        assertTrue(text.contains("- Phone: example phone"))
         assertTrue(text.contains("| en | B | Piper | 4 |"))
     }
 }

@@ -5,7 +5,7 @@
 ## Context
 P4-02 adds the premium voices of Build Spec §3: Kokoro v1.0 for English and Supertonic 3 for Hindi, offered "only
 where measured RTF < 0.8". Both are slower than the bundled Piper voice (S1 desktop RTF: Kokoro 1.18–1.27,
-Supertonic 0.17; predicted on the Moto: Kokoro 2.5–4, Supertonic 0.35–0.5). The render queue (P1-04, ADR-016)
+Supertonic 0.17; predicted on the test phone: Kokoro 2.5–4, Supertonic 0.35–0.5). The render queue (P1-04, ADR-016)
 renders a fixed 3 sentences ahead (`QueueConfig.prefetchUnits`), which is plenty for Piper but not for a voice
 that needs half a second or more per second of speech: a 30-second run-on sentence after three short ones leaves
 the player waiting. The spec's own words for the fix are "measured-RTF-based" render-ahead (§6).
@@ -61,7 +61,7 @@ remaining stall was in the first three sentences.
   normalizer; and the catalog's one-language-per-entry model would download it twice. Left for later.
 
 ## Consequences
-- Kokoro will very likely measure too slow on the Moto (S1 predicted 2.5–4, desktop 1.4): it is downloadable and
+- Kokoro will very likely measure too slow on the test phone (S1 predicted 2.5–4, desktop 1.4): it is downloadable and
   playable, and the Voices screen says so after 30 s of reading. Supertonic should qualify.
 - ~~The window is sized for 1.0× speed; at 1.5× a voice effectively runs 1.5× slower. Not handled yet.~~ Handled:
   see "Playback speed (follow-up)".

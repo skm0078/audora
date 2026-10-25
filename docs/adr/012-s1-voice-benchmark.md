@@ -1,4 +1,4 @@
-# ADR-012: S1 outcome: sherpa-onnx vendoring, voice candidates, English default rule, Moto as reference phone
+# ADR-012: S1 outcome: sherpa-onnx vendoring, voice candidates, English default rule, test phone as reference phone
 
 **Status:** Accepted for the build setup and candidate set (2026-10-15, S1). The English default is chosen by the
 rule below once the phone run is in. Evidence: `research/spikes/S1-voice-benchmark/REPORT.md`.
@@ -15,8 +15,8 @@ from Maven. S1 found:
   hi_IN rohan are fine-tuned from it. ljspeech and cori are trained from scratch on public-domain data and
   measure the same speed.
 - The Bengali Piper and MMS voices are not prebuilt for sherpa-onnx; they convert cleanly (`convert_bn_voices.py`).
-- Spec D4 names the OnePlus 12 as the reference phone; it is a friend's phone, available only before a release.
-  The maintainer's dev phone is the Moto Edge 50 Fusion (Snapdragon 7s Gen 2), a harder target.
+- Spec D4 names the second test phone as the reference phone; it is a friend's phone, available only before a release.
+  The maintainer's dev phone is the test phone (a mid-range chip), a harder target.
 
 ## Decision
 1. **sherpa-onnx is vendored from its GitHub release.** `settings.gradle.kts` declares an `exclusiveContent` Ivy
@@ -30,14 +30,14 @@ from Maven. S1 found:
    bundled, downloaded or mirrored. Supertonic 3 is measured for English too.
 4. **English default rule** (closes S1 when the phone report arrives): the bundled voice is the Piper medium
    voice (ljspeech or cori) the maintainer rates higher in the blind test. KittenTTS v0.8 nano replaces it only if
-   it rates higher than both **and** measures RTF ≤ 0.5 with 2 threads on the Moto (it must leave headroom for
+   it rates higher than both **and** measures RTF ≤ 0.5 with 2 threads on the test phone (it must leave headroom for
    the player, UI and PDF pipeline). Kokoro stays premium-only under the spec's existing rule (offered only where
-   measured RTF < 0.8); on the desktop evidence it will not qualify on the Moto.
+   measured RTF < 0.8); on the desktop evidence it will not qualify on the test phone.
 5. **Hindi and Bengali** neural voices stay download-only. P3-06 picks among priyamvada, pratham, Supertonic
    (Hindi) and Piper bn google, MMS (Bengali) from the phone report and S0, and shows attributions for the
    CC BY-SA / BY-NC-SA / BY-NC voices.
-6. **Reference phone for development is the Moto Edge 50 Fusion.** Performance targets and gates are measured
-   there. The OnePlus 12 is a pre-release check only (D4 amended).
+6. **Reference phone for development is the test phone.** Performance targets and gates are measured
+   there. The second test phone is a pre-release check only (D4 amended).
 
 ## Alternatives considered
 - **Build sherpa-onnx from source in CI:** full control, but a long NDK + ONNX Runtime build and our own 16 KB

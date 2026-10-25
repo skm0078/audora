@@ -170,8 +170,9 @@ class PdfBook private constructor(
     /**
      * [readPage] without running OCR: a scanned page OCR has not read yet is null, one it has read comes from its
      * cache (unjoined to the page before, its running headers removed only as far as the neighbours' cached margins
-     * allow). For whole-book work beside listening (search), which must never queue a book's worth of OCR in front
-     * of the page being read.
+     * allow). A text-layer page is read by the book's verdict so far, joined to the page before like [readPage], but
+     * never sampled against OCR and never teaching the book its languages. For whole-book work beside listening
+     * (search), which must never queue a book's worth of OCR in front of the page being read.
      */
     fun readPageIfReady(pageIndex: Int, builder: ReadingUnitBuilder): Outcome<PageReading?, PdfPageError> = locked {
         contained(pageIndex) {
@@ -180,7 +181,7 @@ class PdfBook private constructor(
                 val quiet = read(page, builder, cache, quiet = true)
                 when (quiet?.source) {
                     null -> Outcome.Success(null)
-                    PageSource.TextLayer -> readPage(pageIndex, builder)
+                    PageSource.TextLayer -> Outcome.Success(joined(pageIndex, quiet, builder, cache))
                     else -> Outcome.Success(quiet)
                 }
             }

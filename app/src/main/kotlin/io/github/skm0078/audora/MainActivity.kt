@@ -245,8 +245,11 @@ class MainActivity : ComponentActivity() {
     /** Audora's own copies of PDFs another app only lends for a moment ("Open with Audora", ADR-033). */
     private val sharedCopies: SharedPdfCopies by lazy { SharedPdfCopies(applicationContext) }
 
-    /** A PDF opened or shared from another app, waiting to be added. Never set on a restore: it was handled then. */
-    private var sharedPdf by mutableStateOf<String?>(null)
+    /**
+     * A PDF opened or shared from another app, waiting to be added. Process-wide and cleared only once added, so a
+     * rotation in the middle of the add starts it again instead of losing it.
+     */
+    private var sharedPdf: String? by PendingShares::pdf
 
     /** A book the home-screen widget's Resume asked to continue (plan item 35), until it is opened. */
     private var widgetResume by mutableStateOf<String?>(null)
@@ -254,8 +257,8 @@ class MainActivity : ComponentActivity() {
     /** A job's notification was tapped (ADR-067): the Jobs screen opens once the screens are up. */
     private var openJobs by mutableStateOf(false)
 
-    /** Text shared from another app (plan item 42), until it is saved as a book. */
-    private var sharedText by mutableStateOf<SharedText?>(null)
+    /** Text shared from another app (plan item 42), until it is saved as a book; process-wide like [sharedPdf]. */
+    private var sharedText: SharedText? by PendingShares::text
 
     /** A long-press shortcut on the app icon (Add a book, Read copied text), until it is done. */
     private var shortcut by mutableStateOf<AppShortcut?>(null)
@@ -303,7 +306,8 @@ class MainActivity : ComponentActivity() {
     private val searchIndexes: SearchIndexes by lazy { SearchIndexes(applicationContext) }
 
     private val voiceNoteParts by lazy {
-        VoiceNoteParts(voiceNoteStore, VoiceNoteAudio(applicationContext), lifecycleScope)
+        // The app's scope: a note saved as the reader closes (a rotation included) is still written.
+        VoiceNoteParts(voiceNoteStore, VoiceNoteAudio(applicationContext), (application as AudoraApplication).appScope)
     }
 
     private val studioParts by lazy {
@@ -393,7 +397,13 @@ class MainActivity : ComponentActivity() {
         val miniPort = rememberConnectedPlaybackPort()
         LaunchedEffect(Unit) { diagnostics.checkUnfinishedSession() }
         LaunchedEffect(Unit) { dropStaleBookFiles(applicationContext, library, searchIndexes, voiceNoteParts) }
-        SharedPdfEffect(sharedPdf, { sharedPdf = null }, libraryController::addShared, nav::navigate)
+        SharedPdfEffect(
+            sharedPdf,
+            libraryController.busy,
+            { sharedPdf = null },
+            libraryController::addShared,
+            nav::navigate,
+        )
         SharedTextEffect(sharedText, sharedCopies, onTaken = { sharedText = null }) { sharedPdf = it }
         AppShortcutEffect(shortcut, { shortcut = null }, photoBooks, libraryController::add) { sharedText = it }
         PhotoBookEffect(photoBooks, nav::navigate)
@@ -776,6 +786,17 @@ class MainActivity : ComponentActivity() {
         studio.Sheets((controller.listState as? LibraryListState.Loaded)?.all?.map { it.book })
     }
 
+    /** The OCR models' state; a scanned page waiting for them is read as soon as they are in. */
+    @Composable
+    private fun rememberOcrState(model: ReaderModel): OcrModelsState? {
+        val ocrState by remember { ocrModels.state().loggingFailures(READER_TAG, "the OCR models") }
+            .collectAsStateWithLifecycle(initialValue = null)
+        LaunchedEffect(model, ocrState is OcrModelsState.Ready) {
+            if (ocrState is OcrModelsState.Ready) model.reloadIfWaitingForOcr()
+        }
+        return ocrState
+    }
+
     @Composable
     private fun ReaderRoute(
         target: ReaderTarget,
@@ -791,6 +812,8 @@ class MainActivity : ComponentActivity() {
         val context = LocalContext.current.applicationContext
         val scope = rememberCoroutineScope()
         val port = remember(id) { MediaControllerPlaybackPort(context) }
+        // The page on screen survives a rotation: no jump to the resume point, no second "Resumed at".
+        var shownPage by rememberSaveable(id) { mutableStateOf<Int?>(null) }
         val model = remember(id) {
             ReaderModel(
                 bookId = id,
@@ -804,6 +827,7 @@ class MainActivity : ComponentActivity() {
                 autoResume = target.autoResume,
                 views = viewPreference,
                 textSettings = ReadingTextPreferences.changes,
+                shownPage = shownPage,
             ).also { it.start() }
         }
         val thumbs = rememberPageThumbnails(id, model)
@@ -813,12 +837,8 @@ class MainActivity : ComponentActivity() {
         DisposableEffect(model) { onDispose { model.close() } }
         AutoResumeRequests(model, target.autoResume, onAutoResumeTaken)
         val state by model.state.collectAsStateWithLifecycle()
-        val ocrState by remember { ocrModels.state().loggingFailures(READER_TAG, "the OCR models") }
-            .collectAsStateWithLifecycle(initialValue = null)
-        // A scanned page waiting for the OCR models is read as soon as they are in.
-        LaunchedEffect(model, ocrState is OcrModelsState.Ready) {
-            if (ocrState is OcrModelsState.Ready) model.reloadIfWaitingForOcr()
-        }
+        PageOnScreenEffect(state) { shownPage = it }
+        val ocrState = rememberOcrState(model)
         val playWithPermission = rememberPlayWithNotificationPermission()
         val notes = remember(id) {
             // Never OCRs: a passage's pages were read on the way to its end; one that was not is refused.
@@ -1057,20 +1077,21 @@ private fun UnfinishedSessionPrompt(diagnostics: DiagnosticsController, resume: 
 }
 
 /**
- * Adds a PDF shared by another app while its grant lasts ([add] keeps the grant or a copy), then opens it.
- * [add] runs on the library's own scope, so clearing [shared] here does not cancel it.
+ * Adds a PDF shared by another app while its grant lasts ([add] keeps the grant or a copy), then opens it. [shared]
+ * is cleared only when the add has finished ([onTaken]), so an add cut short by a rotation runs again on the new
+ * screen; adding the same file twice finds it already in the library. Waits while another pick is [busy].
  */
 @Composable
 private fun SharedPdfEffect(
     shared: String?,
+    busy: Boolean,
     onTaken: () -> Unit,
-    add: (String, (BookId) -> Unit) -> Unit,
+    add: (String, (BookId) -> Unit, () -> Unit) -> Unit,
     navigate: (AppDestination) -> Unit,
 ) {
-    LaunchedEffect(shared) {
-        if (shared == null) return@LaunchedEffect
-        onTaken()
-        add(shared) { id -> navigate(AppDestination.Reader(id)) }
+    LaunchedEffect(shared, busy) {
+        if (shared == null || busy) return@LaunchedEffect
+        add(shared, { id -> navigate(AppDestination.Reader(id)) }, onTaken)
     }
 }
 
@@ -1098,3 +1119,10 @@ private fun ComponentActivity.SystemBarsFollow(dark: Boolean) {
 /** Edge-to-edge's own three-button navigation bar scrims (androidx.activity's defaults), kept explicit here. */
 private const val LIGHT_NAV_SCRIM = 0xE6FFFFFF.toInt()
 private const val DARK_NAV_SCRIM = 0x801B1B1B.toInt()
+
+/** Reports the page on screen once the book is open, so a rebuilt reader can come back to it. */
+@Composable
+private fun PageOnScreenEffect(state: ReaderState, onPage: (Int) -> Unit) {
+    val pageOnScreen = state.page.takeIf { state.document is DocumentState.Open }
+    LaunchedEffect(pageOnScreen) { pageOnScreen?.let(onPage) }
+}

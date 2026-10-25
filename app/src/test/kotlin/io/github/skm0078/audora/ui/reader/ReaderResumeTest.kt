@@ -11,6 +11,8 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -28,7 +30,11 @@ class ReaderResumeTest {
         ResumePoint(unit.page, unit.charStart, AnchorMatch.EXACT)
     }
 
-    private fun TestScope.model(resume: ReaderResume = savedOnPage7, autoResume: Boolean = false) = ReaderModel(
+    private fun TestScope.model(
+        resume: ReaderResume = savedOnPage7,
+        autoResume: Boolean = false,
+        shownPage: Int? = null,
+    ) = ReaderModel(
         BOOK,
         FakeBooks(),
         FakeOpener(document),
@@ -38,6 +44,7 @@ class ReaderResumeTest {
         backgroundScope,
         resume,
         autoResume,
+        shownPage = shownPage,
     ).also { it.start() }
 
     @Test
@@ -47,6 +54,33 @@ class ReaderResumeTest {
         assertEquals(7, model.state.value.page)
         assertEquals(listOf(7), pagesAsked)
     }
+
+    @Test
+    fun `a fresh open says where it resumed`() = runTest(UnconfinedTestDispatcher()) {
+        val model = model()
+
+        assertNotNull(model.state.value.resumedAt)
+    }
+
+    @Test
+    fun `a rebuilt screen shows the page that was on screen, with no second resume notice`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val model = model(shownPage = 3)
+
+            assertEquals(3, model.state.value.page)
+            assertNull(model.state.value.resumedAt)
+        }
+
+    @Test
+    fun `after a rebuild, play on the resume page still continues at the saved sentence`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val model = model(shownPage = 7)
+            port.connect()
+
+            model.playOrPause()
+
+            assertEquals(listOf(ReadingPosition(BOOK, 7, 40) to null), port.starts)
+        }
 
     @Test
     fun `play on that page continues at the saved sentence`() = runTest(UnconfinedTestDispatcher()) {

@@ -1,0 +1,3 @@
+en: With TalkBack, the actions menu reads from or opens any sentence, and the page slider turns one page per swipe.
+hi: TalkBack में ऐक्शन मेन्यू से किसी भी वाक्य से पढ़ें या उसे खोलें, और पेज स्लाइडर हर स्वाइप पर एक पेज बदलता है।
+bn: TalkBack-এ অ্যাকশন মেনু থেকে যেকোনো বাক্য থেকে পড়ুন বা সেটি খুলুন, আর পৃষ্ঠা স্লাইডার প্রতি সোয়াইপে এক পৃষ্ঠা সরে।
