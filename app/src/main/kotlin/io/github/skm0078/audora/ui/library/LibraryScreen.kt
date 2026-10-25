@@ -52,7 +52,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import io.github.skm0078.audora.R
@@ -224,7 +223,7 @@ private fun BookGrid(list: LibraryListState.Loaded, books: BookCallbacks, covers
             start = Dimens.ScreenPadding,
             end = Dimens.ScreenPadding,
             top = Dimens.SpaceS,
-            bottom = fabClearance(),
+            bottom = FAB_CLEARANCE * LocalDensity.current.fontScale.coerceAtLeast(1f),
         ),
         horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXl),
@@ -259,7 +258,8 @@ private fun BookList(list: LibraryListState.Loaded, books: BookCallbacks, covers
     // Rows stay a readable width in the middle of a tablet or a phone in landscape.
     BoxWithConstraints {
         val side = readableSidePadding(maxWidth)
-        LazyColumn(contentPadding = PaddingValues(start = side, end = side, bottom = fabClearance())) {
+        val bottom = FAB_CLEARANCE * LocalDensity.current.fontScale.coerceAtLeast(1f)
+        LazyColumn(contentPadding = PaddingValues(start = side, end = side, bottom = bottom)) {
             list.continueReading?.let { latest ->
                 item(key = CONTINUE_KEY) {
                     Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS)) {
@@ -345,10 +345,7 @@ private fun Centered(content: @Composable () -> Unit) {
     }
 }
 
-/** Room under the last book for the Add book button, which grows with the text size. */
-@Composable
-private fun fabClearance(): Dp = FAB_CLEARANCE * LocalDensity.current.fontScale.coerceAtLeast(1f)
-
+/** Room under the last book for the Add book button at 100% text; it grows with the text size, as the button does. */
 private val FAB_CLEARANCE = 88.dp
 
 /** The app shell's bottom bar takes the bottom inset (ADR-036). */

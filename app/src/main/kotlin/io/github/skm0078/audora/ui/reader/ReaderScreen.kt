@@ -20,7 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,11 +31,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
@@ -73,34 +70,25 @@ fun ReaderScreen(
     voicePacks: VoicePackActions = VoicePackActions(),
 ) {
     var pageTextOpen by rememberSaveable { mutableStateOf(false) }
-    val packOffer = rememberVoicePackOffer(state.bookId, voices, voicePacks)
+    val offer = rememberVoicePackOffer(state.bookId, voices, voicePacks)
     // One card at a time: the gesture tips wait while the page offers a voice pack, so at large font sizes the two
     // cards do not leave no room for the book (UI audit).
-    val offering = (state.content as? PageContent.Ready)?.let { packOffer.packFor(it.units) } != null
+    val offering = (state.content as? PageContent.Ready)?.let { offer.packFor(it.units) } != null
     if (pageTextOpen) {
         PageTextSheet(look, onLookChange, textView = state.view == ReaderView.TEXT) { pageTextOpen = false }
     }
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(
-                title = { ReaderTitle(state.title.orEmpty()) },
-                navigationIcon = { BackButton(actions::onBack) },
-                actions = {
-                    if (state.document is DocumentState.Open) {
-                        BookmarksButton(notes, notesActions)
-                        ChaptersButton(state, actions)
-                        ViewToggle(state.view, actions)
-                        MoreMenu(
-                            onOpenPageText = { pageTextOpen = true },
-                            onOpenUpNext = onOpenUpNext,
-                            onSearch = onSearch,
-                            onSaveAudiobook = actions::onSaveAudiobook,
-                            onReadAloudToMe = onTutor,
-                        )
-                    }
-                },
-            )
+            ReaderTopBar(state, actions, notes, notesActions) {
+                MoreMenu(
+                    onOpenPageText = { pageTextOpen = true },
+                    onOpenUpNext = onOpenUpNext,
+                    onSearch = onSearch,
+                    onSaveAudiobook = actions::onSaveAudiobook,
+                    onReadAloudToMe = onTutor,
+                )
+            }
         },
         bottomBar = {
             if (state.document is DocumentState.Open) {
@@ -130,18 +118,7 @@ fun ReaderScreen(
 
                 is DocumentState.Open -> {
                     PlaceHighlights(state, notesActions)
-                    OpenBook(
-                        state,
-                        document,
-                        config,
-                        actions,
-                        ocrModels,
-                        look,
-                        spokenWord,
-                        thumbnails,
-                        packOffer,
-                        notes,
-                    )
+                    OpenBook(state, document, config, actions, ocrModels, look, spokenWord, thumbnails, offer, notes)
                     NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)
                 }
             }
@@ -325,25 +302,6 @@ private object PreviewActions : ReaderActions {
     override fun onPasswordDismissed() = Unit
     override fun onAskForPassword() = Unit
     override fun onRetry() = Unit
-}
-
-/** The book's title in the top bar, one line; TalkBack's heading, so a swipe by headings lands on it. */
-@Composable
-private fun BackButton(onBack: () -> Unit) {
-    IconButton(onClick = onBack) {
-        Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.navigate_back))
-    }
-}
-
-@Composable
-private fun ReaderTitle(title: String) {
-    Text(
-        title,
-        style = MaterialTheme.typography.titleMedium,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.semantics { heading() },
-    )
 }
 
 /** Tells the notes which sentences show, so highlights land on them after a pipeline change (plan item 30). */
