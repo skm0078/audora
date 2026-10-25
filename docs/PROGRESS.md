@@ -2,6 +2,30 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Release hardening 8: library and PDF reading (2026-10-25)
+From the pre-release review's pick list (P4, P5, P9, P10). `PIPELINE_VERSION` 13.
+- **OCR languages follow most of the book:** a Hindi book with one English page (a title page, a citation) keeps
+  reading its scans as Hindi. A language must appear on at least a quarter as many pages as the most common one, and
+  at most two are used, the most common first (`OcrLanguages`).
+- **Search never starts OCR or teaches the book:** indexing a book for search reads a text-layer page by the book's
+  verdict so far, without the OCR cross-check and without changing the book's languages, so it never queues OCR in
+  front of the page being read.
+- **Long sentences without spaces are cut between letters:** a cut never starts a piece with a vowel sign or splits a
+  joined consonant ("क्ष", "ক্ষ"), so neither piece is read as a broken letter.
+- **Closing a book never waits:** the native close runs on its own thread once PDFium's lock is free, so leaving the
+  reader while another book draws a page for OCR no longer freezes the screen.
+- **The library redraws only when what it shows changes:** saving the place every sentence no longer rebuilds the
+  whole library list; it redraws when a book's page or the "Continue" book changes (`progressShown`).
+- **Verified in CI:** `OcrLanguagesTest`, `ReadingUnitBuilderTest` (cluster-safe cut), `PdfBookOcrTest` (search reads
+  with no OCR and learns nothing), `ProgressShownTest`, `DocumentCloseTest` (device), golden corpus and listening
+  scores.
+- **Could affect:** scanned Hindi or Bengali books with English pages, search in Indic books, very long unbroken
+  lines, closing a book, the library's page numbers and "Continue" card.
+
+**Real-device checks (test phone):** open a scanned Hindi book with an English title page: the scans still read in
+Hindi. Search a Hindi book while it plays: playback does not stall. Leave a book mid-OCR and open another: the screen
+does not freeze. Read a few sentences, go back to the library: the page shown is the current one.
+
 ## Release hardening 7: playback edges (2026-10-25)
 From the pre-release review's pick list (P1, P8, P11, P16, P19).
 - **Switching books while one plays keeps each book's place:** a sentence is saved for the book whose playlist it
