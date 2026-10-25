@@ -2,6 +2,20 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Speed 1: the phones run an optimised build (2026-10-25, ADR-072)
+- **The dev APK is no longer a debug build.** `audora-dev.apk` is now the new `dev` build type: release settings
+  (not debuggable, R8, native code at -O2) with the dev key and the debug app id, so it updates in place. The
+  debug build stays on the release page as `listenlock-debug.apk`, a fallback. Release has R8 on too
+  (`app/proguard-rules.pro`, no renaming).
+- **Library covers fill in faster:** a cover already saved is decoded without queueing behind a page being drawn.
+- **Word highlight** checks the voice's position 30 times a second instead of on every frame (144 Hz on the Moto).
+- **Speed is measured:** CI times debug against dev on the emulator on every push (run summary). Share logs now has
+  one `Audora.RenderSpeed` line per sentence (render time, audio length, rtf, and `first` when a voice loaded).
+  Phone steps: `docs/PERFORMANCE.md`.
+**Real-device checks (Moto):** install the new `audora-dev.apk` over the old one (books and settings stay). Open a
+book, play, change voice, scroll the library, then Share logs. If anything crashes that did not before, install
+`listenlock-debug.apk` and send the logs.
+
 ## Release hardening 5: TalkBack and low vision (2026-10-25)
 From the pre-release accessibility review.
 - **The player says when something goes wrong:** the status line (connecting, a voice error) now shows on the player

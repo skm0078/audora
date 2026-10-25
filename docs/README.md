@@ -33,6 +33,7 @@ When you add a document or an ADR, add a line here in the same change.
 
 | Document | What it is for |
 | --- | --- |
+| [PERFORMANCE.md](PERFORMANCE.md) | How speed is measured: CI's debug-vs-dev timing, Share logs render lines, System Tracing and adb on the phone |
 | [RELEASING.md](RELEASING.md) | Signing keys, cutting a release from `prod`, Obtainium, Google Play, Data safety answers |
 | [index.html](index.html) | Public home page, English, Hindi and Bengali (GitHub Pages, served from `prod` `/docs`); no trackers or external requests |
 | [assets/](assets/) | The home page's stylesheet, Hindi and Bengali text (`i18n.js`), web-sized logo and icons |
@@ -72,6 +73,7 @@ ADR-013 and ADR-037 were planned (podcast mode, online AI) and have no file yet.
 - [ADR-069](adr/069-library-catalogue.md) Collections, filters by author, file type, language and collection, author search and sort; tuned for low-end phones (search keys folded once, debounced search, cover cache sized by memory, 16-bit covers on low-RAM phones)
 - [ADR-070](adr/070-small-touches-testers-notice.md) Cover, author and chapter on the notification and lock screen, app icon shortcuts, What's new after an update, mark finished or not started, copy and share a sentence, a sample book, haptic ticks
 - [ADR-071](adr/071-pitch-presets-and-option-rows.md) Pitch presets like speed, heard while dragging, ±15%; option rows never squeeze their titles
+- [ADR-072](adr/072-optimised-dev-build.md) The phones run an optimised dev build (R8, not debuggable, -O2 native); R8 in release; speed measured on every push
 
 **Reading the PDF (`:pdf`)**
 

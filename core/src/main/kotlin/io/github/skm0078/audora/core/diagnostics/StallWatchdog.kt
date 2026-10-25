@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
  * blocking it: a lock held by OCR, a disk read), then one line with the stall's length once it answers. The lines go
  * to the shared log bundle, so a hang on a phone is diagnosable from "Share logs". Logs code locations, never text.
  *
- * Its own daemon thread; [start] and [stop] from any thread. Debug builds start it (`AudoraApplication`).
+ * Its own daemon thread; [start] and [stop] from any thread. Debug and dev builds start it (`AudoraApplication`).
  */
 class StallWatchdog(
     private val watched: Thread,

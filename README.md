@@ -168,6 +168,9 @@ It installs as a separate app, "ListenLock Dev" (`io.github.skm0078.audora.debug
 also shows the voices and options the release build hides. A newer test build installs over the older one. If Android
 says **"App not installed"**, uninstall the old test build first (it was signed with an earlier key; this clears its
 library). Don't add the test build to Obtainium: its release name never changes, so updates go unnoticed.
+It is built like the released app (optimised, ADR-072), so it is as fast as what ships. The same release page also
+has `listenlock-debug.apk`, the same app as a slower debug build: install it over the dev build only if the dev
+build crashes where the debug one does not, and send the logs.
 
 ## Voices and credits
 
