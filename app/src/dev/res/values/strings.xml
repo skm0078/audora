@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/dev/res/values/strings.xml -->
+<!-- Purpose: The dev build's launcher name (ADR-072), the same as the debug build it replaces on the phones. -->
+<resources>
+    <string name="app_name">ListenLock Dev</string>
+</resources>

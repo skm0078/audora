@@ -223,7 +223,7 @@ private fun BookGrid(list: LibraryListState.Loaded, books: BookCallbacks, covers
             start = Dimens.ScreenPadding,
             end = Dimens.ScreenPadding,
             top = Dimens.SpaceS,
-            bottom = FAB_CLEARANCE,
+            bottom = FAB_CLEARANCE * LocalDensity.current.fontScale.coerceAtLeast(1f),
         ),
         horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXl),
@@ -258,7 +258,8 @@ private fun BookList(list: LibraryListState.Loaded, books: BookCallbacks, covers
     // Rows stay a readable width in the middle of a tablet or a phone in landscape.
     BoxWithConstraints {
         val side = readableSidePadding(maxWidth)
-        LazyColumn(contentPadding = PaddingValues(start = side, end = side, bottom = FAB_CLEARANCE)) {
+        val bottom = FAB_CLEARANCE * LocalDensity.current.fontScale.coerceAtLeast(1f)
+        LazyColumn(contentPadding = PaddingValues(start = side, end = side, bottom = bottom)) {
             list.continueReading?.let { latest ->
                 item(key = CONTINUE_KEY) {
                     Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS)) {
@@ -336,14 +337,15 @@ private fun EmptyLibrary(enabled: Boolean, onAddPdf: () -> Unit, onTrySample: ()
 
 @Composable
 private fun Centered(content: @Composable () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+    Box(modifier = Modifier.fillMaxSize().padding(Dimens.SpaceXl), contentAlignment = Alignment.Center) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) { content() }
     }
 }
 
+/** Room under the last book for the Add book button at 100% text; it grows with the text size, as the button does. */
 private val FAB_CLEARANCE = 88.dp
 
 /** The app shell's bottom bar takes the bottom inset (ADR-036). */

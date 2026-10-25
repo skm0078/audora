@@ -38,6 +38,7 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.ui.shell.readableSidePadding
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.readingBand
 
 /**
  * @param spokenWord the characters of the word being spoken in the spoken sentence (plan item 14); null when its
@@ -153,7 +154,7 @@ private fun Sentence(
     val colors = MaterialTheme.colorScheme
     val highlight = look.look.highlight.takeIf { look.spoken }
     val background = when {
-        highlight == HighlightStyle.FILL -> colors.primaryContainer
+        highlight == HighlightStyle.FILL -> colors.readingBand(look.look.tone.paper ?: colors.surface)
         look.marked -> colors.tertiaryContainer
         else -> Color.Transparent
     }
@@ -186,7 +187,7 @@ private fun Sentence(
 internal fun sentenceColor(look: SentenceLook, colors: ColorScheme): Color {
     val ink = look.look.tone.ink ?: colors.onSurface
     return when {
-        look.spoken && look.look.highlight == HighlightStyle.FILL -> colors.onPrimaryContainer
+        look.spoken && look.look.highlight == HighlightStyle.FILL -> ink
         look.spoken && look.look.highlight == HighlightStyle.BOLD -> colors.primary
         look.marked -> colors.onTertiaryContainer
         look.unreadable -> ink.copy(alpha = UNREADABLE_ALPHA)

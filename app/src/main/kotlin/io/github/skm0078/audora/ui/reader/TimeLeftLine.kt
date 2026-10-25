@@ -11,8 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.ui.theme.Dimens
 
 /** "About 2 h 10 min left at 1.25×, 12 min in this chapter" (plan item 24). */
 @Composable
@@ -26,7 +26,7 @@ internal fun TimeLeftLine(timeLeft: TimeLeftEstimate, speed: Float) {
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl),
     )
 }
 

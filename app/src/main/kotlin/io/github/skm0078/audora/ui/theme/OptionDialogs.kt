@@ -25,6 +25,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,7 +66,8 @@ fun HelpButton(title: String, body: String) {
 
 /**
  * A bottom sheet of option groups with its [title] on top, and [help] for the sheet as a whole beside it. The sheet
- * takes the screen's surface colour so its group cards stand out, as they do in Settings.
+ * takes the screen's surface colour so its group cards stand out, as they do in Settings. It opens at its full
+ * height (up to the screen's), not half-way: half-way showed only the first control at large font sizes (UI audit).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,7 +77,11 @@ fun OptionSheet(
     help: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
         Column(
             Modifier
                 .navigationBarsPadding()

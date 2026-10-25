@@ -35,11 +35,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.PronunciationRule
+import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.switchRow
 
 /** Top bar: opens the bookmarks sheet; filled while this book has bookmarks. */
@@ -85,9 +85,9 @@ private fun BookmarksSheet(
     voice: VoiceNotesBinding,
 ) {
     ModalBottomSheet(onDismissRequest = actions::hideList) {
-        Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
+        Column(Modifier.navigationBarsPadding().padding(bottom = Dimens.SpaceL)) {
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -102,7 +102,7 @@ private fun BookmarksSheet(
                     stringResource(R.string.bookmarks_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                    modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceL),
                 )
             }
             LazyColumn {
@@ -133,7 +133,7 @@ private fun BookmarkRow(bookmark: Bookmark, onOpen: () -> Unit, onEdit: () -> Un
     Row(
         Modifier.fillMaxWidth().clickable(
             onClick = onOpen,
-        ).padding(start = 24.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+        ).padding(start = Dimens.SpaceXl, end = Dimens.SpaceS, top = Dimens.SpaceS, bottom = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
@@ -189,7 +189,7 @@ private fun PronunciationDialog(unit: ReadingUnit, rules: List<PronunciationRule
         onDismissRequest = actions::dismissFix,
         title = { Text(stringResource(R.string.fix_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                 Text(
                     unit.text,
                     style = MaterialTheme.typography.bodySmall,

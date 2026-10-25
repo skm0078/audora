@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
+import io.github.skm0078.audora.ui.theme.Dimens
 
 @Composable
 internal fun ChaptersButton(state: ReaderState, actions: ReaderActions) {
@@ -69,7 +70,7 @@ fun ChaptersSheet(
         Text(
             stringResource(R.string.chapters_title),
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp).semantics { heading() },
+            modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS).semantics { heading() },
         )
         LazyColumn(state = listState) {
             itemsIndexed(chapters) { index, chapter ->
@@ -89,7 +90,12 @@ private fun ChapterRow(chapter: ChapterEntry, isCurrent: Boolean, onClick: () ->
             // The current chapter is shown by colour and weight; TalkBack says it in words.
             .semantics { if (isCurrent) stateDescription = now }
             .clickable(onClickLabel = stringResource(R.string.a11y_read_from_chapter), onClick = onClick)
-            .padding(start = 24.dp + INDENT * chapter.depth, end = 24.dp, top = 12.dp, bottom = 12.dp),
+            .padding(
+                start = Dimens.SpaceXl + INDENT * chapter.depth,
+                end = Dimens.SpaceXl,
+                top = Dimens.SpaceM,
+                bottom = Dimens.SpaceM,
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -105,7 +111,7 @@ private fun ChapterRow(chapter: ChapterEntry, isCurrent: Boolean, onClick: () ->
             (chapter.page + 1).toString(),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.padding(start = 16.dp),
+            modifier = Modifier.padding(start = Dimens.SpaceL),
         )
     }
 }

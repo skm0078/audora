@@ -29,13 +29,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.playback.backup.BackupError
 import io.github.skm0078.audora.playback.backup.BackupEvent
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.backup.PendingRestore
+import io.github.skm0078.audora.ui.theme.Dimens
 import java.time.LocalDate
 
 /** What the dialog shows: the two choices or the restore warning; progress comes from [Backups.state]. */
@@ -106,7 +106,10 @@ private fun BackupDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(if (confirming) R.string.backup_restore_title else R.string.library_backup)) },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+            ) {
                 val explain = if (confirming) R.string.backup_restore_warning else R.string.backup_explain
                 Text(stringResource(explain), style = MaterialTheme.typography.bodyMedium)
                 if (!confirming && sizeBytes != null) {

@@ -30,18 +30,18 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.playback.search.SearchHit
+import io.github.skm0078.audora.ui.theme.Dimens
 
 /** Full screen over the reader; a tapped sentence's page opens in the reader and the screen closes. */
 @Composable
 fun SearchScreen(state: SearchState, onQuery: (String) -> Unit, onHit: (SearchHit) -> Unit, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxSize()) {
-            Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+            Column(Modifier.fillMaxSize().padding(horizontal = Dimens.SpaceL)) {
                 SearchBox(state.query, onQuery, onDismiss)
                 SearchProgress(state)
                 LazyColumn(Modifier.fillMaxSize()) {
@@ -94,10 +94,12 @@ private fun SearchProgress(state: SearchState) {
     if (state.building && progress != null && progress.pageCount > 0) {
         LinearProgressIndicator(
             progress = { progress.pagesDone.toFloat() / progress.pageCount },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceXs),
         )
     }
-    line?.let { Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 8.dp)) }
+    line?.let {
+        Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = Dimens.SpaceS))
+    }
 }
 
 @Composable
@@ -106,7 +108,7 @@ private fun HitRow(hit: SearchHit, onClick: () -> Unit) {
         Modifier
             .fillMaxWidth()
             .clickable(onClickLabel = stringResource(R.string.a11y_go_to_hit), onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(vertical = Dimens.SpaceM),
     ) {
         Text(
             stringResource(R.string.search_page, hit.page + 1),

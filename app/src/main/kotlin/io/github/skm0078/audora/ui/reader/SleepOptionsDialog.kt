@@ -28,10 +28,10 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.model.SleepOptions
+import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.switchRow
 import java.util.Locale
 
@@ -80,9 +80,9 @@ private fun BedtimeSection(draft: SleepOptions, config: ReaderConfig, onChange: 
     Text(
         stringResource(R.string.sleep_options_bedtime_timer),
         style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.padding(top = 8.dp),
+        modifier = Modifier.padding(top = Dimens.SpaceS),
     )
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
         config.sleepMinutes.forEach { minutes ->
             FilterChip(
                 selected = draft.bedtimeMinutes == minutes,

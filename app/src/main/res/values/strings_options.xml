@@ -5,7 +5,7 @@
     <string name="option_help_about">About %1$s</string>
     <string name="option_help_ok">OK</string>
     <string name="option_choice_cancel">Cancel</string>
-    <string name="speech_sheet_title">Speech</string>
+    <string name="speech_sheet_title">Voice and speed</string>
     <string name="speech_speed_title">Speed</string>
     <string name="speech_speed_value">%1$s×</string>
     <string name="reading_skim_short">Headings and key sentences only</string>

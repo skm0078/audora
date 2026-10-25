@@ -101,7 +101,7 @@ by side.
 
 ## Dev build signing key
 
-Debug APKs (the `dev-build` release and every branch's artifact) are signed with the dev key when the repository
+Debug and dev APKs (the `dev-build` release, `audora-dev.apk` being the optimised `dev` build type of ADR-072, and every branch's artifact) are signed with the dev key when the repository
 secret `AUDORA_DEBUG_KEYSTORE_B64` exists, so a newer dev build installs over an older one (ADR-031). Without the
 secret, each CI run signs with a throwaway key, as Android tooling does by default.
 

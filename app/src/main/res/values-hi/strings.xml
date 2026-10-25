@@ -25,6 +25,7 @@
     <string name="library_playing_page_of">पेज %1$d / %2$d</string>
     <string name="library_playing_page">पेज %1$d</string>
     <string name="library_opened_ago">%1$s खोली गई</string>
+    <string name="library_just_now">अभी</string>
     <string name="library_added_ago">%1$s जोड़ी गई</string>
     <string name="library_file_missing">फ़ाइल हटा दी गई या कहीं और चली गई। ढूँढने के लिए टैप करें।</string>
     <string name="library_access_lost">ListenLock अब यह फ़ाइल नहीं खोल सकता। इसे फिर से चुनने के लिए टैप करें।</string>
@@ -299,6 +300,7 @@
     <string name="voices_sample_failed">यह आवाज़ नमूना नहीं चला सकी। फिर से कोशिश करें, या बार-बार हो तो इसे दोबारा डाउनलोड करें।</string>
     <string name="voices_import_title">आवाज़ इंपोर्ट करें</string>
     <string name="voices_import_body">sherpa-onnx आवाज़ का फ़ोल्डर: एक .onnx मॉडल, tokens.txt और, Piper और KittenTTS के लिए, espeak-ng-data।</string>
+    <string name="voices_import_short">खुद डाउनलोड की गई आवाज़ जोड़ें।</string>
     <string name="voices_import_action">इंपोर्ट करें</string>
     <string name="voices_import_language">यह कौन-सी भाषा बोलती है</string>
     <string name="voices_import_name">नाम (ज़रूरी नहीं)</string>

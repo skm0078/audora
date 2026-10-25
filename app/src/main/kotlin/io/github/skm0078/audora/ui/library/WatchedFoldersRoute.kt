@@ -29,12 +29,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.WatchedFolder
 import io.github.skm0078.audora.playback.documents.WatchResult
 import io.github.skm0078.audora.playback.documents.WatchScan
 import io.github.skm0078.audora.playback.documents.WatchedFolders
+import io.github.skm0078.audora.ui.theme.Dimens
 import kotlinx.coroutines.launch
 
 /**
@@ -113,7 +113,10 @@ private fun WatchedFoldersDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.library_watched_folders)) },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+            ) {
                 Text(stringResource(R.string.watched_explain), style = MaterialTheme.typography.bodyMedium)
                 if (folders?.isEmpty() == true) {
                     Text(
