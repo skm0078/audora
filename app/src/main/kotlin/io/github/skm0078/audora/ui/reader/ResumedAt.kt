@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.ReadingUnit
 
@@ -27,12 +28,12 @@ fun resumedAt(position: ReadingPosition, units: List<ReadingUnit>, maxWords: Int
 /** A short toast for [resumed], then [onShown]: shown over the reader and the full player alike. */
 @Composable
 fun ResumedNotice(resumed: ResumedAt?, onShown: () -> Unit) {
+    if (resumed == null) return
     val context = LocalContext.current
+    val page = resumed.page + 1
+    val text = resumed.words?.let { stringResource(R.string.reader_resumed_at, page, it) }
+        ?: stringResource(R.string.reader_resumed_page, page)
     LaunchedEffect(resumed) {
-        if (resumed == null) return@LaunchedEffect
-        val page = resumed.page + 1
-        val text = resumed.words?.let { context.getString(R.string.reader_resumed_at, page, it) }
-            ?: context.getString(R.string.reader_resumed_page, page)
         Toast.makeText(context, text, Toast.LENGTH_LONG).show()
         onShown()
     }
