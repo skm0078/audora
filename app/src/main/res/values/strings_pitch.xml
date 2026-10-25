@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- File: app/src/main/res/values/strings_pitch.xml -->
-<!-- Purpose: The speech sheet's pitch control (ADR-067). -->
+<!-- Purpose: The speech sheet's pitch control (ADR-067, ADR-070). -->
 <resources>
     <string name="speech_pitch_title">Pitch</string>
-    <string name="speech_pitch_own">The voice\'s own</string>
+    <string name="speech_pitch_own">Natural</string>
     <string name="speech_pitch_higher">%1$d%% higher</string>
     <string name="speech_pitch_lower">%1$d%% deeper</string>
     <string name="speech_pitch_spoken">Pitch: %1$s</string>
     <string name="speech_pitch_down">Deeper</string>
     <string name="speech_pitch_up">Higher</string>
-    <string name="speech_pitch_reset">Back to the voice\'s own</string>
-    <string name="speech_pitch_help">How high or deep the voice sounds. It changes what is playing at once, without starting the sentence again. Saved audiobooks, clips, studio files and talking books use it too.</string>
+    <string name="speech_pitch_help" formatted="false">How high or deep the voice sounds. Natural is the voice as it was made. A change is heard at once, without starting the sentence again, and speed never changes it. The range stays within 15% either way, where a voice still sounds like itself. Saved audiobooks, clips, studio files and talking books use it too. With This book\'s own settings on, each book keeps its own pitch.</string>
+    <string name="speech_pitch_bit_deeper">A bit deeper</string>
+    <string name="speech_pitch_bit_higher">A bit higher</string>
+    <string name="speech_pitch_hint">Heard at once. Speed never changes it.</string>
 </resources>
