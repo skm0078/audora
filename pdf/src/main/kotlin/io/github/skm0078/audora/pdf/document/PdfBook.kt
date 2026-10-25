@@ -121,10 +121,12 @@ class PdfBook private constructor(
 
     fun pageText(pageIndex: Int): Outcome<PageText, PdfPageError> = locked {
         if (pageIndex !in 0 until pageCount) return@locked outOfRange(pageIndex)
-        currentHandle().flatMap { open ->
-            readsSinceOpen++
-            pagesRead++
-            open.readPage(pageIndex).map(assembler::assemble)
+        contained(pageIndex) {
+            currentHandle().flatMap { open ->
+                readsSinceOpen++
+                pagesRead++
+                open.readPage(pageIndex).map(assembler::assemble)
+            }
         }
     }
 
@@ -154,10 +156,14 @@ class PdfBook private constructor(
 
     /** [readingUnits] with the page's route (P3-03) and where its words came from (P3-05). */
     fun readPage(pageIndex: Int, builder: ReadingUnitBuilder): Outcome<PageReading, PdfPageError> = locked {
-        val cache = cachesFor(builder)
-        analyzedPage(pageIndex, cache).map { page ->
-            val read = checkNotNull(read(page, builder, cache, quiet = false)) { "only a quiet read leaves a page out" }
-            joined(pageIndex, read, builder, cache)
+        contained(pageIndex) {
+            val cache = cachesFor(builder)
+            analyzedPage(pageIndex, cache).map { page ->
+                val read = checkNotNull(read(page, builder, cache, quiet = false)) {
+                    "only a quiet read leaves a page out"
+                }
+                joined(pageIndex, read, builder, cache)
+            }
         }
     }
 
@@ -168,15 +174,38 @@ class PdfBook private constructor(
      * of the page being read.
      */
     fun readPageIfReady(pageIndex: Int, builder: ReadingUnitBuilder): Outcome<PageReading?, PdfPageError> = locked {
-        val cache = cachesFor(builder)
-        analyzedPage(pageIndex, cache).flatMap { page ->
-            val quiet = read(page, builder, cache, quiet = true)
-            when (quiet?.source) {
-                null -> Outcome.Success(null)
-                PageSource.TextLayer -> readPage(pageIndex, builder)
-                else -> Outcome.Success(quiet)
+        contained(pageIndex) {
+            val cache = cachesFor(builder)
+            analyzedPage(pageIndex, cache).flatMap { page ->
+                val quiet = read(page, builder, cache, quiet = true)
+                when (quiet?.source) {
+                    null -> Outcome.Success(null)
+                    PageSource.TextLayer -> readPage(pageIndex, builder)
+                    else -> Outcome.Success(quiet)
+                }
             }
         }
+    }
+
+    /**
+     * Runs one page's pipeline with its defects contained: an invariant that a strange page breaks (a unit range, a
+     * table cell, a score) or a layout walk that recurses too deep becomes [PdfPageError.ExtractionFailed], which
+     * listening skips and logs, instead of an exception that ends playback. Nothing here suspends, so no coroutine
+     * cancellation can be caught by mistake.
+     */
+    @Suppress("TooGenericExceptionCaught") // Any defect in the page pipeline, by design (see above).
+    private inline fun <T> contained(pageIndex: Int, block: () -> Outcome<T, PdfPageError>): Outcome<T, PdfPageError> =
+        try {
+            block()
+        } catch (e: RuntimeException) {
+            pageFailed(pageIndex, e)
+        } catch (e: StackOverflowError) {
+            pageFailed(pageIndex, e)
+        }
+
+    private fun pageFailed(pageIndex: Int, cause: Throwable): Outcome.Failure<PdfPageError> {
+        AudoraLog.e(TAG, "Page pipeline failed, skipping the page, $logContext page=$pageIndex", cause)
+        return Outcome.Failure(PdfPageError.ExtractionFailed(pageIndex, cause.toString(), cause))
     }
 
     /**
@@ -546,7 +575,7 @@ class PdfBook private constructor(
             config: ExtractionConfig = ExtractionConfig(),
             logContext: String = "",
             ocr: PageOcrFactory? = null,
-        ): Outcome<PdfBook, PdfOpenError> = when (val opened = engine.open(password)) {
+        ): Outcome<PdfBook, PdfOpenError> = when (val opened = engine.open(password).flatMap(::withPages)) {
             is Outcome.Success -> {
                 val book = PdfBook(engine, password, config, logContext, ocr, opened.value)
                 AudoraLog.i(TAG, "Opened $logContext pages=${book.pageCount} encrypted=${password != null}")
@@ -558,6 +587,15 @@ class PdfBook private constructor(
                 Outcome.Failure(opened.error)
             }
         }
+
+        /** A damaged page tree PDFium still opens has nothing to read or resume into: refused (and closed) here. */
+        private fun withPages(handle: PdfDocumentHandle): Outcome<PdfDocumentHandle, PdfOpenError> =
+            if (handle.pageCount > 0) {
+                Outcome.Success(handle)
+            } else {
+                handle.close()
+                Outcome.Failure(PdfOpenError.Damaged("the document has no pages"))
+            }
     }
 }
 

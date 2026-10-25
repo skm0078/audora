@@ -32,6 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,7 +72,15 @@ fun MadePlayerRoute(setKey: String, onBack: () -> Unit) {
     val current = found
     val title = titleOrUntitled(current?.second.orEmpty())
     DisposableEffect(controller) { onDispose(controller::release) }
-    LaunchedEffect(current?.first?.key) { current?.let { (set, _) -> controller.connect(set, title) } }
+    // True only on the listener's own open: a screen Android restores after closing the app is saved as false, so it
+    // shows the audio paused instead of starting it unasked.
+    var openedByListener by rememberSaveable(setKey) { mutableStateOf(true) }
+    LaunchedEffect(current?.first?.key) {
+        current?.let { (set, _) ->
+            controller.connect(set, title, play = openedByListener)
+            openedByListener = false
+        }
+    }
     LaunchedEffect(controller) {
         while (true) {
             controller.refresh()

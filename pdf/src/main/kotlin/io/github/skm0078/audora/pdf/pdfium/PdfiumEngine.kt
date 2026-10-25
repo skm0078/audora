@@ -38,7 +38,17 @@ class PdfiumEngine(
     private val config: ExtractionConfig = ExtractionConfig(),
 ) : PdfEngine {
     override fun open(password: String?): Outcome<PdfDocumentHandle, PdfOpenError> =
-        openDocument(password).map { PdfiumDocumentHandle(it, config) }
+        openDocument(password).flatMap(::handleOf)
+
+    /** A document whose page tree PDFium cannot count is damaged: closed here, never handed on half-open. */
+    @Suppress("TooGenericExceptionCaught") // PdfiumAndroidKt and JNI report failures as RuntimeExceptions.
+    private fun handleOf(document: PdfDocumentU): Outcome<PdfDocumentHandle, PdfOpenError> = try {
+        Outcome.Success(PdfiumDocumentHandle(document, config))
+    } catch (e: RuntimeException) {
+        AudoraLog.w(TAG, "Could not count the pages, closing the document", e)
+        pdfiumLocked { document.close() }
+        Outcome.Failure(PdfOpenError.Damaged("page count unreadable: $e"))
+    }
 
     /**
      * A second, display-only view of the same PDF (P4-03): rendering never shares a document with text
@@ -79,8 +89,9 @@ class PdfiumEngine(
         Outcome.Failure(PdfOpenError.Unreadable(e.toString(), e))
     }
 
-    // A missing or wrong password is an expected outcome, reported as a typed error rather than an exception.
-    @Suppress("SwallowedException")
+    // A missing or wrong password is an expected outcome, reported as a typed error rather than an exception. Any
+    // other failure (a damaged file JNI rejects) closes the descriptor and is reported as damaged, never thrown.
+    @Suppress("SwallowedException", "TooGenericExceptionCaught")
     private fun openDocument(
         pdfium: PdfiumCoreU,
         descriptor: ParcelFileDescriptor,
@@ -93,6 +104,10 @@ class PdfiumEngine(
     } catch (e: IOException) {
         descriptor.close()
         Outcome.Failure(classify(e))
+    } catch (e: RuntimeException) {
+        descriptor.close()
+        AudoraLog.w(TAG, "PDFium refused the document", e)
+        Outcome.Failure(PdfOpenError.Damaged(e.toString()))
     }
 
     /** PdfiumAndroidKt reports FPDF_GetLastError as an IOException message. */
@@ -106,6 +121,7 @@ class PdfiumEngine(
     }
 
     companion object {
+        private const val TAG = "Audora.Pdfium"
         private const val FILE_ERROR_MESSAGE = "not found or could not be opened"
 
         /** An engine reading a document the app may open through [context]'s ContentResolver. */
@@ -152,12 +168,17 @@ private class PdfiumDocumentHandle(private val document: PdfDocumentU, private v
         }
     }
 
-    // A broken outline must not stop the book from being read: log it and read on without chapters.
+    // A broken outline must not stop the book from being read: log it and read on without chapters. A damaged
+    // outline whose entries point back at each other makes the recursive walk overflow the stack, so that is caught
+    // too, and the copy into OutlineEntry stops at MAX_OUTLINE_DEPTH.
     @Suppress("TooGenericExceptionCaught") // PdfiumAndroidKt and JNI report failures as RuntimeExceptions.
     override fun outline(): List<OutlineEntry> = try {
-        pdfiumLocked { document.getTableOfContents() }.map { entryOf(it, pageCount) }
+        pdfiumLocked { document.getTableOfContents() }.map { entryOf(it, pageCount, depth = 0) }
     } catch (e: RuntimeException) {
         AudoraLog.w(TAG, "Could not read the outline, pages=$pageCount", e)
+        emptyList()
+    } catch (e: StackOverflowError) {
+        AudoraLog.w(TAG, "Outline loops back on itself, reading without chapters, pages=$pageCount", e)
         emptyList()
     }
 
@@ -275,9 +296,16 @@ private class PdfiumDocumentHandle(private val document: PdfDocumentU, private v
     }
 }
 
-private fun entryOf(bookmark: Bookmark, pageCount: Int): OutlineEntry = OutlineEntry(
+private fun entryOf(bookmark: Bookmark, pageCount: Int, depth: Int): OutlineEntry = OutlineEntry(
     title = bookmark.title.orEmpty(),
     // PDFium returns -1 for a bookmark without a page destination (a URI or named action).
     page = bookmark.pageIdx.takeIf { it in 0L until pageCount }?.toInt(),
-    children = bookmark.children.map { entryOf(it, pageCount) },
+    children = if (depth < MAX_OUTLINE_DEPTH) {
+        bookmark.children.map { entryOf(it, pageCount, depth + 1) }
+    } else {
+        emptyList()
+    },
 )
+
+/** Deeper than any real book's contents; a damaged outline that nests forever stops here. */
+private const val MAX_OUTLINE_DEPTH = 32

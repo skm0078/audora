@@ -161,4 +161,24 @@ class PdfBookTest {
         book.close()
         assertEquals(PdfPageError.BookClosed, book.pageText(0).errorOrNull())
     }
+
+    @Test
+    fun `a document with no pages is refused as damaged and its handle is closed`() {
+        val engine = FakeEngine(pages = 0)
+        assertEquals(PdfOpenError.Damaged("the document has no pages"), PdfBook.open(engine).errorOrNull())
+        assertEquals(0, engine.openHandles)
+    }
+
+    @Test
+    fun `a defect on one page is a page failure, never an exception, and the other pages still read`() {
+        val engine = FakeEngine(pages = 2) { if (it == 1) "Broken page." else "Fine." }
+        val book = requireNotNull(PdfBook.open(engine).getOrNull())
+        val faulty = ReadingUnitBuilder(
+            splitter = { text, _ -> if (text.startsWith("Broken")) error("boom") else listOf(text.indices) },
+        )
+        assertTrue(book.readPage(0, faulty) is Outcome.Success)
+        val failed = book.readPage(1, faulty).errorOrNull()
+        assertTrue("was $failed", failed is PdfPageError.ExtractionFailed && failed.pageIndex == 1)
+        assertTrue(book.readPageIfReady(1, faulty).errorOrNull() is PdfPageError.ExtractionFailed)
+    }
 }

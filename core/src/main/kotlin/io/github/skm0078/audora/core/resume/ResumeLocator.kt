@@ -17,7 +17,8 @@ class ResumeLocator(
     private val reAnchoring: ReAnchoring = ReAnchoring(),
 ) {
     /**
-     * Null when the book has never been read (start at page 1).
+     * Null when the book has never been read (start at page 1), or has no pages at all (a damaged file: nothing to
+     * resume into, and never a crash).
      *
      * @param pageCount the document's current page count (it can shrink if the file was replaced).
      * @param unitsOf the current units of a page, or null when that page cannot be extracted right now.
@@ -27,8 +28,7 @@ class ResumeLocator(
         pageCount: Int,
         unitsOf: suspend (page: Int) -> List<ReadingUnit>?,
     ): ResumePoint? {
-        require(pageCount > 0) { "pageCount must be > 0, was $pageCount" }
-        val anchor = store.get(bookId) ?: return null
+        val anchor = (if (pageCount > 0) store.get(bookId) else noPages(bookId)) ?: return null
         val point = when {
             anchor.page >= pageCount -> ResumePoint(pageCount - 1, 0, AnchorMatch.PAGE_START)
 
@@ -43,6 +43,11 @@ class ResumeLocator(
                 "match=${point.match} pipelineNow=$pipelineVersion$level",
         )
         return point
+    }
+
+    private fun noPages(bookId: BookId): ResumeAnchor? {
+        AudoraLog.w(TAG, "Resume skipped, ${bookId.logLabel} has no pages")
+        return null
     }
 
     private val AnchorMatch.isTrusted: Boolean

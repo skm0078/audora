@@ -2,6 +2,26 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Release hardening 1: crash guards (2026-10-25)
+From the pre-release review (all modules). No reading output changes, so PIPELINE_VERSION stays.
+- **One odd page no longer ends playback:** any defect while building a page's sentences (a broken invariant, a
+  layout walk that recurses too deep) becomes "page could not be read", which listening already skips and logs
+  (`PdfBook.contained`). Before, the exception went past the typed result and stopped the service.
+- **Damaged PDFs open as "damaged", never crash:** a file with zero pages is refused at open; PDFium errors other
+  than password and I/O close the file and report it damaged; a table of contents that loops back on itself is read
+  as no chapters (`StackOverflowError` caught, depth capped at 32). The resume locator returns nothing for a book
+  with no pages instead of throwing.
+- **Headset Play after the app was closed** always answers Media3 (resumption runs through `launchedFuture`), and
+  the playback service's scope logs a failed task instead of ending the process. Up next treats a start that
+  throws like a book that cannot be opened and tries the next one.
+- **Made-audio player starts only from a tap:** when Android restores the screen after closing the app, the audio
+  is loaded paused (C7). Playing a voice note catches every MediaPlayer failure and releases the player.
+- **Verified in CI:** `PdfBookTest` (zero pages; a throwing splitter fails only its page), `ResumeLocatorTest`
+  (zero pages), `QueueAdvanceTest` (a throwing start is skipped).
+
+**Real-device checks (Moto):** open a Made-audio file, swipe the app away from Recents, reopen it from Recents:
+the player shows paused. Play a book, press Play on a Bluetooth headset after swiping the app away: it resumes.
+
 ## Rows that never squeeze their titles; pitch that works like speed (2026-10-25, ADR-071)
 - **Option rows:** a value shares the title's line only when both fit whole; otherwise it goes on its own line under
   the title and wraps once ("English voice" was squeezed to one letter per line by a long voice name). Every

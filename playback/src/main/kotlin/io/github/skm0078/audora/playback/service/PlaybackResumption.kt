@@ -12,15 +12,14 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession.MediaItemsWithStartPosition
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import com.google.common.util.concurrent.SettableFuture
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
+import io.github.skm0078.audora.playback.async.launchedFuture
 import io.github.skm0078.audora.playback.session.BookSession
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 /**
  * Called by Media3 only when a controller asks to play while nothing is loaded: a Bluetooth or wired headset's
@@ -39,9 +38,12 @@ class PlaybackResumption(
     private val player: Player,
     private val bookSession: () -> BookSession,
 ) {
-    fun resume(isForPlayback: Boolean): ListenableFuture<MediaItemsWithStartPosition> {
-        val result = SettableFuture.create<MediaItemsWithStartPosition>()
-        scope.launch {
+    /**
+     * Always answers Media3: a store, library or book that throws (a damaged database, a file gone mid-open) fails
+     * the future and is logged, instead of ending the service before its notification is up.
+     */
+    fun resume(isForPlayback: Boolean): ListenableFuture<MediaItemsWithStartPosition> =
+        scope.launchedFuture(TAG, "Resumption") { result ->
             val anchor = anchors.latest()
             when {
                 anchor == null -> result.setException(UnsupportedOperationException("Nothing read yet"))
@@ -61,8 +63,6 @@ class PlaybackResumption(
             }
             AudoraLog.i(TAG, "Resumption requested, forPlayback=$isForPlayback book=${anchor?.bookId?.logLabel}")
         }
-        return result
-    }
 
     private fun preview(title: String?): MediaItemsWithStartPosition {
         val item = MediaItem.Builder()

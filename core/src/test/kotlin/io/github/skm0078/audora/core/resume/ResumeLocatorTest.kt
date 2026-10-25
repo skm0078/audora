@@ -35,6 +35,12 @@ class ResumeLocatorTest {
     }
 
     @Test
+    fun `a document with no pages has no resume point and never throws`() = runTest {
+        save(1)
+        assertNull(locator.locate(BOOK, pageCount = 0) { error("no page should be read") })
+    }
+
+    @Test
     fun `the saved sentence is found on its page`() = runTest {
         save(1)
         var asked: Int? = null

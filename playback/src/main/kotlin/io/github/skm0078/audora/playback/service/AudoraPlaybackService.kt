@@ -85,6 +85,7 @@ import io.github.skm0078.audora.speech.sherpa.blendableSpeaker
 import io.github.skm0078.audora.speech.sherpa.isExpressive
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -130,7 +131,12 @@ class AudoraPlaybackService : MediaLibraryService() {
     @Inject
     lateinit var bookmarks: BookmarkStore
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    // A task that throws (a damaged file, a database error) is logged and the rest of the service keeps playing;
+    // without the handler one such failure would end the process mid-book.
+    private val scope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Main.immediate +
+            CoroutineExceptionHandler { _, e -> AudoraLog.e(TAG, "Service task failed", e) },
+    )
 
     // Resume anchor writes (P1-06). Never cancelled: the flush sent while the service is destroyed must land;
     // it holds no work afterwards.

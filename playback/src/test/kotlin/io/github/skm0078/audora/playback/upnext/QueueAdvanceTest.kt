@@ -30,10 +30,12 @@ class QueueAdvanceTest {
     private val store by lazy { UpNextStore(file, scope, dispatcher) }
     private val started = mutableListOf<QueuedBook>()
     private var unreadable = emptySet<String>()
+    private var throwing = emptySet<String>()
 
     private val advance by lazy {
         QueueAdvance(store, scope) { entry ->
             started += entry
+            check(entry.bookId.value !in throwing) { "damaged file" }
             if (entry.bookId.value in unreadable) {
                 Outcome.Failure(OpenFailure(PlaybackErrorCode.BOOK_UNREADABLE, "moved"))
             } else {
@@ -58,6 +60,17 @@ class QueueAdvanceTest {
 
         assertEquals(listOf("a"), started.map { it.bookId.value })
         assertEquals(listOf("b"), store.queue.value.entries.map { it.bookId.value })
+    }
+
+    @Test
+    fun aStartThatThrowsIsSkippedLikeAnUnreadableBookAndNeverCrashes() = runTest(dispatcher) {
+        throwing = setOf("a")
+        store.update { it.add(BookId("a")).add(BookId("b")) }
+
+        advance.onBookFinished(BookId("done"))
+
+        assertEquals(listOf("a", "b"), started.map { it.bookId.value })
+        assertEquals(emptyList<String>(), store.queue.value.entries.map { it.bookId.value })
     }
 
     @Test
