@@ -31,7 +31,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -219,8 +221,16 @@ private fun PageBar(page: Int, pageCount: Int, actions: ReaderActions, onPick: (
     }
 }
 
+/**
+ * Why nothing is heard: the player cannot be reached, or it stopped on an error. Shown in the reader and on the full
+ * player, and announced by TalkBack as soon as it appears (a listener who pressed Read aloud and hears nothing must
+ * be told why).
+ */
 @Composable
-private fun PlayerStatus(playback: PlaybackSnapshot) {
+internal fun PlayerStatus(
+    playback: PlaybackSnapshot,
+    modifier: Modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+) {
     val text = when {
         playback.connection == PlaybackSnapshot.Connection.UNAVAILABLE -> R.string.reader_player_unavailable
         playback.errorCode != null -> R.string.reader_player_error
@@ -230,7 +240,7 @@ private fun PlayerStatus(playback: PlaybackSnapshot) {
         stringResource(text),
         color = MaterialTheme.colorScheme.error,
         style = MaterialTheme.typography.bodySmall,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
+        modifier = modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Assertive },
     )
 }
 

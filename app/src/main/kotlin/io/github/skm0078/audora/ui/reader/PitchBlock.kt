@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,10 +50,13 @@ internal fun PitchBlock(
 ) {
     val range = speech.minPitch..speech.maxPitch
     val step = speech.pitchStep
-    // Follows the service's pitch; while dragging, the finger's step, sent once per step.
-    var dragged by remember(pitch) { mutableFloatStateOf(pitch) }
+    // While the finger is down the thumb follows the finger's step, sent once per step; the service's echoes of
+    // earlier steps arrive late and must not pull the thumb back. When idle it follows the service's pitch.
+    var dragging by remember { mutableStateOf(false) }
+    var dragged by remember { mutableFloatStateOf(pitch) }
+    val shown = if (dragging) dragged else pitch
     val haptics = LocalHapticFeedback.current
-    val label = pitchLabel(dragged)
+    val label = pitchLabel(shown)
     OptionBlock(
         stringResource(R.string.speech_pitch_title),
         modifier = modifier,
@@ -62,12 +66,16 @@ internal fun PitchBlock(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { onPitch(speech.clampPitch(pitch - step)) }, enabled = pitch > range.start) {
-                Icon(painterResource(R.drawable.ic_remove), stringResource(R.string.speech_pitch_down))
+                Icon(painterResource(R.drawable.ic_remove), stringResource(R.string.speech_pitch_step_down))
             }
             val spoken = stringResource(R.string.speech_pitch_spoken, label)
             Slider(
-                value = dragged,
+                value = shown,
                 onValueChange = { moved ->
+                    if (!dragging) {
+                        dragging = true
+                        dragged = pitch
+                    }
                     val snapped = speech.clampPitch(moved)
                     if (snapped != dragged) {
                         // A tick at each step, as on the speed slider, so the pitch can be set by feel.
@@ -76,13 +84,14 @@ internal fun PitchBlock(
                         onPitch(snapped)
                     }
                 },
+                onValueChangeFinished = { dragging = false },
                 valueRange = range,
                 steps = stepsBetween(range, step),
                 // TalkBack reads the pitch ("Pitch: 10% higher"), not the thumb's share of the track.
                 modifier = Modifier.weight(1f).semantics { stateDescription = spoken },
             )
             IconButton(onClick = { onPitch(speech.clampPitch(pitch + step)) }, enabled = pitch < range.endInclusive) {
-                Icon(painterResource(R.drawable.ic_add), stringResource(R.string.speech_pitch_up))
+                Icon(painterResource(R.drawable.ic_add), stringResource(R.string.speech_pitch_step_up))
             }
         }
         Row(

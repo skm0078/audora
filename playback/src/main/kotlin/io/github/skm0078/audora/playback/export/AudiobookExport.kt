@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.playback.jobs.ContinueTokens
 
 object AudiobookExport {
     internal const val ACTION_START = "io.github.skm0078.audora.export.START"
@@ -36,8 +37,14 @@ object AudiobookExport {
      */
     fun continueFrom(context: Context, intent: Intent?): Boolean {
         val id = intent?.getStringExtra(EXTRA_CONTINUE_BOOK)?.let(::BookId) ?: return false
+        val token = intent.getStringExtra(ContinueTokens.EXTRA_TOKEN)
         intent.removeExtra(EXTRA_CONTINUE_BOOK) // Once: a later recreation of the activity must not start it again.
-        start(context, id)
-        return true
+        // Only Audora's own notification holds the token: another app opening Audora with a book id starts nothing.
+        val ours = ContinueTokens.forContext(context).redeem(jobOf(id), token)
+        if (ours) start(context, id) else AudoraLog.w(TAG, "Continue refused, not from Audora, book=${id.logLabel}")
+        return ours
     }
+
+    /** The key of [id]'s Continue token ([ContinueTokens]). */
+    internal fun jobOf(id: BookId): String = "export:${id.value}"
 }

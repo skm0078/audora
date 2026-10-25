@@ -13,4 +13,7 @@
     <string name="speech_pitch_bit_deeper">थोड़ी गहरी</string>
     <string name="speech_pitch_bit_higher">थोड़ी ऊँची</string>
     <string name="speech_pitch_hint">तुरंत सुनाई देती है। गति बदलने से नहीं बदलती।</string>
+    <!-- The - and + buttons beside the slider: one step, named apart from the Deeper and Higher presets for TalkBack. -->
+    <string name="speech_pitch_step_down">एक कदम गहरी</string>
+    <string name="speech_pitch_step_up">एक कदम ऊँची</string>
 </resources>

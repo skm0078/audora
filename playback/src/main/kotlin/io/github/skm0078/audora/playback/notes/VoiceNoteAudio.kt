@@ -120,7 +120,12 @@ class VoiceNoteAudio(context: Context, private val config: VoiceNoteConfig = Voi
         }
     }
 
-    /** Plays [fileName]; [onDone] runs when it ends or fails. Stop it with [Playing.stop]. */
+    /**
+     * Plays [fileName]; [onDone] runs when it ends or fails. Stop it with [Playing.stop]. MediaPlayer reports a bad
+     * file or state as IOException, IllegalStateException, IllegalArgumentException or SecurityException: each one
+     * is a typed failure, the player released, never a crash.
+     */
+    @Suppress("TooGenericExceptionCaught") // See above: MediaPlayer's failures are several RuntimeExceptions.
     fun play(fileName: String, onDone: () -> Unit): Outcome<Playing, VoiceNoteError> {
         val player = MediaPlayer()
         return try {
@@ -135,10 +140,16 @@ class VoiceNoteAudio(context: Context, private val config: VoiceNoteConfig = Voi
             player.start()
             Outcome.Success(Playing(player))
         } catch (e: IOException) {
-            player.release()
-            AudoraLog.w(TAG, "Voice note not played", e)
-            Outcome.Failure(VoiceNoteError.Player(e.message ?: "unreadable"))
+            notPlayed(player, e)
+        } catch (e: RuntimeException) {
+            notPlayed(player, e)
         }
+    }
+
+    private fun notPlayed(player: MediaPlayer, e: Exception): Outcome<Playing, VoiceNoteError> {
+        player.release()
+        AudoraLog.w(TAG, "Voice note not played", e)
+        return Outcome.Failure(VoiceNoteError.Player(e.message ?: "unreadable"))
     }
 
     class Playing internal constructor(private val player: MediaPlayer) {

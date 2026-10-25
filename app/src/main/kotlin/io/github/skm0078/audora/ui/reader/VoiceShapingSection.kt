@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import io.github.skm0078.audora.R
@@ -97,8 +98,9 @@ fun VoiceShapingSection(
 private fun ExpressivenessSlider(step: Int, maxStep: Int, onChange: (Int) -> Unit) {
     var dragged by remember(step) { mutableFloatStateOf(step.toFloat()) }
     val stepOf = stringResource(R.string.slider_step_of, dragged.roundToInt(), maxStep)
+    val title = stringResource(R.string.speech_expressiveness)
     OptionBlock(
-        stringResource(R.string.speech_expressiveness),
+        title,
         value = stepOf,
         help = stringResource(R.string.speech_expressiveness_detail),
     ) {
@@ -108,7 +110,10 @@ private fun ExpressivenessSlider(step: Int, maxStep: Int, onChange: (Int) -> Uni
             valueRange = 0f..maxStep.toFloat(),
             steps = (maxStep - 1).coerceAtLeast(0),
             onValueChangeFinished = { dragged.roundToInt().takeIf { it != step }?.let(onChange) },
-            modifier = Modifier.semantics { stateDescription = stepOf },
+            modifier = Modifier.semantics {
+                contentDescription = title
+                stateDescription = stepOf
+            },
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(stringResource(R.string.speech_expressiveness_newsreader), style = MaterialTheme.typography.bodySmall)

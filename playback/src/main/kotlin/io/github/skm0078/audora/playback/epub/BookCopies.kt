@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.playback.jobs.ContinueTokens
 
 /** What a copy holds. */
 enum class CopyKind {
@@ -49,8 +50,19 @@ object BookCopies {
         val kind = intent?.getStringExtra(EXTRA_CONTINUE_KIND)?.let { name ->
             CopyKind.entries.find { it.name == name }
         }
+        val token = intent?.getStringExtra(ContinueTokens.EXTRA_TOKEN)
         intent?.removeExtra(EXTRA_CONTINUE_BOOK) // Once: a later recreation of the activity must not start it again.
-        if (id != null && kind != null) start(context, id, kind)
-        return id != null && kind != null
+        if (id == null || kind == null) return false
+        // Only Audora's own notification holds the token: another app opening Audora with a book id starts nothing.
+        val ours = ContinueTokens.forContext(context).redeem(jobOf(id), token)
+        if (ours) {
+            start(context, id, kind)
+        } else {
+            AudoraLog.w(TAG, "Continue refused, not from Audora, book=${id.logLabel}")
+        }
+        return ours
     }
+
+    /** The key of [id]'s Continue token ([ContinueTokens]). */
+    internal fun jobOf(id: BookId): String = "copy:${id.value}"
 }

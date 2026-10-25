@@ -13,4 +13,7 @@
     <string name="speech_pitch_bit_deeper">একটু গভীর</string>
     <string name="speech_pitch_bit_higher">একটু উঁচু</string>
     <string name="speech_pitch_hint">সঙ্গে সঙ্গে শোনা যায়। গতি বদলালে বদলায় না।</string>
+    <!-- The - and + buttons beside the slider: one step, named apart from the Deeper and Higher presets for TalkBack. -->
+    <string name="speech_pitch_step_down">এক ধাপ গভীর</string>
+    <string name="speech_pitch_step_up">এক ধাপ উঁচু</string>
 </resources>

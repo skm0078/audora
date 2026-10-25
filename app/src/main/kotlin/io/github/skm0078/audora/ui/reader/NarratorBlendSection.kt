@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import io.github.skm0078.audora.R
@@ -73,12 +74,16 @@ private fun BlendAmountSlider(percent: Int, onChange: (Int) -> Unit) {
     var dragged by remember(percent) { mutableFloatStateOf(percent.toFloat()) }
     val range = VoiceShaping.BLEND_PERCENTS
     val amount = stringResource(R.string.speech_blend_amount, dragged.roundToInt())
+    val title = stringResource(R.string.speech_blend_amount_title)
     OptionBlock(
-        stringResource(R.string.speech_blend_amount_title),
+        title,
         value = stringResource(R.string.speech_blend_percent, dragged.roundToInt()),
     ) {
         Slider(
-            modifier = Modifier.semantics { stateDescription = amount },
+            modifier = Modifier.semantics {
+                contentDescription = title
+                stateDescription = amount
+            },
             value = dragged,
             onValueChange = { dragged = it },
             valueRange = range.first.toFloat()..range.last.toFloat(),

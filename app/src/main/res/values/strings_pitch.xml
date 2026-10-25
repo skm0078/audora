@@ -13,4 +13,7 @@
     <string name="speech_pitch_bit_deeper">A bit deeper</string>
     <string name="speech_pitch_bit_higher">A bit higher</string>
     <string name="speech_pitch_hint">Heard at once. Speed never changes it.</string>
+    <!-- The - and + buttons beside the slider: one step, named apart from the Deeper and Higher presets for TalkBack. -->
+    <string name="speech_pitch_step_down">One step deeper</string>
+    <string name="speech_pitch_step_up">One step higher</string>
 </resources>

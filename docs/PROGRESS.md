@@ -2,6 +2,96 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Release hardening 5: TalkBack and low vision (2026-10-25)
+From the pre-release accessibility review.
+- **The player says when something goes wrong:** the status line (connecting, a voice error) now shows on the player
+  screen too, not only the reader, and TalkBack announces it as it changes (live region).
+- **Sliders and buttons have names:** text size, expressiveness, narrator blend and the page scrubber say what they
+  set; the play button says "loading" while the voice gets ready; a book row says "Open book", its menu names the
+  book, the chapter list marks "Now reading", search hits say "Read from here".
+- **Readable dimmed text:** unreadable and out-of-focus sentences now dim to 60 % instead of lower, keeping body text
+  above WCAG AA contrast. Rows with a title and trailing value mirror correctly in right-to-left layouts.
+- New strings in `strings_a11y.xml` with Hindi and Bengali copies.
+
+**Real-device checks (Moto, TalkBack on):** open a book, swipe through the player: every slider and button is named;
+turn Wi-Fi and the voice off mid-sentence and hear the status announced.
+
+## Release hardening 4: app lock and Continue (2026-10-25, ADR-061)
+From the pre-release security review.
+- **The app lock covers open sheets, dialogs and menus:** the lock screen is now drawn in its own full-screen window,
+  opened after the content's, so a notes sheet or a book's details left open when the app locked is hidden behind
+  it instead of staying readable and tappable on top. Back on the lock screen leaves the app. "Hide app content"
+  still applies (the window inherits the activity's security flag).
+- **Only Audora's own notification can continue a stopped export or copy:** MainActivity is exported, so any app
+  could open it with a book id and start writing that book to shared Audiobooks or Documents. The Continue action
+  now carries a one-time random token kept in app storage (`ContinueTokens`); without it nothing starts and the
+  attempt is logged.
+- **Verified in CI:** `ContinueTokensTest` (once only, wrong or missing token refused, one token per job).
+
+**Real-device checks (Moto):** turn on App lock, open a book's Notes sheet, leave the app for over 30 s, come back:
+only the lock screen shows; unlock and the sheet is still there.
+
+## Release hardening 3: voice installs (2026-10-25)
+From the pre-release review.
+- **A voice deleted while it downloads stays deleted:** catalog voices now install through the same gate as the
+  OCR and punctuation models (`VoiceFiles.installGate`): a delete marks every download started before it as stale,
+  so its install is skipped and its zip removed. Before, the voice came back, could become the reading voice again,
+  and kept its space.
+- **The bundled voice's espeak-ng data is copied by one engine at a time:** playback, studio and quiz each load
+  the bundled voice; two copies into one staging folder could leave a folder missing files that its marker called
+  complete (`AssetDirectoryInstaller`, one process-wide lock).
+- **A full phone keeps the downloaded voice:** when unpacking fails for lack of space, the verified zip stays and
+  the message says to free space; the next try installs it without downloading again. Any other failure still
+  deletes it.
+- **Verified in CI:** `VoiceDownloadJobTest` (delete during download), `AssetDirectoryInstallerTest` (two installs at
+  once), `VoiceArchiveInstallerTest` (full phone told apart from a broken zip).
+
+**Real-device checks (Moto):** start a Hindi voice download, delete it from Voices before it finishes: it does not
+come back.
+
+## Release hardening 2: words read wrong (2026-10-25)
+From the pre-release review. Speech text changes, so STUDIO_AUDIO_VERSION is 3; :pdf is untouched.
+- **"the book I read" is no longer "the book one read":** after book, part, class, lesson and the other numbering
+  words, a lone "I" followed by a verb (an auxiliary, a common verb, any "-ed" word) stays the pronoun. Before
+  anything else it is still the numeral ("Part I.", "Type I diabetes", "Book I of the Iliad"), and after "World
+  War" it always is (`RomanNumeralRule`).
+- **Hindi and Bengali say a minus sign:** "-5 डिग्री" is "माइनस पाँच डिग्री" ("মাইনাস" in Bengali); a dash
+  between numbers stays a range. Equations keep the formal "ऋण".
+- **Map scales:** "1:50,000" is no longer read as a clock time.
+- **A book's pronunciation fixes apply from its first sentence:** `BookContext.open` returns once the fixes are
+  loaded (one collection, so an edit made while the book opens is not missed). Before, up to 40 sentences were
+  rendered without them.
+- **Pitch:** a book's pitch saved under the old range is brought into ±15% when the book opens (ADR-071 said so;
+  the code did not). The slider no longer jumps back while dragging when the service's echo of an earlier step
+  arrives late. The - and + buttons are "One step deeper/higher", so TalkBack no longer gives them the same names
+  as the Deeper and Higher presets.
+- What's new (id 3) lists these.
+- **Verified in CI:** `EnglishNormalizerTest` (pronoun and numeral "I", map scale), `IndicNormalizerTest` (minus),
+  `BookContextTest` (open waits for the fixes; old pitch clamped), `JobsAndPitchScreensTest`.
+
+**Real-device checks (Moto):** read a novel page with "the book I read": hear "I". Add a fix to a book, close it,
+reopen it: the first sentence uses the fix. In a Hindi text with "-5", hear "माइनस पाँच".
+
+## Release hardening 1: crash guards (2026-10-25)
+From the pre-release review (all modules). No reading output changes, so PIPELINE_VERSION stays.
+- **One odd page no longer ends playback:** any defect while building a page's sentences (a broken invariant, a
+  layout walk that recurses too deep) becomes "page could not be read", which listening already skips and logs
+  (`PdfBook.contained`). Before, the exception went past the typed result and stopped the service.
+- **Damaged PDFs open as "damaged", never crash:** a file with zero pages is refused at open; PDFium errors other
+  than password and I/O close the file and report it damaged; a table of contents that loops back on itself is read
+  as no chapters (`StackOverflowError` caught, depth capped at 32). The resume locator returns nothing for a book
+  with no pages instead of throwing.
+- **Headset Play after the app was closed** always answers Media3 (resumption runs through `launchedFuture`), and
+  the playback service's scope logs a failed task instead of ending the process. Up next treats a start that
+  throws like a book that cannot be opened and tries the next one.
+- **Made-audio player starts only from a tap:** when Android restores the screen after closing the app, the audio
+  is loaded paused (C7). Playing a voice note catches every MediaPlayer failure and releases the player.
+- **Verified in CI:** `PdfBookTest` (zero pages; a throwing splitter fails only its page), `ResumeLocatorTest`
+  (zero pages), `QueueAdvanceTest` (a throwing start is skipped).
+
+**Real-device checks (Moto):** open a Made-audio file, swipe the app away from Recents, reopen it from Recents:
+the player shows paused. Play a book, press Play on a Bluetooth headset after swiping the app away: it resumes.
+
 ## Rows that never squeeze their titles; pitch that works like speed (2026-10-25, ADR-071)
 - **Option rows:** a value shares the title's line only when both fit whole; otherwise it goes on its own line under
   the title and wraps once ("English voice" was squeezed to one letter per line by a long voice name). Every

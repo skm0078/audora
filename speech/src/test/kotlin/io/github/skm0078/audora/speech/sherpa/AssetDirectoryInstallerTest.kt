@@ -103,4 +103,30 @@ class AssetDirectoryInstallerTest {
         assertFalse(target.exists())
         assertFalse(File(temp.root, "espeak-ng-data.partial").exists())
     }
+
+    @Test
+    fun `two installers copying at once leave one complete folder`() {
+        val target = File(temp.root, "espeak-ng-data")
+        // Slow opens widen the window in which two unserialised copies would share one staging folder.
+        val slow = object : AssetTree by assets {
+            override fun open(path: String): InputStream {
+                Thread.sleep(SLOW_OPEN_MS)
+                return assets.open(path)
+            }
+        }
+        val threads = List(2) {
+            Thread { AssetDirectoryInstaller(slow).install("voices/bundled/espeak-ng-data", target, "v1") }
+        }
+        threads.forEach(Thread::start)
+        threads.forEach(Thread::join)
+
+        assertEquals("phonemes", File(target, "phontab").readText())
+        assertEquals("english", File(target, "en_dict").readText())
+        assertEquals("variant", File(target, "voices/!v/f1").readText())
+        assertFalse(File(temp.root, "espeak-ng-data.partial").exists())
+    }
+
+    private companion object {
+        const val SLOW_OPEN_MS = 20L
+    }
 }

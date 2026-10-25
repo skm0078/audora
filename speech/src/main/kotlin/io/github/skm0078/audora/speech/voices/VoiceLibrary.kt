@@ -97,7 +97,8 @@ class VoiceLibrary private constructor(
     /** Deletes a downloaded or imported voice; it also stops being the reading voice of its language. */
     suspend fun delete(id: String): Outcome<Unit, String> = withContext(Dispatchers.IO) {
         downloads.cancel(id)
-        val result = synchronized(lock) { files.delete(id).also { refreshLocked() } }
+        // Through the gate, so a download of this voice that ends after now is not installed (InstallGate).
+        val result = files.installGate.delete { synchronized(lock) { files.delete(id).also { refreshLocked() } } }
         SpeechEngines.blendCache(appContext).clear(id) // a Kokoro voice's narrator blend copy (plan item 75)
         readingVoices.forget(VoiceId(EngineId.SHERPA, id))
         speeds.forget(VoiceId(EngineId.SHERPA, id))

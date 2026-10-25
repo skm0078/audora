@@ -60,6 +60,23 @@ class VoiceDownloadJobTest {
     }
 
     @Test
+    fun `a voice deleted while it downloads is not installed and leaves no zip`() {
+        var deleted = false
+        val result = run(
+            keepGoing = {
+                if (!deleted) files.installGate.delete { files.delete(voice.id) }
+                deleted = true
+                true
+            },
+        )
+
+        assertTrue("was $result", result is JobResult.Failed)
+        assertEquals(0, installedCalls)
+        assertTrue(files.installed().isEmpty())
+        assertTrue(files.downloadsRoot.listFiles().orEmpty().isEmpty())
+    }
+
+    @Test
     fun `a corrupt file fails at once`() {
         http.content = zip.copyOf().also { it[10] = (it[10] + 1).toByte() }
 

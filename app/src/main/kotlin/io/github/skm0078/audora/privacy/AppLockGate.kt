@@ -25,6 +25,8 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.logging.AudoraLog
@@ -34,6 +36,10 @@ import io.github.skm0078.audora.ui.theme.Dimens
  * [content] stays composed under the lock, so the open book, the scroll position and any shared file wait behind
  * it; it is only hidden from sight, touch and TalkBack. Playback in the notification and on the lock screen goes on:
  * the lock guards the library and its notes, not the play button.
+ *
+ * The lock is drawn in a window of its own, opened after the content's: a sheet, dialog or menu that was open when
+ * the app locked has its own window above the activity's, and would otherwise stay readable and tappable on top of
+ * a lock drawn in the activity (the notes sheet, a book's details).
  */
 @Composable
 fun AppLockGate(
@@ -46,8 +52,25 @@ fun AppLockGate(
     val locked = settings.appLock && !session.unlocked
     Box(Modifier.fillMaxSize()) {
         Box(if (locked) Modifier.fillMaxSize().clearAndSetSemantics {} else Modifier.fillMaxSize()) { content() }
-        if (locked) LockedScreen(activity, session)
+        if (locked) LockWindow(activity) { LockedScreen(activity, session) }
     }
+}
+
+/**
+ * A full-screen window above every window the content opened. Back leaves the app instead of reaching the screen
+ * behind the lock; its security flag follows the activity's ("Hide app content").
+ */
+@Composable
+private fun LockWindow(activity: Activity, content: @Composable () -> Unit) {
+    Dialog(
+        onDismissRequest = { activity.moveTaskToBack(true) },
+        properties = DialogProperties(
+            dismissOnClickOutside = false,
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false,
+        ),
+        content = content,
+    )
 }
 
 @Composable

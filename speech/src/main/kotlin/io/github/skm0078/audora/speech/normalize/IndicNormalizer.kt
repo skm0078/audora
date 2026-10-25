@@ -41,7 +41,9 @@ class IndicNormalizer internal constructor(
         val spoken = speakSymbols(written)
         val ascii = asciiDigits(spoken)
         if (ascii.none(Char::isAsciiDigit)) return if (spoken == text) text else tidy(spoken)
-        var result = pack.units(pack.ordinals(pack.dates(ascii)))
+        // A sign before a number ("-5°C", "−3.2") is said first; a dash between numbers ("2019-20") is a range.
+        val signed = SIGN.replace(ascii, "${words.minus} ")
+        var result = pack.units(pack.ordinals(pack.dates(signed)))
         result = CURRENCY.replace(result) { match ->
             val (amount, magnitude) = match.destructured
             if (magnitude.isEmpty()) {
@@ -134,6 +136,7 @@ class IndicNormalizer internal constructor(
         /** Hyphen or dash, up to four digits a side: "10-12", "2019-20". Longer runs are codes. */
         private val RANGE = Regex("""(?<![\w.,-])(\d{1,4})\s?[-–—]\s?(\d{1,4})(?![\w-]|[.,]\d)""")
         private val HYPHENATED_CODE = Regex("""(?<![\w.,-])\d+(?:-\d+)+(?![\w-])""")
+        private val SIGN = Regex("""(?:^|(?<=[\s(\[]))[-−](?=\d)""")
         private val PLAIN = Regex("""(?<![\w.])$NUMBER(?![\w])""")
         private val EXTRA_SPACES = Regex("""[ \t]{2,}""")
 

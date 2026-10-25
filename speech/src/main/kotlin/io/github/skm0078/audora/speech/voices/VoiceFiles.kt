@@ -28,6 +28,9 @@ data class InstalledVoice(val spec: SherpaVoiceSpec, val origin: VoiceOrigin, va
  * leaves nothing that looks complete. [recover] tidies what such a kill leaves behind.
  */
 class VoiceFiles(val root: File) {
+    /** Keeps a voice's delete from being undone by its download finishing late ([VoiceDownloadJob]). */
+    val installGate = InstallGate()
+
     val installedRoot = File(root, "installed")
     val downloadsRoot = File(root, "downloads")
 

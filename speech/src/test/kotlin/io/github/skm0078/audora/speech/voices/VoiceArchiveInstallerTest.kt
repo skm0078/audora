@@ -88,4 +88,12 @@ class VoiceArchiveInstallerTest {
         assertFalse(File(installed.dir, "old-only.txt").exists())
         assertEquals(newVoice.sha256, files.installed().single().spec.contentVersion)
     }
+
+    @Test
+    fun `a full phone is told apart from a broken zip, so only the full phone keeps the zip`() {
+        val full = java.io.IOException("write failed: ENOSPC (No space left on device)")
+        assertTrue(VoiceArchiveInstaller.isOutOfSpace(full))
+        assertTrue(VoiceArchiveInstaller.isOutOfSpace(java.io.IOException("copy failed", full)))
+        assertFalse(VoiceArchiveInstaller.isOutOfSpace(java.io.IOException("not a valid zip: bad header")))
+    }
 }

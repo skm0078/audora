@@ -25,7 +25,14 @@ internal class IndicNumberWords private constructor(
      * Words the normalizer puts around numbers. [currency] is "रुपये" even after one: the oblique case ("एक रुपये
      * का सिक्का") is the common one in running text.
      */
-    class Terms(val point: String, val percent: String, val to: String, val currency: String, val paise: String)
+    class Terms(
+        val point: String,
+        val percent: String,
+        val to: String,
+        val currency: String,
+        val paise: String,
+        val minus: String,
+    )
 
     /** Words for "/" and "&" between words (RI-6), and for "/" in a rate after a number ("60 किमी/घंटा"). */
     class Conjunctions(val or: String, val and: String, val per: String)
@@ -39,6 +46,7 @@ internal class IndicNumberWords private constructor(
     val to = nfc(terms.to)
     val currency = nfc(terms.currency)
     val paise = nfc(terms.paise)
+    val minus = nfc(terms.minus)
     val or = nfc(conjunctions.or)
     val and = nfc(conjunctions.and)
     val per = nfc(conjunctions.per)
@@ -109,6 +117,8 @@ internal class IndicNumberWords private constructor(
                 to = "से",
                 currency = "रुपये",
                 paise = "पैसे",
+                // How a minus is said in news and weather ("माइनस पाँच डिग्री"); equations keep the formal "ऋण".
+                minus = "माइनस",
             ),
             conjunctions = Conjunctions(or = "या", and = "और", per = "प्रति"),
         )
@@ -136,6 +146,7 @@ internal class IndicNumberWords private constructor(
                 to = "থেকে",
                 currency = "টাকা",
                 paise = "পয়সা",
+                minus = "মাইনাস",
             ),
             conjunctions = Conjunctions(or = "বা", and = "এবং", per = "প্রতি"),
         )

@@ -50,7 +50,9 @@ internal class TimeRule : NormalizationRule {
         const val MINUTES_NEEDING_OH = 10
 
         const val MERIDIEM = """(?:[aApP]\.?[mM]\.?)(?![\w])"""
-        val CLOCK = Regex("""(?<![\w:.])(\d{1,2}):(\d{2})(?![:\d])(?:\s?($MERIDIEM))?""")
+
+        // Not a map scale or ratio with grouped digits: "1:50,000" is one to fifty thousand, never a clock time.
+        val CLOCK = Regex("""(?<![\w:.])(\d{1,2}):(\d{2})(?![:\d]|,\d)(?:\s?($MERIDIEM))?""")
         val HOUR_ONLY = Regex("""(?<![\w:.])(\d{1,2})\s?($MERIDIEM)""")
     }
 }

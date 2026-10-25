@@ -42,6 +42,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
@@ -135,9 +137,15 @@ private fun SkipButton(forward: Boolean, enabled: Boolean, onClick: () -> Unit, 
 
 @Composable
 private fun PlayPauseButton(reading: Boolean, buffering: Boolean, enabled: Boolean, onClick: () -> Unit) {
+    val loading = stringResource(R.string.a11y_loading)
     Box(contentAlignment = Alignment.Center) {
         if (buffering) CircularProgressIndicator(Modifier.size(PLAY_BUTTON_SIZE))
-        FilledIconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(PLAY_BUTTON_SIZE - 8.dp)) {
+        FilledIconButton(
+            onClick = onClick,
+            enabled = enabled,
+            // The spinner says "getting ready" to the eye; TalkBack says it on the button.
+            modifier = Modifier.size(PLAY_BUTTON_SIZE - 8.dp).semantics { if (buffering) stateDescription = loading },
+        ) {
             if (reading) {
                 Icon(painterResource(R.drawable.ic_pause), stringResource(R.string.reader_pause))
             } else {

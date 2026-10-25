@@ -58,12 +58,17 @@ class MadeAudioController(private val context: Context) {
         }
     }
 
-    fun connect(set: OutputSet, bookTitle: String) {
+    /**
+     * Connects and loads [set] unless the player already holds it. [play] starts it at once: true only when the
+     * listener just opened the player, never when Android restores the screen after the app was closed (C7: playback
+     * starts only from a user action).
+     */
+    fun connect(set: OutputSet, bookTitle: String, play: Boolean) {
         if (future != null) return
         val token = SessionToken(context, ComponentName(context, MadeAudioService::class.java))
         val pending = MediaController.Builder(context, token).buildAsync()
         future = pending
-        pending.addListener({ onConnected(pending, set, bookTitle) }, ContextCompat.getMainExecutor(context))
+        pending.addListener({ onConnected(pending, set, bookTitle, play) }, ContextCompat.getMainExecutor(context))
     }
 
     fun release() {
@@ -115,7 +120,12 @@ class MadeAudioController(private val context: Context) {
         }
     }
 
-    private fun onConnected(pending: ListenableFuture<MediaController>, set: OutputSet, bookTitle: String) {
+    private fun onConnected(
+        pending: ListenableFuture<MediaController>,
+        set: OutputSet,
+        bookTitle: String,
+        play: Boolean,
+    ) {
         if (pending != future) return
         val connected = try {
             pending.get()
@@ -127,11 +137,11 @@ class MadeAudioController(private val context: Context) {
         controller = connected
         connected.addListener(listener)
         val loaded = connected.currentMediaItem?.mediaId?.let(MadePositions::setOf)
-        if (loaded != set.key) load(connected, set, bookTitle)
+        if (loaded != set.key) load(connected, set, bookTitle, play)
         refresh()
     }
 
-    private fun load(player: MediaController, set: OutputSet, bookTitle: String) {
+    private fun load(player: MediaController, set: OutputSet, bookTitle: String, play: Boolean) {
         val items = set.files.map { file ->
             MediaItem.Builder()
                 .setMediaId(MadePositions.mediaId(set.key, file.part))
@@ -141,10 +151,10 @@ class MadeAudioController(private val context: Context) {
                 .build()
         }
         val start = MadePositions(context).get(set.key)?.takeIf { it.index < items.size }
-        AudoraLog.i(TAG, "Made audio loaded, files=${items.size} resumed=${start != null}")
+        AudoraLog.i(TAG, "Made audio loaded, files=${items.size} resumed=${start != null} play=$play")
         player.setMediaItems(items, start?.index ?: 0, start?.positionMs ?: 0)
         player.prepare()
-        player.play()
+        if (play) player.play()
     }
 
     companion object {

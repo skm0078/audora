@@ -14,6 +14,7 @@ import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -24,12 +25,14 @@ import kotlinx.coroutines.launch
  * own thread, so the state is volatile and replaced whole.
  *
  * [onRulesChanged] runs when the open book's fixes change after it opened (the reader added or removed one), so the
- * sentences rendered ahead are rendered again.
+ * sentences rendered ahead are rendered again. [clampPitch] brings a pitch saved under an older, wider range into
+ * today's (ADR-071), so what is heard and what the sheet shows agree.
  */
 class BookContext(
     private val settingsStore: BookSettingsStore,
     private val pronunciations: PronunciationStore,
     private val scope: CoroutineScope,
+    private val clampPitch: (Float) -> Float = { it },
     private val onRulesChanged: () -> Unit = {},
 ) {
     @Volatile
@@ -50,20 +53,25 @@ class BookContext(
     suspend fun open(id: BookId) {
         if (id == bookId) return
         bookId = id
-        settings = settingsStore.get(id)
+        settings = settingsStore.get(id)?.let { own -> own.copy(pitch = own.pitch?.let(clampPitch)) }
         rulesJob?.cancel()
         fixer = PronunciationFixer(emptyList())
-        // The first list is the book's fixes as it opens; later lists are edits while it plays.
-        val rules = pronunciations.observe(id)
-        rulesJob = scope.launch {
+        // The book's fixes are in place before open returns, so its first sentences are rendered with them; later
+        // lists are edits while it plays, and re-render what was rendered ahead. One collection, so no edit made
+        // while the book opens is missed; a store that fails before its first list still lets the book open.
+        val loaded = CompletableDeferred<Unit>()
+        val job = scope.launch {
             var first = true
-            rules.collect { list ->
+            pronunciations.observe(id).collect { list ->
                 fixer = PronunciationFixer(list)
-                AudoraLog.i(TAG, "Pronunciation fixes book=${id.logLabel} rules=${list.size}")
-                if (!first) onRulesChanged()
+                AudoraLog.i(TAG, "Pronunciation fixes book=${id.logLabel} rules=${list.size} first=$first")
+                if (first) loaded.complete(Unit) else onRulesChanged()
                 first = false
             }
         }
+        job.invokeOnCompletion { loaded.complete(Unit) }
+        rulesJob = job
+        loaded.await()
         AudoraLog.i(TAG, "Book context book=${id.logLabel} ownSettings=${settings != null}")
     }
 
