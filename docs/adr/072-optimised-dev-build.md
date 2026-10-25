@@ -3,7 +3,7 @@
 **Status:** Accepted (2026-10-25). Changes what `dev-build/audora-dev.apk` is (ADR-031 publishing, unchanged URL).
 
 ## Context
-The maintainer reports the app as "very slow" on the Moto Edge 50 Fusion, and v0.1.0 waits on it. The APK every
+The maintainer reports the app as "very slow" on their phone, and v0.1.0 waits on it. The APK every
 phone test has used so far is `assembleDebug`. A debug build is the slowest way to run this app:
 
 - **Debuggable.** ART keeps a debuggable app ready for a debugger, so it never compiles the app ahead of time
@@ -35,7 +35,7 @@ phone test has used so far is `assembleDebug`. A debug build is the slowest way 
   (median and worst of 10), frames over swipes, and memory. The table goes to the run summary. Emulator numbers
   are not phone numbers, so read the ratio between the two builds. Phone measurements are in `docs/PERFORMANCE.md`.
 - Two code fixes ride along. Saved library covers are decoded without waiting behind the one lock that draws PDF
-  pages. The spoken-word highlight polls about 30 times a second instead of on every frame (144 Hz on the Moto).
+  pages. The spoken-word highlight polls about 30 times a second instead of on every frame (up to 144 Hz).
 
 ## Alternatives considered
 - **Keep debug, add a Baseline Profile.** A Baseline Profile does nothing for a debuggable app, which ART never
