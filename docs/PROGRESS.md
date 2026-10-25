@@ -2,6 +2,25 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Release hardening 6: jobs that survive a rotation (2026-10-25)
+From the pre-release review's pick list (P2, P3).
+- **A shared file or text is never lost:** it stays pending for the whole process (`PendingShares`) and is cleared
+  only once it is in the library, so turning the phone mid-add starts the add again on the new screen; the same file
+  added twice is found already in the library.
+- **Studio "Save as file" finishes and is listed:** the save runs on the app's scope (`AudoraApplication.appScope`),
+  so a rotation no longer drops its result or its "Made from this book" entry, and a second save cannot start while
+  one runs (`startStudioSave`).
+- **A voice note being recorded is saved on a rotation:** voice notes write on the app's scope, not the activity's.
+- **The reader stays on the page you browsed to:** the page on screen is saved; a rebuilt reader shows it again, with
+  no second "Resumed at" notice. Play still continues from the saved sentence.
+- **Verified in CI:** `LibraryControllerSharedTest`, `StudioSaveTest`, new `ReaderResumeTest` cases (the fresh-open
+  notice and Play position are pinned too), release journey.
+- **Could affect:** sharing a PDF or text into the app, Studio save, voice notes, the reader's opening page.
+
+**Real-device checks (Moto):** share a big PDF from WhatsApp and rotate while it adds: it opens. Start Studio "Save as
+file" and rotate: the done toast shows and the file is under "Made from this book". Record a voice note and rotate:
+the note is there. Browse to another page while paused and rotate: same page, no "Resumed at".
+
 ## Release hardening 5: TalkBack and low vision (2026-10-25)
 From the pre-release accessibility review.
 - **The player says when something goes wrong:** the status line (connecting, a voice error) now shows on the player

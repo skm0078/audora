@@ -21,6 +21,7 @@ import io.github.skm0078.audora.playback.backup.PendingRestore
 import io.github.skm0078.audora.ui.library.BookDetailsFill
 import javax.inject.Inject
 import kotlin.concurrent.thread
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -38,6 +39,16 @@ class AudoraApplication : Application() {
 
     /** Background work that lives as long as the process; one task at a time, so it never crowds the screens. */
     private val background = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
+
+    /**
+     * Main-thread work that must outlive a screen, a rotation or a theme switch: a shared file being added, a studio
+     * file being saved, a voice note being written. A failure is logged, never a crash.
+     */
+    val appScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Main.immediate + CoroutineExceptionHandler { _, e ->
+            AudoraLog.e(TAG, "App task failed", e)
+        },
+    )
 
     override fun onCreate() {
         // Before Hilt builds anything that could open the database or preferences a restore replaces (ADR-046).

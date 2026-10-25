@@ -138,9 +138,10 @@ class LibraryController(
 
     /**
      * A PDF opened or shared from another app ("Open with Audora"): added like a picked one, then [open]ed. When the
-     * other app's grant cannot be kept, the PDF is added through a copy made by `importShared`.
+     * other app's grant cannot be kept, the PDF is added through a copy made by `importShared`. [done] runs once the
+     * add has finished, never when it was cancelled (the screen went away), so the caller can try again.
      */
-    fun addShared(documentUri: String, open: (BookId) -> Unit) = runPick {
+    fun addShared(documentUri: String, open: (BookId) -> Unit, done: () -> Unit = {}) = runPick {
         val kept = library.add(documentUri)
         val added = if (kept.isCannotKeepAccess()) {
             importShared(documentUri)?.let { copy -> library.add(copy) } ?: kept
@@ -148,6 +149,7 @@ class LibraryController(
             kept
         }
         report(added, picked = false)
+        done()
         (added as? Outcome.Success)?.let { open(it.value.book.id) }
     }
 

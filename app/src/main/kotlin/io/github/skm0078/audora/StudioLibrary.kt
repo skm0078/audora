@@ -53,6 +53,7 @@ import io.github.skm0078.audora.ui.library.restartForRestore
 import io.github.skm0078.audora.ui.quiz.QuizRoute
 import io.github.skm0078.audora.ui.studio.StudioAudioActions
 import io.github.skm0078.audora.ui.studio.StudioAudioRoute
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -172,38 +173,34 @@ internal class StudioLibrary(
     }
 
     /**
-     * Encoding hours of audio takes minutes: in the activity's scope, so closing the dialog does not lose the result,
-     * with a toast when it starts and when it ends saying where the file is.
+     * Encoding hours of audio takes minutes: on the app's scope, so closing the dialog or turning the phone neither
+     * loses the result nor lets a second save start, with a toast when it starts and when it ends saying where the
+     * file is.
      */
     private fun saveStudioFile(book: Book) {
-        if (state.savingBookId.value != null) return
-        state.savingBookId.value = book.id.value
-        Toast.makeText(context, R.string.studio_file_saving, Toast.LENGTH_LONG).show()
-        parts.activity.lifecycleScope.launch {
+        // Only the app context and the book are captured: the save can outlive this screen.
+        val appContext = context
+        val started = startStudioSave(
+            saving = state.savingBookId,
+            scope = (parts.activity.application as AudoraApplication).appScope,
+            bookId = book.id.value,
             // An untitled book gets the export's fallback folder name, as an audiobook export does.
-            val saved = withContext(Dispatchers.IO) { StudioAudioFile.save(context, book.id, book.title) }
-            if (saved is Outcome.Success) recordStudioFile(book, saved.value)
-            state.savingBookId.value = null
+            save = { withContext(Dispatchers.IO) { StudioAudioFile.save(appContext, book.id, book.title) } },
+        ) { saved ->
+            if (saved is Outcome.Success) recordStudioFile(appContext, book, saved.value)
             val message = when (saved) {
-                is Outcome.Success -> context.getString(
+                is Outcome.Success -> appContext.getString(
                     R.string.studio_file_saved,
                     saved.value.name,
-                    context.studioDuration(saved.value.durationMs),
+                    appContext.studioDuration(saved.value.durationMs),
                     saved.value.folder,
                 )
 
                 is Outcome.Failure -> saved.error
             }
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            Toast.makeText(appContext, message, Toast.LENGTH_LONG).show()
         }
-    }
-
-    /** In the library's "Made from this book" (ADR-068); a file MediaStore gave no address for is not listed. */
-    private suspend fun recordStudioFile(book: Book, saved: SavedStudioFile) {
-        val location = saved.location ?: return
-        val file = MadeFile(saved.name, location, MadeFiles.AUDIO_MIME, durationMs = saved.durationMs)
-        val style = SpeechStyle(pitch = saved.pitch)
-        MadeFiles(LibraryEntryPoint.of(context).outputs()).studioAudio(book.id, file, style)
+        if (started) Toast.makeText(appContext, R.string.studio_file_saving, Toast.LENGTH_LONG).show()
     }
 
     fun onLibraryAction(action: LibraryAction) = when (action) {
@@ -250,10 +247,47 @@ internal fun rememberStudioLibrary(
         sheet = rememberSaveable { mutableStateOf<StudioSheet?>(null) },
         guideBookId = rememberSaveable { mutableStateOf<String?>(null) },
         studioBookId = rememberSaveable { mutableStateOf<String?>(null) },
-        // Not saved: the save runs in the activity's scope and ends with it.
-        savingBookId = remember { mutableStateOf<String?>(null) },
+        // Process-wide, not saved: the save runs on the app's scope, so a new screen still sees it running.
+        savingBookId = studioSaving,
     )
     return remember(parts) { StudioLibrary(parts, playWithPermission, listen, takePhoto, pickPictures, state) }
+}
+
+/**
+ * In the library's "Made from this book" (ADR-068); a file MediaStore gave no address for is not listed. Top level, so
+ * a save outliving its screen holds the app's context only, never the closed activity.
+ */
+private suspend fun recordStudioFile(context: Context, book: Book, saved: SavedStudioFile) {
+    val location = saved.location ?: return
+    val file = MadeFile(saved.name, location, MadeFiles.AUDIO_MIME, durationMs = saved.durationMs)
+    val style = SpeechStyle(pitch = saved.pitch)
+    MadeFiles(LibraryEntryPoint.of(context).outputs()).studioAudio(book.id, file, style)
+}
+
+/** The book whose studio file is being saved, for every library screen of this process. */
+private val studioSaving = mutableStateOf<String?>(null)
+
+/**
+ * Starts [save] on [scope] unless a save is already running ([saving] holds its book), then hands its result to
+ * [finish]. [saving] is cleared when both are done, or if they fail. False when refused.
+ */
+internal fun <R> startStudioSave(
+    saving: MutableState<String?>,
+    scope: CoroutineScope,
+    bookId: String,
+    save: suspend () -> R,
+    finish: suspend (R) -> Unit,
+): Boolean {
+    if (saving.value != null) return false
+    saving.value = bookId
+    scope.launch {
+        try {
+            finish(save())
+        } finally {
+            saving.value = null
+        }
+    }
+    return true
 }
 
 private const val TAG = "Audora.Library"
