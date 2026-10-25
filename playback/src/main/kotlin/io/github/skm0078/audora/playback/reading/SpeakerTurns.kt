@@ -3,8 +3,10 @@
 
 package io.github.skm0078.audora.playback.reading
 
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.UnitKind
+import io.github.skm0078.audora.speech.route.NameGenders
 import io.github.skm0078.audora.speech.route.QuoteSplitter
 import io.github.skm0078.audora.speech.route.Speaker
 import io.github.skm0078.audora.speech.route.SpeakerTags
@@ -22,14 +24,16 @@ class Paragraph(val sentences: List<Sentence>, val continuesSpeech: Boolean = fa
 /**
  * The conversation so far: [known] named speakers, most recent first, for a pronoun to point back to; [last] and
  * [previous] the two who spoke the latest quoted paragraphs, for an untagged line to alternate between; [crowded] once
- * a third speaker joined the run, when turns no longer simply alternate. A paragraph with no quote, or a heading, ends
- * the run ([last], [previous] and [crowded] cleared) but keeps the names.
+ * a third speaker joined the run, when turns no longer simply alternate; [called] the one the latest quote called by
+ * name ("Mrs Patel, where were you?"), most likely the one who answers. A paragraph with no quote, or a heading, ends
+ * the run ([last], [previous], [crowded] and [called] cleared) but keeps the names.
  */
 data class Turns(
     val known: List<Speaker> = emptyList(),
     val last: Speaker? = null,
     val previous: Speaker? = null,
     val crowded: Boolean = false,
+    val called: Speaker? = null,
 ) {
     /**
      * The speaker an untagged line most likely is in a two-way conversation: the one who did not speak last. None
@@ -42,7 +46,19 @@ data class Turns(
     /** Whether one of the run's two latest speakers is of [gender], named or not. */
     fun runHas(gender: SpeakerGender): Boolean = listOfNotNull(last, previous).any { it.gender == gender }
 
-    fun brokenRun(): Turns = copy(last = null, previous = null, crowded = false)
+    fun brokenRun(): Turns = copy(last = null, previous = null, crowded = false, called = null)
+
+    /**
+     * Narration named [speaker] as a sentence's subject ("Mira came home late"): remembered for a later pronoun, and
+     * a gender it tells is learnt; the conversation's turns are unchanged.
+     */
+    fun mentioned(speaker: Speaker, remembered: Int): Turns {
+        val key = speaker.key ?: return this
+        val gender = speaker.gender.takeUnless { it == SpeakerGender.UNKNOWN } ?: genderOf(key)
+        val known = (listOf(speaker.copy(gender = gender)) + known.filter { it.key != key }).take(remembered)
+        fun learnt(who: Speaker?) = who?.takeIf { it.key == key }?.copy(gender = gender) ?: who
+        return copy(known = known, last = learnt(last), previous = learnt(previous))
+    }
 
     fun spoke(speaker: Speaker, remembered: Int): Turns {
         val known = if (speaker.key == null) known else (listOf(speaker) + known.filter { it.key != speaker.key })
@@ -93,23 +109,114 @@ class SpeakerTurns(
         return Page(speakers, turns)
     }
 
-    private fun paragraph(paragraph: Paragraph, turns: Turns, into: MutableMap<Int, Speaker>): Turns {
-        val quoted = paragraph.sentences.filter { it.unit.kind in PROSE && (it.carried || hasQuote(it.unit.text)) }
-        if (quoted.isEmpty()) return turns.brokenRun()
-        val tagged = ArrayList<Speaker>()
+    private fun paragraph(paragraph: Paragraph, start: Turns, into: MutableMap<Int, Speaker>): Turns {
+        val quoted = paragraph.sentences.filter(::isQuoted)
+        // Narration teaches names and genders first ("Mira came home late." then "she said").
+        val subjects = ArrayList<Speaker>()
+        val turns = paragraph.sentences.filterNot(::isQuoted).fold(start) { acc, sentence ->
+            learn(sentence, acc, subjects)
+        }
+        val speaker = quoted.takeIf { it.isNotEmpty() }?.let { speakers(paragraph, it, turns, subjects, into) }
+        return speaker?.let { said ->
+            val after = turns.spoke(said, remembered)
+            after.copy(called = called(quoted, said, after))
+        } ?: turns.brokenRun()
+    }
+
+    private fun isQuoted(sentence: Sentence): Boolean = sentence.unit.kind in PROSE &&
+        (sentence.carried || splitter.split(sentence.unit.text).any { it.quoted })
+
+    /** [turns] after a sentence of narration; a subject whose gender is known is also put first in [subjects]. */
+    private fun learn(sentence: Sentence, turns: Turns, subjects: MutableList<Speaker>): Turns {
+        val subject = narrated(sentence, turns) ?: return turns
+        if (subject.key != null && subject.gender != SpeakerGender.UNKNOWN) subjects.add(0, subject)
+        return turns.mentioned(subject, remembered)
+    }
+
+    /** Puts each of [quoted]'s speakers [into] the page's map; the paragraph's speaker, null when none is known. */
+    private fun speakers(
+        paragraph: Paragraph,
+        quoted: List<Sentence>,
+        turns: Turns,
+        subjects: List<Speaker>,
+        into: MutableMap<Int, Speaker>,
+    ): Speaker? {
+        // A pronoun tag points first to whom this paragraph's narration just named ("Jonah clung on. “No,” he said."),
+        // when that name's gender is known: one that is not would be taught a gender on a guess.
+        val tagged = ArrayList<Speaker>(subjects)
         val own = quoted.map { sentence ->
             val tag = tags.find(sentence.unit.text, sentence.unit.lang, sentence.carried)
             sentence to tag?.let { resolve(it, turns, tagged) }?.also { if (it.key != null) tagged.add(0, it) }
         }
-        val fallback = if (paragraph.continuesSpeech) turns.last else turns.nextTurn
-        val speaker = own.firstNotNullOfOrNull { it.second } ?: fallback
+        val speaker = own.firstNotNullOfOrNull { it.second } ?: untagged(paragraph, quoted, turns)
         own.forEach { (sentence, said) ->
             (said ?: speaker)?.let { into[sentence.unit.index] = it }
         }
-        return speaker?.let { turns.spoke(it, remembered) } ?: turns.brokenRun()
+        return speaker
     }
 
-    private fun hasQuote(text: String): Boolean = splitter.split(text).any { it.quoted }
+    /**
+     * The one [quoted] calls by name, if not [speaker] themselves: a name the conversation knows, or in English a
+     * name at the speech's start or end ("Mrs Patel, where…", "…breathe, Nora.") with a title or a gender of its
+     * own: "Out, …" or "Fine, …" open speeches as often as names do.
+     */
+    private fun called(quoted: List<Sentence>, speaker: Speaker, turns: Turns): Speaker? {
+        val speech = quoted.joinToString(" ") { sentence ->
+            splitter.split(sentence.unit.text, sentence.carried).filter { it.quoted }.joinToString(" ") { it.text }
+        }
+        // A speech that is only a name ("Raj," said Tom) answers a question; it calls no one.
+        val known = turns.known.firstOrNull {
+            it.key != speaker.key && SpokenNames.addressed(it, speech) &&
+                SpokenNames.words(speech) > SpokenNames.words(it.name.orEmpty())
+        }
+        return known ?: if (quoted.first().unit.lang == Lang.EN) SpokenNames.printed(speech, speaker) else null
+    }
+
+    /**
+     * A paragraph whose quotes carry no tag: the subject of the narration just before its first quote (an action
+     * beat), then the speech it goes on with, then the one the last quote called by name, then the other one of a
+     * two-way conversation; never a name the quote itself calls out to ("My phone died, Tom."): that one is listening.
+     */
+    private fun untagged(paragraph: Paragraph, quoted: List<Sentence>, turns: Turns): Speaker? {
+        val first = paragraph.sentences.indexOf(quoted.first())
+        val beat = paragraph.sentences.take(first).lastOrNull()?.let { narrated(it, turns) }
+            ?.let { subject -> if (subject.key == null) pronoun(subject.gender, turns, emptyList()) else subject }
+        val spoken = quoted.joinToString(" ") { it.unit.text }
+        // A quote calling the beat's subject by name is said to them, most likely by the other one in the scene.
+        val other = beat?.takeIf { SpokenNames.addressed(it, spoken) }?.let { listener ->
+            turns.known.firstOrNull { it.key != null && it.key != listener.key }
+        }
+        val candidates = listOfNotNull(
+            beat,
+            other,
+            turns.last.takeIf { paragraph.continuesSpeech },
+            turns.called?.takeIf { it.key != turns.last?.key },
+            turns.nextTurn,
+            turns.last.takeIf { turns.nextTurn != null },
+        )
+        return candidates.firstOrNull { !SpokenNames.addressed(it, spoken) }
+    }
+
+    /**
+     * The subject of a sentence of narration when it can be trusted as a character: a pronoun with a gender, a name
+     * the conversation already knows, one whose gender its name or verb tells, or an English name as printed
+     * ("Inspector Ward", "Kit"; its gender stays unknown until a tag or pronoun tells it, so it gets no voice yet).
+     */
+    private fun narrated(sentence: Sentence, turns: Turns): Speaker? {
+        val lang = sentence.unit.lang
+        val subject = sentence.takeIf { it.unit.kind in PROSE }?.let { tags.subjectOf(it.unit.text, lang) }
+        val key = subject?.key
+        val known = key?.let { turns.known.firstOrNull { it.key == key } }
+        // A verb's ending may teach a known name's gender ("मीना … घुसी"), but never makes a word a character:
+        // "कोई जवाब नहीं आया" opens with "no one".
+        return when {
+            subject == null -> null
+            key == null -> subject.takeIf { it.gender != SpeakerGender.UNKNOWN }
+            SpokenNames.trusted(subject.name.orEmpty(), lang) -> subject
+            known != null -> if (subject.gender != SpeakerGender.UNKNOWN) known.copy(gender = subject.gender) else known
+            else -> null
+        }
+    }
 
     /** [earlier]: the names tagged before in the same paragraph, most recent first. */
     private fun resolve(tag: Speaker, turns: Turns, earlier: List<Speaker>): Speaker? {

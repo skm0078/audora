@@ -6,8 +6,10 @@ package io.github.skm0078.audora.playback.reading
 
 import io.github.skm0078.audora.core.config.DialogueConfig
 import io.github.skm0078.audora.core.model.Feeling
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.playback.unit
+import io.github.skm0078.audora.speech.route.Speaker
 import io.github.skm0078.audora.speech.sherpa.SpeakerGender
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -157,7 +159,7 @@ class QuoteCarryTest {
         val carry = QuoteCarry()
         val units = listOf(
             sentence(0, "“Where were you?” asked Tom.", pause = paragraphPauseMs),
-            sentence(1, "Mary looked away.", pause = 0),
+            sentence(1, "Zorvan looked away.", pause = 0),
             sentence(2, "“Out,” she said.", pause = paragraphPauseMs),
             sentence(3, "“Out,” said Asha.", pause = 0),
             sentence(4, "“With friends,” she added.", pause = paragraphPauseMs),
@@ -210,11 +212,12 @@ class QuoteCarryTest {
     @Test
     fun `a pronoun that can be the last speaker again never teaches the other one its gender`() {
         val carry = QuoteCarry()
+        // Zorvan is in no name list, so only a pronoun could tell his gender.
         val units = listOf(
-            sentence(0, "“Where were you?” asked Tom.", pause = paragraphPauseMs),
+            sentence(0, "“Where were you?” asked Zorvan.", pause = paragraphPauseMs),
             sentence(1, "“Out,” she said.", pause = paragraphPauseMs),
             sentence(2, "“With friends,” she added.", pause = paragraphPauseMs),
-            sentence(3, "“Which friends?” Tom asked.", pause = paragraphPauseMs),
+            sentence(3, "“Which friends?” Zorvan asked.", pause = paragraphPauseMs),
         )
 
         carry.page(units)
@@ -257,5 +260,123 @@ class QuoteCarryTest {
 
         assertEquals(true, carry.startsInQuote(next.single()))
         assertEquals(false, carry.startsInQuote(fresh.single()))
+    }
+
+    @Test
+    fun `an untagged line is said by the subject of the narration just before it`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "Ravi stopped at a stall heaped with mangoes."),
+            sentence(1, "“How much for a dozen?”", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertEquals(Speaker("Ravi", SpeakerGender.MALE), carry.speakerOf(units[1]))
+    }
+
+    @Test
+    fun `a pronoun takes the name the narration just gave`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "“Where were you?” asked Tom.", pause = paragraphPauseMs),
+            sentence(1, "Mary looked away.", pause = 0),
+            sentence(2, "“Out,” she said.", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertEquals(Speaker("Mary", SpeakerGender.FEMALE), carry.speakerOf(units[2]))
+    }
+
+    @Test
+    fun `a line that calls someone by name is not said by them`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "Mira came home late.", pause = paragraphPauseMs),
+            sentence(1, "“Where were you?” Tom asked.", pause = paragraphPauseMs),
+            sentence(2, "“At the station,” she said.", pause = paragraphPauseMs),
+            sentence(3, "“You could have called.”", pause = paragraphPauseMs),
+            sentence(4, "“My phone died, Tom.”", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertEquals("tom", carry.speakerOf(units[3])?.key)
+        assertEquals("mira", carry.speakerOf(units[4])?.key)
+        assertEquals("she is Mira, named in narration", "mira", carry.speakerOf(units[2])?.key)
+    }
+
+    @Test
+    fun `a Hindi name gets its gender from the name and the verb`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "मीना हाथ में परिणाम लिए घर में घुसी।").copy(lang = Lang.HI),
+            sentence(1, "‘पिताजी, मैं पास हो गई!’", pause = paragraphPauseMs).copy(lang = Lang.HI),
+            sentence(2, "‘सच?’ पिताजी ने चश्मा उतारते हुए पूछा।", pause = paragraphPauseMs).copy(lang = Lang.HI),
+        )
+
+        carry.page(units)
+
+        assertEquals(Speaker("मीना", SpeakerGender.FEMALE), carry.speakerOf(units[1]))
+        assertEquals(Speaker("पिताजी", SpeakerGender.MALE), carry.speakerOf(units[2]))
+    }
+
+    @Test
+    fun `the one a speech calls by name answers it`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "Inspector Ward set his notebook down.", pause = 0),
+            sentence(1, "“Mrs Patel, where were you on Tuesday?”", pause = paragraphPauseMs),
+            sentence(2, "“At home.”", pause = paragraphPauseMs),
+            sentence(3, "“Alone?”", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertEquals("inspector ward", carry.speakerOf(units[1])?.key)
+        assertEquals(Speaker("Mrs Patel", SpeakerGender.FEMALE), carry.speakerOf(units[2]))
+        assertEquals("inspector ward", carry.speakerOf(units[3])?.key)
+    }
+
+    @Test
+    fun `a speech that is only a name or a word before a comma calls no one`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "“Who was that?” asked Ann.", pause = paragraphPauseMs),
+            sentence(1, "“Out, I think,” said Tom.", pause = paragraphPauseMs),
+            sentence(2, "“Oh.”", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertEquals("ann", carry.speakerOf(units[2])?.key)
+    }
+
+    @Test
+    fun `a pronoun tag is the one this paragraph's narration just named, not the last speaker`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "“All hands!” roared the captain.", pause = paragraphPauseMs),
+            sentence(1, "Jonah clung to a rope.", pause = 0),
+            sentence(2, "“I can't,” he stammered.", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertEquals(Speaker("Jonah", SpeakerGender.MALE), carry.speakerOf(units[2]))
+    }
+
+    @Test
+    fun `a word that often opens narration is never a character`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "Nothing moved.", pause = 0),
+            sentence(1, "“Hello?”", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertNull(carry.speakerOf(units[1]))
     }
 }

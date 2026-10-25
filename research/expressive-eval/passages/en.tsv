@@ -1,0 +1,130 @@
+# File: research/expressive-eval/passages/en.tsv
+# Purpose: Gold labels for English story passages (original text, written for this set; free to use).
+# Format: one sentence per line: text<TAB>speaker<TAB>feeling. Speaker "-" is narration only (no speech).
+# A blank line ends a paragraph. "@ id" starts a passage, "@cast Name=F|M ..." lists its characters.
+# Feelings: neutral joy sad angry scared surprised soft loud. A quoted line's feeling is how the words are said.
+
+@ en-01-kitchen
+@cast Mira=F Tom=M
+Mira came home late, her shoes in her hand.	-	neutral
+
+“Where were you?” Tom asked.	Tom	angry
+He had waited up for two hours.	-	neutral
+
+“At the station,” she said.	Mira	neutral
+“The last train broke down outside Rugby.”	Mira	neutral
+
+“You could have called.”	Tom	angry
+
+“My phone died, Tom.	Mira	sad
+I'm sorry.”	Mira	sad
+
+He looked at her for a long moment, and then his face softened.	-	neutral
+“Come here,” he said quietly.	Tom	soft
+
+@ en-02-letter
+@cast Grace=F Mr Hale=M
+Grace opened the envelope with shaking fingers.	-	scared
+Inside was a single sheet, folded twice.	-	neutral
+
+“What does it say?” asked Mr Hale.	Mr Hale	neutral
+
+She read it twice before she could answer.	-	neutral
+“They found him,” she whispered.	Grace	soft
+“After all these years, they found him.”	Grace	soft
+
+“Alive?”	Mr Hale	surprised
+
+“Alive!”	Grace	joy
+She laughed and cried at once, and the letter fell to the floor.	-	joy
+
+@ en-03-market
+@cast Ravi=M Old woman=F
+The market was loud with traders calling out their prices.	-	neutral
+Ravi stopped at a stall heaped with mangoes.	-	neutral
+“How much for a dozen?”	Ravi	neutral
+
+“Two hundred,” said the old woman behind the counter.	Old woman	neutral
+
+“Two hundred!	Ravi	surprised
+Yesterday they were ninety.”	Ravi	surprised
+
+“Yesterday it did not rain.”	Old woman	neutral
+
+Ravi grinned.	-	joy
+“Fair enough,” he said, and counted out the notes.	Ravi	joy
+
+@ en-04-storm
+@cast Captain=M Jonah=M
+The wind rose without warning.	-	scared
+Waves broke over the rail and the deck tipped under their feet.	-	scared
+“All hands!” roared the captain.	Captain	loud
+“Get that sail down before it takes the mast!”	Captain	loud
+
+Jonah clung to a rope, too frightened to move.	-	scared
+“I can't,” he stammered.	Jonah	scared
+“I can't hold it.”	Jonah	scared
+
+“You can and you will!”	Captain	angry
+
+@ en-05-garden
+@cast Lily=F Grandma=F
+Lily found her grandmother in the garden, kneeling among the roses.	-	neutral
+‘Did you plant all of these?’ she asked.	Lily	neutral
+
+‘Every one,’ said Grandma.	Grandma	neutral
+‘Your grandfather gave me the first one the year we married.’	Grandma	sad
+
+‘Do you miss him?’	Lily	soft
+
+The old woman was quiet for a while.	-	sad
+‘Every single day,’ she said at last.	Grandma	sad
+
+@ en-06-interview
+@cast Inspector Ward=M Mrs Patel=F
+Inspector Ward set his notebook on the table.	-	neutral
+“Mrs Patel, where were you on Tuesday night?”	Inspector Ward	neutral
+
+“At home.	Mrs Patel	neutral
+I always am.”	Mrs Patel	neutral
+
+“Alone?”	Inspector Ward	neutral
+
+“My sister was with me.	Mrs Patel	neutral
+You can ask her yourself.”	Mrs Patel	angry
+
+“I intend to.”	Inspector Ward	neutral
+
+She folded her arms.	-	angry
+“Is that all, Inspector?”	Mrs Patel	angry
+
+@ en-07-twins
+@cast Asha=F Arjun=M Mother=F
+The twins burst into the kitchen together.	-	joy
+“We won!” Asha shouted.	Asha	loud
+“We actually won!”	Asha	joy
+
+“First prize,” Arjun added, holding up the cup.	Arjun	joy
+
+Their mother put down her spoon.	-	neutral
+“You're joking.”	Mother	surprised
+
+“We're not!	Asha	joy
+Look at it!”	Asha	joy
+
+“Then I suppose,” said their mother, smiling, “we're having cake tonight.”	Mother	joy
+
+@ en-08-night
+@cast Sam=M Nora=F
+Something moved in the dark at the end of the corridor.	-	scared
+Sam caught Nora's arm.	-	scared
+“Did you hear that?”	Sam	scared
+
+“It's only the house settling,” she murmured.	Nora	soft
+
+“Houses don't breathe, Nora.”	Sam	scared
+
+She lifted the candle higher.	-	scared
+The flame shook.	-	scared
+“Who's there?” she called.	Nora	scared
+No one answered.	-	scared

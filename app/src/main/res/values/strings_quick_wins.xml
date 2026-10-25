@@ -17,9 +17,10 @@
     <string name="whats_new_item">• %1$s</string>
     <string name="whats_new_ok">Got it</string>
     <string-array name="whats_new_items">
-        <item>The app opens, scrolls and starts reading faster: this test version is now built like the final app.</item>
-        <item>Book covers in the library show up sooner.</item>
-        <item>The word highlight uses less battery while a book plays.</item>
+        <item>Character voices find more speakers: dialogue in ‘single quotes’, one-word lines like “Alive?”, and Hindi and Bengali tags such as “दादी बोली” and “বৃদ্ধ কহিল”.</item>
+        <item>Hindi and Bengali characters get a voice of the right gender from their name or role (माँ, পিসি, Mira).</item>
+        <item>A line ending in “!” is no longer read as happy when it could be angry or scared.</item>
+        <item>Character voices are marked experimental while they keep improving.</item>
         <item>You can change the voice from the player\'s Voice and speed sheet, for every book or just this one.</item>
         <item>The reader shows one tip or offer at a time, so more of the book stays on screen.</item>
         <item>Settings, the reader and the player fit better at large text sizes, in Hindi and Bengali too.</item>
