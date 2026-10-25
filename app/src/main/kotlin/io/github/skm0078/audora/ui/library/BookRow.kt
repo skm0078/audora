@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
@@ -69,7 +70,7 @@ internal fun BookRow(
             }
         },
         trailingContent = { BookMenu(item, onRemove, onExport, onAddToUpNext, onDetails, onAction) },
-        modifier = Modifier.clickable(onClick = onTap),
+        modifier = Modifier.clickable(onClickLabel = stringResource(R.string.a11y_open_book), onClick = onTap),
     )
 }
 
@@ -149,10 +150,12 @@ internal fun BookCover(book: Book, covers: CoverSource, modifier: Modifier = Mod
         if (image != null) {
             Image(image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         } else {
+            // Decoration only: the title next to it is read, so TalkBack must not say the letter first.
             Text(
                 displayTitle(book).take(1).uppercase(),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.clearAndSetSemantics {},
             )
         }
     }

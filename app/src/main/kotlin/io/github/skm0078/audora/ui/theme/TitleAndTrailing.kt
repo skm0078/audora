@@ -43,16 +43,16 @@ internal fun TitleAndTrailing(
             val start = titlePart.measure(loose.copy(maxWidth = (width - end.width - gap).coerceAtLeast(0)))
             val height = maxOf(start.height, end.height, constraints.minHeight)
             layout(width, height) {
-                start.place(0, (height - start.height) / 2)
-                end.place(width - end.width, (height - end.height) / 2)
+                start.placeRelative(0, (height - start.height) / 2)
+                end.placeRelative(width - end.width, (height - end.height) / 2)
             }
         } else {
             val top = titlePart.measure(loose)
             val below = trailingPart.measure(loose)
             val height = maxOf(top.height + below.height, constraints.minHeight)
             layout(width, height) {
-                top.place(0, 0)
-                below.place(0, top.height)
+                top.placeRelative(0, 0)
+                below.placeRelative(0, top.height)
             }
         }
     }

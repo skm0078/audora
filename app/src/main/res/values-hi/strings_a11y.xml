@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_a11y.xml -->
+<!-- Purpose: What TalkBack says for controls that show no words of their own (release hardening){'values': '', 'values-hi': ', in Hindi', 'values-bn': ', in Bengali'}. -->
+<resources>
+    <string name="a11y_open_book">किताब खोलें</string>
+    <string name="a11y_read_from_chapter">इस अध्याय से पढ़ें</string>
+    <string name="a11y_go_to_hit">यहाँ से पढ़ें</string>
+    <string name="a11y_loading">आवाज़ तैयार हो रही है</string>
+    <string name="library_book_menu_named">%1$s के और विकल्प</string>
+    <string name="chapters_current">अभी पढ़ा जा रहा है</string>
+</resources>

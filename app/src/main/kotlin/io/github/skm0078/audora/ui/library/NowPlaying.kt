@@ -38,6 +38,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
@@ -205,13 +207,16 @@ private fun MiniPlayPause(playing: NowPlaying, onPlayPause: () -> Unit) {
                 modifier = Modifier.size(Dimens.PlayButtonSmall),
             )
         }
+        val loading = stringResource(R.string.a11y_loading)
         FilledIconButton(
             onClick = onPlayPause,
             colors = IconButtonDefaults.filledIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.inversePrimary,
                 contentColor = MaterialTheme.colorScheme.inverseSurface,
             ),
-            modifier = Modifier.size(Dimens.PlayButtonSmall),
+            modifier = Modifier
+                .size(Dimens.PlayButtonSmall)
+                .semantics { if (playing.buffering) stateDescription = loading },
         ) {
             if (playing.playing) {
                 Icon(painterResource(R.drawable.ic_pause), stringResource(R.string.reader_pause))

@@ -25,6 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -66,7 +69,7 @@ fun ChaptersSheet(
         Text(
             stringResource(R.string.chapters_title),
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp).semantics { heading() },
         )
         LazyColumn(state = listState) {
             itemsIndexed(chapters) { index, chapter ->
@@ -79,10 +82,13 @@ fun ChaptersSheet(
 @Composable
 private fun ChapterRow(chapter: ChapterEntry, isCurrent: Boolean, onClick: () -> Unit) {
     val color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+    val now = stringResource(R.string.chapters_current)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            // The current chapter is shown by colour and weight; TalkBack says it in words.
+            .semantics { if (isCurrent) stateDescription = now }
+            .clickable(onClickLabel = stringResource(R.string.a11y_read_from_chapter), onClick = onClick)
             .padding(start = 24.dp + INDENT * chapter.depth, end = 24.dp, top = 12.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

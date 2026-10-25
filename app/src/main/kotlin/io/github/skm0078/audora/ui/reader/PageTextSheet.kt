@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import io.github.skm0078.audora.R
@@ -81,12 +82,16 @@ private fun ToneBlock(look: ReadingLook, onLookChange: (ReadingLook) -> Unit) {
 @Composable
 private fun TypeRows(look: ReadingLook, onLookChange: (ReadingLook) -> Unit) {
     val percent = stringResource(R.string.text_look_size_value, (look.textScale * PERCENT).roundToInt())
-    OptionBlock(stringResource(R.string.text_look_size), value = percent) {
+    val title = stringResource(R.string.text_look_size)
+    OptionBlock(title, value = percent) {
         Slider(
             value = look.textScale,
             onValueChange = { onLookChange(look.copy(textScale = snapScale(it))) },
             valueRange = ReadingLook.TEXT_SCALES,
-            modifier = Modifier.semantics { stateDescription = percent },
+            modifier = Modifier.semantics {
+                contentDescription = title
+                stateDescription = percent
+            },
         )
     }
     OptionDivider()

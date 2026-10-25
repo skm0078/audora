@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.IntOffset
@@ -47,6 +48,7 @@ internal fun PageScrubber(page: Int, pageCount: Int, thumbnails: PageThumbnails?
     var dragging by remember { mutableStateOf<Int?>(null) }
     val shown = dragging ?: page
     val where = stringResource(R.string.reader_page_of, shown + 1, pageCount)
+    val name = stringResource(R.string.reader_pick_page)
     BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceL)) {
         val trackPx = constraints.maxWidth
         Slider(
@@ -57,7 +59,10 @@ internal fun PageScrubber(page: Int, pageCount: Int, thumbnails: PageThumbnails?
                 dragging = null
             },
             valueRange = 0f..(pageCount - 1).toFloat(),
-            modifier = Modifier.semantics { stateDescription = where },
+            modifier = Modifier.semantics {
+                contentDescription = name
+                stateDescription = where
+            },
         )
         dragging?.let { target ->
             val density = LocalDensity.current

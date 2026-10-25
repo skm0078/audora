@@ -102,7 +102,12 @@ private fun SearchProgress(state: SearchState) {
 
 @Composable
 private fun HitRow(hit: SearchHit, onClick: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp)) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClickLabel = stringResource(R.string.a11y_go_to_hit), onClick = onClick)
+            .padding(vertical = 12.dp),
+    ) {
         Text(
             stringResource(R.string.search_page, hit.page + 1),
             style = MaterialTheme.typography.labelMedium,

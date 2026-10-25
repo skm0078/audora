@@ -2,6 +2,20 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Release hardening 5: TalkBack and low vision (2026-10-25)
+From the pre-release accessibility review.
+- **The player says when something goes wrong:** the status line (connecting, a voice error) now shows on the player
+  screen too, not only the reader, and TalkBack announces it as it changes (live region).
+- **Sliders and buttons have names:** text size, expressiveness, narrator blend and the page scrubber say what they
+  set; the play button says "loading" while the voice gets ready; a book row says "Open book", its menu names the
+  book, the chapter list marks "Now reading", search hits say "Read from here".
+- **Readable dimmed text:** unreadable and out-of-focus sentences now dim to 60 % instead of lower, keeping body text
+  above WCAG AA contrast. Rows with a title and trailing value mirror correctly in right-to-left layouts.
+- New strings in `strings_a11y.xml` with Hindi and Bengali copies.
+
+**Real-device checks (Moto, TalkBack on):** open a book, swipe through the player: every slider and button is named;
+turn Wi-Fi and the voice off mid-sentence and hear the status announced.
+
 ## Release hardening 4: app lock and Continue (2026-10-25, ADR-061)
 From the pre-release security review.
 - **The app lock covers open sheets, dialogs and menus:** the lock screen is now drawn in its own full-screen window,

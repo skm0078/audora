@@ -222,11 +222,17 @@ private suspend fun LazyListState.centre(index: Int) {
 /** The hint above the sentences. */
 private const val HEADER_ITEMS = 1
 
-/** A greyed (unreadable) sentence's text: Material's disabled-content opacity. */
-internal const val UNREADABLE_ALPHA = 0.38f
+/**
+ * A greyed (unreadable) sentence's text. Still text a low-vision reader may need, so it keeps 4.5:1 contrast (WCAG
+ * 1.4.3) on every reading theme; Material's 0.38 disabled opacity gave about 2.3:1.
+ */
+internal const val UNREADABLE_ALPHA = 0.6f
 
-/** Focus view's faded sentences: still readable to find a place, clearly behind the spoken one. */
-internal const val FOCUS_DIM_ALPHA = 0.3f
+/**
+ * Focus view's faded sentences: still readable to find a place, clearly behind the spoken one. 0.6 keeps 4.5:1 on
+ * the light, sepia and dark papers; 0.3 gave 1.6 to 2.4:1.
+ */
+internal const val FOCUS_DIM_ALPHA = 0.6f
 
 private val SENTENCE_GAP = Dimens.SpaceXs / 2
 private val SENTENCE_PADDING = Dimens.SpaceXs + Dimens.SpaceXs / 2

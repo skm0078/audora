@@ -55,7 +55,11 @@ internal fun BookMenu(
     if (LocalKidsMode.current) return
     var open by rememberSaveable { mutableStateOf(false) }
     IconButton(onClick = { open = true }) {
-        Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.library_book_menu))
+        // Named per book: a list of rows that all say "More options" cannot be told apart by ear.
+        Icon(
+            painterResource(R.drawable.ic_more_vert),
+            stringResource(R.string.library_book_menu_named, displayTitle(item.book)),
+        )
     }
     if (!open) return
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)

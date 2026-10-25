@@ -162,6 +162,7 @@ private fun PlayerBody(parts: PlayerParts, spokenWord: () -> IntRange?, compact:
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
     ) {
         PlayerTopBar(parts.state, parts.actions, parts.onShowPage, parts.onOpenUpNext)
+        PlayerStatus(parts.state.playback, Modifier)
         BookLine(parts.title, parts.book.takeUnless { compact }, parts.covers)
         LongJobsPanel(book = parts.state.bookId)
         SentencesAround(
@@ -187,6 +188,7 @@ private fun PlayerPanes(parts: PlayerParts, voices: List<VoiceRow>, spokenWord: 
             verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
         ) {
             PlayerTopBar(parts.state, parts.actions, parts.onShowPage, parts.onOpenUpNext)
+            PlayerStatus(parts.state.playback, Modifier)
             BookLine(parts.title, parts.book, parts.covers)
             LongJobsPanel(book = parts.state.bookId)
             ReplayAndProgress(parts)
