@@ -11,6 +11,7 @@ import io.github.skm0078.audora.core.model.VoiceShaping
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SpeechStyleConfigTest {
@@ -134,12 +135,19 @@ class SpeechStyleConfigTest {
             1f to 1f,
             1.12f to 1.1f,
             0.83f to 0.85f,
-            0.1f to 0.8f,
-            2f to 1.25f,
+            0.1f to 0.85f,
+            2f to 1.15f,
             Float.NaN to 1f,
             Float.NEGATIVE_INFINITY to 1f,
         )
         cases.forEach { (pitch, expected) -> assertEquals("pitch $pitch", expected, config.clampPitch(pitch), 0f) }
+    }
+
+    @Test
+    fun `the pitch range keeps Natural in its middle and the presets inside it`() {
+        assertEquals(SpeechStyle.NORMAL_PITCH - config.minPitch, config.maxPitch - SpeechStyle.NORMAL_PITCH, 1e-6f)
+        assertTrue(config.pitchPresets.all { it in config.minPitch..config.maxPitch })
+        assertEquals(SpeechStyle.NORMAL_PITCH, config.pitchPresets[config.pitchPresets.size / 2])
     }
 
     @Test
@@ -163,6 +171,9 @@ class SpeechStyleConfigTest {
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(minPitch = 0f) }
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(minPitch = 1.1f) }
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(pitchStep = 0f) }
+        assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(pitchPresets = listOf(0.9f)) }
+        assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(pitchPresets = listOf(1f, 1.3f)) }
+        assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(pitchPresets = listOf(1f, 1.02f)) }
     }
 
     private companion object {

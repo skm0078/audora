@@ -2,6 +2,23 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Rows that never squeeze their titles; pitch that works like speed (2026-10-25, ADR-071)
+- **Option rows:** a value shares the title's line only when both fit whole; otherwise it goes on its own line under
+  the title and wraps once ("English voice" was squeezed to one letter per line by a long voice name). Every
+  settings and sheet row built on `LinkOption`, `ChoiceOption` or `OptionBlock` gets it, and the collections
+  sheet's Rename and Delete do too (`TitleAndTrailing`).
+- **Pitch:** presets like speed's (Deeper, A bit deeper, Natural, A bit higher, Higher) under the slider. The
+  slider is heard while it moves. Natural sits in the middle of the track, the range is ±15% (was 0.8 to 1.25,
+  where voices sounded like cartoons), and a line under the title says speed never changes it.
+  The slider ticks at each step like the speed slider. What's new (id 2) lists both changes.
+- **Verified in CI:** `OptionRowsLayoutTest` renders the cast rows with a long voice name, link rows and the pitch
+  block at font 1×, 1.3× and 2× and fails if any line breaks inside a word (screenshots `option-rows-font-*`). The
+  pitch device test taps presets, + and Natural. Unit tests cover the new range and preset rules.
+
+**Real-device checks (Moto):** Speech → Cast voices with a long voice picked, at normal and largest font: the
+title stays whole and the voice name sits under it. Play a book, open Speech, drag Pitch: the voice changes while
+dragging. Tap A bit higher, then Natural.
+
 ## Small touches testers notice (2026-10-25, ADR-070)
 - **Notification, lock screen, car screen and watch** show the book's cover (the one the library drew), and the
   second line reads "Author · Chapter 2 of 9 · Page 14 of 300" (`ItemLook`).

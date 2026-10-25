@@ -39,8 +39,8 @@ class SpeechStyleStoreTest {
 
         assertEquals(1.1f, store.set(SpeechStyle(pitch = 1.12f)).pitch)
         assertEquals(1.1f, SpeechStyleStore(file).current.pitch)
-        assertEquals(1.25f, store.set(SpeechStyle(pitch = 3f)).pitch)
-        assertEquals(0.8f, store.set(SpeechStyle(pitch = 0.1f)).pitch)
+        assertEquals(1.15f, store.set(SpeechStyle(pitch = 3f)).pitch)
+        assertEquals(0.85f, store.set(SpeechStyle(pitch = 0.1f)).pitch)
     }
 
     @Test

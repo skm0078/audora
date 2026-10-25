@@ -42,6 +42,7 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookCollection
 import io.github.skm0078.audora.core.library.CollectionNames
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.TitleAndTrailing
 
 /** Opened from the library's collection chips; [counts] is how many books each collection holds. */
 @Composable
@@ -107,18 +108,31 @@ internal fun CollectionsSheet(
 private fun CollectionLine(collection: BookCollection, books: Int, onRename: () -> Unit, onDelete: () -> Unit) {
     val renameLabel = stringResource(R.string.collections_rename_named, collection.name)
     val deleteLabel = stringResource(R.string.collections_delete_named, collection.name)
+    // Rename and Delete go under the name when both buttons and the name do not fit on one line (large text).
     ListItem(
-        headlineContent = { Text(collection.name) },
-        supportingContent = { Text(pluralStringResource(R.plurals.collections_book_count, books, books)) },
-        trailingContent = {
-            Row {
-                TextButton(onClick = onRename, Modifier.semantics { contentDescription = renameLabel }) {
-                    Text(stringResource(R.string.collections_rename))
-                }
-                TextButton(onClick = onDelete, Modifier.semantics { contentDescription = deleteLabel }) {
-                    Text(stringResource(R.string.collections_delete), color = MaterialTheme.colorScheme.error)
-                }
-            }
+        headlineContent = {
+            TitleAndTrailing(
+                title = {
+                    Column {
+                        Text(collection.name)
+                        Text(
+                            pluralStringResource(R.plurals.collections_book_count, books, books),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
+                trailing = {
+                    Row {
+                        TextButton(onClick = onRename, Modifier.semantics { contentDescription = renameLabel }) {
+                            Text(stringResource(R.string.collections_rename))
+                        }
+                        TextButton(onClick = onDelete, Modifier.semantics { contentDescription = deleteLabel }) {
+                            Text(stringResource(R.string.collections_delete), color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                },
+            )
         },
     )
 }

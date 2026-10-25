@@ -39,10 +39,12 @@ data class PaceTiming(val sentenceGapMs: Int, val pauseScale: Float) {
  * @property clausePausesMs the pause at each strong mark inside a sentence at normal speed, before the pace's
  *   scale (RI-6); tune by ear on the phone.
  * @property asideGainDb the loudness of bracketed words against the rest of the sentence, in decibels.
- * @property minPitch lowest pitch offered (ADR-067). Further than about a fifth from the voice's own, a shifted voice
- *   starts to sound processed, so the range stays inside that.
+ * @property minPitch lowest pitch offered (ADR-067, narrowed by ADR-071). The player's shift moves the voice's
+ *   formants with its pitch, so past about 15 % either way a voice stops sounding like itself (deep drag or a
+ *   cartoon); the range stays inside that, with Natural in its middle.
  * @property maxPitch highest pitch offered.
  * @property pitchStep the pitch slider's step; a saved pitch is snapped to it.
+ * @property pitchPresets the named pitches offered as one-tap choices, like the speed presets (ADR-071).
  */
 data class SpeechStyleConfig(
     val minRate: Float = 0.5f,
@@ -55,6 +57,7 @@ data class SpeechStyleConfig(
     val minPitch: Float = DEFAULT_MIN_PITCH,
     val maxPitch: Float = DEFAULT_MAX_PITCH,
     val pitchStep: Float = DEFAULT_PITCH_STEP,
+    val pitchPresets: List<Float> = DEFAULT_PITCH_PRESETS,
 ) {
     init {
         require(minRate > 0f && maxRate > minRate) { "rates must satisfy 0 < minRate < maxRate" }
@@ -68,6 +71,8 @@ data class SpeechStyleConfig(
         require(minPitch > 0f && maxPitch > minPitch) { "pitches must satisfy 0 < minPitch < maxPitch" }
         require(SpeechStyle.NORMAL_PITCH in minPitch..maxPitch) { "the normal pitch must be in range" }
         require(pitchStep > 0f) { "pitchStep must be > 0, was $pitchStep" }
+        require(SpeechStyle.NORMAL_PITCH in pitchPresets) { "the pitch presets must offer the normal pitch" }
+        require(pitchPresets.all { clampPitch(it) == it }) { "pitch presets must be in range and on a step" }
     }
 
     /** [pitch] within the range and on a step, 2 decimals; a non-finite value (a corrupt file) is the voice's own. */
@@ -146,9 +151,10 @@ data class SpeechStyleConfig(
     private companion object {
         const val HUNDREDTHS = 100f
 
-        const val DEFAULT_MIN_PITCH = 0.8f
-        const val DEFAULT_MAX_PITCH = 1.25f
+        const val DEFAULT_MIN_PITCH = 0.85f
+        const val DEFAULT_MAX_PITCH = 1.15f
         const val DEFAULT_PITCH_STEP = 0.05f
+        val DEFAULT_PITCH_PRESETS = listOf(0.9f, 0.95f, SpeechStyle.NORMAL_PITCH, 1.05f, 1.1f)
 
         /** About 70 % of the loudness: heard as an aside, still clear. */
         const val DEFAULT_ASIDE_GAIN_DB = -3f

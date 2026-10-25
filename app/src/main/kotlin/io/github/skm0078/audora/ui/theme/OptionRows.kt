@@ -124,15 +124,21 @@ fun LinkOption(
     enabled: Boolean = true,
     subtitleIsError: Boolean = false,
 ) {
+    val hasTrailing = value != null || help != null || onClick != null
     ListItem(
-        headlineContent = { OptionTitle(title, enabled) },
+        // The value shares the title's line only when both fit whole; a long value never squeezes the title.
+        headlineContent = {
+            TitleAndTrailing(
+                title = { OptionTitle(title, enabled) },
+                trailing = if (hasTrailing) {
+                    { OptionTrailing(value, help, title, showChevron = onClick != null) }
+                } else {
+                    null
+                },
+            )
+        },
         supportingContent = subtitle?.let { { OptionSubtitle(it, subtitleIsError) } },
         leadingContent = leadingIcon?.let { { Icon(painterResource(it), contentDescription = null) } },
-        trailingContent = if (value == null && help == null && onClick == null) {
-            null
-        } else {
-            { OptionTrailing(value, help, title, showChevron = onClick != null) }
-        },
         colors = optionRowColors(),
         modifier = if (onClick != null) {
             modifier.clickable(enabled = enabled, role = Role.Button, onClick = onClick)
@@ -195,13 +201,20 @@ fun OptionBlock(
             .padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS),
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
     ) {
-        Row(Modifier.heightIn(min = Dimens.TouchTarget), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.bodyLarge)
-                subtitle?.let { OptionSubtitle(it) }
-            }
-            OptionTrailing(value, help, title, showChevron = false)
-        }
+        TitleAndTrailing(
+            title = {
+                Column {
+                    Text(title, style = MaterialTheme.typography.bodyLarge)
+                    subtitle?.let { OptionSubtitle(it) }
+                }
+            },
+            trailing = if (value != null || help != null) {
+                { OptionTrailing(value, help, title, showChevron = false) }
+            } else {
+                null
+            },
+            modifier = Modifier.heightIn(min = Dimens.TouchTarget),
+        )
         content()
     }
 }
@@ -233,8 +246,10 @@ private fun OptionTrailing(value: String?, help: String?, title: String, showChe
                 it,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
+                maxLines = VALUE_LINES,
                 overflow = TextOverflow.Ellipsis,
+                // Shrinks before the buttons after it, so help and the chevron always show.
+                modifier = Modifier.weight(1f, fill = false),
             )
         }
         help?.let { HelpButton(title, it) }
@@ -252,3 +267,6 @@ private fun OptionTrailing(value: String?, help: String?, title: String, showChe
 private const val DISABLED_ALPHA = 0.38f
 
 private const val SUBTITLE_LINES = 2
+
+/** A value on its own line under the title may wrap once ("English (US), Kokoro Michael, male (premium)"). */
+private const val VALUE_LINES = 2

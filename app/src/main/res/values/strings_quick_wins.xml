@@ -24,6 +24,8 @@
         <item>Long-press a sentence to copy or share its words.</item>
         <item>The home-screen widget shows the book\'s cover.</item>
         <item>A light tick when you long-press, change the speed, add a bookmark or set the sleep timer.</item>
+        <item>Long names in settings now go on their own line, so no title is squeezed.</item>
+        <item>Pitch has presets like speed, from Deeper to Higher, and you hear it while you drag.</item>
     </string-array>
 
     <string name="library_mark_finished">Mark as finished</string>

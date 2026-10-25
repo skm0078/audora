@@ -17,14 +17,17 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.DeviceConfigurationOverride
 import androidx.compose.ui.test.ForcedSize
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -93,29 +96,35 @@ class JobsAndPitchScreensTest {
     }
 
     @Test
-    fun aPitchChangeShowsAtOnceAndGoesBackToTheVoicesOwnInOneTap() {
+    fun pitchHasNamedPresetsLikeSpeedAndNaturalIsOneTapAway() {
         var pitch by mutableFloatStateOf(1f)
         val config = SpeechStyleConfig()
         rule.setContent {
             Phone { PitchBlock(pitch, config, onPitch = { pitch = it }, modifier = Modifier.testTag(SCREEN)) }
         }
-        rule.onNodeWithText(context.getString(R.string.speech_pitch_own)).assertExists()
+        val natural = context.getString(R.string.speech_pitch_own)
+        // Natural is both the value at the title's end and the selected preset.
+        rule.onAllNodesWithText(natural).assertCountEquals(2)
+        rule.onNodeWithText(context.getString(R.string.speech_pitch_hint)).assertExists()
 
-        rule.onNodeWithContentDescription(context.getString(R.string.speech_pitch_up)).performClick()
+        rule.onNodeWithText(context.getString(R.string.speech_pitch_bit_higher)).performScrollTo().performClick()
         rule.waitForIdle()
         assertEquals(1.05f, pitch)
         rule.onNodeWithText(context.getString(R.string.speech_pitch_higher, 5)).assertExists()
         save("pitch-higher", rule.onNodeWithTag(SCREEN).captureToImage().asAndroidBitmap())
 
-        rule.onNodeWithText(context.getString(R.string.speech_pitch_reset)).performClick()
+        rule.onNodeWithContentDescription(context.getString(R.string.speech_pitch_up)).performClick()
+        rule.waitForIdle()
+        assertEquals(1.1f, pitch)
+
+        rule.onNodeWithText(natural).performScrollTo().performClick()
         rule.waitForIdle()
         assertEquals(1f, pitch)
-        rule.onNodeWithText(context.getString(R.string.speech_pitch_own)).assertExists()
 
         rule.runOnIdle { pitch = config.minPitch }
         rule.onNodeWithContentDescription(context.getString(R.string.speech_pitch_down)).assertIsNotEnabled()
         rule.onNodeWithContentDescription(context.getString(R.string.speech_pitch_up)).assertIsEnabled()
-        rule.onNodeWithText(context.getString(R.string.speech_pitch_lower, 20)).assertExists()
+        rule.onNodeWithText(context.getString(R.string.speech_pitch_lower, 15)).assertExists()
     }
 
     @Composable
