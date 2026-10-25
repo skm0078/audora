@@ -75,6 +75,7 @@ ADR-013 and ADR-037 were planned (podcast mode, online AI) and have no file yet.
 - [ADR-071](adr/071-pitch-presets-and-option-rows.md) Pitch presets like speed, heard while dragging, ±15%; option rows never squeeze their titles
 - [ADR-072](adr/072-optimised-dev-build.md) The phones run an optimised dev build (R8, not debuggable, -O2 native); R8 in release; speed measured on every push
 - [ADR-075](adr/075-characters-that-are-found.md) Character voices: every quote style, subject-first Hindi and Bengali tags, names tell gender, "!" is emphatic, a measured story set that guards it
+- [ADR-074](adr/074-commercial-use-voices-only.md) Only voices licensed for commercial use: Piper Hindi and MMS Bengali removed, Supertonic 3 reads Hindi and voices its characters
 
 **Reading the PDF (`:pdf`)**
 

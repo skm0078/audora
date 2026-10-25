@@ -50,6 +50,19 @@ class VoiceFilesTest {
     }
 
     @Test
+    fun `withdrawn catalog voices are deleted, an imported voice and other voices stay`() {
+        install("piper-hi-pratham")
+        install("mms-bn", VoiceOrigin.CUSTOM)
+        install("supertonic-hi")
+
+        val gone = files.withdraw(WithdrawnVoices.IDS)
+
+        assertEquals(listOf("piper-hi-pratham"), gone)
+        assertEquals(listOf("mms-bn", "supertonic-hi"), files.installed().map { it.spec.id })
+        assertTrue(files.withdraw(WithdrawnVoices.IDS).isEmpty())
+    }
+
+    @Test
     fun `recover deletes half-made folders and puts back a copy an update had moved aside`() {
         install("piper-en-cori")
         install("kitten-en-nano").renameTo(File(files.installedRoot, "kitten-en-nano.old"))
