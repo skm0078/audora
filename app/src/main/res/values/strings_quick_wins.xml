@@ -20,6 +20,9 @@
         <item>The app opens, scrolls and starts reading faster: this test version is now built like the final app.</item>
         <item>Book covers in the library show up sooner.</item>
         <item>The word highlight uses less battery while a book plays.</item>
+        <item>You can change the voice from the player\'s Voice and speed sheet, for every book or just this one.</item>
+        <item>The reader shows one tip or offer at a time, so more of the book stays on screen.</item>
+        <item>Settings, the reader and the player fit better at large text sizes, in Hindi and Bengali too.</item>
     </string-array>
 
     <string name="library_mark_finished">Mark as finished</string>

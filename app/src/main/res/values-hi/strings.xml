@@ -80,7 +80,6 @@
     <string name="reader_back_to_reading">पेज %1$d पर वापस जाएँ, जहाँ पढ़ाई चल रही है</string>
     <string name="reader_page_no_text">इस पेज पर पढ़ने लायक टेक्स्ट नहीं है। अगर यह स्कैन किया हुआ पेज है, तो सेटिंग्स में स्कैन किए गए पेज (OCR) डाउनलोड करें, फिर ListenLock इसे पढ़ेगा।</string>
     <string name="reader_page_failed">यह पेज पढ़ा नहीं जा सका। कृपया लॉग शेयर करें।</string>
-    <string name="reader_tap_hint">किसी वाक्य पर टैप करें, वहीं से पढ़ना शुरू होगा। जो वाक्य गलत लगा, उसे देर तक दबाएँ।</string>
     <string name="reader_read_from_here">यहाँ से पढ़ें</string>
     <string name="reader_sentence_options">इस वाक्य के विकल्प</string>
     <string name="reader_show_page">पेज दिखाएँ</string>
@@ -183,6 +182,7 @@
     <string name="notes_ok">ठीक है</string>
     <string name="notes_save_failed">यह सेव नहीं हो सका। शायद फ़ोन का स्टोरेज भर गया है।</string>
     <string name="speech_book_voices">इस किताब की आवाज़ें</string>
+    <string name="speech_voices">आवाज़ें</string>
     <string name="speech_sound">साउंड</string>
     <string name="speech_even_loudness">एक जैसा वॉल्यूम</string>
     <string name="speech_even_loudness_detail">चालू: हर वाक्य और हर आवाज़ एक जैसी ऊँचाई पर, ताकि कुछ भी अचानक तेज़ या धीमा न लगे।</string>

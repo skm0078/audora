@@ -80,7 +80,6 @@
     <string name="reader_back_to_reading">যেখানে পড়া চলছে, সেই পৃষ্ঠা %1$d-এ ফিরুন</string>
     <string name="reader_page_no_text">এই পৃষ্ঠায় পড়ার মতো লেখা নেই। এটি স্ক্যান করা পৃষ্ঠা হলে সেটিংসে স্ক্যান করা পৃষ্ঠা (OCR) ডাউনলোড করুন, তারপর ListenLock এটি পড়বে।</string>
     <string name="reader_page_failed">এই পৃষ্ঠাটি পড়া যায়নি। লগ শেয়ার করুন।</string>
-    <string name="reader_tap_hint">যেখান থেকে শুনতে চান সেই বাক্যে ট্যাপ করুন। ভুল শোনালে বাক্যটি চেপে ধরে রাখুন।</string>
     <string name="reader_read_from_here">এখান থেকে পড়ুন</string>
     <string name="reader_sentence_options">এই বাক্যের বিকল্প</string>
     <string name="reader_show_page">পৃষ্ঠা দেখান</string>
@@ -183,6 +182,7 @@
     <string name="notes_ok">ঠিক আছে</string>
     <string name="notes_save_failed">এটি সেভ করা যায়নি। ফোনের স্টোরেজ হয়তো ভরে গেছে।</string>
     <string name="speech_book_voices">এই বইয়ের ভয়েস</string>
+    <string name="speech_voices">ভয়েস</string>
     <string name="speech_sound">সাউন্ড</string>
     <string name="speech_even_loudness">সমান আওয়াজ</string>
     <string name="speech_even_loudness_detail">চালু: প্রতিটি বাক্য আর প্রতিটি ভয়েস একই জোরে বাজে, তাই কিছুই হঠাৎ জোরে বা আস্তে শোনায় না।</string>

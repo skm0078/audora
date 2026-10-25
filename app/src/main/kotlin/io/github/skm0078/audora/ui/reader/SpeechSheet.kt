@@ -110,7 +110,15 @@ fun SpeechSheet(
             OptionDivider()
             OwnSettingsRow(ownSettings, enabled = bookInPlayer || ownSettings, onOwnSettings)
         }
-        if (ownSettings) BookVoicesSection(voices.rows, voices.chosen, voices.onVoice)
+        // The voice is always one tap away (UI audit): this book's own while it keeps its own settings, else the
+        // voice every book uses, the same choice as Settings → Voices.
+        if (ownSettings) {
+            BookVoicesSection(voices.rows, voices.chosen, stringResource(R.string.speech_book_voices), voices.onVoice)
+        } else {
+            BookVoicesSection(voices.rows, emptyMap(), stringResource(R.string.speech_voices)) { lang, id ->
+                voices.rows.firstOrNull { it.lang == lang && it.id == id }?.let(voices.onDefault)
+            }
+        }
         PageLinks(readingModes, focusSound) { page = it }
     }
     val close = { page = null }
@@ -270,11 +278,15 @@ internal fun stepsBetween(range: ClosedFloatingPointRange<Float>, step: Float): 
 
 private const val SUMMARY_SEPARATOR = " · "
 
-/** The voices the open book can pick from (plan item 4), its own choices, and what a tap does. */
+/**
+ * The voices the open book can pick from (plan item 4), its own choices, and what a tap does: [onVoice] for this
+ * book's own, [onDefault] for every book's while this one follows the usual settings.
+ */
 class BookVoices(
     val rows: List<VoiceRow> = emptyList(),
     val chosen: Map<Lang, VoiceId> = emptyMap(),
     val onVoice: (Lang, VoiceId) -> Unit = { _, _ -> },
+    val onDefault: (VoiceRow) -> Unit = {},
 )
 
 /** Shown on the Focus sound row and in its choices. */

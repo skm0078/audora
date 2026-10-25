@@ -71,9 +71,9 @@ fun ReaderScreen(
 ) {
     var pageTextOpen by rememberSaveable { mutableStateOf(false) }
     val offer = rememberVoicePackOffer(state.bookId, voices, voicePacks)
-    // One card at a time: the gesture tips wait while the page offers a voice pack, so at large font sizes the two
-    // cards do not leave no room for the book (UI audit).
-    val offering = (state.content as? PageContent.Ready)?.let { offer.packFor(it.units) } != null
+    val tips = rememberGestureTips()
+    val notice = readerNotice(state, offer, tips.pending)
+    val pack = offer.takeIf { notice == ReaderNotice.VOICE_PACK }
     if (pageTextOpen) {
         PageTextSheet(look, onLookChange, textView = state.view == ReaderView.TEXT) { pageTextOpen = false }
     }
@@ -92,7 +92,8 @@ fun ReaderScreen(
         },
         bottomBar = {
             if (state.document is DocumentState.Open) {
-                ReaderControls(state, config, actions, voices = voices, showTips = !offering)
+                val onTipsSeen = tips::dismiss.takeIf { notice == ReaderNotice.GESTURE_TIPS }
+                ReaderControls(state, config, actions, voices = voices, onTipsSeen = onTipsSeen)
             }
         },
     ) { innerPadding ->
@@ -118,7 +119,7 @@ fun ReaderScreen(
 
                 is DocumentState.Open -> {
                     PlaceHighlights(state, notesActions)
-                    OpenBook(state, document, config, actions, ocrModels, look, spokenWord, thumbnails, offer, notes)
+                    OpenBook(state, document, config, actions, ocrModels, look, spokenWord, thumbnails, pack, notes)
                     NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)
                 }
             }
@@ -137,7 +138,7 @@ private fun OpenBook(
     look: ReadingLook,
     spokenWord: () -> IntRange?,
     thumbnails: PageThumbnails?,
-    voicePack: VoicePackOffer,
+    voicePack: VoicePackOffer?,
     notes: NotesState,
 ) {
     // The start of a passage being highlighted shows as highlighted while its end is picked.
