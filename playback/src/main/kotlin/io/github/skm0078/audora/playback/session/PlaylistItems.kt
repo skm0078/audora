@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.playback.session
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -21,7 +22,7 @@ import io.github.skm0078.audora.playback.queue.UnitKey
 class PlaylistItems(
     private val bookId: String,
     private val epoch: Int,
-    private val title: String,
+    private val look: ItemLook,
     private val pageCount: Int,
     private val texts: ItemTexts,
 ) {
@@ -41,13 +42,16 @@ class PlaylistItems(
 
     private fun metadata(item: PlaybackItem): MediaMetadata {
         val builder = MediaMetadata.Builder()
-            .setTitle(title)
+            .setTitle(look.title)
+            .setAlbumTitle(look.title)
+            .setAlbumArtist(look.author)
+            .setArtworkUri(look.artwork)
             .setIsPlayable(true)
             .setIsBrowsable(false)
             .setMediaType(MediaMetadata.MEDIA_TYPE_AUDIO_BOOK_CHAPTER)
         if (item is PlaybackItem.Sentence) {
             val unit = item.unit
-            builder.setArtist(texts.pageOf(unit.page + 1, pageCount))
+            builder.setArtist(look.whereLine(unit.page, pageCount, texts))
             builder.setExtras(
                 Bundle().apply {
                     putString(PlaybackContract.ITEM_BOOK_ID, bookId)
@@ -69,9 +73,42 @@ class PlaylistItems(
     }
 }
 
+/**
+ * What the notification, lock screen, car screen and watch show of the open book besides the sentence's place: its
+ * [title], [author] and cover ([artwork], a file the library already drew; null shows no picture), and the first
+ * pages of its chapters ([chapterStarts], ascending) for "Chapter 2 of 9".
+ */
+data class ItemLook(
+    val title: String,
+    val author: String? = null,
+    val artwork: Uri? = null,
+    val chapterStarts: List<Int> = emptyList(),
+) {
+    /** "Jane Austen · Chapter 2 of 9 · Page 14 of 300", leaving out what the book does not have. [page] is 0-based. */
+    fun whereLine(page: Int, pageCount: Int, texts: ItemTexts): String {
+        val chapter = chapterStarts.count { it <= page }.takeIf { it > 0 && chapterStarts.size > 1 }
+        return listOfNotNull(
+            author,
+            chapter?.let {
+                texts.chapterOf(it, chapterStarts.size)
+            },
+            texts.pageOf(page + 1, pageCount),
+        )
+            .filter { it.isNotBlank() }
+            .joinToString(SEPARATOR)
+    }
+
+    private companion object {
+        const val SEPARATOR = " · "
+    }
+}
+
 /** Notification and lock-screen strings, from resources in the service. */
 interface ItemTexts {
     fun pageOf(page: Int, pageCount: Int): String
+
+    /** "Chapter [chapter] of [chapterCount]", both 1-based; blank leaves the chapter out. */
+    fun chapterOf(chapter: Int, chapterCount: Int): String = ""
 
     fun loadingNextPage(): String
 }

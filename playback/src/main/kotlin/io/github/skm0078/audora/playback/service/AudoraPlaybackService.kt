@@ -45,6 +45,7 @@ import io.github.skm0078.audora.playback.browse.OutlineChapters
 import io.github.skm0078.audora.playback.browse.ResourceBrowseTexts
 import io.github.skm0078.audora.playback.contract.PendingIntentCodes
 import io.github.skm0078.audora.playback.contract.SentenceTiming
+import io.github.skm0078.audora.playback.covers.CoverFolders
 import io.github.skm0078.audora.playback.focus.FocusRenderersFactory
 import io.github.skm0078.audora.playback.focus.FocusSoundCues
 import io.github.skm0078.audora.playback.focus.FocusSoundProcessor
@@ -201,6 +202,8 @@ class AudoraPlaybackService : MediaLibraryService() {
                     player.playbackParameters = PlaybackParameters(style.config.playerSpeed(heard()), heard().pitch)
                 },
                 keepGoingToNextChapter = { upNext.queue.value.keepGoingToNextChapter },
+                // The cover the library drew, on the notification, lock screen and car screen.
+                artwork = { opened -> CoverFolders(filesDir).shownFile(opened)?.let(CoverFolders::artworkUri) },
                 onBookFinished = queueAdvance()::onBookFinished,
                 replayRender = replayRender,
                 replayStyle = { factor -> style.config.replayStyle(heard(), factor) },
@@ -409,6 +412,9 @@ class AudoraPlaybackService : MediaLibraryService() {
 
     private inner class ResourceTexts : ItemTexts {
         override fun pageOf(page: Int, pageCount: Int): String = getString(R.string.playback_page_of, page, pageCount)
+
+        override fun chapterOf(chapter: Int, chapterCount: Int): String =
+            getString(R.string.playback_chapter_of, chapter, chapterCount)
 
         override fun loadingNextPage(): String = getString(R.string.playback_loading_next_page)
     }

@@ -18,7 +18,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
@@ -103,6 +105,7 @@ internal fun Paragraph(
     val enabled = state.playerReady
     val readLabel = stringResource(R.string.reader_read_from_here)
     val optionsLabel = stringResource(R.string.reader_sentence_options)
+    val haptics = LocalHapticFeedback.current
     Text(
         text = text,
         style = ReadingTextStyles.forLook(look),
@@ -129,7 +132,12 @@ internal fun Paragraph(
                     layout?.getOffsetForPosition(position)?.let { sentenceAt(spans, it) }?.let(sentences::getOrNull)
                 detectTapGestures(
                     onTap = { position -> if (enabled) sentenceUnder(position)?.let(actions::onSentenceTapped) },
-                    onLongPress = { position -> sentenceUnder(position)?.let(actions::onSentenceLongPressed) },
+                    onLongPress = { position ->
+                        sentenceUnder(position)?.let { unit ->
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            actions.onSentenceLongPressed(unit)
+                        }
+                    },
                 )
             },
     )

@@ -10,6 +10,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.view.View
 import android.widget.RemoteViews
 import io.github.skm0078.audora.MainActivity
@@ -73,12 +74,24 @@ class ResumeWidgetProvider : AppWidgetProvider() {
                     setViewVisibility(R.id.widget_progress, View.VISIBLE)
                     setViewVisibility(R.id.widget_resume, View.VISIBLE)
                     setOnClickPendingIntent(R.id.widget_resume, resume(context, book))
+                    showCover(book.coverPath)
                     setContentDescription(
                         R.id.widget_resume,
                         context.getString(R.string.widget_resume_label, book.title ?: ""),
                     )
                 }
             }
+
+        /** The library's cover file, already cover-sized (CoverConfig.widthPx), so it is decoded as it is. */
+        private fun RemoteViews.showCover(path: String?) {
+            val cover = path?.let { BitmapFactory.decodeFile(it) }
+            if (cover == null) {
+                setViewVisibility(R.id.widget_cover, View.GONE)
+            } else {
+                setImageViewBitmap(R.id.widget_cover, cover)
+                setViewVisibility(R.id.widget_cover, View.VISIBLE)
+            }
+        }
 
         // The launcher's own intent, so a tap brings Audora's task forward instead of stacking a second screen on it.
         private fun openApp(context: Context): PendingIntent = PendingIntent.getActivity(

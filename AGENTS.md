@@ -55,6 +55,7 @@ The maintainer has no Android Studio: CI on GitHub Actions is the build of recor
 - No magic numbers: tunables in config objects (LayoutConfig, QueueConfig, QualityConfig).
 - Tests first for :pdf and :speech; table-driven tests for normalizers.
 - TODOs must name a ticket: `TODO(P1-07): ...` (detekt enforces).
+- Something a listener would notice: replace `whats_new_items` (strings_quick_wins.xml, en/hi/bn) and bump `WHATS_NEW_ID` (ui/whatsnew/WhatsNew.kt) in the same PR (ADR-070).
 - No new dependency without asking. No network except model downloads. No cloud or paid services, ever.
 - Never commit keystores, secrets, model binaries, or PDFs we can't redistribute.
 

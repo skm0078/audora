@@ -104,8 +104,8 @@ data class LibraryQuery(
     private fun matches(progress: BookProgress?): Boolean = when (filter) {
         LibraryFilter.ALL -> true
         LibraryFilter.NOT_STARTED -> progress == null
-        LibraryFilter.FINISHED -> progress != null && progress.page == progress.pageCount - 1
-        LibraryFilter.IN_PROGRESS -> progress != null && progress.page < progress.pageCount - 1
+        LibraryFilter.FINISHED -> progress?.isFinished == true
+        LibraryFilter.IN_PROGRESS -> progress != null && !progress.isFinished
     }
 
     private companion object {

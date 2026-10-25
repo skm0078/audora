@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-bn/strings_quick_wins.xml
+  Purpose: Bengali copies of strings_quick_wins.xml.
+-->
+<resources>
+    <string name="sample_try">নমুনা শুনুন</string>
+    <string name="sample_try_hint">ListenLock নিয়ে একটি ছোট পাতা, সঙ্গে সঙ্গে পড়ে শোনানো হয়। যেকোনো সময় লাইব্রেরি থেকে সরাতে পারেন।</string>
+    <string name="sample_title">ListenLock-এ আপনাকে স্বাগত</string>
+    <string name="sample_text">ListenLock-এ আপনাকে স্বাগত। এটি একটি ছোট নমুনা বই, যা আপনার ফোনের ভেতরের একটি ভয়েস পড়ে শোনাচ্ছে। ইন্টারনেট লাগে না, আর আপনি যা পড়েন তা আপনার ফোনের বাইরে যায় না।\n\nযেকোনো বাক্যে ট্যাপ করুন, সেখান থেকেই পড়া শুরু হবে। কোনো বাক্য একটু চেপে ধরে রাখলে সেটি বুকমার্ক বা হাইলাইট করতে পারবেন, কোনো শব্দের মানে দেখতে পারবেন, কপি করতে পারবেন, বা কোনো শব্দের উচ্চারণ ঠিক করতে পারবেন।\n\nভয়েস দ্রুত বা ধীরে করতে পারেন, আর অন্য ভয়েস বেছে নিতে পারেন। স্লিপ টাইমার আপনি ঘুমিয়ে পড়লে পড়া থামিয়ে দেয়, আর ফোন ঝাঁকিয়ে তাকে আরও সময় দিতে পারেন।\n\nস্ক্রিন বন্ধ থাকলেও বা অন্য অ্যাপে গেলেও পড়া চলতে থাকে। প্রতিটি বইয়ে আপনার জায়গা, বাক্য পর্যন্ত, মনে রাখা হয়।\n\nতৈরি হলে লাইব্রেরিতে ফিরে গিয়ে নিজের বই যোগ করুন: PDF, EPUB, Word ফাইল, লেখা, বা পাতার ছবি।</string>
+
+    <string name="reader_resumed_at">পৃষ্ঠা %1$d থেকে আবার: “%2$s…”</string>
+    <string name="reader_resumed_page">পৃষ্ঠা %1$d থেকে আবার</string>
+
+    <string name="whats_new_title">নতুন কী আছে</string>
+    <string name="whats_new_item">• %1$s</string>
+    <string name="whats_new_ok">বুঝেছি</string>
+    <string-array name="whats_new_items">
+        <item>নোটিফিকেশন আর লক স্ক্রিনে বইয়ের প্রচ্ছদ, লেখক আর অধ্যায় দেখা যায়।</item>
+        <item>অ্যাপের আইকন চেপে ধরে নিজের বই আবার শুনুন, বই যোগ করুন, বা কপি করা লেখা পড়ান।</item>
+        <item>বই খুললে ListenLock জানায় কোথা থেকে আবার পড়ছে।</item>
+        <item>বইয়ের মেনু থেকে সেটিকে শেষ বা শুরু হয়নি হিসেবে চিহ্নিত করা যায়।</item>
+        <item>কোনো বাক্য চেপে ধরে তার শব্দ কপি বা শেয়ার করুন।</item>
+        <item>হোম স্ক্রিনের উইজেটে বইয়ের প্রচ্ছদ দেখা যায়।</item>
+        <item>চেপে ধরলে, গতি বদলালে, বুকমার্ক যোগ করলে বা স্লিপ টাইমার দিলে হালকা কম্পন হয়।</item>
+    </string-array>
+
+    <string name="library_mark_finished">শেষ হিসেবে চিহ্নিত করুন</string>
+    <string name="menu_hint_mark_finished">আপনার জায়গা শেষ পৃষ্ঠায় চলে যায়, যাতে বইটি \"শেষ\"-এর মধ্যে দেখা যায়।</string>
+    <string name="library_mark_not_started">শুরু হয়নি হিসেবে চিহ্নিত করুন</string>
+    <string name="menu_hint_mark_not_started">এই বইয়ে আপনার জায়গা ভুলে যায়; আবার পৃষ্ঠা ১ থেকে শুরু হবে। বুকমার্ক আর হাইলাইট থেকে যায়।</string>
+    <string name="library_marked_finished">শেষ হিসেবে চিহ্নিত হয়েছে</string>
+    <string name="library_marked_not_started">শুরু হয়নি হিসেবে চিহ্নিত হয়েছে</string>
+    <string name="library_mark_failed">এটি সেভ করা গেল না। আবার চেষ্টা করুন।</string>
+
+    <string name="sentence_menu_copy">লেখা কপি করুন</string>
+    <string name="sentence_hint_copy">এই বাক্যটি কপি করে, যেকোনো অ্যাপে পেস্ট করার জন্য।</string>
+    <string name="sentence_hint_copy_highlight">পুরো হাইলাইট করা অংশটি কপি করে, যেকোনো অ্যাপে পেস্ট করার জন্য।</string>
+    <string name="sentence_menu_share_text">লেখা শেয়ার করুন</string>
+    <string name="sentence_hint_share_text">শব্দগুলো (হাইলাইট হলে পুরো অংশ) চ্যাট, মেল বা নোটস অ্যাপে পাঠায়।</string>
+    <string name="sentence_copied">কপি হয়েছে</string>
+
+    <string name="shortcut_resume">আবার শুনুন</string>
+    <string name="shortcut_resume_long">নিজের বই আবার শুনুন</string>
+    <string name="shortcut_add_book">বই যোগ করুন</string>
+    <string name="shortcut_add_book_long">বই যোগ করুন</string>
+    <string name="shortcut_clipboard">কপি পড়ুন</string>
+    <string name="shortcut_clipboard_long">কপি করা লেখা পড়ান</string>
+</resources>

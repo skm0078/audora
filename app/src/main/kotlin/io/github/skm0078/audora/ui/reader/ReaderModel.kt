@@ -353,6 +353,8 @@ class ReaderModel(
 
     fun skipRefusalShown() = mutableState.update { it.copy(skipRefused = null) }
 
+    fun resumedShown() = mutableState.update { it.copy(resumedAt = null) }
+
     /**
      * Study loops (plan item 31): marks A or B at the sentence being read in this book, turns looping on or off, or
      * clears the range. A mark needs this book to be the one being read.
@@ -438,10 +440,17 @@ class ReaderModel(
         mutableState.update { it.copy(document = DocumentState.Open(opened.pageCount)) }
         if (!opened.hasPageImages) applyView(ReaderView.TEXT)
         val playing = state.value.readingPosition
+        // Opened again for new text settings: the listener already knows where they are.
+        val reopened = keepPage != null
         if (playing == null) {
-            savedPosition =
-                resume.locate(bookId, opened.pageCount) { page -> (opened.units(page) as? Outcome.Success)?.value }
-                    ?.let { ReadingPosition(bookId, it.page, it.charStart) }
+            // The pages read to find the place, kept so its first words need no second read (or OCR) of the page.
+            val read = HashMap<Int, List<ReadingUnit>>()
+            savedPosition = resume.locate(bookId, opened.pageCount) { page ->
+                (opened.units(page) as? Outcome.Success)?.value?.also { read[page] = it }
+            }?.let { ReadingPosition(bookId, it.page, it.charStart) }
+            savedPosition?.takeIf { !reopened }?.let { position ->
+                mutableState.update { it.copy(resumedAt = resumedAt(position, read[position.page].orEmpty())) }
+            }
         }
         val startPage = keepPage?.also { keepPage = null } ?: playing?.page ?: savedPosition?.page ?: 0
         loadPage(startPage.coerceIn(0, opened.pageCount - 1))

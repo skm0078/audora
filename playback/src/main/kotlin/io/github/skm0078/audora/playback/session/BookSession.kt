@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.playback.session
 
+import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -11,6 +12,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import io.github.skm0078.audora.core.config.QueueConfig
+import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
@@ -63,6 +65,7 @@ class SessionSources(
     val onBookFinished: (BookId) -> Unit = {},
     val replayRender: ReplayRender? = null,
     val replayStyle: (factor: Float) -> SpeechStyle? = { null },
+    val artwork: (Book) -> Uri? = { null },
 )
 
 /**
@@ -141,6 +144,9 @@ class BookSession(
     private var overshootPending = false
 
     private var book: OpenedBook? = null
+
+    /** The open book's cover for the notification and lock screen ([SessionSources.artwork]); null shows none. */
+    private var artwork: Uri? = null
 
     // The book the player's playlist was built for; differs from [book] between a book switch and its rebuild.
     private var playlistBook: BookId? = null
@@ -479,10 +485,12 @@ class BookSession(
         replay.forget()
         study.clear()
         // On the extraction thread, after any page read still running there.
-        val chapters = withContext(env.extraction) {
+        // The cover file too, off the main thread and once per book rather than on every rebuild.
+        val (chapters, cover) = withContext(env.extraction) {
             old?.text?.close()
-            opened.text.chapterStarts()
+            opened.text.chapterStarts() to sources.artwork(opened.book)
         }
+        artwork = cover
         sleep.onBookChanged(chapters)
         chapterStop.chapterStarts = chapters
         sources.reading.chapterPages = chapters.toSet()
@@ -507,7 +515,8 @@ class BookSession(
         val oldQueue = queue
         queue = newQueue
         registry.publish(epoch, newQueue)
-        val items = PlaylistItems(opened.book.id.value, epoch, opened.book.title, opened.text.pageCount, sources.texts)
+        val look = ItemLook(opened.book.title, opened.book.author, artwork, chapterStop.chapterStarts)
+        val items = PlaylistItems(opened.book.id.value, epoch, look, opened.text.pageCount, sources.texts)
         val newFeeder = PlaylistFeeder(PlayerPlaylist(player, items), config, sources.reading.current())
         feeder = newFeeder
         cursor = PageCursor(opened.text.pageCount, page, charStart, index)

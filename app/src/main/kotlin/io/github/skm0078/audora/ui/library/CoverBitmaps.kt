@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/CoverBitmaps.kt
-// Purpose: The covers' files and pictures (plan item 21, ADR-068): where each cover is kept, decoding a picture small,
-//          and writing WEBP so a cover is never half written.
+// Purpose: The covers' pictures (plan item 21, ADR-068): decoding a picture small, and writing WEBP so a cover is
+//          never half written. Where each cover is kept is playback's CoverFolders.
 
 package io.github.skm0078.audora.ui.library
 
@@ -9,8 +9,8 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import io.github.skm0078.audora.core.config.CoverConfig
-import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.playback.covers.CoverFolders
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -21,32 +21,6 @@ fun interface CoverImage {
 
     companion object {
         fun of(bytes: ByteArray) = CoverImage { bytes.inputStream() }
-    }
-}
-
-/**
- * `covers/<id>.webp` for a drawn first page, `covers/<id>@p<n>.webp` for another page, `covers-chosen/<id>.webp` for
- * a kept picture. A file's book id is its name up to the page mark.
- */
-internal class CoverFolders(filesDir: File) {
-    val drawn = File(filesDir, DRAWN)
-    val chosen = File(filesDir, CHOSEN)
-
-    fun drawnFile(id: BookId, page: Int) =
-        File(drawn, if (page == FIRST_PAGE) "${id.value}$EXTENSION" else "${id.value}$PAGE_MARK$page$EXTENSION")
-
-    fun chosenFile(id: BookId) = File(chosen, "${id.value}$EXTENSION")
-
-    fun bookIdOf(fileName: String) =
-        fileName.substringBefore(PAGE_MARK).removeSuffix(PARTIAL_SUFFIX).removeSuffix(EXTENSION)
-
-    companion object {
-        const val FIRST_PAGE = 0
-        const val PARTIAL_SUFFIX = ".part"
-        private const val DRAWN = "covers"
-        private const val CHOSEN = "covers-chosen"
-        private const val PAGE_MARK = "@p"
-        private const val EXTENSION = ".webp"
     }
 }
 
