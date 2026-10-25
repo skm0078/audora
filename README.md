@@ -183,13 +183,13 @@ texts are in the app under **Settings → Voices & licences**.
 | English | KittenTTS nano (female, male) by KittenML | 29 MB | Apache-2.0 |
 | English | Kokoro Heart, Kokoro Michael by hexgrad (premium) | 150 MB | Apache-2.0 |
 | English | Piper cori by Michael Hansen, LibriVox recordings by Cori Samuel | 65 MB | MIT; recordings public domain |
-| Hindi | **Piper pratham** (default), Piper priyamvada by PravalX | 64 MB | CC BY-NC-SA 4.0 |
+| Hindi | **Supertonic 3** by Supertone (default; ten voices, so characters get their own) | 145 MB | OpenRAIL-M (model), MIT (code) |
 | Hindi | Acted voice for studio mode: Chatterbox Multilingual by Resemble AI | 2.9 GB | MIT |
 | Bengali | **SYSPIN male** (default), SYSPIN female by the SYSPIN project, IISc Bengaluru | 114 MB | MIT |
 | Bengali | Rasa expressive (female, male) by AI4Bharat, IIT Madras | 123 MB | CC BY 4.0 |
 
-The test build also offers Supertonic 3 Hindi (OpenRAIL-M), Piper google Bengali (CC BY-SA 4.0) and MMS Bengali by
-Meta (CC BY-NC 4.0). Some voices are licensed for non-commercial use only, which is one reason ListenLock is free.
+The test build also offers Piper google Bengali (CC BY-SA 4.0). Every voice ListenLock offers is licensed for
+commercial use (ADR-074).
 
 Other data: OCR by [Tesseract](https://github.com/tesseract-ocr/tesseract) with `tessdata_best` (Apache-2.0);
 English dictionary from Open English WordNet (CC BY 4.0, from Princeton WordNet); Hindi and Bengali dictionaries

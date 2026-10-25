@@ -45,7 +45,8 @@ data class Cast(
  * How one sentence is spoken, beyond its text and language: the defaults of a plain read. [startsInQuote]: an earlier
  * sentence of its paragraph opened a quote that is still open ([QuoteSplitter.endsInQuote]). [speaker]: who says the
  * sentence's quotes, from its tag or the sentences around it ([SpeakerTags]); null when unknown. [feeling]: how the
- * sentence asks to be read (ADR-056), passed to a voice with speaking styles (ADR-057).
+ * sentence asks to be read (ADR-056), passed to a voice with speaking styles (ADR-057). [pitch]: that feeling's pitch
+ * as a ratio (ADR-076), for voices without styles.
  */
 @Suppress("LongParameterList") // All optional, with the defaults of a plain read.
 class SpeechRequest(
@@ -56,9 +57,10 @@ class SpeechRequest(
     val startsInQuote: Boolean = false,
     val speaker: Speaker? = null,
     val feeling: Feeling = Feeling.NEUTRAL,
+    val pitch: Float = 1f,
 ) {
-    fun copy(feeling: Feeling): SpeechRequest =
-        SpeechRequest(role, rate, prosody, shape, startsInQuote, speaker, feeling)
+    /** The request for narration around a sentence's quotes: no feeling, the voice's own pitch. */
+    fun plain(): SpeechRequest = SpeechRequest(role, rate, prosody, shape, startsInQuote, speaker)
 }
 
 /**
@@ -98,7 +100,8 @@ class CastSpeech(
         val dialogue = if (heading) emptyMap() else quoteVoices(lang, request, cast)
         // A voice that acts feelings (ADR-057) acts only the quoted words: "she sobbed" is said plainly, the plea in
         // its quotes sadly, as a reader does. The sentence is split for it even with no dialogue voice.
-        val acted = !heading && request.feeling != Feeling.NEUTRAL && narratorActs(lang)
+        // A feeling's pitch (ADR-076) is the same: the quotes are shifted, the narration around them is not.
+        val acted = !heading && request.feeling != Feeling.NEUTRAL && (request.pitch != 1f || narratorActs(lang))
         val parts = if (lang in dialogue || acted) {
             quotes.split(text, request.startsInQuote).takeIf { split -> split.any { it.quoted } }
         } else {
@@ -135,7 +138,7 @@ class CastSpeech(
         join: Join,
     ): Outcome<RoutedAudio, SpeechError> {
         val rendered = ArrayList<RoutedAudio>(parts.size)
-        val narration = request.copy(feeling = Feeling.NEUTRAL)
+        val narration = request.plain()
         for (part in parts) {
             val audio = if (part.quoted) {
                 castOrNarrator(part.text, lang, request, dialogue)
@@ -209,4 +212,4 @@ private class CastVoices(private val base: VoiceSource, private val cast: Map<La
 
 /** [RoutedSpeech.render] with a [SpeechRequest]. */
 private suspend fun RoutedSpeech.render(text: String, lang: Lang, request: SpeechRequest) =
-    render(text, lang, request.role, request.rate, request.prosody, request.shape, request.feeling)
+    render(text, lang, request.role, request.rate, request.prosody, request.shape, request.feeling, request.pitch)

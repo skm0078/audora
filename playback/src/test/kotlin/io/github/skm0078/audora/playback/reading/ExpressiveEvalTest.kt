@@ -22,7 +22,8 @@ class ExpressiveEvalTest {
 
     private fun judged(set: String): List<Judged> {
         val dir = File(root, "research/expressive-eval/$set")
-        val passages = listOf("en", "hi", "bn").flatMap { ExpressiveEval.load(File(dir, "$it.tsv")) }
+        val passages = listOf("en", "hi", "bn").map { File(dir, "$it.tsv") }.filter { it.isFile }
+            .flatMap { ExpressiveEval.load(it) }
         return ExpressiveEval.judge(passages).also { File(out, "$set.md").writeText(ExpressiveEval.report(it)) }
     }
 
@@ -50,6 +51,19 @@ class ExpressiveEvalTest {
         assertEquals("no character gets the other gender's voice", 0, rows.count { it.voice == "wrong" })
         assertTrue(rows.count { opposite(it) } <= 1)
         assertTrue(rightVoice(rows, Lang.EN) >= 59)
+        assertTrue(rightVoice(rows, Lang.HI) >= 38)
+    }
+
+    /**
+     * Written after the Hindi and Bengali name-finding change (ADR-077) and scored once before its Bengali half. One
+     * Hindi line goes to the wrong person: the arriving man, the narration's last subject, gets his wife's question.
+     */
+    @Test
+    fun `second held-out passages keep their scores`() {
+        val rows = judged("holdout2")
+        assertTrue("every spoken line is found", rows.filter { it.line.speaker != null }.all { it.heardSpeech })
+        assertTrue("at most one line has the other gender's voice", rows.count { it.voice == "wrong" } <= 1)
+        assertTrue(rightVoice(rows, Lang.HI) >= 40)
     }
 
     private fun opposite(row: Judged) = ExpressiveEval.opposite(row.line.feeling, row.feeling)

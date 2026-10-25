@@ -17,7 +17,8 @@ data class CastSpeaker(val speakerId: Int, val label: String, val gender: Speake
  * past a model's range is undefined behaviour in sherpa-onnx.
  *
  * The lists are the models' own speaker tables (sherpa-onnx's packaging of Kokoro v1.0 multi-lang and KittenTTS
- * v0.8 nano and micro, which share one table), English speakers only, and Rasa's two Bengali speakers. They are
+ * v0.8 nano and micro, which share one table), English speakers only, Rasa's two Bengali speakers and Supertonic 3's
+ * ten voices (its Hindi narrator's characters). They are
  * keyed on the catalog voice that installs that exact archive, never on the model family: a voice imported from
  * any folder, or a family's other packaging, reads with its own speaker only.
  * A test pins each key to its archive in models.json and bundled-voices.json, so a catalog update that swaps the
@@ -53,6 +54,21 @@ object CastSpeakers {
         CastSpeaker(RASA_BENGALI_MALE, "Bengali male", SpeakerGender.MALE),
     )
 
+    /**
+     * Supertonic 3 (ADR-074): one model, ten voice styles that each speak every language it reads, so Hindi has a cast.
+     * Styles 0-4 are the model's female voices and 5-9 its male ones (upstream's F1-F5 and M1-M5, confirmed by ear
+     * and by pitch: 163-224 Hz against 93-135 Hz).
+     */
+    private val SUPERTONIC = (0 until SUPERTONIC_SPEAKERS).map { i ->
+        val female = i < SUPERTONIC_FIRST_MALE
+        val number = if (female) i + 1 else i - SUPERTONIC_FIRST_MALE + 1
+        if (female) {
+            CastSpeaker(i, "Female $number", SpeakerGender.FEMALE)
+        } else {
+            CastSpeaker(i, "Male $number", SpeakerGender.MALE)
+        }
+    }
+
     /** Kokoro's English speakers, for the narrator blend's choices (plan item 75). */
     val kokoroEnglish: List<CastSpeaker> get() = KOKORO_ENGLISH
 
@@ -62,6 +78,7 @@ object CastSpeakers {
         KITTEN_VOICE to CastTable(KITTEN_ARCHIVE, KITTEN, KITTEN_SPEAKERS),
         KITTEN_MICRO_VOICE to CastTable(KITTEN_MICRO_ARCHIVE, KITTEN, KITTEN_SPEAKERS),
         RASA_VOICE to CastTable(RASA_ARCHIVE, RASA_BENGALI, RASA_MODEL_SPEAKERS),
+        SUPERTONIC_VOICE to CastTable(SUPERTONIC_ARCHIVE, SUPERTONIC, SUPERTONIC_SPEAKERS),
     )
 
     /** The archive each keyed catalog voice id was written for, so a test can check the catalogs still ship it. */
@@ -115,6 +132,10 @@ object CastSpeakers {
     private const val RASA_BENGALI_FEMALE = 2
     private const val RASA_BENGALI_MALE = 3
     private const val RASA_MODEL_SPEAKERS = 1024
+    private const val SUPERTONIC_VOICE = "supertonic-hi"
+    private const val SUPERTONIC_ARCHIVE = "sherpa-onnx-supertonic-3-tts-int8-2026-05-11"
+    private const val SUPERTONIC_SPEAKERS = 10
+    private const val SUPERTONIC_FIRST_MALE = 5
     private const val KOKORO_FIRST_MALE = 11
     private const val KOKORO_FIRST_BRITISH = 20
     private const val KOKORO_FIRST_BRITISH_MALE = 24

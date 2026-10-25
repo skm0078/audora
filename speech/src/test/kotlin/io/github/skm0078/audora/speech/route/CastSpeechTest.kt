@@ -27,6 +27,7 @@ class CastSpeechTest {
         override val id = EngineId.SHERPA
         val calls = mutableListOf<Pair<String, String>>()
         val feelings = mutableListOf<Feeling>()
+        val rates = mutableListOf<Float>()
 
         override fun supports(lang: Lang): Boolean = true
 
@@ -39,6 +40,7 @@ class CastSpeechTest {
                 )
             }
             calls.add(voice.name to text)
+            rates.add(rate)
             return Outcome.Success(PcmAudio(ShortArray(text.length) { 1 }, SAMPLE_RATE))
         }
 
@@ -74,6 +76,36 @@ class CastSpeechTest {
 
         assertEquals(listOf(Feeling.SAD, Feeling.NEUTRAL), engine.feelings)
     }
+
+    @Test
+    fun `a feeling's pitch shifts only the quoted words, which keep their length (ADR-076)`() = runTest {
+        val engine = RecordingEngine()
+        val higher = 1.25f
+
+        val audio = speech(engine).render(
+            "“We won,” she laughed.",
+            Lang.EN,
+            SpeechRequest(feeling = Feeling.LIVELY, pitch = higher),
+        )
+
+        assertEquals(listOf("We won,", "she laughed."), engine.calls.map { it.second })
+        assertEquals(listOf(1f / higher, 1f), engine.rates)
+        // The fake voice ignores its speed, so the shifted quote comes out shorter: 7 samples played 1.25 times faster.
+        val samples = (audio as Outcome.Success).value.audio.samples.size
+        assertEquals((7 / higher).toInt() + "she laughed.".length, samples)
+    }
+
+    @Test
+    fun `a sentence with a feeling and no quotes is shifted whole, a voice that acts its feelings is not shifted`() =
+        runTest {
+            val engine = RecordingEngine()
+            speech(engine).render("She wept.", Lang.EN, SpeechRequest(feeling = Feeling.SAD, pitch = 0.9f))
+            assertEquals(listOf(1f / 0.9f), engine.rates)
+
+            val acting = RecordingEngine(acts = true)
+            speech(acting).render("She wept.", Lang.EN, SpeechRequest(feeling = Feeling.SAD, pitch = 0.9f))
+            assertEquals(listOf(1f), acting.rates)
+        }
 
     @Test
     fun `a voice that acts feelings gets the quote split out even without a dialogue voice`() = runTest {

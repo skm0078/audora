@@ -47,6 +47,17 @@ class CastSpeakersTest {
     }
 
     @Test
+    fun `Supertonic's Hindi narrator has four other women and five men for characters`() {
+        val supertonic = spec("supertonic-hi", speakerId = 2).copy(family = SherpaFamily.SUPERTONIC)
+        val cast = CastSpeakers.of(supertonic).filter { it.speakerId != 2 }
+
+        assertEquals(4, cast.count { it.gender == SpeakerGender.FEMALE })
+        assertEquals((5..9).toList(), cast.filter { it.gender == SpeakerGender.MALE }.map { it.speakerId })
+        assertEquals(7, CastSpeakers.speakerFor(supertonic, 7, SUPERTONIC_SPEAKERS))
+        assertEquals(2, CastSpeakers.speakerFor(supertonic, 7, SUPERTONIC_SPEAKERS + 1))
+    }
+
+    @Test
     fun `Kokoro lists 27 English speakers besides the narrator`() {
         assertEquals(27, CastSpeakers.of(kokoro).count { it.speakerId != HEART })
     }
@@ -102,6 +113,7 @@ class CastSpeakersTest {
 
     private companion object {
         const val RASA_SPEAKERS = 1024
+        const val SUPERTONIC_SPEAKERS = 10
         const val HEART = 3
         const val ADAM = 11
         const val KOKORO_V1_0 = 53

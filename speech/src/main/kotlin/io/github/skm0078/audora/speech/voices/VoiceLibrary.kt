@@ -150,7 +150,20 @@ class VoiceLibrary private constructor(
     private fun installedNow(): List<InstalledVoice> = installedState.value ?: synchronized(lock) {
         installedState.value ?: run {
             files.recover()
+            withdrawLocked()
             refreshLocked()
+        }
+    }
+
+    /**
+     * Deletes voices taken out of the catalog ([WithdrawnVoices]); a language one of them read goes back to its
+     * default until the user picks another. Caller holds [lock].
+     */
+    private fun withdrawLocked() {
+        files.withdraw(WithdrawnVoices.IDS).forEach { id ->
+            val voice = VoiceId(EngineId.SHERPA, id)
+            readingVoices.forget(voice)
+            speeds.forget(voice)
         }
     }
 
