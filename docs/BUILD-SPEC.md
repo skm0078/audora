@@ -59,7 +59,7 @@ All neural models run through **sherpa-onnx 1.13.8** (Apache-2.0 runtime). Syste
 
 | Language | Role | Candidate(s) | Engine | Size | License | Decided by |
 |---|---|---|---|---|---|---|
-| English | Default (bundled) | Piper medium **ljspeech or cori** (public-domain data) **or** KittenTTS v0.8 nano | sherpa VITS / Kitten | ~64 MB / ~28 MB + 19 MB espeak-ng-data | MIT + public domain / Apache-2.0 | S1 rule, ADR-012 (blind rating; Kitten only if RTF ≤ 0.5 on the Moto) |
+| English | Default (bundled) | Piper medium **ljspeech or cori** (public-domain data) **or** KittenTTS v0.8 nano | sherpa VITS / Kitten | ~64 MB / ~28 MB + 19 MB espeak-ng-data | MIT + public domain / Apache-2.0 | S1 rule, ADR-012 (blind rating; Kitten only if RTF ≤ 0.5 on the test phone) |
 | English | Premium (download) | Kokoro **v1.0** int8 (af_heart, bf_emma…); Supertonic 3 en | sherpa Kokoro / Supertonic | 132 MB / 145 MB | Apache-2.0 / OpenRAIL-M | S1; offered only if measured RTF < 0.8 |
 | English | Fallback | Android system TTS | `TextToSpeech` | 0 | device | — |
 | Hindi | Default | Google hi-IN system voice until a voice is downloaded; recommended download **Supertonic 3** (ten voice styles, its others read characters) | system / sherpa Supertonic | 0 / 145 MB | device / OpenRAIL-M | ADR-074 (replaces ADR-030's Piper pratham, CC BY-NC-SA) |
@@ -90,7 +90,7 @@ Dependencies flow `app → playback → (speech, pdf) → core`, never the rever
 
 **Stack (pinned in `libs.versions.toml`):** Kotlin 2.x, Compose (BOM), Media3 **1.11.1** (ExoPlayer + MediaSessionService), sherpa-onnx **1.13.8** AAR (arm64-v8a), **PdfiumAndroidKt 2.0.x** (text + render; no `PdfRenderer` fallback, ADR-024), ICU `BreakIterator` (android.icu), Room, DataStore, WorkManager (downloads only), Hilt (KSP), kotlinx.coroutines. Phase 3: Tesseract4Android 4.9.x with `tessdata_best` eng/hin/ben (ADR-011); PaddleOCR (PP-OCR) ONNX on the existing ONNX Runtime only if the optional P3-05 experiment beats Tesseract on Hindi. No ML Kit (D2).
 
-**Platform baseline:** compileSdk 36, targetSdk 36 (37 only after testing the while-in-use rule), minSdk 31 (Android 12, D5), AGP ≥ 8.5.1, NDK r28+, `abiFilters arm64-v8a`. Reference device for development: Moto Edge 50 Fusion (Snapdragon 7s Gen 2); OnePlus 12 (SD 8 Gen 3, Android 16) is a pre-release check (ADR-012). Edge-to-edge + predictive back supported from day one.
+**Platform baseline:** compileSdk 36, targetSdk 36 (37 only after testing the while-in-use rule), minSdk 31 (Android 12, D5), AGP ≥ 8.5.1, NDK r28+, `abiFilters arm64-v8a`. Reference device for development: test phone (a mid-range chip); second test phone (a flagship chip, Android 16) is a pre-release check (ADR-012). Edge-to-edge + predictive back supported from day one.
 
 ```kotlin
 // File: core/src/main/kotlin/app/audora/core/ReadingUnit.kt
@@ -238,7 +238,7 @@ See `TICKET-PLAN.md` for the phased tickets, dependencies and the recommended fi
 | 009 | Resume by char-offset anchor + fingerprint + pipeline version | Accepted (v1.0) |
 | 010 | compileSdk 37, targetSdk 36 | Accepted (P0-01) |
 | 011 | S2: PDFium confirmed + JNI scope, `/ActualText` rebuild, OCR cross-check for Indic, Tesseract for all scripts, reopen every 100 pages | Accepted (S2) |
-| 012 | S1: sherpa-onnx AAR vendored from its GitHub release (SHA-pinned), models mirrored to our own release, Kokoro v1.0, no Lessac-derived voices, English default rule, Moto Edge 50 Fusion as dev reference phone | Accepted (S1); English default pending phone run |
+| 012 | S1: sherpa-onnx AAR vendored from its GitHub release (SHA-pinned), models mirrored to our own release, Kokoro v1.0, no Lessac-derived voices, English default rule, test phone as dev reference phone | Accepted (S1); English default pending phone run |
 | 014 | Bundled English voice chosen in `speech/bundled-voices.json`, fetched at build time from sherpa-onnx's release (SHA-pinned), espeak-ng-data trimmed to en/hi/bn; Piper ljspeech provisional | Accepted (P1-03) |
 | 015 | Resume anchor details: head + tail fingerprints (FNV-1a 64, normalized), no voice in the anchor, `resume_anchors` table (DB v2), brand battery steps as text with public intents only | Accepted (P1-06) |
 | 016 | Render-ahead cache is an 8 MiB in-memory LRU (`QueueConfig.recentAudioBytes`) instead of a 20 MB disk LRU in `cacheDir/tts/` (§6) | Accepted (P1-04) |

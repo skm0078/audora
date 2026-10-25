@@ -22,6 +22,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
@@ -106,6 +107,7 @@ internal fun Paragraph(
     val readLabel = stringResource(R.string.reader_read_from_here)
     val optionsLabel = stringResource(R.string.reader_sentence_options)
     val haptics = LocalHapticFeedback.current
+    val perSentence = rememberSentenceActions(sentences, enabled, actions)
     Text(
         text = text,
         style = ReadingTextStyles.forLook(look),
@@ -113,9 +115,11 @@ internal fun Paragraph(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.SpaceS, vertical = PARAGRAPH_PADDING)
-            // TalkBack reads the paragraph as one block and cannot aim at a sentence inside it, so its double tap
-            // reads from the paragraph's start and its long press opens the first sentence's menu.
+            // TalkBack reads the paragraph as one block and cannot aim at a sentence inside it: its double tap
+            // reads from the paragraph's start, its long press opens the first sentence's menu, and its actions
+            // menu reads from or opens any sentence.
             .semantics {
+                if (perSentence.isNotEmpty()) customActions = perSentence
                 if (enabled) {
                     onClick(readLabel) {
                         actions.onSentenceTapped(sentences.first())

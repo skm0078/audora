@@ -48,6 +48,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -80,7 +83,9 @@ internal fun PageView(state: ReaderState, units: List<ReadingUnit>, actions: Rea
             ?.takeIf { it.page == state.page }
         when {
             shown != null -> {
-                DrawnPage(state, shown.image, PageLook(pageNote(units), tone, zoom), viewport, actions)
+                val sentences = remember(units) { units.filter { it.text.isNotBlank() } }
+                val perSentence = rememberSentenceActions(sentences, state.playerReady, actions)
+                DrawnPage(state, shown.image, PageLook(pageNote(units), tone, zoom, perSentence), viewport, actions)
                 if (zoom.zoomed) {
                     FilledTonalButton(
                         onClick = zoom::reset,
@@ -130,8 +135,16 @@ private class LastDrawn {
     var image: PageImageState.Ready? = null
 }
 
-/** How the drawn page looks: why nothing is highlighted (if so), its colours and its zoom. */
-private class PageLook(val note: Int?, val tone: PageTone, val zoom: PageZoom)
+/**
+ * How the drawn page looks: why nothing is highlighted (if so), its colours and its zoom. [sentenceActions] are
+ * TalkBack's way to each sentence of the page, which it reads as one picture.
+ */
+private class PageLook(
+    val note: Int?,
+    val tone: PageTone,
+    val zoom: PageZoom,
+    val sentenceActions: List<CustomAccessibilityAction>,
+)
 
 @Composable
 private fun DrawnPage(state: ReaderState, image: PageImage, look: PageLook, viewport: IntSize, actions: ReaderActions) {
@@ -183,19 +196,22 @@ private fun DrawnPage(state: ReaderState, image: PageImage, look: PageLook, view
                 .aspectRatio(image.aspectRatio)
                 .onSizeChanged { pageSize = it }
                 .pageTaps(state.playerReady, actions, LocalHapticFeedback.current),
-        ) { PageLayers(state, image, look.tone, highlight) }
+        ) { PageLayers(state, image, look, highlight) }
     }
 }
 
 /** The page drawn in its colours, then the greyed lines and the spoken sentence's band over it. */
 @Composable
-private fun PageLayers(state: ReaderState, image: PageImage, tone: PageTone, highlight: List<ViewRect>) {
+private fun PageLayers(state: ReaderState, image: PageImage, look: PageLook, highlight: List<ViewRect>) {
+    val tone = look.tone
     Image(
         bitmap = image.imageBitmap(),
         contentDescription = stringResource(R.string.reader_page_image, state.page + 1),
         contentScale = ContentScale.FillBounds,
         colorFilter = remember(tone) { tone.colorMatrix()?.let { ColorFilter.colorMatrix(ColorMatrix(it)) } },
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().semantics {
+            if (look.sentenceActions.isNotEmpty()) customActions = look.sentenceActions
+        },
     )
     Dimmed(state.unreadableHighlight, tone.paper ?: MaterialTheme.colorScheme.surface)
     Highlight(highlight, MaterialTheme.colorScheme.readingBand(Color.White), tone)

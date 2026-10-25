@@ -3,7 +3,7 @@
 **Status:** Accepted (2026-10-16). Supersedes Build Spec C6 (speed only through `setPlaybackSpeed`).
 
 ## Context
-The first hands-on run of the dev build on the Moto Edge 50 Fusion found speed changes smearing words and the pace
+The first hands-on run of the dev build on the test phone found speed changes smearing words and the pace
 hard to follow. Two causes:
 - C6 sped every voice up or down by time-stretching the finished audio (Sonic). Slower than 1× and faster than about
   1.5× this blurs consonants; C6 itself allowed an engine-native rate "if quality at >2x is bad".

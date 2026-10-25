@@ -6,23 +6,32 @@ package io.github.skm0078.audora.playback.focus
 import android.content.Context
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.FocusSoundOptions
+import io.github.skm0078.audora.playback.async.LatestWrites
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.Executor
 
 /**
  * The service owns it, like the sleep options, so reading resumed from a headset has the sound too. [current] is
  * set on the main thread and read on the playback thread, hence volatile. A missing or unreadable file means the
  * sound is off, never an error.
  */
-class FocusSoundStore(private val file: File) {
+class FocusSoundStore(private val file: File, writer: Executor = LatestWrites.SETTINGS_WRITER) {
+    private val saves = LatestWrites(writer, ::save)
+
     @Volatile
     private var options: FocusSoundOptions? = null
 
     val current: FocusSoundOptions
         get() = options ?: load().also { options = it }
 
+    /** Applies [requested] at once; the file is saved in the background, a failed save logged. */
     fun set(requested: FocusSoundOptions) {
         options = requested
+        saves.submit(requested)
+    }
+
+    private fun save(requested: FocusSoundOptions) {
         val temp = File(file.path + ".tmp")
         try {
             file.parentFile?.mkdirs()

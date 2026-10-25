@@ -70,5 +70,7 @@ package io.github.skm0078.audora.pdf
  *     tall box no longer joins two lines of words; text set wholly in a monospace font is never cut into columns.
  * 12 = worn print: a scanned black and white page that reads unsure is read again softened and the clearly better
  *     read kept (WornPrintConfig), so its words can change.
+ * 13 = a sentence too long for one unit and without spaces is cut between letters, never before a vowel sign or
+ *     after a virama; a book's OCR languages follow most of its pages, not every language any page showed.
  */
-const val PIPELINE_VERSION: Int = 12
+const val PIPELINE_VERSION: Int = 13

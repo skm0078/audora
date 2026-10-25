@@ -105,7 +105,8 @@ internal fun PhotoBookEffect(photoBooks: PhotoBooks, navigate: (AppDestination) 
 
 /**
  * Text shared from another app (plan item 42): saved as a .txt beside the shared copies, then handed to [onSaved]
- * to be added and opened like a shared PDF. [onTaken] clears the request first.
+ * to be added and opened like a shared PDF. [onTaken] clears the request once that is done, so a save cut short by a
+ * rotation runs again on the new screen.
  */
 @Composable
 internal fun SharedTextEffect(
@@ -117,7 +118,6 @@ internal fun SharedTextEffect(
     val context = LocalContext.current
     LaunchedEffect(shared) {
         val text = shared ?: return@LaunchedEffect
-        onTaken()
         val saved = if (text.isOnlyLink) {
             null
         } else {
@@ -127,6 +127,7 @@ internal fun SharedTextEffect(
                 TextBookConfig().maxSharedChars,
             )
         }
+        onTaken()
         if (saved != null) {
             onSaved(saved)
         } else {

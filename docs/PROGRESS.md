@@ -2,6 +2,99 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Release hardening 9: TalkBack, voice import, release pins (2026-10-25)
+From the pre-release review's pick list (P6, P7, P12, P14, P15, P17, P18). What's new 11.
+- **TalkBack reaches every sentence:** a paragraph in the reflowed text and the drawn page each offer "Read from: …"
+  and "Options for: …" for every sentence in TalkBack's actions menu, named by the sentence's first words
+  (`rememberSentenceActions`). The one-sentence-per-row text view already reached each sentence.
+- **The page slider turns one page per TalkBack swipe** instead of a twentieth of the book (`scrubberStep`).
+- **The mini player says what a double tap does:** "Open the player".
+- **Pitch help is exact:** the slider and the − and + buttons go to 15 % either way; the one-tap choices stop at 10 %.
+- **A Piper voice folder without espeak-ng-data is refused** with a reason before anything is copied, instead of
+  failing on its first sentence. An MMS voice (letter tokens) still imports without it.
+- **Release workflow:** every action is pinned to a commit. Who may use the "release" environment is a GitHub setting
+  (only prod and v* tags); see the release thread's steps.
+- **Sliders (P14):** every slider already speaks its name and its value ("Pitch: 10% higher", "4:07 of 1:05:09");
+  the swipe step stays the platform's (a twentieth of the range). The made-audio player has its skip buttons for
+  fine moves. A one-step custom swipe is only on the page slider, where a twentieth was far too coarse.
+- **Not changed (P17):** screens behind the app lock keep running. Pausing them would also disconnect the player
+  and hands-free commands, which must keep working behind the lock; nothing is shown and the cost is small.
+- **Verified in CI:** `ReaderAccessibilityTest`, `VoiceImporterTest` (Piper without espeak-ng-data, MMS with letter
+  tokens), release journey.
+- **Could affect:** TalkBack on the reader page and text views, the page slider with TalkBack, the mini player,
+  importing a voice folder, the release build (actions pinned).
+
+**Real-device checks (test phone):** with TalkBack on, open a book in page view, swipe to the page, open the actions
+menu: each sentence is listed and "Read from" starts there. Swipe up on the page slider: one page. Import a Piper
+folder without espeak-ng-data: a clear message. Without TalkBack nothing looks different.
+
+## Release hardening 8: library and PDF reading (2026-10-25)
+From the pre-release review's pick list (P4, P5, P9, P10). `PIPELINE_VERSION` 13.
+- **OCR languages follow most of the book:** a Hindi book with one English page (a title page, a citation) keeps
+  reading its scans as Hindi. A language must appear on at least a quarter as many pages as the most common one, and
+  at most two are used, the most common first (`OcrLanguages`).
+- **Search never starts OCR or teaches the book:** indexing a book for search reads a text-layer page by the book's
+  verdict so far, without the OCR cross-check and without changing the book's languages, so it never queues OCR in
+  front of the page being read.
+- **Long sentences without spaces are cut between letters:** a cut never starts a piece with a vowel sign or splits a
+  joined consonant ("क्ष", "ক্ষ"), so neither piece is read as a broken letter.
+- **Closing a book never waits:** the native close runs on its own thread once PDFium's lock is free, so leaving the
+  reader while another book draws a page for OCR no longer freezes the screen.
+- **The library redraws only when what it shows changes:** saving the place every sentence no longer rebuilds the
+  whole library list; it redraws when a book's page or the "Continue" book changes (`progressShown`).
+- **Verified in CI:** `OcrLanguagesTest`, `ReadingUnitBuilderTest` (cluster-safe cut), `PdfBookOcrTest` (search reads
+  with no OCR and learns nothing), `ProgressShownTest`, `DocumentCloseTest` (device), golden corpus and listening
+  scores.
+- **Could affect:** scanned Hindi or Bengali books with English pages, search in Indic books, very long unbroken
+  lines, closing a book, the library's page numbers and "Continue" card.
+
+**Real-device checks (test phone):** open a scanned Hindi book with an English title page: the scans still read in
+Hindi. Search a Hindi book while it plays: playback does not stall. Leave a book mid-OCR and open another: the screen
+does not freeze. Read a few sentences, go back to the library: the page shown is the current one.
+
+## Release hardening 7: playback edges (2026-10-25)
+From the pre-release review's pick list (P1, P8, P11, P16, P19).
+- **Switching books while one plays keeps each book's place:** a sentence is saved for the book whose playlist it
+  belongs to, the new book's pages are never fed into the old playlist, voice or speed changes wait for the new
+  book's rebuild, and a start on a page the new book does not have is refused before anything switches, leaving the
+  playing book as it was. "Book finished" counts for the book that ended.
+- **Quick Settings tile:** a tap while the tile is still connecting waits up to 3 s for the player, then pauses or
+  plays, instead of opening the app over a book that is playing.
+- **Other apps cannot read what you are reading:** an app with no media permission can still play, pause and skip,
+  but no longer sees the title, author, page or book id. The system's media controls, Bluetooth, watches, Android
+  Auto and other trusted controllers are unchanged.
+- **Settings files are written off the main thread:** the speech style (speed and pitch sliders), sleep options and
+  focus sound save in the background, and a burst of slider steps writes the file once (`LatestWrites`).
+- **Not changed:** Quiz keeps its own copy of the voice, freed after a short idle (ADR-039); sharing the service's
+  copy needs a design change across processes.
+- **Verified in CI:** `BookSessionTest` (a refused switch, sentences saved per book), `TileTapTest`,
+  `OtherAppsCommandsTest` (device), `LatestWritesTest`, `SpeechStyleStoreTest`, release journey (notification and lock screen
+  controls).
+- **Could affect:** book switching, Up next, the tile, smartwatch or car controls, saving speed and pitch.
+
+**Real-device checks:** play book A, open book B and press Play: B's progress starts at B's first sentence and A
+keeps its place. Pull the shade and tap the tile at once while reading: it pauses. Drag the speed slider: it saves
+and survives closing the app. A Bluetooth headset and the lock screen still show the title.
+
+## Release hardening 6: jobs that survive a rotation (2026-10-25)
+From the pre-release review's pick list (P2, P3).
+- **A shared file or text is never lost:** it stays pending for the whole process (`PendingShares`) and is cleared
+  only once it is in the library, so turning the phone mid-add starts the add again on the new screen; the same file
+  added twice is found already in the library.
+- **Studio "Save as file" finishes and is listed:** the save runs on the app's scope (`AudoraApplication.appScope`),
+  so a rotation no longer drops its result or its "Made from this book" entry, and a second save cannot start while
+  one runs (`startStudioSave`).
+- **A voice note being recorded is saved on a rotation:** voice notes write on the app's scope, not the activity's.
+- **The reader stays on the page you browsed to:** the page on screen is saved; a rebuilt reader shows it again, with
+  no second "Resumed at" notice. Play still continues from the saved sentence.
+- **Verified in CI:** `LibraryControllerSharedTest`, `StudioSaveTest`, new `ReaderResumeTest` cases (the fresh-open
+  notice and Play position are pinned too), release journey.
+- **Could affect:** sharing a PDF or text into the app, Studio save, voice notes, the reader's opening page.
+
+**Real-device checks (test phone):** share a big PDF from WhatsApp and rotate while it adds: it opens. Start Studio "Save as
+file" and rotate: the done toast shows and the file is under "Made from this book". Record a voice note and rotate:
+the note is there. Browse to another page while paused and rotate: same page, no "Resumed at".
+
 ## Hindi and Bengali characters found by repetition (2026-10-25, ADR-077)
 - A word that opens Hindi or Bengali narration twice on a page is taken as a character ("बिरजू", "পল্টু"), so its
   quotes get its voice; a noun said once is not. Bengali sentences that open with a place, a participle or an owner
@@ -86,7 +179,7 @@ From the pre-release accessibility review.
   above WCAG AA contrast. Rows with a title and trailing value mirror correctly in right-to-left layouts.
 - New strings in `strings_a11y.xml` with Hindi and Bengali copies.
 
-**Real-device checks (Moto, TalkBack on):** open a book, swipe through the player: every slider and button is named;
+**Real-device checks (test phone, TalkBack on):** open a book, swipe through the player: every slider and button is named;
 turn Wi-Fi and the voice off mid-sentence and hear the status announced.
 
 ## Release hardening 4: app lock and Continue (2026-10-25, ADR-061)
@@ -101,7 +194,7 @@ From the pre-release security review.
   attempt is logged.
 - **Verified in CI:** `ContinueTokensTest` (once only, wrong or missing token refused, one token per job).
 
-**Real-device checks:** turn on App lock, open a book's Notes sheet, leave the app for over 30 s, come back:
+**Real-device checks (test phone):** turn on App lock, open a book's Notes sheet, leave the app for over 30 s, come back:
 only the lock screen shows; unlock and the sheet is still there.
 
 ## Release hardening 3: voice installs (2026-10-25)
@@ -119,7 +212,7 @@ From the pre-release review.
 - **Verified in CI:** `VoiceDownloadJobTest` (delete during download), `AssetDirectoryInstallerTest` (two installs at
   once), `VoiceArchiveInstallerTest` (full phone told apart from a broken zip).
 
-**Real-device checks:** start a Hindi voice download, delete it from Voices before it finishes: it does not
+**Real-device checks (test phone):** start a Hindi voice download, delete it from Voices before it finishes: it does not
 come back.
 
 ## Release hardening 2: words read wrong (2026-10-25)
@@ -142,7 +235,7 @@ From the pre-release review. Speech text changes, so STUDIO_AUDIO_VERSION is 3; 
 - **Verified in CI:** `EnglishNormalizerTest` (pronoun and numeral "I", map scale), `IndicNormalizerTest` (minus),
   `BookContextTest` (open waits for the fixes; old pitch clamped), `JobsAndPitchScreensTest`.
 
-**Real-device checks:** read a novel page with "the book I read": hear "I". Add a fix to a book, close it,
+**Real-device checks (test phone):** read a novel page with "the book I read": hear "I". Add a fix to a book, close it,
 reopen it: the first sentence uses the fix. In a Hindi text with "-5", hear "माइनस पाँच".
 
 ## Release hardening 1: crash guards (2026-10-25)
@@ -162,7 +255,7 @@ From the pre-release review (all modules). No reading output changes, so PIPELIN
 - **Verified in CI:** `PdfBookTest` (zero pages; a throwing splitter fails only its page), `ResumeLocatorTest`
   (zero pages), `QueueAdvanceTest` (a throwing start is skipped).
 
-**Real-device checks:** open a Made-audio file, swipe the app away from Recents, reopen it from Recents:
+**Real-device checks (test phone):** open a Made-audio file, swipe the app away from Recents, reopen it from Recents:
 the player shows paused. Play a book, press Play on a Bluetooth headset after swiping the app away: it resumes.
 
 ## Rows that never squeeze their titles; pitch that works like speed (2026-10-25, ADR-071)
@@ -178,7 +271,7 @@ the player shows paused. Play a book, press Play on a Bluetooth headset after sw
   block at font 1×, 1.3× and 2× and fails if any line breaks inside a word (screenshots `option-rows-font-*`). The
   pitch device test taps presets, + and Natural. Unit tests cover the new range and preset rules.
 
-**Real-device checks:** Speech → Cast voices with a long voice picked, at normal and largest font: the
+**Real-device checks (test phone):** Speech → Cast voices with a long voice picked, at normal and largest font: the
 title stays whole and the voice name sits under it. Play a book, open Speech, drag Pitch: the voice changes while
 dragging. Tap A bit higher, then Natural.
 
@@ -196,7 +289,7 @@ dragging. Tap A bit higher, then Natural.
 - Tests: `ItemLookTest`, `ResumedAtTest`, `WhatsNewStartTest`, `BookActionTest`, and `SentenceMenuTest` (device:
   Copy text puts the whole passage on the clipboard). No `:pdf` change (PIPELINE_VERSION 12), no schema change.
 
-**Real-device checks:** play a PDF and lock the phone: cover and "Chapter n of m" on the lock screen. Long-press
+**Real-device checks (test phone):** play a PDF and lock the phone: cover and "Chapter n of m" on the lock screen. Long-press
 the app icon: three shortcuts; Read copied text reads what you copied. Reopen a book: the "Picked up" toast. Book
 menu: Mark as finished moves it to Finished. Empty library (or a fresh install): Try a sample plays in your language.
 
@@ -220,7 +313,7 @@ menu: Mark as finished moves it to Finished. Empty library (or a fresh install):
 - `SentenceMenuTest` (device) checks the hints, the passage actions, the range bar and the fixes dialog, and saves
   screenshots to the `player-screens-<run>` artifact. No `:pdf` change (PIPELINE_VERSION 12).
 
-**Real-device checks:** long-press a sentence, "Highlight from here…", turn a page, tap a sentence: the band
+**Real-device checks (test phone):** long-press a sentence, "Highlight from here…", turn a page, tap a sentence: the band
 covers both pages. Long-press inside it: "Share as audio" sends the passage. Long-press a table row, "This sounded
 wrong", "A table", "Tables: read every row", then "Read this sentence again".
 
@@ -251,7 +344,7 @@ wrong", "A table", "Tables: read every row", then "Read this sentence again".
 - Database v5 (automatic upgrade). No `:pdf` change (PIPELINE_VERSION 12). New strings in en, hi and bn. Tests listed
   in ADR-068; CI's `player-screens` artifact has `made-list.png`, `made-player.png` and `edit-details.png`.
 
-**Real-device checks:** update over v4 and check every book, note and position is still there; save a short
+**Real-device checks (test phone):** update over v4 and check every book, note and position is still there; save a short
 audiobook, open Jobs → Everything made, play it, leave and come back (it goes on where it was), share it to
 WhatsApp; delete a copy; edit a book's author and pick a gallery cover; add an EPUB with a cover and a Word file with
 an author and see both filled in within a few seconds.
@@ -267,14 +360,14 @@ an author and see both filled in within a few seconds.
 - No `:pdf` change (PIPELINE_VERSION 12). New strings in en, hi and bn. Tests listed in ADR-067; CI's
   `player-screens` artifact has `jobs-screen.png` and `pitch-higher.png`.
 
-**Real-device checks:** change the pitch while a book plays (the same sentence goes on, higher or deeper) and
+**Real-device checks (test phone):** change the pitch while a book plays (the same sentence goes on, higher or deeper) and
 while paused; export a short audiobook at 1.15 and play it in Files (same pitch, same length); start a voice download
 and tap the export notification: the Jobs screen shows both; Cancel the download and start it again (it resumes).
 
 ## Phone test fixes before v0.1.0: player width, time left everywhere, no babble after quotes (2026-10-24)
 - **Player:** the controls row (speed, previous, play, next, sleep timer) did not fill the panel, so `SpaceBetween` had
-  no room and the row sat at the left (seen on the Moto). It now fills the width, in the reader too.
-  `PlayerLayoutTest` checks at 411 × 914 dp (the Moto) and font scales 1, 1.3 and 2 that the row reaches both edges
+  no room and the row sat at the left (seen on the test phone). It now fills the width, in the reader too.
+  `PlayerLayoutTest` checks at 411 × 914 dp (the test phone) and font scales 1, 1.3 and 2 that the row reaches both edges
   with Play in the middle, and saves a screenshot of each; CI uploads them as the `player-screens-<run>` artifact.
 - **Time left:** every download (voices, voice packs, text recognition, dictionaries, the tutor's model) shows
   "12 min left" under its bar, after "Working out the time left…" for its first seconds. Audiobook export and
@@ -291,7 +384,7 @@ and tap the export notification: the Jobs screen shows both; Cancel the download
   30-minute bedtime timer ran out after 1.8 ms and paused the loop it watched (2 runs in 5). It now uses
   `SystemClock.elapsedRealtime`, as the service does; the app was not affected.
 
-**Real-device checks:** open the player at normal and largest font: controls spread across the width. Download
+**Real-device checks (test phone):** open the player at normal and largest font: controls spread across the width. Download
 a voice and the text recognition files: the time left appears after a few seconds and counts down. Read an English
 dialogue page (“…,” he said. “….”): no sound after the closing quotes. Export a short audiobook: the notification
 shows the time left after the first steps.
@@ -321,7 +414,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Voices:** each language is a radio group; the voice in use is tinted, bold and says "In use"; a voice not yet downloaded shows the download mark and cannot be picked.
 - Strings in en, hi and bn (`strings_formats.xml`). No `:pdf` change (PIPELINE_VERSION 12). Tests: `DocumentFormatTest`, `DocxParserTest`, `OdtParserTest`, `RtfParserTest`, `MarkdownParserTest`, `SavedPageTest`, `ImagePdfTest` (pages).
 
-**Real-device checks:** add a Word file with headings, a table and footnotes (chapters in the contents, notes at the end); an `.odt` from LibreOffice; an RTF in Hindi; a saved web page; a `.md` note. Read pictures with 3 screenshots (one book, three pages, OCR reads each); share one photo from Gallery. Select text in Chrome → ⋮ → Read aloud; copy text → Read copied text, and with an empty clipboard (message). Settings → Voices: the voice in use stands out, tapping another downloaded voice moves the mark, TalkBack says "radio button, selected".
+**Real-device checks (test phone):** add a Word file with headings, a table and footnotes (chapters in the contents, notes at the end); an `.odt` from LibreOffice; an RTF in Hindi; a saved web page; a `.md` note. Read pictures with 3 screenshots (one book, three pages, OCR reads each); share one photo from Gallery. Select text in Chrome → ⋮ → Read aloud; copy text → Read copied text, and with an empty clipboard (message). Settings → Voices: the voice in use stands out, tapping another downloaded voice moves the mark, TalkBack says "radio button, selected".
 
 ## Book wording, not PDF-only wording; README lists every feature (2026-10-24)
 - **Why:** EPUB, text files, shared text and photos have been read since ADR-042 and ADR-043, but the library, first run, widget and menus still said "Add PDF" and "Pick a PDF", so nobody found them.
@@ -329,14 +422,14 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - README: the intro names every format, and the feature list adds the Quick Settings tile, volume keys, Skim, paragraph skip, focus sound, voice blend, Study repeats, character guide, kids mode, own pronunciations, skip citations, sounded-wrong reports, duplicate check, app language and themes.
 - No preference, playback or `:pdf` change (PIPELINE_VERSION 12).
 
-**Real-device checks:** empty library and first run say "Add book"; the picker still offers PDF, EPUB and text files; Hindi and Bengali texts fit the empty-library card and the widget.
+**Real-device checks (test phone):** empty library and first run say "Add book"; the picker still offers PDF, EPUB and text files; Hindi and Bengali texts fit the empty-library card and the widget.
 
 ## The app icon is the ListenLock logo (2026-10-24, ADR-065)
 - **What:** the launcher icon is the designer's hand-drawn logo on white, scaled into the 66dp safe zone (PNG per density), with a one-colour copy for themed icons. The Android 12 splash shows it on the app's paper. Debug builds (the dev APK) use the same icon; the label "ListenLock Dev" tells them apart.
 - **Store:** `docs/store/logo.png` (master), `icon.png` (512 px) and `feature-graphic.png` re-made from it; `icon.svg` removed.
 - README: the GPL covers the code; the name and logo are the owner's. No code, preference or `:pdf` change (PIPELINE_VERSION 12).
 
-**Real-device checks:** launcher (round and squircle shapes if the launcher offers them), themed icons on (Settings → Wallpaper and style), the splash at a cold start and recents, on the dev APK.
+**Real-device checks (test phone):** launcher (round and squircle shapes if the launcher offers them), themed icons on (Settings → Wallpaper and style), the splash at a cold start and recents, on the dev APK.
 
 ## Studio audio survives updates; reading settings apply at once (2026-10-23, ADR-064)
 - **Studio audio** is keyed by `STUDIO_AUDIO_VERSION` instead of the app's install time, so an update no longer deletes it. Bump the version when the sound can change (AGENTS.md). This build drops older, unversioned studio audio once.
@@ -344,14 +437,14 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Settings → Voices** says so when the open book keeps its own voice for that language, and names the switch to turn off.
 - No `:pdf` change (PIPELINE_VERSION 12). Tests: `StudioStoreTest` (versions), `ReAnchoringTest` (relocate).
 
-**Real-device checks:** render some studio audio, install the next dev APK over it, open the Studio mode dialog (audio still there); toggle Skip citation numbers while a paper with "[12]" plays, and while paused (continues from the same sentence, highlight right); give a book its own voice, then pick another English voice in Settings → Voices while it plays (toast).
+**Real-device checks (test phone):** render some studio audio, install the next dev APK over it, open the Studio mode dialog (audio still there); toggle Skip citation numbers while a paper with "[12]" plays, and while paused (continues from the same sentence, highlight right); give a book its own voice, then pick another English voice in Settings → Voices while it plays (toast).
 
 ## Options that look like controls (2026-10-23, ADR-062)
 - **Why:** options did not read as controls, and long hints sat under each. 66 option texts were over 70 characters.
 - **What:** one set of option rows (`ui/theme/OptionRows.kt`): titled cards; switch, value-and-choice, slider and link rows; one line under a title at most; longer help behind an ⓘ button (the old hint text, kept). Settings: Listening, Reading and look, App, then Privacy and Advanced as pages (Back returns). Speech sheet: speed, pace, Read to suit the book and This book only on top; What to read, Sound, Cast voices, Study and Focus sound each open their own sheet. Reader ⋮ menu: five one-line actions with icons; all look options in a new Page and text sheet. Sentence, book and library menus: one line each, help behind ⓘ. First run: progress bar, "Free and offline" up front. Empty states shortened.
 - Strings in en, hi and bn: new `strings_options.xml`, 25 unused strings removed. No preference, playback or `:pdf` change (PIPELINE_VERSION 12).
 
-**Real-device checks:** every Settings row toggles from anywhere on the row; ⓘ opens help without toggling; Back from Privacy and Advanced returns to Settings; speech sheet sub-sheets open over it and Back closes only the top one; Page and text in page view shows only the page colour; Hindi and Bengali subtitles fit in two lines; TalkBack reads each switch row as one control.
+**Real-device checks (test phone):** every Settings row toggles from anywhere on the row; ⓘ opens help without toggling; Back from Privacy and Advanced returns to Settings; speech sheet sub-sheets open over it and Back closes only the top one; Page and text in page view shows only the page colour; Hindi and Bengali subtitles fit in two lines; TalkBack reads each switch row as one control.
 ## Studio mode you can see, and a new voice that applies at once (2026-10-23, ADR-063)
 - **Studio progress:** updates after every sentence (not every page) with the page, the speed measured on this phone and an honest time left (to 6 h ready or the book's end, whichever is nearer), and says what that speed means for the voice. Shown from the moment it starts; "measuring" until 20 s of rendering.
 - **Studio mode dialog** (book menu → Studio mode, or Details on the studio card): what it does, live progress, what is ready (length, pages, size), where it is kept and what deletes it, Listen, Save as audio file (`Audiobooks/<title>/Studio audio, pages a-b.m4a`), Delete, Start, Stop, Start now.
@@ -359,7 +452,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Feedback:** "This sounded wrong" now confirms where the report went.
 - No `:pdf` change (PIPELINE_VERSION 12). Tests: `StudioProgressTest`, `StudioRunTest`, `StudioStoreTest`, `StudioPageTest`, `VoiceChoiceTest`.
 
-**Real-device checks:** start studio mode unplugged (waiting card with Start now and the reason), tap Start now (page and "measuring", then a time left within a minute); plug in overnight; open the dialog (numbers move), Save as audio file (opens in Files → Audiobooks), Delete; change the voice in Settings → Voices while a book plays and while paused (next sentence in the new voice).
+**Real-device checks (test phone):** start studio mode unplugged (waiting card with Start now and the reason), tap Start now (page and "measuring", then a time left within a minute); plug in overnight; open the dialog (numbers move), Save as audio file (opens in Files → Audiobooks), Delete; change the voice in Settings → Voices while a book plays and while paused (next sentence in the new voice).
 
 ## Privacy and security: app lock, hide app content, no Android backup (2026-10-23, ADR-061)
 - **Audit:** the only network use is the user-chosen downloads (HTTPS, SHA-256 pinned, GitHub only); no analytics, crash reporting, ads or account; the phone's TTS engine is used only with offline voices. The privacy page wrongly named Hugging Face; fixed. Full table in ADR-061.
@@ -367,7 +460,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Backup:** `data_extraction_rules.xml` turns off Android's device-to-device transfer as well as cloud backup (Android 12+ ignores `allowBackup="false"` for transfers). Back up and restore is the way to move phones.
 - `docs/privacy.html` gains "Your files, your responsibility"; `docs/RELEASING.md` has the Data safety answers. No new dependency; `USE_BIOMETRIC` (normal permission). No `:pdf` change (PIPELINE_VERSION 12). Tests: `AppLockSessionTest`.
 
-**Real-device checks:** turn App lock on (asks first), leave for over 30 s, come back (asks; cancel shows Unlock); rotate (does not ask); play with the app locked (notification controls work); recents shows a blank preview; Hide app content blocks a screenshot; remove the phone's screen lock with App lock on (the app opens, no lockout).
+**Real-device checks (test phone):** turn App lock on (asks first), leave for over 30 s, come back (asks; cancel shows Unlock); rotate (does not ask); play with the app locked (notification controls work); recents shows a blank preview; Hide app content blocks a screenshot; remove the phone's screen lock with App lock on (the app opens, no lockout).
 
 ## The app is called ListenLock (2026-10-23, ADR-060)
 - **What:** the name people see is now ListenLock: the launcher label ("ListenLock Dev" for debug builds), every English, Hindi and Bengali string, the licences screen, README, `docs/index.html`, `docs/privacy.html` and the Play feature graphic (`docs/store/feature-graphic.svg`, PNG re-rendered).
@@ -375,7 +468,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Files:** exports go to `Documents/ListenLock/`; backups are saved as `listenlock-backup-<date>.zip` (old ones still restore).
 - Unchanged: application id `io.github.skm0078.audora`, repository, release file names (Obtainium links), packages, classes, log tags, database and preference names. No `:pdf` change (PIPELINE_VERSION 12). Tests: `VoiceCommandTest`, `KeywordTokensTest`, `ListenLoopTest`.
 
-**Real-device checks:** the launcher, recents and notification show ListenLock; "ListenLock, pause" and "listen lock, next" work with the reader open; a talking book lands in Documents/ListenLock.
+**Real-device checks (test phone):** the launcher, recents and notification show ListenLock; "ListenLock, pause" and "listen lock, next" work with the reader open; a talking book lands in Documents/ListenLock.
 
 ## Acted Hindi voice for studio mode (2026-10-23, ADR-059)
 - **What:** an optional download (Settings → Listening, "Acted Hindi voice (studio mode)", Wi-Fi only, about 2.9 GB in two parts, offered on phones with 8 GB of memory). Once installed, studio mode reads Hindi with Chatterbox Multilingual (Resemble AI, MIT), which acts feelings and dialogue; playback plays that audio and still reads live with the usual Hindi voice. Clips, talking books and exports are unchanged.
@@ -383,14 +476,14 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Measured:** every one of 12 Hindi test lines read right at full precision; every 4- or 8-bit model garbled about a third. About 1.5 s of work per second of audio on CI's ARM runner. Known model limit: some aspirated consonants after a nasal soften (आँधी heard as "आंदी"); respelling does not help.
 - No `:pdf` change (PIPELINE_VERSION 12). Tests: `ChatterboxTokenizerTest`, `ActedTakesTest`, `ActedSpeechEngineTest`, `ActedVoiceModelTest`, `CastSpeechTest`, `StorageRowsTest`.
 
-**Real-device checks:** download on Wi-Fi; a Hindi book in studio mode overnight on the charger (memory, heat, how much renders by morning); the rendered pages play with acting; delete from Settings and Storage.
+**Real-device checks (test phone):** download on Wi-Fi; a Hindi book in studio mode overnight on the charger (memory, heat, how much renders by morning); the rendered pages play with acting; delete from Settings and Storage.
 
 ## Act the quotes, keep the mood, check pronunciation (2026-10-23, ADR-058)
 - **Emotion:** with Rasa, only the quoted words take the line's emotion; "সে অবাক হয়ে বলল" is said plainly around them (`CastSpeech`, `SpeechEngine.actsFeelings`). A sad or scared line carries into the next plain sentence of its paragraph (`SceneMoods`, `QuoteCarry.moodOf`). Other voices read as before.
 - **Pronunciation check:** `scripts/pronunciation_check.py` and `research/pronunciation/` read rule-dense sentences with every voice and transcribe them back. First fix: Piper Hindi garbled ग़, ख़, क़ ("ग़ज़ल" heard as "ओजल"); those voices now get them without the nukta (`VoiceRespellings`).
 - No `:pdf` change (PIPELINE_VERSION 12). Tests: `SceneMoodsTest`, `DeliveryPlannerTest`, `CastSpeechTest`, `QuoteCarryTest`, `VoiceRespellingsTest`. No new dependency.
 
-**Real-device checks:** a Bengali story with dialogue on Rasa (narration around a quote stays calm); a sad paragraph keeps its tone for the next sentence; a Hindi page with "ग़ज़ल" or "क़ानून" on Pratham.
+**Real-device checks (test phone):** a Bengali story with dialogue on Rasa (narration around a quote stays calm); a sad paragraph keeps its tone for the next sentence; a Hindi page with "ग़ज़ल" or "क़ानून" on Pratham.
 
 ## Bengali emotion voices (2026-10-23, ADR-057)
 - **New download:** "Bengali, Rasa expressive (female and male)", 123 MB, CC BY 4.0 (AI4Bharat). Opt-in under All voices; SYSPIN male stays the Bengali pack. Shown in the Play build.
@@ -399,7 +492,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Characters:** with Rasa narrating, characters can use its male speaker (`CastSpeakers`).
 - No `:pdf` change (PIPELINE_VERSION 12). Tests: `StyledTextTest`, `SherpaVoiceManifestTest`, `SherpaModelConfigTest`, `SherpaSpeechEngineTest`, `CastSpeechTest`, `CastSpeakersTest`, `SentenceFeelingsTest`. No new dependency.
 
-**Real-device checks:** download Rasa, pick it for Bengali, play a Bengali story with dialogue (listen for a different colour on shouted, sad and surprised lines, and no click after "?"); turn "Read to suit the book" off (book style only); check render speed keeps up.
+**Real-device checks (test phone):** download Rasa, pick it for Bengali, play a Bengali story with dialogue (listen for a different colour on shouted, sad and surprised lines, and no click after "?"); turn "Read to suit the book" off (book style only); check render speed keeps up.
 
 ## Read each book to suit it, and a simpler Play build (2026-10-23, ADR-056)
 - **What a book is:** the first pages tell a story, children's story, poem, scripture, news, report, textbook or anything else, in English, Hindi and Bengali (`IntentClassifier`, `IntentSignals`, `BookIntent`). Golden excerpts: Moby-Dick reads as a story, the KJV as scripture, the three papers as study, the UDHR and the factsheets as general or report (`IntentLabelsTest`).
@@ -411,7 +504,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Branding:** new amber icon (sound bars over an open book) on paper, the same in themed icons and the splash; store icon and feature graphic in `docs/store/`. The dev build keeps its orange icon.
 - No `:pdf` output change (PIPELINE_VERSION 12, golden and listening unchanged). Tests: `IntentClassifierTest`, `IntentLabelsTest`, `DeliveryConfigTest`, `DeliveryPlannerTest`, `SentenceFeelingsTest`, `OpenEndTest`, `BookIntentTest`, `LanguagePacksTest`, `VoiceShapingTest`. No new dependency. Studio audio made before renders once more.
 
-**Real-device checks:** play a children's story, a Hindi news page and a textbook chapter and open the speech sheet on each (it names the kind); switch "Read to suit the book" off and on over the same page to hear it; find a sentence split across two pages; delete the Hindi voice and open a Hindi book (the reader offers the pack and shows progress).
+**Real-device checks (test phone):** play a children's story, a Hindi news page and a textbook chapter and open the speech sheet on each (it names the kind); switch "Read to suit the book" off and on over the same page to hear it; find a sentence split across two pages; delete the Hindi voice and open a Hindi book (the reader offers the pack and shows progress).
 
 ## Large scanned books never hang the app (2026-10-23, ADR-054)
 - **Root cause:** a scanned page's OCR (up to a minute) ran under the book's lock, and leaving the reader or stopping playback closed the book on the main thread, which waited for that lock: an "isn't responding" dialog. Turned pages queued behind the old pages' OCR, and search OCR'd the whole book.
@@ -419,7 +512,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Feedback:** a page still loading after 3 s says it is being read with OCR and that pages can still be turned (English, Hindi, Bengali).
 - **Guards:** debug builds log a main thread stuck for 2 s with its stack to the shared logs (`StallWatchdog`), plus StrictMode in logcat. Tests: `PdfBookCloseTest`, `RenderedPageOcrStopTest`, `StallWatchdogTest`, and the emulator's `LargeScannedBookTest` on a generated 700-page scanned PDF. No `:pdf` output change (PIPELINE_VERSION 12, golden unchanged).
 
-**Real-device checks:** open the 700-page scanned book, flip quickly through ten pages, open search, leave the reader while a page shows the OCR notice, then play and stop from the notification. Nothing should freeze; Share logs should show no `Main thread stuck` lines.
+**Real-device checks (test phone):** open the 700-page scanned book, flip quickly through ten pages, open search, leave the reader while a page shows the OCR notice, then play and stop from the notification. Nothing should freeze; Share logs should show no `Main thread stuck` lines.
 ## Final polish before the Play release (2026-10-23)
 - **Four UI gaps closed:** the backup dialog has a Close button; every voice that can speak has a play/stop sample on the Voices screen and on first run (one line in the voice's own language, with the listener's speed and style, outside the book player; `VoiceSampler`, `QuizSpeaker.speakFor`); a one-time card above the reader's controls names the two long-press gestures; the Notes tab lists highlights and voice notes next to bookmarks, in reading order, and a tap opens each place (`NoteEntry`, `ReaderModel.goToPlace`).
 - **Persona review (code and strings, no device):** a TalkBack listener, a first-time Bengali user, a crash hunter and an exam student walked the flows. Fixed from it:
@@ -439,7 +532,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Speed:** a voice can set its own ONNX Runtime thread count (`threads` in `models.json`, read into `SherpaVoiceSpec.threads`). The SYSPIN voices use 4, giving a desktop RTF of 0.22 against 0.39 at 2. Every other voice keeps `SpeechConfig.sherpaThreads`.
 - **Tests:** `SherpaVoiceManifestTest` (thread count read, 0 rejected) and `SherpaModelConfigTest` (the voice's count wins). The voice mirror script built both zips against their pins. ktlint and detekt are clean on the changed files.
 
-**Real-device checks:** download "Bengali, SYSPIN male" and pick it under Bengali, then play a Bengali PDF for 5 minutes. Check that there are no gaps between sentences and that the Voices screen does not mark it "Too slow on this phone". Listen to the female voice too, and say which reads better; `recommended` changes in one line.
+**Real-device checks (test phone):** download "Bengali, SYSPIN male" and pick it under Bengali, then play a Bengali PDF for 5 minutes. Check that there are no gaps between sentences and that the Voices screen does not mark it "Too slow on this phone". Listen to the female voice too, and say which reads better; `recommended` changes in one line.
 
 ## Worn print on scanned Bengali and Hindi books (2026-10-22)
 - **Softened second read:** a scanned page that reads unsure (mean confidence under 88) and is almost wholly black and white (most Bengali and Hindi books online) is read again with each pixel averaged with its neighbours, twice; the softened read is kept only when it reads clearly surer, holds as many words and more confidence over all its characters. Grey photos and clean pages are never touched (`WornPrintConfig`, `WornPrint`).
@@ -534,7 +627,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Backup and restore (28):** *Back up and restore* in the library's ⋮ menu saves one zip wherever the listener chooses: a `VACUUM INTO` snapshot of every Room table (schema 4), the reading, Up next, speech-style, sleep and look settings, voice speeds, voice notes and books shared into the app. *Restore* (after a warning) unpacks a picked backup into a staging folder, refusing foreign, newer or oversized files and any entry outside the allow-list, checks its database (version, integrity, Room's schema hash) and free space, then restarts the app, which puts it in place by renames before the database opens; a failure or a crash part-way rolls everything back once and says so. Refused while an export, copy, clip or studio run is going; the dialog shows the backup's size and survives turning the phone. Voices, the dictionary and the first-run flag are left out, so a new phone still downloads voices; books from the phone's storage relink when the same file is added again, and watched folders come back asking to be picked again (`BackupArchive`, `BackupContents`, `PendingRestore`, `Backups`; ADR-046).
 - Tests: `BackupArchiveTest`, `PendingRestoreTest`, `DictionaryTest`, `IndicDictionaryTest`, `DictionaryDownloadTest`, `test_build_dictionary.py`, `WatchedFoldersTest`, `QuoteExportTest`, `BookNotesTest`, `SearchTermsTest`, `BookSearchTest`, `DocumentFormatTest`, `ImagePdfTest`, `MarkupScannerTest`, `EpubParserTest`, `PlainTextParserTest`, `TextBookTextTest`, plus `BookFingerprinterTest`, `BookTitlesTest`, `LibraryTest` updates; the Room migration device test covers v3 to v4. No new dependency; no `:pdf` change.
 
-**Real-device checks (final phone session):** highlight and export notes for a book, open the `.md`; search a 300-page text PDF and a scanned Hindi book (time to build, MB in the index); record, play and delete a voice note, deny the microphone once; open a Project Gutenberg EPUB 3, an EPUB 2 and a Hindi `.txt` from Files, check chapters and resume; share selected text from Chrome and from WhatsApp; share a bare link and see the message; point and read a printed English page and a Hindi notice (OCR time, book size), cancel the camera once, turn the phone while the photo becomes a book (it still opens). Watch a folder inside Download and a Telegram folder, drop a PDF in, reopen the library (book joins, toast); trash a book in Files (not re-added); rotate the phone (no rescan); remove the book (not added back); remove the folder (its books still open); try a Drive folder. Download the dictionary (time, MB), look up "running", "mice", "café"; download the Hindi and Bengali dictionaries (time, MB) and look up an inflected Hindi word (कुत्ते), a nukta word (क़िताब) and a Bengali word; delete nothing else while it downloads. Save a backup to Drive, clear the app's storage (or use the OnePlus), restore it: library, positions, bookmarks, highlights, voice notes, Up next and settings are back, first run still asks for voices, a picked book relinks when added again; try restoring a random zip and a photo (refused); start a restore while saving an audiobook (refused); turn the phone while a backup saves.
+**Real-device checks (final phone session):** highlight and export notes for a book, open the `.md`; search a 300-page text PDF and a scanned Hindi book (time to build, MB in the index); record, play and delete a voice note, deny the microphone once; open a Project Gutenberg EPUB 3, an EPUB 2 and a Hindi `.txt` from Files, check chapters and resume; share selected text from Chrome and from WhatsApp; share a bare link and see the message; point and read a printed English page and a Hindi notice (OCR time, book size), cancel the camera once, turn the phone while the photo becomes a book (it still opens). Watch a folder inside Download and a Telegram folder, drop a PDF in, reopen the library (book joins, toast); trash a book in Files (not re-added); rotate the phone (no rescan); remove the book (not added back); remove the folder (its books still open); try a Drive folder. Download the dictionary (time, MB), look up "running", "mice", "café"; download the Hindi and Bengali dictionaries (time, MB) and look up an inflected Hindi word (कुत्ते), a nukta word (क़िताब) and a Bengali word; delete nothing else while it downloads. Save a backup to Drive, clear the app's storage (or use the second test phone), restore it: library, positions, bookmarks, highlights, voice notes, Up next and settings are back, first run still asks for voices, a picked book relinks when added again; try restoring a random zip and a photo (refused); start a restore while saving an audiobook (refused); turn the phone while a backup saves.
 
 ## Studio mode and exports (plan items 6, 41, 69, 76; 2026-10-17, ADR-039, ADR-040)
 - **Studio mode (6):** *Prepare in studio mode* in a book's menu renders the book from its resume page, 6 listening hours ahead, while the phone charges (`StudioService`, `ChargingGate`). Unplugged it waits with the wake lock released and offers *Start now* on battery; it pauses while any audio plays. It renders with exactly playback's voices, style, book settings, fixes and reading modes; playback (`StudioSentenceRenderer`) plays a sentence's studio clip when its signature and text match and renders live otherwise. Stored losslessly (`LosslessPcm`, FLAC-style fixed prediction and Rice codes, pure Kotlin) per page with a checksum; old pages, old signatures and removed books are deleted; 2 GiB in all; stops below 512 MiB free (`StudioConfig`).
@@ -544,7 +637,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Save as audiobook goes on and replaces (ADR-034 §9):** a stopped export (Cancel, Android's 6-hour limit with a new *Continue*, a crash) renders only the chapters not saved yet the next time; saving again with another voice, style or title, or saving a finished one again, deletes the earlier files first, so no "(1)" copies (`ExportRecords`, `ExportSession`). *Save as audiobook* in the reader's ⋮ menu saves a password-protected PDF too, its password handed over in memory only (`PasswordHandoff`, one minute, taken once). The wake lock is renewed per page. The talking book's and the export's *Continue* now use their own notification request codes, so an "open Audora" tap elsewhere can no longer rewrite them.
 - Tests: `LosslessPcmTest`, `StudioPageTest`, `StudioStoreTest`, `StudioRunTest`, `StudioSentenceRendererTest`, `ClipMakerTest`, `DocumentBuilderTest`, `EpubWriterTest`, `PlainTextCopyTest`, `OverlayRecorderTest`, `BookPagesTest`, `ExportSessionTest`, `ExportProgressTest`, `PasswordHandoffTest`. No new dependency; no `:pdf` change.
 
-**Real-device checks (final phone session):** start studio mode on a Kokoro book unplugged (notification waits, *Start now* renders), plug in (it resumes), play a song (it pauses); after a run, the first sentence plays at once and the log shows `Studio.Play`; change the speed and confirm it renders live; measure render time and MB per ready hour on the Moto. Share a clip to WhatsApp from the reader (audio plays there, text quote attached). Save an accessible copy of a scanned Hindi PDF and open the EPUB in an ebook reader with TalkBack and the `.txt` in a file viewer. Save a talking book and open it in Thorium or Voice Dream: sentences highlight in sync with the audio, page list and contents work. Save a 100-page book as an audiobook, cancel after two chapters, save again (only the rest renders, no "(1)" files in Audiobooks/); change the voice and save again (old files gone); save a password-protected PDF from the reader.
+**Real-device checks (final phone session):** start studio mode on a Kokoro book unplugged (notification waits, *Start now* renders), plug in (it resumes), play a song (it pauses); after a run, the first sentence plays at once and the log shows `Studio.Play`; change the speed and confirm it renders live; measure render time and MB per ready hour on the test phone. Share a clip to WhatsApp from the reader (audio plays there, text quote attached). Save an accessible copy of a scanned Hindi PDF and open the EPUB in an ebook reader with TalkBack and the `.txt` in a file viewer. Save a talking book and open it in Thorium or Voice Dream: sentences highlight in sync with the audio, page list and contents work. Save a 100-page book as an audiobook, cancel after two chapters, save again (only the rest renders, no "(1)" files in Audiobooks/); change the voice and save again (old files gone); save a password-protected PDF from the reader.
 
 ## UI wave 5 — predictive back, cover into the player, large screens, edge to edge, accessibility (UI plan Look and feel, targetSdk 36 pass; 2026-10-17, ADR-036 consequences)
 - **Predictive back:** a back swipe on the reader, player and Settings pages shrinks the screen and shows where back leads; letting go finishes, cancelling springs back (`AnimatedScreens`). Every screen change animates.
@@ -559,7 +652,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Second review:** Settings and the book screen log a failing OCR, punctuation or voice list instead of crashing (`loggingFailures`); every screen change sets its z-index from depth, so back stays a shrink however deep; the rail reads the window's full width (Android 12-14 included); the reader's word highlight redraws only the spoken row; a continued table's empty summary is skipped by "What did it say?" and the reader's highlight, and lists key on the unit index; "1 page" is a plural. Device tests for the back preview (cancel and finish) and for the screen-on and volume-key hand-over between two book screens (`WindowEffectsTest`).
 - **Compose UI tests on the CI emulator** (`:app:connectedUiTestAndroidTest`, Compose's own ui-test from the BOM; a `uiTest` build type adds x86_64 for the emulator, debug and release stay arm64-only): library → reader → player and back with the system back button, one book's reader and player staying one screen, Settings → Storage → Voices and back (`ScreenFlowTest`); Storage sizes, failures, Delete asking first and Clear not (`StorageScreenTest`); first-run Next, back, Skip and Not now (`FirstRunScreenTest`); bottom bar on a phone, rail from 600 dp, neither in kids mode (`AppShellTest`).
 
-**Real-device checks (final phone session):** back-swipe slowly from the full player, reader and Voices, once cancelled and once finished; open the full player from the mini player and watch the cover; turn the Moto to landscape on the library (rail), player (two panes) and reader (cutout side clear); TalkBack through a running paragraph, the player and Storage; system font at 200 % through first run in Hindi and Bengali.
+**Real-device checks (final phone session):** back-swipe slowly from the full player, reader and Voices, once cancelled and once finished; open the full player from the mini player and watch the cover; turn the test phone to landscape on the library (rail), player (two panes) and reader (cutout side clear); TalkBack through a running paragraph, the player and Storage; system font at 200 % through first run in Hindi and Bengali.
 
 ## UI wave 4 — swipe-up player, Notes filter, chapter marks, book details, first run, storage (UI plan screens; 2026-10-17, ADR-036 consequences)
 - **Mini player:** swipe up (or tap) opens the full player.
@@ -727,7 +820,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Review fixes:** other apps connected to the media session can no longer list the library, play from it or swap the book (Android Auto, cars, System UI and Assistant still can); "Undo jump" never lands outside the open book and a book switch doesn't record a jump; a book's own voice that was deleted falls back to the reading voice; car browsing pages past the end are empty, and a failed car or app command is answered instead of left waiting; a book counts as finished (Up next moves on) only when it ends while playing; Up next is synced to storage before it replaces the old file. Earlier the same day: the saved speed survives a cold start, equations are spoken without prosody, symbols and bracket labels are kept whole at clause cuts, "km/h" reads "per".
 - Tests: `ReplaySpeedTest`, `UrlTextTest`, `BrowsePagesTest`, `ReaderResumeTest`, `ReaderNavigationTest`.
 
-**Real-device checks (final phone session):** replay at 1.5× and at 0.8×, then lock the phone mid-replay and check the speed after; add a book to Up next on an Android 12 phone if one is at hand (the Moto runs a newer Android); from another media app, check it can pause Audora but not browse it.
+**Real-device checks (final phone session):** replay at 1.5× and at 0.8×, then lock the phone mid-replay and check the speed after; add a book to Up next on an Android 12 phone if one is at hand (the test phone runs a newer Android); from another media app, check it can pause Audora but not browse it.
 
 ## Maths read aloud (plan item 66; 2026-10-17)
 - With equations set to be read as written, an equation is now read the way a teacher reads it: "x² + y² = z²" is "x squared plus y squared equals z squared", "x^{n+1}" "x to the power n plus one", "a_{n-1}" "a sub n minus one", "√(x+1)" "the square root of x plus one", "(a+b)/(c+d)" "the fraction a plus b over c plus d", "d²y/dx²" "d squared y by d x squared", "∂f/∂x" "partial f by partial x", "|x − 3|" "the absolute value of x minus three", "n!" "n factorial", "sin²x" "sine squared x", "ln(xy)" "natural log of x y", "lim x→0" "the limit as x approaches zero", "f′(x)" "f prime of x", "½" "one half", "…" "and so on". Letters run together ("xy", "dx") are read as letters, and a one-letter group "(x)" is the letter, never the roman numeral ten. Hindi and Bengali use their own words for the structure ("x का वर्ग", "x এর বর্গ") and their own word for "/".
@@ -774,7 +867,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 ## Expressiveness slider (plan item 8; 2026-10-17)
 - The speech sheet's sound section gains **Expressiveness**, a five-step slider from **Newsreader** (flat, even delivery) to **Storyteller** (livelier pitch, energy and timing). The middle step, the default, is the voices' own delivery, so nothing changes until it is moved.
-- How: Piper's `noise_scale` and `noise_w`, the two values calibre's Piper settings tune, set when a Piper or MMS voice loads (0.33/0.4 up to 0.9/1.05; the middle is the voices' 0.667/0.8; `VoiceShapingConfig`). Saved with the voice shaping, so it reaches playback and audiobook export alike; the change applies when the thumb is let go and restarts the sentence playing, which reloads the voice once (about a second on the Moto). Kokoro, Kitten, Supertonic and the phone's own voices have no such values and sound the same at every step.
+- How: Piper's `noise_scale` and `noise_w`, the two values calibre's Piper settings tune, set when a Piper or MMS voice loads (0.33/0.4 up to 0.9/1.05; the middle is the voices' 0.667/0.8; `VoiceShapingConfig`). Saved with the voice shaping, so it reaches playback and audiobook export alike; the change applies when the thumb is let go and restarts the sentence playing, which reloads the voice once (about a second on the test phone). Kokoro, Kitten, Supertonic and the phone's own voices have no such values and sound the same at every step.
 - Tests: `VoiceShapingConfigTest`, `VoiceShapingTest`, `SherpaSpeechEngineTest` (a new step reloads the voice once), `SherpaModelConfigTest`.
 
 **Real-device checks (final phone session):** an English and a Hindi Piper page at Newsreader, the middle and Storyteller; the reload pause when it changes; Storyteller must not slur.
@@ -811,7 +904,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - Tests: `RunOnPunctuationTest`, `PunctuationDownloadTest` (pins match models.json, safe unpack, resume, give-up), `ReadingSetupTest`, the mirror script's tarball and `models` tests. Golden and listening scores unchanged (no `:pdf` change; the listening corpus is born-digital, so the model never runs there). No new dependency (sherpa-onnx already ships the API).
 - **Gaps:** English only (no Hindi or Bengali punctuation model exists offline in sherpa-onnx); a danda or full stop from a scanned line end is the PDF pipeline's to restore, not this model's.
 
-**Real-device checks (final phone session):** download the model from Settings and delete it; a scanned English page with no full stops (e.g. a photocopied notice) sounds less breathless with the model and unchanged without; a punctuated scan and a normal PDF sound the same either way; render speed on the Moto stays ahead of playback on a dense scanned page.
+**Real-device checks (final phone session):** download the model from Settings and delete it; a scanned English page with no full stops (e.g. a photocopied notice) sounds less breathless with the model and unchanged without; a punctuated scan and a normal PDF sound the same either way; render speed on the test phone stays ahead of playback on a dense scanned page.
 
 ## Convenience pack — chapters, time left, undo jump, sleep extras, sound, bookmarks, per-book settings, fixes, library search, covers, Up next, screen on (plan items 1, 4, 9, 10, 11, 21, 22, 24, 25, 29, 37, 78; 2026-10-17)
 - **Chapter list (11):** a top-bar button opens the PDF outline (three levels) with the current chapter marked; a row reads from there while reading, else shows the page. A PDF without an outline has no list yet (see gaps).
@@ -830,7 +923,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - Tests: `ReaderChaptersTest`/`ReaderNavigationTest`, `ChapterListTest`, `TimeLeftTest`, `JumpHistoryTest`, `SleepOptionsTest`, `ShakeDetectorTest`, `SleepTimerTest`, `SleepMenuTest`, `VoiceShaperTest`, `VoiceShapingTest`, `ShapedRenderTest`, `BookSettingsTest`, `PronunciationFixerTest`, `BookNotesTest`, `LibraryQueryTest`, `UpNextQueueTest`, `QueueAdvanceTest`, `InMemoryUpNextTest`, the migration device test. Golden and listening scores unchanged (no `:pdf` change). No new dependency.
 - **Gaps:** no chapter list for a PDF without an outline (building one from detected headings means reading every page once in the background, about a page extraction per page and OCR for scans, cached per book); per-book "what to read" modes (RI-10's book kind can pick them) are not in yet.
 
-**Real-device checks (final phone session):** chapter list on a book with an outline, time left against a stopwatch over 10 minutes; tap a far sentence then Undo jump; a 5-minute timer with fade-out, shake in bed to extend, bedtime auto-on, stop after 2 chapters; a Hindi–English book with even loudness on and off, boost +9 dB on the Moto speaker (no crackle), pause trim with each voice; bookmark with a note, close the app, reopen and jump to it; per-book speed on one book while another keeps the global; fix "US" in one book and every book and hear it; search a Bengali title, sort and filter; covers on a long library (scrolling stays smooth) and a password PDF; screen stays on while reading and times out when paused; queue two books, let the first end (a short PDF) and hear the second start where it was left, then queue a chapter; turn "Keep going to the next chapter" off and check it pauses at the chapter end.
+**Real-device checks (final phone session):** chapter list on a book with an outline, time left against a stopwatch over 10 minutes; tap a far sentence then Undo jump; a 5-minute timer with fade-out, shake in bed to extend, bedtime auto-on, stop after 2 chapters; a Hindi–English book with even loudness on and off, boost +9 dB on the test phone speaker (no crackle), pause trim with each voice; bookmark with a note, close the app, reopen and jump to it; per-book speed on one book while another keeps the global; fix "US" in one book and every book and hear it; search a Bengali title, sort and filter; covers on a long library (scrolling stays smooth) and a password PDF; screen stays on while reading and times out when paused; queue two books, let the first end (a short PDF) and hear the second start where it was left, then queue a chapter; turn "Keep going to the next chapter" off and check it pauses at the chapter end.
 
 ## Reading intelligence in playback — what to read, and saying when it sounded wrong (RI-2b, RI-4b, RI-5b, RI-7b, RI-8b, RI-9; 2026-10-17, ADR-035)
 - **"What to read" in the speech sheet**, saved with the speech style (`ReadingModes`, one setting for all books for now): *Skip unreadable text* (on), *Tables* size only / row by row / skip, *Footnotes* end of page / skip, *Equations* announce / as written / skip, *Figure captions* announce / skip. `UnitReading` (`:playback`) is the one place the modes apply, used alike by the playlist, the renderer, the audiobook export and the listening score.
@@ -939,7 +1032,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known limits:** the pause lengths are first guesses, untuned by ear. Each piece ends with the voice's own short silence, so a sentence with many marks runs a little longer. Some voices may sound slightly different at a cut than mid-sentence; that is what the switch is for.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the other phone checks):** (1) The launcher shows "Audora Dev" with an orange icon next to the release "Audora". (2) Play a paragraph with a dash, a colon and a bracket at 1× and 2×, with "Pause at punctuation" on and then off: the marks are audible as pauses when on, the bracket a little quieter, and on sounds better (if not, say so and it goes). (3) Play a Hindi sentence with "हाँ/नहीं" and a bilingual sentence with "(UN रिपोर्ट)": the slash reads "या", and the bracket keeps the Hindi voice.
+**Real-device checks (test phone, dev build; batch with the other phone checks):** (1) The launcher shows "Audora Dev" with an orange icon next to the release "Audora". (2) Play a paragraph with a dash, a colon and a bracket at 1× and 2×, with "Pause at punctuation" on and then off: the marks are audible as pauses when on, the bracket a little quieter, and on sounds better (if not, say so and it goes). (3) Play a Hindi sentence with "हाँ/नहीं" and a bilingual sentence with "(UN रिपोर्ट)": the slash reads "या", and the bracket keeps the Hindi voice.
 
 ## Audiobook export — "Save as audiobook", one AAC file per chapter (2026-10-17, ADR-034)
 - **Save as audiobook** in a book's menu in the library renders the whole book offline into `Audiobooks/<title>/NN Pages a-b.m4a`, one file per outline chapter (front matter kept as its own file; 10-page parts when the PDF has no outline). Any audiobook app (Voice, Smart AudioBook Player) or the phone's music app plays the folder as a book with chapters.
@@ -948,9 +1041,9 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - `PIPELINE_VERSION` unchanged. Room unchanged. New permissions: foreground service types dataSync (Android 12-14) and mediaProcessing (15+) only.
 - Tests: chapter plan, folder names, exporter failure and cancel rules, progress steps (JVM); on the CI emulator, the platform encoder writes AAC at the voice's rate and length, an aborted chapter leaves no file, and the bilingual PDF becomes one playable file per chapter.
 
-**Known limits:** password-protected PDFs are not exported yet. Saving the same book again adds a second set of files beside the first (Android numbers them); delete the old folder first. File names use page numbers, not chapter titles. Exporting while listening loads a second copy of the voice. Android 15+ stops this kind of job after 6 hours a day, which is long enough for most books with Piper voices, but not with Kokoro on the Moto.
+**Known limits:** password-protected PDFs are not exported yet. Saving the same book again adds a second set of files beside the first (Android numbers them); delete the old folder first. File names use page numbers, not chapter titles. Exporting while listening loads a second copy of the voice. Android 15+ stops this kind of job after 6 hours a day, which is long enough for most books with Piper voices, but not with Kokoro on the test phone.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the other phone checks):** (1) Library → a book's ⋮ → Save as audiobook: a notification shows the chapter and percent; turn the screen off for 5 min, and the percent has moved on. (2) When it finishes, open Files → Audiobooks → the book's folder: the files are in reading order and play in the phone's music or audiobook app with the app's voice and pauses. (3) Start another export and tap Cancel: the notification says it stopped, and the finished chapters remain. (4) Start an export while a book is playing: playback keeps going without stutter (watch memory with the Kokoro voice).
+**Real-device checks (test phone, dev build; batch with the other phone checks):** (1) Library → a book's ⋮ → Save as audiobook: a notification shows the chapter and percent; turn the screen off for 5 min, and the percent has moved on. (2) When it finishes, open Files → Audiobooks → the book's folder: the files are in reading order and play in the phone's music or audiobook app with the app's voice and pauses. (3) Start another export and tap Cancel: the notification says it stopped, and the finished chapters remain. (4) Start an export while a book is playing: playback keeps going without stutter (watch memory with the Kokoro voice).
 
 ## App basics — speed, pace, library progress, Open with Audora, rewind on resume (2026-10-16, ADR-033)
 - **Speed without smeared words:** the voice model now speaks at the chosen rate itself (Piper/VITS, Kokoro, Kitten, Supertonic, and the phone's engine through `setSpeechRate`) up to 1.5×; only the rest above that is time-stretched. 0.5×–3× in 0.05 steps.
@@ -964,7 +1057,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known limits:** the 1.5× model cap and the pace timings are first guesses from published listening tests, not tuned by ear per voice. A speed change has a short gap while the sentence restarts. Progress counts pages, not words.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the other phone checks):** (1) With the English default voice, play a page at 0.75×, 1×, 1.5× and 2.5× from the speed sheet: words stay clear at each, and 2.5× is only slightly smeared. (2) Switch pace Short → Long mid-page: the pauses after sentences and paragraphs change audibly. (3) Set 1.25× and Long, force-stop, play from the lock screen notification: the same speed and pace. (4) Read a few pages of two books, go back to the library: each shows "Page x of y", the Continue reading card names the last one, and Continue plays from where it stopped; the mini player shows the page and pauses/plays. (5) From Files, tap a PDF and pick Audora; from Gmail or WhatsApp, share a PDF to Audora: the book is added and opens; force-stop and reopen it later: it is still readable. (6) Pause for 30 s and play: the sentence restarts from its first word; pause 6 min and play: the previous sentence plays first.
+**Real-device checks (test phone, dev build; batch with the other phone checks):** (1) With the English default voice, play a page at 0.75×, 1×, 1.5× and 2.5× from the speed sheet: words stay clear at each, and 2.5× is only slightly smeared. (2) Switch pace Short → Long mid-page: the pauses after sentences and paragraphs change audibly. (3) Set 1.25× and Long, force-stop, play from the lock screen notification: the same speed and pace. (4) Read a few pages of two books, go back to the library: each shows "Page x of y", the Continue reading card names the last one, and Continue plays from where it stopped; the mini player shows the page and pauses/plays. (5) From Files, tap a PDF and pick Audora; from Gmail or WhatsApp, share a PDF to Audora: the book is added and opens; force-stop and reopen it later: it is still readable. (6) Pause for 30 s and play: the sentence restarts from its first word; pause 6 min and play: the previous sentence plays first.
 
 ## Known gaps after Phase 4 — scanned pages, legacy fonts, premium voices, citation switch (2026-10-16)
 - **Scanned pages (P3-05, ADR-032):** OCR now keeps each word's position. OCR'd sentences are highlighted on the page like any other. A sideways or upside-down scan (low OCR confidence) is probed in all four turns and read the right way up. Running headers, footers and page numbers are dropped by comparing the page's top and bottom lines with strips read from the two pages on each side (cached; about 0.4 of a page of extra OCR per page). Cached OCR from earlier builds is read again once.
@@ -976,7 +1069,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known limits:** a header that changes on every page, or that OCR misreads on most pages, is still read. On a sideways scan the highlight is a box per word, not per line. Each scanned page costs a little extra OCR for its neighbours' strips. The citation switch applies when a book is opened, not to the page already showing.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the other phone checks):** (1) Open `test-pdfs/scanned/hi-scan-up-revenue-board-letter.pdf` and `en-scan-1867-chicmedexam-imageonly.pdf` and play two pages of each: the header and page number are not read, the spoken sentence is highlighted on the page, and Share logs shows "OCR page" lines without errors. (2) Open a scanned page turned sideways (rotate a scan by 90° in any PDF tool): it reads as text, not noise, and the log has an "OCR orientation check" line. (3) Open `test-pdfs/legacy-fonts/hi-legacy-chanakya-devlys-raj-sanskrit-paper.pdf`: "सिद्धिकार्यं" is read correctly, and page 1's sideways table is not read as jumbled letters. (4) With Supertonic Hindi, play `hi-udhr-noto.pdf` screen-off at 1× for a minute, switch to 2× mid-sentence and play 10 more minutes: no gaps after the switch. (5) With Kokoro (English) and Supertonic (Hindi) both picked, play page 1 of `enhi-udhr-bilingual.pdf`, then Share logs: one "Loaded voice=" line per voice and no "least recently used" unloads while the languages alternate. (6) Open a paper with "[12]" citations, turn off Settings → "Skip citation numbers", reopen it and play: the markers are read and the highlight stays on the spoken sentence; turn it back on and reopen: they are skipped.
+**Real-device checks (test phone, dev build; batch with the other phone checks):** (1) Open `test-pdfs/scanned/hi-scan-up-revenue-board-letter.pdf` and `en-scan-1867-chicmedexam-imageonly.pdf` and play two pages of each: the header and page number are not read, the spoken sentence is highlighted on the page, and Share logs shows "OCR page" lines without errors. (2) Open a scanned page turned sideways (rotate a scan by 90° in any PDF tool): it reads as text, not noise, and the log has an "OCR orientation check" line. (3) Open `test-pdfs/legacy-fonts/hi-legacy-chanakya-devlys-raj-sanskrit-paper.pdf`: "सिद्धिकार्यं" is read correctly, and page 1's sideways table is not read as jumbled letters. (4) With Supertonic Hindi, play `hi-udhr-noto.pdf` screen-off at 1× for a minute, switch to 2× mid-sentence and play 10 more minutes: no gaps after the switch. (5) With Kokoro (English) and Supertonic (Hindi) both picked, play page 1 of `enhi-udhr-bilingual.pdf`, then Share logs: one "Loaded voice=" line per voice and no "least recently used" unloads while the languages alternate. (6) Open a paper with "[12]" citations, turn off Settings → "Skip citation numbers", reopen it and play: the markers are read and the highlight stays on the spoken sentence; turn it back on and reopen: they are skipped.
 
 ## P5-02 — Developer verification readiness (2026-10-16)
 - **Done (by the maintainer, in the Android Developer Console):** free limited distribution account (Personal; no fee, no ID). Package `io.github.skm0078.audora` registered with the release certificate `A4:A5:58:…:F8:EA`: status *Registered*, key *Verified*. This meets the ticket's done-when ahead of India's enforcement.
@@ -986,14 +1079,14 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known limits:** past 20 phones, Audora needs the paid account or each extra friend uses Android's advanced flow. The dev build's package is not registered.
 
-**Real-device check (batch with the v0.1.0 checks):** the Moto shows up under **Devices** after the link-and-code handshake; once enforcement reaches India, check that a release installs and updates on an authorized phone.
+**Real-device check (batch with the v0.1.0 checks):** the test phone shows up under **Devices** after the link-and-code handshake; once enforcement reaches India, check that a release installs and updates on an authorized phone.
 
 ## ADR-031 — One signing key for dev builds (2026-10-16)
 - **Problem (confirmed):** every CI run signed the debug APK with a key made in that run (the published `dev-build` APK's certificate dates from 2026-10-15 22:06:38 UTC, inside the run that published it). A newer dev build could not install over an older one, so each test install meant uninstalling and losing the library and reading positions.
 - **Change:** `android.yml` restores a fixed debug keystore from the repository secret `AUDORA_DEBUG_KEYSTORE_B64` before building, and checks that the debug APK carries that key's certificate. Without the secret nothing changes (throwaway key, as before), so this commit is safe to merge before the secret exists. One secret only: the keystore password is Android's public debug convention (`android`). ADR-031; how to add or replace it in `docs/RELEASING.md`; README's test-build note updated.
 - Release signing, `release.yml` and the release key are untouched.
 
-**Check after the secret is added:** the next dev CI run logs the same SHA-256 on its "Dev key certificate" and "Debug APK signing certificate" lines. On the Moto, uninstall the old dev build once, install the new one, then install the next one over it: the library stays.
+**Check after the secret is added:** the next dev CI run logs the same SHA-256 on its "Dev key certificate" and "Debug APK signing certificate" lines. On the test phone, uninstall the old dev build once, install the new one, then install the next one over it: the library stays.
 
 ## P5-01 — README for friends, Obtainium setup, Play Protect note (2026-10-16)
 - **README rewritten for friends:** what Audora does, what phone it needs, installing with Obtainium (get Obtainium, allow installs from a source, add `https://github.com/skm0078/audora`, install, update), installing without Obtainium, the Play Protect prompts and what to tap, the permissions Audora asks for and the release key's SHA-256, a first-run walk-through (add a PDF, background-reading setup, voices, OCR files) and what to do when something goes wrong (Share logs). Contributor notes moved to the end.
@@ -1012,9 +1105,9 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Settings → Voices & licences:** every voice (built in, downloadable whether downloaded or not, imported) with its licence, credit (who made it, the data, what was changed) and links to the licence and the source; an installed voice also shows the `LICENSE` / `MODEL_CARD` / `README.md` files it carries. Then the phone's voice and the speech/OCR software (sherpa-onnx, ONNX Runtime, eSpeak NG, Tesseract, Audora). Credits are new required fields in `models.json` and `bundled-voices.json`, checked by the build.
 - Tests: 13 new JVM tests (licence list order and credits, licence files with a size cap, catalog credits and `recommended`, first-download choice, recommended sort, the screen's controller) and 3 mirror-script tests (zip sources give the same bytes as tarballs, every voice credited, recommendations name a voice of their language). Locally: 72 JVM tests (core + speech voices + the controller) in a harness, ktlint and detekt clean, mirror tests green; the Android build and device tests run in CI only.
 
-**Known limits:** Supertonic's OpenRAIL-M licence text is still not inside its zip (Hugging Face is unreachable from the agent workspace); the screen links to it and states the use restrictions. Choosing "Phone's voice" is stored as no choice, so the first Hindi or Bengali download afterwards takes over. MMS may measure too slow on the Moto; P4-02's label covers it. Bengali reads with speaker 0 of 16, the one S1 measured.
+**Known limits:** Supertonic's OpenRAIL-M licence text is still not inside its zip (Hugging Face is unreachable from the agent workspace); the screen links to it and states the use restrictions. Choosing "Phone's voice" is stored as no choice, so the first Hindi or Bengali download afterwards takes over. MMS may measure too slow on the test phone; P4-02's label covers it. Bengali reads with speaker 0 of 16, the one S1 measured.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the S1/S3 phone run):** (1) **Listening (replaces S0):** in Settings → Voices download pratham, priyamvada and Supertonic; play page 1 of `test-pdfs/generated/hi-udhr-noto.pdf` with each and with the phone's voice; do the same for Bengali (`bn-udhr-noto.pdf`) with Piper google, MMS and the phone's voice. Note the best per language in `research/notes/S0-listening.md`; if it is not pratham / Piper google, `recommended` changes. (2) On a fresh install, download "Bengali, Piper google" only: the Bengali PDF now reads with it without picking it. (3) Settings → Voices & licences: every voice is listed; Licence and Source open the browser; Files on a downloaded voice shows its MODEL_CARD.
+**Real-device checks (test phone, dev build; batch with the S1/S3 phone run):** (1) **Listening (replaces S0):** in Settings → Voices download pratham, priyamvada and Supertonic; play page 1 of `test-pdfs/generated/hi-udhr-noto.pdf` with each and with the phone's voice; do the same for Bengali (`bn-udhr-noto.pdf`) with Piper google, MMS and the phone's voice. Note the best per language in `research/notes/S0-listening.md`; if it is not pratham / Piper google, `recommended` changes. (2) On a fresh install, download "Bengali, Piper google" only: the Bengali PDF now reads with it without picking it. (3) Settings → Voices & licences: every voice is listed; Licence and Source open the browser; Files on a downloaded voice shows its MODEL_CARD.
 
 ## P2-04 part 2 — Numbers read aloud in playback, and pauses (2026-10-16)
 - **The English normalizer from part 1 now runs on every English sentence** (and English part of a mixed sentence) right before the voice, next to P3-02's Hindi and Bengali ones (`speechNormalizers()` in `RoutedSpeech`). "₹1,50,000" is heard as "one lakh fifty thousand rupees", "15/08/1947" as "fifteenth August nineteen forty-seven", "Dr." as "Doctor". The page text, highlight and resume are unchanged (ADR-019). Sentences in a heading are read as headings, so "IV. Results" says "four".
@@ -1025,7 +1118,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known limits:** pause lengths are the spec's numbers, not yet tuned by ear. A list without hanging indents and without a gap after it can run into the next body line (only the pause lands later). Hindi dates like "15-08-1947" still read digit by digit (P3-02).
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the other phone checks):** (1) Open `test-pdfs/english/en-textbook-forallx-yyc-logic.pdf` at a page with a section heading and a list: a clear pause after the heading, a shorter one after each list item, and the items are not run together. (2) Play a page with amounts, dates or "Dr."/"Fig." (e.g. `test-pdfs/english/en-2col-physimaging-radonc-ccby.pdf` page 1): they are read as words while the page shows the digits. (3) Say whether the 600/400/300 ms pauses sound natural or too long with the bundled voice.
+**Real-device checks (test phone, dev build; batch with the other phone checks):** (1) Open `test-pdfs/english/en-textbook-forallx-yyc-logic.pdf` at a page with a section heading and a list: a clear pause after the heading, a shorter one after each list item, and the items are not run together. (2) Play a page with amounts, dates or "Dr."/"Fig." (e.g. `test-pdfs/english/en-2col-physimaging-radonc-ccby.pdf` page 1): they are read as words while the page shows the digits. (3) Say whether the 600/400/300 ms pauses sound natural or too long with the bundled voice.
 
 ## P4-02 — Premium voices and measured render-ahead (2026-10-16)
 - **Two premium voices in Settings → Voices:** "English (US), Kokoro Heart (premium)" (Kokoro v1.0 int8, af_heart, 149 MB, Apache-2.0) and "Hindi, Supertonic 3 (premium)" (Supertonic 3 int8, speaker 2, 145 MB, code MIT + model OpenRAIL-M). They download like the P4-01 voices from the `voices` release (pins in `speech/models.json`; downloads work once this is on `dev`). New sherpa families `kokoro` and `supertonic` (ADR-027). Both zips were built with `build_voice_mirror.py`, then loaded and rendered with sherpa-onnx 1.13.8 using the app's exact config (desktop, 2 threads: Kokoro RTF 1.4, Supertonic 0.19).
@@ -1034,9 +1127,9 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Evidence:** `RenderAheadSimulationTest` replays twenty one-hour books (with run-on sentences, noise and hot spells the policy is not told about) on the queue's timing: no stall at RTF 0.1–0.6 with the new window; the old fixed window stalls at 0.6; at 0.79, 4×+ less stalled time. The simulation set the 30 s design sentence (20 s still stalled) and showed the start hold was needed (every other stall was in the first three sentences).
 - Tests: 32 new JVM tests (Kokoro/Supertonic manifests and sherpa configs, speed averaging/verdict/persistence, window sizing, start hold in the real queue, tracker rules, rows, routed voices, the simulation) plus 2 mirror-script tests. Locally: 275 JVM tests (core, speech, playback pure code) in a harness, ktlint and detekt clean, mirror tests green; the Android build and device tests run in CI only.
 
-**Known limits:** Kokoro will most likely measure too slow on the Moto (S1 predicted RTF 2.5–4); it stays downloadable and is labelled after 30 s. The window is sized for 1.0×; at faster playback speeds a voice is effectively slower. In a bilingual book with both premium voices, each switch reloads a model (one is kept loaded). The Supertonic zip carries its MIT code licence and README but not the OpenRAIL-M text; P3-06's "Voices & licenses" screen should add it.
+**Known limits:** Kokoro will most likely measure too slow on the test phone (S1 predicted RTF 2.5–4); it stays downloadable and is labelled after 30 s. The window is sized for 1.0×; at faster playback speeds a voice is effectively slower. In a bilingual book with both premium voices, each switch reloads a model (one is kept loaded). The Supertonic zip carries its MIT code licence and README but not the OpenRAIL-M text; P3-06's "Voices & licenses" screen should add it.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the S1/S3 phone run):** (1) Settings → Voices → download "Hindi, Supertonic 3 (premium)", pick it for Hindi, play `test-pdfs/generated/hi-udhr-noto.pdf` for 10 minutes screen-off at 1.0×: no gaps between sentences; after a minute Voices shows its speed (expect "renders 2× faster" or better). (2) Seek to another page while it plays: it may wait a few seconds before speaking, then plays without a gap after the first sentence. (3) Download "English (US), Kokoro Heart (premium)", pick it, play an English book for a minute: if it pauses, Voices should say "Too slow on this phone"; switch back to the built-in voice (it plays smoothly) and Kokoro can no longer be picked. (4) Note the speeds Voices shows for the built-in voice, Supertonic and Kokoro in the S1 phone table.
+**Real-device checks (test phone, dev build; batch with the S1/S3 phone run):** (1) Settings → Voices → download "Hindi, Supertonic 3 (premium)", pick it for Hindi, play `test-pdfs/generated/hi-udhr-noto.pdf` for 10 minutes screen-off at 1.0×: no gaps between sentences; after a minute Voices shows its speed (expect "renders 2× faster" or better). (2) Seek to another page while it plays: it may wait a few seconds before speaking, then plays without a gap after the first sentence. (3) Download "English (US), Kokoro Heart (premium)", pick it, play an English book for a minute: if it pauses, Voices should say "Too slow on this phone"; switch back to the built-in voice (it plays smoothly) and Kokoro can no longer be picked. (4) Note the speeds Voices shows for the built-in voice, Supertonic and Kokoro in the S1 phone table.
 
 ## P3-02 — Hindi and Bengali sentences, digits and NFC (2026-10-16)
 - **Sentences split where a Hindi or Bengali reader expects:** at every danda (। ॥), with closing quotes kept on the sentence they close and a comma after a danda continuing it. No break after Hindi/Bengali abbreviations ("डॉ.", "श्री.", "प्रो.", "ডা.", "মো.", "কি.মি.") or initials spelled as English letter names ("ए. पी. जे. अब्दुल कलाम", "এ. কে. ফজলুল হক"); a verse number "॥ १ ॥" is read with its verse. Lists in `SentenceConfig` (`:core`). The rules run after `BreakIterator`, so the JDK (tests) and ICU (Android) now split the same way (ADR-028).
@@ -1047,7 +1140,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Done-when (Indic unit tests pass):** new JVM tests: `IndicSentenceSplitterTest` (danda, quotes, abbreviations, initials, verses, English unchanged), `UnicodeRepairTest` (NFC forms and offsets, pipe dandas), `IndicNormalizerTest` (48 Hindi/Bengali cases, all 0–99 distinct, idempotent), plus `ReadingUnitBuilderTest` and `RoutedSpeechTest` cases. Device test `MixedScriptVoicesTest` now also checks the Hindi voice never gets a digit in the bilingual UDHR ("अनुच्छेद १." → "अनुच्छेद एक."). Run locally in a JVM harness with ktlint and detekt; Android build and device tests in CI.
 - Known limits: native Bengali initials ("আ. ক. ম.") and unlisted abbreviations still split; a "|" between Hindi words in a table becomes a danda; Hindi dates like "15-08-1947" read digit by digit.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the other phone checks):** (1) With a Hindi voice installed, open `test-pdfs/generated/hi-udhr-noto.pdf` and play an article: each sentence ends at the danda, and "अनुच्छेद १" is read "अनुच्छेद एक". (2) Open `test-pdfs/hindi/hi-govreport-jalshakti-annual-2019-20.pdf` at a page with amounts or years: "२०१९-२०" reads "दो हज़ार उन्नीस से बीस", lakh/crore amounts read in lakh and crore. (3) With a Bengali voice, play `test-pdfs/generated/bn-udhr-noto.pdf`: sentences end at the danda and article numbers read in Bengali.
+**Real-device checks (test phone, dev build; batch with the other phone checks):** (1) With a Hindi voice installed, open `test-pdfs/generated/hi-udhr-noto.pdf` and play an article: each sentence ends at the danda, and "अनुच्छेद १" is read "अनुच्छेद एक". (2) Open `test-pdfs/hindi/hi-govreport-jalshakti-annual-2019-20.pdf` at a page with amounts or years: "२०१९-२०" reads "दो हज़ार उन्नीस से बीस", lakh/crore amounts read in lakh and crore. (3) With a Bengali voice, play `test-pdfs/generated/bn-udhr-noto.pdf`: sentences end at the danda and article numbers read in Bengali.
 
 ## P3-01 — Script routing per sentence (2026-10-16)
 - **A mixed sentence switches voice mid-sentence:** each script run is read by its language's voice, the one picked in Settings → Voices (P4-01) or the default. Rules (ADR-026): Latin → English, Devanagari → Hindi, Bengali → Bengali; punctuation and ASCII digits stay with the run before them; inside a mostly Hindi or Bengali sentence fewer than 3 English words ("PDF", "Article 12") stay with the Indic voice (`ScriptRoutingConfig.minEnglishWordsInIndic`); Indic words inside English always switch.
@@ -1056,7 +1149,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Done-when:** `MixedScriptVoicesTest` (device, CI emulator) reads the bilingual UDHR PDF (`enhi-udhr-bilingual.pdf`) through the real pipeline and renderer with recording voices: the English voice never gets Devanagari, the Hindi voice never gets three English words in a row, every sentence's parts add up to the sentence, mixed clips come out at the higher rate, and voices switch 100+ times. On the desktop dump of the same PDF: 186 sentences, 4 mixed (e.g. "…the rule of law, चूंकि मानव परिवार…"), 129 switches; before P3-01 those 4 were read by one voice.
 - Tests: 13 new JVM tests (router table with real UDHR sentences, threshold, parts add up; RoutedSpeech joining, rates, fallback, failure; resampling). ktlint/detekt run in CI (no Android build in this workspace); the JVM tests ran locally in a harness.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the S1/S3 phone run):** (1) Install the phone's Google Hindi voice (Android Settings → Text-to-speech → Google → Install voice data → Hindi), open `test-pdfs/generated/enhi-udhr-bilingual.pdf` and play page 1: English paragraphs in the English voice, Hindi in the Hindi voice, and the sentence starting "चूंकि मानव परिवार" switches to the English voice at "Whereas it is essential" without a long gap. (2) Remove the Hindi voice and play the same page: English plays, Hindi sentences show the "no Hindi voice" error, English sentences with a Hindi word still play. (3) In Settings → Voices pick another English voice and play on: the English parts change voice from the next sentence.
+**Real-device checks (test phone, dev build; batch with the S1/S3 phone run):** (1) Install the phone's Google Hindi voice (Android Settings → Text-to-speech → Google → Install voice data → Hindi), open `test-pdfs/generated/enhi-udhr-bilingual.pdf` and play page 1: English paragraphs in the English voice, Hindi in the Hindi voice, and the sentence starting "चूंकि मानव परिवार" switches to the English voice at "Whereas it is essential" without a long gap. (2) Remove the Hindi voice and play the same page: English plays, Hindi sentences show the "no Hindi voice" error, English sentences with a Hindi word still play. (3) In Settings → Voices pick another English voice and play on: the English parts change voice from the next sentence.
 
 ## P3-05 — OCR for scanned pages with Tesseract (2026-10-16)
 - **Scanned pages are read aloud.** Pages P3-03/P3-04 route to OCR (no text layer, a scanner's hidden layer, broken glyph maps, junk, impossible Indic sequences, unknown legacy glyphs, a failed book sample) are now drawn by PDFium at 300 dpi in greyscale and read by Tesseract 5.5.1 (Tesseract4Android 4.9.0) with the `tessdata_best` English, Hindi and Bengali models. The text gets the same repair and sentence split as a text layer (line-end hyphens, junk, NFC); lone page numbers are dropped. P3-03's Hindi/Bengali book sample now really runs, so office exports with wrong conjunct maps switch to OCR.
@@ -1069,7 +1162,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known limits:** running headers on OCR'd pages are read aloud; no rotation detection (a sideways scan reads badly); no sentence highlight on OCR'd pages; the models download only on a connection (no Wi-Fi-only switch yet).
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the other phone checks):** (1) Settings → Scanned pages (OCR) → Download: progress, then "Ready". Turn on airplane mode halfway once: it continues afterwards. (2) Open `audora/test-pdfs/scanned/en-scan-1867-chicmedexam-imageonly.pdf`, play page 1: English is read, the page shows the OCR badge. (3) Same for `hi-scan-up-revenue-board-letter.pdf` (Hindi) and `bn-scan-gov-bd-cevdsc-notice.pdf` (Bengali); note anything unintelligible. (4) Open `generated/hi-udhr-noto-scan300.pdf` and play 3 pages; jump back to page 1: it starts at once (cached). (5) Before downloading the models, open a scan: the card offers the download, nothing crashes. (6) Share logs (P1-07): find the "OCR page … renderMs= recognizeMs=" lines and note the per-page time for each language (done-when; OnePlus at the pre-release check).
+**Real-device checks (test phone, dev build; batch with the other phone checks):** (1) Settings → Scanned pages (OCR) → Download: progress, then "Ready". Turn on airplane mode halfway once: it continues afterwards. (2) Open `audora/test-pdfs/scanned/en-scan-1867-chicmedexam-imageonly.pdf`, play page 1: English is read, the page shows the OCR badge. (3) Same for `hi-scan-up-revenue-board-letter.pdf` (Hindi) and `bn-scan-gov-bd-cevdsc-notice.pdf` (Bengali); note anything unintelligible. (4) Open `generated/hi-udhr-noto-scan300.pdf` and play 3 pages; jump back to page 1: it starts at once (cached). (5) Before downloading the models, open a scan: the card offers the download, nothing crashes. (6) Share logs (P1-07): find the "OCR page … renderMs= recognizeMs=" lines and note the per-page time for each language (done-when; the second test phone at the pre-release check).
 
 ## P4-03 — Sentence highlight on the rendered page (2026-10-16)
 - **The reader shows the page as printed** (new default "page view"): the PDF page drawn at the screen's width, with the sentence being read highlighted line by line like a highlighter pen (multiply blend, so the ink stays dark in light and dark themes). The page scrolls to keep the highlight in view while the reader follows reading, and turns with it. Tap a line to read from that sentence (the nearest line within 8 pt counts). A top-bar button switches to the sentence list ("text view", P1-05) and back; the choice is remembered.
@@ -1079,7 +1172,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known limits:** no pinch zoom yet (a two-column paper is small on a phone; the text view is there for that); TalkBack users should use the text view (the drawn page is one image).
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the S1/S3 phone run):** (1) Open an English book and press Play: the spoken sentence is highlighted on the page and the highlight moves sentence by sentence; on a page turn the next page appears with its first sentence highlighted. (2) Two-column paper (e.g. the CC BY radiation oncology article): the highlight follows down the left column, then the right, and a sentence crossing the gutter highlights in both columns. (3) Tap a line in the middle of the page: reading jumps there. (4) Rotated pages (`tricky/bn-rotated-pages-90-180-270-fda.pdf`): pages show upright and the highlight sits on the text. (5) Switch to the text view and back; close and reopen the book: the last choice stays. (6) Rotate the phone: the page redraws at the new width with the highlight in place.
+**Real-device checks (test phone, dev build; batch with the S1/S3 phone run):** (1) Open an English book and press Play: the spoken sentence is highlighted on the page and the highlight moves sentence by sentence; on a page turn the next page appears with its first sentence highlighted. (2) Two-column paper (e.g. the CC BY radiation oncology article): the highlight follows down the left column, then the right, and a sentence crossing the gutter highlights in both columns. (3) Tap a line in the middle of the page: reading jumps there. (4) Rotated pages (`tricky/bn-rotated-pages-90-180-270-fda.pdf`): pages show upright and the highlight sits on the text. (5) Switch to the text view and back; close and reopen the book: the last choice stays. (6) Rotate the phone: the page redraws at the new width with the highlight in place.
 
 ## P3-04 — Legacy-font converter: Kruti Dev, DevLys, Chanakya, Bijoy (2026-10-16)
 - **Legacy-font Hindi and Bengali is read as words** (`pdf.legacy`, Build Spec §5 step 3a): text in Kruti Dev 010 (and Kundli, MINNO-GOPI), DevLys, Chanakya and Bijoy/SutonnyMJ fonts, which PDFium extracts as Latin gibberish ("izsl foKfIr"), is converted to Unicode ("प्रेस विज्ञप्ति") by table, chosen by font name (`QualityConfig.legacyFonts`). Pre-base signs and rephs move to their logical place, signs typed out of order are put in Unicode order, PDFium's spaces inside a syllable go, split vowels compose, "पी0एस0" → "पी॰एस॰". Runs wherever legacy text is read, before P3-03's Indic repair; offsets stay mapped (ADR-018).
@@ -1089,7 +1182,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known limits:** a second "Chanakya" layout (one Rajasthan file) mangles one conjunct without being caught; rotated text converts in drawing order; source typos are read as typed; NFC of nukta letters is P3-02's; OCR itself is P3-05, so pages routed there still read their text layer.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the S1/S3 phone run):** (1) Copy a Kruti Dev PDF (`audora/test-pdfs/legacy-fonts/`, the UP press release) and the SutonnyMJ college notice to the phone, play page 1 of each: Hindi and Bengali words are read, not Latin letters. (2) The reader shows the converted Unicode text. (3) The log bundle (P1-07) has "LEGACY_FONT" route lines with `legacyUnknown=` near 0 and no PDF text.
+**Real-device checks (test phone, dev build; batch with the S1/S3 phone run):** (1) Copy a Kruti Dev PDF (`audora/test-pdfs/legacy-fonts/`, the UP press release) and the SutonnyMJ college notice to the phone, play page 1 of each: Hindi and Bengali words are read, not Latin letters. (2) The reader shows the converted Unicode text. (3) The log bundle (P1-07) has "LEGACY_FONT" route lines with `legacyUnknown=` near 0 and no PDF text.
 
 ## P4-01 — Voice manager (2026-10-16)
 - **Settings → Voices** lists every voice by language: the built-in English voice, the catalog voices to download (size and licence shown), voices already downloaded or imported, and for Hindi/Bengali "Phone's voice" (the default). The radio button picks which voice reads that language; the choice is saved and used by the player from the next sentence. Downloaded and imported voices can be deleted (asks first); a deleted voice stops being the choice.
@@ -1102,7 +1195,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known limits:** downloads only work once this is merged to `dev` and the `voice-mirror` workflow has published the `voices` release. Hindi/Bengali catalog voices come with P3-06; until then Hindi/Bengali neural voices come only from import.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the other phone checks):** (1) Settings → Voices → Download "cori": progress moves, then Installed. (2) Start another download, turn on airplane mode halfway, wait a minute, turn it off: it continues from where it stopped (not from 0). (3) Close Audora (swipe away) mid-download and reopen: it continues. (4) Cancel a download: the row goes back to Download. (5) Pick cori for English, open an English book, Play: cori reads. Switch back to the built-in voice: the next sentence uses it. (6) Delete cori while it is the English choice: the built-in voice reads again. (7) Import a Piper Hindi folder (e.g. sherpa-onnx `vits-piper-hi_IN-*` unpacked in Downloads) as Hindi, pick it, open a Hindi PDF: it reads in that voice. (8) Restart the phone with a download queued: it resumes after boot, and nothing starts playing.
+**Real-device checks (test phone, dev build; batch with the other phone checks):** (1) Settings → Voices → Download "cori": progress moves, then Installed. (2) Start another download, turn on airplane mode halfway, wait a minute, turn it off: it continues from where it stopped (not from 0). (3) Close Audora (swipe away) mid-download and reopen: it continues. (4) Cancel a download: the row goes back to Download. (5) Pick cori for English, open an English book, Play: cori reads. Switch back to the built-in voice: the next sentence uses it. (6) Delete cori while it is the English choice: the built-in voice reads again. (7) Import a Piper Hindi folder (e.g. sherpa-onnx `vits-piper-hi_IN-*` unpacked in Downloads) as Hindi, pick it, open a Hindi PDF: it reads in that voice. (8) Restart the phone with a download queued: it resumes after boot, and nothing starts playing.
 
 ## P3-03 — Hindi and Bengali text quality: scorer, Indic reorder, OCR sample (2026-10-16)
 - **Every page is scored and routed** (`pdf.quality.PageQualityScorer`, Build Spec §5 step 2): almost no letters (a scan), a mostly invisible text layer, Unicode-map errors > 2 %, junk > 2 % (U+FFFD, private-use glyphs, ASCII glued inside an Indic word) or > 1 % of Indic characters in impossible positions → **OCR**; KrutiDev/DevLys/Chanakya/SutonnyMJ/Bijoy runs → **legacy-font converter**; else **text layer**. Tunables in `QualityConfig` (`:core`).
@@ -1114,7 +1207,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known limits:** nothing is OCR'd or converted yet (P3-05, P3-04): pages routed there are still read from their text layer. A scan whose hidden text layer is Latin junk reads as English and is not caught. The sample runs on the render thread (one page of OCR time per book, once P3-05 exists). Tesseract's own error on clean pages has to fit under the 5 % threshold; P3-05 measures it on the phone.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the S1/S3 phone run):** (1) Play the HUD Hindi fact sheet (`audora/test-pdfs/hindi/hi-us-hud-factsheet-pd.pdf`, page 2): "हाउसिंग", "मानसिक", "विद" are read as words, not as split syllables. (2) Play a clean Unicode Hindi book (e.g. `hi-udhr-noto.pdf`): it reads exactly as before. (3) The log bundle (P1-07) shared after (1) has "Page routed OCR (INVALID_INDIC)" lines with book and page, and no PDF text.
+**Real-device checks (test phone, dev build; batch with the S1/S3 phone run):** (1) Play the HUD Hindi fact sheet (`audora/test-pdfs/hindi/hi-us-hud-factsheet-pd.pdf`, page 2): "हाउसिंग", "मानसिक", "विद" are read as words, not as split syllables. (2) Play a clean Unicode Hindi book (e.g. `hi-udhr-noto.pdf`): it reads exactly as before. (3) The log bundle (P1-07) shared after (1) has "Page routed OCR (INVALID_INDIC)" lines with book and page, and no PDF text.
 
 ## P2-03 — Headers, footers, page numbers, tables and text repair (2026-10-15)
 - **Clutter is no longer read:** running headers and footers (a line in the top or bottom 8 % of the text area that repeats on 3+ pages of a 7-page window, or carries a page number that runs with the page: "CHAPTER 5. CONNECTIVES 33", "Page 3 of 50"), standalone page numbers (also Devanagari and Bengali digits), table interiors (runs of aligned, widely spaced cells and the columns paired with them; captions stay), bullet glyphs at line starts and bracketed citation markers ("[4–7]"; `CleanupConfig.skipCitationMarkers`, on by default as the spec says).
@@ -1126,7 +1219,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known limits:** journal front matter (affiliations, keywords, the masthead) is still read; superscript citation numbers are read; a ruled or tightly set table is read; figure labels have no rule of their own (no image bounds); the citation setting has no switch in :app yet (later ticket); Indic NFC is P3-02's.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the S1/S3 phone run):** (1) Play a book with running headers (e.g. forallx or Moby-Dick from the test corpus) across a page turn: the header, page number and footer are not read, and a word hyphenated at a line end is read whole. (2) Jump to a page in the middle of a long book (e.g. Pro Git, 500+ pages): reading starts as quickly as before (the first page now reads up to 7 pages for its neighbours). (3) Resume a book saved before this update: it resumes at the same sentence.
+**Real-device checks (test phone, dev build; batch with the S1/S3 phone run):** (1) Play a book with running headers (e.g. forallx or Moby-Dick from the test corpus) across a page turn: the header, page number and footer are not read, and a word hyphenated at a line end is read whole. (2) Jump to a page in the middle of a long book (e.g. Pro Git, 500+ pages): reading starts as quickly as before (the first page now reads up to 7 pages for its neighbours). (3) Resume a book saved before this update: it resumes at the same sentence.
 
 ## P1-04 follow-up — End-of-chapter sleep timer (2026-10-15)
 - **Sleep timer "End of chapter"** (Build Spec §2, MVP): pauses after the last sentence before the page where the next chapter starts. Offered in the reader's timer menu only when the book has chapters (session extra `has_chapters`); the service refuses it otherwise.
@@ -1134,7 +1227,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Seam for detected headings:** `BookText.chapterStarts()` is where P2-02's heading detection plugs in for books without an outline. Chapters are page-granular: a chapter that starts mid-page counts from the top of that page.
 - Tests: JVM tests for chapter starts (top level, wrapper entry, no split, bad pages, duplicates, depth limit, no outline) and the timer rule (page end inside a chapter, chapter end, next page still extracting, blank chapter page, end of book). Device test: on a real ExoPlayer the timer pauses after the first chapter's last sentence and clears itself. No new dependencies; `PIPELINE_VERSION` unchanged (sentences are unchanged).
 
-**Real-device checks (Moto, batch with the phone run):** (1) A PDF with bookmarks (most ebooks): the timer menu shows "End of chapter"; choose it, reading stops at the end of the chapter. (2) A PDF without bookmarks (a scan): the option is not shown.
+**Real-device checks (test phone, batch with the phone run):** (1) A PDF with bookmarks (most ebooks): the timer menu shows "End of chapter"; choose it, reading stops at the end of the chapter. (2) A PDF without bookmarks (a scan): the option is not shown.
 
 ## P2-02 — Layout and reading order (2026-10-15)
 - **Two-column pages are read in order:** `:pdf` now rebuilds each page's layout before cutting sentences (`pdf.layout`): glyphs are grouped into runs, a recursive XY-cut finds columns first (a full-width title or abstract is read before the columns under it), stacked pieces of one column are joined, then lines, paragraphs (line spacing, first-line indent, style change) and headings (≥ 1.15× the body size or a bold font name; font weight is not used, ADR-011). A sentence that runs from the bottom of one column into the next is one sentence. Tunables in `LayoutConfig` (`:core`).
@@ -1147,7 +1240,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known limits:** tables read column by column (forallx's connectives table); a running header beside a table can come after the table (P2-03 removes running headers); Indic paragraph breaks are often missed (uneven glyph boxes), sentences still split at the danda.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the S1/S3 phone run):** (1) Open a two-column paper (e.g. the CC BY "Physics and Imaging in Radiation Oncology" article from the test corpus) and play page 1: after the abstract it reads down the left column, then the right column, and the sentence crossing the gutter is read as one. (2) Resume a book saved before this update: it resumes at the same sentence (the log says "fingerprint").
+**Real-device checks (test phone, dev build; batch with the S1/S3 phone run):** (1) Open a two-column paper (e.g. the CC BY "Physics and Imaging in Radiation Oncology" article from the test corpus) and play page 1: after the abstract it reads down the left column, then the right column, and the sentence crossing the gutter is read as one. (2) Resume a book saved before this update: it resumes at the same sentence (the log says "fingerprint").
 
 ## P2-01 — Golden corpus and quality score (2026-10-15)
 - **Golden corpus** (`pdf/golden/`, ADR-017): 18 redistributable documents in 9 categories: plain English, books with running headers and line-end hyphens, two-column (KJV, a CC BY journal article), math (CC BY), English+Hindi, Unicode Hindi and Bengali, and broken font maps (S2's fpdf2 files and three US-government Hindi/Bengali fact sheets, one also rotated 90/180/270°). Long books are excerpted to 2–5 consecutive pages; ~6 MB in total. Licences and the expected-text rules are in `pdf/golden/README.md`.
@@ -1158,7 +1251,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - Not scored on the JVM: scans (OCR on the phone, P3-05), legacy fonts (no redistributable KrutiDev/Bijoy file; P3-04 generates one), password and damaged files (device tests).
 - Tests: the golden run plus JVM tests for the score (normalization table, order vs bag of words, clutter vs loss, multiset matching, empty sides) and the report (scores round trip, gate pass/fail, rounding noise, added/removed documents, deterministic Markdown). Checked locally: the gate fails on a raised baseline and passes on the committed one; the dump check passes; ktlint and detekt clean. No new dependencies (pypdfium2 is a CI-only tool, like the S2 scripts).
 
-**User checks (batch with the phone session; none blocks P2-02/P2-03):** (1) Outside-view listening, ~30 min: five golden PDFs in Acrobat Reader's Read Out Loud on the PC and in Librera on the Moto; fill the table in `research/notes/04-outside-view-benchmark.md`. (2) Hand-check the Hindi and Bengali expected text against the PDFs (`pdf/golden/expected/hi-us-hud-factsheet-pd.txt`, `bn-us-fda-factsheet-vrinda-pd.txt`, `bn-us-hud-fairlending-guide-pd.txt`); note wrong words, or tell Claude and it updates them. (3) Optional: skim the four English drafts the same way.
+**User checks (batch with the phone session; none blocks P2-02/P2-03):** (1) Outside-view listening, ~30 min: five golden PDFs in Acrobat Reader's Read Out Loud on the PC and in Librera on the test phone; fill the table in `research/notes/04-outside-view-benchmark.md`. (2) Hand-check the Hindi and Bengali expected text against the PDFs (`pdf/golden/expected/hi-us-hud-factsheet-pd.txt`, `bn-us-fda-factsheet-vrinda-pd.txt`, `bn-us-hud-fairlending-guide-pd.txt`); note wrong words, or tell Claude and it updates them. (3) Optional: skim the four English drafts the same way.
 
 ## P2-04 (part 1) — English normalizer (2026-10-15)
 - **`EnglishNormalizer`** (`:speech`, `speech.normalize`): turns written English into what a voice should say, before every engine (ADR-012). Ten ordered rules, specific to general: links and e-mail addresses → "link"; money (₹/Rs./INR in lakh and crore, $, £, €, paise/cents, "₹5 crore", "$2.5 million"); clock times (10:30, 9 a.m. → "nine ay em"); abbreviations (Dr., Smt., e.g., etc., "Fig. 3", "pp. 10–12"; St. is Saint before a name, else Street); dates (15 August 1947, Aug. 15, 1947, 15/08/1947 day-first, ISO); minus signs; symbols (&, #5, 3 × 4, ±, ~); percent and units (km, kg, °C, GB, km/h…, with ranges); Roman numerals only where they cannot be words (after Chapter/Part/Class/World War, regnal names, "(iv)" labels, the start of a heading); then sections (3.2.1), ranges, phone-style codes, decades, ordinals, years and plain numbers. A bare four-digit number from 1100 to 2099 reads as a year.
@@ -1166,7 +1259,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - Tests: 183 table-driven sentence cases plus number-word tables (cardinals in both systems, ordinals, years), idempotence (normalizing twice equals once), config variants, and no digit left in long mixed text.
 - **Not yet audible:** the playback renderer does not call it yet. Part 2 wires it into `EngineRenderer` and adds the prosody pauses (headings ~600 ms, paragraphs ~400 ms, list items) once P1-06 is on dev; heading pauses and heading numerals need P2-02.
 
-**Real-device checks (after part 2, Moto Edge 50 Fusion):** play a page with a date, a ₹ amount in lakh, a URL and "Dr." and listen that each is read in words ("fifteenth August nineteen forty-seven", "one lakh fifty thousand rupees", "link", "Doctor").
+**Real-device checks (after part 2, test phone):** play a page with a date, a ₹ amount in lakh, a URL and "Dr." and listen that each is read in words ("fifteenth August nineteen forty-seven", "one lakh fifty thousand rupees", "link", "Doctor").
 
 ## P1-06 — Exact resume and battery onboarding (2026-10-15)
 - **Audora remembers the sentence:** while reading, the playback service saves the current sentence of each book as a `ResumeAnchor` (page, sentence start, head and tail fingerprints, pipeline version) in a new `resume_anchors` table (database version 2, Room auto-migration, one row per book, deleted with the book). At most one write per 2 s, and at once on pause, stop, sleep timer and end of book, so a kill resumes at most one sentence early.
@@ -1175,7 +1268,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - **Battery onboarding:** the library shows a "Keep reading with the screen off" card until the app is exempt from battery optimization or the user says "Not now"; Settings has a Battery row that opens the same screen. It asks Android for the exemption (system dialog), opens App info, and lists the maker's own steps for Motorola, OnePlus, Samsung, Xiaomi, OPPO, realme, vivo, or a generic list.
 - **Verified in CI:** core unit tests for fingerprints (pinned value), re-anchoring (pipeline version bump, split change, header glued on), the recorder's throttling and the write race the emulator test caught; reader tests for opening at the saved sentence and auto-resume; emulator tests for the Room store, the 1 → 2 migration, and a kill mid-sentence followed by a resume on a bumped pipeline version.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the S1/S3 phone run):** (1) Read a few pages, App info → Force stop mid-sentence, reopen Audora and the book: it opens on that page; Play resumes at that sentence. (2) Force stop while reading, reopen: the "Reading stopped unexpectedly" prompt's Resume starts reading at that sentence. (3) Swipe Audora away while paused, then press a headset or Bluetooth play button: the last book resumes. (4) The battery card on the library, "Allow" shows the system dialog, the card goes away; Settings → Battery shows the Motorola steps and App info opens. (5) Remove a book and add it again: it starts at page 1. OnePlus 12 at the pre-release check: the OnePlus steps and (1).
+**Real-device checks (test phone, dev build; batch with the S1/S3 phone run):** (1) Read a few pages, App info → Force stop mid-sentence, reopen Audora and the book: it opens on that page; Play resumes at that sentence. (2) Force stop while reading, reopen: the "Reading stopped unexpectedly" prompt's Resume starts reading at that sentence. (3) Swipe Audora away while paused, then press a headset or Bluetooth play button: the last book resumes. (4) The battery card on the library, "Allow" shows the system dialog, the card goes away; Settings → Battery shows the steps for the phone's maker and App info opens. (5) Remove a book and add it again: it starts at page 1. The second test phone at the pre-release check: its maker's steps and (1).
 
 ## P1-04 — Playback service (2026-10-15)
 - **Reading aloud works end to end:** the reader's Play / tap-a-sentence sends `PLAY_FROM` to `AudoraPlaybackService` (Media3 `MediaSessionService`, foreground type `mediaPlayback`), which opens the book through the library's file grant, extracts pages on one background thread (PDFium, P1-02) about a page ahead of the playhead, and reads sentence by sentence. Notification, lock screen, headset and Bluetooth buttons come from Media3's session (play/pause, previous/next sentence). Speed is the player's own (Sonic, C6).
@@ -1192,7 +1285,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known limits:** a 15- or 60-minute screen-off run can only be checked on a phone (below). Logs carry book ids, pages and sentence keys (`p12u3`), never the text.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build; batch with the S1/S3 phone run):** (1) Open an English PDF, press Play: reading starts within a few seconds and the notification shows the title and "Page N of M". (2) Screen off, phone on the table, 15 min (P1-04 done-when), then 60 min (Phase 1 done-when): reading never stops; Share logs afterwards. (3) Lock screen and notification play/pause/next/previous; wired or Bluetooth headset button pauses and resumes; unplugging the headset pauses. (4) Take a phone call while reading: it pauses and resumes after. (5) Go to page 20 while reading: reading jumps there. (6) Sleep timer 15 min with the screen off: stops at the end of a sentence. (7) A Hindi PDF with the phone's Hindi voice installed reads in Hindi; without it, the reader shows the error instead of silence. (8) Swipe Audora away from recents while paused: the notification goes away; while playing: reading goes on.
+**Real-device checks (test phone, dev build; batch with the S1/S3 phone run):** (1) Open an English PDF, press Play: reading starts within a few seconds and the notification shows the title and "Page N of M". (2) Screen off, phone on the table, 15 min (P1-04 done-when), then 60 min (Phase 1 done-when): reading never stops; Share logs afterwards. (3) Lock screen and notification play/pause/next/previous; wired or Bluetooth headset button pauses and resumes; unplugging the headset pauses. (4) Take a phone call while reading: it pauses and resumes after. (5) Go to page 20 while reading: reading jumps there. (6) Sleep timer 15 min with the screen off: stops at the end of a sentence. (7) A Hindi PDF with the phone's Hindi voice installed reads in Hindi; without it, the reader shows the error instead of silence. (8) Swipe Audora away from recents while paused: the notification goes away; while playing: reading goes on.
 
 ## P1-03 — Speech engines (2026-10-15)
 - **`SpeechEngine` contract** (`:speech`): `render(text, voice)` returns 16-bit mono PCM or a typed `SpeechError` (`VoiceUnavailable` with reason UNKNOWN_VOICE / NOT_INSTALLED / NETWORK_ONLY / MODEL_FILES_MISSING, `EngineUnavailable`, `SynthesisFailed`), each with a readable message. Renders are main-safe, serialized per engine and cancellable (the caller gets `CancellationException`, the engine stays usable). `VoiceId`/`EngineId` and `SpeechConfig` live in `:core` so resume anchors can store a voice.
@@ -1201,7 +1294,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - Tests: 44 JVM tests (chunker table, WAV reader, PCM conversion, manifest parsing, asset install incl. a killed copy, both engines over fakes: voice choice, missing packs, chunk join, sample-rate mismatch, errors, cancellation, release during a render). Device tests (emulator job, `:speech:connectedDebugAndroidTest`): the bundled voice renders real speech from the APK, a cancelled render leaves it usable, the system engine renders or reports a typed reason. Build task checked locally: Piper and Kitten unpack and speak in desktop sherpa-onnx; a wrong pin fails the build.
 - APK grows by ~92 MB (model, espeak data, sherpa-onnx native libraries). No new libraries.
 
-**Real-device checks (batched into the overnight run, Moto Edge 50 Fusion):** covered by P1-04's playback run: the first sentence starts within ~2 s of Play on a fresh install (model load + espeak copy), and a Hindi book with no Hindi voice pack installed shows the "download it in Text-to-speech output" message.
+**Real-device checks (batched into the overnight run, test phone):** covered by P1-04's playback run: the first sentence starts within ~2 s of Play on a fresh install (model load + espeak copy), and a Hindi book with no Hindi voice pack installed shows the "download it in Text-to-speech output" message.
 
 ## P1-05 — Reader screen (2026-10-15)
 - **Opening a book now opens the reader** (replaces the P1-02 extraction check, whose screen and strings are gone; the password prompt moved to `ui/reader`). It shows one page at a time as a list of its sentences, "Page N of M" with previous/next arrows, and a "Go to page" dialog (tap the page number). A password-protected book asks for its password first; the password stays in memory only and goes to the player with each start request.
@@ -1214,7 +1307,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known limits:** reading aloud was wired by P1-04 (`MediaControllerPlaybackPort` over `PlaybackContract`). The reader opens at page 1 unless the book is already playing (resume anchor is P1-06). The reader and the service each open the PDF; both use the same :pdf pipeline, so their sentence offsets match.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build, after P1-04):** (1) Open a 50+ page English PDF, tap the page number, go to page 20, press Play: reading starts at the top of page 20. (2) Tap the third sentence on a page: reading jumps there and it is highlighted. (3) Change speed to 2× while reading: the voice speeds up within a second, with no gap or restart; back to 1×. Close and reopen Audora: the speed is still what you picked. (4) Previous/next sentence buttons. (5) Browse to another page while reading: the screen stays there and offers "Back to page N"; tap it. (6) Sleep timer "End of page": reading stops after the last sentence of the page, not mid-sentence. (7) Sleep timer 15 min with the screen off: reading stops at a sentence end around 15 min. (8) First play on a fresh install asks for notifications; saying no still plays. (9) A password-protected PDF: password prompt, then reading works.
+**Real-device checks (test phone, dev build, after P1-04):** (1) Open a 50+ page English PDF, tap the page number, go to page 20, press Play: reading starts at the top of page 20. (2) Tap the third sentence on a page: reading jumps there and it is highlighted. (3) Change speed to 2× while reading: the voice speeds up within a second, with no gap or restart; back to 1×. Close and reopen Audora: the speed is still what you picked. (4) Previous/next sentence buttons. (5) Browse to another page while reading: the screen stays there and offers "Back to page N"; tap it. (6) Sleep timer "End of page": reading stops after the last sentence of the page, not mid-sentence. (7) Sleep timer 15 min with the screen off: reading stops at a sentence end around 15 min. (8) First play on a fresh install asks for notifications; saying no still plays. (9) A password-protected PDF: password prompt, then reading works.
 
 ## P1-01 — Library (2026-10-15)
 - **Home is now the library.** "Add PDF" opens the system file picker; Audora keeps a lasting read grant for the file (it is not copied) and lists the book with its title (from the file name), page count once opened, and when it was last opened or added. Most recently used first. Each row's menu has "Remove from library" (asks first; the PDF stays on the phone, the grant is given back).
@@ -1229,7 +1322,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known limits:** the file check runs one provider call per book in sequence (fine for hundreds of books). A book added while the app is killed mid-add can leave one unused grant (Android allows 512); adding the same file again reuses it.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build):** (1) Add PDF → pick an English PDF: it appears; tap it: the check shows its pages; back: the row shows the page count. (2) Close Audora (swipe away), reopen: the book is still listed. (3) In the Files app move that PDF to another folder, return to Audora: the row says "File moved or deleted"; tap it, pick the moved file: "Found … again", and it opens. (4) Delete a PDF that is in the library: the row turns red. (5) Add the same PDF twice: "already in your library". (6) Remove a book: it disappears; the file is still in Files. (7) Add a password-protected PDF and open it: the password prompt appears.
+**Real-device checks (test phone, dev build):** (1) Add PDF → pick an English PDF: it appears; tap it: the check shows its pages; back: the row shows the page count. (2) Close Audora (swipe away), reopen: the book is still listed. (3) In the Files app move that PDF to another folder, return to Audora: the row says "File moved or deleted"; tap it, pick the moved file: "Found … again", and it opens. (4) Delete a PDF that is in the library: the row turns red. (5) Add the same PDF twice: "already in your library". (6) Remove a book: it disappears; the file is still in Files. (7) Add a password-protected PDF and open it: the password prompt appears.
 
 ## P1-07 — Diagnostics (2026-10-15)
 - **Settings → Share logs:** a gear on the home screen opens Settings; "Share logs" zips a `summary.txt` (app version, phone, Android version, unfinished read, last 10 process exits) and the rolling log files into `cacheDir/shared-logs/` and opens the share sheet through a FileProvider limited to that folder. One zip, because every chat and mail app takes a single attachment and text logs compress about tenfold. The log queue is flushed first so the newest lines are included. No PDF text or book titles go into the log or the summary.
@@ -1240,7 +1333,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - Settings is a second screen switched by state and closed with back; P1-01 replaces it with real navigation. No new dependencies.
 - Tests: JVM tests for the state file (round trip, corrupt file, stale temp file, unwritable folder), the tracker (dies while playing, paused, page change, repeated deaths, resolve), startup exit logging (once per exit, levels, cause selection), the zip writer and the summary; an app unit test for the Android reason/importance mapping.
 
-**Real-device checks (Moto Edge 50 Fusion, dev build):** (1) Home → gear → Share logs → pick an app: the zip arrives and holds `summary.txt` plus `audora.log`. (2) Settings → "Simulate a reading session", then App info → Force stop, reopen Audora: the "Reading stopped unexpectedly" prompt names page 14; Share logs again: the log has "Previous process ended: USER_REQUESTED…" and "Reading stopped unexpectedly…".
+**Real-device checks (test phone, dev build):** (1) Home → gear → Share logs → pick an app: the zip arrives and holds `summary.txt` plus `audora.log`. (2) Settings → "Simulate a reading session", then App info → Force stop, reopen Audora: the "Reading stopped unexpectedly" prompt names page 14; Share logs again: the log has "Previous process ended: USER_REQUESTED…" and "Reading stopped unexpectedly…".
 
 ## P1-02 — PDF text extraction (2026-10-15)
 - `:pdf` reads a PDF one page at a time through PdfiumAndroidKt and turns each page into `ReadingUnit`s (sentence-sized, `charStart`/`charEnd` into the page text, language, line boxes). No layout heuristics yet (P2).
@@ -1254,17 +1347,17 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Known risks:** the JNI layer uses PdfiumAndroidKt's "unlocked" API (`PdfDocumentU`/`PdfPageU` native pointers) and its global lock; a library upgrade must re-run the device tests. PdfiumAndroidKt 2.0.3 brings kotlin-stdlib 2.4.x into a Kotlin 2.3 build (supported by Kotlin's forward metadata compatibility). Footers and headers are still read aloud (P2).
 
-**Real-device checks (Moto Edge 50 Fusion):** install the dev build, tap "Open a PDF to test" and open (1) an English PDF, (2) a Hindi and a Bengali Unicode PDF: the first sentence shown has whole words, not split into pieces, (3) a password-protected PDF: the prompt appears, a wrong password says so, the right one opens it; (4) a 400+ page book opens without lag.
+**Real-device checks (test phone):** install the dev build, tap "Open a PDF to test" and open (1) an English PDF, (2) a Hindi and a Bengali Unicode PDF: the first sentence shown has whole words, not split into pieces, (3) a password-protected PDF: the prompt appears, a wrong password says so, the right one opens it; (4) a 400+ page book opens without lag.
 
 ## S1 — Voice benchmark, harness and desktop pre-run (2026-10-15)
 - New debug app `:spikes:voices` (`spikes/voices/`): downloads the voice models from our `s1-voices` release (zip + SHA-256 check, zip-slip guard), benchmarks every voice at 2 and 4 threads plus the system TTS (load, first sentence, RTF, RSS, thermal), blind listening test with ratings, shareable Markdown report and log. CI builds it as `audora-s1-voices.apk` on the dev-build release.
 - sherpa-onnx 1.13.8 AAR resolved from its GitHub release through an exclusive Ivy repository, SHA-256 pinned and checked before every build (ADR-012). Its arm64 libraries are 16 KB aligned; the unused C/C++ API libraries are excluded.
 - `.github/workflows/s1-voices.yml`: repacks sherpa-onnx's models as zip, converts Piper bn_BD google and MMS ben, runs the desktop pre-run with an ASR round trip and publishes it all to the `s1-voices` pre-release.
 - Desktop pre-run: Piper RTF ≈ 0.07, Supertonic ≈ 0.17, Kitten ≈ 0.34 (1.7 s first render), Kokoro ≈ 1.2–1.3 (not real time). Report: `research/spikes/S1-voice-benchmark/REPORT.md`; samples: `research/voice-samples/`.
-- Decisions (ADR-012): Kokoro v1.0 instead of v1.1; no Lessac-derived Piper voices (lessac, amy, hfc_*, hi rohan); English default = Piper ljspeech or cori by blind rating, Kitten only if rated higher and RTF ≤ 0.5 on the Moto; Moto Edge 50 Fusion is the dev reference phone.
+- Decisions (ADR-012): Kokoro v1.0 instead of v1.1; no Lessac-derived Piper voices (lessac, amy, hfc_*, hi rohan); English default = Piper ljspeech or cori by blind rating, Kitten only if rated higher and RTF ≤ 0.5 on the test phone; test phone is the dev reference phone.
 - Verified: 30 unit tests (catalog-free logic: model store with a fake HTTP fetcher, zip extraction, WAV, runner, plan, report, blind order), ktlint and detekt locally; Python catalog test; MMS converter checked end to end on a tiny random VITS model. The Android build itself is verified only in CI.
 
-**Real-device checks (pending, this closes S1):** on the Moto Edge 50 Fusion, download all voices, run the benchmark, rate the samples blind, share the report (`/mnt/project-files/audora/s1/phone-test-steps.md`, batched with the S3 overnight run).
+**Real-device checks (pending, this closes S1):** on the test phone, download all voices, run the benchmark, rate the samples blind, share the report (`/mnt/project-files/audora/s1/phone-test-steps.md`, batched with the S3 overnight run).
 
 ## P0-02 — Signed releases (2026-10-15)
 - `.github/workflows/release.yml`: run from `prod` (Actions → Release → Run workflow) or push a `v*` tag on `prod`. Builds and signs `:app:assembleRelease`, checks 16 KB alignment and the signer certificate, publishes `audora-vX.Y.Z-arm64.apk` + `SHA256SUMS.txt` to GitHub Releases. Refuses commits not on `prod` and tags that differ from the version.
@@ -1276,14 +1369,14 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 
 **Pending (user):** one-time key setup and backups and ruleset change (docs/RELEASING.md steps 1–4), dev → prod PR, run the Release workflow; key created and backed up 2026-10-15 and its certificate pinned in release.yml.
 
-**Real-device checks:** Obtainium installs `audora-v0.0.1-arm64.apk` on the Moto Edge 50 Fusion next to the dev build; the app opens.
+**Real-device checks:** Obtainium installs `audora-v0.0.1-arm64.apk` on the test phone next to the dev build; the app opens.
 
 ## S3 — Background playback spike, harness (2026-10-14)
 - New debug app `:spikes:playback` (`spikes/playback/`): Media3 `MediaSessionService`, blocking `TtsDataSource` over a render-ahead queue, fake engine with configurable RTF (sleep or busy-CPU), run metrics and a shareable report. CI builds it and the dev-build release carries it as `audora-s3-spike.apk`.
 - Report and protocol: `research/spikes/S3-background-playback/REPORT.md`. Media3 source review found a 10-minute stuck-buffering timeout P1-04 must handle.
 - Verified: unit tests for the queue, WAV encoder, fake engine, playlist window and metrics; ktlint and detekt.
 
-**Real-device checks (pending, this closes S3):** 60-min gate preset screen-off on the OnePlus 12 and the Moto Edge 50 Fusion; gap check with and without per-stream progression.
+**Real-device checks (pending, this closes S3):** 60-min gate preset screen-off on the second test phone and the test phone; gap check with and without per-stream progression.
 
 ## S2 — PDF extraction spike (2026-10-14)
 - Report: `research/spikes/S2-pdf-extraction/REPORT.md`; decision: ADR-011 (ADR-008 confirmed).
@@ -1292,7 +1385,7 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - New work for P1-02/P3-03: JNI library over PdfiumAndroidKt's `libpdfium.so`, `/ActualText` rebuild (Indic CER 9–22 % → 2–3 %), OCR cross-check for Indic text layers.
 - OCR: Tesseract `best` for eng/hin/ben; PP-OCRv5 has no Bengali model; PaddleOCR Hindi stays an optional experiment.
 
-**Real-device checks:** none yet (desktop spike). OCR and extraction timings on the OnePlus 12 and Moto Edge 50 Fusion come in P1-02 and P3-05.
+**Real-device checks:** none yet (desktop spike). OCR and extraction timings on the second test phone and test phone come in P1-02 and P3-05.
 
 ## P0-01 — Repo scaffold + CI (2026-10-14)
 - Five modules (`:app`, `:playback`, `:speech`, `:pdf`, `:core`) wired `app → playback → (speech, pdf) → core`. `:core` is a pure JVM module; the others are Android modules.
@@ -1305,6 +1398,6 @@ light and dark, tap हिन्दी and বাংলা, tap Email to join, a
 - Branches: `dev` (default, stable code, ticket PRs land here) and `prod` (releases; tags from P0-02 are cut here).
 - Docs moved into the repo: spec, ticket plan, decisions, v0.1 archive, research notes.
 
-**Real-device checks:** install the CI debug APK on the OnePlus 12; it opens and shows the placeholder screen; the launcher icon renders (including themed icons); `adb logcat -s` shows an `Audora.AppLogging` start line.
+**Real-device checks:** install the CI debug APK on the second test phone; it opens and shows the placeholder screen; the launcher icon renders (including themed icons); `adb logcat -s` shows an `Audora.AppLogging` start line.
 
 **Known gaps:** 16 KB check passes trivially until native libraries arrive (S1/P1-02); its own unit tests prove it rejects bad APKs. Signed release builds are P0-02.

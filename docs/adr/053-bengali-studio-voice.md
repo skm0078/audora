@@ -26,7 +26,7 @@ voice. The model cards give an MIT licence. They take Bengali characters directl
 and their token set includes the danda, so sentence ends are spoken as ends.
 
 Speed is the catch. Their RTF scales almost linearly with threads: 0.71 at 1 thread, 0.39 at 2 and 0.22 at 4.
-S1 measured the Moto at roughly 2 to 3 times the desktop RTF. At the app's 2 threads that puts these voices near
+S1 measured the test phone at roughly 2 to 3 times the desktop RTF. At the app's 2 threads that puts these voices near
 real time (the same tier as MMS); with 4 threads they have headroom. Dynamic int8 quantization was tried and
 dropped: it shrank the model to 38 MB but made it about 3.6 times slower (ONNX Runtime's int8 convolutions).
 
@@ -37,7 +37,7 @@ dropped: it shrank the model to 38 MB but made it about 3.6 times slower (ONNX R
 2. Bengali's recommended voice becomes `syspin-bn-male`, the clearest by the round trip. Piper google and MMS stay
    available as downloads.
 3. Add an optional per-voice `threads` field (catalog → `voice.properties` → `SherpaVoiceSpec.threads`). When it is
-   absent, `SpeechConfig.sherpaThreads` (2) applies. The two SYSPIN voices set 4, which matches the Moto's four
+   absent, `SpeechConfig.sherpaThreads` (2) applies. The two SYSPIN voices set 4, which matches the test phone's four
    big cores. Every other voice keeps 2.
 4. Rasa is not shipped as a plain voice: it is no clearer than SYSPIN on plain text. Its value is acted styles,
    and switching style per sentence belongs to the expressive-reading work, which can add it later with its
@@ -48,7 +48,7 @@ dropped: it shrank the model to 38 MB but made it about 3.6 times slower (ONNX R
   chosen (ADR-030 §3), so the maintainer picks SYSPIN in Settings → Voices.
 - At 4 threads a SYSPIN voice uses more CPU, and so more battery, than Piper while it renders. The render-ahead
   window means it only runs while there is text left to buffer.
-- If the Moto still measures too slow, the existing "too slow on this phone" check flags the voice. The fallback
+- If the test phone still measures too slow, the existing "too slow on this phone" check flags the voice. The fallback
   is Piper google, unchanged.
 - Rejected without a trial: IndicF5 (1.3 GB or more, diffusion), Indic Parler-TTS (0.9B), Kokoro and Supertonic
   (no Bengali), AI4Bharat FastPitch (no route into sherpa-onnx).

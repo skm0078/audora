@@ -11,26 +11,35 @@ import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceShaping
+import io.github.skm0078.audora.playback.async.LatestWrites
 import java.io.File
 import java.io.IOException
 import java.util.Properties
+import java.util.concurrent.Executor
 
 /**
  * The service owns the style, so reading resumed from the lock screen or a headset after Audora was closed speaks
  * at the listener's rate too, not only reading started from the app. [current] is read on the render thread and
  * set on the main thread, hence volatile. A missing or unreadable file means the default style, never an error.
  */
-class SpeechStyleStore(private val file: File, val config: SpeechStyleConfig = SpeechStyleConfig()) {
+class SpeechStyleStore(
+    private val file: File,
+    val config: SpeechStyleConfig = SpeechStyleConfig(),
+    writer: Executor = LatestWrites.SETTINGS_WRITER,
+) {
     @Volatile
     private var style: SpeechStyle? = null
+
+    // Off the main thread, latest value only: speed and pitch sliders set the style on every step.
+    private val saves = LatestWrites(writer, ::save)
 
     /** Loaded from the file on first use: one small read. */
     val current: SpeechStyle
         get() = style ?: load().also { style = it }
 
     /**
-     * Applies [requested] (rate and pitch clamped to their ranges) at once; returns what was applied. A failed save
-     * is logged.
+     * Applies [requested] (rate and pitch clamped to their ranges) at once; returns what was applied. The file is saved
+     * in the background; a failed save is logged.
      */
     fun set(requested: SpeechStyle): SpeechStyle {
         val applied = requested.copy(
@@ -38,7 +47,7 @@ class SpeechStyleStore(private val file: File, val config: SpeechStyleConfig = S
             pitch = config.clampPitch(requested.pitch),
         )
         style = applied
-        save(applied)
+        saves.submit(applied)
         return applied
     }
 

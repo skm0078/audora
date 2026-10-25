@@ -4,7 +4,7 @@
 package io.github.skm0078.audora.core.config
 
 /**
- * @property threads ONNX Runtime threads; four matches the Moto's big cores, as for the SYSPIN voices (ADR-053).
+ * @property threads ONNX Runtime threads; four matches the test phone's big cores, as for the SYSPIN voices (ADR-053).
  * @property plainStrength Chatterbox's "exaggeration" for a sentence that asks for no feeling: its own default.
  * @property feelingStrength for a sentence that asks for one (ADR-056). Kept well under 0.9, where the PyTorch spike
  *   heard the model run on into made-up words.

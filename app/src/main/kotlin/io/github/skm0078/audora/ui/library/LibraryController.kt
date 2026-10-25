@@ -27,6 +27,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
@@ -74,11 +75,13 @@ class LibraryController(
 
     fun start() {
         if (watch != null) return
-        // Progress is a nicety: if the anchors cannot be read the library still shows, without it.
+        // Progress is a nicety: if the anchors cannot be read the library still shows, without it. A save every
+        // sentence or two while a book plays changes nothing the library shows until the page does, so those are
+        // skipped instead of filtering and sorting every book on the main thread every 2 s.
         val saved = anchors.catch { e ->
             AudoraLog.w(TAG, "Reading positions could not be loaded; the library shows no progress", e)
             emit(emptyList())
-        }
+        }.distinctUntilChanged { old, new -> progressShown(old) == progressShown(new) }
         scope.launch { library.pruneDocuments() }
         watch = scope.launch {
             combine(library.books(), saved, ownCollections()) { latest, positions, own ->
@@ -138,9 +141,10 @@ class LibraryController(
 
     /**
      * A PDF opened or shared from another app ("Open with Audora"): added like a picked one, then [open]ed. When the
-     * other app's grant cannot be kept, the PDF is added through a copy made by `importShared`.
+     * other app's grant cannot be kept, the PDF is added through a copy made by `importShared`. [done] runs once the
+     * add has finished, never when it was cancelled (the screen went away), so the caller can try again.
      */
-    fun addShared(documentUri: String, open: (BookId) -> Unit) = runPick {
+    fun addShared(documentUri: String, open: (BookId) -> Unit, done: () -> Unit = {}) = runPick {
         val kept = library.add(documentUri)
         val added = if (kept.isCannotKeepAccess()) {
             importShared(documentUri)?.let { copy -> library.add(copy) } ?: kept
@@ -148,6 +152,7 @@ class LibraryController(
             kept
         }
         report(added, picked = false)
+        done()
         (added as? Outcome.Success)?.let { open(it.value.book.id) }
     }
 
@@ -255,3 +260,10 @@ class LibraryController(
         const val SEARCH_PAUSE_MS = 200L
     }
 }
+
+/**
+ * What the library shows of the resume anchors: each book's page (its progress) and which book was read last
+ * ("Continue reading"). Two lists with the same of both look the same on screen.
+ */
+internal fun progressShown(anchors: List<ResumeAnchor>): Pair<Map<BookId, Int>, BookId?> =
+    anchors.associate { it.bookId to it.page } to anchors.maxByOrNull { it.savedAtMillis }?.bookId

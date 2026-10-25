@@ -8,7 +8,7 @@ import io.github.skm0078.audora.spike.voices.catalog.TextKind
 data class BenchConfig(
     /**
      * sherpa-onnx thread counts to measure. 2 leaves cores free for the player and UI (the real app's case);
-     * 4 matches the Moto's four performance cores and shows the ceiling.
+     * 4 matches the test phone's four performance cores and shows the ceiling.
      */
     val threadCounts: List<Int> = DEFAULT_THREAD_COUNTS,
     /** Texts concatenated into each voice's listening sample: a natural passage, then the hard one. */

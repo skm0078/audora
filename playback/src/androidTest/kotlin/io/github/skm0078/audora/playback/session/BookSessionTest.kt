@@ -77,6 +77,9 @@ class BookSessionTest {
     // The player's speed as each sentence started (same index as [played]).
     private val speeds: MutableList<Float> = Collections.synchronizedList(mutableListOf())
     private val finished: MutableList<BookId> = Collections.synchronizedList(mutableListOf())
+
+    // Each sentence the session reported started (saved as its book's resume anchor), with the book it was saved for.
+    private val saved: MutableList<Pair<BookId, UnitKey>> = Collections.synchronizedList(mutableListOf())
     private val ended = CountDownLatch(1)
     private val endings = AtomicInteger()
     private val pausedAtItemEnd = CountDownLatch(1)
@@ -357,6 +360,38 @@ class BookSessionTest {
     }
 
     @Test
+    fun aRefusedStartInAnotherBookLeavesThePlayingBookAsItWas() {
+        play(page = 0, charStart = 0)
+        awaitCondition("first sentence") { played.isNotEmpty() }
+
+        // The short book has no page 3: refused before anything switches.
+        val refused = runBlocking {
+            withContext(Dispatchers.Main) { session.playFrom(SHORT_BOOK.id, PAGES - 1, 0, null) }
+        }
+        assertTrue(refused is Outcome.Failure)
+        assertEquals(BOOK.id, onMain { session.bookId })
+
+        awaitEnd()
+        assertEquals(allKeys(), played.toList())
+        assertTrue("saved for another book: ${saved.toList()}", saved.all { it.first == BOOK.id })
+        assertEquals(listOf(BOOK.id), onMain { finished.toList() })
+    }
+
+    @Test
+    fun switchingBooksSavesEachSentenceForItsOwnBook() {
+        play(page = 0, charStart = 0)
+        awaitCondition("first sentence") { played.isNotEmpty() }
+
+        play(page = 0, charStart = 0, book = SHORT_BOOK)
+        awaitEnd()
+
+        val shortKeys = (0 until SHORT_PAGES).flatMap { p -> (0 until UNITS_PER_PAGE).map { UnitKey(p, it) } }
+        val savedForShort = saved.filter { it.first == SHORT_BOOK.id }.map { it.second }
+        assertEquals(shortKeys, savedForShort)
+        assertEquals(listOf(SHORT_BOOK.id), onMain { finished.toList() })
+    }
+
+    @Test
     fun onlyABookReadToItsEndWhilePlayingCountsAsFinished() {
         play(page = 0, charStart = 0)
         awaitCondition("second sentence") { played.size >= 2 }
@@ -518,6 +553,10 @@ class BookSessionTest {
 
     private inner class Events : SessionEvents {
         override fun onReading(bookId: String, page: Int) = Unit
+
+        override fun onSentenceStarted(bookId: BookId, unit: ReadingUnit) {
+            saved += bookId to UnitKey.of(unit)
+        }
 
         override fun onNotReading() = Unit
 

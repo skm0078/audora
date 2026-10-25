@@ -9,7 +9,7 @@
     <string name="speech_pitch_spoken">Pitch: %1$s</string>
     <string name="speech_pitch_down">Deeper</string>
     <string name="speech_pitch_up">Higher</string>
-    <string name="speech_pitch_help" formatted="false">How high or deep the voice sounds. Natural is the voice as it was made. A change is heard at once, without starting the sentence again, and speed never changes it. The range stays within 15% either way, where a voice still sounds like itself. Saved audiobooks, clips, studio files and talking books use it too. With This book\'s own settings on, each book keeps its own pitch.</string>
+    <string name="speech_pitch_help" formatted="false">How high or deep the voice sounds. Natural is the voice as it was made. A change is heard at once, without starting the sentence again, and speed never changes it. The slider and the − and + buttons go up to 15% either way, where a voice still sounds like itself; the one-tap choices stop at 10%. Saved audiobooks, clips, studio files and talking books use it too. With This book\'s own settings on, each book keeps its own pitch.</string>
     <string name="speech_pitch_bit_deeper">A bit deeper</string>
     <string name="speech_pitch_bit_higher">A bit higher</string>
     <string name="speech_pitch_hint">Heard at once. Speed never changes it.</string>
