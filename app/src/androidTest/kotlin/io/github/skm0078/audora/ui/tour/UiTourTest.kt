@@ -15,10 +15,14 @@ import android.util.Log
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.core.graphics.scale
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -56,7 +60,9 @@ class UiTourTest {
         assumeTrue("Only ui-tour.yml runs the tour", InstrumentationRegistry.getArguments().getString(ARG) == "true")
         prepareDevice()
         try {
-            PASSES.forEach(::runPass)
+            PASSES.forEach { next ->
+                runCatching { runPass(next) }.onFailure { Log.w(TAG, "Pass ${next.name} stopped: ${it.message}", it) }
+            }
         } finally {
             scenario?.close()
             restoreDevice()
@@ -91,8 +97,10 @@ class UiTourTest {
     private fun visit(name: String, block: () -> Unit) {
         runCatching(block).onFailure { failure ->
             Log.w(TAG, "${pass.name}: could not tour $name: ${failure.message}")
-            capture("$name-failed")
-            backToTabs()
+            runCatching {
+                capture("$name-failed")
+                backToTabs()
+            }.onFailure { Log.w(TAG, "${pass.name}: could not get back to the tabs: ${it.message}") }
         }
     }
 
@@ -207,7 +215,10 @@ class UiTourTest {
     private fun scrollCaptures(name: String, pages: Int = SCROLL_PAGES) {
         var previous = screenshot()
         for (page in 2..pages) {
-            JourneyDevice.shell("input swipe $SWIPE_X $SWIPE_FROM_Y $SWIPE_X $SWIPE_TO_Y $SWIPE_MS")
+            // The topmost window: a sheet or dialog over the screen, else the screen itself.
+            rule.onAllNodes(isRoot()).onLast().performTouchInput {
+                swipeUp(startY = height * SWIPE_FROM, endY = height * SWIPE_TO)
+            }
             settle()
             val now = screenshot()
             if (middle(now).sameAs(middle(previous))) return
@@ -266,14 +277,16 @@ class UiTourTest {
         settle()
     }
 
-    /** Back until the tab bar shows, or a fresh start of the app when Back cannot get there. */
+    /** Back until the tab bar shows, or a fresh start of the app when Back cannot get there (or it left the screen). */
     private fun backToTabs() {
         val tabs = hasText(text(R.string.tab_settings))
+        val onTabs = { runCatching { rule.onAllNodes(tabs).fetchSemanticsNodes().isNotEmpty() }.getOrDefault(false) }
         repeat(MAX_BACKS) {
-            if (rule.onAllNodes(tabs).fetchSemanticsNodes().isNotEmpty()) return
+            if (onTabs()) return
+            if (JourneyDevice.resumedActivity() == null) return@repeat
             back()
         }
-        if (rule.onAllNodes(tabs).fetchSemanticsNodes().isEmpty()) {
+        if (!onTabs()) {
             scenario?.close()
             scenario = ActivityScenario.launch(MainActivity::class.java)
             settle()
@@ -288,9 +301,8 @@ class UiTourTest {
 
     private fun text(id: Int, vararg args: Any): String = localized().getString(id, *args)
 
+    /** The screen size comes from the emulator's own settings (ui-tour.yml); only animations are set here. */
     private fun prepareDevice() {
-        JourneyDevice.shell("wm size $WIDTH_PX" + "x$HEIGHT_PX")
-        JourneyDevice.shell("wm density $DENSITY")
         listOf("window_animation_scale", "transition_animation_scale", "animator_duration_scale").forEach {
             JourneyDevice.shell("settings put global $it 0")
         }
@@ -299,8 +311,6 @@ class UiTourTest {
     private fun restoreDevice() {
         JourneyDevice.shell("settings put system font_scale 1.0")
         JourneyDevice.shell("cmd uimode night no")
-        JourneyDevice.shell("wm size reset")
-        JourneyDevice.shell("wm density reset")
     }
 
     private val app: Context get() = JourneyDevice.app
@@ -311,17 +321,12 @@ class UiTourTest {
         const val FOLDER = "Download/ListenLock-screens/tour"
         const val PERCENT = 100
 
-        // A common 6.7-inch phone: 1080 × 2400 px at about 420 dpi (411 × 914 dp).
-        const val WIDTH_PX = 1080
-        const val HEIGHT_PX = 2400
-        const val DENSITY = 420
         const val SAVED_WIDTH = 720
         const val WEBP_QUALITY = 82
 
-        const val SWIPE_X = 540
-        const val SWIPE_FROM_Y = 1900
-        const val SWIPE_TO_Y = 700
-        const val SWIPE_MS = 400
+        // A swipe in the middle of the screen, clear of the system's edge gestures (one from the bottom goes home).
+        const val SWIPE_FROM = 0.7f
+        const val SWIPE_TO = 0.3f
         const val SCROLL_PAGES = 4
         const val SHEET_PAGES = 6
         const val EDGE_PART = 4

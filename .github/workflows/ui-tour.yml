@@ -70,6 +70,8 @@ jobs:
           export ANDROID_AVD_HOME="$RUNNER_TEMP/avd"
           mkdir -p "$ANDROID_AVD_HOME"
           echo no | "$tools/avdmanager" create avd --force --name ci --package "$EMULATOR_IMAGE"
+          # A common 6.7-inch phone: 1080 x 2400 px at 420 dpi (411 x 914 dp), so layouts match what listeners see.
+          printf 'hw.lcd.width=1080\nhw.lcd.height=2400\nhw.lcd.density=420\n' >> "$ANDROID_AVD_HOME/ci.avd/config.ini"
           if ! "$emulator" -list-avds | grep -qx ci; then
             find "$HOME" "$RUNNER_TEMP" -name 'ci.ini' 2> /dev/null || true
             fail "AVD 'ci' was not created in $ANDROID_AVD_HOME"
