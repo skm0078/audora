@@ -427,8 +427,11 @@ class SessionCallback(
  * Bluetooth, watches and car apps are trusted controllers (a media-control permission or notification
  * access) and still see everything.
  */
+internal val OTHER_APPS: Player.Commands = otherAppsCommands()
+
+// Android lint honours the opt-in on a function, not on a property's initializer.
 @OptIn(UnstableApi::class)
-internal val OTHER_APPS: Player.Commands = MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
+private fun otherAppsCommands(): Player.Commands = MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
     .remove(Player.COMMAND_SET_MEDIA_ITEM)
     .remove(Player.COMMAND_CHANGE_MEDIA_ITEMS)
     .remove(Player.COMMAND_GET_METADATA)
