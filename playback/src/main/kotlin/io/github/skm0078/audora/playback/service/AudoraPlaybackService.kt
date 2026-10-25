@@ -173,7 +173,7 @@ class AudoraPlaybackService : MediaLibraryService() {
         }
         voices = SpeechVoices(engines)
         val sleepOptions = SleepOptionsStore.forContext(this)
-        val book = BookContext(bookSettings, pronunciations, scope) { bookSession.restartRendering() }
+        val book = BookContext(bookSettings, pronunciations, scope, style.config::clampPitch, ::onBookRulesChanged)
         voices.bookVoice = book::voice
         // What is heard: the global style with the open book's own speed and pace on top (plan item 4).
         val heard = { book.style(style.current) }
@@ -399,6 +399,9 @@ class AudoraPlaybackService : MediaLibraryService() {
             voices.trimMemory()
         }
     }
+
+    /** The open book's fixes changed while it plays: what was rendered ahead is rendered again. */
+    private fun onBookRulesChanged() = bookSession.restartRendering()
 
     override fun onDestroy() {
         if (restoring) {

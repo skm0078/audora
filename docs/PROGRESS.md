@@ -2,6 +2,29 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Release hardening 2: words read wrong (2026-10-25)
+From the pre-release review. Speech text changes, so STUDIO_AUDIO_VERSION is 3; :pdf is untouched.
+- **"the book I read" is no longer "the book one read":** after book, part, class, lesson and the other numbering
+  words, a lone "I" followed by a verb (an auxiliary, a common verb, any "-ed" word) stays the pronoun. Before
+  anything else it is still the numeral ("Part I.", "Type I diabetes", "Book I of the Iliad"), and after "World
+  War" it always is (`RomanNumeralRule`).
+- **Hindi and Bengali say a minus sign:** "-5 डिग्री" is "माइनस पाँच डिग्री" ("মাইনাস" in Bengali); a dash
+  between numbers stays a range. Equations keep the formal "ऋण".
+- **Map scales:** "1:50,000" is no longer read as a clock time.
+- **A book's pronunciation fixes apply from its first sentence:** `BookContext.open` returns once the fixes are
+  loaded (one collection, so an edit made while the book opens is not missed). Before, up to 40 sentences were
+  rendered without them.
+- **Pitch:** a book's pitch saved under the old range is brought into ±15% when the book opens (ADR-071 said so;
+  the code did not). The slider no longer jumps back while dragging when the service's echo of an earlier step
+  arrives late. The - and + buttons are "One step deeper/higher", so TalkBack no longer gives them the same names
+  as the Deeper and Higher presets.
+- What's new (id 3) lists these.
+- **Verified in CI:** `EnglishNormalizerTest` (pronoun and numeral "I", map scale), `IndicNormalizerTest` (minus),
+  `BookContextTest` (open waits for the fixes; old pitch clamped), `JobsAndPitchScreensTest`.
+
+**Real-device checks (Moto):** read a novel page with "the book I read": hear "I". Add a fix to a book, close it,
+reopen it: the first sentence uses the fix. In a Hindi text with "-5", hear "माइनस पाँच".
+
 ## Release hardening 1: crash guards (2026-10-25)
 From the pre-release review (all modules). No reading output changes, so PIPELINE_VERSION stays.
 - **One odd page no longer ends playback:** any defect while building a page's sentences (a broken invariant, a

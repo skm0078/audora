@@ -10,5 +10,7 @@ package io.github.skm0078.audora.playback.studio
  * the app's install time instead, so every update threw away hours of rendering.
  * 1 = ADR-064: first explicit version.
  * 2 = closing quotes after a sentence's end move inside it for Kitten voices (no babble after the sentence).
+ * 3 = a lone "I" after book, part, class and the like stays the pronoun; Hindi and Bengali say a minus sign; "1:50,000"
+ *     is not a clock time; a book's pronunciation fixes apply from its first sentence.
  */
-const val STUDIO_AUDIO_VERSION: Int = 2
+const val STUDIO_AUDIO_VERSION: Int = 3

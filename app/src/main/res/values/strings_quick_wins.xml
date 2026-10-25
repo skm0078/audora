@@ -17,15 +17,10 @@
     <string name="whats_new_item">• %1$s</string>
     <string name="whats_new_ok">Got it</string>
     <string-array name="whats_new_items">
-        <item>The notification and lock screen show the book\'s cover, author and chapter.</item>
-        <item>Long-press the app icon to resume your book, add a book or read copied text.</item>
-        <item>When a book opens, ListenLock says where it picked up.</item>
-        <item>A book\'s menu can mark it as finished or as not started.</item>
-        <item>Long-press a sentence to copy or share its words.</item>
-        <item>The home-screen widget shows the book\'s cover.</item>
-        <item>A light tick when you long-press, change the speed, add a bookmark or set the sleep timer.</item>
-        <item>Long names in settings now go on their own line, so no title is squeezed.</item>
-        <item>Pitch has presets like speed, from Deeper to Higher, and you hear it while you drag.</item>
+        <item>Words like “the book I read” are no longer read as “the book one read”.</item>
+        <item>Hindi and Bengali say “minus” for a minus sign before a number.</item>
+        <item>Your pronunciation fixes apply from a book\'s very first sentence.</item>
+        <item>A damaged PDF shows a message instead of closing the app.</item>
     </string-array>
 
     <string name="library_mark_finished">Mark as finished</string>

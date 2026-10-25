@@ -11,14 +11,18 @@ package io.github.skm0078.audora.speech.normalize
  * 3. as a parenthesised list label made of i, v and x only: "(iv)" → "(four)";
  * 4. at the start of a heading, followed by ".", ")" or ":" or standing alone: "IV. Results" → "four. Results".
  *
- * A lone L, C, D or M is never a numeral (it is a letter label); only canonical numerals are read (no "IIII").
+ * A lone L, C, D or M is never a numeral (it is a letter label); only canonical numerals are read (no "IIII"). A
+ * lone "I" after a keyword is the pronoun when a verb follows it ("the book I read", "the part I played", "the class
+ * I teach"), and stays as written; before anything else it is the numeral ("Part I.", "Type I diabetes", "Book I of
+ * the Iliad"). After "World War" it is always the numeral ("World War I began").
  */
 internal class RomanNumeralRule : NormalizationRule {
 
     override fun apply(text: String, role: TextRole): String {
         var result = AFTER_KEYWORD.replace(text) { match ->
             val (keyword, numeral) = match.destructured
-            cardinalOf(numeral)?.let { "$keyword $it" } ?: match.value
+            val pronoun = numeral.equals("I", ignoreCase = true) && isPronoun(keyword, text, match.range.last + 1)
+            if (pronoun) match.value else cardinalOf(numeral)?.let { "$keyword $it" } ?: match.value
         }
         result = REGNAL.replace(result) { match ->
             val (name, numeral) = match.destructured
@@ -36,6 +40,10 @@ internal class RomanNumeralRule : NormalizationRule {
         return result
     }
 
+    /** A lone "I" at [after] is the pronoun when [PRONOUN_VERB] follows, except after "World War" (two words). */
+    private fun isPronoun(keyword: String, text: String, after: Int): Boolean =
+        ' ' !in keyword && PRONOUN_VERB.matchesAt(text, after)
+
     private fun cardinalOf(numeral: String): String? = RomanNumerals.valueOf(numeral)?.let {
         NumberWords.cardinal(it.toLong())
     }
@@ -50,6 +58,17 @@ internal class RomanNumeralRule : NormalizationRule {
         private const val NUMERAL = """([IVXLCDM]+|[ivxlcdm]+)(?![\w'’])"""
 
         val AFTER_KEYWORD = Regex("""(?<![\w])((?i:$KEYWORDS))\s+$NUMERAL""")
+
+        // What follows the pronoun "I" and never the numeral: a verb (an auxiliary, a common verb, any "-ed" word) or
+        // an adverb that sits between them ("the book I also read").
+        private const val VERBS =
+            """am|was|were|have|had|has|do|did|does|will|would|shall|should|can|could|may|might|must|need|want|""" +
+                """like|love|hate|know|knew|think|thought|mean|meant|read|write|wrote|make|made|get|got|give|gave|""" +
+                """find|found|take|took|see|saw|feel|felt|left|meet|met|teach|taught|buy|bought|bring|brought|""" +
+                """hear|heard|keep|kept|lose|lost|tell|told|say|said|go|went|come|came|began|run|ran|choose|chose|""" +
+                """spent|built|sent|held|won|prefer|use|study|attend|remember|forget|forgot|""" +
+                """also|never|just|still|really|once|ever|always|often|only|already|\p{Ll}+ed"""
+        val PRONOUN_VERB = Regex("""\s+(?:$VERBS)(?![\w'’])""")
 
         private val NAMES = RomanNumerals.REGNAL_NAMES.joinToString("|")
 

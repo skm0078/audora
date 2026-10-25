@@ -113,7 +113,7 @@ class JobsAndPitchScreensTest {
         rule.onNodeWithText(context.getString(R.string.speech_pitch_higher, 5)).assertExists()
         save("pitch-higher", rule.onNodeWithTag(SCREEN).captureToImage().asAndroidBitmap())
 
-        rule.onNodeWithContentDescription(context.getString(R.string.speech_pitch_up)).performClick()
+        rule.onNodeWithContentDescription(context.getString(R.string.speech_pitch_step_up)).performClick()
         rule.waitForIdle()
         assertEquals(1.1f, pitch)
 
@@ -122,8 +122,8 @@ class JobsAndPitchScreensTest {
         assertEquals(1f, pitch)
 
         rule.runOnIdle { pitch = config.minPitch }
-        rule.onNodeWithContentDescription(context.getString(R.string.speech_pitch_down)).assertIsNotEnabled()
-        rule.onNodeWithContentDescription(context.getString(R.string.speech_pitch_up)).assertIsEnabled()
+        rule.onNodeWithContentDescription(context.getString(R.string.speech_pitch_step_down)).assertIsNotEnabled()
+        rule.onNodeWithContentDescription(context.getString(R.string.speech_pitch_step_up)).assertIsEnabled()
         rule.onNodeWithText(context.getString(R.string.speech_pitch_lower, 15)).assertExists()
     }
 
