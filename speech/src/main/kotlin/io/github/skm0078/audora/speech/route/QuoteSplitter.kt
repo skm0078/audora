@@ -58,12 +58,12 @@ class QuoteSplitter(private val config: DialogueConfig = DialogueConfig()) {
             val before = text.getOrNull(i - 1)
             val after = text.getOrNull(i + 1)
             when {
-                open != null && c in open && (c != SINGLE_CLOSE || endsWord(after)) -> {
+                open != null && closes(open, c, after) -> {
                     flush(quoted = true)
                     closers = null
                 }
 
-                open == null && c == SINGLE_OPEN && startsWord(before, after) -> {
+                open == null && opensSingle(c, before, after) -> {
                     flush(quoted = false)
                     closers = setOf(SINGLE_CLOSE)
                 }
@@ -89,13 +89,6 @@ class QuoteSplitter(private val config: DialogueConfig = DialogueConfig()) {
         SINGLE_CLOSE -> before != null && before in SPEECH_END && endsWord(after)
         else -> false
     }
-
-    /** `‘` opens a quote at a word's start: after a space, a bracket or a dash, and before a letter or a mark. */
-    private fun startsWord(before: Char?, after: Char?): Boolean =
-        (before == null || before.isWhitespace() || before in "([—–-") && after != null && !after.isWhitespace()
-
-    /** `’` closes a quote at a word's end; inside a word ("don’t", "ma’am") it is an apostrophe. */
-    private fun endsWord(after: Char?): Boolean = after == null || !after.isLetterOrDigit()
 
     /** A short quote that is a whole utterance: it ends on speech punctuation inside the marks. */
     private fun utterance(quote: String): Boolean = quote.trimEnd().lastOrNull()?.let { it in SPEECH_END } == true
@@ -128,5 +121,19 @@ class QuoteSplitter(private val config: DialogueConfig = DialogueConfig()) {
         /** A quote opened in an earlier sentence: any closing mark ends it (not `“`, which opens English quotes). */
         val CARRIED_CLOSERS = CLOSERS + '"' + SINGLE_CLOSE
         val WHITESPACE = Regex("""\s+""")
+
+        /** [c] closes the open quote: one of its [closers], and a `’` only at a word's end. */
+        private fun closes(closers: Set<Char>, c: Char, after: Char?): Boolean =
+            c in closers && (c != SINGLE_CLOSE || endsWord(after))
+
+        private fun opensSingle(c: Char, before: Char?, after: Char?): Boolean =
+            c == SINGLE_OPEN && startsWord(before, after)
+
+        /** `‘` opens a quote at a word's start: after a space, a bracket or a dash, and before a letter or a mark. */
+        private fun startsWord(before: Char?, after: Char?): Boolean =
+            (before == null || before.isWhitespace() || before in "([—–-") && after != null && !after.isWhitespace()
+
+        /** `’` closes a quote at a word's end; inside a word ("don’t", "ma’am") it is an apostrophe. */
+        private fun endsWord(after: Char?): Boolean = after == null || !after.isLetterOrDigit()
     }
 }

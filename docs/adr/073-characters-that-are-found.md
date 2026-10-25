@@ -33,15 +33,20 @@ and "Help!" sounded cheerful (Bengali Rasa's HAPPY style).
    পিসি, the captain). Names used for both genders are left out: a wrong-gender voice is worse than none.
 5. **Narration helps.** A name the narration makes a sentence's subject is remembered for a later "she said"; an
    untagged line goes to the subject of the narration just before it in its paragraph; a line that calls someone by
-   name ("My phone died, Tom.") is not given to them.
+   name ("My phone died, Tom.") is not given to them, and the one a line calls ("Mrs Patel, where were you?") is
+   most likely the next to speak. An English name printed as one ("Inspector Ward", "Kit") is a character even when
+   no list knows it (it gets no voice until its gender is told). A "he said" goes first to the one this paragraph's
+   narration just named ("Jonah clung to a rope. “I can't,” he stammered.").
 6. **"!" is emphatic, not happy.** A new feeling `EMPHATIC` (a little quicker and louder, Rasa's CONV style) is used
    for an exclamation without a cue word.
 7. **Experimental.** "A voice for each character" is labelled experimental until the held-out scores are good.
 
 ## Results
+Right speaker on the tuned set: 17 / 11 / 26 % → 87 / 84 / 100 %.
+
 | Set | Right-gender voice before → after (en / hi / bn) | Opposite feelings |
 |---|---|---|
-| Tuned | 29 / 11 / 0 % → 74 / 88 / 100 % | 5 → 0 |
+| Tuned | 29 / 11 / 0 % → 85 / 88 / 100 % | 5 → 0 |
 | Held out | 22 / 0 / 0 % → 55 / 7 / 0 % | 4 → 1 |
 
 The held-out Hindi and Bengali scores show the limit of rules: names that are in no list (बिरजू, পল্টু) still get no

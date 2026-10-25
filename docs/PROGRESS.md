@@ -10,8 +10,8 @@ The maintainer heard character voices fail most of the time. Measured first, the
   its opposite. Reports land in `playback/build/expressive/`.
 - **Characters found:** single-quoted dialogue, one-word lines, Hindi and Bengali tags read subject first (sadhu
   verbs too), names and role words that tell gender, the narration's subject for an untagged line, never the person
-  a line calls by name. Right-gender voice: 29/11/0 % → 74/88/100 % (en/hi/bn) on the tuned set, 22/0/0 % →
-  55/7/0 % held out.
+  a line calls by name (the one it calls answers next), English names as printed. Right speaker 17/11/26 % →
+  87/84/100 % (en/hi/bn); right-gender voice 29/11/0 % → 85/88/100 % on the tuned set, 22/0/0 % → 55/7/0 % held out.
 - **"!" alone reads emphatic, not happy.** Opposite feelings 5 → 0 on the tuned set.
 - "A voice for each character" is labelled experimental; What's new lists the changes; studio audio renders again.
 

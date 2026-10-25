@@ -43,15 +43,13 @@ class SpeakerTags(private val splitter: QuoteSplitter = QuoteSplitter()) {
      * name (one it knows, or one whose gender [NameGenders] knows): "Waves broke over the rail" opens with a noun.
      */
     fun subjectOf(text: String, lang: Lang): Speaker? {
-        if (splitter.split(text).any { it.quoted }) return null
-        val patterns = PATTERNS[lang] ?: return null
-        return patterns.subject(text.trim())?.let { withNameGender(it, lang) }
+        val patterns = PATTERNS[lang]?.takeUnless { splitter.split(text).any { it.quoted } }
+        return patterns?.subject(text.trim())?.let { withNameGender(it, lang) }
     }
 
-    private fun withNameGender(speaker: Speaker, lang: Lang): Speaker {
-        val name = speaker.name ?: return speaker
-        if (speaker.gender != SpeakerGender.UNKNOWN) return speaker
-        return speaker.copy(gender = NameGenders.of(name, lang))
+    private fun withNameGender(speaker: Speaker, lang: Lang): Speaker = when {
+        speaker.name == null || speaker.gender != SpeakerGender.UNKNOWN -> speaker
+        else -> speaker.copy(gender = NameGenders.of(speaker.name, lang))
     }
 
     private interface Patterns {
@@ -200,14 +198,13 @@ class SpeakerTags(private val splitter: QuoteSplitter = QuoteSplitter()) {
 
         /** The subject among a clause's [words]; [verb] may tell its gender. */
         private fun pick(words: List<String>, verb: String): Speaker? {
-            agent(words)?.let { return it }
-            val gender = genderOf(verb)
             val at = words.indexOfFirst { it !in skip }
-            if (at < 0) return null
-            val word = words[at]
-            if (words.getOrNull(at + 1) in objectMarkers) return null
-            if (word in pronouns) return Speaker(null, gender)
-            return Speaker(withTitle(words, at), gender)
+            val gender = genderOf(verb)
+            return agent(words) ?: when {
+                at < 0 || words.getOrNull(at + 1) in objectMarkers -> null
+                words[at] in pronouns -> Speaker(null, gender)
+                else -> Speaker(withTitle(words, at), gender)
+            }
         }
 
         /** Hindi's "X ने": the doer, whatever comes first. */
@@ -244,13 +241,14 @@ class SpeakerTags(private val splitter: QuoteSplitter = QuoteSplitter()) {
         private val doer = Regex("([\\p{L}\\p{M}]+)(?:\\s+(जी))?\\s+ने(?![\\p{L}\\p{M}])")
         private val ownNe = setOf("उसने", "उन्होंने", "मैंने", "हमने", "तुमने", "आपने", "इसने", "इन्होंने")
 
+        private val notDoers = setOf("तब", "फिर", "और")
+
         override fun agent(words: List<String>): Speaker? {
-            words.firstOrNull { it in ownNe }?.let { return Speaker(null, SpeakerGender.UNKNOWN) }
-            val match = doer.find(words.joinToString(" ")) ?: return null
-            val name = match.groupValues[1]
-            if (name in setOf("तब", "फिर", "और")) return null
-            val title = match.groupValues[2]
-            return Speaker(if (title.isEmpty()) name else "$name $title", SpeakerGender.UNKNOWN)
+            if (words.any { it in ownNe }) return Speaker(null, SpeakerGender.UNKNOWN)
+            return doer.find(words.joinToString(" "))?.takeUnless { it.groupValues[1] in notDoers }?.let { match ->
+                val (name, title) = match.groupValues[1] to match.groupValues[2]
+                Speaker(if (title.isEmpty()) name else "$name $title", SpeakerGender.UNKNOWN)
+            }
         }
 
         /** An intransitive verb agrees with its subject: बोली, चीखी, गई are hers; बोला, आया, गया his. */
