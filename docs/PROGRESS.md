@@ -2,6 +2,30 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Release hardening 7: playback edges (2026-10-25)
+From the pre-release review's pick list (P1, P8, P11, P16, P19).
+- **Switching books while one plays keeps each book's place:** a sentence is saved for the book whose playlist it
+  belongs to, the new book's pages are never fed into the old playlist, voice or speed changes wait for the new
+  book's rebuild, and a start on a page the new book does not have is refused before anything switches, leaving the
+  playing book as it was. "Book finished" counts for the book that ended.
+- **Quick Settings tile:** a tap while the tile is still connecting waits up to 3 s for the player, then pauses or
+  plays, instead of opening the app over a book that is playing.
+- **Other apps cannot read what you are reading:** an app with no media permission can still play, pause and skip,
+  but no longer sees the title, author, page or book id. The system's media controls, Bluetooth, watches, Android
+  Auto and other trusted controllers are unchanged.
+- **Settings files are written off the main thread:** the speech style (speed and pitch sliders), sleep options and
+  focus sound save in the background, and a burst of slider steps writes the file once (`LatestWrites`).
+- **Not changed:** Quiz keeps its own copy of the voice, freed after a short idle (ADR-039); sharing the service's
+  copy needs a design change across processes.
+- **Verified in CI:** `BookSessionTest` (a refused switch, sentences saved per book), `TileTapTest`,
+  `OtherAppsCommandsTest`, `LatestWritesTest`, `SpeechStyleStoreTest`, release journey (notification and lock screen
+  controls).
+- **Could affect:** book switching, Up next, the tile, smartwatch or car controls, saving speed and pitch.
+
+**Real-device checks:** play book A, open book B and press Play: B's progress starts at B's first sentence and A
+keeps its place. Pull the shade and tap the tile at once while reading: it pauses. Drag the speed slider: it saves
+and survives closing the app. A Bluetooth headset and the lock screen still show the title.
+
 ## Release hardening 6: jobs that survive a rotation (2026-10-25)
 From the pre-release review's pick list (P2, P3).
 - **A shared file or text is never lost:** it stays pending for the whole process (`PendingShares`) and is cleared

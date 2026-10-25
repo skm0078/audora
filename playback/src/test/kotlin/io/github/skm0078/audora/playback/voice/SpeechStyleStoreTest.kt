@@ -5,6 +5,7 @@ package io.github.skm0078.audora.playback.voice
 
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.model.SpeechStyle
+import io.github.skm0078.audora.playback.async.LatestWrites
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -19,26 +20,26 @@ class SpeechStyleStoreTest {
 
     @Test
     fun `no file means normal speed and pace`() {
-        assertEquals(SpeechStyle(), SpeechStyleStore(file).current)
+        assertEquals(SpeechStyle(), SpeechStyleStore(file, writer = LatestWrites.NOW).current)
     }
 
     @Test
     fun `a style is clamped, applied at once and read back by a new instance`() {
-        val store = SpeechStyleStore(file)
+        val store = SpeechStyleStore(file, writer = LatestWrites.NOW)
 
         val applied = store.set(SpeechStyle(rate = 1.33f, pace = Pace.RELAXED))
 
         assertEquals(SpeechStyle(1.35f, Pace.RELAXED), applied)
         assertEquals(applied, store.current)
-        assertEquals(applied, SpeechStyleStore(file).current)
+        assertEquals(applied, SpeechStyleStore(file, writer = LatestWrites.NOW).current)
     }
 
     @Test
     fun `a pitch is snapped to its step, kept in range and read back`() {
-        val store = SpeechStyleStore(file)
+        val store = SpeechStyleStore(file, writer = LatestWrites.NOW)
 
         assertEquals(1.1f, store.set(SpeechStyle(pitch = 1.12f)).pitch)
-        assertEquals(1.1f, SpeechStyleStore(file).current.pitch)
+        assertEquals(1.1f, SpeechStyleStore(file, writer = LatestWrites.NOW).current.pitch)
         assertEquals(1.15f, store.set(SpeechStyle(pitch = 3f)).pitch)
         assertEquals(0.85f, store.set(SpeechStyle(pitch = 0.1f)).pitch)
     }
@@ -48,7 +49,7 @@ class SpeechStyleStoreTest {
         file.parentFile?.mkdirs()
         file.writeText("rate=1.5\npace=TIGHT\n")
 
-        val read = SpeechStyleStore(file).current
+        val read = SpeechStyleStore(file, writer = LatestWrites.NOW).current
 
         assertEquals(SpeechStyle.NORMAL_PITCH, read.pitch)
         assertEquals(1.5f, read.rate)
@@ -59,6 +60,6 @@ class SpeechStyleStoreTest {
         file.parentFile?.mkdirs()
         file.writeText("rate=fast\npace=SIDEWAYS\npitch=high\n")
 
-        assertEquals(SpeechStyle(), SpeechStyleStore(file).current)
+        assertEquals(SpeechStyle(), SpeechStyleStore(file, writer = LatestWrites.NOW).current)
     }
 }

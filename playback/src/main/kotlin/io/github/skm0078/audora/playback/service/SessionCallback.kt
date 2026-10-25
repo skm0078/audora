@@ -76,8 +76,8 @@ class SessionCallback(
         AudoraLog.i(TAG, "Controller connected: ${controller.packageName} trusted=$trusted browses=$browses")
         val builder = MediaSession.ConnectionResult.AcceptedResultBuilder(session)
         if (!browses) {
-            // Any other app: play and pause what is playing, but never list the library (titles are often personal
-            // documents) or put a book in the player.
+            // Any other app: play and pause what is playing, but never list the library, see what is being read
+            // (titles are often personal documents) or put a book in the player.
             builder.setAvailableSessionCommands(SessionCommands.EMPTY)
             builder.setAvailablePlayerCommands(OTHER_APPS)
         }
@@ -415,19 +415,26 @@ class SessionCallback(
             .remove(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM)
             .build()
 
-        /**
-         * Commands for any other app that connects (plan item 34): it may see and drive what is playing, but never
-         * swap the book, so a stray app cannot load media into the reader's session.
-         */
-        val OTHER_APPS: Player.Commands = MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
-            .remove(Player.COMMAND_SET_MEDIA_ITEM)
-            .remove(Player.COMMAND_CHANGE_MEDIA_ITEMS)
-            .build()
-
         /** A day; anything longer is a bug in the caller, not a bedtime. */
         const val MAX_SLEEP_MINUTES = 24 * 60
     }
 }
+
+/**
+ * Player commands for any other app that connects (plan item 34): it may drive what is playing, but never swap the
+ * book, so a stray app cannot load media into the reader's session, and never read the title, author, page
+ * or book id, so an app with no permission cannot log what the listener reads. The system's media controls,
+ * Bluetooth, watches and car apps are trusted controllers (a media-control permission or notification
+ * access) and still see everything.
+ */
+@OptIn(UnstableApi::class)
+internal val OTHER_APPS: Player.Commands = MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
+    .remove(Player.COMMAND_SET_MEDIA_ITEM)
+    .remove(Player.COMMAND_CHANGE_MEDIA_ITEMS)
+    .remove(Player.COMMAND_GET_METADATA)
+    .remove(Player.COMMAND_GET_CURRENT_MEDIA_ITEM)
+    .remove(Player.COMMAND_GET_TIMELINE)
+    .build()
 
 /** The listener's saved settings the custom commands change: style, sleep timer extras, the open book's own. */
 class SessionStores(
