@@ -37,12 +37,19 @@ data class DeliveryProfile(
 
 /**
  * What one [Feeling] does at full strength: [rate] and [pauseScale] are multipliers, [gainDb] is added loudness
- * (negative is softer). Kept small on purpose: a wrong feeling is worse than none, so each stays a nudge.
+ * (negative is softer), [semitones] moves the voice's pitch (ADR-076: sad lower, lively and surprised higher). Speed
+ * and loudness alone were too small to hear; pitch is what a listener hears first. Each stays well inside the range
+ * where a voice still sounds like itself.
  */
-data class FeelingEffect(val rate: Float = 1f, val gainDb: Float = 0f, val pauseScale: Float = 1f) {
+data class FeelingEffect(
+    val rate: Float = 1f,
+    val gainDb: Float = 0f,
+    val pauseScale: Float = 1f,
+    val semitones: Float = 0f,
+) {
     init {
         require(rate > 0f && rate.isFinite() && pauseScale > 0f && pauseScale.isFinite()) { "bad effect $this" }
-        require(gainDb.isFinite()) { "gainDb must be finite, was $gainDb" }
+        require(gainDb.isFinite() && semitones.isFinite()) { "gainDb and semitones must be finite: $this" }
     }
 }
 
@@ -75,6 +82,8 @@ data class FeelingEffect(val rate: Float = 1f, val gainDb: Float = 0f, val pause
  * @property effects each feeling's effect; every feeling needs one.
  * @property minRate the slowest a delivery may make the voice, whatever the multipliers.
  * @property maxGainDb the loudest a feeling may make a sentence; the shaper's soft limiter catches the peaks.
+ * @property maxSemitones the furthest a feeling may move the pitch, either way, after the profile's strength: past
+ *   about 2.5 semitones (15 %) a voice stops sounding like itself (ADR-071).
  * @property openEndWords a prose sentence of at least this many words that breaks off (a page or column cut it,
  *   "…in old times must") is read as unfinished: rising, not falling, and with only [openEndPauseScale] of its pause.
  */
@@ -102,6 +111,7 @@ data class DeliveryConfig(
     val effects: Map<Feeling, FeelingEffect> = DEFAULT_EFFECTS,
     val minRate: Float = 0.75f,
     val maxGainDb: Float = 3f,
+    val maxSemitones: Float = 2.5f,
     val openEndWords: Int = 4,
     val openEndPauseScale: Float = 0.2f,
 ) {
@@ -119,6 +129,7 @@ data class DeliveryConfig(
         require(profiles.keys == ContentIntent.entries.toSet()) { "every intent needs a delivery profile" }
         require(effects.keys == Feeling.entries.toSet()) { "every feeling needs an effect" }
         require(minRate > 0f && maxGainDb >= 0f) { "minRate must be > 0 and maxGainDb >= 0" }
+        require(maxSemitones in 0f..MAX_SEMITONES) { "maxSemitones must be in 0..$MAX_SEMITONES, was $maxSemitones" }
         require(openEndWords >= 1 && openEndPauseScale in 0f..1f) { "need openEndWords >= 1, pause scale in 0..1" }
     }
 
@@ -127,6 +138,9 @@ data class DeliveryConfig(
     fun effect(feeling: Feeling): FeelingEffect = effects.getValue(feeling)
 
     private companion object {
+        /** An octave: no feeling is read further from the voice's own pitch. */
+        const val MAX_SEMITONES = 12f
+
         // Starting points from audiobook practice (children's narration ~10 % slower, news ~5 % brisker, verse with
         // long line pauses); tune by ear on the phone. GENERAL is today's reading plus gentle feelings.
         val DEFAULT_PROFILES = mapOf(
@@ -163,16 +177,17 @@ data class DeliveryConfig(
             ContentIntent.GENERAL to DeliveryProfile(feelingScale = 0.6f),
         )
 
+        // ADR-076: tuned by ear on rendered story passages (samples in the project's audora/samples/character-voices).
         val DEFAULT_EFFECTS = mapOf(
-            Feeling.LOUD to FeelingEffect(rate = 1.05f, gainDb = 2.5f),
-            Feeling.SOFT to FeelingEffect(rate = 0.93f, gainDb = -6f, pauseScale = 1.1f),
-            Feeling.SAD to FeelingEffect(rate = 0.92f, gainDb = -2f, pauseScale = 1.25f),
-            Feeling.SCARED to FeelingEffect(rate = 1.03f, gainDb = -1.5f),
-            Feeling.SURPRISED to FeelingEffect(rate = 1.02f, gainDb = 1.5f),
-            Feeling.LIVELY to FeelingEffect(rate = 1.04f, gainDb = 1.5f),
-            Feeling.EMPHATIC to FeelingEffect(rate = 1.03f, gainDb = 1.5f),
-            Feeling.TRAILING to FeelingEffect(rate = 0.96f, pauseScale = 1.5f),
-            Feeling.ASKING to FeelingEffect(pauseScale = 1.15f),
+            Feeling.LOUD to FeelingEffect(rate = 1.05f, gainDb = 3f, semitones = 1f),
+            Feeling.SOFT to FeelingEffect(rate = 0.93f, gainDb = -6f, pauseScale = 1.2f, semitones = -0.7f),
+            Feeling.SAD to FeelingEffect(rate = 0.9f, gainDb = -3f, pauseScale = 1.4f, semitones = -1.5f),
+            Feeling.SCARED to FeelingEffect(rate = 1.07f, gainDb = -2f, semitones = 1.5f),
+            Feeling.SURPRISED to FeelingEffect(rate = 1f, gainDb = 2f, pauseScale = 1.1f, semitones = 2f),
+            Feeling.LIVELY to FeelingEffect(rate = 1.06f, gainDb = 2f, semitones = 2f),
+            Feeling.EMPHATIC to FeelingEffect(rate = 1.03f, gainDb = 2f, semitones = 1f),
+            Feeling.TRAILING to FeelingEffect(rate = 0.96f, pauseScale = 1.5f, semitones = -0.5f),
+            Feeling.ASKING to FeelingEffect(pauseScale = 1.15f, semitones = 0.5f),
             Feeling.NEUTRAL to FeelingEffect(),
         )
     }

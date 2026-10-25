@@ -185,6 +185,7 @@ class EngineRenderer(
             reading.startsInQuote(unit),
             speaker,
             delivery.feeling,
+            delivery.pitch,
         )
         return runBlocking { castSpeech.render(text, unit.lang, request, cast, quotePauseMs, level) }.map { routed ->
             speed?.onRendered(text.trim().length, routed, System.nanoTime() - started, rate * stretch)

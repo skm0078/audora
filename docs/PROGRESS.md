@@ -2,6 +2,21 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Feelings you can hear (2026-10-25, ADR-076)
+- **Pitch per feeling on every voice:** sad lines are 1.5 semitones lower, lively and surprised 2 higher, scared 1.5,
+  loud 1, capped at 2.5. Only the quoted words move; narration around them stays plain. Voices that act feelings
+  themselves (Rasa, studio) are not shifted. Made by resampling (`PcmAudio.pitched`), with the voice asked for the
+  speed that keeps the words' length.
+- **Stronger speed, loudness and pauses** per feeling (`DeliveryConfig` effects).
+- "What's new" (en/hi/bn) leads with it, `WHATS_NEW_ID` 8. No `:pdf` change. No new dependency.
+- **Verified in CI:** `PcmAudioTest` (a 200 Hz tone comes out at 224 Hz, 1.12 times shorter), `CastSpeechTest`
+  (only the quote is shifted, its words keep their length, an acting voice is not shifted), `DeliveryPlannerTest`
+  (sad lower, lively higher, plain and news unchanged, a storybook within the cap).
+
+**Real-device checks (the test phone):** with "Read to suit the book" on, play a story with a sad and a happy line in
+English, Hindi (Supertonic) and Bengali: the sad line is clearly lower and slower, the happy one brighter, and both
+still sound like the same voice.
+
 ## Commercial-use voices only; Supertonic reads Hindi (2026-10-25, ADR-074)
 - **Removed:** Piper Hindi pratham and priyamvada (CC BY-NC-SA 4.0) and MMS Bengali (CC BY-NC 4.0). A phone that
   downloaded one deletes it at the next start and that language goes back to its default until another voice is
