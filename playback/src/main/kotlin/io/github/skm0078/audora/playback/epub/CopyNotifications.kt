@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.Intent
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.playback.R
+import io.github.skm0078.audora.playback.jobs.ContinueTokens
 import io.github.skm0078.audora.playback.jobs.JobTimeLeft
 import io.github.skm0078.audora.playback.jobs.LongJobEnd
 import io.github.skm0078.audora.playback.jobs.LongJobKind
@@ -98,6 +99,7 @@ internal class CopyNotifications(private val context: Context) {
         val open = context.packageManager.getLaunchIntentForPackage(context.packageName)
             ?.putExtra(BookCopies.EXTRA_CONTINUE_BOOK, id.value)
             ?.putExtra(BookCopies.EXTRA_CONTINUE_KIND, kind.name)
+            ?.putExtra(ContinueTokens.EXTRA_TOKEN, ContinueTokens.forContext(context).issue(BookCopies.jobOf(id)))
             // Delivered to a running Audora through onNewIntent; without these flags it only comes to the front.
             ?.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             // Its own request code: launch intents differ only in extras, which PendingIntent matching ignores, so

@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.Intent
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.playback.R
+import io.github.skm0078.audora.playback.jobs.ContinueTokens
 import io.github.skm0078.audora.playback.jobs.JobTimeLeft
 import io.github.skm0078.audora.playback.jobs.LongJobEnd
 import io.github.skm0078.audora.playback.jobs.LongJobKind
@@ -102,6 +103,7 @@ internal class ExportNotifications(private val context: Context) {
         // the app's usual code 0 this would rewrite (and be rewritten by) every "open Audora" tap in the app.
         val open = context.packageManager.getLaunchIntentForPackage(context.packageName)
             ?.putExtra(AudiobookExport.EXTRA_CONTINUE_BOOK, id.value)
+            ?.putExtra(ContinueTokens.EXTRA_TOKEN, ContinueTokens.forContext(context).issue(AudiobookExport.jobOf(id)))
             // Delivered to a running Audora through onNewIntent; without these flags it only comes to the front.
             ?.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             ?.let { PendingIntent.getActivity(context, CONTINUE_REQUEST, it, IMMUTABLE_UPDATE) }

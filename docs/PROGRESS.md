@@ -2,6 +2,21 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Release hardening 4: app lock and Continue (2026-10-25, ADR-061)
+From the pre-release security review.
+- **The app lock covers open sheets, dialogs and menus:** the lock screen is now drawn in its own full-screen window,
+  opened after the content's, so a notes sheet or a book's details left open when the app locked is hidden behind
+  it instead of staying readable and tappable on top. Back on the lock screen leaves the app. "Hide app content"
+  still applies (the window inherits the activity's security flag).
+- **Only Audora's own notification can continue a stopped export or copy:** MainActivity is exported, so any app
+  could open it with a book id and start writing that book to shared Audiobooks or Documents. The Continue action
+  now carries a one-time random token kept in app storage (`ContinueTokens`); without it nothing starts and the
+  attempt is logged.
+- **Verified in CI:** `ContinueTokensTest` (once only, wrong or missing token refused, one token per job).
+
+**Real-device checks (Moto):** turn on App lock, open a book's Notes sheet, leave the app for over 30 s, come back:
+only the lock screen shows; unlock and the sheet is still there.
+
 ## Release hardening 3: voice installs (2026-10-25)
 From the pre-release review.
 - **A voice deleted while it downloads stays deleted:** catalog voices now install through the same gate as the
