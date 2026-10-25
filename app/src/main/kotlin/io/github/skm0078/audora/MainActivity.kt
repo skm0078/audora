@@ -800,8 +800,7 @@ class MainActivity : ComponentActivity() {
         val context = LocalContext.current.applicationContext
         val scope = rememberCoroutineScope()
         val port = remember(id) { MediaControllerPlaybackPort(context) }
-        // The page on screen, kept across a rotation or Android closing the app, so the reader comes back to it
-        // instead of jumping to the resume point and saying "Resumed at" again.
+        // The page on screen survives a rotation: no jump to the resume point, no second "Resumed at".
         var shownPage by rememberSaveable(id) { mutableStateOf<Int?>(null) }
         val model = remember(id) {
             ReaderModel(
@@ -826,8 +825,7 @@ class MainActivity : ComponentActivity() {
         DisposableEffect(model) { onDispose { model.close() } }
         AutoResumeRequests(model, target.autoResume, onAutoResumeTaken)
         val state by model.state.collectAsStateWithLifecycle()
-        val pageOnScreen = state.page.takeIf { state.document is DocumentState.Open }
-        LaunchedEffect(pageOnScreen) { pageOnScreen?.let { shownPage = it } }
+        PageOnScreenEffect(state) { shownPage = it }
         val ocrState by remember { ocrModels.state().loggingFailures(READER_TAG, "the OCR models") }
             .collectAsStateWithLifecycle(initialValue = null)
         // A scanned page waiting for the OCR models is read as soon as they are in.
@@ -1114,3 +1112,10 @@ private fun ComponentActivity.SystemBarsFollow(dark: Boolean) {
 /** Edge-to-edge's own three-button navigation bar scrims (androidx.activity's defaults), kept explicit here. */
 private const val LIGHT_NAV_SCRIM = 0xE6FFFFFF.toInt()
 private const val DARK_NAV_SCRIM = 0x801B1B1B.toInt()
+
+/** Reports the page on screen once the book is open, so a rebuilt reader can come back to it. */
+@Composable
+private fun PageOnScreenEffect(state: ReaderState, onPage: (Int) -> Unit) {
+    val pageOnScreen = state.page.takeIf { state.document is DocumentState.Open }
+    LaunchedEffect(pageOnScreen) { pageOnScreen?.let(onPage) }
+}
