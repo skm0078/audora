@@ -166,7 +166,7 @@ warm "reading lamp" look; this ADR records what was built from them and why.
   monochrome layer. First run is decided once per install from the saved flag and the library's first settled
   state, with the shell held until it is known. Voices carries where it was opened from (Settings or Storage), like
   the reader. Real-device checks: a back swipe from the player, reader and Voices, cancelled and finished;
-  the mini player to the full player; landscape on the Moto (player panes, rail, cutout side); TalkBack through a
+  the mini player to the full player; landscape on the test phone (player panes, rail, cutout side); TalkBack through a
   running paragraph and Storage; 200 % font on first run in Hindi.
   Review of wave 5: the screen-on flag and the volume-key hook are counted per window and dropped as soon as a
   reader starts leaving, so two reader compositions during a transition never fight; the mini player's controller

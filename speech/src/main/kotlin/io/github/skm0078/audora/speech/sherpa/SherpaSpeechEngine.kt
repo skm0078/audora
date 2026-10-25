@@ -40,7 +40,7 @@ import kotlinx.coroutines.withContext
  * are seen at once. A voice whose files changed (an update: new `contentVersion`) is reloaded on its next render.
  *
  * Cancellation: sherpa-onnx can only stop between its internal sentences, so a cancelled render returns as soon as
- * the sentence being computed finishes (a fraction of a second for Piper on the Moto) and its audio is discarded.
+ * the sentence being computed finishes (a fraction of a second for Piper on the test phone) and its audio is discarded.
  *
  * @param dispatcher where model loads and renders run. One thread: sherpa-onnx uses its own worker threads inside a
  *   call, and two renders at once would only compete for the same cores.

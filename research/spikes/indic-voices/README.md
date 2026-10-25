@@ -2,7 +2,7 @@
 
 Why: on the dev APK the user rated both Bengali voices (Piper google, Meta MMS) as unusable: unclear, with pacing
 that ignores the text. This spike finds the best offline Bengali (and Hindi) voice we can legally ship and run on
-the Moto Edge 50 Fusion. It extends P3-06 (ADR-030); the pick lands through speech/models.json's `recommended` map.
+the test phone. It extends P3-06 (ADR-030); the pick lands through speech/models.json's `recommended` map.
 
 How: `.github/workflows/indic-voices.yml` converts the candidates sherpa-onnx does not ship (Hugging Face is only
 reachable from CI), renders the same texts with every voice through `bench_desktop.py` (S1's bench, same

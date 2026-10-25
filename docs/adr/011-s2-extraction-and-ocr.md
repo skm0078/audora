@@ -57,7 +57,7 @@ documents, legacy-font files, scans, 400–1,323 page books). Findings that driv
   per document.
 
 ## Consequences
-- More Indic pages go through OCR. Expected cost is ~3–6 s/page on the OnePlus 12 (desktop 1–2 s, not yet
+- More Indic pages go through OCR. Expected cost is ~3–6 s/page on the second test phone (desktop 1–2 s, not yet
   measured on device). Pages take minutes to read aloud, so OCR runs inside the render-ahead window;
   Bengali gets extra lead.
 - P1-02 grows by the JNI library and the `/ActualText` rebuild; its 500-page memory test now includes the reopen rule.

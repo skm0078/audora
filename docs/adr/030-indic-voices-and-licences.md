@@ -57,4 +57,4 @@ Supertonic's OpenRAIL-M text (also on Hugging Face).
 - **Open:** Supertonic 3's OpenRAIL-M text is still not inside its zip. The licences screen links to it and states
   the use restrictions; adding the file needs a copy of `LICENSE` from
   huggingface.co/supertone-oss-archive/supertonic-3 committed under `speech/` and a new Supertonic pin.
-- MMS may measure too slow on the Moto (S1 predicted RTF 0.8–1.1); P4-02's too-slow label covers it.
+- MMS may measure too slow on the test phone (S1 predicted RTF 0.8–1.1); P4-02's too-slow label covers it.

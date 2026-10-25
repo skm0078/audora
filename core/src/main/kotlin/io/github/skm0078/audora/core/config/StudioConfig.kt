@@ -5,7 +5,7 @@ package io.github.skm0078.audora.core.config
 
 /**
  * @property hoursAhead audio rendered ahead of the listener's place, in listening hours. About 60–80 MB per hour
- *   (stored losslessly); Kokoro renders at roughly a third of real time on the Moto, so a night on the charger fills
+ *   (stored losslessly); Kokoro renders at about a third of real time on a test phone, so a night on the charger fills
  *   two to three hours and the next charge carries on.
  * @property maxBytes all books' studio audio together stays under this; the books opened longest ago go first.
  * @property minFreeBytes rendering pauses for good when the phone has less free storage than this, so studio mode

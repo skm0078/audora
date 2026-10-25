@@ -1,5 +1,5 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/reader/PlayerLayoutTest.kt
-// Purpose: The player fills a phone's width at every font size (it huddled at the left on a Moto Edge 50 Fusion),
+// Purpose: The player fills a phone's width at every font size (it huddled at the left on the test phone),
 //          and leaves a screenshot of each size for review in CI's "player-screens" artifact.
 
 package io.github.skm0078.audora.ui.reader
@@ -51,7 +51,7 @@ class PlayerLayoutTest {
         var fontScale by mutableFloatStateOf(FONT_SCALES.first())
         rule.setContent {
             DeviceConfigurationOverride(
-                DeviceConfigurationOverride.ForcedSize(MOTO_EDGE_50_FUSION) then
+                DeviceConfigurationOverride.ForcedSize(TEST_PHONE_SIZE) then
                     DeviceConfigurationOverride.FontScale(fontScale),
             ) {
                 AudoraTheme {
@@ -64,7 +64,7 @@ class PlayerLayoutTest {
             rule.waitForIdle()
             val player = rule.onNodeWithTag(PLAYER)
             Screens.save("player-font-${(scale * PERCENT).toInt()}", player.captureToImage().asAndroidBitmap())
-            // The player's own bounds: the emulator's screen need not have the Moto's shape around it.
+            // The player's own bounds: the emulator's screen need not have the test phone's shape around it.
             val root = player.fetchSemanticsNode().boundsInRoot
             val speed = boundsOf(context.getString(R.string.reader_speed, speedLabel(1f)), byText = true)
             val sleep = boundsOf(context.getString(R.string.reader_sleep_timer))
@@ -118,7 +118,7 @@ class PlayerLayoutTest {
 
     private companion object {
         /** 1080 × 2400 px at about 420 dpi. */
-        val MOTO_EDGE_50_FUSION = DpSize(411.dp, 914.dp)
+        val TEST_PHONE_SIZE = DpSize(411.dp, 914.dp)
         val FONT_SCALES = listOf(1f, 1.3f, 2f)
 
         /** The panel's padding plus a button's inner space, about 32 dp of 411: more and the row has huddled. */

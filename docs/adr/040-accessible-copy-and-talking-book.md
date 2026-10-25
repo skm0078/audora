@@ -47,7 +47,7 @@ No library may be added before the user's call 3, and nothing may leave the phon
   threshold as listening.
 
 ## Consequences
-- An accessible copy of a scanned book takes about 3–6 s a page on the Moto (OCR), less when the OCR cache has the
+- An accessible copy of a scanned book takes about 3–6 s a page on the test phone (OCR), less when the OCR cache has the
   page; a text PDF takes seconds. Its files are about the size of the text (an EPUB of 300 pages is well under 1 MB).
 - A talking book takes as long as an audiobook export (the live voice's render speed) and is about 29 MB per hour of
   audio (AAC 64 kbps mono), staged in the cache folder per book and rendering signature (`StagedChapters`). Finished

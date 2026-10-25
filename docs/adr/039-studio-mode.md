@@ -3,7 +3,7 @@
 **Status:** Accepted (2026-10-17). Plan item 6.
 
 ## Context
-The premium voices (Kokoro English, about 150 MB) are estimated at 2.5–4× slower than real time on the Moto Edge 50
+The premium voices (Kokoro English, about 150 MB) are estimated at 2.5–4× slower than real time on the test phone
 Fusion, so live playback with them can buffer, and every listen starts with the first sentence's render. Paid apps
 avoid this by streaming from servers, which Audora will not do (zero spend, offline first). The plan's answer is to
 render ahead while the phone is on the charger, when CPU time and battery cost nothing the listener notices.
@@ -57,11 +57,11 @@ rendering on its own when the charger is plugged in.
   start on the render thread. Rejected for now; the codec sits behind `StudioClip`, so it can change with a format
   version bump.
 - **IMA ADPCM.** About 40 MB per hour and simple, but audibly noisy on the quiet tails of premium voices. Rejected.
-- **Rendering on battery by default.** Kokoro at 3× real time would cost a large share of the Moto's battery per
+- **Rendering on battery by default.** Kokoro at 3× real time would cost a large share of the test phone's battery per
   listening hour. Kept as the explicit "Start now" choice.
 
 ## Consequences
-- An hour of Kokoro audio needs about three hours on the charger (estimate until the final Moto session measures it);
+- An hour of Kokoro audio needs about three hours on the charger (estimate until the final test phone session measures it);
   a night fills two to three hours and the next charge carries on from the new resume page.
 - Storage: about 60–80 MB per ready listening hour at 22–24 kHz; at most 2 GiB in all.
 - Every app update discards studio audio, because the signature keys on the build's install time. Keying it on a

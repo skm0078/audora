@@ -115,7 +115,7 @@ Hand-checked real pages:
 
 Decision: **Tesseract with `tessdata_best` for eng/hin/ben is the v1 OCR**, one engine and one code path. Model sizes: 15.4 / 11.9 / 11.0 MB, downloaded on demand like voices. PaddleOCR Devanagari stays an optional P3-05 experiment on a real phone (det 4.8 MB + rec 7.9 MB on the ONNX Runtime we already ship). Adopt it only if it beats Tesseract on real Hindi scans after batching and tuning. This pipeline is minimal: no recognition batching, a simplified DB post-process.
 
-Phone time estimate (inference, not measured on device): Tesseract best 1–2 s/page desktop → ~3–6 s/page on the OnePlus 12 and up to ~2× that on the Moto. That is far below one page's reading time (2–4 min), so OCR runs in the render-ahead window. Bengali `best` is the slowest (1.4–7 s desktop) and should get a page or two of extra lead.
+Phone time estimate (inference, not measured on device): Tesseract best 1–2 s/page desktop → ~3–6 s/page on the second test phone and up to ~2× that on the test phone. That is far below one page's reading time (2–4 min), so OCR runs in the render-ahead window. Bengali `best` is the slowest (1.4–7 s desktop) and should get a page or two of extra lead.
 
 ## 8. What this changes
 

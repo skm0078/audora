@@ -5,7 +5,7 @@
 ## Context
 Spec §3 bundles one English neural voice in the APK. Model binaries must never enter git (AGENTS.md), the container
 and CI build the APK without Android Studio, and ADR-012 left the choice between Piper ljspeech, Piper cori and
-KittenTTS to a blind rating on the Moto that has not happened yet. P1-03 has to ship a voice now and make the later
+KittenTTS to a blind rating on the test phone that has not happened yet. P1-03 has to ship a voice now and make the later
 swap a configuration change. Each sherpa-onnx voice archive also carries 19 MB of espeak-ng-data, 17 MB of which are
 dictionaries for languages Audora never speaks.
 

@@ -16,7 +16,7 @@ package io.github.skm0078.audora.core.config
  * later instead of pausing after its first sentence.
  *
  * @property assumedRtf real-time factor (render time / audio time) of a voice never measured on this phone. 0.5 is
- *   pessimistic for Piper (S1 predicts 0.15–0.25 on the Moto) and about right for Supertonic (0.35–0.5).
+ *   pessimistic for Piper (S1 predicts 0.15–0.25 on the test phone) and about right for Supertonic (0.35–0.5).
  * @property assumedCharsPerSecond speech rate used to guess a sentence's length before its voice was measured:
  *   about 160 words a minute.
  * @property longSentenceSeconds the long sentence the window must absorb. Most sentences read in under 15 s; legal

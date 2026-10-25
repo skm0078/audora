@@ -59,7 +59,7 @@ free, and never keep or log what the reader says.
 - Memory while listening: roughly 150-250 MB (model plus decoder); freed when the dialog closes. The "hear it"
   voice (60-150 MB) is freed before the model loads, so the two are never held together.
 - Speed and battery: two decoder threads; the streaming models run faster than real time on a mid-range phone, and
-  Dolphin decodes an 8 s phrase in well under its length. To be measured on the Moto in the final phone session
+  Dolphin decodes an 8 s phrase in well under its length. To be measured on the test phone in the final phone session
   (accuracy per language, Bengali first, latency and heat) and listed in the phone checklist.
 
 ## Alternatives considered
