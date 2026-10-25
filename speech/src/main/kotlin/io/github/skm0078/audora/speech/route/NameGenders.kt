@@ -3,8 +3,10 @@
 
 package io.github.skm0078.audora.speech.route
 
+import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.speech.sherpa.SpeakerGender
+import java.io.IOException
 
 /**
  * Without this, a character whose gender no pronoun or verb had told yet kept the plain dialogue voice, and Hindi
@@ -12,21 +14,49 @@ import io.github.skm0078.audora.speech.sherpa.SpeakerGender
  * that are clearly one gender are listed: a name used for both (Sam, Alex, Kiran, Suman) stays unknown, since a
  * wrong-gender voice is worse than none. The first word decides ("Mira Sen", "सेठ जी", "Grandma Rose"), after an
  * English article ("the old woman" is decided by its last word elsewhere). Lists are lowercase in English and NFC in
- * Hindi and Bengali; matching is on the name as the book prints it.
+ * Hindi and Bengali; matching is on the name as the book prints it. English also knows about 3,000 given names from
+ * public-domain birth records ([ENGLISH_DATA], `scripts/build_name_lists.py`), read once on first use; the hand
+ * lists win where both know a name.
  */
 object NameGenders {
     fun of(name: String, lang: Lang): SpeakerGender {
         val words = name.trim().split(SPACES).filter { it.isNotEmpty() }
         val first = words.firstOrNull()?.trimEnd('.', ',')?.lowercase() ?: return SpeakerGender.UNKNOWN
-        val table = when (lang) {
-            Lang.EN -> ENGLISH
-            Lang.HI -> HINDI
-            Lang.BN -> BENGALI
+        val (table, hand) = when (lang) {
+            Lang.EN -> englishAll to ENGLISH
+            Lang.HI -> HINDI to HINDI
+            Lang.BN -> BENGALI to BENGALI
         }
-        return table[first] ?: words.lastOrNull()?.lowercase()?.let { table[it] } ?: SpeakerGender.UNKNOWN
+        // The last word only by the hand lists ("the old woman"): a surname is often a given name too ("Dr Ward").
+        return table[first] ?: words.lastOrNull()?.lowercase()?.let { hand[it] } ?: SpeakerGender.UNKNOWN
     }
 
+    private const val TAG = "NameGenders"
+    private const val ENGLISH_DATA = "/io/github/skm0078/audora/speech/route/names-en.tsv"
     private val SPACES = Regex("""\s+""")
+
+    private val englishAll: Map<String, SpeakerGender> by lazy { englishData() + ENGLISH }
+
+    /** The data list; empty (hand lists only) when it is missing or unreadable, which is logged. */
+    private fun englishData(): Map<String, SpeakerGender> {
+        val lines = try {
+            NameGenders::class.java.getResourceAsStream(ENGLISH_DATA)?.bufferedReader(Charsets.UTF_8)?.use {
+                it.readLines()
+            }
+        } catch (e: IOException) {
+            AudoraLog.w(TAG, "English name list unreadable, using the hand list only", e)
+            null
+        }
+        if (lines == null) AudoraLog.w(TAG, "English name list missing, using the hand list only")
+        return lines.orEmpty().filterNot { it.startsWith('#') }.mapNotNull { line ->
+            val (name, gender) = line.split('\t').takeIf { it.size == 2 } ?: return@mapNotNull null
+            when (gender) {
+                "F" -> name to SpeakerGender.FEMALE
+                "M" -> name to SpeakerGender.MALE
+                else -> null
+            }
+        }.toMap()
+    }
 
     private fun table(female: String, male: String): Map<String, SpeakerGender> =
         female.split(' ').filter { it.isNotBlank() }.associateWith { SpeakerGender.FEMALE } +

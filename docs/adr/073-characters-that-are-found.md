@@ -30,7 +30,10 @@ and "Help!" sounded cheerful (Bengali Rasa's HAPPY style).
    or the word before ने, skipping openers (तब, তারপর) and a noun a participle takes as its object
    ("দীর্ঘশ্বাস ফেলে"). Bengali sadhu verbs are known. Hindi intransitive verbs tell gender (बोली, मुस्कुराया).
 4. **Names tell gender.** `NameGenders` lists clearly gendered names and role words in each language (Mira, दादी,
-   পিসি, the captain). Names used for both genders are left out: a wrong-gender voice is worse than none.
+   পিসি, the captain). Names used for both genders are left out: a wrong-gender voice is worse than none. English also
+   reads about 3,000 given names that are one gender in 98 % of US birth records (public domain,
+   `scripts/build_name_lists.py`). Only a name's first word, or a role word, decides: a surname is often a given
+   name too ("Dr Ward").
 5. **Narration helps.** A name the narration makes a sentence's subject is remembered for a later "she said"; an
    untagged line goes to the subject of the narration just before it in its paragraph; a line that calls someone by
    name ("My phone died, Tom.") is not given to them, and the one a line calls ("Mrs Patel, where were you?") is
@@ -47,7 +50,7 @@ Right speaker on the tuned set: 17 / 11 / 26 % → 87 / 84 / 100 %.
 | Set | Right-gender voice before → after (en / hi / bn) | Opposite feelings |
 |---|---|---|
 | Tuned | 29 / 11 / 0 % → 85 / 88 / 100 % | 5 → 0 |
-| Held out | 22 / 0 / 0 % → 55 / 7 / 0 % | 4 → 1 |
+| Held out | 22 / 0 / 0 % → 59 / 7 / 0 % | 4 → 1 |
 
 The held-out Hindi and Bengali scores show the limit of rules: names that are in no list (बिरजू, পল্টু) still get no
 gender, and lines tagged with an action instead of a speech verb ("बिरजू ने मुँह फेर लिया") are not attributed. That

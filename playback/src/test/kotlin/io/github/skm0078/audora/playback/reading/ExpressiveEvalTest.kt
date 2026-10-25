@@ -49,7 +49,7 @@ class ExpressiveEvalTest {
         assertTrue("every spoken line is found", rows.filter { it.line.speaker != null }.all { it.heardSpeech })
         assertEquals("no character gets the other gender's voice", 0, rows.count { it.voice == "wrong" })
         assertTrue(rows.count { opposite(it) } <= 1)
-        assertTrue(rightVoice(rows, Lang.EN) >= 55)
+        assertTrue(rightVoice(rows, Lang.EN) >= 59)
     }
 
     private fun opposite(row: Judged) = ExpressiveEval.opposite(row.line.feeling, row.feeling)
