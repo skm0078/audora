@@ -9,11 +9,22 @@
   "baseUrl": "https://github.com/skm0078/audora/releases/download/story-brain/",
   "source": {
     "repo": "unsloth/Qwen3.5-4B-GGUF",
-    "revision": "",
+    "revision": "e87f176479d0855a907a41277aca2f8ee7a09523",
     "file": "Qwen3.5-4B-Q4_K_M.gguf"
   },
-  "sha256": "",
-  "sizeBytes": 0,
+  "sha256": "00fe7986ff5f6b463e62455821146049db6f9313603938a70800d1fb69ef11a4",
+  "sizeBytes": 2740937888,
   "partBytes": 1500000000,
-  "parts": []
+  "parts": [
+    {
+      "file": "brain-qwen35-4b-q4km-00fe7986ff5f.part1",
+      "sha256": "416e11f3cf0391279546e73fd7a3658c368ae4328f0a94d34b6d7d6d0394964f",
+      "sizeBytes": 1500000000
+    },
+    {
+      "file": "brain-qwen35-4b-q4km-00fe7986ff5f.part2",
+      "sha256": "d4761367a069f853868471b7c11cd9a65c6112e5d9476b9c3ac2bd32bcebacfb",
+      "sizeBytes": 1240937888
+    }
+  ]
 }
