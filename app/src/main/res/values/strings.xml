@@ -76,7 +76,6 @@
     <string name="reader_back_to_reading">Back to page %1$d, where reading is</string>
     <string name="reader_page_no_text">No readable text on this page. If it is a scanned page, download Scanned pages (OCR) in Settings and ListenLock reads it.</string>
     <string name="reader_page_failed">This page could not be read. Please share the logs.</string>
-    <string name="reader_tap_hint">Tap a sentence to read from there. Long-press one that sounded wrong.</string>
     <string name="reader_read_from_here">Read from here</string>
     <string name="reader_sentence_options">Options for this sentence</string>
     <string name="reader_show_page">Show the page</string>
@@ -179,6 +178,7 @@
     <string name="notes_ok">OK</string>
     <string name="notes_save_failed">That could not be saved. The phone may be out of storage.</string>
     <string name="speech_book_voices">Voices for this book</string>
+    <string name="speech_voices">Voices</string>
     <string name="speech_sound">Sound</string>
     <string name="speech_even_loudness">Even loudness</string>
     <string name="speech_even_loudness_detail">On: every sentence and every voice plays at the same volume, so nothing is suddenly loud or quiet.</string>

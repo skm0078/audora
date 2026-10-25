@@ -23,6 +23,9 @@
         <item>Two older Hindi voices and one Bengali voice were removed. If you used one, download Supertonic or pick another voice in Settings → Voices.</item>
         <item>Character voices find more speakers: dialogue in ‘single quotes’, one-word lines like “Alive?”, and Hindi and Bengali tags such as “दादी बोली” and “বৃদ্ধ কহিল”.</item>
         <item>Hindi and Bengali characters get a voice of the right gender from their name or role (माँ, পিসি, Mira).</item>
+        <item>You can change the voice from the player\'s Voice and speed sheet, for every book or just this one.</item>
+        <item>The reader shows one tip or offer at a time, so more of the book stays on screen.</item>
+        <item>Settings, the reader and the player fit better at large text sizes, in Hindi and Bengali too.</item>
     </string-array>
 
     <string name="library_mark_finished">Mark as finished</string>

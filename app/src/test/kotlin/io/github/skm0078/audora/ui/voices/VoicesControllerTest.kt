@@ -59,6 +59,14 @@ class VoicesControllerTest {
         }
 
     @Test
+    fun `a voice picked in the speech sheet is saved the same way as in Settings`() {
+        manager.use(CORI)
+        manager.use(BUILT_IN)
+
+        assertEquals(listOf(Lang.EN to CORI.id, Lang.EN to null), manager.choices)
+    }
+
+    @Test
     fun `a sample loads, plays for its length, and a second tap stops it`() = runTest(UnconfinedTestDispatcher()) {
         val sampler = FakeSampler()
         val controller = VoicesController(manager, backgroundScope, sampler).also { it.start() }

@@ -90,14 +90,6 @@ private fun SentenceList(
         contentPadding = PaddingValues(horizontal = side, vertical = Dimens.SpaceS),
         verticalArrangement = Arrangement.spacedBy(SENTENCE_GAP),
     ) {
-        item {
-            Text(
-                stringResource(R.string.reader_tap_hint),
-                style = MaterialTheme.typography.labelMedium,
-                color = look.tone.ink ?: MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs),
-            )
-        }
         if (look.reflow) {
             items(paragraphs, key = { units[it.first].index }) { range ->
                 Paragraph(units, range, state, look, spokenWord().takeIf { look.wordHighlight }, actions, isHighlighted)
