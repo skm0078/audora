@@ -82,19 +82,26 @@ class WhatsNewEntriesTest {
     }
 
     @Test
-    fun `an update from a numbered build does not show the carried-over items again`() {
-        val seen = WhatsNewEntries.seenEntries(stored = null, legacySeen = WhatsNewEntries.LEGACY_LAST_LIST)
+    fun `an update from the last numbered build does not show the carried-over items again`() {
+        val last = WhatsNewEntries.LEGACY_LISTS.keys.max()
+        val seen = WhatsNewEntries.seenEntries(stored = null, legacySeen = last)
         assertEquals(WhatsNewEntries.LEGACY_ENTRIES, seen)
         val shipped = WhatsNewEntries.LEGACY_ENTRIES.map(::entry) + entry("2099-01-01-new")
         assertEquals(listOf("2099-01-01-new"), WhatsNewEntries.unseen(shipped, seen).map { it.name })
     }
 
     @Test
-    fun `someone who missed the last numbered list sees it, and stored names win once written`() {
-        assertTrue(WhatsNewEntries.seenEntries(stored = null, legacySeen = 1).isEmpty())
+    fun `someone who saw an older numbered list sees only what came after it`() {
+        val first = WhatsNewEntries.LEGACY_LISTS.keys.min()
+        val seen = WhatsNewEntries.seenEntries(stored = null, legacySeen = first)
+        assertEquals(WhatsNewEntries.LEGACY_LISTS.getValue(first), seen)
         assertTrue(WhatsNewEntries.seenEntries(stored = null, legacySeen = 0).isEmpty())
+    }
+
+    @Test
+    fun `stored names win once written`() {
         val stored = setOf("2026-10-01-a")
-        assertEquals(stored, WhatsNewEntries.seenEntries(stored, legacySeen = WhatsNewEntries.LEGACY_LAST_LIST))
-        assertTrue(WhatsNewEntries.seenEntries(emptySet(), WhatsNewEntries.LEGACY_LAST_LIST).isEmpty())
+        assertEquals(stored, WhatsNewEntries.seenEntries(stored, legacySeen = 99))
+        assertTrue(WhatsNewEntries.seenEntries(emptySet(), legacySeen = 99).isEmpty())
     }
 }

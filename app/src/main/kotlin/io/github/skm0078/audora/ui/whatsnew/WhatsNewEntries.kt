@@ -39,21 +39,28 @@ object WhatsNewEntries {
     const val MAX_SHOWN = 8
 
     /**
-     * The last numbered list (ADR-070's `WHATS_NEW_ID`) and the entries it held. Someone who saw that list has seen
-     * these; never changes again.
+     * The numbered lists of ADR-070 (`WHATS_NEW_ID`) and the items each one added, as entry names. Someone who saw list
+     * N has seen every entry of lists up to N. Never changes again.
      */
-    const val LEGACY_LAST_LIST = 10
-    val LEGACY_ENTRIES = setOf(
-        "2026-10-25-feelings-you-can-hear",
-        "2026-10-25-indic-names-found",
-        "2026-10-25-supertonic-reads-hindi",
-        "2026-10-25-noncommercial-voices-removed",
-        "2026-10-25-more-speakers-found",
-        "2026-10-25-voices-match-gender",
-        "2026-10-25-voice-from-the-player",
-        "2026-10-25-one-reader-notice",
-        "2026-10-25-large-text-fits",
+    @Suppress("MagicNumber") // the lists' own numbers, as they shipped
+    val LEGACY_LISTS: Map<Int, Set<String>> = mapOf(
+        9 to setOf(
+            "2026-10-25-feelings-you-can-hear",
+            "2026-10-25-indic-names-found",
+            "2026-10-25-supertonic-reads-hindi",
+            "2026-10-25-noncommercial-voices-removed",
+            "2026-10-25-more-speakers-found",
+            "2026-10-25-voices-match-gender",
+        ),
+        10 to setOf(
+            "2026-10-25-voice-from-the-player",
+            "2026-10-25-one-reader-notice",
+            "2026-10-25-large-text-fits",
+        ),
     )
+
+    /** Every entry carried over from a numbered list. */
+    val LEGACY_ENTRIES: Set<String> get() = LEGACY_LISTS.values.flatten().toSet()
 
     private val NAME = Regex("""\d{4}-\d{2}-\d{2}-[a-z0-9]+(-[a-z0-9]+)*""")
     private val LINE = Regex("""^([a-z]{2}):\s*(.+)$""")
@@ -88,5 +95,5 @@ object WhatsNewEntries {
      * ([legacySeen]), so an update from a numbered build does not show its items again.
      */
     fun seenEntries(stored: Set<String>?, legacySeen: Int): Set<String> =
-        stored ?: if (legacySeen >= LEGACY_LAST_LIST) LEGACY_ENTRIES else emptySet()
+        stored ?: LEGACY_LISTS.filterKeys { it <= legacySeen }.values.flatten().toSet()
 }
