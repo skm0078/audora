@@ -24,8 +24,8 @@ concurrency:
 env:
   SPIKE: research/expressive-eval
   TAG: expressive-eval
-  # llama.cpp at a fixed release, so every model is timed by the same build.
-  LLAMA_TAG: b6990
+  # llama.cpp's master at run time (Qwen3.5 needs a recent build); the commit is printed with the results.
+  LLAMA_REF: master
 
 jobs:
   director:
@@ -47,8 +47,7 @@ jobs:
       - name: Build llama.cpp server
         run: |
           sudo apt-get update -q && sudo apt-get install -y -q cmake build-essential
-          git clone --depth 1 --branch "$LLAMA_TAG" https://github.com/ggml-org/llama.cpp /tmp/llama \
-            || git clone --depth 1 https://github.com/ggml-org/llama.cpp /tmp/llama
+          git clone --depth 1 --branch "$LLAMA_REF" https://github.com/ggml-org/llama.cpp /tmp/llama
           (cd /tmp/llama && git log -1 --format='llama.cpp %h %cd')
           cmake -S /tmp/llama -B /tmp/llama/build -DCMAKE_BUILD_TYPE=Release -DLLAMA_CURL=OFF -DGGML_NATIVE=ON
           cmake --build /tmp/llama/build --target llama-server -j "$(nproc)"
@@ -68,7 +67,7 @@ jobs:
               repos = list(api.list_models(search=term, author=author, limit=20)) if author else \
                   list(api.list_models(search=f"{term} GGUF", limit=20))
               for repo in repos:
-                  if "gguf" not in repo.id.lower():
+                  if "gguf" not in repo.id.lower() or "mtp" in repo.id.lower():
                       continue
                   try:
                       files = api.list_repo_files(repo.id)
@@ -94,10 +93,12 @@ jobs:
           /tmp/llama/build/bin/llama-server -m "${{ steps.model.outputs.path }}" -t 4 -c 8192 --jinja \
             --port 8080 > /tmp/server.log 2>&1 &
           for i in $(seq 1 120); do curl -fs http://127.0.0.1:8080/health > /dev/null && break; sleep 2; done
+          curl -fs http://127.0.0.1:8080/health || { tail -30 /tmp/server.log; exit 1; }
           mkdir -p out
           python3 "$SPIKE/llm_director.py" --model "$MODEL" --out out \
             --passages "$SPIKE"/passages/en.tsv "$SPIKE"/passages/hi.tsv "$SPIKE"/passages/bn.tsv
-          echo "Model file: ${{ steps.model.outputs.repo }} (${{ steps.model.outputs.size }} MB), 4 threads" >> "out/$MODEL.md"
+          echo "Model file: ${{ steps.model.outputs.repo }} (${{ steps.model.outputs.size }} MB), 4 threads," \
+            "$(cd /tmp/llama && git log -1 --format='llama.cpp %h')" >> "out/$MODEL.md"
           cat "out/$MODEL.md" >> "$GITHUB_STEP_SUMMARY"
           tail -5 /tmp/server.log
 
