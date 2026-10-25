@@ -68,7 +68,7 @@ From the pre-release review's pick list (P1, P8, P11, P16, P19).
 - **Not changed:** Quiz keeps its own copy of the voice, freed after a short idle (ADR-039); sharing the service's
   copy needs a design change across processes.
 - **Verified in CI:** `BookSessionTest` (a refused switch, sentences saved per book), `TileTapTest`,
-  `OtherAppsCommandsTest`, `LatestWritesTest`, `SpeechStyleStoreTest`, release journey (notification and lock screen
+  `OtherAppsCommandsTest` (device), `LatestWritesTest`, `SpeechStyleStoreTest`, release journey (notification and lock screen
   controls).
 - **Could affect:** book switching, Up next, the tile, smartwatch or car controls, saving speed and pitch.
 
