@@ -2,6 +2,19 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Hindi and Bengali characters found by repetition (2026-10-25, ADR-077)
+- A word that opens Hindi or Bengali narration twice on a page is taken as a character ("बिरजू", "পল্টু"), so its
+  quotes get its voice; a noun said once is not. Bengali sentences that open with a place, a participle or an owner
+  ("ছাদে উঠে", "মাছের দাম শুনে") now find the real subject.
+- Held-out Hindi right speaker 7 % to 38 %; a second held-out set: Hindi 0 to 80 %, Bengali 0 to 83 %. One wrong
+  voice in that set (see the ADR). Bengali names still get no voice of their own (no gender from the verb).
+- "What's new" (en/hi/bn) item, `WHATS_NEW_ID` 9. No `:pdf` change. No new dependency.
+- **Verified in CI:** `QuoteCarryTest` (a repeated Hindi name is a character, a noun is not), `SpeakerTagsTest`
+  (Bengali openers), `ExpressiveEvalTest` (held-out floors, new second held-out set).
+
+**Real-device checks (the test phone):** a Hindi story with Supertonic and character voices on: the two main
+characters' lines get their own voices after their names have opened two sentences.
+
 ## Feelings you can hear (2026-10-25, ADR-076)
 - **Pitch per feeling on every voice:** sad lines are 1.5 semitones lower, lively and surprised 2 higher, scared 1.5,
   loud 1, capped at 2.5. Only the quoted words move; narration around them stays plain. Voices that act feelings

@@ -75,6 +75,9 @@ class SpeakerTagsTest {
     @Test
     fun subjectsOfNarration() {
         assertEquals(Speaker("Ravi", MALE), tags.subjectOf("Ravi stopped at a stall heaped with mangoes.", Lang.EN))
+        // A Bengali place, participle or owner that opens the sentence is passed over for the bare subject.
+        assertEquals("পল্টু", tags.subjectOf("ছাদে উঠে পল্টু দেখল ঘুড়িটা গাছে আটকে গেছে।", Lang.BN)?.name)
+        assertEquals("হরিপদ", tags.subjectOf("মাছের দাম শুনে হরিপদ থমকে দাঁড়াল।", Lang.BN)?.name)
         assertEquals(Speaker("their mother", FEMALE), tags.subjectOf("Their mother put down her spoon.", Lang.EN))
         assertEquals(Speaker(null, FEMALE), tags.subjectOf("She folded her arms.", Lang.EN))
         assertEquals(Speaker("मीना", FEMALE), tags.subjectOf("मीना हाथ में परिणाम लिए घर में घुसी।", Lang.HI))

@@ -167,7 +167,7 @@ class SpeakerTags(private val splitter: QuoteSplitter = QuoteSplitter()) {
     private abstract class SubjectFirst(
         verbs: List<String>,
         private val skip: Set<String>,
-        private val pronouns: Set<String>,
+        protected val pronouns: Set<String>,
         private val objectMarkers: Set<String> = emptySet(),
     ) : Patterns {
         private val verb = Regex(
@@ -198,7 +198,7 @@ class SpeakerTags(private val splitter: QuoteSplitter = QuoteSplitter()) {
 
         /** The subject among a clause's [words]; [verb] may tell its gender. */
         private fun pick(words: List<String>, verb: String): Speaker? {
-            val at = words.indexOfFirst { it !in skip }
+            val at = subjectAt(words)
             val gender = genderOf(verb)
             return agent(words) ?: when {
                 at < 0 || words.getOrNull(at + 1) in objectMarkers -> null
@@ -206,6 +206,9 @@ class SpeakerTags(private val splitter: QuoteSplitter = QuoteSplitter()) {
                 else -> Speaker(withTitle(words, at), gender)
             }
         }
+
+        /** Where a clause's subject is among its [words]; -1 when every word is skipped. */
+        open fun subjectAt(words: List<String>): Int = words.indexOfFirst { it !in skip }
 
         /** Hindi's "X ने": the doer, whatever comes first. */
         open fun agent(words: List<String>): Speaker? = null
@@ -283,7 +286,29 @@ class SpeakerTags(private val splitter: QuoteSplitter = QuoteSplitter()) {
             "ফেলে", "করে", "নিয়ে", "দিয়ে", "ছেড়ে", "তুলে", "নামিয়ে", "নামাইয়া", "মুছে", "মুছিয়া", "ফেলিয়া",
             "করিয়া",
         ),
-    )
+    ) {
+        /**
+         * A subject is said bare. A clause may open with a place or a time in "-এ" ("ছাদে", "পুকুরপাড়ে"), a
+         * participle in "-এ" or "-তেই" ("উঠে", "ফিরতেই") or an owner in "-এর" ("মাছের দাম শুনে"): none of them is
+         * who the sentence is about, and Bengali names seldom end that way.
+         */
+        override fun subjectAt(words: List<String>): Int {
+            var at = super.subjectAt(words)
+            while (at in words.indices && words[at] !in pronouns) {
+                val word = words[at]
+                // An owner takes the noun after it with it: "মাছের দাম".
+                at += when {
+                    word.endsWith(OWNER) -> 2
+                    OPENER_ENDINGS.any { word.endsWith(it) } -> 1
+                    else -> return at
+                }
+            }
+            return if (at in words.indices) at else -1
+        }
+
+        private const val OWNER = "ের"
+        private val OPENER_ENDINGS = listOf("ে", "তেই")
+    }
 
     private companion object {
         val PATTERNS: Map<Lang, Patterns> = mapOf(Lang.EN to English, Lang.HI to Hindi, Lang.BN to Bengali)
