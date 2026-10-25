@@ -2,6 +2,20 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Commercial-use voices only; Supertonic reads Hindi (2026-10-25, ADR-074)
+- **Removed:** Piper Hindi pratham and priyamvada (CC BY-NC-SA 4.0) and MMS Bengali (CC BY-NC 4.0). A phone that
+  downloaded one deletes it at the next start and that language goes back to its default until another voice is
+  picked (`WithdrawnVoices`, `VoiceFiles.withdraw`).
+- **Hindi:** Supertonic 3 (OpenRAIL-M) is the recommended download and shows in the Play build. Its other nine voice
+  styles (four women, five men) read Hindi characters (`CastSpeakers`). `VoiceRespellings` (Piper-only fixes) is gone.
+- "What's new" (en/hi/bn) lists these two items above the character-voice ones, `WHATS_NEW_ID` 7. No `:pdf` change. No new dependency.
+- **Verified in CI:** `CatalogLicencesTest` (no NC licence, no withdrawn voice, every recommended voice offered),
+  `VoiceFilesTest` (withdraw deletes only catalog copies), `CastSpeakersTest` (Supertonic table and archive pin),
+  `LanguagePacksTest`.
+
+**Real-device checks (the test phone):** download Supertonic Hindi, read a Hindi story with dialogue: it keeps up,
+and a man's line is read by a male voice. A phone that had Piper Hindi installed: it disappears from Voices and
+Hindi reads with the phone voice until Supertonic is picked.
 ## Character voices that find the characters (2026-10-25, ADR-075)
 The maintainer heard character voices fail most of the time. Measured first, then fixed.
 - **A marked story set** (`research/expressive-eval/`): 20 stories in English, Hindi and Bengali, each sentence
