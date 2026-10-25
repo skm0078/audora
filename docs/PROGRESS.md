@@ -2,7 +2,7 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
-## Character voices that find the characters (2026-10-25, ADR-073)
+## Character voices that find the characters (2026-10-25, ADR-075)
 The maintainer heard character voices fail most of the time. Measured first, then fixed.
 - **A marked story set** (`research/expressive-eval/`): 20 stories in English, Hindi and Bengali, each sentence
   marked with its speaker and feeling, plus a held-out set never tuned on. `ExpressiveEvalTest` scores the app's

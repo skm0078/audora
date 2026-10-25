@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # File: scripts/build_name_lists.py
 # Purpose: Builds speech/src/main/resources/.../route/names-en.tsv, the English given names NameGenders knows beyond
-#          its hand lists (ADR-073): names used for one gender at least 98 % of the time in the US Social Security
+#          its hand lists (ADR-075): names used for one gender at least 98 % of the time in the US Social Security
 #          Administration's baby-name data (public domain), as github.com/hadley/data-baby-names publishes it
 #          (top 1000 names a year, 1880-2008, share of births per name and sex).
 #

@@ -1,4 +1,4 @@
-# ADR-073: Find the characters, give them a voice, and measure it
+# ADR-075: Find the characters, give them a voice, and measure it
 
 **Status:** Accepted (2026-10-25). Follows ADR-056 to 058. First stage of the expressive reading rework, after the
 maintainer judged character voices as "no intelligence, doesn't work most of the time".
