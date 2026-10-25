@@ -1,0 +1,113 @@
+# File: .github/workflows/expressive-eval.yml
+# Purpose: Expressive reading spike (research/expressive-eval, no app change): runs small LLMs with llama.cpp on an ARM
+#          CPU as a "director" that marks who speaks each sentence and how, scores them on the marked passages, times
+#          them, and publishes the results to the "expressive-eval" pre-release.
+
+name: Expressive eval
+
+on:
+  push:
+    branches: ["feat/**"]
+    paths:
+      - research/expressive-eval/llm_director.py
+      - research/expressive-eval/passages/**
+      - .github/workflows/expressive-eval.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: expressive-eval-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SPIKE: research/expressive-eval
+  TAG: expressive-eval
+  # llama.cpp at a fixed release, so every model is timed by the same build.
+  LLAMA_TAG: b6990
+
+jobs:
+  director:
+    name: Director ${{ matrix.model }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 150
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # A search term on Hugging Face; the first GGUF repo with a Q4_K_M file is used.
+        model: [Qwen3.5-0.8B, Qwen3.5-2B, Qwen3.5-4B, Qwen3-1.7B, gemma-3n-E2B-it, gemma-3-4b-it]
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Build llama.cpp server
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q cmake build-essential
+          git clone --depth 1 --branch "$LLAMA_TAG" https://github.com/ggml-org/llama.cpp /tmp/llama \
+            || git clone --depth 1 https://github.com/ggml-org/llama.cpp /tmp/llama
+          (cd /tmp/llama && git log -1 --format='llama.cpp %h %cd')
+          cmake -S /tmp/llama -B /tmp/llama/build -DCMAKE_BUILD_TYPE=Release -DLLAMA_CURL=OFF -DGGML_NATIVE=ON
+          cmake --build /tmp/llama/build --target llama-server -j "$(nproc)"
+          nproc; free -g; lscpu | grep -iE "model name|flags" | head -2
+
+      - name: Download the model
+        id: model
+        env:
+          TERM_: ${{ matrix.model }}
+        run: |
+          python3 -m pip install -q "huggingface_hub>=0.34"
+          python3 - <<'EOF'
+          import os
+          from huggingface_hub import HfApi, hf_hub_download
+          api, term = HfApi(), os.environ["TERM_"]
+          for author in ("ggml-org", "unsloth", "bartowski", "lmstudio-community", "Qwen", None):
+              repos = list(api.list_models(search=term, author=author, limit=20)) if author else \
+                  list(api.list_models(search=f"{term} GGUF", limit=20))
+              for repo in repos:
+                  if "gguf" not in repo.id.lower():
+                      continue
+                  try:
+                      files = api.list_repo_files(repo.id)
+                  except Exception:
+                      continue
+                  pick = [f for f in files if f.lower().endswith(".gguf") and "q4_k_m" in f.lower()
+                          and "mmproj" not in f.lower()]
+                  if pick:
+                      path = hf_hub_download(repo.id, sorted(pick, key=len)[0], local_dir="/tmp/model")
+                      size = os.path.getsize(path) // 1_000_000
+                      info = api.model_info(repo.id)
+                      print(f"{repo.id} {pick[0]} {size} MB, licence tags: {[t for t in info.tags if 'license' in t]}")
+                      with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+                          out.write(f"path={path}\nrepo={repo.id}\nsize={size}\n")
+                      raise SystemExit(0)
+          raise SystemExit(f"no Q4_K_M GGUF found for {term}")
+          EOF
+
+      - name: Score and time
+        env:
+          MODEL: ${{ matrix.model }}
+        run: |
+          /tmp/llama/build/bin/llama-server -m "${{ steps.model.outputs.path }}" -t 4 -c 8192 --jinja \
+            --port 8080 > /tmp/server.log 2>&1 &
+          for i in $(seq 1 120); do curl -fs http://127.0.0.1:8080/health > /dev/null && break; sleep 2; done
+          mkdir -p out
+          python3 "$SPIKE/llm_director.py" --model "$MODEL" --out out \
+            --passages "$SPIKE"/passages/en.tsv "$SPIKE"/passages/hi.tsv "$SPIKE"/passages/bn.tsv
+          echo "Model file: ${{ steps.model.outputs.repo }} (${{ steps.model.outputs.size }} MB), 4 threads" >> "out/$MODEL.md"
+          cat "out/$MODEL.md" >> "$GITHUB_STEP_SUMMARY"
+          tail -5 /tmp/server.log
+
+      - name: Publish results
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            gh release create "$TAG" --prerelease --target "$GITHUB_SHA" --title "Expressive reading eval" \
+              --notes "Scores and timings for on-device director models on the marked passages. Not shipped." || true
+          fi
+          gh release upload "$TAG" out/* --clobber
