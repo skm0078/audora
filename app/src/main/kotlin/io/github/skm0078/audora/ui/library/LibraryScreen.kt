@@ -52,6 +52,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import io.github.skm0078.audora.R
@@ -223,7 +224,7 @@ private fun BookGrid(list: LibraryListState.Loaded, books: BookCallbacks, covers
             start = Dimens.ScreenPadding,
             end = Dimens.ScreenPadding,
             top = Dimens.SpaceS,
-            bottom = FAB_CLEARANCE,
+            bottom = fabClearance(),
         ),
         horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXl),
@@ -258,7 +259,7 @@ private fun BookList(list: LibraryListState.Loaded, books: BookCallbacks, covers
     // Rows stay a readable width in the middle of a tablet or a phone in landscape.
     BoxWithConstraints {
         val side = readableSidePadding(maxWidth)
-        LazyColumn(contentPadding = PaddingValues(start = side, end = side, bottom = FAB_CLEARANCE)) {
+        LazyColumn(contentPadding = PaddingValues(start = side, end = side, bottom = fabClearance())) {
             list.continueReading?.let { latest ->
                 item(key = CONTINUE_KEY) {
                     Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS)) {
@@ -343,6 +344,10 @@ private fun Centered(content: @Composable () -> Unit) {
         ) { content() }
     }
 }
+
+/** Room under the last book for the Add book button, which grows with the text size. */
+@Composable
+private fun fabClearance(): Dp = FAB_CLEARANCE * LocalDensity.current.fontScale.coerceAtLeast(1f)
 
 private val FAB_CLEARANCE = 88.dp
 

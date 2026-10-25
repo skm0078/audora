@@ -225,12 +225,15 @@ private fun OptionTitle(title: String, enabled: Boolean) {
     )
 }
 
-/** One short line under a title. Two lines at most, so a longer translation wraps once instead of being cut. */
+/**
+ * One short line under a title. Two lines at most, so a longer translation wraps once instead of being cut; a
+ * warning is never cut, since its end is usually what to do about it ("Tap to set up").
+ */
 @Composable
 private fun OptionSubtitle(text: String, isError: Boolean = false) {
     Text(
         text,
-        maxLines = SUBTITLE_LINES,
+        maxLines = if (isError) Int.MAX_VALUE else SUBTITLE_LINES,
         overflow = TextOverflow.Ellipsis,
         color = if (isError) MaterialTheme.colorScheme.error else Color.Unspecified,
     )

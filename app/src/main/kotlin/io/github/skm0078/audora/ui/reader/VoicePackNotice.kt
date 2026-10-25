@@ -23,8 +23,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.speech.voices.LanguagePack
 import io.github.skm0078.audora.speech.voices.LanguagePacks
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.speech.voices.VoiceStatus
@@ -40,9 +42,8 @@ import io.github.skm0078.audora.ui.voices.megabytes
  */
 @Composable
 internal fun VoicePackNotice(units: List<ReadingUnit>, offer: VoicePackOffer) {
-    val lang = pageLanguage(units) ?: return
-    var dismissed by rememberSaveable(lang) { mutableStateOf(false) }
-    val pack = LanguagePacks.pack(offer.voices, lang)?.takeIf { !it.ready && !dismissed } ?: return
+    val pack = offer.packFor(units) ?: return
+    val lang = pack.lang
     val language = stringResource(languageName(lang))
     Card(modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS)) {
         Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
@@ -68,7 +69,7 @@ internal fun VoicePackNotice(units: List<ReadingUnit>, offer: VoicePackOffer) {
                     Button(onClick = { offer.actions.onDownload(pack.voice) }) {
                         Text(stringResource(R.string.voice_pack_download))
                     }
-                    TextButton(onClick = { dismissed = true }) {
+                    TextButton(onClick = { offer.onLater(lang) }) {
                         Text(stringResource(R.string.reader_voice_pack_later))
                     }
                 }
@@ -77,11 +78,32 @@ internal fun VoicePackNotice(units: List<ReadingUnit>, offer: VoicePackOffer) {
     }
 }
 
+/** The reader's pack offer; languages put off with "Not now" stay off until the book is opened again. */
+@Composable
+internal fun rememberVoicePackOffer(bookId: BookId, voices: List<VoiceRow>, actions: VoicePackActions): VoicePackOffer {
+    var later by rememberSaveable(bookId) { mutableStateOf(emptyList<String>()) }
+    return VoicePackOffer(voices, actions, later.map(Lang::valueOf).toSet()) { lang -> later = later + lang.name }
+}
+
 /** What a tap on the reader's language-pack card does; the defaults do nothing (previews, tests). */
 class VoicePackActions(val onDownload: (VoiceRow) -> Unit = {}, val onCancel: (VoiceRow) -> Unit = {})
 
-/** The voices the card reads its pack from, and its [actions]. */
-internal class VoicePackOffer(val voices: List<VoiceRow>, val actions: VoicePackActions)
+/**
+ * The voices the card reads its pack from, and its [actions]. [later] holds the languages put off with "Not now"
+ * ([onLater]), kept by the reader for as long as the book is open.
+ */
+internal class VoicePackOffer(
+    val voices: List<VoiceRow>,
+    val actions: VoicePackActions,
+    val later: Set<Lang> = emptySet(),
+    val onLater: (Lang) -> Unit = {},
+) {
+    /** The pack the card offers for a page of [units]; null when none is needed, it is in, or it was put off. */
+    fun packFor(units: List<ReadingUnit>): LanguagePack? {
+        val lang = pageLanguage(units)?.takeIf { it !in later } ?: return null
+        return LanguagePacks.pack(voices, lang)?.takeIf { !it.ready }
+    }
+}
 
 /** The language most of the page's letters are in, when that is Hindi or Bengali; English has a built-in voice. */
 internal fun pageLanguage(units: List<ReadingUnit>): Lang? {

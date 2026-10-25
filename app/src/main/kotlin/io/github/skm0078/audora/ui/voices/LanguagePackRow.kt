@@ -31,15 +31,24 @@ import io.github.skm0078.audora.ui.theme.Dimens
 @Composable
 internal fun LanguagePackRow(pack: LanguagePack, onDownload: () -> Unit, onCancel: () -> Unit) {
     val language = stringResource(languageName(pack.lang))
+    // The button sits under the status, not in the trailing slot: there it squeezed the status into a narrow
+    // column at large text sizes. Only the small Ready tick trails.
     ListItem(
         headlineContent = { Text(language) },
-        supportingContent = { PackStatus(pack, language) },
-        trailingContent = {
-            when {
-                pack.ready -> Icon(painterResource(R.drawable.ic_check), contentDescription = null)
-                pack.downloading -> TextButton(onClick = onCancel) { Text(stringResource(R.string.voices_cancel)) }
-                else -> Button(onClick = onDownload) { Text(stringResource(R.string.voice_pack_download)) }
+        supportingContent = {
+            Column {
+                PackStatus(pack, language)
+                when {
+                    pack.ready -> Unit
+                    pack.downloading -> TextButton(onClick = onCancel) { Text(stringResource(R.string.voices_cancel)) }
+                    else -> Button(onClick = onDownload) { Text(stringResource(R.string.voice_pack_download)) }
+                }
             }
+        },
+        trailingContent = if (pack.ready) {
+            { Icon(painterResource(R.drawable.ic_check), contentDescription = null) }
+        } else {
+            null
         },
     )
 }

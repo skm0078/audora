@@ -73,6 +73,10 @@ fun ReaderScreen(
     voicePacks: VoicePackActions = VoicePackActions(),
 ) {
     var pageTextOpen by rememberSaveable { mutableStateOf(false) }
+    val packOffer = rememberVoicePackOffer(state.bookId, voices, voicePacks)
+    // One card at a time: the gesture tips wait while the page offers a voice pack, so at large font sizes the two
+    // cards do not leave no room for the book (UI audit).
+    val offering = (state.content as? PageContent.Ready)?.let { packOffer.packFor(it.units) } != null
     if (pageTextOpen) {
         PageTextSheet(look, onLookChange, textView = state.view == ReaderView.TEXT) { pageTextOpen = false }
     }
@@ -99,7 +103,9 @@ fun ReaderScreen(
             )
         },
         bottomBar = {
-            if (state.document is DocumentState.Open) ReaderControls(state, config, actions, voices = voices)
+            if (state.document is DocumentState.Open) {
+                ReaderControls(state, config, actions, voices = voices, showTips = !offering)
+            }
         },
     ) { innerPadding ->
         Box(Modifier.padding(innerPadding).fillMaxSize()) {
@@ -124,8 +130,18 @@ fun ReaderScreen(
 
                 is DocumentState.Open -> {
                     PlaceHighlights(state, notesActions)
-                    val offer = VoicePackOffer(voices, voicePacks)
-                    OpenBook(state, document, config, actions, ocrModels, look, spokenWord, thumbnails, offer, notes)
+                    OpenBook(
+                        state,
+                        document,
+                        config,
+                        actions,
+                        ocrModels,
+                        look,
+                        spokenWord,
+                        thumbnails,
+                        packOffer,
+                        notes,
+                    )
                     NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)
                 }
             }

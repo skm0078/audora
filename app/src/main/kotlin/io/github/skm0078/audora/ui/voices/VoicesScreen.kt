@@ -52,6 +52,7 @@ import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.speech.voices.VoiceStatus
 import io.github.skm0078.audora.ui.theme.AudoraTheme
+import io.github.skm0078.audora.ui.theme.HelpButton
 import io.github.skm0078.audora.ui.theme.MoreOptions
 
 @Composable
@@ -145,13 +146,22 @@ private fun VoicesContent(state: VoicesState, actions: VoicesActions, onImport: 
             }
             if (state.canImport) {
                 item(key = "import") {
+                    // Most listeners never import: one plain line, the file details behind the info button.
                     ListItem(
                         headlineContent = { Text(stringResource(R.string.voices_import_title)) },
-                        supportingContent = { Text(stringResource(R.string.voices_import_body)) },
-                        trailingContent = {
-                            TextButton(onClick = onImport, enabled = !state.importing) {
-                                Text(stringResource(R.string.voices_import_action))
+                        supportingContent = {
+                            Column {
+                                Text(stringResource(R.string.voices_import_short))
+                                TextButton(onClick = onImport, enabled = !state.importing) {
+                                    Text(stringResource(R.string.voices_import_action))
+                                }
                             }
+                        },
+                        trailingContent = {
+                            HelpButton(
+                                stringResource(R.string.voices_import_title),
+                                stringResource(R.string.voices_import_body),
+                            )
                         },
                     )
                 }

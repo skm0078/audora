@@ -57,6 +57,7 @@ fun ReaderControls(
     actions: ReaderActions,
     modifier: Modifier = Modifier,
     voices: List<VoiceRow> = emptyList(),
+    showTips: Boolean = true,
 ) {
     // A raised panel with rounded top corners, so the controls read as one block under the thumb (ADR-036).
     Surface(
@@ -65,7 +66,7 @@ fun ReaderControls(
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(Modifier.navigationBarsPadding()) {
-            GestureTips(Modifier.padding(start = Dimens.SpaceM, end = Dimens.SpaceM, top = Dimens.SpaceM))
+            if (showTips) GestureTips(Modifier.padding(start = Dimens.SpaceM, end = Dimens.SpaceM, top = Dimens.SpaceM))
             ControlsRow(state, config, actions, voices)
         }
     }

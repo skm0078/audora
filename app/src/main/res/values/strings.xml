@@ -21,6 +21,7 @@
     <string name="library_playing_page_of">Page %1$d of %2$d</string>
     <string name="library_playing_page">Page %1$d</string>
     <string name="library_opened_ago">opened %1$s</string>
+    <string name="library_just_now">just now</string>
     <string name="library_added_ago">added %1$s</string>
     <string name="library_file_missing">File moved or deleted. Tap to find it.</string>
     <string name="library_access_lost">ListenLock can no longer open this file. Tap to pick it again.</string>
@@ -295,6 +296,7 @@
     <string name="voices_sample_failed">That voice couldn\'t play a sample. Try again, or download it again if it keeps failing.</string>
     <string name="voices_import_title">Import a voice</string>
     <string name="voices_import_body">A sherpa-onnx voice folder: one .onnx model, tokens.txt and, for Piper and KittenTTS, espeak-ng-data.</string>
+    <string name="voices_import_short">Add a voice you downloaded yourself.</string>
     <string name="voices_import_action">Import</string>
     <string name="voices_import_language">Language it speaks</string>
     <string name="voices_import_name">Name (optional)</string>

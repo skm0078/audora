@@ -13,6 +13,8 @@ import android.os.LocaleList
 import android.provider.MediaStore
 import android.util.Log
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
@@ -180,7 +182,8 @@ class UiTourTest {
         capture("reader-more-menu")
         JourneyDevice.pressBackKey()
         settle()
-        tap(hasText(speedButtonText(), substring = true))
+        // Clickable only: in Bengali the time-left line also holds the speed word and sits first.
+        tap(hasText(speedButtonText(), substring = true) and hasClickAction())
         settle()
         capture("speech-sheet")
         scrollCaptures("speech-sheet", pages = SHEET_PAGES)
@@ -197,10 +200,11 @@ class UiTourTest {
         backToTabs()
         capture("library-with-book")
         // The mini player sits under the content, so its "Page 3 of 9" is the last one on screen.
-        val where = hasText(textBefore(R.string.library_playing_page_of), substring = true)
+        // Tap the clickable surface that holds it, not the text itself.
+        val where = hasClickAction() and
+            hasAnyDescendant(hasText(textBefore(R.string.library_playing_page_of), substring = true))
         node(where)
-        val all = rule.onAllNodes(where, useUnmergedTree = true)
-        all[all.fetchSemanticsNodes().size - 1].performClick()
+        rule.onAllNodes(where).onLast().performClick()
         settle()
         capture("player")
         backToTabs()
