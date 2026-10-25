@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_brain.xml -->
+<!-- Purpose: The story brain's Settings row, Storage and Jobs name (ADR-078). -->
+<resources>
+    <string name="brain_model_title">স্টোরি ব্রেন (কে বলছে, আর কীভাবে)</string>
+    <string name="brain_model_missing">একটি ছোট ভাষা মডেল যা গল্পের সংলাপ মানুষের মতো পড়ে: প্রতিটি লাইন কে বলছে, আর কোন অনুভূতিতে। এতে চরিত্রদের ভয়েস আর অনুভূতি অনেক বেশি বার ঠিক হয়। আপনি শোনার সময় এটি এক-দুই পাতা আগে পড়ে নেয়, আপনার ফোনেই, ইন্টারনেট ছাড়া, আর তখন ব্যাটারি বেশি খরচ হয়। ৬ GB বা তার বেশি মেমরির ফোনের জন্য। শুধু Wi-Fi-তে ডাউনলোড হয়। %1$d MB লাগবে।</string>
+    <string name="brain_model_ready">গল্প আপনার আগে পড়ে ঠিক করে কে কীভাবে বলছে · %1$d MB</string>
+    <string name="storage_story_brain">স্টোরি ব্রেন</string>
+</resources>

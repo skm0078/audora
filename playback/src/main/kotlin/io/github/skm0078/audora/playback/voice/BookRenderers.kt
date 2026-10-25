@@ -43,6 +43,7 @@ object BookRenderers {
             startsInQuote = book.startsInQuote,
             speakerOf = book.speakerOf,
             moodOf = book.moodOf,
+            judgedFeeling = book.judgedFeeling,
             characters = book.characters,
             intent = book.intent,
         ),

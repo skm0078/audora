@@ -13,6 +13,8 @@ import io.github.skm0078.audora.playback.studio.StudioMode
 import io.github.skm0078.audora.speech.SpeechEngines
 import io.github.skm0078.audora.speech.acted.ActedVoices
 import io.github.skm0078.audora.speech.acted.sizeOnDisk
+import io.github.skm0078.audora.speech.brain.StoryBrainModels
+import io.github.skm0078.audora.speech.brain.sizeOnDisk
 import io.github.skm0078.audora.speech.dictionary.Dictionaries
 import io.github.skm0078.audora.speech.kws.VoiceCommandModels
 import io.github.skm0078.audora.speech.kws.sizeOnDisk
@@ -42,9 +44,11 @@ internal fun storageOwners(
     val punctuation = PunctuationModels.get(context)
     val voiceCommands = VoiceCommandModels.get(context)
     val acted = ActedVoices.get(context)
+    val brain = StoryBrainModels.get(context)
     val pictures = File(context.cacheDir, THUMBNAILS_DIR)
     return mapOf(
         StorageKind.ACTED_VOICE to StorageOwner({ acted.sizeOnDisk() }, acted::delete),
+        StorageKind.STORY_BRAIN to StorageOwner({ brain.sizeOnDisk() }, brain::delete),
         StorageKind.OCR to StorageOwner({ ocr.sizeOnDisk() }, ocr::delete),
         StorageKind.PUNCTUATION to StorageOwner({ punctuation.sizeOnDisk() }, punctuation::delete),
         StorageKind.VOICE_COMMANDS to StorageOwner({ voiceCommands.sizeOnDisk() }, voiceCommands::delete),

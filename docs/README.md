@@ -78,6 +78,7 @@ ADR-013 and ADR-037 were planned (podcast mode, online AI) and have no file yet.
 - [ADR-074](adr/074-commercial-use-voices-only.md) Only voices licensed for commercial use: Piper Hindi and MMS Bengali removed, Supertonic 3 reads Hindi and voices its characters
 - [ADR-076](adr/076-feelings-you-can-hear.md) Feelings you can hear: each feeling moves the pitch (sad lower, lively higher) on every voice, only the quoted words, with stronger speed and loudness
 - [ADR-077](adr/077-indic-names-by-repetition.md) Hindi and Bengali characters found by repetition: a word opening narration twice on a page is a person; Bengali openers in -এ, -তেই and owners in -এর are passed over
+- [ADR-078](adr/078-story-brain.md) Optional story brain: an on-phone language model (Qwen3.5 4B on llama.cpp, 2.7 GB download) reads each page's dialogue ahead of the listener for who speaks and how; rules stay the fallback
 
 **Reading the PDF (`:pdf`)**
 

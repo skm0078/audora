@@ -1,0 +1,19 @@
+<|im_start|>user
+You prepare a {language} story for an audiobook narrator who gives each character their own voice.
+Below is part of the story, one numbered sentence per line; a blank line separates paragraphs. Sentences marked * have words spoken aloud in them: inside quote marks, or a speech that goes on from the sentence before.
+
+For each marked sentence, write one line with its number, who speaks, and how they say it, like this:
+12|Tom|angry
+- Who: the character speaking, by the name or description the story uses for them (Tom, the old woman, दादी, বাবা). A spoken line with no tag is usually the other person in a two-person conversation, and a speech can run over several sentences. Keep each character's name the same every time.
+- How: one of neutral, joy, sad, angry, scared, surprised, soft (gentle, whispered or tender), loud (shouting or calling out without anger). Judge from the scene, not only from cue words: an exclamation can be angry, scared or happy. Use neutral when nothing special is felt.
+Then write one last line listing every speaker with F or M, like this:
+cast: Tom=M, the old woman=F
+Tell F or M from names, titles, relations and verb endings.
+{context}
+Sentences:
+{sentences}<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+

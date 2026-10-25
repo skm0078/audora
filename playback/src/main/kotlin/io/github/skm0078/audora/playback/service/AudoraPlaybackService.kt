@@ -37,6 +37,9 @@ import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
+import io.github.skm0078.audora.playback.brain.BrainNotesStore
+import io.github.skm0078.audora.playback.brain.BrainSource
+import io.github.skm0078.audora.playback.brain.StoryBrainReader
 import io.github.skm0078.audora.playback.browse.BrowseLookup
 import io.github.skm0078.audora.playback.browse.BrowseSources
 import io.github.skm0078.audora.playback.browse.BrowseTree
@@ -81,9 +84,12 @@ import io.github.skm0078.audora.playback.voice.StudyGapRenderer
 import io.github.skm0078.audora.playback.voice.VoiceEngines
 import io.github.skm0078.audora.playback.voice.forReading
 import io.github.skm0078.audora.playback.voice.narratorBlend
+import io.github.skm0078.audora.speech.brain.StoryBrainModels
+import io.github.skm0078.audora.speech.brain.StoryBrainPrompt
 import io.github.skm0078.audora.speech.sherpa.blendableSpeaker
 import io.github.skm0078.audora.speech.sherpa.isExpressive
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
+import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -150,6 +156,7 @@ class AudoraPlaybackService : MediaLibraryService() {
     private lateinit var speed: LivePlaybackSpeed
     private lateinit var bookSession: BookSession
     private var session: MediaLibrarySession? = null
+    private var brain: StoryBrainReader? = null
 
     // Where the voice speaks in each clip, for the reader's word highlight (plan item 14).
     private val timings = SentenceTimings()
@@ -184,7 +191,7 @@ class AudoraPlaybackService : MediaLibraryService() {
         player.playbackParameters = PlaybackParameters(style.config.playerSpeed(heard()), heard().pitch)
         speed = LivePlaybackSpeed(player)
         // The reading modes travel with the speech style; a change restarts the sentence playing (ADR-035).
-        val reading = ReadingSource(modes = { style.current.modes })
+        val reading = ReadingSource(modes = { style.current.modes }, brain = storyBrain(heard).also { brain = it })
         val stores = SessionStores(style, sleepOptions, book, focusSound)
         val characters = CharacterCast.forReading(this, engines, { voices }) { heard().shaping }
         val mediaSession = mediaSession(stores).also { session = it }
@@ -415,8 +422,23 @@ class AudoraPlaybackService : MediaLibraryService() {
         session = null
         player.release()
         voices.release()
+        brain?.close()
         scope.cancel()
         super.onDestroy()
+    }
+
+    /**
+     * The opt-in story brain (ADR-078). Built on every phone but costs nothing without its model: whether the phone
+     * can run it and has it is asked on the brain's own thread, the first time a page has speech on it.
+     */
+    private fun storyBrain(heard: () -> SpeechStyle): StoryBrainReader {
+        val models = StoryBrainModels.get(this)
+        return StoryBrainReader(
+            config = models.config,
+            source = BrainSource(load = models::load, installed = { models.supported && models.isInstalled() }),
+            store = BrainNotesStore(File(filesDir, BRAIN_NOTES_DIR), "${models.model.id}/${StoryBrainPrompt.VERSION}"),
+            wanted = { heard().shaping.let { it.characterVoices || it.suitBook } },
+        )
     }
 
     private inner class ResourceTexts : ItemTexts {
@@ -430,6 +452,7 @@ class AudoraPlaybackService : MediaLibraryService() {
 
     private companion object {
         const val TAG = "Playback.Service"
+        const val BRAIN_NOTES_DIR = "story-brain-notes"
     }
 }
 

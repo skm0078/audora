@@ -83,6 +83,7 @@ import io.github.skm0078.audora.privacy.PrivacyHost
 import io.github.skm0078.audora.shortcuts.AppShortcut
 import io.github.skm0078.audora.shortcuts.AppShortcutEffect
 import io.github.skm0078.audora.speech.acted.ActedVoices
+import io.github.skm0078.audora.speech.brain.StoryBrainModels
 import io.github.skm0078.audora.speech.kws.VoiceCommandModels
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
@@ -160,6 +161,7 @@ import io.github.skm0078.audora.ui.reader.rememberSpokenWord
 import io.github.skm0078.audora.ui.settings.SettingsScreen
 import io.github.skm0078.audora.ui.settings.rememberActedVoiceSettings
 import io.github.skm0078.audora.ui.settings.rememberPronunciationSettings
+import io.github.skm0078.audora.ui.settings.rememberStoryBrainSettings
 import io.github.skm0078.audora.ui.settings.rememberVoiceCommandsSettings
 import io.github.skm0078.audora.ui.settings.runModelAction
 import io.github.skm0078.audora.ui.shell.AppShell
@@ -660,6 +662,7 @@ class MainActivity : ComponentActivity() {
             voiceCommands = rememberVoiceCommandsSettings(voiceCommandModels, screenPreference),
             pronunciation = rememberPronunciationSettings(pronunciationStore),
             actedVoice = rememberActedVoiceSettings(ActedVoices.get(applicationContext)),
+            storyBrain = rememberStoryBrainSettings(StoryBrainModels.get(applicationContext)),
             appearance = appearance,
             onAppearanceChange = { changed -> scope.launch { appearancePreferences.save(changed) } },
             onKidsMode = onKidsMode,

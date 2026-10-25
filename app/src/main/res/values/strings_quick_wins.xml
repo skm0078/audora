@@ -17,6 +17,7 @@
     <string name="whats_new_item">• %1$s</string>
     <string name="whats_new_ok">Got it</string>
     <string-array name="whats_new_items">
+        <item>New and optional: the story brain. Download it in Settings to have each line of a story read by the right character, with the right feeling, far more often. It runs on your phone, offline.</item>
         <item>Feelings are easier to hear: sad lines are lower and slower, happy, surprised and scared ones higher, shouts louder.</item>
         <item>Hindi and Bengali stories find more of their characters, even names the app has never seen, like बिरजू or পল্টু.</item>
         <item>Hindi now reads with Supertonic, a clearer voice with ten speakers, so Hindi characters can get voices of their own.</item>

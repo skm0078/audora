@@ -38,13 +38,21 @@ data class Delivery(
 class DeliveryPlanner(private val config: DeliveryConfig = DeliveryConfig()) {
     /**
      * [quoted]: the sentence holds quoted speech, or starts inside a quote an earlier sentence opened. [carried]: the
-     * mood the sentence before left ([SceneMoods]), used when this one asks for none.
+     * mood the sentence before left ([SceneMoods]), used when this one asks for none. [judged]: the feeling the story
+     * brain heard in the sentence (ADR-078), null when it was not asked; it read the scene, so a feeling it heard wins
+     * over the rules', and when it heard none the sentence keeps only its own cues, not a carried mood.
      */
-    fun plan(unit: ReadingUnit, intent: ContentIntent, quoted: Boolean, carried: Feeling? = null): Delivery {
+    fun plan(
+        unit: ReadingUnit,
+        intent: ContentIntent,
+        quoted: Boolean,
+        carried: Feeling? = null,
+        judged: Feeling? = null,
+    ): Delivery {
         val profile = config.profile(intent)
         val prose = unit.kind == UnitKind.BODY || unit.kind == UnitKind.LIST_ITEM || unit.kind == UnitKind.ASIDE
         val feeling = if (prose && intent.feelings && profile.feelingScale > 0f) {
-            SentenceFeelings.of(unit.text).takeIf { it != Feeling.NEUTRAL } ?: carried ?: Feeling.NEUTRAL
+            feelingOf(unit.text, carried, judged)
         } else {
             Feeling.NEUTRAL
         }
@@ -63,6 +71,16 @@ class DeliveryPlanner(private val config: DeliveryConfig = DeliveryConfig()) {
             openEnd = openEnd,
             pitch = SEMITONE.pow((effect.semitones * strength).coerceIn(-config.maxSemitones, config.maxSemitones)),
         )
+    }
+
+    private fun feelingOf(text: String, carried: Feeling?, judged: Feeling?): Feeling {
+        val own = SentenceFeelings.of(text)
+        return when {
+            judged != null && judged != Feeling.NEUTRAL -> judged
+            own != Feeling.NEUTRAL -> own
+            judged == Feeling.NEUTRAL -> Feeling.NEUTRAL
+            else -> carried ?: Feeling.NEUTRAL
+        }
     }
 
     /**

@@ -15,7 +15,8 @@ import io.github.skm0078.audora.speech.route.Speaker
  * thread-safe: its chapter start pages (cue before a chapter's heading), whether a page was read by OCR (run-on
  * punctuation, RI-11), its pronunciation fixes (plan item 1) and whether a sentence starts inside a quote opened
  * earlier in its paragraph (cast voices, plan item 7), who speaks it and the book's character voices (item 63), and
- * what the book is (a story, a poem, the news; ADR-056), which sets how it is delivered.
+ * what the book is (a story, a poem, the news; ADR-056), which sets how it is delivered, and the feeling the story
+ * brain heard in a sentence (ADR-078; null when it was not asked).
  */
 @Suppress("LongParameterList") // All optional: each caller sets what it knows about the book.
 class RenderBook(
@@ -25,6 +26,7 @@ class RenderBook(
     val startsInQuote: (ReadingUnit) -> Boolean = { false },
     val speakerOf: (ReadingUnit) -> Speaker? = { null },
     val moodOf: (ReadingUnit) -> Feeling? = { null },
+    val judgedFeeling: (ReadingUnit) -> Feeling? = { null },
     val characters: CharacterVoices? = null,
     val intent: () -> ContentIntent = { ContentIntent.GENERAL },
 )
