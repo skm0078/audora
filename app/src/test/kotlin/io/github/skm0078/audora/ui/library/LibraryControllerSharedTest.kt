@@ -25,6 +25,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -38,7 +39,7 @@ class LibraryControllerSharedTest {
     private val opened = mutableListOf<BookId>()
     private var doneCount = 0
 
-    private fun library(dispatcher: UnconfinedTestDispatcher) = Library(
+    private fun library(dispatcher: TestDispatcher) = Library(
         store = MemoryBooks(),
         documents = documents,
         fingerprinter = BookFingerprinter(),

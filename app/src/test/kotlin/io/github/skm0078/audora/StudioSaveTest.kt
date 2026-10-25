@@ -41,7 +41,7 @@ class StudioSaveTest {
         // Like the app's scope, which logs a failed task instead of crashing.
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler) + CoroutineExceptionHandler { _, _ -> })
 
-        startStudioSave(saving, scope, "moby", { error("disk full") }) { finished += it }
+        startStudioSave<String>(saving, scope, "moby", { error("disk full") }) { finished += it }
 
         assertNull(saving.value)
         assertTrue(startStudioSave(saving, scope, "moby", { "Moby Dick.m4a" }) { finished += it })
