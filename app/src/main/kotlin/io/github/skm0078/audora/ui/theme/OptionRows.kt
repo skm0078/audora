@@ -201,13 +201,10 @@ fun OptionBlock(
             .padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS),
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
     ) {
+        // The value stays beside the title it belongs to; a long subtitle wraps under both at full width instead of
+        // pushing the value down below it (release audit P18).
         TitleAndTrailing(
-            title = {
-                Column {
-                    Text(title, style = MaterialTheme.typography.bodyLarge)
-                    subtitle?.let { OptionSubtitle(it) }
-                }
-            },
+            title = { Text(title, style = MaterialTheme.typography.bodyLarge) },
             trailing = if (value != null || help != null) {
                 { OptionTrailing(value, help, title, showChevron = false) }
             } else {
@@ -215,6 +212,7 @@ fun OptionBlock(
             },
             modifier = Modifier.heightIn(min = Dimens.TouchTarget),
         )
+        subtitle?.let { OptionSubtitle(it) }
         content()
     }
 }
@@ -227,12 +225,15 @@ private fun OptionTitle(title: String, enabled: Boolean) {
     )
 }
 
-/** One short line under a title. Two lines at most, so a longer translation wraps once instead of being cut. */
+/**
+ * One short line under a title. Two lines at most, so a longer translation wraps once instead of being cut; a
+ * warning is never cut, since its end is usually what to do about it ("Tap to set up").
+ */
 @Composable
 private fun OptionSubtitle(text: String, isError: Boolean = false) {
     Text(
         text,
-        maxLines = SUBTITLE_LINES,
+        maxLines = if (isError) Int.MAX_VALUE else SUBTITLE_LINES,
         overflow = TextOverflow.Ellipsis,
         color = if (isError) MaterialTheme.colorScheme.error else Color.Unspecified,
     )

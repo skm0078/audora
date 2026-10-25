@@ -28,7 +28,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.dictionary.DictionaryEntry
 import io.github.skm0078.audora.core.dictionary.PartOfSpeech
@@ -36,6 +35,7 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.speech.dictionary.Dictionaries
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.ui.jobs.DownloadTimeLeft
+import io.github.skm0078.audora.ui.theme.Dimens
 
 /** Shown while the binding's state is set: the download offer, the words, or the entries of the word picked. */
 @Composable
@@ -47,7 +47,10 @@ fun LookUpOverlay(binding: LookUpBinding) {
         onDismissRequest = actions::close,
         title = { Text(state.word ?: stringResource(R.string.dictionary_title)) },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
+            ) {
                 when {
                     !ready -> DownloadOffer(state.dictionaryLang, binding.download, actions)
                     state.word == null -> WordPicker(state, actions)
@@ -101,7 +104,7 @@ private fun DownloadOffer(lang: Lang, download: OcrModelsState?, actions: LookUp
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun WordPicker(state: LookUpState, actions: LookUpActions) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
         state.words.forEach { word -> OutlinedButton(onClick = { actions.pick(word) }) { Text(word) } }
     }
     var typed by rememberSaveable { mutableStateOf("") }

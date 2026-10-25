@@ -5,7 +5,6 @@ package io.github.skm0078.audora.ui.settings
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
@@ -13,7 +12,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
@@ -33,19 +31,25 @@ internal fun OcrModelsItem(
     onAction: (OcrModelsAction) -> Unit,
     texts: ModelPackTexts = ModelPackTexts.OCR,
 ) {
+    // The action sits under the status, not in the trailing slot: beside a long title at large text sizes it
+    // squeezed the title and status into a narrow column that broke words mid-way. Only the small help icon trails.
     ListItem(
         headlineContent = { Text(stringResource(texts.title)) },
-        supportingContent = { Column { OcrModelsStatus(state, texts) } },
-        trailingContent = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (state is OcrModelsState.NotDownloaded) {
-                    HelpButton(
-                        stringResource(texts.title),
-                        stringResource(texts.missing, megabytes(state.missingBytes)),
-                    )
-                }
+        supportingContent = {
+            Column {
+                OcrModelsStatus(state, texts)
                 PackActionButton(state, texts, onAction)
             }
+        },
+        trailingContent = if (state is OcrModelsState.NotDownloaded) {
+            {
+                HelpButton(
+                    stringResource(texts.title),
+                    stringResource(texts.missing, megabytes(state.missingBytes)),
+                )
+            }
+        } else {
+            null
         },
         colors = optionRowColors(),
     )

@@ -55,6 +55,7 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.pdf.render.ViewRect
+import io.github.skm0078.audora.ui.theme.readingBand
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 
@@ -197,7 +198,7 @@ private fun PageLayers(state: ReaderState, image: PageImage, tone: PageTone, hig
         modifier = Modifier.fillMaxSize(),
     )
     Dimmed(state.unreadableHighlight, tone.paper ?: MaterialTheme.colorScheme.surface)
-    Highlight(highlight, MaterialTheme.colorScheme.primaryContainer, tone)
+    Highlight(highlight, MaterialTheme.colorScheme.readingBand(Color.White), tone)
 }
 
 /**

@@ -100,12 +100,16 @@ private fun bookDetails(book: Book): String {
     )
 }
 
-/** "5 minutes ago", "yesterday", in the phone's language. Recomputed when the row recomposes. */
-private fun relativeTime(millis: Long): String = DateUtils.getRelativeTimeSpanString(
-    millis,
-    System.currentTimeMillis(),
-    DateUtils.MINUTE_IN_MILLIS,
-).toString()
+/**
+ * "5 minutes ago", "yesterday", in the phone's language; "just now" under a minute, where the platform says
+ * "0 minutes ago". Recomputed when the row recomposes.
+ */
+@Composable
+private fun relativeTime(millis: Long): String {
+    val now = System.currentTimeMillis()
+    if (now - millis < DateUtils.MINUTE_IN_MILLIS) return stringResource(R.string.library_just_now)
+    return DateUtils.getRelativeTimeSpanString(millis, now, DateUtils.MINUTE_IN_MILLIS).toString()
+}
 
 @Composable
 internal fun messageText(message: LibraryMessage): String = when (message) {

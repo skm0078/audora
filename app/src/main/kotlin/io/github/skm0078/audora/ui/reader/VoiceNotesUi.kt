@@ -29,12 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.notes.VoiceNote
+import io.github.skm0078.audora.ui.theme.Dimens
 import kotlinx.coroutines.delay
 
 /**
@@ -113,7 +113,7 @@ fun LazyListScope.voiceNoteItems(voice: VoiceNotesBinding, onOpen: (VoiceNote) -
         Text(
             stringResource(R.string.voice_notes_title),
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 4.dp),
+            modifier = Modifier.padding(start = Dimens.SpaceXl, top = Dimens.SpaceL, bottom = Dimens.SpaceXs),
         )
     }
     items(voice.state.notes, key = { "voice-${it.id}" }) { note ->
@@ -126,7 +126,7 @@ fun LazyListScope.voiceNoteItems(voice: VoiceNotesBinding, onOpen: (VoiceNote) -
 private fun VoiceNoteRow(note: VoiceNote, playing: Boolean, actions: VoiceNotesActions, onOpen: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onOpen)
-            .padding(start = 24.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+            .padding(start = Dimens.SpaceXl, end = Dimens.SpaceS, top = Dimens.SpaceS, bottom = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {

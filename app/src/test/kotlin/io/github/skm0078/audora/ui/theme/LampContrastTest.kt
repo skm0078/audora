@@ -1,5 +1,6 @@
 // File: app/src/test/kotlin/io/github/skm0078/audora/ui/theme/LampContrastTest.kt
-// Purpose: The lamp palette keeps WCAG AA contrast in light, dark and true black: 4.5:1 for text, 3:1 for bars.
+// Purpose: The lamp palette keeps WCAG AA contrast in light, dark and true black: 4.5:1 for text, 3:1 for bars;
+//          the reading band stands out from the paper.
 
 package io.github.skm0078.audora.ui.theme
 
@@ -26,6 +27,7 @@ class LampContrastTest {
         "onSurfaceVariant on surfaceContainerHighest" to { it.onSurfaceVariant to it.surfaceContainerHighest },
         "onPrimary on primary" to { it.onPrimary to it.primary },
         "spoken word: onPrimaryContainer on primaryContainer" to { it.onPrimaryContainer to it.primaryContainer },
+        "spoken sentence: onSurface on its band" to { it.onSurface to it.readingBand(it.surface) },
         "replay card: onSecondaryContainer on secondaryContainer" to {
             it.onSecondaryContainer to it.secondaryContainer
         },
@@ -47,6 +49,17 @@ class LampContrastTest {
     @Test
     fun barsAndMarksMeetAa() = check(graphicPairs, GRAPHIC_MIN)
 
+    /** The spoken sentence's band is found at a glance on the paper (it was 1.3:1, release audit P13). */
+    @Test
+    fun readingBandStandsOutFromThePaper() {
+        val papers = schemes.mapValues { it.value.surface } + ("white page" to Color.White)
+        papers.forEach { (name, paper) ->
+            val colors = schemes[name] ?: LampLightColors
+            val ratio = contrast(colors.readingBand(paper), paper)
+            assertTrue("$name: band $ratio < $BAND_MIN", ratio >= BAND_MIN)
+        }
+    }
+
     private fun check(pairs: List<Pair<String, ColorPair>>, min: Float) {
         schemes.forEach { (scheme, colors) ->
             pairs.forEach { (name, pick) ->
@@ -65,6 +78,7 @@ class LampContrastTest {
     private companion object {
         const val TEXT_MIN = 4.5f
         const val GRAPHIC_MIN = 3f
+        const val BAND_MIN = 1.6f
 
         /** WCAG's allowance for ambient light in the contrast formula. */
         const val FLARE = 0.05f

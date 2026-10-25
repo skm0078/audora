@@ -5,8 +5,8 @@
     <string name="option_help_about">%1$s के बारे में</string>
     <string name="option_help_ok">ठीक है</string>
     <string name="option_choice_cancel">रद्द करें</string>
-    <string name="speech_sheet_title">आवाज़ और रफ़्तार</string>
-    <string name="speech_speed_title">रफ़्तार</string>
+    <string name="speech_sheet_title">आवाज़ और स्पीड</string>
+    <string name="speech_speed_title">स्पीड</string>
     <string name="speech_speed_value">%1$s×</string>
     <string name="reading_skim_short">सिर्फ़ शीर्षक और मुख्य वाक्य</string>
     <string name="reading_skip_unreadable_short">बिगड़ा स्कैन टेक्स्ट हल्की ध्वनि बन जाता है</string>
