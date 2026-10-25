@@ -28,6 +28,9 @@ class ReaderAccessibilityTest {
             "Some years ago, never mind how…",
             sentencePreview("Some years ago, never mind how long precisely."),
         )
-        assertEquals("सभी मनुष्यों को गौरव और अधिकारों…", sentencePreview("सभी मनुष्यों को गौरव और अधिकारों के मामले में"))
+        assertEquals(
+            "सभी मनुष्यों को गौरव और अधिकारों…",
+            sentencePreview("सभी मनुष्यों को गौरव और अधिकारों के मामले में"),
+        )
     }
 }
