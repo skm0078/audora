@@ -9,6 +9,7 @@ import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.UnitKind
+import kotlin.math.pow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -29,6 +30,26 @@ class DeliveryPlannerTest {
         assertTrue(whisper.rate < config.profile(ContentIntent.STORY).dialogueRate)
         assertEquals(config.profile(ContentIntent.STORY).rate, narration.rate, DELTA)
         assertEquals(0f, narration.gainDb, DELTA)
+    }
+
+    @Test
+    fun `sad lines are lower, lively ones higher, plain and factual ones keep the voice's pitch (ADR-076)`() {
+        val sad = planner.plan(unit("“Don't go,” she sobbed."), ContentIntent.STORY, quoted = true)
+        val lively = planner.plan(unit("“We did it,” he laughed."), ContentIntent.STORY, quoted = true)
+        val plain = planner.plan(unit("The rain kept falling."), ContentIntent.STORY, quoted = false)
+        val news = planner.plan(unit("“Fire!” he shouted."), ContentIntent.NEWS, quoted = true)
+        assertTrue("${sad.pitch}", sad.pitch < 1f)
+        assertTrue("${lively.pitch}", lively.pitch > 1f)
+        assertEquals(1f, plain.pitch, DELTA)
+        assertEquals(1f, news.pitch, DELTA)
+    }
+
+    @Test
+    fun `a storybook's stronger feelings stay within the pitch limit`() {
+        val surprised = planner.plan(unit("“Oh!” she gasped."), ContentIntent.CHILDREN, quoted = true)
+        val limit = 2.0.pow(config.maxSemitones / 12.0).toFloat()
+        assertEquals(Feeling.SURPRISED, surprised.feeling)
+        assertTrue("${surprised.pitch} <= $limit", surprised.pitch in 1f..limit + DELTA)
     }
 
     @Test

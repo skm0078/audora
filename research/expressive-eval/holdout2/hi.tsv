@@ -1,0 +1,25 @@
+# File: research/expressive-eval/holdout2/hi.tsv
+# Purpose: Second held-out Hindi set (original text), written before the name-finding change was scored on it.
+
+@ hi-k1-mela
+@cast चुन्नी=F टिल्लू=M
+मेले में बड़ी भीड़ थी।	-	joy
+चुन्नी गुब्बारे वाले के पास रुक गई।	-	joy
+“मुझे वह लाल वाला चाहिए!”	चुन्नी	joy
+
+टिल्लू ने जेब टटोली।	-	neutral
+“पैसे तो घर पर ही रह गए।”	टिल्लू	sad
+
+चुन्नी का मुँह उतर गया।	-	sad
+टिल्लू हँसा और पीछे से गुब्बारा निकालकर उसके हाथ में थमा दिया।	-	joy
+“मज़ाक कर रहा था, पगली।”	टिल्लू	joy
+
+@ hi-k2-raat
+@cast सुखिया=F रमेसर=M
+रात गहरी हो चली थी।	-	scared
+सुखिया दरवाज़े पर खड़ी राह देख रही थी।	-	scared
+रमेसर अब तक नहीं लौटा था।	-	scared
+तभी गली में लालटेन की रोशनी दिखी।	-	surprised
+रमेसर थका हुआ आँगन में आया।	-	neutral
+“इतनी देर कहाँ लगा दी?”	सुखिया	angry
+“बाज़ार में बैल बीमार पड़ गया था।”	रमेसर	sad

@@ -18,21 +18,21 @@ class VoiceLicencesTest {
     private val credits = VoiceCredits("By someone", "https://licence.test", "https://source.test")
     private val bundled = voiceSpec("piper-en-ljspeech")
     private val cori = catalogVoice(ByteArray(10), "piper-en-cori").copy(credits = credits)
-    private val pratham = catalogVoice(ByteArray(20), "piper-hi-pratham", Lang.HI).copy(credits = credits)
+    private val supertonic = catalogVoice(ByteArray(20), "supertonic-hi", Lang.HI).copy(credits = credits)
     private val bengali = catalogVoice(ByteArray(30), "piper-bn-google", Lang.BN).copy(credits = credits)
-    private val catalog = VoiceCatalog(listOf(bengali, pratham, cori))
+    private val catalog = VoiceCatalog(listOf(bengali, supertonic, cori))
 
     @Test
     fun `every voice is listed by language, built in first, with downloads whether installed or not`() {
         val installed = listOf(
-            InstalledVoice(pratham.spec, VoiceOrigin.CATALOG, File("p"), 1),
+            InstalledVoice(supertonic.spec, VoiceOrigin.CATALOG, File("p"), 1),
             InstalledVoice(voiceSpec("custom-hi-1", Lang.HI), VoiceOrigin.CUSTOM, File("c"), 1),
         )
 
         val list = VoiceLicences.build(bundled, credits, catalog, installed)
 
         assertEquals(
-            listOf("piper-en-ljspeech", "piper-en-cori", "piper-hi-pratham", "custom-hi-1", "piper-bn-google"),
+            listOf("piper-en-ljspeech", "piper-en-cori", "supertonic-hi", "custom-hi-1", "piper-bn-google"),
             list.map { it.id.name },
         )
         assertEquals(

@@ -323,6 +323,23 @@ class QuoteCarryTest {
     }
 
     @Test
+    fun `a Hindi name that opens narration twice on a page is a character, a noun said once is not`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "बादल घिर आए थे।").copy(lang = Lang.HI),
+            sentence(1, "“अब क्या होगा?”", pause = paragraphPauseMs).copy(lang = Lang.HI),
+            sentence(2, "झुमकी रोटी लेकर आई।").copy(lang = Lang.HI),
+            sentence(3, "“खा लो।”", pause = paragraphPauseMs).copy(lang = Lang.HI),
+            sentence(4, "झुमकी पास बैठ गई।", pause = paragraphPauseMs).copy(lang = Lang.HI),
+        )
+
+        carry.page(units)
+
+        assertEquals(null, carry.speakerOf(units[1]))
+        assertEquals(Speaker("झुमकी", SpeakerGender.FEMALE), carry.speakerOf(units[3]))
+    }
+
+    @Test
     fun `the one a speech calls by name answers it`() {
         val carry = QuoteCarry()
         val units = listOf(

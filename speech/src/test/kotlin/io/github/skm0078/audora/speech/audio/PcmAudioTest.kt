@@ -3,6 +3,8 @@
 
 package io.github.skm0078.audora.speech.audio
 
+import kotlin.math.PI
+import kotlin.math.sin
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -15,6 +17,22 @@ class PcmAudioTest {
 
         assertArrayEquals(shortArrayOf(0, 32_767, -32_767, 32_767, -32_767, 16_384, 0), audio.samples)
         assertEquals(22_050, audio.sampleRate)
+    }
+
+    @Test
+    fun `a shifted tone is higher by the ratio and shorter by it, at the same sample rate`() {
+        val rate = 24_000
+        val tone = PcmAudio(ShortArray(rate) { i -> (10_000 * sin(2 * PI * 200 * i / rate)).toInt().toShort() }, rate)
+        val ratio = 1.12f
+
+        val higher = tone.pitched(ratio)
+
+        assertEquals(rate, higher.sampleRate)
+        assertEquals((rate / ratio).toDouble(), higher.samples.size.toDouble(), 2.0)
+        // Rising zero crossings per second: 200 Hz before, 224 after.
+        val crossings = (1 until higher.samples.size).count { higher.samples[it - 1] < 0 && higher.samples[it] >= 0 }
+        assertEquals(200.0 * ratio, crossings / (higher.samples.size.toDouble() / rate), 2.0)
+        assertSame(tone, tone.pitched(1f))
     }
 
     @Test

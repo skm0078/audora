@@ -26,7 +26,9 @@ class Paragraph(val sentences: List<Sentence>, val continuesSpeech: Boolean = fa
  * [previous] the two who spoke the latest quoted paragraphs, for an untagged line to alternate between; [crowded] once
  * a third speaker joined the run, when turns no longer simply alternate; [called] the one the latest quote called by
  * name ("Mrs Patel, where were you?"), most likely the one who answers. A paragraph with no quote, or a heading, ends
- * the run ([last], [previous], [crowded] and [called] cleared) but keeps the names.
+ * the run ([last], [previous], [crowded] and [called] cleared) but keeps the names. [cast]: Hindi and Bengali names
+ * that open sentences of narration again and again, so they are the story's people ([recurring]); a
+ * heading keeps them.
  */
 data class Turns(
     val known: List<Speaker> = emptyList(),
@@ -34,6 +36,7 @@ data class Turns(
     val previous: Speaker? = null,
     val crowded: Boolean = false,
     val called: Speaker? = null,
+    val cast: Set<String> = emptySet(),
 ) {
     /**
      * The speaker an untagged line most likely is in a two-way conversation: the one who did not speak last. None
@@ -98,10 +101,10 @@ class SpeakerTurns(
     /** [paragraphs]: one page's paragraphs in reading order. */
     fun page(paragraphs: List<Paragraph>, start: Turns): Page {
         val speakers = HashMap<Int, Speaker>()
-        var turns = start
+        var turns = start.copy(cast = start.cast + recurring(paragraphs, tags, ::isQuoted))
         paragraphs.forEach { paragraph ->
             turns = if (paragraph.sentences.all { it.unit.kind == UnitKind.HEADING }) {
-                Turns()
+                Turns(cast = turns.cast)
             } else {
                 paragraph(paragraph, turns, speakers)
             }
@@ -212,7 +215,7 @@ class SpeakerTurns(
         return when {
             subject == null -> null
             key == null -> subject.takeIf { it.gender != SpeakerGender.UNKNOWN }
-            SpokenNames.trusted(subject.name.orEmpty(), lang) -> subject
+            SpokenNames.trusted(subject.name.orEmpty(), lang) || key in turns.cast -> subject
             known != null -> if (subject.gender != SpeakerGender.UNKNOWN) known.copy(gender = subject.gender) else known
             else -> null
         }
@@ -238,3 +241,23 @@ class SpeakerTurns(
         return match?.copy(gender = gender) ?: Speaker(null, gender)
     }
 }
+
+/** Languages printed without capitals, whose names are known by repetition ([SpeakerTurns]). */
+private val CASTLESS = setOf(Lang.HI, Lang.BN)
+
+/** How often a word must open narration on one page to be taken as a person's name. */
+private const val CAST_MIN_SUBJECTS = 2
+
+/**
+ * Hindi and Bengali print no capitals, so an unknown name ("बिरजू", "পল্টু") cannot be told from a noun by its look.
+ * A word that opens [Lang.HI] or [Lang.BN] narration (not [quoted]) at least [CAST_MIN_SUBJECTS] times on the page is
+ * taken as one of the story's people (ADR-077): "बिरजू खेत की मेड़ पर बैठा", "बिरजू ने मुँह फेर लिया". A noun opens
+ * a sentence once ("बादल घिर आए थे") and stays untrusted.
+ */
+private fun recurring(paragraphs: List<Paragraph>, tags: SpeakerTags, quoted: (Sentence) -> Boolean): Set<String> =
+    paragraphs.asSequence()
+        .flatMap { it.sentences }
+        .filter { it.unit.lang in CASTLESS && it.unit.kind in PROSE && !quoted(it) }
+        .mapNotNull { tags.subjectOf(it.unit.text, it.unit.lang)?.key }
+        .groupingBy { it }.eachCount()
+        .filterValues { it >= CAST_MIN_SUBJECTS }.keys
