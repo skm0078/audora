@@ -89,17 +89,18 @@ class RoutedSpeech(
         prosody: ClauseProsody? = null,
         shape: (PcmAudio) -> PcmAudio = { it },
         feeling: Feeling = Feeling.NEUTRAL,
+        pitch: Float = 1f,
     ): Outcome<RoutedAudio, SpeechError> {
         val segments = router.route(text, lang).ifEmpty { listOf(ScriptSegment(text, lang)) }
         val uncut = segments.map { Clause(it.text, it.lang, pauseBefore = null, aside = false) }
         val clauses = prosody?.let { ClauseSplitter.split(segments).ifEmpty { uncut } } ?: uncut
         val parts = ArrayList<Voiced>(clauses.size)
         for (clause in clauses) {
-            when (val part = renderWith(clause.text, clause.lang, role, rate, feeling)) {
+            when (val part = renderWith(clause.text, clause.lang, role, Tone(rate, feeling, pitch))) {
                 is Outcome.Success -> parts.add(part.value.let { Voiced(shape(it.audio), it.voice) })
 
                 is Outcome.Failure ->
-                    return fallBack(Part(text, lang, role, rate, feeling), clause.lang, part.error, shape)
+                    return fallBack(Part(text, lang, role, Tone(rate, feeling, pitch)), clause.lang, part.error, shape)
             }
         }
         return Outcome.Success(join(clauses, parts, prosody))
@@ -134,27 +135,33 @@ class RoutedSpeech(
     ): Outcome<RoutedAudio, SpeechError> = if (failedLang == sentence.lang) {
         Outcome.Failure(error)
     } else {
-        renderWith(sentence.text, sentence.lang, sentence.role, sentence.rate, sentence.feeling)
+        renderWith(sentence.text, sentence.lang, sentence.role, sentence.tone)
             .map { RoutedAudio(shape(it.audio), listOf(sentence.lang), listOf(it.voice), error) }
     }
 
-    private suspend fun renderWith(
-        text: String,
-        lang: Lang,
-        role: TextRole,
-        rate: Float,
-        feeling: Feeling,
-    ): Outcome<Voiced, SpeechError> = voices.voiceFor(lang).flatMap { voice ->
-        when (val engine = voices.engine(voice.engine)) {
-            is Outcome.Success ->
-                engine.value.render(spoken(text, lang, role), voice, rate, feeling).map { Voiced(it, voice) }
+    /**
+     * A voice that acts feelings in a style of its own (ADR-057) is not shifted as well. Every other voice reads a
+     * feeling's [Tone.pitch] as a tape played faster or slower: it is asked for the speed that comes back to [Tone.rate]
+     * once shifted, so the words keep their length.
+     */
+    private suspend fun renderWith(text: String, lang: Lang, role: TextRole, tone: Tone): Outcome<Voiced, SpeechError> =
+        voices.voiceFor(lang).flatMap { voice ->
+            when (val engine = voices.engine(voice.engine)) {
+                is Outcome.Success -> {
+                    val pitch = if (engine.value.actsFeelings(voice)) 1f else tone.pitch
+                    engine.value.render(spoken(text, lang, role), voice, tone.rate / pitch, tone.feeling)
+                        .map { Voiced(it.pitched(pitch), voice) }
+                }
 
-            is Outcome.Failure -> engine
+                is Outcome.Failure -> engine
+            }
         }
-    }
+
+    /** How a part is voiced: its speed, its feeling, and its pitch as a ratio (1: the voice's own). */
+    private class Tone(val rate: Float, val feeling: Feeling, val pitch: Float)
 
     /** The whole sentence as asked for, for the fallback. */
-    private class Part(val text: String, val lang: Lang, val role: TextRole, val rate: Float, val feeling: Feeling)
+    private class Part(val text: String, val lang: Lang, val role: TextRole, val tone: Tone)
 
     private class Voiced(val audio: PcmAudio, val voice: VoiceId)
 

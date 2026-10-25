@@ -8,10 +8,12 @@ import io.github.skm0078.audora.core.model.ContentIntent
 import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.UnitKind
+import kotlin.math.pow
 
 /**
  * One sentence's delivery, on top of the listener's speed and pace: multipliers of the voice's [rate], the silence
- * after the sentence ([pauseScale]) and inside it ([clauseScale]), and [gainDb] of loudness. [PLAIN] changes nothing.
+ * after the sentence ([pauseScale]) and inside it ([clauseScale]), [gainDb] of loudness, and its feeling's [pitch] as
+ * a ratio (ADR-076). [PLAIN] changes nothing.
  * [openEnd]: the sentence breaks off and the next unit finishes it, so the voice is told it goes on (a comma).
  */
 data class Delivery(
@@ -21,6 +23,7 @@ data class Delivery(
     val gainDb: Float = 0f,
     val feeling: Feeling = Feeling.NEUTRAL,
     val openEnd: Boolean = false,
+    val pitch: Float = 1f,
 ) {
     companion object {
         val PLAIN = Delivery()
@@ -58,6 +61,7 @@ class DeliveryPlanner(private val config: DeliveryConfig = DeliveryConfig()) {
             gainDb = (effect.gainDb * strength).coerceAtMost(config.maxGainDb),
             feeling = feeling,
             openEnd = openEnd,
+            pitch = SEMITONE.pow((effect.semitones * strength).coerceIn(-config.maxSemitones, config.maxSemitones)),
         )
     }
 
@@ -81,6 +85,9 @@ class DeliveryPlanner(private val config: DeliveryConfig = DeliveryConfig()) {
 
     private companion object {
         val WORD = Regex("[\\p{L}\\p{M}\\p{Nd}]+")
+
+        /** One equal-tempered semitone as a frequency ratio. */
+        val SEMITONE = 2f.pow(1f / 12)
     }
 
     /** A multiplier [factor] at [strength]: 0 is 1 (no change), 1 is [factor], 2 doubles its distance from 1. */

@@ -36,7 +36,7 @@ import kotlinx.coroutines.withContext
  * The list in `whats_new_items` (strings_whats_new.xml, with its Hindi and Bengali copies). Bump this whenever that
  * list is replaced, so everyone who has not seen the new one sees it once.
  */
-const val WHATS_NEW_ID = 7
+const val WHATS_NEW_ID = 8
 
 /** What to do at start: show the list, or mark it seen unshown (a new listener, who has nothing to compare). */
 enum class WhatsNewStart { SHOW, MARK_SEEN, NOTHING }
