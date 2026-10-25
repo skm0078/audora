@@ -1,5 +1,9 @@
 # Audora — Progress
 
+**Frozen on 2026-10-25.** New entries are one file each in [progress/](progress/README.md), so parallel PRs never
+edit the same lines ([ADR 2026-10-25-parallel-prs-merge-cleanly](adr/2026-10-25-parallel-prs-merge-cleanly.md)).
+CI fails a branch that edits this file.
+
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
 ## Hindi and Bengali characters found by repetition (2026-10-25, ADR-077)

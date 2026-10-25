@@ -1,0 +1,3 @@
+en: Feelings are easier to hear: sad lines are lower and slower, happy, surprised and scared ones higher, shouts louder.
+hi: भावनाएँ अब साफ़ सुनाई देती हैं: दुखी पंक्तियाँ धीमी और नीची, खुशी, हैरानी और डर वाली ऊँची, चीख़ ज़्यादा ज़ोर से।
+bn: অনুভূতি এখন সহজে শোনা যায়: দুঃখের লাইন নিচু আর ধীর, খুশি, অবাক আর ভয়ের লাইন উঁচু, চিৎকার আরও জোরে।

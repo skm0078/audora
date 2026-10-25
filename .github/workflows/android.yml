@@ -36,6 +36,15 @@ jobs:
       - name: Check out
         uses: actions/checkout@v5
 
+      - name: Shared hotspot files untouched (parallel PRs merge cleanly)
+        # Fails in seconds a branch that edits a file every PR used to conflict on, and says what to do instead
+        # (AGENTS.md, Parallel PRs). Needs the branch's history back to where it left dev.
+        if: github.ref_name != 'dev' && github.ref_name != 'prod'
+        run: |
+          dev="+refs/heads/dev:refs/remotes/origin/dev"
+          git fetch --no-tags --unshallow origin "$dev" || git fetch --no-tags origin "$dev"
+          python3 scripts/check_hotspots.py --base origin/dev
+
       - name: Set up JDK 21
         uses: actions/setup-java@v6
         with:
@@ -75,7 +84,7 @@ jobs:
           echo "Dev key certificate: $cert_sha256"
           echo "EXPECTED_DEBUG_CERT_SHA256=$cert_sha256" >> "$GITHUB_ENV"
 
-      - name: Test the repo scripts (16 KB checker, voice mirror)
+      - name: Test the repo scripts (16 KB checker, voice mirror, hotspot check)
         run: python3 -m unittest discover -s scripts/tests -v
 
       - name: Golden corpus page dumps are current

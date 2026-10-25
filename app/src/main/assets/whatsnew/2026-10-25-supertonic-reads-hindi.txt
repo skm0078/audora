@@ -1,0 +1,3 @@
+en: Hindi now reads with Supertonic, a clearer voice with ten speakers, so Hindi characters can get voices of their own.
+hi: हिंदी अब Supertonic से पढ़ी जाती है: ज़्यादा साफ़ आवाज़, दस वक्ताओं के साथ, ताकि हिंदी किरदारों को अपनी आवाज़ मिल सके।
+bn: হিন্দি এখন Supertonic দিয়ে পড়া হয়: আরও পরিষ্কার ভয়েস, দশজন বক্তা সহ, যাতে হিন্দি চরিত্ররা নিজেদের ভয়েস পেতে পারে।

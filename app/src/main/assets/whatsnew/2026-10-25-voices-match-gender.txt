@@ -1,0 +1,3 @@
+en: Hindi and Bengali characters get a voice of the right gender from their name or role (माँ, পিসি, Mira).
+hi: हिंदी और बांग्ला पात्रों को उनके नाम या रिश्ते (माँ, পিসি, Mira) से सही लिंग की आवाज़ मिलती है।
+bn: হিন্দি আর বাংলা চরিত্ররা নাম বা সম্পর্ক (মা, पिताजी, Mira) দেখে ঠিক লিঙ্গের ভয়েস পায়।

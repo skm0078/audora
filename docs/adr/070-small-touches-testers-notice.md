@@ -1,6 +1,6 @@
 # ADR-070: Small touches testers notice: covers outside the app, shortcuts, What's new
 
-**Status:** Accepted (2026-10-25).
+**Status:** Accepted (2026-10-25). What's new numbering (`WHATS_NEW_ID`, `whats_new_items`) replaced by one file per item: ADR 2026-10-25-parallel-prs-merge-cleanly.
 
 ## Context
 Friends testing the dev APK kept finding small gaps that the listening apps they know (Pocket Casts, Audible, Voice
