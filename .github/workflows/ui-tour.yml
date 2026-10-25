@@ -2,13 +2,18 @@
 # Purpose: The UI tour (UiTourTest): screenshots of every main screen of the real app in English, Hindi and Bengali at
 #          font sizes 1, 1.3 and 2, plus dark mode, for UI reviews. Runs on feat/ui-* pushes and by hand. The pictures
 #          go to the run's "ui-tour" artifact and, so a review can fetch them with plain git, to the ui-tour-screens
-#          branch (one commit, replaced each run).
+#          branch (one commit, replaced each run). On a pull request that changes the app's screens or strings it
+#          tours only font size 2 and fails on a word broken across lines (a squeezed row), without publishing.
 
 name: UI tour
 
 on:
   push:
     branches: ["feat/ui-*"]
+  pull_request:
+    paths:
+      - "app/src/main/kotlin/io/github/skm0078/audora/ui/**"
+      - "app/src/main/res/values*/**"
   workflow_dispatch:
 
 permissions:
@@ -21,6 +26,8 @@ concurrency:
 jobs:
   tour:
     name: UI tour (emulator)
+    # A feat/ui-* branch already gets the full tour on push.
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'feat/ui-')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -93,10 +100,14 @@ jobs:
 
       - name: Tour the app
         timeout-minutes: 30
-        run: >-
-          ./gradlew :app:connectedUiTestAndroidTest
-          -Pandroid.testInstrumentationRunnerArguments.class=io.github.skm0078.audora.ui.tour.UiTourTest
-          -Pandroid.testInstrumentationRunnerArguments.uiTour=true --stacktrace
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          args="-Pandroid.testInstrumentationRunnerArguments"
+          scales=""
+          [ "$EVENT" = "pull_request" ] && scales="$args.uiTourScales=2.0"
+          ./gradlew :app:connectedUiTestAndroidTest "$args.class=io.github.skm0078.audora.ui.tour.UiTourTest" \
+            "$args.uiTour=true" $scales --stacktrace
 
       - name: Pull the screenshots
         if: always()
@@ -121,7 +132,7 @@ jobs:
           retention-days: 14
 
       - name: Publish the screenshots to the ui-tour-screens branch
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         env:
           TOKEN: ${{ github.token }}
         run: |

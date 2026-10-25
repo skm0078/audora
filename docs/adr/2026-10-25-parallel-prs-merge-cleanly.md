@@ -19,7 +19,7 @@ Each change adds its own file, named by date and slug; nothing shared is edited 
 
 1. **What's new** is one file per item: `app/src/main/assets/whatsnew/<yyyy-mm-dd>-<slug>.txt`, with an `en:`, `hi:`
    and `bn:` line. The app shows the entries a listener has not seen (newest first, at most 8) and stores the names
-   it showed, so there is no number to bump. A listener who saw the last numbered list (9) has seen the six entries
+   it showed, so there is no number to bump. A listener who saw the last numbered list (10) has seen the nine entries
    carried over from it (`WhatsNewEntries.LEGACY_ENTRIES`). A new listener's entries are marked seen, as before.
 2. **Progress** is one file per change: `docs/progress/<yyyy-mm-dd>-<slug>.md`. `PROGRESS.md` keeps the history up to
    this change and is frozen.

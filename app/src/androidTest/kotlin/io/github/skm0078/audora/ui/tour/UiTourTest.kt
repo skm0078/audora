@@ -1,7 +1,8 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/tour/UiTourTest.kt
 // Purpose: A screenshot tour of the real app for UI reviews: every main screen in English, Hindi and Bengali at font
-//          sizes 1, 1.3 and 2 (and English in dark mode), on a common 6.7-inch phone screen. It checks nothing;
-//          a screen it cannot reach is logged and skipped. Runs only when asked (ui-tour.yml passes uiTour=true).
+//          sizes 1, 1.3 and 2 (and English in dark mode), on a common 6.7-inch phone screen. It fails on one thing
+//          only: a word broken across two lines, the sign of a squeezed row; a screen it cannot reach is logged and
+//          skipped. Runs only when asked (ui-tour.yml passes uiTour=true, and uiTourScales to tour fewer sizes).
 
 package io.github.skm0078.audora.ui.tour
 
@@ -12,6 +13,7 @@ import android.graphics.Bitmap
 import android.os.LocaleList
 import android.provider.MediaStore
 import android.util.Log
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasClickAction
@@ -37,6 +39,7 @@ import io.github.skm0078.audora.language.AppLanguageStore
 import io.github.skm0078.audora.language.AppLanguages
 import io.github.skm0078.audora.release.JourneyDevice
 import io.github.skm0078.audora.ui.firstrun.FirstRunStep
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
@@ -50,6 +53,7 @@ class UiTourTest {
     private var scenario: ActivityScenario<MainActivity>? = null
     private lateinit var pass: Pass
     private var shot = 0
+    private val broken = mutableListOf<String>()
 
     /** One language, font size and theme. */
     private data class Pass(val language: AppLanguage, val book: String, val fontScale: Float, val dark: Boolean) {
@@ -61,14 +65,16 @@ class UiTourTest {
     fun tourEveryScreen() {
         assumeTrue("Only ui-tour.yml runs the tour", InstrumentationRegistry.getArguments().getString(ARG) == "true")
         prepareDevice()
+        val scales = InstrumentationRegistry.getArguments().getString(SCALES_ARG)?.split(',')?.map(String::toFloat)
         try {
-            PASSES.forEach { next ->
+            PASSES.filter { scales == null || it.fontScale in scales }.forEach { next ->
                 runCatching { runPass(next) }.onFailure { Log.w(TAG, "Pass ${next.name} stopped: ${it.message}", it) }
             }
         } finally {
             scenario?.close()
             restoreDevice()
         }
+        assertTrue("Words broken across lines (a squeezed row):\n" + broken.joinToString("\n"), broken.isEmpty())
     }
 
     private fun runPass(next: Pass) {
@@ -193,6 +199,8 @@ class UiTourTest {
         capture("sleep-menu")
         JourneyDevice.pressBackKey()
         settle()
+        // Play, so the library shows the mini player that opens the full player.
+        tryTap(hasContentDescription(text(R.string.reader_play)))
     }
 
     /** The full player, from the mini player on the library once the reader is closed. */
@@ -233,6 +241,17 @@ class UiTourTest {
 
     private fun capture(name: String) {
         save(name, screenshot())
+        checkWords(name)
+    }
+
+    /** Every text on screen, the topmost window included; the test books' file names are long and may wrap anywhere. */
+    private fun checkWords(name: String) {
+        runCatching {
+            rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
+                .fetchSemanticsNodes()
+        }.getOrDefault(emptyList()).forEach { node ->
+            brokenWords(node).filterNot { BOOK_FILE in it }.forEach { broken += "${pass.name} $name: $it" }
+        }
     }
 
     private fun screenshot(): Bitmap =
@@ -322,6 +341,8 @@ class UiTourTest {
     private companion object {
         const val TAG = "UiTour"
         const val ARG = "uiTour"
+        const val SCALES_ARG = "uiTourScales"
+        const val BOOK_FILE = "udhr"
         const val FOLDER = "Download/ListenLock-screens/tour"
         const val PERCENT = 100
 

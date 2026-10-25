@@ -118,10 +118,7 @@ class VoicesController(
      * Reading voice for the row's language. Choosing the built-in voice is the same as the default; one of its other
      * speakers is a choice of its own.
      */
-    fun use(row: VoiceRow) = voices.choose(
-        row.lang,
-        row.id.takeIf { row.kind != VoiceKind.BUILT_IN || CastSpeakers.parse(it).second != null },
-    )
+    fun use(row: VoiceRow) = voices.use(row)
 
     /** Back to the default voice of [lang] (built-in for English, the phone's for Hindi and Bengali). */
     fun useDefault(lang: Lang) = voices.choose(lang, null)
@@ -188,3 +185,12 @@ class VoicesController(
         const val TAG = "UI.Voices"
     }
 }
+
+/**
+ * Makes [row] read its language for every book, from Settings → Voices or the speech sheet. A plain built-in voice is
+ * the default, so it is stored as no choice; a built-in voice with a cast speaker is a choice of its own.
+ */
+fun VoiceManager.use(row: VoiceRow) = choose(
+    row.lang,
+    row.id.takeIf { row.kind != VoiceKind.BUILT_IN || CastSpeakers.parse(it).second != null },
+)

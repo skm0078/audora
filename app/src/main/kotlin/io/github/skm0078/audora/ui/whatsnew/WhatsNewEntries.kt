@@ -42,7 +42,7 @@ object WhatsNewEntries {
      * The last numbered list (ADR-070's `WHATS_NEW_ID`) and the entries it held. Someone who saw that list has seen
      * these; never changes again.
      */
-    const val LEGACY_LAST_LIST = 9
+    const val LEGACY_LAST_LIST = 10
     val LEGACY_ENTRIES = setOf(
         "2026-10-25-feelings-you-can-hear",
         "2026-10-25-indic-names-found",
@@ -50,6 +50,9 @@ object WhatsNewEntries {
         "2026-10-25-noncommercial-voices-removed",
         "2026-10-25-more-speakers-found",
         "2026-10-25-voices-match-gender",
+        "2026-10-25-voice-from-the-player",
+        "2026-10-25-one-reader-notice",
+        "2026-10-25-large-text-fits",
     )
 
     private val NAME = Regex("""\d{4}-\d{2}-\d{2}-[a-z0-9]+(-[a-z0-9]+)*""")
