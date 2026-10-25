@@ -19,6 +19,7 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.pdfium.PdfiumEngine
 import io.github.skm0078.audora.playback.covers.CoverFolders
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
+import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ensureActive
@@ -56,6 +57,10 @@ class BookCovers(
     private val bitmaps = CoverBitmaps(config)
     private val drawing = Mutex()
 
+    /** Bumped under [drawing] by [clear] and [keep]; a cover read outside the lock is kept only if it is unchanged. */
+    @Volatile
+    private var generation = 0
+
     /** Pages (document URI and page) that could not be drawn; a book found again at a new URI gets another try. */
     private val failed: MutableSet<String> = ConcurrentHashMap.newKeySet()
     private val revisions = mutableStateMapOf<BookId, Int>()
@@ -72,12 +77,19 @@ class BookCovers(
             known != null -> known.asImageBitmap()
 
             else -> withContext(io) {
+                // A cover already on disk is decoded without waiting for [drawing] (ADR-072): a page being drawn for
+                // one book no longer holds up every other row's saved cover, so a scrolled library fills in at decode
+                // speed. A clear() or keep() while decoding wins: the bitmap is dropped and the locked path decides.
+                val seen = generation
+                val saved = savedCoverFile(book, folders)?.let(bitmaps::decode)?.takeIf { seen == generation }
+                saved?.let { memory.put(key, it) }
                 // Into memory under the same lock as clear(), so a cover drawn just before it is not kept after.
                 // A tile scrolled away while waiting for the lock is cancelled here, before its page is drawn.
-                drawing.withLock {
+                val bitmap = saved ?: drawing.withLock {
                     ensureActive()
                     make(book)?.also { memory.put(key, it) }
-                }?.asImageBitmap()
+                }
+                bitmap?.asImageBitmap()
             }
         }
     }
@@ -93,6 +105,7 @@ class BookCovers(
             return@withContext false
         }
         drawing.withLock {
+            generation++
             val saved = bitmaps.writeWebp(folders.chosenFile(id), bitmap)
             memory.snapshot().keys.filter { it.startsWith(id.value) }.forEach(memory::remove)
             if (saved) revisions[id] = revision(id) + 1
@@ -121,6 +134,7 @@ class BookCovers(
      */
     suspend fun clear(): Outcome<Unit, String> = withContext(io) {
         drawing.withLock {
+            generation++
             memory.evictAll()
             failed.clear()
             val files = folders.drawn.listFiles().orEmpty()
@@ -194,4 +208,11 @@ class BookCovers(
         const val TAG = "Audora.Covers"
         const val FIRST_PAGE = CoverFolders.FIRST_PAGE
     }
+}
+
+/** Where [book]'s cover is kept once made: its chosen picture, or its drawn page; null for a text book. */
+private fun savedCoverFile(book: Book, folders: CoverFolders): File? = when {
+    book.cover.isKeptPicture -> folders.chosenFile(book.id)
+    book.format?.isText == true -> null
+    else -> folders.drawnFile(book.id, (book.cover as? CoverChoice.Page)?.index ?: CoverFolders.FIRST_PAGE)
 }

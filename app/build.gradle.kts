@@ -7,6 +7,8 @@ plugins {
 }
 
 val uiTestBuildType = "uiTest"
+val devBuildType = "dev"
+val benchmarkBuildType = "benchmark"
 
 val releaseVersionName: String = providers.gradleProperty("audora.versionName").get()
 
@@ -63,13 +65,39 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             buildConfigField("boolean", "SIMPLE_VOICES", simpleVoices(release = false))
+            buildConfigField("boolean", "DEV_TOOLS", "true")
         }
         release {
+            // R8 shrinks and optimises the code (ADR-072). Names are kept (-dontobfuscate), so shared logs and crash
+            // stacks read the same as in a debug build.
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             // The Play build lists one download per language and hides voices still being judged (ADR-056).
             buildConfigField("boolean", "SIMPLE_VOICES", simpleVoices(release = true))
+            buildConfigField("boolean", "DEV_TOOLS", "false")
             if (releaseSigningConfigured) {
                 signingConfig = signingConfigs.getByName("release")
             }
+        }
+        // The dev APK the phones run (ADR-072): built like release (not debuggable, R8, optimised native code), so
+        // what is tested is as fast as what ships, but signed with the dev key under the debug build's application
+        // id, so it updates the installed dev app in place. Every voice and the debug tools stay on.
+        create(devBuildType) {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-dev"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+            buildConfigField("boolean", "SIMPLE_VOICES", simpleVoices(release = false))
+            buildConfigField("boolean", "DEV_TOOLS", "true")
+        }
+        // The dev build again for CI's x86_64 emulator, only to time it against the debug build (scripts/perf/).
+        // Never uploaded, published or 16 KB checked, like uiTest.
+        create(benchmarkBuildType) {
+            initWith(getByName(devBuildType))
+            applicationIdSuffix = ".bench"
+            matchingFallbacks += "release"
+            ndk { abiFilters += "x86_64" }
         }
         // Only for the Compose UI tests on CI's x86_64 emulator, which cannot run arm64-only native code. Debug and
         // release stay arm64-v8a only (ADR-010); this variant is never uploaded, published or 16 KB checked.

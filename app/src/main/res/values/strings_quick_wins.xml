@@ -17,10 +17,9 @@
     <string name="whats_new_item">• %1$s</string>
     <string name="whats_new_ok">Got it</string>
     <string-array name="whats_new_items">
-        <item>Words like “the book I read” are no longer read as “the book one read”.</item>
-        <item>Hindi and Bengali say “minus” for a minus sign before a number.</item>
-        <item>Your pronunciation fixes apply from a book\'s very first sentence.</item>
-        <item>A damaged PDF shows a message instead of closing the app.</item>
+        <item>The app opens, scrolls and starts reading faster: this test version is now built like the final app.</item>
+        <item>Book covers in the library show up sooner.</item>
+        <item>The word highlight uses less battery while a book plays.</item>
     </string-array>
 
     <string name="library_mark_finished">Mark as finished</string>

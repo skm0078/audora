@@ -9,9 +9,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.withFrameMillis
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.playback.contract.SentenceTiming
+import kotlinx.coroutines.delay
 
 /**
  * The characters of the word being said in [text] when the voice is [fraction] (0..1) of the way through the
@@ -46,8 +46,10 @@ internal fun speechFraction(timing: SentenceTiming?, unit: ReadingUnit?, positio
 }
 
 /**
- * The spoken sentence's word being said, polled once a frame while the voice plays (the controller runs the clock,
- * so a poll is cheap); null when [enabled] is off, nothing plays on the page, or the timing is not known yet.
+ * The spoken sentence's word being said, polled every [WORD_POLL_MS] while the voice plays (the controller runs the
+ * clock, so a poll is cheap); null when [enabled] is off, nothing plays on the page, or the timing is not known yet.
+ * Not once a frame (ADR-072): a 120-144 Hz screen woke the main thread 144 times a second for a word that changes
+ * about four times a second, and the estimate itself drifts by ±150 ms.
  */
 @Composable
 internal fun rememberSpokenWord(state: ReaderState, port: PlaybackPort, enabled: Boolean): State<IntRange?> {
@@ -60,10 +62,9 @@ internal fun rememberSpokenWord(state: ReaderState, port: PlaybackPort, enabled:
         word.value = null
         if (!active || unit == null) return@LaunchedEffect
         while (true) {
-            withFrameMillis {
-                val fraction = speechFraction(playback.sentenceTiming, unit, port.positionInSentenceMs())
-                word.value = spokenWord(unit.text, fraction)
-            }
+            val fraction = speechFraction(playback.sentenceTiming, unit, port.positionInSentenceMs())
+            word.value = spokenWord(unit.text, fraction)
+            delay(WORD_POLL_MS)
         }
     }
     return word
@@ -80,3 +81,6 @@ private fun nthLetterIndex(text: String, n: Int): Int {
     }
     error("text has only $seen non-space characters, asked for #$n")
 }
+
+/** About 30 checks a second: well inside a word's ~250 ms, a fifth of a 144 Hz screen's frames. */
+private const val WORD_POLL_MS = 33L

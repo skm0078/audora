@@ -27,7 +27,8 @@ jobs:
   build:
     name: Check, test, assemble
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # R8 runs for the release and dev APKs (ADR-072).
+    timeout-minutes: 40
     outputs:
       apk-name: ${{ steps.apk.outputs.name }}
 
@@ -106,7 +107,7 @@ jobs:
         run: >-
           ./gradlew ktlintCheck detekt test :pdf:goldenTest -Pgolden.baseline="$GOLDEN_BASELINE"
           :playback:listeningTest -Plistening.baseline="$LISTENING_BASELINE"
-          assembleDebug :app:assembleRelease :app:bundleRelease :app:lintDebug
+          assembleDebug :app:assembleDev :app:assembleRelease :app:bundleRelease :app:lintDebug
           :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest
           :app:assembleUiTestAndroidTest --stacktrace
 
@@ -140,6 +141,7 @@ jobs:
         run: |
           python3 scripts/check_16kb_alignment.py \
             app/build/outputs/apk/debug/*.apk \
+            app/build/outputs/apk/dev/*.apk \
             app/build/outputs/apk/release/*.apk \
             spikes/playback/build/outputs/apk/debug/*.apk \
             spikes/voices/build/outputs/apk/debug/*.apk
@@ -149,14 +151,17 @@ jobs:
         # back to a throwaway key fails here instead of publishing a dev build that cannot update the previous one.
         run: |
           build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
-          apk="$(find app/build/outputs/apk/debug -name '*.apk' | head -n 1)"
-          certs="$("$build_tools/apksigner" verify --print-certs "$apk" \
-            | grep -oE 'certificate SHA-256 digest: [0-9a-f]{64}' | awk '{print $NF}' | sort -u)"
-          echo "Debug APK signing certificate: ${certs:-none}"
-          if [ -n "${EXPECTED_DEBUG_CERT_SHA256:-}" ] && [ "$certs" != "$EXPECTED_DEBUG_CERT_SHA256" ]; then
-            echo "::error::Debug APK signed with ${certs:-no certificate}, not with the dev key $EXPECTED_DEBUG_CERT_SHA256 (docs/RELEASING.md)."
-            exit 1
-          fi
+          # The dev APK (ADR-072) is what the phones install, so it must carry the same key.
+          for dir in debug dev; do
+            apk="$(find "app/build/outputs/apk/$dir" -name '*.apk' | head -n 1)"
+            certs="$("$build_tools/apksigner" verify --print-certs "$apk" \
+              | grep -oE 'certificate SHA-256 digest: [0-9a-f]{64}' | awk '{print $NF}' | sort -u)"
+            echo "$dir APK signing certificate: ${certs:-none}"
+            if [ -n "${EXPECTED_DEBUG_CERT_SHA256:-}" ] && [ "$certs" != "$EXPECTED_DEBUG_CERT_SHA256" ]; then
+              echo "::error::$dir APK signed with ${certs:-no certificate}, not with the dev key $EXPECTED_DEBUG_CERT_SHA256 (docs/RELEASING.md)."
+              exit 1
+            fi
+          done
 
       - name: Name the debug APKs
         id: apk
@@ -165,6 +170,7 @@ jobs:
           name="audora-debug-${short_sha}"
           mkdir -p dist
           cp app/build/outputs/apk/debug/*.apk "dist/${name}.apk"
+          cp app/build/outputs/apk/dev/*.apk "dist/audora-dev-${short_sha}.apk"
           cp spikes/playback/build/outputs/apk/debug/*.apk "dist/audora-s3-spike-${short_sha}.apk"
           cp spikes/voices/build/outputs/apk/debug/*.apk "dist/audora-s1-voices-${short_sha}.apk"
           echo "name=${name}" >> "$GITHUB_OUTPUT"
@@ -239,9 +245,10 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Build the test APK
+        # The uiTest and benchmark APKs are the debug and dev builds for x86_64, timed after the tests (ADR-072).
         run: >-
           ./gradlew :pdf:assembleDebugAndroidTest :playback:assembleDebugAndroidTest :speech:assembleDebugAndroidTest
-          :app:assembleUiTestAndroidTest --stacktrace
+          :app:assembleUiTestAndroidTest :app:assembleUiTest :app:assembleBenchmark --stacktrace
 
       - name: Start the emulator
         timeout-minutes: 15
@@ -286,6 +293,21 @@ jobs:
         run: >-
           ./gradlew :pdf:connectedDebugAndroidTest :playback:connectedDebugAndroidTest
           :speech:connectedDebugAndroidTest :app:connectedUiTestAndroidTest --stacktrace
+
+      # Debug build against the dev build (ADR-072): cold start, frames and memory on this emulator. Emulator numbers
+      # are not phone numbers; the ratio between the two builds is what to read. Never fails the job.
+      - name: Speed numbers (debug vs dev build)
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 15
+        run: |
+          export ADB="$ANDROID_HOME/platform-tools/adb"
+          debug_apk="$(find app/build/outputs/apk/uiTest -name '*.apk' | head -n 1)"
+          dev_apk="$(find app/build/outputs/apk/benchmark -name '*.apk' | head -n 1)"
+          scripts/perf/time_builds.sh \
+            "debug=$debug_apk" \
+            "dev=$dev_apk" | tee speed.txt
+          { echo "### Speed numbers (emulator, debug vs dev build)"; sed -n '/^| Build/,$p' speed.txt; } >> "$GITHUB_STEP_SUMMARY"
 
       # UI changes ship with emulator screenshots (PlayerLayoutTest saves them to Downloads, which outlives the
       # test app's uninstall). Download the "player-screens" artifact from the run's summary page to look at them.
@@ -364,12 +386,16 @@ jobs:
           GH_REPO: ${{ github.repository }}
           TAG: dev-build
         run: |
-          cp dist/audora-debug-*.apk audora-dev.apk
+          # audora-dev.apk is the optimised dev build (ADR-072). The debug build stays beside it under a name
+          # Obtainium's "audora-dev" filter does not match: same app id and key, so it installs over the dev build if
+          # R8 ever breaks something, and logs show whether a slowness is the build's or the code's.
+          cp dist/audora-dev-*.apk audora-dev.apk
+          cp dist/audora-debug-*.apk listenlock-debug.apk
           cp dist/audora-s3-spike-*.apk audora-s3-spike.apk
           cp dist/audora-s1-voices-*.apk audora-s1-voices.apk
           gh release delete "$TAG" --cleanup-tag --yes || echo "No previous $TAG release"
-          gh release create "$TAG" audora-dev.apk audora-s3-spike.apk audora-s1-voices.apk \
+          gh release create "$TAG" audora-dev.apk listenlock-debug.apk audora-s3-spike.apk audora-s1-voices.apk \
             --prerelease \
             --target "$GITHUB_SHA" \
             --title "Dev build (${GITHUB_SHA::7})" \
-            --notes "Latest debug builds of the dev branch, commit ${GITHUB_SHA}: audora-dev.apk (the app), audora-s3-spike.apk (S3 background-playback test) and audora-s1-voices.apk (S1 voice benchmark). For testing only; not signed for release."
+            --notes "Latest builds of the dev branch, commit ${GITHUB_SHA}: audora-dev.apk (the app, optimised like release), listenlock-debug.apk (the same app as a debug build, a fallback), audora-s3-spike.apk (S3 background-playback test) and audora-s1-voices.apk (S1 voice benchmark). For testing only; not signed for release."

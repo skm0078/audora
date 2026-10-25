@@ -624,7 +624,7 @@ class MainActivity : ComponentActivity() {
             shareState = diagnostics.shareState,
             batteryExempt = battery.exempt,
             versionName = BuildConfig.VERSION_NAME,
-            showDebugTools = BuildConfig.DEBUG,
+            showDebugTools = BuildConfig.DEV_TOOLS,
             onOpenBatterySetup = { navigate(AppDestination.BatterySetup(fromSettings = true)) },
             onOpenVoices = { navigate(AppDestination.Voices()) },
             onOpenLicences = { navigate(AppDestination.Licences) },
