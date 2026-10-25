@@ -2,6 +2,23 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
+## Character voices that find the characters (2026-10-25, ADR-075)
+The maintainer heard character voices fail most of the time. Measured first, then fixed.
+- **A marked story set** (`research/expressive-eval/`): 20 stories in English, Hindi and Bengali, each sentence
+  marked with its speaker and feeling, plus a held-out set never tuned on. `ExpressiveEvalTest` scores the app's
+  reading of them and fails if a score drops, a character gets the other gender's voice, or a feeling is read as
+  its opposite. Reports land in `playback/build/expressive/`.
+- **Characters found:** single-quoted dialogue, one-word lines, Hindi and Bengali tags read subject first (sadhu
+  verbs too), names and role words that tell gender, the narration's subject for an untagged line, never the person
+  a line calls by name (the one it calls answers next), English names as printed. Right speaker 17/11/26 % →
+  87/84/100 % (en/hi/bn); right-gender voice 29/11/0 % → 85/88/100 % on the tuned set, 22/0/0 % → 59/7/0 % held out. English knows ~3,000 more given names from public-domain
+  birth records.
+- **"!" alone reads emphatic, not happy.** Opposite feelings 5 → 0 on the tuned set.
+- "A voice for each character" is labelled experimental; What's new lists the changes; studio audio renders again.
+
+**Real-device checks (test phone):** a story with single-quoted dialogue in English with Kitten, a Hindi story with
+Piper Pratham and a Bengali story with Rasa: characters switch voices, men and women are not swapped, "Get out!"
+does not sound cheerful in Bengali.
 ## Speed 1: the phones run an optimised build (2026-10-25, ADR-072)
 - **The dev APK is no longer a debug build.** `audora-dev.apk` is now the new `dev` build type: release settings
   (not debuggable, R8, native code at -O2) with the dev key and the debug app id, so it updates in place. The

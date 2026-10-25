@@ -2,6 +2,6 @@
 <!-- File: app/src/main/res/values-hi/strings_characters.xml -->
 <!-- Purpose: Hindi copy of values/strings_characters.xml: Strings for a voice per character (plan item 63). -->
 <resources>
-    <string name="speech_cast_characters">हर पात्र की अपनी आवाज़</string>
+    <string name="speech_cast_characters">हर पात्र की अपनी आवाज़ (प्रायोगिक)</string>
     <string name="speech_cast_characters_detail">जिन पंक्तियों में बोलने वाला साफ़ है (\"मीरा ने कहा\") उन्हें उस किरदार की अपनी आवाज़ मिलती है, पूरी किताब के लिए। अंग्रेज़ी की बिल्ट-इन आवाज़, Kokoro और Kitten के साथ काम करता है। बाकी उद्धरण उद्धरण वाली आवाज़ में रहते हैं।</string>
 </resources>

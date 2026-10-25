@@ -29,6 +29,31 @@ class QuoteSplitterTest {
     }
 
     @Test
+    fun `curly single quotes are speech, apostrophes inside or after a word are not`() {
+        val cases = listOf(
+            "‘Did you plant all of these?’ she asked." to listOf(q("Did you plant all of these?"), n("she asked.")),
+            "‘I don’t know, ma’am,’ said Lily." to listOf(q("I don’t know, ma’am,"), n("said Lily.")),
+            "‘सच?’ पिताजी ने पूछा।" to listOf(q("सच?"), n("पिताजी ने पूछा।")),
+            "James’ hat was on the peg." to listOf(n("James’ hat was on the peg.")),
+            "The ’90s were long gone." to listOf(n("The ’90s were long gone.")),
+        )
+        cases.forEach { (text, parts) -> assertEquals(text, parts, splitter.split(text)) }
+        assertEquals(
+            listOf(q("hold it."), n("He let go.")),
+            splitter.split("hold it.’ He let go.", startsInQuote = true),
+        )
+        assertEquals(true, splitter.endsInQuote("She said, ‘Listen to me."))
+        assertEquals(true, splitter.opensWithQuote("‘And another thing,’ she said."))
+    }
+
+    @Test
+    fun `a short quote that is a whole line is speech`() {
+        assertEquals(listOf(q("Alive?")), splitter.split("“Alive?”"))
+        assertEquals(listOf(q("Two hundred!")), splitter.split("“Two hundred!"))
+        assertEquals(listOf(q("बिल्ली?")), splitter.split("“बिल्ली?"))
+    }
+
+    @Test
     fun `a speech that runs on past the sentence is quoted to its end`() {
         assertEquals(
             listOf(n("She turned and said,"), q("Listen to me carefully.")),

@@ -74,6 +74,7 @@ ADR-013 and ADR-037 were planned (podcast mode, online AI) and have no file yet.
 - [ADR-070](adr/070-small-touches-testers-notice.md) Cover, author and chapter on the notification and lock screen, app icon shortcuts, What's new after an update, mark finished or not started, copy and share a sentence, a sample book, haptic ticks
 - [ADR-071](adr/071-pitch-presets-and-option-rows.md) Pitch presets like speed, heard while dragging, ±15%; option rows never squeeze their titles
 - [ADR-072](adr/072-optimised-dev-build.md) The phones run an optimised dev build (R8, not debuggable, -O2 native); R8 in release; speed measured on every push
+- [ADR-075](adr/075-characters-that-are-found.md) Character voices: every quote style, subject-first Hindi and Bengali tags, names tell gender, "!" is emphatic, a measured story set that guards it
 
 **Reading the PDF (`:pdf`)**
 

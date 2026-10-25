@@ -1,0 +1,70 @@
+# File: research/expressive-eval/holdout/en.tsv
+# Purpose: Held-out English passages (original text), written after the rules were tuned on passages/: never tune on these.
+# Format as passages/en.tsv.
+
+@ en-h1-station
+@cast Priya=F Daniel=M Porter=M
+The platform was empty except for a porter sweeping the far end.	-	neutral
+Priya checked the board again.	-	neutral
+“It's been cancelled,” she said flatly.	Priya	sad
+
+Daniel dropped his bag.	-	angry
+“Cancelled?	Daniel	angry
+That's the third time this week!”	Daniel	angry
+
+“Excuse me,” Priya called to the porter.	Priya	loud
+“Is there another train tonight?”	Priya	neutral
+
+The porter leaned on his broom.	-	neutral
+“Not till six in the morning, miss.”	Porter	neutral
+
+“Wonderful,” muttered Daniel.	Daniel	angry
+
+@ en-h2-hospital
+@cast Dr Okafor=F Ben=M
+The waiting room smelled of disinfectant and cold coffee.	-	neutral
+Ben had not slept.	-	sad
+When the door opened he was on his feet before Dr Okafor could speak.	-	scared
+“Is she all right?”	Ben	scared
+
+Dr Okafor smiled.	-	joy
+“She's awake.	Dr Okafor	joy
+She's asking for you.”	Dr Okafor	joy
+
+For a moment Ben could not say anything at all.	-	joy
+Then he laughed, a broken, shaky laugh.	-	joy
+“Thank you,” he whispered.	Ben	soft
+“Thank you so much.”	Ben	soft
+
+@ en-h3-attic
+@cast Kit=F Felix=M
+“Pass me the torch.”	Kit	neutral
+
+Felix handed it up the ladder.	-	neutral
+“What can you see?”	Felix	neutral
+
+“Boxes.	Kit	neutral
+Old letters.	Kit	neutral
+And—oh.”	Kit	surprised
+
+“What?”	Felix	scared
+
+“There's a photograph of us.	Kit	scared
+Of us, Felix, and we're standing in this attic.”	Kit	scared
+
+@ en-h4-shop
+@cast Mr Brennan=M Lucy=F Mrs Brennan=F
+Mr Brennan looked up from the till as the bell rang.	-	neutral
+“We're closed,” he said without turning round.	Mr Brennan	angry
+
+“It's me, Dad.”	Lucy	joy
+
+He spun round so fast he knocked a jar off the counter.	-	surprised
+“Lucy!	Mr Brennan	joy
+Martha, come down!	Mr Brennan	loud
+Lucy's home!”	Mr Brennan	joy
+
+Footsteps thundered on the stairs.	-	joy
+Mrs Brennan stopped in the doorway with her hand over her mouth.	-	surprised
+“Oh, my girl,” she said.	Mrs Brennan	sad
+“My girl.”	Mrs Brennan	sad

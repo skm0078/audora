@@ -170,6 +170,7 @@ data class DeliveryConfig(
             Feeling.SCARED to FeelingEffect(rate = 1.03f, gainDb = -1.5f),
             Feeling.SURPRISED to FeelingEffect(rate = 1.02f, gainDb = 1.5f),
             Feeling.LIVELY to FeelingEffect(rate = 1.04f, gainDb = 1.5f),
+            Feeling.EMPHATIC to FeelingEffect(rate = 1.03f, gainDb = 1.5f),
             Feeling.TRAILING to FeelingEffect(rate = 0.96f, pauseScale = 1.5f),
             Feeling.ASKING to FeelingEffect(pauseScale = 1.15f),
             Feeling.NEUTRAL to FeelingEffect(),
