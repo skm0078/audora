@@ -1,6 +1,6 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/tour/UiTourTest.kt
 // Purpose: A screenshot tour of the real app for UI reviews: every main screen in English, Hindi and Bengali at font
-//          sizes 1, 1.3 and 2 (and English in dark mode), on a Moto Edge 50 Fusion sized screen. It checks nothing;
+//          sizes 1, 1.3 and 2 (and English in dark mode), on a common 6.7-inch phone screen. It checks nothing;
 //          a screen it cannot reach is logged and skipped. Runs only when asked (ui-tour.yml passes uiTour=true).
 
 package io.github.skm0078.audora.ui.tour
@@ -311,7 +311,7 @@ class UiTourTest {
         const val FOLDER = "Download/ListenLock-screens/tour"
         const val PERCENT = 100
 
-        // A Moto Edge 50 Fusion: 1080 × 2400 px at about 420 dpi (411 × 914 dp).
+        // A common 6.7-inch phone: 1080 × 2400 px at about 420 dpi (411 × 914 dp).
         const val WIDTH_PX = 1080
         const val HEIGHT_PX = 2400
         const val DENSITY = 420
