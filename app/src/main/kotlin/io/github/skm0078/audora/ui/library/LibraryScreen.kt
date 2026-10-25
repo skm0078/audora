@@ -336,9 +336,9 @@ private fun EmptyLibrary(enabled: Boolean, onAddPdf: () -> Unit, onTrySample: ()
 
 @Composable
 private fun Centered(content: @Composable () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+    Box(modifier = Modifier.fillMaxSize().padding(Dimens.SpaceXl), contentAlignment = Alignment.Center) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) { content() }
     }

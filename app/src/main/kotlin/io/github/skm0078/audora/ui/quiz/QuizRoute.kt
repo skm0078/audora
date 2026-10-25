@@ -27,13 +27,13 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.notes.HighlightStore
 import io.github.skm0078.audora.core.quiz.QuizProgressStore
 import io.github.skm0078.audora.core.quiz.QuizRound
 import io.github.skm0078.audora.playback.quiz.QuizSpeaker
+import io.github.skm0078.audora.ui.theme.Dimens
 import java.io.File
 
 /** While [open], runs one quiz over every book's highlights; its voices are freed when it closes. */
@@ -61,7 +61,7 @@ private fun QuizDialog(state: QuizState, model: QuizModel, onClose: () -> Unit) 
         text = {
             Column(
                 Modifier.verticalScroll(rememberScrollState()).fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
             ) {
                 when (state) {
                     QuizState.Loading -> CircularProgressIndicator()

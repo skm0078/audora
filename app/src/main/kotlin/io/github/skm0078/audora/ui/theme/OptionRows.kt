@@ -201,13 +201,10 @@ fun OptionBlock(
             .padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS),
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
     ) {
+        // The value stays beside the title it belongs to; a long subtitle wraps under both at full width instead of
+        // pushing the value down below it (release audit P18).
         TitleAndTrailing(
-            title = {
-                Column {
-                    Text(title, style = MaterialTheme.typography.bodyLarge)
-                    subtitle?.let { OptionSubtitle(it) }
-                }
-            },
+            title = { Text(title, style = MaterialTheme.typography.bodyLarge) },
             trailing = if (value != null || help != null) {
                 { OptionTrailing(value, help, title, showChevron = false) }
             } else {
@@ -215,6 +212,7 @@ fun OptionBlock(
             },
             modifier = Modifier.heightIn(min = Dimens.TouchTarget),
         )
+        subtitle?.let { OptionSubtitle(it) }
         content()
     }
 }

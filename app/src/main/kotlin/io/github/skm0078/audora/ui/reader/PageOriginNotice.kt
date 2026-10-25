@@ -25,6 +25,7 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.ui.jobs.DownloadTimeLeft
 import io.github.skm0078.audora.ui.theme.AudoraTheme
+import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.voices.megabytes
 
 /**
@@ -50,15 +51,15 @@ internal fun PageOriginNotice(
 @Composable
 private fun OcrBadge(@StringRes text: Int) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 2.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
     ) {
         Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = MaterialTheme.shapes.small) {
             Text(
                 stringResource(R.string.reader_ocr_badge),
                 style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                modifier = Modifier.padding(horizontal = Dimens.SpaceS, vertical = 2.dp),
             )
         }
         Text(
@@ -104,8 +105,8 @@ private fun NeedsModelsCard(state: OcrModelsState?, onDownload: () -> Unit) {
 
 @Composable
 private fun NoticeCard(text: String, content: @Composable () -> Unit = {}) {
-    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS)) {
+        Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
             Text(text, style = MaterialTheme.typography.bodyMedium)
             content()
         }

@@ -20,11 +20,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.ui.theme.AudoraTheme
+import io.github.skm0078.audora.ui.theme.Dimens
 
 /**
  * Part of the old library is still set aside after a failed restore (ADR-046), so the library must not open: it
@@ -34,8 +34,8 @@ import io.github.skm0078.audora.ui.theme.AudoraTheme
 fun FinishRestoringScreen(onRestart: () -> Unit) {
     Surface(Modifier.fillMaxSize()) {
         Column(
-            Modifier.safeDrawingPadding().padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+            Modifier.safeDrawingPadding().padding(Dimens.SpaceXl),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(stringResource(R.string.backup_finish_title), style = MaterialTheme.typography.headlineSmall)

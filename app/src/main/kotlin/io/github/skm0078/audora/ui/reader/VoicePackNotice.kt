@@ -22,13 +22,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.speech.voices.LanguagePacks
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.speech.voices.VoiceStatus
+import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.voices.PackStatus
 import io.github.skm0078.audora.ui.voices.languageName
 import io.github.skm0078.audora.ui.voices.megabytes
@@ -44,8 +44,8 @@ internal fun VoicePackNotice(units: List<ReadingUnit>, offer: VoicePackOffer) {
     var dismissed by rememberSaveable(lang) { mutableStateOf(false) }
     val pack = LanguagePacks.pack(offer.voices, lang)?.takeIf { !it.ready && !dismissed } ?: return
     val language = stringResource(languageName(lang))
-    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS)) {
+        Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
             Text(
                 stringResource(R.string.reader_voice_pack_title, language),
                 style = MaterialTheme.typography.titleSmall,
@@ -59,7 +59,7 @@ internal fun VoicePackNotice(units: List<ReadingUnit>, offer: VoicePackOffer) {
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
                 if (pack.downloading) {
                     TextButton(onClick = {
                         offer.actions.onCancel(pack.voice)

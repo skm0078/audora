@@ -182,7 +182,7 @@
     <string name="notes_ok">ঠিক আছে</string>
     <string name="notes_save_failed">এটি সেভ করা যায়নি। ফোনের স্টোরেজ হয়তো ভরে গেছে।</string>
     <string name="speech_book_voices">এই বইয়ের ভয়েস</string>
-    <string name="speech_sound">শব্দ</string>
+    <string name="speech_sound">সাউন্ড</string>
     <string name="speech_even_loudness">সমান আওয়াজ</string>
     <string name="speech_even_loudness_detail">চালু: প্রতিটি বাক্য আর প্রতিটি ভয়েস একই জোরে বাজে, তাই কিছুই হঠাৎ জোরে বা আস্তে শোনায় না।</string>
     <string name="speech_trim_pauses">লম্বা বিরতি ছোট করুন</string>

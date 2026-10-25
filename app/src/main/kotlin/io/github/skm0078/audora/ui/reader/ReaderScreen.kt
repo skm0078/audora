@@ -38,7 +38,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.library.BookId
@@ -49,6 +48,7 @@ import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.ui.jobs.BookJobsOnTop
 import io.github.skm0078.audora.ui.theme.AudoraTheme
+import io.github.skm0078.audora.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -207,7 +207,7 @@ private fun OpenBook(
 @Composable
 private fun PageBar(page: Int, pageCount: Int, actions: ReaderActions, onPick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -229,7 +229,7 @@ private fun PageBar(page: Int, pageCount: Int, actions: ReaderActions, onPick: (
 @Composable
 internal fun PlayerStatus(
     playback: PlaybackSnapshot,
-    modifier: Modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+    modifier: Modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceXs),
 ) {
     val text = when {
         playback.connection == PlaybackSnapshot.Connection.UNAVAILABLE -> R.string.reader_player_unavailable
@@ -247,8 +247,8 @@ internal fun PlayerStatus(
 @Composable
 private fun Message(text: String, action: (@Composable () -> Unit)? = null) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        modifier = Modifier.fillMaxSize().padding(Dimens.SpaceXl),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(text, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)

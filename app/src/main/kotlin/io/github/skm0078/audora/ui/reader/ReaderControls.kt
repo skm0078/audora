@@ -44,7 +44,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.speech.voices.VoiceRow
@@ -144,7 +143,9 @@ private fun PlayPauseButton(reading: Boolean, buffering: Boolean, enabled: Boole
             onClick = onClick,
             enabled = enabled,
             // The spinner says "getting ready" to the eye; TalkBack says it on the button.
-            modifier = Modifier.size(PLAY_BUTTON_SIZE - 8.dp).semantics { if (buffering) stateDescription = loading },
+            modifier = Modifier
+                .size(PLAY_BUTTON_SIZE - Dimens.SpaceS)
+                .semantics { if (buffering) stateDescription = loading },
         ) {
             if (reading) {
                 Icon(painterResource(R.drawable.ic_pause), stringResource(R.string.reader_pause))
@@ -213,7 +214,7 @@ private fun SleepTimerButton(
         TextButton(onClick = { open = true }, enabled = enabled) {
             Icon(painterResource(R.drawable.ic_timer), stringResource(R.string.reader_sleep_timer))
             sleepTimerLabel(playback.sleepTimer)?.let { label ->
-                Spacer(Modifier.width(4.dp))
+                Spacer(Modifier.width(Dimens.SpaceXs))
                 Text(label)
             }
         }
