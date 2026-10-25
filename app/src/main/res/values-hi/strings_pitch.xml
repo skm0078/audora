@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- File: app/src/main/res/values-hi/strings_pitch.xml -->
-<!-- Purpose: The speech sheet's pitch control (ADR-067, ADR-070), in Hindi. -->
+<!-- Purpose: The speech sheet's pitch control (ADR-067, ADR-071), in Hindi. -->
 <resources>
     <string name="speech_pitch_title">पिच</string>
     <string name="speech_pitch_own">स्वाभाविक</string>

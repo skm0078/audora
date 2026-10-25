@@ -20,6 +20,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -47,6 +48,7 @@ import io.github.skm0078.audora.ui.voices.languageName
  * @param onAllowBackground asks Android for it (the same prompt as Settings → Background reading).
  * @param onAddPdf opens the file picker; the screens finish first, so the new book lands in the library.
  * @param onFinish the screens are done (finished or skipped) and never show again.
+ * @param onTrySample saves and opens the sample book; the screens finish first, as for [onAddPdf].
  */
 @Composable
 fun FirstRunScreen(
@@ -56,6 +58,7 @@ fun FirstRunScreen(
     onAllowBackground: () -> Unit,
     onAddPdf: () -> Unit,
     onFinish: () -> Unit,
+    onTrySample: () -> Unit = {},
 ) {
     var step by rememberSaveable { mutableStateOf(FirstRunStep.LANGUAGES) }
     val phoneLanguage = LocalConfiguration.current.locales[0].toLanguageTag()
@@ -77,10 +80,16 @@ fun FirstRunScreen(
 
                     FirstRunStep.BACKGROUND -> BackgroundStep(backgroundAllowed, onAllowBackground)
 
-                    FirstRunStep.BOOK -> BookStep {
-                        onFinish()
-                        onAddPdf()
-                    }
+                    FirstRunStep.BOOK -> BookStep(
+                        onAddPdf = {
+                            onFinish()
+                            onAddPdf()
+                        },
+                        onTrySample = {
+                            onFinish()
+                            onTrySample()
+                        },
+                    )
                 }
             }
             StepButtons(
@@ -177,9 +186,10 @@ private fun BackgroundStep(allowed: Boolean, onAllow: () -> Unit) {
 }
 
 @Composable
-private fun BookStep(onAddPdf: () -> Unit) {
+private fun BookStep(onAddPdf: () -> Unit, onTrySample: () -> Unit) {
     StepTitle(R.string.first_run_book_title, R.string.first_run_book_body)
     Button(onClick = onAddPdf) { Text(stringResource(R.string.first_run_add_pdf)) }
+    OutlinedButton(onClick = onTrySample) { Text(stringResource(R.string.sample_try)) }
 }
 
 /** Back (after the first step), Skip, and Next; on the last step Next reads "Not now" and finishes. */

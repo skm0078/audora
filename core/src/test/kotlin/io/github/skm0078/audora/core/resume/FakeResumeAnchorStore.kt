@@ -28,6 +28,12 @@ class FakeResumeAnchorStore : ResumeAnchorStore {
         writes += anchor
         return Outcome.Success(Unit)
     }
+
+    override suspend fun clear(bookId: BookId): Outcome<Unit, StorageError> {
+        if (failWrites) return Outcome.Failure(StorageError("disk full"))
+        anchors.remove(bookId)
+        return Outcome.Success(Unit)
+    }
 }
 
 val BOOK = BookId("book-1")

@@ -79,7 +79,7 @@ internal fun BookMenu(
             if (item.availability == BookAvailability.AVAILABLE) {
                 ActionRow(R.string.library_add_to_up_next, R.string.menu_hint_up_next) { choose(onAddToUpNext) }
                 ActionRow(R.string.library_export_audiobook, R.string.menu_hint_audiobook) { choose(onExport) }
-                BookAction.entries.forEach { action ->
+                BookAction.entries.filter { it.appliesTo(item) }.forEach { action ->
                     ActionRow(action.label, action.hint) { choose { onAction(action) } }
                 }
             }

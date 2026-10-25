@@ -39,10 +39,13 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -178,7 +181,7 @@ private fun DrawnPage(state: ReaderState, image: PageImage, look: PageLook, view
                 .width(pageWidth)
                 .aspectRatio(image.aspectRatio)
                 .onSizeChanged { pageSize = it }
-                .pageTaps(state.playerReady, actions),
+                .pageTaps(state.playerReady, actions, LocalHapticFeedback.current),
         ) { PageLayers(state, image, look.tone, highlight) }
     }
 }
@@ -197,17 +200,22 @@ private fun PageLayers(state: ReaderState, image: PageImage, tone: PageTone, hig
     Highlight(highlight, MaterialTheme.colorScheme.primaryContainer, tone)
 }
 
-/** Tap a line to read from it, long-press for its menu; positions are fractions of the page, whatever the zoom. */
-private fun Modifier.pageTaps(enabled: Boolean, actions: ReaderActions): Modifier = pointerInput(enabled, actions) {
-    if (enabled) {
-        detectTapGestures(
-            onLongPress = { offset ->
-                actions.onPageLongPressed(ViewPoint(offset.x / size.width, offset.y / size.height))
-            },
-            onTap = { offset -> actions.onPageTapped(ViewPoint(offset.x / size.width, offset.y / size.height)) },
-        )
+/**
+ * Tap a line to read from it, long-press for its menu (with a tick, as long-presses elsewhere give); positions are
+ * fractions of the page, whatever the zoom.
+ */
+private fun Modifier.pageTaps(enabled: Boolean, actions: ReaderActions, haptics: HapticFeedback): Modifier =
+    pointerInput(enabled, actions) {
+        if (enabled) {
+            detectTapGestures(
+                onLongPress = { offset ->
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    actions.onPageLongPressed(ViewPoint(offset.x / size.width, offset.y / size.height))
+                },
+                onTap = { offset -> actions.onPageTapped(ViewPoint(offset.x / size.width, offset.y / size.height)) },
+            )
+        }
     }
-}
 
 /**
  * One rounded rect per line of the spoken sentence. On light paper, multiply blending tints the paper like a

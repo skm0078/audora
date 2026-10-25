@@ -6,20 +6,31 @@ package io.github.skm0078.audora.widget
 
 import android.content.Context
 import androidx.core.content.edit
+import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.ui.library.LibraryListState
 
-/** The book read most recently, as the library's Continue reading card counts it. */
-data class ResumeWidgetBook(val bookId: String, val title: String?, val page: Int, val pageCount: Int) {
+/**
+ * The book read most recently, as the library's Continue reading card counts it. [coverPath]: the cover the library
+ * drew for it, when it has one yet.
+ */
+data class ResumeWidgetBook(
+    val bookId: String,
+    val title: String?,
+    val page: Int,
+    val pageCount: Int,
+    val coverPath: String? = null,
+) {
     /** 0..1, the share of pages started: the library's progress measure. */
     val fraction: Float get() = ((page + 1).toFloat() / pageCount).coerceIn(0f, 1f)
 }
 
 /**
  * The widget's book for [list]: the most recently read book whose file is still there, whatever the library is
- * searched or filtered by. Null when no book was read yet; [Unchanged] while the library loads.
+ * searched or filtered by. Null when no book was read yet; [Unchanged] while the library loads. [coverOf] finds the
+ * cover file the library already drew (never draws one).
  */
-fun resumeWidgetBook(list: LibraryListState): ResumeWidgetUpdate {
+fun resumeWidgetBook(list: LibraryListState, coverOf: (Book) -> String? = { null }): ResumeWidgetUpdate {
     val loaded = list as? LibraryListState.Loaded ?: return ResumeWidgetUpdate.Unchanged
     val latest = loaded.all.filterNot { it.needsLocating }
         .mapNotNull { item -> item.progress?.let { item to it } }
@@ -31,6 +42,7 @@ fun resumeWidgetBook(list: LibraryListState): ResumeWidgetUpdate {
                 title = item.book.title.takeUnless { it == BookTitles.UNTITLED },
                 page = progress.page,
                 pageCount = progress.pageCount,
+                coverPath = coverOf(item.book),
             )
         },
     )
@@ -46,7 +58,7 @@ sealed interface ResumeWidgetUpdate {
 
 /**
  * The widget's copy of [ResumeWidgetBook]. SharedPreferences, not DataStore: the widget reads it synchronously
- * inside a broadcast, where a coroutine would need goAsync for four values.
+ * inside a broadcast, where a coroutine would need goAsync for five values.
  */
 class ResumeWidgetStore(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -57,7 +69,13 @@ class ResumeWidgetStore(context: Context) {
         return if (id == null || count <= 0) {
             null
         } else {
-            ResumeWidgetBook(id, prefs.getString(KEY_TITLE, null), prefs.getInt(KEY_PAGE, 0), count)
+            ResumeWidgetBook(
+                id,
+                prefs.getString(KEY_TITLE, null),
+                prefs.getInt(KEY_PAGE, 0),
+                count,
+                prefs.getString(KEY_COVER, null),
+            )
         }
     }
 
@@ -72,6 +90,7 @@ class ResumeWidgetStore(context: Context) {
                 putString(KEY_TITLE, book.title)
                 putInt(KEY_PAGE, book.page)
                 putInt(KEY_COUNT, book.pageCount)
+                putString(KEY_COVER, book.coverPath)
             }
         }
         return true
@@ -83,5 +102,6 @@ class ResumeWidgetStore(context: Context) {
         const val KEY_TITLE = "title"
         const val KEY_PAGE = "page"
         const val KEY_COUNT = "page_count"
+        const val KEY_COVER = "cover_path"
     }
 }

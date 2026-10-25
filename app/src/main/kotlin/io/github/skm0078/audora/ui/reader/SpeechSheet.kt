@@ -28,6 +28,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -182,6 +184,7 @@ private fun SpeedBlock(speed: Float, config: ReaderConfig, onSpeed: (Float) -> U
     val step = config.speech.rateStep
     // Follows the player's speed, but shows the finger's position while dragging.
     var dragged by remember(speed) { mutableFloatStateOf(speed) }
+    val haptics = LocalHapticFeedback.current
     val value = stringResource(R.string.speech_speed_value, speedLabel(config.nearestSpeed(dragged)))
     val spoken = stringResource(R.string.speech_sheet_speed, speedLabel(config.nearestSpeed(dragged)))
     OptionBlock(stringResource(R.string.speech_speed_title), value = value) {
@@ -191,7 +194,13 @@ private fun SpeedBlock(speed: Float, config: ReaderConfig, onSpeed: (Float) -> U
             }
             Slider(
                 value = dragged,
-                onValueChange = { dragged = it },
+                onValueChange = {
+                    // A tick at each step the thumb crosses, so the speed can be set by feel.
+                    if (config.nearestSpeed(it) != config.nearestSpeed(dragged)) {
+                        haptics.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+                    }
+                    dragged = it
+                },
                 onValueChangeFinished = { onSpeed(config.nearestSpeed(dragged)) },
                 valueRange = range,
                 steps = stepsBetween(range, step),

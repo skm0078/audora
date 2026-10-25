@@ -39,12 +39,12 @@ data class PaceTiming(val sentenceGapMs: Int, val pauseScale: Float) {
  * @property clausePausesMs the pause at each strong mark inside a sentence at normal speed, before the pace's
  *   scale (RI-6); tune by ear on the phone.
  * @property asideGainDb the loudness of bracketed words against the rest of the sentence, in decibels.
- * @property minPitch lowest pitch offered (ADR-067, narrowed by ADR-070). The player's shift moves the voice's
+ * @property minPitch lowest pitch offered (ADR-067, narrowed by ADR-071). The player's shift moves the voice's
  *   formants with its pitch, so past about 15 % either way a voice stops sounding like itself (deep drag or a
  *   cartoon); the range stays inside that, with Natural in its middle.
  * @property maxPitch highest pitch offered.
  * @property pitchStep the pitch slider's step; a saved pitch is snapped to it.
- * @property pitchPresets the named pitches offered as one-tap choices, like the speed presets (ADR-070).
+ * @property pitchPresets the named pitches offered as one-tap choices, like the speed presets (ADR-071).
  */
 data class SpeechStyleConfig(
     val minRate: Float = 0.5f,

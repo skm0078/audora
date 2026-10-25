@@ -21,6 +21,9 @@ data class BookProgress(val page: Int, val pageCount: Int, val savedAtMillis: Lo
     /** 0..1: the share of pages started, so the last page shows as 100 %. */
     val fraction: Float get() = (page + 1).toFloat() / pageCount
 
+    /** On the last page: the library's Finished. */
+    val isFinished: Boolean get() = page == pageCount - 1
+
     companion object {
         /** Null when the book was never read or its page count is not known yet (never opened). */
         fun of(book: Book, anchor: ResumeAnchor?): BookProgress? {

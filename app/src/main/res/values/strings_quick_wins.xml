@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/strings_quick_wins.xml
+  Purpose: Small touches testers asked for: the sample book, "Picked up on page N", What's new, marking a book
+  finished or not started, copying and sharing a sentence's words, and the app icon's shortcuts.
+-->
+<resources>
+    <string name="sample_try">Try a sample</string>
+    <string name="sample_try_hint">A short page about ListenLock, read aloud at once. Remove it from the library any time.</string>
+    <string name="sample_title">Welcome to ListenLock</string>
+    <string name="sample_text">Welcome to ListenLock. This is a short sample book, read aloud by a voice that lives on your phone. No internet is needed, and nothing you read leaves your phone.\n\nTap any sentence to start reading from there. Long-press a sentence to bookmark it, highlight it, look up a word, copy it, or fix how a word is said.\n\nYou can make the voice faster or slower, and pick another voice. The sleep timer stops reading when you fall asleep, and you can shake the phone to give it more time.\n\nReading keeps going with the screen off or in other apps. Your place is kept in every book, to the sentence.\n\nWhen you are ready, go back to the library and add your own book: a PDF, an EPUB, a Word file, text, or photos of pages.</string>
+
+    <string name="reader_resumed_at">Picked up on page %1$d: “%2$s…”</string>
+    <string name="reader_resumed_page">Picked up on page %1$d</string>
+
+    <string name="whats_new_title">What\'s new</string>
+    <string name="whats_new_item">• %1$s</string>
+    <string name="whats_new_ok">Got it</string>
+    <string-array name="whats_new_items">
+        <item>The notification and lock screen show the book\'s cover, author and chapter.</item>
+        <item>Long-press the app icon to resume your book, add a book or read copied text.</item>
+        <item>When a book opens, ListenLock says where it picked up.</item>
+        <item>A book\'s menu can mark it as finished or as not started.</item>
+        <item>Long-press a sentence to copy or share its words.</item>
+        <item>The home-screen widget shows the book\'s cover.</item>
+        <item>A light tick when you long-press, change the speed, add a bookmark or set the sleep timer.</item>
+        <item>Long names in settings now go on their own line, so no title is squeezed.</item>
+        <item>Pitch has presets like speed, from Deeper to Higher, and you hear it while you drag.</item>
+    </string-array>
+
+    <string name="library_mark_finished">Mark as finished</string>
+    <string name="menu_hint_mark_finished">Moves your place to the last page, so the book shows under Finished.</string>
+    <string name="library_mark_not_started">Mark as not started</string>
+    <string name="menu_hint_mark_not_started">Forgets your place in this book; it starts again from page 1. Bookmarks and highlights stay.</string>
+    <string name="library_marked_finished">Marked as finished</string>
+    <string name="library_marked_not_started">Marked as not started</string>
+    <string name="library_mark_failed">Could not save that. Try again.</string>
+
+    <string name="sentence_menu_copy">Copy text</string>
+    <string name="sentence_hint_copy">Copies this sentence, to paste in any app.</string>
+    <string name="sentence_hint_copy_highlight">Copies the whole highlighted passage, to paste in any app.</string>
+    <string name="sentence_menu_share_text">Share text</string>
+    <string name="sentence_hint_share_text">Sends the words (the highlighted passage, if this is one) to a chat, mail or notes app.</string>
+    <string name="sentence_copied">Copied</string>
+
+    <string name="shortcut_resume">Resume</string>
+    <string name="shortcut_resume_long">Resume your book</string>
+    <string name="shortcut_add_book">Add book</string>
+    <string name="shortcut_add_book_long">Add a book</string>
+    <string name="shortcut_clipboard">Read copied</string>
+    <string name="shortcut_clipboard_long">Read copied text</string>
+</resources>

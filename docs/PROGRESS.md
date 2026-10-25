@@ -2,7 +2,7 @@
 
 One entry per merged ticket, newest first. Each entry: what changed, what was verified, what still needs a real-device check.
 
-## Rows that never squeeze their titles; pitch that works like speed (2026-10-25, ADR-070)
+## Rows that never squeeze their titles; pitch that works like speed (2026-10-25, ADR-071)
 - **Option rows:** a value shares the title's line only when both fit whole; otherwise it goes on its own line under
   the title and wraps once ("English voice" was squeezed to one letter per line by a long voice name). Every
   settings and sheet row built on `LinkOption`, `ChoiceOption` or `OptionBlock` gets it, and the collections
@@ -10,6 +10,7 @@ One entry per merged ticket, newest first. Each entry: what changed, what was ve
 - **Pitch:** presets like speed's (Deeper, A bit deeper, Natural, A bit higher, Higher) under the slider. The
   slider is heard while it moves. Natural sits in the middle of the track, the range is ±15% (was 0.8 to 1.25,
   where voices sounded like cartoons), and a line under the title says speed never changes it.
+  The slider ticks at each step like the speed slider. What's new (id 2) lists both changes.
 - **Verified in CI:** `OptionRowsLayoutTest` renders the cast rows with a long voice name, link rows and the pitch
   block at font 1×, 1.3× and 2× and fails if any line breaks inside a word (screenshots `option-rows-font-*`). The
   pitch device test taps presets, + and Natural. Unit tests cover the new range and preset rules.
@@ -17,6 +18,24 @@ One entry per merged ticket, newest first. Each entry: what changed, what was ve
 **Real-device checks (Moto):** Speech → Cast voices with a long voice picked, at normal and largest font: the
 title stays whole and the voice name sits under it. Play a book, open Speech, drag Pitch: the voice changes while
 dragging. Tap A bit higher, then Natural.
+
+## Small touches testers notice (2026-10-25, ADR-070)
+- **Notification, lock screen, car screen and watch** show the book's cover (the one the library drew), and the
+  second line reads "Author · Chapter 2 of 9 · Page 14 of 300" (`ItemLook`).
+- **App icon long-press:** Resume your book, Add a book, Read copied text (dynamic shortcuts, in the app's language).
+- **"Picked up on page 42: “It was a bright cold day…”"** when a book opens where it was left (`ResumedAt`).
+- **What's new** once after an update, for someone who already has books (`WhatsNewDialog`, `WHATS_NEW_ID`).
+- **Book menu:** Mark as finished, Mark as not started (each only when it changes something).
+- **Sentence menu:** Copy text and Share text (the whole passage on a highlight).
+- **Try a sample** on the empty library and the first-run book step: a short page about the app in English, Hindi or
+  Bengali, saved and opened like shared text.
+- **Widget** shows the book's cover. **Haptics:** long-press on a page or paragraph, speed steps, bookmark, sleep timer.
+- Tests: `ItemLookTest`, `ResumedAtTest`, `WhatsNewStartTest`, `BookActionTest`, and `SentenceMenuTest` (device:
+  Copy text puts the whole passage on the clipboard). No `:pdf` change (PIPELINE_VERSION 12), no schema change.
+
+**Real-device checks (Moto):** play a PDF and lock the phone: cover and "Chapter n of m" on the lock screen. Long-press
+the app icon: three shortcuts; Read copied text reads what you copied. Reopen a book: the "Picked up" toast. Book
+menu: Mark as finished moves it to Finished. Empty library (or a fresh install): Try a sample plays in your language.
 
 ## Sentence menu fixes from phone tests: passage highlights, sharing them, a working "This sounded wrong" (2026-10-24)
 - **Highlight a passage:** the sentence menu has "Highlight from here…": a bar says "Tap the sentence where it ends",

@@ -81,5 +81,7 @@ class CharacterGuideModelTest {
         override suspend fun latest(): ResumeAnchor? = anchor
 
         override suspend fun put(anchor: ResumeAnchor): Outcome<Unit, StorageError> = Outcome.Success(Unit)
+
+        override suspend fun clear(bookId: BookId): Outcome<Unit, StorageError> = Outcome.Success(Unit)
     }
 }

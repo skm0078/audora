@@ -6,8 +6,11 @@ package io.github.skm0078.audora.ui.library
 import androidx.annotation.StringRes
 import io.github.skm0078.audora.R
 
-/** Each entry shows in the library's ⋮ menu, in this order, with [hint] under it; the activity does the work. */
-enum class LibraryAction(@StringRes val label: Int, @StringRes val hint: Int) {
+/**
+ * Each entry with [inMenu] shows in the library's ⋮ menu, in this order, with [hint] under it; the activity does the
+ * work. The others are buttons elsewhere on the library (the empty library's Try a sample).
+ */
+enum class LibraryAction(@StringRes val label: Int, @StringRes val hint: Int, val inMenu: Boolean = true) {
     /** Takes a photo of a page with the camera app and reads it as a one-page book (plan item 62, ADR-043). */
     POINT_AND_READ(R.string.library_point_and_read, R.string.menu_hint_point_and_read),
 
@@ -25,4 +28,7 @@ enum class LibraryAction(@StringRes val label: Int, @StringRes val hint: Int) {
 
     /** Fill-in-the-blank questions from every book's highlights, read aloud (plan item 70, ADR-048). */
     QUIZ(R.string.library_quiz, R.string.menu_hint_quiz),
+
+    /** A short page about ListenLock in the app's language, saved as a text book and opened (empty library only). */
+    TRY_SAMPLE(R.string.sample_try, R.string.sample_try_hint, inMenu = false),
 }

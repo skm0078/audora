@@ -1,4 +1,4 @@
-# ADR-070: Pitch works like speed; option rows never squeeze their titles
+# ADR-071: Pitch works like speed; option rows never squeeze their titles
 
 **Status:** Accepted (2026-10-25). Narrows ADR-067's pitch range.
 

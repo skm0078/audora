@@ -22,10 +22,14 @@ import androidx.lifecycle.lifecycleScope
 import io.github.skm0078.audora.core.config.PhotoConfig
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.library.StorageError
+import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.resume.ResumeAnchor
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.di.LibraryEntryPoint
+import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.documents.WatchedFolders
 import io.github.skm0078.audora.playback.epub.BookCopies
@@ -62,7 +66,7 @@ internal class StudioLibraryParts(
     val backups: Backups,
     val anchors: ResumeAnchorStore,
     val notes: MarkStores,
-    val readClipboard: () -> Unit,
+    val onText: (SharedText) -> Unit,
 )
 
 /** A studio sheet opened from the library's menu; one at a time. */
@@ -106,6 +110,42 @@ internal class StudioLibrary(
         BookAction.EXPORT_NOTES -> parts.activity.exportNotes(parts.activity.lifecycleScope, parts.notes, book)
 
         BookAction.CHARACTER_GUIDE -> guideBookId.value = book.id.value
+
+        BookAction.MARK_FINISHED, BookAction.MARK_NOT_STARTED -> markProgress(book, action)
+    }
+
+    /**
+     * Finished puts the place at the start of the last page; Not started forgets it. The save time is kept, so the
+     * book does not jump to the top as "Continue reading". A book the player still holds saves its own place again
+     * once it plays on, which is the listener's latest choice.
+     */
+    private fun markProgress(book: Book, action: BookAction) {
+        val anchors = parts.anchors
+        val finished = action == BookAction.MARK_FINISHED
+        parts.activity.lifecycleScope.launch {
+            val pageCount = book.pageCount
+            val result = when {
+                !finished -> anchors.clear(book.id)
+
+                pageCount == null -> Outcome.Failure(StorageError("page count not known yet"))
+
+                else -> {
+                    val savedAt = anchors.get(book.id)?.savedAtMillis ?: 0L
+                    anchors.put(ResumeAnchor(book.id, pageCount - 1, 0, 0L, 0L, PIPELINE_VERSION, savedAt))
+                }
+            }
+            val message = when {
+                result is Outcome.Failure -> {
+                    AudoraLog.w(TAG, "Progress not marked, book=${book.id.logLabel}: ${result.error.detail}")
+                    R.string.library_mark_failed
+                }
+
+                finished -> R.string.library_marked_finished
+
+                else -> R.string.library_marked_not_started
+            }
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun longJob(kind: LongJobKind, start: () -> Unit) =
@@ -169,10 +209,11 @@ internal class StudioLibrary(
     fun onLibraryAction(action: LibraryAction) = when (action) {
         LibraryAction.POINT_AND_READ -> parts.activity.pointAndRead(parts.photoBooks, takePhoto)
         LibraryAction.READ_PICTURES -> pickPictures.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
-        LibraryAction.READ_CLIPBOARD -> parts.readClipboard()
+        LibraryAction.READ_CLIPBOARD -> parts.activity.readClipboard(parts.onText)
         LibraryAction.WATCHED_FOLDERS -> sheet.value = StudioSheet.WATCHED_FOLDERS
         LibraryAction.BACKUP -> sheet.value = StudioSheet.BACKUP
         LibraryAction.QUIZ -> sheet.value = StudioSheet.QUIZ
+        LibraryAction.TRY_SAMPLE -> parts.onText(sampleBook(parts.activity))
     }
 
     /** The sheet open now, if any; [books] (null while the list loads) holds the character guide's book. */
@@ -214,3 +255,5 @@ internal fun rememberStudioLibrary(
     )
     return remember(parts) { StudioLibrary(parts, playWithPermission, listen, takePhoto, pickPictures, state) }
 }
+
+private const val TAG = "Audora.Library"

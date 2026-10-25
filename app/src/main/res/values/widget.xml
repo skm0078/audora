@@ -15,4 +15,6 @@
     <dimen name="widget_padding_vertical">10dp</dimen>
     <dimen name="widget_gap">6dp</dimen>
     <dimen name="widget_button">48dp</dimen>
+    <dimen name="widget_cover_width">32dp</dimen>
+    <dimen name="widget_cover_height">44dp</dimen>
 </resources>

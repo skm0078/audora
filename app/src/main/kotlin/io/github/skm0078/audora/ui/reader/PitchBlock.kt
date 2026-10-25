@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/PitchBlock.kt
-// Purpose: The speech sheet's pitch control (ADR-067, ADR-070), built like speed's: named presets with Natural in the
+// Purpose: The speech sheet's pitch control (ADR-067, ADR-071), built like speed's: named presets with Natural in the
 //          middle, a fine slider with - and + that is heard while it moves, and the value in words.
 
 package io.github.skm0078.audora.ui.reader
@@ -21,6 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -33,7 +35,7 @@ import io.github.skm0078.audora.ui.theme.OptionBlock
 import kotlin.math.roundToInt
 
 /**
- * Pitch (ADR-070): a preset row like speed's (Deeper, A bit deeper, Natural, A bit higher, Higher), then a slider
+ * Pitch (ADR-071): a preset row like speed's (Deeper, A bit deeper, Natural, A bit higher, Higher), then a slider
  * for the steps between. A pitch change restarts nothing, so the slider sends each new step while the finger moves
  * and the listener hears it at once; the range stays where a shifted voice still sounds like itself. Natural is in
  * the middle of the track and one tap away.
@@ -49,6 +51,7 @@ internal fun PitchBlock(
     val step = speech.pitchStep
     // Follows the service's pitch; while dragging, the finger's step, sent once per step.
     var dragged by remember(pitch) { mutableFloatStateOf(pitch) }
+    val haptics = LocalHapticFeedback.current
     val label = pitchLabel(dragged)
     OptionBlock(
         stringResource(R.string.speech_pitch_title),
@@ -67,6 +70,8 @@ internal fun PitchBlock(
                 onValueChange = { moved ->
                     val snapped = speech.clampPitch(moved)
                     if (snapped != dragged) {
+                        // A tick at each step, as on the speed slider, so the pitch can be set by feel.
+                        haptics.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
                         dragged = snapped
                         onPitch(snapped)
                     }

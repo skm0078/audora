@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   File: app/src/main/res/layout/widget_resume.xml
-  Purpose: The home-screen widget (plan item 35): book title, page progress and a Resume button. RemoteViews
-  allows only framework views, so this is plain LinearLayout, TextView, ProgressBar and ImageButton.
+  Purpose: The home-screen widget (plan item 35): the book's cover, title, page progress and a Resume button. RemoteViews
+  allows only framework views, so this is plain LinearLayout, ImageView, TextView, ProgressBar and ImageButton.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
@@ -13,6 +13,16 @@
     android:orientation="horizontal"
     android:paddingHorizontal="@dimen/widget_padding"
     android:paddingVertical="@dimen/widget_padding_vertical">
+
+    <!-- The cover the library drew; gone when the book has none yet. The title says what it is to TalkBack. -->
+    <ImageView
+        android:id="@+id/widget_cover"
+        android:layout_width="@dimen/widget_cover_width"
+        android:layout_height="@dimen/widget_cover_height"
+        android:layout_marginEnd="@dimen/widget_gap"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
 
     <LinearLayout
         android:layout_width="0dp"

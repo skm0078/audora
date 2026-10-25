@@ -25,4 +25,11 @@ internal class RoomResumeAnchorStore(private val dao: ResumeAnchorDao) : ResumeA
     } catch (e: SQLiteException) {
         Outcome.Failure(StorageError("put anchor: ${e.javaClass.simpleName}: ${e.message}"))
     }
+
+    override suspend fun clear(bookId: BookId): Outcome<Unit, StorageError> = try {
+        dao.delete(bookId.value)
+        Outcome.Success(Unit)
+    } catch (e: SQLiteException) {
+        Outcome.Failure(StorageError("clear anchor: ${e.javaClass.simpleName}: ${e.message}"))
+    }
 }

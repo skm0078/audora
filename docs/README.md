@@ -70,6 +70,8 @@ ADR-013 and ADR-037 were planned (podcast mode, online AI) and have no file yet.
 - [ADR-067](adr/067-jobs-screen-and-pitch.md) One Jobs screen for every long job and download (with Cancel); pitch is a listening setting applied after the voice, in playback and saved files
 - [ADR-068](adr/068-library-outputs-and-book-details.md) What the app made (audiobooks, studio files, copies) is listed per book with Play, Share and Delete and an in-app player; books carry author, language, format and a chosen cover, filled from the file and editable; pitch per book
 - [ADR-069](adr/069-library-catalogue.md) Collections, filters by author, file type, language and collection, author search and sort; tuned for low-end phones (search keys folded once, debounced search, cover cache sized by memory, 16-bit covers on low-RAM phones)
+- [ADR-070](adr/070-small-touches-testers-notice.md) Cover, author and chapter on the notification and lock screen, app icon shortcuts, What's new after an update, mark finished or not started, copy and share a sentence, a sample book, haptic ticks
+- [ADR-071](adr/071-pitch-presets-and-option-rows.md) Pitch presets like speed, heard while dragging, ±15%; option rows never squeeze their titles
 
 **Reading the PDF (`:pdf`)**
 
