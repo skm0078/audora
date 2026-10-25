@@ -130,6 +130,7 @@ class SessionPublisher(
 
 private fun Bundle.putSpeech(speech: SpeechStyle) {
     putFloat(PlaybackContract.SESSION_SPEECH_RATE, speech.rate)
+    putFloat(PlaybackContract.SESSION_PITCH, speech.pitch)
     putString(PlaybackContract.SESSION_PACE, speech.pace.name)
     putBoolean(PlaybackContract.SESSION_CLAUSE_PAUSES, speech.clausePauses)
     putString(PlaybackContract.SESSION_READING_MODES, speech.modes.encode())

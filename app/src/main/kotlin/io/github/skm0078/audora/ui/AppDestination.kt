@@ -26,6 +26,20 @@ sealed interface AppDestination {
     /** Settings → Storage (UI plan): what Audora's data takes and how to free it. */
     data object Storage : AppDestination
 
+    /** Every long job and download with its progress (ADR-067), from the library's top bar or a job's notification. */
+    data object Jobs : AppDestination
+
+    /** Everything the app made from the books (ADR-068): audiobooks, studio files, copies; from the Jobs screen. */
+    data object Made : AppDestination
+
+    /**
+     * A saved audiobook or studio file played in the app (ADR-068).
+     *
+     * @property setKey the made set ([io.github.skm0078.audora.core.library.OutputSet.key]).
+     * @property fromMade opened from the Made screen, where back returns; else from the library.
+     */
+    data class MadePlayer(val setKey: String, val fromMade: Boolean = false) : AppDestination
+
     /**
      * @property from the tab it was opened over (a bookmark from Notes, a book from the library), where back returns.
      * @property viaPlayer opened from the full player's "Show the page": back returns to that player.
@@ -53,6 +67,9 @@ sealed interface AppDestination {
             is Voices -> if (fromStorage) Storage else Settings
             Licences, Storage -> Settings
             is BatterySetup -> if (fromSettings) Settings else Library
+            Jobs -> Library
+            Made -> Jobs
+            is MadePlayer -> if (fromMade) Made else Library
             is Reader -> if (viaPlayer) Player(id, from) else from.destination
             is Player -> from.destination
             Notes, Settings -> Library
@@ -64,7 +81,7 @@ sealed interface AppDestination {
             Library -> AppTab.LIBRARY
             Notes -> AppTab.NOTES
             Settings -> AppTab.SETTINGS
-            is Voices, Licences, Storage, is BatterySetup, is Reader, is Player -> null
+            is Voices, Licences, Storage, Jobs, Made, is MadePlayer, is BatterySetup, is Reader, is Player -> null
         }
 
     /**
@@ -76,20 +93,18 @@ sealed interface AppDestination {
             Library, Notes, Settings -> TABS_SCREEN
             is Reader -> BOOK_PREFIX + id.value
             is Player -> BOOK_PREFIX + id.value
-            is Voices, Licences, Storage, is BatterySetup -> toRoute()
+            is Voices, Licences, Storage, Jobs, Made, is MadePlayer, is BatterySetup -> toRoute()
         }
 
     fun toRoute(): String = when (this) {
-        Library -> LIBRARY
-        Notes -> NOTES
-        Settings -> SETTINGS
-        is Voices -> if (fromStorage) VOICES_FROM_STORAGE else VOICES
-        Licences -> LICENCES
-        Storage -> STORAGE
+        is MadePlayer -> madePlayerRoute()
         is Reader -> bookRoute(BOOK_PREFIX, id, from, viaPlayer)
         is Player -> bookRoute(PLAYER_PREFIX, id, from, viaPlayer = false)
-        is BatterySetup -> if (fromSettings) BATTERY_SETUP_FROM_SETTINGS else BATTERY_SETUP
+        else -> routesOf.getValue(this)
     }
+
+    private fun MadePlayer.madePlayerRoute(): String =
+        MADE_PLAYER_PREFIX + setKey + if (fromMade) QUERY + FROM_MADE else ""
 
     companion object {
         private const val TABS_SCREEN = "tabs"
@@ -102,6 +117,10 @@ sealed interface AppDestination {
         private const val VOICES_FROM_STORAGE = "settings/storage/voices"
         private const val LICENCES = "settings/licences"
         private const val STORAGE = "settings/storage"
+        private const val JOBS = "jobs"
+        private const val MADE = "jobs/made"
+        private const val MADE_PLAYER_PREFIX = "made/play/"
+        private const val FROM_MADE = "from=made"
         private const val BOOK_PREFIX = "book/"
         private const val PLAYER_PREFIX = "player/"
         private const val QUERY = '?'
@@ -138,7 +157,16 @@ sealed interface AppDestination {
             route.startsWith(PLAYER_PREFIX) ->
                 parseBook(route, PLAYER_PREFIX)?.let { (id, from, _) -> Player(id, from) } ?: Library
 
+            route.startsWith(MADE_PLAYER_PREFIX) -> route.removePrefix(MADE_PLAYER_PREFIX).substringBefore(QUERY)
+                .takeIf { it.isNotEmpty() }
+                ?.let { MadePlayer(it, fromMade = route.substringAfter(QUERY, "") == FROM_MADE) } ?: Library
+
             else -> fixedRoutes[route] ?: Library
+        }
+
+        /** The fixed destinations' routes; AppDestinationTest round-trips every destination through it. */
+        private val routesOf: Map<AppDestination, String> by lazy {
+            fixedRoutes.entries.associate { it.value to it.key }
         }
 
         private val fixedRoutes: Map<String, AppDestination> by lazy {
@@ -152,6 +180,8 @@ sealed interface AppDestination {
                 VOICES_FROM_STORAGE to Voices(fromStorage = true),
                 LICENCES to Licences,
                 STORAGE to Storage,
+                JOBS to Jobs,
+                MADE to Made,
             )
         }
     }

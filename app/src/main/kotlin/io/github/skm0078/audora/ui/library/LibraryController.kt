@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/LibraryController.kt
-// Purpose: Library screen state from the books, their progress and file checks; I/O stays off the main thread.
+// Purpose: Library screen state from the books, their progress, collections and file checks; I/O stays off the main
+//          thread, and search keys are folded once per change of the library (ADR-069).
 
 package io.github.skm0078.audora.ui.library
 
@@ -9,16 +10,20 @@ import androidx.compose.runtime.setValue
 import io.github.skm0078.audora.core.library.AddResult
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookAvailability
+import io.github.skm0078.audora.core.library.BookCollection
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.BookProgress
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.library.LibraryError
+import io.github.skm0078.audora.core.library.LibraryFacets
+import io.github.skm0078.audora.core.library.LibraryIndex
 import io.github.skm0078.audora.core.library.LibraryQuery
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeAnchor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
@@ -30,6 +35,7 @@ import kotlinx.coroutines.launch
  *
  * @param anchors every book's resume anchor, for its progress and "Continue reading".
  * @param importShared copies a PDF another app only lends for a moment into a URI Audora can keep; null on failure.
+ * @param collections the listener's collections, and [members] each book's: both read whole, once per change.
  */
 // Add, locate, share, remove and their messages, plus the list they publish.
 @Suppress("TooManyFunctions")
@@ -38,6 +44,8 @@ class LibraryController(
     private val scope: CoroutineScope,
     private val anchors: Flow<List<ResumeAnchor>> = flowOf(emptyList()),
     private val importShared: suspend (String) -> String? = { null },
+    private val collections: Flow<List<BookCollection>> = flowOf(emptyList()),
+    private val members: Flow<Map<BookId, Set<String>>> = flowOf(emptyMap()),
 ) {
     var listState: LibraryListState by mutableStateOf(LibraryListState.Loading)
         private set
@@ -55,6 +63,10 @@ class LibraryController(
     private var books: List<Book> = emptyList()
     private var query = LibraryQuery()
     private var progress: Map<BookId, ResumeAnchor> = emptyMap()
+    private var index = LibraryIndex.EMPTY
+    private var facets = LibraryFacets.EMPTY
+    private var own = OwnCollections()
+    private var search: Job? = null
 
     /** Last check per book, with the URI it was made for: a book moved to a new URI is checked again. */
     private var checked: Map<BookId, Pair<String, BookAvailability>> = emptyMap()
@@ -69,26 +81,54 @@ class LibraryController(
         }
         scope.launch { library.pruneDocuments() }
         watch = scope.launch {
-            combine(library.books(), saved) { latest, positions -> latest to positions }
+            combine(library.books(), saved, ownCollections()) { latest, positions, own ->
+                Triple(latest, positions, own)
+            }
                 .catch { e ->
                     AudoraLog.e(TAG, "Library could not be loaded", e)
                     listState = LibraryListState.Failed
                 }
-                .collect { (latest, positions) ->
+                .collect { (latest, positions, own) ->
                     val fresh = latest.filter { checked[it.id]?.first != it.documentUri }
+                    if (latest != books) {
+                        index = LibraryIndex.of(latest, index)
+                        facets = LibraryFacets.of(latest, index)
+                    }
                     books = latest
                     progress = positions.associateBy { it.bookId }
+                    this@LibraryController.own = own
                     publish()
                     checkFiles(fresh)
                 }
         }
     }
 
-    /** Search, sort and filter (plan item 22); the search text is the listener's own, so it is never logged. */
+    /** Collections are a nicety too: if they cannot be read the library shows every book, ungrouped. */
+    private fun ownCollections(): Flow<OwnCollections> = combine(collections, members, ::OwnCollections).catch { e ->
+        AudoraLog.w(TAG, "Collections could not be loaded; the library shows none", e)
+        emit(OwnCollections())
+    }
+
+    /**
+     * Search, sort and filter (plan item 22); the search text is the listener's own, so it is never logged. A change
+     * of text shows in the field at once and narrows the list once typing pauses, so a fast typist on a slow phone
+     * does not filter thousands of books on every letter.
+     */
     fun setQuery(next: LibraryQuery) {
         if (next == query) return
+        val typed = next.copy(text = query.text) == query
         query = next
-        publish()
+        search?.cancel()
+        val shown = listState
+        if (typed && shown is LibraryListState.Loaded) {
+            listState = shown.copy(query = next)
+            search = scope.launch {
+                delay(SEARCH_PAUSE_MS)
+                publish()
+            }
+        } else {
+            publish()
+        }
     }
 
     /** The screen came back to the foreground: files may have been moved or deleted meanwhile. */
@@ -191,15 +231,27 @@ class LibraryController(
             .mapNotNull { item -> item.progress?.let { item to it.savedAtMillis } }
             .maxByOrNull { it.second }
             ?.first
+        query = query.copy(narrow = query.narrow.keptBy(facets, own.collections.mapTo(HashSet()) { it.id }))
         listState = LibraryListState.Loaded(
-            items = query.apply(items, book = { it.book }, progress = { it.progress }),
+            items = query.apply(items, { it.book }, { it.progress }, index, own.members),
             continueReading = latest.takeIf { query.isDefault },
             all = items,
             query = query,
+            collections = own.collections,
+            members = own.members,
+            facets = facets,
         )
     }
 
+    private data class OwnCollections(
+        val collections: List<BookCollection> = emptyList(),
+        val members: Map<BookId, Set<String>> = emptyMap(),
+    )
+
     private companion object {
         const val TAG = "Audora.LibraryUi"
+
+        /** Long enough to span a burst of keys, short enough to feel like the list follows the typing. */
+        const val SEARCH_PAUSE_MS = 200L
     }
 }

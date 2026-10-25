@@ -14,6 +14,7 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import io.github.skm0078.audora.core.config.VoiceDownloadConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.speech.download.forItem
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -37,6 +38,7 @@ class VoiceDownloads(
         }
         val request = OneTimeWorkRequestBuilder<VoiceDownloadWorker>()
             .setInputData(workDataOf(VoiceDownloadWorker.KEY_VOICE_ID to id))
+            .forItem(id)
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, config.retryBackoffMs, TimeUnit.MILLISECONDS)
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)

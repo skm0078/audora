@@ -306,6 +306,9 @@ class ReaderModel(
         if (save && !state.value.playback.ownSettings) scope.launch { speeds.save(offered) }
     }
 
+    /** Global for now: the service keeps it with the speech style, so it is not saved here (ADR-067). */
+    fun setPitch(pitch: Float) = player.setPitch(config.speech.clampPitch(pitch))
+
     fun setPace(pace: Pace) = player.setPace(pace)
 
     fun setClausePauses(on: Boolean) = player.setClausePauses(on)

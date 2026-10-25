@@ -7,7 +7,12 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import io.github.skm0078.audora.core.library.BookField
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.library.BookOutput
+import io.github.skm0078.audora.core.library.CoverChoice
+import io.github.skm0078.audora.core.library.DocumentFormat
+import io.github.skm0078.audora.core.library.OutputKind
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
 import io.github.skm0078.audora.core.notes.BookSettings
@@ -88,6 +93,50 @@ class AudoraDatabaseMigrationTest {
             assertTrue(storage.bookmarks.observe(book).first().isEmpty())
             assertNull(storage.bookSettings.get(book))
             assertTrue(storage.pronunciations.observe(book).first().isEmpty())
+        }
+    }
+
+    @Test
+    fun detailsOutputsAndPitchWorkAfterTheUpgradeAndOutputsGoWithTheirBook() = runBlocking {
+        writeVersion1Database()
+
+        AudoraStorage.open(context, NAME).use { storage ->
+            val id = BookId(BOOK_ID)
+            val upgraded = requireNotNull(storage.books.byId(id))
+            assertNull(upgraded.author)
+            assertEquals(CoverChoice.FirstPage, upgraded.cover)
+            assertEquals(0, upgraded.detailsVersion)
+
+            val detailed = upgraded.copy(
+                author = "Herman Melville",
+                language = "en",
+                format = DocumentFormat.PDF,
+                cover = CoverChoice.Page(2),
+                edited = setOf(BookField.AUTHOR, BookField.COVER),
+                detailsVersion = 1,
+            )
+            assertEquals(Outcome.Success(Unit), storage.books.update(detailed))
+            assertEquals(detailed, storage.books.byId(id))
+
+            val settings = BookSettings(id, rate = 1.1f, pitch = 1.15f)
+            assertEquals(Outcome.Success(Unit), storage.bookSettings.put(settings))
+            assertEquals(settings, storage.bookSettings.get(id))
+
+            val chapters = (1..2).map { part ->
+                BookOutput(
+                    id, OutputKind.AUDIOBOOK, "set-1", part, "Pages $part.m4a", "content://out/$part",
+                    "audio/mp4", createdAtMillis = 5L, durationMs = 1_000L, pitch = 1.15f,
+                )
+            }
+            assertEquals(Outcome.Success(Unit), storage.outputs.replace(id, OutputKind.AUDIOBOOK, chapters))
+            assertEquals(chapters, storage.outputs.observe(id).first().map { it.copy(id = 0) }.sortedBy { it.part })
+
+            val again = chapters.take(1).map { it.copy(setKey = "set-2", createdAtMillis = 9L) }
+            assertEquals(Outcome.Success(Unit), storage.outputs.replace(id, OutputKind.AUDIOBOOK, again))
+            assertEquals(listOf("set-2"), storage.outputs.observe(id).first().map { it.setKey })
+
+            assertEquals(Outcome.Success(Unit), storage.books.delete(id))
+            assertTrue(storage.outputs.observeAll().first().isEmpty())
         }
     }
 

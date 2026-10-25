@@ -170,13 +170,13 @@ class ClipService : Service() {
                 passage = passage,
             )
             when (made) {
-                is Outcome.Success -> share(book, start, made.value)
+                is Outcome.Success -> share(book, start, made.value, rendering.style.pitch)
                 is Outcome.Failure -> notices.showFailed(getString(R.string.clip_failed_text))
             }
         }
     }
 
-    private fun share(book: OpenedBook, start: UnitKey, clip: Clip) {
+    private fun share(book: OpenedBook, start: UnitKey, clip: Clip, pitch: Float) {
         val title = book.book.title.takeUnless { it == BookTitles.UNTITLED } ?: getString(R.string.export_untitled)
         val folder = File(cacheDir, AudioClips.FOLDER).apply { mkdirs() }
         folder.listFiles()?.forEach { old ->
@@ -184,7 +184,8 @@ class ClipService : Service() {
         }
         val name =
             getString(R.string.clip_file_name, AudiobookFolder.folderName(title, config), start.page + 1) + ".m4a"
-        val file = encode(folder, name, start, clip) ?: return notices.showFailed(getString(R.string.clip_failed_text))
+        val file =
+            encode(folder, name, start, clip, pitch) ?: return notices.showFailed(getString(R.string.clip_failed_text))
         val uri = AudioClips.uriFor(this, file)
         val quote = clip.units.joinToString(" ") { it.text }
         val send = Intent(Intent.ACTION_SEND).apply {
@@ -206,11 +207,15 @@ class ClipService : Service() {
         }
     }
 
-    /** The clip as one .m4a file; null when the encoder or storage failed (logged where it failed). */
-    private fun encode(folder: File, name: String, start: UnitKey, clip: Clip): File? {
+    /**
+     * The clip as one .m4a file at the listener's [pitch] (ADR-067); null when the encoder or storage failed (logged
+     * where it failed).
+     */
+    private fun encode(folder: File, name: String, start: UnitKey, clip: Clip, pitch: Float): File? {
         val chapter = AudioChapter(number = 1, firstPage = start.page, lastPage = start.page)
         val writer = LocalChapterFiles(folder).create(name).getOrNull()
             ?.let { target -> AacChapterWriter.create(chapter, target, clip.audio.sampleRate, config).getOrNull() }
+            ?.atPitch(pitch)
         val done = writer != null && writer.write(clip.audio) is Outcome.Success && writer.finish() is Outcome.Success
         if (!done) writer?.abort()
         return File(folder, name).takeIf { done }

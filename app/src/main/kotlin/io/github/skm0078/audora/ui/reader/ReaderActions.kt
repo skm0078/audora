@@ -76,6 +76,9 @@ interface ReaderActions {
 
     fun onPace(pace: Pace) = Unit
 
+    /** How high the voice sounds (ADR-067); the player shifts it at once. */
+    fun onPitch(pitch: Float) = Unit
+
     fun onClausePauses(on: Boolean) = Unit
 
     fun onReadingModes(modes: ReadingModes) = Unit

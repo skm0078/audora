@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/LibraryTopBar.kt
-// Purpose: The library's top bar: title, search field, sort and filter menu (plan item 22), ⋮ tools menu.
+// Purpose: The library's top bar: title, search field, sort and filter menu (plan item 22), the Jobs button with
+//          its count (ADR-067), ⋮ tools menu.
 
 package io.github.skm0078.audora.ui.library
 
@@ -9,6 +10,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,6 +36,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -44,19 +48,22 @@ import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.HelpButton
 
 @Composable
-internal fun LibraryTopBar(listState: LibraryListState, actions: LibraryActions) {
+internal fun LibraryTopBar(listState: LibraryListState, actions: LibraryActions, runningJobs: Int = 0) {
     val loaded = listState as? LibraryListState.Loaded
     LibraryTopBar(
         query = loaded?.query ?: LibraryQuery(),
         hasBooks = loaded?.all?.isNotEmpty() == true,
         onQuery = actions::onQuery,
         onAction = actions::onLibraryAction,
+        runningJobs = runningJobs,
+        onOpenJobs = actions::onOpenJobs,
     )
 }
 
 /**
  * Search and the sort menu show once the library has a book. Closing the search clears its text but keeps the sort
- * and filter, which stay until changed.
+ * and filter, which stay until changed. The Jobs button is always there (a download can run before the first book),
+ * with a badge counting what works now.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +72,8 @@ internal fun LibraryTopBar(
     hasBooks: Boolean,
     onQuery: (LibraryQuery) -> Unit,
     onAction: (LibraryAction) -> Unit = {},
+    runningJobs: Int = 0,
+    onOpenJobs: () -> Unit = {},
 ) {
     var searching by rememberSaveable { mutableStateOf(query.text.isNotEmpty()) }
     // The keyboard rises only after a tap on search, never when the library is rebuilt with a search still open (a
@@ -105,9 +114,25 @@ internal fun LibraryTopBar(
                 }
             }
             if (hasBooks) SortMenu(query, onQuery)
+            if (!searching) JobsButton(runningJobs, onOpenJobs)
             if (!searching) LibraryActionsMenu(onAction)
         },
     )
+}
+
+/** TalkBack hears "Jobs, 2 running"; the badge shows the number. */
+@Composable
+private fun JobsButton(running: Int, onClick: () -> Unit) {
+    val label = if (running > 0) {
+        pluralStringResource(R.plurals.jobs_open_running, running, running)
+    } else {
+        stringResource(R.string.jobs_open)
+    }
+    IconButton(onClick = onClick) {
+        BadgedBox(badge = { if (running > 0) Badge { Text(running.toString()) } }) {
+            Icon(painterResource(R.drawable.ic_jobs), label)
+        }
+    }
 }
 
 @Composable
@@ -208,6 +233,7 @@ private fun Choice(@StringRes label: Int, selected: Boolean, onClick: () -> Unit
 private fun sortLabel(sort: LibrarySort): Int = when (sort) {
     LibrarySort.RECENT -> R.string.library_sort_recent
     LibrarySort.TITLE -> R.string.library_sort_title
+    LibrarySort.AUTHOR -> R.string.library_sort_author
     LibrarySort.ADDED -> R.string.library_sort_added
     LibrarySort.PROGRESS -> R.string.library_sort_progress
 }

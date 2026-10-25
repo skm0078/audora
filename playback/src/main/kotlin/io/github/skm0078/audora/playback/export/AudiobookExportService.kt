@@ -13,9 +13,11 @@ import android.os.PowerManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.core.config.AudiobookConfig
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.library.BookOutputStore
 import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.result.Outcome
@@ -25,6 +27,7 @@ import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.jobs.LongJobs
+import io.github.skm0078.audora.playback.outputs.MadeFiles
 import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.VoiceEngines
@@ -55,6 +58,9 @@ class AudiobookExportService : Service() {
 
     @Inject
     lateinit var pronunciations: PronunciationStore
+
+    @Inject
+    lateinit var outputs: BookOutputStore
 
     private val config = AudiobookConfig()
     private lateinit var notifications: ExportNotifications
@@ -191,26 +197,30 @@ class AudiobookExportService : Service() {
         val factory = BookRendering.Factory(this, bookSettings, pronunciations)
         try {
             ExportVoice(this, SpeechStyleStore.forContext(this), factory, book.book.id, book.text).use { voice ->
+                val pitch = voice.rendering.style.pitch
+                val records = ExportRecords.of(this)
                 val session = ExportSession(
-                    ExportRecords(File(filesDir, RECORDS_FOLDER)),
+                    records,
                     MediaStoreSavedFiles(contentResolver),
                     bookId = book.book.id.value,
-                    // The book's voices and fixes are in the signature: changing either starts again, never mixes.
-                    key = exportKey(voice.rendering.key.signature.hash, folder, chapters),
+                    // The book's voices, fixes and pitch are in the key: changing any starts again, never mixes.
+                    key = exportKey(withPitch(voice.rendering.key.signature.hash, pitch), folder, chapters),
                     chapters,
                     logContext,
                 )
                 // Each file is recorded as pending once created, so a crash mid-chapter never strands a hidden file.
                 val files = MediaStoreChapterFiles(contentResolver, folder).recordedIn(session)
-                val sink = AacAudioSink(files, chapters.size, config)
+                val sink = AacAudioSink(files, chapters.size, config, pitch)
                 val listener = ProgressListener(title, chapters, session)
                 val exporter = voice.exporter(config) { cast ->
                     AudoraLog.i(TAG, "Export cast=$cast, $logContext")
                     listener.castChanged(exportCastNote(cast))
                 }
                 when (val result = exporter.export(book.text, session.remaining, sink, listener, logContext)) {
-                    is Outcome.Success ->
+                    is Outcome.Success -> {
                         notifications.showDone(title, session.finish(result.value), shownFolder, listener.note)
+                        MadeFiles(outputs).audiobookBlocking(book.book.id, records, voice.rendering.style)
+                    }
 
                     is Outcome.Failure -> notifications.showFailed(title, result.error.message)
                 }
@@ -275,7 +285,6 @@ class AudiobookExportService : Service() {
         const val TAG = "Export.Service"
         const val THREAD_NAME = "audiobook-export"
         const val WAKE_LOCK_TAG = "Audora:AudiobookExport"
-        const val RECORDS_FOLDER = "audiobook-exports"
 
         /** mediaProcessing is the type made for this (Android 15+); dataSync before it existed. */
         fun foregroundType(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {

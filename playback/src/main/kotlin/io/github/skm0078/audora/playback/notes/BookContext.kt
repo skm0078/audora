@@ -67,7 +67,7 @@ class BookContext(
         AudoraLog.i(TAG, "Book context book=${id.logLabel} ownSettings=${settings != null}")
     }
 
-    /** [global] with the open book's speed and pace on top, when it has its own. */
+    /** [global] with the open book's speed, pace and pitch on top, when it has its own. */
     fun style(global: SpeechStyle): SpeechStyle = settings?.over(global) ?: global
 
     /** The open book's own voice for [lang]; null to use the global choice. */
@@ -76,7 +76,16 @@ class BookContext(
     /** Turns the open book's own settings on (starting from [from]) or off; false with no book open. */
     suspend fun setOwnSettings(on: Boolean, from: SpeechStyle): Outcome<Boolean, StorageError> {
         val id = bookId ?: return Outcome.Success(false)
-        val next = if (on) settings ?: BookSettings(id, rate = from.rate, pace = from.pace) else null
+        val next = if (on) {
+            settings ?: BookSettings(
+                id,
+                rate = from.rate,
+                pace = from.pace,
+                pitch = from.pitch,
+            )
+        } else {
+            null
+        }
         return save(id, next)
     }
 

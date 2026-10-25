@@ -49,6 +49,23 @@ class PdfiumEngine(
             PdfiumPageRenderer(document, reopen = { openDocument(password) }, config, logContext)
         }
 
+    /**
+     * The PDF's own title and author from its document information (ADR-068), for the library. Opens and closes the
+     * document; reads no page. Blank values are null.
+     */
+    @Suppress("TooGenericExceptionCaught") // PdfiumAndroidKt and JNI report failures as RuntimeExceptions.
+    fun documentInfo(password: String? = null): Outcome<PdfDocumentInfo, PdfOpenError> =
+        openDocument(password).flatMap { document ->
+            try {
+                val meta = pdfiumLocked { document.getDocumentMeta() }
+                Outcome.Success(PdfDocumentInfo(meta.title.orNullIfBlank(), meta.author.orNullIfBlank()))
+            } catch (e: RuntimeException) {
+                Outcome.Failure(PdfOpenError.Damaged("document information unreadable: $e"))
+            } finally {
+                pdfiumLocked { document.close() }
+            }
+        }
+
     private fun openDocument(password: String?): Outcome<PdfDocumentU, PdfOpenError> =
         PdfiumRuntime.core().flatMap { pdfium ->
             openDescriptor().flatMap { descriptor -> openDocument(pdfium, descriptor, password) }
@@ -101,6 +118,11 @@ class PdfiumEngine(
         }
     }
 }
+
+/** What a PDF says about itself in its document information dictionary; each field null when not set. */
+data class PdfDocumentInfo(val title: String?, val author: String?)
+
+private fun String?.orNullIfBlank(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
 
 private class PdfiumDocumentHandle(private val document: PdfDocumentU, private val config: ExtractionConfig) :
     PdfDocumentHandle {

@@ -23,6 +23,7 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.download.PinnedZipFiles
 import io.github.skm0078.audora.speech.download.PinnedZipJob
 import io.github.skm0078.audora.speech.download.awaitNoDownload
+import io.github.skm0078.audora.speech.download.forItem
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.voices.JobResult
 import io.github.skm0078.audora.speech.voices.ResumableDownloader
@@ -101,6 +102,7 @@ class ListenModels private constructor(
     fun download(lang: Lang) {
         val request = OneTimeWorkRequestBuilder<ListenDownloadWorker>()
             .setInputData(workDataOf(ListenDownloadWorker.KEY_LANGUAGE to lang.bcp47Tag))
+            .forItem(lang.bcp47Tag)
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, downloads.retryBackoffMs, TimeUnit.MILLISECONDS)
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)

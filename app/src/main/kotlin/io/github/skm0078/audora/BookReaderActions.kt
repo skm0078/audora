@@ -173,6 +173,8 @@ internal class BookReaderActions(
 
     override fun onVoiceShaping(shaping: VoiceShaping) = model.setVoiceShaping(shaping)
 
+    override fun onPitch(pitch: Float) = model.setPitch(pitch)
+
     override fun onUndoJump() = model.undoJump()
 
     override fun onStudy(action: StudyAction, loop: Boolean) = model.study(action, loop)

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_pitch.xml -->
+<!-- Purpose: The speech sheet's pitch control (ADR-067), in Bengali. -->
+<resources>
+    <string name="speech_pitch_title">পিচ</string>
+    <string name="speech_pitch_own">ভয়েসের নিজের</string>
+    <string name="speech_pitch_higher">%1$d%% উঁচু</string>
+    <string name="speech_pitch_lower">%1$d%% গভীর</string>
+    <string name="speech_pitch_spoken">পিচ: %1$s</string>
+    <string name="speech_pitch_down">গভীর</string>
+    <string name="speech_pitch_up">উঁচু</string>
+    <string name="speech_pitch_reset">ভয়েসের নিজের পিচে ফিরুন</string>
+    <string name="speech_pitch_help">ভয়েস কতটা উঁচু বা গভীর শোনাবে। বদলালেই চলতি পড়ায় সঙ্গে সঙ্গে লাগে, বাক্য আবার শুরু হয় না। সেভ করা অডিওবুক, ক্লিপ, স্টুডিও ফাইল আর কথা বলা বইতেও এই পিচ থাকে।</string>
+</resources>

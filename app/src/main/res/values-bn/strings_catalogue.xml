@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_catalogue.xml -->
+<!-- Purpose: Library collections, filters by author, file type, language and collection, and sort by author (ADR-069). -->
+<resources>
+    <string name="library_sort_author">লেখক</string>
+    <string name="catalogue_filters">ফিল্টার</string>
+    <string name="catalogue_filters_count">ফিল্টার · %1$d</string>
+    <string name="catalogue_filters_title">বই ফিল্টার করুন</string>
+    <string name="catalogue_any">যেকোনো</string>
+    <string name="catalogue_author">লেখক</string>
+    <string name="catalogue_format">ফাইলের ধরন</string>
+    <string name="catalogue_language">ভাষা</string>
+    <string name="catalogue_collection">সংগ্রহ</string>
+    <string name="catalogue_clear">ফিল্টার সরান</string>
+    <string name="catalogue_done">হয়ে গেছে</string>
+    <string name="collections_title">সংগ্রহ</string>
+    <string name="collections_new">নতুন সংগ্রহ</string>
+    <string name="collections_edit">সংগ্রহ বদলান</string>
+    <string name="collections_empty">এখনও কোনো সংগ্রহ নেই। বই একসাথে রাখতে একটি বানান, যেমন “স্কুলের জন্য” বা “ঘুমের আগে”।</string>
+    <string name="collections_name">সংগ্রহের নাম</string>
+    <string name="collections_save">সেভ করুন</string>
+    <string name="collections_cancel">বাতিল</string>
+    <string name="collections_rename">নাম বদলান</string>
+    <string name="collections_rename_named">%1$s-এর নাম বদলান</string>
+    <string name="collections_delete">মুছুন</string>
+    <string name="collections_delete_named">%1$s মুছুন</string>
+    <string name="collections_delete_title">“%1$s” মুছবেন?</string>
+    <string name="collections_delete_body">বইগুলো আপনার লাইব্রেরিতে থাকবে।</string>
+    <string name="collections_failed">সংগ্রহ সেভ করা গেল না। আবার চেষ্টা করুন।</string>
+    <string name="collections_in_hint">এই বইটি কোনো সংগ্রহে রাখতে বা সেখান থেকে সরাতে সেটিতে ট্যাপ করুন।</string>
+    <plurals name="collections_book_count">
+        <item quantity="one">%1$dটি বই</item>
+        <item quantity="other">%1$dটি বই</item>
+    </plurals>
+</resources>

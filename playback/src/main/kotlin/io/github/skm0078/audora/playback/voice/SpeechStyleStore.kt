@@ -1,5 +1,6 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/voice/SpeechStyleStore.kt
-// Purpose: The listener's speaking rate, pace and clause pauses (ADR-033), kept by the playback service in a file.
+// Purpose: The listener's speaking rate, pitch, pace and clause pauses (ADR-033, ADR-067), kept by the playback
+//          service in a file.
 
 package io.github.skm0078.audora.playback.voice
 
@@ -27,9 +28,15 @@ class SpeechStyleStore(private val file: File, val config: SpeechStyleConfig = S
     val current: SpeechStyle
         get() = style ?: load().also { style = it }
 
-    /** Applies [requested] (rate clamped to the range) at once; returns what was applied. A failed save is logged. */
+    /**
+     * Applies [requested] (rate and pitch clamped to their ranges) at once; returns what was applied. A failed save
+     * is logged.
+     */
     fun set(requested: SpeechStyle): SpeechStyle {
-        val applied = requested.copy(rate = config.clampRate(requested.rate))
+        val applied = requested.copy(
+            rate = config.clampRate(requested.rate),
+            pitch = config.clampPitch(requested.pitch),
+        )
         style = applied
         save(applied)
         return applied
@@ -42,7 +49,9 @@ class SpeechStyleStore(private val file: File, val config: SpeechStyleConfig = S
         val clausePauses = properties.getProperty(KEY_CLAUSE_PAUSES)?.toBooleanStrictOrNull() ?: true
         val modes = ReadingModes.decode(properties.getProperty(KEY_READING_MODES))
         val shaping = VoiceShaping.decode(properties.getProperty(KEY_VOICE_SHAPING))
-        return SpeechStyle(config.clampRate(rate), pace, clausePauses, modes, shaping)
+        // A file from before pitch existed has none: the voice's own.
+        val pitch = properties.getProperty(KEY_PITCH)?.toFloatOrNull() ?: SpeechStyle.NORMAL_PITCH
+        return SpeechStyle(config.clampRate(rate), pace, clausePauses, modes, shaping, config.clampPitch(pitch))
     }
 
     /** Null when there is no file or it cannot be read; logged. */
@@ -65,6 +74,7 @@ class SpeechStyleStore(private val file: File, val config: SpeechStyleConfig = S
             setProperty(KEY_CLAUSE_PAUSES, applied.clausePauses.toString())
             setProperty(KEY_READING_MODES, applied.modes.encode())
             setProperty(KEY_VOICE_SHAPING, applied.shaping.encode())
+            setProperty(KEY_PITCH, applied.pitch.toString())
         }
         val temp = File(file.path + ".tmp")
         try {
@@ -73,7 +83,8 @@ class SpeechStyleStore(private val file: File, val config: SpeechStyleConfig = S
             if (!temp.renameTo(file)) throw IOException("cannot replace ${file.name}")
             AudoraLog.i(
                 TAG,
-                "Speech style set: ${applied.rate} ${applied.pace} clauses=${applied.clausePauses} ${applied.modes} " +
+                "Speech style set: ${applied.rate} pitch=${applied.pitch} ${applied.pace} " +
+                    "clauses=${applied.clausePauses} ${applied.modes} " +
                     "shaping=${applied.shaping.encode()}",
             )
         } catch (e: IOException) {
@@ -89,6 +100,7 @@ class SpeechStyleStore(private val file: File, val config: SpeechStyleConfig = S
         private const val KEY_CLAUSE_PAUSES = "clausePauses"
         private const val KEY_READING_MODES = "readingModes"
         private const val KEY_VOICE_SHAPING = "voiceShaping"
+        private const val KEY_PITCH = "pitch"
 
         fun forContext(context: Context): SpeechStyleStore =
             SpeechStyleStore(File(context.applicationContext.filesDir, FILE_NAME))

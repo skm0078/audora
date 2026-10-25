@@ -1,0 +1,216 @@
+// File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/CollectionsSheet.kt
+// Purpose: The listener's collections (ADR-069): making, renaming and deleting them, and putting a book in them from
+//          its details sheet. Writes go to the collection store; one that fails says so in a toast.
+
+package io.github.skm0078.audora.ui.library
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.library.BookCollection
+import io.github.skm0078.audora.core.library.CollectionNames
+import io.github.skm0078.audora.ui.theme.Dimens
+
+/** Opened from the library's collection chips; [counts] is how many books each collection holds. */
+@Composable
+internal fun CollectionsRoute(collections: List<BookCollection>, counts: Map<String, Int>, onDismiss: () -> Unit) {
+    val writer = rememberCollectionWriter()
+    CollectionsSheet(collections, counts, writer::create, writer::rename, writer::delete, onDismiss)
+}
+
+/** Every collection with its number of books, Rename and Delete, and New collection; deleting asks first. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun CollectionsSheet(
+    collections: List<BookCollection>,
+    counts: Map<String, Int>,
+    onCreate: (String) -> Unit,
+    onRename: (String, String) -> Unit,
+    onDelete: (String) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var creating by rememberSaveable { mutableStateOf(false) }
+    var renaming by rememberSaveable { mutableStateOf<String?>(null) }
+    var deleting by rememberSaveable { mutableStateOf<String?>(null) }
+    ModalBottomSheet(onDismissRequest = onDismiss, modifier = modifier) {
+        LazyColumn(Modifier.navigationBarsPadding().padding(horizontal = Dimens.ScreenPadding)) {
+            item {
+                Text(
+                    stringResource(R.string.collections_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.semantics { heading() },
+                )
+            }
+            if (collections.isEmpty()) {
+                item { Text(stringResource(R.string.collections_empty), Modifier.padding(vertical = Dimens.SpaceS)) }
+            }
+            items(collections, key = { it.id }) { collection ->
+                CollectionLine(collection, counts[collection.id] ?: 0, { renaming = collection.id }) {
+                    deleting = collection.id
+                }
+            }
+            item {
+                Button(onClick = { creating = true }, Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS)) {
+                    Icon(painterResource(R.drawable.ic_add), contentDescription = null)
+                    Text(stringResource(R.string.collections_new))
+                }
+            }
+        }
+    }
+    if (creating) {
+        NameDialog(stringResource(R.string.collections_new), "", onSave = onCreate) { creating = false }
+    }
+    collections.firstOrNull { it.id == renaming }?.let { collection ->
+        NameDialog(stringResource(R.string.collections_rename), collection.name, { onRename(collection.id, it) }) {
+            renaming = null
+        }
+    }
+    collections.firstOrNull { it.id == deleting }?.let { collection ->
+        DeleteCollectionDialog(collection, onConfirm = { onDelete(collection.id) }) { deleting = null }
+    }
+}
+
+@Composable
+private fun CollectionLine(collection: BookCollection, books: Int, onRename: () -> Unit, onDelete: () -> Unit) {
+    val renameLabel = stringResource(R.string.collections_rename_named, collection.name)
+    val deleteLabel = stringResource(R.string.collections_delete_named, collection.name)
+    ListItem(
+        headlineContent = { Text(collection.name) },
+        supportingContent = { Text(pluralStringResource(R.plurals.collections_book_count, books, books)) },
+        trailingContent = {
+            Row {
+                TextButton(onClick = onRename, Modifier.semantics { contentDescription = renameLabel }) {
+                    Text(stringResource(R.string.collections_rename))
+                }
+                TextButton(onClick = onDelete, Modifier.semantics { contentDescription = deleteLabel }) {
+                    Text(stringResource(R.string.collections_delete), color = MaterialTheme.colorScheme.error)
+                }
+            }
+        },
+    )
+}
+
+/** Save stays off until the name has a letter; a name is cut at [CollectionNames.MAX_LENGTH] as it is typed. */
+@Composable
+internal fun NameDialog(title: String, initial: String, onSave: (String) -> Unit, onDismiss: () -> Unit) {
+    var text by rememberSaveable { mutableStateOf(initial) }
+    val cleaned = CollectionNames.clean(text)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it.take(CollectionNames.MAX_LENGTH) },
+                label = { Text(stringResource(R.string.collections_name)) },
+                singleLine = true,
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    cleaned?.let(onSave)
+                    onDismiss()
+                },
+                enabled = cleaned != null,
+            ) { Text(stringResource(R.string.collections_save)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.collections_cancel)) } },
+    )
+}
+
+@Composable
+private fun DeleteCollectionDialog(collection: BookCollection, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.collections_delete_title, collection.name)) },
+        text = { Text(stringResource(R.string.collections_delete_body)) },
+        confirmButton = {
+            TextButton(onClick = {
+                onConfirm()
+                onDismiss()
+            }) { Text(stringResource(R.string.collections_delete), color = MaterialTheme.colorScheme.error) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.collections_cancel)) } },
+    )
+}
+
+/**
+ * A book's collections in its details sheet: tap a chip to put the book in it or take it out, at once; New
+ * collection makes one with this book already in it.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun BookCollectionChips(
+    collections: List<BookCollection>,
+    memberOf: Set<String>,
+    onToggle: (String, Boolean) -> Unit,
+    onCreate: (String) -> Unit,
+) {
+    var creating by rememberSaveable { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+        Text(
+            stringResource(R.string.collections_title),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() },
+        )
+        if (collections.isNotEmpty()) {
+            Text(
+                stringResource(R.string.collections_in_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+            collections.forEach { collection ->
+                val member = collection.id in memberOf
+                FilterChip(
+                    selected = member,
+                    onClick = { onToggle(collection.id, !member) },
+                    label = { Text(collection.name, maxLines = 1) },
+                )
+            }
+            AssistChip(
+                onClick = { creating = true },
+                label = { Text(stringResource(R.string.collections_new)) },
+                leadingIcon = { Icon(painterResource(R.drawable.ic_add), contentDescription = null) },
+            )
+        }
+    }
+    if (creating) {
+        NameDialog(stringResource(R.string.collections_new), "", onSave = onCreate) { creating = false }
+    }
+}

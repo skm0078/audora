@@ -96,6 +96,8 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
 
     override fun setSpeed(speed: Float) = setStyle(SpeechStyleChange(rate = speed))
 
+    override fun setPitch(pitch: Float) = setStyle(SpeechStyleChange(pitch = pitch))
+
     override fun setPace(pace: Pace) = setStyle(SpeechStyleChange(pace = pace))
 
     override fun setClausePauses(on: Boolean) = setStyle(SpeechStyleChange(clausePauses = on))
@@ -247,6 +249,7 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
             buffering = player.playbackState == Player.STATE_BUFFERING,
             styleKnown = extras.containsKey(PlaybackContract.SESSION_SPEECH_RATE),
             speed = extras.getFloat(PlaybackContract.SESSION_SPEECH_RATE, SpeechStyle.NORMAL_RATE),
+            pitch = extras.getFloat(PlaybackContract.SESSION_PITCH, SpeechStyle.NORMAL_PITCH),
             pace = Pace.entries.firstOrNull { it.name == extras.getString(PlaybackContract.SESSION_PACE) }
                 ?: Pace.NORMAL,
             clausePauses = extras.getBoolean(PlaybackContract.SESSION_CLAUSE_PAUSES, true),

@@ -1,6 +1,7 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/AudoraApplication.kt
 // Purpose: Process entry point. Applies a staged restore, starts logging, then logs how the last process ended;
-//          sets the app's language (plan item 44). Debug builds also watch the main thread for stalls.
+//          sets the app's language (plan item 44); fills books in from their files (ADR-068). Debug builds also watch
+//          the main thread for stalls.
 
 package io.github.skm0078.audora
 
@@ -17,8 +18,12 @@ import io.github.skm0078.audora.language.AppLanguages
 import io.github.skm0078.audora.logging.AppLogging
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.backup.PendingRestore
+import io.github.skm0078.audora.ui.library.BookDetailsFill
 import javax.inject.Inject
 import kotlin.concurrent.thread
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 @HiltAndroidApp
 class AudoraApplication : Application() {
@@ -27,6 +32,12 @@ class AudoraApplication : Application() {
 
     @Inject
     lateinit var startupDiagnostics: StartupDiagnostics
+
+    @Inject
+    lateinit var bookDetailsFill: BookDetailsFill
+
+    /** Background work that lives as long as the process; one task at a time, so it never crowds the screens. */
+    private val background = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
 
     override fun onCreate() {
         // Before Hilt builds anything that could open the database or preferences a restore replaces (ADR-046).
@@ -37,6 +48,7 @@ class AudoraApplication : Application() {
         AppLanguages.applyToProcess(this, AppLanguageStore(this).load())
         // File reads and a binder call: kept off the main thread so they never delay the first frame.
         thread(name = STARTUP_DIAGNOSTICS_THREAD) { startupDiagnostics.run() }
+        bookDetailsFill.start(background)
         if (BuildConfig.DEBUG) watchForHangs()
     }
 

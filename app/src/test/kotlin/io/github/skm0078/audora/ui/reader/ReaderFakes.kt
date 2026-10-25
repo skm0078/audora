@@ -125,6 +125,10 @@ class FakePlaybackPort : PlaybackPort {
         calls += "pace $pace"
     }
 
+    override fun setPitch(pitch: Float) {
+        calls += "pitch $pitch"
+    }
+
     override fun setClausePauses(on: Boolean) {
         calls += "clause pauses $on"
     }

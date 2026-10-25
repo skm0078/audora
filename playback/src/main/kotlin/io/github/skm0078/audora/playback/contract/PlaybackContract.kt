@@ -67,7 +67,10 @@ object PlaybackContract {
     /** Sets or clears the sleep timer. */
     val SET_SLEEP_TIMER = SessionCommand(ACTION_SET_SLEEP_TIMER, Bundle.EMPTY)
 
-    /** Sets the speaking rate and pace; the current sentence restarts with them, like a voice change. */
+    /**
+     * Sets the speaking rate and pace; the current sentence restarts with them, like a voice change. A pitch change
+     * alone restarts nothing: the player shifts what is playing (ADR-067).
+     */
     val SET_SPEECH_STYLE = SessionCommand(ACTION_SET_SPEECH_STYLE, Bundle.EMPTY)
 
     /** "This sounded wrong" (RI-8b): the service logs it with the voice reading that language; nothing else. */
@@ -169,6 +172,9 @@ object PlaybackContract {
     /** String: [VoiceShaping.encode]; absent or unreadable = the defaults (plan items 9, 10). */
     const val ARG_VOICE_SHAPING = "voice_shaping"
 
+    /** Float, 1.0 = the voice's own pitch; clamped to the offered range (ADR-067). */
+    const val ARG_PITCH = "pitch"
+
     // Arguments of STUDY (and PLAY_FROM's for a range's start).
 
     /** A [StudyAction] name. */
@@ -247,6 +253,9 @@ object PlaybackContract {
 
     /** The speaking rate in effect (Float), always present. */
     const val SESSION_SPEECH_RATE = "speech_rate"
+
+    /** The pitch in effect (Float), always present (ADR-067). */
+    const val SESSION_PITCH = "pitch"
 
     /** The [Pace] name in effect, always present. */
     const val SESSION_PACE = "pace"
@@ -405,17 +414,20 @@ object PlaybackContract {
         change.clausePauses?.let { putBoolean(ARG_CLAUSE_PAUSES, it) }
         change.modes?.let { putString(ARG_READING_MODES, it.encode()) }
         change.shaping?.let { putString(ARG_VOICE_SHAPING, it.encode()) }
+        change.pitch?.let { putFloat(ARG_PITCH, it) }
     }
 
     /**
-     * Parses [speechStyleArgs]; null when no field was sent or one is unreadable (a rate that is not a positive
-     * number, an unknown pace), so a bad request changes nothing. Unreadable modes or shaping take their defaults.
+     * Parses [speechStyleArgs]; null when no field was sent or one is unreadable (a rate or pitch that is not a
+     * positive number, an unknown pace), so a bad request changes nothing. Unreadable modes or shaping take their
+     * defaults.
      */
     fun speechStyleChangeFrom(args: Bundle): SpeechStyleChange? {
         val rate = if (args.containsKey(ARG_SPEECH_RATE)) args.getFloat(ARG_SPEECH_RATE, Float.NaN) else null
+        val pitch = if (args.containsKey(ARG_PITCH)) args.getFloat(ARG_PITCH, Float.NaN) else null
         val paceName = args.getString(ARG_PACE)
         val pace = paceName?.let { enumOrNull<Pace>(it) }
-        val unreadable = (rate != null && !(rate > 0f && rate.isFinite())) || (paceName != null && pace == null)
+        val unreadable = !positiveOrAbsent(rate) || !positiveOrAbsent(pitch) || (paceName != null && pace == null)
         return if (unreadable || STYLE_KEYS.none(args::containsKey)) {
             null
         } else {
@@ -425,11 +437,15 @@ object PlaybackContract {
                 clausePauses = if (args.containsKey(ARG_CLAUSE_PAUSES)) args.getBoolean(ARG_CLAUSE_PAUSES) else null,
                 modes = args.getString(ARG_READING_MODES)?.let(ReadingModes::decode),
                 shaping = args.getString(ARG_VOICE_SHAPING)?.let(VoiceShaping::decode),
+                pitch = pitch,
             )
         }
     }
 
-    private val STYLE_KEYS = listOf(ARG_SPEECH_RATE, ARG_PACE, ARG_CLAUSE_PAUSES, ARG_READING_MODES, ARG_VOICE_SHAPING)
+    private fun positiveOrAbsent(value: Float?): Boolean = value == null || (value > 0f && value.isFinite())
+
+    private val STYLE_KEYS =
+        listOf(ARG_SPEECH_RATE, ARG_PACE, ARG_CLAUSE_PAUSES, ARG_READING_MODES, ARG_VOICE_SHAPING, ARG_PITCH)
 
     /** Parses [setVoiceArgs]; null when a field is missing or unknown. */
     fun voiceFrom(args: Bundle): Pair<VoiceId, Lang>? {
