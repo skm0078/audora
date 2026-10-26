@@ -201,9 +201,10 @@ class EngineRenderer(
      * only with "Read to suit the book" on, like the delivery itself, and only for narration, not quoted speech.
      */
     private fun narrated(unit: ReadingUnit, now: SpeechStyle, delivery: Delivery): Delivery {
-        if (!now.shaping.suitBook) return delivery
+        val arc = reading.narration
+        if (arc == null || !now.shaping.suitBook) return delivery
         val quoted = reading.startsInQuote(unit) || unit.text.any { it in QUOTE_MARKS }
-        return reading.narration.shape(delivery, unit, reading.placeOf(unit), quoted)
+        return arc.shape(delivery, unit, reading.placeOf(unit), quoted)
     }
 
     /** Context only (page, sentence, languages), never the sentence's text. */
@@ -242,7 +243,8 @@ class EngineRenderer(
  * @property intent what the open book is (ADR-056), read on the render thread for each sentence.
  * @property planner each sentence's delivery from that intent, used when the style's shaping turns it on.
  * @property placeOf where a sentence sits in its paragraph (Q-3), from the quote carry; null when unknown.
- * @property narration the narrator's rise and fall across a paragraph, used with [planner].
+ * @property narration the narrator's rise and fall across a paragraph, used with [planner]; null (no paragraph places
+ *   to shape by, as in the tests of other features) leaves the planned delivery as it is.
  */
 @Suppress("LongParameterList") // All optional: each caller sets the few it has.
 class ReadingSetup(
@@ -261,7 +263,7 @@ class ReadingSetup(
     val intent: () -> ContentIntent = { ContentIntent.GENERAL },
     val planner: DeliveryPlanner = DeliveryPlanner(),
     val placeOf: (ReadingUnit) -> ParagraphPlace? = { null },
-    val narration: NarrationArc = NarrationArc(),
+    val narration: NarrationArc? = null,
 ) {
     /** [text] with the model's pauses when it is a run-on on a scanned page, else [text]. */
     fun punctuated(text: String, unit: ReadingUnit): String = when {

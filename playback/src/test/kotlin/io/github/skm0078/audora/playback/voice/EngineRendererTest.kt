@@ -4,12 +4,14 @@
 
 package io.github.skm0078.audora.playback.voice
 
+import io.github.skm0078.audora.core.config.NarrationConfig
 import io.github.skm0078.audora.core.config.PaceTiming
 import io.github.skm0078.audora.core.config.SpeechStyleConfig
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.EquationMode
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.ParagraphPlace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.UnitKind
@@ -26,10 +28,12 @@ import io.github.skm0078.audora.speech.SpeechEngine
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.VoiceInfo
 import io.github.skm0078.audora.speech.audio.PcmAudio
+import io.github.skm0078.audora.speech.delivery.NarrationArc
 import io.github.skm0078.audora.speech.route.VoiceSource
 import io.github.skm0078.audora.speech.voices.MeasuredSpeeds
 import io.github.skm0078.audora.speech.voices.SpeedSample
 import io.github.skm0078.audora.speech.voices.VoiceSpeed
+import kotlin.math.pow
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -156,6 +160,31 @@ class EngineRendererTest {
 
         // Snapped to the slider's step; above the cap the player stretches the rest.
         assertEquals(listOf(1.35f, 1.5f), voices.rates)
+    }
+
+    @Test
+    fun `narration rises and falls by the sentence's place only with the arc and Read to suit the book on`() {
+        val steady = NarrationArc(NarrationConfig(jitterSemitones = 0f, jitterRate = 0f))
+        val sectionStart = ReadingSetup(placeOf = { ParagraphPlace(0, 3, afterHeading = true) }, narration = steady)
+        val plain = RecordingVoices()
+        val narrated = RecordingVoices()
+        val switchedOff = RecordingVoices()
+        val off = SpeechStyle(shaping = VoiceShaping(suitBook = false))
+
+        EngineRenderer(plain, styleConfig = flatPaces).render(unit(0, 0).copy(text = "Hello."))
+        EngineRenderer(
+            narrated,
+            styleConfig = flatPaces,
+            reading = sectionStart,
+        ).render(unit(0, 0).copy(text = "Hello."))
+        EngineRenderer(switchedOff, style = { off }, styleConfig = flatPaces, reading = sectionStart)
+            .render(unit(0, 0).copy(text = "Hello."))
+
+        // A section's first sentence: slower, and a little higher, which the voice is asked for as a slower rate still.
+        val pitch = 2.0.pow(NarrationConfig.DEFAULT_START_SEMITONES / 12.0).toFloat()
+        val expected = plain.rates.single() * NarrationConfig.DEFAULT_SECTION_START_RATE / pitch
+        assertEquals(expected, narrated.rates.single(), 1e-4f)
+        assertEquals(plain.rates, switchedOff.rates)
     }
 
     @Test
