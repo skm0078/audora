@@ -1,8 +1,9 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/tour/UiTourTest.kt
 // Purpose: A screenshot tour of the real app for UI reviews: every main screen in English, Hindi and Bengali at font
-//          sizes 1, 1.3 and 2 (and English in dark mode), on a common 6.7-inch phone screen. It fails on one thing
-//          only: a word broken across two lines, the sign of a squeezed row; a screen it cannot reach is logged and
-//          skipped. Runs only when asked (ui-tour.yml passes uiTour=true, and uiTourScales to tour fewer sizes).
+//          sizes 1, 1.3 and 2 (and English in dark mode), on a common 6.7-inch phone screen. It fails on a word
+//          broken across two lines, the sign of a squeezed row, and on what TalkBack would trip over
+//          (TalkBackAudit); a screen it cannot reach is logged and skipped. Runs only when asked (ui-tour.yml passes
+//          uiTour=true, and uiTourScales to tour fewer sizes).
 
 package io.github.skm0078.audora.ui.tour
 
@@ -54,6 +55,7 @@ class UiTourTest {
     private lateinit var pass: Pass
     private var shot = 0
     private val broken = mutableListOf<String>()
+    private val talkBack = linkedSetOf<String>()
 
     /** One language, font size and theme. */
     private data class Pass(val language: AppLanguage, val book: String, val fontScale: Float, val dark: Boolean) {
@@ -74,7 +76,12 @@ class UiTourTest {
             scenario?.close()
             restoreDevice()
         }
-        assertTrue("Words broken across lines (a squeezed row):\n" + broken.joinToString("\n"), broken.isEmpty())
+        val report = listOf(
+            "Words broken across lines (a squeezed row)" to broken,
+            "TalkBack problems" to talkBack,
+        ).filter { it.second.isNotEmpty() }
+            .joinToString("\n") { (title, lines) -> "$title:\n" + lines.joinToString("\n") }
+        assertTrue(report, report.isEmpty())
     }
 
     private fun runPass(next: Pass) {
@@ -106,7 +113,7 @@ class UiTourTest {
         runCatching(block).onFailure { failure ->
             Log.w(TAG, "${pass.name}: could not tour $name: ${failure.message}")
             runCatching {
-                capture("$name-failed")
+                capture("$name$FAILED")
                 backToTabs()
             }.onFailure { Log.w(TAG, "${pass.name}: could not get back to the tabs: ${it.message}") }
         }
@@ -242,6 +249,15 @@ class UiTourTest {
     private fun capture(name: String) {
         save(name, screenshot())
         checkWords(name)
+        if (!name.endsWith(FAILED)) checkTalkBack(name)
+    }
+
+    /** Every window on screen; a menu needs no heading. Each problem is reported once per screen and language. */
+    private fun checkTalkBack(name: String) {
+        val roots = runCatching { rule.onAllNodes(isRoot()).fetchSemanticsNodes() }.getOrDefault(emptyList())
+        talkBackProblems(roots, needsHeading = !name.endsWith(MENU)).forEach { problem ->
+            if (talkBack.add("${pass.language.tag} $name: $problem")) Log.w(TAG, "${pass.name} $name: $problem")
+        }
     }
 
     /** Every text on screen, the topmost window included; the test books' file names are long and may wrap anywhere. */
@@ -343,6 +359,8 @@ class UiTourTest {
         const val ARG = "uiTour"
         const val SCALES_ARG = "uiTourScales"
         const val BOOK_FILE = "udhr"
+        const val FAILED = "-failed"
+        const val MENU = "-menu"
         const val FOLDER = "Download/ListenLock-screens/tour"
         const val PERCENT = 100
 
