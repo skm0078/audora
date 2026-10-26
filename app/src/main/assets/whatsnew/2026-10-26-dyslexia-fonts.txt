@@ -1,0 +1,3 @@
+en: Two new fonts for the text view, in Page and text → Font: Easy letters (Atkinson Hyperlegible) and Dyslexia-friendly (OpenDyslexic).
+hi: टेक्स्ट व्यू के लिए दो नए फ़ॉन्ट, पेज और टेक्स्ट → फ़ॉन्ट में: आसान अक्षर (Atkinson Hyperlegible) और डिस्लेक्सिया के अनुकूल (OpenDyslexic)।
+bn: টেক্সট ভিউয়ের জন্য দুটি নতুন ফন্ট, পৃষ্ঠা আর লেখা → ফন্টে: সহজ অক্ষর (Atkinson Hyperlegible) আর ডিসলেক্সিয়া-বান্ধব (OpenDyslexic)।

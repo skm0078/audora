@@ -101,6 +101,7 @@ private fun TypeRows(look: ReadingLook, onLookChange: (ReadingLook) -> Unit) {
         look.font,
         label = { stringResource(it.label) },
         onPick = { onLookChange(look.copy(font = it)) },
+        help = stringResource(R.string.text_look_font_help),
     )
     OptionDivider()
     ChoiceOption(
@@ -191,6 +192,8 @@ private val ReadingFont.label: Int
     @StringRes get() = when (this) {
         ReadingFont.SERIF -> R.string.text_look_font_serif
         ReadingFont.SANS -> R.string.text_look_font_sans
+        ReadingFont.ATKINSON_HYPERLEGIBLE -> R.string.text_look_font_atkinson
+        ReadingFont.OPEN_DYSLEXIC -> R.string.text_look_font_opendyslexic
     }
 
 private val LineSpacing.label: Int
