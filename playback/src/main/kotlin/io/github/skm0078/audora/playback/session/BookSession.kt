@@ -504,6 +504,7 @@ class BookSession(
         chapterStop.chapterStarts = chapters
         sources.reading.chapterPages = chapters.toSet()
         sources.reading.scanned = opened.text::isScanned
+        sources.reading.language = opened.book.language
         sources.reading.clearBook()
         // The book's own speed, voices and pronunciation fixes, before its first sentence is rendered.
         sources.onBook(opened.book.id)

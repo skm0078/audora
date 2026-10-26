@@ -8,6 +8,7 @@ import android.content.Intent
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.PhoneLanguages
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
@@ -89,15 +90,21 @@ object StudioMode {
     }
 
     /** The audio key for a book read with [style], [voices] and pronunciation [fixes] (ADR-039). */
-    fun signature(context: Context, style: SpeechStyle, voices: (Lang) -> VoiceId?, fixes: String): StudioSignature =
-        StudioSignature(
-            pipelineVersion = PIPELINE_VERSION,
-            audioVersion = STUDIO_AUDIO_VERSION,
-            style = style,
-            voices = Lang.entries.associateWith(voices),
-            fixes = fixes,
-            punctuation = PunctuationModels.get(context).isInstalled(),
-        )
+    fun signature(
+        context: Context,
+        style: SpeechStyle,
+        voices: (Lang) -> VoiceId?,
+        fixes: String,
+        language: String?,
+    ): StudioSignature = StudioSignature(
+        pipelineVersion = PIPELINE_VERSION,
+        audioVersion = STUDIO_AUDIO_VERSION,
+        style = style,
+        voices = Lang.entries.associateWith(voices),
+        fixes = fixes,
+        punctuation = PunctuationModels.get(context).isInstalled(),
+        phoneLanguage = PhoneLanguages.phoneLanguage(language),
+    )
 
     /**
      * The voice studio mode reads [lang] with in place of the reading voice: the acted one, once installed (ADR-059).

@@ -26,6 +26,12 @@ import kotlin.math.pow
 interface VoiceSource {
     suspend fun voiceFor(lang: Lang): Outcome<VoiceId, SpeechError>
 
+    /**
+     * The phone's offline voice for [language], a BCP 47 primary tag beyond the three [Lang]s ("fr", "ta"), or why
+     * there is none (ADR 2026-10-26). Never a voice that needs the network.
+     */
+    suspend fun phoneVoiceFor(language: String): Outcome<VoiceId, SpeechError>
+
     fun engine(id: EngineId): Outcome<SpeechEngine, SpeechError>
 }
 
@@ -66,10 +72,14 @@ class ClauseProsody(val silenceMs: (ClauseMark) -> Int, asideGainDb: Float) {
  * If a part in another language than the sentence's own cannot be voiced (no Hindi voice on the phone, say), the
  * sentence is read whole with its own language's voice rather than failing: an English book with one Hindi word
  * keeps playing on a phone without Hindi. A failure of the sentence's own language fails the sentence, as before.
+ * A part for the phone's voice ([ScriptSegment.phone]: the book's language, or a script none of the three is written
+ * in) that has no voice on the phone falls back the same way, so a French book on a phone without French reads as it
+ * did before phone languages: whole, with the English voice.
  *
  * Each part is normalized for its voice's language right before synthesis ([normalizers], ADR-019): English
  * numbers, dates, money, abbreviations and links become words (P2-04), Hindi and Bengali numbers too (P3-02). A
- * language without a normalizer is read as written. [TextRole] tells the normalizer what the sentence is on the page.
+ * language without a normalizer is read as written, and so is a phone-voice part: the phone's engine says numbers
+ * and dates in its own language. [TextRole] tells the normalizer what the sentence is on the page.
  *
  * With [ClauseProsody], the routed parts are also cut at dashes, colons, semicolons, brackets, quotes and ellipses
  * ([ClauseSplitter]); each piece is voiced on its own and the mark's silence goes between them, bracketed pieces a
@@ -90,17 +100,17 @@ class RoutedSpeech(
         shape: (PcmAudio) -> PcmAudio = { it },
         feeling: Feeling = Feeling.NEUTRAL,
         pitch: Float = 1f,
+        bookLanguage: String? = null,
     ): Outcome<RoutedAudio, SpeechError> {
-        val segments = router.route(text, lang).ifEmpty { listOf(ScriptSegment(text, lang)) }
-        val uncut = segments.map { Clause(it.text, it.lang, pauseBefore = null, aside = false) }
+        val segments = router.route(text, lang, bookLanguage).ifEmpty { listOf(ScriptSegment(text, lang)) }
+        val uncut = segments.map { Clause(it.text, it.lang, pauseBefore = null, aside = false, it.phone) }
         val clauses = prosody?.let { ClauseSplitter.split(segments).ifEmpty { uncut } } ?: uncut
         val parts = ArrayList<Voiced>(clauses.size)
+        val tone = Tone(rate, feeling, pitch)
         for (clause in clauses) {
-            when (val part = renderWith(clause.text, clause.lang, role, Tone(rate, feeling, pitch))) {
+            when (val part = renderWith(clause.text, Reader(clause.lang, clause.phone), role, tone)) {
                 is Outcome.Success -> parts.add(part.value.let { Voiced(shape(it.audio), it.voice) })
-
-                is Outcome.Failure ->
-                    return fallBack(Part(text, lang, role, Tone(rate, feeling, pitch)), clause.lang, part.error, shape)
+                is Outcome.Failure -> return fallBack(Part(text, lang, role, tone), clause, part.error, shape)
             }
         }
         return Outcome.Success(join(clauses, parts, prosody))
@@ -126,16 +136,19 @@ class RoutedSpeech(
         return RoutedAudio(PcmAudio.concat(pieces), voiced.map { it.first }, voiced.map { it.second }, null, pausesMs)
     }
 
-    /** A part in [failedLang] could not be voiced: read the whole sentence with [lang]'s voice, unless that failed. */
+    /**
+     * [failed] could not be voiced: read the whole sentence with its language's own voice, unless that is the voice
+     * that failed.
+     */
     private suspend fun fallBack(
         sentence: Part,
-        failedLang: Lang,
+        failed: Clause,
         error: SpeechError,
         shape: (PcmAudio) -> PcmAudio,
-    ): Outcome<RoutedAudio, SpeechError> = if (failedLang == sentence.lang) {
+    ): Outcome<RoutedAudio, SpeechError> = if (failed.phone == null && failed.lang == sentence.lang) {
         Outcome.Failure(error)
     } else {
-        renderWith(sentence.text, sentence.lang, sentence.role, sentence.tone)
+        renderWith(sentence.text, Reader(sentence.lang, phone = null), sentence.role, sentence.tone)
             .map { RoutedAudio(shape(it.audio), listOf(sentence.lang), listOf(it.voice), error) }
     }
 
@@ -144,18 +157,28 @@ class RoutedSpeech(
      * feeling's [Tone.pitch] as a tape played faster or slower: it is asked for the speed that comes back to [Tone.rate]
      * once shifted, so the words keep their length.
      */
-    private suspend fun renderWith(text: String, lang: Lang, role: TextRole, tone: Tone): Outcome<Voiced, SpeechError> =
-        voices.voiceFor(lang).flatMap { voice ->
+    private suspend fun renderWith(
+        text: String,
+        reader: Reader,
+        role: TextRole,
+        tone: Tone,
+    ): Outcome<Voiced, SpeechError> {
+        val chosen = reader.phone?.let { voices.phoneVoiceFor(it) } ?: voices.voiceFor(reader.lang)
+        return chosen.flatMap { voice ->
             when (val engine = voices.engine(voice.engine)) {
                 is Outcome.Success -> {
                     val pitch = if (engine.value.actsFeelings(voice)) 1f else tone.pitch
-                    engine.value.render(spoken(text, lang, role), voice, tone.rate / pitch, tone.feeling)
+                    engine.value.render(spoken(text, reader, role), voice, tone.rate / pitch, tone.feeling)
                         .map { Voiced(it.pitched(pitch), voice) }
                 }
 
                 is Outcome.Failure -> engine
             }
         }
+    }
+
+    /** Who reads a part: [lang]'s voice, or the phone's voice for [phone] when set. */
+    private class Reader(val lang: Lang, val phone: String?)
 
     /** How a part is voiced: its speed, its feeling, and its pitch as a ratio (1: the voice's own). */
     private class Tone(val rate: Float, val feeling: Feeling, val pitch: Float)
@@ -165,8 +188,11 @@ class RoutedSpeech(
 
     private class Voiced(val audio: PcmAudio, val voice: VoiceId)
 
-    private fun spoken(text: String, lang: Lang, role: TextRole): String =
-        normalizers[lang]?.normalize(text, role)?.takeIf { it.isNotBlank() } ?: text
+    private fun spoken(text: String, reader: Reader, role: TextRole): String = if (reader.phone != null) {
+        text
+    } else {
+        normalizers[reader.lang]?.normalize(text, role)?.takeIf { it.isNotBlank() } ?: text
+    }
 }
 
 /** Every language's normalizer, keyed by language: English (P2-04), Hindi and Bengali (P3-02). */

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_phone_languages.xml -->
+<!-- Purpose: Books in languages read by the phone's own voices, in Edit details (ADR 2026-10-26), in Bengali. -->
+<resources>
+    <string name="phone_languages_help">অন্য ভাষাগুলো আপনার ফোনের নিজের অফলাইন ভয়েস পড়ে। এটি ListenLock-এর ইংরেজি, হিন্দি আর বাংলা ভয়েসের চেয়ে সাদামাটা শোনায়।</string>
+    <string name="phone_languages_missing">আপনার ফোনে এখনও %1$s-এর অফলাইন ভয়েস নেই। যতক্ষণ না যোগ করছেন, ListenLock-এর নিজের ভয়েস এই বই পড়বে।</string>
+    <string name="phone_languages_add">ফোনে ভাষা যোগ করুন</string>
+    <string name="phone_languages_add_steps">সেখানে পছন্দের ইঞ্জিনের পাশের গিয়ারে ট্যাপ করুন, তারপর Install voice data, আর ভাষাটি ডাউনলোড করুন।</string>
+    <string name="phone_languages_no_settings">এই ফোনে খোলার মতো টেক্সট-টু-স্পিচ সেটিং নেই।</string>
+</resources>

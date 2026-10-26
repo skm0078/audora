@@ -16,9 +16,11 @@ import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.pdf.quality.LanguageModel
 import io.github.skm0078.audora.playback.TEST_SAMPLE_RATE
 import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.queue.UnitKey
+import io.github.skm0078.audora.playback.reading.SentenceLanguage
 import io.github.skm0078.audora.playback.session.SentenceTimings
 import io.github.skm0078.audora.playback.unit
 import io.github.skm0078.audora.speech.RenderResult
@@ -45,6 +47,9 @@ class EngineRendererTest {
 
         override suspend fun voiceFor(lang: Lang): Outcome<VoiceId, SpeechError> = Outcome.Success(VOICE)
 
+        override suspend fun phoneVoiceFor(language: String): Outcome<VoiceId, SpeechError> =
+            Outcome.Success(VoiceId(EngineId.SYSTEM, "phone-$language"))
+
         override fun engine(id: EngineId): Outcome<SpeechEngine, SpeechError> = Outcome.Success(this)
 
         override fun supports(lang: Lang): Boolean = true
@@ -60,6 +65,10 @@ class EngineRendererTest {
 
         override fun release() = Unit
     }
+
+    /** The sentence rule over an English word list of just [words], so the test does not hang on the bundled one. */
+    private fun englishWords(words: String) =
+        SentenceLanguage(english = { LanguageModel(words.split(' ').associateWith { 1 } + ("improvement" to 1)) })
 
     private val recorded = ArrayList<SpeedSample>()
     private val speeds = object : MeasuredSpeeds {
@@ -116,6 +125,32 @@ class EngineRendererTest {
         renderer.render(unit(0, 1).copy(text = "The Long Road", kind = UnitKind.HEADING))
 
         assertEquals(listOf(dialogue, VOICE, heading), voices.readBy)
+    }
+
+    @Test
+    fun `a French book is read by the phone's French voice as written, its English sentences in English`() {
+        val voices = RecordingVoices()
+        val reading = ReadingSetup(language = { "fr-FR" }, sentences = englishWords("the results show clear accuracy"))
+        val renderer = EngineRenderer(voices, styleConfig = flatPaces, reading = reading)
+
+        renderer.render(unit(0, 0).copy(text = "Il a payé 5 € hier soir."))
+        renderer.render(unit(0, 1).copy(text = "The results show a clear improvement in accuracy."))
+
+        assertEquals(listOf(VoiceId(EngineId.SYSTEM, "phone-fr"), VOICE), voices.readBy)
+        assertEquals("Il a payé 5 € hier soir.", voices.spoken.first())
+    }
+
+    @Test
+    fun `a French sentence scored low by the English word list is still read, not cued`() {
+        val voices = RecordingVoices()
+        val polish = unit(0, 0).copy(text = "Dziś rano przeczytałem bardzo ciekawą książkę.", speakScore = 0.37f)
+
+        val reading = ReadingSetup(language = { "pl" }, sentences = englishWords("the"))
+        EngineRenderer(voices, styleConfig = flatPaces, reading = reading).render(polish)
+        EngineRenderer(voices, styleConfig = flatPaces).render(polish)
+
+        // Read by the Polish voice in the Polish book; the same score in an English book is junk, as before.
+        assertEquals(listOf(VoiceId(EngineId.SYSTEM, "phone-pl")), voices.readBy)
     }
 
     @Test

@@ -32,6 +32,8 @@ class ShapedRenderTest {
 
         override suspend fun voiceFor(lang: Lang): Outcome<VoiceId, SpeechError> = Outcome.Success(VOICE)
 
+        override suspend fun phoneVoiceFor(language: String): Outcome<VoiceId, SpeechError> = Outcome.Success(VOICE)
+
         override fun engine(id: EngineId): Outcome<SpeechEngine, SpeechError> = Outcome.Success(this)
 
         override fun supports(lang: Lang): Boolean = true

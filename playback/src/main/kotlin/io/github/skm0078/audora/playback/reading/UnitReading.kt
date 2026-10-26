@@ -34,7 +34,9 @@ sealed interface Speech {
  * offset, which is then the next unit played (`PageCursor`). Decisions per mode:
  * - **Unreadable** (`speakScore` below [SpeakabilityConfig.skipBelow], "Skip unreadable text" on): a run of them plays
  *   one cue, so a page of OCR noise is one soft sound, not twenty. Tables and equations have their own modes and are
- *   never judged as junk (a row of numbers scores like symbol soup).
+ *   never judged as junk (a row of numbers scores like symbol soup). Nor is a sentence of a book in another
+ *   language written in the same letters as English, Hindi or Bengali ([language], ADR 2026-10-26): its score came
+ *   from those languages' word lists, so a good French or Marathi sentence would look like junk.
  * - **Tables:** Summary plays the header unit as the table's size; Row by row adds each row with its column names;
  *   Skip leaves the table out (its caption is a caption).
  * - **Footnotes:** read where printed (after the page's text) or left out.
@@ -52,11 +54,14 @@ sealed interface Speech {
  *   bold mostly marks a term being defined, and the term alone says little. A sentence set wholly in bold (a run-in
  *   heading) is kept the same way. Table rows, footnotes and equations are left out.
  */
+@Suppress("LongParameterList") // All but the modes optional, with the defaults of a book in the three languages.
 class UnitReading(
     private val modes: ReadingModes,
     private val speakability: SpeakabilityConfig = SpeakabilityConfig(),
     private val chapterPages: Set<Int> = emptySet(),
     private val unitConfig: ReadingUnitConfig = ReadingUnitConfig(),
+    private val language: String? = null,
+    private val sentences: SentenceLanguage = SentenceLanguage.DEFAULT,
 ) {
     private val skips = TextSkips(modes.skipParentheses, modes.skipBrackets, modes.skipLinks)
 
@@ -118,7 +123,7 @@ class UnitReading(
     fun isUnreadable(unit: ReadingUnit): Boolean {
         val judged = modes.skipUnreadable && !unit.kind.isTable && unit.kind != UnitKind.EQUATION
         val score = unit.speakScore
-        return judged && score != null && score < speakability.skipBelow
+        return judged && score != null && score < speakability.skipBelow && !sentences.misjudged(unit, language)
     }
 
     private fun playsKind(unit: ReadingUnit, next: ReadingUnit?): Boolean = when (unit.kind) {

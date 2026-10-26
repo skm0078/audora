@@ -19,6 +19,7 @@ import androidx.media3.session.MediaSession
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.core.config.QueueConfig
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
+import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.AfterSentence
@@ -220,7 +221,7 @@ class AudoraPlaybackService : MediaLibraryService() {
             events = publisher(mediaSession, stores, heard, engines, reading).also { it.publishInitial() },
             env = sessionEnvironment(scope, AccelerometerShakes(this, config.sleep)),
         )
-        followReadingChanges()
+        followReadingChanges(reading)
         resumption = PlaybackResumption(
             anchors = resumeAnchors,
             library = library,
@@ -232,12 +233,35 @@ class AudoraPlaybackService : MediaLibraryService() {
     }
 
     /**
+     * The listener changed the open book's language in Edit details: from the sentence playing on, it is read by the
+     * phone's voice for that language, or by the three languages' own (ADR 2026-10-26), at once (ADR-064). Only a
+     * change seen for the same book counts, so the library's update when a book opens never restarts it.
+     */
+    private fun followBookLanguage(reading: ReadingSource) {
+        scope.launch {
+            var seen: Pair<BookId, String?>? = null
+            library.books().collect { books ->
+                val id = bookSession.bookId ?: return@collect
+                val book = books.firstOrNull { it.id == id } ?: return@collect
+                val before = seen
+                seen = id to book.language
+                if (before?.first == id && before.second != book.language) {
+                    AudoraLog.i(TAG, "Book language changed, book=${id.logLabel}; restarting the sentence")
+                    reading.language = book.language
+                    bookSession.restartRendering()
+                }
+            }
+        }
+    }
+
+    /**
      * A voice picked in Settings → Voices or the reader, or a language pack's first voice, reads from the sentence
      * playing now: the sentences rendered ahead in the old voice are redone, playing or paused. Without this the old
      * voice went on for every sentence already rendered, until some other setting happened to restart reading.
-     * Likewise a reading text setting (skip citation numbers) reads the open book again at once (ADR-064).
+     * Likewise a reading text setting (skip citation numbers) reads the open book again at once (ADR-064), and so
+     * does a new language for the open book ([followBookLanguage]).
      */
-    private fun followReadingChanges() {
+    private fun followReadingChanges(source: ReadingSource) {
         val context = applicationContext
         scope.launch {
             // Read first (off the main thread), so the first value seen is the saved state and only changes follow.
@@ -256,6 +280,7 @@ class AudoraPlaybackService : MediaLibraryService() {
                 bookSession.onReadingTextChanged()
             }
         }
+        followBookLanguage(source)
     }
 
     /**
@@ -348,7 +373,8 @@ class AudoraPlaybackService : MediaLibraryService() {
             book.bookId?.let { id ->
                 // Studio mode reads Hindi with the acted voice once installed (ADR-059): look its audio up under it.
                 val studioVoice = { lang: Lang -> StudioMode.actedVoice(this, lang) ?: voices.choiceFor(lang) }
-                StudioKey(id, StudioMode.signature(this, heard(), studioVoice, book.fixer.signature))
+                val signature = StudioMode.signature(this, heard(), studioVoice, book.fixer.signature, reading.language)
+                StudioKey(id, signature)
             }
         }
         // Outermost, so studio audio still leaves the "Leave a gap to say it back" pause (plan item 31).

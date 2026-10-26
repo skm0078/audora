@@ -6,6 +6,7 @@ package io.github.skm0078.audora.speech.system
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.PhoneLanguages
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.flatMap
@@ -27,6 +28,7 @@ import kotlinx.coroutines.sync.withLock
  * pack that is missing is reported as [Reason.NOT_INSTALLED] or [Reason.NETWORK_ONLY] so the UI can send the user
  * to Android's TTS settings instead of failing silently.
  */
+@Suppress("TooManyFunctions") // The SpeechEngine contract plus the voice lookups Settings and phone languages use.
 class SystemSpeechEngine(private val client: SystemTtsClient) : SpeechEngine {
     override val id: EngineId = EngineId.SYSTEM
 
@@ -47,15 +49,38 @@ class SystemSpeechEngine(private val client: SystemTtsClient) : SpeechEngine {
     }
 
     /** The best offline voice for [lang], or why there is none. What the voice settings (P3-01) offer by default. */
-    suspend fun bestVoice(lang: Lang): Outcome<VoiceId, SpeechError> = mutex.withLock {
+    suspend fun bestVoice(lang: Lang): Outcome<VoiceId, SpeechError> = bestVoiceFor(lang.bcp47Tag)
+
+    /**
+     * The best offline voice for [language], any BCP 47 tag ("fr", "ta-IN"; only its primary language counts), or why
+     * there is none: the reader of a phone language (ADR 2026-10-26).
+     */
+    suspend fun bestVoiceFor(language: String): Outcome<VoiceId, SpeechError> = mutex.withLock {
         connected { _ ->
-            val candidates = client.voices().filter { it.language == lang.bcp47Tag }
+            val wanted = PhoneLanguages.canonical(language)
+            val lang = Lang.entries.firstOrNull { it.bcp47Tag == wanted }
+            val candidates = client.voices().filter { PhoneLanguages.canonical(it.language) == wanted }
             val best = candidates.filter { usable(it) }.maxWithOrNull(compareBy({ it.quality }, { -it.latency }))
+            val detail = "language $wanted"
             when {
                 best != null -> Outcome.Success(VoiceId(id, best.name))
-                candidates.any { it.requiresNetwork && it.installed } -> unavailable(Reason.NETWORK_ONLY, lang = lang)
-                else -> unavailable(Reason.NOT_INSTALLED, lang = lang)
+
+                candidates.any { it.requiresNetwork && it.installed } ->
+                    unavailable(Reason.NETWORK_ONLY, lang = lang, detail = detail)
+
+                else -> unavailable(Reason.NOT_INSTALLED, lang = lang, detail = detail)
             }
+        }
+    }
+
+    /**
+     * The primary languages the phone's engine reads offline right now ("en", "fr", "ta"), sorted, each once: what
+     * Edit details offers a book. Empty when the engine lists no usable voice.
+     */
+    suspend fun offlineLanguages(): Outcome<List<String>, SpeechError> = mutex.withLock {
+        connected { _ ->
+            val ready = client.voices().filter { usable(it) }
+            Outcome.Success(ready.mapNotNull { PhoneLanguages.canonical(it.language) }.distinct().sorted())
         }
     }
 
@@ -150,4 +175,5 @@ class SystemSpeechEngine(private val client: SystemTtsClient) : SpeechEngine {
 
 private fun usable(voice: SystemVoice): Boolean = voice.installed && !voice.requiresNetwork
 
-private fun langOf(voice: SystemVoice): Lang? = Lang.entries.firstOrNull { it.bcp47Tag == voice.language }
+private fun langOf(voice: SystemVoice): Lang? =
+    Lang.entries.firstOrNull { it.bcp47Tag == PhoneLanguages.canonical(voice.language) }

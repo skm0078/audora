@@ -27,6 +27,13 @@ class ReadingSource(
     @Volatile
     var scanned: (Int) -> Boolean = { false }
 
+    /**
+     * The open book's language tag as the library holds it (ADR 2026-10-26); set when a book opens and when the
+     * listener changes it in Edit details. Null for none.
+     */
+    @Volatile
+    var language: String? = null
+
     /** Which sentences start inside a quote opened earlier in their paragraph (plan item 7); fed a page at a time. */
     val quotes: QuoteCarry = QuoteCarry()
 
@@ -55,8 +62,9 @@ class ReadingSource(
         moodOf = quotes::moodOf,
         characters = characters,
         intent = { intent.current },
+        language = { language },
     )
 
     /** The modes as they are now, for one render epoch's playlist. */
-    fun current(): UnitReading = UnitReading(modes(), speakability, chapterPages)
+    fun current(): UnitReading = UnitReading(modes(), speakability, chapterPages, language = language)
 }

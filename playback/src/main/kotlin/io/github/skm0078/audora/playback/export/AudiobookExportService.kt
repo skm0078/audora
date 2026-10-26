@@ -196,7 +196,8 @@ class AudiobookExportService : Service() {
         val shownFolder = folder.trimEnd('/')
         val factory = BookRendering.Factory(this, bookSettings, pronunciations)
         try {
-            ExportVoice(this, SpeechStyleStore.forContext(this), factory, book.book.id, book.text).use { voice ->
+            val style = SpeechStyleStore.forContext(this)
+            ExportVoice(this, style, factory, book.book.id, book.text, book.book.language).use { voice ->
                 val pitch = voice.rendering.style.pitch
                 val records = ExportRecords.of(this)
                 val session = ExportSession(

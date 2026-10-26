@@ -1,0 +1,3 @@
+en: Books in other languages (French, Tamil, Arabic, Japanese and more) are read by your phone's own offline voice. Set a book's language in Edit details.
+hi: दूसरी भाषाओं (फ़्रेंच, तमिल, अरबी, जापानी और कई) की किताबें आपके फ़ोन की अपनी ऑफ़लाइन आवाज़ पढ़ती है। किताब की भाषा Edit details में चुनें।
+bn: অন্য ভাষার বই (ফরাসি, তামিল, আরবি, জাপানি আর আরও) আপনার ফোনের নিজের অফলাইন ভয়েস পড়ে। বইয়ের ভাষা Edit details-এ বেছে নিন।
