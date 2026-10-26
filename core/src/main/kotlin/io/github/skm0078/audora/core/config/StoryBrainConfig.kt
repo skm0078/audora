@@ -1,5 +1,5 @@
 // File: core/src/main/kotlin/io/github/skm0078/audora/core/config/StoryBrainConfig.kt
-// Purpose: Tunables for the opt-in story brain (ADR-078): which phones run it, how far ahead it reads, its budget.
+// Purpose: Tunables for the opt-in story brain (ADR 2026-10-25-story-brain): which phones run it, how far ahead it reads, its budget.
 
 package io.github.skm0078.audora.core.config
 

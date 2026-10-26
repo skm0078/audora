@@ -1,0 +1,3 @@
+en: Turning the phone while a shared file is added or a studio file is saved no longer loses it.
+hi: शेयर की गई फ़ाइल जोड़ते या स्टूडियो फ़ाइल सेव करते समय फ़ोन घुमाने से अब वह खोती नहीं।
+bn: শেয়ার করা ফাইল যোগ বা স্টুডিও ফাইল সেভ করার সময় ফোন ঘোরালে আর তা হারায় না।

@@ -1,9 +1,10 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/whatsnew/WhatsNew.kt
 // Purpose: "What's new", once after an update that brings something a listener would notice, so people testing a
-//          new build know what changed and what to try.
+//          new build know what changed and what to try. Its items are files in assets/whatsnew/ (WhatsNewEntries).
 
 package io.github.skm0078.audora.ui.whatsnew
 
+import android.content.res.AssetManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
@@ -21,10 +22,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.battery.OnboardingPreferences
+import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.ui.kids.LocalKidsMode
 import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.theme.Dimens
@@ -32,23 +33,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
-/**
- * The list in `whats_new_items` (strings_whats_new.xml, with its Hindi and Bengali copies). Bump this whenever that
- * list is replaced, so everyone who has not seen the new one sees it once.
- */
-const val WHATS_NEW_ID = 11
+/** The names of every shipped entry; lists the APK's asset table only, so it is cheap enough for the main thread. */
+fun whatsNewEntryNames(assets: AssetManager): Set<String> = assets.list(WhatsNewEntries.DIRECTORY).orEmpty()
+    .filter(WhatsNewEntries::isEntryFile)
+    .mapTo(HashSet()) { it.removeSuffix(WhatsNewEntries.EXTENSION) }
 
-/** What to do at start: show the list, or mark it seen unshown (a new listener, who has nothing to compare). */
-enum class WhatsNewStart { SHOW, MARK_SEEN, NOTHING }
+/** Every shipped entry; one that does not parse is logged and left out (the unit test keeps that from shipping). */
+fun loadWhatsNew(assets: AssetManager): List<WhatsNewEntry> =
+    whatsNewEntryNames(assets).mapNotNull { name -> readEntry(assets, name) }
 
-/**
- * From the list seen last ([seen]) and the library's first settled state: only someone who already has books and
- * has not seen [current] is shown it; someone with an empty library is new, so it is marked seen for them.
- */
-fun whatsNewStart(seen: Int, current: Int, library: LibraryListState): WhatsNewStart = when {
-    seen >= current || library !is LibraryListState.Loaded -> WhatsNewStart.NOTHING
-    library.all.isEmpty() -> WhatsNewStart.MARK_SEEN
-    else -> WhatsNewStart.SHOW
+private fun readEntry(assets: AssetManager, name: String): WhatsNewEntry? {
+    val path = "${WhatsNewEntries.DIRECTORY}/$name${WhatsNewEntries.EXTENSION}"
+    return runCatching { WhatsNewEntries.parse(name, assets.open(path).bufferedReader().use { it.readText() }) }
+        .onFailure { AudoraLog.w(TAG, "What's new entry $name skipped", it) }
+        .getOrNull()
 }
 
 /**
@@ -60,20 +58,35 @@ fun WhatsNewDialog(library: () -> LibraryListState) {
     if (LocalKidsMode.current) return
     val context = LocalContext.current
     val preferences = remember(context) { OnboardingPreferences(context.applicationContext) }
-    var show by rememberSaveable { mutableStateOf(false) }
+    val language = stringResource(R.string.whats_new_language)
+    // The items shown and every entry's name (marked seen on "Got it"); saved, so a rotation keeps the dialog.
+    var items by rememberSaveable { mutableStateOf<ArrayList<String>?>(null) }
+    var names by rememberSaveable { mutableStateOf(ArrayList<String>()) }
     LaunchedEffect(Unit) {
-        val seen = withContext(Dispatchers.IO) { preferences.whatsNewSeen }
+        if (items != null) return@LaunchedEffect
+        val (entries, seen) = withContext(Dispatchers.IO) {
+            loadWhatsNew(context.assets) to
+                WhatsNewEntries.seenEntries(preferences.whatsNewSeenEntries, preferences.whatsNewSeenList)
+        }
         val settled = snapshotFlow(library).first { it !is LibraryListState.Loading }
-        when (whatsNewStart(seen, WHATS_NEW_ID, settled)) {
-            WhatsNewStart.SHOW -> show = true
-            WhatsNewStart.MARK_SEEN -> preferences.whatsNewSeen = WHATS_NEW_ID
+        val fresh = WhatsNewEntries.unseen(entries, seen)
+        val all = entries.mapTo(HashSet()) { it.name }
+        when (whatsNewStart(fresh.isNotEmpty(), settled)) {
+            WhatsNewStart.SHOW -> {
+                names = ArrayList(all)
+                items = fresh.mapTo(ArrayList()) { it.textIn(language) }
+            }
+
+            WhatsNewStart.MARK_SEEN -> preferences.markWhatsNewSeen(all)
+
             WhatsNewStart.NOTHING -> Unit
         }
     }
-    if (!show) return
+    val shown = items
+    if (shown.isNullOrEmpty()) return
     val done = {
-        show = false
-        preferences.whatsNewSeen = WHATS_NEW_ID // an apply(): written in the background
+        items = ArrayList()
+        preferences.markWhatsNewSeen(names.toSet()) // an apply(): written in the background
     }
     AlertDialog(
         onDismissRequest = done,
@@ -83,11 +96,11 @@ fun WhatsNewDialog(library: () -> LibraryListState) {
                 Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
             ) {
-                stringArrayResource(R.array.whats_new_items).forEach { item ->
-                    Text(stringResource(R.string.whats_new_item, item))
-                }
+                shown.forEach { item -> Text(stringResource(R.string.whats_new_item, item)) }
             }
         },
         confirmButton = { TextButton(onClick = done) { Text(stringResource(R.string.whats_new_ok)) } },
     )
 }
+
+private const val TAG = "Audora.WhatsNew"

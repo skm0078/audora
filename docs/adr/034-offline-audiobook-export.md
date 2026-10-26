@@ -80,9 +80,9 @@ which is how this feature was scoped. Nothing in this ADR was taken from another
 
 ## Consequences
 - Rendering a book takes about as long as the voice's render speed allows (Piper is several times faster than
-  real time on the Moto; Kokoro is not, and should be warned about before a long export).
+  real time on the test phone; Kokoro is not, and should be warned about before a long export).
 - Exporting while listening loads a second copy of the voice model (separate engines, no shared state); fine for
-  Piper, to be watched with Kokoro on the Moto.
+  Piper, to be watched with Kokoro on the test phone.
 - Opening the book for export marks it opened in the library, like opening it in the reader.
 - A resumed chapter sequence starts quote voices (`QuoteCarry`) fresh at the first chapter rendered; a quote
   running across a chapter boundary at that point is read in the narrator's voice.

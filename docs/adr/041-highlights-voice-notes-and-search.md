@@ -42,7 +42,7 @@ No library may be added before the user's call 3, and nothing may leave the phon
 ## Consequences
 - Search index size is about twice the book's text (sentences plus terms): roughly 1–2 MB for a 300-page book.
   Building reads every page once: a text PDF at PDFium speed (tens of pages a second), a scanned page not yet in the
-  OCR cache at OCR speed (about 3–6 s a page on the Moto), so a long scanned book is searchable page by page as it
+  OCR cache at OCR speed (about 3–6 s a page on the test phone), so a long scanned book is searchable page by page as it
   builds. While it builds, page turns in the reader share the extraction thread and can be slower.
 - Voice notes cost about 0.5 MB per minute (AAC, 64 kbps mono); they are in backup.
 - The quote of a highlight is the book's text stored in the app's private database; like notes, it is never logged.

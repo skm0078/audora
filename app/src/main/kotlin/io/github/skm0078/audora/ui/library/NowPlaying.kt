@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
@@ -144,6 +145,7 @@ fun MiniPlayer(
     modifier: Modifier = Modifier,
     covers: CoverSource = CoverSource.None,
 ) {
+    val openLabel = stringResource(R.string.a11y_open_player)
     Surface(
         onClick = onOpen,
         color = MaterialTheme.colorScheme.inverseSurface,
@@ -152,7 +154,7 @@ fun MiniPlayer(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = Dimens.SpaceS, vertical = Dimens.SpaceXs)
-            .swipeUpToOpen(onOpen),
+            .opensPlayer(openLabel, onOpen),
     ) {
         Column {
             Row(
@@ -228,6 +230,15 @@ private fun MiniPlayPause(playing: NowPlaying, onPlayPause: () -> Unit) {
 }
 
 private const val PERCENT = 100
+
+/** A tap, TalkBack's "double tap to open the player" (not only "to activate") and a swipe up open the player. */
+@Composable
+private fun Modifier.opensPlayer(label: String, onOpen: () -> Unit): Modifier = semantics {
+    onClick(label) {
+        onOpen()
+        true
+    }
+}.swipeUpToOpen(onOpen)
 
 /**
  * A swipe up opens the full player, as music apps do (UI plan, mini player). A tap still opens it too, and TalkBack

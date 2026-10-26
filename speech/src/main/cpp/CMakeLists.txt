@@ -1,6 +1,6 @@
 # File: speech/src/main/cpp/CMakeLists.txt
 # Purpose: Builds libaudora_acted.so, the acted Hindi voice (Chatterbox) on ONNX Runtime's C API (ADR-059), and on
-#          arm64 the story brain's libaudora_brain.so on llama.cpp (brain/, ADR-078).
+#          arm64 the story brain's libaudora_brain.so on llama.cpp (brain/, ADR 2026-10-25-story-brain).
 #
 # The library does not link against ONNX Runtime: it looks up OrtGetApiBase with dlsym at runtime, in the
 # libonnxruntime.so that sherpa-onnx's AAR already ships. So only the C API headers (third_party/onnxruntime) are

@@ -5,7 +5,7 @@
 #          samples, and scores intelligibility by transcribing each sample back with Whisper (ASR round trip).
 #
 # Desktop RTF is NOT the phone number (x86 vs. Cortex-A78); it ranks voices against each other and
-# predicts which ones can possibly be real time on the Moto. The phone numbers come from :spikes:voices.
+# predicts which ones can possibly be real time on the test phone. The phone numbers come from :spikes:voices.
 #
 # Usage:
 #   python3 bench_desktop.py --catalog spikes/voices/src/main/assets/s1-voices.json \

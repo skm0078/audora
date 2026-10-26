@@ -1,0 +1,3 @@
+en: Leaving a book no longer freezes the screen while another book is being read.
+hi: दूसरी किताब पढ़ी जा रही हो तब भी किताब बंद करने पर स्क्रीन नहीं अटकती।
+bn: অন্য বই পড়া চলার সময়ও বই বন্ধ করলে স্ক্রিন আটকে যায় না।

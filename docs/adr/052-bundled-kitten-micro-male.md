@@ -5,7 +5,7 @@
 ## Context
 ADR-014 bundled Piper ljspeech until a blind rating on the phone. The maintainer tested the dev build and asked for a
 male, friendly voice instead of the one female voice that reads by default, and found the downloads too slow or odd
-on the Moto. Every Piper English male voice we could bundle is fine-tuned from Lessac, which the catalog rules out.
+on the test phone. Every Piper English male voice we could bundle is fine-tuned from Lessac, which the catalog rules out.
 
 ## Decision
 1. **Bundle `kitten-micro-en-v0_8` (sherpa-onnx's packaging of KittenTTS v0.8 micro, Apache-2.0)** as

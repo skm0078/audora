@@ -303,7 +303,7 @@ private fun ListeningGroup(
         )
         // Studio mode's slow Hindi voice (ADR-059), next to the voices it stands in for.
         acted?.let { ModelPackRow(it, ModelPackTexts.ACTED) }
-        // Who speaks each line and how (ADR-078): for every voice, so next to them too.
+        // Who speaks each line and how (ADR 2026-10-25-story-brain): for every voice, so next to them too.
         brain?.let { ModelPackRow(it, ModelPackTexts.STORY_BRAIN) }
         ModelPackRow(ocr, ModelPackTexts.OCR)
         OptionDivider()

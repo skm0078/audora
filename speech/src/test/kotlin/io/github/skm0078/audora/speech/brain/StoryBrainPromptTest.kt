@@ -1,5 +1,5 @@
 // File: speech/src/test/kotlin/io/github/skm0078/audora/speech/brain/StoryBrainPromptTest.kt
-// Purpose: The story brain's question (ADR-078): numbered lines, spoken ones marked, context, and a grammar that asks
+// Purpose: The story brain's question (ADR 2026-10-25-story-brain): numbered lines, spoken ones marked, context, and a grammar that asks
 //          for exactly the spoken lines in order.
 
 package io.github.skm0078.audora.speech.brain

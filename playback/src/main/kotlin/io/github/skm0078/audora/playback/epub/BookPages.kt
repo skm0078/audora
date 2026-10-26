@@ -31,7 +31,7 @@ data class LoadedPages(val units: Map<Int, List<ReadingUnit>>, val skippedPages:
 
 /**
  * Blocking, on the caller's extraction thread: this is the slow step of an accessible copy, since a scanned page goes
- * through OCR (about 3–6 s a page on the Moto). A page that cannot be extracted is skipped, a book that can no
+ * through OCR (about 3–6 s a page on the test phone). A page that cannot be extracted is skipped, a book that can no
  * longer be opened stops it, as in playback. Cancel by interrupting the thread.
  */
 class BookPages(private val onPage: (done: Int, total: Int) -> Unit = { _, _ -> }) {

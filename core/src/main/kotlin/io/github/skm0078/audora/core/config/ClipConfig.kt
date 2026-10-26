@@ -13,11 +13,11 @@ package io.github.skm0078.audora.core.config
  *   paragraph.
  * @property maxPages pages searched for the clip's sentences, from the picked one.
  * @property passageMaxMs a highlighted passage shared as audio is cut before the sentence that would pass this (2 min:
- *   with Kokoro it renders for about 5 minutes on the Moto; a clip much longer is a chapter, which Save as audiobook
+ *   Kokoro renders for about 5 minutes on a test phone; a clip much longer is a chapter, which Save as audiobook
  *   makes).
  * @property passageMaxPages pages a highlighted passage's clip reads at most, from its first.
  * @property wakeLockMs the clip's wake lock is held at most this long: a 44 s Kokoro clip renders in about 2 minutes on
- *   the Moto, so this is a safety limit for a stuck render, not a working limit.
+ *   the test phone, so this is a safety limit for a stuck render, not a working limit.
  */
 data class ClipConfig(
     val minMs: Long = 5_000L,

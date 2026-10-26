@@ -1,5 +1,5 @@
 # File: .github/workflows/story-brain-mirror.yml
-# Purpose: Publishes the story brain's model (speech/story-brain.json, ADR-078) to the "story-brain" release, as parts
+# Purpose: Publishes the story brain's model (speech/story-brain.json, ADR 2026-10-25-story-brain) to the "story-brain" release, as parts
 #          under GitHub's 2 GiB asset limit, each checked against its pin by scripts/build_story_brain_mirror.py.
 #
 # Assets are only ever added, never replaced: an APK in someone's hands keeps working after the pins move on. A push
@@ -48,7 +48,7 @@ jobs:
           if ! gh release view "$TAG" > /dev/null 2>&1; then
             gh release create "$TAG" --prerelease --latest=false --target "$GITHUB_SHA" \
               --title "Story brain" \
-              --notes "The opt-in on-phone language model Audora's story brain downloads (speech/story-brain.json, ADR-078), cut into parts the app joins back. Licence and credit are in the catalog and the app. Assets are never replaced."
+              --notes "The opt-in on-phone language model Audora's story brain downloads (speech/story-brain.json, ADR 2026-10-25-story-brain), cut into parts the app joins back. Licence and credit are in the catalog and the app. Assets are never replaced."
           fi
           existing=$(gh release view "$TAG" --json assets --jq '.assets[].name')
           for part in dist/*; do

@@ -1,5 +1,5 @@
 {
-  "comment": "File: speech/story-brain.json. Purpose: the story brain's model (ADR-078), the opt-in on-phone language model that reads a story's dialogue for who speaks and how. It is one GGUF file pinned to a Hugging Face commit, cut into parts under GitHub's 2 GiB asset limit by scripts/build_story_brain_mirror.py and published to this repo's 'story-brain' release by .github/workflows/story-brain-mirror.yml, which never replaces an asset. The app downloads the parts, checks each and the joined file against these pins, and joins them. The licence must allow commercial use (no NC): StoryBrainSpecTest checks it.",
+  "comment": "File: speech/story-brain.json. Purpose: the story brain's model (ADR 2026-10-25-story-brain), the opt-in on-phone language model that reads a story's dialogue for who speaks and how. It is one GGUF file pinned to a Hugging Face commit, cut into parts under GitHub's 2 GiB asset limit by scripts/build_story_brain_mirror.py and published to this repo's 'story-brain' release by .github/workflows/story-brain-mirror.yml, which never replaces an asset. The app downloads the parts, checks each and the joined file against these pins, and joins them. The licence must allow commercial use (no NC): StoryBrainSpecTest checks it.",
   "id": "brain-qwen35-4b-q4km",
   "label": "Qwen3.5 4B (Q4_K_M)",
   "licence": "Apache-2.0",

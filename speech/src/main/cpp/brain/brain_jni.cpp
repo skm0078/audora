@@ -1,5 +1,5 @@
 // File: speech/src/main/cpp/brain/brain_jni.cpp
-// Purpose: JNI entry points for StoryBrainNative.kt (ADR-078). Text crosses as UTF-8 bytes, not Java's modified UTF-8.
+// Purpose: JNI entry points for StoryBrainNative.kt (ADR 2026-10-25-story-brain). Text crosses as UTF-8 bytes, not Java's modified UTF-8.
 
 #include <jni.h>
 

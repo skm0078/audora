@@ -50,6 +50,11 @@ sealed interface ImportError {
         override val message = "This KittenTTS voice needs its espeak-ng-data folder next to the model."
     }
 
+    /** A Piper voice speaks phonemes, which only espeak-ng-data turns text into; without it the engine fails. */
+    data object PiperWithoutEspeak : ImportError {
+        override val message = "This Piper voice needs its espeak-ng-data folder next to the model."
+    }
+
     /** A model family Audora cannot load yet (Kokoro, Matcha, lexicon-based voices…). */
     data class Unsupported(val marker: String) : ImportError {
         override val message: String
@@ -100,7 +105,26 @@ class VoiceImporter(
         }
         return when (val plan = plan(listed)) {
             is Outcome.Failure -> plan
-            is Outcome.Success -> copy(tree, plan.value, lang, label.trim().ifEmpty { tree.name })
+
+            is Outcome.Success -> espeakProblem(tree, plan.value)?.let { Outcome.Failure(it) }
+                ?: copy(tree, plan.value, lang, label.trim().ifEmpty { tree.name })
+        }
+    }
+
+    /**
+     * A VITS folder without espeak-ng-data is fine only when its tokens are letters (MMS). Piper's tokens are
+     * phonemes with stress marks: loading it without the data would fail on the first sentence, so it is refused
+     * here, before anything is copied.
+     */
+    private fun espeakProblem(tree: ImportTree, plan: ImportPlan): ImportError? {
+        if (plan.family != SherpaFamily.VITS || plan.dataDir != null) return null
+        return try {
+            val phonemes = tree.open(plan.sourcePrefix + TOKENS).bufferedReader(Charsets.UTF_8).use { reader ->
+                ImportRules.phonemeTokens(reader.lineSequence().take(MAX_TOKEN_LINES))
+            }
+            ImportError.PiperWithoutEspeak.takeIf { phonemes }
+        } catch (e: IOException) {
+            ImportError.Failed("cannot read tokens.txt: ${e.message}", e)
         }
     }
 
@@ -186,6 +210,7 @@ class VoiceImporter(
         private const val TOKENS = "tokens.txt"
         private const val ONNX = ".onnx"
         private const val SUFFIX_CHARS = 8
+        private const val MAX_TOKEN_LINES = 4_096
         private const val SLUG_CHARS = 24
         private const val TAG = "Speech.VoiceImport"
         private val NON_SLUG = Regex("[^a-z0-9]+")
@@ -246,6 +271,11 @@ internal object ImportRules {
             ),
         )
     }
+
+    /** Piper's tokens.txt lists IPA phonemes, always with the stress marks; an MMS voice's lists plain letters. */
+    fun phonemeTokens(lines: Sequence<String>): Boolean = lines.any { line -> STRESS_MARKS.any { it in line } }
+
+    private const val STRESS_MARKS = "\u02C8\u02CC"
 
     private fun wanted(path: String, model: String): Boolean = when {
         path == model || path == TOKENS || path == VOICES || path in ATTRIBUTION -> true

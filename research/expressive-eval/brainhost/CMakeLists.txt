@@ -1,6 +1,6 @@
 # File: research/expressive-eval/brainhost/CMakeLists.txt
 # Purpose: Builds brainhost, the app's story brain code (speech/src/main/cpp/brain) on a PC, for llm_director.py
-#          --brainhost (ADR-078). Point LLAMA_CPP_DIR at llama.cpp at the tag in gradle/libs.versions.toml:
+#          --brainhost (ADR 2026-10-25-story-brain). Point LLAMA_CPP_DIR at llama.cpp at the tag in gradle/libs.versions.toml:
 #          cmake -B build -DLLAMA_CPP_DIR=/path/to/llama.cpp && cmake --build build -j
 cmake_minimum_required(VERSION 3.22)
 project(brainhost CXX C)

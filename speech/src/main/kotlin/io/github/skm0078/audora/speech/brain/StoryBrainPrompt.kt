@@ -1,5 +1,5 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/brain/StoryBrainPrompt.kt
-// Purpose: What the story brain is asked about a passage (ADR-078): the prompt, and a grammar that lets it answer only
+// Purpose: What the story brain is asked about a passage (ADR 2026-10-25-story-brain): the prompt, and a grammar that lets it answer only
 //          one line per spoken sentence, in order, and a cast line.
 
 package io.github.skm0078.audora.speech.brain

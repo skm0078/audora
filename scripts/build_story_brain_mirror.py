@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # File: scripts/build_story_brain_mirror.py
-# Purpose: Builds the story brain's download parts (ADR-078) from speech/story-brain.json: fetches the GGUF pinned to a
+# Purpose: Builds the story brain's download parts (ADR 2026-10-25-story-brain) from speech/story-brain.json: fetches the GGUF pinned to a
 #          Hugging Face commit, checks it against the pins, and cuts it into parts under GitHub's 2 GiB asset limit.
 #
 # The parts are plain byte ranges of the one file (the phone joins them back), named by the whole file's hash, so the

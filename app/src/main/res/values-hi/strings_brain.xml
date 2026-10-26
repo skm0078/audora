@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- File: app/src/main/res/values-hi/strings_brain.xml -->
-<!-- Purpose: The story brain's Settings row, Storage and Jobs name (ADR-078). -->
+<!-- Purpose: The story brain's Settings row, Storage and Jobs name (ADR 2026-10-25-story-brain). -->
 <resources>
     <string name="brain_model_title">स्टोरी ब्रेन (कौन बोल रहा है, और कैसे)</string>
     <string name="brain_model_missing">एक छोटा भाषा मॉडल जो कहानी के संवाद को इंसान की तरह पढ़ता है: हर पंक्ति कौन बोल रहा है, और किस भावना से। इससे किरदारों की आवाज़ें और भावनाएँ कहीं ज़्यादा बार सही होती हैं। आपके सुनते समय यह एक-दो पन्ने आगे पढ़ लेता है, आपके फ़ोन पर, बिना इंटरनेट के, और तब बैटरी ज़्यादा लगती है। 6 GB या ज़्यादा मेमोरी वाले फ़ोन के लिए। सिर्फ़ Wi-Fi पर डाउनलोड होता है। %1$d MB चाहिए।</string>

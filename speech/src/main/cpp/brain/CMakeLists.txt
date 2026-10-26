@@ -1,5 +1,5 @@
 # File: speech/src/main/cpp/brain/CMakeLists.txt
-# Purpose: Builds libaudora_brain.so, the story brain (ADR-078), on llama.cpp from the pinned source :speech unpacks
+# Purpose: Builds libaudora_brain.so, the story brain (ADR 2026-10-25-story-brain), on llama.cpp from the pinned source :speech unpacks
 #          (LLAMA_CPP_DIR, from the llamaCppSource task).
 #
 # llama.cpp is built as shared libraries with every Android CPU variant of ggml (GGML_CPU_ALL_VARIANTS): at load

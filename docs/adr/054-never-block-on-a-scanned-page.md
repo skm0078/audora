@@ -3,7 +3,7 @@
 **Status:** Accepted (2026-10-23).
 
 ## Context
-A 700-page scanned book hung the app on the Moto Edge 50 Fusion. A scanned page costs up to a minute of OCR
+A 700-page scanned book hung the app on the test phone. A scanned page costs up to a minute of OCR
 (a 300 dpi render, then Tesseract with the orientation check, the evened and softened re-reads, the line retry and
 the margin strips of the neighbouring pages), and all of it ran under the `PdfBook` monitor (`@Synchronized`).
 Three things followed:

@@ -1,5 +1,5 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/brain/StoryBrainFiles.kt
-// Purpose: Where the story brain's model lives on the phone (ADR-078), and how its downloaded parts become one file.
+// Purpose: Where the story brain's model lives on the phone (ADR 2026-10-25-story-brain), and how its downloaded parts become one file.
 
 package io.github.skm0078.audora.speech.brain
 

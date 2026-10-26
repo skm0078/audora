@@ -147,7 +147,7 @@ class BookSession(
 
     private var book: OpenedBook? = null
 
-    /** Whether the open book's text may still be read ahead for the story brain; false before it closes (ADR-078). */
+    /** Whether the open book's text may still be read ahead for the story brain; false before it closes (ADR 2026-10-25-story-brain). */
     private var bookOpen: AtomicBoolean? = null
 
     /** The open book's cover for the notification and lock screen ([SessionSources.artwork]); null shows none. */
@@ -194,13 +194,12 @@ class BookSession(
         val openPassword = password ?: same?.let { bookPassword }
         val opened = same?.takeIf { current(it) }
             ?: when (val result = sources.books.open(id, openPassword)) {
-                is Outcome.Success -> result.value.also { replaceBook(it, openPassword) }
+                is Outcome.Success -> result.value
                 is Outcome.Failure -> return@withLock fail(result.error)
             }
         val pageCount = opened.text.pageCount
-        if (page !in 0 until pageCount || charStart < 0) {
-            return@withLock fail(OpenFailure(PlaybackErrorCode.BAD_REQUEST, "Page ${page + 1} is not in this book"))
-        }
+        outOfRange(opened, page, charStart)?.let { return@withLock fail(it) }
+        if (opened !== book) replaceBook(opened, openPassword)
         error = null
         AudoraLog.i(TAG, "Play book=${id.logLabel} page=$page char=$charStart pages=$pageCount")
         // Only a jump within the book: after a book switch the player still holds the old book's playlist.
@@ -475,6 +474,16 @@ class BookSession(
         reporter.notReading()
     }
 
+    /**
+     * Checked before a book switch: a start outside [opened] is refused and leaves the book that is playing as it
+     * was, its newly opened copy closed.
+     */
+    private suspend fun outOfRange(opened: OpenedBook, page: Int, charStart: Int): OpenFailure? {
+        if (page in 0 until opened.text.pageCount && charStart >= 0) return null
+        if (opened !== book) withContext(env.extraction) { opened.text.close() }
+        return OpenFailure(PlaybackErrorCode.BAD_REQUEST, "Page ${page + 1} is not in this book")
+    }
+
     /** False (logged) when [opened] must be opened again: the reading text settings changed since (P2-03). */
     private suspend fun current(opened: OpenedBook): Boolean = sources.books.isCurrent(opened).also { fresh ->
         if (!fresh) AudoraLog.i(TAG, "Reading text settings changed, reopening book=${opened.book.id.logLabel}")
@@ -554,6 +563,8 @@ class BookSession(
     }
 
     private fun pump() {
+        // Between a book switch and its rebuild the playlist is still the old book's: never feed it the new pages.
+        if (playlistBook != bookId) return
         val opened = book
         val currentFeeder = feeder
         val currentCursor = cursor
@@ -590,14 +601,18 @@ class BookSession(
      * The current sentence (by its index too, so a rebuild on a continued table's first row restarts that row, not
      * the summary sharing its offset), or just after the last one while waiting for a page.
      */
-    private fun resumePoint(): Restart? = when (val item = playlist.current()) {
-        is PlaybackItem.Sentence -> Restart(item.unit.page, item.unit.charStart, item.unit.index)
+    private fun resumePoint(): Restart? {
+        // Between a book switch and its rebuild the playlist is the old book's: its places mean nothing in the new one.
+        if (playlistBook != bookId) return null
+        return when (val item = playlist.current()) {
+            is PlaybackItem.Sentence -> Restart(item.unit.page, item.unit.charStart, item.unit.index)
 
-        is PlaybackItem.More ->
-            lastSentence?.let { Restart(it.page, it.spokenEnd, it.index + 1) }
-                ?: cursor?.let { Restart(it.startPage, 0, null) }
+            is PlaybackItem.More ->
+                lastSentence?.let { Restart(it.page, it.spokenEnd, it.index + 1) }
+                    ?: cursor?.let { Restart(it.startPage, 0, null) }
 
-        null -> null
+            null -> null
+        }
     }
 
     /** Resuming after a pause steps back by whole sentences (ADR-033); placeholders are never rewound. */
@@ -933,8 +948,10 @@ class BookSession(
                 sources.replayRender?.onSentence(UnitKey.of(sentence))?.let { queue?.forget(it) }
             }
             (PlaylistItems.itemOf(mediaItem) as? PlaybackItem.Sentence)?.let { sentence ->
-                lastSentence = sentence.unit
-                bookId?.let { events.onSentenceStarted(it, sentence.unit) }
+                // The sentence is the playlist's book's: during a book switch that is still the old book, whose
+                // place it saves; the new book's state starts with its own first sentence.
+                if (playlistBook == bookId) lastSentence = sentence.unit
+                playlistBook?.let { events.onSentenceStarted(it, sentence.unit) }
             }
             feeder?.trimBehind()
             updateWindow()
@@ -1001,8 +1018,8 @@ class BookSession(
             // a replaced playlist) is not the listener finishing it, so Up next must not move on.
             val ended = player.playbackState == Player.STATE_ENDED && player.playWhenReady
             if (events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED) && ended) {
-                AudoraLog.i(TAG, "Book finished, book=${bookId?.logLabel}")
-                bookId?.let(sources.onBookFinished)
+                AudoraLog.i(TAG, "Book finished, book=${playlistBook?.logLabel}")
+                playlistBook?.let(sources.onBookFinished)
             }
             // A faster speed drains the queue sooner (ADR-027): resize the window now, not at the next sentence.
             if (events.contains(Player.EVENT_PLAYBACK_PARAMETERS_CHANGED)) {

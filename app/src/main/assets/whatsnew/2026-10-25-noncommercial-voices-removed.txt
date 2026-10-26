@@ -1,0 +1,3 @@
+en: Two older Hindi voices and one Bengali voice were removed. If you used one, download Supertonic or pick another voice in Settings → Voices.
+hi: दो पुरानी हिंदी आवाज़ें और एक बांग्ला आवाज़ हटा दी गई हैं। अगर आप इनमें से किसी का इस्तेमाल करते थे, तो सेटिंग्स → आवाज़ें में Supertonic डाउनलोड करें या कोई और आवाज़ चुनें।
+bn: দুটি পুরোনো হিন্দি ভয়েস আর একটি বাংলা ভয়েস সরানো হয়েছে। এগুলোর কোনোটি ব্যবহার করে থাকলে সেটিংস → ভয়েস-এ Supertonic ডাউনলোড করুন বা অন্য ভয়েস বেছে নিন।

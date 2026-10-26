@@ -1,5 +1,5 @@
 // File: speech/src/main/cpp/brain/brain_core.h
-// Purpose: The story brain's model on llama.cpp (ADR-078): load a GGUF, answer one prompt under a grammar, greedily.
+// Purpose: The story brain's model on llama.cpp (ADR 2026-10-25-story-brain): load a GGUF, answer one prompt under a grammar, greedily.
 
 #pragma once
 

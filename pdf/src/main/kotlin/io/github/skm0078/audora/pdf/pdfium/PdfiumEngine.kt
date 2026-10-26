@@ -28,6 +28,8 @@ import io.legere.pdfiumandroid.core.unlocked.PdfDocumentU
 import io.legere.pdfiumandroid.core.unlocked.PdfiumCoreU
 import java.io.FileNotFoundException
 import java.io.IOException
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 
 /**
  * @param openFile opens a fresh descriptor on every call; the document owns and closes it. Called again on
@@ -283,12 +285,29 @@ private class PdfiumDocumentHandle(private val document: PdfDocumentU, private v
         return gray
     }
 
+    /**
+     * Never waits: PDFium's lock is process-wide and is held through another book's page drawing (seconds for an OCR
+     * draw on a slow phone), and a book closes on the main thread when the reader goes. The native close runs on
+     * [CLOSER] once the lock is free; the document is never touched again from here.
+     */
+    @Suppress("TooGenericExceptionCaught") // PdfiumAndroidKt and JNI report failures as RuntimeExceptions.
     override fun close() {
-        pdfiumLocked { document.close() }
+        CLOSER.execute {
+            try {
+                pdfiumLocked { document.close() }
+            } catch (e: RuntimeException) {
+                AudoraLog.w(TAG, "Document close failed", e)
+            }
+        }
     }
 
     private companion object {
         const val TAG = "Audora.Pdfium"
+
+        /** One thread for every document close, in the order asked. */
+        val CLOSER: Executor = Executors.newSingleThreadExecutor { task ->
+            Thread(task, "audora-pdf-close").apply { isDaemon = true }
+        }
         const val LUMA_R = 299
         const val LUMA_G = 587
         const val LUMA_B = 114

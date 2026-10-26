@@ -1,6 +1,6 @@
 // File: speech/src/test/kotlin/io/github/skm0078/audora/speech/brain/StoryBrainDownloadJobTest.kt
 // Purpose: The story brain's parts download, resume, join and install only when every byte matches its pins
-//          (ADR-078); a delete during the download wins.
+//          (ADR 2026-10-25-story-brain); a delete during the download wins.
 
 package io.github.skm0078.audora.speech.brain
 

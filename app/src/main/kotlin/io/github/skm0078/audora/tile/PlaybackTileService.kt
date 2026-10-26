@@ -21,7 +21,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Connected to the media session only while the shade shows the tile (a connected controller keeps the playback
@@ -55,11 +57,29 @@ class PlaybackTileService : TileService() {
     override fun onClick() {
         super.onClick()
         val player = port
-        val snapshot = player?.state?.value
-        when {
-            player != null && snapshot?.position != null && snapshot.wantsToPlay -> player.pause()
-            player != null && snapshot?.position != null -> player.play()
-            else -> openAudora()
+        when (tileTap(player?.state?.value)) {
+            TileTap.PAUSE -> player?.pause()
+
+            TileTap.PLAY -> player?.play()
+
+            TileTap.OPEN_APP -> openAudora()
+
+            // Tapped as the shade opened: the tap waits for the player instead of opening the app.
+            TileTap.WAIT -> scope?.launch { act(player) }
+        }
+    }
+
+    /** The tap once connected, or after [CONNECT_WAIT_MS]; a player still not there opens the app. */
+    private suspend fun act(player: MediaControllerPlaybackPort?) {
+        val settled = player?.let {
+            withTimeoutOrNull(CONNECT_WAIT_MS) {
+                it.state.first { snapshot -> snapshot.connection != PlaybackSnapshot.Connection.CONNECTING }
+            }
+        }
+        when (tileTap(settled)) {
+            TileTap.PAUSE -> player?.pause()
+            TileTap.PLAY -> player?.play()
+            TileTap.OPEN_APP, TileTap.WAIT -> openAudora()
         }
     }
 
@@ -114,5 +134,24 @@ class PlaybackTileService : TileService() {
     private companion object {
         const val TAG = "Audora.Tile"
         const val LOG_ID_LENGTH = 8
+
+        // Long enough for a cold start of the playback service on a slow phone, short enough to feel like a tap.
+        const val CONNECT_WAIT_MS = 3_000L
     }
+}
+
+/** What a tap on the tile does. */
+internal enum class TileTap { PAUSE, PLAY, OPEN_APP, WAIT }
+
+/**
+ * Pause or play the book loaded; open the app when none is (it reads on from the book read last); wait while the
+ * tile is still connecting, since the player's state is not known yet and opening the app would be wrong if a book
+ * is playing.
+ */
+internal fun tileTap(snapshot: PlaybackSnapshot?): TileTap = when {
+    snapshot == null -> TileTap.OPEN_APP
+    snapshot.connection == PlaybackSnapshot.Connection.CONNECTING -> TileTap.WAIT
+    snapshot.position != null && snapshot.wantsToPlay -> TileTap.PAUSE
+    snapshot.position != null -> TileTap.PLAY
+    else -> TileTap.OPEN_APP
 }

@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/brain/StoryBrainReader.kt
-// Purpose: Runs the opt-in story brain (ADR-078) over a book's pages ahead of the listener: who says each spoken line
+// Purpose: Runs the opt-in story brain (ADR 2026-10-25-story-brain) over a book's pages ahead of the listener: who says each spoken line
 //          and how, kept for the renderer and on disk. With no model, it answers nothing and the rules read as before.
 
 package io.github.skm0078.audora.playback.brain

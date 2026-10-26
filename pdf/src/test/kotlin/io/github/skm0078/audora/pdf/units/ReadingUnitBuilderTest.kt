@@ -71,6 +71,24 @@ class ReadingUnitBuilderTest {
     }
 
     @Test
+    fun `a hard cut never starts a piece with a vowel sign or splits a joined consonant`() {
+        val hindi = "कि".repeat(12)
+        val joined = "क्ष".repeat(8)
+        val bengali = "ক্ষি".repeat(6)
+        for (text in listOf(hindi, joined, bengali)) {
+            val units = ReadingUnitBuilder(ReadingUnitConfig(maxUnitChars = 10)).build(pageOf(text))
+
+            assertTrue(units.size > 1)
+            assertEquals(text, units.joinToString("") { it.text })
+            for (unit in units) {
+                val first = unit.text.first()
+                assertTrue("$text cut before ${first.code}", Character.getType(first) !in MARKS)
+                assertTrue("$text cut after a virama", unit.text.last() !in "\u094D\u09CD")
+            }
+        }
+    }
+
+    @Test
     fun `Hindi sentences end at the danda and get the Hindi language`() {
         val units = builder.build(pageOf("सभी मनुष्य स्वतंत्र हैं। उन्हें बुद्धि मिली है।"))
         assertEquals(2, units.size)
@@ -306,5 +324,9 @@ class ReadingUnitBuilderTest {
             listOf(emptyList(), listOf("Krebs cycle", "mitochondria")),
             units.map { unit -> unit.boldTerms.map { unit.text.substring(it.start, it.end) } },
         )
+    }
+
+    private companion object {
+        val MARKS = setOf(Character.NON_SPACING_MARK.toInt(), Character.COMBINING_SPACING_MARK.toInt())
     }
 }

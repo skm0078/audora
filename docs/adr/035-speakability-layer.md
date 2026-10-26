@@ -53,7 +53,7 @@ and highlight need a unit to land on.
   re-anchoring) would vary by setting; a setting change would need the book re-extracted.
 - **A separate "skip list" next to the units instead of fields on `ReadingUnit`.** Keeps the model small, but every
   consumer (reader, player, export, highlight) would have to join two lists by offset.
-- **An on-device language model to clean pages.** Too large and slow for the Moto Edge 50 Fusion as a default; it
+- **An on-device language model to clean pages.** Too large and slow for the test phone as a default; it
   stays a candidate behind the online opt-in.
 
 ## Consequences

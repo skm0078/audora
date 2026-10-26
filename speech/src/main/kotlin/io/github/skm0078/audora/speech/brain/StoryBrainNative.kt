@@ -1,5 +1,5 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/brain/StoryBrainNative.kt
-// Purpose: The JNI side of libaudora_brain.so: the story brain's language model on llama.cpp (ADR-078).
+// Purpose: The JNI side of libaudora_brain.so: the story brain's language model on llama.cpp (ADR 2026-10-25-story-brain).
 
 package io.github.skm0078.audora.speech.brain
 

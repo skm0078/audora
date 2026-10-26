@@ -1,6 +1,6 @@
 # S1 — Voice benchmark
 
-Status: desktop pre-run done; phone run pending (Moto Edge 50 Fusion). Decision: ADR-012.
+Status: desktop pre-run done; phone run pending (test phone). Decision: ADR-012.
 
 ## Question
 Which offline voices are fast enough and good enough for Audora on a mid-range phone, and which English voice
@@ -60,7 +60,7 @@ inconsistently. Listening shows the gap P2-04's normalizer must close: Piper and
 "Vol. II" passably through espeak; Supertonic produces nonsense on that sentence ("Smith-Smith-Paint-1-Town…").
 
 ## What the desktop numbers predict for the phone
-The Moto's Cortex-A78 cores are roughly 2–3× slower per thread than this x86 container for ONNX Runtime int8/fp32
+The test phone's Cortex-A78 cores are roughly 2–3× slower per thread than this x86 container for ONNX Runtime int8/fp32
 inference (estimate, to be replaced by the phone table):
 - **MMS ben:** RTF ≈ 0.8–1.1. Borderline; a fallback at best.
 - **Piper (all languages):** RTF ≈ 0.15–0.25. Comfortably real time; first sentence under 1 s once loaded.
@@ -92,10 +92,10 @@ are in `s1-desktop-samples.zip` on the `s1-voices` release. The phone app saves 
 ## Speaker sweeps (desktop)
 Multi-speaker models were swept to pick the benchmarked speaker; see `results/desktop-sweep.md`. Kitten uses speaker 7 (speaker 1 paces ~50 % slower than every other voice) and Supertonic Hindi speaker 2 (lowest CER, every text scored).
 
-## Phone results (Moto Edge 50 Fusion)
+## Phone results (test phone)
 Pending: filled from the app's shared report (`s1-report.md`). Phone steps:
 `/mnt/project-files/audora/s1/phone-test-steps.md` in the project files.
 
 ## Outcome
 See ADR-012. English default: **Piper medium (ljspeech or cori, whichever rates higher blind)**, unless Kitten
-rates clearly higher and measures RTF ≤ 0.5 at 2 threads on the Moto.
+rates clearly higher and measures RTF ≤ 0.5 at 2 threads on the test phone.

@@ -1,4 +1,4 @@
-# ADR-078: An optional story brain reads dialogue for who speaks and how
+# ADR 2026-10-25-story-brain: An optional story brain reads dialogue for who speaks and how
 
 **Status:** Accepted (2026-10-25). Extends ADR-056, ADR-058, ADR-063, ADR-075, ADR-076, ADR-077.
 

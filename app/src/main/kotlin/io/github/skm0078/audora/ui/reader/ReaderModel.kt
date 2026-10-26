@@ -66,6 +66,7 @@ class ReaderModel(
     private val views: ViewPreference = ViewPreference.None,
     private val pipelineVersion: Int = PIPELINE_VERSION,
     private val textSettings: Flow<Int> = emptyFlow(),
+    shownPage: Int? = null,
 ) {
     private val mutableState = MutableStateFlow(ReaderState(bookId))
     val state: StateFlow<ReaderState> = mutableState.asStateFlow()
@@ -89,8 +90,12 @@ class ReaderModel(
     private var pageWidthPx: Int? = null
     private var started = false
 
-    /** The page shown when the book was opened again for new text settings, to show it again. */
-    private var keepPage: Int? = null
+    /**
+     * The page to show again instead of the resume point, with no "Resumed at" notice: the page on screen when the
+     * book was opened again for new text settings, or [shownPage] when the screen was rebuilt (a rotation, a theme
+     * switch, the app coming back after Android closed it).
+     */
+    private var keepPage: Int? = shownPage
 
     /** Where this book was left (its resume anchor), when the player is not already on this book. */
     private var savedPosition: ReadingPosition? = null

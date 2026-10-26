@@ -1,0 +1,3 @@
+en: Settings, the reader and the player fit better at large text sizes, in Hindi and Bengali too.
+hi: बड़े अक्षरों में भी सेटिंग, रीडर और प्लेयर ठीक से दिखते हैं, हिंदी और बांग्ला में भी।
+bn: বড় অক্ষরেও সেটিংস, রিডার আর প্লেয়ার ঠিকমতো দেখায়, হিন্দি আর বাংলাতেও।

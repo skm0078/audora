@@ -1,5 +1,5 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/brain/StoryBrainAnswer.kt
-// Purpose: Reads the story brain's answer (ADR-078) into who speaks each spoken line, with a gender, and how.
+// Purpose: Reads the story brain's answer (ADR 2026-10-25-story-brain) into who speaks each spoken line, with a gender, and how.
 
 package io.github.skm0078.audora.speech.brain
 

@@ -9,7 +9,7 @@ plugins {
     id("audora.android.library")
 }
 
-// The story brain's llama.cpp source (ADR-078), unpacked once per pin; CMake builds it for arm64 only.
+// The story brain's llama.cpp source (ADR 2026-10-25-story-brain), unpacked once per pin; CMake builds it for arm64 only.
 val llamaCppDir = layout.buildDirectory.dir("llama.cpp")
 val llamaCppSource = tasks.register<LlamaCppSourceTask>("llamaCppSource") {
     tag.set(libs.versions.llamaCpp)
@@ -38,7 +38,7 @@ android {
     }
 
     // libaudora_acted.so, the acted Hindi voice (ADR-059), on the ONNX Runtime sherpa-onnx already ships; and
-    // libaudora_brain.so, the story brain (ADR-078), on llama.cpp's source from the llamaCppSource task.
+    // libaudora_brain.so, the story brain (ADR 2026-10-25-story-brain), on llama.cpp's source from the llamaCppSource task.
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")

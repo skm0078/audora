@@ -2,7 +2,7 @@
 # File: research/expressive-eval/llm_director.py
 # Purpose: Asks a small on-device-sized LLM (llama.cpp server) who speaks each sentence of the marked passages and how,
 #          scores it like ExpressiveEval.kt, and times it, so the plan can say whether an on-phone "director" is worth it.
-#          With --brainhost it asks the app's own story brain instead (ADR-078): the app's prompt (brain/prompt.txt),
+#          With --brainhost it asks the app's own story brain instead (ADR 2026-10-25-story-brain): the app's prompt (brain/prompt.txt),
 #          its answer grammar and its native code (brainhost/, built on a PC), on the spoken lines only.
 
 import argparse

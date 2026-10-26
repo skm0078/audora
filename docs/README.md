@@ -3,7 +3,8 @@
 Every document in the repository, in one list. Plans, trackers and guides that live outside the repository are
 collected on the project's private docs hub; this file is its repository half.
 
-When you add a document or an ADR, add a line here in the same change.
+When you add a document, add a line here in the same change. ADRs and progress entries are not listed: their folders
+([adr/](adr/), [progress/](progress/)) are their own lists, so parallel PRs never append here.
 
 ## Start here
 
@@ -11,7 +12,8 @@ When you add a document or an ADR, add a line here in the same change.
 | --- | --- |
 | [../README.md](../README.md) | What the app does, privacy, voice credits, roadmap |
 | [../AGENTS.md](../AGENTS.md) | Rules for every change: stack, module boundaries, definition of done |
-| [PROGRESS.md](PROGRESS.md) | One entry per merged change, newest first, with the real-device checks each still needs |
+| [progress/](progress/README.md) | One file per merged change, with the real-device checks each still needs |
+| [PROGRESS.md](PROGRESS.md) | The same, up to 2026-10-25 (frozen) |
 
 ## Product and plan
 
@@ -45,7 +47,7 @@ When you add a document or an ADR, add a line here in the same change.
 | Document | What it is for |
 | --- | --- |
 | [../research/notes/](../research/notes/) | Early research: offline TTS, PDF extraction, playback and distribution, outside-view benchmark |
-| [../research/spikes/S1-voice-benchmark/REPORT.md](../research/spikes/S1-voice-benchmark/REPORT.md) | S1: voice speed and quality on desktop and the Moto |
+| [../research/spikes/S1-voice-benchmark/REPORT.md](../research/spikes/S1-voice-benchmark/REPORT.md) | S1: voice speed and quality on desktop and the test phone |
 | [../research/spikes/S2-pdf-extraction/REPORT.md](../research/spikes/S2-pdf-extraction/REPORT.md) | S2: PDF text extraction and OCR across the test corpus |
 | [../research/spikes/S3-background-playback/REPORT.md](../research/spikes/S3-background-playback/REPORT.md) | S3: screen-off background playback |
 | [../research/spikes/indic-voices/README.md](../research/spikes/indic-voices/README.md) | Hindi and Bengali voice candidates and how they were exported |
@@ -54,7 +56,8 @@ When you add a document or an ADR, add a line here in the same change.
 
 ## Decisions (ADRs)
 
-How to write one: [adr/README.md](adr/README.md). ADR-001 to ADR-009 are in the Build Spec, §11.
+How to write one: [adr/README.md](adr/README.md). ADR-001 to ADR-009 are in the Build Spec, §11. ADRs from
+2026-10-25 on are named by date and are listed only in [adr/](adr/); the numbered ones are below.
 ADR-013 and ADR-037 were planned (podcast mode, online AI) and have no file yet.
 
 **Platform, build and release**
@@ -78,7 +81,6 @@ ADR-013 and ADR-037 were planned (podcast mode, online AI) and have no file yet.
 - [ADR-074](adr/074-commercial-use-voices-only.md) Only voices licensed for commercial use: Piper Hindi and MMS Bengali removed, Supertonic 3 reads Hindi and voices its characters
 - [ADR-076](adr/076-feelings-you-can-hear.md) Feelings you can hear: each feeling moves the pitch (sad lower, lively higher) on every voice, only the quoted words, with stronger speed and loudness
 - [ADR-077](adr/077-indic-names-by-repetition.md) Hindi and Bengali characters found by repetition: a word opening narration twice on a page is a person; Bengali openers in -এ, -তেই and owners in -এর are passed over
-- [ADR-078](adr/078-story-brain.md) Optional story brain: an on-phone language model (Qwen3.5 4B on llama.cpp, 2.7 GB download) reads each page's dialogue ahead of the listener for who speaks and how; rules stay the fallback
 
 **Reading the PDF (`:pdf`)**
 

@@ -1,5 +1,5 @@
 // File: speech/src/test/kotlin/io/github/skm0078/audora/speech/brain/StoryBrainSpecTest.kt
-// Purpose: The app's story brain pins match speech/story-brain.json, and its licence allows commercial use (ADR-078).
+// Purpose: The app's story brain pins match speech/story-brain.json, and its licence allows commercial use (ADR 2026-10-25-story-brain).
 
 package io.github.skm0078.audora.speech.brain
 

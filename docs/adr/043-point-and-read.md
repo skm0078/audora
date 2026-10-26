@@ -34,6 +34,6 @@ already reads scanned PDF pages: Tesseract OCR (P3-05), sideways-scan turning, l
 
 ## Consequences
 - Each photo book is about 1–2 MB in the app's private storage, kept until the book is removed; it is in backup.
-- Reading it costs one OCR page: about 3–6 s on the Moto, and the OCR models must be downloaded (the reader offers it).
+- Reading it costs one OCR page: about 3–6 s on the test phone, and the OCR models must be downloaded (the reader offers it).
 - One photo is one book. Several photos of a chapter are several books until a later item adds "add a page".
 - The book's title is "Photo <date, time>".

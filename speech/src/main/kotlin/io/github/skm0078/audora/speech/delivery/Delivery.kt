@@ -39,7 +39,7 @@ class DeliveryPlanner(private val config: DeliveryConfig = DeliveryConfig()) {
     /**
      * [quoted]: the sentence holds quoted speech, or starts inside a quote an earlier sentence opened. [carried]: the
      * mood the sentence before left ([SceneMoods]), used when this one asks for none. [judged]: the feeling the story
-     * brain heard in the sentence (ADR-078), null when it was not asked; it read the scene, so a feeling it heard wins
+     * brain heard in the sentence (ADR 2026-10-25-story-brain), null when it was not asked; it read the scene, so a feeling it heard wins
      * over the rules', and when it heard none the sentence keeps only its own cues, not a carried mood.
      */
     fun plan(

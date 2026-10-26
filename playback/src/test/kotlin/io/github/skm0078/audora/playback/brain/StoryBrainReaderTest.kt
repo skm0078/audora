@@ -1,6 +1,6 @@
 // File: playback/src/test/kotlin/io/github/skm0078/audora/playback/brain/StoryBrainReaderTest.kt
 // Purpose: The story brain reader asks about spoken lines only, reads ahead, keeps and reuses its notes, and with no
-//          model answers nothing, so reading is exactly as before (ADR-078).
+//          model answers nothing, so reading is exactly as before (ADR 2026-10-25-story-brain).
 
 package io.github.skm0078.audora.playback.brain
 

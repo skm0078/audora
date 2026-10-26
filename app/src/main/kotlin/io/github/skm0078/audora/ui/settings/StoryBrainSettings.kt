@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/StoryBrainSettings.kt
-// Purpose: The story brain's Settings row state (ADR-078): download, cancel and delete through StoryBrainModels.
+// Purpose: The story brain's Settings row state (ADR 2026-10-25-story-brain): download, cancel and delete through StoryBrainModels.
 
 package io.github.skm0078.audora.ui.settings
 

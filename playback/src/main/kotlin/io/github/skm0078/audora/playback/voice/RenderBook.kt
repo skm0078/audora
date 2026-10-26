@@ -16,7 +16,7 @@ import io.github.skm0078.audora.speech.route.Speaker
  * punctuation, RI-11), its pronunciation fixes (plan item 1) and whether a sentence starts inside a quote opened
  * earlier in its paragraph (cast voices, plan item 7), who speaks it and the book's character voices (item 63), and
  * what the book is (a story, a poem, the news; ADR-056), which sets how it is delivered, and the feeling the story
- * brain heard in a sentence (ADR-078; null when it was not asked).
+ * brain heard in a sentence (ADR 2026-10-25-story-brain; null when it was not asked).
  */
 @Suppress("LongParameterList") // All optional: each caller sets what it knows about the book.
 class RenderBook(

@@ -33,7 +33,7 @@ for ADR-053 at about 9 % CER, behind SYSPIN male (5.1 %), so it is not the defau
 
 ## Consequences
 - Only voices with `styles` change; every other voice renders byte for byte as before. No `:pdf` change.
-- Rasa is fp32 and about RTF 0.2 at 4 threads on a desktop; it must be heard on the Moto before it is recommended.
+- Rasa is fp32 and about RTF 0.2 at 4 threads on a desktop; it must be heard on the test phone before it is recommended.
 - The upstream Hugging Face repository is gated: the licence (CC BY 4.0) is taken from the export's model card and
   the upstream metadata. Check the upstream page's terms once while signed in before the Play release.
 - Rasa's style ids are fixed by the export; a different export would need its own table (the catalog pins the zip).
