@@ -1,17 +1,20 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/release/ReleaseJourneyTest.kt
 // Purpose: The release blockers a machine can check, on the real app (MainActivity, the playback service, the
 //          bundled voice) on CI's emulator: first run, "Open with", play without the notification permission, the
-//          media controls a notification or lock screen sends, a new voice and a reading setting applying at once,
-//          Settings rows, pages and Back, Hide app content, the ListenLock name, and a scan read after the OCR
-//          download. One test on one fresh install, as one listener would use the app: AndroidJUnitRunner finishes
-//          every activity between tests, so the steps are named blocks inside it and the first broken one stops it.
+//          media controls a notification or lock screen sends and its own buttons (CF-1), a new voice and a reading
+//          setting applying at once, Settings rows, pages and Back, Hide app content, the ListenLock name, and a scan
+//          read after the OCR download. One test on one fresh install, as one listener would use the app:
+//          AndroidJUnitRunner finishes every activity between tests, so the steps are named blocks inside it and the
+//          first broken one stops it.
 
 package io.github.skm0078.audora.release
 
 import android.Manifest
 import android.app.Activity
+import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
+import androidx.annotation.OptIn
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
@@ -26,11 +29,18 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.printToString
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.common.util.concurrent.ListenableFuture
 import io.github.skm0078.audora.MainActivity
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.playback.contract.LockScreenCommands
+import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.privacy.PrivacyPreferences
 import io.github.skm0078.audora.privacy.PrivacySettings
 import io.github.skm0078.audora.release.JourneyDevice.app
@@ -41,6 +51,7 @@ import io.github.skm0078.audora.ui.firstrun.FirstRunStep
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
 import io.github.skm0078.audora.ui.reader.ReadingPosition
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -67,6 +78,7 @@ class ReleaseJourneyTest {
             step("03 Open with adds the book and opens the reader", ::openWithAddsTheBookAndOpensTheReader)
             step("04 play starts without the notification permission", ::playStartsWithoutTheNotificationPermission)
             step("05 media controls pause, resume and skip", ::mediaControlsPauseResumeAndSkip)
+            step("05b the lock screen's buttons go back, on and bookmark", ::lockScreenButtonsGoBackOnAndBookmark)
             step("06 a new voice applies while playing", ::aNewVoiceAppliesWhilePlaying)
             step("07 a new voice applies while paused", ::aNewVoiceAppliesWhilePaused)
             step("08 a Settings row toggles from its title and applies at once", ::aRowTogglesFromItsTitle)
@@ -227,6 +239,49 @@ class ReleaseJourneyTest {
         awaitReadingMovesOn("play after pause and skip")
     }
 
+    /**
+     * The buttons the notification and lock screen draw (CF-1), sent as Audora's notification controller sends them:
+     * a controller from this package, like the one System UI's taps are routed through.
+     */
+    @OptIn(UnstableApi::class)
+    private fun lockScreenButtonsGoBackOnAndBookmark() {
+        val controller = MediaController.Builder(app, PlaybackContract.sessionToken(app)).buildAsync()
+            .get(UI_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        try {
+            var shown = emptyList<String?>()
+            JourneyDevice.onMain { shown = controller.mediaButtonPreferences.map { it.sessionCommand?.customAction } }
+            assertTrue("The lock screen's buttons were $shown", shown.containsAll(LockScreenCommands.ACTIONS))
+            pause()
+            awaitTrue("the next sentence to be ready", state = {
+                "Player: ${snapshot()}"
+            }) { snapshot().canSkipForward }
+            val before = position()
+            send(controller, LockScreenCommands.NEXT_SENTENCE)
+            awaitTrue("next sentence from the lock screen", state = {
+                "Player: ${snapshot()}"
+            }) { position() != before }
+            send(controller, LockScreenCommands.PREVIOUS_SENTENCE)
+            awaitTrue("previous sentence from the lock screen", state = { "Player: ${snapshot()}" }) {
+                position() == before
+            }
+            val bookmarks = JourneyDevice.logCount(LOCK_SCREEN_BOOKMARK)
+            send(controller, LockScreenCommands.BOOKMARK)
+            awaitLog(LOCK_SCREEN_BOOKMARK, bookmarks)
+            assertFalse("A lock-screen button must not start a paused book", snapshot().wantsToPlay)
+            JourneyDevice.onMain(requireNotNull(port)::play)
+            awaitReadingMovesOn("play after the lock screen's buttons")
+        } finally {
+            JourneyDevice.onMain { controller.release() }
+        }
+    }
+
+    private fun send(controller: MediaController, command: SessionCommand) {
+        var result: ListenableFuture<SessionResult>? = null
+        JourneyDevice.onMain { result = controller.sendCustomCommand(command, Bundle.EMPTY) }
+        val code = requireNotNull(result).get(UI_TIMEOUT_MS, TimeUnit.MILLISECONDS).resultCode
+        assertEquals("${command.customAction} answered $code", SessionResult.RESULT_SUCCESS, code)
+    }
+
     private fun aNewVoiceAppliesWhilePlaying() {
         val restarts = JourneyDevice.logCount(VOICE_RESTART)
         if (!chooseAnotherEnglishVoice()) return
@@ -364,5 +419,6 @@ class ReleaseJourneyTest {
         // The service's own words when it acts on a change (AudoraPlaybackService.followReadingChanges).
         const val VOICE_RESTART = "Reading voices changed; restarting the sentence"
         const val TEXT_REREAD = "Reading text settings changed; reading the open book again"
+        const val LOCK_SCREEN_BOOKMARK = "Lock screen bookmark added"
     }
 }

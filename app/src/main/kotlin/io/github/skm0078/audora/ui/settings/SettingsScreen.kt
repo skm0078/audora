@@ -309,6 +309,8 @@ private fun ListeningGroup(
             subtitle = stringResource(R.string.settings_skip_citations_short),
             help = stringResource(R.string.settings_skip_citations_body),
         )
+        OptionDivider()
+        ResumeOnReconnectItem()
     }
 }
 

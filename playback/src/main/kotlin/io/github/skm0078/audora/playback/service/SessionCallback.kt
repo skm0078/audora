@@ -31,6 +31,7 @@ import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.async.launchedValue
 import io.github.skm0078.audora.playback.browse.LibraryBrowser
+import io.github.skm0078.audora.playback.contract.LockScreenCommands
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
@@ -50,7 +51,8 @@ import kotlinx.coroutines.withContext
  * Only controllers from Audora itself get the custom commands; the system UI, Bluetooth and other apps get
  * the standard transport controls (play, pause, skip), which is all a lock screen or headset needs. The lock screen's
  * slider is locked (item 79), and a headset's play/pause button gets [buttons]' presses (item 20). Media browsers
- * (Android Auto, item 34) browse and search the library through [library] and play what the driver picks.
+ * (Android Auto, item 34) browse and search the library through [library] and play what the driver picks. The
+ * notification's and lock screen's own buttons (CF-1) reach [lockScreen] through Audora's notification controller.
  */
 @OptIn(UnstableApi::class)
 @Suppress(
@@ -66,6 +68,7 @@ class SessionCallback(
     private val resumption: () -> PlaybackResumption?,
     private val buttons: MediaButtons? = null,
     private val library: LibraryBrowser? = null,
+    private val lockScreen: LockScreenActions? = null,
 ) : MediaLibrarySession.Callback {
     override fun onConnect(
         session: MediaSession,
@@ -97,6 +100,7 @@ class SessionCallback(
                     .add(PlaybackContract.STUDY)
                     .add(PlaybackContract.SET_FOCUS_SOUND)
                     .add(PlaybackContract.SKIP_PARAGRAPH)
+                    .apply { LockScreenCommands.ALL.forEach { add(it) } }
                     .build(),
             )
         }
@@ -121,7 +125,7 @@ class SessionCallback(
         PlaybackContract.ACTION_STUDY -> study(args)
         PlaybackContract.ACTION_SET_FOCUS_SOUND -> Futures.immediateFuture(setFocusSound(args))
         PlaybackContract.ACTION_SKIP_PARAGRAPH -> later { skipParagraph(args) }
-        else -> Futures.immediateFuture(SessionResult(SessionError.ERROR_NOT_SUPPORTED))
+        else -> Futures.immediateFuture(lockScreen(customCommand.customAction))
     }
 
     override fun onMediaButtonEvent(
@@ -397,6 +401,16 @@ class SessionCallback(
         stores.focusSound.set(FocusSoundOptions.decode(line))
         bookSession().onListeningOptionsChanged()
         return SessionResult(SessionResult.RESULT_SUCCESS)
+    }
+
+    /** The notification's and lock screen's buttons (CF-1); any other action is not one of Audora's. */
+    private fun lockScreen(action: String): SessionResult {
+        val actions = lockScreen?.takeIf { action in LockScreenCommands.ACTIONS }
+        return when {
+            actions == null -> SessionResult(SessionError.ERROR_NOT_SUPPORTED)
+            actions.run(action) -> SessionResult(SessionResult.RESULT_SUCCESS)
+            else -> badRequest()
+        }
     }
 
     private fun badRequest(): SessionResult = failure(PlaybackErrorCode.BAD_REQUEST)

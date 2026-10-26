@@ -1,0 +1,3 @@
+en: The home-screen widget shows how much listening is left in your book.
+hi: होम-स्क्रीन विजेट दिखाता है कि आपकी किताब में कितना सुनना बाकी है।
+bn: হোম-স্ক্রিন উইজেট দেখায় আপনার বইয়ে আর কতটা শোনা বাকি।

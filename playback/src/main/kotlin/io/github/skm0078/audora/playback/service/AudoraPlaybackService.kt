@@ -149,6 +149,7 @@ class AudoraPlaybackService : MediaLibraryService() {
     private lateinit var player: ExoPlayer
     private lateinit var speed: LivePlaybackSpeed
     private lateinit var bookSession: BookSession
+    private lateinit var controls: QuickControls
     private var session: MediaLibrarySession? = null
 
     // Where the voice speaks in each clip, for the reader's word highlight (plan item 14).
@@ -267,6 +268,8 @@ class AudoraPlaybackService : MediaLibraryService() {
     }
 
     private fun mediaSession(stores: SessionStores): MediaLibrarySession {
+        // The lock screen's buttons, headphones coming back and the widget's time listened (CF-1, CF-4, CF-7).
+        controls = QuickControls(this, player, { bookSession }, bookmarks, scope, PIPELINE_VERSION, config.sleep.buzzMs)
         // Android Auto and other media browsers (plan item 34): the library, Up next and each book's chapters.
         val chapters = OutlineChapters(this)
         val browse = BrowseSources(
@@ -287,23 +290,21 @@ class AudoraPlaybackService : MediaLibraryService() {
             LibraryBrowser(BrowseLookup(BrowseTree(ResourceBrowseTexts(this)), browse), scope) {
                 PlaybackResumption.playlistOf(player)
             },
+            controls.lockScreen,
         )
+        // The notification's and lock screen's buttons: a sentence back, play/pause, a sentence on, bookmark (CF-1).
         return MediaLibrarySession.Builder(this, player, callback)
+            .setMediaButtonPreferences(controls.initialButtons)
             .apply { sessionActivity()?.let { setSessionActivity(it) } }
             .build()
+            .also(controls::attach)
     }
 
     /** A headset's play/pause button (plan item 20); a double press bookmarks and buzzes to confirm. */
     private fun mediaButtons() = MediaButtons(
         player = { player },
         bookSession = { bookSession },
-        bookmarks = HeadsetBookmarks(
-            store = bookmarks,
-            scope = scope,
-            pipelineVersion = PIPELINE_VERSION,
-            clock = System::currentTimeMillis,
-            onSaved = { buzz(config.sleep.buzzMs) },
-        ),
+        bookmarks = controls.headsetBookmarks,
     )
 
     /** Up next (plan item 25): a queued chapter starts on its page, a queued book where it was left. */
@@ -409,6 +410,7 @@ class AudoraPlaybackService : MediaLibraryService() {
             return
         }
         AudoraLog.i(TAG, "Service destroyed, book=${bookSession.bookId?.logLabel}")
+        controls.release()
         bookSession.release()
         speed.release()
         session?.release()

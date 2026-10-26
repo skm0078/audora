@@ -22,7 +22,8 @@ Dependencies: app → playback → (speech, pdf) → core. Never the reverse.
 
 ## Invariants
 - The player never reaches ENDED while text remains (TtsDataSource blocks instead).
-- Playback starts only from a user action. No boot auto-start.
+- Playback starts only from a user action. No boot auto-start. The opt-in "Resume when headphones reconnect" counts
+  (the listener turned it on and put the headphones back; ADR 2026-10-26-player-and-lockscreen-controls).
 - Resume uses ResumeAnchor (page + charStart + fingerprint + pipelineVersion). Bump PIPELINE_VERSION when :pdf output can change.
 - Studio audio is kept across app updates, keyed by STUDIO_AUDIO_VERSION (playback/studio/StudioAudioVersion.kt). Bump it when a change can make the same sentence, voice and settings sound different (engine or model upgrade, speech text shaping, clip format); ADR-064.
 - Never declare SMS, accessibility, or notification-listener permissions.

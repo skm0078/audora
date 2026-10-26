@@ -1,0 +1,3 @@
+en: Bookmark the sentence you are hearing with one tap on the player, then add a note or undo it.
+hi: प्लेयर पर एक टैप से सुनाई दे रहे वाक्य को बुकमार्क करें, फिर नोट जोड़ें या वापस लें।
+bn: প্লেয়ারে এক ট্যাপে শোনা বাক্যটি বুকমার্ক করুন, তারপর নোট যোগ করুন বা ফিরিয়ে নিন।
