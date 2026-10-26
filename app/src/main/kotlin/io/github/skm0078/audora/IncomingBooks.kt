@@ -74,14 +74,16 @@ internal fun Context.addPicked(uri: Uri, photoBooks: PhotoBooks, add: (String) -
 internal suspend fun Context.takeComic(photoBooks: PhotoBooks, documentUri: String): Boolean {
     val uri = Uri.parse(documentUri)
     if (!withContext(Dispatchers.IO) { isComicArchive(uri) }) return false
-    if (photoBooks.making) {
-        Toast.makeText(this, R.string.photo_busy, Toast.LENGTH_LONG).show()
+    val notice = if (photoBooks.making) {
+        getString(R.string.photo_busy)
     } else {
         val name = withContext(Dispatchers.IO) { contentResolver.displayName(uri) }?.substringBeforeLast('.')
         val title = name?.takeIf { it.isNotBlank() } ?: getString(R.string.comic_book_title)
         photoBooks.startBookFromComic(uri, title)
-        Toast.makeText(this, getString(R.string.comic_making, title), Toast.LENGTH_LONG).show()
+        getString(R.string.comic_making, title)
     }
+    // The library calls this from its own scope, which may resume off the main thread; a toast needs a Looper.
+    withContext(Dispatchers.Main) { Toast.makeText(this@takeComic, notice, Toast.LENGTH_LONG).show() }
     return true
 }
 
