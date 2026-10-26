@@ -113,6 +113,7 @@ class BookRendering private constructor(
                     moodOf = quotes::moodOf,
                     characters = characters,
                     intent = { intent.current },
+                    language = { run.language },
                 ),
                 timings = timings,
             )
@@ -120,11 +121,11 @@ class BookRendering private constructor(
             // a voice picked in Settings meanwhile never changes the audio under the key. A language on its default
             // binds it on its first sentence, so an English-only book never binds the phone's TTS.
             val chosen = voices.fixChoices()
-            val key = StudioKey(id, StudioMode.signature(context, style, chosen::get, fixer.signature))
+            val key = StudioKey(id, StudioMode.signature(context, style, chosen::get, fixer.signature, run.language))
             // English's default (the bundled voice) binds no phone TTS: know it now, as the pin did, so the run's
             // first sentence already has its character voices.
             if (chosen[Lang.EN] == null) voices.voiceFor(Lang.EN)
-            val reading = UnitReading(style.modes, chapterPages = chapterPages)
+            val reading = UnitReading(style.modes, chapterPages = chapterPages, language = run.language)
             return BookRendering(key, style, live, reading, quotes, intent, timings)
         }
     }
@@ -140,10 +141,13 @@ class BookRendering private constructor(
  *   in the dialogue voice.
  * @property acted read Hindi with the acted voice when it is installed (ADR-059): studio mode's run only, the one
  *   run slow enough for it. Others key their lookups the same way and read Hindi with the reading voice.
+ * @property language the book's language tag as the library holds it: a language none of the three is read by the
+ *   phone's voice, as in playback (ADR 2026-10-26), and names the studio key.
  */
 data class RunSettings(
     val normalRate: Boolean = false,
     val global: SpeechStyle? = null,
     val characters: CharacterVoices? = null,
     val acted: Boolean = false,
+    val language: String? = null,
 )

@@ -45,6 +45,7 @@ object BookRenderers {
             moodOf = book.moodOf,
             characters = book.characters,
             intent = book.intent,
+            language = book.language,
         ),
         timings = timings,
         replay = replay,

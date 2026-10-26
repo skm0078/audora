@@ -153,7 +153,7 @@ class ClipService : Service() {
     private fun clipOf(book: OpenedBook, start: UnitKey, passage: ClipPassage?) {
         val text = book.text
         val factory = BookRendering.Factory(this, bookSettings, pronunciations)
-        BookVoice(this, factory, book.book.id, text, RunSettings()).use { voice ->
+        BookVoice(this, factory, book.book.id, text, RunSettings(language = book.book.language)).use { voice ->
             val rendering = voice.rendering
             val renderer = StudioSentenceRenderer(rendering.live, StudioMode.store(this)) { rendering.key }
             val made = ClipMaker(renderer).make(

@@ -225,4 +225,48 @@ class SystemSpeechEngineTest {
         assertTrue(engine.render("Hi.", systemVoice("en-local")).errorOrNull() is SpeechError.EngineUnavailable)
         assertFalse(engine.voices() is Outcome.Success)
     }
+
+    @Test
+    fun `best voice for a phone language is offline, of its primary language, of the best quality`() = runTest {
+        client.voiceList = listOf(
+            voice("fr-network", "fr", network = true),
+            voice("fr-low", "fr").copy(quality = 200),
+            voice("fr-high", "fr").copy(quality = 400),
+            voice("he-local", "iw"),
+        )
+
+        assertEquals(systemVoice("fr-high"), engine.bestVoiceFor("fr-CA").getOrNull())
+        // Android may still name Hebrew by its old code.
+        assertEquals(systemVoice("he-local"), engine.bestVoiceFor("he").getOrNull())
+    }
+
+    @Test
+    fun `a phone language with only a network voice or none says why`() = runTest {
+        client.voiceList =
+            listOf(voice("de-network", "de", network = true), voice("ta-missing", "ta", installed = false))
+
+        val network = engine.bestVoiceFor("de").errorOrNull() as SpeechError.VoiceUnavailable
+        val missing = engine.bestVoiceFor("ta").errorOrNull() as SpeechError.VoiceUnavailable
+
+        assertEquals(Reason.NETWORK_ONLY, network.reason)
+        assertEquals(Reason.NOT_INSTALLED, missing.reason)
+        assertEquals(
+            Reason.NOT_INSTALLED,
+            (engine.bestVoiceFor("sw").errorOrNull() as SpeechError.VoiceUnavailable).reason,
+        )
+    }
+
+    @Test
+    fun `offline languages are the usable voices' primary languages, each once`() = runTest {
+        client.voiceList = listOf(
+            voice("fr-FR", "fr"),
+            voice("fr-CA", "fr"),
+            voice("en-local", "en"),
+            voice("de-network", "de", network = true),
+            voice("ta-missing", "ta", installed = false),
+            voice("he-local", "iw"),
+        )
+
+        assertEquals(listOf("en", "fr", "he"), engine.offlineLanguages().getOrNull())
+    }
 }

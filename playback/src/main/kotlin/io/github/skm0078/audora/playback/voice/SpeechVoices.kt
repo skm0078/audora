@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.playback.voice
 
 import android.content.Context
+import io.github.skm0078.audora.core.config.PhoneLanguageConfig
 import io.github.skm0078.audora.core.config.SpeechConfig
 import io.github.skm0078.audora.core.config.VoiceShapingConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
@@ -41,9 +42,15 @@ import java.util.concurrent.ConcurrentHashMap
  * default (Build Spec §3): English = the bundled neural voice; Hindi and Bengali = the phone's best offline
  * voice for the language. Thread-safe: the render worker resolves voices while the main thread may change them.
  */
-class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
+@Suppress("TooManyFunctions") // The VoiceSource contract plus the queries the pickers and render-ahead make.
+class SpeechVoices(
+    private val engines: VoiceEngines,
+    phoneConfig: PhoneLanguageConfig = PhoneLanguageConfig(),
+    clock: () -> Long = System::currentTimeMillis,
+) : VoiceSource {
     private val defaults = ConcurrentHashMap<Lang, VoiceId>()
     private val fixedChoices = FixedChoices()
+    private val phoneVoices = PhoneVoices({ engines.system().bestVoiceFor(it) }, phoneConfig, clock)
 
     /** The open book's own voice for a language (plan item 4), ahead of every other choice; null = none. */
     @Volatile
@@ -99,6 +106,9 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
         }
     }
 
+    /** The phone's best offline voice for [language] (ADR 2026-10-26); suspends while the phone's TTS binds. */
+    override suspend fun phoneVoiceFor(language: String): Outcome<VoiceId, SpeechError> = phoneVoices.voiceFor(language)
+
     override fun engine(id: EngineId): Outcome<SpeechEngine, SpeechError> = when (id) {
         EngineId.SHERPA -> engines.bundled().map { it.engine }
         EngineId.SYSTEM -> Outcome.Success(engines.system())
@@ -113,6 +123,45 @@ class SpeechVoices(private val engines: VoiceEngines) : VoiceSource {
     private companion object {
         const val TAG = "Playback.Voices"
     }
+}
+
+/**
+ * The phone's best offline voice for each phone language, as [find] gives it, found once and kept, as the default
+ * voices are. A language with no voice answers from memory until [PhoneLanguageConfig.missingVoiceRetryMs] has
+ * passed, then asks the phone again: a voice pack downloaded meanwhile is picked up without a restart.
+ */
+internal class PhoneVoices(
+    private val find: suspend (String) -> Outcome<VoiceId, SpeechError>,
+    private val config: PhoneLanguageConfig,
+    private val clock: () -> Long,
+) {
+    private val found = ConcurrentHashMap<String, VoiceId>()
+    private val missing = ConcurrentHashMap<String, Missing>()
+
+    /** Why a phone language had no voice, and when that was found. */
+    private class Missing(val error: SpeechError, val atMs: Long)
+
+    suspend fun voiceFor(language: String): Outcome<VoiceId, SpeechError> {
+        val now = clock()
+        val known = found[language]
+        val recent = missing[language]?.takeIf { now - it.atMs < config.missingVoiceRetryMs }
+        return when {
+            known != null -> Outcome.Success(known)
+            recent != null -> Outcome.Failure(recent.error)
+            else -> ask(language, now)
+        }
+    }
+
+    private suspend fun ask(language: String, now: Long): Outcome<VoiceId, SpeechError> =
+        when (val resolved = find(language)) {
+            is Outcome.Success -> {
+                missing.remove(language)
+                // Two calls racing answer alike: the first voice stored wins.
+                Outcome.Success(found.putIfAbsent(language, resolved.value) ?: resolved.value)
+            }
+
+            is Outcome.Failure -> resolved.also { missing[language] = Missing(it.error, now) }
+        }
 }
 
 /**

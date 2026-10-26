@@ -121,6 +121,23 @@ object SpeechEngines {
     fun system(context: Context, config: SpeechConfig = SpeechConfig()): SystemSpeechEngine =
         SystemSpeechEngine(AndroidSystemTtsClient(context, File(context.cacheDir, SYSTEM_WORK_DIR), config))
 
+    /**
+     * The languages the phone's own engine reads offline right now ([SystemSpeechEngine.offlineLanguages], ADR
+     * 2026-10-26), for Edit details: binds the phone's TTS for this call only, then lets it go. Call on the main
+     * thread or any other; it suspends while the engine binds.
+     */
+    suspend fun phoneLanguages(
+        context: Context,
+        config: SpeechConfig = SpeechConfig(),
+    ): Outcome<List<String>, SpeechError> {
+        val engine = system(context, config)
+        return try {
+            engine.offlineLanguages()
+        } finally {
+            engine.release()
+        }
+    }
+
     /** The bundled voice's `voice.properties`, written by the build (ADR-014). */
     internal fun readBundledSpec(assets: AssetManager): Outcome<SherpaVoiceSpec, String> =
         readBundledManifest(assets).flatMap { SherpaVoiceManifest.parse(it) }

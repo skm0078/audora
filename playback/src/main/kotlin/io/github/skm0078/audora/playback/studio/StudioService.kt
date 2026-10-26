@@ -183,7 +183,13 @@ class StudioService : Service() {
         val title = book.book.title.takeUnless { it == BookTitles.UNTITLED } ?: getString(R.string.studio_untitled)
         try {
             val factory = BookRendering.Factory(this, bookSettings, pronunciations)
-            BookVoice(this, factory, id, book.text, RunSettings(acted = true)).use { voice ->
+            BookVoice(
+                this,
+                factory,
+                id,
+                book.text,
+                RunSettings(acted = true, language = book.book.language),
+            ).use { voice ->
                 render(id, title, book.text, voice, wakeLock)
             }
         } catch (interrupted: InterruptedException) {

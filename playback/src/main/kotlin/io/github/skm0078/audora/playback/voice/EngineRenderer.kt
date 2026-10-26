@@ -18,6 +18,7 @@ import io.github.skm0078.audora.core.result.map
 import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.queue.SentenceRenderer
 import io.github.skm0078.audora.playback.queue.UnitKey
+import io.github.skm0078.audora.playback.reading.SentenceLanguage
 import io.github.skm0078.audora.playback.reading.Speech
 import io.github.skm0078.audora.playback.reading.UnitReading
 import io.github.skm0078.audora.playback.session.SentenceTimings
@@ -105,7 +106,8 @@ class EngineRenderer(
         val now = replay?.styleFor(UnitKey.of(unit)) ?: style()
         val delivery = deliveryOf(unit, now)
         val pauseAfterMs = (styleConfig.silenceAfterMs(unit.pauseAfterMs, now) * delivery.pauseScale).roundToInt()
-        return when (val speech = UnitReading(now.modes, reading.speakability, reading.chapterPages()).speechOf(unit)) {
+        val reads = UnitReading(now.modes, reading.speakability, reading.chapterPages(), language = reading.language())
+        return when (val speech = reads.speechOf(unit)) {
             Speech.Cue -> {
                 AudoraLog.d(TAG, "${UnitKey.of(unit)}: unreadable, cue instead")
                 val cue = reading.earcon.cue()
@@ -186,6 +188,7 @@ class EngineRenderer(
             speaker,
             delivery.feeling,
             delivery.pitch,
+            bookLanguage = reading.sentences.of(unit, reading.language()),
         )
         return runBlocking { castSpeech.render(text, unit.lang, request, cast, quotePauseMs, level) }.map { routed ->
             speed?.onRendered(text.trim().length, routed, System.nanoTime() - started, rate * stretch)
@@ -229,6 +232,8 @@ class EngineRenderer(
  * @property smartStretch smart speed's uneven stretch (plan item 10), used when the style's shaping turns it on.
  * @property intent what the open book is (ADR-056), read on the render thread for each sentence.
  * @property planner each sentence's delivery from that intent, used when the style's shaping turns it on.
+ * @property language the open book's language tag, read on the render thread for each sentence: a language none of
+ *   the three is read by the phone's voice, sentence by sentence as [sentences] decides (ADR 2026-10-26).
  */
 @Suppress("LongParameterList") // All optional: each caller sets the few it has.
 class ReadingSetup(
@@ -246,6 +251,8 @@ class ReadingSetup(
     val smartStretch: SmartStretch = SmartStretch(),
     val intent: () -> ContentIntent = { ContentIntent.GENERAL },
     val planner: DeliveryPlanner = DeliveryPlanner(),
+    val language: () -> String? = { null },
+    val sentences: SentenceLanguage = SentenceLanguage.DEFAULT,
 ) {
     /** [text] with the model's pauses when it is a run-on on a scanned page, else [text]. */
     fun punctuated(text: String, unit: ReadingUnit): String = when {
