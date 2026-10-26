@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReadingTextStyles.kt
 // Purpose: The type for book text (text view, Focus view, the player's sentence): the phone's serif, airy lines,
-//          or the listener's own font, size and spacing in the text view.
+//          or the listener's own font (CF-5 adds two for dyslexic readers), size and spacing in the text view.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -46,7 +46,7 @@ internal object ReadingTextStyles {
         val base = if (look.focus) focus() else body()
         val lineHeight = if (look.focus) LARGE_LINE_HEIGHT else BODY_LINE_HEIGHT
         return base.copy(
-            fontFamily = if (look.font == ReadingFont.SANS) FontFamily.SansSerif else FontFamily.Serif,
+            fontFamily = ReadingFonts.familyOf(look.font),
             fontSize = base.fontSize * look.textScale,
             lineHeight = (lineHeight * look.spacing.factor).em,
         )

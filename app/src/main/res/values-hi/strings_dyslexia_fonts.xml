@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The text view's fonts for dyslexic readers, and their credits on Voices & licences (CF-5). -->
+<resources>
+    <string name="text_look_font_atkinson">आसान अक्षर (Atkinson Hyperlegible)</string>
+    <string name="text_look_font_opendyslexic">डिस्लेक्सिया के अनुकूल (OpenDyslexic)</string>
+    <string name="text_look_font_help">आसान अक्षर एक जैसे दिखने वाले अक्षरों (I, l, 1 और b, d, p, q) को साफ़ अलग दिखाता है। डिस्लेक्सिया के अनुकूल फ़ॉन्ट में अक्षरों का निचला हिस्सा भारी होता है, ताकि वे उलटे न लगें। दोनों सिर्फ़ अंग्रेज़ी पाठ बदलते हैं; हिंदी और बांग्ला अपने सामान्य फ़ॉन्ट में रहती हैं।</string>
+    <string name="licences_fonts">फ़ॉन्ट</string>
+    <string name="licences_ofl">SIL Open Font License 1.1</string>
+</resources>

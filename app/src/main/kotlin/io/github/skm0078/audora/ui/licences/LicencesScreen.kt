@@ -112,6 +112,7 @@ private fun LicencesList(voices: List<VoiceLicence>, openLink: (String) -> Unit,
             )
             HorizontalDivider()
         }
+        fontLicenceItems({ Caption(R.string.licences_fonts) }, openLink)
     }
 }
 
@@ -179,7 +180,7 @@ private fun Caption(@StringRes text: Int, header: Boolean = true) {
 }
 
 @Composable
-private fun LinkButton(@StringRes label: Int, onClick: () -> Unit) {
+internal fun LinkButton(@StringRes label: Int, onClick: () -> Unit) {
     TextButton(onClick = onClick) { Text(stringResource(label)) }
 }
 
