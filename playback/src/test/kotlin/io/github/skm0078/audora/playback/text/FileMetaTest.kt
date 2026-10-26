@@ -92,4 +92,27 @@ class FileMetaTest {
         assertEquals("Short Story", details.title)
         assertEquals("Mira Nair", details.author)
     }
+
+    @Test
+    fun `an FB2's title-info gives its title, authors and language`() {
+        val head = """<?xml version="1.0" encoding="utf-8"?><FictionBook><description><title-info>
+            <author><first-name>Leo</first-name><last-name>Tolstoy</last-name></author>
+            <author><nickname>Translator</nickname></author>
+            <book-title>Childhood</book-title><lang>ru</lang></title-info></description><body>""".toByteArray()
+
+        assertEquals(
+            FileDetails(DocumentFormat.FB2, title = "Childhood", author = "Leo Tolstoy, Translator", language = "ru"),
+            FileMeta.fb2(head),
+        )
+    }
+
+    @Test
+    fun `a Kindle book's EXTH gives its title, author and language`() {
+        val content = MobiFile.Content("A Mobi Book", "Ann Writer", "en", isHtml = true, markup = "")
+
+        assertEquals(
+            FileDetails(DocumentFormat.MOBI, title = "A Mobi Book", author = "Ann Writer", language = "en"),
+            FileMeta.mobi(content),
+        )
+    }
 }

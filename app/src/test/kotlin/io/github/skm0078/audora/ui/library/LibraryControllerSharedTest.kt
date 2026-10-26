@@ -1,6 +1,7 @@
 // File: app/src/test/kotlin/io/github/skm0078/audora/ui/library/LibraryControllerSharedTest.kt
 // Purpose: A PDF shared from another app is added and opened, through a copy when its grant cannot be kept, and is
-//          reported done only when the add finished: a screen closed mid-add (a rotation) leaves it to try again.
+//          reported done only when the add finished: a screen closed mid-add (a rotation) leaves it to try again. A
+//          comic archive goes to the comic hook instead of the library (ADR 2026-10-26-more-ebook-formats).
 
 package io.github.skm0078.audora.ui.library
 
@@ -30,6 +31,8 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -39,8 +42,11 @@ class LibraryControllerSharedTest {
     private val opened = mutableListOf<BookId>()
     private var doneCount = 0
 
+    private val store = MemoryBooks()
+    private val comicsTaken = mutableListOf<String>()
+
     private fun library(dispatcher: TestDispatcher) = Library(
-        store = MemoryBooks(),
+        store = store,
         documents = documents,
         fingerprinter = BookFingerprinter(),
         clock = { 1L },
@@ -94,6 +100,43 @@ class LibraryControllerSharedTest {
         assertEquals(0, doneCount)
         assertTrue(opened.isEmpty())
     }
+
+    @Test
+    fun `a shared comic goes to the comic hook, is not added, and is reported done`() =
+        runTest(UnconfinedTestDispatcher()) {
+            documents.put(COMIC, "Strip.cbz")
+            val controller = LibraryController(
+                library(UnconfinedTestDispatcher(testScheduler)),
+                backgroundScope,
+                comics = { comicsTaken.add(it) },
+            )
+
+            controller.addShared(COMIC, opened::add) { doneCount++ }
+
+            assertEquals(listOf(COMIC), comicsTaken)
+            assertEquals(1, doneCount)
+            assertTrue(opened.isEmpty())
+            assertNull(store.byDocumentUri(COMIC))
+        }
+
+    @Test
+    fun `a picked comic goes to the comic hook and a picked PDF still to the library`() =
+        runTest(UnconfinedTestDispatcher()) {
+            documents.put(COMIC, "Strip.cbz")
+            documents.put(LENT, "Moby Dick.pdf")
+            val controller = LibraryController(
+                library(UnconfinedTestDispatcher(testScheduler)),
+                backgroundScope,
+                comics = { it == COMIC && comicsTaken.add(it) },
+            )
+
+            controller.add(COMIC)
+            controller.add(LENT)
+
+            assertEquals(listOf(COMIC), comicsTaken)
+            assertNull(store.byDocumentUri(COMIC))
+            assertNotNull(store.byDocumentUri(LENT))
+        }
 
     private class MemoryBooks : BookStore {
         private val books = MutableStateFlow<Map<BookId, Book>>(emptyMap())
@@ -159,6 +202,7 @@ class LibraryControllerSharedTest {
     private companion object {
         const val LENT = "content://chat/lent.pdf"
         const val COPY = "content://audora/copy.pdf"
+        const val COMIC = "content://files/strip.cbz"
         val PDF = "%PDF-1.7\n% moby\n".toByteArray(Charsets.US_ASCII)
     }
 }

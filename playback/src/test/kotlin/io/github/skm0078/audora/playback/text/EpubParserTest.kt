@@ -102,7 +102,7 @@ class EpubParserTest {
         val drm = """<encryption><EncryptedData><CipherData><CipherReference URI="OEBPS/text/ch2.xhtml"/>
             </CipherData></EncryptedData></encryption>"""
         val protected = EpubParser.parse(entries(mapOf("META-INF/encryption.xml" to drm)))
-        assertTrue((protected as Outcome.Failure).error is TextBookError.Unreadable)
+        assertTrue((protected as Outcome.Failure).error is TextBookError.Locked)
         val fonts = """<encryption><CipherReference URI="OEBPS/fonts/a.otf"/></encryption>"""
         assertTrue(EpubParser.parse(entries(mapOf("META-INF/encryption.xml" to fonts))) is Outcome.Success)
         val images =

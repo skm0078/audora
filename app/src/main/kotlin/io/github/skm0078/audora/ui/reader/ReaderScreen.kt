@@ -253,6 +253,7 @@ private fun Message(text: String, action: (@Composable () -> Unit)? = null) {
 private fun failureText(reason: ReaderFailure): Int = when (reason) {
     ReaderFailure.DAMAGED -> R.string.reader_damaged
     ReaderFailure.UNREADABLE -> R.string.reader_unreadable
+    ReaderFailure.LOCKED -> R.string.reader_drm_locked
     ReaderFailure.ENGINE_UNAVAILABLE -> R.string.reader_engine
 }
 

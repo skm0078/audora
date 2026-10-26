@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_ebooks.xml -->
+<!-- Purpose: Bengali copy of values/strings_ebooks.xml. -->
+<resources>
+    <string name="book_format_fb2">FB2</string>
+    <string name="book_format_mobi">Kindle (MOBI, AZW3)</string>
+    <string name="book_format_chm">হেল্প ফাইল (CHM)</string>
+    <string name="comic_book_title">কমিক</string>
+    <string name="comic_making">কমিক “%1$s” বই বানানো হচ্ছে; তৈরি হলেই খুলবে। কথার বুদবুদগুলো মোটামুটি ক্রমে পড়া হয়।</string>
+    <string name="comic_too_long">এই কমিকটি এখানে পড়ার জন্য খুব লম্বা: সর্বোচ্চ %1$d পাতা, বা ফাইলটি খুব বড়।</string>
+    <string name="comic_unreadable">ListenLock এই কমিক ফাইলটি পড়তে পারেনি। ফাইলটি নষ্ট হতে পারে, বা তাতে কোনো ছবি নেই।</string>
+    <string name="reader_drm_locked">যে দোকান বইটি বিক্রি করেছে সে এতে DRM তালা দিয়েছে, তাই ListenLock এটি পড়তে পারে না। DRM ছাড়া বই আগের মতোই পড়া যায়।</string>
+</resources>

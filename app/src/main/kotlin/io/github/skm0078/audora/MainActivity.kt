@@ -373,6 +373,7 @@ class MainActivity : ComponentActivity() {
             sharedCopies::copy,
             collections.observe(),
             collections.observeMembers(),
+            comics = { takeComic(photoBooks, it) },
         ).apply { start() }
     }
 

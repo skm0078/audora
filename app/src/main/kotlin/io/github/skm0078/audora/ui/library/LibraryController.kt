@@ -37,9 +37,12 @@ import kotlinx.coroutines.launch
  * @param anchors every book's resume anchor, for its progress and "Continue reading".
  * @param importShared copies a PDF another app only lends for a moment into a URI Audora can keep; null on failure.
  * @param collections the listener's collections, and [members] each book's: both read whole, once per change.
+ * @param comics takes a file that is not a book but becomes one, a comic archive made into a photo book that opens
+ *   when made (ADR 2026-10-26-more-ebook-formats), and says so to the listener; false for any other file.
  */
 // Add, locate, share, remove and their messages, plus the list they publish.
-@Suppress("TooManyFunctions")
+// Every parameter after the scope is an optional hook with a no-op default, so callers name only what they use.
+@Suppress("TooManyFunctions", "LongParameterList")
 class LibraryController(
     private val library: Library,
     private val scope: CoroutineScope,
@@ -47,6 +50,7 @@ class LibraryController(
     private val importShared: suspend (String) -> String? = { null },
     private val collections: Flow<List<BookCollection>> = flowOf(emptyList()),
     private val members: Flow<Map<BookId, Set<String>>> = flowOf(emptyMap()),
+    private val comics: suspend (String) -> Boolean = { false },
 ) {
     var listState: LibraryListState by mutableStateOf(LibraryListState.Loading)
         private set
@@ -145,6 +149,10 @@ class LibraryController(
      * add has finished, never when it was cancelled (the screen went away), so the caller can try again.
      */
     fun addShared(documentUri: String, open: (BookId) -> Unit, done: () -> Unit = {}) = runPick {
+        if (comics(documentUri)) {
+            done()
+            return@runPick
+        }
         val kept = library.add(documentUri)
         val added = if (kept.isCannotKeepAccess()) {
             importShared(documentUri)?.let { copy -> library.add(copy) } ?: kept
@@ -156,7 +164,9 @@ class LibraryController(
         (added as? Outcome.Success)?.let { open(it.value.book.id) }
     }
 
-    private suspend fun addNow(documentUri: String) = report(library.add(documentUri))
+    private suspend fun addNow(documentUri: String) {
+        if (!comics(documentUri)) report(library.add(documentUri))
+    }
 
     /**
      * [picked]: the user chose the file in the picker, so a duplicate offers to open the book (plan item 27). A shared

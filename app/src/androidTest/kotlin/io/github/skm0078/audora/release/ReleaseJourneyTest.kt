@@ -2,9 +2,10 @@
 // Purpose: The release blockers a machine can check, on the real app (MainActivity, the playback service, the
 //          bundled voice) on CI's emulator: first run, "Open with", play without the notification permission, the
 //          media controls a notification or lock screen sends, a new voice and a reading setting applying at once,
-//          Settings rows, pages and Back, Hide app content, the ListenLock name, and a scan read after the OCR
-//          download. One test on one fresh install, as one listener would use the app: AndroidJUnitRunner finishes
-//          every activity between tests, so the steps are named blocks inside it and the first broken one stops it.
+//          Settings rows, pages and Back, Hide app content, the ListenLock name, a scan read after the OCR
+//          download, and the e-book formats and comic archives of ADR 2026-10-26-more-ebook-formats. One test on one
+//          fresh install, as one listener would use the app: AndroidJUnitRunner finishes every activity between
+//          tests, so the steps are named blocks inside it and the first broken one stops it.
 
 package io.github.skm0078.audora.release
 
@@ -14,6 +15,7 @@ import android.util.Log
 import android.view.WindowManager
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasClickAction
@@ -74,6 +76,8 @@ class ReleaseJourneyTest {
             step("10 Privacy and Advanced open and go back", ::privacyAndAdvancedOpenAndGoBack)
             step("11 Hide app content blocks screenshots", ::hideAppContentBlocksScreenshots)
             step("12 a scan offers OCR and reads after the download", ::aScanOffersOcrAndReadsAfterTheDownload)
+            step("13 Open with reads FB2, Kindle and help-file books", ::openWithReadsMoreEbookFormats)
+            step("14 Open with makes a comic archive into a photo book", ::openWithMakesAComicIntoAPhotoBook)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -316,6 +320,54 @@ class ReleaseJourneyTest {
         waitForNode(hasText(text(R.string.reader_ocr_badge)), OCR_DOWNLOAD_TIMEOUT_MS)
     }
 
+    /**
+     * Each format is told from its bytes, added and opened as a text book (ADR 2026-10-26-more-ebook-formats): the
+     * reader shows the book's own first sentence. The library's mini player also has a Play button, so the reader's
+     * text, not its controls, is what is checked; TextBooks' log lines name a failed open.
+     */
+    private fun openWithReadsMoreEbookFormats() {
+        for ((asset, type, sentence) in MORE_FORMATS) {
+            backToTabs()
+            val uri = JourneyDevice.downloadedBook(asset)
+            val current = activity()
+            JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, type)) }
+            awaitTrue("$asset to show \"$sentence\" in the reader", OPEN_TIMEOUT_MS, state = ::textBookLog) {
+                rule.onAllNodes(hasText(sentence, substring = true)).fetchSemanticsNodes().isNotEmpty()
+            }
+        }
+    }
+
+    private fun textBookLog(): String =
+        "Opened: ${JourneyDevice.logCount(TEXT_BOOK_OPENED)}, not opened: ${JourneyDevice.logCount(TEXT_BOOK_FAILED)}"
+
+    /**
+     * A comic archive is not added as a book: its pages become a photo book, added to the library, which opens in the
+     * reader by itself. Its pages are blank pictures; OCR reading a picture page is step 12's. The library's work runs
+     * in the screen's scope, which the Compose test clock drives, so these waits go through [awaitSynced].
+     */
+    private fun openWithMakesAComicIntoAPhotoBook() {
+        backToTabs()
+        val added = JourneyDevice.logCount(PHOTO_BOOK_ADDED)
+        val uri = JourneyDevice.downloadedBook(COMIC)
+        val current = activity()
+        JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, COMIC_TYPE)) }
+        awaitSynced("the comic to be added as a photo book", OPEN_TIMEOUT_MS) {
+            JourneyDevice.logCount(PHOTO_BOOK_ADDED) > added
+        }
+        awaitSynced("the comic to open in the reader", OPEN_TIMEOUT_MS) {
+            rule.onAllNodes(hasText(COMIC_TITLE)).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    /** Waits on the Compose test clock (frames and effects run meanwhile); a timeout lists the app's last log lines. */
+    private fun awaitSynced(what: String, timeoutMs: Long, condition: () -> Boolean) {
+        try {
+            rule.waitUntil(timeoutMs, condition)
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Timed out waiting for: $what. Last log lines: ${JourneyDevice.logTail(LOG_TAIL)}", e)
+        }
+    }
+
     private fun pause() {
         JourneyDevice.onMain(requireNotNull(port)::pause)
         awaitTrue("pause", state = { "Player: ${snapshot()}" }) { !snapshot().wantsToPlay }
@@ -351,6 +403,27 @@ class ReleaseJourneyTest {
         const val LOG_TAG = "ReleaseJourney"
         const val BOOK = "en-udhr-noto.pdf"
         const val SCAN = "en-udhr-noto-scan200bad-p1.pdf"
+
+        // assets/ebooks, written by scripts/fixtures/make_ebook_fixtures.py, with the type a Files app sends and
+        // a sentence from the book's first page.
+        val MORE_FORMATS = listOf(
+            Triple("book.fb2", "application/x-fictionbook+xml", "The first chapter of a small FictionBook."),
+            Triple("kf8.azw3", "application/vnd.amazon.mobi8-ebook", "The first file"),
+            Triple("help.chm", "application/vnd.ms-htmlhelp", "Press the green button to begin."),
+        )
+
+        // TextBooks' own words when a text book opens, or does not (shown when a step times out).
+        const val TEXT_BOOK_OPENED = "Text book opened"
+        const val TEXT_BOOK_FAILED = "Text book not opened"
+        const val COMIC = "comic.cbz"
+        const val COMIC_TYPE = "application/vnd.comicbook+zip"
+
+        // The photo book is named after the file; the reader's top bar shows it.
+        const val COMIC_TITLE = "comic"
+
+        // PhotoBooks' own words once the photo book is in the library.
+        const val PHOTO_BOOK_ADDED = "Photo book added"
+        const val LOG_TAIL = 30
         val firstRunSteps = FirstRunStep.entries.size
         const val MAX_BACKS = 4
         const val POLL_MS = 200L

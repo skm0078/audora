@@ -1,6 +1,7 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/text/FileMeta.kt
 // Purpose: Pure readers of a file's own details (ADR-068): EPUB package, Office core properties, OpenDocument meta,
-//          a web page's head and an RTF file's info group. Testable on the JVM with byte arrays.
+//          a web page's head, an RTF file's info group, an FB2's title-info and a Kindle book's EXTH. Testable on the
+//          JVM with byte arrays.
 
 package io.github.skm0078.audora.playback.text
 
@@ -63,6 +64,16 @@ object FileMeta {
             author = RTF_AUTHOR.find(source)?.groupValues?.get(1)?.trim()?.takeIf { it.isNotEmpty() },
         )
     }
+
+    /** An FB2's `title-info`: title, authors and language, from the start of the file (the description comes first). */
+    fun fb2(head: ByteArray): FileDetails {
+        val info = Fb2Info.of(MarkupScanner.scan(EpubParser.decode(head)))
+        return FileDetails(DocumentFormat.FB2, title = info.title, author = info.author, language = info.language)
+    }
+
+    /** A Kindle or Mobipocket book's EXTH title, author and language, from its first record ([MobiFile]). */
+    fun mobi(content: MobiFile.Content): FileDetails =
+        FileDetails(DocumentFormat.MOBI, title = content.title, author = content.author, language = content.language)
 
     /** `{\author Name}`: plain text only; an author written with escapes is left to the listener. */
     private val RTF_AUTHOR = Regex("""\{\\author\s+([^{}\\]+)\}""")
