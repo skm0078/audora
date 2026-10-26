@@ -28,12 +28,16 @@ data class PaceTiming(val sentenceGapMs: Int, val pauseScale: Float) {
  * player time-stretches the rest (Sonic, in Media3), because a model pushed further starts to swallow syllables.
  * Slower than normal is always the model's own: a stretched voice sounds smeared. With smart speed on
  * ([VoiceShaping.smartSpeed], ADR-049) the rest above the cap is the renderer's uneven stretch of the voice instead
- * ([voiceStretch]), and the player stays at 1.0 ([playerSpeed] of a style).
+ * ([voiceStretch]), and the player stays at 1.0 ([playerSpeed] of a style). Above [smartAlwaysAbove] smart speed
+ * is used whatever the switch says (CF-6): the player's even stretch swallows consonants that far past the cap.
  *
  * @property minRate slowest rate offered. Neural voices stay clear down to about half speed.
- * @property maxRate fastest rate offered.
+ * @property maxRate fastest rate offered: 4x, for listeners used to fast speech (CF-6).
  * @property maxModelRate fastest rate asked of the voice model; a starting point from published listening tests,
  *   to be tuned per voice by ear on the phone.
+ * @property smartAlwaysAbove past this rate the voice is always sped up by smart speed, not the player. At 3x the
+ *   even stretch still loses nothing; past it a speech recogniser missed about 1 word in 6 with either, and fewer
+ *   consonants with smart speed.
  * @property rateStep the slider's step; a saved rate is snapped to it.
  * @property paces the silences of each pace at normal speed; tune by ear on the phone.
  * @property clausePausesMs the pause at each strong mark inside a sentence at normal speed, before the pace's
@@ -48,8 +52,9 @@ data class PaceTiming(val sentenceGapMs: Int, val pauseScale: Float) {
  */
 data class SpeechStyleConfig(
     val minRate: Float = 0.5f,
-    val maxRate: Float = 3f,
+    val maxRate: Float = 4f,
     val maxModelRate: Float = 1.5f,
+    val smartAlwaysAbove: Float = 3f,
     val rateStep: Float = 0.05f,
     val paces: Map<Pace, PaceTiming> = DEFAULT_PACES,
     val clausePausesMs: Map<ClauseMark, Int> = DEFAULT_CLAUSE_PAUSES,
@@ -63,6 +68,7 @@ data class SpeechStyleConfig(
         require(minRate > 0f && maxRate > minRate) { "rates must satisfy 0 < minRate < maxRate" }
         require(SpeechStyle.NORMAL_RATE in minRate..maxRate) { "the normal rate must be in range" }
         require(maxModelRate in SpeechStyle.NORMAL_RATE..maxRate) { "maxModelRate must be in 1..maxRate" }
+        require(smartAlwaysAbove >= maxModelRate) { "smartAlwaysAbove must be at or above maxModelRate" }
         require(rateStep > 0f) { "rateStep must be > 0, was $rateStep" }
         require(paces.keys == Pace.entries.toSet()) { "every pace needs its timing" }
         require(clausePausesMs.keys == ClauseMark.entries.toSet()) { "every clause mark needs its pause" }
@@ -98,19 +104,20 @@ data class SpeechStyleConfig(
      * The player's time-stretch for [style]: 1.0 until the model's cap, the rest above it; or 1.0 when smart speed
      * stretches the voice instead. With [voiceStretch], exactly one of the two carries the speed past the model's cap.
      */
-    fun playerSpeed(style: SpeechStyle): Float = if (style.shaping.smartSpeed) 1f else pastModel(style.rate)
+    fun playerSpeed(style: SpeechStyle): Float = if (smartStretches(style)) 1f else pastModel(style.rate)
 
-    /** How much faster than the model the renderer makes the voice for [style]: 1.0 unless smart speed is on. */
-    fun voiceStretch(style: SpeechStyle): Float = if (style.shaping.smartSpeed) pastModel(style.rate) else 1f
+    /** How much faster than the model the renderer makes the voice for [style]: 1.0 unless smart speed acts. */
+    fun voiceStretch(style: SpeechStyle): Float = if (smartStretches(style)) pastModel(style.rate) else 1f
 
     /**
-     * [style] as it is heard: smart speed changes nothing at or below the model's cap (the voice is not stretched
-     * there), so it counts as off, and turning it on or off there restarts nothing.
+     * [style] as it is heard: smart speed counts as on exactly when it stretches the voice. At or below the model's
+     * cap it changes nothing, and above [smartAlwaysAbove] it acts anyway, so flipping the switch there restarts
+     * nothing.
      */
-    fun asHeard(style: SpeechStyle): SpeechStyle = if (style.shaping.smartSpeed && pastModel(style.rate) <= 1f) {
-        style.copy(shaping = style.shaping.copy(smartSpeed = false))
-    } else {
-        style
+    fun asHeard(style: SpeechStyle): SpeechStyle {
+        val heard = smartStretches(style)
+        if (heard == style.shaping.smartSpeed) return style
+        return style.copy(shaping = style.shaping.copy(smartSpeed = heard))
     }
 
     /**
@@ -120,7 +127,8 @@ data class SpeechStyleConfig(
      * cleanly (smart speed off or not stretching), which needs no new render.
      */
     fun replayStyle(style: SpeechStyle, factor: Float): SpeechStyle? =
-        style.takeIf { voiceStretch(it) > 1f }?.copy(rate = clampRate(style.rate * factor))
+        // As heard: a replay of 4x keeps the smart speed the 4x forced, though the slower rate would not force it.
+        style.takeIf { voiceStretch(it) > 1f }?.let { asHeard(it).copy(rate = clampRate(it.rate * factor)) }
 
     /**
      * The speed left after the model's cap for listening [rate]. Private, so nothing can apply it as a player speed
@@ -186,3 +194,12 @@ data class SpeechStyleConfig(
  */
 fun SpeechStyleConfig.asRendered(style: SpeechStyle): SpeechStyle =
     asHeard(style).copy(pitch = SpeechStyle.NORMAL_PITCH)
+
+/**
+ * Whether smart speed carries [style]'s speed past the model's cap: switched on, or forced above
+ * [SpeechStyleConfig.smartAlwaysAbove]. Top level to keep the class's function count down.
+ */
+private fun SpeechStyleConfig.smartStretches(style: SpeechStyle): Boolean {
+    val rate = clampRate(style.rate)
+    return rate > maxModelRate && (style.shaping.smartSpeed || rate > smartAlwaysAbove)
+}

@@ -24,7 +24,8 @@ class SpeechStyleConfigTest {
             1.25f to 1.25f,
             1.33f to 1.35f,
             0.1f to 0.5f,
-            4f to 3f,
+            4f to 4f,
+            5f to 4f,
             Float.NaN to 1f,
             Float.POSITIVE_INFINITY to 1f,
         )
@@ -97,7 +98,7 @@ class SpeechStyleConfigTest {
             assertEquals("plain voice at $rate", 1f, config.voiceStretch(plain), EPS)
         }
         // Never stacked: the model, the voice and the player together make exactly the asked speed.
-        listOf(0.75f, 1.5f, 2.25f, 3f).forEach { rate ->
+        listOf(0.75f, 1.5f, 2.25f, 3f, 3.5f, 4f).forEach { rate ->
             listOf(true, false).forEach { on ->
                 val style = SpeechStyle(rate = rate, shaping = VoiceShaping(smartSpeed = on))
                 val heard = config.modelRate(rate) * config.voiceStretch(style) * config.playerSpeed(style)
@@ -113,6 +114,29 @@ class SpeechStyleConfigTest {
         val smart = SpeechStyle(rate = 3f, pace = Pace.NORMAL, shaping = VoiceShaping(smartSpeed = true))
         assertEquals(87, config.silenceAfterMs(0, smart))
         assertEquals(177, config.clauseSilenceMs(ClauseMark.DASH, smart.copy(rate = 2f)))
+    }
+
+    @Test
+    fun `past 3x smart speed stretches the voice even when switched off`() {
+        val plain = SpeechStyle(rate = 4f)
+        assertEquals(1f, config.playerSpeed(plain), EPS)
+        assertEquals(4f / 1.5f, config.voiceStretch(plain), EPS)
+        // Up to 3x the switch still decides: off, the player stretches.
+        assertEquals(2f, config.playerSpeed(plain.copy(rate = 3f)), EPS)
+        assertEquals(1f, config.voiceStretch(plain.copy(rate = 3f)), EPS)
+        // Flipping the switch past 3x changes nothing heard, so it restarts nothing.
+        val smart = plain.copy(shaping = VoiceShaping(smartSpeed = true))
+        assertEquals(config.asRendered(smart), config.asRendered(plain))
+        assertTrue(config.asHeard(plain).shaping.smartSpeed)
+    }
+
+    @Test
+    fun `a replay of a forced smart speed keeps it`() {
+        // 4x with the switch off, replayed at 3x: still smart speed, so the player stays at 1.0 and the replay is 3x.
+        val replay = requireNotNull(config.replayStyle(SpeechStyle(rate = 4f), 0.75f))
+        assertEquals(3f, replay.rate, EPS)
+        assertEquals(1f, config.playerSpeed(replay), EPS)
+        assertEquals(3f, config.modelRate(replay.rate) * config.voiceStretch(replay), EPS)
     }
 
     @Test
@@ -166,6 +190,7 @@ class SpeechStyleConfigTest {
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(rateStep = 0f) }
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(paces = emptyMap()) }
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(maxModelRate = 0.8f) }
+        assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(smartAlwaysAbove = 1f) }
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(clausePausesMs = emptyMap()) }
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(asideGainDb = 3f) }
         assertThrows(IllegalArgumentException::class.java) { SpeechStyleConfig(minPitch = 0f) }
