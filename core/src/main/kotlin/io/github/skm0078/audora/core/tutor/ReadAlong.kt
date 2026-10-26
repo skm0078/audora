@@ -70,9 +70,12 @@ class ReadAlong private constructor(
      */
     private fun resyncOr(ahead: Alignment, spoken: List<String>): Alignment {
         // A jump costs at least one skip, so a stretch that fits ahead as well as that never jumps (most of them).
-        if (spoken.size < config.resyncWords || ahead.cost <= config.skipOpenCost) return ahead
-        val jump = aligner.resync(words, settled.next, spoken, toPageEnd = true) ?: return ahead
-        return if (jump.cost < ahead.cost && mostlyMatched(jump.cost, spoken.size)) jump else ahead
+        val jump = if (spoken.size < config.resyncWords || ahead.cost <= config.skipOpenCost) {
+            null
+        } else {
+            aligner.resync(words, settled.next, spoken, toPageEnd = true)
+        }
+        return jump?.takeIf { it.cost < ahead.cost && mostlyMatched(it.cost, spoken.size) } ?: ahead
     }
 
     private fun mostlyMatched(cost: Int, heard: Int) = cost <= heard * config.extraCost * (1 - config.repeatMatchShare)
@@ -82,9 +85,10 @@ class ReadAlong private constructor(
      * matches words just read, and fits them better than the words ahead.
      */
     private fun isRepeat(heardWords: List<String>): Boolean {
-        if (heardWords.size < config.minRepeatWords) return false
-        val repeat = aligner.repeatCost(words, settled.next, heardWords) ?: return false
-        return mostlyMatched(repeat, heardWords.size) && repeat < aligner.align(words, settled.next, heardWords).cost
+        val repeat = heardWords.takeIf { it.size >= config.minRepeatWords }
+            ?.let { aligner.repeatCost(words, settled.next, it) }
+        return repeat != null && mostlyMatched(repeat, heardWords.size) &&
+            repeat < aligner.align(words, settled.next, heardWords).cost
     }
 
     /** What the reader did on this page, from the settled stretches and the current one. */
