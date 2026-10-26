@@ -82,12 +82,15 @@ class WebCatalogues(private val catalogues: OpdsCatalogues, private val fetcher:
         private const val SEARCH_TYPES = "application/opensearchdescription+xml,application/xml;q=0.9,*/*;q=0.5"
         private const val SEARCH_TERMS = "{searchTerms}"
 
+        /** By name: the Charset overload needs API 33. */
+        private const val UTF_8 = "UTF-8"
+
         /** OpenSearch's optional parameters ({startPage?}, {language?}, ...) are left empty. */
-        private val OPTIONAL_PARAMETER = Regex("""\{[^}]*\?}""")
+        private val OPTIONAL_PARAMETER = Regex("""\{[^}]*\?\}""")
 
         /** [template] with [query] put in; any other optional parameter left empty. */
         fun fill(template: String, query: String): String =
-            template.replace(SEARCH_TERMS, URLEncoder.encode(query.trim(), Charsets.UTF_8))
+            template.replace(SEARCH_TERMS, URLEncoder.encode(query.trim(), UTF_8))
                 .replace(OPTIONAL_PARAMETER, "")
     }
 }

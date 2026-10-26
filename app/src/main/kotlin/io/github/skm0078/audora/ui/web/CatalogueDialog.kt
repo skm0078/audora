@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -122,6 +123,7 @@ internal fun CatalogueDialog(books: WebBooks, onDownloadStarted: (Boolean) -> Un
 @Composable
 private fun CatalogueList(books: WebBooks, onOpen: (String) -> Unit) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     var catalogues by remember { mutableStateOf<List<OpdsCatalogue>?>(null) }
     var typed by rememberSaveable { mutableStateOf("") }
@@ -134,7 +136,7 @@ private fun CatalogueList(books: WebBooks, onOpen: (String) -> Unit) {
                 val added = books.browser.add(typed)
                 val message = when (added) {
                     is Outcome.Failure -> webErrorText(context, added.error)
-                    is Outcome.Success -> context.getString(addMessage(added.value))
+                    is Outcome.Success -> resources.getString(addMessage(added.value))
                 }
                 if ((added as? Outcome.Success)?.value == CatalogueAdd.ADDED) typed = ""
                 catalogues = books.browser.all()
