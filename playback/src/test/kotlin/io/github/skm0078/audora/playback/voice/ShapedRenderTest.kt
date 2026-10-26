@@ -75,6 +75,14 @@ class ShapedRenderTest {
     }
 
     @Test
+    fun `past 3x the voice is shortened by smart speed even with the switch off`() {
+        val switchedOff = render(VoiceShaping(evenLoudness = false), rate = 4f)
+        // The model is at its 1.5 cap; the other 4 / 1.5 is the stretch's, not the player's (CF-6).
+        val whole = VOICED + PAUSE + VOICED
+        assertEquals(whole * 1.5f / 4f, switchedOff.samples.size.toFloat(), whole * 0.01f)
+    }
+
+    @Test
     fun `with smart speed Audora's own clause pauses are heard as long as with the player's stretch`() {
         val text = "Hello there, said the voice; and then, at last, it stopped."
         val plain = render(VoiceShaping(evenLoudness = false), rate = 3f, text = text, clausePauses = true)
