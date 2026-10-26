@@ -1,7 +1,7 @@
 Figure two. Synthetic T2 weighted image with ROI and dose distribution. In a, there is an example of ROI placements in a synthetic T2 weighted image of a patient. ROIs are placed in the lower part of the parietal lobe, left and right, in the genu and splenium of the corpus callosum. In b, the same T2 weighted image is displayed, but with an overlay of the isodose lines of ten, twenty, thirty, forty, fifty and fifty-seven gray.
 
 Table two. Student's t-test of differences from baseline for immediate post-operative examination and first follow-up after RT. There was no significant difference between baseline and the first post-operative MRI. Significant changes in PD, cMy and R2 were observed during the first follow-up after RT completion. The difference is expressed as the arithmetic difference between the two percentages, percent point, p p, for PD and cMy and in per second for the relaxation rates.
-Four rows, five columns.
+A table of four rows and five columns, including first post-op mean of difference, p-value, and first follow-up mean of difference.
 
 millimetre slice thickness and one millimetre gap, were collected with a scan time of five minutes fifty-five seconds. The qMRI maps, R1, R2, and PD, and the myelin map, cMy, were calculated and synthetic T2 weighted images reconstructed. In Figure one R1, R2, PD and cMy are shown for one patient from the examinations before and after operation and the first three follow-up examinations after RT completion.
 
@@ -15,7 +15,7 @@ A two-sided paired Student's t-test was used to analyse changes in any quantitat
 Changes related to absorbed dose and time after concluded CRT were analysed with a mixed model analysis. In this test, each ROI for every patient was seen as a subject in the analysis, with a repeated measurement at approximately every third month. The dependent variable, the difference in R1, R2, PD or cMy, were assumed to be linearly dependent on the covariates absorbed dose, gray, and time, months, both of which were assumed to be fixed effects. Random effects depending on patient and anatomical location were accounted for in the mixed model. Significance level was set to zero point zero one seven, to correct for multiple comparison of three different statistical tests.
 
 Table three. The covariate factors and the significance of the mixed model test, the time factor is per month and the dose factor per Gray. PD and cMy are expressed as ten to the minus three and the arithmetic difference between the two percentages, percent point, p p, and the relaxation rates are expressed as ten to the minus three per second.
-Four rows, five columns.
+A table of four rows and five columns, including time factor, p-value, and dose factor.
 
 three. Results.
 Comparisons of the differences in R1, R2, PD and cMy between the baseline image and the first follow-up show a significant difference in all parameters except R1. The mean value of difference in R1 is minus zero point zero one three per second, p-value zero point one three. For R2 the difference is zero point three three per second, for PD it is one point five percentage points, p p, and the difference in cMy is minus two point two p p, all with a p-value less than zero point zero zero one. There was no significant difference between the pre-operative and radicality control images. The mean values of these differences are printed in Table two.

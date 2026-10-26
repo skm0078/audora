@@ -23,7 +23,7 @@
     <string name="sounded_wrong_fix_nothing">There is nothing to change for this here; it is in the log for a later fix.</string>
     <string name="sounded_wrong_fix_word">Tell the voice how to say the word</string>
     <string name="sounded_wrong_fix_skip_unreadable">Skip unreadable text</string>
-    <string name="sounded_wrong_fix_tables_summary">Tables: say only their size</string>
+    <string name="sounded_wrong_fix_tables_summary">Tables: say what they hold, not every row</string>
     <string name="sounded_wrong_fix_tables_rows">Tables: read every row</string>
     <string name="sounded_wrong_fix_tables_skip">Tables: skip them</string>
     <string name="sounded_wrong_fix_footnotes_skip">Skip footnotes</string>

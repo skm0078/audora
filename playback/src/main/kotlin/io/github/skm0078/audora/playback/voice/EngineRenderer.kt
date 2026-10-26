@@ -28,6 +28,7 @@ import io.github.skm0078.audora.speech.audio.SmartStretch
 import io.github.skm0078.audora.speech.audio.VoiceShaper
 import io.github.skm0078.audora.speech.delivery.Delivery
 import io.github.skm0078.audora.speech.delivery.DeliveryPlanner
+import io.github.skm0078.audora.speech.delivery.FootnoteVoice
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
 import io.github.skm0078.audora.speech.normalize.TextNormalizer
 import io.github.skm0078.audora.speech.normalize.TextRole
@@ -100,10 +101,11 @@ class EngineRenderer(
     private val replay: ReplayRender? = null,
 ) : SentenceRenderer {
     private val castSpeech = CastSpeech(voices, ScriptRouter(config), normalizers)
+    private val footnoteVoice = FootnoteVoice()
 
     override fun render(unit: ReadingUnit): Outcome<PcmAudio, SpeechError> {
         val now = replay?.styleFor(UnitKey.of(unit)) ?: style()
-        val delivery = deliveryOf(unit, now)
+        val delivery = footnoteVoice.shape(unit, deliveryOf(unit, now))
         val pauseAfterMs = (styleConfig.silenceAfterMs(unit.pauseAfterMs, now) * delivery.pauseScale).roundToInt()
         return when (val speech = UnitReading(now.modes, reading.speakability, reading.chapterPages()).speechOf(unit)) {
             Speech.Cue -> {
