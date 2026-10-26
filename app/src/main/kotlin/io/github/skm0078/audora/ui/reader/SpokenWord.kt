@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/SpokenWord.kt
-// Purpose: Which word of the spoken sentence is being said (plan item 14, version one): how far the voice is through
-//          the sentence's speech, spread evenly over its letters.
+// Purpose: Which word of the spoken sentence is being said (plan item 14): timed from the voice's audio when the
+//          renderer read the word starts from it (CF-10), else spread evenly over its letters (version one).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -30,6 +30,22 @@ internal fun spokenWord(text: String, fraction: Float?): IntRange? {
     var end = index
     while (end < text.lastIndex && !text[end + 1].isWhitespace()) end++
     return start..end
+}
+
+/** The characters of [text]'s [index]th (0-based) whitespace-separated word; null past its last word. */
+internal fun nthWord(text: String, index: Int): IntRange? = WORD.findAll(text).elementAtOrNull(index)?.range
+
+/**
+ * The word of [unit] being said at the player's [positionMs] in its clip: from the word starts the renderer read off
+ * the voice (CF-10) when [timing] has them for this sentence's words, else [spokenWord] by letters. Null when the
+ * timing belongs to another sentence or the cue still plays.
+ */
+internal fun spokenWordOf(timing: SentenceTiming?, unit: ReadingUnit?, positionMs: Long?): IntRange? {
+    val fraction = speechFraction(timing, unit, positionMs)
+    val text = unit?.text
+    if (fraction == null || text == null || positionMs == null) return null
+    val word = timing?.takeIf { it.wordStartsMs.size == WORD.findAll(text).count() }?.wordAt(positionMs)
+    return if (word != null) nthWord(text, word) else spokenWord(text, fraction)
 }
 
 /**
@@ -62,8 +78,7 @@ internal fun rememberSpokenWord(state: ReaderState, port: PlaybackPort, enabled:
         word.value = null
         if (!active || unit == null) return@LaunchedEffect
         while (true) {
-            val fraction = speechFraction(playback.sentenceTiming, unit, port.positionInSentenceMs())
-            word.value = spokenWord(unit.text, fraction)
+            word.value = spokenWordOf(playback.sentenceTiming, unit, port.positionInSentenceMs())
             delay(WORD_POLL_MS)
         }
     }
@@ -81,6 +96,9 @@ private fun nthLetterIndex(text: String, n: Int): Int {
     }
     error("text has only $seen non-space characters, asked for #$n")
 }
+
+/** A word, as [spokenWord] and the renderer's word starts count them: what [Char.isWhitespace] separates. */
+private val WORD = Regex("[^\\p{javaWhitespace}\\p{Z}]+")
 
 /** About 30 checks a second: well inside a word's ~250 ms, a fifth of a 144 Hz screen's frames. */
 private const val WORD_POLL_MS = 33L

@@ -10,6 +10,9 @@ package io.github.skm0078.audora.playback.contract
  * up to [totalMs] (the pace's gap, a paragraph's pause). [page], [charStart] and [unitIndex] name the sentence (as the
  * media item's `ITEM_PAGE`, `ITEM_CHAR_START` and `ITEM_UNIT_INDEX` do), so a timing is never applied to another one:
  * match on [unitIndex] too, since a continued table's empty summary shares its first row's [charStart].
+ *
+ * [wordStartsMs]: when each whitespace-separated word of the sentence starts, in ms from the start of the voice (so
+ * after [leadMs]), read from the voice's audio (CF-10); empty when not known, and the reader spreads by letters.
  */
 data class SentenceTiming(
     val page: Int,
@@ -18,6 +21,7 @@ data class SentenceTiming(
     val leadMs: Long,
     val speechMs: Long,
     val totalMs: Long,
+    val wordStartsMs: List<Long> = emptyList(),
 ) {
     init {
         require(page >= 0 && charStart >= 0 && unitIndex >= 0) { "page, charStart and unitIndex must be >= 0" }
@@ -31,10 +35,21 @@ data class SentenceTiming(
         else -> (positionMs - leadMs).toFloat() / speechMs
     }
 
-    fun encode(): String = listOf(page, charStart, unitIndex, leadMs, speechMs, totalMs).joinToString(SEPARATOR)
+    /** The word being said at [positionMs] in the clip: its index in [wordStartsMs], or null when they are unknown. */
+    fun wordAt(positionMs: Long): Int? {
+        if (wordStartsMs.isEmpty()) return null
+        val intoSpeech = (positionMs - leadMs).coerceAtLeast(0)
+        return wordStartsMs.indexOfLast { it <= intoSpeech }.coerceAtLeast(0)
+    }
+
+    fun encode(): String {
+        val fields = listOf(page, charStart, unitIndex, leadMs, speechMs, totalMs).joinToString(SEPARATOR)
+        return if (wordStartsMs.isEmpty()) fields else fields + SEPARATOR + wordStartsMs.joinToString(WORD_SEPARATOR)
+    }
 
     companion object {
         private const val SEPARATOR = ";"
+        private const val WORD_SEPARATOR = ","
         private const val FIELDS = 6
         private const val PAGE = 0
         private const val CHAR = 1
@@ -45,8 +60,10 @@ data class SentenceTiming(
 
         /** Reads [encode]'s line; null when absent or malformed (no highlight beats a wrong one). */
         fun decode(line: String?): SentenceTiming? {
-            val values = line?.split(SEPARATOR)?.mapNotNull { it.toLongOrNull() }
-            if (values == null || values.size != FIELDS) return null
+            val parts = line?.split(SEPARATOR).orEmpty()
+            val values = parts.take(FIELDS).mapNotNull { it.toLongOrNull() }
+            val words = parts.getOrNull(FIELDS)?.split(WORD_SEPARATOR)?.map { it.toLongOrNull() }
+            if (values.size != FIELDS || parts.size > FIELDS + 1 || words?.contains(null) == true) return null
             return runCatching {
                 SentenceTiming(
                     values[PAGE].toInt(),
@@ -55,6 +72,7 @@ data class SentenceTiming(
                     values[LEAD],
                     values[SPEECH],
                     values[TOTAL],
+                    words.orEmpty().filterNotNull(),
                 )
             }.getOrNull()
         }

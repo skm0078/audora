@@ -27,6 +27,7 @@ import io.github.skm0078.audora.speech.audio.Earcon
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.audio.SmartStretch
 import io.github.skm0078.audora.speech.audio.VoiceShaper
+import io.github.skm0078.audora.speech.audio.WordTimes
 import io.github.skm0078.audora.speech.delivery.Delivery
 import io.github.skm0078.audora.speech.delivery.DeliveryPlanner
 import io.github.skm0078.audora.speech.delivery.FootnoteVoice
@@ -78,7 +79,8 @@ import kotlinx.coroutines.runBlocking
  * What the voice is given follows the style's reading modes ([UnitReading], ADR-035): a table's size or a row with its
  * column names, "Equation 3", a cue in place of unreadable text, a cue before a caption or a chapter's heading.
  *
- * Each clip's layout (cue, voice, silence after) goes to [timings] for the reader's word highlight (plan item 14).
+ * Each clip's layout (cue, voice, silence after) goes to [timings] for the reader's word highlight (plan item 14),
+ * with each word's start read from the voice's own audio ([WordTimes], CF-10).
  *
  * With cast voices in the style's shaping (plan item 7), headings and quoted speech are read by their own voices
  * ([CastSpeech]), the quote's clause pause where the voice changes, each part evened before the join.
@@ -103,6 +105,7 @@ class EngineRenderer(
 ) : SentenceRenderer {
     private val castSpeech = CastSpeech(voices, ScriptRouter(config), normalizers)
     private val footnoteVoice = FootnoteVoice()
+    private val wordTimes = WordTimes()
 
     override fun render(unit: ReadingUnit): Outcome<PcmAudio, SpeechError> {
         val now = replay?.styleFor(UnitKey.of(unit)) ?: style()
@@ -121,19 +124,22 @@ class EngineRenderer(
             is Speech.Text -> speak(unit, speech, now, delivery).map { voice ->
                 val cued = if (speech.cueBefore) reading.earcon.before(voice) else voice
                 val clip = cued.withSilenceAfter(pauseAfterMs)
-                record(unit, leadMs = cued.durationMs - voice.durationMs, speechMs = voice.durationMs, clip)
+                // Words are timed only when the voice says the sentence as written: a table row with its column
+                // names or "Equation 3" has other words, and the reader spreads by letters there (CF-10).
+                val words = if (speech.text == unit.text) wordTimes.of(unit.text, voice) else null
+                record(unit, leadMs = cued.durationMs - voice.durationMs, speechMs = voice.durationMs, clip, words)
                 clip
             }
         }
     }
 
     /** Where the voice speaks in [clip] (plan item 14); millisecond rounding is kept inside the clip. */
-    private fun record(unit: ReadingUnit, leadMs: Long, speechMs: Long, clip: PcmAudio) {
+    private fun record(unit: ReadingUnit, leadMs: Long, speechMs: Long, clip: PcmAudio, words: List<Long>? = null) {
         val timings = timings ?: return
         val total = clip.durationMs
         val lead = leadMs.coerceIn(0, total)
         val speech = speechMs.coerceIn(0, total - lead)
-        val timing = SentenceTiming(unit.page, unit.charStart, unit.index, lead, speech, total)
+        val timing = SentenceTiming(unit.page, unit.charStart, unit.index, lead, speech, total, words.orEmpty())
         timings.record(UnitKey.of(unit), timing)
     }
 
