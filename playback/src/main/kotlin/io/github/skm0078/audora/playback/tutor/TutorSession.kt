@@ -67,15 +67,18 @@ class TutorSession(
         onChange: (ReadAlong) -> Unit,
     ): Outcome<ReadAlong, TutorError> {
         var listener: Listener? = null
+        val stats = TutorRunStats(config.sampleRateHz, start)
         return try {
+            val loadStart = System.nanoTime()
             withContext(work) { listener = openListener() }
+            stats.modelLoadMs = (System.nanoTime() - loadStart) / NANOS_PER_MS
             val opened = listener
             if (opened == null) {
                 Outcome.Failure(TutorError.MODEL_FAILED)
             } else {
                 // Taken where cancelling cannot drop it: a hold lost between taking and use would keep voice
                 // commands paused until the process dies.
-                withContext(NonCancellable) { gate.hold(REASON) }.use { run(opened, start, onChange) }
+                withContext(NonCancellable) { gate.hold(REASON) }.use { run(opened, start, onChange, stats) }
             }
         } catch (e: CancellationException) {
             throw e
@@ -85,6 +88,7 @@ class TutorSession(
         } finally {
             // Also when the caller is cancelled while the model loads: the loaded model is native memory.
             listener?.let { withContext(NonCancellable + work) { it.close() } }
+            AudoraLog.i(TAG, stats.summary())
         }
     }
 
@@ -98,15 +102,24 @@ class TutorSession(
         listener: Listener,
         start: ReadAlong,
         onChange: (ReadAlong) -> Unit,
+        stats: TutorRunStats,
     ): Outcome<ReadAlong, TutorError> = coroutineScope {
         val chunks = Channel<FloatArray>(config.micQueueChunks)
         var micOutcome: Outcome<Unit, TutorError> = Outcome.Success(Unit)
-        val job = launch { micOutcome = microphone.record { chunks.send(it) } }
+        val job = launch {
+            micOutcome = microphone.record { chunk ->
+                // A full queue means decoding fell behind the reader; the wait may cost audio, so it is counted.
+                if (chunks.trySend(chunk).isFailure) {
+                    stats.queueFull.incrementAndGet()
+                    chunks.send(chunk)
+                }
+            }
+        }
         job.invokeOnCompletion { chunks.close() }
         recording.set(job)
         if (stopped.get()) job.cancel()
         AudoraLog.i(TAG, "Listening, words=${start.words.size}")
-        val along = withContext(work) { follow(listener, chunks, start, onChange) }
+        val along = withContext(work) { follow(listener, chunks, start, onChange, stats) }
         job.cancel()
         job.join()
         val failure = micOutcome as? Outcome.Failure
@@ -119,26 +132,44 @@ class TutorSession(
         chunks: ReceiveChannel<FloatArray>,
         start: ReadAlong,
         onChange: (ReadAlong) -> Unit,
+        stats: TutorRunStats,
     ): ReadAlong {
         var along = start
         for (chunk in chunks) {
-            along = mark(along, listener.accept(chunk), onChange)
+            stats.audio(chunk)
+            along = mark(along, timed(stats) { listener.accept(chunk) }, onChange, stats)
             if (along.finished) break
         }
         // Always: a page finished on a growing (not yet final) stretch settles only through finish(), and only
         // settled marks are kept across a rotation.
-        return mark(along, listener.finish(), onChange)
+        return mark(along, timed(stats) { listener.finish() }, onChange, stats)
     }
 
-    private fun mark(along: ReadAlong, heard: List<Heard>, onChange: (ReadAlong) -> Unit): ReadAlong =
-        heard.fold(along) { current, stretch ->
-            val next = current.heard(PageWords.heard(stretch.text), stretch.final)
-            if (next.marks != current.marks || next.next != current.next) onChange(next)
-            next
+    private inline fun timed(stats: TutorRunStats, decode: () -> List<Heard>): List<Heard> {
+        val started = System.nanoTime()
+        return decode().also { stats.decoded(System.nanoTime() - started) }
+    }
+
+    private fun mark(
+        along: ReadAlong,
+        heard: List<Heard>,
+        onChange: (ReadAlong) -> Unit,
+        stats: TutorRunStats,
+    ): ReadAlong = heard.fold(along) { current, stretch ->
+        val step = current.follow(PageWords.heard(stretch.text), stretch.final)
+        stats.stretch(step, stretch.final)
+        val next = step.along
+        // Counts and place only: what was heard is the reader's voice.
+        if (stretch.final) {
+            AudoraLog.i(TAG, "Stretch words=${step.words} taken=${step.taken} place=${next.next}/${next.words.size}")
         }
+        if (next.marks != current.marks || next.next != current.next) onChange(next)
+        next
+    }
 
     private companion object {
         const val TAG = "Playback.Tutor"
         const val REASON = "reading tutor"
+        const val NANOS_PER_MS = 1_000_000L
     }
 }

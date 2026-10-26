@@ -14,6 +14,15 @@ package io.github.skm0078.audora.core.config
  * @property lookaheadWords how far past the next word a stretch of speech is matched, so a skipped line is found.
  * @property maxNumberWords how many heard words one number or symbol on the page may take ("1995" is read as four).
  * @property maxUtteranceWords heard words beyond this, in one stretch without a pause, are left unmatched.
+ * @property carryWords at most this many heard words a stretch left unexplained are lined up again with the next one
+ *   (ReadAlong), so a reader pausing after every word still gets past a word the recogniser missed; enough to pay for
+ *   passing over a skipped line.
+ * @property minRepeatWords a stretch shorter than this is never taken as going back over read words: one or two
+ *   common words ("of the") fit somewhere behind almost always, which held the place still.
+ * @property resyncWords a final stretch (with what was carried) of at least this many words that mostly matches page
+ *   words further on moves the place there, the words between marked skipped; fewer words match by chance.
+ * @property repeatMatchShare at least this share of a stretch must match for it to count as going back over words
+ *   just read, or as the reader found further on; a stretch that fits nowhere well moves nothing.
  * @property misreadCost what a heard word unlike its page word costs the alignment (WordAligner).
  * @property extraCost what a heard word with no page word (a repeat, a filler) costs.
  * @property numberWordCost what each heard word after the first costs when a number or symbol takes it: just under
@@ -41,6 +50,10 @@ data class TutorConfig(
     val lookaheadWords: Int = 30,
     val maxNumberWords: Int = 6,
     val maxUtteranceWords: Int = 80,
+    val carryWords: Int = 12,
+    val minRepeatWords: Int = 3,
+    val resyncWords: Int = 4,
+    val repeatMatchShare: Double = 0.5,
     val misreadCost: Int = 10,
     val extraCost: Int = 10,
     val numberWordCost: Int = 9,
@@ -66,6 +79,10 @@ data class TutorConfig(
         require(lookaheadWords >= 0) { "lookaheadWords must be >= 0, was $lookaheadWords" }
         require(maxNumberWords >= 1) { "maxNumberWords must be >= 1, was $maxNumberWords" }
         require(maxUtteranceWords >= 1) { "maxUtteranceWords must be >= 1, was $maxUtteranceWords" }
+        require(carryWords >= 0) { "carryWords must be >= 0, was $carryWords" }
+        require(minRepeatWords >= 1) { "minRepeatWords must be >= 1, was $minRepeatWords" }
+        require(resyncWords >= 1) { "resyncWords must be >= 1, was $resyncWords" }
+        require(repeatMatchShare in 0.0..1.0) { "repeatMatchShare must be in 0..1, was $repeatMatchShare" }
         require(misreadCost > 0 && extraCost > 0 && skipOpenCost > 0 && skipExtendCost >= 0) { "costs must be > 0" }
         require(numberWordCost in 0 until extraCost) { "numberWordCost must be in 0 until extraCost" }
         require(endpointSilenceSec > 0 && endpointQuietSec > 0 && endpointMaxSec > 0) { "endpoints must be > 0" }
