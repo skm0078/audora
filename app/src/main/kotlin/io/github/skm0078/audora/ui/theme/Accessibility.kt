@@ -6,6 +6,7 @@ package io.github.skm0078.audora.ui.theme
 
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -30,6 +31,7 @@ fun Modifier.namedSlider(name: String, value: String): Modifier = this
  * own, and that control reads nothing unless the handle inside it has a description. Every sheet passes this as its
  * `dragHandle`.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SheetDragHandle() {
     val name = stringResource(R.string.a11y_sheet_handle)
