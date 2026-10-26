@@ -76,6 +76,7 @@ class UiTourTest {
             scenario?.close()
             restoreDevice()
         }
+        writeTalkBackReport()
         val report = listOf(
             "Words broken across lines (a squeezed row)" to broken,
             "TalkBack problems" to talkBack,
@@ -224,11 +225,14 @@ class UiTourTest {
         }
     }
 
-    /** Taps [path] in turn, captures what opened and goes back; a step with nothing to tap ends it uncaptured. */
+    /**
+     * Taps [path] in turn, captures what opened and goes back. A step with nothing to tap ends it uncaptured; Back is
+     * pressed only once something opened, so a missing button never backs out of the screen.
+     */
     private fun opened(name: String, vararg path: SemanticsMatcher) {
-        val reached = path.all { step -> runCatching { tap(step) }.isSuccess }
-        if (reached) capture(name) else Log.w(TAG, "${pass.name}: could not open $name")
-        back()
+        val taps = path.takeWhile { step -> runCatching { tap(step) }.isSuccess }.size
+        if (taps == path.size) capture(name) else Log.w(TAG, "${pass.name}: could not open $name")
+        if (taps > 0) back()
     }
 
     /** A book's menu and details sheet, from its row in the library. */
@@ -298,6 +302,22 @@ class UiTourTest {
         }.getOrDefault(emptyList()).forEach { node ->
             brokenWords(node).filterNot { BOOK_FILE in it }.forEach { broken += "${pass.name} $name: $it" }
         }
+    }
+
+    /** Every TalkBack problem, also as a file beside the screenshots, so a review can read it with them. */
+    private fun writeTalkBackReport() {
+        runCatching {
+            val values = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, TALKBACK_REPORT)
+                put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+                put(MediaStore.Downloads.RELATIVE_PATH, FOLDER)
+            }
+            val resolver = app.contentResolver
+            val uri = requireNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values))
+            requireNotNull(resolver.openOutputStream(uri)).bufferedWriter().use { out ->
+                talkBack.forEach { out.appendLine(it) }
+            }
+        }.onFailure { Log.w(TAG, "Could not write $TALKBACK_REPORT: ${it.message}") }
     }
 
     private fun screenshot(): Bitmap =
@@ -389,6 +409,7 @@ class UiTourTest {
         const val ARG = "uiTour"
         const val SCALES_ARG = "uiTourScales"
         const val BOOK_FILE = "udhr"
+        const val TALKBACK_REPORT = "talkback.txt"
         const val FAILED = "-failed"
         const val MENU = "-menu"
         const val FOLDER = "Download/ListenLock-screens/tour"

@@ -4,6 +4,8 @@
 
 package io.github.skm0078.audora.ui.tour
 
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -12,27 +14,36 @@ import androidx.compose.ui.semantics.getOrNull
 /**
  * Problems on the screen whose merged semantics trees start at [roots] (every window, the topmost last). A control is
  * anything TalkBack can activate: a click, a long press, a switch or a slider. Its name is what TalkBack reads before
- * the role and state: its description or text, merged from what it holds. Its size is its laid-out size, which the
- * minimum touch target already counts, so a list item cut off by the screen edge is not called small. Only the
- * topmost window must have a heading: a menu has none ([needsHeading] false).
+ * the role and state: its description or text, merged from what it holds. Its size is what TalkBack and touch use:
+ * its touch bounds, which Compose widens to the minimum touch target where nothing else is in the way. A control cut
+ * off by the edge of its window (a list item half scrolled away) is not measured. Only the topmost window must have
+ * a heading: a menu has none ([needsHeading] false).
  */
 internal fun talkBackProblems(roots: List<SemanticsNode>, needsHeading: Boolean): List<String> {
-    val problems = roots.flatMap { root -> root.descendants().filter(::isControl).mapNotNull(::controlProblem) }
+    val problems = roots.flatMap { root ->
+        val window = root.boundsInRoot
+        root.descendants().filter(::isControl).mapNotNull { controlProblem(it, window) }
+    }
     val top = roots.lastOrNull() ?: return problems
     val headed = (sequenceOf(top) + top.descendants()).any { SemanticsProperties.Heading in it.config }
     return if (needsHeading && !headed) problems + NO_HEADING else problems
 }
 
-private fun controlProblem(node: SemanticsNode): String? {
+private fun controlProblem(node: SemanticsNode, window: Rect): String? {
     val name = spokenName(node)
+    val bounds = node.boundsInRoot
+    if (bounds.isEmpty) return null // scrolled out of sight: TalkBack does not reach it either
     val density = node.layoutInfo.density.density
-    val widthDp = node.size.width / density
-    val heightDp = node.size.height / density
-    val where = "${roleOf(node)} at ${node.boundsInRoot.left.toInt()},${node.boundsInRoot.top.toInt()} px"
+    val touch = node.touchBoundsInRoot
+    val widthDp = touch.width / density
+    val heightDp = touch.height / density
+    val where = "${roleOf(node)} at ${bounds.left.toInt()},${bounds.top.toInt()} px"
+    val whole = window.contains(touch.topLeft) && window.contains(touch.bottomRight - Offset(1f, 1f))
     return when {
-        name.isBlank() -> "unnamed control: $where"
+        // Its semantics say what it is, for a control this audit cannot name from its parts.
+        name.isBlank() -> "unnamed control: $where, ${widthDp.toInt()}x${heightDp.toInt()} dp, ${node.config}"
 
-        minOf(widthDp, heightDp) < MIN_TARGET_DP && node.size.width > 0 ->
+        whole && minOf(widthDp, heightDp) < MIN_TARGET_DP ->
             "small target \"$name\": ${widthDp.toInt()}x${heightDp.toInt()} dp, $where"
 
         else -> null
