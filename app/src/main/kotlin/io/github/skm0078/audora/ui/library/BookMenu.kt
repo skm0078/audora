@@ -16,7 +16,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,8 +61,7 @@ internal fun BookMenu(
         )
     }
     if (!open) return
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    AppSheet(onDismissRequest = { open = false }, sheetState = sheetState) {
+    AppSheet(onDismissRequest = { open = false }, skipPartiallyExpanded = true) {
         val choose = { action: () -> Unit ->
             open = false
             action()
