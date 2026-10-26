@@ -38,7 +38,9 @@ object MarkdownParser {
         Regex("""(?<![\w_])_(?=\S)(.+?)(?<=\S)_(?![\w_])""") to "$1",
         Regex("""~~(.+?)~~""") to "$1",
         Regex("""</?[A-Za-z][^>\n]*>""") to "",
-        Regex("""\s*\{#[\w-]+}\s*$""") to "",
+        // Both braces escaped: Android's ICU regex rejects a bare "}" that the desktop JVM accepts, and the failed
+        // pattern crashed every text book on the phone (the sample, shared text) while unit tests passed.
+        Regex("""\s*\{#[\w-]+\}\s*$""") to "",
         Regex("""\\([\\`*_{}\[\]()#+\-.!|>~])""") to "$1",
     )
     private const val MARKDOWN_SCORE = 2
