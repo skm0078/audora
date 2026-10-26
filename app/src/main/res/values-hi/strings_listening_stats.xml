@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Listening stats and streaks, kept on the phone only (CF-8). -->
+<resources>
+    <string name="library_listening_stats">सुनने के आँकड़े</string>
+    <string name="menu_hint_listening_stats">कितना सुना, लगातार दिन और पूरी हुई किताबें। सिर्फ़ इसी फ़ोन पर रहते हैं।</string>
+    <string name="stats_today">आज</string>
+    <string name="stats_week">इस हफ़्ते</string>
+    <string name="stats_streak">लगातार दिन</string>
+    <string name="stats_best_streak">सबसे लंबा सिलसिला</string>
+    <string name="stats_books_finished">पूरी हुई किताबें</string>
+    <string name="stats_total">अब तक कुल</string>
+    <string name="stats_minutes">%1$d मिनट</string>
+    <string name="stats_hours_minutes">%1$d घंटे %2$d मिनट</string>
+    <plurals name="stats_days">
+        <item quantity="one">%d दिन</item>
+        <item quantity="other">%d दिन</item>
+    </plurals>
+    <string name="stats_chart_title">पिछले 7 दिन</string>
+    <string name="stats_chart_day">%1$s: %2$s</string>
+    <string name="stats_empty">कोई किताब चलाइए, आपका सुनने का समय यहाँ दिखेगा। जिस दिन एक मिनट या ज़्यादा सुनें, वह दिन सिलसिले में गिना जाता है।</string>
+    <string name="stats_private">सिर्फ़ इसी फ़ोन पर रहते हैं। कुछ भी कहीं भेजा नहीं जाता।</string>
+    <string name="stats_clear">आँकड़े मिटाएँ</string>
+    <string name="stats_clear_title">सुनने के आँकड़े मिटाएँ?</string>
+    <string name="stats_clear_body">हर दिन का सुनने का समय और आपका सिलसिला भूल जाएगा। आपकी किताबें और जगहें बनी रहेंगी।</string>
+    <string name="stats_clear_confirm">मिटाएँ</string>
+    <string name="stats_cancel">रद्द करें</string>
+</resources>

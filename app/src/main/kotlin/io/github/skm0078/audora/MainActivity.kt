@@ -63,6 +63,7 @@ import io.github.skm0078.audora.core.resume.ResumeAnchor
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.di.LibraryEntryPoint
+import io.github.skm0078.audora.di.ListeningStatsEntryPoint
 import io.github.skm0078.audora.diagnostics.LogSharer
 import io.github.skm0078.audora.language.AppLanguage
 import io.github.skm0078.audora.language.AppLanguageStore
@@ -313,7 +314,8 @@ class MainActivity : ComponentActivity() {
     private val studioParts by lazy {
         val notes = MarkStores(highlightStore, bookmarkStore, voiceNoteStore)
         val watched = WatchedFolders(applicationContext, library)
-        StudioLibraryParts(this, photoBooks, watched, backups, resumeAnchors, notes) { sharedText = it }
+        val listening = ListeningStatsEntryPoint.of(applicationContext).listeningLog()
+        StudioLibraryParts(this, photoBooks, watched, backups, resumeAnchors, notes, listening) { sharedText = it }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

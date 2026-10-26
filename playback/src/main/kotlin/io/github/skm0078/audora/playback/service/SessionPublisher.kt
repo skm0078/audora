@@ -1,5 +1,6 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/service/SessionPublisher.kt
-// Purpose: Publishes the book session's state as session extras and forwards reading/not-reading to diagnostics.
+// Purpose: Publishes the book session's state as session extras and forwards reading/not-reading to diagnostics
+//          and to the listening stats (CF-8).
 
 package io.github.skm0078.audora.playback.service
 
@@ -25,6 +26,7 @@ import io.github.skm0078.audora.playback.queue.UnitKey
 import io.github.skm0078.audora.playback.session.SentenceTimings
 import io.github.skm0078.audora.playback.session.SessionEvents
 import io.github.skm0078.audora.playback.session.SessionState
+import io.github.skm0078.audora.playback.stats.ListeningBridge
 import io.github.skm0078.audora.speech.kws.NarratorEcho
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -47,6 +49,7 @@ class SessionPublisher(
     private val focusSound: () -> FocusSoundOptions = { FocusSoundOptions() },
     private val blend: () -> BlendAvailability = { BlendAvailability() },
     private val intent: () -> ContentIntent? = { null },
+    private val listening: ListeningBridge? = null,
 ) : SessionEvents {
     private val main = Handler(Looper.getMainLooper())
     private var lastState: SessionState? = null
@@ -57,10 +60,14 @@ class SessionPublisher(
         timings?.onRecorded = { key -> main.post { if (key == playing) showTiming(key) } }
     }
 
-    override fun onReading(bookId: String, page: Int) = diagnostics.reading(bookId, page)
+    override fun onReading(bookId: String, page: Int) {
+        diagnostics.reading(bookId, page)
+        listening?.reading()
+    }
 
     override fun onNotReading() {
         diagnostics.notReading()
+        listening?.notReading()
         NarratorEcho.shared.stopped(SystemClock.elapsedRealtime())
         resume.flush()
     }

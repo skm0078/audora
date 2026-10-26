@@ -29,6 +29,9 @@ enum class LibraryAction(@StringRes val label: Int, @StringRes val hint: Int, va
     /** Fill-in-the-blank questions from every book's highlights, read aloud (plan item 70, ADR-048). */
     QUIZ(R.string.library_quiz, R.string.menu_hint_quiz),
 
+    /** Time listened, streaks and books finished, kept on the phone only (CF-8). */
+    LISTENING_STATS(R.string.library_listening_stats, R.string.menu_hint_listening_stats),
+
     /** A short page about ListenLock in the app's language, saved as a text book and opened (empty library only). */
     TRY_SAMPLE(R.string.sample_try, R.string.sample_try_hint, inMenu = false),
 }
