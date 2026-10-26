@@ -1,0 +1,3 @@
+en: The word highlight follows the voice: it waits on a comma while the voice pauses, then moves on with it.
+hi: शब्द की हाइलाइट अब आवाज़ के साथ चलती है: अल्पविराम पर आवाज़ रुकती है तो वह भी रुकती है, फिर आवाज़ के साथ आगे बढ़ती है।
+bn: শব্দের হাইলাইট এখন ভয়েসের সঙ্গে চলে: কমায় ভয়েস থামলে সেও থামে, তারপর ভয়েসের সঙ্গে এগোয়।

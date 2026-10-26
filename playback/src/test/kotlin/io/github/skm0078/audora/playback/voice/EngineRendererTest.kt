@@ -127,7 +127,11 @@ class EngineRendererTest {
         renderer.render(sentence)
 
         // No cue, 20 ms of voice ("Pay five rupees now." at 1 kHz), then the 400 ms pause.
-        assertEquals(SentenceTiming(2, 30, 5, 0, 20, 420), timings.of(UnitKey(2, 5)))
+        val timing = requireNotNull(timings.of(UnitKey(2, 5)))
+        assertEquals(SentenceTiming(2, 30, 5, 0, 20, 420), timing.copy(wordStartsMs = emptyList()))
+        // A start for each of the written words the reader highlights ("Pay", "₹5", "now."), read off the voice.
+        assertEquals(3, timing.wordStartsMs.size)
+        assertEquals(timing.wordStartsMs.sorted(), timing.wordStartsMs)
     }
 
     @Test

@@ -17,6 +17,21 @@ class SentenceTimingTest {
     }
 
     @Test
+    fun `word starts round trip, and a line without them is still read`() {
+        val timed = timing.copy(wordStartsMs = listOf(0, 180, 520))
+        assertEquals(timed, SentenceTiming.decode(timed.encode()))
+        assertEquals(emptyList<Long>(), SentenceTiming.decode(timing.encode())?.wordStartsMs)
+    }
+
+    @Test
+    fun `the word said is the last one started, counted from the end of the cue`() {
+        val timed = timing.copy(wordStartsMs = listOf(0, 180, 520))
+        val cases = listOf(0L to 0, 200L to 0, 379L to 0, 380L to 1, 719L to 1, 720L to 2, 1_499L to 2)
+        cases.forEach { (ms, word) -> assertEquals("at $ms", word, timed.wordAt(ms)) }
+        assertNull(timing.wordAt(700))
+    }
+
+    @Test
     fun `a missing or malformed line is no timing`() {
         val malformed = listOf(
             null,
@@ -25,6 +40,8 @@ class SentenceTimingTest {
             "3;120;4;x;1000;1500",
             "3;120;4;200;1000;900",
             "-1;0;0;0;0;0",
+            "3;120;4;200;1000;1500;0,x", // a broken word start
+            "3;120;4;200;1000;1500;0;5",
         )
         malformed.forEach {
             assertNull(it, SentenceTiming.decode(it))
