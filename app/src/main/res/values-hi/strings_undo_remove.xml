@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Undo on the "Removed" snackbar: brings a removed book back for a few seconds (CF-3). -->
+<resources>
+    <string name="library_removed_undo">वापस लाएँ</string>
+</resources>
