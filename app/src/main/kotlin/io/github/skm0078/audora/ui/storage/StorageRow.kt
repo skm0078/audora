@@ -34,6 +34,7 @@ data class StorageRow(val kind: StorageKind, val bytes: Long?, val action: Stora
 enum class StorageKind(@StringRes val label: Int) {
     VOICES(R.string.storage_voices),
     ACTED_VOICE(R.string.storage_acted_voice),
+    STORY_BRAIN(R.string.storage_story_brain),
     OCR(R.string.storage_ocr),
     PUNCTUATION(R.string.storage_punctuation),
     VOICE_COMMANDS(R.string.storage_voice_commands),
@@ -55,8 +56,8 @@ enum class StorageKind(@StringRes val label: Int) {
 fun actionOf(kind: StorageKind): StorageAction? = when (kind) {
     StorageKind.VOICES -> StorageAction.MANAGE_VOICES
 
-    StorageKind.ACTED_VOICE, StorageKind.OCR, StorageKind.PUNCTUATION, StorageKind.VOICE_COMMANDS,
-    StorageKind.DICTIONARIES, StorageKind.READING_TUTOR,
+    StorageKind.ACTED_VOICE, StorageKind.STORY_BRAIN, StorageKind.OCR, StorageKind.PUNCTUATION,
+    StorageKind.VOICE_COMMANDS, StorageKind.DICTIONARIES, StorageKind.READING_TUTOR,
     -> StorageAction.DELETE
 
     StorageKind.PAGE_PICTURES, StorageKind.OCR_TEXT, StorageKind.COVERS, StorageKind.VOICE_BLENDS,

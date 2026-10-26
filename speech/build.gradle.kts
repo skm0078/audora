@@ -9,11 +9,25 @@ plugins {
     id("audora.android.library")
 }
 
+// The story brain's llama.cpp source (ADR story-brain), unpacked once per pin; CMake builds it for arm64 only.
+val llamaCppDir = layout.buildDirectory.dir("llama.cpp")
+val llamaCppSource = tasks.register<LlamaCppSourceTask>("llamaCppSource") {
+    tag.set(libs.versions.llamaCpp)
+    sha256.set(libs.versions.llamaCppSha256)
+    downloadDirectory.set(File(gradle.gradleUserHomeDir, "caches/audora-llama"))
+    outputDirectory.set(llamaCppDir)
+}
+
 android {
     namespace = "io.github.skm0078.audora.speech"
     ndkVersion = libs.versions.ndk.get()
 
     defaultConfig {
+        externalNativeBuild {
+            cmake {
+                arguments += "-DLLAMA_CPP_DIR=${llamaCppDir.get().asFile.absolutePath}"
+            }
+        }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
         ndk {
@@ -23,7 +37,8 @@ android {
         }
     }
 
-    // libaudora_acted.so, the acted Hindi voice (ADR-059), on the ONNX Runtime sherpa-onnx already ships.
+    // libaudora_acted.so, the acted Hindi voice (ADR-059), on the ONNX Runtime sherpa-onnx already ships; and
+    // libaudora_brain.so, the story brain (ADR story-brain), on llama.cpp's source from the llamaCppSource task.
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
@@ -102,4 +117,9 @@ val verifySherpaOnnxAar by tasks.registering {
 
 tasks.named("preBuild") {
     dependsOn(verifySherpaOnnxAar)
+}
+
+// CMake reads llama.cpp's source while it configures, so it must be in place first.
+tasks.matching { it.name.startsWith("configureCMake") || it.name.startsWith("buildCMake") }.configureEach {
+    dependsOn(llamaCppSource)
 }

@@ -219,6 +219,12 @@ private val SPEECH_SOFTWARE = listOf(
         "https://github.com/resemble-ai/chatterbox",
     ),
     Software(
+        "Qwen3.5 4B (Qwen team, Alibaba Cloud), GGUF by Unsloth, story brain, if downloaded",
+        R.string.licences_apache,
+        "https://huggingface.co/Qwen/Qwen3.5-4B",
+    ),
+    Software("llama.cpp (ggml authors), story brain", R.string.licences_mit, "https://github.com/ggml-org/llama.cpp"),
+    Software(
         "Edge-Punct-Casing punctuation model (frankyoujian), if downloaded",
         R.string.licences_apache,
         "https://github.com/frankyoujian/Edge-Punct-Casing",

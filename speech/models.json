@@ -213,7 +213,7 @@
       "model": "model.onnx",
       "speakerId": 2,
       "threads": 4,
-      "styles": {"NEUTRAL": 3, "LOUD": 1, "SAD": 12, "SCARED": 7, "SURPRISED": 14, "LIVELY": 8, "EMPHATIC": 4, "ASKING": 4},
+      "styles": {"NEUTRAL": 3, "LOUD": 1, "ANGRY": 1, "SAD": 12, "SCARED": 7, "SURPRISED": 14, "LIVELY": 8, "EMPHATIC": 4, "ASKING": 4},
       "licence": "CC-BY-4.0: AI4Bharat Rasa",
       "credit": "Rasa expressive Indic voices (VITS, vits_rasa_13) by AI4Bharat at IIT Madras, trained on the Rasa emotional speech dataset; Bengali female and male speakers, read in Rasa's book, happy, sad, angry, fearful, surprised and conversational styles. Exported to the sherpa-onnx format by MatiasLin; weights unchanged.",
       "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
