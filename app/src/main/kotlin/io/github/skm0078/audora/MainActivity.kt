@@ -118,6 +118,7 @@ import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.LibraryScreen
 import io.github.skm0078.audora.ui.library.MiniPlayer
 import io.github.skm0078.audora.ui.library.nowPlaying
+import io.github.skm0078.audora.ui.library.rememberRemovalUndoMs
 import io.github.skm0078.audora.ui.library.restoreMessageOf
 import io.github.skm0078.audora.ui.library.showFinishRestoringIfNeeded
 import io.github.skm0078.audora.ui.licences.LicenceSource
@@ -716,11 +717,12 @@ class MainActivity : ComponentActivity() {
         banner: @Composable () -> Unit,
     ) {
         val context = LocalContext.current.applicationContext
+        val undoMs = rememberRemovalUndoMs()
         val playWithPermission = rememberPlayWithNotificationPermission()
         val studio = rememberStudioLibrary(studioParts, playWithPermission) { book ->
             playWithPermission { onContinue(book.id) }
         }
-        val actions = remember(controller) {
+        val actions = remember(controller, undoMs) {
             object : LibraryActions {
                 override fun onAddPdf(documentUri: Uri) = addPicked(documentUri, photoBooks, controller::add)
 
@@ -738,7 +740,9 @@ class MainActivity : ComponentActivity() {
                     playWithPermission { AudiobookExport.start(context, book.id) }
                 }
 
-                override fun onConfirmRemoval() = controller.confirmRemoval()
+                override fun onConfirmRemoval() = controller.confirmRemoval(undoMs)
+
+                override fun onUndoRemoval(id: BookId) = controller.undoRemoval(id)
 
                 override fun onCancelRemoval() = controller.proposeRemoval(null)
 
@@ -763,7 +767,9 @@ class MainActivity : ComponentActivity() {
                 override fun onPlayMade(setKey: String) = navigate(AppDestination.MadePlayer(setKey))
             }
         }
-        val books = (controller.listState as? LibraryListState.Loaded)?.all?.mapTo(HashSet()) { it.book.id }
+        val loaded = controller.listState as? LibraryListState.Loaded
+        // A book whose removal can still be undone keeps its cover (CF-3).
+        val books = loaded?.let { list -> list.all.mapTo(HashSet()) { it.book.id } + list.leaving }
         // Covers of removed books go once the list has loaded; never while it is loading or failed.
         LaunchedEffect(books) { books?.let { bookCovers.prune(it) } }
         LibraryScreen(
