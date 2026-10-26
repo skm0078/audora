@@ -162,10 +162,11 @@ import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.reader.rememberSpokenWord
 import io.github.skm0078.audora.ui.settings.SettingsScreen
 import io.github.skm0078.audora.ui.settings.rememberActedVoiceSettings
+import io.github.skm0078.audora.ui.settings.rememberModelPackSetting
 import io.github.skm0078.audora.ui.settings.rememberPronunciationSettings
+import io.github.skm0078.audora.ui.settings.rememberSkipCitationsSetting
 import io.github.skm0078.audora.ui.settings.rememberStoryBrainSettings
 import io.github.skm0078.audora.ui.settings.rememberVoiceCommandsSettings
-import io.github.skm0078.audora.ui.settings.runModelAction
 import io.github.skm0078.audora.ui.shell.AppShell
 import io.github.skm0078.audora.ui.shell.ReadableWidth
 import io.github.skm0078.audora.ui.storage.StorageRoute
@@ -627,17 +628,16 @@ class MainActivity : ComponentActivity() {
         appearance: Appearance,
         onKidsMode: () -> Unit,
     ) {
-        val ocrState by remember { ocrModels.state().loggingFailures(SETTINGS_TAG, "the OCR models") }
-            .collectAsStateWithLifecycle(initialValue = null)
-        val punctState by remember { punctuationModels.state().loggingFailures(SETTINGS_TAG, "the punctuation model") }
-            .collectAsStateWithLifecycle(initialValue = null)
+        val ocr = rememberModelPackSetting(
+            SETTINGS_TAG, "the OCR models", ocrModels::state, ocrModels::download, ocrModels::cancel,
+        ) { ocrModels.delete() }
+        val punctuation = rememberModelPackSetting(
+            SETTINGS_TAG, "the punctuation model", punctuationModels::state, punctuationModels::download,
+            punctuationModels::cancel,
+        ) { punctuationModels.delete() }
         val volumeKeys by remember { screenPreference.volumeKeysSkip() }.collectAsStateWithLifecycle(false)
         val scope = rememberCoroutineScope()
-        val textPreferences = remember { ReadingTextPreferences.forContext(applicationContext) }
-        // A one-line properties file, read once when Settings opens (like the onboarding flags). Saved off the main
-        // thread, one write at a time and in order, so quick taps leave the file as the switch shows.
-        var skipCitations by remember { mutableStateOf(textPreferences.skipCitationMarkers()) }
-        val textWrites = remember { Dispatchers.IO.limitedParallelism(1) }
+        val citations = rememberSkipCitationsSetting(applicationContext)
         val keepScreenOn by remember { screenPreference.keepScreenOn() }.collectAsStateWithLifecycle(false)
         SettingsScreen(
             shareState = diagnostics.shareState,
@@ -653,28 +653,16 @@ class MainActivity : ComponentActivity() {
                 diagnostics.simulateReadingSession()
                 Toast.makeText(this@MainActivity, R.string.debug_simulate_done, Toast.LENGTH_LONG).show()
             },
-            ocrModels = ocrState,
-            onOcrModels = { action ->
-                scope.runModelAction(action, ocrModels::download, ocrModels::cancel) { ocrModels.delete() }
-            },
-            skipCitations = skipCitations,
-            onSkipCitationsChange = { skip ->
-                skipCitations = skip
-                scope.launch {
-                    val saved = withContext(textWrites) { textPreferences.setSkipCitationMarkers(skip) }
-                    if (!saved) skipCitations = !skip // logged; the switch shows what books will use
-                }
-            },
+            ocrModels = ocr.state,
+            onOcrModels = ocr.onAction,
+            skipCitations = citations.skip,
+            onSkipCitationsChange = citations.onChange,
             keepScreenOn = keepScreenOn,
             onKeepScreenOnChange = { on -> scope.launch { screenPreference.saveKeepScreenOn(on) } },
-            punctuationModel = punctState,
+            punctuationModel = punctuation.state,
             volumeKeysSkip = volumeKeys,
             onVolumeKeysSkipChange = { on -> scope.launch { screenPreference.saveVolumeKeysSkip(on) } },
-            onPunctuationModel = { action ->
-                scope.runModelAction(action, punctuationModels::download, punctuationModels::cancel) {
-                    punctuationModels.delete()
-                }
-            },
+            onPunctuationModel = punctuation.onAction,
             voiceCommands = rememberVoiceCommandsSettings(voiceCommandModels, screenPreference),
             pronunciation = rememberPronunciationSettings(pronunciationStore),
             actedVoice = rememberActedVoiceSettings(ActedVoices.get(applicationContext)),
