@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Background reading: Optimized vs Unrestricted, and the brand-free steps heading (phone-test fixes 2026-10-26). -->
+<resources>
+    <string name="battery_steps_heading">Steps for this phone</string>
+    <string name="battery_status_optimized">Background use is on, but Android still limits ListenLock (Optimized). Reading may stop with the screen off.</string>
+    <string name="battery_choose_unrestricted">Choose Unrestricted</string>
+    <string name="battery_choose_unrestricted_hint">Android opens ListenLock\'s app info. Tap App battery usage (or Battery) and pick Unrestricted instead of Optimized.</string>
+</resources>

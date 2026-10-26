@@ -491,8 +491,8 @@ class MainActivity : ComponentActivity() {
                 FirstRunScreen(
                     voices = voicesState,
                     voiceActions = voiceActions,
-                    backgroundAllowed = battery.exempt,
-                    onAllowBackground = { battery.requestExemption(::startActivity) },
+                    backgroundAccess = battery.access,
+                    onAllowBackground = { battery.allow(::startActivity) },
                     onAddPdf = { picker.launch(BOOK_MIME_TYPES) },
                     onFinish = finish,
                     onTrySample = { sharedText = sampleBook(this) },

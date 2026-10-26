@@ -8,7 +8,7 @@ import org.junit.Test
 
 class DiagnosticsSummaryTest {
     private val build =
-        BuildAndDevice("io.github.skm0078.audora.debug", "0.0.1-debug", 1, "motorola", "edge 50 fusion", "15", 35)
+        BuildAndDevice("io.github.skm0078.audora.debug", "0.0.1-debug", 1, "Google", "Pixel 8", "15", 35)
 
     @Test
     fun `lists build, phone, session and exits`() {
@@ -20,7 +20,7 @@ class DiagnosticsSummaryTest {
         )
 
         assertTrue("App: io.github.skm0078.audora.debug 0.0.1-debug (1)" in text)
-        assertTrue("Phone: motorola edge 50 fusion, Android 15 (SDK 35)" in text)
+        assertTrue("Phone: Google Pixel 8, Android 15 (SDK 35)" in text)
         assertTrue("book=book-1 page=14" in text)
         assertTrue("SIGNALED status=9 at 1970-01-01T00:00:01.000Z" in text)
         assertTrue("description=\"killed by task manager\"" in text)
