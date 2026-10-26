@@ -65,6 +65,7 @@ class AudioRecordMicrophone(context: Context, private val config: TutorConfig) :
         val recorder =
             AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, config.sampleRateHz, CHANNEL, ENCODING, bytes)
         if (recorder.state == AudioRecord.STATE_INITIALIZED) {
+            AudoraLog.i(TAG, "Microphone open, rate=${recorder.sampleRate}, bufferFrames=${recorder.bufferSizeInFrames}")
             Outcome.Success(recorder)
         } else {
             AudoraLog.e(TAG, "Microphone not initialised")
