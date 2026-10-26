@@ -65,7 +65,12 @@ class TextBooks(
         } catch (e: SecurityException) {
             Outcome.Failure(TextBookError.Unreadable("${e.javaClass.simpleName} authority=${uri.authority}"))
         }
-        if (document is Outcome.Failure) AudoraLog.w(TAG, "Text book not opened, format=$format: ${document.error}")
+        when (document) {
+            is Outcome.Success ->
+                AudoraLog.i(TAG, "Text book opened, format=$format chapters=${document.value.chapters.size}")
+
+            is Outcome.Failure -> AudoraLog.w(TAG, "Text book not opened, format=$format: ${document.error}")
+        }
         return document.map { TextBookText(it, config) }
     }
 

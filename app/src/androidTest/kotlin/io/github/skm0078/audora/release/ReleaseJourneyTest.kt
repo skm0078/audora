@@ -319,22 +319,26 @@ class ReleaseJourneyTest {
         waitForNode(hasText(text(R.string.reader_ocr_badge)), OCR_DOWNLOAD_TIMEOUT_MS)
     }
 
-    /** Each format is told from its bytes, added and opened in the reader (ADR 2026-10-26-more-ebook-formats). */
+    /**
+     * Each format is told from its bytes, added and opened as a text book (ADR 2026-10-26-more-ebook-formats). The
+     * library's mini player also has a Play button, so the reader's own words in the log are what is checked.
+     */
     private fun openWithReadsMoreEbookFormats() {
-        val play = hasContentDescription(text(R.string.reader_play))
-        for ((asset, type) in MORE_FORMATS) {
+        for ((asset, type, format) in MORE_FORMATS) {
             backToTabs()
-            gone(play)
+            val opened = "$TEXT_BOOK_OPENED, format=$format"
+            val before = JourneyDevice.logCount(opened)
             val uri = JourneyDevice.downloadedBook(asset)
             val current = activity()
             JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, type)) }
-            try {
-                waitForNode(play, OPEN_TIMEOUT_MS)
-            } catch (failure: Throwable) {
-                throw AssertionError("$asset did not open in the reader", failure)
+            awaitTrue("$asset to open as a $format book", OPEN_TIMEOUT_MS, state = { notOpened(format) }) {
+                JourneyDevice.logCount(opened) > before
             }
         }
     }
+
+    private fun notOpened(format: String): String =
+        "Failed opens: ${JourneyDevice.logCount("$TEXT_BOOK_FAILED, format=$format")}"
 
     /** A comic archive is not added as a book: its pages are read out of the archive for the photo book. */
     private fun openWithMakesAComicIntoAPhotoBook() {
@@ -385,10 +389,14 @@ class ReleaseJourneyTest {
 
         // assets/ebooks, written by scripts/fixtures/make_ebook_fixtures.py, with the type a Files app sends.
         val MORE_FORMATS = listOf(
-            "book.fb2" to "application/x-fictionbook+xml",
-            "kf8.azw3" to "application/vnd.amazon.mobi8-ebook",
-            "help.chm" to "application/vnd.ms-htmlhelp",
+            Triple("book.fb2", "application/x-fictionbook+xml", "FB2"),
+            Triple("kf8.azw3", "application/vnd.amazon.mobi8-ebook", "MOBI"),
+            Triple("help.chm", "application/vnd.ms-htmlhelp", "CHM"),
         )
+
+        // TextBooks' own words when a text book opens, or does not.
+        const val TEXT_BOOK_OPENED = "Text book opened"
+        const val TEXT_BOOK_FAILED = "Text book not opened"
         const val COMIC = "comic.cbz"
         const val COMIC_TYPE = "application/vnd.comicbook+zip"
         const val COMIC_PAGES = 3

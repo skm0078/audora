@@ -66,6 +66,7 @@ class PdfReaderDocumentOpener(
             is Outcome.Failure -> Outcome.Failure(
                 when (opened.error) {
                     is TextBookError.Unreadable -> PdfOpenError.Unreadable(opened.error.message)
+
                     is TextBookError.Locked -> PdfOpenError.Unreadable(
                         opened.error.message,
                         DrmLockedException(opened.error.message),
