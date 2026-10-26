@@ -428,8 +428,8 @@ class AudoraPlaybackService : MediaLibraryService() {
     }
 
     /**
-     * The opt-in story brain (ADR 2026-10-25-story-brain). Built on every phone but costs nothing without its model: whether the phone
-     * can run it and has it is asked on the brain's own thread, the first time a page has speech on it.
+     * The opt-in story brain (ADR story-brain). Built on every phone but costs nothing without its model: whether the
+     * phone can run it and has it is asked on the brain's own thread, the first time a page has speech on it.
      */
     private fun storyBrain(heard: () -> SpeechStyle): StoryBrainReader {
         val models = StoryBrainModels.get(this)

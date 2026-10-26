@@ -17,7 +17,7 @@ import io.github.skm0078.audora.speech.sherpa.SpeakerGender
  * One per playback service. [modes] is read when a render epoch starts (a mode change restarts the sentence playing,
  * like any style change); [chapterPages] and [scanned] are set when a book opens. All are read on the render thread
  * too, so [chapterPages] and [scanned] are volatile and [modes] must be thread-safe. [brain]: the opt-in story brain
- * (ADR 2026-10-25-story-brain); its calls on who speaks ([speakerOf]) and how fill in where the rules' are unsure.
+ * (ADR story-brain); its calls on who speaks ([speakerOf]) and how fill in where the rules' are unsure.
  */
 class ReadingSource(
     val modes: () -> ReadingModes = { ReadingModes() },
@@ -69,7 +69,7 @@ class ReadingSource(
 
     /**
      * Who says [unit]: the rules' speaker when they also know the gender (a tag like "said Mira": they are rarely
-     * wrong then), else the story brain's, else the rules' (ADR 2026-10-25-story-brain).
+     * wrong then), else the story brain's, else the rules' (ADR story-brain).
      */
     fun speakerOf(unit: ReadingUnit): Speaker? {
         val ruled = quotes.speakerOf(unit)

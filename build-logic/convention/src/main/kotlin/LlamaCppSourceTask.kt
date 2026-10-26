@@ -1,6 +1,6 @@
 // File: build-logic/convention/src/main/kotlin/LlamaCppSourceTask.kt
-// Purpose: Puts llama.cpp's source, for the story brain's native library (ADR 2026-10-25-story-brain), where :speech's CMake build finds
-//          it: downloads the SHA-256-pinned release tarball once (cached in the Gradle user home) and unpacks it.
+// Purpose: Puts llama.cpp's source, for the story brain's native library (ADR story-brain), where :speech's CMake build
+//          finds it: downloads the SHA-256-pinned release tarball once (cached in the Gradle user home) and unpacks it.
 
 import java.io.File
 import java.io.IOException

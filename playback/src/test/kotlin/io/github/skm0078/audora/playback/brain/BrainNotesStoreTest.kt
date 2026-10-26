@@ -1,6 +1,6 @@
 // File: playback/src/test/kotlin/io/github/skm0078/audora/playback/brain/BrainNotesStoreTest.kt
 // Purpose: The story brain's notes survive a restart per book, are dropped for another model or prompt, and a
-//          half-written line never breaks a book's notes (ADR 2026-10-25-story-brain).
+//          half-written line never breaks a book's notes (ADR story-brain).
 
 package io.github.skm0078.audora.playback.brain
 

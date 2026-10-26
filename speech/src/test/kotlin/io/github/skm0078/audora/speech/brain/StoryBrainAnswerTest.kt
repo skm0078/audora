@@ -1,5 +1,6 @@
 // File: speech/src/test/kotlin/io/github/skm0078/audora/speech/brain/StoryBrainAnswerTest.kt
-// Purpose: The story brain's answer read into speakers with genders and feelings (ADR 2026-10-25-story-brain); a broken row is left out.
+// Purpose: The story brain's answer read into speakers with genders and feelings (ADR story-brain); a broken row is
+//          left out.
 
 package io.github.skm0078.audora.speech.brain
 

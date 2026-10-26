@@ -41,8 +41,9 @@ enum class Feeling {
     NEUTRAL,
 
     /**
-     * Anger, only from the story brain (ADR 2026-10-25-story-brain): the rules never guess it, since a "!" alone can be joy or fear.
-     * Louder, a touch quicker and lower. Last, so the order of the feelings before it (and of saved style lists) holds.
+     * Anger, only from the story brain (ADR story-brain): the rules never guess it, since a "!" alone can be joy or
+     * fear. Louder, a touch quicker and lower. Last, so the order of the feelings before it (and of saved style lists)
+     * holds.
      */
     ANGRY,
 }

@@ -1,6 +1,6 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/brain/BrainNotesStore.kt
-// Purpose: Keeps the story brain's notes per book on disk (ADR 2026-10-25-story-brain), so a page is read by the model once, not on
-//          every listen.
+// Purpose: Keeps the story brain's notes per book on disk (ADR story-brain), so a page is read by the model once, not
+//          on every listen.
 
 package io.github.skm0078.audora.playback.brain
 

@@ -92,7 +92,7 @@ class DeliveryPlannerTest {
     }
 
     @Test
-    fun `the story brain's feeling wins over the rules', and anger is read lower and louder (ADR 2026-10-25-story-brain)`() {
+    fun `the story brain's feeling wins over the rules', and anger is read lower and louder (ADR story-brain)`() {
         val line = unit("“You could have called!”")
         val ruled = planner.plan(line, ContentIntent.STORY, quoted = true)
         val angry = planner.plan(line, ContentIntent.STORY, quoted = true, judged = Feeling.ANGRY)

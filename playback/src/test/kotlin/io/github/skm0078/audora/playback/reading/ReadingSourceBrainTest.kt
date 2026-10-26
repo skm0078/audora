@@ -1,6 +1,6 @@
 // File: playback/src/test/kotlin/io/github/skm0078/audora/playback/reading/ReadingSourceBrainTest.kt
 // Purpose: With no story brain the renderer reads speakers and feelings exactly as before; with one, its calls win
-//          where it made them and the rules fill the rest (ADR 2026-10-25-story-brain).
+//          where it made them and the rules fill the rest (ADR story-brain).
 
 package io.github.skm0078.audora.playback.reading
 

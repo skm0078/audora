@@ -147,7 +147,8 @@ class BookSession(
 
     private var book: OpenedBook? = null
 
-    /** Whether the open book's text may still be read ahead for the story brain; false before it closes (ADR 2026-10-25-story-brain). */
+    /** Whether the open book's text may still be read ahead for the story brain; false before it closes (ADR
+     * story-brain). */
     private var bookOpen: AtomicBoolean? = null
 
     /** The open book's cover for the notification and lock screen ([SessionSources.artwork]); null shows none. */

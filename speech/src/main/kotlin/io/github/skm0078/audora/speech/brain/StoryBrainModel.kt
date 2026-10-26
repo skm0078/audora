@@ -1,5 +1,6 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/brain/StoryBrainModel.kt
-// Purpose: The pinned story brain model (ADR 2026-10-25-story-brain): one GGUF file, downloaded as parts from the app's own release.
+// Purpose: The pinned story brain model (ADR story-brain): one GGUF file, downloaded as parts from the app's own
+//          release.
 
 package io.github.skm0078.audora.speech.brain
 

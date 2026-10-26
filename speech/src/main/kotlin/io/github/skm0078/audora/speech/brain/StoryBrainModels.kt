@@ -1,6 +1,6 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/brain/StoryBrainModels.kt
-// Purpose: The story brain's Android entry point (ADR 2026-10-25-story-brain): whether this phone can run it, download, cancel, delete,
-//          state, and the loaded model.
+// Purpose: The story brain's Android entry point (ADR story-brain): whether this phone can run it, download, cancel,
+//          delete, state, and the loaded model.
 
 package io.github.skm0078.audora.speech.brain
 

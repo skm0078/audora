@@ -1,5 +1,6 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/brain/StoryBrainDownloadJob.kt
-// Purpose: One background attempt at downloading the story brain's parts, joining and installing them (ADR 2026-10-25-story-brain).
+// Purpose: One background attempt at downloading the story brain's parts, joining and installing them (ADR
+//          story-brain).
 
 package io.github.skm0078.audora.speech.brain
 
