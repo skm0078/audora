@@ -232,7 +232,8 @@ class EngineRenderer(
  * @property speakerOf who says a sentence's quotes, from the same carry (plan item 63); null when unknown.
  * @property moodOf the mood a sentence carries from the one before, from the same carry (ADR-058); null for none.
  * @property judgedFeeling the feeling the story brain heard in a sentence (ADR story-brain); null when it was not
- * asked. @property characters the open book's character voices, used when the style's shaping turns them on.
+ *   asked.
+ * @property characters the open book's character voices, used when the style's shaping turns them on.
  * @property smartStretch smart speed's uneven stretch (plan item 10), used when the style's shaping turns it on.
  * @property intent what the open book is (ADR-056), read on the render thread for each sentence.
  * @property planner each sentence's delivery from that intent, used when the style's shaping turns it on.
