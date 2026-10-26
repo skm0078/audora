@@ -1,6 +1,7 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/PlayerScreen.kt
 // Purpose: The full player: the sentence being read in large type between its neighbours, "What did it say?"
-//          (plan item 5) and every control; in kids mode (plan item 71) just three big buttons.
+//          (plan item 5), a one-tap bookmark (CF-2) and every control; in kids mode (plan item 71) just three big
+//          buttons.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -69,6 +70,7 @@ import io.github.skm0078.audora.ui.theme.WindowWidths
  * @param book the library's book, for its cover.
  * @param spokenWord the word being said in the spoken sentence (plan item 14), marked like the reader marks it; read
  *   only by the sentence, so the rest of the player does not redraw on every word.
+ * @param notes the book's bookmarks, for the one-tap bookmark beside the title (CF-2), its notice and the note dialog.
  */
 @Composable
 fun PlayerScreen(
@@ -82,15 +84,17 @@ fun PlayerScreen(
     covers: CoverSource = CoverSource.None,
     voices: List<VoiceRow> = emptyList(),
     spokenWord: () -> IntRange? = { null },
+    notes: NotesState = NotesState(),
+    notesActions: BookNotesActions = BookNotesActions.None,
 ) {
     val title = state.title.orEmpty()
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-            val parts = PlayerParts(state, config, actions, onShowPage, onOpenUpNext, title, book, covers)
+            val parts = PlayerParts(state, config, actions, onShowPage, onOpenUpNext, title, book, covers, notes)
             // A phone in landscape, a foldable open or a tablet on its side: book and progress on one side, the
             // sentence and the controls on the other, instead of one tall column squeezed into a short window.
             if (rememberPanes(maxWidth, maxHeight)) {
-                PlayerPanes(parts, voices, spokenWord)
+                PlayerPanes(parts, voices, spokenWord, notesActions)
             } else {
                 // A tablet in portrait keeps the phone layout at a readable width in the middle.
                 Column(Modifier.widthIn(max = WindowWidths.READABLE).fillMaxSize()) {
@@ -99,11 +103,14 @@ fun PlayerScreen(
                         // and the sentence keeps a fixed share instead of being squeezed to nothing.
                         PlayerBody(parts, spokenWord, compact = maxHeight < COMPACT_HEIGHT)
                     }
+                    PlayerBookmarkNotice(notes.quickBookmark, notesActions)
                     PlayerControls(state, config, actions, voices)
                 }
             }
         }
     }
+    // The note dialog a bookmark opens, and a failed save's message; the reader's other notes never open here.
+    NotesOverlays(notes, notesActions, actions)
 }
 
 /**
@@ -133,6 +140,7 @@ private data class PlayerParts(
     val title: String,
     val book: Book?,
     val covers: CoverSource,
+    val notes: NotesState,
 )
 
 @Composable
@@ -163,7 +171,7 @@ private fun PlayerBody(parts: PlayerParts, spokenWord: () -> IntRange?, compact:
     ) {
         PlayerTopBar(parts.state, parts.actions, parts.onShowPage, parts.onOpenUpNext)
         PlayerStatus(parts.state.playback, Modifier)
-        BookLine(parts.title, parts.book.takeUnless { compact }, parts.covers)
+        BookLine(parts, parts.book.takeUnless { compact })
         LongJobsPanel(book = parts.state.bookId)
         SentencesAround(
             parts.state,
@@ -176,7 +184,12 @@ private fun PlayerBody(parts: PlayerParts, spokenWord: () -> IntRange?, compact:
 
 /** Two panes side by side; each scrolls on its own if a large font needs more room than the window has. */
 @Composable
-private fun PlayerPanes(parts: PlayerParts, voices: List<VoiceRow>, spokenWord: () -> IntRange?) {
+private fun PlayerPanes(
+    parts: PlayerParts,
+    voices: List<VoiceRow>,
+    spokenWord: () -> IntRange?,
+    notesActions: BookNotesActions,
+) {
     Row(Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -189,7 +202,7 @@ private fun PlayerPanes(parts: PlayerParts, voices: List<VoiceRow>, spokenWord: 
         ) {
             PlayerTopBar(parts.state, parts.actions, parts.onShowPage, parts.onOpenUpNext)
             PlayerStatus(parts.state.playback, Modifier)
-            BookLine(parts.title, parts.book, parts.covers)
+            BookLine(parts, parts.book)
             LongJobsPanel(book = parts.state.bookId)
             ReplayAndProgress(parts)
         }
@@ -207,6 +220,7 @@ private fun PlayerPanes(parts: PlayerParts, voices: List<VoiceRow>, spokenWord: 
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(END_PANE))
                     .padding(horizontal = Dimens.ScreenPadding),
             )
+            PlayerBookmarkNotice(parts.notes.quickBookmark, notesActions)
             PlayerControls(parts.state, parts.config, parts.actions, voices)
         }
     }
@@ -270,23 +284,32 @@ private fun PlayerExtras(
     }
 }
 
+/** The cover, the title and, outside kids mode, the one-tap bookmark (CF-2) at the end, under the thumb's reach. */
 @Composable
-private fun BookLine(title: String, book: Book?, covers: CoverSource) {
+private fun BookLine(parts: PlayerParts, book: Book?) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceL)) {
         book?.let {
             BookCover(
                 it,
-                covers,
+                parts.covers,
                 Modifier.sharedCover(it.id).size(Dimens.CoverMedium, Dimens.CoverMedium * COVER_RATIO),
             )
         }
         Text(
-            title,
+            parts.title,
             style = MaterialTheme.typography.titleLarge,
             maxLines = TITLE_LINES,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).semantics { heading() },
         )
+        if (!LocalKidsMode.current && parts.state.document is DocumentState.Open) {
+            val here = parts.state.sentenceHere
+            PlayerBookmarkButton(
+                marked = here != null && parts.notes.isBookmarked(here),
+                enabled = here != null,
+                onClick = parts.actions::onQuickBookmark,
+            )
+        }
     }
 }
 

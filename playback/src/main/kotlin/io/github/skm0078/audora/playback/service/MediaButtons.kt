@@ -59,18 +59,7 @@ class MediaButtons(
         when (gesture) {
             HeadsetGesture.PLAY_PAUSE -> Util.handlePlayPauseButtonAction(player)
             HeadsetGesture.BACK_ONE_SENTENCE -> player.seekToPreviousMediaItem()
-            HeadsetGesture.BOOKMARK -> bookmark()
-        }
-    }
-
-    private fun bookmark() {
-        val session = bookSession()
-        val bookId = session.bookId
-        val unit = session.currentSentence()
-        if (bookId == null || unit == null) {
-            AudoraLog.w(TAG, "Headset bookmark ignored: no sentence playing")
-        } else {
-            bookmarks.add(bookId, unit)
+            HeadsetGesture.BOOKMARK -> bookmarks.addCurrent(bookSession())
         }
     }
 

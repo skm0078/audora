@@ -155,6 +155,15 @@
                 android:resource="@xml/widget_resume_info" />
         </receiver>
 
+        <!-- The service's listening reports count the widget's time left down (CF-7); no other app can reach it. -->
+        <receiver
+            android:name=".widget.WidgetListeningReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="io.github.skm0078.audora.action.LISTENED" />
+            </intent-filter>
+        </receiver>
+
         <!-- Quick Settings tile (plan item 36): play or pause through the media session, or resume the last book. -->
         <service
             android:name=".tile.PlaybackTileService"

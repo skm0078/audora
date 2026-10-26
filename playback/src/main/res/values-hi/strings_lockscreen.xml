@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: playback/src/main/res/values-hi/strings_lockscreen.xml -->
+<!-- Purpose: Hindi copy of values/strings_lockscreen.xml: What TalkBack says for the notification's and lock screen's buttons (CF-1). -->
+<resources>
+    <string name="lockscreen_previous">पिछला वाक्य</string>
+    <string name="lockscreen_next">अगला वाक्य</string>
+    <string name="lockscreen_bookmark">इस वाक्य को बुकमार्क करें</string>
+    <string name="lockscreen_bookmarked">बुकमार्क हो गया</string>
+</resources>

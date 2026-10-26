@@ -118,6 +118,16 @@ data class ReaderState(
     /** The reading position is on another page than the one shown. */
     val readingElsewhere: Boolean get() = readingPosition?.let { it.page != page } ?: false
 
+    /**
+     * What "Bookmark here" and the player's bookmark button mark: the sentence being read on the shown page, else the
+     * page's first sentence; null while the page loads.
+     */
+    val sentenceHere: ReadingUnit?
+        get() {
+            val units = (content as? PageContent.Ready)?.units ?: return null
+            return spokenUnitIndex?.let(units::getOrNull) ?: units.firstOrNull()
+        }
+
     /** The chapter-list row being read (or shown, when nothing of this book is read), if any. */
     val currentChapter: Int? get() = ChapterList.currentIndex(chapters, readingPosition?.page ?: page)
 

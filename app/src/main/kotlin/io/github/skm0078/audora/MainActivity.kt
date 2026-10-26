@@ -188,6 +188,7 @@ import io.github.skm0078.audora.ui.whatsnew.WhatsNewDialog
 import io.github.skm0078.audora.ui.whatsnew.whatsNewEntryNames
 import io.github.skm0078.audora.widget.ResumeWidgetEffect
 import io.github.skm0078.audora.widget.ResumeWidgetProvider
+import io.github.skm0078.audora.widget.WidgetTimeLeftEffect
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -869,6 +870,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         BookWindowEffects(model, state, listeningInBackground)
+        WidgetTimeLeftEffect(model.state)
         val opened = state.document is DocumentState.Open
         LaunchedEffect(model, opened, openPlace) {
             if (opened && openPlace != null) {
@@ -943,6 +945,8 @@ class MainActivity : ComponentActivity() {
                 covers = bookCovers,
                 voices = voiceRows,
                 spokenWord = { spokenWord.value },
+                notes = notesState,
+                notesActions = notes,
             )
         } else {
             ReaderScreen(

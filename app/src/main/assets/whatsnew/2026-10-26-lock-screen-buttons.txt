@@ -1,0 +1,3 @@
+en: The lock screen and notification now have previous sentence, next sentence and bookmark buttons.
+hi: लॉक स्क्रीन और नोटिफ़िकेशन में अब पिछला वाक्य, अगला वाक्य और बुकमार्क के बटन हैं।
+bn: লক স্ক্রিন আর নোটিফিকেশনে এখন আগের বাক্য, পরের বাক্য আর বুকমার্কের বোতাম আছে।
