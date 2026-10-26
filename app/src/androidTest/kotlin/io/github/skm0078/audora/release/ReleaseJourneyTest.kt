@@ -340,16 +340,20 @@ class ReleaseJourneyTest {
         "Opened: ${JourneyDevice.logCount(TEXT_BOOK_OPENED)}, not opened: ${JourneyDevice.logCount(TEXT_BOOK_FAILED)}"
 
     /**
-     * A comic archive is not added as a book: its pages become a photo book, which opens in the reader by itself and
-     * is read by OCR (the models came with step 12).
+     * A comic archive is not added as a book: its pages become a photo book, added to the library, which opens in the
+     * reader by itself and is read by OCR (the models came with step 12).
      */
     private fun openWithMakesAComicIntoAPhotoBook() {
         backToTabs()
+        val added = JourneyDevice.logCount(PHOTO_BOOK_ADDED)
         val uri = JourneyDevice.downloadedBook(COMIC)
         val current = activity()
         JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, COMIC_TYPE)) }
-        val comicLog = { "Comic log lines: ${JourneyDevice.logCount(COMIC_READ)}" }
-        awaitTrue("the comic to open in the reader", OCR_DOWNLOAD_TIMEOUT_MS, state = comicLog) {
+        val photoLog = { "Log: ${JourneyDevice.logLines(COMIC_LOG, PHOTO_LOG)}" }
+        awaitTrue("the comic to be added as a photo book", OPEN_TIMEOUT_MS, state = photoLog) {
+            JourneyDevice.logCount(PHOTO_BOOK_ADDED) > added
+        }
+        awaitTrue("the comic to open in the reader", OPEN_TIMEOUT_MS, state = photoLog) {
             rule.onAllNodes(hasText(COMIC_TITLE)).fetchSemanticsNodes().isNotEmpty()
         }
         waitForNode(hasText(text(R.string.reader_ocr_badge)), OCR_DOWNLOAD_TIMEOUT_MS)
@@ -408,8 +412,10 @@ class ReleaseJourneyTest {
         // The photo book is named after the file; the reader's top bar shows it.
         const val COMIC_TITLE = "comic"
 
-        // PhotoBooks' own words once it has the comic's pages (shown when the step times out).
-        const val COMIC_READ = "Comic archive read"
+        // PhotoBooks' own words: the photo book is in the library; any comic or photo line names a failure.
+        const val PHOTO_BOOK_ADDED = "Photo book added"
+        const val COMIC_LOG = "Comic"
+        const val PHOTO_LOG = "Photo book"
         val firstRunSteps = FirstRunStep.entries.size
         const val MAX_BACKS = 4
         const val POLL_MS = 200L
