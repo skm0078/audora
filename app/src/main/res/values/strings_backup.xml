@@ -2,7 +2,7 @@
 <!-- Back up and restore: one file that moves the library and settings to a new phone (plan item 28, ADR-046). -->
 <resources>
     <string name="library_backup">Back up and restore</string>
-    <string name="backup_explain">A backup is one file with your library, reading positions, bookmarks, highlights, voice notes, pronunciation fixes, Up next and reading settings, plus books shared into ListenLock. Keep it somewhere safe, such as Drive or a computer.\n\nVoices and the dictionary are not included: download them again on the new phone. Books opened from your phone\'s storage come back once you add the same file again, with their positions and notes; watched folders ask to be picked again.</string>
+    <string name="backup_explain">A backup is one file with your library, reading positions, bookmarks, highlights, voice notes, pronunciation fixes, Up next, reading settings and listening stats, plus books shared into ListenLock. Keep it somewhere safe, such as Drive or a computer.\n\nVoices and the dictionary are not included: download them again on the new phone. Books opened from your phone\'s storage come back once you add the same file again, with their positions and notes; watched folders ask to be picked again.</string>
     <string name="backup_save">Save a backup</string>
     <string name="backup_restore">Restore</string>
     <string name="backup_restore_title">Restore a backup?</string>

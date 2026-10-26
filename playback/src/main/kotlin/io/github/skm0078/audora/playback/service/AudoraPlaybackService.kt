@@ -33,6 +33,7 @@ import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.core.resume.ResumeRecorder
+import io.github.skm0078.audora.core.stats.ListeningLog
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.backup.Backups
@@ -70,6 +71,7 @@ import io.github.skm0078.audora.playback.session.SessionSources
 import io.github.skm0078.audora.playback.session.ShakeSource
 import io.github.skm0078.audora.playback.session.SleepOptionsStore
 import io.github.skm0078.audora.playback.session.SpeechPlayer
+import io.github.skm0078.audora.playback.stats.ListeningBridge
 import io.github.skm0078.audora.playback.studio.StudioClip
 import io.github.skm0078.audora.playback.studio.StudioKey
 import io.github.skm0078.audora.playback.studio.StudioMode
@@ -123,6 +125,9 @@ class AudoraPlaybackService : MediaLibraryService() {
 
     @Inject
     lateinit var tracker: ReadingSessionTracker
+
+    @Inject
+    lateinit var listeningLog: ListeningLog
 
     @Inject
     lateinit var resumeAnchors: ResumeAnchorStore
@@ -409,6 +414,7 @@ class AudoraPlaybackService : MediaLibraryService() {
             blend = { blendAvailability(engines, voices) },
             // The speech sheet says what the book reads as (ADR-056), only while that shapes the reading.
             intent = { reading.intent.takeIf { it.told && heard().shaping.suitBook }?.current },
+            listening = ListeningBridge(listeningLog, scope),
         )
     }
 
