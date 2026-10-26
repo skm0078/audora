@@ -320,35 +320,39 @@ class ReleaseJourneyTest {
     }
 
     /**
-     * Each format is told from its bytes, added and opened as a text book (ADR 2026-10-26-more-ebook-formats). The
-     * library's mini player also has a Play button, so the reader's own words in the log are what is checked.
+     * Each format is told from its bytes, added and opened as a text book (ADR 2026-10-26-more-ebook-formats): the
+     * reader shows the book's own first sentence. The library's mini player also has a Play button, so the reader's
+     * text, not its controls, is what is checked; TextBooks' log lines name a failed open.
      */
     private fun openWithReadsMoreEbookFormats() {
-        for ((asset, type, format) in MORE_FORMATS) {
+        for ((asset, type, sentence) in MORE_FORMATS) {
             backToTabs()
-            val opened = "$TEXT_BOOK_OPENED, format=$format"
-            val before = JourneyDevice.logCount(opened)
             val uri = JourneyDevice.downloadedBook(asset)
             val current = activity()
             JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, type)) }
-            awaitTrue("$asset to open as a $format book", OPEN_TIMEOUT_MS, state = { notOpened(format) }) {
-                JourneyDevice.logCount(opened) > before
+            awaitTrue("$asset to show \"$sentence\" in the reader", OPEN_TIMEOUT_MS, state = ::textBookLog) {
+                rule.onAllNodes(hasText(sentence, substring = true)).fetchSemanticsNodes().isNotEmpty()
             }
         }
     }
 
-    private fun notOpened(format: String): String =
-        "Failed opens: ${JourneyDevice.logCount("$TEXT_BOOK_FAILED, format=$format")}"
+    private fun textBookLog(): String =
+        "Opened: ${JourneyDevice.logCount(TEXT_BOOK_OPENED)}, not opened: ${JourneyDevice.logCount(TEXT_BOOK_FAILED)}"
 
-    /** A comic archive is not added as a book: its pages are read out of the archive for the photo book. */
+    /**
+     * A comic archive is not added as a book: its pages become a photo book, which opens in the reader by itself and
+     * is read by OCR (the models came with step 12).
+     */
     private fun openWithMakesAComicIntoAPhotoBook() {
         backToTabs()
-        val read = JourneyDevice.logCount(COMIC_READ)
         val uri = JourneyDevice.downloadedBook(COMIC)
         val current = activity()
         JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, COMIC_TYPE)) }
-        awaitLog(COMIC_READ, read)
-        assertEquals("The comic's pages", 1, JourneyDevice.logCount("$COMIC_READ, pages=$COMIC_PAGES"))
+        val comicLog = { "Comic log lines: ${JourneyDevice.logCount(COMIC_READ)}" }
+        awaitTrue("the comic to open in the reader", OCR_DOWNLOAD_TIMEOUT_MS, state = comicLog) {
+            rule.onAllNodes(hasText(COMIC_TITLE)).fetchSemanticsNodes().isNotEmpty()
+        }
+        waitForNode(hasText(text(R.string.reader_ocr_badge)), OCR_DOWNLOAD_TIMEOUT_MS)
     }
 
     private fun pause() {
@@ -387,21 +391,24 @@ class ReleaseJourneyTest {
         const val BOOK = "en-udhr-noto.pdf"
         const val SCAN = "en-udhr-noto-scan200bad-p1.pdf"
 
-        // assets/ebooks, written by scripts/fixtures/make_ebook_fixtures.py, with the type a Files app sends.
+        // assets/ebooks, written by scripts/fixtures/make_ebook_fixtures.py, with the type a Files app sends and
+        // a sentence from the book's first page.
         val MORE_FORMATS = listOf(
-            Triple("book.fb2", "application/x-fictionbook+xml", "FB2"),
-            Triple("kf8.azw3", "application/vnd.amazon.mobi8-ebook", "MOBI"),
-            Triple("help.chm", "application/vnd.ms-htmlhelp", "CHM"),
+            Triple("book.fb2", "application/x-fictionbook+xml", "The first chapter of a small FictionBook."),
+            Triple("kf8.azw3", "application/vnd.amazon.mobi8-ebook", "The first file"),
+            Triple("help.chm", "application/vnd.ms-htmlhelp", "Press the green button to begin."),
         )
 
-        // TextBooks' own words when a text book opens, or does not.
+        // TextBooks' own words when a text book opens, or does not (shown when a step times out).
         const val TEXT_BOOK_OPENED = "Text book opened"
         const val TEXT_BOOK_FAILED = "Text book not opened"
         const val COMIC = "comic.cbz"
         const val COMIC_TYPE = "application/vnd.comicbook+zip"
-        const val COMIC_PAGES = 3
 
-        // PhotoBooks' own words once it has the comic's pages.
+        // The photo book is named after the file; the reader's top bar shows it.
+        const val COMIC_TITLE = "comic"
+
+        // PhotoBooks' own words once it has the comic's pages (shown when the step times out).
         const val COMIC_READ = "Comic archive read"
         val firstRunSteps = FirstRunStep.entries.size
         const val MAX_BACKS = 4
