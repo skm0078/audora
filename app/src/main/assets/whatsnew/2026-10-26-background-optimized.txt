@@ -1,0 +1,3 @@
+en: Background reading now tells you when Android still has ListenLock on Optimized, and opens the page where you choose Unrestricted.
+hi: बैकग्राउंड में पढ़ना अब बताता है जब Android ने ListenLock को अब भी Optimized पर रखा है, और वह पेज खोलता है जहाँ आप Unrestricted चुनते हैं।
+bn: ব্যাকগ্রাউন্ডে পড়া এখন জানিয়ে দেয় যখন Android ListenLock-কে এখনও Optimized-এ রেখেছে, এবং সেই পেজ খোলে যেখানে আপনি Unrestricted বেছে নেন।

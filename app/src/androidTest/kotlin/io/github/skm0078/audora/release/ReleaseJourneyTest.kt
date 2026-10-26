@@ -62,7 +62,7 @@ class ReleaseJourneyTest {
     fun aListenerUsesTheAppFromFirstRunToAScan() {
         JourneyDevice.captureLogs()
         try {
-            step("01 first run walks through and finishes", ::firstRunWalksThroughAndFinishes)
+            step("01 first run plays a voice sample; Try a sample opens the reader", ::firstRunWalksThroughAndFinishes)
             step("02 the launcher says ListenLock", ::theLauncherSaysListenLock)
             step("03 Open with adds the book and opens the reader", ::openWithAddsTheBookAndOpensTheReader)
             step("04 play starts without the notification permission", ::playStartsWithoutTheNotificationPermission)
@@ -170,11 +170,24 @@ class ReleaseJourneyTest {
         val stepOne = hasText(text(R.string.first_run_step, 1, firstRunSteps))
         waitForNode(stepOne)
         node(hasText(text(R.string.first_run_privacy))).assertExists()
-        repeat(firstRunSteps - 1) { tapText(R.string.first_run_next) }
+        tapText(R.string.first_run_next)
+        playAVoiceSample()
+        repeat(firstRunSteps - 2) { tapText(R.string.first_run_next) }
         node(hasText(text(R.string.first_run_step, firstRunSteps, firstRunSteps))).assertExists()
-        tapText(R.string.first_run_later)
-        waitForNode(hasText(text(R.string.tab_library)))
+        // Phone test 2026-10-26: a sample crashed the app. The sample book is saved and opened like shared text.
+        tapText(R.string.sample_try)
+        waitForNode(hasContentDescription(text(R.string.reader_play)), OPEN_TIMEOUT_MS)
         gone(stepOne)
+        backToTabs()
+    }
+
+    /** The bundled voice's "Play a sample" on the voices step, heard to the end (the stop button goes away). */
+    private fun playAVoiceSample() {
+        val play = hasContentDescription(text(R.string.voices_sample_play, ""), substring = true) and hasClickAction()
+        tap(play)
+        val stop = hasContentDescription(text(R.string.voices_sample_stop, ""), substring = true)
+        gone(stop, PLAY_TIMEOUT_MS)
+        node(play).assertExists()
     }
 
     private fun theLauncherSaysListenLock() {

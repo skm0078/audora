@@ -244,14 +244,6 @@
     <string name="battery_open_app_settings">ListenLock की ऐप जानकारी खोलें</string>
     <string name="battery_footer">अगर स्क्रीन बंद होने पर अब भी पढ़ना रुकता है, तो सेटिंग्स से लॉग शेयर करें: उनमें लिखा होता है कि Android ने ListenLock को क्यों रोका।</string>
     <string name="battery_step_number">%1$d. %2$s</string>
-    <string name="battery_brand_motorola">आपके Motorola फ़ोन पर</string>
-    <string name="battery_brand_oneplus">आपके OnePlus फ़ोन पर</string>
-    <string name="battery_brand_samsung">आपके Samsung फ़ोन पर</string>
-    <string name="battery_brand_xiaomi">आपके Xiaomi, Redmi या POCO फ़ोन पर</string>
-    <string name="battery_brand_oppo">आपके OPPO फ़ोन पर</string>
-    <string name="battery_brand_realme">आपके realme फ़ोन पर</string>
-    <string name="battery_brand_vivo">आपके vivo या iQOO फ़ोन पर</string>
-    <string name="battery_brand_other">आपके फ़ोन पर</string>
     <string name="battery_step_unrestricted">ListenLock की ऐप जानकारी में App battery usage (या Battery) खोलें, Allow background usage चालू करें और Unrestricted चुनें।</string>
     <string name="battery_step_background_activity">ListenLock की ऐप जानकारी में Battery usage खोलें और Allow background activity चालू करें।</string>
     <string name="battery_step_auto_launch">ListenLock की ऐप जानकारी में Auto launch (जिसे Autostart भी कहते हैं) चालू करें।</string>

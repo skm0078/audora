@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bengali: background reading, Optimized vs Unrestricted, and the brand-free steps heading. -->
+<resources>
+    <string name="battery_steps_heading">এই ফোনের জন্য ধাপগুলি</string>
+    <string name="battery_status_optimized">ব্যাকগ্রাউন্ড ব্যবহার চালু আছে, কিন্তু Android এখনও ListenLock-কে সীমিত রাখছে (Optimized)। স্ক্রিন বন্ধ হলে পড়া থেমে যেতে পারে।</string>
+    <string name="battery_choose_unrestricted">Unrestricted বেছে নিন</string>
+    <string name="battery_choose_unrestricted_hint">Android ListenLock-র অ্যাপ ইনফো খুলবে। App battery usage (বা Battery)-তে ট্যাপ করুন এবং Optimized-এর বদলে Unrestricted বেছে নিন।</string>
+</resources>

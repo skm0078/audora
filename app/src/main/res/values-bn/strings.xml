@@ -244,14 +244,6 @@
     <string name="battery_open_app_settings">ListenLock-র অ্যাপ ইনফো খুলুন</string>
     <string name="battery_footer">স্ক্রিন বন্ধ থাকলে এখনো পড়া থেমে গেলে, সেটিংস থেকে লগ শেয়ার করুন: Android কেন ListenLock বন্ধ করেছে তা সেখানে লেখা থাকে।</string>
     <string name="battery_step_number">%1$d. %2$s</string>
-    <string name="battery_brand_motorola">আপনার Motorola ফোনে</string>
-    <string name="battery_brand_oneplus">আপনার OnePlus ফোনে</string>
-    <string name="battery_brand_samsung">আপনার Samsung ফোনে</string>
-    <string name="battery_brand_xiaomi">আপনার Xiaomi, Redmi বা POCO ফোনে</string>
-    <string name="battery_brand_oppo">আপনার OPPO ফোনে</string>
-    <string name="battery_brand_realme">আপনার realme ফোনে</string>
-    <string name="battery_brand_vivo">আপনার vivo বা iQOO ফোনে</string>
-    <string name="battery_brand_other">আপনার ফোনে</string>
     <string name="battery_step_unrestricted">ListenLock-র অ্যাপ ইনফোতে App battery usage (বা Battery) খুলুন, Allow background usage চালু করুন এবং Unrestricted বেছে নিন।</string>
     <string name="battery_step_background_activity">ListenLock-র অ্যাপ ইনফোতে Battery usage খুলুন এবং Allow background activity চালু করুন।</string>
     <string name="battery_step_auto_launch">ListenLock-র অ্যাপ ইনফোতে Auto launch (Autostart নামেও পরিচিত) চালু করুন।</string>

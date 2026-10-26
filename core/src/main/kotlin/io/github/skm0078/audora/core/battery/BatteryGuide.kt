@@ -43,7 +43,7 @@ private val PhoneBrand.aliases: Set<String>
  * for the user, because brand-specific settings screens are private activities that move between OS versions.
  */
 enum class BatteryStep {
-    /** Stock Android 12+, Motorola: App info → App battery usage → Allow background usage → Unrestricted. */
+    /** Stock Android 12+: App info → App battery usage → Allow background usage → Unrestricted. */
     APP_BATTERY_UNRESTRICTED,
 
     /** OxygenOS, ColorOS, realme UI: App info → Battery usage → Allow background activity. */
@@ -67,9 +67,9 @@ enum class BatteryStep {
 
 object BatteryGuide {
     /**
-     * Steps after the system's "ignore battery optimization" prompt, which every brand gets first. OnePlus and
-     * Motorola are the test phones (D4, ADR-012) and are kept short and exact; other brands follow
-     * dontkillmyapp.com's advice for their current OS.
+     * Steps after the system's "ignore battery optimization" prompt, which every brand gets first. Brands
+     * checked on a test phone (D4, ADR-012) are kept short and exact; the others follow dontkillmyapp.com's advice
+     * for their current OS.
      */
     fun stepsFor(brand: PhoneBrand): List<BatteryStep> = when (brand) {
         PhoneBrand.MOTOROLA -> listOf(BatteryStep.APP_BATTERY_UNRESTRICTED)
@@ -97,5 +97,29 @@ object BatteryGuide {
         )
 
         PhoneBrand.OTHER -> listOf(BatteryStep.APP_BATTERY_UNRESTRICTED)
+    }
+}
+
+/**
+ * How much Android lets Audora run in the background, from the two answers it gives: on Android 14+, App battery usage
+ * has "Allow background usage" (off = [RESTRICTED]) and, under it, Optimized or Unrestricted. Turning the switch on
+ * leaves Optimized, which still lets Doze stop reading on some phones, so only [UNRESTRICTED] counts as set up.
+ */
+enum class BackgroundAccess {
+    RESTRICTED,
+    OPTIMIZED,
+    UNRESTRICTED,
+    ;
+
+    companion object {
+        /**
+         * [ignoringOptimizations]: `PowerManager.isIgnoringBatteryOptimizations` (true only for Unrestricted).
+         * [backgroundRestricted]: `ActivityManager.isBackgroundRestricted` (true when background usage is off).
+         */
+        fun of(ignoringOptimizations: Boolean, backgroundRestricted: Boolean): BackgroundAccess = when {
+            backgroundRestricted -> RESTRICTED
+            ignoringOptimizations -> UNRESTRICTED
+            else -> OPTIMIZED
+        }
     }
 }

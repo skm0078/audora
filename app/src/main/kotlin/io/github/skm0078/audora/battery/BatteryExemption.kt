@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.battery
 
+import android.app.ActivityManager
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -10,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import io.github.skm0078.audora.core.battery.BackgroundAccess
 import io.github.skm0078.audora.core.battery.PhoneBrand
 import io.github.skm0078.audora.core.logging.AudoraLog
 
@@ -23,6 +25,12 @@ class BatteryExemption(private val context: Context) {
     /** True when Android's battery optimization is off for Audora ("Unrestricted" on Android 12+). */
     fun isExempt(): Boolean =
         context.getSystemService(PowerManager::class.java)?.isIgnoringBatteryOptimizations(context.packageName) == true
+
+    /** Restricted, Optimized or Unrestricted, as App info → App battery usage shows it. */
+    fun access(): BackgroundAccess = BackgroundAccess.of(
+        ignoringOptimizations = isExempt(),
+        backgroundRestricted = context.getSystemService(ActivityManager::class.java)?.isBackgroundRestricted == true,
+    )
 
     /**
      * Android's battery optimization list, where the user picks Audora and "Don't optimize" (the hint under the

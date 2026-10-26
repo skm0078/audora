@@ -1,6 +1,7 @@
 // File: app/src/test/kotlin/io/github/skm0078/audora/release/ListenLockNameTest.kt
 // Purpose: Nothing a person reads says "Audora" (ADR-060): every string resource the app and the playback service
 //          show, in English, Hindi and Bengali. Code, packages, log tags and file names keep the old name on purpose.
+//          Nor does any shown text or What's new entry name a phone maker or model: testers read that as personal.
 
 package io.github.skm0078.audora.release
 
@@ -19,6 +20,17 @@ class ListenLockNameTest {
         val offenders = shownStrings().filter { (_, text) -> OLD_NAME.containsMatchIn(text) }
         assertTrue(
             "Strings still saying Audora:\n" + offenders.joinToString("\n") { (where, text) -> "$where: $text" },
+            offenders.isEmpty(),
+        )
+    }
+
+    @Test
+    fun noShownTextNamesAPhone() {
+        val whatsNew = File("src/main/assets/whatsnew").listFiles().orEmpty()
+            .map { "whatsnew/${it.name}" to it.readText() }
+        val offenders = (shownStrings() + whatsNew).filter { (_, text) -> PHONE_NAMES.containsMatchIn(text) }
+        assertTrue(
+            "Shown text naming a phone:\n" + offenders.joinToString("\n") { (where, text) -> "$where: $text" },
             offenders.isEmpty(),
         )
     }
@@ -60,6 +72,12 @@ class ListenLockNameTest {
 
     private companion object {
         val OLD_NAME = Regex("audora", RegexOption.IGNORE_CASE)
+
+        /** Makers and models of phones; the battery steps keep the maker in code (BatteryGuide), never on screen. */
+        val PHONE_NAMES = Regex(
+            "\\b(moto|motorola|oneplus|samsung|galaxy|xiaomi|redmi|poco|oppo|realme|vivo|iqoo|pixel|edge 50)\\b",
+            RegexOption.IGNORE_CASE,
+        )
         val STRING_TAGS = listOf("string", "item")
 
         /** A theme's <item> is a style value, not text; only these parents hold shown items. */
