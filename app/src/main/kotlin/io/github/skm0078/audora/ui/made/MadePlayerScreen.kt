@@ -43,7 +43,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.R
@@ -51,6 +50,7 @@ import io.github.skm0078.audora.core.library.OutputSet
 import io.github.skm0078.audora.di.LibraryEntryPoint
 import io.github.skm0078.audora.ui.library.titleOrUntitled
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.namedSlider
 import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
@@ -195,7 +195,7 @@ private fun SeekBar(state: MadePlayerState, controls: MadeAudioController?) {
             dragging = null
         },
         enabled = state.durationMs > 0,
-        modifier = Modifier.semantics { stateDescription = spoken },
+        modifier = Modifier.namedSlider(stringResource(R.string.a11y_player_position), spoken),
     )
     Text(spoken, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }

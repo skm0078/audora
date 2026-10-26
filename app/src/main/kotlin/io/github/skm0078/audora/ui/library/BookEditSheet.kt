@@ -53,6 +53,7 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.di.LibraryEntryPoint
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.SheetDragHandle
 import kotlinx.coroutines.launch
 
 /** Saves through the library, so the list, its covers and the reader see the change at once. */
@@ -99,6 +100,7 @@ internal fun BookEditSheet(
         uri?.let { draft = draft.copy(cover = CoverOption.GALLERY, picture = it.toString()) }
     }
     ModalBottomSheet(
+        dragHandle = { SheetDragHandle() },
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {

@@ -49,6 +49,7 @@ import io.github.skm0078.audora.ui.library.titleOrUntitled
 import io.github.skm0078.audora.ui.reader.durationText
 import io.github.skm0078.audora.ui.theme.ConfirmedTextButton
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.SheetDragHandle
 
 /**
  * @param library every book in the library, to name queued books and offer the rest; a queued book it no longer
@@ -69,7 +70,7 @@ fun UpNextSheet(
     val queued = state.entries.map { it.bookId }.toSet()
     val addable = library.filter { it.id != playing && it.id !in queued }
     var adding by rememberSaveable { mutableStateOf(false) }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(dragHandle = { SheetDragHandle() }, onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .navigationBarsPadding()

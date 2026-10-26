@@ -6,4 +6,6 @@
         <item quantity="one">%1$d minute left</item>
         <item quantity="other">%1$d minutes left</item>
     </plurals>
+    <string name="a11y_sheet_handle">Sheet handle</string>
+    <string name="a11y_player_position">Position</string>
 </resources>

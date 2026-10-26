@@ -6,4 +6,6 @@
         <item quantity="one">%1$d मिनट बाकी</item>
         <item quantity="other">%1$d मिनट बाकी</item>
     </plurals>
+    <string name="a11y_sheet_handle">शीट का हैंडल</string>
+    <string name="a11y_player_position">कहाँ तक सुना</string>
 </resources>

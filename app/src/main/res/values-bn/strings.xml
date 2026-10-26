@@ -94,7 +94,6 @@
     <string name="reader_paragraph_back">আগের অনুচ্ছেদ</string>
     <string name="reader_paragraph_forward">পরের অনুচ্ছেদ</string>
     <string name="reader_speed">গতি %1$s×</string>
-    <string name="speech_sheet_speed">গতি %1$s×</string>
     <string name="speech_sheet_slower">ধীরে</string>
     <string name="speech_sheet_faster">দ্রুত</string>
     <string name="speech_sheet_pace">বাক্যের মাঝে বিরতি</string>

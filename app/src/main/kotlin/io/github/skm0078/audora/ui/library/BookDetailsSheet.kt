@@ -41,6 +41,7 @@ import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.core.library.DocumentFormat
 import io.github.skm0078.audora.ui.made.MadeFromBook
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.SheetDragHandle
 import java.util.Locale
 
 /** A book's details sheet, and Edit details opened from it (ADR-068); [details] is the book whose sheet is open. */
@@ -88,7 +89,7 @@ internal fun BookDetailsSheet(
         onDismiss()
         action()
     }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(dragHandle = { SheetDragHandle() }, onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())

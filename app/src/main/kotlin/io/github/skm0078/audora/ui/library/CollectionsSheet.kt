@@ -42,6 +42,7 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookCollection
 import io.github.skm0078.audora.core.library.CollectionNames
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.SheetDragHandle
 import io.github.skm0078.audora.ui.theme.TitleAndTrailing
 
 /** Opened from the library's collection chips; [counts] is how many books each collection holds. */
@@ -66,7 +67,7 @@ internal fun CollectionsSheet(
     var creating by rememberSaveable { mutableStateOf(false) }
     var renaming by rememberSaveable { mutableStateOf<String?>(null) }
     var deleting by rememberSaveable { mutableStateOf<String?>(null) }
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = modifier) {
+    ModalBottomSheet(dragHandle = { SheetDragHandle() }, onDismissRequest = onDismiss, modifier = modifier) {
         LazyColumn(Modifier.navigationBarsPadding().padding(horizontal = Dimens.ScreenPadding)) {
             item {
                 Text(

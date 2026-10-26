@@ -11,9 +11,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.FocusSound
 import io.github.skm0078.audora.core.model.FocusSoundOptions
@@ -21,6 +18,7 @@ import io.github.skm0078.audora.ui.theme.ChoiceOption
 import io.github.skm0078.audora.ui.theme.OptionBlock
 import io.github.skm0078.audora.ui.theme.OptionDivider
 import io.github.skm0078.audora.ui.theme.OptionGroup
+import io.github.skm0078.audora.ui.theme.namedSlider
 import kotlin.math.roundToInt
 
 /** The volume is sent when the slider is let go, not on every step, since each change is saved. */
@@ -49,10 +47,7 @@ private fun LevelSlider(options: FocusSoundOptions, onOptions: (FocusSoundOption
     val percent = stringResource(R.string.slider_percent, (level * PERCENT).roundToInt())
     OptionBlock(title, value = stringResource(R.string.focus_level_value, (level * PERCENT).roundToInt())) {
         Slider(
-            modifier = Modifier.semantics {
-                contentDescription = title
-                stateDescription = percent
-            },
+            modifier = Modifier.namedSlider(title, percent),
             value = level,
             onValueChange = { level = it },
             onValueChangeFinished = { onOptions(options.copy(level = level)) },

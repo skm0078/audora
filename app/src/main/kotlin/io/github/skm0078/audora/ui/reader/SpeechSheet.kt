@@ -32,8 +32,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.model.ContentIntent
@@ -53,6 +51,7 @@ import io.github.skm0078.audora.ui.theme.OptionDivider
 import io.github.skm0078.audora.ui.theme.OptionGroup
 import io.github.skm0078.audora.ui.theme.OptionSheet
 import io.github.skm0078.audora.ui.theme.SwitchOption
+import io.github.skm0078.audora.ui.theme.namedSlider
 import kotlin.math.roundToInt
 
 /**
@@ -194,8 +193,8 @@ private fun SpeedBlock(speed: Float, config: ReaderConfig, onSpeed: (Float) -> U
     var dragged by remember(speed) { mutableFloatStateOf(speed) }
     val haptics = LocalHapticFeedback.current
     val value = stringResource(R.string.speech_speed_value, speedLabel(config.nearestSpeed(dragged)))
-    val spoken = stringResource(R.string.speech_sheet_speed, speedLabel(config.nearestSpeed(dragged)))
-    OptionBlock(stringResource(R.string.speech_speed_title), value = value) {
+    val title = stringResource(R.string.speech_speed_title)
+    OptionBlock(title, value = value) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { onSpeed(config.nearestSpeed(speed - step)) }, enabled = speed > range.start) {
                 Icon(painterResource(R.drawable.ic_remove), stringResource(R.string.speech_sheet_slower))
@@ -212,8 +211,8 @@ private fun SpeedBlock(speed: Float, config: ReaderConfig, onSpeed: (Float) -> U
                 onValueChangeFinished = { onSpeed(config.nearestSpeed(dragged)) },
                 valueRange = range,
                 steps = stepsBetween(range, step),
-                // TalkBack reads the speed ("Speed 1.25×"), not the thumb's share of the track.
-                modifier = Modifier.weight(1f).semantics { stateDescription = spoken },
+                // TalkBack reads "Speed, 1.25×", not the thumb's share of the track.
+                modifier = Modifier.weight(1f).namedSlider(title, value),
             )
             IconButton(onClick = { onSpeed(config.nearestSpeed(speed + step)) }, enabled = speed < range.endInclusive) {
                 Icon(painterResource(R.drawable.ic_add), stringResource(R.string.speech_sheet_faster))

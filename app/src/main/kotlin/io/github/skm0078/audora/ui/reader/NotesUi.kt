@@ -34,12 +34,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.PronunciationRule
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.SheetDragHandle
 import io.github.skm0078.audora.ui.theme.switchRow
 
 /** Top bar: opens the bookmarks sheet; filled while this book has bookmarks. */
@@ -84,7 +87,7 @@ private fun BookmarksSheet(
     reader: ReaderActions,
     voice: VoiceNotesBinding,
 ) {
-    ModalBottomSheet(onDismissRequest = actions::hideList) {
+    ModalBottomSheet(dragHandle = { SheetDragHandle() }, onDismissRequest = actions::hideList) {
         Column(Modifier.navigationBarsPadding().padding(bottom = Dimens.SpaceL)) {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl),
@@ -93,7 +96,7 @@ private fun BookmarksSheet(
                 Text(
                     stringResource(R.string.bookmarks_title),
                     style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).semantics { heading() },
                 )
                 TextButton(onClick = reader::onBookmarkHere) { Text(stringResource(R.string.bookmarks_add_here)) }
             }

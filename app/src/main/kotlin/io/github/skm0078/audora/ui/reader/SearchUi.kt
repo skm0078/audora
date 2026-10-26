@@ -29,6 +29,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -58,19 +60,25 @@ fun SearchScreen(state: SearchState, onQuery: (String) -> Unit, onHit: (SearchHi
 @Composable
 private fun SearchBox(query: String, onQuery: (String) -> Unit, onDismiss: () -> Unit) {
     val focus = remember { FocusRequester() }
+    // The title is the screen's heading, so TalkBack can jump back to the top past a long list of matches.
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onDismiss) {
             Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.navigate_back))
         }
-        OutlinedTextField(
-            value = query,
-            onValueChange = onQuery,
-            modifier = Modifier.weight(1f).focusRequester(focus),
-            placeholder = { Text(stringResource(R.string.search_hint)) },
-            leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null) },
-            singleLine = true,
+        Text(
+            stringResource(R.string.search_action),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.semantics { heading() },
         )
     }
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQuery,
+        modifier = Modifier.fillMaxWidth().focusRequester(focus),
+        placeholder = { Text(stringResource(R.string.search_hint)) },
+        leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null) },
+        singleLine = true,
+    )
     LaunchedEffect(Unit) { focus.requestFocus() }
 }
 

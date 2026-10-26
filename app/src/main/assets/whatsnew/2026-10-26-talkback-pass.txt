@@ -1,0 +1,3 @@
+en: TalkBack names every button and slider, says "Now reading" on the current sentence, and reads the sleep timer as minutes left.
+hi: TalkBack हर बटन और स्लाइडर का नाम बोलता है, पढ़े जा रहे वाक्य पर "अभी पढ़ा जा रहा है" कहता है, और स्लीप टाइमर को बचे मिनटों में बताता है।
+bn: TalkBack প্রতিটি বোতাম আর স্লাইডারের নাম বলে, পড়া চলা বাক্যে "এখন পড়া হচ্ছে" বলে, আর স্লিপ টাইমার বাকি মিনিটে জানায়।

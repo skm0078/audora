@@ -17,9 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.ui.theme.ChoiceOption
 import io.github.skm0078.audora.ui.theme.Dimens
@@ -28,6 +25,7 @@ import io.github.skm0078.audora.ui.theme.OptionDivider
 import io.github.skm0078.audora.ui.theme.OptionGroup
 import io.github.skm0078.audora.ui.theme.OptionSheet
 import io.github.skm0078.audora.ui.theme.SwitchOption
+import io.github.skm0078.audora.ui.theme.namedSlider
 import kotlin.math.roundToInt
 
 /**
@@ -88,10 +86,7 @@ private fun TypeRows(look: ReadingLook, onLookChange: (ReadingLook) -> Unit) {
             value = look.textScale,
             onValueChange = { onLookChange(look.copy(textScale = snapScale(it))) },
             valueRange = ReadingLook.TEXT_SCALES,
-            modifier = Modifier.semantics {
-                contentDescription = title
-                stateDescription = percent
-            },
+            modifier = Modifier.namedSlider(title, percent),
         )
     }
     OptionDivider()

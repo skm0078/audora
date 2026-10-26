@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
@@ -77,6 +78,7 @@ internal fun PageScrubber(page: Int, pageCount: Int, thumbnails: PageThumbnails?
                     dragging = null
                 },
                 valueRange = range,
+                modifier = Modifier.heightIn(min = Dimens.TouchTarget),
             )
         }
         dragging?.let { target ->

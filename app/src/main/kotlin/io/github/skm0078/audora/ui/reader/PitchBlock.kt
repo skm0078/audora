@@ -26,13 +26,12 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.SpeechStyleConfig
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.OptionBlock
+import io.github.skm0078.audora.ui.theme.namedSlider
 import kotlin.math.roundToInt
 
 /**
@@ -68,7 +67,7 @@ internal fun PitchBlock(
             IconButton(onClick = { onPitch(speech.clampPitch(pitch - step)) }, enabled = pitch > range.start) {
                 Icon(painterResource(R.drawable.ic_remove), stringResource(R.string.speech_pitch_step_down))
             }
-            val spoken = stringResource(R.string.speech_pitch_spoken, label)
+            val title = stringResource(R.string.speech_pitch_title)
             Slider(
                 value = shown,
                 onValueChange = { moved ->
@@ -87,8 +86,8 @@ internal fun PitchBlock(
                 onValueChangeFinished = { dragging = false },
                 valueRange = range,
                 steps = stepsBetween(range, step),
-                // TalkBack reads the pitch ("Pitch: 10% higher"), not the thumb's share of the track.
-                modifier = Modifier.weight(1f).semantics { stateDescription = spoken },
+                // TalkBack reads "Pitch, 10% higher", not the thumb's share of the track.
+                modifier = Modifier.weight(1f).namedSlider(title, label),
             )
             IconButton(onClick = { onPitch(speech.clampPitch(pitch + step)) }, enabled = pitch < range.endInclusive) {
                 Icon(painterResource(R.drawable.ic_add), stringResource(R.string.speech_pitch_step_up))

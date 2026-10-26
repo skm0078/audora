@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.SheetDragHandle
 
 @Composable
 internal fun ChaptersButton(state: ReaderState, actions: ReaderActions) {
@@ -66,7 +67,7 @@ fun ChaptersSheet(
 ) {
     val first = ((current ?: 0) - CONTEXT_ROWS).coerceAtLeast(0)
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = first)
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(dragHandle = { SheetDragHandle() }, onDismissRequest = onDismiss) {
         Text(
             stringResource(R.string.chapters_title),
             style = MaterialTheme.typography.titleMedium,

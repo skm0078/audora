@@ -49,6 +49,7 @@ import io.github.skm0078.audora.core.library.LibraryFacets
 import io.github.skm0078.audora.core.library.LibraryNarrow
 import io.github.skm0078.audora.core.library.LibraryQuery
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.SheetDragHandle
 
 /** How many books each collection holds, from every book's collections. */
 internal fun collectionCounts(members: Map<BookId, Set<String>>): Map<String, Int> =
@@ -124,7 +125,7 @@ internal fun FilterSheet(
     val formatNames = facets.formats.associate { (format, _) -> format to stringResource(formatName(format)) }
     val languageNames = facets.languages.associate { (tag, _) -> tag to languageName(tag) }
     val collectionNames = collections.associate { it.id to it.name }
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = modifier) {
+    ModalBottomSheet(dragHandle = { SheetDragHandle() }, onDismissRequest = onDismiss, modifier = modifier) {
         LazyColumn(Modifier.navigationBarsPadding().padding(horizontal = Dimens.ScreenPadding)) {
             item {
                 Text(

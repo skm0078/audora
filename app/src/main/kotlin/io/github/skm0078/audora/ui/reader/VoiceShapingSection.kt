@@ -17,9 +17,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.SpeechStyleConfig
 import io.github.skm0078.audora.core.config.VoiceShapingConfig
@@ -29,6 +26,7 @@ import io.github.skm0078.audora.ui.theme.OptionBlock
 import io.github.skm0078.audora.ui.theme.OptionDivider
 import io.github.skm0078.audora.ui.theme.OptionGroup
 import io.github.skm0078.audora.ui.theme.SwitchOption
+import io.github.skm0078.audora.ui.theme.namedSlider
 import kotlin.math.roundToInt
 
 /**
@@ -110,10 +108,7 @@ private fun ExpressivenessSlider(step: Int, maxStep: Int, onChange: (Int) -> Uni
             valueRange = 0f..maxStep.toFloat(),
             steps = (maxStep - 1).coerceAtLeast(0),
             onValueChangeFinished = { dragged.roundToInt().takeIf { it != step }?.let(onChange) },
-            modifier = Modifier.semantics {
-                contentDescription = title
-                stateDescription = stepOf
-            },
+            modifier = Modifier.namedSlider(title, stepOf),
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(stringResource(R.string.speech_expressiveness_newsreader), style = MaterialTheme.typography.bodySmall)

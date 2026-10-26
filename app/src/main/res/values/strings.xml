@@ -90,7 +90,6 @@
     <string name="reader_paragraph_back">Previous paragraph</string>
     <string name="reader_paragraph_forward">Next paragraph</string>
     <string name="reader_speed">Speed %1$s×</string>
-    <string name="speech_sheet_speed">Speed %1$s×</string>
     <string name="speech_sheet_slower">Slower</string>
     <string name="speech_sheet_faster">Faster</string>
     <string name="speech_sheet_pace">Pause between sentences</string>
