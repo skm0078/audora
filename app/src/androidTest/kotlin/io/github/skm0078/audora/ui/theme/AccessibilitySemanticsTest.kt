@@ -10,12 +10,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.and
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -75,7 +78,10 @@ class AccessibilitySemanticsTest {
         }
         rule.waitForIdle()
         assertEquals(emptyList<String>(), problems(needsHeading = true))
-        rule.onNodeWithContentDescription(rule.activity.getString(R.string.a11y_sheet_close)).performClick()
+        // The handle, not Material's scrim behind the sheet, which has the same name.
+        val handle = hasContentDescription(rule.activity.getString(R.string.a11y_sheet_close)) and
+            SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
+        rule.onNode(handle).performClick()
         rule.waitForIdle()
         assertTrue("the handle closes the sheet", closed)
     }
