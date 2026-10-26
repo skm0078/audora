@@ -35,7 +35,7 @@ after it the app only gets fixes.
     written page by page into a picture PDF, as gallery pictures are (ADR-066). The existing OCR path reads it.
 - **DRM is refused, never broken.** A Kindle book with encryption, like an EPUB with encrypted content, fails with
   the new `TextBookError.Locked`; the reader says the shop locked it with DRM and that DRM-free books read as usual
-  (`reader_locked`), instead of the old "moved or deleted" message. The lock reaches the reader as
+  (`reader_drm_locked`), instead of the old "moved or deleted" message. The lock reaches the reader as
   `PdfOpenError.Unreadable` with a `DrmLockedException` cause, so `:pdf` does not change.
 - **Comics read in rough order.** OCR reads each page top to bottom, so speech bubbles in panels come out roughly, not
   in panel order. The toast shown when a comic is taken says so. Limits: `PhotoConfig.maxComicPages` = 400 and

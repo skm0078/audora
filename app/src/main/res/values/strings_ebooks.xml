@@ -13,5 +13,5 @@
     <string name="comic_too_long">That comic is too long to read here: up to %1$d pages, or the file is too large.</string>
     <string name="comic_unreadable">ListenLock could not read that comic file. It may be damaged, or hold no pictures.</string>
     <!-- The reader, for an EPUB or Kindle book a shop locked with DRM. -->
-    <string name="reader_locked">This book is locked with DRM by the shop that sold it, so ListenLock cannot read it. Books without DRM read as usual.</string>
+    <string name="reader_drm_locked">This book is locked with DRM by the shop that sold it, so ListenLock cannot read it. Books without DRM read as usual.</string>
 </resources>
