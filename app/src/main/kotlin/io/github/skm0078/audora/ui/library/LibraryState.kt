@@ -65,4 +65,3 @@ sealed interface LibraryMessage {
 
     data class Failed(val error: LibraryError) : LibraryMessage
 }
-

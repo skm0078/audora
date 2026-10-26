@@ -229,7 +229,6 @@ class LibraryControllerUndoTest {
         val GITA = book("gita", "Gitanjali")
         val GORA = book("gora", "Gora")
 
-        fun book(id: String, title: String) =
-            Book(BookId(id), "content://test/$id", title, 1_000, "f-$id", 10, 1, null)
+        fun book(id: String, title: String) = Book(BookId(id), "content://test/$id", title, 1_000, "f-$id", 10, 1, null)
     }
 }
