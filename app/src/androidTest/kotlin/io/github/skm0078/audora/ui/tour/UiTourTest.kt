@@ -300,7 +300,10 @@ class UiTourTest {
             rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
                 .fetchSemanticsNodes()
         }.getOrDefault(emptyList()).forEach { node ->
-            brokenWords(node).filterNot { BOOK_FILE in it }.forEach { broken += "${pass.name} $name: $it" }
+            brokenWords(node).filterNot { BOOK_FILE in it }.forEach {
+                broken += "${pass.name} $name: $it"
+                Log.w(TAG, "${pass.name} $name: broken word: $it")
+            }
         }
     }
 
