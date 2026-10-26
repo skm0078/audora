@@ -91,11 +91,11 @@ internal fun PhotoBookEffect(photoBooks: PhotoBooks, navigate: (AppDestination) 
             is Outcome.Success -> navigate(AppDestination.Reader(result.value))
 
             is Outcome.Failure -> {
-                val error = result.error
-                val message = if (error is PhotoError.TooMany) {
-                    resources.getString(R.string.pictures_too_many, error.max)
-                } else {
-                    resources.getString(R.string.photo_failed)
+                val message = when (val error = result.error) {
+                    is PhotoError.TooMany -> resources.getString(R.string.pictures_too_many, error.max)
+                    is PhotoError.ComicTooLong -> resources.getString(R.string.comic_too_long, error.max)
+                    is PhotoError.ComicUnreadable -> resources.getString(R.string.comic_unreadable)
+                    else -> resources.getString(R.string.photo_failed)
                 }
                 Toast.makeText(context, message, Toast.LENGTH_LONG).show()
             }

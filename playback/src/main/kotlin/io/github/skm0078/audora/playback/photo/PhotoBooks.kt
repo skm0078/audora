@@ -1,6 +1,7 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/photo/PhotoBooks.kt
-// Purpose: "Point and read" and pictures: a camera photo, or pictures from the gallery, Files or a share, become a
-//          scanned book in the library (plan item 62, ADR-043, ADR-066).
+// Purpose: "Point and read" and pictures: a camera photo, pictures from the gallery, Files or a share, or a comic
+//          archive become a scanned book in the library (plan item 62, ADR-043, ADR-066,
+//          ADR 2026-10-26-more-ebook-formats).
 
 package io.github.skm0078.audora.playback.photo
 
@@ -14,6 +15,8 @@ import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.backup.writeDurably
+import io.github.skm0078.audora.playback.comic.ComicBookFile
+import io.github.skm0078.audora.playback.comic.ComicTooLargeException
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import java.io.File
 import java.io.IOException
@@ -44,6 +47,14 @@ sealed interface PhotoError {
     data class TooMany(val max: Int) : PhotoError {
         override val detail = "over $max pictures"
     }
+
+    /** A comic archive with more pages than [max], or larger than the copy limit; nothing was made. */
+    data class ComicTooLong(val max: Int) : PhotoError {
+        override val detail = "comic over $max pages or the size limit"
+    }
+
+    /** A comic archive that is damaged or has no picture Android can decode. */
+    data class ComicUnreadable(override val detail: String) : PhotoError
 }
 
 /**
@@ -62,6 +73,7 @@ sealed interface PhotoError {
  * (ADR-066). Their URIs are lent for a moment, so they are read at once; a book cut short by the process dying is
  * not made again (the pictures are still in the gallery to pick again).
  */
+@Suppress("TooManyFunctions") // Pictures, a camera capture and a comic archive each have their own way in.
 class PhotoBooks(
     context: Context,
     private val copies: SharedPdfCopies,
@@ -77,6 +89,7 @@ class PhotoBooks(
     private val busy = AtomicBoolean(false)
     private val mutableMade = MutableStateFlow<Outcome<BookId, PhotoError>?>(null)
     private val bookFile = PhotoBookFile(config)
+    private val comicFile = ComicBookFile(appContext.contentResolver, File(appContext.cacheDir, COMIC_FOLDER), config)
 
     /** The last book's result until [consume]: the book to open, or why there is none. */
     val made: StateFlow<Outcome<BookId, PhotoError>?> = mutableMade.asStateFlow()
@@ -136,6 +149,52 @@ class PhotoBooks(
                     busy.set(false)
                 }
             }
+        }
+    }
+
+    /**
+     * A comic archive (.cbz) as one book named [title], a page per picture in name order
+     * (ADR 2026-10-26-more-ebook-formats); the result arrives in [made]. The archive is copied in first (its URI may
+     * be lent for a moment, and pages are read out of order), and the copy is deleted once the book is made.
+     */
+    fun startBookFromComic(archive: Uri, title: String) {
+        if (!busy.compareAndSet(false, true)) {
+            AudoraLog.w(TAG, "A photo book is already being made")
+            return
+        }
+        scope.launch {
+            try {
+                mutableMade.value = makeComic(archive, title)
+            } catch (e: ComicTooLargeException) {
+                AudoraLog.w(TAG, "Comic archive too large: ${e.javaClass.simpleName}")
+                mutableMade.value = Outcome.Failure(PhotoError.ComicTooLong(config.maxComicPages))
+            } catch (e: IOException) {
+                mutableMade.value = comicFailed(e)
+            } catch (e: SecurityException) {
+                mutableMade.value = comicFailed(e)
+            } finally {
+                busy.set(false)
+            }
+        }
+    }
+
+    private fun comicFailed(e: Exception): Outcome<BookId, PhotoError> {
+        AudoraLog.e(TAG, "Comic book not made: ${e.javaClass.simpleName}")
+        return Outcome.Failure(PhotoError.ComicUnreadable(e.javaClass.simpleName))
+    }
+
+    private suspend fun makeComic(archive: Uri, title: String): Outcome<BookId, PhotoError> {
+        val copy = comicFile.copyIn(archive)
+        try {
+            val pages = comicFile.pages(copy)
+            AudoraLog.i(TAG, "Comic archive read, pages=${pages.size}")
+            return when {
+                pages.isEmpty() -> Outcome.Failure(PhotoError.ComicUnreadable("no pictures"))
+                pages.size > config.maxComicPages -> Outcome.Failure(PhotoError.ComicTooLong(config.maxComicPages))
+                else -> addMade(title, { comicFile.write(copy, pages, madeFile) }) {}
+            }
+        } finally {
+            if (!copy.delete()) AudoraLog.w(TAG, "A comic archive's copy could not be deleted")
         }
     }
 
@@ -238,6 +297,7 @@ class PhotoBooks(
         const val PENDING_NAME = "photo.pending"
         const val MADE_NAME = "photo-book.pdf"
         const val AUTHORITY_SUFFIX = ".photos"
+        const val COMIC_FOLDER = "comic-copies"
     }
 }
 

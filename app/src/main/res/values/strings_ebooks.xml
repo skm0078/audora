@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_ebooks.xml -->
+<!-- Purpose: FB2, Kindle (MOBI, AZW3), CHM and comic (CBZ) books, and books locked with DRM
+     (ADR 2026-10-26-more-ebook-formats). -->
+<resources>
+    <string name="book_format_fb2">FB2</string>
+    <string name="book_format_mobi">Kindle (MOBI, AZW3)</string>
+    <string name="book_format_chm">Help file (CHM)</string>
+    <!-- The title of a comic book whose file has no name. -->
+    <string name="comic_book_title">Comic</string>
+    <!-- %1$s is the comic's title. -->
+    <string name="comic_making">Making the comic “%1$s” into a book; it opens when it is ready. Speech bubbles are read in a rough order.</string>
+    <string name="comic_too_long">That comic is too long to read here: up to %1$d pages, or the file is too large.</string>
+    <string name="comic_unreadable">ListenLock could not read that comic file. It may be damaged, or hold no pictures.</string>
+    <!-- The reader, for an EPUB or Kindle book a shop locked with DRM. -->
+    <string name="reader_locked">This book is locked with DRM by the shop that sold it, so ListenLock cannot read it. Books without DRM read as usual.</string>
+</resources>

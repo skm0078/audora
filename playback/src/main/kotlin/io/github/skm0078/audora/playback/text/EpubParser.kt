@@ -49,7 +49,7 @@ object EpubParser {
         val encrypted = entries[ENCRYPTION]?.let { isContentEncrypted(decode(it)) } == true
         return when {
             container == null -> Outcome.Failure(TextBookError.Damaged("no container"))
-            encrypted -> Outcome.Failure(TextBookError.Unreadable("protected by DRM"))
+            encrypted -> Outcome.Failure(TextBookError.Locked("protected by DRM"))
             opf == null || opfPath == null -> Outcome.Failure(TextBookError.Damaged("no package document"))
             else -> Outcome.Success(PackageDocument.parse(MarkupScanner.scan(opf), baseOf(opfPath)))
         }

@@ -77,6 +77,7 @@ class ReaderModelTest {
         val cases = mapOf(
             PdfOpenError.Damaged("x") to ReaderFailure.DAMAGED,
             PdfOpenError.Unreadable("x") to ReaderFailure.UNREADABLE,
+            PdfOpenError.Unreadable("x", DrmLockedException("x")) to ReaderFailure.LOCKED,
             PdfOpenError.EngineUnavailable("x") to ReaderFailure.ENGINE_UNAVAILABLE,
         )
         cases.forEach { (error, expected) ->

@@ -608,7 +608,9 @@ class ReaderModel(
         PdfOpenError.PasswordRequired -> DocumentState.NeedsPassword(wrongPassword = false)
         PdfOpenError.IncorrectPassword -> DocumentState.NeedsPassword(wrongPassword = true)
         is PdfOpenError.Damaged -> DocumentState.Failed(ReaderFailure.DAMAGED)
-        is PdfOpenError.Unreadable -> DocumentState.Failed(ReaderFailure.UNREADABLE)
+        is PdfOpenError.Unreadable -> DocumentState.Failed(
+            if (error.cause is DrmLockedException) ReaderFailure.LOCKED else ReaderFailure.UNREADABLE,
+        )
         is PdfOpenError.EngineUnavailable -> DocumentState.Failed(ReaderFailure.ENGINE_UNAVAILABLE)
     }
 

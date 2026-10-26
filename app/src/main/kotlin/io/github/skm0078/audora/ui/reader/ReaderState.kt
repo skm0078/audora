@@ -26,7 +26,7 @@ sealed interface DocumentState {
     data class Open(val pageCount: Int) : DocumentState
 }
 
-enum class ReaderFailure { DAMAGED, UNREADABLE, ENGINE_UNAVAILABLE }
+enum class ReaderFailure { DAMAGED, UNREADABLE, LOCKED, ENGINE_UNAVAILABLE }
 
 /** Where the shown page's words come from: drives the "OCR" badge and the scanned-page notice (P3-05). */
 enum class PageOrigin {

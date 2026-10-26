@@ -2,9 +2,10 @@
 // Purpose: The release blockers a machine can check, on the real app (MainActivity, the playback service, the
 //          bundled voice) on CI's emulator: first run, "Open with", play without the notification permission, the
 //          media controls a notification or lock screen sends, a new voice and a reading setting applying at once,
-//          Settings rows, pages and Back, Hide app content, the ListenLock name, and a scan read after the OCR
-//          download. One test on one fresh install, as one listener would use the app: AndroidJUnitRunner finishes
-//          every activity between tests, so the steps are named blocks inside it and the first broken one stops it.
+//          Settings rows, pages and Back, Hide app content, the ListenLock name, a scan read after the OCR
+//          download, and the e-book formats and comic archives of ADR 2026-10-26-more-ebook-formats. One test on one
+//          fresh install, as one listener would use the app: AndroidJUnitRunner finishes every activity between
+//          tests, so the steps are named blocks inside it and the first broken one stops it.
 
 package io.github.skm0078.audora.release
 
@@ -74,6 +75,8 @@ class ReleaseJourneyTest {
             step("10 Privacy and Advanced open and go back", ::privacyAndAdvancedOpenAndGoBack)
             step("11 Hide app content blocks screenshots", ::hideAppContentBlocksScreenshots)
             step("12 a scan offers OCR and reads after the download", ::aScanOffersOcrAndReadsAfterTheDownload)
+            step("13 Open with reads FB2, Kindle and help-file books", ::openWithReadsMoreEbookFormats)
+            step("14 Open with makes a comic archive into a photo book", ::openWithMakesAComicIntoAPhotoBook)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -316,6 +319,34 @@ class ReleaseJourneyTest {
         waitForNode(hasText(text(R.string.reader_ocr_badge)), OCR_DOWNLOAD_TIMEOUT_MS)
     }
 
+    /** Each format is told from its bytes, added and opened in the reader (ADR 2026-10-26-more-ebook-formats). */
+    private fun openWithReadsMoreEbookFormats() {
+        val play = hasContentDescription(text(R.string.reader_play))
+        for ((asset, type) in MORE_FORMATS) {
+            backToTabs()
+            gone(play)
+            val uri = JourneyDevice.downloadedBook(asset)
+            val current = activity()
+            JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, type)) }
+            try {
+                waitForNode(play, OPEN_TIMEOUT_MS)
+            } catch (failure: Throwable) {
+                throw AssertionError("$asset did not open in the reader", failure)
+            }
+        }
+    }
+
+    /** A comic archive is not added as a book: its pages are read out of the archive for the photo book. */
+    private fun openWithMakesAComicIntoAPhotoBook() {
+        backToTabs()
+        val read = JourneyDevice.logCount(COMIC_READ)
+        val uri = JourneyDevice.downloadedBook(COMIC)
+        val current = activity()
+        JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, COMIC_TYPE)) }
+        awaitLog(COMIC_READ, read)
+        assertEquals("The comic's pages", 1, JourneyDevice.logCount("$COMIC_READ, pages=$COMIC_PAGES"))
+    }
+
     private fun pause() {
         JourneyDevice.onMain(requireNotNull(port)::pause)
         awaitTrue("pause", state = { "Player: ${snapshot()}" }) { !snapshot().wantsToPlay }
@@ -351,6 +382,19 @@ class ReleaseJourneyTest {
         const val LOG_TAG = "ReleaseJourney"
         const val BOOK = "en-udhr-noto.pdf"
         const val SCAN = "en-udhr-noto-scan200bad-p1.pdf"
+
+        // assets/ebooks, written by scripts/fixtures/make_ebook_fixtures.py, with the type a Files app sends.
+        val MORE_FORMATS = listOf(
+            "book.fb2" to "application/x-fictionbook+xml",
+            "kf8.azw3" to "application/vnd.amazon.mobi8-ebook",
+            "help.chm" to "application/vnd.ms-htmlhelp",
+        )
+        const val COMIC = "comic.cbz"
+        const val COMIC_TYPE = "application/vnd.comicbook+zip"
+        const val COMIC_PAGES = 3
+
+        // PhotoBooks' own words once it has the comic's pages.
+        const val COMIC_READ = "Comic archive read"
         val firstRunSteps = FirstRunStep.entries.size
         const val MAX_BACKS = 4
         const val POLL_MS = 200L

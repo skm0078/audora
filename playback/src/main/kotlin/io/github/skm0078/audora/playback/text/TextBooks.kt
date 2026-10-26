@@ -1,11 +1,13 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/text/TextBooks.kt
-// Purpose: Opens text books (EPUB, Word, OpenDocument, RTF, HTML, Markdown, text) by URI: the seam beside BookOpener.
+// Purpose: Opens text books (EPUB, Word, OpenDocument, RTF, HTML, Markdown, FB2, Kindle, CHM, text) by URI: the seam
+//          beside BookOpener.
 
 package io.github.skm0078.audora.playback.text
 
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
+import android.os.ParcelFileDescriptor
 import io.github.skm0078.audora.core.config.LibraryConfig
 import io.github.skm0078.audora.core.config.TextBookConfig
 import io.github.skm0078.audora.core.files.readUpTo
@@ -23,9 +25,11 @@ import java.util.zip.ZipInputStream
 
 /**
  * Every book source (playback, the reader, the studio and the exports through them) asks [formatOf] first and
- * opens text books here (ADR-042, ADR-066), PDFs through PDFium as before. Blocking: call on an IO thread. Errors
- * name the provider's authority only, never the file (its path may be in the URI).
+ * opens text books here (ADR-042, ADR-066, ADR 2026-10-26-more-ebook-formats), PDFs through PDFium as before.
+ * Blocking: call on an IO thread. Errors name the provider's authority only, never the file (its path may be in the
+ * URI).
  */
+@Suppress("TooManyFunctions") // One small reader per file format.
 class TextBooks(
     context: Context,
     private val config: TextBookConfig = TextBookConfig(),
@@ -53,15 +57,7 @@ class TextBooks(
     fun open(documentUri: String, format: DocumentFormat): Outcome<TextBookText, TextBookError> {
         val uri = Uri.parse(documentUri)
         val document = try {
-            when (format) {
-                DocumentFormat.EPUB -> readZip(uri, EpubParser::isTextEntry).flatMap(EpubParser::parse)
-                DocumentFormat.DOCX -> readZip(uri, DocxParser::isWanted).flatMap(DocxParser::parse)
-                DocumentFormat.ODT -> readZip(uri, OdtParser::isWanted).flatMap(OdtParser::parse)
-                DocumentFormat.TEXT -> readText(uri)
-                DocumentFormat.RTF -> readRtf(uri)
-                DocumentFormat.HTML -> readHtml(uri)
-                DocumentFormat.PDF -> Outcome.Failure(TextBookError.Unreadable("a PDF is not a text book"))
-            }
+            read(uri, format)
         } catch (e: ZipException) {
             Outcome.Failure(TextBookError.Damaged(e.javaClass.simpleName))
         } catch (e: IOException) {
@@ -71,6 +67,19 @@ class TextBooks(
         }
         if (document is Outcome.Failure) AudoraLog.w(TAG, "Text book not opened, format=$format: ${document.error}")
         return document.map { TextBookText(it, config) }
+    }
+
+    private fun read(uri: Uri, format: DocumentFormat): Outcome<TextDocument, TextBookError> = when (format) {
+        DocumentFormat.EPUB -> readZip(uri, EpubParser::isTextEntry).flatMap(EpubParser::parse)
+        DocumentFormat.DOCX -> readZip(uri, DocxParser::isWanted).flatMap(DocxParser::parse)
+        DocumentFormat.ODT -> readZip(uri, OdtParser::isWanted).flatMap(OdtParser::parse)
+        DocumentFormat.TEXT -> readText(uri)
+        DocumentFormat.RTF -> readRtf(uri)
+        DocumentFormat.HTML -> readHtml(uri)
+        DocumentFormat.FB2 -> readFb2(uri)
+        DocumentFormat.MOBI -> readMobi(uri)
+        DocumentFormat.CHM -> readChm(uri)
+        DocumentFormat.PDF -> Outcome.Failure(TextBookError.Unreadable("a PDF is not a text book"))
     }
 
     /**
@@ -118,6 +127,66 @@ class TextBooks(
         TextDocument(title, language = null, chapters = if (blocks.isEmpty()) emptyList() else listOf(chapter))
     }
 
+    /** An FB2, or an FB2 zipped alone (.fb2.zip), which its first bytes tell apart. */
+    private fun readFb2(uri: Uri): Outcome<TextDocument, TextBookError> {
+        val zipped = stream(uri).use { DocumentFormats.isZip(it.readUpTo(ZIP_MAGIC_BYTES)) }
+        return if (zipped) {
+            readZip(uri, Fb2Parser::isWanted).flatMap(Fb2Parser::parseZip)
+        } else {
+            readBytes(uri).flatMap(Fb2Parser::parse)
+        }
+    }
+
+    /** A Kindle or Mobipocket book without DRM, or a PalmDOC, read once from the start ([MobiFile]). */
+    private fun readMobi(uri: Uri): Outcome<TextDocument, TextBookError> =
+        stream(uri).use { MobiFile.read(it, config.maxBookBytes) }.flatMap { content ->
+            val document = MobiParser.parse(content) { PlainTextParser(config).parse(it) }
+            if (document.isEmpty) Outcome.Failure(TextBookError.NoText) else Outcome.Success(document)
+        }
+
+    /** A help file, read at random places: through its file descriptor when it has one, else whole in memory. */
+    private fun readChm(uri: Uri): Outcome<TextDocument, TextBookError> = try {
+        readChmOrThrow(uri)
+    } catch (e: ChmException) {
+        Outcome.Failure(TextBookError.Damaged("CHM: ${e.message}"))
+    } catch (e: ChmTooLargeException) {
+        Outcome.Failure(TextBookError.TooLarge(e.javaClass.simpleName))
+    }
+
+    private fun readChmOrThrow(uri: Uri): Outcome<TextDocument, TextBookError> {
+        val descriptor = resolver.openFileDescriptor(uri, READ_MODE)
+            ?: return ChmParser.parse(ChmFile.open(wholeChm(uri)), config.maxBookBytes)
+        // The stream owns the descriptor: closing it closes both, once.
+        return ParcelFileDescriptor.AutoCloseInputStream(descriptor).use { input ->
+            val channel = input.channel
+            // A pipe has no size and cannot be read at a place; such a provider's file is read whole.
+            val size = try {
+                channel.size()
+            } catch (e: IOException) {
+                AudoraLog.d(TAG, "CHM descriptor has no size, read whole: ${e.javaClass.simpleName}")
+                0L
+            }
+            val source = if (size > 0) FileChannelChmSource(channel) else wholeChm(uri)
+            ChmParser.parse(ChmFile.open(source), config.maxBookBytes)
+        }
+    }
+
+    /** A provider whose descriptor cannot seek (a pipe): the help file is read whole, up to the size limit. */
+    private fun wholeChm(uri: Uri): ChmSource {
+        val bytes = stream(uri).use { it.readUpTo((config.maxBookBytes + 1).toInt()) }
+        if (bytes.size > config.maxBookBytes) throw ChmTooLargeException()
+        return ByteArrayChmSource(bytes)
+    }
+
+    private fun readBytes(uri: Uri): Outcome<ByteArray, TextBookError> {
+        val bytes = stream(uri).use { it.readUpTo((config.maxBookBytes + 1).toInt()) }
+        return if (bytes.size > config.maxBookBytes) {
+            Outcome.Failure(TextBookError.TooLarge("file over the limit"))
+        } else {
+            Outcome.Success(bytes)
+        }
+    }
+
     /** The whole file decoded as text ([PlainTextParser.decode]) and parsed, or TooLarge or NoText. */
     private fun readWhole(uri: Uri, parse: (String) -> TextDocument): Outcome<TextDocument, TextBookError> {
         val bytes = stream(uri).use { it.readUpTo((config.maxBookBytes + 1).toInt()) }
@@ -131,5 +200,7 @@ class TextBooks(
 
     private companion object {
         const val TAG = "TextBooks"
+        const val READ_MODE = "r"
+        const val ZIP_MAGIC_BYTES = 4
     }
 }

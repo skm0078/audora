@@ -362,6 +362,8 @@ private const val CONTINUE_KEY = "continue-reading"
  * OpenDocument filters by MIME type; providers that mislabel files are caught by the header check. PDFs, EPUBs and
  * text files (items 42 and 43, ADR-042); Word, OpenDocument, RTF, HTML and Markdown files, and pictures, which become
  * a photo book (ADR-066). `text/` as a whole, since Markdown has several labels. The first-run picker uses it too.
+ * FB2, Kindle (MOBI, AZW3), CHM and comic archives (ADR 2026-10-26-more-ebook-formats) are rarely labelled right by
+ * Android, so files of no known type and ZIPs (a zipped FB2, a comic) are offered too; their first bytes decide.
  */
 internal val BOOK_MIME_TYPES = arrayOf(
     "application/pdf",
@@ -375,6 +377,13 @@ internal val BOOK_MIME_TYPES = arrayOf(
     "image/webp",
     "image/heic",
     "image/heif",
+    "application/x-fictionbook+xml",
+    "application/x-mobipocket-ebook",
+    "application/vnd.amazon.mobi8-ebook",
+    "application/vnd.ms-htmlhelp",
+    "application/vnd.comicbook+zip",
+    "application/zip",
+    "application/octet-stream",
 )
 
 @Preview(showBackground = true)

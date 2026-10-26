@@ -54,7 +54,7 @@
     <string name="library_no_match">No book matches. Change the search or the filter.</string>
     <string name="library_error_cannot_keep">The app you picked from only lends the file for a moment. Save the file to your phone first, then add it from there.</string>
     <string name="library_error_unreadable">ListenLock could not read that file. It may have been moved or deleted.</string>
-    <string name="library_error_not_pdf">That file is not a book ListenLock can read: PDF, EPUB, Word, OpenDocument, RTF, web page, text or picture.</string>
+    <string name="library_error_not_pdf">That file is not a book ListenLock can read: PDF, EPUB, Word, OpenDocument, RTF, FB2, Kindle (MOBI, AZW3), CHM, comic (CBZ), web page, text or picture.</string>
     <string name="library_error_different_file">That is a different file. Pick the same file, or remove this book and add the new one.</string>
     <string name="library_error_not_in_library">That book is no longer in your library.</string>
     <string name="library_error_storage">ListenLock could not save your library. Is your phone\'s storage full?</string>

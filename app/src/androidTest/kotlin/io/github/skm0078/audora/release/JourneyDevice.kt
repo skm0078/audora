@@ -1,5 +1,5 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/release/JourneyDevice.kt
-// Purpose: What the release journey needs from the device itself: test PDFs placed in Downloads the way a Files app
+// Purpose: What the release journey needs from the device itself: test books placed in Downloads the way a Files app
 //          holds them, "Open with" intents, the shell (Back key, permissions), polling, and the app's log lines.
 
 package io.github.skm0078.audora.release
@@ -43,18 +43,26 @@ object JourneyDevice {
      * Copies a PDF from the test's assets into Download/ListenLockTest through MediaStore, as a browser or Files app
      * saves it, and returns its content URI: what "Open with" hands the app.
      */
-    fun downloadedPdf(asset: String): Uri {
+    fun downloadedPdf(asset: String): Uri = downloaded("pdfs", asset, PDF)
+
+    /**
+     * Copies an e-book from the test's assets/ebooks the same way. Saved as plain bytes: MediaStore would rename a
+     * file whose type it does not know, and the app tells a book's format from its bytes, never from its type.
+     */
+    fun downloadedBook(asset: String): Uri = downloaded("ebooks", asset, ANY_FILE)
+
+    private fun downloaded(folder: String, asset: String, mimeType: String): Uri {
         val resolver = app.contentResolver
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, asset)
-            put(MediaStore.MediaColumns.MIME_TYPE, PDF)
+            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
             put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/ListenLockTest")
             put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
         val uri = requireNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)) {
             "MediaStore refused a new download for $asset"
         }
-        instrumentation.context.assets.open("pdfs/$asset").use { input ->
+        instrumentation.context.assets.open("$folder/$asset").use { input ->
             requireNotNull(resolver.openOutputStream(uri)) { "No output stream for $uri" }.use { input.copyTo(it) }
         }
         resolver.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
@@ -62,8 +70,8 @@ object JourneyDevice {
     }
 
     /** The intent Files sends for "Open with ListenLock". */
-    fun openWith(uri: Uri): Intent = Intent(Intent.ACTION_VIEW)
-        .setDataAndType(uri, PDF)
+    fun openWith(uri: Uri, mimeType: String = PDF): Intent = Intent(Intent.ACTION_VIEW)
+        .setDataAndType(uri, mimeType)
         .setClass(app, MainActivity::class.java)
         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
@@ -105,6 +113,7 @@ object JourneyDevice {
     }
 
     private const val PDF = "application/pdf"
+    private const val ANY_FILE = "application/octet-stream"
     private const val POLL_MS = 200L
     const val DEFAULT_TIMEOUT_MS = 30_000L
 }

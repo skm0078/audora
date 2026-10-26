@@ -1,5 +1,6 @@
 // File: core/src/main/kotlin/io/github/skm0078/audora/core/config/PhotoConfig.kt
-// Purpose: Tunables for photo books: a camera photo, or picked pictures, kept as a scanned book (ADR-043, ADR-066).
+// Purpose: Tunables for photo books: a camera photo, picked pictures or a comic archive, kept as a scanned book
+//          (ADR-043, ADR-066, ADR 2026-10-26-more-ebook-formats).
 
 package io.github.skm0078.audora.core.config
 
@@ -11,6 +12,9 @@ package io.github.skm0078.audora.core.config
  * @property captureFolder the cache folder the camera app writes the photo to, through a FileProvider.
  * @property maxImagesPerBook pictures picked or shared at once become one book of at most this many pages: about a
  *   chapter, 50–100 MB of book file, and minutes of OCR the first time it is read.
+ * @property maxComicPages a comic archive (.cbz) of more pages is refused: a long graphic novel, a few hundred MB of
+ *   book file, read by OCR page by page as it plays (ADR 2026-10-26-more-ebook-formats).
+ * @property maxComicBytes a comic archive larger than this is not copied in (it is copied whole before reading).
  */
 data class PhotoConfig(
     val maxLongSidePx: Int = 3_000,
@@ -18,15 +22,20 @@ data class PhotoConfig(
     val pageLongSidePt: Int = 842,
     val captureFolder: String = "photo-capture",
     val maxImagesPerBook: Int = 50,
+    val maxComicPages: Int = 400,
+    val maxComicBytes: Long = DEFAULT_MAX_COMIC_BYTES,
 ) {
     init {
         require(maxLongSidePx > 0) { "maxLongSidePx must be > 0, was $maxLongSidePx" }
         require(jpegQuality in 1..MAX_QUALITY) { "jpegQuality must be in 1..$MAX_QUALITY, was $jpegQuality" }
         require(pageLongSidePt > 0) { "pageLongSidePt must be > 0, was $pageLongSidePt" }
         require(maxImagesPerBook > 0) { "maxImagesPerBook must be > 0, was $maxImagesPerBook" }
+        require(maxComicPages > 0) { "maxComicPages must be > 0, was $maxComicPages" }
+        require(maxComicBytes > 0) { "maxComicBytes must be > 0, was $maxComicBytes" }
     }
 
     private companion object {
         const val MAX_QUALITY = 100
+        const val DEFAULT_MAX_COMIC_BYTES = 512L * 1024L * 1024L
     }
 }
