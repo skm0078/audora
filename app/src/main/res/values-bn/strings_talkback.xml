@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_talkback.xml -->
+<!-- Purpose: What TalkBack says in the screen-by-screen pass (CF-9), in Bengali. -->
+<resources>
+    <plurals name="a11y_sleep_minutes_left">
+        <item quantity="one">%1$d মিনিট বাকি</item>
+        <item quantity="other">%1$d মিনিট বাকি</item>
+    </plurals>
+</resources>

@@ -28,6 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontStyle
@@ -151,6 +153,7 @@ private fun Sentence(
         else -> Color.Transparent
     }
     val color = sentenceColor(look, colors)
+    val now = stringResource(R.string.chapters_current)
     Text(
         text = sentenceText(unit.text, look.look.boldWordStarts, look.word, wordStyle(highlight, colors)),
         style = ReadingTextStyles.forLook(look.look),
@@ -168,6 +171,8 @@ private fun Sentence(
                 onClick = { if (enabled) onTap(unit) },
                 onLongClick = { onLongPress(unit) },
             )
+            // TalkBack finds the sentence being read by its state, without the voice being talked over.
+            .semantics { if (look.spoken) stateDescription = now }
             .padding(horizontal = Dimens.SpaceS, vertical = SENTENCE_PADDING),
     )
 }
