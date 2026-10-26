@@ -114,6 +114,7 @@ class BookRendering private constructor(
                     characters = characters,
                     intent = { intent.current },
                     language = { run.language },
+                    placeOf = quotes::placeOf,
                 ),
                 timings = timings,
             )

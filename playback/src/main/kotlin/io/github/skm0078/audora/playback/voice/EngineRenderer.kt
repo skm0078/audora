@@ -11,6 +11,7 @@ import io.github.skm0078.audora.core.model.ClauseMark
 import io.github.skm0078.audora.core.model.ContentIntent
 import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.ParagraphPlace
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.result.Outcome
@@ -31,6 +32,7 @@ import io.github.skm0078.audora.speech.audio.WordTimes
 import io.github.skm0078.audora.speech.delivery.Delivery
 import io.github.skm0078.audora.speech.delivery.DeliveryPlanner
 import io.github.skm0078.audora.speech.delivery.FootnoteVoice
+import io.github.skm0078.audora.speech.delivery.NarrationArc
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
 import io.github.skm0078.audora.speech.normalize.TextNormalizer
 import io.github.skm0078.audora.speech.normalize.TextRole
@@ -109,7 +111,7 @@ class EngineRenderer(
 
     override fun render(unit: ReadingUnit): Outcome<PcmAudio, SpeechError> {
         val now = replay?.styleFor(UnitKey.of(unit)) ?: style()
-        val delivery = footnoteVoice.shape(unit, deliveryOf(unit, now))
+        val delivery = footnoteVoice.shape(unit, narrated(unit, now, deliveryOf(unit, now)))
         val pauseAfterMs = (styleConfig.silenceAfterMs(unit.pauseAfterMs, now) * delivery.pauseScale).roundToInt()
         val reads = UnitReading(now.modes, reading.speakability, reading.chapterPages(), language = reading.language())
         return when (val speech = reads.speechOf(unit)) {
@@ -211,6 +213,17 @@ class EngineRenderer(
         }
     }
 
+    /**
+     * [delivery] with the narrator's rise and fall across its paragraph (Q-3, ADR 2026-10-26-natural-narration):
+     * only with "Read to suit the book" on, like the delivery itself, and only for narration, not quoted speech.
+     */
+    private fun narrated(unit: ReadingUnit, now: SpeechStyle, delivery: Delivery): Delivery {
+        val arc = reading.narration
+        if (arc == null || !now.shaping.suitBook) return delivery
+        val quoted = reading.startsInQuote(unit) || unit.text.any { it in QUOTE_MARKS }
+        return arc.shape(delivery, unit, reading.placeOf(unit), quoted)
+    }
+
     /** Context only (page, sentence, languages), never the sentence's text. */
     private fun log(unit: ReadingUnit, routed: RoutedAudio) {
         val key = UnitKey.of(unit)
@@ -250,6 +263,9 @@ class EngineRenderer(
  * @property planner each sentence's delivery from that intent, used when the style's shaping turns it on.
  * @property language the open book's language tag, read on the render thread for each sentence: a language none of
  *   the three is read by the phone's voice, sentence by sentence as [sentences] decides (ADR 2026-10-26).
+ * @property placeOf where a sentence sits in its paragraph (Q-3), from the quote carry; null when unknown.
+ * @property narration the narrator's rise and fall across a paragraph, used with [planner]; null (no paragraph places
+ *   to shape by, as in the tests of other features) leaves the planned delivery as it is.
  */
 @Suppress("LongParameterList") // All optional: each caller sets the few it has.
 class ReadingSetup(
@@ -270,6 +286,8 @@ class ReadingSetup(
     val planner: DeliveryPlanner = DeliveryPlanner(),
     val language: () -> String? = { null },
     val sentences: SentenceLanguage = SentenceLanguage.DEFAULT,
+    val placeOf: (ReadingUnit) -> ParagraphPlace? = { null },
+    val narration: NarrationArc? = null,
 ) {
     /** [text] with the model's pauses when it is a run-on on a scanned page, else [text]. */
     fun punctuated(text: String, unit: ReadingUnit): String = when {

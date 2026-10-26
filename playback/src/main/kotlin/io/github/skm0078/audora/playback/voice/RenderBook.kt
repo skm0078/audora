@@ -5,6 +5,7 @@ package io.github.skm0078.audora.playback.voice
 
 import io.github.skm0078.audora.core.model.ContentIntent
 import io.github.skm0078.audora.core.model.Feeling
+import io.github.skm0078.audora.core.model.ParagraphPlace
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
 import io.github.skm0078.audora.speech.route.CharacterVoices
@@ -18,6 +19,7 @@ import io.github.skm0078.audora.speech.route.Speaker
  * what the book is (a story, a poem, the news; ADR-056), which sets how it is delivered, its language tag, which
  * has the phone's voice read a language none of the three is (ADR 2026-10-26), and the feeling the story brain heard
  * in a sentence (ADR story-brain; null when it was not asked).
+ * [placeOf]: where a sentence sits in its paragraph, for the narration's rise and fall (Q-3); null when unknown.
  */
 @Suppress("LongParameterList") // All optional: each caller sets what it knows about the book.
 class RenderBook(
@@ -31,4 +33,5 @@ class RenderBook(
     val characters: CharacterVoices? = null,
     val intent: () -> ContentIntent = { ContentIntent.GENERAL },
     val language: () -> String? = { null },
+    val placeOf: (ReadingUnit) -> ParagraphPlace? = { null },
 )

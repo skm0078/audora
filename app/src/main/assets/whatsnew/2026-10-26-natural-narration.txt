@@ -1,0 +1,3 @@
+en: Narration sounds more human: each paragraph starts a little higher and settles at its end, and a new section starts a little slower. With "Read to suit the book" on.
+hi: पढ़ाई अब ज़्यादा इंसानी लगती है: हर अनुच्छेद थोड़ा ऊँचे सुर में शुरू होकर अंत में ठहरता है, और नया खंड थोड़ा धीरे शुरू होता है। "किताब के अनुसार पढ़ें" चालू होने पर।
+bn: পড়া এখন আরও মানুষের মতো শোনায়: প্রতিটি অনুচ্ছেদ একটু উঁচু সুরে শুরু হয়ে শেষে থিতু হয়, আর নতুন অংশ একটু ধীরে শুরু হয়। "বই অনুযায়ী পড়ুন" চালু থাকলে।

@@ -73,6 +73,7 @@ class ReadingSource(
         characters = characters,
         intent = { intent.current },
         language = { language },
+        placeOf = quotes::placeOf,
     )
 
     /**
