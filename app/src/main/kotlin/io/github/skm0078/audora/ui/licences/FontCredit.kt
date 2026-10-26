@@ -1,4 +1,4 @@
-// File: app/src/main/kotlin/io/github/skm0078/audora/ui/licences/FontLicences.kt
+// File: app/src/main/kotlin/io/github/skm0078/audora/ui/licences/FontCredit.kt
 // Purpose: The fonts bundled for the text view (CF-5), credited on "Voices & licences" as their licence asks.
 
 package io.github.skm0078.audora.ui.licences
