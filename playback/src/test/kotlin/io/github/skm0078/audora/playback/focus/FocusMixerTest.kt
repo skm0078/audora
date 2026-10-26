@@ -76,8 +76,8 @@ class FocusMixerTest {
     fun switchingSoundsFadesThroughSilence() {
         val mixer = FocusMixer(RATE, config, TEST_BEDS)
         run(mixer, ShortArray(RATE * 2), rain)
-        run(mixer, ShortArray(RATE * 2), FocusSoundOptions(FocusSound.CAFE, level = 1f))
-        assertEquals(FocusSound.CAFE, mixer.sound)
+        run(mixer, ShortArray(RATE * 2), FocusSoundOptions(FocusSound.WIND, level = 1f))
+        assertEquals(FocusSound.WIND, mixer.sound)
     }
 
     @Test

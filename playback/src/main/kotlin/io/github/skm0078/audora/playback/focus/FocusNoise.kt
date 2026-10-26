@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/focus/FocusNoise.kt
-// Purpose: Makes brown noise for the focus sound (plan item 72) sample by sample; rain and café are recordings (Q-1).
+// Purpose: Makes brown noise for the focus sound (plan item 72) sample by sample; nature sounds are recordings (Q-1).
 
 package io.github.skm0078.audora.playback.focus
 
@@ -12,7 +12,7 @@ fun interface NoiseSource {
 
 /**
  * Brown noise is noise by definition, so made here it sounds the same as a recording of it. Rain and café used to be
- * made here too, from filtered noise; they sounded fake and are recorded loops now ([FocusLoops]).
+ * made here too, from filtered noise; they sounded fake, and nature sounds are recorded loops now ([FocusLoops]).
  */
 object FocusNoise {
     /** Brown noise for [FocusSound.BROWN_NOISE], else null. The same [seed] gives the same sound, for tests. */

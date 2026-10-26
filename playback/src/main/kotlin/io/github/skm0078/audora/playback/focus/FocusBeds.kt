@@ -24,7 +24,14 @@ object FocusLoopAssets {
 
     private val RECORDED = mapOf(
         FocusSound.RAIN to "rain",
-        FocusSound.CAFE to "cafe",
+        FocusSound.FOREST_RAIN to "forest-rain",
+        FocusSound.STREAM to "stream",
+        FocusSound.BROOK to "brook",
+        FocusSound.RIVER to "river",
+        FocusSound.FOREST_BIRDS to "forest-birds",
+        FocusSound.SPRING_BIRDS to "spring-birds",
+        FocusSound.FIREPLACE to "fireplace",
+        FocusSound.WIND to "wind",
     )
 
     /** The asset path of [sound]'s loop, or null for a sound made on the phone (or none). */

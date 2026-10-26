@@ -17,7 +17,7 @@ import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
 /**
- * The service's [FocusBeds]: brown noise is made on the phone ([FocusNoise]); rain, café and the other recordings are
+ * The service's [FocusBeds]: brown noise is made on the phone ([FocusNoise]); rain, water, birds, fire and wind are
  * Opus loops in `assets/focus/`. A loop is decoded and resampled on [loader] the first time it is asked for at a rate,
  * and played from memory after that: about 2 MB a minute of loop at 16 kHz, 5 MB at 44.1 kHz. Only the loop in use is
  * kept; another sound or rate replaces it. Until it is ready its source is silent; it then fades in
