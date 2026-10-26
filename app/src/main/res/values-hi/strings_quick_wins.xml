@@ -15,13 +15,8 @@
     <string name="whats_new_title">नया क्या है</string>
     <string name="whats_new_item">• %1$s</string>
     <string name="whats_new_ok">समझ गए</string>
-    <string-array name="whats_new_items">
-        <item>एक किताब चलते हुए दूसरी खोलने पर हर किताब अपनी जगह याद रखती है।</item>
-        <item>शेयर की गई फ़ाइल जोड़ते या स्टूडियो फ़ाइल सेव करते समय फ़ोन घुमाने से अब वह खोती नहीं।</item>
-        <item>अंग्रेज़ी पेज वाली स्कैन की गई हिंदी या बांग्ला किताब अपनी ही भाषा में पढ़ी जाती है।</item>
-        <item>TalkBack में ऐक्शन मेन्यू से किसी भी वाक्य से पढ़ें या उसे खोलें, और पेज स्लाइडर हर स्वाइप पर एक पेज बदलता है।</item>
-        <item>दूसरी किताब पढ़ी जा रही हो तब भी किताब बंद करने पर स्क्रीन नहीं अटकती।</item>
-    </string-array>
+    <!-- Which line of each assets/whatsnew/ entry to show; the items themselves are one file per change there. -->
+    <string name="whats_new_language">hi</string>
 
     <string name="library_mark_finished">पूरी हुई चिह्नित करें</string>
     <string name="menu_hint_mark_finished">आपकी जगह आख़िरी पेज पर चली जाती है, ताकि किताब \"पूरी हुई\" में दिखे।</string>

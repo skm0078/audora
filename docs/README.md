@@ -3,7 +3,8 @@
 Every document in the repository, in one list. Plans, trackers and guides that live outside the repository are
 collected on the project's private docs hub; this file is its repository half.
 
-When you add a document or an ADR, add a line here in the same change.
+When you add a document, add a line here in the same change. ADRs and progress entries are not listed: their folders
+([adr/](adr/), [progress/](progress/)) are their own lists, so parallel PRs never append here.
 
 ## Start here
 
@@ -11,7 +12,8 @@ When you add a document or an ADR, add a line here in the same change.
 | --- | --- |
 | [../README.md](../README.md) | What the app does, privacy, voice credits, roadmap |
 | [../AGENTS.md](../AGENTS.md) | Rules for every change: stack, module boundaries, definition of done |
-| [PROGRESS.md](PROGRESS.md) | One entry per merged change, newest first, with the real-device checks each still needs |
+| [progress/](progress/README.md) | One file per merged change, with the real-device checks each still needs |
+| [PROGRESS.md](PROGRESS.md) | The same, up to 2026-10-25 (frozen) |
 
 ## Product and plan
 
@@ -54,7 +56,8 @@ When you add a document or an ADR, add a line here in the same change.
 
 ## Decisions (ADRs)
 
-How to write one: [adr/README.md](adr/README.md). ADR-001 to ADR-009 are in the Build Spec, §11.
+How to write one: [adr/README.md](adr/README.md). ADR-001 to ADR-009 are in the Build Spec, §11. ADRs from
+2026-10-25 on are named by date and are listed only in [adr/](adr/); the numbered ones are below.
 ADR-013 and ADR-037 were planned (podcast mode, online AI) and have no file yet.
 
 **Platform, build and release**

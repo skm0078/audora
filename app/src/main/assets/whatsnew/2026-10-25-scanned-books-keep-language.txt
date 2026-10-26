@@ -1,0 +1,3 @@
+en: A scanned Hindi or Bengali book with an English page keeps reading in its own language.
+hi: अंग्रेज़ी पेज वाली स्कैन की गई हिंदी या बांग्ला किताब अपनी ही भाषा में पढ़ी जाती है।
+bn: ইংরেজি পৃষ্ঠা থাকা স্ক্যান করা হিন্দি বা বাংলা বই নিজের ভাষাতেই পড়া হয়।

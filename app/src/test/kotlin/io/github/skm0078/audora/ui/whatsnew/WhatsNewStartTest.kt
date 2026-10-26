@@ -17,22 +17,22 @@ class WhatsNewStartTest {
     private val empty = LibraryListState.Loaded(items = emptyList())
 
     @Test
-    fun `someone with books who has not seen this list sees it`() {
-        assertEquals(WhatsNewStart.SHOW, whatsNewStart(seen = 0, current = 1, library = withBooks))
+    fun `someone with books who has unseen entries sees them`() {
+        assertEquals(WhatsNewStart.SHOW, whatsNewStart(hasUnseen = true, library = withBooks))
     }
 
     @Test
-    fun `a list already seen is not shown again`() {
-        assertEquals(WhatsNewStart.NOTHING, whatsNewStart(seen = 1, current = 1, library = withBooks))
+    fun `nothing unseen shows nothing`() {
+        assertEquals(WhatsNewStart.NOTHING, whatsNewStart(hasUnseen = false, library = withBooks))
     }
 
     @Test
     fun `a new listener with no books is marked as having seen it`() {
-        assertEquals(WhatsNewStart.MARK_SEEN, whatsNewStart(seen = 0, current = 1, library = empty))
+        assertEquals(WhatsNewStart.MARK_SEEN, whatsNewStart(hasUnseen = true, library = empty))
     }
 
     @Test
     fun `nothing is decided from a library that failed to load`() {
-        assertEquals(WhatsNewStart.NOTHING, whatsNewStart(seen = 0, current = 1, library = LibraryListState.Failed))
+        assertEquals(WhatsNewStart.NOTHING, whatsNewStart(hasUnseen = true, library = LibraryListState.Failed))
     }
 }

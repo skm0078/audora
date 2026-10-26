@@ -181,8 +181,8 @@ import io.github.skm0078.audora.ui.voices.VoicesRoute
 import io.github.skm0078.audora.ui.voices.use
 import io.github.skm0078.audora.ui.voices.voicePackActions
 import io.github.skm0078.audora.ui.voices.voicesActions
-import io.github.skm0078.audora.ui.whatsnew.WHATS_NEW_ID
 import io.github.skm0078.audora.ui.whatsnew.WhatsNewDialog
+import io.github.skm0078.audora.ui.whatsnew.whatsNewEntryNames
 import io.github.skm0078.audora.widget.ResumeWidgetEffect
 import io.github.skm0078.audora.widget.ResumeWidgetProvider
 import java.io.File
@@ -466,7 +466,8 @@ class MainActivity : ComponentActivity() {
         val finish = {
             show = false
             onboarding.firstRunDone = true // an apply(): written in the background
-            onboarding.whatsNewSeen = WHATS_NEW_ID // a new listener has no older version to compare with
+            // A new listener has no older version to compare with: everything shipped counts as seen.
+            onboarding.markWhatsNewSeen(whatsNewEntryNames(assets))
         }
         LaunchedEffect(Unit) {
             if (show != null) return@LaunchedEffect

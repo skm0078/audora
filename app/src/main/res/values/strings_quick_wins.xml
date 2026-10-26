@@ -16,13 +16,8 @@
     <string name="whats_new_title">What\'s new</string>
     <string name="whats_new_item">• %1$s</string>
     <string name="whats_new_ok">Got it</string>
-    <string-array name="whats_new_items">
-        <item>Switching books while one plays keeps each book\'s place.</item>
-        <item>Turning the phone while a shared file is added or a studio file is saved no longer loses it.</item>
-        <item>A scanned Hindi or Bengali book with an English page keeps reading in its own language.</item>
-        <item>With TalkBack, the actions menu reads from or opens any sentence, and the page slider turns one page per swipe.</item>
-        <item>Leaving a book no longer freezes the screen while another book is being read.</item>
-    </string-array>
+    <!-- Which line of each assets/whatsnew/ entry to show; the items themselves are one file per change there. -->
+    <string name="whats_new_language">en</string>
 
     <string name="library_mark_finished">Mark as finished</string>
     <string name="menu_hint_mark_finished">Moves your place to the last page, so the book shows under Finished.</string>
