@@ -14,9 +14,11 @@ import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Active for 16-bit PCM (what every voice renders); anything else passes through untouched. [options] is read once
- * per buffer on the playback thread, so a change is heard within one buffer. With the sound off the mixer copies
- * the voice as it is.
+ * Runs after Media3's speed and pitch change ([FocusAfterSpeedChain]), so the player's speed above the voice's cap,
+ * a replay's slow-down and the pitch setting (ADR-067) change the voice only: a recorded rain stretched or pitched
+ * with it would sound wrong. Active for 16-bit PCM (what every voice renders); anything else passes through
+ * untouched. [options] is read once per buffer on the playback thread, so a change is heard within one buffer. With
+ * the sound off the mixer copies the voice as it is.
  *
  * Media3 drains and flushes its processors at every media item change (each sentence is one), so neither the end of
  * a stream nor a flush means the book ended or was sought. The session says so instead ([FocusSoundCues]): [fadeIn]
@@ -27,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class FocusSoundProcessor(
     private val options: () -> FocusSoundOptions,
     private val config: FocusSoundConfig = FocusSoundConfig(),
+    private val beds: FocusBeds = FocusBeds.GENERATED,
 ) : BaseAudioProcessor() {
     private var mixer: FocusMixer? = null
     private var samples = ShortArray(0)
@@ -75,7 +78,7 @@ class FocusSoundProcessor(
     private fun mixerFor(sampleRate: Int): FocusMixer {
         val current = mixer
         return when {
-            current == null -> FocusMixer(sampleRate, config)
+            current == null -> FocusMixer(sampleRate, config, beds)
             current.sampleRate == sampleRate -> current
             else -> current.continuedAt(sampleRate)
         }.also { mixer = it }

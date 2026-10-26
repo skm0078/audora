@@ -19,7 +19,7 @@ class FocusMixerTest {
 
     @Test
     fun offLeavesTheVoiceUntouched() {
-        val mixer = FocusMixer(RATE, config)
+        val mixer = FocusMixer(RATE, config, TEST_BEDS)
         val voice = tone(seconds = 1f)
         val out = voice.copyOf()
         mixer.mix(out, out.size, 1, FocusSoundOptions())
@@ -28,7 +28,7 @@ class FocusMixerTest {
 
     @Test
     fun inSilenceTheSoundRisesToItsLevel() {
-        val mixer = FocusMixer(RATE, config)
+        val mixer = FocusMixer(RATE, config, TEST_BEDS)
         run(mixer, ShortArray(RATE * 2), rain)
         val bed = run(mixer, ShortArray(RATE), rain)
         // Each sound is about 0.18 RMS of full scale before its gain.
@@ -38,7 +38,7 @@ class FocusMixerTest {
 
     @Test
     fun theSoundDipsWhileTheVoiceSpeaksAndComesBackAfter() {
-        val mixer = FocusMixer(RATE, config)
+        val mixer = FocusMixer(RATE, config, TEST_BEDS)
         run(mixer, ShortArray(RATE * 2), rain)
         val voice = tone(seconds = 2f)
         val mixed = run(mixer, voice.copyOf(), rain)
@@ -52,7 +52,7 @@ class FocusMixerTest {
 
     @Test
     fun aShortGapBetweenWordsStaysDipped() {
-        val mixer = FocusMixer(RATE, config)
+        val mixer = FocusMixer(RATE, config, TEST_BEDS)
         run(mixer, ShortArray(RATE * 2), rain)
         run(mixer, tone(seconds = 1f), rain)
         // A gap shorter than the hold: the sound must not swell between two words.
@@ -63,7 +63,7 @@ class FocusMixerTest {
 
     @Test
     fun switchingToOffFadesOutWithinTheSwitchTime() {
-        val mixer = FocusMixer(RATE, config)
+        val mixer = FocusMixer(RATE, config, TEST_BEDS)
         run(mixer, ShortArray(RATE * 2), rain)
         val fade = run(mixer, ShortArray(RATE * config.switchMs * FADE_TIMES / MS), FocusSoundOptions())
         val tail = fade.copyOfRange(fade.size - RATE / TAIL_PARTS, fade.size)
@@ -74,7 +74,7 @@ class FocusMixerTest {
 
     @Test
     fun switchingSoundsFadesThroughSilence() {
-        val mixer = FocusMixer(RATE, config)
+        val mixer = FocusMixer(RATE, config, TEST_BEDS)
         run(mixer, ShortArray(RATE * 2), rain)
         run(mixer, ShortArray(RATE * 2), FocusSoundOptions(FocusSound.CAFE, level = 1f))
         assertEquals(FocusSound.CAFE, mixer.sound)
@@ -82,7 +82,7 @@ class FocusMixerTest {
 
     @Test
     fun aLoudVoiceNeverWrapsAround() {
-        val mixer = FocusMixer(RATE, config)
+        val mixer = FocusMixer(RATE, config, TEST_BEDS)
         val loud = ShortArray(RATE) { i -> if (i % 2 == 0) Short.MAX_VALUE else Short.MIN_VALUE }
         val out = run(mixer, loud.copyOf(), rain)
         for (i in out.indices) assertEquals(loud[i] > 0, out[i] > 0)
@@ -90,7 +90,7 @@ class FocusMixerTest {
 
     @Test
     fun stereoGetsTheSameSoundInBothChannels() {
-        val mixer = FocusMixer(RATE, config)
+        val mixer = FocusMixer(RATE, config, TEST_BEDS)
         val out = ShortArray(RATE * 2 * 2)
         mixer.mix(out, out.size, 2, rain)
         for (frame in out.indices step 2) assertEquals(out[frame], out[frame + 1])
@@ -99,7 +99,7 @@ class FocusMixerTest {
 
     @Test
     fun aVoiceAtAnotherRateCarriesTheSoundOnAtItsLevel() {
-        val mixer = FocusMixer(RATE, config)
+        val mixer = FocusMixer(RATE, config, TEST_BEDS)
         run(mixer, ShortArray(RATE * 2), rain)
         val next = mixer.continuedAt(OTHER_RATE)
         val bed = run(next, ShortArray(OTHER_RATE / 2), rain)
@@ -110,7 +110,7 @@ class FocusMixerTest {
 
     @Test
     fun afterAGapTheSoundFadesBackIn() {
-        val mixer = FocusMixer(RATE, config)
+        val mixer = FocusMixer(RATE, config, TEST_BEDS)
         run(mixer, ShortArray(RATE * 2), rain)
         mixer.fadeIn()
         val start = run(mixer, ShortArray(RATE / 20), rain)
@@ -119,7 +119,7 @@ class FocusMixerTest {
 
     @Test
     fun theEndFadesOutInsteadOfStoppingDead() {
-        val mixer = FocusMixer(RATE, config)
+        val mixer = FocusMixer(RATE, config, TEST_BEDS)
         run(mixer, ShortArray(RATE * 2), rain)
         val tail = mixer.tail(channels = 2)
         assertEquals(RATE * config.tailMs / MS * 2, tail.size)
@@ -159,5 +159,18 @@ class FocusMixerTest {
         const val FADE_TIMES = 2
         const val TAIL_PARTS = 10
         const val SILENT_RMS = 1e-4f
+    }
+}
+
+/** RMS of [TEST_BEDS]' noise: uniform in ±a has an RMS of a / √3. */
+private const val TEST_PEAK = 0.329f
+
+/** A plain noise for every sound but off, about as loud as the real ones (0.19 RMS), so mixing is tested alone. */
+internal val TEST_BEDS = FocusBeds { sound, _, seed ->
+    if (sound == FocusSound.OFF) {
+        null
+    } else {
+        val random = Xorshift(seed + sound.ordinal)
+        NoiseSource { random.white() * TEST_PEAK }
     }
 }
