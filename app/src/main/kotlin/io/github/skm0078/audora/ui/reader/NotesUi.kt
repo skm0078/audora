@@ -7,6 +7,8 @@ package io.github.skm0078.audora.ui.reader
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -78,7 +80,7 @@ fun NotesOverlays(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun BookmarksSheet(
     bookmarks: List<Bookmark>,
@@ -88,14 +90,16 @@ private fun BookmarksSheet(
 ) {
     AppSheet(onDismissRequest = actions::hideList) {
         Column(Modifier.navigationBarsPadding().padding(bottom = Dimens.SpaceL)) {
-            Row(
+            // Wraps "Bookmark here" under the title when both do not fit, rather than squeezing the title.
+            FlowRow(
                 Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl),
-                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                itemVerticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     stringResource(R.string.bookmarks_title),
                     style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.weight(1f).semantics { heading() },
+                    modifier = Modifier.semantics { heading() },
                 )
                 TextButton(onClick = reader::onBookmarkHere) { Text(stringResource(R.string.bookmarks_add_here)) }
             }
