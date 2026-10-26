@@ -39,8 +39,8 @@ object JourneyDevice {
 
     fun logCount(fragment: String): Int = lines.count { fragment in it }
 
-    /** The kept log lines holding any of [fragments], for a step's failure message. */
-    fun logLines(vararg fragments: String): List<String> = lines.filter { line -> fragments.any { it in line } }
+    /** The last [count] kept log lines, for a step's failure message. */
+    fun logTail(count: Int): List<String> = lines.takeLast(count)
 
     /**
      * Copies a PDF from the test's assets into Download/ListenLockTest through MediaStore, as a browser or Files app
