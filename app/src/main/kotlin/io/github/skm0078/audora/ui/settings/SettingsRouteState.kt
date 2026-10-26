@@ -13,7 +13,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
+import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
+import io.github.skm0078.audora.speech.punct.PunctuationModels
 import io.github.skm0078.audora.ui.loggingFailures
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -23,10 +25,27 @@ import kotlinx.coroutines.withContext
 /** A model pack row's state (null while it loads) and what its buttons do. */
 internal class ModelPackSetting(val state: OcrModelsState?, val onAction: (OcrModelsAction) -> Unit)
 
+/** The OCR models' row (P3-05). */
+@Composable
+internal fun rememberOcrModelsSetting(models: OcrModels): ModelPackSetting = rememberModelPackSetting(
+    what = "the OCR models",
+    state = models::state,
+    download = models::download,
+    cancel = models::cancel,
+) { models.delete() }
+
+/** The punctuation model's row (RI-11). */
+@Composable
+internal fun rememberPunctuationModelSetting(models: PunctuationModels): ModelPackSetting = rememberModelPackSetting(
+    what = "the punctuation model",
+    state = models::state,
+    download = models::download,
+    cancel = models::cancel,
+) { models.delete() }
+
 /** The row for one model pack: [what] names it in the log when its state cannot be read. */
 @Composable
-internal fun rememberModelPackSetting(
-    tag: String,
+private fun rememberModelPackSetting(
     what: String,
     state: () -> Flow<OcrModelsState>,
     download: () -> Unit,
@@ -34,7 +53,7 @@ internal fun rememberModelPackSetting(
     delete: suspend () -> Unit,
 ): ModelPackSetting {
     val scope = rememberCoroutineScope()
-    val current by remember { state().loggingFailures(tag, what) }.collectAsStateWithLifecycle(initialValue = null)
+    val current by remember { state().loggingFailures(TAG, what) }.collectAsStateWithLifecycle(initialValue = null)
     return ModelPackSetting(current) { action -> scope.runModelAction(action, download, cancel, delete) }
 }
 
@@ -57,3 +76,5 @@ internal fun rememberSkipCitationsSetting(context: Context): SkipCitationsSettin
         }
     }
 }
+
+private const val TAG = "Audora.Settings"

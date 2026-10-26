@@ -162,8 +162,9 @@ import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.reader.rememberSpokenWord
 import io.github.skm0078.audora.ui.settings.SettingsScreen
 import io.github.skm0078.audora.ui.settings.rememberActedVoiceSettings
-import io.github.skm0078.audora.ui.settings.rememberModelPackSetting
+import io.github.skm0078.audora.ui.settings.rememberOcrModelsSetting
 import io.github.skm0078.audora.ui.settings.rememberPronunciationSettings
+import io.github.skm0078.audora.ui.settings.rememberPunctuationModelSetting
 import io.github.skm0078.audora.ui.settings.rememberSkipCitationsSetting
 import io.github.skm0078.audora.ui.settings.rememberStoryBrainSettings
 import io.github.skm0078.audora.ui.settings.rememberVoiceCommandsSettings
@@ -628,13 +629,8 @@ class MainActivity : ComponentActivity() {
         appearance: Appearance,
         onKidsMode: () -> Unit,
     ) {
-        val ocr = rememberModelPackSetting(
-            SETTINGS_TAG, "the OCR models", ocrModels::state, ocrModels::download, ocrModels::cancel,
-        ) { ocrModels.delete() }
-        val punctuation = rememberModelPackSetting(
-            SETTINGS_TAG, "the punctuation model", punctuationModels::state, punctuationModels::download,
-            punctuationModels::cancel,
-        ) { punctuationModels.delete() }
+        val ocr = rememberOcrModelsSetting(ocrModels)
+        val punctuation = rememberPunctuationModelSetting(punctuationModels)
         val volumeKeys by remember { screenPreference.volumeKeysSkip() }.collectAsStateWithLifecycle(false)
         val scope = rememberCoroutineScope()
         val citations = rememberSkipCitationsSetting(applicationContext)
@@ -1099,7 +1095,6 @@ private fun SharedPdfEffect(
     }
 }
 
-private const val SETTINGS_TAG = "Audora.Settings"
 private const val READER_TAG = "Audora.Reader"
 
 /** cacheDir subfolder for the page scrubber's thumbnails (plan item 17), one folder per book. */
