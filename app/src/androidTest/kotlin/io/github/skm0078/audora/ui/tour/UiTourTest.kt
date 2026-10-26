@@ -195,6 +195,7 @@ class UiTourTest {
         capture("reader-more-menu")
         JourneyDevice.pressBackKey()
         settle()
+        readerSheets()
         // Clickable only: in Bengali the time-left line also holds the speed word and sits first.
         tap(hasText(speedButtonText(), substring = true) and hasClickAction())
         settle()
@@ -210,10 +211,39 @@ class UiTourTest {
         tryTap(hasContentDescription(text(R.string.reader_play)))
     }
 
+    /** The reader's sheets: from its top bar, then from its More menu. */
+    private fun readerSheets() {
+        opened("chapters-sheet", hasContentDescription(text(R.string.chapters_title)))
+        opened("bookmarks-sheet", hasContentDescription(text(R.string.bookmarks_title)))
+        for ((name, item) in listOf(
+            "page-text" to R.string.page_text_title,
+            "search" to R.string.search_action,
+            "up-next" to R.string.up_next_title,
+        )) {
+            opened(name, hasContentDescription(text(R.string.reader_more)), hasText(text(item)))
+        }
+    }
+
+    /** Taps [path] in turn, captures what opened and goes back; a step with nothing to tap ends it uncaptured. */
+    private fun opened(name: String, vararg path: SemanticsMatcher) {
+        val reached = path.all { step -> runCatching { tap(step) }.isSuccess }
+        if (reached) capture(name) else Log.w(TAG, "${pass.name}: could not open $name")
+        back()
+    }
+
+    /** A book's menu and details sheet, from its row in the library. */
+    private fun bookSheets() {
+        val menu = hasContentDescription(textBefore(R.string.library_book_menu_named), substring = true)
+        opened("book-menu", menu)
+        opened("book-details", menu, hasText(text(R.string.book_details_title)))
+        backToTabs()
+    }
+
     /** The full player, from the mini player on the library once the reader is closed. */
     private fun player() {
         backToTabs()
         capture("library-with-book")
+        bookSheets()
         // The mini player sits under the content, so its "Page 3 of 9" is the last one on screen.
         // Tap the clickable surface that holds it, not the text itself.
         val where = hasClickAction() and
