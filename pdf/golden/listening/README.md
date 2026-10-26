@@ -53,8 +53,11 @@ What a careful human narrator would say with the app's **default settings**, in 
   Letter-and-digit names a voice reads right as written stay as written ("T2", "R1", "MRI", "USA").
 - **Skip:** running headers and footers, page numbers, text inside figures (axis labels, legends), OCR noise,
   footnote markers in the body ("both.¹" → "both."), the number that starts a footnote, bracketed numeric citations.
-- **Tables (default: Summary):** the caption, then "<rows> rows, <columns> columns." counting data rows (not the
-  header row), e.g. "Table two. Student's t-test of … Four rows, five columns." Cells are not read.
+- **Tables (default: Summary):** the caption, then what the table holds, the way a person describes it (Q-4):
+  "A table of <rows> rows, with columns for <A>, <B>, and <C>." counting data rows (not the header row) and naming
+  every column when there are four or fewer, all named; otherwise "A table of <rows> rows and <columns> columns,
+  including <the first three distinct column names>." Column names are said without their bracketed tail ("(kg)",
+  "(n = 104)"). Cells are not read.
 - **Footnotes (default: at the end of the page):** the note's text where it is printed, without its number.
 - **Captions (default: Announce):** read in full; the cue before them is a sound, not words.
 - **Display equations:** "Equation" and its printed number ("Equation nine."), or just "Equation." when unnumbered.
