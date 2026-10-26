@@ -113,6 +113,7 @@ class BookRendering private constructor(
                     moodOf = quotes::moodOf,
                     characters = characters,
                     intent = { intent.current },
+                    placeOf = quotes::placeOf,
                 ),
                 timings = timings,
             )

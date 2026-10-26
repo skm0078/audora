@@ -55,6 +55,7 @@ class ReadingSource(
         moodOf = quotes::moodOf,
         characters = characters,
         intent = { intent.current },
+        placeOf = quotes::placeOf,
     )
 
     /** The modes as they are now, for one render epoch's playlist. */

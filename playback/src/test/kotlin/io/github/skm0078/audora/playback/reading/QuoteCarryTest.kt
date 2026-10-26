@@ -22,6 +22,33 @@ class QuoteCarryTest {
         unit(page, index).copy(text = text, pauseAfterMs = pause, kind = kind)
 
     @Test
+    fun `each sentence knows its place in its paragraph, and a paragraph after a heading opens a section (Q-3)`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "It was late.", pause = 0),
+            sentence(1, "Everyone slept.", pause = paragraphPauseMs),
+            sentence(2, "Chapter Two", pause = paragraphPauseMs, kind = UnitKind.HEADING),
+            sentence(3, "Morning came.", pause = 0),
+            sentence(4, "The birds sang.", pause = 0),
+            sentence(5, "Nobody woke.", pause = paragraphPauseMs),
+            sentence(6, "Then a knock.", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        val places = units.map { carry.placeOf(it) }
+        assertEquals(
+            listOf(0 to 2, 1 to 2, 0 to 1, 0 to 3, 1 to 3, 2 to 3, 0 to 1),
+            places.map {
+                it!!.index to it.size
+            },
+        )
+        // The page's first paragraph may follow a heading on the page before, so it is not counted as a section's.
+        assertEquals(listOf(false, false, false, true, true, true, false), places.map { it!!.afterHeading })
+        assertNull(carry.placeOf(sentence(0, "Another page.", page = 9)))
+    }
+
+    @Test
     fun `a sad line's mood reaches the next sentence of its paragraph, not across a paragraph break`() {
         val carry = QuoteCarry()
         val units = listOf(

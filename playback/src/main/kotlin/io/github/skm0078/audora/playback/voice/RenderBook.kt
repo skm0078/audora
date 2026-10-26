@@ -5,6 +5,7 @@ package io.github.skm0078.audora.playback.voice
 
 import io.github.skm0078.audora.core.model.ContentIntent
 import io.github.skm0078.audora.core.model.Feeling
+import io.github.skm0078.audora.core.model.ParagraphPlace
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
 import io.github.skm0078.audora.speech.route.CharacterVoices
@@ -16,6 +17,7 @@ import io.github.skm0078.audora.speech.route.Speaker
  * punctuation, RI-11), its pronunciation fixes (plan item 1) and whether a sentence starts inside a quote opened
  * earlier in its paragraph (cast voices, plan item 7), who speaks it and the book's character voices (item 63), and
  * what the book is (a story, a poem, the news; ADR-056), which sets how it is delivered.
+ * [placeOf]: where a sentence sits in its paragraph, for the narration's rise and fall (Q-3); null when unknown.
  */
 @Suppress("LongParameterList") // All optional: each caller sets what it knows about the book.
 class RenderBook(
@@ -27,4 +29,5 @@ class RenderBook(
     val moodOf: (ReadingUnit) -> Feeling? = { null },
     val characters: CharacterVoices? = null,
     val intent: () -> ContentIntent = { ContentIntent.GENERAL },
+    val placeOf: (ReadingUnit) -> ParagraphPlace? = { null },
 )
