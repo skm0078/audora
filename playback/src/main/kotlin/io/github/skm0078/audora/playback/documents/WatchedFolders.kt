@@ -218,6 +218,10 @@ class WatchedFolders(
         @Volatile
         private var lastScanMs: Long? = null
 
+        /** Whether [treeUri] is a watched folder: folder sync (CF-16) keeps its read grant then. Blocking. */
+        fun isWatched(filesDir: File, treeUri: String): Boolean =
+            WatchedFolderStore(File(filesDir, FILE_NAME)).load().orEmpty().any { it.watched && it.treeUri == treeUri }
+
         /** The folder (tree) URI a document was opened through, or null for a document opened on its own. */
         fun folderOf(document: Uri): Uri? = if (DocumentsContract.isTreeUri(document)) {
             DocumentsContract.buildTreeDocumentUri(document.authority, DocumentsContract.getTreeDocumentId(document))

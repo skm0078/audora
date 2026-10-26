@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sync through a folder the listener picks (CF-16, ADR 2026-10-26-folder-sync). -->
+<resources>
+    <string name="library_sync_folder">फ़ोल्डर से सिंक करें</string>
+    <string name="menu_hint_sync_folder">आपका पढ़ने का स्थान, बुकमार्क और हाइलाइट आपके सभी फ़ोन और टैबलेट पर एक जैसे रहें, उस फ़ोल्डर के ज़रिए जिसे आपका क्लाउड ऐप एक जैसा रखता है।</string>
+    <string name="sync_explain">ऐसा फ़ोल्डर चुनें जिसे आपका क्लाउड ऐप (जैसे Google Drive, Dropbox या OneDrive) या कोई सिंक ऐप आपके दूसरे डिवाइसों पर एक जैसा रखता है, और वहाँ ListenLock में भी यही फ़ोल्डर चुनें। ListenLock उसमें आपके पढ़ने के स्थान, बुकमार्क, हाइलाइट और नोट लिखता है, और आप चाहें तो आपकी किताबों की कॉपी भी। ListenLock खुद कुछ भी कहीं नहीं भेजता: फ़ोल्डर का ऐप फ़ाइलें ले जाता है, और वह ऐप जिनके साथ फ़ोल्डर साझा करता है वे उन्हें पढ़ सकते हैं।</string>
+    <string name="sync_no_folder">अभी कोई फ़ोल्डर नहीं चुना गया।</string>
+    <string name="sync_folder_label">फ़ोल्डर: %1$s</string>
+    <string name="sync_unnamed">चुना गया फ़ोल्डर</string>
+    <string name="sync_last">पिछला सिंक %1$s</string>
+    <string name="sync_never">अभी तक सिंक नहीं हुआ</string>
+    <string name="sync_running">सिंक हो रहा है…</string>
+    <string name="sync_last_failed">पिछला सिंक फ़ोल्डर तक नहीं पहुँच सका। उसे फिर से चुनें।</string>
+    <string name="sync_copy_books">किताबें फ़ोल्डर में कॉपी करें</string>
+    <string name="sync_copy_books_hint">ताकि आपके दूसरे डिवाइस भी उन्हें जोड़ सकें। 200 MB से बड़ी किताबें सिर्फ़ इसी डिवाइस पर रहती हैं।</string>
+    <string name="sync_pick">फ़ोल्डर चुनें</string>
+    <string name="sync_change">फ़ोल्डर बदलें</string>
+    <string name="sync_now">अभी सिंक करें</string>
+    <string name="sync_stop">सिंक बंद करें</string>
+    <string name="sync_done">हो गया</string>
+    <string name="sync_no_grant">उस फ़ोल्डर का ऐप ListenLock को उसमें लिखते रहने नहीं देता। किसी दूसरे ऐप में या इसी डिवाइस पर फ़ोल्डर चुनें।</string>
+    <string name="sync_not_saved">सिंक की सेटिंग सेव नहीं हो सकी। थोड़ी जगह खाली करके फिर कोशिश करें।</string>
+    <string name="sync_lost">सिंक फ़ोल्डर तक नहीं पहुँच सके। \"फ़ोल्डर से सिंक करें\" खोलकर उसे फिर से चुनें।</string>
+    <string name="sync_up_to_date">सिंक हो गया। सब कुछ पहले से ताज़ा था।</string>
+    <string name="sync_stopped">सिंक बंद हो गया। फ़ोल्डर और उसकी फ़ाइलें जहाँ हैं वहीं रहती हैं।</string>
+    <plurals name="sync_changes">
+        <item quantity="one">सिंक हो गया: आपके दूसरे डिवाइसों से %d बदलाव।</item>
+        <item quantity="other">सिंक हो गया: आपके दूसरे डिवाइसों से %d बदलाव।</item>
+    </plurals>
+    <plurals name="sync_books_added">
+        <item quantity="one">सिंक फ़ोल्डर से %d किताब जोड़ी गई।</item>
+        <item quantity="other">सिंक फ़ोल्डर से %d किताबें जोड़ी गईं।</item>
+    </plurals>
+</resources>

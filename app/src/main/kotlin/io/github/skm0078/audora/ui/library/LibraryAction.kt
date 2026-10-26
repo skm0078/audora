@@ -29,6 +29,9 @@ enum class LibraryAction(@StringRes val label: Int, @StringRes val hint: Int, va
     /** Lists the watched folders, whose new books join the library when it opens (plan item 26, ADR-044). */
     WATCHED_FOLDERS(R.string.library_watched_folders, R.string.menu_hint_watched_folders),
 
+    /** Syncs places, bookmarks, highlights and books through a folder the listener picks (CF-16). */
+    SYNC_FOLDER(R.string.library_sync_folder, R.string.menu_hint_sync_folder),
+
     /** Saves one backup file, or restores one on a new phone (plan item 28, ADR-046). */
     BACKUP(R.string.library_backup, R.string.menu_hint_backup),
 

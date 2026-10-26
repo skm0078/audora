@@ -1,0 +1,3 @@
+en: Keep your place, bookmarks and highlights the same on all your devices, through a folder your cloud app keeps in step (Library ⋮ > Sync through a folder).
+hi: अपने सभी डिवाइसों पर पढ़ने का स्थान, बुकमार्क और हाइलाइट एक जैसे रखें, उस फ़ोल्डर से जिसे आपका क्लाउड ऐप एक जैसा रखता है (लाइब्रेरी ⋮ > फ़ोल्डर से सिंक करें)।
+bn: আপনার সব ডিভাইসে পড়ার জায়গা, বুকমার্ক ও হাইলাইট একই রাখুন, এমন ফোল্ডারের মাধ্যমে যা আপনার ক্লাউড অ্যাপ মিলিয়ে রাখে (লাইব্রেরি ⋮ > ফোল্ডারের মাধ্যমে সিঙ্ক)।
