@@ -41,12 +41,7 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 
 @Composable
-fun ListeningStatsSheet(
-    summary: ListeningSummary,
-    booksFinished: Int,
-    onClear: () -> Unit,
-    onClose: () -> Unit,
-) {
+fun ListeningStatsSheet(summary: ListeningSummary, booksFinished: Int, onClear: () -> Unit, onClose: () -> Unit) {
     var confirming by rememberSaveable { mutableStateOf(false) }
     OptionSheet(stringResource(R.string.library_listening_stats), onClose) {
         if (summary.isEmpty) {
