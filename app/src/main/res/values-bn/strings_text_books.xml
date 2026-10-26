@@ -2,6 +2,5 @@
 <!-- File: app/src/main/res/values-bn/strings_text_books.xml -->
 <!-- Purpose: Bengali copy of values/strings_text_books.xml. -->
 <resources>
-    <string name="shared_text_link">ListenLock শেয়ার করা লেখা পড়ে, ওয়েব লিংক নয়। পৃষ্ঠার লেখাটি বেছে নিয়ে সেটি শেয়ার করুন।</string>
     <string name="shared_text_failed">শেয়ার করা লেখা সেভ করা গেল না।</string>
 </resources>

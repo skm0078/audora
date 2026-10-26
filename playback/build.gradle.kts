@@ -73,6 +73,9 @@ dependencies {
     // FileProvider for shared audio clips (plan item 41); already in the app, so no new library in the APK.
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
+    // A web page's article (CF-12) and OPDS catalogues (CF-15); jsoup pinned above Readability4J's old one.
+    implementation(libs.readability4j)
+    implementation(libs.jsoup)
 
     testImplementation(libs.kotlinx.coroutines.test)
 
