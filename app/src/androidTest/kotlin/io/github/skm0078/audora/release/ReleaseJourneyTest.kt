@@ -342,8 +342,8 @@ class ReleaseJourneyTest {
 
     /**
      * A comic archive is not added as a book: its pages become a photo book, added to the library, which opens in the
-     * reader by itself and is read by OCR (the models came with step 12). The library's work runs in the screen's
-     * scope, which the Compose test clock drives, so these waits go through [awaitSynced].
+     * reader by itself. Its pages are blank pictures; OCR reading a picture page is step 12's. The library's work runs
+     * in the screen's scope, which the Compose test clock drives, so these waits go through [awaitSynced].
      */
     private fun openWithMakesAComicIntoAPhotoBook() {
         backToTabs()
@@ -357,7 +357,6 @@ class ReleaseJourneyTest {
         awaitSynced("the comic to open in the reader", OPEN_TIMEOUT_MS) {
             rule.onAllNodes(hasText(COMIC_TITLE)).fetchSemanticsNodes().isNotEmpty()
         }
-        waitForNode(hasText(text(R.string.reader_ocr_badge)), OCR_DOWNLOAD_TIMEOUT_MS)
     }
 
     /** Waits on the Compose test clock (frames and effects run meanwhile); a timeout lists the app's last log lines. */
