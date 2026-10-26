@@ -1,5 +1,5 @@
 // File: playback/src/test/kotlin/io/github/skm0078/audora/playback/focus/FocusNoiseTest.kt
-// Purpose: Every focus sound stays in range, is about as loud as the others, and repeats for the same seed.
+// Purpose: Brown noise made on the phone stays in range, repeats for the same seed; recorded sounds are not made here.
 
 package io.github.skm0078.audora.playback.focus
 
@@ -12,15 +12,20 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FocusNoiseTest {
-    private val sounds = FocusSound.entries - FocusSound.OFF
+    private val sounds = listOf(FocusSound.BROWN_NOISE)
 
     @Test
-    fun offMakesNoSource() {
-        assertNull(FocusNoise.of(FocusSound.OFF, RATE, SEED))
+    fun onlyBrownNoiseIsMadeHere() {
+        for (sound in FocusSound.entries - FocusSound.BROWN_NOISE) {
+            assertNull(
+                sound.name,
+                FocusNoise.of(sound, RATE, SEED),
+            )
+        }
     }
 
     @Test
-    fun everySoundStaysInRangeAndIsAboutAsLoudAsTheOthers() {
+    fun brownNoiseStaysInRangeAtAComfortableLevel() {
         for (rate in listOf(16_000, 22_050, 24_000, 44_100)) {
             for (sound in sounds) {
                 val samples = render(sound, rate)

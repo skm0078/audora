@@ -16,7 +16,7 @@ import org.junit.Test
 
 @Suppress("DEPRECATION") // flush(): the overload every Media3 1.x keeps; the test needs no stream metadata.
 class FocusSoundProcessorTest {
-    private val processor = FocusSoundProcessor({ FocusSoundOptions(FocusSound.RAIN, level = 1f) })
+    private val processor = FocusSoundProcessor({ FocusSoundOptions(FocusSound.RAIN, level = 1f) }, beds = TEST_BEDS)
 
     private fun start() {
         processor.configure(AudioProcessor.AudioFormat(RATE, 1, C.ENCODING_PCM_16BIT))

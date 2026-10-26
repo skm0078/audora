@@ -3,10 +3,17 @@
 <!-- Purpose: Strings for the focus sound under the voice (plan item 72). -->
 <resources>
     <string name="focus_title">Focus sound</string>
-    <string name="focus_detail">Plays quietly under the voice and gets softer whenever it speaks. You hear it only while reading plays. Made on your phone, nothing to download.</string>
+    <string name="focus_detail">Plays quietly under the voice and gets softer whenever it speaks. You hear it only while reading plays. Real nature recordings built into the app; nothing to download.</string>
     <string name="focus_off">Off</string>
     <string name="focus_rain">Rain</string>
-    <string name="focus_cafe">Café</string>
+    <string name="focus_forest_rain">Rain in a forest</string>
+    <string name="focus_stream">Forest stream</string>
+    <string name="focus_brook">Babbling brook</string>
+    <string name="focus_river">River</string>
+    <string name="focus_forest_birds">Birds at dawn</string>
+    <string name="focus_spring_birds">Spring birds</string>
+    <string name="focus_fireplace">Fireplace</string>
+    <string name="focus_wind">Wind</string>
     <string name="focus_brown_noise">Brown noise</string>
     <string name="focus_level">Volume</string>
 </resources>

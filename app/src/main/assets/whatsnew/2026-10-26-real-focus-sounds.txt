@@ -1,0 +1,3 @@
+en: Focus sounds are now real nature recordings: rain, rain in a forest, a forest stream, a brook, a river, birds, a fireplace and wind, plus brown noise. They stay the same at any reading speed.
+hi: फ़ोकस साउंड अब प्रकृति की असली रिकॉर्डिंग हैं: बारिश, जंगल में बारिश, जंगल की धारा, कलकल पानी, नदी, पक्षी, अंगीठी की आग और हवा, साथ में ब्राउन नॉइज़। पढ़ने की रफ़्तार कुछ भी हो, ये वैसी ही रहती हैं।
+bn: ফোকাস সাউন্ড এখন প্রকৃতির আসল রেকর্ডিং: বৃষ্টি, বনে বৃষ্টি, বনের জলধারা, কুলকুল জল, নদী, পাখি, চুল্লির আগুন আর হাওয়া, সঙ্গে ব্রাউন নয়েজ। পড়ার গতি যাই হোক, এগুলো একই থাকে।

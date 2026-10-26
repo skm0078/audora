@@ -46,6 +46,7 @@ import io.github.skm0078.audora.playback.browse.ResourceBrowseTexts
 import io.github.skm0078.audora.playback.contract.PendingIntentCodes
 import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.covers.CoverFolders
+import io.github.skm0078.audora.playback.focus.FocusLoops
 import io.github.skm0078.audora.playback.focus.FocusRenderersFactory
 import io.github.skm0078.audora.playback.focus.FocusSoundCues
 import io.github.skm0078.audora.playback.focus.FocusSoundProcessor
@@ -178,7 +179,8 @@ class AudoraPlaybackService : MediaLibraryService() {
         // What is heard: the global style with the open book's own speed and pace on top (plan item 4).
         val heard = { book.style(style.current) }
         val focusSound = FocusSoundStore.forContext(this)
-        val focus = FocusSoundProcessor(focusSound::current) // In the voice's audio: pauses and ducks with it (72).
+        // In the voice's audio: pauses and ducks with it (72); recorded loops from the assets (Q-1).
+        val focus = FocusSoundProcessor(focusSound::current, beds = FocusLoops(assets))
         player = speechPlayer(this, registry, config, focus)
         // ADR-033, 049: the voice speaks the rest of the speed. The pitch is the player's alone (ADR-067).
         player.playbackParameters = PlaybackParameters(style.config.playerSpeed(heard()), heard().pitch)

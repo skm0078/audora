@@ -24,10 +24,15 @@ class FocusSoundOptionsTest {
             "" to FocusSoundOptions(),
             "sound=THUNDER;level=0.3" to FocusSoundOptions(level = 0.3f),
             "sound=RAIN;level=7" to FocusSoundOptions(FocusSound.RAIN),
-            "sound=CAFE;level=x" to FocusSoundOptions(FocusSound.CAFE),
+            "sound=WIND;level=x" to FocusSoundOptions(FocusSound.WIND),
             "level=0.1;sound=BROWN_NOISE;extra=1" to FocusSoundOptions(FocusSound.BROWN_NOISE, 0.1f),
         )
         for ((line, expected) in cases) assertEquals("line $line", expected, FocusSoundOptions.decode(line))
+    }
+
+    @Test
+    fun aSavedCafeNowPlaysRain() {
+        assertEquals(FocusSoundOptions(FocusSound.RAIN, 0.4f), FocusSoundOptions.decode("sound=CAFE;level=0.4"))
     }
 
     @Test
