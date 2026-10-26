@@ -254,6 +254,8 @@ class PhotoBooks(
     private suspend fun addMade(title: String, write: () -> Unit, onAdded: () -> Unit): Outcome<BookId, PhotoError> {
         var copy: File? = null
         return try {
+            // Only the camera path made the folder before; pictures and comics on a fresh install found none.
+            folder.mkdirs()
             write()
             val target = copies.newCopy("$title.pdf").also { copy = it }
             moveInto(madeFile, target)

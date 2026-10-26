@@ -17,6 +17,9 @@
   `ChmParserTest`, `FileMetaTest`, `ComicPagesTest`, `LibraryControllerSharedTest` (comic hook; PDFs still added),
   `ReaderModelTest` (DRM message), `EpubParserTest`, and the release journey's steps 13 (Open with an FB2, AZW3 and
   CHM) and 14 (a CBZ becomes a photo book).
+- **Found by the release journey, fixed here:** a photo book made from picked or shared pictures, or from a comic,
+  failed with "could not make" on a phone that had never taken a photo in the app (its work folder was only made
+  for the camera); and the comic's "making" toast crashed when shown off the main thread.
 
 **Real-device checks (the test phone):** open a DRM-free `.azw3` or `.mobi` from Calibre, a `.fb2`, a `.chm` manual
 and a `.cbz` from Files with "Open with ListenLock"; check each reads with chapters in order and the details sheet
