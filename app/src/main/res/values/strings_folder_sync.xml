@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sync through a folder the listener picks (CF-16, ADR 2026-10-26-folder-sync). -->
+<resources>
+    <string name="library_sync_folder">Sync through a folder</string>
+    <string name="menu_hint_sync_folder">Keep your place, bookmarks and highlights the same on your phones and tablets, through a folder your cloud app keeps in step.</string>
+    <string name="sync_explain">Pick a folder that your cloud app (such as Google Drive, Dropbox or OneDrive) or a sync app keeps the same on your other devices, and pick the same folder in ListenLock there. ListenLock writes your reading places, bookmarks, highlights and notes into it, and copies of your books if you want. ListenLock itself sends nothing anywhere: the folder\'s app moves the files, and anyone that app shares the folder with can read them.</string>
+    <string name="sync_no_folder">No folder picked yet.</string>
+    <string name="sync_folder_label">Folder: %1$s</string>
+    <string name="sync_unnamed">The picked folder</string>
+    <string name="sync_last">Last synced %1$s</string>
+    <string name="sync_never">Not synced yet</string>
+    <string name="sync_running">Syncing…</string>
+    <string name="sync_last_failed">The last sync could not reach the folder. Pick it again.</string>
+    <string name="sync_copy_books">Copy books into the folder</string>
+    <string name="sync_copy_books_hint">So your other devices can add them too. Books over 200 MB stay on this device only.</string>
+    <string name="sync_pick">Pick a folder</string>
+    <string name="sync_change">Change folder</string>
+    <string name="sync_now">Sync now</string>
+    <string name="sync_stop">Stop syncing</string>
+    <string name="sync_done">Done</string>
+    <string name="sync_no_grant">That folder\'s app doesn\'t let ListenLock keep writing to it. Pick a folder in another app or on this device.</string>
+    <string name="sync_not_saved">The sync settings couldn\'t be saved. Free some space and try again.</string>
+    <string name="sync_lost">Couldn\'t reach the sync folder. Open Sync through a folder and pick it again.</string>
+    <string name="sync_up_to_date">Synced. Everything was already up to date.</string>
+    <string name="sync_stopped">Sync stopped. The folder and its files stay where they are.</string>
+    <plurals name="sync_changes">
+        <item quantity="one">Synced: %d change from your other devices.</item>
+        <item quantity="other">Synced: %d changes from your other devices.</item>
+    </plurals>
+    <plurals name="sync_books_added">
+        <item quantity="one">%d book added from the sync folder.</item>
+        <item quantity="other">%d books added from the sync folder.</item>
+    </plurals>
+</resources>

@@ -13,12 +13,14 @@ import dagger.hilt.android.HiltAndroidApp
 import io.github.skm0078.audora.core.diagnostics.StallWatchdog
 import io.github.skm0078.audora.core.diagnostics.StartupDiagnostics
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.di.FolderSyncEntryPoint
 import io.github.skm0078.audora.language.AppLanguageStore
 import io.github.skm0078.audora.language.AppLanguages
 import io.github.skm0078.audora.logging.AppLogging
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.backup.PendingRestore
 import io.github.skm0078.audora.ui.library.BookDetailsFill
+import io.github.skm0078.audora.ui.library.FolderSyncTrigger
 import javax.inject.Inject
 import kotlin.concurrent.thread
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -60,6 +62,8 @@ class AudoraApplication : Application() {
         // File reads and a binder call: kept off the main thread so they never delay the first frame.
         thread(name = STARTUP_DIAGNOSTICS_THREAD) { startupDiagnostics.run() }
         bookDetailsFill.start(background)
+        // Built on first use, never at start: a listener who never picked a sync folder pays nothing.
+        registerActivityLifecycleCallbacks(FolderSyncTrigger(appScope) { FolderSyncEntryPoint.of(this) })
         if (BuildConfig.DEV_TOOLS) watchForHangs()
         if (BuildConfig.DEBUG) reportStrictModeViolations()
     }

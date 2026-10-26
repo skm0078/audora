@@ -47,6 +47,8 @@ import io.github.skm0078.audora.ui.guide.CharacterGuideRoute
 import io.github.skm0078.audora.ui.jobs.startLongJob
 import io.github.skm0078.audora.ui.library.BackupRoute
 import io.github.skm0078.audora.ui.library.BookAction
+import io.github.skm0078.audora.ui.library.FolderSyncRoute
+import io.github.skm0078.audora.ui.library.FolderSyncUi
 import io.github.skm0078.audora.ui.library.LibraryAction
 import io.github.skm0078.audora.ui.library.WatchedFoldersRoute
 import io.github.skm0078.audora.ui.library.restartForRestore
@@ -208,6 +210,7 @@ internal class StudioLibrary(
         LibraryAction.READ_PICTURES -> pickPictures.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
         LibraryAction.READ_CLIPBOARD -> parts.activity.readClipboard(parts.onText)
         LibraryAction.WATCHED_FOLDERS -> sheet.value = StudioSheet.WATCHED_FOLDERS
+        LibraryAction.SYNC_FOLDER -> FolderSyncUi.open = true
         LibraryAction.BACKUP -> sheet.value = StudioSheet.BACKUP
         LibraryAction.QUIZ -> sheet.value = StudioSheet.QUIZ
         LibraryAction.TRY_SAMPLE -> parts.onText(sampleBook(parts.activity))
@@ -218,6 +221,7 @@ internal class StudioLibrary(
     fun Sheets(books: List<Book>?) {
         val close = { sheet.value = null }
         WatchedFoldersRoute(parts.watchedFolders, open = sheet.value == StudioSheet.WATCHED_FOLDERS, onClose = close)
+        FolderSyncRoute()
         BackupRoute(parts.backups, sheet.value == StudioSheet.BACKUP, close) { parts.activity.restartForRestore() }
         QuizRoute(parts.notes.highlights, open = sheet.value == StudioSheet.QUIZ, onClose = close)
         val guideBook = books?.firstOrNull { it.id.value == guideBookId.value }
