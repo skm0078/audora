@@ -20,7 +20,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -47,9 +46,9 @@ import io.github.skm0078.audora.ui.library.CoverSource
 import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.titleOrUntitled
 import io.github.skm0078.audora.ui.reader.durationText
+import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.ConfirmedTextButton
 import io.github.skm0078.audora.ui.theme.Dimens
-import io.github.skm0078.audora.ui.theme.SheetDragHandle
 
 /**
  * @param library every book in the library, to name queued books and offer the rest; a queued book it no longer
@@ -70,7 +69,7 @@ fun UpNextSheet(
     val queued = state.entries.map { it.bookId }.toSet()
     val addable = library.filter { it.id != playing && it.id !in queued }
     var adding by rememberSaveable { mutableStateOf(false) }
-    ModalBottomSheet(dragHandle = { SheetDragHandle() }, onDismissRequest = onDismiss) {
+    AppSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .navigationBarsPadding()

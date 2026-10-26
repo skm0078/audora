@@ -6,6 +6,6 @@
         <item quantity="one">%1$d মিনিট বাকি</item>
         <item quantity="other">%1$d মিনিট বাকি</item>
     </plurals>
-    <string name="a11y_sheet_handle">শিটের হাতল</string>
+    <string name="a11y_sheet_close">শিট বন্ধ করুন</string>
     <string name="a11y_player_position">কতদূর শোনা হয়েছে</string>
 </resources>

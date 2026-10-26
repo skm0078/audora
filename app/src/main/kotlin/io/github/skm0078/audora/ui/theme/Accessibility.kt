@@ -1,39 +1,84 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/theme/Accessibility.kt
-// Purpose: The two TalkBack fixes every screen shares: a slider that says what it sets, and a sheet handle that has a
-//          name (CF-9).
+// Purpose: The two TalkBack fixes every screen shares: a slider that says what it sets, and a bottom sheet whose
+//          handle has a name and closes it (CF-9).
 
 package io.github.skm0078.audora.ui.theme
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import io.github.skm0078.audora.R
+import kotlinx.coroutines.launch
 
 /**
- * A slider TalkBack reads as "[name], [value], slider" ("Speed, 1.25×"), not as a bare percentage of its track, and
- * that is at least [Dimens.TouchTarget] tall: Material's slider is 44 dp, a little short of the touch minimum.
+ * A slider TalkBack reads as "[name], [value], slider" ("Speed, 1.25×"), not as a bare percentage of its track.
+ * Material's slider is 44 dp tall whatever it is given; Compose widens its touch area to 48 dp (see the TalkBack ADR).
  */
-fun Modifier.namedSlider(name: String, value: String): Modifier = this
-    .heightIn(min = Dimens.TouchTarget)
-    .semantics {
-        contentDescription = name
-        stateDescription = value
-    }
+fun Modifier.namedSlider(name: String, value: String): Modifier = semantics {
+    contentDescription = name
+    stateDescription = value
+}
 
 /**
- * Material's sheet handle with a name. Material wraps the handle in a tooltip whose long press is a control of its
- * own, and that control reads nothing unless the handle inside it has a description. Every sheet passes this as its
- * `dragHandle`.
+ * Material's bottom sheet with a handle TalkBack can use. Material's own handle sits inside a tooltip whose long press
+ * is a control with no name ("double-tap and hold to show tooltip"), so every sheet uses this one instead: it looks
+ * the same, reads "Close sheet, button" and closes the sheet as a swipe down would.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SheetDragHandle() {
-    val name = stringResource(R.string.a11y_sheet_handle)
-    BottomSheetDefaults.DragHandle(Modifier.semantics { contentDescription = name })
+fun AppSheet(
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+    sheetState: SheetState = rememberModalBottomSheetState(),
+    containerColor: Color = BottomSheetDefaults.ContainerColor,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    val close: () -> Unit = {
+        scope.launch { sheetState.hide() }.invokeOnCompletion { if (!sheetState.isVisible) onDismissRequest() }
+    }
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest,
+        modifier = modifier,
+        sheetState = sheetState,
+        containerColor = containerColor,
+        dragHandle = null,
+    ) {
+        SheetHandle(close)
+        content()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SheetHandle(onClose: () -> Unit) {
+    val name = stringResource(R.string.a11y_sheet_close)
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = Dimens.TouchTarget)
+            .clickable(onClickLabel = name, role = Role.Button, onClick = onClose)
+            .semantics { contentDescription = name },
+        contentAlignment = Alignment.Center,
+    ) {
+        BottomSheetDefaults.DragHandle(Modifier.clearAndSetSemantics {})
+    }
 }

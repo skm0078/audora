@@ -77,8 +77,7 @@ fun OptionSheet(
     help: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    ModalBottomSheet(
-        dragHandle = { SheetDragHandle() },
+    AppSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surface,

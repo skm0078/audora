@@ -1,14 +1,12 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/theme/AccessibilitySemanticsTest.kt
-// Purpose: The shared TalkBack fixes hold: a named slider says what it sets and is a full touch target, and a sheet's
-//          handle has a name. Checked with the same audit the UI tour runs on every screen, which must also still
+// Purpose: The shared TalkBack fixes hold: a named slider says what it sets, and a sheet's handle has a name and
+//          closes the sheet. Checked with the same audit the UI tour runs on every screen, which must also still
 //          catch the bare Material versions, so a passing tour means something.
 
 package io.github.skm0078.audora.ui.theme
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
@@ -21,7 +19,9 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.github.skm0078.audora.R
 import io.github.skm0078.audora.ui.tour.talkBackProblems
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -29,14 +29,13 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@OptIn(ExperimentalMaterial3Api::class)
 @RunWith(AndroidJUnit4::class)
 class AccessibilitySemanticsTest {
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun aNamedSliderIsReadByNameAndValueAndIsAFullTouchTarget() {
+    fun aNamedSliderIsReadByNameAndValue() {
         rule.setContent {
             AudoraTheme {
                 Column {
@@ -61,20 +60,24 @@ class AccessibilitySemanticsTest {
             }
         }
         val found = problems(needsHeading = true)
-        assertTrue("unnamed and 44 dp tall, got $found", found.any { it.startsWith("unnamed control") })
+        assertTrue("unnamed, got $found", found.any { it.startsWith("unnamed control") })
     }
 
     @Test
-    fun aSheetWithTheSharedHandleHasNothingUnnamed() {
+    fun aSheetWithTheSharedHandleHasNothingUnnamedAndTheHandleCloses() {
+        var closed = false
         rule.setContent {
             AudoraTheme {
-                ModalBottomSheet(onDismissRequest = {}, dragHandle = { SheetDragHandle() }) {
+                AppSheet(onDismissRequest = { closed = true }) {
                     Text(TITLE, Modifier.semantics { heading() })
                 }
             }
         }
         rule.waitForIdle()
         assertEquals(emptyList<String>(), problems(needsHeading = true))
+        rule.onNodeWithContentDescription(rule.activity.getString(R.string.a11y_sheet_close)).performClick()
+        rule.waitForIdle()
+        assertTrue("the handle closes the sheet", closed)
     }
 
     private fun problems(needsHeading: Boolean): List<String> =

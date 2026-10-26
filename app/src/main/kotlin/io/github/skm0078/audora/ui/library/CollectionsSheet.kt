@@ -22,7 +22,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,8 +40,8 @@ import androidx.compose.ui.semantics.semantics
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookCollection
 import io.github.skm0078.audora.core.library.CollectionNames
+import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
-import io.github.skm0078.audora.ui.theme.SheetDragHandle
 import io.github.skm0078.audora.ui.theme.TitleAndTrailing
 
 /** Opened from the library's collection chips; [counts] is how many books each collection holds. */
@@ -67,7 +66,7 @@ internal fun CollectionsSheet(
     var creating by rememberSaveable { mutableStateOf(false) }
     var renaming by rememberSaveable { mutableStateOf<String?>(null) }
     var deleting by rememberSaveable { mutableStateOf<String?>(null) }
-    ModalBottomSheet(dragHandle = { SheetDragHandle() }, onDismissRequest = onDismiss, modifier = modifier) {
+    AppSheet(onDismissRequest = onDismiss, modifier = modifier) {
         LazyColumn(Modifier.navigationBarsPadding().padding(horizontal = Dimens.ScreenPadding)) {
             item {
                 Text(

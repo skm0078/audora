@@ -34,9 +34,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.ui.kids.LocalKidsMode
+import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.HelpButton
-import io.github.skm0078.audora.ui.theme.SheetDragHandle
 
 /**
  * A book's actions, in a sheet: Details, then Up next, Save as audiobook and the [BookAction]s while the file can be
@@ -64,7 +64,7 @@ internal fun BookMenu(
     }
     if (!open) return
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(dragHandle = { SheetDragHandle() }, onDismissRequest = { open = false }, sheetState = sheetState) {
+    AppSheet(onDismissRequest = { open = false }, sheetState = sheetState) {
         val choose = { action: () -> Unit ->
             open = false
             action()

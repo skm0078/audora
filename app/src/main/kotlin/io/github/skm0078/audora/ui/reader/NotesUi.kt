@@ -19,7 +19,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -41,8 +40,8 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.PronunciationRule
+import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
-import io.github.skm0078.audora.ui.theme.SheetDragHandle
 import io.github.skm0078.audora.ui.theme.switchRow
 
 /** Top bar: opens the bookmarks sheet; filled while this book has bookmarks. */
@@ -87,7 +86,7 @@ private fun BookmarksSheet(
     reader: ReaderActions,
     voice: VoiceNotesBinding,
 ) {
-    ModalBottomSheet(dragHandle = { SheetDragHandle() }, onDismissRequest = actions::hideList) {
+    AppSheet(onDismissRequest = actions::hideList) {
         Column(Modifier.navigationBarsPadding().padding(bottom = Dimens.SpaceL)) {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl),

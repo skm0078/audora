@@ -43,12 +43,19 @@ private fun controlProblem(node: SemanticsNode, window: Rect): String? {
         // Its semantics say what it is, for a control this audit cannot name from its parts.
         name.isBlank() -> "unnamed control: $where, ${widthDp.toInt()}x${heightDp.toInt()} dp, ${node.config}"
 
-        whole && minOf(widthDp, heightDp) < MIN_TARGET_DP ->
+        whole && (widthDp < MIN_TARGET_DP || heightDp < minHeightDp(node)) ->
             "small target \"$name\": ${widthDp.toInt()}x${heightDp.toInt()} dp, $where"
 
         else -> null
     }
 }
+
+/**
+ * Material's slider lays itself out 44 dp tall whatever it is given, and Compose widens its touch area to 48 dp for the
+ * finger; TalkBack moves it with swipes, not by touch. So a slider is held to Material's own height.
+ */
+private fun minHeightDp(node: SemanticsNode): Float =
+    if (SemanticsActions.SetProgress in node.config) MATERIAL_SLIDER_DP else MIN_TARGET_DP
 
 private fun isControl(node: SemanticsNode): Boolean = with(node.config) {
     SemanticsActions.OnClick in this || SemanticsActions.OnLongClick in this ||
@@ -71,5 +78,8 @@ private fun SemanticsNode.descendants(): Sequence<SemanticsNode> =
 
 /** Android's and WCAG's smallest comfortable touch target. */
 private const val MIN_TARGET_DP = 48f
+
+/** Material 3's slider height: its thumb. */
+private const val MATERIAL_SLIDER_DP = 44f
 
 private const val NO_HEADING = "no heading (TalkBack cannot jump to the top of this screen)"
