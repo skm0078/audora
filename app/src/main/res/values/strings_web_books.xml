@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Books from the web, only on the listener's tap: a web page read from its link (CF-12) and free OPDS book
+     catalogues (CF-15). ADR 2026-10-26-web-books. -->
+<resources>
+    <string name="library_read_web_page">Read a web page</string>
+    <string name="menu_hint_read_web_page">Type or paste a web address. ListenLock downloads that one page once and reads its article, without menus or ads.</string>
+    <string name="library_book_catalogues">Free book catalogues</string>
+    <string name="menu_hint_book_catalogues">Browse Project Gutenberg, or another catalogue you add, and download free books. Only the book you tap is downloaded.</string>
+
+    <string name="web_page_title">Read a web page</string>
+    <string name="web_page_explain">ListenLock downloads this page once, keeps only the article and reads it like a book. Nothing about you is sent.</string>
+    <string name="web_page_address">Web address</string>
+    <string name="web_read">Read</string>
+    <string name="web_cancel">Cancel</string>
+    <string name="web_shared_link_title">Read this web page?</string>
+    <string name="web_shared_link_body">ListenLock will download the page from %1$s once and read its article.</string>
+    <string name="web_getting_page">Getting the page from %1$s</string>
+    <string name="web_downloading_book">Downloading %1$s</string>
+    <string name="web_busy">Another download is running. Wait for it to finish or cancel it.</string>
+
+    <string name="web_error_address">That is not a web address. Check it and try again.</string>
+    <string name="web_error_unreachable">Could not reach the site. Check your internet connection and try again.</string>
+    <string name="web_error_refused">The site said no (error %1$d). The page may need a log-in, or it may be gone.</string>
+    <string name="web_error_too_big">That is too large to download.</string>
+    <string name="web_error_no_article">There is no article on that page to read. Open the article itself, not the site\'s home page.</string>
+    <string name="web_error_not_catalogue">That address is not a book catalogue (OPDS).</string>
+    <string name="web_error_not_saved">Could not save it on this phone. Free some space and try again.</string>
+
+    <string name="catalogues_title">Free book catalogues</string>
+    <string name="catalogues_explain">A book downloads only when you tap Download, straight from the catalogue\'s own website. No account, and nothing about you is sent.</string>
+    <string name="catalogues_add_hint">Add a catalogue (OPDS address)</string>
+    <string name="catalogues_add">Add catalogue</string>
+    <string name="catalogues_added">Catalogue added.</string>
+    <string name="catalogues_already">That catalogue is already in the list.</string>
+    <string name="catalogues_too_many">The list is full. Remove a catalogue first.</string>
+    <string name="catalogues_not_saved">Could not save the list. Try again.</string>
+    <string name="catalogues_remove">Remove</string>
+    <string name="catalogues_search_hint">Search this catalogue</string>
+    <string name="catalogues_search">Search</string>
+    <string name="catalogues_more">More</string>
+    <string name="catalogues_download">Download</string>
+    <string name="catalogues_empty">Nothing here.</string>
+    <string name="catalogues_try_again">Try again</string>
+    <string name="catalogues_close">Close</string>
+</resources>

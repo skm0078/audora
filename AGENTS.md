@@ -72,7 +72,7 @@ shared list.
 - TODOs must name a ticket: `TODO(P1-07): ...` (detekt enforces).
 - Something a listener would notice: add `app/src/main/assets/whatsnew/<yyyy-mm-dd>-<slug>.txt` with an `en:`, `hi:` and `bn:` line (one file per item). Nothing to bump: the app shows entries not seen yet (ADR 2026-10-25-parallel-prs-merge-cleanly).
 - New strings go into a `strings_<feature>.xml` (en/hi/bn) of their own, never appended to `strings.xml`.
-- No new dependency without asking. No network except model downloads. No cloud or paid services, ever.
+- No new dependency without asking. No network except model downloads and what the listener taps (a web page, a catalogue book; ADR 2026-10-26-web-books). No cloud or paid services, ever.
 - Never commit keystores, secrets, model binaries, or PDFs we can't redistribute.
 
 ## Definition of done

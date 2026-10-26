@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/StudioLibrary.kt
 // Purpose: The library's studio actions (studio mode, copies, notes export, character guide, point and read,
-//          pictures, clipboard, watched folders, backup, quiz) and the sheet each opens.
+//          pictures, clipboard, web pages and catalogues, watched folders, backup, quiz) and the sheet each opens.
 
 package io.github.skm0078.audora
 
@@ -53,6 +53,8 @@ import io.github.skm0078.audora.ui.library.restartForRestore
 import io.github.skm0078.audora.ui.quiz.QuizRoute
 import io.github.skm0078.audora.ui.studio.StudioAudioActions
 import io.github.skm0078.audora.ui.studio.StudioAudioRoute
+import io.github.skm0078.audora.ui.web.WebBooksUi
+import io.github.skm0078.audora.ui.web.WebSheet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -207,6 +209,8 @@ internal class StudioLibrary(
         LibraryAction.POINT_AND_READ -> parts.activity.pointAndRead(parts.photoBooks, takePhoto)
         LibraryAction.READ_PICTURES -> pickPictures.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
         LibraryAction.READ_CLIPBOARD -> parts.activity.readClipboard(parts.onText)
+        LibraryAction.READ_WEB_PAGE -> WebBooksUi.sheet = WebSheet.ADDRESS
+        LibraryAction.BOOK_CATALOGUES -> WebBooksUi.sheet = WebSheet.CATALOGUES
         LibraryAction.WATCHED_FOLDERS -> sheet.value = StudioSheet.WATCHED_FOLDERS
         LibraryAction.BACKUP -> sheet.value = StudioSheet.BACKUP
         LibraryAction.QUIZ -> sheet.value = StudioSheet.QUIZ
