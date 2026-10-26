@@ -26,9 +26,10 @@ enum class WordMark {
 
 /**
  * [marks] for the page words from the start index on, in order; [next] the first page word after them; [cost] how
- * badly the stretch fits there (0 when every heard word matched).
+ * badly the stretch fits there (0 when every heard word matched); [used] how many heard words, from the first, were
+ * lined up with page words up to [next]. Those after it are extras at the end, which a later stretch may explain.
  */
-internal data class Alignment(val marks: List<WordMark>, val next: Int, val cost: Int)
+internal data class Alignment(val marks: List<WordMark>, val next: Int, val cost: Int, val used: Int)
 
 /**
  * An edit-distance alignment of the heard words against the page's words from [from], over at most as many page
@@ -43,21 +44,42 @@ internal data class Alignment(val marks: List<WordMark>, val next: Int, val cost
  * was read. Ties go to the shorter reach (a last word heard wrong stays unread, and is marked skipped if the next
  * stretch goes on after it), except with [align]'s `toPageEnd` when reaching the page's last word costs no more: a
  * final stretch whose last word was misread there marks it, so the page can finish (unless that heard word repeats
- * the page word before the last, a filler such as "on the the").
+ * the page word before the last, a filler such as "on the the"); so does one ending on the page's last word after a
+ * word the recogniser missed.
  */
 internal class WordAligner(private val config: TutorConfig) {
     fun align(page: List<PageWord>, from: Int, heard: List<String>, toPageEnd: Boolean = false): Alignment {
         val spoken = heard.take(config.maxUtteranceWords)
         val reach = minOf(page.size - from, spoken.size + config.lookaheadWords)
-        if (reach <= 0 || spoken.isEmpty()) return Alignment(emptyList(), from, spoken.size * config.extraCost)
+        if (reach <= 0 || spoken.isEmpty()) return Alignment(emptyList(), from, spoken.size * config.extraCost, 0)
         val table = Table(page.subList(from, from + reach), spoken, freeStart = false)
         val costs = table.main[spoken.size]
         val best = costs.min()
         // A last heard word that repeats the word before the page's last ("on the the") is an extra, not a misread.
         val repeatsWordBefore = page.getOrNull(page.size - 2)?.let { similar(it.key, spoken.last()) } == true
-        val reachesPageEnd = toPageEnd && from + reach == page.size && costs[reach] == best && !repeatsWordBefore
+        // The page's last word heard last ends the page even past a word or so the recogniser missed: no later words
+        // will come to pay for that skip.
+        val endsOnLastWord = similar(page.last().key, spoken.last()) && costs[reach] - best <= config.skipOpenCost
+        val reachesPageEnd = toPageEnd && from + reach == page.size && !repeatsWordBefore &&
+            (costs[reach] == best || endsOnLastWord)
         val end = if (reachesPageEnd) reach else (0..reach).first { costs[it] == best }
-        return Alignment(table.trace(end), from + end, best)
+        val (marks, used) = table.trace(end)
+        return Alignment(marks, from + end, costs[end], used)
+    }
+
+    /**
+     * The best fit of the heard words starting at a later page word, up to [TutorConfig.lookaheadWords] past [from],
+     * with the page words before that start passed over for one [TutorConfig.skipOpenCost], however many: the reader
+     * found again after a skipped line and words the recogniser missed, which as separate skips cost more than leaving
+     * every heard word unmatched. Null when there is no later word to start at. Ties go to the nearer start.
+     */
+    fun resync(page: List<PageWord>, from: Int, heard: List<String>, toPageEnd: Boolean = false): Alignment? {
+        val last = minOf(page.size - 1, from + config.lookaheadWords)
+        val best = (from + 1..last).map { it to align(page, it, heard, toPageEnd) }.minByOrNull { it.second.cost }
+            ?: return null
+        val (start, found) = best
+        val passed = (from until start).map { if (page[it].checked) WordMark.SKIPPED else WordMark.PASSED }
+        return found.copy(marks = passed + found.marks, cost = found.cost + config.skipOpenCost)
     }
 
     /**
@@ -92,13 +114,17 @@ internal class WordAligner(private val config: TutorConfig) {
             }
         }
 
-        fun trace(end: Int): List<WordMark> {
+        /** The marks of the first [end] page words, and how many heard words came before the trailing extras. */
+        fun trace(end: Int): Pair<List<WordMark>, Int> {
             val marks = MutableList(end) { WordMark.UNREAD }
+            var used: Int? = null
             var at = Step(spoken.size, end, main[spoken.size][end], mark = null, inGap = false)
             while (at.i > 0 || at.j > 0) {
                 val target = at.cost
                 val steps = if (at.inGap) gapSteps(at.i, at.j) else mainSteps(at.i, at.j)
                 val step = steps.first { it.cost == target }
+                // Walking back, the first step that takes a page word ends the trailing extras.
+                if (used == null && step.j < at.j) used = at.i
                 step.mark?.let { marks[at.j - 1] = it }
                 at =
                     Step(
@@ -109,7 +135,7 @@ internal class WordAligner(private val config: TutorConfig) {
                         step.inGap,
                     )
             }
-            return marks
+            return marks to (used ?: 0)
         }
 
         /** Every way into main (i, j), in the order ties are broken; each step's cost is the total through it. */

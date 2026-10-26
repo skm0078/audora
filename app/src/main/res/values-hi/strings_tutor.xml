@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Hindi: Read aloud to me, the reading tutor (plan item 67, ADR-050). -->
 <resources>
-    <string name="tutor_menu">मुझे पढ़कर सुनाइए</string>
-    <string name="tutor_title">मुझे पढ़कर सुनाइए</string>
+    <string name="tutor_menu">मुझे पढ़कर सुनाइए (प्रायोगिक)</string>
+    <string name="tutor_title">मुझे पढ़कर सुनाइए (प्रायोगिक)</string>
+    <string name="tutor_experimental_note">कुछ निशान गलत हो सकते हैं, ज़्यादातर शोर वाले कमरे में या फ़ोन दूर होने पर। गड़बड़ हो तो सेटिंग्स से लॉग शेयर करें: लॉग में सिर्फ़ गिनती होती है, आपके शब्द कभी नहीं।</string>
     <string name="tutor_mode_words">पेज ज़ोर से पढ़िए। ListenLock हर शब्द सुनता है, सिर्फ़ इसी फ़ोन पर।</string>
     <string name="tutor_mode_phrases">पेज ज़ोर से पढ़िए। ListenLock एक बार में एक वाक्यांश सुनता है, इसलिए हर ठहराव के बाद निशान दिखते हैं। सिर्फ़ इसी फ़ोन पर।</string>
     <string name="tutor_needs_model">%1$s में सुनने के लिए ListenLock को एक स्पीच मॉडल चाहिए: एक बार %2$s डाउनलोड, फ़ोन पर %3$s। उसके बाद यह बिना इंटरनेट के चलता है।</string>

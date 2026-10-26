@@ -23,7 +23,7 @@
     <string name="sounded_wrong_fix_nothing">এর জন্য এখানে বদলানোর কিছু নেই; পরের সংশোধনের জন্য এটি লগে আছে।</string>
     <string name="sounded_wrong_fix_word">ভয়েসকে শব্দটি কীভাবে বলতে হবে জানান</string>
     <string name="sounded_wrong_fix_skip_unreadable">অপাঠ্য লেখা বাদ দিন</string>
-    <string name="sounded_wrong_fix_tables_summary">টেবিল: শুধু আকার বলুন</string>
+    <string name="sounded_wrong_fix_tables_summary">টেবিল: প্রতিটি সারি নয়, শুধু কী আছে</string>
     <string name="sounded_wrong_fix_tables_rows">টেবিল: প্রতিটি সারি পড়ুন</string>
     <string name="sounded_wrong_fix_tables_skip">টেবিল: বাদ দিন</string>
     <string name="sounded_wrong_fix_footnotes_skip">পাদটীকা বাদ দিন</string>

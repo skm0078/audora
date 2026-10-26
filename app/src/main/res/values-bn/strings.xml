@@ -107,7 +107,7 @@
     <string name="reading_skip_unreadable">অপাঠ্য লেখা বাদ দিন</string>
     <string name="reading_skip_unreadable_detail">চালু: স্ক্যানের গোলমেলে লেখা অর্থহীন শব্দের বদলে হালকা আওয়াজ বাজায়। বন্ধ: সব পড়া হয়, আবর্জনাও।</string>
     <string name="reading_tables">টেবিল</string>
-    <string name="reading_tables_summary">শুধু আকার</string>
+    <string name="reading_tables_summary">সারসংক্ষেপ</string>
     <string name="reading_tables_rows">সারি ধরে ধরে</string>
     <string name="reading_footnotes">পাদটীকা</string>
     <string name="reading_footnotes_read">পৃষ্ঠার শেষে</string>

@@ -55,7 +55,7 @@ class UnitReadingTest {
         val equation = kind(1, UnitKind.EQUATION, "x = y (1)").copy(speakScore = 0.1f)
         val reading = UnitReading(ReadingModes(tables = TableMode.ROWS))
         assertEquals(listOf(0, 1), reading.plays(listOf(row, equation)).map { it.index })
-        assertEquals(Speech.Text("Row 1. Name: Ram. Age: 34.", TextRole.BODY), reading.speechOf(row))
+        assertEquals(Speech.Text("Ram: Age 34.", TextRole.BODY), reading.speechOf(row))
     }
 
     @Test
@@ -75,22 +75,23 @@ class UnitReadingTest {
         assertEquals(listOf(0, 1, 2, 3, 4), played(ReadingModes(tables = TableMode.ROWS), units))
         assertEquals(listOf(0, 4), played(ReadingModes(tables = TableMode.SKIP), units))
         val reading = UnitReading(ReadingModes(tables = TableMode.ROWS))
-        assertEquals(Speech.Text("2 rows, 2 columns.", TextRole.BODY), reading.speechOf(units[1]))
-        assertEquals(Speech.Text("Row 2. Name: Sita. Age: 29.", TextRole.BODY), reading.speechOf(units[3]))
+        val summary = Speech.Text("A table of 2 rows, with columns for Name and Age.", TextRole.BODY)
+        assertEquals(summary, reading.speechOf(units[1]))
+        assertEquals(Speech.Text("Sita: Age 29.", TextRole.BODY), reading.speechOf(units[3]))
     }
 
     @Test
     fun `a continued table says it continues before its rows, in summary and in row by row`() {
         val carried = { unit: ReadingUnit -> unit.copy(table = unit.table!!.copy(continued = true, rowsBefore = 12)) }
         val units = listOf(table(0, null, "Name Age"), table(1, 0), table(2, 1, "Sita 29")).map(carried)
-        val continues = Speech.Text("Table continues, 2 more rows.", TextRole.BODY)
+        val continues = Speech.Text("The table continues, with 2 more rows.", TextRole.BODY)
 
         assertEquals(listOf(0), played(ReadingModes(tables = TableMode.SUMMARY), units))
         assertEquals(continues, UnitReading(ReadingModes(tables = TableMode.SUMMARY)).speechOf(units[0]))
         val rows = UnitReading(ReadingModes(tables = TableMode.ROWS))
         assertEquals(listOf(0, 1, 2), rows.plays(units).map { it.index })
         assertEquals(
-            listOf(continues, Speech.Text("Row 13. Name: Ram. Age: 34.", TextRole.BODY)),
+            listOf(continues, Speech.Text("Ram: Age 34.", TextRole.BODY)),
             units.take(2).map(rows::speechOf),
         )
     }

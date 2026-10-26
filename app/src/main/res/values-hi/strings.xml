@@ -107,7 +107,7 @@
     <string name="reading_skip_unreadable">न पढ़ने लायक टेक्स्ट छोड़ें</string>
     <string name="reading_skip_unreadable_detail">चालू: स्कैन का बिगड़ा टेक्स्ट बेतुके शब्दों की जगह हल्की आवाज़ बजाता है। बंद: सब कुछ पढ़ा जाता है, कचरा भी।</string>
     <string name="reading_tables">टेबल</string>
-    <string name="reading_tables_summary">सिर्फ़ आकार</string>
+    <string name="reading_tables_summary">सारांश</string>
     <string name="reading_tables_rows">पंक्ति-दर-पंक्ति</string>
     <string name="reading_footnotes">फ़ुटनोट</string>
     <string name="reading_footnotes_read">पेज के अंत में</string>

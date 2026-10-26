@@ -149,6 +149,11 @@ private fun TutorBody(state: TutorState, model: TutorModel, onNextPage: (() -> U
         ListenKind.PHRASE_CTC -> R.string.tutor_mode_phrases
     }
     Text(stringResource(mode), style = MaterialTheme.typography.bodyMedium)
+    Text(
+        stringResource(R.string.tutor_experimental_note),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     Status(state)
     Text(markedPage(state), style = MaterialTheme.typography.bodyLarge)
     Text(

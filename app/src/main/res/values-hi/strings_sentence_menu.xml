@@ -23,7 +23,7 @@
     <string name="sounded_wrong_fix_nothing">इसके लिए यहाँ बदलने को कुछ नहीं है; यह आगे के सुधार के लिए लॉग में है।</string>
     <string name="sounded_wrong_fix_word">आवाज़ को शब्द बोलने का तरीका बताएँ</string>
     <string name="sounded_wrong_fix_skip_unreadable">न पढ़ने लायक टेक्स्ट छोड़ें</string>
-    <string name="sounded_wrong_fix_tables_summary">टेबल: सिर्फ़ उनका आकार बताएँ</string>
+    <string name="sounded_wrong_fix_tables_summary">टेबल: हर पंक्ति नहीं, बस उनमें क्या है</string>
     <string name="sounded_wrong_fix_tables_rows">टेबल: हर पंक्ति पढ़ें</string>
     <string name="sounded_wrong_fix_tables_skip">टेबल: छोड़ दें</string>
     <string name="sounded_wrong_fix_footnotes_skip">फ़ुटनोट छोड़ें</string>

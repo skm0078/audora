@@ -20,3 +20,5 @@
 -dontwarn com.google.j2objc.annotations.**
 -dontwarn javax.annotation.**
 -dontwarn org.checkerframework.**
+# Readability4J logs through the SLF4J API with no logger bound (it falls back to doing nothing).
+-dontwarn org.slf4j.impl.**

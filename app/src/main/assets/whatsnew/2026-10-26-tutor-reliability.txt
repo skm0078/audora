@@ -1,0 +1,3 @@
+en: Read aloud to me keeps up when you pause after every word or skip a line. It is marked experimental while we test it.
+hi: मुझे पढ़कर सुनाइए अब हर शब्द के बाद रुकने या एक पंक्ति छोड़ने पर भी साथ चलता है। जाँच पूरी होने तक इसे प्रायोगिक लिखा गया है।
+bn: আমাকে পড়ে শোনান এখন প্রতিটি শব্দের পরে থামলে বা একটি লাইন বাদ দিলেও সঙ্গে থাকে। পরীক্ষা চলা পর্যন্ত এটি পরীক্ষামূলক লেখা আছে।

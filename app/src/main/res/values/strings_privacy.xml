@@ -3,7 +3,7 @@
 <resources>
     <string name="settings_group_privacy">Privacy and security</string>
     <string name="privacy_statement_title">Your data stays on your phone</string>
-    <string name="privacy_statement_body">Your books, notes, recordings and settings are kept only on this phone. ListenLock has no account, no ads, no analytics and no server of its own, and it never uploads anything. It goes online only to download the voices and language packs you choose.\n\nThey are your files, so keeping them safe is up to you: backups and exports are saved where you choose, and anyone who can open those files or this app can read them.</string>
+    <string name="privacy_statement_body">Your books, notes, recordings and settings are kept only on this phone. ListenLock has no account, no ads, no analytics and no server of its own, and it never uploads anything. It goes online only when you ask: to download the voices and language packs you choose, or a web page or free book you tap, straight from that website.\n\nThey are your files, so keeping them safe is up to you: backups and exports are saved where you choose, and anyone who can open those files or this app can read them.</string>
     <string name="app_lock_title">App lock</string>
     <string name="app_lock_body">Ask for your fingerprint, face or phone PIN when you come back to ListenLock after 30 seconds away. The playback controls in the notification still work.</string>
     <string name="app_lock_needs_screen_lock">Set a screen lock (PIN, pattern or password) in your phone\'s settings first.</string>

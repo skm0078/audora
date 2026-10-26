@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Bengali: Read aloud to me, the reading tutor (plan item 67, ADR-050). -->
 <resources>
-    <string name="tutor_menu">আমাকে পড়ে শোনান</string>
-    <string name="tutor_title">আমাকে পড়ে শোনান</string>
+    <string name="tutor_menu">আমাকে পড়ে শোনান (পরীক্ষামূলক)</string>
+    <string name="tutor_title">আমাকে পড়ে শোনান (পরীক্ষামূলক)</string>
+    <string name="tutor_experimental_note">কিছু চিহ্ন ভুল হতে পারে, বেশিরভাগ সময় কোলাহলের ঘরে বা ফোন দূরে থাকলে। ভুল হলে সেটিংস থেকে লগ শেয়ার করুন: লগে শুধু সংখ্যা থাকে, আপনার শব্দ কখনও নয়।</string>
     <string name="tutor_mode_words">পাতাটি জোরে পড়ুন। ListenLock প্রতিটি শব্দ শোনে, শুধু এই ফোনেই।</string>
     <string name="tutor_mode_phrases">পাতাটি জোরে পড়ুন। ListenLock একবারে একটি বাক্যাংশ শোনে, তাই প্রতিটি বিরতির পরে চিহ্ন দেখা যায়। শুধু এই ফোনেই।</string>
     <string name="tutor_needs_model">%1$s শুনতে ListenLock-র একটি স্পিচ মডেল দরকার: একবার %2$s ডাউনলোড, ফোনে %3$s। তারপর ইন্টারনেট ছাড়াই চলে।</string>
