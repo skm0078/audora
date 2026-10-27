@@ -91,11 +91,11 @@
       "sourceUrl": "https://huggingface.co/hexgrad/Kokoro-82M",
       "source": {
         "archive": "kokoro-int8-multi-lang-v1_0",
-        "sha256": "4c3052abaa60943a341f193888cf6abd68787dae6ab8ae5c925a706caa247e4e"
+        "sha256": "72c347230107ef8a31098ec4d468a605244beef5f1ed00db97efa13518800653"
       },
-      "file": "kokoro-en-heart-5bade7e6fb72.zip",
-      "sha256": "5bade7e6fb72265288ab73838c93742f44452302fc792d619117b44fc0e9db1d",
-      "sizeBytes": 149491614
+      "file": "kokoro-en-heart-99a421b49045.zip",
+      "sha256": "99a421b49045b384bf9bc56b79908915f8796d7f9221265f19e7e7d7e047f0ac",
+      "sizeBytes": 149490851
     },
     {
       "id": "kokoro-en-michael",
@@ -114,11 +114,11 @@
       "sourceUrl": "https://huggingface.co/hexgrad/Kokoro-82M",
       "source": {
         "archive": "kokoro-int8-multi-lang-v1_0",
-        "sha256": "4c3052abaa60943a341f193888cf6abd68787dae6ab8ae5c925a706caa247e4e"
+        "sha256": "72c347230107ef8a31098ec4d468a605244beef5f1ed00db97efa13518800653"
       },
-      "file": "kokoro-en-michael-5bade7e6fb72.zip",
-      "sha256": "5bade7e6fb72265288ab73838c93742f44452302fc792d619117b44fc0e9db1d",
-      "sizeBytes": 149491614
+      "file": "kokoro-en-michael-99a421b49045.zip",
+      "sha256": "99a421b49045b384bf9bc56b79908915f8796d7f9221265f19e7e7d7e047f0ac",
+      "sizeBytes": 149490851
     },
     {
       "id": "supertonic-hi",
