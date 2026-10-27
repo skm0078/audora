@@ -60,6 +60,7 @@ data class VoiceRow(
     val speed: VoiceSpeed? = null,
     val tooSlow: Boolean = false,
     val recommended: Boolean = false,
+    val useTerms: VoiceUseTerms? = null,
 ) {
     /** Unique in the list even when an installed voice shares the built-in voice's id after a bundled-voice swap. */
     val key: String get() = "${kind.name}:${id.name}"
@@ -93,7 +94,7 @@ object VoiceRows {
             val spec = copy?.spec ?: voice.spec
             val reads = copy != null && preferred[spec.lang] == spec.voiceId
             row(spec, VoiceKind.CATALOG, status, copy?.sizeBytes ?: voice.sizeBytes, reads)
-                .copy(recommended = voice.recommended)
+                .copy(recommended = voice.recommended, useTerms = voice.useTerms)
         }
         val catalogIds = catalog.voices.map { it.id }.toSet()
         val others = installed.filter { it.origin == VoiceOrigin.CUSTOM || it.spec.id !in catalogIds }.map {

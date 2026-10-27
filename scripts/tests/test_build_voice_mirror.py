@@ -115,6 +115,24 @@ class BuildZipTest(unittest.TestCase):
                 self.assertNotIn("espeak-ng-data/fr_dict", names)
                 self.assertTrue(all(i.compress_type == zipfile.ZIP_STORED for i in zf.infolist()))
 
+    def test_a_model_licence_from_the_repo_goes_in_as_model_license(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            archive = root / "src.tar.bz2"
+            make_archive(archive, FILES, 0)
+            licence = "speech/licences/bigscience-openrail-m.txt"
+            built = mirror.build_zip(voice(model_licence=licence), archive, root / "out", ["en"])
+            with zipfile.ZipFile(built.path) as zf:
+                self.assertEqual(zf.read("MODEL_LICENSE"), (mirror.REPO_ROOT / licence).read_bytes())
+
+    def test_supertonic_ships_its_model_licence_and_asks_for_its_terms(self):
+        root, voices = mirror.load_catalog(mirror.REPO_ROOT / "speech" / "models.json")
+        supertonic = next(v for v in voices if v.id == "supertonic-hi")
+        self.assertEqual(supertonic.model_licence, "speech/licences/bigscience-openrail-m.txt")
+        self.assertIn("Attachment A", (mirror.REPO_ROOT / supertonic.model_licence).read_text(encoding="utf-8"))
+        entry = next(e for e in root["voices"] if e["id"] == "supertonic-hi")
+        self.assertEqual(entry["useTerms"], "openrail-m")
+
     def test_missing_model_fails(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

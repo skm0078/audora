@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_use_terms.xml -->
+<!-- Purpose: Bengali copy of values/strings_use_terms.xml. -->
+<resources>
+    <string name="use_terms_title">%1$s-এর নিয়ম</string>
+    <string name="use_terms_openrail_m">এই ভয়েসের লাইসেন্স (OpenRAIL-M) আপনাকে এটি স্বাধীনভাবে ব্যবহার করতে দেয়, কিন্তু কখনও এসবের জন্য নয়:\n• আইন ভাঙা\n• শিশুদের ক্ষতি বা শোষণ করা\n• কাউকে আঘাত করে এমন মিথ্যা বা ব্যক্তিগত তথ্য ছড়ানো\n• মানুষকে হয়রানি, অপমান বা বদনাম করা\n• কোনো আসল মানুষের সম্মতি ছাড়া তার মতো শোনানো\n• চিকিৎসার পরামর্শ দেওয়া\n• কারও আইনি অধিকার নিয়ে, বা পুলিশ, আদালত, অভিবাসন বা আশ্রয়ের জন্য, নিজে থেকে সিদ্ধান্ত নেওয়া\n• মানুষকে তাদের পরিচয়ের জন্য আলাদা করা\n\nএটি দিয়ে তৈরি অডিও কাউকে দিলে জানান যে একটি কম্পিউটার ভয়েস সেটি পড়েছে। ডাউনলোড করা মানে আপনি এই নিয়মগুলিতে রাজি।</string>
+    <string name="use_terms_agree">রাজি, ডাউনলোড করুন</string>
+    <string name="use_terms_cancel">বাতিল</string>
+    <string name="use_terms_read_licence">পুরো লাইসেন্স পড়ুন</string>
+    <string name="licences_bsd3_apache">BSD 3-Clause License এবং Apache License 2.0; এর পুরো বিজ্ঞপ্তি অ্যাপের সঙ্গে আসে</string>
+    <string name="licences_gpl2_later">GNU General Public License v2.0 বা পরবর্তী; এর পুরো লেখা অ্যাপের সঙ্গে আসে</string>
+</resources>

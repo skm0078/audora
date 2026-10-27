@@ -48,6 +48,7 @@ import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
 import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
+import io.github.skm0078.audora.speech.voices.VoiceStatus
 import io.github.skm0078.audora.ui.firstrun.FirstRunStep
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
@@ -90,6 +91,7 @@ class ReleaseJourneyTest {
             step("13 Open with reads FB2, Kindle and help-file books", ::openWithReadsMoreEbookFormats)
             step("14 Open with makes a comic archive into a photo book", ::openWithMakesAComicIntoAPhotoBook)
             step("15 Open with reads a DjVu's text and makes a DjVu scan a photo book", ::openWithReadsDjvuBooks)
+            step("16 Supertonic's licence rules show before its download", ::supertonicRulesShowBeforeItsDownload)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -467,6 +469,26 @@ class ReleaseJourneyTest {
         awaitTrue("pause", state = { "Player: ${snapshot()}" }) { !snapshot().wantsToPlay }
     }
 
+    /**
+     * The Hindi pack (Supertonic, OpenRAIL-M) asks the user to agree to its use rules first (ADR
+     * 2026-10-27-licence-fixes); Cancel downloads nothing.
+     */
+    private fun supertonicRulesShowBeforeItsDownload() {
+        pause()
+        backToTabs()
+        tapText(R.string.tab_settings)
+        node(hasText(text(R.string.settings_voices_title))).performScrollTo().performClick()
+        tap(hasText(text(R.string.voice_pack_download)) and hasClickAction())
+        val agree = hasText(text(R.string.use_terms_agree))
+        waitForNode(agree)
+        tapText(R.string.use_terms_cancel)
+        gone(agree)
+        val supertonic = runBlocking { VoiceLibrary.get(app).rows().first { it.isNotEmpty() } }
+            .single { it.id.name == SUPERTONIC }
+        assertEquals("Cancel must not start the download", VoiceStatus.NotDownloaded, supertonic.status)
+        backToTabs()
+    }
+
     /** False (logged, the step passes) on a build with only one English voice. */
     private fun chooseAnotherEnglishVoice(): Boolean {
         val library = VoiceLibrary.get(app)
@@ -494,6 +516,7 @@ class ReleaseJourneyTest {
     }
 
     private companion object {
+        const val SUPERTONIC = "supertonic-hi"
         const val LOG_TAG = "ReleaseJourney"
         const val BOOK = "en-udhr-noto.pdf"
         const val SCAN = "en-udhr-noto-scan200bad-p1.pdf"

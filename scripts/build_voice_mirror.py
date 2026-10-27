@@ -33,6 +33,8 @@ ZIP_DATE = (1980, 1, 1, 0, 0, 0)
 FILE_MODE = 0o100644 << 16
 DICT_SUFFIX = "_dict"
 ATTRIBUTION_FILES = ("MODEL_CARD", "LICENSE", "README.md")
+MODEL_LICENCE_NAME = "MODEL_LICENSE"
+REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TOKENS = "tokens.txt"
 SHA_PREFIX_CHARS = 12
 # Supertonic's model is its tts.json (the catalog's "model") plus these files under fixed names (SupertonicParts in
@@ -68,6 +70,9 @@ class Voice:
     source_url: str | None = None
     # More single files a model needs ("extraFiles"): the keyword spotter's decoder and joiner (plan item 38).
     extra_files: tuple[str, ...] = ()
+    # A repo file added to the zip as MODEL_LICENSE ("modelLicence"): the model's own licence when the upstream archive
+    # carries only its code's (Supertonic's OpenRAIL-M, which must travel with the model).
+    model_licence: str | None = None
 
     def source(self, base_url: str) -> str:
         return self.source_url or f"{base_url}{self.archive}{TAR_SUFFIX}"
@@ -125,6 +130,7 @@ def load_catalog(path: Path) -> tuple[dict, list[Voice]]:
                 size_bytes=int(entry["sizeBytes"]),
                 source_url=source.get("url"),
                 extra_files=tuple(entry.get("extraFiles", [])),
+                model_licence=entry.get("modelLicence"),
             )
         )
     ids = [v.id for v in voices]
@@ -205,6 +211,8 @@ def read_members(voice: Voice, archive: Path, dictionaries: set[str]) -> dict[st
 def build_zip(voice: Voice, archive: Path, out_dir: Path, espeak_dictionaries: list[str]) -> Built:
     dictionaries = {f"{lang}{DICT_SUFFIX}" for lang in espeak_dictionaries}
     members = read_members(voice, archive, dictionaries)
+    if voice.model_licence:
+        members[MODEL_LICENCE_NAME] = (REPO_ROOT / voice.model_licence).read_bytes()
 
     missing = [name for name in voice.required_files() if name not in members]
     if voice.data_dir and not any(name.startswith(voice.data_dir + "/") for name in members):

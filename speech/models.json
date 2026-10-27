@@ -134,34 +134,15 @@
       "credit": "Supertonic 3 by Supertone Inc., speaker 2. Packaged for sherpa-onnx by k2-fsa (int8); files unchanged. The model's OpenRAIL-M licence forbids harmful, illegal and deceptive uses; using it means accepting those terms.",
       "licenceUrl": "https://huggingface.co/supertone-oss-archive/supertonic-3/blob/main/LICENSE",
       "sourceUrl": "https://github.com/supertone-inc/supertonic",
+      "useTerms": "openrail-m",
+      "modelLicence": "speech/licences/bigscience-openrail-m.txt",
       "source": {
         "archive": "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
         "sha256": "82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427"
       },
-      "file": "supertonic-hi-24d94e841d36.zip",
-      "sha256": "24d94e841d368cc4bfef0a89fee30419a4275256d6835f56531907148d6d2233",
-      "sizeBytes": 145317352
-    },
-    {
-      "id": "piper-bn-google",
-      "label": "Bengali, Piper google",
-      "lang": "bn",
-      "family": "vits",
-      "model": "bn_BD-google-medium.onnx",
-      "dataDir": "espeak-ng-data",
-      "speakerId": 0,
-      "licence": "CC BY-SA 4.0: Google's Bengali speech data (OpenSLR 37) and CMU Indic",
-      "credit": "Piper voice “google” (speaker 0 of 16), fine-tuned from Piper's LibriTTS-R voice on Google's crowd-sourced Bengali speech (OpenSLR 37, CC BY-SA 4.0) and CMU Indic (© 2009-2017 Carnegie Mellon University; its notice is in the voice's MODEL_CARD). Converted to the sherpa-onnx format by Audora; weights unchanged.",
-      "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
-      "sourceUrl": "https://huggingface.co/rhasspy/piper-voices/tree/main/bn/bn_BD/google/medium",
-      "source": {
-        "archive": "vits-piper-bn_BD-google-medium",
-        "sha256": "e32f683b65b361fb7e11684947c5996071a9469c152497c2a4458a65345a31bf",
-        "url": "https://github.com/skm0078/audora/releases/download/s1-voices/vits-piper-bn_BD-google-medium.zip"
-      },
-      "file": "piper-bn-google-04f8a557afb8.zip",
-      "sha256": "04f8a557afb8433ed9a66afa80b1cdad3d997bca85abe39ff18aa81c72bdbc88",
-      "sizeBytes": 77903022
+      "file": "supertonic-hi-dcb1b86a4492.zip",
+      "sha256": "dcb1b86a449282e3a17391f907db41abdb4313d8a9ddeea9e5a7ce1cb2d78417",
+      "sizeBytes": 145332475
     },
     {
       "id": "syspin-bn-male",

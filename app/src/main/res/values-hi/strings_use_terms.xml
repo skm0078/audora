@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_use_terms.xml -->
+<!-- Purpose: Hindi copy of values/strings_use_terms.xml. -->
+<resources>
+    <string name="use_terms_title">%1$s के नियम</string>
+    <string name="use_terms_openrail_m">इस आवाज़ का लाइसेंस (OpenRAIL-M) आपको इसे खुलकर इस्तेमाल करने देता है, पर इन कामों के लिए कभी नहीं:\n• क़ानून तोड़ना\n• बच्चों को नुक़सान पहुँचाना या उनका शोषण करना\n• किसी को चोट पहुँचाने वाली झूठी या निजी जानकारी फैलाना\n• लोगों को परेशान करना, उनका अपमान या बदनामी करना\n• किसी असली व्यक्ति की आवाज़ बनना, उसकी मर्ज़ी के बिना\n• इलाज की सलाह देना\n• किसी के क़ानूनी अधिकारों पर, या पुलिस, अदालत, इमिग्रेशन या शरण के लिए, अपने-आप फ़ैसले करना\n• लोगों को उनकी पहचान के कारण अलग करना\n\nअगर आप इससे बना ऑडियो किसी से साझा करते हैं, तो बताइए कि उसे कंप्यूटर की आवाज़ ने पढ़ा है। डाउनलोड करने का मतलब है कि आप इन नियमों से सहमत हैं।</string>
+    <string name="use_terms_agree">सहमत हूँ, डाउनलोड करें</string>
+    <string name="use_terms_cancel">रद्द करें</string>
+    <string name="use_terms_read_licence">पूरा लाइसेंस पढ़ें</string>
+    <string name="licences_bsd3_apache">BSD 3-Clause License और Apache License 2.0; इसकी पूरी सूचना ऐप के साथ आती है</string>
+    <string name="licences_gpl2_later">GNU General Public License v2.0 या बाद का; इसका पूरा पाठ ऐप के साथ आता है</string>
+</resources>

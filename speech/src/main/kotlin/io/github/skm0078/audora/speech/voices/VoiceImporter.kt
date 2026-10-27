@@ -234,7 +234,7 @@ internal object ImportRules {
     private const val VOICES = "voices.bin"
     private const val ESPEAK = "espeak-ng-data"
     private const val DICT_SUFFIX = "_dict"
-    private val ATTRIBUTION = setOf("MODEL_CARD", "LICENSE", "README.md")
+    private val ATTRIBUTION = setOf("MODEL_LICENSE", "MODEL_CARD", "LICENSE", "README.md")
     private val LEXICON = Regex("lexicon.*\\.txt")
 
     /** espeak-ng dictionaries kept: the languages Audora reads (the same trim as the bundled voice, ADR-014). */

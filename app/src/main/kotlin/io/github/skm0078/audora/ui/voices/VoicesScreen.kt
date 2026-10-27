@@ -58,6 +58,8 @@ import io.github.skm0078.audora.ui.theme.MoreOptions
 @Composable
 fun VoicesScreen(state: VoicesState, actions: VoicesActions, modifier: Modifier = Modifier) {
     val snackbar = remember { SnackbarHostState() }
+    val terms = rememberUseTermsGate(actions::onDownload)
+    val gated = remember(actions, terms) { termsGated(actions, terms) }
     // Saveable: the folder picker can outlive this process; the language and name typed before it must survive.
     var importRequest by rememberSaveable { mutableStateOf<String?>(null) }
     var importLang by rememberSaveable { mutableStateOf(Lang.EN) }
@@ -83,7 +85,7 @@ fun VoicesScreen(state: VoicesState, actions: VoicesActions, modifier: Modifier 
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             if (state.importing) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            VoicesContent(state, actions, onImport = { if (!state.importing) importDialog = true })
+            VoicesContent(state, gated, onImport = { if (!state.importing) importDialog = true })
         }
     }
     if (importDialog) {
@@ -99,6 +101,7 @@ fun VoicesScreen(state: VoicesState, actions: VoicesActions, modifier: Modifier 
         )
     }
     state.pendingDelete?.let { DeleteDialog(it, actions) }
+    UseTermsDialog(terms)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

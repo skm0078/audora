@@ -186,7 +186,7 @@ internal fun LinkButton(@StringRes label: Int, onClick: () -> Unit) {
 
 /** Opens a link in the user's browser; a phone without one logs it instead of crashing. */
 @Composable
-private fun rememberLinkOpener(): (String) -> Unit {
+internal fun rememberLinkOpener(): (String) -> Unit {
     val uriHandler = LocalUriHandler.current
     return { url ->
         try {
@@ -205,6 +205,16 @@ private val SPEECH_SOFTWARE = listOf(
     Software("ONNX Runtime (Microsoft)", R.string.licences_mit, "https://github.com/microsoft/onnxruntime"),
     Software("eSpeak NG", R.string.licences_gpl3, "https://github.com/espeak-ng/espeak-ng"),
     Software("Tesseract OCR and its data", R.string.licences_apache, "https://github.com/tesseract-ocr/tesseract"),
+    Software(
+        "PDFium (The PDFium Authors), via PdfiumAndroidKt (legere), PDF pages",
+        R.string.licences_bsd3_apache,
+        "https://pdfium.googlesource.com/pdfium/",
+    ),
+    Software(
+        "DjVuLibre (Léon Bottou and Yann Le Cun, AT&T, LizardTech), DjVu books",
+        R.string.licences_gpl2_later,
+        "https://sourceforge.net/projects/djvu/",
+    ),
     Software(
         "Readability4J (dankito), a web page's article",
         R.string.licences_apache,
@@ -275,14 +285,14 @@ private const val TAG = "UI.Licences"
 private fun LicencesScreenPreview() {
     val voices = listOf(
         VoiceLicence(
-            VoiceId(EngineId.SHERPA, "piper-bn-google"),
-            "Bengali, Piper google",
+            VoiceId(EngineId.SHERPA, "syspin-bn-male"),
+            "Bengali, SYSPIN male",
             Lang.BN,
-            "CC BY-SA 4.0: Google's Bengali speech data (OpenSLR 37) and CMU Indic",
+            "MIT: SYSPIN VITS voice",
             VoiceCredits(
-                "Piper voice “google”, fine-tuned on Google's crowd-sourced Bengali speech (OpenSLR 37).",
-                "https://creativecommons.org/licenses/by-sa/4.0/",
-                "https://huggingface.co/rhasspy/piper-voices",
+                "SYSPIN Bengali male voice by the SYSPIN project at the Indian Institute of Science, Bengaluru.",
+                "https://huggingface.co/SYSPIN/vits_Bengali_Male/blob/main/README.md",
+                "https://huggingface.co/SYSPIN/vits_Bengali_Male",
             ),
             LicenceKind.DOWNLOAD,
             installed = true,

@@ -44,7 +44,7 @@ data class VoiceListConfig(val simple: Boolean = false, val hiddenIds: Set<Strin
     }
 
     companion object {
-        /** Piper's Google Bengali: the weakest of the Bengali voices. */
-        val SIMPLE_HIDDEN = setOf("piper-bn-google")
+        /** None today: Piper's Google Bengali, the one voice hidden here, left the catalog (2026-10-27). */
+        val SIMPLE_HIDDEN = emptySet<String>()
     }
 }

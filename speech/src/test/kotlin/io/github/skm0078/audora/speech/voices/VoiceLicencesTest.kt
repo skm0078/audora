@@ -56,13 +56,15 @@ class VoiceLicencesTest {
         val dir = temp.newFolder("voice")
         dir.write("MODEL_CARD", "card".toByteArray())
         dir.write("LICENSE", "x".repeat(LicenceTexts.MAX_CHARS + 10).toByteArray())
+        dir.write("MODEL_LICENSE", "openrail".toByteArray())
         dir.write("model.onnx", ByteArray(4))
 
         val texts = LicenceTexts.read(dir)
 
-        assertEquals(listOf("LICENSE", "MODEL_CARD"), texts.map { it.name })
-        assertEquals(LicenceTexts.MAX_CHARS, texts[0].text.length)
-        assertEquals("card", texts[1].text)
+        assertEquals(listOf("MODEL_LICENSE", "LICENSE", "MODEL_CARD"), texts.map { it.name })
+        assertEquals("openrail", texts[0].text)
+        assertEquals(LicenceTexts.MAX_CHARS, texts[1].text.length)
+        assertEquals("card", texts[2].text)
     }
 
     @Test
