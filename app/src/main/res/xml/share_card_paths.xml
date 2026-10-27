@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/xml/share_card_paths.xml
+  Purpose: The only folder the share card FileProvider may hand out: pictures made by "Share as a picture"
+           (ADR 2026-10-27-share-cards).
+-->
+<paths>
+    <cache-path name="shared_cards" path="shared-cards/" />
+</paths>

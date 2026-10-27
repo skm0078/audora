@@ -65,6 +65,10 @@ class SentenceMenuTest {
         override fun onShareHighlight(highlight: Highlight) {
             calls += "passage ${highlight.anchor.page}-${highlight.endPage}"
         }
+
+        override fun onSharePicture(lines: String, page: Int) {
+            calls += "picture $page: $lines"
+        }
     }
 
     private fun text(id: Int) = context.getString(id)
@@ -87,11 +91,37 @@ class SentenceMenuTest {
         rule.setContent { AudoraTheme { NotesOverlays(NotesState(menuFor = UNIT, placed = placed), notes, reader) } }
 
         rule.onNodeWithText(text(R.string.sentence_hint_unhighlight)).assertExists()
-        rule.onNodeWithText(text(R.string.sentence_hint_share_highlight)).performScrollTo().assertExists()
         Screens.save("sentence-menu-highlighted", rule.onNode(isDialog()).captureToImage().asAndroidBitmap())
 
-        rule.onNodeWithText(text(R.string.sentence_menu_share_clip)).performScrollTo().performClick()
+        // Share opens its choices in the same dialog; As audio shares the whole passage.
+        rule.onNodeWithText(text(R.string.sentence_menu_share)).performScrollTo().performClick()
+        rule.onNodeWithText(text(R.string.sentence_hint_share_highlight)).assertExists()
+        rule.onNodeWithText(text(R.string.share_choices_note)).performScrollTo().assertExists()
+        Screens.save("sentence-menu-share-choices", rule.onNode(isDialog()).captureToImage().asAndroidBitmap())
+        rule.onNodeWithText(text(R.string.sentence_menu_share_clip)).performClick()
         assertEquals(listOf("dismiss", "passage ${PASSAGE.anchor.page}-${PASSAGE.endPage}"), calls)
+    }
+
+    @Test
+    fun shareAsAPictureSendsTheWholeHighlightedQuoteAndItsPage() {
+        val placed = PlacedHighlights(UNIT.page, mapOf(UNIT.index to listOf(PASSAGE)))
+        rule.setContent { AudoraTheme { NotesOverlays(NotesState(menuFor = UNIT, placed = placed), notes, reader) } }
+
+        rule.onNodeWithText(text(R.string.sentence_menu_share)).performScrollTo().performClick()
+        rule.onNodeWithText(text(R.string.share_hint_picture)).assertExists()
+        rule.onNodeWithText(text(R.string.share_as_picture)).performClick()
+        assertEquals(listOf("dismiss", "picture ${PASSAGE.anchor.page}: ${PASSAGE.quote}"), calls)
+    }
+
+    @Test
+    fun shareAsAPictureOnAPlainSentenceSendsThatSentence() {
+        rule.setContent { AudoraTheme { NotesOverlays(NotesState(menuFor = UNIT), notes, reader) } }
+
+        rule.onNodeWithText(text(R.string.sentence_hint_share)).performScrollTo().assertExists()
+        rule.onNodeWithText(text(R.string.sentence_menu_share)).performClick()
+        rule.onNodeWithText(text(R.string.sentence_hint_share_clip)).assertExists()
+        rule.onNodeWithText(text(R.string.share_as_picture)).performClick()
+        assertEquals(listOf("dismiss", "picture ${UNIT.page}: ${UNIT.text}"), calls)
     }
 
     @Test
@@ -100,7 +130,7 @@ class SentenceMenuTest {
         rule.setContent { AudoraTheme { NotesOverlays(NotesState(menuFor = UNIT, placed = placed), notes, reader) } }
 
         rule.onNodeWithText(text(R.string.sentence_hint_copy_highlight)).performScrollTo().assertExists()
-        rule.onNodeWithText(text(R.string.sentence_hint_share_text)).performScrollTo().assertExists()
+        rule.onNodeWithText(text(R.string.sentence_hint_share)).performScrollTo().assertExists()
         rule.onNodeWithText(text(R.string.sentence_menu_copy)).performScrollTo().performClick()
         assertEquals(listOf("dismiss"), calls)
         // The test's own window has focus, so it may read back what it copied.

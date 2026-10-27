@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/strings_share_cards.xml
+  Purpose: Sharing lines as a picture: the sentence menu's Share choices and the quote card screen (ADR
+           2026-10-27-share-cards).
+-->
+<resources>
+    <!-- The sentence menu's one Share row; it opens the choices below. -->
+    <string name="sentence_menu_share">Share…</string>
+    <string name="sentence_hint_share">As audio, as a picture or as words. Pictures always carry the book\'s title and author.</string>
+    <string name="share_choices_title">Share these lines</string>
+    <string name="share_as_picture">Share as a picture</string>
+    <string name="share_hint_picture">A quote card with the book, author and page, sized for Status, Stories or a post.</string>
+    <string name="share_choices_note">Every picture carries the book, its author and a small ListenLock mark.</string>
+
+    <!-- The quote card screen. -->
+    <string name="share_card_title">Share as a picture</string>
+    <string name="share_card_book_title">Share this book</string>
+    <string name="share_card_back">Back</string>
+    <string name="share_card_preview">Preview of the picture</string>
+    <string name="share_card_shape">Size</string>
+    <string name="share_card_square">Square</string>
+    <string name="share_card_story">Story 9:16</string>
+    <string name="share_card_post">Post 4:5</string>
+    <string name="share_card_look">Background</string>
+    <string name="share_card_look_light">Paper</string>
+    <string name="share_card_look_sepia">Sepia</string>
+    <string name="share_card_look_dark">Night</string>
+    <string name="share_card_look_dusk">Dusk blue</string>
+    <string name="share_card_look_cover">The book\'s cover</string>
+    <string name="share_card_look_picture">Your own picture</string>
+    <string name="share_card_picture_note">Use a picture you took or are allowed to share.</string>
+    <string name="share_card_picture_failed">That picture could not be opened. Try another one.</string>
+    <string name="share_card_dedication">Dedication (optional)</string>
+    <string name="share_card_dedication_hint">For Ma</string>
+    <string name="share_card_cut_note">Shortened to 60 words, so the quote stays short and fair to the author.</string>
+    <string name="share_card_send">Share</string>
+    <string name="share_card_failed">The picture could not be made. Please share the logs.</string>
+    <string name="share_card_no_app">No app on this phone can take a picture.</string>
+    <!-- On the card under the title and author. %1$d is the page. -->
+    <string name="share_card_page">Page %1$d</string>
+    <!-- The book card: no quote, just the book. -->
+    <string name="share_card_now_listening">Now listening</string>
+    <string name="share_card_book_missing">This book is no longer in your library.</string>
+    <string name="menu_hint_share_card">A picture of the book's cover, title and author to share in any app. It stays on the phone until you pick an app.</string>
+</resources>

@@ -12,6 +12,7 @@ package io.github.skm0078.audora.release
 
 import android.Manifest
 import android.app.Activity
+import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.os.Bundle
 import android.util.Log
@@ -67,6 +68,9 @@ import io.github.skm0078.audora.ui.firstrun.FirstRunStep
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
 import io.github.skm0078.audora.ui.reader.ReadingPosition
+import io.github.skm0078.audora.ui.share.ShareCardActivity
+import io.github.skm0078.audora.ui.share.ShareCardFiles
+import io.github.skm0078.audora.ui.share.ShareEntry
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.first
@@ -109,6 +113,7 @@ class ReleaseJourneyTest {
             step("15 Open with reads a DjVu's text and makes a DjVu scan a photo book", ::openWithReadsDjvuBooks)
             step("16 Supertonic's licence rules show before its download", ::supertonicRulesShowBeforeItsDownload)
             step("17 an exported chapter carries the book's cover", ::anExportedChapterCarriesTheCover)
+            step("19 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -560,6 +565,35 @@ class ReleaseJourneyTest {
         return true
     }
 
+    /**
+     * "Share as a picture" on the installed app (ADR 2026-10-27-share-cards): the card screen opens from the reader's
+     * call with the journey's PDF, Share writes a 1080 x 1920 PNG into the share folder and hands it to the share
+     * sheet, and Back returns to the app.
+     */
+    private fun aQuoteCardIsShared() {
+        val entry = LibraryEntryPoint.of(app)
+        val book = runBlocking { entry.library().books().first() }.first { it.format == DocumentFormat.PDF }
+        val folder = File(app.cacheDir, ShareCardFiles.FOLDER).apply { deleteRecursively() }
+        val reader = activity()
+        JourneyDevice.onMain { ShareEntry.quote(reader, book.id, CARD_QUOTE, page = 0) }
+        waitForNode(hasText(text(R.string.share_card_title)), OPEN_TIMEOUT_MS)
+        node(hasText(text(R.string.share_card_send)) and hasClickAction()).performScrollTo().performClick()
+        val card = { folder.listFiles()?.firstOrNull { it.name.endsWith(".png") } }
+        awaitTrue("the card in the share folder", state = { "Files: ${folder.list()?.toList()}" }) { card() != null }
+        val size = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(requireNotNull(card()).path, size)
+        assertEquals(CARD_WIDTH, size.outWidth)
+        assertEquals(CARD_HEIGHT, size.outHeight)
+        // The share sheet (another app's window) covers the card screen; Back closes it, then the card screen.
+        awaitTrue("the share sheet") { JourneyDevice.resumedActivity() !is ShareCardActivity }
+        repeat(MAX_BACKS) {
+            if (JourneyDevice.resumedActivity() is MainActivity) return@repeat
+            JourneyDevice.pressBackKey()
+            Thread.sleep(POLL_MS)
+        }
+        awaitTrue("the reader back on screen") { JourneyDevice.resumedActivity() is MainActivity }
+    }
+
     private fun savedPrivacy(): PrivacySettings = runBlocking { PrivacyPreferences(app).settings.first() }
 
     private fun windowState(): String {
@@ -624,5 +658,10 @@ class ReleaseJourneyTest {
         const val OTHER_BOOK_LANGUAGE = "fr"
         const val TEXT_REREAD = "Reading text settings changed; reading the open book again"
         const val LOCK_SCREEN_BOOKMARK = "Lock screen bookmark added"
+
+        // Step 19: a line of the journey's PDF, made into a story-sized card.
+        const val CARD_QUOTE = "All human beings are born free and equal in dignity and rights."
+        const val CARD_WIDTH = 1080
+        const val CARD_HEIGHT = 1920
     }
 }

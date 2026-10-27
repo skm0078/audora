@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-bn/strings_share_cards.xml
+  Purpose: Bengali copy of strings_share_cards.xml.
+-->
+<resources>
+    <string name="sentence_menu_share">শেয়ার করুন…</string>
+    <string name="sentence_hint_share">অডিও, ছবি বা লেখা হিসেবে। ছবিতে সবসময় বইয়ের নাম আর লেখক থাকে।</string>
+    <string name="share_choices_title">এই লাইনগুলো শেয়ার করুন</string>
+    <string name="share_as_picture">ছবি হিসেবে শেয়ার করুন</string>
+    <string name="share_hint_picture">বই, লেখক আর পৃষ্ঠাসহ একটি উদ্ধৃতি কার্ড, স্ট্যাটাস, স্টোরি বা পোস্টের মাপে।</string>
+    <string name="share_choices_note">প্রতিটি ছবিতে বই, তার লেখক আর ListenLock-এর ছোট চিহ্ন থাকে।</string>
+
+    <string name="share_card_title">ছবি হিসেবে শেয়ার করুন</string>
+    <string name="share_card_book_title">এই বইটি শেয়ার করুন</string>
+    <string name="share_card_back">ফিরে যান</string>
+    <string name="share_card_preview">ছবির প্রিভিউ</string>
+    <string name="share_card_shape">মাপ</string>
+    <string name="share_card_square">বর্গ</string>
+    <string name="share_card_story">স্টোরি ৯:১৬</string>
+    <string name="share_card_post">পোস্ট ৪:৫</string>
+    <string name="share_card_look">পটভূমি</string>
+    <string name="share_card_look_light">কাগজ</string>
+    <string name="share_card_look_sepia">সেপিয়া</string>
+    <string name="share_card_look_dark">রাত</string>
+    <string name="share_card_look_dusk">সন্ধ্যার নীল</string>
+    <string name="share_card_look_cover">বইয়ের প্রচ্ছদ</string>
+    <string name="share_card_look_picture">আপনার নিজের ছবি</string>
+    <string name="share_card_picture_note">এমন ছবি নিন যা আপনি তুলেছেন বা শেয়ার করার অনুমতি আছে।</string>
+    <string name="share_card_picture_failed">ছবিটি খোলা গেল না। অন্য একটি চেষ্টা করুন।</string>
+    <string name="share_card_dedication">উৎসর্গ (ইচ্ছে হলে)</string>
+    <string name="share_card_dedication_hint">মায়ের জন্য</string>
+    <string name="share_card_cut_note">৬০ শব্দে ছোট করা হয়েছে, যাতে উদ্ধৃতি ছোট থাকে আর লেখকের প্রতি সুবিচার হয়।</string>
+    <string name="share_card_send">শেয়ার করুন</string>
+    <string name="share_card_failed">ছবিটি বানানো গেল না। অনুগ্রহ করে লগ শেয়ার করুন।</string>
+    <string name="share_card_no_app">এই ফোনে কোনো অ্যাপ ছবি নিতে পারে না।</string>
+    <string name="share_card_page">পৃষ্ঠা %1$d</string>
+    <string name="share_card_now_listening">এখন শুনছি</string>
+    <string name="share_card_book_missing">এই বইটি আর আপনার লাইব্রেরিতে নেই।</string>
+    <string name="menu_hint_share_card">বইয়ের প্রচ্ছদ, নাম আর লেখকের একটি ছবি, যেকোনো অ্যাপে শেয়ার করার জন্য। অ্যাপ বেছে নেওয়া পর্যন্ত এটি ফোনেই থাকে।</string>
+</resources>
