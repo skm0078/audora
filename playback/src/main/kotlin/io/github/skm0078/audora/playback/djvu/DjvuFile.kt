@@ -50,7 +50,8 @@ internal object DjvuNative {
 /**
  * A DjVu read where it lies: DjVuLibre opens the provider's file through `/proc/self/fd`, reading only what it needs
  * (a 300-page scan's text layer without its pictures). A provider whose descriptor has no size (a pipe), or whose
- * file cannot be opened again by that path, gets its file copied to [copyFolder] first, up to [maxCopyBytes]. Close it to release the library's memory and the copy.
+ * file cannot be opened again by that path, gets its file copied to [copyFolder] first, up to [maxCopyBytes]. Close it
+ * to release the library's memory and the copy.
  */
 class DjvuFile private constructor(
     private val handle: Long,
