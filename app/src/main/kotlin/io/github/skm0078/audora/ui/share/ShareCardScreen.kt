@@ -72,7 +72,8 @@ fun ShareCardScreen(
     actions: CardScreenActions,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
-        val sideBySide = maxWidth > maxHeight && maxHeight < SIDE_BY_SIDE_BELOW
+        val height = maxHeight
+        val sideBySide = maxWidth > height && height < SIDE_BY_SIDE_BELOW
         val title = if (subject.quote != null) R.string.share_card_title else R.string.share_card_book_title
         val preview = @Composable { modifier: Modifier ->
             CardPreview(subject, choices, picture, recorder, modifier)
@@ -92,7 +93,7 @@ fun ShareCardScreen(
             Column(Modifier.fillMaxSize()) {
                 TopBar(title, actions::onBack)
                 preview(Modifier.weight(1f).fillMaxWidth().padding(horizontal = Dimens.ScreenPadding))
-                controls(Modifier.fillMaxWidth().heightIn(max = maxHeight * CONTROLS_SHARE))
+                controls(Modifier.fillMaxWidth().heightIn(max = height * CONTROLS_SHARE))
             }
         }
     }

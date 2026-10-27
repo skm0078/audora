@@ -9,12 +9,11 @@ import android.content.res.Configuration
 import androidx.compose.ui.graphics.ImageBitmap
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ShareCardConfig
-import io.github.skm0078.audora.core.library.Book
+import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.share.CardQuote
 import io.github.skm0078.audora.di.LibraryEntryPoint
-import io.github.skm0078.audora.ui.library.displayTitle
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -55,11 +54,10 @@ internal object CardSubjects {
         val quote = (request as? ShareCardRequest.Quote)?.let { CardQuote.of(it.lines, config) }
         val page = (request as? ShareCardRequest.Quote)?.page
         val pageLabel = if (quote != null && page != null) pageLabel(context, quote.script, page) else null
-        return CardSubjectState.Ready(subject(book, cover, soft, quote, pageLabel))
+        val title = book.title.takeUnless { it == BookTitles.UNTITLED } ?: context.getString(R.string.library_untitled)
+        val author = book.author?.takeIf(String::isNotBlank)
+        return CardSubjectState.Ready(CardSubject(title, author, cover, soft, quote, pageLabel))
     }
-
-    private fun subject(book: Book, cover: ImageBitmap?, soft: ImageBitmap?, quote: CardQuote?, page: String?) =
-        CardSubject(displayTitle(book), book.author?.takeIf(String::isNotBlank), cover, soft, quote, page)
 
     /** "Page 3", "पृष्ठ 3", "পৃষ্ঠা 3": the card speaks the quote's language, whatever the app's. */
     private fun pageLabel(context: Context, script: Lang, page: Int): String {
