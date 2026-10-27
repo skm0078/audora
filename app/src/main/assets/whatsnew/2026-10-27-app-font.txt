@@ -1,0 +1,3 @@
+en: A new look for the app's text: one open-source font, Anek, drawn for English, Hindi and Bengali, so every screen reads the same in all three. Your books keep their own fonts.
+hi: ऐप के अक्षरों को नया रूप: एक ओपन-सोर्स फ़ॉन्ट, Anek, जो अंग्रेज़ी, हिंदी और बांग्ला के लिए बना है, ताकि हर स्क्रीन तीनों भाषाओं में एक जैसी दिखे। आपकी किताबों के फ़ॉन्ट वैसे ही रहेंगे।
+bn: অ্যাপের লেখায় নতুন চেহারা: একটি ওপেন-সোর্স ফন্ট, Anek, যা ইংরেজি, হিন্দি আর বাংলার জন্য আঁকা, তাই প্রতিটি স্ক্রিন তিন ভাষাতেই একরকম দেখায়। আপনার বইয়ের ফন্ট যেমন ছিল তেমনই থাকবে।
