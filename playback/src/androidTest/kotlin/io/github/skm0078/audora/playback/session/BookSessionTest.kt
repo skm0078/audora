@@ -392,6 +392,23 @@ class BookSessionTest {
     }
 
     @Test
+    fun aLanguageChangedRightAfterSwitchingBooksTakesEffect() {
+        play(page = 0, charStart = 0)
+        awaitCondition("first sentence") { played.isNotEmpty() }
+        assertTrue(onMain { session.onBookLanguage(BOOK.id, "fr") })
+
+        // Phone test: the next book's language, changed before the library said anything about it, was ignored.
+        play(page = 0, charStart = 0, book = SHORT_BOOK)
+        awaitCondition("the short book's first sentence") { saved.any { it.first == SHORT_BOOK.id } }
+        assertTrue("the opened book's language", onMain { session.onBookLanguage(SHORT_BOOK.id, "de") })
+
+        // The same language again, or a book that is not open, restarts nothing.
+        assertFalse(onMain { session.onBookLanguage(SHORT_BOOK.id, "de") })
+        assertFalse(onMain { session.onBookLanguage(BOOK.id, "it") })
+        awaitEnd()
+    }
+
+    @Test
     fun onlyABookReadToItsEndWhilePlayingCountsAsFinished() {
         play(page = 0, charStart = 0)
         awaitCondition("second sentence") { played.size >= 2 }

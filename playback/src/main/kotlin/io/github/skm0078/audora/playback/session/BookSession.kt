@@ -258,6 +258,20 @@ class BookSession(
     }
 
     /**
+     * The library holds [language] for book [id] (Edit details, ADR 2026-10-26). When [id] is the open book and the
+     * session reads it in another language, it reads in [language] from the sentence playing and answers true.
+     * Compared with the language the session reads in, not with the last library update seen: a change made right
+     * after switching books, before the library sent anything for the new book, was lost that way (phone test).
+     */
+    fun onBookLanguage(id: BookId, language: String?): Boolean {
+        if (bookId != id || sources.reading.language == language) return false
+        AudoraLog.i(TAG, "Book language changed, book=${id.logLabel}; restarting the sentence")
+        sources.reading.language = language
+        restartRendering()
+        return true
+    }
+
+    /**
      * The reading text settings changed (Settings, "Skip citation numbers"): the open book is read again with them at
      * once, from the sentence playing, found by its words since its offsets moved; playing or paused as now (ADR-064).
      * Nothing happens with no book, or one already read with these settings.
@@ -493,6 +507,8 @@ class BookSession(
         loader.cancel()
         val old = book
         book = opened
+        // With the book, before the first suspension: a library update seen in between must find them in step.
+        sources.reading.language = opened.book.language
         bookOpen?.set(false)
         val open = AtomicBoolean(true).also { bookOpen = it }
         sources.reading.brain?.open(opened.book.id.value, aheadPages(opened, open))
@@ -513,7 +529,6 @@ class BookSession(
         chapterStop.chapterStarts = chapters
         sources.reading.chapterPages = chapters.toSet()
         sources.reading.scanned = opened.text::isScanned
-        sources.reading.language = opened.book.language
         sources.reading.clearBook()
         // The book's own speed, voices and pronunciation fixes, before its first sentence is rendered.
         sources.onBook(opened.book.id)
