@@ -34,7 +34,10 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.printToString
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionCommand
@@ -115,6 +118,7 @@ class ReleaseJourneyTest {
             step("16 Supertonic's licence rules show before its download", ::supertonicRulesShowBeforeItsDownload)
             step("17 an exported chapter carries the book's cover", ::anExportedChapterCarriesTheCover)
             step("18 the app font draws English, Hindi and Bengali", ::theAppFontDrawsAllThreeScripts)
+            step("20 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -582,6 +586,28 @@ class ReleaseJourneyTest {
         return true
     }
 
+    /**
+     * The test book opened again (Open with) and paused; a sideways swipe on its page turns it (ADR
+     * 2026-10-28-page-flip): back a page if there is one, else on to the next.
+     */
+    private fun aSwipeTurnsThePdfPage() {
+        pause()
+        val uri = JourneyDevice.downloadedPdf(BOOK)
+        val current = activity()
+        JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri)) }
+        val pageImage = { page: Int -> hasContentDescription(text(R.string.reader_page_image, page)) }
+        val onScreen = { page: Int -> rule.onAllNodes(pageImage(page)).fetchSemanticsNodes().isNotEmpty() }
+        var shown: Int? = null
+        awaitTrue("a drawn page on screen") {
+            shown = (1..MAX_SCANNED_PAGES).firstOrNull(onScreen)
+            shown != null
+        }
+        val from = requireNotNull(shown)
+        val to = if (from > 1) from - 1 else from + 1
+        node(pageImage(from)).performTouchInput { if (to < from) swipeRight() else swipeLeft() }
+        waitForNode(pageImage(to), OPEN_TIMEOUT_MS)
+    }
+
     private fun savedPrivacy(): PrivacySettings = runBlocking { PrivacyPreferences(app).settings.first() }
 
     private fun windowState(): String {
@@ -599,6 +625,9 @@ class ReleaseJourneyTest {
         const val SUPERTONIC = "supertonic-hi"
         const val LOG_TAG = "ReleaseJourney"
         const val BOOK = "en-udhr-noto.pdf"
+
+        /** Pages looked through for the one on screen: more than the test book has. */
+        const val MAX_SCANNED_PAGES = 40
         const val SCAN = "en-udhr-noto-scan200bad-p1.pdf"
 
         // assets/ebooks, written by scripts/fixtures/make_ebook_fixtures.py, with the type a Files app sends and

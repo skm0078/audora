@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-bn/strings_page_flip.xml
+  Purpose: Turning PDF pages by hand (ADR 2026-10-28-page-flip).
+-->
+<resources>
+    <!-- Beside "Back to page N": reading carries on from the page turned to by hand. -->
+    <string name="reader_read_from_here">এখান থেকে পড়ুন</string>
+</resources>

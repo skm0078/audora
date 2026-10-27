@@ -31,6 +31,7 @@ import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
+import io.github.skm0078.audora.ui.reader.flip.PageNeighbours
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -90,6 +91,13 @@ class ReaderModel(
     private var pageWidthPx: Int? = null
     private var started = false
 
+    /** The pages beside the shown one, drawn and read ahead for a turn by hand (ADR 2026-10-28-page-flip). */
+    private val neighbours = PageNeighbours(config.flip)
+    private var aheadJob: Job? = null
+
+    /** The page is zoomed in: nothing is drawn ahead, as each page would be drawn at the zoomed size. */
+    private var zoomed = false
+
     /**
      * The page to show again instead of the resume point, with no "Resumed at" notice: the page on screen when the
      * book was opened again for new text settings, or [shownPage] when the screen was rebuilt (a rotation, a theme
@@ -143,6 +151,16 @@ class ReaderModel(
     fun nextPage() = showPage(state.value.page + 1)
 
     fun previousPage() = showPage(state.value.page - 1)
+
+    /**
+     * A tap on the page away from any sentence: in the outer edge of the page, it turns the page that way (not while
+     * zoomed in, where the page's edge is off screen). True if it turned.
+     */
+    fun turnAtEdge(point: ViewPoint): Boolean {
+        val way = if (zoomed) 0 else config.flip.edgeTurn(point.u)
+        if (way != 0) showPage(state.value.page + way)
+        return way != 0
+    }
 
     /** Back to the page being read; the screen follows reading again. */
     fun showReadingPosition() {
@@ -279,6 +297,31 @@ class ReaderModel(
     }
 
     /**
+     * The page view was zoomed in (said before the zoomed width) or back to its width (said after it): pages are
+     * drawn ahead only at the page view's own width. Back at it, the page on screen (if drawn already; else when it
+     * is) is kept and its neighbours drawn ahead.
+     */
+    fun setZoomed(on: Boolean) {
+        if (on == zoomed) return
+        zoomed = on
+        val open = document
+        val width = pageWidthPx
+        val current = state.value
+        val shown = (current.pageImage as? PageImageState.Ready)?.takeIf { it.page == current.page }
+        when {
+            on -> {
+                aheadJob?.cancel()
+                dropNeighbourImages()
+            }
+
+            open != null && width != null && shown != null -> {
+                neighbours.keepImage(shown.page, width, shown.image)
+                drawAhead(open, shown.page, width)
+            }
+        }
+    }
+
+    /**
      * Pauses while reading. Otherwise resumes where reading stopped if that is on the page shown, or starts at
      * the top of the page shown: what is on screen is what gets read ("start from page N").
      */
@@ -392,6 +435,8 @@ class ReaderModel(
         openJob?.cancel()
         pageJob?.cancel()
         renderJob?.cancel()
+        aheadJob?.cancel()
+        neighbours.clear()
         document?.close()
         document = null
     }
@@ -437,6 +482,7 @@ class ReaderModel(
     private suspend fun onOpened(opened: ReaderDocument, password: String?) {
         document?.close()
         document = opened
+        neighbours.clear()
         this.password = password
         mutableState.update { it.copy(document = DocumentState.Open(opened.pageCount)) }
         if (!opened.hasPageImages) applyView(ReaderView.TEXT)
@@ -534,7 +580,15 @@ class ReaderModel(
     private fun loadPage(page: Int) {
         val open = document ?: return
         pageJob?.cancel()
-        mutableState.update { it.copy(page = page, content = PageContent.Loading) }
+        // A page read ahead for a turn by hand shows at once (ADR 2026-10-28-page-flip).
+        val ahead = neighbours.content(page)
+        mutableState.update { it.copy(page = page, content = ahead ?: PageContent.Loading) }
+        if (ahead != null) {
+            samples[page] = ahead.units
+            refreshTimeLeft()
+            renderPage(page)
+            return
+        }
         pageJob = scope.launch {
             val content = when (val shown = open.page(page)) {
                 is Outcome.Success -> shown.value.let { PageContent.Ready(it.units, it.origin, it.ocrConfidence) }
@@ -544,7 +598,10 @@ class ReaderModel(
                     PageContent.Failed
                 }
             }
-            if (content is PageContent.Ready) samples[page] = content.units
+            if (content is PageContent.Ready) {
+                samples[page] = content.units
+                if (content.isFinal) neighbours.keepContent(page, content)
+            }
             mutableState.update { if (it.page == page) it.copy(content = content) else it }
             refreshTimeLeft()
         }
@@ -558,13 +615,26 @@ class ReaderModel(
         renderPage(state.value.page)
     }
 
-    /** Draws [page] for the page view; nothing in the text view, so its bitmap is not held there. */
+    /**
+     * Draws [page] for the page view; nothing in the text view, so its bitmap is not held there. A page drawn ahead at
+     * this width shows at once, without a spinner; then the pages beside it are drawn ahead.
+     */
     private fun renderPage(page: Int) {
         renderJob?.cancel()
+        aheadJob?.cancel()
         val open = document
         val width = pageWidthPx
         if (open == null || width == null || state.value.view != ReaderView.PAGE) {
+            dropNeighbourImages()
             mutableState.update { it.copy(pageImage = PageImageState.None) }
+            return
+        }
+        neighbours.useWidth(width)
+        neighbours.keepAround(page, open.pageCount)
+        val ahead = neighbours.image(page, width)
+        if (ahead != null) {
+            mutableState.update { it.copy(pageImage = PageImageState.Ready(page, ahead)) }
+            drawAhead(open, page, width)
             return
         }
         mutableState.update { it.copy(pageImage = PageImageState.Loading) }
@@ -578,9 +648,42 @@ class ReaderModel(
                     PageImageState.Failed
                 }
             }
+            if (image is PageImageState.Ready && !zoomed) neighbours.keepImage(page, width, image.image)
             mutableState.update { if (it.page == page) it.copy(pageImage = image) else it }
+            if (image is PageImageState.Ready) drawAhead(open, page, width)
         }
     }
+
+    /**
+     * Draws and reads the pages beside [page] in the background, one at a time behind [renderLock], so the shown
+     * page and the scrubber always go first. Never at a zoomed width (each page would be several times bigger), and
+     * never runs OCR for a page ahead: a scanned page not read yet still loads when turned to.
+     */
+    private fun drawAhead(open: ReaderDocument, page: Int, width: Int) {
+        if (zoomed) return
+        aheadJob = scope.launch {
+            for (next in neighbours.wanted(page, open.pageCount)) {
+                if (neighbours.image(next, width) == null) {
+                    val rendered = renderLock.withLock { open.render(next, width, config.pageMaxPixels) }
+                    (rendered as? Outcome.Success)?.let { neighbours.keepImage(next, width, it.value) }
+                }
+                if (neighbours.content(next) == null) {
+                    val read = (open.pageIfReady(next) as? Outcome.Success)?.value
+                    read?.let { PageContent.Ready(it.units, it.origin, it.ocrConfidence) }
+                        ?.takeIf { it.isFinal }
+                        ?.let { neighbours.keepContent(next, it) }
+                }
+                publishNeighbours()
+            }
+        }
+    }
+
+    private fun dropNeighbourImages() {
+        neighbours.dropImages()
+        publishNeighbours()
+    }
+
+    private fun publishNeighbours() = mutableState.update { it.copy(nearbyPages = neighbours.images()) }
 
     /**
      * [page] drawn [widthPx] wide for the page scrubber's thumbnails (plan item 17), through the page view's render

@@ -1,0 +1,3 @@
+en: Swipe a PDF page sideways to turn it, or tap near the page's edge. The pages beside are ready before you get there. After turning away while reading, "Read from here" carries on from the page you are on.
+hi: PDF पेज को बगल में स्वाइप करके पलटें, या पेज के किनारे के पास टैप करें। बगल के पेज पहले से तैयार रहते हैं। पढ़ाई के दौरान पेज पलटने के बाद, ‘यहाँ से पढ़ें’ उसी पेज से आगे पढ़ता है।
+bn: PDF পৃষ্ঠা পাশে সোয়াইপ করে উল্টান, বা পৃষ্ঠার কিনারার কাছে ট্যাপ করুন। পাশের পৃষ্ঠাগুলি আগে থেকেই তৈরি থাকে। পড়ার সময় পৃষ্ঠা উল্টানোর পরে, ‘এখান থেকে পড়ুন’ সেই পৃষ্ঠা থেকেই পড়া চালিয়ে যায়।

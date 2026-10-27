@@ -27,6 +27,7 @@ package io.github.skm0078.audora.core.config
  *   to catch a word, not so slow that the stretched audio smears it.
  * @property slowPageNoticeMs a page still loading after this long gets a line saying why (a scanned page is being
  *   read with OCR, up to a minute) under its spinner, so a slow page never looks like a hang.
+ * @property flip turning PDF pages by hand: swipe, edge taps, the pages drawn ahead.
  */
 data class ReaderConfig(
     val speeds: List<Float> = DEFAULT_SPEEDS,
@@ -44,6 +45,7 @@ data class ReaderConfig(
     val voiceShaping: VoiceShapingConfig = VoiceShapingConfig(),
     val replayFactor: Float = DEFAULT_REPLAY_FACTOR,
     val slowPageNoticeMs: Long = DEFAULT_SLOW_PAGE_NOTICE_MS,
+    val flip: PageFlipConfig = PageFlipConfig(),
 ) {
     init {
         require(speeds.isNotEmpty() && speeds == speeds.sorted()) { "speeds must be non-empty and ascending" }

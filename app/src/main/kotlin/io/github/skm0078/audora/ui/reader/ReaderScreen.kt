@@ -7,6 +7,8 @@ package io.github.skm0078.audora.ui.reader
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -149,19 +151,7 @@ private fun OpenBook(
         PageBar(state.page, pageCount, actions, announce = !state.isReading, onPick = { picking = true })
         PageScrubber(state.page, pageCount, thumbnails, actions::onGoToPage)
         state.timeLeft?.let { TimeLeftLine(it, state.playback.speed) }
-        Row(Modifier.align(Alignment.CenterHorizontally)) {
-            state.readingPosition?.takeIf { state.readingElsewhere }?.let { position ->
-                TextButton(onClick = actions::onShowReadingPosition) {
-                    Text(stringResource(R.string.reader_back_to_reading, position.page + 1))
-                }
-            }
-            state.undoJumpTo?.let { target ->
-                TextButton(onClick = actions::onUndoJump) {
-                    Icon(painterResource(R.drawable.ic_undo), contentDescription = null)
-                    Text(stringResource(R.string.reader_undo_jump, target.page + 1))
-                }
-            }
-        }
+        ReadingJumps(state, actions, Modifier.align(Alignment.CenterHorizontally))
         PlayerStatus(state.playback)
         when (val content = state.content) {
             PageContent.Loading -> PageLoading(state.page, config.slowPageNoticeMs)
@@ -173,7 +163,7 @@ private fun OpenBook(
                 PageOriginNotice(content.origin, ocrModels, badge, actions::onDownloadOcrModels)
                 VoicePackNotice(content.units, voicePack)
                 when {
-                    state.view == ReaderView.PAGE -> PageView(state, content.units, actions, look.tone)
+                    state.view == ReaderView.PAGE -> PageView(state, content.units, actions, look.tone, config.flip)
 
                     content.units.isNotEmpty() ->
                         Sentences(state, content.units, actions, look, spokenWord, isHighlighted)
@@ -195,6 +185,35 @@ private fun OpenBook(
             },
             onDismiss = { picking = false },
         )
+    }
+}
+
+/**
+ * Ways back from browsing: to the page being read, reading on from the page shown (turned to by hand, ADR
+ * 2026-10-28-page-flip), or undoing a jump.
+ */
+@OptIn(ExperimentalLayoutApi::class) // FlowRow
+@Composable
+private fun ReadingJumps(state: ReaderState, actions: ReaderActions, modifier: Modifier) {
+    // Wraps at large text sizes rather than squeezing the buttons.
+    FlowRow(modifier, horizontalArrangement = Arrangement.Center) {
+        state.readingPosition?.takeIf { state.readingElsewhere }?.let { position ->
+            TextButton(onClick = actions::onShowReadingPosition) {
+                Text(stringResource(R.string.reader_back_to_reading, position.page + 1))
+            }
+            // Turned away by hand while reading: carry on from this page instead (ADR 2026-10-28-page-flip).
+            state.sentenceHere?.let { here ->
+                TextButton(onClick = { actions.onSentenceTapped(here) }) {
+                    Text(stringResource(R.string.reader_read_from_here))
+                }
+            }
+        }
+        state.undoJumpTo?.let { target ->
+            TextButton(onClick = actions::onUndoJump) {
+                Icon(painterResource(R.drawable.ic_undo), contentDescription = null)
+                Text(stringResource(R.string.reader_undo_jump, target.page + 1))
+            }
+        }
     }
 }
 
