@@ -1,8 +1,8 @@
 # Cover, title and author inside exported audiobooks (2026-10-27)
 - Every exported `.m4a` chapter now has iTunes-style tags in `moov/udta/meta/ilst`: chapter title (`©nam`, the file
   stem), book title (`©alb`), author (`©ART`, `aART`, when known), track n/total (`trkn`), genre `Audiobook`, and the
-  library's cover (`covr`, JPEG). MediaMuxer cannot write these, so `Mp4Tags` adds them after the muxer stops and
-  before the file is published to MediaStore, so the media scanner indexes album and artist on first sight.
+  library's cover (`covr`, JPEG). MediaMuxer cannot write these, so `TaggedChapterFile` runs `Mp4Tags` after the muxer
+  stops and before the file is published to MediaStore, so the media scanner indexes album and artist on first sight.
 - `Mp4Tags` only rewrites `moov`; the audio (`mdat`) never moves, so no sample offset (`stco`/`co64`) needs fixing.
   `moov` last: rewritten in place. `moov` + `free` with room: in place, rest stays `free`. Otherwise the old `moov`
   becomes `free` and the new one is appended. Tagging failures are logged and skipped; they never fail an export.

@@ -6,19 +6,18 @@ package io.github.skm0078.audora.playback.export
 import java.io.IOException
 import java.nio.ByteBuffer
 
-/**
- * What an audiobook player shows for one chapter file: [title] is the chapter, [album] the book. [coverJpeg] is the
- * book's cover as JPEG, the one picture format every player reads from MP4 files.
- */
-class AudioTags(
-    val title: String,
-    val album: String,
-    val artist: String?,
-    val track: Int,
-    val trackTotal: Int,
-    val genre: String,
-    val coverJpeg: ByteArray?,
-)
+/** What an audiobook player shows for one chapter file: [title] is the chapter, [book] the album it belongs to. */
+class AudioTags(val title: String, val track: Int, val trackTotal: Int, val book: BookTags)
+
+/** What every chapter file of one book shares; [forChapter] adds the chapter's own title and number. */
+class BookTags(val title: String, val author: String?, val coverJpeg: ByteArray?) {
+    fun forChapter(chapter: AudioChapter, chapterCount: Int) = AudioTags(
+        title = chapter.fileStem(chapterCount),
+        track = chapter.number,
+        trackTotal = chapterCount,
+        book = this,
+    )
+}
 
 /** A file that can be read and written anywhere: an open "rw" descriptor on a phone, a RandomAccessFile in tests. */
 interface SeekableFile {

@@ -8,8 +8,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.media.MediaExtractor
-import android.media.MediaMetadataRetriever
 import android.media.MediaFormat
+import android.media.MediaMetadataRetriever
 import android.os.ParcelFileDescriptor
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry

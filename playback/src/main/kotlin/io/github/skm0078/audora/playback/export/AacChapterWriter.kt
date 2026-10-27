@@ -29,7 +29,6 @@ class AacChapterWriter private constructor(
     private val muxer: MediaMuxer,
     override val sampleRate: Int,
     private val config: AudiobookConfig,
-    private val tags: AudioTags?,
 ) : ChapterAudioWriter {
     private val info = MediaCodec.BufferInfo()
     private var track = NO_TRACK
@@ -58,7 +57,6 @@ class AacChapterWriter private constructor(
         codec.queueInputBuffer(index, 0, 0, presentationUs(), MediaCodec.BUFFER_FLAG_END_OF_STREAM)
         drain(endOfStream = true)
         release()
-        tags?.let(::writeTags)
         val published = target.publish()
         if (published is Outcome.Failure) throw IOException(published.error.detail)
         val durationMs = samplesQueued * MS_PER_S / sampleRate
@@ -121,15 +119,6 @@ class AacChapterWriter private constructor(
         return info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0
     }
 
-    /** Tags are a nicety: a file that cannot take them is still a good chapter, so this logs and carries on. */
-    private fun writeTags(tags: AudioTags) {
-        try {
-            Mp4Tags.write(DescriptorFile(target.descriptor), tags)
-        } catch (e: IOException) {
-            AudoraLog.w(TAG, "Tags not written to ${target.name}, cover=${tags.coverJpeg != null}", e)
-        }
-    }
-
     private fun presentationUs(): Long = samplesQueued * US_PER_S / sampleRate
 
     private fun release() {
@@ -171,16 +160,12 @@ class AacChapterWriter private constructor(
         private const val MS_PER_S = 1_000L
         private const val US_PER_S = 1_000_000L
 
-        /**
-         * Starts the encoder into [target]. The caller owns the result and must finish or abort it. [tags], when
-         * given, are written into the file once the audio is complete.
-         */
+        /** Starts the encoder into [target]. The caller owns the result and must finish or abort it. */
         fun create(
             chapter: AudioChapter,
             target: ChapterFile,
             sampleRate: Int,
             config: AudiobookConfig = AudiobookConfig(),
-            tags: AudioTags? = null,
         ): Outcome<ChapterAudioWriter, ExportError.Storage> {
             val format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, sampleRate, CHANNELS).apply {
                 setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC)
@@ -192,7 +177,7 @@ class AacChapterWriter private constructor(
                 codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
                 codec.start()
                 val muxer = MediaMuxer(target.descriptor.fileDescriptor, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
-                Outcome.Success(AacChapterWriter(chapter, target, codec, muxer, sampleRate, config, tags))
+                Outcome.Success(AacChapterWriter(chapter, target, codec, muxer, sampleRate, config))
             } catch (e: IOException) {
                 createFailed(target, sampleRate, codec, e)
             } catch (e: IllegalStateException) {

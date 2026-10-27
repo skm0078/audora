@@ -11,14 +11,14 @@ internal object Mp4Ilst {
     fun meta(tags: AudioTags): ByteArray {
         val items = buildList {
             add(text(NAME, tags.title))
-            add(text(ALBUM, tags.album))
-            tags.artist?.takeIf { it.isNotBlank() }?.let { artist ->
+            add(text(ALBUM, tags.book.title))
+            tags.book.author?.takeIf { it.isNotBlank() }?.let { artist ->
                 add(text(ARTIST, artist))
                 add(text(ALBUM_ARTIST, artist))
             }
-            add(text(GENRE, tags.genre))
+            add(text(GENRE, AUDIOBOOK))
             add(item(TRACK, DATA_IMPLICIT, trackNumber(tags.track, tags.trackTotal)))
-            tags.coverJpeg?.let { add(item(COVER, DATA_JPEG, it)) }
+            tags.book.coverJpeg?.let { add(item(COVER, DATA_JPEG, it)) }
         }
         val versionAndFlags = ByteArray(Int.SIZE_BYTES)
         return mp4Box(META, listOf(versionAndFlags, handler(), mp4Box(ILST, items)))
@@ -64,6 +64,9 @@ internal object Mp4Ilst {
     private const val GENRE = "©gen"
     private const val TRACK = "trkn"
     private const val COVER = "covr"
+
+    /** The genre audiobook players and file managers file these under; a fixed tag value, never translated. */
+    private const val AUDIOBOOK = "Audiobook"
 }
 
 /** A box: 32-bit size, four-letter type (ISO-8859-1, so `©` is the single byte 0xA9), then [parts] in order. */

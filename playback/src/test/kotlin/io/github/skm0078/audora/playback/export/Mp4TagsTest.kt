@@ -202,12 +202,9 @@ class Mp4TagsTest {
 
         fun tags(artist: String? = "লেখক", cover: ByteArray? = COVER) = AudioTags(
             title = "01 Pages 1-10",
-            album = "বইয়ের নাম",
-            artist = artist,
             track = 1,
             trackTotal = 12,
-            genre = "Audiobook",
-            coverJpeg = cover,
+            book = BookTags(title = "বইয়ের নাম", author = artist, coverJpeg = cover),
         )
     }
 }

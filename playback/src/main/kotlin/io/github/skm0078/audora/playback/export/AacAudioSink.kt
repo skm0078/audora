@@ -24,8 +24,8 @@ class AacAudioSink(
     override fun open(chapter: AudioChapter, sampleRate: Int): Outcome<ChapterAudioWriter, ExportError.Storage> =
         when (val file = files.create("${chapter.fileStem(chapterCount)}.$EXTENSION")) {
             is Outcome.Success -> {
-                val tags = book?.forChapter(chapter, chapterCount)
-                AacChapterWriter.create(chapter, file.value, sampleRate, config, tags).map { it.atPitch(pitch) }
+                val target = book?.let { TaggedChapterFile(file.value, it.forChapter(chapter, chapterCount)) }
+                AacChapterWriter.create(chapter, target ?: file.value, sampleRate, config).map { it.atPitch(pitch) }
             }
 
             is Outcome.Failure -> file
@@ -33,23 +33,5 @@ class AacAudioSink(
 
     private companion object {
         const val EXTENSION = "m4a"
-    }
-}
-
-/** What every chapter file of one book shares; [forChapter] adds the chapter's own title and number. */
-class BookTags(val title: String, val author: String?, val coverJpeg: ByteArray?) {
-    fun forChapter(chapter: AudioChapter, chapterCount: Int) = AudioTags(
-        title = chapter.fileStem(chapterCount),
-        album = title,
-        artist = author,
-        track = chapter.number,
-        trackTotal = chapterCount,
-        genre = GENRE,
-        coverJpeg = coverJpeg,
-    )
-
-    private companion object {
-        /** The genre audiobook players and file managers file these under; a fixed tag value, never translated. */
-        const val GENRE = "Audiobook"
     }
 }

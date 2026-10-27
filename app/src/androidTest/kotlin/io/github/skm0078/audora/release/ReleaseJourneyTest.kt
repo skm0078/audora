@@ -108,7 +108,7 @@ class ReleaseJourneyTest {
             step("14 Open with makes a comic archive into a photo book", ::openWithMakesAComicIntoAPhotoBook)
             step("15 Open with reads a DjVu's text and makes a DjVu scan a photo book", ::openWithReadsDjvuBooks)
             step("16 Supertonic's licence rules show before its download", ::supertonicRulesShowBeforeItsDownload)
-            step("17 an exported chapter carries the book's title and library cover", ::anExportedChapterCarriesTheCover)
+            step("17 an exported chapter carries the book's cover", ::anExportedChapterCarriesTheCover)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
