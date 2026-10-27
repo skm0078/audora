@@ -1,6 +1,7 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/LibraryController.kt
 // Purpose: Library screen state from the books, their progress, collections and file checks; I/O stays off the main
-//          thread, and search keys are folded once per change of the library (ADR-069).
+//          thread, and search keys are folded once per change of the library (ADR-069). A removed book can be
+//          brought back for a few seconds (CF-3).
 
 package io.github.skm0078.audora.ui.library
 
@@ -23,6 +24,7 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeAnchor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -30,6 +32,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Plain state holder (no Compose UI here), like the other controllers. Call [start] once.
@@ -73,6 +76,14 @@ class LibraryController(
     private var own = OwnCollections()
     private var search: Job? = null
 
+    /**
+     * Removals waiting out their undo window (CF-3), each with the job that removes the book when it ends. [removing]
+     * holds those whose removal runs now, too late to undo. Both are hidden from the list; nothing is deleted until the
+     * window ends, so Undo only has to show the book again.
+     */
+    private var leaving: Map<BookId, Job> = emptyMap()
+    private var removing: Set<BookId> = emptySet()
+
     /** Last check per book, with the URI it was made for: a book moved to a new URI is checked again. */
     private var checked: Map<BookId, Pair<String, BookAvailability>> = emptyMap()
     private var watch: Job? = null
@@ -102,6 +113,7 @@ class LibraryController(
                         facets = LibraryFacets.of(latest, index)
                     }
                     books = latest
+                    removing = removing.filterTo(HashSet()) { id -> latest.any { it.id == id } }
                     progress = positions.associateBy { it.bookId }
                     this@LibraryController.own = own
                     publish()
@@ -200,15 +212,50 @@ class LibraryController(
         pendingRemoval = book
     }
 
-    fun confirmRemoval() {
+    /**
+     * Hides the book at once and removes it after [undoMs], unless [undoRemoval] brings it back first (CF-3). The
+     * snackbar offering Undo shows for [undoMs]; the removal waits [REMOVAL_UNDO_GRACE_MS] longer, so an Undo tapped
+     * in the snackbar's last moment still finds the book. If the screen's scope ends first (the activity is
+     * finished), the removal runs then: the listener asked for it. A process killed inside the window keeps the book.
+     */
+    fun confirmRemoval(undoMs: Long = REMOVAL_UNDO_MS) {
         val book = pendingRemoval ?: return
         pendingRemoval = null
-        scope.launch {
-            message = when (val removed = library.remove(book.id)) {
-                is Outcome.Failure -> LibraryMessage.Failed(removed.error)
-                is Outcome.Success -> LibraryMessage.Removed(book.title)
-            }
+        if (book.id in leaving || book.id in removing) return
+        leaving = leaving + (book.id to scope.launch { removeAfter(book, undoMs + REMOVAL_UNDO_GRACE_MS) })
+        message = LibraryMessage.Removed(book.title, undo = book.id, undoMs = undoMs)
+        publish()
+    }
+
+    /** Undo on the snackbar: the book shows again as it was, place, notes and collections untouched. */
+    fun undoRemoval(id: BookId) {
+        val job = leaving[id] ?: return
+        leaving = leaving - id
+        job.cancel()
+        AudoraLog.i(TAG, "Removal undone, book=${id.logLabel}")
+        publish()
+    }
+
+    private suspend fun removeAfter(book: Book, windowMs: Long) {
+        try {
+            delay(windowMs)
+        } finally {
+            // Undo takes the book out of [leaving] before it cancels; any other end of the wait removes it.
+            if (book.id in leaving) withContext(NonCancellable) { remove(book) }
         }
+    }
+
+    private suspend fun remove(book: Book) {
+        leaving = leaving - book.id
+        removing = removing + book.id
+        val removed = library.remove(book.id)
+        if (removed is Outcome.Failure) {
+            // The book is still in the library: show it again and say why.
+            removing = removing - book.id
+            message = LibraryMessage.Failed(removed.error)
+            publish()
+        }
+        // On success the book stays hidden until the library's next list no longer has it, so it never flickers back.
     }
 
     fun messageShown() {
@@ -238,7 +285,8 @@ class LibraryController(
     }
 
     private fun publish() {
-        val items = books.map { book ->
+        val hidden = leaving.keys + removing
+        val items = books.filterNot { it.id in hidden }.map { book ->
             val check = checked[book.id]?.takeIf { it.first == book.documentUri }
             LibraryItem(book, check?.second, BookProgress.of(book, progress[book.id]))
         }
@@ -255,6 +303,7 @@ class LibraryController(
             collections = own.collections,
             members = own.members,
             facets = facets,
+            leaving = hidden,
         )
     }
 

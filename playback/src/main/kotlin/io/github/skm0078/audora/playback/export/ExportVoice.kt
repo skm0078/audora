@@ -32,8 +32,10 @@ internal class ExportVoice(
     factory: BookRendering.Factory,
     id: BookId,
     text: BookText,
+    language: String?,
 ) : AutoCloseable {
-    private val book = BookVoice(context, factory, id, text, RunSettings(normalRate = true), style = style)
+    private val book =
+        BookVoice(context, factory, id, text, RunSettings(normalRate = true, language = language), style = style)
     private val languages: MutableSet<Lang> = ConcurrentHashMap.newKeySet()
     private val castSizes = ConcurrentHashMap<Lang, Int>()
     val voices: SpeechVoices get() = book.voices

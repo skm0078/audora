@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Listening stats and streaks, kept on the phone only (CF-8). -->
+<resources>
+    <string name="library_listening_stats">Listening stats</string>
+    <string name="menu_hint_listening_stats">Time listened, your streak and books finished. Kept on this phone only.</string>
+    <string name="stats_today">Today</string>
+    <string name="stats_week">This week</string>
+    <string name="stats_streak">Streak</string>
+    <string name="stats_best_streak">Longest streak</string>
+    <string name="stats_books_finished">Books finished</string>
+    <string name="stats_total">All time</string>
+    <string name="stats_minutes">%1$d min</string>
+    <string name="stats_hours_minutes">%1$d h %2$d min</string>
+    <plurals name="stats_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <string name="stats_chart_title">Last 7 days</string>
+    <string name="stats_chart_day">%1$s: %2$s</string>
+    <string name="stats_empty">Play a book and your listening time shows up here. A day with a minute or more of listening keeps your streak going.</string>
+    <string name="stats_private">Kept on this phone only. Nothing is sent anywhere.</string>
+    <string name="stats_clear">Clear stats</string>
+    <string name="stats_clear_title">Clear listening stats?</string>
+    <string name="stats_clear_body">Every day\'s listening time and your streak are forgotten. Your books and places stay.</string>
+    <string name="stats_clear_confirm">Clear</string>
+    <string name="stats_cancel">Cancel</string>
+</resources>

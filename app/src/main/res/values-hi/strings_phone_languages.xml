@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_phone_languages.xml -->
+<!-- Purpose: Books in languages read by the phone's own voices, in Edit details (ADR 2026-10-26), in Hindi. -->
+<resources>
+    <string name="phone_languages_help">दूसरी भाषाएँ आपके फ़ोन की अपनी ऑफ़लाइन आवाज़ पढ़ती है। यह ListenLock की अंग्रेज़ी, हिंदी और बांग्ला आवाज़ों से सादी लगती है।</string>
+    <string name="phone_languages_missing">आपके फ़ोन में अभी %1$s की ऑफ़लाइन आवाज़ नहीं है। जब तक आप इसे नहीं जोड़ते, ListenLock की अपनी आवाज़ें यह किताब पढ़ेंगी।</string>
+    <string name="phone_languages_add">फ़ोन में भाषाएँ जोड़ें</string>
+    <string name="phone_languages_add_steps">वहाँ पसंदीदा इंजन के पास गियर पर टैप करें, फिर Install voice data, और भाषा डाउनलोड करें।</string>
+    <string name="phone_languages_no_settings">इस फ़ोन में खोलने के लिए टेक्स्ट-टू-स्पीच सेटिंग नहीं है।</string>
+</resources>

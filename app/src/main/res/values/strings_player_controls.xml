@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/strings_player_controls.xml
+  Purpose: The player's one-tap bookmark (CF-2), resuming when headphones reconnect (CF-4) and the widget's time
+  left (CF-7).
+-->
+<resources>
+    <string name="player_bookmark_add">Bookmark this sentence</string>
+    <string name="player_bookmark_edit">Bookmarked. Edit its note</string>
+    <string name="player_bookmark_saved">Bookmarked</string>
+    <string name="player_bookmark_note">Add note</string>
+    <string name="player_bookmark_undo">Undo</string>
+    <string name="settings_reconnect_title">Resume when headphones reconnect</string>
+    <string name="settings_reconnect_short">Headphones or a Bluetooth speaker</string>
+    <plurals name="settings_reconnect_body">
+        <item quantity="one">Reading pauses when headphones or a Bluetooth speaker disconnect. With this on, it goes on by itself if they come back within %1$d minute. After a longer pause it also needs Background reading allowed.</item>
+        <item quantity="other">Reading pauses when headphones or a Bluetooth speaker disconnect. With this on, it goes on by itself if they come back within %1$d minutes. After a longer pause it also needs Background reading allowed.</item>
+    </plurals>
+    <!-- %1$s a duration like "2 h 10 min"; %2$d the page; %3$d the book's pages. -->
+    <string name="widget_time_left">About %1$s left · page %2$d of %3$d</string>
+</resources>

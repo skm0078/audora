@@ -1,12 +1,13 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/reading/QuoteCarry.kt
 // Purpose: Which sentences start inside a quote opened earlier in their paragraph, who speaks them (items 7, 63),
-//          and the mood a sentence carries from the one before (ADR-058).
+//          the mood a sentence carries from the one before (ADR-058), and each one's place in its paragraph (Q-3).
 
 package io.github.skm0078.audora.playback.reading
 
 import io.github.skm0078.audora.core.config.DialogueConfig
 import io.github.skm0078.audora.core.config.ReadingUnitConfig
 import io.github.skm0078.audora.core.model.Feeling
+import io.github.skm0078.audora.core.model.ParagraphPlace
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.playback.queue.UnitKey
@@ -47,6 +48,7 @@ class QuoteCarry(
         val end: Turns,
         val endsOpen: Boolean,
         val moods: Map<Int, Feeling>,
+        val places: Map<Int, ParagraphPlace>,
     )
 
     /**
@@ -60,7 +62,7 @@ class QuoteCarry(
         val spoken = turns.page(paragraphs, before?.end ?: Turns())
         val opened = paragraphs.flatMap { it.sentences }.filter { it.carried }
             .mapTo(HashSet()) { UnitKey.of(it.unit).index }
-        pages[page] = PageQuotes(opened, spoken.speakers, spoken.end, endsOpen, moods(paragraphs))
+        pages[page] = PageQuotes(opened, spoken.speakers, spoken.end, endsOpen, moods(paragraphs), places(paragraphs))
         synchronized(order) {
             order.remove(page)
             order.addLast(page)
@@ -75,6 +77,9 @@ class QuoteCarry(
 
     /** The mood the sentence before leaves on this one ([SceneMoods]); null for none. */
     fun moodOf(unit: ReadingUnit): Feeling? = pages[unit.page]?.moods?.get(unit.index)
+
+    /** Where the sentence sits in its paragraph on its page (Q-3); null when its page is not known. */
+    fun placeOf(unit: ReadingUnit): ParagraphPlace? = pages[unit.page]?.places?.get(unit.index)
 
     /** A new book opened. */
     fun clear() {
@@ -114,6 +119,19 @@ class QuoteCarry(
             val units = paragraph.sentences.map { it.unit }.filter { it.kind in PROSE }
             SceneMoods.of(units.map { it.text }).forEachIndexed { i, mood ->
                 if (mood != null) put(UnitKey.of(units[i]).index, mood)
+            }
+        }
+    }
+
+    /**
+     * Each sentence's place in its paragraph, by unit index (Q-3). A paragraph right after a heading opens a section;
+     * the page's first paragraph never counts as one, since its heading, if any, may be on the page before.
+     */
+    private fun places(paragraphs: List<Paragraph>): Map<Int, ParagraphPlace> = buildMap {
+        paragraphs.forEachIndexed { p, paragraph ->
+            val afterHeading = paragraphs.getOrNull(p - 1)?.sentences?.lastOrNull()?.unit?.kind == UnitKind.HEADING
+            paragraph.sentences.forEachIndexed { i, sentence ->
+                put(UnitKey.of(sentence.unit).index, ParagraphPlace(i, paragraph.sentences.size, afterHeading))
             }
         }
     }

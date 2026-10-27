@@ -8,6 +8,7 @@ import io.github.skm0078.audora.core.config.SpeakabilityConfig
 import io.github.skm0078.audora.core.config.SpeechStyleConfig
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.playback.session.SentenceTimings
+import io.github.skm0078.audora.speech.delivery.NarrationArc
 import io.github.skm0078.audora.speech.punct.PunctuationModels
 import io.github.skm0078.audora.speech.punct.RunOnPunctuation
 import io.github.skm0078.audora.speech.route.VoiceSource
@@ -43,8 +44,12 @@ object BookRenderers {
             startsInQuote = book.startsInQuote,
             speakerOf = book.speakerOf,
             moodOf = book.moodOf,
+            judgedFeeling = book.judgedFeeling,
             characters = book.characters,
             intent = book.intent,
+            language = book.language,
+            placeOf = book.placeOf,
+            narration = NarrationArc(),
         ),
         timings = timings,
         replay = replay,

@@ -5,7 +5,7 @@ Offline-first Android app that reads PDFs aloud like a human (English, Hindi, Be
 Spec: docs/BUILD-SPEC.md · Tickets: docs/TICKET-PLAN.md · Progress: docs/progress/ (one file per change; docs/PROGRESS.md is frozen history) · Decisions: docs/DECISIONS-OPEN.md, docs/adr/ · Docs index: docs/README.md (add a line for every new doc; not for ADRs or progress entries)
 
 ## Stack (change only via an ADR)
-Kotlin 2.x, Compose, Hilt, Media3 1.11.x (ExoPlayer + MediaSessionService), sherpa-onnx 1.13.x (arm64-v8a), PdfiumAndroidKt, ICU BreakIterator, Room, DataStore, WorkManager (downloads only). Phase 3: Tesseract4Android (PaddleOCR ONNX only if P3-05 proves it, ADR-011). No proprietary SDKs (GPL-3.0).
+Kotlin 2.x, Compose, Hilt, Media3 1.11.x (ExoPlayer + MediaSessionService), sherpa-onnx 1.13.x (arm64-v8a), PdfiumAndroidKt, ICU BreakIterator, Room, DataStore, WorkManager (downloads only). Phase 3: Tesseract4Android (PaddleOCR ONNX only if P3-05 proves it, ADR-011). Story brain: llama.cpp built from its pinned source tag (ADR 2026-10-25-story-brain). No proprietary SDKs (GPL-3.0).
 Versions live only in gradle/libs.versions.toml. Build setup lives in build-logic/ (convention plugins: audora.android.application, audora.android.library, audora.jvm.library, audora.hilt, audora.room).
 Platform: compileSdk 37, targetSdk 36, minSdk 31, arm64-v8a only (ADR-010).
 Toolchain: AGP 9 (built-in Kotlin, so no kotlin-android plugin), Gradle wrapper, JDK 21 to run Gradle, Java/Kotlin target 17.
@@ -22,7 +22,8 @@ Dependencies: app → playback → (speech, pdf) → core. Never the reverse.
 
 ## Invariants
 - The player never reaches ENDED while text remains (TtsDataSource blocks instead).
-- Playback starts only from a user action. No boot auto-start.
+- Playback starts only from a user action. No boot auto-start. The opt-in "Resume when headphones reconnect" counts
+  (the listener turned it on and put the headphones back; ADR 2026-10-26-player-and-lockscreen-controls).
 - Resume uses ResumeAnchor (page + charStart + fingerprint + pipelineVersion). Bump PIPELINE_VERSION when :pdf output can change.
 - Studio audio is kept across app updates, keyed by STUDIO_AUDIO_VERSION (playback/studio/StudioAudioVersion.kt). Bump it when a change can make the same sentence, voice and settings sound different (engine or model upgrade, speech text shaping, clip format); ADR-064.
 - Never declare SMS, accessibility, or notification-listener permissions.

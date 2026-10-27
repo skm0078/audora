@@ -249,11 +249,7 @@ class ReaderModel(
     }
 
     /** What "Bookmark here" marks: the sentence being read on the shown page, else the page's first sentence. */
-    fun sentenceHere(): ReadingUnit? {
-        val current = state.value
-        val units = (current.content as? PageContent.Ready)?.units ?: return null
-        return current.spokenUnitIndex?.let(units::getOrNull) ?: units.firstOrNull()
-    }
+    fun sentenceHere(): ReadingUnit? = state.value.sentenceHere
 
     /** "Use for this book only" (plan item 4): the book keeps its own speed, pace and voices, or goes back to all. */
     fun setOwnSettings(on: Boolean) = player.setOwnSettings(on)

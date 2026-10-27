@@ -1,0 +1,3 @@
+en: New and optional: the story brain. Download it in Settings to have each line of a story read by the right character, with the right feeling, far more often. It runs on your phone, offline.
+hi: नया और वैकल्पिक: स्टोरी ब्रेन। इसे सेटिंग्स में डाउनलोड करें, तो कहानी की हर पंक्ति कहीं ज़्यादा बार सही किरदार की आवाज़ में, सही भावना के साथ पढ़ी जाती है। यह आपके फ़ोन पर, बिना इंटरनेट के चलता है।
+bn: নতুন আর ঐচ্ছিক: স্টোরি ব্রেন। সেটিংসে এটি ডাউনলোড করলে গল্পের প্রতিটি লাইন অনেক বেশি বার ঠিক চরিত্রের ভয়েসে, ঠিক অনুভূতিতে পড়া হয়। এটি আপনার ফোনেই, ইন্টারনেট ছাড়া চলে।

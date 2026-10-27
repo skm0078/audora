@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_brain.xml -->
+<!-- Purpose: The story brain's Settings row, Storage and Jobs name (ADR 2026-10-25-story-brain). -->
+<resources>
+    <string name="brain_model_title">Story brain (who speaks, and how)</string>
+    <string name="brain_model_missing">A small language model that reads a story\'s dialogue the way a person would: who says each line, and with what feeling. Character voices and feelings then get it right far more often. It reads a page or two ahead of you while you listen, on your phone, offline, and uses more battery while it does. For phones with 6 GB of memory or more. Downloads on Wi-Fi only. Needs %1$d MB.</string>
+    <string name="brain_model_ready">Reads stories ahead of you for who speaks and how · %1$d MB</string>
+    <string name="storage_story_brain">Story brain</string>
+</resources>

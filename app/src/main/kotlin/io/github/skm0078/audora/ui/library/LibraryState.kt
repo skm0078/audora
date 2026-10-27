@@ -29,7 +29,8 @@ sealed interface LibraryListState {
      * while nothing is searched or filtered; null when none was read yet. [all]: every book in the library, so "no
      * book matches" and "the library is empty" can be told apart, and the mini player finds a filtered-out book.
      * [collections], [members] (each book's collections) and [facets] (what the library holds to filter by) feed
-     * the collection chips and the filter sheet (ADR-069).
+     * the collection chips and the filter sheet (ADR-069). [leaving]: books removed but still undoable (CF-3), left
+     * out of [items] and [all]; their covers and files are kept until the removal runs.
      */
     data class Loaded(
         val items: List<LibraryItem>,
@@ -39,6 +40,7 @@ sealed interface LibraryListState {
         val collections: List<BookCollection> = emptyList(),
         val members: Map<BookId, Set<String>> = emptyMap(),
         val facets: LibraryFacets = LibraryFacets.EMPTY,
+        val leaving: Set<BookId> = emptySet(),
     ) : LibraryListState
 
     /** The database could not be read; the log has the cause. */
@@ -54,7 +56,12 @@ sealed interface LibraryMessage {
 
     data class FoundAgain(val title: String, val id: BookId? = null) : LibraryMessage
 
-    data class Removed(val title: String) : LibraryMessage
+    /**
+     * [undo]: the book that can still be brought back, for [undoMs], with the snackbar's Undo (CF-3); null when the
+     * removal is final.
+     */
+    data class Removed(val title: String, val undo: BookId? = null, val undoMs: Long = REMOVAL_UNDO_MS) :
+        LibraryMessage
 
     data class Failed(val error: LibraryError) : LibraryMessage
 }

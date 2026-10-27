@@ -223,7 +223,13 @@ class BookCopyService : Service() {
 
     private fun talkingBook(book: OpenedBook, job: CopyJob, keepAwake: () -> Unit): Outcome<SavedCopy, CopyError> {
         val factory = BookRendering.Factory(this, bookSettings, pronunciations)
-        return BookVoice(this, factory, book.book.id, book.text, RunSettings(normalRate = true)).use { voice ->
+        return BookVoice(
+            this,
+            factory,
+            book.book.id,
+            book.text,
+            RunSettings(normalRate = true, language = book.book.language),
+        ).use { voice ->
             job.talkingBook(voice.rendering, StudioMode.store(this), onChapter = keepAwake)
         }
     }

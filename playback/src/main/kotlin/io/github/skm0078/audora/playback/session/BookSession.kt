@@ -42,11 +42,13 @@ import io.github.skm0078.audora.playback.recovery.PlayerFault
 import io.github.skm0078.audora.playback.recovery.RecoveryAction
 import io.github.skm0078.audora.playback.voice.ReplayRender
 import java.time.LocalTime
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -144,6 +146,9 @@ class BookSession(
     private var overshootPending = false
 
     private var book: OpenedBook? = null
+
+    /** Whether the open book may still be read ahead for the story brain (ADR story-brain); false once it closes. */
+    private var bookOpen: AtomicBoolean? = null
 
     /** The open book's cover for the notification and lock screen ([SessionSources.artwork]); null shows none. */
     private var artwork: Uri? = null
@@ -456,6 +461,7 @@ class BookSession(
     }
 
     fun release() {
+        bookOpen?.set(false)
         player.removeListener(playerListener)
         loader.cancel()
         sleep.cancel()
@@ -487,6 +493,9 @@ class BookSession(
         loader.cancel()
         val old = book
         book = opened
+        bookOpen?.set(false)
+        val open = AtomicBoolean(true).also { bookOpen = it }
+        sources.reading.brain?.open(opened.book.id.value, aheadPages(opened, open))
         bookPassword = password
         lastSentence = null
         jumps.clear()
@@ -504,10 +513,25 @@ class BookSession(
         chapterStop.chapterStarts = chapters
         sources.reading.chapterPages = chapters.toSet()
         sources.reading.scanned = opened.text::isScanned
+        sources.reading.language = opened.book.language
         sources.reading.clearBook()
         // The book's own speed, voices and pronunciation fixes, before its first sentence is rendered.
         sources.onBook(opened.book.id)
         AudoraLog.i(TAG, "Opened book=${opened.book.id.logLabel} chapters=${chapters.size}")
+    }
+
+    /**
+     * The story brain's look-ahead: a page's units, read on the extraction thread like any page (it waits there for
+     * the page reads playback needs); null once [open] is false, so a closed book's text is never touched.
+     */
+    private fun aheadPages(opened: OpenedBook, open: AtomicBoolean): (Int) -> List<ReadingUnit>? = { page ->
+        if (page >= opened.text.pageCount) {
+            null
+        } else {
+            runBlocking(env.extraction) {
+                if (open.get()) (opened.text.units(page) as? Outcome.Success)?.value else null
+            }
+        }
     }
 
     /** [index]: the start unit's index on [page] when known (see [PageCursor]); null starts at [charStart] alone. */

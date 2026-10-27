@@ -2,11 +2,15 @@
 # File: research/expressive-eval/llm_director.py
 # Purpose: Asks a small on-device-sized LLM (llama.cpp server) who speaks each sentence of the marked passages and how,
 #          scores it like ExpressiveEval.kt, and times it, so the plan can say whether an on-phone "director" is worth it.
+#          With --brainhost it asks the app's own story brain instead (ADR 2026-10-25-story-brain): the app's prompt (brain/prompt.txt),
+#          its answer grammar and its native code (brainhost/, built on a PC), on the spoken lines only.
 
 import argparse
 import json
 import re
+import subprocess
 import sys
+import tempfile
 import time
 import urllib.request
 from pathlib import Path
@@ -109,6 +113,57 @@ def ask(server, passage):
     return answer, data.get("timings", {}), wall
 
 
+APP_PROMPT = Path(__file__).resolve().parents[2] / "speech/src/main/resources/brain/prompt.txt"
+
+
+def app_request(passage):
+    """The app's question for one passage, as StoryBrainPrompt builds it: spoken lines (marked *) answered in order."""
+    lines = passage["lines"]
+    numbers = [i for i, line in enumerate(lines, 1) if line["speaker"]]
+    out = []
+    for i, line in enumerate(lines, 1):
+        if i > 1:
+            out.append("\n\n" if line["para"] != lines[i - 2]["para"] else "\n")
+        out.append(f"{i}{'* ' if line['speaker'] else '. '}{' '.join(line['text'].split())}")
+    prompt = (APP_PROMPT.read_text(encoding="utf-8").replace("{language}", LANG_NAMES[passage["lang"]])
+              .replace("{context}", "").replace("{sentences}", "".join(out)))
+    grammar = ("root ::= " + " ".join(f'"{n}|" who "|" how "\\n"' for n in numbers) + " cast\n"
+               + "who ::= [^|\\n]{1,40}\n"
+               + "how ::= " + " | ".join(f'"{f}"' for f in FEELINGS) + "\n"
+               + 'cast ::= "cast: " pair (", " pair){0,' + str(min(len(numbers), 12) - 1) + '} "\\n"\n'
+               + 'pair ::= [^|\\n=,]{1,40} "=" [FM]\n')
+    return prompt, grammar, numbers, len(numbers) * 16 + 120
+
+
+def ask_app(brainhost, gguf, passage):
+    """The app brain's answer, read into the {cast, lines} shape [score] takes; narration lines are left unanswered."""
+    prompt, grammar, numbers, max_tokens = app_request(passage)
+    if not numbers:
+        return {"cast": [], "lines": []}, {}, 0
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / "p.txt").write_text(prompt, encoding="utf-8")
+        (Path(tmp) / "g.txt").write_text(grammar, encoding="utf-8")
+        started = time.time()
+        done = subprocess.run([brainhost, gguf, str(Path(tmp) / "p.txt"), str(Path(tmp) / "g.txt"), str(max_tokens)],
+                              capture_output=True, text=True, timeout=1800, check=False)
+        wall = time.time() - started
+    text, _, tail = done.stdout.rpartition("\n--- ")
+    stats = dict(kv.split("=") for kv in tail.split() if "=" in kv)
+    answer = {"cast": [], "lines": []}
+    for row in text.splitlines():
+        if row.startswith("cast:"):
+            for pair in row[5:].split(","):
+                name, _, gender = pair.strip().rpartition("=")
+                answer["cast"].append({"name": name.strip(), "gender": gender.strip()})
+        elif row.count("|") == 2:
+            n, who, how = row.split("|")
+            if n.strip().isdigit():
+                answer["lines"].append({"n": int(n), "speaker": who.strip(), "feeling": how.strip()})
+    timing = {"prompt_n": int(stats.get("prompt_tokens", 0)), "prompt_ms": 0,
+              "predicted_n": 0, "predicted_ms": int(stats.get("ms", 0))}
+    return answer, timing, wall
+
+
 def bare(name):
     name = (name or "").strip().lower()
     for prefix in ("the ", "a ", "their ", "his ", "her "):
@@ -139,6 +194,7 @@ def score(passages, answers):
             gold_gender = passage["cast"].get(line["speaker"]) if line["speaker"] else None
             voice = "none" if gender is None else ("right" if gender == gold_gender else "wrong")
             rows.append({"passage": passage["id"], "lang": passage["lang"], "text": line["text"],
+                         "spoken": bool(line["speaker"]),
                          "gold_speaker": line["speaker"], "speaker": speaker,
                          "speaker_right": bool(line["speaker"]) and same(speaker, line["speaker"]),
                          "voice": voice, "gold_feeling": line["feeling"], "feeling": feeling})
@@ -149,8 +205,10 @@ def pct(a, b):
     return "-" if b == 0 else f"{a * 100 // b} %"
 
 
-def report(model, rows, timings):
-    out = [f"### {model}", "",
+def report(model, rows, timings, spoken_only=False):
+    if spoken_only:
+        rows = [r for r in rows if r["spoken"]]
+    out = [f"### {model}" + (" (spoken lines only: narration keeps the rules' feelings)" if spoken_only else ""), "",
            "| Lang | Lines with speech | Right speaker | Right-gender voice | Wrong-gender voice |",
            "|---|---:|---:|---:|---:|"]
     for lang in ("en", "hi", "bn"):
@@ -186,12 +244,17 @@ def main():
     ap.add_argument("--model", required=True)
     ap.add_argument("--passages", nargs="+", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--brainhost", help="the app brain's host build (brainhost/); asks it instead of --server")
+    ap.add_argument("--gguf", help="the model file for --brainhost")
     args = ap.parse_args()
     passages = [p for f in args.passages for p in load(Path(f))]
     answers, timings = [], []
     for passage in passages:
         try:
-            answer, timing, wall = ask(args.server, passage)
+            if args.brainhost:
+                answer, timing, wall = ask_app(args.brainhost, args.gguf, passage)
+            else:
+                answer, timing, wall = ask(args.server, passage)
         except Exception as error:  # noqa: BLE001 - one passage failing must not hide the others' scores
             print(f"{passage['id']}: {error}", file=sys.stderr)
             answer, timing, wall = {"cast": [], "lines": []}, {}, 0
@@ -203,8 +266,9 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     (out / f"{args.model}.json").write_text(json.dumps({"answers": answers, "timings": timings, "rows": rows},
                                                        ensure_ascii=False, indent=1), encoding="utf-8")
-    (out / f"{args.model}.md").write_text(report(args.model, rows, timings), encoding="utf-8")
-    print(report(args.model, rows, timings))
+    text = report(args.model, rows, timings, spoken_only=bool(args.brainhost))
+    (out / f"{args.model}.md").write_text(text, encoding="utf-8")
+    print(text)
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ import io.github.skm0078.audora.speech.normalize.TextRole
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RoutedSpeechTest {
@@ -38,7 +39,10 @@ class RoutedSpeechTest {
         override fun release() = Unit
     }
 
-    private class FakeVoices(private val missing: Set<Lang> = emptySet()) : VoiceSource {
+    private class FakeVoices(
+        private val missing: Set<Lang> = emptySet(),
+        private val phones: Set<String> = emptySet(),
+    ) : VoiceSource {
         val sherpa = RecordingEngine(EngineId.SHERPA)
         val system = RecordingEngine(EngineId.SYSTEM)
 
@@ -54,6 +58,14 @@ class RoutedSpeechTest {
             lang == Lang.EN -> Outcome.Success(VoiceId(EngineId.SHERPA, EN_VOICE))
 
             else -> Outcome.Success(VoiceId(EngineId.SYSTEM, HI_VOICE))
+        }
+
+        override suspend fun phoneVoiceFor(language: String): Outcome<VoiceId, SpeechError> = if (language in phones) {
+            Outcome.Success(VoiceId(EngineId.SYSTEM, phoneVoice(language)))
+        } else {
+            Outcome.Failure(
+                SpeechError.VoiceUnavailable(EngineId.SYSTEM, SpeechError.VoiceUnavailable.Reason.NOT_INSTALLED),
+            )
         }
 
         override fun engine(id: EngineId): Outcome<SpeechEngine, SpeechError> =
@@ -192,12 +204,70 @@ class RoutedSpeechTest {
         assertEquals(1, routed.audio.samples.size)
     }
 
+    @Test
+    fun `a French book reads with the phone's French voice, as written (ADR 2026-10-26)`() = runTest {
+        val voices = FakeVoices(phones = setOf("fr"))
+
+        val routed = RoutedSpeech(voices, ScriptRouter())
+            .render("Le 15/08/1947, il a payé 20 €.", Lang.EN, bookLanguage = "fr-FR")
+
+        // No English normalizer: the phone's French engine says the date and the sum in French.
+        assertEquals(listOf(phoneVoice("fr") to "Le 15/08/1947, il a payé 20 €."), voices.system.calls)
+        assertEquals(emptyList<Pair<String, String>>(), voices.sherpa.calls)
+        assertEquals(listOf(VoiceId(EngineId.SYSTEM, phoneVoice("fr"))), (routed as Outcome.Success).value.voices)
+    }
+
+    @Test
+    fun `a book in English, Hindi or Bengali reads as before`() = runTest {
+        val voices = FakeVoices(phones = setOf("en", "fr"))
+
+        RoutedSpeech(voices, ScriptRouter()).render("Dr. Rao.", Lang.EN, bookLanguage = "en")
+
+        assertEquals(listOf(EN_VOICE to "Doctor Rao."), voices.sherpa.calls)
+        assertEquals(emptyList<Pair<String, String>>(), voices.system.calls)
+    }
+
+    @Test
+    fun `Tamil inside an English sentence gets the phone's Tamil voice`() = runTest {
+        val voices = FakeVoices(phones = setOf("ta"))
+
+        RoutedSpeech(voices, ScriptRouter()).render("The word is வணக்கம் here.", Lang.EN)
+
+        assertEquals(listOf(EN_VOICE to "The word is", EN_VOICE to "here."), voices.sherpa.calls)
+        assertEquals(listOf(phoneVoice("ta") to "வணக்கம்"), voices.system.calls)
+    }
+
+    @Test
+    fun `no phone voice for the book's language reads the sentence whole with its own voice, as before`() = runTest {
+        val voices = FakeVoices()
+
+        val routed = RoutedSpeech(voices, ScriptRouter()).render("Le chat dort.", Lang.EN, bookLanguage = "fr")
+
+        assertEquals(listOf(EN_VOICE to "Le chat dort."), voices.sherpa.calls)
+        assertEquals(listOf(Lang.EN), (routed as Outcome.Success).value.langs)
+        assertTrue(routed.value.fallback is SpeechError.VoiceUnavailable)
+    }
+
+    @Test
+    fun `clause pauses keep the phone voice on every piece`() = runTest {
+        val voices = FakeVoices(phones = setOf("fr"))
+        val prosody = ClauseProsody(silenceMs = { 100 }, asideGainDb = 0f)
+
+        RoutedSpeech(voices, ScriptRouter())
+            .render("Il pleut; je reste ici.", Lang.EN, prosody = prosody, bookLanguage = "fr")
+
+        assertEquals(listOf(phoneVoice("fr") to "Il pleut", phoneVoice("fr") to "je reste ici."), voices.system.calls)
+    }
+
     private companion object {
         const val EN_VOICE = "en-voice"
         const val HI_VOICE = "hi-voice"
         const val EN_RATE = 22_050
         const val HI_RATE = 16_000
+        const val PHONE_RATE = 24_000
         const val SAMPLE: Short = 100
-        val RATES = mapOf(EN_VOICE to EN_RATE, HI_VOICE to HI_RATE)
+        val RATES = mapOf(EN_VOICE to EN_RATE, HI_VOICE to HI_RATE).withDefault { PHONE_RATE }
+
+        fun phoneVoice(language: String) = "phone-$language"
     }
 }

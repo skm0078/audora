@@ -128,6 +128,11 @@ internal data class ModelPackTexts(@StringRes val title: Int, @StringRes val mis
             R.string.settings_punct_ready_needs_ocr,
         )
         val ACTED = ModelPackTexts(R.string.acted_model_title, R.string.acted_model_missing, R.string.acted_model_ready)
+        val STORY_BRAIN = ModelPackTexts(
+            R.string.brain_model_title,
+            R.string.brain_model_missing,
+            R.string.brain_model_ready,
+        )
         val VOICE_COMMANDS = ModelPackTexts(
             R.string.commands_model_title,
             R.string.commands_model_missing,

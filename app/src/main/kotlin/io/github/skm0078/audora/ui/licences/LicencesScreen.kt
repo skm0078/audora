@@ -112,6 +112,7 @@ private fun LicencesList(voices: List<VoiceLicence>, openLink: (String) -> Unit,
             )
             HorizontalDivider()
         }
+        fontLicenceItems({ Caption(R.string.licences_fonts) }, openLink)
     }
 }
 
@@ -179,7 +180,7 @@ private fun Caption(@StringRes text: Int, header: Boolean = true) {
 }
 
 @Composable
-private fun LinkButton(@StringRes label: Int, onClick: () -> Unit) {
+internal fun LinkButton(@StringRes label: Int, onClick: () -> Unit) {
     TextButton(onClick = onClick) { Text(stringResource(label)) }
 }
 
@@ -217,6 +218,12 @@ private val SPEECH_SOFTWARE = listOf(
         R.string.licences_mit,
         "https://github.com/resemble-ai/chatterbox",
     ),
+    Software(
+        "Qwen3.5 4B (Qwen team, Alibaba Cloud), GGUF by Unsloth, story brain, if downloaded",
+        R.string.licences_apache,
+        "https://huggingface.co/Qwen/Qwen3.5-4B",
+    ),
+    Software("llama.cpp (ggml authors), story brain", R.string.licences_mit, "https://github.com/ggml-org/llama.cpp"),
     Software(
         "Edge-Punct-Casing punctuation model (frankyoujian), if downloaded",
         R.string.licences_apache,

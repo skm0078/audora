@@ -45,6 +45,10 @@ pdfiumAndroid = "2.0.3"
 # Bump both together.
 sherpaOnnx = "1.13.8"
 sherpaOnnxAarSha256 = "633c24321e06b1fe79feafa03ea16cbc0f8a286641e2da3559bac91bdb13bd96"
+# llama.cpp for the story brain (ADR 2026-10-25-story-brain): built from source in :speech's CMake build (arm64 only), from GitHub's
+# archive of this release tag, checked against this SHA-256 (LlamaCppSourceTask). Bump both together.
+llamaCpp = "b11887"
+llamaCppSha256 = "4642d708747f0be2e6af630f016f564618882b58fb92f80585c717a084af4225"
 # Tesseract4Android (Phase 3 OCR, ADR-011/ADR-025): Tesseract 5.5.1 + Leptonica, built 16 KB-aligned. Published only on
 # JitPack, resolved through an exclusive repository (settings.gradle.kts) and checked against this SHA-256 before
 # every :pdf build. Standard (single-threaded) variant. Bump both together.

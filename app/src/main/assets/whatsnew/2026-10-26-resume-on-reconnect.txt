@@ -1,0 +1,3 @@
+en: New setting: reading can go on by itself when your headphones or Bluetooth speaker reconnect. It is off until you turn it on.
+hi: नई सेटिंग: हेडफ़ोन या ब्लूटूथ स्पीकर फिर जुड़ने पर पढ़ना अपने-आप जारी हो सकता है। आप चालू करें, तभी यह चलती है।
+bn: নতুন সেটিং: হেডফোন বা ব্লুটুথ স্পিকার আবার যুক্ত হলে পড়া নিজে থেকেই চলতে পারে। আপনি চালু না করলে এটি বন্ধ থাকে।

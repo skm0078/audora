@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The text view's fonts for dyslexic readers, and their credits on Voices & licences (CF-5). -->
+<resources>
+    <string name="text_look_font_atkinson">Easy letters (Atkinson Hyperlegible)</string>
+    <string name="text_look_font_opendyslexic">Dyslexia-friendly (OpenDyslexic)</string>
+    <string name="text_look_font_help">Easy letters draws look-alike letters (I, l, 1 and b, d, p, q) clearly apart. Dyslexia-friendly gives letters heavy bottoms so they do not seem to flip. Both change English text only; Hindi and Bengali stay in their usual font.</string>
+    <string name="licences_fonts">Fonts</string>
+    <string name="licences_ofl">SIL Open Font License 1.1</string>
+</resources>

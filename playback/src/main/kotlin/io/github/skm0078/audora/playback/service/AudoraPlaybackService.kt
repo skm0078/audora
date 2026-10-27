@@ -19,6 +19,7 @@ import androidx.media3.session.MediaSession
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.core.config.QueueConfig
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
+import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.AfterSentence
@@ -32,11 +33,15 @@ import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.core.resume.ResumeRecorder
+import io.github.skm0078.audora.core.stats.ListeningLog
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.ReadingTextPreferences
+import io.github.skm0078.audora.playback.brain.BrainNotesStore
+import io.github.skm0078.audora.playback.brain.BrainSource
+import io.github.skm0078.audora.playback.brain.StoryBrainReader
 import io.github.skm0078.audora.playback.browse.BrowseLookup
 import io.github.skm0078.audora.playback.browse.BrowseSources
 import io.github.skm0078.audora.playback.browse.BrowseTree
@@ -66,6 +71,7 @@ import io.github.skm0078.audora.playback.session.SessionSources
 import io.github.skm0078.audora.playback.session.ShakeSource
 import io.github.skm0078.audora.playback.session.SleepOptionsStore
 import io.github.skm0078.audora.playback.session.SpeechPlayer
+import io.github.skm0078.audora.playback.stats.ListeningBridge
 import io.github.skm0078.audora.playback.studio.StudioClip
 import io.github.skm0078.audora.playback.studio.StudioKey
 import io.github.skm0078.audora.playback.studio.StudioMode
@@ -82,9 +88,12 @@ import io.github.skm0078.audora.playback.voice.StudyGapRenderer
 import io.github.skm0078.audora.playback.voice.VoiceEngines
 import io.github.skm0078.audora.playback.voice.forReading
 import io.github.skm0078.audora.playback.voice.narratorBlend
+import io.github.skm0078.audora.speech.brain.StoryBrainModels
+import io.github.skm0078.audora.speech.brain.StoryBrainPrompt
 import io.github.skm0078.audora.speech.sherpa.blendableSpeaker
 import io.github.skm0078.audora.speech.sherpa.isExpressive
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
+import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -116,6 +125,9 @@ class AudoraPlaybackService : MediaLibraryService() {
 
     @Inject
     lateinit var tracker: ReadingSessionTracker
+
+    @Inject
+    lateinit var listeningLog: ListeningLog
 
     @Inject
     lateinit var resumeAnchors: ResumeAnchorStore
@@ -150,7 +162,9 @@ class AudoraPlaybackService : MediaLibraryService() {
     private lateinit var player: ExoPlayer
     private lateinit var speed: LivePlaybackSpeed
     private lateinit var bookSession: BookSession
+    private lateinit var controls: QuickControls
     private var session: MediaLibrarySession? = null
+    private var brain: StoryBrainReader? = null
 
     // Where the voice speaks in each clip, for the reader's word highlight (plan item 14).
     private val timings = SentenceTimings()
@@ -186,7 +200,7 @@ class AudoraPlaybackService : MediaLibraryService() {
         player.playbackParameters = PlaybackParameters(style.config.playerSpeed(heard()), heard().pitch)
         speed = LivePlaybackSpeed(player)
         // The reading modes travel with the speech style; a change restarts the sentence playing (ADR-035).
-        val reading = ReadingSource(modes = { style.current.modes })
+        val reading = ReadingSource(modes = { style.current.modes }, brain = storyBrain(heard).also { brain = it })
         val stores = SessionStores(style, sleepOptions, book, focusSound)
         val characters = CharacterCast.forReading(this, engines, { voices }) { heard().shaping }
         val mediaSession = mediaSession(stores).also { session = it }
@@ -220,7 +234,7 @@ class AudoraPlaybackService : MediaLibraryService() {
             events = publisher(mediaSession, stores, heard, engines, reading).also { it.publishInitial() },
             env = sessionEnvironment(scope, AccelerometerShakes(this, config.sleep)),
         )
-        followReadingChanges()
+        followReadingChanges(reading)
         resumption = PlaybackResumption(
             anchors = resumeAnchors,
             library = library,
@@ -232,12 +246,35 @@ class AudoraPlaybackService : MediaLibraryService() {
     }
 
     /**
+     * The listener changed the open book's language in Edit details: from the sentence playing on, it is read by the
+     * phone's voice for that language, or by the three languages' own (ADR 2026-10-26), at once (ADR-064). Only a
+     * change seen for the same book counts, so the library's update when a book opens never restarts it.
+     */
+    private fun followBookLanguage(reading: ReadingSource) {
+        scope.launch {
+            var seen: Pair<BookId, String?>? = null
+            library.books().collect { books ->
+                val id = bookSession.bookId ?: return@collect
+                val book = books.firstOrNull { it.id == id } ?: return@collect
+                val before = seen
+                seen = id to book.language
+                if (before?.first == id && before.second != book.language) {
+                    AudoraLog.i(TAG, "Book language changed, book=${id.logLabel}; restarting the sentence")
+                    reading.language = book.language
+                    bookSession.restartRendering()
+                }
+            }
+        }
+    }
+
+    /**
      * A voice picked in Settings → Voices or the reader, or a language pack's first voice, reads from the sentence
      * playing now: the sentences rendered ahead in the old voice are redone, playing or paused. Without this the old
      * voice went on for every sentence already rendered, until some other setting happened to restart reading.
-     * Likewise a reading text setting (skip citation numbers) reads the open book again at once (ADR-064).
+     * Likewise a reading text setting (skip citation numbers) reads the open book again at once (ADR-064), and so
+     * does a new language for the open book ([followBookLanguage]).
      */
-    private fun followReadingChanges() {
+    private fun followReadingChanges(source: ReadingSource) {
         val context = applicationContext
         scope.launch {
             // Read first (off the main thread), so the first value seen is the saved state and only changes follow.
@@ -256,6 +293,7 @@ class AudoraPlaybackService : MediaLibraryService() {
                 bookSession.onReadingTextChanged()
             }
         }
+        followBookLanguage(source)
     }
 
     /**
@@ -269,6 +307,8 @@ class AudoraPlaybackService : MediaLibraryService() {
     }
 
     private fun mediaSession(stores: SessionStores): MediaLibrarySession {
+        // The lock screen's buttons, headphones coming back and the widget's time listened (CF-1, CF-4, CF-7).
+        controls = QuickControls(this, player, { bookSession }, bookmarks, scope, PIPELINE_VERSION, config.sleep.buzzMs)
         // Android Auto and other media browsers (plan item 34): the library, Up next and each book's chapters.
         val chapters = OutlineChapters(this)
         val browse = BrowseSources(
@@ -289,23 +329,21 @@ class AudoraPlaybackService : MediaLibraryService() {
             LibraryBrowser(BrowseLookup(BrowseTree(ResourceBrowseTexts(this)), browse), scope) {
                 PlaybackResumption.playlistOf(player)
             },
+            controls.lockScreen,
         )
+        // The notification's and lock screen's buttons: a sentence back, play/pause, a sentence on, bookmark (CF-1).
         return MediaLibrarySession.Builder(this, player, callback)
+            .setMediaButtonPreferences(controls.initialButtons)
             .apply { sessionActivity()?.let { setSessionActivity(it) } }
             .build()
+            .also(controls::attach)
     }
 
     /** A headset's play/pause button (plan item 20); a double press bookmarks and buzzes to confirm. */
     private fun mediaButtons() = MediaButtons(
         player = { player },
         bookSession = { bookSession },
-        bookmarks = HeadsetBookmarks(
-            store = bookmarks,
-            scope = scope,
-            pipelineVersion = PIPELINE_VERSION,
-            clock = System::currentTimeMillis,
-            onSaved = { buzz(config.sleep.buzzMs) },
-        ),
+        bookmarks = controls.headsetBookmarks,
     )
 
     /** Up next (plan item 25): a queued chapter starts on its page, a queued book where it was left. */
@@ -348,7 +386,8 @@ class AudoraPlaybackService : MediaLibraryService() {
             book.bookId?.let { id ->
                 // Studio mode reads Hindi with the acted voice once installed (ADR-059): look its audio up under it.
                 val studioVoice = { lang: Lang -> StudioMode.actedVoice(this, lang) ?: voices.choiceFor(lang) }
-                StudioKey(id, StudioMode.signature(this, heard(), studioVoice, book.fixer.signature))
+                val signature = StudioMode.signature(this, heard(), studioVoice, book.fixer.signature, reading.language)
+                StudioKey(id, signature)
             }
         }
         // Outermost, so studio audio still leaves the "Leave a gap to say it back" pause (plan item 31).
@@ -375,6 +414,7 @@ class AudoraPlaybackService : MediaLibraryService() {
             blend = { blendAvailability(engines, voices) },
             // The speech sheet says what the book reads as (ADR-056), only while that shapes the reading.
             intent = { reading.intent.takeIf { it.told && heard().shaping.suitBook }?.current },
+            listening = ListeningBridge(listeningLog, scope),
         )
     }
 
@@ -411,14 +451,30 @@ class AudoraPlaybackService : MediaLibraryService() {
             return
         }
         AudoraLog.i(TAG, "Service destroyed, book=${bookSession.bookId?.logLabel}")
+        controls.release()
         bookSession.release()
         speed.release()
         session?.release()
         session = null
         player.release()
         voices.release()
+        brain?.close()
         scope.cancel()
         super.onDestroy()
+    }
+
+    /**
+     * The opt-in story brain (ADR story-brain). Built on every phone but costs nothing without its model: whether the
+     * phone can run it and has it is asked on the brain's own thread, the first time a page has speech on it.
+     */
+    private fun storyBrain(heard: () -> SpeechStyle): StoryBrainReader {
+        val models = StoryBrainModels.get(this)
+        return StoryBrainReader(
+            config = models.config,
+            source = BrainSource(load = models::load, installed = { models.supported && models.isInstalled() }),
+            store = BrainNotesStore(File(filesDir, BRAIN_NOTES_DIR), "${models.model.id}/${StoryBrainPrompt.VERSION}"),
+            wanted = { heard().shaping.let { it.characterVoices || it.suitBook } },
+        )
     }
 
     private inner class ResourceTexts : ItemTexts {
@@ -432,6 +488,7 @@ class AudoraPlaybackService : MediaLibraryService() {
 
     private companion object {
         const val TAG = "Playback.Service"
+        const val BRAIN_NOTES_DIR = "story-brain-notes"
     }
 }
 

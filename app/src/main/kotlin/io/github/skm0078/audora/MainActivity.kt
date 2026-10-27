@@ -63,6 +63,7 @@ import io.github.skm0078.audora.core.resume.ResumeAnchor
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.di.LibraryEntryPoint
+import io.github.skm0078.audora.di.ListeningStatsEntryPoint
 import io.github.skm0078.audora.diagnostics.LogSharer
 import io.github.skm0078.audora.language.AppLanguage
 import io.github.skm0078.audora.language.AppLanguageStore
@@ -83,6 +84,7 @@ import io.github.skm0078.audora.privacy.PrivacyHost
 import io.github.skm0078.audora.shortcuts.AppShortcut
 import io.github.skm0078.audora.shortcuts.AppShortcutEffect
 import io.github.skm0078.audora.speech.acted.ActedVoices
+import io.github.skm0078.audora.speech.brain.StoryBrainModels
 import io.github.skm0078.audora.speech.kws.VoiceCommandModels
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
@@ -118,6 +120,7 @@ import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.LibraryScreen
 import io.github.skm0078.audora.ui.library.MiniPlayer
 import io.github.skm0078.audora.ui.library.nowPlaying
+import io.github.skm0078.audora.ui.library.rememberRemovalUndoMs
 import io.github.skm0078.audora.ui.library.restoreMessageOf
 import io.github.skm0078.audora.ui.library.showFinishRestoringIfNeeded
 import io.github.skm0078.audora.ui.licences.LicenceSource
@@ -159,9 +162,12 @@ import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.reader.rememberSpokenWord
 import io.github.skm0078.audora.ui.settings.SettingsScreen
 import io.github.skm0078.audora.ui.settings.rememberActedVoiceSettings
+import io.github.skm0078.audora.ui.settings.rememberOcrModelsSetting
 import io.github.skm0078.audora.ui.settings.rememberPronunciationSettings
+import io.github.skm0078.audora.ui.settings.rememberPunctuationModelSetting
+import io.github.skm0078.audora.ui.settings.rememberSkipCitationsSetting
+import io.github.skm0078.audora.ui.settings.rememberStoryBrainSettings
 import io.github.skm0078.audora.ui.settings.rememberVoiceCommandsSettings
-import io.github.skm0078.audora.ui.settings.runModelAction
 import io.github.skm0078.audora.ui.shell.AppShell
 import io.github.skm0078.audora.ui.shell.ReadableWidth
 import io.github.skm0078.audora.ui.storage.StorageRoute
@@ -185,6 +191,7 @@ import io.github.skm0078.audora.ui.whatsnew.WhatsNewDialog
 import io.github.skm0078.audora.ui.whatsnew.whatsNewEntryNames
 import io.github.skm0078.audora.widget.ResumeWidgetEffect
 import io.github.skm0078.audora.widget.ResumeWidgetProvider
+import io.github.skm0078.audora.widget.WidgetTimeLeftEffect
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -313,7 +320,8 @@ class MainActivity : ComponentActivity() {
     private val studioParts by lazy {
         val notes = MarkStores(highlightStore, bookmarkStore, voiceNoteStore)
         val watched = WatchedFolders(applicationContext, library)
-        StudioLibraryParts(this, photoBooks, watched, backups, resumeAnchors, notes) { sharedText = it }
+        val listening = ListeningStatsEntryPoint.of(applicationContext).listeningLog()
+        StudioLibraryParts(this, photoBooks, watched, backups, resumeAnchors, notes, listening) { sharedText = it }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -621,17 +629,11 @@ class MainActivity : ComponentActivity() {
         appearance: Appearance,
         onKidsMode: () -> Unit,
     ) {
-        val ocrState by remember { ocrModels.state().loggingFailures(SETTINGS_TAG, "the OCR models") }
-            .collectAsStateWithLifecycle(initialValue = null)
-        val punctState by remember { punctuationModels.state().loggingFailures(SETTINGS_TAG, "the punctuation model") }
-            .collectAsStateWithLifecycle(initialValue = null)
+        val ocr = rememberOcrModelsSetting(ocrModels)
+        val punctuation = rememberPunctuationModelSetting(punctuationModels)
         val volumeKeys by remember { screenPreference.volumeKeysSkip() }.collectAsStateWithLifecycle(false)
         val scope = rememberCoroutineScope()
-        val textPreferences = remember { ReadingTextPreferences.forContext(applicationContext) }
-        // A one-line properties file, read once when Settings opens (like the onboarding flags). Saved off the main
-        // thread, one write at a time and in order, so quick taps leave the file as the switch shows.
-        var skipCitations by remember { mutableStateOf(textPreferences.skipCitationMarkers()) }
-        val textWrites = remember { Dispatchers.IO.limitedParallelism(1) }
+        val citations = rememberSkipCitationsSetting(applicationContext)
         val keepScreenOn by remember { screenPreference.keepScreenOn() }.collectAsStateWithLifecycle(false)
         SettingsScreen(
             shareState = diagnostics.shareState,
@@ -647,31 +649,20 @@ class MainActivity : ComponentActivity() {
                 diagnostics.simulateReadingSession()
                 Toast.makeText(this@MainActivity, R.string.debug_simulate_done, Toast.LENGTH_LONG).show()
             },
-            ocrModels = ocrState,
-            onOcrModels = { action ->
-                scope.runModelAction(action, ocrModels::download, ocrModels::cancel) { ocrModels.delete() }
-            },
-            skipCitations = skipCitations,
-            onSkipCitationsChange = { skip ->
-                skipCitations = skip
-                scope.launch {
-                    val saved = withContext(textWrites) { textPreferences.setSkipCitationMarkers(skip) }
-                    if (!saved) skipCitations = !skip // logged; the switch shows what books will use
-                }
-            },
+            ocrModels = ocr.state,
+            onOcrModels = ocr.onAction,
+            skipCitations = citations.skip,
+            onSkipCitationsChange = citations.onChange,
             keepScreenOn = keepScreenOn,
             onKeepScreenOnChange = { on -> scope.launch { screenPreference.saveKeepScreenOn(on) } },
-            punctuationModel = punctState,
+            punctuationModel = punctuation.state,
             volumeKeysSkip = volumeKeys,
             onVolumeKeysSkipChange = { on -> scope.launch { screenPreference.saveVolumeKeysSkip(on) } },
-            onPunctuationModel = { action ->
-                scope.runModelAction(action, punctuationModels::download, punctuationModels::cancel) {
-                    punctuationModels.delete()
-                }
-            },
+            onPunctuationModel = punctuation.onAction,
             voiceCommands = rememberVoiceCommandsSettings(voiceCommandModels, screenPreference),
             pronunciation = rememberPronunciationSettings(pronunciationStore),
             actedVoice = rememberActedVoiceSettings(ActedVoices.get(applicationContext)),
+            storyBrain = rememberStoryBrainSettings(StoryBrainModels.get(applicationContext)),
             appearance = appearance,
             onAppearanceChange = { changed -> scope.launch { appearancePreferences.save(changed) } },
             onKidsMode = onKidsMode,
@@ -717,11 +708,12 @@ class MainActivity : ComponentActivity() {
         banner: @Composable () -> Unit,
     ) {
         val context = LocalContext.current.applicationContext
+        val undoMs = rememberRemovalUndoMs()
         val playWithPermission = rememberPlayWithNotificationPermission()
         val studio = rememberStudioLibrary(studioParts, playWithPermission) { book ->
             playWithPermission { onContinue(book.id) }
         }
-        val actions = remember(controller) {
+        val actions = remember(controller, undoMs) {
             object : LibraryActions {
                 override fun onAddPdf(documentUri: Uri) = addPicked(documentUri, photoBooks, controller::add)
 
@@ -739,7 +731,9 @@ class MainActivity : ComponentActivity() {
                     playWithPermission { AudiobookExport.start(context, book.id) }
                 }
 
-                override fun onConfirmRemoval() = controller.confirmRemoval()
+                override fun onConfirmRemoval() = controller.confirmRemoval(undoMs)
+
+                override fun onUndoRemoval(id: BookId) = controller.undoRemoval(id)
 
                 override fun onCancelRemoval() = controller.proposeRemoval(null)
 
@@ -764,7 +758,9 @@ class MainActivity : ComponentActivity() {
                 override fun onPlayMade(setKey: String) = navigate(AppDestination.MadePlayer(setKey))
             }
         }
-        val books = (controller.listState as? LibraryListState.Loaded)?.all?.mapTo(HashSet()) { it.book.id }
+        val loaded = controller.listState as? LibraryListState.Loaded
+        // A book whose removal can still be undone keeps its cover (CF-3).
+        val books = loaded?.let { list -> list.all.mapTo(HashSet()) { it.book.id } + list.leaving }
         // Covers of removed books go once the list has loaded; never while it is loading or failed.
         LaunchedEffect(books) { books?.let { bookCovers.prune(it) } }
         LibraryScreen(
@@ -860,6 +856,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         BookWindowEffects(model, state, listeningInBackground)
+        WidgetTimeLeftEffect(model.state)
         val opened = state.document is DocumentState.Open
         LaunchedEffect(model, opened, openPlace) {
             if (opened && openPlace != null) {
@@ -934,6 +931,8 @@ class MainActivity : ComponentActivity() {
                 covers = bookCovers,
                 voices = voiceRows,
                 spokenWord = { spokenWord.value },
+                notes = notesState,
+                notesActions = notes,
             )
         } else {
             ReaderScreen(
@@ -1096,7 +1095,6 @@ private fun SharedPdfEffect(
     }
 }
 
-private const val SETTINGS_TAG = "Audora.Settings"
 private const val READER_TAG = "Audora.Reader"
 
 /** cacheDir subfolder for the page scrubber's thumbnails (plan item 17), one folder per book. */

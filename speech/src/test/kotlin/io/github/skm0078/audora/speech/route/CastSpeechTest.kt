@@ -57,6 +57,9 @@ class CastSpeechTest {
     private class FakeVoices(val engine: RecordingEngine) : VoiceSource {
         override suspend fun voiceFor(lang: Lang): Outcome<VoiceId, SpeechError> = Outcome.Success(NARRATOR)
 
+        override suspend fun phoneVoiceFor(language: String): Outcome<VoiceId, SpeechError> =
+            Outcome.Success(VoiceId(EngineId.SYSTEM, "phone-$language"))
+
         override fun engine(id: EngineId): Outcome<SpeechEngine, SpeechError> = Outcome.Success(engine)
     }
 

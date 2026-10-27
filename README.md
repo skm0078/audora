@@ -42,7 +42,7 @@ What changed and what still needs checking on a phone: [docs/PROGRESS.md](docs/P
 **Listening**
 - Picks up at the same sentence, even after a restart. Sleep timer by minutes, end of page or end of chapter.
 - Follow along on the page with the sentence (and word) highlighted, or in a clean text view.
-- Speed from 0.5× to 3× (**Smart speed** keeps fast speech clear), headset and lock-screen controls, Android Auto,
+- Speed from 0.5× to 4× (**Smart speed** keeps fast speech clear, and is always on above 3×), headset and lock-screen controls, Android Auto,
   a home-screen widget, a Quick Settings tile, volume keys that skip sentences, and screen-off voice commands
   ("ListenLock, pause").
 - **Skim** reads only headings, captions and each paragraph's first sentence; skip by paragraph; a quiet **focus

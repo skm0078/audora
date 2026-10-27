@@ -46,7 +46,9 @@ data class Cast(
  * sentence of its paragraph opened a quote that is still open ([QuoteSplitter.endsInQuote]). [speaker]: who says the
  * sentence's quotes, from its tag or the sentences around it ([SpeakerTags]); null when unknown. [feeling]: how the
  * sentence asks to be read (ADR-056), passed to a voice with speaking styles (ADR-057). [pitch]: that feeling's pitch
- * as a ratio (ADR-076), for voices without styles.
+ * as a ratio (ADR-076), for voices without styles. [bookLanguage]: the book's language tag, which has the phone's own
+ * voice read the letters of its script when it is none of the three [Lang]s ([ScriptRouter], ADR 2026-10-26); null
+ * reads every part with the three languages' voices.
  */
 @Suppress("LongParameterList") // All optional, with the defaults of a plain read.
 class SpeechRequest(
@@ -58,9 +60,11 @@ class SpeechRequest(
     val speaker: Speaker? = null,
     val feeling: Feeling = Feeling.NEUTRAL,
     val pitch: Float = 1f,
+    val bookLanguage: String? = null,
 ) {
     /** The request for narration around a sentence's quotes: no feeling, the voice's own pitch. */
-    fun plain(): SpeechRequest = SpeechRequest(role, rate, prosody, shape, startsInQuote, speaker)
+    fun plain(): SpeechRequest =
+        SpeechRequest(role, rate, prosody, shape, startsInQuote, speaker, bookLanguage = bookLanguage)
 }
 
 /**
@@ -207,9 +211,20 @@ private class CastVoices(private val base: VoiceSource, private val cast: Map<La
     override suspend fun voiceFor(lang: Lang): Outcome<VoiceId, SpeechError> =
         cast[lang]?.let { Outcome.Success(it) } ?: base.voiceFor(lang)
 
+    override suspend fun phoneVoiceFor(language: String): Outcome<VoiceId, SpeechError> = base.phoneVoiceFor(language)
+
     override fun engine(id: EngineId): Outcome<SpeechEngine, SpeechError> = base.engine(id)
 }
 
 /** [RoutedSpeech.render] with a [SpeechRequest]. */
-private suspend fun RoutedSpeech.render(text: String, lang: Lang, request: SpeechRequest) =
-    render(text, lang, request.role, request.rate, request.prosody, request.shape, request.feeling, request.pitch)
+private suspend fun RoutedSpeech.render(text: String, lang: Lang, request: SpeechRequest) = render(
+    text,
+    lang,
+    request.role,
+    request.rate,
+    request.prosody,
+    request.shape,
+    request.feeling,
+    request.pitch,
+    request.bookLanguage,
+)

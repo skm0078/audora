@@ -1,0 +1,3 @@
+en: Library ⋮ → Listening stats: time listened today and this week, your streak and books finished. Kept on this phone only.
+hi: लाइब्रेरी ⋮ → सुनने के आँकड़े: आज और इस हफ़्ते कितना सुना, लगातार दिन और पूरी हुई किताबें। सिर्फ़ इसी फ़ोन पर रहते हैं।
+bn: লাইব্রেরি ⋮ → শোনার হিসাব: আজ আর এই সপ্তাহে কতটা শুনলেন, টানা দিন আর শেষ করা বই। শুধু এই ফোনেই থাকে।

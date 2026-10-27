@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/widget/ResumeWidgetProvider.kt
-// Purpose: The home-screen widget (plan item 35): the book to continue, its progress, and a Resume button that
-//          opens Audora reading it. Plain RemoteViews; it never touches the playback service.
+// Purpose: The home-screen widget (plan item 35): the book to continue, its time left (CF-7) and progress, and a
+//          Resume button that opens Audora reading it. Plain RemoteViews; it never touches the playback service.
 
 package io.github.skm0078.audora.widget
 
@@ -21,7 +21,8 @@ import kotlin.math.roundToInt
 
 /**
  * Draws from [ResumeWidgetStore], which the app keeps current whenever the library's latest book or its progress
- * changes, so the widget never polls (updatePeriodMillis is 0) and never wakes the phone.
+ * changes, and [WidgetTimeLeftStore], which the reader and the service's listening reports keep current, so the widget
+ * never polls (updatePeriodMillis is 0) and never wakes the phone.
  */
 class ResumeWidgetProvider : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, appWidgetIds: IntArray) {
@@ -44,18 +45,28 @@ class ResumeWidgetProvider : AppWidgetProvider() {
             if (ids.isNotEmpty()) draw(context, manager, ids)
         }
 
+        /** Saves [timeLeft] for the widget and redraws it when it changed and is for the book the widget shows. */
+        fun publishTimeLeft(context: Context, timeLeft: WidgetTimeLeft) {
+            if (!WidgetTimeLeftStore(context).write(timeLeft)) return
+            if (ResumeWidgetStore(context).read()?.bookId != timeLeft.bookId) return
+            val manager = AppWidgetManager.getInstance(context)
+            val ids = manager.getAppWidgetIds(ComponentName(context, ResumeWidgetProvider::class.java))
+            if (ids.isNotEmpty()) draw(context, manager, ids)
+        }
+
         /** The book id a Resume tap asks to continue, or null for any other intent. */
         fun bookIdOf(intent: Intent?): String? =
             intent?.takeIf { it.action == ACTION_CONTINUE }?.getStringExtra(EXTRA_BOOK_ID)?.takeIf { it.isNotBlank() }
 
         private fun draw(context: Context, manager: AppWidgetManager, ids: IntArray) {
             val book = ResumeWidgetStore(context).read()
+            val timeLeft = WidgetTimeLeftStore(context).read()?.takeIf { it.bookId == book?.bookId }
             AudoraLog.d(TAG, "Drawing ${ids.size} widget(s), book=${book?.bookId?.take(LOG_ID_LENGTH)}")
-            val views = views(context, book)
+            val views = views(context, book, timeLeft)
             ids.forEach { manager.updateAppWidget(it, views) }
         }
 
-        private fun views(context: Context, book: ResumeWidgetBook?): RemoteViews =
+        internal fun views(context: Context, book: ResumeWidgetBook?, timeLeft: WidgetTimeLeft?): RemoteViews =
             RemoteViews(context.packageName, R.layout.widget_resume).apply {
                 setOnClickPendingIntent(R.id.widget_root, openApp(context))
                 if (book == null) {
@@ -66,10 +77,7 @@ class ResumeWidgetProvider : AppWidgetProvider() {
                 } else {
                     val percent = (book.fraction * PERCENT).roundToInt()
                     setTextViewText(R.id.widget_title, book.title ?: context.getString(R.string.library_untitled))
-                    setTextViewText(
-                        R.id.widget_progress_text,
-                        context.getString(R.string.library_progress, book.page + 1, book.pageCount, percent),
-                    )
+                    setTextViewText(R.id.widget_progress_text, progressLine(context, book, percent, timeLeft))
                     setProgressBar(R.id.widget_progress, PERCENT, percent, false)
                     setViewVisibility(R.id.widget_progress, View.VISIBLE)
                     setViewVisibility(R.id.widget_resume, View.VISIBLE)
@@ -81,6 +89,26 @@ class ResumeWidgetProvider : AppWidgetProvider() {
                     )
                 }
             }
+
+        /**
+         * "About 2 h 10 min left · page 12 of 340" once the reader has estimated the book (CF-7): the time left first,
+         * so a narrow widget cuts the page, which the bar also shows. Otherwise the library's "Page 12 of 340 · 4%".
+         */
+        internal fun progressLine(
+            context: Context,
+            book: ResumeWidgetBook,
+            percent: Int,
+            timeLeft: WidgetTimeLeft?,
+        ): String = if (timeLeft != null && timeLeft.bookId == book.bookId) {
+            context.getString(
+                R.string.widget_time_left,
+                context.durationLabel(timeLeft.ms),
+                book.page + 1,
+                book.pageCount,
+            )
+        } else {
+            context.getString(R.string.library_progress, book.page + 1, book.pageCount, percent)
+        }
 
         /** The library's cover file, already cover-sized (CoverConfig.widthPx), so it is decoded as it is. */
         private fun RemoteViews.showCover(path: String?) {

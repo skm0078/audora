@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_phone_languages.xml -->
+<!-- Purpose: Books in languages read by the phone's own voices, in Edit details (ADR 2026-10-26). -->
+<resources>
+    <string name="phone_languages_help">Other languages are read by your phone\'s own offline voice. It sounds plainer than ListenLock\'s English, Hindi and Bengali voices.</string>
+    <string name="phone_languages_missing">Your phone has no offline voice for %1$s yet. Until you add one, ListenLock\'s own voices read this book.</string>
+    <string name="phone_languages_add">Add languages to your phone</string>
+    <string name="phone_languages_add_steps">There, tap the gear beside the preferred engine, then Install voice data, and download the language.</string>
+    <string name="phone_languages_no_settings">This phone has no text-to-speech settings screen to open.</string>
+</resources>
