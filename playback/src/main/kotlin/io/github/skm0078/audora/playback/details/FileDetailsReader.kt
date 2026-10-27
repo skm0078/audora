@@ -6,6 +6,7 @@ package io.github.skm0078.audora.playback.details
 
 import android.content.Context
 import android.net.Uri
+import io.github.skm0078.audora.core.config.TextBookConfig
 import io.github.skm0078.audora.core.files.readUpTo
 import io.github.skm0078.audora.core.library.DocumentFormat
 import io.github.skm0078.audora.core.library.DocumentFormats
@@ -13,6 +14,10 @@ import io.github.skm0078.audora.core.library.FileDetails
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.pdf.pdfium.PdfiumEngine
+import io.github.skm0078.audora.playback.djvu.DjvuException
+import io.github.skm0078.audora.playback.djvu.DjvuExpressionException
+import io.github.skm0078.audora.playback.djvu.DjvuFile
+import io.github.skm0078.audora.playback.djvu.DjvuParser
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import io.github.skm0078.audora.playback.text.ByteArrayChmSource
 import io.github.skm0078.audora.playback.text.ChmException
@@ -72,6 +77,7 @@ class FileDetailsReader(
         DocumentFormat.FB2 -> FileDetailsRead(FileMeta.fb2(fb2Head(uri)))
         DocumentFormat.MOBI -> FileDetailsRead(mobi(uri))
         DocumentFormat.CHM -> FileDetailsRead(chm(uri))
+        DocumentFormat.DJVU -> FileDetailsRead(djvu(uri))
     }
 
     private fun pdf(uri: Uri): FileDetails = when (val info = PdfiumEngine.forUri(appContext, uri).documentInfo()) {
@@ -124,6 +130,25 @@ class FileDetailsReader(
             null
         }
         return FileDetails(DocumentFormat.CHM, title = title)
+    }
+
+    /** A DjVu's title and author from its metadata, when its maker wrote any. */
+    private fun djvu(uri: Uri): FileDetails = try {
+        DjvuFile.open(appContext, uri, TextBookConfig().maxDjvuCopyBytes).use { file ->
+            val annotations = file.annotations()
+            FileDetails(
+                DocumentFormat.DJVU,
+                title = DjvuParser.metadata(annotations, "title"),
+                author = DjvuParser.metadata(annotations, "author"),
+            )
+        }
+    } catch (e: DjvuException) {
+        // Damage: the reader says so when the book is opened; the library keeps the file's name.
+        AudoraLog.i(TAG, "No DjVu details, authority=${uri.authority}: ${e.javaClass.simpleName}")
+        FileDetails(DocumentFormat.DJVU)
+    } catch (e: DjvuExpressionException) {
+        AudoraLog.i(TAG, "No DjVu details, authority=${uri.authority}: ${e.javaClass.simpleName}")
+        FileDetails(DocumentFormat.DJVU)
     }
 
     private fun zipEntries(uri: Uri, names: Set<String>, limit: Int = headBytes) = zipEntries(uri, limit) {

@@ -1,6 +1,6 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/photo/PhotoBookFile.kt
 // Purpose: Writes photos, upright and scaled, as the pages of a PDF with no text layer (ADR-043, ADR-066); comic
-//          pages too (ADR 2026-10-26-more-ebook-formats).
+//          pages and scanned DjVu pages too (ADR 2026-10-26-more-ebook-formats, ADR 2026-10-27-djvu-books).
 
 package io.github.skm0078.audora.playback.photo
 
@@ -26,11 +26,18 @@ internal class PhotoBookFile(private val config: PhotoConfig) {
     fun write(sources: List<ImageDecoder.Source>, target: File) = write(sources.size, sources::get, target)
 
     /** [pages] pictures, each made by [sourceAt] only when its page is written (a comic's page from its archive). */
-    fun write(pages: Int, sourceAt: (Int) -> ImageDecoder.Source, target: File) {
+    fun write(pages: Int, sourceAt: (Int) -> ImageDecoder.Source, target: File) =
+        writePictures(pages, { decodeUpright(sourceAt(it)) }, target)
+
+    /**
+     * [pages] pictures already drawn, each by [pictureAt] only when its page is written (a scanned DjVu's page); the
+     * picture is recycled once written.
+     */
+    fun writePictures(pages: Int, pictureAt: (Int) -> Bitmap, target: File) {
         FileOutputStream(target).use { file ->
             val out = BufferedOutputStream(file)
             val writer = ImagePdfWriter(out, pages, config.pageLongSidePt)
-            for (page in 0 until pages) writePage(writer, sourceAt(page))
+            for (page in 0 until pages) writePage(writer, pictureAt(page))
             writer.finish()
             out.flush()
             file.fd.sync()
@@ -38,8 +45,7 @@ internal class PhotoBookFile(private val config: PhotoConfig) {
         AudoraLog.i(TAG, "Photo book made, pages=$pages, bytes=${target.length()}")
     }
 
-    private fun writePage(writer: ImagePdfWriter, source: ImageDecoder.Source) {
-        val bitmap = decodeUpright(source)
+    private fun writePage(writer: ImagePdfWriter, bitmap: Bitmap) {
         try {
             val jpeg = ByteArrayOutputStream().use { out ->
                 check(bitmap.compress(Bitmap.CompressFormat.JPEG, config.jpegQuality, out)) { "JPEG encoder failed" }

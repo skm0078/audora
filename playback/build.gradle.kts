@@ -9,9 +9,22 @@ plugins {
 
 android {
     namespace = "io.github.skm0078.audora.playback"
+    ndkVersion = libs.versions.ndk.get()
 
     defaultConfig {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            // arm64-v8a ships (D5). x86_64 only so the instrumented tests run on CI's emulator; the app's own
+            // abiFilters keep it out of the APK.
+            abiFilters += listOf("arm64-v8a", "x86_64")
+        }
+    }
+
+    // libaudora_djvu.so: DjVuLibre and its bridge, for DjVu books (ADR 2026-10-27-djvu-books).
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+        }
     }
 
     packaging {

@@ -367,6 +367,7 @@ private const val CONTINUE_KEY = "continue-reading"
  * a photo book (ADR-066). `text/` as a whole, since Markdown has several labels. The first-run picker uses it too.
  * FB2, Kindle (MOBI, AZW3), CHM and comic archives (ADR 2026-10-26-more-ebook-formats) are rarely labelled right by
  * Android, so files of no known type and ZIPs (a zipped FB2, a comic) are offered too; their first bytes decide.
+ * DjVu too (ADR 2026-10-27-djvu-books).
  */
 internal val BOOK_MIME_TYPES = arrayOf(
     "application/pdf",
@@ -385,6 +386,8 @@ internal val BOOK_MIME_TYPES = arrayOf(
     "application/vnd.amazon.mobi8-ebook",
     "application/vnd.ms-htmlhelp",
     "application/vnd.comicbook+zip",
+    "image/vnd.djvu",
+    "image/x-djvu",
     "application/zip",
     "application/octet-stream",
 )

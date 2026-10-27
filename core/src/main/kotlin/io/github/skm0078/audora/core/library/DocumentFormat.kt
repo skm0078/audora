@@ -1,7 +1,7 @@
 // File: core/src/main/kotlin/io/github/skm0078/audora/core/library/DocumentFormat.kt
-// Purpose: Tells PDF, EPUB, Word, OpenDocument, RTF, HTML, FB2, MOBI, CHM and text books apart by their first bytes
-//          (ADR-042, ADR-066, ADR 2026-10-26-more-ebook-formats); comic archives are told apart too, to become photo
-//          books.
+// Purpose: Tells PDF, EPUB, Word, OpenDocument, RTF, HTML, FB2, MOBI, CHM, DjVu and text books apart by their first
+//          bytes (ADR-042, ADR-066, ADR 2026-10-26-more-ebook-formats, ADR 2026-10-27-djvu-books); comic archives are
+//          told apart too, to become photo books.
 
 package io.github.skm0078.audora.core.library
 
@@ -33,6 +33,12 @@ enum class DocumentFormat {
 
     /** A compiled Windows help file (.chm): HTML pages in Microsoft's container. */
     CHM,
+
+    /**
+     * A DjVu book (.djvu, .djv), one file holding every page: read by its hidden text layer; a scan without one
+     * becomes a photo book when added (ADR 2026-10-27-djvu-books).
+     */
+    DJVU,
     ;
 
     /** Read by the text-book path, not PDFium. */
@@ -55,6 +61,11 @@ object DocumentFormats {
     private const val FB2_START = "<fictionbook"
     private const val FB2_ENTRY = ".fb2"
     private val CHM_MAGIC = "ITSF".toByteArray(Charsets.US_ASCII)
+
+    /** An IFF file of AT&T's DjVu: `AT&TFORM`, a length, then `DJVU` (one page) or `DJVM` (a book of pages). */
+    private val DJVU_MAGIC = "AT&TFORM".toByteArray(Charsets.US_ASCII)
+    private val DJVU_KINDS = listOf("DJVU", "DJVM").map { it.toByteArray(Charsets.US_ASCII) }
+    private const val DJVU_KIND_OFFSET = 12
 
     /** A Palm database's type and creator at [PDB_TYPE_OFFSET]: a Mobipocket or Kindle book, or a PalmDOC. */
     private val PDB_BOOK_TYPES = listOf("BOOKMOBI", "TEXtREAd").map { it.toByteArray(Charsets.US_ASCII) }
@@ -94,19 +105,25 @@ object DocumentFormats {
      * entries (the opener refuses one with no `word/document.xml`, such as a spreadsheet). RTF: `{\rtf`. HTML: text
      * that opens with an HTML doctype or tag (after a BOM, an XML declaration or comments). FB2: text that opens with
      * `<FictionBook`, or a ZIP whose first entry is a `.fb2`. MOBI: a Palm database of type `BOOKMOBI` (Mobipocket and
-     * Kindle, AZW3 included) or `TEXtREAd` (PalmDOC). CHM: `ITSF`. Text: a byte-order mark,
-     * or no NUL byte and almost no control characters (UTF-8, or an 8-bit encoding read as Windows-1252).
+     * Kindle, AZW3 included) or `TEXtREAd` (PalmDOC). CHM: `ITSF`. DjVu: `AT&TFORM` then `DJVU` or `DJVM`. Text: a
+     * byte-order mark, or no NUL byte and almost no control characters (UTF-8, or an 8-bit encoding read as
+     * Windows-1252).
      */
     fun sniff(head: ByteArray, pdfWindowBytes: Int): DocumentFormat? = when {
         head.indexOf(PDF_MAGIC, limit = pdfWindowBytes) >= 0 -> DocumentFormat.PDF
         head.startsWith(ZIP_MAGIC) -> zipFormat(head)
         head.startsWith(CHM_MAGIC) -> DocumentFormat.CHM
+        isDjvu(head) -> DocumentFormat.DJVU
         PDB_BOOK_TYPES.any { head.startsWith(it, at = PDB_TYPE_OFFSET) } -> DocumentFormat.MOBI
         head.withoutBom().startsWith(RTF_MAGIC) -> DocumentFormat.RTF
         head.startsWith(UTF8_BOM) || UTF16_BOMS.any { head.startsWith(it) } -> textFormat(head)
         looksLikeText(head) -> textFormat(head)
         else -> null
     }
+
+    /** A DjVu's first bytes: one page (`DJVU`) or a bundled or indirect book (`DJVM`). */
+    fun isDjvu(head: ByteArray): Boolean =
+        head.startsWith(DJVU_MAGIC) && DJVU_KINDS.any { head.startsWith(it, at = DJVU_KIND_OFFSET) }
 
     /** A ZIP's first bytes: a zipped FB2 is read through its archive, a plain one as it is. */
     fun isZip(head: ByteArray): Boolean = head.startsWith(ZIP_MAGIC)

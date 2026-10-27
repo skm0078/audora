@@ -1,0 +1,3 @@
+en: ListenLock now reads DjVu books: their hidden text when they have it, and scanned pages through text recognition.
+hi: ListenLock अब DjVu किताबें पढ़ता है: अंदर छिपा टेक्स्ट हो तो उसे, और स्कैन किए पन्नों को टेक्स्ट पहचान से।
+bn: ListenLock এখন DjVu বই পড়ে: ভেতরে লুকোনো লেখা থাকলে সেটি, আর স্ক্যান করা পাতা লেখা চেনার মাধ্যমে।
