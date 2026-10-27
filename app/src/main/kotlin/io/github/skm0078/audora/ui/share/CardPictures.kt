@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/share/CardPictures.kt
-// Purpose: The pictures behind a card: the book's cover softened, and a picture the listener picked, decoded small.
+// Purpose: The pictures behind a card: the book's cover blurred, and a picture the listener picked, decoded small.
 
 package io.github.skm0078.audora.ui.share
 
@@ -19,34 +19,41 @@ import kotlin.math.roundToInt
 internal object CardPictures {
     private const val TAG = "ShareCard"
 
-    /** The tiny copy a soft cover is grown back from: about 1/45 of the card's width, so only colour stays. */
-    private const val SOFT_WIDTH_PX = 24
-    private const val SOFT_GROWN_WIDTH_PX = 270
+    /**
+     * The cover is blurred at this width (an eighth of the card's) and drawn stretched: a blur at full size would
+     * cost 64 times the work for a picture that is soft anyway.
+     */
+    private const val BLUR_WIDTH_PX = 135
+
+    /** Box-blur radius, in pixels of the small copy; three passes of it look like a Gaussian blur. */
+    private const val BLUR_RADIUS_PX = 6
+    private const val BLUR_PASSES = 3
 
     /** A picked picture is decoded no bigger than the largest card's long side. */
     private const val MAX_SIDE_PX = 1920
 
     /**
-     * The cover shrunk to a few pixels and grown back with filtering: a soft wash of its colours behind the quote.
-     * Two cheap scalings instead of a blur effect, so it costs a few milliseconds and no GPU work on old phones.
+     * The cover blurred behind the quote: shrunk to [BLUR_WIDTH_PX], blurred on the CPU (three box passes each way),
+     * then stretched with filtering when drawn. A few milliseconds once per card screen, and it looks the same on
+     * every phone (no GPU blur effect, which a captured picture may not carry).
      */
     fun softened(cover: ImageBitmap): ImageBitmap {
-        val source = cover.asAndroidBitmap()
-        val tinyHeight = max(1, (source.height * SOFT_WIDTH_PX / source.width.toFloat()).roundToInt())
-        val tiny = Bitmap.createScaledBitmap(source.softwareCopy(), SOFT_WIDTH_PX, tinyHeight, true)
-        val grownHeight = max(1, (tinyHeight * SOFT_GROWN_WIDTH_PX / SOFT_WIDTH_PX.toFloat()).roundToInt())
-        return Bitmap.createScaledBitmap(tiny, SOFT_GROWN_WIDTH_PX, grownHeight, true).asImageBitmap()
+        val source = cover.asAndroidBitmap().softwareCopy()
+        val height = max(1, (source.height * BLUR_WIDTH_PX / source.width.toFloat()).roundToInt())
+        val small = Bitmap.createScaledBitmap(source, BLUR_WIDTH_PX, height, true)
+        val pixels = IntArray(BLUR_WIDTH_PX * height)
+        small.getPixels(pixels, 0, BLUR_WIDTH_PX, 0, 0, BLUR_WIDTH_PX, height)
+        val blurred = BoxBlur.blur(pixels, BLUR_WIDTH_PX, height, BLUR_RADIUS_PX, BLUR_PASSES)
+        val out = Bitmap.createBitmap(BLUR_WIDTH_PX, height, Bitmap.Config.ARGB_8888)
+        out.setPixels(blurred, 0, BLUR_WIDTH_PX, 0, 0, BLUR_WIDTH_PX, height)
+        return out.asImageBitmap()
     }
 
     /** The listener's picture from the photo picker (no storage permission), or null if it cannot be read. */
     fun decode(context: Context, picture: Uri): ImageBitmap? = try {
         val source = ImageDecoder.createSource(context.contentResolver, picture)
         ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
-            val longSide = max(info.size.width, info.size.height)
-            if (longSide > MAX_SIDE_PX) {
-                val ratio = MAX_SIDE_PX / longSide.toFloat()
-                decoder.setTargetSize((info.size.width * ratio).roundToInt(), (info.size.height * ratio).roundToInt())
-            }
+            cappedSize(info.size.width, info.size.height)?.let { (w, h) -> decoder.setTargetSize(w, h) }
             decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
         }.asImageBitmap()
     } catch (e: IOException) {
@@ -56,6 +63,17 @@ internal object CardPictures {
         // The picker's grant can lapse if the screen was recreated long after the pick.
         AudoraLog.w(TAG, "Picked picture no longer readable: ${e.javaClass.simpleName}")
         null
+    }
+
+    /**
+     * The size a [width] by [height] picture is decoded at: its long side brought down to [MAX_SIDE_PX] (at most
+     * about 15 MB in memory, held only while the card screen is open), or null when it is already that small.
+     */
+    fun cappedSize(width: Int, height: Int, maxSide: Int = MAX_SIDE_PX): Pair<Int, Int>? {
+        val longSide = max(width, height)
+        if (longSide <= maxSide) return null
+        val ratio = maxSide / longSide.toFloat()
+        return max(1, (width * ratio).roundToInt()) to max(1, (height * ratio).roundToInt())
     }
 
     private fun Bitmap.softwareCopy(): Bitmap =

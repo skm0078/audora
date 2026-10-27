@@ -24,9 +24,10 @@ text, but not as a picture. Everything must stay on the phone, cost little, and 
   (1080 x 1080, 1080 x 1920, 1080 x 1350) with its own density and font scale 1, shown scaled to fit, and recorded
   into a `GraphicsLayer`. Share turns that layer into the bitmap, so the picture is exactly the preview. PNG for flat
   backgrounds, JPEG 92 for photo backgrounds.
-- **Backgrounds**: Paper, Sepia, Night, Dusk blue, the book's cover softened (shrunk to 24 px and grown back with
-  filtering, no blur effect or GPU work), or the listener's own picture from the photo picker (no storage
-  permission) under a dark scrim so white text stays readable, with "Use a picture you took or are allowed to share."
+- **Backgrounds**: Paper, Sepia, Night, Dusk blue, the book's cover blurred (shrunk to 135 px wide, three box-blur
+  passes each way on the CPU, stretched when drawn; a few milliseconds once per screen, same on every phone), or the
+  listener's own picture from the photo picker (no storage permission, decoded at most 1920 px on its long side)
+  under a dark scrim so white text stays readable, with "Use a picture you took or are allowed to share."
 - **Type**: Tiro Devanagari Hindi and Tiro Bangla (Tiro Typeworks, OFL 1.1) for the quote, trimmed with fonttools to
   their script plus Latin and punctuation, OpenType layout kept, hinting dropped: 239 KB + 172 KB on disk, about
   **0.2 MB compressed** in the APK. English quotes use Tiro Devanagari Hindi's Latin. Credits and controls use the
@@ -45,8 +46,10 @@ text, but not as a picture. Everything must stay on the phone, cost little, and 
   anyway, so recording what is drawn is simpler.
 - **Noto from the phone** for quotes: 0 KB, but differs by phone maker and lacks the bookish look the design system
   chose.
-- **Blur effect** (`RenderEffect`): nicer edges, but GPU work and a hardware layer per frame; the two-scale wash looks
-  close at card size for a few milliseconds of CPU.
+- **Blur effect** (`RenderEffect`): GPU work and a hardware layer per frame, and a captured layer may not carry the
+  effect into the shared picture. The CPU blur is the same picture on screen and in the file.
+- **Two-scale colour wash** (shrink to 24 px, grow back): the first version; cheaper still, but blocky rather than a
+  true blur. Replaced at the maintainer's request.
 
 ## Consequences
 
