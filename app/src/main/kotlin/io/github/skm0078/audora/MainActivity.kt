@@ -381,7 +381,7 @@ class MainActivity : ComponentActivity() {
             sharedCopies::copy,
             collections.observe(),
             collections.observeMembers(),
-            comics = { takeComic(photoBooks, it) },
+            comics = { takeComic(photoBooks, it) || takeScannedDjvu(photoBooks, it) },
         ).apply { start() }
     }
 

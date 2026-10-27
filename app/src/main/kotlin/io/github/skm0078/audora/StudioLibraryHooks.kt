@@ -98,6 +98,8 @@ internal fun PhotoBookEffect(photoBooks: PhotoBooks, navigate: (AppDestination) 
                     is PhotoError.TooMany -> resources.getString(R.string.pictures_too_many, error.max)
                     is PhotoError.ComicTooLong -> resources.getString(R.string.comic_too_long, error.max)
                     is PhotoError.ComicUnreadable -> resources.getString(R.string.comic_unreadable)
+                    is PhotoError.DjvuTooLong -> resources.getString(R.string.djvu_too_long, error.max)
+                    is PhotoError.DjvuUnreadable -> resources.getString(R.string.djvu_unreadable)
                     else -> resources.getString(R.string.photo_failed)
                 }
                 Toast.makeText(context, message, Toast.LENGTH_LONG).show()

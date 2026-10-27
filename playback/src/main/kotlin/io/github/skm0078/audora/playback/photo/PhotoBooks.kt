@@ -1,7 +1,7 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/photo/PhotoBooks.kt
-// Purpose: "Point and read" and pictures: a camera photo, pictures from the gallery, Files or a share, or a comic
-//          archive become a scanned book in the library (plan item 62, ADR-043, ADR-066,
-//          ADR 2026-10-26-more-ebook-formats).
+// Purpose: "Point and read" and pictures: a camera photo, pictures from the gallery, Files or a share, a comic
+//          archive or a scanned DjVu become a scanned book in the library (plan item 62, ADR-043, ADR-066,
+//          ADR 2026-10-26-more-ebook-formats, ADR 2026-10-27-djvu-books).
 
 package io.github.skm0078.audora.playback.photo
 
@@ -10,6 +10,7 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import androidx.core.content.FileProvider
 import io.github.skm0078.audora.core.config.PhotoConfig
+import io.github.skm0078.audora.core.config.TextBookConfig
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
@@ -17,6 +18,7 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.backup.writeDurably
 import io.github.skm0078.audora.playback.comic.ComicBookFile
 import io.github.skm0078.audora.playback.comic.ComicTooLargeException
+import io.github.skm0078.audora.playback.djvu.DjvuFile
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
 import java.io.File
 import java.io.IOException
@@ -55,6 +57,14 @@ sealed interface PhotoError {
 
     /** A comic archive that is damaged or has no picture Android can decode. */
     data class ComicUnreadable(override val detail: String) : PhotoError
+
+    /** A scanned DjVu with more pages than [max]; nothing was made. */
+    data class DjvuTooLong(val max: Int) : PhotoError {
+        override val detail = "DjVu scan over $max pages"
+    }
+
+    /** A scanned DjVu that is damaged, indirect (its pages in separate files), or has a page that cannot be drawn. */
+    data class DjvuUnreadable(override val detail: String) : PhotoError
 }
 
 /**
@@ -73,7 +83,7 @@ sealed interface PhotoError {
  * (ADR-066). Their URIs are lent for a moment, so they are read at once; a book cut short by the process dying is
  * not made again (the pictures are still in the gallery to pick again).
  */
-@Suppress("TooManyFunctions") // Pictures, a camera capture and a comic archive each have their own way in.
+@Suppress("TooManyFunctions") // Pictures, a camera capture, a comic archive and a DjVu scan each have their own way in.
 class PhotoBooks(
     context: Context,
     private val copies: SharedPdfCopies,
@@ -90,6 +100,7 @@ class PhotoBooks(
     private val mutableMade = MutableStateFlow<Outcome<BookId, PhotoError>?>(null)
     private val bookFile = PhotoBookFile(config)
     private val comicFile = ComicBookFile(appContext.contentResolver, File(appContext.cacheDir, COMIC_FOLDER), config)
+    private val maxDjvuCopyBytes = TextBookConfig().maxDjvuCopyBytes
 
     /** The last book's result until [consume]: the book to open, or why there is none. */
     val made: StateFlow<Outcome<BookId, PhotoError>?> = mutableMade.asStateFlow()
@@ -196,6 +207,51 @@ class PhotoBooks(
         } finally {
             if (!copy.delete()) AudoraLog.w(TAG, "A comic archive's copy could not be deleted")
         }
+    }
+
+    /**
+     * A DjVu with no text layer (a scan) as one book named [title], each page drawn as a picture for OCR to read
+     * (ADR 2026-10-27-djvu-books); the result arrives in [made]. A DjVu with a text layer is a text book instead.
+     */
+    fun startBookFromDjvu(document: Uri, title: String) {
+        if (!busy.compareAndSet(false, true)) {
+            AudoraLog.w(TAG, "A photo book is already being made")
+            return
+        }
+        scope.launch {
+            try {
+                mutableMade.value = makeDjvu(document, title)
+            } catch (e: IOException) {
+                mutableMade.value = djvuFailed(e)
+            } catch (e: SecurityException) {
+                mutableMade.value = djvuFailed(e)
+            } finally {
+                busy.set(false)
+            }
+        }
+    }
+
+    private suspend fun makeDjvu(document: Uri, title: String): Outcome<BookId, PhotoError> =
+        DjvuFile.open(appContext, document, maxDjvuCopyBytes).use { djvu ->
+            AudoraLog.i(TAG, "DjVu scan opened, pages=${djvu.pageCount}")
+            val pages = djvu.pageCount
+            when {
+                pages <= 0 -> Outcome.Failure(PhotoError.DjvuUnreadable("no pages"))
+
+                pages > config.maxDjvuScanPages -> Outcome.Failure(PhotoError.DjvuTooLong(config.maxDjvuScanPages))
+
+                else -> {
+                    val write = {
+                        bookFile.writePictures(pages, { djvu.pagePicture(it, config.maxLongSidePx) }, madeFile)
+                    }
+                    addMade(title, write) {}
+                }
+            }
+        }
+
+    private fun djvuFailed(e: Exception): Outcome<BookId, PhotoError> {
+        AudoraLog.e(TAG, "DjVu scan book not made: ${e.javaClass.simpleName}")
+        return Outcome.Failure(PhotoError.DjvuUnreadable(e.javaClass.simpleName))
     }
 
     /**

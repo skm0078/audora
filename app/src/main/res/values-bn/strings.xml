@@ -58,7 +58,7 @@
     <string name="library_no_match">কোনো বই মেলেনি। খোঁজ বা ফিল্টার বদলান।</string>
     <string name="library_error_cannot_keep">যে অ্যাপ থেকে বেছেছেন, সেটি ফাইলটি শুধু অল্প সময়ের জন্য দেয়। আগে ফাইলটি ফোনে সেভ করুন, তারপর সেখান থেকে যোগ করুন।</string>
     <string name="library_error_unreadable">ListenLock ফাইলটি পড়তে পারেনি। হয়তো সেটি সরানো বা মুছে ফেলা হয়েছে।</string>
-    <string name="library_error_not_pdf">ফাইলটি এমন বই নয় যা ListenLock পড়তে পারে: PDF, EPUB, Word, OpenDocument, RTF, FB2, Kindle (MOBI, AZW3), CHM, কমিক (CBZ), ওয়েব পেজ, লেখা বা ছবি।</string>
+    <string name="library_error_not_pdf">ফাইলটি এমন বই নয় যা ListenLock পড়তে পারে: PDF, EPUB, Word, OpenDocument, RTF, FB2, Kindle (MOBI, AZW3), CHM, DjVu, কমিক (CBZ), ওয়েব পেজ, লেখা বা ছবি।</string>
     <string name="library_error_different_file">এটি অন্য একটি ফাইল। একই ফাইল বেছে নিন, অথবা এই বইটি সরিয়ে নতুনটি যোগ করুন।</string>
     <string name="library_error_not_in_library">বইটি আর আপনার লাইব্রেরিতে নেই।</string>
     <string name="library_error_storage">ListenLock আপনার লাইব্রেরি সেভ করতে পারেনি। ফোনের স্টোরেজ কি ভরে গেছে?</string>

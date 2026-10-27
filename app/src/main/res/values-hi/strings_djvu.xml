@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_djvu.xml -->
+<!-- Purpose: Hindi copy of values/strings_djvu.xml. -->
+<resources>
+    <string name="book_format_djvu">DjVu</string>
+    <string name="djvu_book_title">स्कैन की हुई किताब</string>
+    <string name="djvu_making">“%1$s” एक स्कैन है जिसके अंदर टेक्स्ट नहीं है, इसलिए ListenLock इसे ऐसी किताब बना रहा है जिसे वह पन्ना-दर-पन्ना पढ़ेगा। तैयार होते ही खुल जाएगी।</string>
+    <string name="djvu_too_long">यह स्कैन की हुई DjVu यहाँ पढ़ने के लिए बहुत लंबी है: ज़्यादा से ज़्यादा %1$d पन्ने।</string>
+    <string name="djvu_unreadable">ListenLock यह DjVu फ़ाइल नहीं पढ़ सका। हो सकता है वह ख़राब हो, या उसके पन्ने अलग-अलग फ़ाइलों में रखे हों।</string>
+</resources>

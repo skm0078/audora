@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_djvu.xml -->
+<!-- Purpose: Bengali copy of values/strings_djvu.xml. -->
+<resources>
+    <string name="book_format_djvu">DjVu</string>
+    <string name="djvu_book_title">স্ক্যান করা বই</string>
+    <string name="djvu_making">“%1$s” একটি স্ক্যান, এর ভেতরে কোনো লেখা নেই, তাই ListenLock এটিকে এমন বই বানাচ্ছে যা পাতা ধরে ধরে পড়া হবে। তৈরি হলেই খুলবে।</string>
+    <string name="djvu_too_long">এই স্ক্যান করা DjVu এখানে পড়ার জন্য খুব লম্বা: সর্বোচ্চ %1$d পাতা।</string>
+    <string name="djvu_unreadable">ListenLock এই DjVu ফাইলটি পড়তে পারেনি। ফাইলটি নষ্ট হতে পারে, বা এর পাতাগুলো আলাদা আলাদা ফাইলে রাখা থাকতে পারে।</string>
+</resources>

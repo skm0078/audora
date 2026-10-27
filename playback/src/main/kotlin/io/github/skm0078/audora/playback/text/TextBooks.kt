@@ -1,6 +1,6 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/text/TextBooks.kt
-// Purpose: Opens text books (EPUB, Word, OpenDocument, RTF, HTML, Markdown, FB2, Kindle, CHM, text) by URI: the seam
-//          beside BookOpener.
+// Purpose: Opens text books (EPUB, Word, OpenDocument, RTF, HTML, Markdown, FB2, Kindle, CHM, DjVu, text) by URI:
+//          the seam beside BookOpener.
 
 package io.github.skm0078.audora.playback.text
 
@@ -17,6 +17,10 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.flatMap
 import io.github.skm0078.audora.core.result.map
+import io.github.skm0078.audora.playback.djvu.DjvuException
+import io.github.skm0078.audora.playback.djvu.DjvuExpressionException
+import io.github.skm0078.audora.playback.djvu.DjvuFile
+import io.github.skm0078.audora.playback.djvu.DjvuParser
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
@@ -35,7 +39,8 @@ class TextBooks(
     private val config: TextBookConfig = TextBookConfig(),
     private val library: LibraryConfig = LibraryConfig(),
 ) {
-    private val resolver: ContentResolver = context.applicationContext.contentResolver
+    private val appContext: Context = context.applicationContext
+    private val resolver: ContentResolver = appContext.contentResolver
 
     /** The book's format by its first bytes; null when it cannot be read now (the PDF path then reports why). */
     fun formatOf(documentUri: String): DocumentFormat? {
@@ -84,6 +89,7 @@ class TextBooks(
         DocumentFormat.FB2 -> readFb2(uri)
         DocumentFormat.MOBI -> readMobi(uri)
         DocumentFormat.CHM -> readChm(uri)
+        DocumentFormat.DJVU -> readDjvu(uri)
         DocumentFormat.PDF -> Outcome.Failure(TextBookError.Unreadable("a PDF is not a text book"))
     }
 
@@ -174,6 +180,18 @@ class TextBooks(
             val source = if (size > 0) FileChannelChmSource(channel) else wholeChm(uri)
             ChmParser.parse(ChmFile.open(source), config.maxBookBytes)
         }
+    }
+
+    /**
+     * A DjVu's hidden text layer, read in place by DjVuLibre (ADR 2026-10-27-djvu-books). A scan without one became a
+     * photo book when it was added, so here it is NoText.
+     */
+    private fun readDjvu(uri: Uri): Outcome<TextDocument, TextBookError> = try {
+        DjvuFile.open(appContext, uri, config.maxDjvuCopyBytes).use { DjvuParser.parse(it, config.maxBookBytes) }
+    } catch (e: DjvuException) {
+        Outcome.Failure(TextBookError.Damaged("DjVu: ${e.message}"))
+    } catch (e: DjvuExpressionException) {
+        Outcome.Failure(TextBookError.Damaged("DjVu text layer: ${e.message}"))
     }
 
     /** A provider whose descriptor cannot seek (a pipe): the help file is read whole, up to the size limit. */

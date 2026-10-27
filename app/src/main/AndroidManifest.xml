@@ -87,6 +87,7 @@
             </intent-filter>
             <!-- E-books from other readers (ADR 2026-10-26-more-ebook-formats): FB2, Kindle and Mobipocket without DRM
                  (MOBI, AZW3, AZW, PRC) and PalmDOC, CHM help files, and comic archives (CBZ), which become photo books.
+                 DjVu (ADR 2026-10-27-djvu-books): a text layer reads as text, a scan becomes a photo book.
                  Their own filters, so the lists above stay as they were. Checked by first bytes like every book. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -106,6 +107,8 @@
                 <data android:mimeType="application/x-chm" />
                 <data android:mimeType="application/vnd.comicbook+zip" />
                 <data android:mimeType="application/x-cbz" />
+                <data android:mimeType="image/vnd.djvu" />
+                <data android:mimeType="image/x-djvu" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
@@ -124,6 +127,8 @@
                 <data android:mimeType="application/x-chm" />
                 <data android:mimeType="application/vnd.comicbook+zip" />
                 <data android:mimeType="application/x-cbz" />
+                <data android:mimeType="image/vnd.djvu" />
+                <data android:mimeType="image/x-djvu" />
             </intent-filter>
             <!-- Several pictures shared at once (the pages of a chapter) become one book (ADR-066). -->
             <intent-filter>

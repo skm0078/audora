@@ -1,5 +1,5 @@
 // File: core/src/test/kotlin/io/github/skm0078/audora/core/library/DocumentFormatTest.kt
-// Purpose: PDF, EPUB, Word, OpenDocument, RTF, HTML, FB2, MOBI, CHM and text books, and comic archives, are told
+// Purpose: PDF, EPUB, Word, OpenDocument, RTF, HTML, FB2, MOBI, CHM, DjVu and text books, and comic archives, are told
 //          apart by their first bytes.
 
 package io.github.skm0078.audora.core.library
@@ -79,6 +79,17 @@ class DocumentFormatTest {
         )
         for ((bytes, format) in cases) assertEquals(String(bytes), format, sniff(bytes))
         assertEquals(null, sniff(palmDatabase("DataPlkr")))
+    }
+
+    @Test
+    fun `recognizes a DjVu page or book by its IFF header, not any AT&T form`() {
+        fun form(kind: String) = "AT&TFORM\u0000\u0000\u0010\u0000$kind".toByteArray(Charsets.ISO_8859_1)
+        assertEquals(DocumentFormat.DJVU, sniff(form("DJVU")))
+        assertEquals(DocumentFormat.DJVU, sniff(form("DJVM")))
+        assertTrue(DocumentFormats.isDjvu(form("DJVM")))
+        assertFalse(DocumentFormats.isDjvu(form("DJVI")))
+        assertFalse(DocumentFormats.isDjvu("AT&TFORM".toByteArray()))
+        assertEquals(null, sniff(form("DJVI")))
     }
 
     @Test
