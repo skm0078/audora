@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/IncomingBooks.kt
-// Purpose: Books that arrive from outside the library: pictures, comic archives, shared files and text, copied text
-//          (ADR-066, ADR 2026-10-26-more-ebook-formats).
+// Purpose: Books that arrive from outside the library: pictures, comic archives, scanned DjVu books, shared files
+//          and text, copied text (ADR-066, ADR 2026-10-26-more-ebook-formats, ADR 2026-10-27-djvu-books).
 
 package io.github.skm0078.audora
 
@@ -10,9 +10,13 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import io.github.skm0078.audora.core.config.LibraryConfig
+import io.github.skm0078.audora.core.config.TextBookConfig
 import io.github.skm0078.audora.core.files.readUpTo
 import io.github.skm0078.audora.core.library.DocumentFormats
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.playback.djvu.DjvuExpressionException
+import io.github.skm0078.audora.playback.djvu.DjvuFile
+import io.github.skm0078.audora.playback.djvu.DjvuParser
 import io.github.skm0078.audora.playback.documents.displayName
 import io.github.skm0078.audora.playback.photo.PhotoBooks
 import java.io.IOException
@@ -87,16 +91,56 @@ internal suspend fun Context.takeComic(photoBooks: PhotoBooks, documentUri: Stri
     return true
 }
 
-private fun Context.isComicArchive(uri: Uri): Boolean = try {
-    val window = LibraryConfig().pdfHeaderWindowBytes
-    val head = contentResolver.openInputStream(uri)?.use { it.readUpTo(window) }
-    head != null && DocumentFormats.isComicArchive(head, window)
+private fun Context.isComicArchive(uri: Uri): Boolean =
+    head(uri)?.let { DocumentFormats.isComicArchive(it, LibraryConfig().pdfHeaderWindowBytes) } == true
+
+/**
+ * A DjVu with no text layer (a scan), picked, opened or shared, becomes a photo book read by OCR
+ * (ADR 2026-10-27-djvu-books): true when [documentUri] is one and was taken (the book opens itself once made); false
+ * for any other file, a DjVu with a text layer included, which is added as a text book. A DjVu that cannot be opened
+ * is left to the library too, which says it is damaged. Reads the file off the main thread.
+ */
+internal suspend fun Context.takeScannedDjvu(photoBooks: PhotoBooks, documentUri: String): Boolean {
+    val uri = Uri.parse(documentUri)
+    if (!withContext(Dispatchers.IO) { isScannedDjvu(uri) }) return false
+    val notice = if (photoBooks.making) {
+        getString(R.string.photo_busy)
+    } else {
+        val name = withContext(Dispatchers.IO) { contentResolver.displayName(uri) }?.substringBeforeLast('.')
+        val title = name?.takeIf { it.isNotBlank() } ?: getString(R.string.djvu_book_title)
+        photoBooks.startBookFromDjvu(uri, title)
+        getString(R.string.djvu_making, title)
+    }
+    withContext(Dispatchers.Main) { Toast.makeText(this@takeScannedDjvu, notice, Toast.LENGTH_LONG).show() }
+    return true
+}
+
+private fun Context.isScannedDjvu(uri: Uri): Boolean {
+    val head = head(uri)
+    if (head == null || !DocumentFormats.isDjvu(head)) return false
+    return try {
+        DjvuFile.open(this, uri, TextBookConfig().maxDjvuCopyBytes).use { !DjvuParser.hasTextLayer(it) }
+    } catch (e: IOException) {
+        AudoraLog.w(TAG, "A DjVu could not be checked for a text layer: ${e.javaClass.simpleName}")
+        false
+    } catch (e: DjvuExpressionException) {
+        AudoraLog.w(TAG, "A DjVu's text layer is not well formed: ${e.javaClass.simpleName}")
+        false
+    } catch (e: SecurityException) {
+        AudoraLog.w(TAG, "A DjVu could not be checked for a text layer: ${e.javaClass.simpleName}")
+        false
+    }
+}
+
+/** The file's first bytes, enough to tell its format; null when it cannot be read. */
+private fun Context.head(uri: Uri): ByteArray? = try {
+    contentResolver.openInputStream(uri)?.use { it.readUpTo(LibraryConfig().pdfHeaderWindowBytes) }
 } catch (e: IOException) {
-    AudoraLog.w(TAG, "A picked file could not be checked for a comic: ${e.javaClass.simpleName}")
-    false
+    AudoraLog.w(TAG, "A picked file could not be checked: ${e.javaClass.simpleName}")
+    null
 } catch (e: SecurityException) {
-    AudoraLog.w(TAG, "A picked file could not be checked for a comic: ${e.javaClass.simpleName}")
-    false
+    AudoraLog.w(TAG, "A picked file could not be checked: ${e.javaClass.simpleName}")
+    null
 }
 
 /** "Read copied text": the text copied last, handed to [onText] like text shared to ListenLock (ADR-066). */

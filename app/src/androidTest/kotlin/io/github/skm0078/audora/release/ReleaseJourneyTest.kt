@@ -89,6 +89,7 @@ class ReleaseJourneyTest {
             step("12 a scan offers OCR and reads after the download", ::aScanOffersOcrAndReadsAfterTheDownload)
             step("13 Open with reads FB2, Kindle and help-file books", ::openWithReadsMoreEbookFormats)
             step("14 Open with makes a comic archive into a photo book", ::openWithMakesAComicIntoAPhotoBook)
+            step("15 Open with reads a DjVu's text and makes a DjVu scan a photo book", ::openWithReadsDjvuBooks)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -426,6 +427,32 @@ class ReleaseJourneyTest {
         }
     }
 
+    /**
+     * DjVu through DjVuLibre (ADR 2026-10-27-djvu-books): one with a text layer opens as a text book showing its first
+     * paragraph, joined across lines and a broken word; a scan (no text layer) becomes a photo book that opens by
+     * itself, like a comic.
+     */
+    private fun openWithReadsDjvuBooks() {
+        backToTabs()
+        val textUri = JourneyDevice.downloadedBook(DJVU_TEXT)
+        val textHost = activity()
+        JourneyDevice.onMain { textHost.startActivity(JourneyDevice.openWith(textUri, DJVU_TYPE)) }
+        awaitSynced("$DJVU_TEXT to show \"$DJVU_SENTENCE\" in the reader", OPEN_TIMEOUT_MS) {
+            rule.onAllNodes(hasText(DJVU_SENTENCE, substring = true)).fetchSemanticsNodes().isNotEmpty()
+        }
+        backToTabs()
+        val added = JourneyDevice.logCount(PHOTO_BOOK_ADDED)
+        val scanUri = JourneyDevice.downloadedBook(DJVU_SCAN)
+        val scanHost = activity()
+        JourneyDevice.onMain { scanHost.startActivity(JourneyDevice.openWith(scanUri, DJVU_TYPE)) }
+        awaitSynced("the DjVu scan to be added as a photo book", OPEN_TIMEOUT_MS) {
+            JourneyDevice.logCount(PHOTO_BOOK_ADDED) > added
+        }
+        awaitSynced("the DjVu scan to open in the reader", OPEN_TIMEOUT_MS) {
+            rule.onAllNodes(hasText(DJVU_SCAN_TITLE)).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
     /** Waits on the Compose test clock (frames and effects run meanwhile); a timeout lists the app's last log lines. */
     private fun awaitSynced(what: String, timeoutMs: Long, condition: () -> Boolean) {
         try {
@@ -487,6 +514,14 @@ class ReleaseJourneyTest {
 
         // The photo book is named after the file; the reader's top bar shows it.
         const val COMIC_TITLE = "comic"
+
+        // assets/ebooks, written by scripts/fixtures/make_djvu_fixtures.py: its first paragraph has "remark-" / "able"
+        // across a line end, so the sentence shows only when the lines are joined.
+        const val DJVU_TEXT = "text.djvu"
+        const val DJVU_SCAN = "scan.djvu"
+        const val DJVU_TYPE = "image/vnd.djvu"
+        const val DJVU_SENTENCE = "The first page of a small DjVu book has a remarkable sentence"
+        const val DJVU_SCAN_TITLE = "scan"
 
         // PhotoBooks' own words once the photo book is in the library.
         const val PHOTO_BOOK_ADDED = "Photo book added"

@@ -1,6 +1,6 @@
 // File: core/src/main/kotlin/io/github/skm0078/audora/core/config/PhotoConfig.kt
-// Purpose: Tunables for photo books: a camera photo, picked pictures or a comic archive, kept as a scanned book
-//          (ADR-043, ADR-066, ADR 2026-10-26-more-ebook-formats).
+// Purpose: Tunables for photo books: a camera photo, picked pictures, a comic archive or a scanned DjVu, kept as a
+//          scanned book (ADR-043, ADR-066, ADR 2026-10-26-more-ebook-formats, ADR 2026-10-27-djvu-books).
 
 package io.github.skm0078.audora.core.config
 
@@ -15,6 +15,8 @@ package io.github.skm0078.audora.core.config
  * @property maxComicPages a comic archive (.cbz) of more pages is refused: a long graphic novel, a few hundred MB of
  *   book file, read by OCR page by page as it plays (ADR 2026-10-26-more-ebook-formats).
  * @property maxComicBytes a comic archive larger than this is not copied in (it is copied whole before reading).
+ * @property maxDjvuScanPages a DjVu with no text layer of more pages is refused: each page is drawn and kept as a
+ *   picture, so a 600-page scan is several hundred MB of book file (ADR 2026-10-27-djvu-books).
  */
 data class PhotoConfig(
     val maxLongSidePx: Int = 3_000,
@@ -24,6 +26,7 @@ data class PhotoConfig(
     val maxImagesPerBook: Int = 50,
     val maxComicPages: Int = 400,
     val maxComicBytes: Long = DEFAULT_MAX_COMIC_BYTES,
+    val maxDjvuScanPages: Int = 600,
 ) {
     init {
         require(maxLongSidePx > 0) { "maxLongSidePx must be > 0, was $maxLongSidePx" }
@@ -32,6 +35,7 @@ data class PhotoConfig(
         require(maxImagesPerBook > 0) { "maxImagesPerBook must be > 0, was $maxImagesPerBook" }
         require(maxComicPages > 0) { "maxComicPages must be > 0, was $maxComicPages" }
         require(maxComicBytes > 0) { "maxComicBytes must be > 0, was $maxComicBytes" }
+        require(maxDjvuScanPages > 0) { "maxDjvuScanPages must be > 0, was $maxDjvuScanPages" }
     }
 
     private companion object {

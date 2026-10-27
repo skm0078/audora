@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_djvu.xml -->
+<!-- Purpose: DjVu books: with a text layer they read as text; a scan becomes a photo book read by OCR
+     (ADR 2026-10-27-djvu-books). -->
+<resources>
+    <string name="book_format_djvu">DjVu</string>
+    <!-- The title of a scanned DjVu book whose file has no name. -->
+    <string name="djvu_book_title">Scanned book</string>
+    <!-- %1$s is the book's title. -->
+    <string name="djvu_making">“%1$s” is a scan with no text inside, so ListenLock is making it into a book it reads page by page. It opens when it is ready.</string>
+    <string name="djvu_too_long">That scanned DjVu is too long to read here: up to %1$d pages.</string>
+    <string name="djvu_unreadable">ListenLock could not read that DjVu file. It may be damaged, or its pages may be kept in separate files.</string>
+</resources>

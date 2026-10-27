@@ -40,8 +40,9 @@ import kotlinx.coroutines.withContext
  * @param anchors every book's resume anchor, for its progress and "Continue reading".
  * @param importShared copies a PDF another app only lends for a moment into a URI Audora can keep; null on failure.
  * @param collections the listener's collections, and [members] each book's: both read whole, once per change.
- * @param comics takes a file that is not a book but becomes one, a comic archive made into a photo book that opens
- *   when made (ADR 2026-10-26-more-ebook-formats), and says so to the listener; false for any other file.
+ * @param comics takes a file that is not a book but becomes one, a comic archive or a scanned DjVu made into a photo
+ *   book that opens when made (ADR 2026-10-26-more-ebook-formats, ADR 2026-10-27-djvu-books), and says so to the
+ *   listener; false for any other file.
  */
 // Add, locate, share, remove and their messages, plus the list they publish.
 // Every parameter after the scope is an optional hook with a no-op default, so callers name only what they use.
