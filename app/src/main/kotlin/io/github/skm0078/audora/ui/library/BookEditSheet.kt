@@ -23,12 +23,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +50,7 @@ import io.github.skm0078.audora.core.library.resetDetails
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.di.LibraryEntryPoint
+import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
 import kotlinx.coroutines.launch
 
@@ -103,9 +102,9 @@ internal fun BookEditSheet(
     val pick = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
         uri?.let { draft = draft.copy(cover = CoverOption.GALLERY, picture = it.toString()) }
     }
-    ModalBottomSheet(
+    AppSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        skipPartiallyExpanded = true,
     ) {
         Column(
             modifier

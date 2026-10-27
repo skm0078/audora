@@ -94,7 +94,6 @@
     <string name="reader_paragraph_back">पिछला अनुच्छेद</string>
     <string name="reader_paragraph_forward">अगला अनुच्छेद</string>
     <string name="reader_speed">स्पीड %1$s×</string>
-    <string name="speech_sheet_speed">स्पीड %1$s×</string>
     <string name="speech_sheet_slower">धीमा</string>
     <string name="speech_sheet_faster">तेज़</string>
     <string name="speech_sheet_pace">वाक्यों के बीच रुकना</string>

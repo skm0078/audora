@@ -26,7 +26,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -106,11 +105,7 @@ fun LibraryScreen(
         topBar = { LibraryTopBar(listState, actions, runningJobs) },
         floatingActionButton = {
             if (!LocalKidsMode.current && listState is LibraryListState.Loaded && listState.all.isNotEmpty()) {
-                ExtendedFloatingActionButton(
-                    onClick = { if (!busy) pickPdf() },
-                    icon = { Icon(painterResource(R.drawable.ic_add), contentDescription = null) },
-                    text = { Text(stringResource(R.string.library_add_pdf)) },
-                )
+                AddBookButton { if (!busy) pickPdf() }
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },

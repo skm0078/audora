@@ -30,6 +30,9 @@ fun hoursMinutes(ms: Long): HoursMinutes {
     return HoursMinutes(totalMinutes / MINUTES_PER_HOUR, totalMinutes % MINUTES_PER_HOUR)
 }
 
+/** Whole minutes left, rounded up, so TalkBack says "1 minute left" until the very end, never "0 minutes". */
+fun minutesLeft(ms: Long): Int = maxOf(1L, (ms.coerceAtLeast(0) + MILLIS_PER_MINUTE - 1) / MILLIS_PER_MINUTE).toInt()
+
 /** The typed 1-based page if it exists in the book, else null. */
 fun parsePageNumber(text: String, pageCount: Int): Int? = text.toIntOrNull()?.takeIf { it in 1..pageCount }
 

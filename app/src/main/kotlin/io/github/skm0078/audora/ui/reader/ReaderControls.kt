@@ -40,8 +40,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import io.github.skm0078.audora.R
@@ -214,12 +216,18 @@ private fun SleepTimerButton(
     var open by remember { mutableStateOf(false) }
     var editingOptions by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
+    val timer = sleepTimerText(playback.sleepTimer)
     Box {
-        TextButton(onClick = { open = true }, enabled = enabled) {
+        // TalkBack hears the time left in words, once a minute, not a ticking "14:59".
+        TextButton(
+            onClick = { open = true },
+            enabled = enabled,
+            modifier = Modifier.semantics { stateDescription = timer.spoken },
+        ) {
             Icon(painterResource(R.drawable.ic_timer), stringResource(R.string.reader_sleep_timer))
-            sleepTimerLabel(playback.sleepTimer)?.let { label ->
+            timer.shown?.let { label ->
                 Spacer(Modifier.width(Dimens.SpaceXs))
-                Text(label)
+                Text(label, Modifier.clearAndSetSemantics {})
             }
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
@@ -273,10 +281,12 @@ private fun settingLabel(setting: SleepTimerSetting): String = when (setting) {
     is SleepTimerSetting.AfterChapters -> stringResource(R.string.reader_sleep_chapters, setting.count)
 }
 
-/** What the timer button shows next to its icon; null when off. */
+/** What the timer button shows next to its icon (null when off), and what TalkBack says for it. */
+private data class SleepTimerText(val shown: String?, val spoken: String)
+
 @Composable
-private fun sleepTimerLabel(timer: SleepTimerState): String? = when (timer) {
-    SleepTimerState.Off -> null
+private fun sleepTimerText(timer: SleepTimerState): SleepTimerText = when (timer) {
+    SleepTimerState.Off -> SleepTimerText(null, stringResource(R.string.reader_sleep_off))
 
     is SleepTimerState.Counting -> {
         val remaining by produceState(timer.endsAtMillis - System.currentTimeMillis(), timer) {
@@ -285,14 +295,19 @@ private fun sleepTimerLabel(timer: SleepTimerState): String? = when (timer) {
                 value = timer.endsAtMillis - System.currentTimeMillis()
             }
         }
-        remainingLabel(remaining)
+        val minutes = minutesLeft(remaining)
+        SleepTimerText(
+            remainingLabel(remaining),
+            pluralStringResource(R.plurals.a11y_sleep_minutes_left, minutes, minutes),
+        )
     }
 
-    SleepTimerState.EndOfPage -> stringResource(R.string.reader_sleep_end_of_page)
+    SleepTimerState.EndOfPage -> stringResource(R.string.reader_sleep_end_of_page).let { SleepTimerText(it, it) }
 
-    SleepTimerState.EndOfChapter -> stringResource(R.string.reader_sleep_end_of_chapter)
+    SleepTimerState.EndOfChapter -> stringResource(R.string.reader_sleep_end_of_chapter).let { SleepTimerText(it, it) }
 
-    is SleepTimerState.AfterChapters -> stringResource(R.string.reader_sleep_chapters, timer.count)
+    is SleepTimerState.AfterChapters ->
+        stringResource(R.string.reader_sleep_chapters, timer.count).let { SleepTimerText(it, it) }
 }
 
 private val PLAY_BUTTON_SIZE = Dimens.PlayButton

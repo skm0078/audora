@@ -11,9 +11,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.speech.sherpa.CastSpeakers
@@ -22,6 +19,7 @@ import io.github.skm0078.audora.ui.theme.LinkOption
 import io.github.skm0078.audora.ui.theme.OptionBlock
 import io.github.skm0078.audora.ui.theme.OptionDivider
 import io.github.skm0078.audora.ui.theme.OptionGroup
+import io.github.skm0078.audora.ui.theme.namedSlider
 import io.github.skm0078.audora.ui.voices.megabytes
 import kotlin.math.roundToInt
 
@@ -80,10 +78,7 @@ private fun BlendAmountSlider(percent: Int, onChange: (Int) -> Unit) {
         value = stringResource(R.string.speech_blend_percent, dragged.roundToInt()),
     ) {
         Slider(
-            modifier = Modifier.semantics {
-                contentDescription = title
-                stateDescription = amount
-            },
+            modifier = Modifier.namedSlider(title, amount),
             value = dragged,
             onValueChange = { dragged = it },
             valueRange = range.first.toFloat()..range.last.toFloat(),

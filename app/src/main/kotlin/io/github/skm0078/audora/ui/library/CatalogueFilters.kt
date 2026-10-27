@@ -24,7 +24,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -48,6 +47,7 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.LibraryFacets
 import io.github.skm0078.audora.core.library.LibraryNarrow
 import io.github.skm0078.audora.core.library.LibraryQuery
+import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
 
 /** How many books each collection holds, from every book's collections. */
@@ -124,7 +124,7 @@ internal fun FilterSheet(
     val formatNames = facets.formats.associate { (format, _) -> format to stringResource(formatName(format)) }
     val languageNames = facets.languages.associate { (tag, _) -> tag to languageName(tag) }
     val collectionNames = collections.associate { it.id to it.name }
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = modifier) {
+    AppSheet(onDismissRequest = onDismiss, modifier = modifier) {
         LazyColumn(Modifier.navigationBarsPadding().padding(horizontal = Dimens.ScreenPadding)) {
             item {
                 Text(

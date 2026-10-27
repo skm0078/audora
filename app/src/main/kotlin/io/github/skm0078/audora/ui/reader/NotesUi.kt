@@ -7,6 +7,8 @@ package io.github.skm0078.audora.ui.reader
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -19,7 +21,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -34,11 +35,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.PronunciationRule
+import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.switchRow
 
@@ -76,7 +80,7 @@ fun NotesOverlays(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun BookmarksSheet(
     bookmarks: List<Bookmark>,
@@ -84,16 +88,18 @@ private fun BookmarksSheet(
     reader: ReaderActions,
     voice: VoiceNotesBinding,
 ) {
-    ModalBottomSheet(onDismissRequest = actions::hideList) {
+    AppSheet(onDismissRequest = actions::hideList) {
         Column(Modifier.navigationBarsPadding().padding(bottom = Dimens.SpaceL)) {
-            Row(
+            // Wraps "Bookmark here" under the title when both do not fit, rather than squeezing the title.
+            FlowRow(
                 Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl),
-                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                itemVerticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     stringResource(R.string.bookmarks_title),
                     style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.semantics { heading() },
                 )
                 TextButton(onClick = reader::onBookmarkHere) { Text(stringResource(R.string.bookmarks_add_here)) }
             }

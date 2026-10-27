@@ -15,9 +15,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.ui.kids.LocalKidsMode
+import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.HelpButton
 
@@ -62,8 +61,7 @@ internal fun BookMenu(
         )
     }
     if (!open) return
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(onDismissRequest = { open = false }, sheetState = sheetState) {
+    AppSheet(onDismissRequest = { open = false }, skipPartiallyExpanded = true) {
         val choose = { action: () -> Unit ->
             open = false
             action()

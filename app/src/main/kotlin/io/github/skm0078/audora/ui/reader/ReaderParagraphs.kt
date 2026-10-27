@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
@@ -94,14 +95,17 @@ internal fun Paragraph(
     val sentences = units.slice(range)
     val spans = remember(sentences) { sentenceSpans(sentences.map { it.text }) }
     val colors = MaterialTheme.colorScheme
+    var spoken = false
     val text = buildAnnotatedString {
         sentences.forEachIndexed { i, unit ->
             if (i > 0) append(SEPARATOR)
             val sentence =
                 sentenceLook(state, unit, range.first + i, look, spokenWord).copy(marked = isHighlighted(unit))
+            spoken = spoken || sentence.spoken
             append(sentenceText(unit.text, sentence, colors))
         }
     }
+    val now = stringResource(R.string.chapters_current)
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
     val enabled = state.playerReady
     val readLabel = stringResource(R.string.reader_read_from_here)
@@ -119,6 +123,7 @@ internal fun Paragraph(
             // reads from the paragraph's start, its long press opens the first sentence's menu, and its actions
             // menu reads from or opens any sentence.
             .semantics {
+                if (spoken) stateDescription = now
                 if (perSentence.isNotEmpty()) customActions = perSentence
                 if (enabled) {
                     onClick(readLabel) {

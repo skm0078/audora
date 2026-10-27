@@ -146,7 +146,7 @@ private fun OpenBook(
     val pageCount = document.pageCount
     var picking by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxSize()) {
-        PageBar(state.page, pageCount, actions, onPick = { picking = true })
+        PageBar(state.page, pageCount, actions, announce = !state.isReading, onPick = { picking = true })
         PageScrubber(state.page, pageCount, thumbnails, actions::onGoToPage)
         state.timeLeft?.let { TimeLeftLine(it, state.playback.speed) }
         Row(Modifier.align(Alignment.CenterHorizontally)) {
@@ -198,8 +198,12 @@ private fun OpenBook(
     }
 }
 
+/**
+ * [announce]: TalkBack says the new page when the listener turns it (not while reading, where it would talk over the
+ * voice at every page turn).
+ */
 @Composable
-private fun PageBar(page: Int, pageCount: Int, actions: ReaderActions, onPick: () -> Unit) {
+private fun PageBar(page: Int, pageCount: Int, actions: ReaderActions, announce: Boolean, onPick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
@@ -208,7 +212,10 @@ private fun PageBar(page: Int, pageCount: Int, actions: ReaderActions, onPick: (
         IconButton(onClick = actions::onPreviousPage, enabled = page > 0) {
             Icon(painterResource(R.drawable.ic_chevron_left), stringResource(R.string.reader_previous_page))
         }
-        TextButton(onClick = onPick) { Text(stringResource(R.string.reader_page_of, page + 1, pageCount)) }
+        TextButton(
+            onClick = onPick,
+            modifier = Modifier.semantics { if (announce) liveRegion = LiveRegionMode.Polite },
+        ) { Text(stringResource(R.string.reader_page_of, page + 1, pageCount)) }
         IconButton(onClick = actions::onNextPage, enabled = page < pageCount - 1) {
             Icon(painterResource(R.drawable.ic_chevron_right), stringResource(R.string.reader_next_page))
         }

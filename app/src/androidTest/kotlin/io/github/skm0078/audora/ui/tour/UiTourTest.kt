@@ -1,8 +1,9 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/tour/UiTourTest.kt
 // Purpose: A screenshot tour of the real app for UI reviews: every main screen in English, Hindi and Bengali at font
-//          sizes 1, 1.3 and 2 (and English in dark mode), on a common 6.7-inch phone screen. It fails on one thing
-//          only: a word broken across two lines, the sign of a squeezed row; a screen it cannot reach is logged and
-//          skipped. Runs only when asked (ui-tour.yml passes uiTour=true, and uiTourScales to tour fewer sizes).
+//          sizes 1, 1.3 and 2 (and English in dark mode), on a common 6.7-inch phone screen. It fails on a word
+//          broken across two lines, the sign of a squeezed row, and on what TalkBack would trip over
+//          (TalkBackAudit); a screen it cannot reach is logged and skipped. Runs only when asked (ui-tour.yml passes
+//          uiTour=true, and uiTourScales to tour fewer sizes).
 
 package io.github.skm0078.audora.ui.tour
 
@@ -54,6 +55,7 @@ class UiTourTest {
     private lateinit var pass: Pass
     private var shot = 0
     private val broken = mutableListOf<String>()
+    private val talkBack = linkedSetOf<String>()
 
     /** One language, font size and theme. */
     private data class Pass(val language: AppLanguage, val book: String, val fontScale: Float, val dark: Boolean) {
@@ -74,7 +76,13 @@ class UiTourTest {
             scenario?.close()
             restoreDevice()
         }
-        assertTrue("Words broken across lines (a squeezed row):\n" + broken.joinToString("\n"), broken.isEmpty())
+        writeTalkBackReport()
+        val report = listOf(
+            "Words broken across lines (a squeezed row)" to broken,
+            "TalkBack problems" to talkBack,
+        ).filter { it.second.isNotEmpty() }
+            .joinToString("\n") { (title, lines) -> "$title:\n" + lines.joinToString("\n") }
+        assertTrue(report, report.isEmpty())
     }
 
     private fun runPass(next: Pass) {
@@ -106,7 +114,7 @@ class UiTourTest {
         runCatching(block).onFailure { failure ->
             Log.w(TAG, "${pass.name}: could not tour $name: ${failure.message}")
             runCatching {
-                capture("$name-failed")
+                capture("$name$FAILED")
                 backToTabs()
             }.onFailure { Log.w(TAG, "${pass.name}: could not get back to the tabs: ${it.message}") }
         }
@@ -188,6 +196,7 @@ class UiTourTest {
         capture("reader-more-menu")
         JourneyDevice.pressBackKey()
         settle()
+        readerSheets()
         // Clickable only: in Bengali the time-left line also holds the speed word and sits first.
         tap(hasText(speedButtonText(), substring = true) and hasClickAction())
         settle()
@@ -203,10 +212,42 @@ class UiTourTest {
         tryTap(hasContentDescription(text(R.string.reader_play)))
     }
 
+    /** The reader's sheets: from its top bar, then from its More menu. */
+    private fun readerSheets() {
+        opened("chapters-sheet", hasContentDescription(text(R.string.chapters_title)))
+        opened("bookmarks-sheet", hasContentDescription(text(R.string.bookmarks_title)))
+        for ((name, item) in listOf(
+            "page-text" to R.string.page_text_title,
+            "search" to R.string.search_action,
+            "up-next" to R.string.up_next_title,
+        )) {
+            opened(name, hasContentDescription(text(R.string.reader_more)), hasText(text(item)))
+        }
+    }
+
+    /**
+     * Taps [path] in turn, captures what opened and goes back. A step with nothing to tap ends it uncaptured; Back is
+     * pressed only once something opened, so a missing button never backs out of the screen.
+     */
+    private fun opened(name: String, vararg path: SemanticsMatcher) {
+        val taps = path.takeWhile { step -> runCatching { tap(step) }.isSuccess }.size
+        if (taps == path.size) capture(name) else Log.w(TAG, "${pass.name}: could not open $name")
+        if (taps > 0) back()
+    }
+
+    /** A book's menu and details sheet, from its row in the library. */
+    private fun bookSheets() {
+        val menu = hasContentDescription(textBefore(R.string.library_book_menu_named), substring = true)
+        opened("book-menu", menu)
+        opened("book-details", menu, hasText(text(R.string.book_details_title)))
+        backToTabs()
+    }
+
     /** The full player, from the mini player on the library once the reader is closed. */
     private fun player() {
         backToTabs()
         capture("library-with-book")
+        bookSheets()
         // The mini player sits under the content, so its "Page 3 of 9" is the last one on screen.
         // Tap the clickable surface that holds it, not the text itself.
         val where = hasClickAction() and
@@ -242,6 +283,15 @@ class UiTourTest {
     private fun capture(name: String) {
         save(name, screenshot())
         checkWords(name)
+        if (!name.endsWith(FAILED)) checkTalkBack(name)
+    }
+
+    /** Every window on screen; a menu needs no heading. Each problem is reported once per screen and language. */
+    private fun checkTalkBack(name: String) {
+        val roots = runCatching { rule.onAllNodes(isRoot()).fetchSemanticsNodes() }.getOrDefault(emptyList())
+        talkBackProblems(roots, needsHeading = !name.endsWith(MENU)).forEach { problem ->
+            if (talkBack.add("${pass.language.tag} $name: $problem")) Log.w(TAG, "${pass.name} $name: $problem")
+        }
     }
 
     /** Every text on screen, the topmost window included; the test books' file names are long and may wrap anywhere. */
@@ -250,8 +300,27 @@ class UiTourTest {
             rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true)
                 .fetchSemanticsNodes()
         }.getOrDefault(emptyList()).forEach { node ->
-            brokenWords(node).filterNot { BOOK_FILE in it }.forEach { broken += "${pass.name} $name: $it" }
+            brokenWords(node).filterNot { BOOK_FILE in it }.forEach {
+                broken += "${pass.name} $name: $it"
+                Log.w(TAG, "${pass.name} $name: broken word: $it")
+            }
         }
+    }
+
+    /** Every TalkBack problem, also as a file beside the screenshots, so a review can read it with them. */
+    private fun writeTalkBackReport() {
+        runCatching {
+            val values = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, TALKBACK_REPORT)
+                put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+                put(MediaStore.Downloads.RELATIVE_PATH, FOLDER)
+            }
+            val resolver = app.contentResolver
+            val uri = requireNotNull(resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values))
+            requireNotNull(resolver.openOutputStream(uri)).bufferedWriter().use { out ->
+                talkBack.forEach { out.appendLine(it) }
+            }
+        }.onFailure { Log.w(TAG, "Could not write $TALKBACK_REPORT: ${it.message}") }
     }
 
     private fun screenshot(): Bitmap =
@@ -343,6 +412,9 @@ class UiTourTest {
         const val ARG = "uiTour"
         const val SCALES_ARG = "uiTourScales"
         const val BOOK_FILE = "udhr"
+        const val TALKBACK_REPORT = "talkback.txt"
+        const val FAILED = "-failed"
+        const val MENU = "-menu"
         const val FOLDER = "Download/ListenLock-screens/tour"
         const val PERCENT = 100
 

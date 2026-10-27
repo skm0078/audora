@@ -1,6 +1,6 @@
 // File: app/src/test/kotlin/io/github/skm0078/audora/ui/reader/ReaderAccessibilityTest.kt
-// Purpose: TalkBack's page scrubber turns one page per swipe, and its sentence actions name each sentence by its
-//          first words.
+// Purpose: TalkBack's page scrubber turns one page per swipe, its sentence actions name each sentence by its first
+//          words, and the sleep timer's time left is said in whole minutes.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -32,5 +32,15 @@ class ReaderAccessibilityTest {
             "सभी मनुष्यों को गौरव और अधिकारों…",
             sentencePreview("सभी मनुष्यों को गौरव और अधिकारों के मामले में"),
         )
+    }
+
+    @Test
+    fun `the sleep timer is said in whole minutes, rounded up, never zero`() {
+        assertEquals(15, minutesLeft(15 * 60_000L))
+        assertEquals(15, minutesLeft(14 * 60_000L + 1))
+        assertEquals(1, minutesLeft(59_000L))
+        assertEquals(1, minutesLeft(0L))
+        assertEquals(1, minutesLeft(-5_000L))
+        assertEquals(75, minutesLeft(75 * 60_000L))
     }
 }

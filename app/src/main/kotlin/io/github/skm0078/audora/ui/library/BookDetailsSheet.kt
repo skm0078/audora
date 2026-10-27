@@ -20,7 +20,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,6 +39,7 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.core.library.DocumentFormat
 import io.github.skm0078.audora.ui.made.MadeFromBook
+import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
 import java.util.Locale
 
@@ -88,7 +88,7 @@ internal fun BookDetailsSheet(
         onDismiss()
         action()
     }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    AppSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
