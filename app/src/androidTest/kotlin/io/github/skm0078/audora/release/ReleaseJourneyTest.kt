@@ -4,7 +4,8 @@
 //          media controls a notification or lock screen sends and its own buttons (CF-1), a new voice, a book's
 //          language and a reading setting applying at once, Settings rows, pages and Back, Hide app content, the
 //          ListenLock name, a scan read after the OCR download, the e-book formats and comic archives of ADR
-//          2026-10-26-more-ebook-formats, and the cover inside exported audiobooks. One test on one fresh install, as
+//          2026-10-26-more-ebook-formats, the cover inside exported audiobooks and the app's own font in English, Hindi
+//          and Bengali. One test on one fresh install, as
 //          one listener would use the app: AndroidJUnitRunner finishes every activity between tests, so the steps are
 //          named blocks inside it and the first broken one stops it.
 
@@ -13,6 +14,8 @@ package io.github.skm0078.audora.release
 import android.Manifest
 import android.app.Activity
 import android.graphics.BitmapFactory
+import android.graphics.Paint
+import android.graphics.Typeface
 import android.media.MediaMetadataRetriever
 import android.os.Bundle
 import android.util.Log
@@ -71,12 +74,14 @@ import io.github.skm0078.audora.ui.reader.ReadingPosition
 import io.github.skm0078.audora.ui.share.ShareCardActivity
 import io.github.skm0078.audora.ui.share.ShareCardFiles
 import io.github.skm0078.audora.ui.share.ShareEntry
+import io.github.skm0078.audora.ui.theme.AppFont
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -113,6 +118,7 @@ class ReleaseJourneyTest {
             step("15 Open with reads a DjVu's text and makes a DjVu scan a photo book", ::openWithReadsDjvuBooks)
             step("16 Supertonic's licence rules show before its download", ::supertonicRulesShowBeforeItsDownload)
             step("17 an exported chapter carries the book's cover", ::anExportedChapterCarriesTheCover)
+            step("18 the app font draws English, Hindi and Bengali", ::theAppFontDrawsAllThreeScripts)
             step("19 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
         } finally {
             JourneyDevice.onMain {
@@ -552,6 +558,22 @@ class ReleaseJourneyTest {
         }
     }
 
+    /** Each weight loads from the APK and each script draws in Anek; a failed load measures like the phone's sans. */
+    private fun theAppFontDrawsAllThreeScripts() {
+        AppFont.Weight.entries.forEach { weight ->
+            val anek = requireNotNull(AppFont.typeface(app, weight)) { "${weight.name} did not load" }
+            listOf(FONT_ENGLISH, FONT_HINDI, FONT_BENGALI).forEach { sample ->
+                val phone = widthOf(sample, Typeface.SANS_SERIF)
+                assertNotEquals("${weight.name} draws '$sample' in the app font", phone, widthOf(sample, anek))
+            }
+        }
+    }
+
+    private fun widthOf(text: String, face: Typeface): Float = Paint().apply {
+        typeface = face
+        textSize = FONT_TEXT_SIZE
+    }.measureText(text)
+
     /** False (logged, the step passes) on a build with only one English voice. */
     private fun chooseAnotherEnglishVoice(): Boolean {
         val library = VoiceLibrary.get(app)
@@ -655,6 +677,10 @@ class ReleaseJourneyTest {
         const val VOICE_RESTART = "Reading voices changed; restarting the sentence"
         const val LANGUAGE_RESTART = "Book language changed"
         const val EXPORT_RATE = 22_050
+        const val FONT_TEXT_SIZE = 48f
+        const val FONT_ENGLISH = "Listen to every book"
+        const val FONT_HINDI = "हर किताब सुनिए"
+        const val FONT_BENGALI = "প্রতিটি বই শুনুন"
         const val OTHER_BOOK_LANGUAGE = "fr"
         const val TEXT_REREAD = "Reading text settings changed; reading the open book again"
         const val LOCK_SCREEN_BOOKMARK = "Lock screen bookmark added"

@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/licences/FontCredit.kt
-// Purpose: The fonts bundled for the text view (CF-5), credited on "Voices & licences" as their licence asks.
+// Purpose: The bundled fonts (the app's own type and the text view's, CF-5), credited on "Voices & licences" as their
+//          licence asks.
 
 package io.github.skm0078.audora.ui.licences
 
@@ -16,6 +17,11 @@ import io.github.skm0078.audora.R
 internal data class FontCredit(val name: String, val copyright: String, val url: String)
 
 internal val BUNDLED_FONTS = listOf(
+    FontCredit(
+        "Anek (Latin, Devanagari, Bangla)",
+        "Copyright 2021 The Anek Project Authors (https://github.com/EkType/Anek)",
+        "https://github.com/EkType/Anek",
+    ),
     FontCredit(
         "Atkinson Hyperlegible",
         "Copyright 2020 Braille Institute of America, Inc.",
