@@ -349,9 +349,6 @@
     <!-- App shell and screens (ADR-036) -->
     <string name="tab_library">Library</string>
     <string name="tab_notes">Notes</string>
-    <string name="tab_made">Made</string>
-    <string name="tab_you">You</string>
-    <string name="sidebar_collections">Your collections</string>
     <string name="library_add_to_up_next">Add to Up next</string>
     <string name="library_status_new">New</string>
     <string name="library_status_finished">Finished</string>

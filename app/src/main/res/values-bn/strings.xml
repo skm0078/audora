@@ -353,9 +353,6 @@
     <!-- App shell and screens (ADR-036) -->
     <string name="tab_library">লাইব্রেরি</string>
     <string name="tab_notes">নোট</string>
-    <string name="tab_made">সৃষ্টি</string>
-    <string name="tab_you">আপনি</string>
-    <string name="sidebar_collections">আপনার সংগ্রহ</string>
     <string name="library_add_to_up_next">এরপর শোনার তালিকায় যোগ করুন</string>
     <string name="library_status_new">নতুন</string>
     <string name="library_status_finished">শেষ</string>
