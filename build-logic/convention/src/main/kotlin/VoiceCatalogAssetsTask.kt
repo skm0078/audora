@@ -109,6 +109,7 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
             "credit" to entry.text("credit"),
             "licenceUrl" to entry.text("licenceUrl"),
             "sourceUrl" to entry.text("sourceUrl"),
+            "useTerms" to useTerms(id, entry),
             "recommended" to recommended.toString(),
             "contentVersion" to sha256,
             "url" to "$baseUrl$file",
@@ -137,6 +138,13 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
             entry["threads"] != null && ((entry["threads"] as? Number)?.toInt() ?: 0) <= 0 ->
                 fail("$id: threads must be a number > 0")
         }
+    }
+
+    /** Use terms the user agrees to before downloading (a model licence with use restrictions, e.g. OpenRAIL-M). */
+    private fun useTerms(id: String, entry: Map<String, Any?>): String? {
+        val terms = entry["useTerms"]?.toString() ?: return null
+        if (terms !in USE_TERMS) fail("$id: useTerms must be one of $USE_TERMS")
+        return terms
     }
 
     /**
@@ -176,5 +184,6 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
         val NEEDS_ENGINE_LANG = setOf("kokoro", "supertonic")
         val CREDIT_LINKS = listOf("licenceUrl", "sourceUrl")
         val FEELING = Regex("[A-Z]+")
+        val USE_TERMS = setOf("openrail-m")
     }
 }

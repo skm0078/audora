@@ -15,6 +15,7 @@ import java.util.Properties
  *
  * @property credits for the licences screen (P3-06); null only for an asset written by an older build.
  * @property recommended its language's suggested download (speech/models.json `recommended`, ADR-030).
+ * @property useTerms terms the user agrees to before the download starts; null for a plain licence.
  */
 data class CatalogVoice(
     val spec: SherpaVoiceSpec,
@@ -23,6 +24,7 @@ data class CatalogVoice(
     override val sizeBytes: Long,
     val credits: VoiceCredits? = null,
     val recommended: Boolean = false,
+    val useTerms: VoiceUseTerms? = null,
 ) : PinnedFile {
     override val id: String get() = spec.id
 }
@@ -54,6 +56,7 @@ object CatalogVoiceParser {
     private const val KEY_SHA256 = "sha256"
     private const val KEY_SIZE = "sizeBytes"
     private const val KEY_RECOMMENDED = "recommended"
+    private const val KEY_USE_TERMS = "useTerms"
     private const val HTTPS = "https://"
     private val SHA256_HEX = Regex("[0-9a-f]{64}")
 
@@ -62,12 +65,18 @@ object CatalogVoiceParser {
             val url = properties.getProperty(KEY_URL)?.trim().orEmpty()
             val sha256 = properties.getProperty(KEY_SHA256)?.trim()?.lowercase().orEmpty()
             val size = properties.getProperty(KEY_SIZE)?.trim()?.toLongOrNull()
+            val terms = properties.getProperty(KEY_USE_TERMS)?.trim()
+            val useTerms = terms?.let(VoiceUseTerms::fromKey)
             when {
                 !url.startsWith(HTTPS) -> Outcome.Failure("catalog voice ${spec.id} needs an https url, has '$url'")
 
                 !SHA256_HEX.matches(sha256) -> Outcome.Failure("catalog voice ${spec.id} has an invalid sha256")
 
                 size == null || size <= 0 -> Outcome.Failure("catalog voice ${spec.id} has an invalid sizeBytes")
+
+                // A voice whose terms this build cannot show is left out rather than offered without them.
+                terms != null && useTerms == null ->
+                    Outcome.Failure("catalog voice ${spec.id} has unknown useTerms '$terms'")
 
                 else -> Outcome.Success(
                     CatalogVoice(
@@ -77,6 +86,7 @@ object CatalogVoiceParser {
                         sizeBytes = size,
                         credits = VoiceCredits.parse(properties),
                         recommended = properties.getProperty(KEY_RECOMMENDED)?.trim().toBoolean(),
+                        useTerms = useTerms,
                     ),
                 )
             }

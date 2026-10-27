@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_use_terms.xml -->
+<!-- Purpose: A voice's use terms, agreed to before its download (OpenRAIL-M, 2026-10-27 licence audit), and the
+     licences of the PDF and DjVu readers on "Voices & licences". -->
+<resources>
+    <!-- %1$s: the voice, e.g. "Hindi, Supertonic 3". -->
+    <string name="use_terms_title">Rules for %1$s</string>
+    <string name="use_terms_openrail_m">This voice\'s licence (OpenRAIL-M) lets you use it freely, but never to:\n• break the law\n• harm or exploit children\n• spread false or private information that hurts someone\n• harass, insult or defame people\n• sound like a real person without their consent\n• give medical advice\n• make automatic decisions about someone\'s legal rights, or for policing, courts, immigration or asylum\n• single people out for who they are\n\nIf you share audio made with it, say that a computer voice read it. Downloading means you agree to these rules.</string>
+    <string name="use_terms_agree">Agree and download</string>
+    <string name="use_terms_cancel">Cancel</string>
+    <string name="use_terms_read_licence">Read the full licence</string>
+    <string name="licences_bsd3_apache">BSD 3-Clause License and Apache License 2.0; its full notice comes with the app</string>
+    <string name="licences_gpl2_later">GNU General Public License v2.0 or later; its full text comes with the app</string>
+</resources>

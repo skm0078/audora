@@ -101,7 +101,8 @@ data class LicenceText(val name: String, val text: String)
 
 /** Reads the attribution files a voice's folder carries (the mirror and the importer keep exactly these). */
 object LicenceTexts {
-    val FILE_NAMES = listOf("LICENSE", "MODEL_CARD", "README.md")
+    /** MODEL_LICENSE: a model's own licence added by the voice mirror when its archive has only its code's. */
+    val FILE_NAMES = listOf("MODEL_LICENSE", "LICENSE", "MODEL_CARD", "README.md")
 
     /** A licence or model card is a few kilobytes; anything far larger is not one and is cut. */
     const val MAX_CHARS = 64 * 1024

@@ -8,6 +8,7 @@ import io.github.skm0078.audora.speech.sherpa.CastSpeakers
 import io.github.skm0078.audora.speech.sherpa.SherpaFamily
 import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -71,6 +72,15 @@ class VoiceRowsTest {
         val hindiRows = rows.filter { it.lang == Lang.HI }
         assertEquals(listOf("supertonic-hi", "piper-hi-test"), hindiRows.map { it.id.name })
         assertEquals(listOf(true, false), hindiRows.map { it.recommended })
+    }
+
+    @Test
+    fun `a download's use terms reach its row`() {
+        val supertonic = catalogVoice(ByteArray(30), "supertonic-hi", Lang.HI).copy(useTerms = VoiceUseTerms.OPENRAIL_M)
+        val rows = VoiceRows.build(bundled, VoiceCatalog(listOf(cori, supertonic)), emptyList(), emptyMap(), emptyMap())
+
+        assertEquals(VoiceUseTerms.OPENRAIL_M, rows.single { it.id.name == "supertonic-hi" }.useTerms)
+        assertNull(rows.single { it.id.name == "piper-en-cori" }.useTerms)
     }
 
     @Test

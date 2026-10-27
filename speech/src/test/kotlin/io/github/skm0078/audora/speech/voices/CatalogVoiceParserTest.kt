@@ -46,6 +46,14 @@ class CatalogVoiceParserTest {
     }
 
     @Test
+    fun `use terms are read, and a voice with terms this build does not know is left out`() {
+        val voice = requireNotNull(CatalogVoiceParser.parse(entry("useTerms" to "openrail-m")).getOrNull())
+        assertEquals(VoiceUseTerms.OPENRAIL_M, voice.useTerms)
+        assertNull(requireNotNull(CatalogVoiceParser.parse(entry()).getOrNull()).useTerms)
+        assertTrue(CatalogVoiceParser.parse(entry("useTerms" to "some-new-licence")) is Outcome.Failure)
+    }
+
+    @Test
     fun `credits and the recommended flag are read when present`() {
         val voice = requireNotNull(
             CatalogVoiceParser.parse(

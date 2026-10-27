@@ -1,0 +1,3 @@
+en: The Piper Google Bengali voice was removed because of its licence; Bengali reads with SYSPIN unless you pick another voice. Before Supertonic downloads, ListenLock now shows the rules of its licence.
+hi: Piper Google बांग्ला आवाज़ उसके लाइसेंस की वजह से हटा दी गई है; बांग्ला SYSPIN से पढ़ी जाएगी, जब तक आप कोई और आवाज़ न चुनें। Supertonic डाउनलोड होने से पहले ListenLock अब उसके लाइसेंस के नियम दिखाता है।
+bn: Piper Google বাংলা ভয়েসটি তার লাইসেন্সের কারণে সরানো হয়েছে; অন্য ভয়েস না বাছলে বাংলা SYSPIN দিয়ে পড়া হবে। Supertonic ডাউনলোডের আগে ListenLock এখন তার লাইসেন্সের নিয়ম দেখায়।

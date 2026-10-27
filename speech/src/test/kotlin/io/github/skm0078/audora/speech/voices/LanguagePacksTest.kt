@@ -49,12 +49,13 @@ class LanguagePacksTest {
 
     @Test
     fun `a simple build hides unsettled voices unless they are already chosen or on the phone`() {
-        val simple = VoiceListConfig(simple = true)
+        val simple = VoiceListConfig(simple = true, hiddenIds = setOf("piper-bn-google"))
         val rows = listOf(english, supertonic, syspin, google)
         assertEquals(listOf(english, supertonic, syspin), simple.visible(rows))
         val kept = google.copy(status = VoiceStatus.Installed)
         assertTrue(kept in simple.visible(listOf(kept)))
         assertFalse(simple.canImport)
+        assertTrue(VoiceListConfig(simple = true).hiddenIds.isEmpty())
         assertEquals(rows, VoiceListConfig().visible(rows))
         assertTrue(VoiceListConfig().canImport)
     }

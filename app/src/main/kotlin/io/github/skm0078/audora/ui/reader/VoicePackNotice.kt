@@ -32,8 +32,10 @@ import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.speech.voices.VoiceStatus
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.voices.PackStatus
+import io.github.skm0078.audora.ui.voices.UseTermsDialog
 import io.github.skm0078.audora.ui.voices.languageName
 import io.github.skm0078.audora.ui.voices.megabytes
+import io.github.skm0078.audora.ui.voices.rememberUseTermsGate
 
 /**
  * Shown while the page is mostly in a language whose pack is not on the phone and nothing more urgent is up (a null
@@ -46,6 +48,8 @@ internal fun VoicePackNotice(units: List<ReadingUnit>, offer: VoicePackOffer?) {
     val pack = offer?.packFor(units) ?: return
     val lang = pack.lang
     val language = stringResource(languageName(lang))
+    val terms = rememberUseTermsGate(offer.actions.onDownload)
+    UseTermsDialog(terms)
     Card(modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS)) {
         Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
             Text(
@@ -67,7 +71,7 @@ internal fun VoicePackNotice(units: List<ReadingUnit>, offer: VoicePackOffer?) {
                         offer.actions.onCancel(pack.voice)
                     }) { Text(stringResource(R.string.voices_cancel)) }
                 } else {
-                    Button(onClick = { offer.actions.onDownload(pack.voice) }) {
+                    Button(onClick = { terms.request(pack.voice) }) {
                         Text(stringResource(R.string.voice_pack_download))
                     }
                     TextButton(onClick = { offer.onLater(lang) }) {
