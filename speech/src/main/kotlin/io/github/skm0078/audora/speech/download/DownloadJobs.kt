@@ -1,6 +1,6 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/download/DownloadJobs.kt
 // Purpose: Every model download (voices, tutor, dictionaries, text recognition, punctuation, voice commands, acted
-//          voices) in one list, for the Jobs screen: what it is, how far it is, and a way to stop it.
+//          voices, the story brain) in one list, for the Jobs screen: what it is, how far it is, and a way to stop it.
 
 package io.github.skm0078.audora.speech.download
 
@@ -11,6 +11,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkQuery
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.speech.acted.ActedVoiceDownloadWorker
+import io.github.skm0078.audora.speech.brain.StoryBrainDownloadWorker
 import io.github.skm0078.audora.speech.dictionary.DictionaryDownloadWorker
 import io.github.skm0078.audora.speech.kws.VoiceCommandDownloadWorker
 import io.github.skm0078.audora.speech.listen.ListenDownloadWorker
@@ -30,6 +31,7 @@ enum class DownloadKind(internal val worker: Class<*>) {
     PUNCTUATION(PunctuationDownloadWorker::class.java),
     VOICE_COMMANDS(VoiceCommandDownloadWorker::class.java),
     ACTED_VOICE(ActedVoiceDownloadWorker::class.java),
+    STORY_BRAIN(StoryBrainDownloadWorker::class.java),
 }
 
 /**

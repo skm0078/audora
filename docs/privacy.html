@@ -13,7 +13,7 @@
 <body>
 <h1>ListenLock privacy policy</h1>
 <p><a href="./">ListenLock home</a></p>
-<p>Last updated: 24 October 2026</p>
+<p>Last updated: 26 October 2026</p>
 
 <p>ListenLock is a free, open-source Android app that reads PDFs, e-books, documents and pictures of pages aloud. It is
 published on Google Play by the developer TelosMind Labs. In short: <strong>ListenLock does not collect, store on any server, or share any information about
@@ -27,7 +27,8 @@ you.</strong> Everything it does happens on your phone.</p>
     Android's photo picker, so the app sees only the ones you pick, never the rest of your gallery.</li>
   <li>Text you send to ListenLock from another app: text you share to it, text you select and read with
     <em>Read aloud</em>, and copied text. The clipboard is read only when you tap <em>Read copied text</em>.</li>
-  <li>Your library, reading positions, bookmarks, notes and settings.</li>
+  <li>Your library, reading positions, bookmarks, notes and settings, and for <em>Listening stats</em> how many
+    minutes you listened on each day (never which book or when in the day). <em>Clear stats</em> forgets them.</li>
   <li>Audio from the microphone, only when you use a feature that listens: voice commands and practice features
     turn speech into text on the phone and keep no recording; a voice note you record is saved in the app on your
     phone until you delete it. No audio is ever sent anywhere.</li>
@@ -46,6 +47,11 @@ does not reach Google's backup either.</p>
     covered by that place's own terms, and anyone who can open it can read it.</li>
   <li><strong>Exports</strong> (talking books, clips, notes) are saved in your phone's shared folders or sent with the
     share sheet to an app you pick. Other apps with access to those folders can read them.</li>
+  <li><strong>Sync through a folder</strong> (library menu) writes your reading places, bookmarks, highlights and
+    notes, and copies of your books if you leave that on, as plain files into a folder you pick, so your other
+    devices can read them there. ListenLock itself sends nothing anywhere: if that folder belongs to a cloud app
+    (Google Drive, Dropbox, OneDrive or another), that app uploads the files under its own terms, and anyone it
+    shares the folder with can read them. Stopping sync leaves the folder and its files for you to keep or delete.</li>
   <li>If you lose your phone or uninstall the app without a backup, your library and notes are gone.</li>
   <li>The books you open are your own; you are responsible for having the right to use them.</li>
 </ul>
@@ -60,7 +66,13 @@ over HTTPS from GitHub (github.com and its download servers, such as raw.githubu
 against a fingerprint built into the app before it is used. These requests carry only the file's address and the
 app's name, never anything about you or your documents. Like any web request, GitHub sees your IP address, under
 <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's own
-privacy statement</a>. Nothing else in the app uses the internet.</p>
+privacy statement</a>.</p>
+<p>When you tap <em>Read a web page</em>, choose to read a link you shared to ListenLock, or tap <em>Download</em> in
+<em>Free book catalogues</em>, ListenLock fetches that one page or book over HTTPS, straight from the website you chose
+(Project Gutenberg, for example, or a catalogue address you added). The request carries only the address, the app's
+name and the file types it can read: no cookies, no account, and nothing about you or your other books. That website
+sees your IP address, under its own privacy policy. A web page is kept only as its article, a text book in your
+library; nothing is fetched in the background or ahead of time. Nothing else in the app uses the internet.</p>
 <p>Languages without a downloaded voice can be read by your phone's own text-to-speech engine. ListenLock only uses
 that engine's voices that work offline, so the text stays on the phone.</p>
 

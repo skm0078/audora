@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: playback/src/main/res/values/strings_lockscreen.xml -->
+<!-- Purpose: What TalkBack says for the notification's and lock screen's buttons (CF-1). -->
+<resources>
+    <string name="lockscreen_previous">Previous sentence</string>
+    <string name="lockscreen_next">Next sentence</string>
+    <string name="lockscreen_bookmark">Bookmark this sentence</string>
+    <string name="lockscreen_bookmarked">Bookmarked</string>
+</resources>

@@ -16,7 +16,9 @@ package io.github.skm0078.audora.core.config
  * @property retryMaxMs the longest wait between two tries of a file.
  * @property extensions file name endings taken as books when the provider's type says nothing more specific. Text
  *   files, Markdown, web pages and pictures are left out: a folder of books often holds READMEs, notes, saved
- *   pages and covers that are not books. Word, OpenDocument and RTF documents are books (ADR-066).
+ *   pages and covers that are not books. Word, OpenDocument and RTF documents are books (ADR-066), and so are FB2,
+ *   Kindle and Mobipocket books and CHM help files (ADR 2026-10-26-more-ebook-formats). Comic archives are not
+ *   watched: each becomes a new photo book, which is made only when the listener asks for it.
  * @property mimeTypes provider types taken as books.
  */
 data class WatchedFolderConfig(
@@ -26,7 +28,9 @@ data class WatchedFolderConfig(
     val minScanIntervalMs: Long = 180_000L,
     val retryBaseMs: Long = 3_600_000L,
     val retryMaxMs: Long = 604_800_000L,
-    val extensions: Set<String> = setOf("pdf", "epub", "docx", "odt", "rtf"),
+    val extensions: Set<String> = setOf(
+        "pdf", "epub", "docx", "odt", "rtf", "fb2", "mobi", "azw3", "azw", "prc", "chm",
+    ),
     val mimeTypes: Set<String> = setOf(
         "application/pdf",
         "application/epub+zip",
@@ -34,6 +38,10 @@ data class WatchedFolderConfig(
         "application/vnd.oasis.opendocument.text",
         "application/rtf",
         "text/rtf",
+        "application/x-fictionbook+xml",
+        "application/x-mobipocket-ebook",
+        "application/vnd.amazon.mobi8-ebook",
+        "application/vnd.ms-htmlhelp",
     ),
 ) {
     init {

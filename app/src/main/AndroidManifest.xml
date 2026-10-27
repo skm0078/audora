@@ -85,6 +85,46 @@
                 <data android:mimeType="image/heic" />
                 <data android:mimeType="image/heif" />
             </intent-filter>
+            <!-- E-books from other readers (ADR 2026-10-26-more-ebook-formats): FB2, Kindle and Mobipocket without DRM
+                 (MOBI, AZW3, AZW, PRC) and PalmDOC, CHM help files, and comic archives (CBZ), which become photo books.
+                 Their own filters, so the lists above stay as they were. Checked by first bytes like every book. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/x-fictionbook+xml" />
+                <data android:mimeType="application/x-fictionbook" />
+                <data android:mimeType="application/x-fb2" />
+                <data android:mimeType="text/fb2+xml" />
+                <data android:mimeType="application/x-zip-compressed-fb2" />
+                <data android:mimeType="application/x-mobipocket-ebook" />
+                <data android:mimeType="application/vnd.amazon.ebook" />
+                <data android:mimeType="application/vnd.amazon.mobi8-ebook" />
+                <data android:mimeType="application/x-mobi8-ebook" />
+                <data android:mimeType="application/vnd.palm" />
+                <data android:mimeType="application/vnd.ms-htmlhelp" />
+                <data android:mimeType="application/x-chm" />
+                <data android:mimeType="application/vnd.comicbook+zip" />
+                <data android:mimeType="application/x-cbz" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/x-fictionbook+xml" />
+                <data android:mimeType="application/x-fictionbook" />
+                <data android:mimeType="application/x-fb2" />
+                <data android:mimeType="text/fb2+xml" />
+                <data android:mimeType="application/x-zip-compressed-fb2" />
+                <data android:mimeType="application/x-mobipocket-ebook" />
+                <data android:mimeType="application/vnd.amazon.ebook" />
+                <data android:mimeType="application/vnd.amazon.mobi8-ebook" />
+                <data android:mimeType="application/x-mobi8-ebook" />
+                <data android:mimeType="application/vnd.palm" />
+                <data android:mimeType="application/vnd.ms-htmlhelp" />
+                <data android:mimeType="application/x-chm" />
+                <data android:mimeType="application/vnd.comicbook+zip" />
+                <data android:mimeType="application/x-cbz" />
+            </intent-filter>
             <!-- Several pictures shared at once (the pages of a chapter) become one book (ADR-066). -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
@@ -113,6 +153,15 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_resume_info" />
+        </receiver>
+
+        <!-- The service's listening reports count the widget's time left down (CF-7); no other app can reach it. -->
+        <receiver
+            android:name=".widget.WidgetListeningReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="io.github.skm0078.audora.action.LISTENED" />
+            </intent-filter>
         </receiver>
 
         <!-- Quick Settings tile (plan item 36): play or pause through the media session, or resume the last book. -->

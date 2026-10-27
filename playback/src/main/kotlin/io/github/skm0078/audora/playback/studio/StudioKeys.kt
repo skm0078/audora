@@ -24,6 +24,8 @@ import java.security.MessageDigest
  * @property audioVersion [STUDIO_AUDIO_VERSION] when it was rendered: an app update keeps audio that still sounds the
  *   same and drops the rest (ADR-064).
  * @property punctuation whether the punctuation model is installed: it changes how scanned run-ons are read (RI-11).
+ * @property phoneLanguage the book's language when the phone's voice reads it (ADR 2026-10-26); null for a book in
+ *   English, Hindi or Bengali, which then keeps the hash it had before phone languages.
  */
 data class StudioSignature(
     val pipelineVersion: Int,
@@ -32,6 +34,7 @@ data class StudioSignature(
     val voices: Map<Lang, VoiceId?>,
     val fixes: String,
     val punctuation: Boolean = false,
+    val phoneLanguage: String? = null,
 ) {
     /** 16 hex digits of SHA-256 over every field: the folder name, safe to log. */
     val hash: String by lazy {
@@ -47,7 +50,7 @@ data class StudioSignature(
             "voices=$voiceLine",
             "fixes=$fixes",
             "punct=$punctuation",
-        ).joinToString("|")
+        ).plus(listOfNotNull(phoneLanguage?.let { "phone=$it" })).joinToString("|")
         StudioKeys.hex(line, HASH_CHARS)
     }
 

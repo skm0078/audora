@@ -30,10 +30,9 @@ fun rememberBatterySetup(scope: CoroutineScope): BatterySetupController {
 fun BatterySetupRoute(battery: BatterySetupController, navigateBack: () -> Unit) {
     val activity = LocalContext.current
     BatterySetupScreen(
-        exempt = battery.exempt,
-        brand = battery.brand,
+        access = battery.access,
         steps = battery.steps,
-        onAllow = { battery.requestExemption(activity::startActivity) },
+        onAllow = { battery.allow(activity::startActivity) },
         onOpenAppSettings = { battery.openAppSettings(activity::startActivity) },
         onBack = navigateBack,
     )

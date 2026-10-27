@@ -57,8 +57,12 @@ data class ReadingLook(
 /** How the spoken sentence stands out: a tinted band, an underline, or bold type alone. */
 enum class HighlightStyle { FILL, UNDERLINE, BOLD }
 
-/** The text view's typeface: the book-like serif, or sans for screens and for some dyslexic readers. */
-enum class ReadingFont { SERIF, SANS }
+/**
+ * The text view's typeface: the book-like serif, sans for screens, or one of two faces made for readers who confuse
+ * letters (CF-5): Atkinson Hyperlegible, whose look-alike letters (I l 1, b d p q) are drawn apart, and OpenDyslexic,
+ * whose weighted bottoms keep letters from flipping. Saved by name, so the order here can change.
+ */
+enum class ReadingFont { SERIF, SANS, ATKINSON_HYPERLEGIBLE, OPEN_DYSLEXIC }
 
 /** Line spacing, as a factor on the reading style's own (taller than usual for Indic marks). */
 enum class LineSpacing(val factor: Float) {

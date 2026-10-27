@@ -180,6 +180,8 @@ data class DeliveryConfig(
         // ADR-076: tuned by ear on rendered story passages (samples in the project's audora/samples/character-voices).
         val DEFAULT_EFFECTS = mapOf(
             Feeling.LOUD to FeelingEffect(rate = 1.05f, gainDb = 3f, semitones = 1f),
+            // ADR story-brain: the story brain's anger, kept apart from LOUD by its lower pitch.
+            Feeling.ANGRY to FeelingEffect(rate = 1.06f, gainDb = 3f, pauseScale = 0.9f, semitones = -0.7f),
             Feeling.SOFT to FeelingEffect(rate = 0.93f, gainDb = -6f, pauseScale = 1.2f, semitones = -0.7f),
             Feeling.SAD to FeelingEffect(rate = 0.9f, gainDb = -3f, pauseScale = 1.4f, semitones = -1.5f),
             Feeling.SCARED to FeelingEffect(rate = 1.07f, gainDb = -2f, semitones = 1.5f),

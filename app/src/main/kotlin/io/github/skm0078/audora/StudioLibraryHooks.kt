@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/StudioLibraryHooks.kt
-// Purpose: MainActivity's library-side studio features: notes export, point and read, shared text.
+// Purpose: MainActivity's library-side studio features: notes export, point and read, shared text and links.
 
 package io.github.skm0078.audora
 
@@ -27,7 +27,10 @@ import io.github.skm0078.audora.playback.export.MarkStores
 import io.github.skm0078.audora.playback.export.NotesExport
 import io.github.skm0078.audora.playback.photo.PhotoBooks
 import io.github.skm0078.audora.playback.photo.PhotoError
+import io.github.skm0078.audora.playback.web.WebAddress
 import io.github.skm0078.audora.ui.AppDestination
+import io.github.skm0078.audora.ui.web.WebBooksRoute
+import io.github.skm0078.audora.ui.web.WebBooksUi
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.CoroutineScope
@@ -91,11 +94,11 @@ internal fun PhotoBookEffect(photoBooks: PhotoBooks, navigate: (AppDestination) 
             is Outcome.Success -> navigate(AppDestination.Reader(result.value))
 
             is Outcome.Failure -> {
-                val error = result.error
-                val message = if (error is PhotoError.TooMany) {
-                    resources.getString(R.string.pictures_too_many, error.max)
-                } else {
-                    resources.getString(R.string.photo_failed)
+                val message = when (val error = result.error) {
+                    is PhotoError.TooMany -> resources.getString(R.string.pictures_too_many, error.max)
+                    is PhotoError.ComicTooLong -> resources.getString(R.string.comic_too_long, error.max)
+                    is PhotoError.ComicUnreadable -> resources.getString(R.string.comic_unreadable)
+                    else -> resources.getString(R.string.photo_failed)
                 }
                 Toast.makeText(context, message, Toast.LENGTH_LONG).show()
             }
@@ -106,7 +109,8 @@ internal fun PhotoBookEffect(photoBooks: PhotoBooks, navigate: (AppDestination) 
 /**
  * Text shared from another app (plan item 42): saved as a .txt beside the shared copies, then handed to [onSaved]
  * to be added and opened like a shared PDF. [onTaken] clears the request once that is done, so a save cut short by a
- * rotation runs again on the new screen.
+ * rotation runs again on the new screen. A shared link on its own asks first whether to read that web page (CF-12);
+ * the web dialogs, and the book or article a download brings, are drawn here too, over every screen.
  */
 @Composable
 internal fun SharedTextEffect(
@@ -118,23 +122,25 @@ internal fun SharedTextEffect(
     val context = LocalContext.current
     LaunchedEffect(shared) {
         val text = shared ?: return@LaunchedEffect
-        val saved = if (text.isOnlyLink) {
-            null
-        } else {
-            copies.saveText(
-                text.text,
-                text.title,
-                TextBookConfig().maxSharedChars,
-            )
+        if (text.isOnlyLink) {
+            onTaken()
+            val link = WebAddress.firstIn(text.text)
+            if (link != null) {
+                WebBooksUi.sharedLink = link
+            } else {
+                Toast.makeText(context, R.string.web_error_address, Toast.LENGTH_LONG).show()
+            }
+            return@LaunchedEffect
         }
+        val saved = copies.saveText(text.text, text.title, TextBookConfig().maxSharedChars)
         onTaken()
         if (saved != null) {
             onSaved(saved)
         } else {
-            val message = if (text.isOnlyLink) R.string.shared_text_link else R.string.shared_text_failed
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            Toast.makeText(context, R.string.shared_text_failed, Toast.LENGTH_LONG).show()
         }
     }
+    WebBooksRoute(onBook = onSaved)
 }
 
 private const val STUDIO_TAG = "Audora.Main"

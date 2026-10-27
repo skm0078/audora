@@ -61,8 +61,11 @@ internal fun BookEditRoute(book: Book, onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
     val entry = remember { LibraryEntryPoint.of(context) }
     val said = { text: Int -> Toast.makeText(context, text, Toast.LENGTH_SHORT).show() }
+    val phoneLanguages = rememberPhoneLanguages()
     BookEditSheet(
         book = book,
+        phoneLanguages = phoneLanguages,
+        onAddLanguages = { openPhoneVoiceSettings(context) },
         onSave = { draft ->
             onDismiss()
             scope.launch {
@@ -92,6 +95,8 @@ internal fun BookEditSheet(
     onFillFromFile: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    phoneLanguages: List<String>? = null,
+    onAddLanguages: () -> Unit = {},
 ) {
     var draft by rememberSaveable(book.id.value, stateSaver = DraftSaver) { mutableStateOf(BookEditDraft.of(book)) }
     val pick = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
@@ -127,7 +132,11 @@ internal fun BookEditSheet(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            LanguageChoice(draft.language) { draft = draft.copy(language = it) }
+            LanguageChoice(
+                LanguageOffer(book, draft.language, phoneLanguages),
+                onSelect = { draft = draft.copy(language = it) },
+                onAddLanguages = onAddLanguages,
+            )
             CoverChoices(book, draft, onDraft = { draft = it }) {
                 pick.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
             }
@@ -137,25 +146,57 @@ internal fun BookEditSheet(
                     Text(stringResource(R.string.book_edit_save))
                 }
             }
-            TextButton(onClick = onFillFromFile, Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.book_edit_fill))
-            }
-            Text(
-                stringResource(R.string.book_edit_fill_help),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            FillFromFile(onFillFromFile)
         }
     }
 }
 
 @Composable
-private fun LanguageChoice(selected: String, onSelect: (String) -> Unit) {
+private fun FillFromFile(onFillFromFile: () -> Unit) {
+    TextButton(onClick = onFillFromFile, Modifier.fillMaxWidth()) {
+        Text(stringResource(R.string.book_edit_fill))
+    }
+    Text(
+        stringResource(R.string.book_edit_fill_help),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+/** What the language choice shows: the [book], the [selected] tag ("" for "As the book says") and the phone's
+ * [offline] languages.
+ */
+private class LanguageOffer(val book: Book, val selected: String, val offline: List<String>?)
+
+/**
+ * "As the book says", the three languages with ListenLock's own voices, then every language the phone's own voices
+ * read offline (ADR 2026-10-26), with a way to add more and a word when the book's language has no voice yet.
+ */
+@Composable
+private fun LanguageChoice(offer: LanguageOffer, onSelect: (String) -> Unit, onAddLanguages: () -> Unit) {
+    val selected = offer.selected
+    val tags = (BookEditDraft.LANGUAGES + offer.offline.orEmpty() + selected).filter { it.isNotEmpty() }
+    val names = tags.associateWith { languageName(it) }
     SectionTitle(R.string.book_edit_language)
     Column(Modifier.selectableGroup()) {
         Choice(stringResource(R.string.book_edit_language_auto), selected.isEmpty()) { onSelect("") }
-        BookEditDraft.LANGUAGES.forEach { tag -> Choice(languageName(tag), selected == tag) { onSelect(tag) } }
+        BookEditDraft.LANGUAGES.forEach { tag -> Choice(names.getValue(tag), selected == tag) { onSelect(tag) } }
+        BookEditDraft.phoneChoices(offer.offline.orEmpty(), selected) { names[it] ?: it }.forEach { tag ->
+            Choice(names[tag] ?: tag, selected == tag) { onSelect(tag) }
+        }
     }
+    val hint = MaterialTheme.typography.bodySmall
+    val hintColor = MaterialTheme.colorScheme.onSurfaceVariant
+    Text(stringResource(R.string.phone_languages_help), style = hint, color = hintColor)
+    BookEditDraft.missingVoice(offer.book, selected, offer.offline)?.let { missing ->
+        Text(
+            stringResource(R.string.phone_languages_missing, languageName(missing)),
+            style = hint,
+            color = MaterialTheme.colorScheme.error,
+        )
+    }
+    TextButton(onClick = onAddLanguages) { Text(stringResource(R.string.phone_languages_add)) }
+    Text(stringResource(R.string.phone_languages_add_steps), style = hint, color = hintColor)
 }
 
 @Composable

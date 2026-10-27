@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The text view's fonts for dyslexic readers, and their credits on Voices & licences (CF-5). -->
+<resources>
+    <string name="text_look_font_atkinson">সহজ অক্ষর (Atkinson Hyperlegible)</string>
+    <string name="text_look_font_opendyslexic">ডিসলেক্সিয়া-বান্ধব (OpenDyslexic)</string>
+    <string name="text_look_font_help">সহজ অক্ষর একই রকম দেখতে অক্ষরগুলো (I, l, 1 আর b, d, p, q) স্পষ্ট আলাদা করে দেখায়। ডিসলেক্সিয়া-বান্ধব ফন্টে অক্ষরের নিচটা ভারী, তাই সেগুলো উল্টে গেছে বলে মনে হয় না। দুটোই শুধু ইংরেজি লেখা বদলায়; হিন্দি আর বাংলা তাদের সাধারণ ফন্টেই থাকে।</string>
+    <string name="licences_fonts">ফন্ট</string>
+    <string name="licences_ofl">SIL Open Font License 1.1</string>
+</resources>

@@ -249,11 +249,7 @@ class ReaderModel(
     }
 
     /** What "Bookmark here" marks: the sentence being read on the shown page, else the page's first sentence. */
-    fun sentenceHere(): ReadingUnit? {
-        val current = state.value
-        val units = (current.content as? PageContent.Ready)?.units ?: return null
-        return current.spokenUnitIndex?.let(units::getOrNull) ?: units.firstOrNull()
-    }
+    fun sentenceHere(): ReadingUnit? = state.value.sentenceHere
 
     /** "Use for this book only" (plan item 4): the book keeps its own speed, pace and voices, or goes back to all. */
     fun setOwnSettings(on: Boolean) = player.setOwnSettings(on)
@@ -606,9 +602,15 @@ class ReaderModel(
 
     private fun documentStateFor(error: PdfOpenError): DocumentState = when (error) {
         PdfOpenError.PasswordRequired -> DocumentState.NeedsPassword(wrongPassword = false)
+
         PdfOpenError.IncorrectPassword -> DocumentState.NeedsPassword(wrongPassword = true)
+
         is PdfOpenError.Damaged -> DocumentState.Failed(ReaderFailure.DAMAGED)
-        is PdfOpenError.Unreadable -> DocumentState.Failed(ReaderFailure.UNREADABLE)
+
+        is PdfOpenError.Unreadable -> DocumentState.Failed(
+            if (error.cause is DrmLockedException) ReaderFailure.LOCKED else ReaderFailure.UNREADABLE,
+        )
+
         is PdfOpenError.EngineUnavailable -> DocumentState.Failed(ReaderFailure.ENGINE_UNAVAILABLE)
     }
 

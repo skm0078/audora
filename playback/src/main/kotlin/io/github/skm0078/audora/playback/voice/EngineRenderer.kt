@@ -11,6 +11,7 @@ import io.github.skm0078.audora.core.model.ClauseMark
 import io.github.skm0078.audora.core.model.ContentIntent
 import io.github.skm0078.audora.core.model.Feeling
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.ParagraphPlace
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.result.Outcome
@@ -18,6 +19,7 @@ import io.github.skm0078.audora.core.result.map
 import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.queue.SentenceRenderer
 import io.github.skm0078.audora.playback.queue.UnitKey
+import io.github.skm0078.audora.playback.reading.SentenceLanguage
 import io.github.skm0078.audora.playback.reading.Speech
 import io.github.skm0078.audora.playback.reading.UnitReading
 import io.github.skm0078.audora.playback.session.SentenceTimings
@@ -26,8 +28,11 @@ import io.github.skm0078.audora.speech.audio.Earcon
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.audio.SmartStretch
 import io.github.skm0078.audora.speech.audio.VoiceShaper
+import io.github.skm0078.audora.speech.audio.WordTimes
 import io.github.skm0078.audora.speech.delivery.Delivery
 import io.github.skm0078.audora.speech.delivery.DeliveryPlanner
+import io.github.skm0078.audora.speech.delivery.FootnoteVoice
+import io.github.skm0078.audora.speech.delivery.NarrationArc
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
 import io.github.skm0078.audora.speech.normalize.TextNormalizer
 import io.github.skm0078.audora.speech.normalize.TextRole
@@ -76,7 +81,8 @@ import kotlinx.coroutines.runBlocking
  * What the voice is given follows the style's reading modes ([UnitReading], ADR-035): a table's size or a row with its
  * column names, "Equation 3", a cue in place of unreadable text, a cue before a caption or a chapter's heading.
  *
- * Each clip's layout (cue, voice, silence after) goes to [timings] for the reader's word highlight (plan item 14).
+ * Each clip's layout (cue, voice, silence after) goes to [timings] for the reader's word highlight (plan item 14),
+ * with each word's start read from the voice's own audio ([WordTimes], CF-10).
  *
  * With cast voices in the style's shaping (plan item 7), headings and quoted speech are read by their own voices
  * ([CastSpeech]), the quote's clause pause where the voice changes, each part evened before the join.
@@ -100,12 +106,15 @@ class EngineRenderer(
     private val replay: ReplayRender? = null,
 ) : SentenceRenderer {
     private val castSpeech = CastSpeech(voices, ScriptRouter(config), normalizers)
+    private val footnoteVoice = FootnoteVoice()
+    private val wordTimes = WordTimes()
 
     override fun render(unit: ReadingUnit): Outcome<PcmAudio, SpeechError> {
         val now = replay?.styleFor(UnitKey.of(unit)) ?: style()
-        val delivery = deliveryOf(unit, now)
+        val delivery = footnoteVoice.shape(unit, narrated(unit, now, deliveryOf(unit, now)))
         val pauseAfterMs = (styleConfig.silenceAfterMs(unit.pauseAfterMs, now) * delivery.pauseScale).roundToInt()
-        return when (val speech = UnitReading(now.modes, reading.speakability, reading.chapterPages()).speechOf(unit)) {
+        val reads = UnitReading(now.modes, reading.speakability, reading.chapterPages(), language = reading.language())
+        return when (val speech = reads.speechOf(unit)) {
             Speech.Cue -> {
                 AudoraLog.d(TAG, "${UnitKey.of(unit)}: unreadable, cue instead")
                 val cue = reading.earcon.cue()
@@ -117,19 +126,22 @@ class EngineRenderer(
             is Speech.Text -> speak(unit, speech, now, delivery).map { voice ->
                 val cued = if (speech.cueBefore) reading.earcon.before(voice) else voice
                 val clip = cued.withSilenceAfter(pauseAfterMs)
-                record(unit, leadMs = cued.durationMs - voice.durationMs, speechMs = voice.durationMs, clip)
+                // Words are timed only when the voice says the sentence as written: a table row with its column
+                // names or "Equation 3" has other words, and the reader spreads by letters there (CF-10).
+                val words = if (speech.text == unit.text) wordTimes.of(unit.text, voice) else null
+                record(unit, leadMs = cued.durationMs - voice.durationMs, speechMs = voice.durationMs, clip, words)
                 clip
             }
         }
     }
 
     /** Where the voice speaks in [clip] (plan item 14); millisecond rounding is kept inside the clip. */
-    private fun record(unit: ReadingUnit, leadMs: Long, speechMs: Long, clip: PcmAudio) {
+    private fun record(unit: ReadingUnit, leadMs: Long, speechMs: Long, clip: PcmAudio, words: List<Long>? = null) {
         val timings = timings ?: return
         val total = clip.durationMs
         val lead = leadMs.coerceIn(0, total)
         val speech = speechMs.coerceIn(0, total - lead)
-        val timing = SentenceTiming(unit.page, unit.charStart, unit.index, lead, speech, total)
+        val timing = SentenceTiming(unit.page, unit.charStart, unit.index, lead, speech, total, words.orEmpty())
         timings.record(UnitKey.of(unit), timing)
     }
 
@@ -137,7 +149,13 @@ class EngineRenderer(
     private fun deliveryOf(unit: ReadingUnit, now: SpeechStyle): Delivery {
         if (!now.shaping.suitBook) return Delivery.PLAIN
         val quoted = reading.startsInQuote(unit) || unit.text.any { it in QUOTE_MARKS }
-        val delivery = reading.planner.plan(unit, reading.intent(), quoted, reading.moodOf(unit))
+        val delivery = reading.planner.plan(
+            unit,
+            reading.intent(),
+            quoted,
+            reading.moodOf(unit),
+            reading.judgedFeeling(unit),
+        )
         if (delivery.feeling != Feeling.NEUTRAL) AudoraLog.d(TAG, "${UnitKey.of(unit)}: feeling ${delivery.feeling}")
         return delivery
     }
@@ -186,12 +204,24 @@ class EngineRenderer(
             speaker,
             delivery.feeling,
             delivery.pitch,
+            bookLanguage = reading.sentences.of(unit, reading.language()),
         )
         return runBlocking { castSpeech.render(text, unit.lang, request, cast, quotePauseMs, level) }.map { routed ->
             speed?.onRendered(text.trim().length, routed, System.nanoTime() - started, rate * stretch)
             log(unit, routed)
             shaper.level(routed.audio, shaping.evenLoudness, shaping.boostDb, delivery.gainDb)
         }
+    }
+
+    /**
+     * [delivery] with the narrator's rise and fall across its paragraph (Q-3, ADR 2026-10-26-natural-narration):
+     * only with "Read to suit the book" on, like the delivery itself, and only for narration, not quoted speech.
+     */
+    private fun narrated(unit: ReadingUnit, now: SpeechStyle, delivery: Delivery): Delivery {
+        val arc = reading.narration
+        if (arc == null || !now.shaping.suitBook) return delivery
+        val quoted = reading.startsInQuote(unit) || unit.text.any { it in QUOTE_MARKS }
+        return arc.shape(delivery, unit, reading.placeOf(unit), quoted)
     }
 
     /** Context only (page, sentence, languages), never the sentence's text. */
@@ -225,10 +255,17 @@ class EngineRenderer(
  *   ([io.github.skm0078.audora.playback.reading.QuoteCarry], plan item 7).
  * @property speakerOf who says a sentence's quotes, from the same carry (plan item 63); null when unknown.
  * @property moodOf the mood a sentence carries from the one before, from the same carry (ADR-058); null for none.
+ * @property judgedFeeling the feeling the story brain heard in a sentence (ADR story-brain); null when it was not
+ *   asked.
  * @property characters the open book's character voices, used when the style's shaping turns them on.
  * @property smartStretch smart speed's uneven stretch (plan item 10), used when the style's shaping turns it on.
  * @property intent what the open book is (ADR-056), read on the render thread for each sentence.
  * @property planner each sentence's delivery from that intent, used when the style's shaping turns it on.
+ * @property language the open book's language tag, read on the render thread for each sentence: a language none of
+ *   the three is read by the phone's voice, sentence by sentence as [sentences] decides (ADR 2026-10-26).
+ * @property placeOf where a sentence sits in its paragraph (Q-3), from the quote carry; null when unknown.
+ * @property narration the narrator's rise and fall across a paragraph, used with [planner]; null (no paragraph places
+ *   to shape by, as in the tests of other features) leaves the planned delivery as it is.
  */
 @Suppress("LongParameterList") // All optional: each caller sets the few it has.
 class ReadingSetup(
@@ -242,10 +279,15 @@ class ReadingSetup(
     val startsInQuote: (ReadingUnit) -> Boolean = { false },
     val speakerOf: (ReadingUnit) -> Speaker? = { null },
     val moodOf: (ReadingUnit) -> Feeling? = { null },
+    val judgedFeeling: (ReadingUnit) -> Feeling? = { null },
     val characters: CharacterVoices? = null,
     val smartStretch: SmartStretch = SmartStretch(),
     val intent: () -> ContentIntent = { ContentIntent.GENERAL },
     val planner: DeliveryPlanner = DeliveryPlanner(),
+    val language: () -> String? = { null },
+    val sentences: SentenceLanguage = SentenceLanguage.DEFAULT,
+    val placeOf: (ReadingUnit) -> ParagraphPlace? = { null },
+    val narration: NarrationArc? = null,
 ) {
     /** [text] with the model's pauses when it is a run-on on a scanned page, else [text]. */
     fun punctuated(text: String, unit: ReadingUnit): String = when {

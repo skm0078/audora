@@ -40,7 +40,7 @@ Four real limits shape the design:
 - Start from any page, or tap a sentence to start there.
 - Voices: one bundled English neural voice (Piper or Kitten, per S1) + Android system voices.
 - Playback with screen off and in other apps; lock-screen, notification and headset controls.
-- Speed 0.5x–3x, skip sentence back/forward, sleep timer (15/30/60 min, end of page, end of chapter).
+- Speed 0.5x–4x (ADR 2026-10-26-speed-up-to-4x), skip sentence back/forward, sleep timer (15/30/60 min, end of page, end of chapter).
 - Exact resume per book, surviving process death and app updates.
 - "Human reading" pipeline for digital PDFs (reading order, header/footer removal, hyphen repair, normalization, pauses).
 

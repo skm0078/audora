@@ -17,6 +17,7 @@ import kotlin.math.roundToInt
 class FocusMixer(
     val sampleRate: Int,
     private val config: FocusSoundConfig = FocusSoundConfig(),
+    private val beds: FocusBeds = FocusBeds.GENERATED,
     private val seed: Long = DEFAULT_SEED,
 ) {
     private val holdFrames = frames(config.holdMs)
@@ -55,9 +56,9 @@ class FocusMixer(
      * The same sound carried on at another [rate] (a voice of another sample rate took over): its level, and whether
      * the voice was speaking, go on, so the sound neither restarts nor fades in again.
      */
-    fun continuedAt(rate: Int): FocusMixer = FocusMixer(rate, config, seed).also { next ->
+    fun continuedAt(rate: Int): FocusMixer = FocusMixer(rate, config, beds, seed).also { next ->
         next.playing = playing
-        next.source = source?.let { FocusNoise.of(playing, rate, seed) }
+        next.source = source?.let { beds.of(playing, rate, seed) }
         next.gain = gain
         next.voice = voice
         next.held = (held.toLong() * rate / sampleRate).toInt()
@@ -107,7 +108,7 @@ class FocusMixer(
 
     private fun switchTo(sound: FocusSound) {
         playing = sound
-        source = FocusNoise.of(sound, sampleRate, seed)
+        source = beds.of(sound, sampleRate, seed)
         gain = 0f
     }
 

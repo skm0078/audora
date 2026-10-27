@@ -7,13 +7,20 @@ import io.github.skm0078.audora.core.model.ClauseMark
 import io.github.skm0078.audora.core.model.Lang
 
 /**
- * One piece of a sentence between strong marks, read by [lang]'s voice.
+ * One piece of a sentence between strong marks, read by [lang]'s voice, or the phone's voice for [phone] when set
+ * ([ScriptSegment.phone]).
  *
  * @property pauseBefore the mark that separates it from the piece before; null for the first piece and where only
  *   the voice changes.
  * @property aside inside brackets: read a little quieter.
  */
-data class Clause(val text: String, val lang: Lang, val pauseBefore: ClauseMark?, val aside: Boolean)
+data class Clause(
+    val text: String,
+    val lang: Lang,
+    val pauseBefore: ClauseMark?,
+    val aside: Boolean,
+    val phone: String? = null,
+)
 
 /**
  * Splits after script routing, so routing decisions made on the whole sentence (a short English run staying with
@@ -64,6 +71,7 @@ object ClauseSplitter {
         val state = State()
         for (segment in segments) {
             state.lang = segment.lang
+            state.phone = segment.phone
             scan(segment.text, state)
             state.flush() // a voice change alone adds no pause; a mark at the segment's end carries over
         }
@@ -75,6 +83,7 @@ object ClauseSplitter {
         val clauses = ArrayList<Clause>()
         val buffer = StringBuilder()
         var lang = Lang.EN
+        var phone: String? = null
         var depth = 0
         var pending: ClauseMark? = null
 
@@ -96,7 +105,7 @@ object ClauseSplitter {
             }
             val spoken = if (carried.isEmpty()) text else "$carried $text"
             carried = ""
-            clauses.add(Clause(spoken, lang, pending.takeIf { clauses.isNotEmpty() }, aside = depth > 0))
+            clauses.add(Clause(spoken, lang, pending.takeIf { clauses.isNotEmpty() }, aside = depth > 0, phone))
             pending = null
         }
 
@@ -108,7 +117,7 @@ object ClauseSplitter {
         fun finish() {
             if (carried.isEmpty()) return
             val last = clauses.removeLastOrNull()
-            clauses.add(last?.copy(text = "${last.text} $carried") ?: Clause(carried, lang, null, aside = false))
+            clauses.add(last?.copy(text = "${last.text} $carried") ?: Clause(carried, lang, null, aside = false, phone))
             carried = ""
         }
     }

@@ -1,6 +1,7 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/StudioLibrary.kt
 // Purpose: The library's studio actions (studio mode, copies, notes export, character guide, point and read,
-//          pictures, clipboard, watched folders, backup, quiz) and the sheet each opens.
+//          pictures, clipboard, web pages and catalogues, watched folders, backup, quiz, listening stats) and the sheet
+//          each opens.
 
 package io.github.skm0078.audora
 
@@ -28,6 +29,7 @@ import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ResumeAnchor
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
+import io.github.skm0078.audora.core.stats.ListeningLog
 import io.github.skm0078.audora.di.LibraryEntryPoint
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.playback.backup.Backups
@@ -47,12 +49,17 @@ import io.github.skm0078.audora.ui.guide.CharacterGuideRoute
 import io.github.skm0078.audora.ui.jobs.startLongJob
 import io.github.skm0078.audora.ui.library.BackupRoute
 import io.github.skm0078.audora.ui.library.BookAction
+import io.github.skm0078.audora.ui.library.FolderSyncRoute
+import io.github.skm0078.audora.ui.library.FolderSyncUi
 import io.github.skm0078.audora.ui.library.LibraryAction
 import io.github.skm0078.audora.ui.library.WatchedFoldersRoute
 import io.github.skm0078.audora.ui.library.restartForRestore
 import io.github.skm0078.audora.ui.quiz.QuizRoute
+import io.github.skm0078.audora.ui.stats.ListeningStatsRoute
 import io.github.skm0078.audora.ui.studio.StudioAudioActions
 import io.github.skm0078.audora.ui.studio.StudioAudioRoute
+import io.github.skm0078.audora.ui.web.WebBooksUi
+import io.github.skm0078.audora.ui.web.WebSheet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -67,11 +74,12 @@ internal class StudioLibraryParts(
     val backups: Backups,
     val anchors: ResumeAnchorStore,
     val notes: MarkStores,
+    val listening: ListeningLog,
     val onText: (SharedText) -> Unit,
 )
 
 /** A studio sheet opened from the library's menu; one at a time. */
-internal enum class StudioSheet { WATCHED_FOLDERS, BACKUP, QUIZ }
+internal enum class StudioSheet { WATCHED_FOLDERS, BACKUP, QUIZ, LISTENING_STATS }
 
 /** The dialogs open on the library, saved across rotation: a studio sheet, and the book a dialog is for. */
 internal class StudioLibraryState(
@@ -207,9 +215,13 @@ internal class StudioLibrary(
         LibraryAction.POINT_AND_READ -> parts.activity.pointAndRead(parts.photoBooks, takePhoto)
         LibraryAction.READ_PICTURES -> pickPictures.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
         LibraryAction.READ_CLIPBOARD -> parts.activity.readClipboard(parts.onText)
+        LibraryAction.READ_WEB_PAGE -> WebBooksUi.sheet = WebSheet.ADDRESS
+        LibraryAction.BOOK_CATALOGUES -> WebBooksUi.sheet = WebSheet.CATALOGUES
         LibraryAction.WATCHED_FOLDERS -> sheet.value = StudioSheet.WATCHED_FOLDERS
+        LibraryAction.SYNC_FOLDER -> FolderSyncUi.open = true
         LibraryAction.BACKUP -> sheet.value = StudioSheet.BACKUP
         LibraryAction.QUIZ -> sheet.value = StudioSheet.QUIZ
+        LibraryAction.LISTENING_STATS -> sheet.value = StudioSheet.LISTENING_STATS
         LibraryAction.TRY_SAMPLE -> parts.onText(sampleBook(parts.activity))
     }
 
@@ -218,8 +230,11 @@ internal class StudioLibrary(
     fun Sheets(books: List<Book>?) {
         val close = { sheet.value = null }
         WatchedFoldersRoute(parts.watchedFolders, open = sheet.value == StudioSheet.WATCHED_FOLDERS, onClose = close)
+        FolderSyncRoute()
         BackupRoute(parts.backups, sheet.value == StudioSheet.BACKUP, close) { parts.activity.restartForRestore() }
         QuizRoute(parts.notes.highlights, open = sheet.value == StudioSheet.QUIZ, onClose = close)
+        val stats = sheet.value == StudioSheet.LISTENING_STATS
+        ListeningStatsRoute(parts.listening, books, parts.anchors, open = stats, onClose = close)
         val guideBook = books?.firstOrNull { it.id.value == guideBookId.value }
         CharacterGuideRoute(guideBook, parts.anchors) { guideBookId.value = null }
         val studioBook = books?.firstOrNull { it.id.value == state.studioBookId.value }

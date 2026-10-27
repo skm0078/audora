@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/battery/BatterySetupScreen.kt
-// Purpose: "Keep reading with the screen off": the system exemption prompt plus this phone brand's own steps.
+// Purpose: "Keep reading with the screen off": the system exemption prompt plus this phone maker's own steps.
 
 package io.github.skm0078.audora.ui.battery
 
@@ -32,6 +32,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.battery.BackgroundAccess
 import io.github.skm0078.audora.core.battery.BatteryGuide
 import io.github.skm0078.audora.core.battery.BatteryStep
 import io.github.skm0078.audora.core.battery.PhoneBrand
@@ -40,8 +41,7 @@ import io.github.skm0078.audora.ui.theme.AudoraTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BatterySetupScreen(
-    exempt: Boolean,
-    brand: PhoneBrand,
+    access: BackgroundAccess,
     steps: List<BatteryStep>,
     onAllow: () -> Unit,
     onOpenAppSettings: () -> Unit,
@@ -66,8 +66,9 @@ fun BatterySetupScreen(
             verticalArrangement = Arrangement.spacedBy(SPACING),
         ) {
             Text(stringResource(R.string.battery_intro), style = MaterialTheme.typography.bodyLarge)
-            ExemptionStatus(exempt, onAllow)
-            Text(stringResource(brandHeading(brand)), style = MaterialTheme.typography.titleMedium)
+            ExemptionStatus(access, onAllow)
+            // Never the maker's name: a heading naming the phone read as personal to testers.
+            Text(stringResource(R.string.battery_steps_heading), style = MaterialTheme.typography.titleMedium)
             steps.forEachIndexed { index, step ->
                 Text(stringResource(R.string.battery_step_number, index + 1, stringResource(stepText(step))))
             }
@@ -84,24 +85,38 @@ fun BatterySetupScreen(
 }
 
 @Composable
-private fun ExemptionStatus(exempt: Boolean, onAllow: () -> Unit) {
+private fun ExemptionStatus(access: BackgroundAccess, onAllow: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(SCREEN_PADDING), verticalArrangement = Arrangement.spacedBy(SPACING)) {
-            if (exempt) {
-                Text(stringResource(R.string.battery_status_allowed), style = MaterialTheme.typography.titleSmall)
-            } else {
-                Text(stringResource(R.string.battery_status_limited), style = MaterialTheme.typography.titleSmall)
-                Button(onClick = onAllow, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.battery_allow))
-                }
+            val (status, button, hint) = statusTexts(access)
+            Text(stringResource(status), style = MaterialTheme.typography.titleSmall)
+            if (button != null && hint != null) {
+                Button(onClick = onAllow, modifier = Modifier.fillMaxWidth()) { Text(stringResource(button)) }
                 Text(
-                    stringResource(R.string.battery_allow_hint),
+                    stringResource(hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
     }
+}
+
+/** Status line, button and hint; no button once Unrestricted. */
+private fun statusTexts(access: BackgroundAccess): Triple<Int, Int?, Int?> = when (access) {
+    BackgroundAccess.UNRESTRICTED -> Triple(R.string.battery_status_allowed, null, null)
+
+    BackgroundAccess.OPTIMIZED -> Triple(
+        R.string.battery_status_optimized,
+        R.string.battery_choose_unrestricted,
+        R.string.battery_choose_unrestricted_hint,
+    )
+
+    BackgroundAccess.RESTRICTED -> Triple(
+        R.string.battery_status_limited,
+        R.string.battery_allow,
+        R.string.battery_allow_hint,
+    )
 }
 
 /** Shown at the top of the library until Audora is exempt or the user taps "Not now". */
@@ -117,18 +132,6 @@ fun BatterySetupCard(onSetUp: () -> Unit, onNotNow: () -> Unit, modifier: Modifi
             }
         }
     }
-}
-
-@StringRes
-private fun brandHeading(brand: PhoneBrand): Int = when (brand) {
-    PhoneBrand.MOTOROLA -> R.string.battery_brand_motorola
-    PhoneBrand.ONEPLUS -> R.string.battery_brand_oneplus
-    PhoneBrand.SAMSUNG -> R.string.battery_brand_samsung
-    PhoneBrand.XIAOMI -> R.string.battery_brand_xiaomi
-    PhoneBrand.OPPO -> R.string.battery_brand_oppo
-    PhoneBrand.REALME -> R.string.battery_brand_realme
-    PhoneBrand.VIVO -> R.string.battery_brand_vivo
-    PhoneBrand.OTHER -> R.string.battery_brand_other
 }
 
 @StringRes
@@ -150,8 +153,7 @@ private val SPACING = 8.dp
 private fun BatterySetupScreenPreview() {
     AudoraTheme {
         BatterySetupScreen(
-            exempt = false,
-            brand = PhoneBrand.ONEPLUS,
+            access = BackgroundAccess.OPTIMIZED,
             steps = BatteryGuide.stepsFor(PhoneBrand.ONEPLUS),
             onAllow = {},
             onOpenAppSettings = {},

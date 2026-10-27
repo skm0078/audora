@@ -11,6 +11,7 @@ import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.library.CoverChoice
 import io.github.skm0078.audora.core.library.DocumentFormat
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.PhoneLanguages
 
 /** The cover options the sheet offers. */
 enum class CoverOption { FIRST_PAGE, PAGE, GALLERY, FROM_BOOK }
@@ -57,13 +58,13 @@ data class BookEditDraft(
     }
 
     companion object {
-        /** The languages offered besides "As the book says": the three the app reads. */
+        /** The languages offered first, besides "As the book says": the three with ListenLock's own voices. */
         val LANGUAGES = listOf(Lang.EN, Lang.HI, Lang.BN).map { it.bcp47Tag }
 
         fun of(book: Book) = BookEditDraft(
             title = shownTitle(book),
             author = book.author.orEmpty(),
-            language = book.language?.takeIf { BookField.LANGUAGE in book.edited && it in LANGUAGES }.orEmpty(),
+            language = book.language?.takeIf { BookField.LANGUAGE in book.edited }.orEmpty(),
             cover = when (val cover = book.cover) {
                 CoverChoice.FirstPage -> CoverOption.FIRST_PAGE
                 is CoverChoice.Page -> CoverOption.PAGE
@@ -81,6 +82,24 @@ data class BookEditDraft(
             }
             add(CoverOption.GALLERY)
             if (book.format == DocumentFormat.EPUB) add(CoverOption.FROM_BOOK)
+        }
+
+        /**
+         * The languages offered after [LANGUAGES] (ADR 2026-10-26): those the phone reads offline ([offline]), and the
+         * one [selected] if it is none of them, so an edit made before a voice pack went is still shown. Each once,
+         * ordered by [nameOf].
+         */
+        fun phoneChoices(offline: List<String>, selected: String, nameOf: (String) -> String): List<String> =
+            (offline + selected).mapNotNull(PhoneLanguages::phoneLanguage).distinct().sortedBy(nameOf)
+
+        /**
+         * The phone language [book] is read in with [selected] ("" for "As the book says") when the phone has no
+         * offline voice for it, so the sheet can say so; null when it has one, the language is one of the three,
+         * or [offline] is not known yet.
+         */
+        fun missingVoice(book: Book, selected: String, offline: List<String>?): String? {
+            val language = PhoneLanguages.phoneLanguage(selected.ifEmpty { book.language.orEmpty() })
+            return language?.takeIf { offline != null && it !in offline.mapNotNull(PhoneLanguages::canonical) }
         }
 
         private fun shownTitle(book: Book) = book.title.takeUnless { it == BookTitles.UNTITLED }.orEmpty()

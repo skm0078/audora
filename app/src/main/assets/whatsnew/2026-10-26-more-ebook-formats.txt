@@ -1,0 +1,3 @@
+en: ListenLock now reads FB2, Kindle (MOBI, AZW3) and CHM books, and turns CBZ comics into books it reads aloud.
+hi: ListenLock अब FB2, Kindle (MOBI, AZW3) और CHM किताबें पढ़ता है, और CBZ कॉमिक्स को किताब बनाकर पढ़कर सुनाता है।
+bn: ListenLock এখন FB2, Kindle (MOBI, AZW3) ও CHM বই পড়ে, আর CBZ কমিককে বই বানিয়ে পড়ে শোনায়।

@@ -209,6 +209,74 @@ class ReadAlongTest {
     }
 
     @Test
+    fun `a reader pausing after every word gets past a word the recogniser missed`() {
+        // "declaration" never heard; each later word is its own final stretch, as a slow reader's pauses make them.
+        var along = page("Universal declaration of human rights and the dignity of all.")
+        listOf("universal", "of", "human", "rights", "and", "the", "dignity", "of", "all").forEach {
+            along = along.say(it)
+        }
+
+        assertEquals(listOf(READ, SKIPPED) + List(8) { READ }, along.marks)
+        assertTrue(along.finished)
+    }
+
+    @Test
+    fun `one or two common words are never taken as going back`() {
+        val along = page("The cat sat on the mat and the dog sat on the rug.")
+            .say("the cat sat on the mat")
+            .say("dug") // misheard "and": no match ahead, so carried
+            .say("the dog")
+
+        assertEquals(List(6) { READ } + listOf(MISREAD, READ, READ) + List(4) { UNREAD }, along.marks)
+        assertEquals(ReadAlong.Taken.MOVED, along.follow(PageWords.heard("sat on"), final = true).taken)
+    }
+
+    @Test
+    fun `a stretch after a skipped line is not taken as a re-read`() {
+        val along = page(
+            "Whereas recognition of the inherent dignity of all members of the human family is the foundation,",
+            "whereas disregard and contempt for human rights have resulted in barbarous acts.",
+        )
+            .say("whereas recognition of the inherent dignity of all members of the human family")
+            // Skips "is the foundation whereas disregard and contempt for", and one word is misheard.
+            .say("human rights have resulted in famous acts")
+
+        assertTrue(along.finished)
+        assertEquals(List(8) { SKIPPED }, along.marks.subList(13, 21))
+        assertEquals(MISREAD, along.marks[26])
+    }
+
+    @Test
+    fun `a misread word at the end of a stretch is marked once the next stretch explains it`() {
+        val along = page("The cat sat on the mat.").say("the cat sit").say("on the mat")
+
+        assertEquals(listOf(READ, READ, MISREAD, READ, READ, READ), along.marks)
+    }
+
+    @Test
+    fun `a real re-read still changes nothing and clears what was carried`() {
+        val along = page("The cat sat on the mat.", "Then the dog sat on the rug.")
+            .say("the cat sat on the mat")
+            .say("um")
+            .say("the cat sat on the mat")
+        val step = along.follow(PageWords.heard("then the dog"), final = true)
+
+        assertEquals(List(6) { READ } + List(7) { UNREAD }, along.marks)
+        assertEquals(ReadAlong.Taken.MOVED, step.taken)
+        assertEquals(List(9) { READ } + List(4) { UNREAD }, step.along.marks)
+    }
+
+    @Test
+    fun `the page's last word after a word the recogniser missed finishes the page`() {
+        val along = page("The cat sat on the mat.").say("the cat sat on").say("mat")
+
+        assertEquals(List(4) { READ } + SKIPPED + READ, along.marks)
+        assertTrue(along.finished)
+        // Said mid-page, the last word does not jump to the end.
+        assertFalse(page("The mat is where the cat sat on the mat.").say("the mat").say("mat").finished)
+    }
+
+    @Test
     fun `a stretch mostly in another script is recognised`() {
         assertTrue(PageWords.mostlyIn("वह सो गया", Lang.HI))
         assertFalse(PageWords.mostlyIn("وہ سو گیا", Lang.HI))

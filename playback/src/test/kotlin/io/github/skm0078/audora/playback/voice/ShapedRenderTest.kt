@@ -32,6 +32,8 @@ class ShapedRenderTest {
 
         override suspend fun voiceFor(lang: Lang): Outcome<VoiceId, SpeechError> = Outcome.Success(VOICE)
 
+        override suspend fun phoneVoiceFor(language: String): Outcome<VoiceId, SpeechError> = Outcome.Success(VOICE)
+
         override fun engine(id: EngineId): Outcome<SpeechEngine, SpeechError> = Outcome.Success(this)
 
         override fun supports(lang: Lang): Boolean = true
@@ -72,6 +74,14 @@ class ShapedRenderTest {
         assertEquals(VOICED + PAUSE + VOICED, plain.samples.size)
         // The model is at its 1.5 cap; the other 2x is the stretch's.
         assertEquals((VOICED + PAUSE + VOICED) / 2f, smart.samples.size.toFloat(), (VOICED + PAUSE + VOICED) * 0.01f)
+    }
+
+    @Test
+    fun `past 3x the voice is shortened by smart speed even with the switch off`() {
+        val switchedOff = render(VoiceShaping(evenLoudness = false), rate = 4f)
+        // The model is at its 1.5 cap; the other 4 / 1.5 is the stretch's, not the player's (CF-6).
+        val whole = VOICED + PAUSE + VOICED
+        assertEquals(whole * 1.5f / 4f, switchedOff.samples.size.toFloat(), whole * 0.01f)
     }
 
     @Test

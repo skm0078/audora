@@ -45,6 +45,9 @@ class MixedScriptVoicesTest {
         override suspend fun voiceFor(lang: Lang): Outcome<VoiceId, SpeechError> =
             Outcome.Success(VoiceId(EngineId.SYSTEM, lang.name))
 
+        override suspend fun phoneVoiceFor(language: String): Outcome<VoiceId, SpeechError> =
+            Outcome.Success(VoiceId(EngineId.SYSTEM, language))
+
         override fun engine(id: EngineId): Outcome<SpeechEngine, SpeechError> = Outcome.Success(this)
 
         override fun supports(lang: Lang) = true

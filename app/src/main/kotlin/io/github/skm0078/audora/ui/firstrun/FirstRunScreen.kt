@@ -35,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.battery.BackgroundAccess
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.voices.DeleteDialog
@@ -44,8 +45,8 @@ import io.github.skm0078.audora.ui.voices.VoicesState
 import io.github.skm0078.audora.ui.voices.languageName
 
 /**
- * @param backgroundAllowed Audora may run in the background already (the battery exemption).
- * @param onAllowBackground asks Android for it (the same prompt as Settings → Background reading).
+ * @param backgroundAccess how freely Audora may run in the background now; only Unrestricted counts as done.
+ * @param onAllowBackground opens the page that fixes it (the same as Settings → Background reading).
  * @param onAddPdf opens the file picker; the screens finish first, so the new book lands in the library.
  * @param onFinish the screens are done (finished or skipped) and never show again.
  * @param onTrySample saves and opens the sample book; the screens finish first, as for [onAddPdf].
@@ -54,7 +55,7 @@ import io.github.skm0078.audora.ui.voices.languageName
 fun FirstRunScreen(
     voices: VoicesState,
     voiceActions: VoicesActions,
-    backgroundAllowed: Boolean,
+    backgroundAccess: BackgroundAccess,
     onAllowBackground: () -> Unit,
     onAddPdf: () -> Unit,
     onFinish: () -> Unit,
@@ -78,7 +79,7 @@ fun FirstRunScreen(
 
                     FirstRunStep.VOICES -> VoicesStep(chosen, voices, voiceActions)
 
-                    FirstRunStep.BACKGROUND -> BackgroundStep(backgroundAllowed, onAllowBackground)
+                    FirstRunStep.BACKGROUND -> BackgroundStep(backgroundAccess, onAllowBackground)
 
                     FirstRunStep.BOOK -> BookStep(
                         onAddPdf = {
@@ -176,12 +177,25 @@ private fun VoicesStep(chosen: Set<Lang>, voices: VoicesState, actions: VoicesAc
 }
 
 @Composable
-private fun BackgroundStep(allowed: Boolean, onAllow: () -> Unit) {
+private fun BackgroundStep(access: BackgroundAccess, onAllow: () -> Unit) {
     StepTitle(R.string.first_run_background_title, R.string.first_run_background_body)
-    if (allowed) {
-        Text(stringResource(R.string.first_run_background_done), color = MaterialTheme.colorScheme.primary)
-    } else {
-        Button(onClick = onAllow) { Text(stringResource(R.string.first_run_background_allow)) }
+    when (access) {
+        BackgroundAccess.UNRESTRICTED ->
+            Text(stringResource(R.string.first_run_background_done), color = MaterialTheme.colorScheme.primary)
+
+        // "Allow background usage" is on but Android still optimizes: say so, or the step looks stuck after allowing.
+        BackgroundAccess.OPTIMIZED -> {
+            Text(stringResource(R.string.battery_status_optimized), style = MaterialTheme.typography.titleSmall)
+            Button(onClick = onAllow) { Text(stringResource(R.string.battery_choose_unrestricted)) }
+            Text(
+                stringResource(R.string.battery_choose_unrestricted_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        BackgroundAccess.RESTRICTED ->
+            Button(onClick = onAllow) { Text(stringResource(R.string.first_run_background_allow)) }
     }
 }
 

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_ebooks.xml -->
+<!-- Purpose: Hindi copy of values/strings_ebooks.xml. -->
+<resources>
+    <string name="book_format_fb2">FB2</string>
+    <string name="book_format_mobi">Kindle (MOBI, AZW3)</string>
+    <string name="book_format_chm">हेल्प फ़ाइल (CHM)</string>
+    <string name="comic_book_title">कॉमिक</string>
+    <string name="comic_making">कॉमिक “%1$s” को किताब बनाया जा रहा है; तैयार होते ही खुल जाएगी। बोलने वाले बुलबुले मोटे तौर पर क्रम में पढ़े जाते हैं।</string>
+    <string name="comic_too_long">यह कॉमिक यहाँ पढ़ने के लिए बहुत लंबी है: ज़्यादा से ज़्यादा %1$d पन्ने, या फ़ाइल बहुत बड़ी है।</string>
+    <string name="comic_unreadable">ListenLock यह कॉमिक फ़ाइल नहीं पढ़ सका। हो सकता है वह ख़राब हो, या उसमें कोई तस्वीर न हो।</string>
+    <string name="reader_drm_locked">इस किताब पर बेचने वाली दुकान ने DRM ताला लगाया है, इसलिए ListenLock इसे नहीं पढ़ सकता। बिना DRM वाली किताबें हमेशा की तरह पढ़ी जाती हैं।</string>
+</resources>

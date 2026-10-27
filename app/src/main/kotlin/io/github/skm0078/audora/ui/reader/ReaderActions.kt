@@ -120,6 +120,9 @@ interface ReaderActions {
     /** "Bookmark here": the sentence being read on the shown page, else its first. */
     fun onBookmarkHere() = Unit
 
+    /** The player's bookmark button (CF-2): the same sentence as [onBookmarkHere], saved at once with a notice. */
+    fun onQuickBookmark() = Unit
+
     /** "Use for this book only" in the speech sheet (plan item 4). */
     fun onOwnSettings(on: Boolean) = Unit
 

@@ -66,6 +66,12 @@ class PdfReaderDocumentOpener(
             is Outcome.Failure -> Outcome.Failure(
                 when (opened.error) {
                     is TextBookError.Unreadable -> PdfOpenError.Unreadable(opened.error.message)
+
+                    is TextBookError.Locked -> PdfOpenError.Unreadable(
+                        opened.error.message,
+                        DrmLockedException(opened.error.message),
+                    )
+
                     else -> PdfOpenError.Damaged(opened.error.message)
                 },
             )
@@ -211,3 +217,9 @@ private fun originOf(source: PageSource): PageOrigin = when (source) {
 }
 
 private const val TAG = "Audora.ReaderDocument"
+
+/**
+ * Why a text book's [PdfOpenError.Unreadable] is a shop's DRM lock rather than a missing file: the reader says so
+ * ([ReaderFailure.LOCKED]) without `:pdf` knowing about e-books (ADR 2026-10-26-more-ebook-formats).
+ */
+class DrmLockedException(message: String) : Exception(message)

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: playback/src/main/res/values-bn/strings_lockscreen.xml -->
+<!-- Purpose: Bengali copy of values/strings_lockscreen.xml: What TalkBack says for the notification's and lock screen's buttons (CF-1). -->
+<resources>
+    <string name="lockscreen_previous">আগের বাক্য</string>
+    <string name="lockscreen_next">পরের বাক্য</string>
+    <string name="lockscreen_bookmark">এই বাক্যটি বুকমার্ক করুন</string>
+    <string name="lockscreen_bookmarked">বুকমার্ক করা হয়েছে</string>
+</resources>

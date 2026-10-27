@@ -30,6 +30,9 @@ interface LibraryActions {
 
     fun onCancelRemoval()
 
+    /** Undo on the "Removed" snackbar, within its few seconds: the book comes back as it was (CF-3). */
+    fun onUndoRemoval(id: BookId) = Unit
+
     fun onMessageShown()
 
     fun onScreenResumed()

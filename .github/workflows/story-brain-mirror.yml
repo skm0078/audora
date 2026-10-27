@@ -1,0 +1,62 @@
+# File: .github/workflows/story-brain-mirror.yml
+# Purpose: Publishes the story brain's model (speech/story-brain.json, ADR 2026-10-25-story-brain) to the "story-brain" release, as parts
+#          under GitHub's 2 GiB asset limit, each checked against its pin by scripts/build_story_brain_mirror.py.
+#
+# Assets are only ever added, never replaced: an APK in someone's hands keeps working after the pins move on. A push
+# to a feature branch only builds and checks (and prints the pins a new model needs); publishing happens from dev, or
+# from any branch when the workflow is started by hand, so a branch's test APK can download what it pins.
+
+name: Story brain mirror
+
+on:
+  push:
+    paths:
+      - speech/story-brain.json
+      - scripts/build_story_brain_mirror.py
+      - .github/workflows/story-brain-mirror.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: story-brain-mirror-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    name: Build, check and publish the story brain
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Build and check the parts against their pins
+        run: python3 scripts/build_story_brain_mirror.py --out dist
+
+      - name: Publish new parts to the story-brain release
+        if: github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: story-brain
+        run: |
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            gh release create "$TAG" --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "Story brain" \
+              --notes "The opt-in on-phone language model Audora's story brain downloads (speech/story-brain.json, ADR 2026-10-25-story-brain), cut into parts the app joins back. Licence and credit are in the catalog and the app. Assets are never replaced."
+          fi
+          existing=$(gh release view "$TAG" --json assets --jq '.assets[].name')
+          for part in dist/*; do
+            name=$(basename "$part")
+            if grep -qxF "$name" <<< "$existing"; then
+              echo "$name already published"
+            else
+              gh release upload "$TAG" "$part"
+              echo "Published $name"
+            fi
+          done

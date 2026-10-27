@@ -69,7 +69,7 @@ fun VoiceShapingSection(
             stringResource(R.string.speech_smart_speed),
             shaping.smartSpeed,
             { onChange(shaping.copy(smartSpeed = it)) },
-            help = stringResource(R.string.speech_smart_speed_detail, SMART_SPEED_FROM),
+            help = stringResource(R.string.speech_smart_speed_detail, SMART_SPEED_FROM, SMART_SPEED_ALWAYS_ABOVE),
         )
         OptionDivider()
         ChoiceOption(
@@ -123,3 +123,6 @@ private fun boostLabel(db: Int): String =
 
 /** Where smart speed starts to act: the voice model's own top speed (ADR-033, 049). */
 private val SMART_SPEED_FROM = speedLabel(SpeechStyleConfig().maxModelRate)
+
+/** Past this speed smart speed acts whatever the switch says (CF-6). */
+private val SMART_SPEED_ALWAYS_ABOVE = speedLabel(SpeechStyleConfig().smartAlwaysAbove)

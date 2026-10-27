@@ -54,7 +54,7 @@
     <string name="library_no_match">No book matches. Change the search or the filter.</string>
     <string name="library_error_cannot_keep">The app you picked from only lends the file for a moment. Save the file to your phone first, then add it from there.</string>
     <string name="library_error_unreadable">ListenLock could not read that file. It may have been moved or deleted.</string>
-    <string name="library_error_not_pdf">That file is not a book ListenLock can read: PDF, EPUB, Word, OpenDocument, RTF, web page, text or picture.</string>
+    <string name="library_error_not_pdf">That file is not a book ListenLock can read: PDF, EPUB, Word, OpenDocument, RTF, FB2, Kindle (MOBI, AZW3), CHM, comic (CBZ), web page, text or picture.</string>
     <string name="library_error_different_file">That is a different file. Pick the same file, or remove this book and add the new one.</string>
     <string name="library_error_not_in_library">That book is no longer in your library.</string>
     <string name="library_error_storage">ListenLock could not save your library. Is your phone\'s storage full?</string>
@@ -102,7 +102,7 @@
     <string name="reading_skip_unreadable">Skip unreadable text</string>
     <string name="reading_skip_unreadable_detail">On: garbled scan text plays a soft sound instead of nonsense words. Off: everything is read, even junk.</string>
     <string name="reading_tables">Tables</string>
-    <string name="reading_tables_summary">Size only</string>
+    <string name="reading_tables_summary">Summary</string>
     <string name="reading_tables_rows">Row by row</string>
     <string name="reading_footnotes">Footnotes</string>
     <string name="reading_footnotes_read">End of page</string>
@@ -239,14 +239,6 @@
     <string name="battery_open_app_settings">Open ListenLock\'s app info</string>
     <string name="battery_footer">If reading still stops with the screen off, share the logs from Settings: they record why Android stopped ListenLock.</string>
     <string name="battery_step_number">%1$d. %2$s</string>
-    <string name="battery_brand_motorola">On your Motorola phone</string>
-    <string name="battery_brand_oneplus">On your OnePlus phone</string>
-    <string name="battery_brand_samsung">On your Samsung phone</string>
-    <string name="battery_brand_xiaomi">On your Xiaomi, Redmi or POCO phone</string>
-    <string name="battery_brand_oppo">On your OPPO phone</string>
-    <string name="battery_brand_realme">On your realme phone</string>
-    <string name="battery_brand_vivo">On your vivo or iQOO phone</string>
-    <string name="battery_brand_other">On your phone</string>
     <string name="battery_step_unrestricted">In ListenLock\'s app info, open App battery usage (or Battery), turn on Allow background usage and choose Unrestricted.</string>
     <string name="battery_step_background_activity">In ListenLock\'s app info, open Battery usage and turn on Allow background activity.</string>
     <string name="battery_step_auto_launch">In ListenLock\'s app info, turn on Auto launch (also called Autostart).</string>

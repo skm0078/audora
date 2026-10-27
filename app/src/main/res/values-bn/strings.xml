@@ -58,7 +58,7 @@
     <string name="library_no_match">কোনো বই মেলেনি। খোঁজ বা ফিল্টার বদলান।</string>
     <string name="library_error_cannot_keep">যে অ্যাপ থেকে বেছেছেন, সেটি ফাইলটি শুধু অল্প সময়ের জন্য দেয়। আগে ফাইলটি ফোনে সেভ করুন, তারপর সেখান থেকে যোগ করুন।</string>
     <string name="library_error_unreadable">ListenLock ফাইলটি পড়তে পারেনি। হয়তো সেটি সরানো বা মুছে ফেলা হয়েছে।</string>
-    <string name="library_error_not_pdf">ফাইলটি এমন বই নয় যা ListenLock পড়তে পারে: PDF, EPUB, Word, OpenDocument, RTF, ওয়েব পেজ, লেখা বা ছবি।</string>
+    <string name="library_error_not_pdf">ফাইলটি এমন বই নয় যা ListenLock পড়তে পারে: PDF, EPUB, Word, OpenDocument, RTF, FB2, Kindle (MOBI, AZW3), CHM, কমিক (CBZ), ওয়েব পেজ, লেখা বা ছবি।</string>
     <string name="library_error_different_file">এটি অন্য একটি ফাইল। একই ফাইল বেছে নিন, অথবা এই বইটি সরিয়ে নতুনটি যোগ করুন।</string>
     <string name="library_error_not_in_library">বইটি আর আপনার লাইব্রেরিতে নেই।</string>
     <string name="library_error_storage">ListenLock আপনার লাইব্রেরি সেভ করতে পারেনি। ফোনের স্টোরেজ কি ভরে গেছে?</string>
@@ -106,7 +106,7 @@
     <string name="reading_skip_unreadable">অপাঠ্য লেখা বাদ দিন</string>
     <string name="reading_skip_unreadable_detail">চালু: স্ক্যানের গোলমেলে লেখা অর্থহীন শব্দের বদলে হালকা আওয়াজ বাজায়। বন্ধ: সব পড়া হয়, আবর্জনাও।</string>
     <string name="reading_tables">টেবিল</string>
-    <string name="reading_tables_summary">শুধু আকার</string>
+    <string name="reading_tables_summary">সারসংক্ষেপ</string>
     <string name="reading_tables_rows">সারি ধরে ধরে</string>
     <string name="reading_footnotes">পাদটীকা</string>
     <string name="reading_footnotes_read">পৃষ্ঠার শেষে</string>
@@ -243,14 +243,6 @@
     <string name="battery_open_app_settings">ListenLock-র অ্যাপ ইনফো খুলুন</string>
     <string name="battery_footer">স্ক্রিন বন্ধ থাকলে এখনো পড়া থেমে গেলে, সেটিংস থেকে লগ শেয়ার করুন: Android কেন ListenLock বন্ধ করেছে তা সেখানে লেখা থাকে।</string>
     <string name="battery_step_number">%1$d. %2$s</string>
-    <string name="battery_brand_motorola">আপনার Motorola ফোনে</string>
-    <string name="battery_brand_oneplus">আপনার OnePlus ফোনে</string>
-    <string name="battery_brand_samsung">আপনার Samsung ফোনে</string>
-    <string name="battery_brand_xiaomi">আপনার Xiaomi, Redmi বা POCO ফোনে</string>
-    <string name="battery_brand_oppo">আপনার OPPO ফোনে</string>
-    <string name="battery_brand_realme">আপনার realme ফোনে</string>
-    <string name="battery_brand_vivo">আপনার vivo বা iQOO ফোনে</string>
-    <string name="battery_brand_other">আপনার ফোনে</string>
     <string name="battery_step_unrestricted">ListenLock-র অ্যাপ ইনফোতে App battery usage (বা Battery) খুলুন, Allow background usage চালু করুন এবং Unrestricted বেছে নিন।</string>
     <string name="battery_step_background_activity">ListenLock-র অ্যাপ ইনফোতে Battery usage খুলুন এবং Allow background activity চালু করুন।</string>
     <string name="battery_step_auto_launch">ListenLock-র অ্যাপ ইনফোতে Auto launch (Autostart নামেও পরিচিত) চালু করুন।</string>

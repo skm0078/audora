@@ -1,21 +1,27 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/firstrun/FirstRunScreenTest.kt
-// Purpose: The first-run screens on a device: Next and the system back step through them, Skip and Not now finish.
+// Purpose: The first-run screens on a device: Next and the system back step through them, Skip and Not now finish,
+//          and the background step follows Android's answer (Optimized is not done; Unrestricted is).
 
 package io.github.skm0078.audora.ui.firstrun
 
 import android.net.Uri
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.battery.BackgroundAccess
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import io.github.skm0078.audora.ui.voices.VoicesActions
 import io.github.skm0078.audora.ui.voices.VoicesState
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -28,6 +34,8 @@ class FirstRunScreenTest {
     val rule = createAndroidComposeRule<ComponentActivity>()
 
     private var finished = false
+    private var access by mutableStateOf(BackgroundAccess.RESTRICTED)
+    private var allowTaps = 0
     private val steps = FirstRunStep.entries.size
 
     private fun text(id: Int, vararg args: Any) = rule.activity.getString(id, *args)
@@ -43,8 +51,8 @@ class FirstRunScreenTest {
             FirstRunScreen(
                 voices = VoicesState(rows = emptyList()),
                 voiceActions = NoVoiceActions,
-                backgroundAllowed = false,
-                onAllowBackground = {},
+                backgroundAccess = access,
+                onAllowBackground = { allowTaps++ },
                 onAddPdf = {},
                 onFinish = { finished = true },
             )
@@ -62,6 +70,19 @@ class FirstRunScreenTest {
         assertStep(steps)
         rule.onNodeWithText(text(R.string.first_run_later)).performClick()
         rule.runOnIdle { assertTrue(finished) }
+    }
+
+    /** The phone-test bug: background usage switched on, back in the app, and the step still said "Allow". */
+    @Test
+    fun backgroundStepFollowsAndroidsAnswer() {
+        repeat(FirstRunStep.BACKGROUND.ordinal) { next() }
+        rule.onNodeWithText(text(R.string.first_run_background_allow)).performClick()
+        access = BackgroundAccess.OPTIMIZED // as the resume check finds it after "Allow background usage"
+        rule.onNodeWithText(text(R.string.battery_status_optimized)).assertIsDisplayed()
+        rule.onNodeWithText(text(R.string.battery_choose_unrestricted)).performClick()
+        access = BackgroundAccess.UNRESTRICTED
+        rule.onNodeWithText(text(R.string.first_run_background_done)).assertIsDisplayed()
+        rule.runOnIdle { assertEquals(2, allowTaps) }
     }
 
     @Test

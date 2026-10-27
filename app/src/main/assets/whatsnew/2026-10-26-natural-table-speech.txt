@@ -1,0 +1,3 @@
+en: Tables are read like a person explaining them: what the table holds, then each row as one sentence ("Ram: age 34 and city Delhi"). Footnotes come a touch quicker and softer.
+hi: तालिकाएँ अब ऐसे पढ़ी जाती हैं जैसे कोई समझा रहा हो: पहले तालिका में क्या है, फिर हर पंक्ति एक वाक्य में ("राम: आयु 34 और शहर दिल्ली")। फ़ुटनोट थोड़े तेज़ और धीमी आवाज़ में।
+bn: সারণি এখন এমনভাবে পড়া হয় যেন কেউ বুঝিয়ে বলছে: আগে সারণিতে কী আছে, তারপর প্রতিটি সারি এক বাক্যে ("রাম: বয়স ৩৪ আর শহর দিল্লি")। পাদটীকা একটু তাড়াতাড়ি আর নরম স্বরে।

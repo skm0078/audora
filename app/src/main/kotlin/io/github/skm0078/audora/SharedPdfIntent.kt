@@ -11,7 +11,7 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 
 /** [title] from the sharing app's subject line, when it gives one. */
 data class SharedText(val title: String?, val text: String) {
-    /** A browser's "Share" of a page sends only its link; Audora never fetches pages, so there is nothing to read. */
+    /** A browser's "Share" of a page sends only its link: ListenLock asks whether to read that page (CF-12). */
     val isOnlyLink: Boolean get() = LINK.matches(text.trim())
 
     private companion object {

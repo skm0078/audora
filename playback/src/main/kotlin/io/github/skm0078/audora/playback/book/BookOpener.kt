@@ -123,6 +123,7 @@ class LibraryBookSource(
         is TextBookError.Damaged -> "This book looks damaged"
         is TextBookError.TooLarge -> "This book is too large to read"
         is TextBookError.Unreadable -> "The book was moved, deleted or is protected"
+        is TextBookError.Locked -> "This book is locked with DRM by the shop that sold it"
         TextBookError.NoText -> "This book has no text to read"
     }
 

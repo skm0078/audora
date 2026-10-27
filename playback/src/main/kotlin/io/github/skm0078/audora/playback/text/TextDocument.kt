@@ -36,6 +36,12 @@ sealed interface TextBookError {
 
     data class Unreadable(override val message: String) : TextBookError
 
+    /**
+     * Locked with DRM by the shop that sold it (an EPUB's encryption, a Kindle book's): refused, never broken, and the
+     * listener is told why (ADR 2026-10-26-more-ebook-formats).
+     */
+    data class Locked(override val message: String) : TextBookError
+
     /** The book has no text to read (an EPUB of images only, an empty file). */
     data object NoText : TextBookError {
         override val message = "no text"

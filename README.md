@@ -42,7 +42,7 @@ What changed and what still needs checking on a phone: [docs/PROGRESS.md](docs/P
 **Listening**
 - Picks up at the same sentence, even after a restart. Sleep timer by minutes, end of page or end of chapter.
 - Follow along on the page with the sentence (and word) highlighted, or in a clean text view.
-- Speed from 0.5× to 3× (**Smart speed** keeps fast speech clear), headset and lock-screen controls, Android Auto,
+- Speed from 0.5× to 4× (**Smart speed** keeps fast speech clear, and is always on above 3×), headset and lock-screen controls, Android Auto,
   a home-screen widget, a Quick Settings tile, volume keys that skip sentences, and screen-off voice commands
   ("ListenLock, pause").
 - **Skim** reads only headings, captions and each paragraph's first sentence; skip by paragraph; a quiet **focus
@@ -70,6 +70,8 @@ What changed and what still needs checking on a phone: [docs/PROGRESS.md](docs/P
 - The internet is used only for downloads you choose (voices, OCR, dictionaries, voice commands). They come from
   this project's GitHub releases or the upstream project's own GitHub, over HTTPS, and each file is checked against a
   fingerprint built into the app.
+- A web page you ask ListenLock to read, and a book you tap Download on in a free catalogue (Project Gutenberg or one
+  you add), are fetched once, over HTTPS, straight from that website; nothing about you is sent.
 - **App lock** (off by default) asks for your phone's own fingerprint, face or screen lock. **Hide app content** blocks
   screenshots and the recent-apps preview.
 - Android's cloud backup and phone-to-phone transfer are off; Back up and restore makes a file that you keep.

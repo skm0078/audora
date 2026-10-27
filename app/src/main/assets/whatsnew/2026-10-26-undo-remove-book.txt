@@ -1,0 +1,3 @@
+en: Removed a book by mistake? Tap Undo within a few seconds and it comes back with its place and notes.
+hi: गलती से किताब हटा दी? कुछ सेकंड में "वापस लाएँ" दबाएँ, किताब अपनी जगह और नोट्स के साथ लौट आएगी।
+bn: ভুল করে বই সরিয়ে ফেলেছেন? কয়েক সেকেন্ডের মধ্যে "ফিরিয়ে আনুন" চাপুন, বইটি তার জায়গা আর নোট সহ ফিরে আসবে।

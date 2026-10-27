@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Books from the web, only on the listener's tap: a web page read from its link (CF-12) and free OPDS book
+     catalogues (CF-15). ADR 2026-10-26-web-books. -->
+<resources>
+    <string name="library_read_web_page">ওয়েব পেজ পড়ান</string>
+    <string name="menu_hint_read_web_page">ওয়েব ঠিকানা লিখুন বা পেস্ট করুন। ListenLock শুধু সেই পেজটি একবার ডাউনলোড করে, মেনু বা বিজ্ঞাপন ছাড়া তার লেখাটি পড়ে।</string>
+    <string name="library_book_catalogues">বিনামূল্যের বইয়ের তালিকা</string>
+    <string name="menu_hint_book_catalogues">Project Gutenberg বা আপনার যোগ করা অন্য তালিকা দেখুন আর বিনামূল্যের বই ডাউনলোড করুন। শুধু যে বইয়ে ট্যাপ করবেন সেটিই ডাউনলোড হয়।</string>
+
+    <string name="web_page_title">ওয়েব পেজ পড়ান</string>
+    <string name="web_page_explain">ListenLock এই পেজটি একবার ডাউনলোড করে, শুধু লেখাটি রাখে আর বইয়ের মতো পড়ে। আপনার সম্পর্কে কিছুই পাঠানো হয় না।</string>
+    <string name="web_page_address">ওয়েব ঠিকানা</string>
+    <string name="web_read">পড়ুন</string>
+    <string name="web_cancel">বাতিল</string>
+    <string name="web_shared_link_title">এই ওয়েব পেজটি পড়াবেন?</string>
+    <string name="web_shared_link_body">ListenLock %1$s থেকে পেজটি একবার ডাউনলোড করে তার লেখাটি পড়বে।</string>
+    <string name="web_getting_page">%1$s থেকে পেজ আনা হচ্ছে</string>
+    <string name="web_downloading_book">%1$s ডাউনলোড হচ্ছে</string>
+    <string name="web_busy">আরেকটি ডাউনলোড চলছে। সেটি শেষ হওয়া পর্যন্ত অপেক্ষা করুন বা বাতিল করুন।</string>
+
+    <string name="web_error_address">এটি ওয়েব ঠিকানা নয়। দেখে নিয়ে আবার চেষ্টা করুন।</string>
+    <string name="web_error_unreachable">সাইটে পৌঁছানো গেল না। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।</string>
+    <string name="web_error_refused">সাইটটি রাজি হয়নি (ত্রুটি %1$d)। পেজটির জন্য লগ-ইন লাগতে পারে, বা সেটি আর নেই।</string>
+    <string name="web_error_too_big">এটি ডাউনলোড করার পক্ষে খুব বড়।</string>
+    <string name="web_error_no_article">ওই পেজে পড়ার মতো কোনো লেখা নেই। সাইটের হোম পেজ নয়, লেখাটিই খুলুন।</string>
+    <string name="web_error_not_catalogue">এই ঠিকানাটি বইয়ের তালিকা (OPDS) নয়।</string>
+    <string name="web_error_not_saved">এই ফোনে সেভ করা গেল না। কিছু জায়গা খালি করে আবার চেষ্টা করুন।</string>
+
+    <string name="catalogues_title">বিনামূল্যের বইয়ের তালিকা</string>
+    <string name="catalogues_explain">ডাউনলোডে ট্যাপ করলে তবেই বই ডাউনলোড হয়, সরাসরি তালিকার নিজের ওয়েবসাইট থেকে। কোনো অ্যাকাউন্ট নেই, আপনার সম্পর্কে কিছুই পাঠানো হয় না।</string>
+    <string name="catalogues_add_hint">তালিকা যোগ করুন (OPDS ঠিকানা)</string>
+    <string name="catalogues_add">তালিকা যোগ করুন</string>
+    <string name="catalogues_added">তালিকা যোগ হয়েছে।</string>
+    <string name="catalogues_already">এই তালিকাটি আগেই আছে।</string>
+    <string name="catalogues_too_many">তালিকা ভরে গেছে। আগে একটি সরান।</string>
+    <string name="catalogues_not_saved">তালিকা সেভ করা গেল না। আবার চেষ্টা করুন।</string>
+    <string name="catalogues_remove">সরান</string>
+    <string name="catalogues_search_hint">এই তালিকায় খুঁজুন</string>
+    <string name="catalogues_search">খুঁজুন</string>
+    <string name="catalogues_more">আরও</string>
+    <string name="catalogues_download">ডাউনলোড</string>
+    <string name="catalogues_empty">এখানে কিছু নেই।</string>
+    <string name="catalogues_try_again">আবার চেষ্টা করুন</string>
+    <string name="catalogues_close">বন্ধ করুন</string>
+</resources>

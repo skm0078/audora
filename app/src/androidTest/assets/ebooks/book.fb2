@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+<description><title-info><author><first-name>Ann</first-name><last-name>Writer</last-name></author>
+<book-title>A Journey Book</book-title><lang>en</lang></title-info></description>
+<body><section><title><p>Chapter One</p></title><p>The first chapter of a small FictionBook.</p>
+<p>It has a note<a l:href="#n1" type="note">[1]</a> and a second sentence.</p></section>
+<section><title><p>Chapter Two</p></title><p>The second chapter ends the book.</p></section></body>
+<body name="notes"><section id="n1"><title><p>1</p></title><p>The note's own words.</p></section></body>
+</FictionBook>

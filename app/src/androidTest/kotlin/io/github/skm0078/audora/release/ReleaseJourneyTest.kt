@@ -1,19 +1,23 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/release/ReleaseJourneyTest.kt
 // Purpose: The release blockers a machine can check, on the real app (MainActivity, the playback service, the
 //          bundled voice) on CI's emulator: first run, "Open with", play without the notification permission, the
-//          media controls a notification or lock screen sends, a new voice and a reading setting applying at once,
-//          Settings rows, pages and Back, Hide app content, the ListenLock name, and a scan read after the OCR
-//          download. One test on one fresh install, as one listener would use the app: AndroidJUnitRunner finishes
-//          every activity between tests, so the steps are named blocks inside it and the first broken one stops it.
+//          media controls a notification or lock screen sends and its own buttons (CF-1), a new voice and a reading
+//          setting applying at once, Settings rows, pages and Back, Hide app content, the ListenLock name, a scan read
+//          after the OCR download, and the e-book formats and comic archives of ADR 2026-10-26-more-ebook-formats. One
+//          test on one fresh install, as one listener would use the app: AndroidJUnitRunner finishes every activity
+//          between tests, so the steps are named blocks inside it and the first broken one stops it.
 
 package io.github.skm0078.audora.release
 
 import android.Manifest
 import android.app.Activity
+import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
+import androidx.annotation.OptIn
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasClickAction
@@ -26,11 +30,18 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.printToString
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.common.util.concurrent.ListenableFuture
 import io.github.skm0078.audora.MainActivity
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.playback.contract.LockScreenCommands
+import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.privacy.PrivacyPreferences
 import io.github.skm0078.audora.privacy.PrivacySettings
 import io.github.skm0078.audora.release.JourneyDevice.app
@@ -41,6 +52,7 @@ import io.github.skm0078.audora.ui.firstrun.FirstRunStep
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
 import io.github.skm0078.audora.ui.reader.ReadingPosition
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -62,11 +74,12 @@ class ReleaseJourneyTest {
     fun aListenerUsesTheAppFromFirstRunToAScan() {
         JourneyDevice.captureLogs()
         try {
-            step("01 first run walks through and finishes", ::firstRunWalksThroughAndFinishes)
+            step("01 first run plays a voice sample; Try a sample opens the reader", ::firstRunWalksThroughAndFinishes)
             step("02 the launcher says ListenLock", ::theLauncherSaysListenLock)
             step("03 Open with adds the book and opens the reader", ::openWithAddsTheBookAndOpensTheReader)
             step("04 play starts without the notification permission", ::playStartsWithoutTheNotificationPermission)
             step("05 media controls pause, resume and skip", ::mediaControlsPauseResumeAndSkip)
+            step("05b the lock screen's buttons go back, on and bookmark", ::lockScreenButtonsGoBackOnAndBookmark)
             step("06 a new voice applies while playing", ::aNewVoiceAppliesWhilePlaying)
             step("07 a new voice applies while paused", ::aNewVoiceAppliesWhilePaused)
             step("08 a Settings row toggles from its title and applies at once", ::aRowTogglesFromItsTitle)
@@ -74,6 +87,8 @@ class ReleaseJourneyTest {
             step("10 Privacy and Advanced open and go back", ::privacyAndAdvancedOpenAndGoBack)
             step("11 Hide app content blocks screenshots", ::hideAppContentBlocksScreenshots)
             step("12 a scan offers OCR and reads after the download", ::aScanOffersOcrAndReadsAfterTheDownload)
+            step("13 Open with reads FB2, Kindle and help-file books", ::openWithReadsMoreEbookFormats)
+            step("14 Open with makes a comic archive into a photo book", ::openWithMakesAComicIntoAPhotoBook)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -170,11 +185,24 @@ class ReleaseJourneyTest {
         val stepOne = hasText(text(R.string.first_run_step, 1, firstRunSteps))
         waitForNode(stepOne)
         node(hasText(text(R.string.first_run_privacy))).assertExists()
-        repeat(firstRunSteps - 1) { tapText(R.string.first_run_next) }
+        tapText(R.string.first_run_next)
+        playAVoiceSample()
+        repeat(firstRunSteps - 2) { tapText(R.string.first_run_next) }
         node(hasText(text(R.string.first_run_step, firstRunSteps, firstRunSteps))).assertExists()
-        tapText(R.string.first_run_later)
-        waitForNode(hasText(text(R.string.tab_library)))
+        // Phone test 2026-10-26: a sample crashed the app. The sample book is saved and opened like shared text.
+        tapText(R.string.sample_try)
+        waitForNode(hasContentDescription(text(R.string.reader_play)), OPEN_TIMEOUT_MS)
         gone(stepOne)
+        backToTabs()
+    }
+
+    /** The bundled voice's "Play a sample" on the voices step, heard to the end (the stop button goes away). */
+    private fun playAVoiceSample() {
+        val play = hasContentDescription(text(R.string.voices_sample_play, ""), substring = true) and hasClickAction()
+        tap(play)
+        val stop = hasContentDescription(text(R.string.voices_sample_stop, ""), substring = true)
+        gone(stop, PLAY_TIMEOUT_MS)
+        node(play).assertExists()
     }
 
     private fun theLauncherSaysListenLock() {
@@ -225,6 +253,49 @@ class ReleaseJourneyTest {
         awaitTrue("next sentence while paused", state = { "Player: ${snapshot()}" }) { position() != paused }
         JourneyDevice.onMain(player::play)
         awaitReadingMovesOn("play after pause and skip")
+    }
+
+    /**
+     * The buttons the notification and lock screen draw (CF-1), sent as Audora's notification controller sends them:
+     * a controller from this package, like the one System UI's taps are routed through.
+     */
+    @OptIn(UnstableApi::class)
+    private fun lockScreenButtonsGoBackOnAndBookmark() {
+        val controller = MediaController.Builder(app, PlaybackContract.sessionToken(app)).buildAsync()
+            .get(UI_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        try {
+            var shown = emptyList<String?>()
+            JourneyDevice.onMain { shown = controller.mediaButtonPreferences.map { it.sessionCommand?.customAction } }
+            assertTrue("The lock screen's buttons were $shown", shown.containsAll(LockScreenCommands.ACTIONS))
+            pause()
+            awaitTrue("the next sentence to be ready", state = {
+                "Player: ${snapshot()}"
+            }) { snapshot().canSkipForward }
+            val before = position()
+            send(controller, LockScreenCommands.NEXT_SENTENCE)
+            awaitTrue("next sentence from the lock screen", state = {
+                "Player: ${snapshot()}"
+            }) { position() != before }
+            send(controller, LockScreenCommands.PREVIOUS_SENTENCE)
+            awaitTrue("previous sentence from the lock screen", state = { "Player: ${snapshot()}" }) {
+                position() == before
+            }
+            val bookmarks = JourneyDevice.logCount(LOCK_SCREEN_BOOKMARK)
+            send(controller, LockScreenCommands.BOOKMARK)
+            awaitLog(LOCK_SCREEN_BOOKMARK, bookmarks)
+            assertFalse("A lock-screen button must not start a paused book", snapshot().wantsToPlay)
+            JourneyDevice.onMain(requireNotNull(port)::play)
+            awaitReadingMovesOn("play after the lock screen's buttons")
+        } finally {
+            JourneyDevice.onMain { controller.release() }
+        }
+    }
+
+    private fun send(controller: MediaController, command: SessionCommand) {
+        var result: ListenableFuture<SessionResult>? = null
+        JourneyDevice.onMain { result = controller.sendCustomCommand(command, Bundle.EMPTY) }
+        val code = requireNotNull(result).get(UI_TIMEOUT_MS, TimeUnit.MILLISECONDS).resultCode
+        assertEquals("${command.customAction} answered $code", SessionResult.RESULT_SUCCESS, code)
     }
 
     private fun aNewVoiceAppliesWhilePlaying() {
@@ -316,6 +387,54 @@ class ReleaseJourneyTest {
         waitForNode(hasText(text(R.string.reader_ocr_badge)), OCR_DOWNLOAD_TIMEOUT_MS)
     }
 
+    /**
+     * Each format is told from its bytes, added and opened as a text book (ADR 2026-10-26-more-ebook-formats): the
+     * reader shows the book's own first sentence. The library's mini player also has a Play button, so the reader's
+     * text, not its controls, is what is checked; TextBooks' log lines name a failed open.
+     */
+    private fun openWithReadsMoreEbookFormats() {
+        for ((asset, type, sentence) in MORE_FORMATS) {
+            backToTabs()
+            val uri = JourneyDevice.downloadedBook(asset)
+            val current = activity()
+            JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, type)) }
+            awaitTrue("$asset to show \"$sentence\" in the reader", OPEN_TIMEOUT_MS, state = ::textBookLog) {
+                rule.onAllNodes(hasText(sentence, substring = true)).fetchSemanticsNodes().isNotEmpty()
+            }
+        }
+    }
+
+    private fun textBookLog(): String =
+        "Opened: ${JourneyDevice.logCount(TEXT_BOOK_OPENED)}, not opened: ${JourneyDevice.logCount(TEXT_BOOK_FAILED)}"
+
+    /**
+     * A comic archive is not added as a book: its pages become a photo book, added to the library, which opens in the
+     * reader by itself. Its pages are blank pictures; OCR reading a picture page is step 12's. The library's work runs
+     * in the screen's scope, which the Compose test clock drives, so these waits go through [awaitSynced].
+     */
+    private fun openWithMakesAComicIntoAPhotoBook() {
+        backToTabs()
+        val added = JourneyDevice.logCount(PHOTO_BOOK_ADDED)
+        val uri = JourneyDevice.downloadedBook(COMIC)
+        val current = activity()
+        JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, COMIC_TYPE)) }
+        awaitSynced("the comic to be added as a photo book", OPEN_TIMEOUT_MS) {
+            JourneyDevice.logCount(PHOTO_BOOK_ADDED) > added
+        }
+        awaitSynced("the comic to open in the reader", OPEN_TIMEOUT_MS) {
+            rule.onAllNodes(hasText(COMIC_TITLE)).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    /** Waits on the Compose test clock (frames and effects run meanwhile); a timeout lists the app's last log lines. */
+    private fun awaitSynced(what: String, timeoutMs: Long, condition: () -> Boolean) {
+        try {
+            rule.waitUntil(timeoutMs, condition)
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Timed out waiting for: $what. Last log lines: ${JourneyDevice.logTail(LOG_TAIL)}", e)
+        }
+    }
+
     private fun pause() {
         JourneyDevice.onMain(requireNotNull(port)::pause)
         awaitTrue("pause", state = { "Player: ${snapshot()}" }) { !snapshot().wantsToPlay }
@@ -351,6 +470,27 @@ class ReleaseJourneyTest {
         const val LOG_TAG = "ReleaseJourney"
         const val BOOK = "en-udhr-noto.pdf"
         const val SCAN = "en-udhr-noto-scan200bad-p1.pdf"
+
+        // assets/ebooks, written by scripts/fixtures/make_ebook_fixtures.py, with the type a Files app sends and
+        // a sentence from the book's first page.
+        val MORE_FORMATS = listOf(
+            Triple("book.fb2", "application/x-fictionbook+xml", "The first chapter of a small FictionBook."),
+            Triple("kf8.azw3", "application/vnd.amazon.mobi8-ebook", "The first file"),
+            Triple("help.chm", "application/vnd.ms-htmlhelp", "Press the green button to begin."),
+        )
+
+        // TextBooks' own words when a text book opens, or does not (shown when a step times out).
+        const val TEXT_BOOK_OPENED = "Text book opened"
+        const val TEXT_BOOK_FAILED = "Text book not opened"
+        const val COMIC = "comic.cbz"
+        const val COMIC_TYPE = "application/vnd.comicbook+zip"
+
+        // The photo book is named after the file; the reader's top bar shows it.
+        const val COMIC_TITLE = "comic"
+
+        // PhotoBooks' own words once the photo book is in the library.
+        const val PHOTO_BOOK_ADDED = "Photo book added"
+        const val LOG_TAIL = 30
         val firstRunSteps = FirstRunStep.entries.size
         const val MAX_BACKS = 4
         const val POLL_MS = 200L
@@ -364,5 +504,6 @@ class ReleaseJourneyTest {
         // The service's own words when it acts on a change (AudoraPlaybackService.followReadingChanges).
         const val VOICE_RESTART = "Reading voices changed; restarting the sentence"
         const val TEXT_REREAD = "Reading text settings changed; reading the open book again"
+        const val LOCK_SCREEN_BOOKMARK = "Lock screen bookmark added"
     }
 }

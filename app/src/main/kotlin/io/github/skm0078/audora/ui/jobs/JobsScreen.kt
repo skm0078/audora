@@ -224,6 +224,7 @@ private fun labelOf(kind: DownloadKind): DownloadLabel = when (kind) {
     DownloadKind.PUNCTUATION -> DownloadLabel(null, R.string.storage_punctuation)
     DownloadKind.VOICE_COMMANDS -> DownloadLabel(null, R.string.storage_voice_commands)
     DownloadKind.ACTED_VOICE -> DownloadLabel(null, R.string.storage_acted_voice)
+    DownloadKind.STORY_BRAIN -> DownloadLabel(null, R.string.storage_story_brain)
 }
 
 /** Opens the Jobs screen once a job's notification asked for it ([requested]), and clears the request. */

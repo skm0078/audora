@@ -35,12 +35,20 @@ media3 = "1.11.1"
 room = "2.8.5"
 datastore = "1.2.1"
 work = "2.12.0"
+# Web pages and OPDS catalogues read on the listener's tap (CF-12, CF-15; ADR 2026-10-26-web-books). Readability4J's
+# last release asks for jsoup 1.11; the current jsoup is pinned instead (fixes since then, same API it uses).
+readability4j = "1.0.8"
+jsoup = "1.23.2"
 pdfiumAndroid = "2.0.3"
 # sherpa-onnx ships as an AAR on its GitHub releases, not on Maven: resolved from there by an exclusive ivy
 # repository (settings.gradle.kts) and checked against this SHA-256 before every build that uses it (ADR-012).
 # Bump both together.
 sherpaOnnx = "1.13.8"
 sherpaOnnxAarSha256 = "633c24321e06b1fe79feafa03ea16cbc0f8a286641e2da3559bac91bdb13bd96"
+# llama.cpp for the story brain (ADR 2026-10-25-story-brain): built from source in :speech's CMake build (arm64 only), from GitHub's
+# archive of this release tag, checked against this SHA-256 (LlamaCppSourceTask). Bump both together.
+llamaCpp = "b11887"
+llamaCppSha256 = "4642d708747f0be2e6af630f016f564618882b58fb92f80585c717a084af4225"
 # Tesseract4Android (Phase 3 OCR, ADR-011/ADR-025): Tesseract 5.5.1 + Leptonica, built 16 KB-aligned. Published only on
 # JitPack, resolved through an exclusive repository (settings.gradle.kts) and checked against this SHA-256 before
 # every :pdf build. Standard (single-threaded) variant. Bump both together.
@@ -79,6 +87,8 @@ room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
+readability4j = { module = "net.dankito.readability4j:readability4j", version.ref = "readability4j" }
+jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 # :pdf uses the core and api modules of PdfiumAndroidKt directly: the core exposes the native page pointers the
 # JNI library needs (ADR-011). Same library and version as the public wrapper, which :pdf does not use.
 pdfium-android-core = { module = "io.legere:pdfiumandroid-core", version.ref = "pdfiumAndroid" }

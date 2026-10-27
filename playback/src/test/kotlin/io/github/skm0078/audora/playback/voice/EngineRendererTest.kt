@@ -4,21 +4,25 @@
 
 package io.github.skm0078.audora.playback.voice
 
+import io.github.skm0078.audora.core.config.NarrationConfig
 import io.github.skm0078.audora.core.config.PaceTiming
 import io.github.skm0078.audora.core.config.SpeechStyleConfig
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.EquationMode
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
+import io.github.skm0078.audora.core.model.ParagraphPlace
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.pdf.quality.LanguageModel
 import io.github.skm0078.audora.playback.TEST_SAMPLE_RATE
 import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.queue.UnitKey
+import io.github.skm0078.audora.playback.reading.SentenceLanguage
 import io.github.skm0078.audora.playback.session.SentenceTimings
 import io.github.skm0078.audora.playback.unit
 import io.github.skm0078.audora.speech.RenderResult
@@ -26,10 +30,12 @@ import io.github.skm0078.audora.speech.SpeechEngine
 import io.github.skm0078.audora.speech.SpeechError
 import io.github.skm0078.audora.speech.VoiceInfo
 import io.github.skm0078.audora.speech.audio.PcmAudio
+import io.github.skm0078.audora.speech.delivery.NarrationArc
 import io.github.skm0078.audora.speech.route.VoiceSource
 import io.github.skm0078.audora.speech.voices.MeasuredSpeeds
 import io.github.skm0078.audora.speech.voices.SpeedSample
 import io.github.skm0078.audora.speech.voices.VoiceSpeed
+import kotlin.math.pow
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -44,6 +50,9 @@ class EngineRendererTest {
         override val id = EngineId.SHERPA
 
         override suspend fun voiceFor(lang: Lang): Outcome<VoiceId, SpeechError> = Outcome.Success(VOICE)
+
+        override suspend fun phoneVoiceFor(language: String): Outcome<VoiceId, SpeechError> =
+            Outcome.Success(VoiceId(EngineId.SYSTEM, "phone-$language"))
 
         override fun engine(id: EngineId): Outcome<SpeechEngine, SpeechError> = Outcome.Success(this)
 
@@ -60,6 +69,10 @@ class EngineRendererTest {
 
         override fun release() = Unit
     }
+
+    /** The sentence rule over an English word list of just [words], so the test does not hang on the bundled one. */
+    private fun englishWords(words: String) =
+        SentenceLanguage(english = { LanguageModel(words.split(' ').associateWith { 1 } + ("improvement" to 1)) })
 
     private val recorded = ArrayList<SpeedSample>()
     private val speeds = object : MeasuredSpeeds {
@@ -119,6 +132,32 @@ class EngineRendererTest {
     }
 
     @Test
+    fun `a French book is read by the phone's French voice as written, its English sentences in English`() {
+        val voices = RecordingVoices()
+        val reading = ReadingSetup(language = { "fr-FR" }, sentences = englishWords("the results show clear accuracy"))
+        val renderer = EngineRenderer(voices, styleConfig = flatPaces, reading = reading)
+
+        renderer.render(unit(0, 0).copy(text = "Il a payé 5 € hier soir."))
+        renderer.render(unit(0, 1).copy(text = "The results show a clear improvement in accuracy."))
+
+        assertEquals(listOf(VoiceId(EngineId.SYSTEM, "phone-fr"), VOICE), voices.readBy)
+        assertEquals("Il a payé 5 € hier soir.", voices.spoken.first())
+    }
+
+    @Test
+    fun `a French sentence scored low by the English word list is still read, not cued`() {
+        val voices = RecordingVoices()
+        val polish = unit(0, 0).copy(text = "Dziś rano przeczytałem bardzo ciekawą książkę.", speakScore = 0.37f)
+
+        val reading = ReadingSetup(language = { "pl" }, sentences = englishWords("the"))
+        EngineRenderer(voices, styleConfig = flatPaces, reading = reading).render(polish)
+        EngineRenderer(voices, styleConfig = flatPaces).render(polish)
+
+        // Read by the Polish voice in the Polish book; the same score in an English book is junk, as before.
+        assertEquals(listOf(VoiceId(EngineId.SYSTEM, "phone-pl")), voices.readBy)
+    }
+
+    @Test
     fun `each clip's layout is recorded for the word highlight`() {
         val timings = SentenceTimings()
         val renderer = EngineRenderer(RecordingVoices(), styleConfig = flatPaces, timings = timings)
@@ -127,7 +166,11 @@ class EngineRendererTest {
         renderer.render(sentence)
 
         // No cue, 20 ms of voice ("Pay five rupees now." at 1 kHz), then the 400 ms pause.
-        assertEquals(SentenceTiming(2, 30, 5, 0, 20, 420), timings.of(UnitKey(2, 5)))
+        val timing = requireNotNull(timings.of(UnitKey(2, 5)))
+        assertEquals(SentenceTiming(2, 30, 5, 0, 20, 420), timing.copy(wordStartsMs = emptyList()))
+        // A start for each of the written words the reader highlights ("Pay", "₹5", "now."), read off the voice.
+        assertEquals(3, timing.wordStartsMs.size)
+        assertEquals(timing.wordStartsMs.sorted(), timing.wordStartsMs)
     }
 
     @Test
@@ -156,6 +199,31 @@ class EngineRendererTest {
 
         // Snapped to the slider's step; above the cap the player stretches the rest.
         assertEquals(listOf(1.35f, 1.5f), voices.rates)
+    }
+
+    @Test
+    fun `narration rises and falls by the sentence's place only with the arc and Read to suit the book on`() {
+        val steady = NarrationArc(NarrationConfig(jitterSemitones = 0f, jitterRate = 0f))
+        val sectionStart = ReadingSetup(placeOf = { ParagraphPlace(0, 3, afterHeading = true) }, narration = steady)
+        val plain = RecordingVoices()
+        val narrated = RecordingVoices()
+        val switchedOff = RecordingVoices()
+        val off = SpeechStyle(shaping = VoiceShaping(suitBook = false))
+
+        EngineRenderer(plain, styleConfig = flatPaces).render(unit(0, 0).copy(text = "Hello."))
+        EngineRenderer(
+            narrated,
+            styleConfig = flatPaces,
+            reading = sectionStart,
+        ).render(unit(0, 0).copy(text = "Hello."))
+        EngineRenderer(switchedOff, style = { off }, styleConfig = flatPaces, reading = sectionStart)
+            .render(unit(0, 0).copy(text = "Hello."))
+
+        // A section's first sentence: slower, and a little higher, which the voice is asked for as a slower rate still.
+        val pitch = 2.0.pow(NarrationConfig.DEFAULT_START_SEMITONES / 12.0).toFloat()
+        val expected = plain.rates.single() * NarrationConfig.DEFAULT_SECTION_START_RATE / pitch
+        assertEquals(expected, narrated.rates.single(), 1e-4f)
+        assertEquals(plain.rates, switchedOff.rates)
     }
 
     @Test

@@ -56,7 +56,7 @@ interface PlaybackPort {
     /** Shake to extend, fade-out and bedtime auto-on (plan item 37); the service keeps them. */
     fun setSleepOptions(options: SleepOptions)
 
-    /** Rain, café or brown noise under the voice, and how loud (plan item 72); the service keeps it. */
+    /** A nature recording or brown noise under the voice, and how loud (plan item 72); the service keeps it. */
     fun setFocusSound(options: FocusSoundOptions)
 
     /** The open book keeps its own speed, pace and voices (plan item 4), or follows the global ones again. */

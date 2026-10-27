@@ -292,6 +292,13 @@ class BookVoices(
 internal fun focusSoundLabel(sound: FocusSound): Int = when (sound) {
     FocusSound.OFF -> R.string.focus_off
     FocusSound.RAIN -> R.string.focus_rain
-    FocusSound.CAFE -> R.string.focus_cafe
+    FocusSound.FOREST_RAIN -> R.string.focus_forest_rain
+    FocusSound.STREAM -> R.string.focus_stream
+    FocusSound.BROOK -> R.string.focus_brook
+    FocusSound.RIVER -> R.string.focus_river
+    FocusSound.FOREST_BIRDS -> R.string.focus_forest_birds
+    FocusSound.SPRING_BIRDS -> R.string.focus_spring_birds
+    FocusSound.FIREPLACE -> R.string.focus_fireplace
+    FocusSound.WIND -> R.string.focus_wind
     FocusSound.BROWN_NOISE -> R.string.focus_brown_noise
 }

@@ -1,5 +1,6 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/photo/PhotoBookFile.kt
-// Purpose: Writes photos, upright and scaled, as the pages of a PDF with no text layer (ADR-043, ADR-066).
+// Purpose: Writes photos, upright and scaled, as the pages of a PDF with no text layer (ADR-043, ADR-066); comic
+//          pages too (ADR 2026-10-26-more-ebook-formats).
 
 package io.github.skm0078.audora.playback.photo
 
@@ -13,22 +14,28 @@ import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.roundToInt
 
-/** The file side of [PhotoBooks]: decoding, scaling and JPEG encoding of each photo, and the PDF around them. */
+/**
+ * The file side of [PhotoBooks] and comic books: decoding, scaling and JPEG encoding of each picture, and the PDF
+ * around them.
+ */
 internal class PhotoBookFile(private val config: PhotoConfig) {
     /**
      * Each picture, upright and scaled, as a page of a PDF in [target]: one picture in memory at a time, and the
      * file flushed to disk before it is moved, so a crash never leaves half a book that looks whole.
      */
-    fun write(sources: List<ImageDecoder.Source>, target: File) {
+    fun write(sources: List<ImageDecoder.Source>, target: File) = write(sources.size, sources::get, target)
+
+    /** [pages] pictures, each made by [sourceAt] only when its page is written (a comic's page from its archive). */
+    fun write(pages: Int, sourceAt: (Int) -> ImageDecoder.Source, target: File) {
         FileOutputStream(target).use { file ->
             val out = BufferedOutputStream(file)
-            val writer = ImagePdfWriter(out, sources.size, config.pageLongSidePt)
-            sources.forEach { source -> writePage(writer, source) }
+            val writer = ImagePdfWriter(out, pages, config.pageLongSidePt)
+            for (page in 0 until pages) writePage(writer, sourceAt(page))
             writer.finish()
             out.flush()
             file.fd.sync()
         }
-        AudoraLog.i(TAG, "Photo book made, pages=${sources.size}, bytes=${target.length()}")
+        AudoraLog.i(TAG, "Photo book made, pages=$pages, bytes=${target.length()}")
     }
 
     private fun writePage(writer: ImagePdfWriter, source: ImageDecoder.Source) {

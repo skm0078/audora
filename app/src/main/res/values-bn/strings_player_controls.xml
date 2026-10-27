@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-bn/strings_player_controls.xml
+  Purpose: Bengali copy of values/strings_player_controls.xml: the player's one-tap bookmark (CF-2), resuming when
+  headphones reconnect (CF-4) and the widget's time left (CF-7).
+-->
+<resources>
+    <string name="player_bookmark_add">এই বাক্যটি বুকমার্ক করুন</string>
+    <string name="player_bookmark_edit">বুকমার্ক করা আছে। নোট বদলান</string>
+    <string name="player_bookmark_saved">বুকমার্ক করা হয়েছে</string>
+    <string name="player_bookmark_note">নোট যোগ করুন</string>
+    <string name="player_bookmark_undo">ফিরিয়ে নিন</string>
+    <string name="settings_reconnect_title">হেডফোন আবার যুক্ত হলে পড়া চালিয়ে যান</string>
+    <string name="settings_reconnect_short">হেডফোন বা ব্লুটুথ স্পিকার</string>
+    <plurals name="settings_reconnect_body">
+        <item quantity="one">হেডফোন বা ব্লুটুথ স্পিকার বিচ্ছিন্ন হলে পড়া থেমে যায়। এটি চালু থাকলে, %1$d মিনিটের মধ্যে আবার যুক্ত হলে পড়া নিজে থেকেই চলতে থাকে। আরও লম্বা বিরতির পরে এর জন্য ব্যাকগ্রাউন্ডে পড়ার অনুমতিও লাগে।</item>
+        <item quantity="other">হেডফোন বা ব্লুটুথ স্পিকার বিচ্ছিন্ন হলে পড়া থেমে যায়। এটি চালু থাকলে, %1$d মিনিটের মধ্যে আবার যুক্ত হলে পড়া নিজে থেকেই চলতে থাকে। আরও লম্বা বিরতির পরে এর জন্য ব্যাকগ্রাউন্ডে পড়ার অনুমতিও লাগে।</item>
+    </plurals>
+    <string name="widget_time_left">প্রায় %1$s বাকি · পৃষ্ঠা %2$d / %3$d</string>
+</resources>

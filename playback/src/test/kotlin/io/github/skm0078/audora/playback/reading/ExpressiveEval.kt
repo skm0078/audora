@@ -107,6 +107,7 @@ object ExpressiveEval {
         Feeling.SURPRISED -> "surprised"
         Feeling.LIVELY -> "joy"
         Feeling.EMPHATIC -> "emphatic"
+        Feeling.ANGRY -> "angry"
         Feeling.TRAILING, Feeling.ASKING, Feeling.NEUTRAL -> "neutral"
     }
 

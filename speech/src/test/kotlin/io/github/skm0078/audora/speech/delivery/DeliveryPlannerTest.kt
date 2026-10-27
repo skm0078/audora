@@ -91,6 +91,48 @@ class DeliveryPlannerTest {
         assertEquals(0.95f, sad.rate, DELTA)
     }
 
+    @Test
+    fun `the story brain's feeling wins over the rules', and anger is read lower and louder (ADR story-brain)`() {
+        val line = unit("“You could have called!”")
+        val ruled = planner.plan(line, ContentIntent.STORY, quoted = true)
+        val angry = planner.plan(line, ContentIntent.STORY, quoted = true, judged = Feeling.ANGRY)
+        assertEquals(Feeling.EMPHATIC, ruled.feeling)
+        assertEquals(Feeling.ANGRY, angry.feeling)
+        assertTrue(angry.gainDb > 0f)
+        assertTrue("${angry.pitch}", angry.pitch < 1f)
+        val whisper = unit("“Run,” she whispered.")
+        assertEquals(Feeling.SCARED, planner.plan(whisper, ContentIntent.STORY, true, judged = Feeling.SCARED).feeling)
+    }
+
+    @Test
+    fun `when the story brain heard no feeling, a line keeps its own cues but not a carried mood`() {
+        val question = unit("“Where were you?”")
+        val plain = unit("“At the station.”")
+        assertEquals(
+            Feeling.ASKING,
+            planner.plan(question, ContentIntent.STORY, true, judged = Feeling.NEUTRAL).feeling,
+        )
+        assertEquals(Feeling.SAD, planner.plan(plain, ContentIntent.STORY, true, carried = Feeling.SAD).feeling)
+        assertEquals(
+            Feeling.NEUTRAL,
+            planner.plan(plain, ContentIntent.STORY, true, carried = Feeling.SAD, judged = Feeling.NEUTRAL).feeling,
+        )
+    }
+
+    @Test
+    fun `no brain call reads exactly as before, and an intent without feelings ignores the brain`() {
+        listOf("“Run,” she whispered.", "“Where were you?”", "The rain kept falling.").forEach { text ->
+            assertEquals(
+                planner.plan(unit(text), ContentIntent.STORY, quoted = true, carried = Feeling.SAD),
+                planner.plan(unit(text), ContentIntent.STORY, quoted = true, carried = Feeling.SAD, judged = null),
+            )
+        }
+        assertEquals(
+            Feeling.NEUTRAL,
+            planner.plan(unit("“Fire!”"), ContentIntent.NEWS, quoted = true, judged = Feeling.ANGRY).feeling,
+        )
+    }
+
     private companion object {
         const val DELTA = 1e-4f
     }

@@ -110,6 +110,10 @@ internal class BookReaderActions(
         model.sentenceHere()?.let(notes::bookmark)
     }
 
+    override fun onQuickBookmark() {
+        model.sentenceHere()?.let(notes::quickBookmark)
+    }
+
     override fun onOwnSettings(on: Boolean) = model.setOwnSettings(on)
 
     override fun onBookVoice(lang: Lang, voice: VoiceId) = model.setBookVoice(lang, voice)

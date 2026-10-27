@@ -3,5 +3,5 @@
 <!-- Purpose: Bengali copy of values/strings_smart_speed.xml: Strings for smart speed in the speech sheet (plan item 10, ADR-049). -->
 <resources>
     <string name="speech_smart_speed">স্মার্ট স্পিড</string>
-    <string name="speech_smart_speed_detail">শুধু %1$s×-এর ওপরে কাজ করে: নীরবতা আর লম্বা আওয়াজ ছোট করে কিন্তু ব্যঞ্জন রাখে, তাই দ্রুত পড়াও স্পষ্ট থাকে। স্বাভাবিক গতিতে কিছুই বদলায় না।</string>
+    <string name="speech_smart_speed_detail">শুধু %1$s×-এর ওপরে কাজ করে: নীরবতা আর লম্বা আওয়াজ ছোট করে কিন্তু ব্যঞ্জন রাখে, তাই দ্রুত পড়াও স্পষ্ট থাকে। স্বাভাবিক গতিতে কিছুই বদলায় না। %2$s×-এর ওপরে এটা সবসময় চালু থাকে।</string>
 </resources>

@@ -177,6 +177,9 @@ internal fun formatName(format: DocumentFormat): Int = when (format) {
     DocumentFormat.ODT -> R.string.book_format_odt
     DocumentFormat.RTF -> R.string.book_format_rtf
     DocumentFormat.HTML -> R.string.book_format_html
+    DocumentFormat.FB2 -> R.string.book_format_fb2
+    DocumentFormat.MOBI -> R.string.book_format_mobi
+    DocumentFormat.CHM -> R.string.book_format_chm
 }
 
 /** "Bengali", "বাংলা" or "बांग्ला": the language's name in the phone's language. */

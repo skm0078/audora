@@ -9,7 +9,8 @@ package io.github.skm0078.audora.core.config
  * [duckedFraction] of its level, within [duckMs]; it comes back over [releaseMs] once the voice stops, so a pause
  * between sentences fills gently instead of pumping. Switching sounds fades out over [switchMs] and back in. When
  * the book's audio ends the sound fades out over [tailMs] instead of stopping dead; after a seek or a stall (a render
- * that fell behind) it fades back in instead of returning at full level.
+ * that fell behind) it fades back in instead of returning at full level. A recorded sound (Q-1) is decoded when it is
+ * chosen; it fades in over [loopFadeInMs] once ready, so it never starts with a jump.
  */
 data class FocusSoundConfig(
     val maxGain: Float = DEFAULT_MAX_GAIN,
@@ -20,6 +21,7 @@ data class FocusSoundConfig(
     val releaseMs: Int = DEFAULT_RELEASE_MS,
     val switchMs: Int = DEFAULT_SWITCH_MS,
     val tailMs: Int = DEFAULT_TAIL_MS,
+    val loopFadeInMs: Int = DEFAULT_LOOP_FADE_IN_MS,
 ) {
     init {
         require(maxGain in 0f..1f) { "maxGain must be in 0..1, was $maxGain" }
@@ -28,6 +30,7 @@ data class FocusSoundConfig(
         require(holdMs >= 0) { "holdMs must be >= 0, was $holdMs" }
         require(minOf(duckMs, releaseMs, switchMs) > 0) { "fade times must be > 0: $duckMs, $releaseMs, $switchMs" }
         require(tailMs >= 0) { "tailMs must be >= 0, was $tailMs" }
+        require(loopFadeInMs >= 0) { "loopFadeInMs must be >= 0, was $loopFadeInMs" }
     }
 
     companion object {
@@ -39,5 +42,6 @@ data class FocusSoundConfig(
         const val DEFAULT_RELEASE_MS = 700
         const val DEFAULT_SWITCH_MS = 500
         const val DEFAULT_TAIL_MS = 600
+        const val DEFAULT_LOOP_FADE_IN_MS = 400
     }
 }

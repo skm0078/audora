@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/IncomingBooks.kt
-// Purpose: Books that arrive from outside the library: pictures, shared files and text, copied text (ADR-066).
+// Purpose: Books that arrive from outside the library: pictures, comic archives, shared files and text, copied text
+//          (ADR-066, ADR 2026-10-26-more-ebook-formats).
 
 package io.github.skm0078.audora
 
@@ -8,11 +9,17 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import io.github.skm0078.audora.core.config.LibraryConfig
+import io.github.skm0078.audora.core.files.readUpTo
+import io.github.skm0078.audora.core.library.DocumentFormats
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.playback.documents.displayName
 import io.github.skm0078.audora.playback.photo.PhotoBooks
+import java.io.IOException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Pictures picked with Add book, from the gallery, or opened or shared from another app become one book with a page
@@ -57,6 +64,39 @@ internal fun Context.addPicked(uri: Uri, photoBooks: PhotoBooks, add: (String) -
         null
     }
     if (SharedPdfIntent.isImage(type)) makePicturesBook(photoBooks, listOf(uri)) else add(uri.toString())
+}
+
+/**
+ * A comic archive (.cbz), picked, opened or shared, becomes a photo book read by OCR
+ * (ADR 2026-10-26-more-ebook-formats): true when [documentUri] is one and was taken (the book opens itself once made);
+ * false for any other file, which is added as it is. Reads the file's first bytes, off the main thread.
+ */
+internal suspend fun Context.takeComic(photoBooks: PhotoBooks, documentUri: String): Boolean {
+    val uri = Uri.parse(documentUri)
+    if (!withContext(Dispatchers.IO) { isComicArchive(uri) }) return false
+    val notice = if (photoBooks.making) {
+        getString(R.string.photo_busy)
+    } else {
+        val name = withContext(Dispatchers.IO) { contentResolver.displayName(uri) }?.substringBeforeLast('.')
+        val title = name?.takeIf { it.isNotBlank() } ?: getString(R.string.comic_book_title)
+        photoBooks.startBookFromComic(uri, title)
+        getString(R.string.comic_making, title)
+    }
+    // The library calls this from its own scope, which may resume off the main thread; a toast needs a Looper.
+    withContext(Dispatchers.Main) { Toast.makeText(this@takeComic, notice, Toast.LENGTH_LONG).show() }
+    return true
+}
+
+private fun Context.isComicArchive(uri: Uri): Boolean = try {
+    val window = LibraryConfig().pdfHeaderWindowBytes
+    val head = contentResolver.openInputStream(uri)?.use { it.readUpTo(window) }
+    head != null && DocumentFormats.isComicArchive(head, window)
+} catch (e: IOException) {
+    AudoraLog.w(TAG, "A picked file could not be checked for a comic: ${e.javaClass.simpleName}")
+    false
+} catch (e: SecurityException) {
+    AudoraLog.w(TAG, "A picked file could not be checked for a comic: ${e.javaClass.simpleName}")
+    false
 }
 
 /** "Read copied text": the text copied last, handed to [onText] like text shared to ListenLock (ADR-066). */

@@ -14,5 +14,7 @@ package io.github.skm0078.audora.playback.studio
  *     is not a clock time; a book's pronunciation fixes apply from its first sentence.
  * 4 = an exclamation without a cue word reads emphatic, not lively (Bengali Rasa: CONV, not HAPPY); characters are
  *     found in single quotes, short lines and Hindi and Bengali tags, so more lines get a character's voice.
+ * 5 = tables read like a person explaining them ("Ram: Age 34 and City Delhi."); footnotes a little quicker and softer.
+ * 6 = narration rises and falls across a paragraph, slows after a heading and breathes in long sentences (Q-3).
  */
-const val STUDIO_AUDIO_VERSION: Int = 4
+const val STUDIO_AUDIO_VERSION: Int = 6

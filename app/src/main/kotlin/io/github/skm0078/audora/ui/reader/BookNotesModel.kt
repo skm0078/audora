@@ -37,6 +37,8 @@ import kotlinx.coroutines.launch
  * @property failed the last save failed; the screen says so once.
  * @property rangeFrom where a highlight over several sentences starts, while the listener picks where it ends.
  * @property rangeRefused why the last such highlight was not made, shown once.
+ * @property quickBookmark the bookmark the player's one-tap button just saved (CF-2), while its notice offers Add note
+ *   and Undo.
  */
 data class NotesState(
     val bookmarks: List<Bookmark> = emptyList(),
@@ -50,7 +52,11 @@ data class NotesState(
     val placed: PlacedHighlights = PlacedHighlights(),
     val rangeFrom: ReadingUnit? = null,
     val rangeRefused: RangeRefusal? = null,
+    val quickBookmark: Bookmark? = null,
 ) {
+    /** [unit] already has a bookmark: the player shows its bookmark button filled. */
+    fun isBookmarked(unit: ReadingUnit): Boolean = bookmarks.any { it.marks(unit) }
+
     /** The highlights covering [unit] on the page showing (plan item 30); two when sentences were merged. */
     fun highlightsOn(unit: ReadingUnit): List<Highlight> =
         placed.byIndex[unit.index]?.takeIf { placed.page == unit.page }.orEmpty()
@@ -86,6 +92,18 @@ interface BookNotesActions {
     fun dismissMenu() = Unit
 
     fun bookmark(unit: ReadingUnit) = Unit
+
+    /** The player's one-tap bookmark (CF-2): saves [unit] without opening its note, and offers Add note and Undo. */
+    fun quickBookmark(unit: ReadingUnit) = Unit
+
+    /** "Add note" on the one-tap bookmark's notice: its note opens. */
+    fun noteQuickBookmark() = Unit
+
+    /** "Undo" on the one-tap bookmark's notice: the bookmark is deleted again. */
+    fun undoQuickBookmark() = Unit
+
+    /** The notice timed out or was swiped: the bookmark stays. */
+    fun dismissQuickBookmark() = Unit
 
     /** Highlights [unit], or removes its highlight when it has one (plan item 30). */
     fun toggleHighlight(unit: ReadingUnit) = Unit
@@ -167,6 +185,9 @@ class BookNotesModel(
     private val logContext = "book=${bookId.logLabel}"
     private var started = false
 
+    /** A one-tap bookmark is being written: a second tap meanwhile must not save the sentence twice. */
+    private var quickSaving = false
+
     fun start() {
         if (started) return
         started = true
@@ -210,6 +231,44 @@ class BookNotesModel(
             }
         }
     }
+
+    /**
+     * Saves [unit] with no note and shows the notice; a sentence that already has a bookmark opens its note instead,
+     * so a second tap never makes a twin.
+     */
+    override fun quickBookmark(unit: ReadingUnit) {
+        state.value.bookmarks.firstOrNull { it.marks(unit) }?.let { existing ->
+            editNote(existing)
+            return
+        }
+        if (quickSaving) return
+        quickSaving = true
+        val anchor = anchorOf(unit)
+        scope.launch {
+            when (val added = bookmarks.add(Bookmark(0, anchor))) {
+                is Outcome.Success -> {
+                    AudoraLog.i(TAG, "Player bookmark added, $logContext page=${unit.page} id=${added.value}")
+                    mutableState.update { it.copy(quickBookmark = Bookmark(added.value, anchor)) }
+                }
+
+                is Outcome.Failure -> failed("bookmark", added.error)
+            }
+            quickSaving = false
+        }
+    }
+
+    override fun noteQuickBookmark() {
+        val saved = state.value.quickBookmark ?: return
+        mutableState.update { it.copy(quickBookmark = null, editing = saved) }
+    }
+
+    override fun undoQuickBookmark() {
+        val saved = state.value.quickBookmark ?: return
+        mutableState.update { it.copy(quickBookmark = null) }
+        delete(saved)
+    }
+
+    override fun dismissQuickBookmark() = mutableState.update { it.copy(quickBookmark = null) }
 
     /** Highlights [unit], or removes every highlight its band shows (a merged sentence can carry two). */
     override fun toggleHighlight(unit: ReadingUnit) {
@@ -376,3 +435,9 @@ class BookNotesModel(
         fun ReadingUnit.hasWords(): Boolean = text.any(Char::isLetterOrDigit)
     }
 }
+
+/**
+ * This bookmark is on [unit]: same page and first character. A bookmark saved by an older reading pipeline whose
+ * offsets moved is not matched; it is still found again from the bookmarks list.
+ */
+internal fun Bookmark.marks(unit: ReadingUnit): Boolean = anchor.page == unit.page && anchor.charStart == unit.charStart

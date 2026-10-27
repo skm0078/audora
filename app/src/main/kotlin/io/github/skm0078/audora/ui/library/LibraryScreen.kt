@@ -33,8 +33,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -61,6 +63,7 @@ import io.github.skm0078.audora.ui.kids.LocalKidsMode
 import io.github.skm0078.audora.ui.shell.readableSidePadding
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import io.github.skm0078.audora.ui.theme.Dimens
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** [runningJobs]: how many jobs and downloads work now, for the badge on the Jobs button (ADR-067). */
 @Composable
@@ -94,7 +97,7 @@ fun LibraryScreen(
         onPauseOrDispose {}
     }
     val duplicate = message?.let(::duplicateOf)
-    MessageEffect(message.takeIf { duplicate == null }, snackbar, actions::onMessageShown)
+    MessageEffect(message.takeIf { duplicate == null }, snackbar, actions::onUndoRemoval, actions::onMessageShown)
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -357,6 +360,8 @@ private const val CONTINUE_KEY = "continue-reading"
  * OpenDocument filters by MIME type; providers that mislabel files are caught by the header check. PDFs, EPUBs and
  * text files (items 42 and 43, ADR-042); Word, OpenDocument, RTF, HTML and Markdown files, and pictures, which become
  * a photo book (ADR-066). `text/` as a whole, since Markdown has several labels. The first-run picker uses it too.
+ * FB2, Kindle (MOBI, AZW3), CHM and comic archives (ADR 2026-10-26-more-ebook-formats) are rarely labelled right by
+ * Android, so files of no known type and ZIPs (a zipped FB2, a comic) are offered too; their first bytes decide.
  */
 internal val BOOK_MIME_TYPES = arrayOf(
     "application/pdf",
@@ -370,6 +375,13 @@ internal val BOOK_MIME_TYPES = arrayOf(
     "image/webp",
     "image/heic",
     "image/heif",
+    "application/x-fictionbook+xml",
+    "application/x-mobipocket-ebook",
+    "application/vnd.amazon.mobi8-ebook",
+    "application/vnd.ms-htmlhelp",
+    "application/vnd.comicbook+zip",
+    "application/zip",
+    "application/octet-stream",
 )
 
 @Preview(showBackground = true)
@@ -392,14 +404,31 @@ private fun LibraryScreenPreview() {
     }
 }
 
+/**
+ * One message at a time. A removal that can still be undone (CF-3) shows Undo for its undo window, then closes by
+ * itself; the controller removes the book a moment after.
+ */
 @Composable
-private fun MessageEffect(message: LibraryMessage?, snackbar: SnackbarHostState, onShown: () -> Unit) {
+private fun MessageEffect(
+    message: LibraryMessage?,
+    snackbar: SnackbarHostState,
+    onUndo: (BookId) -> Unit,
+    onShown: () -> Unit,
+) {
     val messageText = message?.let { messageText(it) }
+    val undoLabel = stringResource(R.string.library_removed_undo)
     LaunchedEffect(message) {
-        if (messageText != null) {
+        if (messageText == null) return@LaunchedEffect
+        val undoable = (message as? LibraryMessage.Removed)?.takeIf { it.undo != null }
+        if (undoable == null) {
             snackbar.showSnackbar(messageText)
-            onShown()
+        } else {
+            val result = withTimeoutOrNull(undoable.undoMs) {
+                snackbar.showSnackbar(messageText, actionLabel = undoLabel, duration = SnackbarDuration.Indefinite)
+            }
+            if (result == SnackbarResult.ActionPerformed) undoable.undo?.let(onUndo)
         }
+        onShown()
     }
 }
 

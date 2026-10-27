@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Listening stats and streaks, kept on the phone only (CF-8). -->
+<resources>
+    <string name="library_listening_stats">শোনার হিসাব</string>
+    <string name="menu_hint_listening_stats">কতটা শুনলেন, টানা কত দিন, আর শেষ করা বই। শুধু এই ফোনেই থাকে।</string>
+    <string name="stats_today">আজ</string>
+    <string name="stats_week">এই সপ্তাহে</string>
+    <string name="stats_streak">টানা দিন</string>
+    <string name="stats_best_streak">সবচেয়ে লম্বা টানা</string>
+    <string name="stats_books_finished">শেষ করা বই</string>
+    <string name="stats_total">এ পর্যন্ত মোট</string>
+    <string name="stats_minutes">%1$d মিনিট</string>
+    <string name="stats_hours_minutes">%1$d ঘণ্টা %2$d মিনিট</string>
+    <plurals name="stats_days">
+        <item quantity="one">%d দিন</item>
+        <item quantity="other">%d দিন</item>
+    </plurals>
+    <string name="stats_chart_title">গত ৭ দিন</string>
+    <string name="stats_chart_day">%1$s: %2$s</string>
+    <string name="stats_empty">একটা বই চালান, আপনার শোনার সময় এখানে দেখা যাবে। যেদিন এক মিনিট বা তার বেশি শুনবেন, সেদিন টানা দিনের হিসাবে ধরা হবে।</string>
+    <string name="stats_private">শুধু এই ফোনেই থাকে। কিছুই কোথাও পাঠানো হয় না।</string>
+    <string name="stats_clear">হিসাব মুছুন</string>
+    <string name="stats_clear_title">শোনার হিসাব মুছবেন?</string>
+    <string name="stats_clear_body">প্রতিদিনের শোনার সময় আর আপনার টানা দিন মুছে যাবে। আপনার বই আর জায়গা থাকবে।</string>
+    <string name="stats_clear_confirm">মুছুন</string>
+    <string name="stats_cancel">বাতিল</string>
+</resources>

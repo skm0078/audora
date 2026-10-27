@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Read aloud to me: the reading tutor listens while you read the page and marks each word (plan item 67, ADR-050). -->
 <resources>
-    <string name="tutor_menu">Read aloud to me</string>
-    <string name="tutor_title">Read aloud to me</string>
+    <string name="tutor_menu">Read aloud to me (experimental)</string>
+    <string name="tutor_title">Read aloud to me (experimental)</string>
+    <string name="tutor_experimental_note">Some marks may be wrong, most often in a noisy room or with the phone far away. If it goes wrong, Share logs from Settings: the log has counts only, never your words.</string>
     <string name="tutor_mode_words">Read the page aloud. ListenLock listens word by word, on this phone only.</string>
     <string name="tutor_mode_phrases">Read the page aloud. ListenLock listens a phrase at a time, so marks appear after each pause. On this phone only.</string>
     <string name="tutor_needs_model">To listen in %1$s, ListenLock needs a speech model: %2$s to download once, %3$s on the phone. After that it works offline.</string>

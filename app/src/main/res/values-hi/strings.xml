@@ -58,7 +58,7 @@
     <string name="library_no_match">कोई किताब नहीं मिली। खोज या फ़िल्टर बदलें।</string>
     <string name="library_error_cannot_keep">जिस ऐप से आपने फ़ाइल चुनी, वह इसे सिर्फ़ थोड़ी देर के लिए देता है। पहले फ़ाइल को अपने फ़ोन में सेव करें, फिर वहाँ से जोड़ें।</string>
     <string name="library_error_unreadable">ListenLock वह फ़ाइल नहीं पढ़ सका। हो सकता है वह हटा दी गई हो या कहीं और चली गई हो।</string>
-    <string name="library_error_not_pdf">यह फ़ाइल ऐसी किताब नहीं है जिसे ListenLock पढ़ सके: PDF, EPUB, Word, OpenDocument, RTF, वेब पेज, टेक्स्ट या तस्वीर।</string>
+    <string name="library_error_not_pdf">यह फ़ाइल ऐसी किताब नहीं है जिसे ListenLock पढ़ सके: PDF, EPUB, Word, OpenDocument, RTF, FB2, Kindle (MOBI, AZW3), CHM, कॉमिक (CBZ), वेब पेज, टेक्स्ट या तस्वीर।</string>
     <string name="library_error_different_file">यह कोई दूसरी फ़ाइल है। वही फ़ाइल चुनें, या यह किताब हटाकर नई वाली जोड़ें।</string>
     <string name="library_error_not_in_library">वह किताब अब आपकी लाइब्रेरी में नहीं है।</string>
     <string name="library_error_storage">ListenLock आपकी लाइब्रेरी सेव नहीं कर सका। क्या आपके फ़ोन का स्टोरेज भर गया है?</string>
@@ -106,7 +106,7 @@
     <string name="reading_skip_unreadable">न पढ़ने लायक टेक्स्ट छोड़ें</string>
     <string name="reading_skip_unreadable_detail">चालू: स्कैन का बिगड़ा टेक्स्ट बेतुके शब्दों की जगह हल्की आवाज़ बजाता है। बंद: सब कुछ पढ़ा जाता है, कचरा भी।</string>
     <string name="reading_tables">टेबल</string>
-    <string name="reading_tables_summary">सिर्फ़ आकार</string>
+    <string name="reading_tables_summary">सारांश</string>
     <string name="reading_tables_rows">पंक्ति-दर-पंक्ति</string>
     <string name="reading_footnotes">फ़ुटनोट</string>
     <string name="reading_footnotes_read">पेज के अंत में</string>
@@ -243,14 +243,6 @@
     <string name="battery_open_app_settings">ListenLock की ऐप जानकारी खोलें</string>
     <string name="battery_footer">अगर स्क्रीन बंद होने पर अब भी पढ़ना रुकता है, तो सेटिंग्स से लॉग शेयर करें: उनमें लिखा होता है कि Android ने ListenLock को क्यों रोका।</string>
     <string name="battery_step_number">%1$d. %2$s</string>
-    <string name="battery_brand_motorola">आपके Motorola फ़ोन पर</string>
-    <string name="battery_brand_oneplus">आपके OnePlus फ़ोन पर</string>
-    <string name="battery_brand_samsung">आपके Samsung फ़ोन पर</string>
-    <string name="battery_brand_xiaomi">आपके Xiaomi, Redmi या POCO फ़ोन पर</string>
-    <string name="battery_brand_oppo">आपके OPPO फ़ोन पर</string>
-    <string name="battery_brand_realme">आपके realme फ़ोन पर</string>
-    <string name="battery_brand_vivo">आपके vivo या iQOO फ़ोन पर</string>
-    <string name="battery_brand_other">आपके फ़ोन पर</string>
     <string name="battery_step_unrestricted">ListenLock की ऐप जानकारी में App battery usage (या Battery) खोलें, Allow background usage चालू करें और Unrestricted चुनें।</string>
     <string name="battery_step_background_activity">ListenLock की ऐप जानकारी में Battery usage खोलें और Allow background activity चालू करें।</string>
     <string name="battery_step_auto_launch">ListenLock की ऐप जानकारी में Auto launch (जिसे Autostart भी कहते हैं) चालू करें।</string>
