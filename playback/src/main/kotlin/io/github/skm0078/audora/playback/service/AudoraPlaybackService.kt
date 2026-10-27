@@ -19,7 +19,6 @@ import androidx.media3.session.MediaSession
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.core.config.QueueConfig
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
-import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.AfterSentence
@@ -234,7 +233,7 @@ class AudoraPlaybackService : MediaLibraryService() {
             events = publisher(mediaSession, stores, heard, engines, reading).also { it.publishInitial() },
             env = sessionEnvironment(scope, AccelerometerShakes(this, config.sleep)),
         )
-        followReadingChanges(reading)
+        followReadingChanges()
         resumption = PlaybackResumption(
             anchors = resumeAnchors,
             library = library,
@@ -247,22 +246,15 @@ class AudoraPlaybackService : MediaLibraryService() {
 
     /**
      * The listener changed the open book's language in Edit details: from the sentence playing on, it is read by the
-     * phone's voice for that language, or by the three languages' own (ADR 2026-10-26), at once (ADR-064). Only a
-     * change seen for the same book counts, so the library's update when a book opens never restarts it.
+     * phone's voice for that language, or by the three languages' own (ADR 2026-10-26), at once (ADR-064). The
+     * session compares it with the language it reads in, so the library's update when a book opens restarts nothing.
      */
-    private fun followBookLanguage(reading: ReadingSource) {
+    private fun followBookLanguage() {
         scope.launch {
-            var seen: Pair<BookId, String?>? = null
             library.books().collect { books ->
                 val id = bookSession.bookId ?: return@collect
                 val book = books.firstOrNull { it.id == id } ?: return@collect
-                val before = seen
-                seen = id to book.language
-                if (before?.first == id && before.second != book.language) {
-                    AudoraLog.i(TAG, "Book language changed, book=${id.logLabel}; restarting the sentence")
-                    reading.language = book.language
-                    bookSession.restartRendering()
-                }
+                bookSession.onBookLanguage(id, book.language)
             }
         }
     }
@@ -274,7 +266,7 @@ class AudoraPlaybackService : MediaLibraryService() {
      * Likewise a reading text setting (skip citation numbers) reads the open book again at once (ADR-064), and so
      * does a new language for the open book ([followBookLanguage]).
      */
-    private fun followReadingChanges(source: ReadingSource) {
+    private fun followReadingChanges() {
         val context = applicationContext
         scope.launch {
             // Read first (off the main thread), so the first value seen is the saved state and only changes follow.
@@ -293,7 +285,7 @@ class AudoraPlaybackService : MediaLibraryService() {
                 bookSession.onReadingTextChanged()
             }
         }
-        followBookLanguage(source)
+        followBookLanguage()
     }
 
     /**

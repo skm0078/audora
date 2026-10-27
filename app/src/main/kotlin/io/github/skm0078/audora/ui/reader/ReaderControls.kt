@@ -48,6 +48,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.ui.theme.Dimens
 import kotlinx.coroutines.delay
@@ -88,7 +89,9 @@ private fun ControlsRow(state: ReaderState, config: ReaderConfig, actions: Reade
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         val study = StudyControls(state.study, canMark = state.readingPosition != null, onStudy = actions::onStudy)
-        SpeedButton(state.playback, config, enabled, actions, voices, study, state.readingPosition != null)
+        // The open page's language, so a Hindi or Bengali book's voices come first in the speech sheet.
+        val bookLang = (state.content as? PageContent.Ready)?.units?.let(::pageLanguage)
+        SpeedButton(state.playback, config, enabled, actions, voices, study, state.readingPosition != null, bookLang)
         SkipButton(
             forward = false,
             enabled = enabled && loaded && state.playback.canSkipBack,
@@ -171,6 +174,7 @@ private fun SpeedButton(
     voices: List<VoiceRow>,
     study: StudyControls,
     bookInPlayer: Boolean,
+    bookLang: Lang?,
 ) {
     var open by remember { mutableStateOf(false) }
     TextButton(onClick = { open = true }, enabled = enabled) {
@@ -193,7 +197,7 @@ private fun SpeedButton(
             onVoiceShaping = actions::onVoiceShaping,
             ownSettings = playback.ownSettings,
             onOwnSettings = actions::onOwnSettings,
-            voices = BookVoices(voices, playback.bookVoices, actions::onBookVoice, actions::onVoice),
+            voices = BookVoices(voices, playback.bookVoices, actions::onBookVoice, actions::onVoice, bookLang),
             study = study,
             focusSound = playback.focusSound,
             onFocusSound = actions::onFocusSound,

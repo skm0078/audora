@@ -1,11 +1,12 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/release/ReleaseJourneyTest.kt
 // Purpose: The release blockers a machine can check, on the real app (MainActivity, the playback service, the
 //          bundled voice) on CI's emulator: first run, "Open with", play without the notification permission, the
-//          media controls a notification or lock screen sends and its own buttons (CF-1), a new voice and a reading
-//          setting applying at once, Settings rows, pages and Back, Hide app content, the ListenLock name, a scan read
-//          after the OCR download, and the e-book formats and comic archives of ADR 2026-10-26-more-ebook-formats. One
-//          test on one fresh install, as one listener would use the app: AndroidJUnitRunner finishes every activity
-//          between tests, so the steps are named blocks inside it and the first broken one stops it.
+//          media controls a notification or lock screen sends and its own buttons (CF-1), a new voice, a book's
+//          language and a reading setting applying at once, Settings rows, pages and Back, Hide app content, the
+//          ListenLock name, a scan read after the OCR download, and the e-book formats and comic archives of ADR
+//          2026-10-26-more-ebook-formats. One test on one fresh install, as one listener would use the app:
+//          AndroidJUnitRunner finishes every activity between tests, so the steps are named blocks inside it and the
+//          first broken one stops it.
 
 package io.github.skm0078.audora.release
 
@@ -39,7 +40,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.util.concurrent.ListenableFuture
 import io.github.skm0078.audora.MainActivity
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.library.BookField
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.di.LibraryEntryPoint
 import io.github.skm0078.audora.playback.contract.LockScreenCommands
 import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.privacy.PrivacyPreferences
@@ -83,6 +86,7 @@ class ReleaseJourneyTest {
             step("05b the lock screen's buttons go back, on and bookmark", ::lockScreenButtonsGoBackOnAndBookmark)
             step("06 a new voice applies while playing", ::aNewVoiceAppliesWhilePlaying)
             step("07 a new voice applies while paused", ::aNewVoiceAppliesWhilePaused)
+            step("07b a book language set in Edit details applies at once", ::aBookLanguageAppliesAtOnce)
             step("08 a Settings row toggles from its title and applies at once", ::aRowTogglesFromItsTitle)
             step("09 help opens without toggling", ::helpOpensWithoutToggling)
             step("10 Privacy and Advanced open and go back", ::privacyAndAdvancedOpenAndGoBack)
@@ -324,6 +328,19 @@ class ReleaseJourneyTest {
         awaitReadingMovesOn("play in the new voice")
     }
 
+    /** Edit details writes the book's language to the library; the playing book follows it, and back (phone test). */
+    private fun aBookLanguageAppliesAtOnce() {
+        val id = requireNotNull(position()?.bookId) { "No book playing" }
+        val library = LibraryEntryPoint.of(app).library()
+        val before = runBlocking { library.book(id) }?.language
+        listOf(OTHER_BOOK_LANGUAGE, before).forEach { language ->
+            val changes = JourneyDevice.logCount(LANGUAGE_RESTART)
+            runBlocking { library.change(id) { it.copy(language = language, edited = it.edited + BookField.LANGUAGE) } }
+            awaitLog(LANGUAGE_RESTART, changes)
+            awaitReadingMovesOn("reading to go on in the book's language $language")
+        }
+    }
+
     private fun aRowTogglesFromItsTitle() {
         // While a book plays, its highlight recomposes every frame and Compose's test sync never goes idle, so the
         // screens are driven paused; the service acting on the setting and reading on afterwards is what is checked.
@@ -561,6 +578,8 @@ class ReleaseJourneyTest {
 
         // The service's own words when it acts on a change (AudoraPlaybackService.followReadingChanges).
         const val VOICE_RESTART = "Reading voices changed; restarting the sentence"
+        const val LANGUAGE_RESTART = "Book language changed"
+        const val OTHER_BOOK_LANGUAGE = "fr"
         const val TEXT_REREAD = "Reading text settings changed; reading the open book again"
         const val LOCK_SCREEN_BOOKMARK = "Lock screen bookmark added"
     }

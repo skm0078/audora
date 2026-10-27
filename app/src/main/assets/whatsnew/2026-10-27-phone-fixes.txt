@@ -1,0 +1,3 @@
+en: In a Hindi or Bengali book, the speed button's sheet now shows that language's voices first, even when only one is downloaded. A book's language changed in Edit details now applies at once, also right after switching books.
+hi: हिंदी या बांग्ला किताब में गति बटन की शीट अब पहले उसी भाषा की आवाज़ें दिखाती है, चाहे एक ही आवाज़ डाउनलोड हो। ‘जानकारी बदलें’ में बदली गई किताब की भाषा अब तुरंत लागू होती है, किताब बदलने के ठीक बाद भी।
+bn: হিন্দি বা বাংলা বইয়ে গতির বোতামের শিটে এখন আগে সেই ভাষার ভয়েস দেখায়, একটিই ভয়েস ডাউনলোড থাকলেও। ‘তথ্য বদলান’-এ বইয়ের ভাষা বদলালে এখন সঙ্গে সঙ্গে কাজ করে, বই বদলানোর ঠিক পরেও।
