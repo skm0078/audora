@@ -6,17 +6,17 @@ package io.github.skm0078.audora.ui.theme
 import android.content.Context
 import android.graphics.Typeface
 import android.graphics.fonts.Font
+import android.graphics.fonts.FontFamily as PlatformFontFamily
 import android.graphics.fonts.FontStyle
 import androidx.compose.ui.text.font.AndroidFont
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontLoadingStrategy
+import androidx.compose.ui.text.font.FontStyle as ComposeFontStyle
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.logging.AudoraLog
 import java.io.IOException
-import android.graphics.fonts.FontFamily as PlatformFontFamily
-import androidx.compose.ui.text.font.FontStyle as ComposeFontStyle
 
 /**
  * Anek (Ek Type, SIL Open Font License 1.1) is one design drawn for Latin, Devanagari and Bengali, so a Hindi title
