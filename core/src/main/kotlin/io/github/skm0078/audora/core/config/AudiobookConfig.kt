@@ -20,6 +20,9 @@ package io.github.skm0078.audora.core.config
  * @property progressStepPercent the progress notification is updated when the export moves on by this much.
  * @property wakeLockMs the export's wake lock times out after this long and is renewed on every finished page, so it
  *   is held exactly while pages keep coming: a stuck export releases it within this time, a long book never does.
+ * @property coverMaxSidePx the book's cover is put into every chapter file at most this many pixels on its longer
+ *   side: sharp on a player's full-screen artwork, yet small enough (about 60 KB) to repeat in each file.
+ * @property coverJpegQuality JPEG quality (0..100) of that cover; MP4 players read JPEG or PNG covers, not WebP.
  */
 data class AudiobookConfig(
     val pagesPerPartWithoutChapters: Int = 10,
@@ -31,6 +34,8 @@ data class AudiobookConfig(
     val maxExportMs: Long = 21_600_000L, // 6 h
     val progressStepPercent: Int = 1,
     val wakeLockMs: Long = 1_800_000L, // 30 min: far beyond one page, even a slow OCR page on a slow phone.
+    val coverMaxSidePx: Int = 600,
+    val coverJpegQuality: Int = 85,
 ) {
     init {
         require(pagesPerPartWithoutChapters >= 1) {
@@ -43,6 +48,8 @@ data class AudiobookConfig(
         require(folderNameMaxChars >= 1) { "folderNameMaxChars must be >= 1, was $folderNameMaxChars" }
         require(maxExportMs > 0) { "maxExportMs must be > 0, was $maxExportMs" }
         require(wakeLockMs > 0) { "wakeLockMs must be > 0, was $wakeLockMs" }
+        require(coverMaxSidePx >= 1) { "coverMaxSidePx must be >= 1, was $coverMaxSidePx" }
+        require(coverJpegQuality in 0..PERCENT) { "coverJpegQuality must be in 0..$PERCENT, was $coverJpegQuality" }
         require(progressStepPercent in 1..PERCENT) {
             "progressStepPercent must be in 1..$PERCENT, was $progressStepPercent"
         }

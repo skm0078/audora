@@ -25,6 +25,7 @@ import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
+import io.github.skm0078.audora.playback.covers.CoverFolders
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.jobs.LongJobs
 import io.github.skm0078.audora.playback.outputs.MadeFiles
@@ -211,7 +212,10 @@ class AudiobookExportService : Service() {
                 )
                 // Each file is recorded as pending once created, so a crash mid-chapter never strands a hidden file.
                 val files = MediaStoreChapterFiles(contentResolver, folder).recordedIn(session)
-                val sink = AacAudioSink(files, chapters.size, config, pitch)
+                val cover = CoverJpeg.of(CoverFolders(filesDir).shownFile(book.book), config)
+                AudoraLog.i(TAG, "Export tags, cover=${cover != null}, $logContext")
+                val tags = BookTags(title, book.book.author, cover)
+                val sink = AacAudioSink(files, chapters.size, config, pitch, tags)
                 val listener = ProgressListener(title, chapters, session)
                 val exporter = voice.exporter(config) { cast ->
                     AudoraLog.i(TAG, "Export cast=$cast, $logContext")

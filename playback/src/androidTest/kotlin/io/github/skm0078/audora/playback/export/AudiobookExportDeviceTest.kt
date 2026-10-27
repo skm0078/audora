@@ -1,13 +1,19 @@
 // File: playback/src/androidTest/kotlin/io/github/skm0078/audora/playback/export/AudiobookExportDeviceTest.kt
-// Purpose: ADR-034 on a device: the platform AAC encoder writes playable .m4a chapters from a real PDF.
+// Purpose: ADR-034 on a device: the platform AAC encoder writes playable .m4a chapters from a real PDF, tagged with
+//          the book's title, author and cover that players show.
 
 package io.github.skm0078.audora.playback.export
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.media.MediaExtractor
 import android.media.MediaFormat
+import android.media.MediaMetadataRetriever
 import android.os.ParcelFileDescriptor
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import io.github.skm0078.audora.core.config.AudiobookConfig
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.getOrNull
 import io.github.skm0078.audora.pdf.document.PdfBook
@@ -15,13 +21,16 @@ import io.github.skm0078.audora.pdf.pdfium.PdfiumEngine
 import io.github.skm0078.audora.playback.book.PdfBookText
 import io.github.skm0078.audora.playback.queue.SentenceRenderer
 import io.github.skm0078.audora.speech.audio.PcmAudio
+import java.io.ByteArrayOutputStream
 import java.io.File
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.sin
 import org.junit.After
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -61,6 +70,47 @@ class AudiobookExportDeviceTest {
     }
 
     @Test
+    fun aTaggedChapterShowsTheBookTitleAuthorTrackAndCoverAndStillPlays() {
+        val cover = jpeg(COVER_SIDE * 2, COVER_SIDE * 3)
+        val book = BookTags(title = "বইয়ের নাম", author = "लेखक", coverJpeg = cover)
+        val sink = AacAudioSink(LocalChapterFiles(folder), chapterCount = 12, book = book)
+        val chapter = AudioChapter(3, 20, 29)
+        val writer = requireNotNull(sink.open(chapter, RATE).getOrNull())
+        repeat(3) { assertTrue(writer.write(tone(RATE, HALF_SECOND_MS)) is Outcome.Success) }
+
+        val exported = (writer.finish() as Outcome.Success).value
+
+        val file = File(folder, exported.name)
+        MediaMetadataRetriever().use { tags ->
+            tags.setDataSource(file.path)
+            assertEquals("বইয়ের নাম", tags.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM))
+            assertEquals("03 Pages 21-30", tags.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE))
+            assertEquals("लेखक", tags.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST))
+            assertEquals("3/12", tags.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER))
+            assertArrayEquals(cover, tags.embeddedPicture)
+        }
+        assertNear(exported.durationMs, trackFormat(file).getLong(MediaFormat.KEY_DURATION) / US_PER_MS)
+    }
+
+    @Test
+    fun aBigCoverIsShrunkToAJpegOfTheConfiguredSide() {
+        val webp = File(folder, "cover.webp")
+        val big = Bitmap.createBitmap(COVER_SIDE * 3, COVER_SIDE * 4, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(Color.rgb(200, 120, 40))
+        }
+        webp.outputStream().use { big.compress(Bitmap.CompressFormat.WEBP_LOSSLESS, 100, it) }
+        big.recycle()
+
+        val jpeg = requireNotNull(CoverJpeg.of(webp, AudiobookConfig(coverMaxSidePx = COVER_SIDE)))
+
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size, bounds)
+        assertEquals("image/jpeg", bounds.outMimeType)
+        assertEquals(COVER_SIDE, maxOf(bounds.outWidth, bounds.outHeight))
+        assertNull(CoverJpeg.of(File(folder, "missing.webp")))
+    }
+
+    @Test
     fun anAbortedChapterLeavesNoFile() {
         val file = File(folder, "partial.m4a")
         val writer =
@@ -95,6 +145,15 @@ class AudiobookExportDeviceTest {
                 assertEquals("${exported.chapter.fileStem(chapters.size)}.m4a", file.name)
                 assertNear(exported.durationMs, trackFormat(file).getLong(MediaFormat.KEY_DURATION) / US_PER_MS)
             }
+        }
+    }
+
+    private fun jpeg(width: Int, height: Int): ByteArray {
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.BLUE) }
+        return ByteArrayOutputStream().use { out ->
+            bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
+            bitmap.recycle()
+            out.toByteArray()
         }
     }
 
@@ -144,5 +203,7 @@ class AudiobookExportDeviceTest {
         const val MS_PER_S = 1_000
         const val US_PER_MS = 1_000L
         const val TOLERANCE_MS = 150L
+        const val COVER_SIDE = 200
+        const val JPEG_QUALITY = 80
     }
 }

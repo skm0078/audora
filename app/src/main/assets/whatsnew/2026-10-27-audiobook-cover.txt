@@ -1,0 +1,3 @@
+en: Exported audiobooks now carry the book's cover, title and author, so audiobook players show your book with its picture instead of a list of page ranges. Change the cover in Edit details before exporting to use your own picture.
+hi: निर्यात की गई ऑडियोबुक में अब किताब का कवर, नाम और लेखक होता है, इसलिए ऑडियोबुक प्लेयर पेज-रेंज की सूची की जगह आपकी किताब उसकी तस्वीर के साथ दिखाते हैं। अपनी तस्वीर लगाने के लिए निर्यात से पहले ‘जानकारी बदलें’ में कवर बदलें।
+bn: রপ্তানি করা অডিওবুকে এখন বইয়ের কভার, নাম ও লেখক থাকে, তাই অডিওবুক প্লেয়ার পৃষ্ঠার তালিকার বদলে আপনার বইটি তার ছবিসহ দেখায়। নিজের ছবি দিতে রপ্তানির আগে ‘তথ্য বদলান’-এ কভার বদলান।
