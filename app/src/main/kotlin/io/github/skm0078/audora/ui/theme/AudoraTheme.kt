@@ -17,8 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * Every supported phone has wallpaper colours (minSdk 31); with them off Audora uses its own lamp palette. Text uses
- * the phone's own fonts (Noto for Hindi and Bengali on every Android phone), so the theme adds no font files.
+ * Every supported phone has wallpaper colours (minSdk 31); with them off Audora uses its own lamp palette. The app's
+ * text is set in [AppFont] (Anek, one design for English, Hindi and Bengali); book text keeps the reader's own fonts.
  */
 @Composable
 fun AudoraTheme(
@@ -37,17 +37,30 @@ fun AudoraTheme(
     MaterialTheme(colorScheme = colorScheme, typography = AudoraTypography, shapes = AudoraShapes, content = content)
 }
 
-// Material's scale with bolder headings: screen titles carry the hierarchy, so body text can stay calm.
-private val AudoraTypography: Typography = Typography().let { base ->
+// Material's scale in the app font with bolder headings: screen titles carry the hierarchy, so body text can stay
+// calm. Headings use 600, the heaviest weight bundled, so nothing is drawn as a synthesised bold.
+internal val AudoraTypography: Typography = Typography().let { base ->
+    val app = AppFont.family
     base.copy(
-        displaySmall = base.displaySmall.copy(fontWeight = FontWeight.Bold),
-        headlineLarge = base.headlineLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
-        headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.Bold),
-        headlineSmall = base.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
-        titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Bold),
-        titleMedium = base.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-        titleSmall = base.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-        labelLarge = base.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+        displayLarge = base.displayLarge.copy(fontFamily = app),
+        displayMedium = base.displayMedium.copy(fontFamily = app),
+        displaySmall = base.displaySmall.copy(fontFamily = app, fontWeight = FontWeight.SemiBold),
+        headlineLarge = base.headlineLarge.copy(
+            fontFamily = app,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = (-0.5).sp,
+        ),
+        headlineMedium = base.headlineMedium.copy(fontFamily = app, fontWeight = FontWeight.SemiBold),
+        headlineSmall = base.headlineSmall.copy(fontFamily = app, fontWeight = FontWeight.SemiBold),
+        titleLarge = base.titleLarge.copy(fontFamily = app, fontWeight = FontWeight.SemiBold),
+        titleMedium = base.titleMedium.copy(fontFamily = app, fontWeight = FontWeight.SemiBold),
+        titleSmall = base.titleSmall.copy(fontFamily = app, fontWeight = FontWeight.SemiBold),
+        bodyLarge = base.bodyLarge.copy(fontFamily = app),
+        bodyMedium = base.bodyMedium.copy(fontFamily = app),
+        bodySmall = base.bodySmall.copy(fontFamily = app),
+        labelLarge = base.labelLarge.copy(fontFamily = app, fontWeight = FontWeight.SemiBold),
+        labelMedium = base.labelMedium.copy(fontFamily = app),
+        labelSmall = base.labelSmall.copy(fontFamily = app),
     )
 }
 
