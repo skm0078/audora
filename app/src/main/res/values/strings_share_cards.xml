@@ -42,5 +42,5 @@
     <!-- The book card: no quote, just the book. -->
     <string name="share_card_now_listening">Now listening</string>
     <string name="share_card_book_missing">This book is no longer in your library.</string>
-    <string name="menu_hint_share_card">A picture of the book's cover, title and author to share in any app. It stays on the phone until you pick an app.</string>
+    <string name="menu_hint_share_card">A picture of the book\'s cover, title and author to share in any app. It stays on the phone until you pick an app.</string>
 </resources>

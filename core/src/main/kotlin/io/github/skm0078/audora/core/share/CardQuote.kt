@@ -46,8 +46,9 @@ data class CardQuote(val text: String, val cut: Boolean, val script: Lang) {
 
         /** The script most letters belong to; ties and text without letters read as English. */
         fun scriptOf(text: String): Lang {
-            val counts = text.codePoints().toArray().mapNotNull(ScriptLang::of).groupingBy { it }.eachCount()
-            return counts.maxByOrNull { (lang, count) -> count * Lang.entries.size - lang.ordinal }?.key ?: Lang.EN
+            val letters = text.codePoints().toArray().asList().mapNotNull(ScriptLang::of)
+            val counts = letters.groupingBy { it }.eachCount()
+            return counts.entries.maxByOrNull { (lang, count) -> count * Lang.entries.size - lang.ordinal }?.key ?: Lang.EN
         }
 
         private fun endsSentence(word: String): Boolean = word.trimEnd { it in CLOSERS }.lastOrNull() in SENTENCE_ENDS
