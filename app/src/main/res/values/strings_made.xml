@@ -2,8 +2,12 @@
 <!-- File: app/src/main/res/values/strings_made.xml -->
 <!-- Purpose: What the app made from each book, the in-app player for saved audio, and editing a book's details (ADR-068). -->
 <resources>
-    <string name="made_title">Made from your books</string>
-    <string name="made_open_all">Everything made from your books</string>
+    <string name="made_jobs">Jobs and downloads</string>
+    <plurals name="made_jobs_running">
+        <item quantity="one">%1$d running now</item>
+        <item quantity="other">%1$d running now</item>
+    </plurals>
+    <string name="made_jobs_idle">Nothing running now</string>
     <string name="made_from_book">Made from this book</string>
     <string name="made_empty">Nothing made yet. Saved audiobooks, studio audio files, accessible copies and talking books show here, with Play, Share and Delete.</string>
     <string name="made_kind_audiobook">Audiobook</string>

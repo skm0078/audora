@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/jobs/JobsScreen.kt
 // Purpose: One screen for every long job (audiobook, copies, studio mode) and every download, each with its progress,
-//          time left and Cancel (ADR-067), reached from the library's top bar and from the jobs' notifications.
+//          time left and Cancel (ADR-067), reached from the Made place and from the jobs' notifications.
 
 package io.github.skm0078.audora.ui.jobs
 
@@ -22,7 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,7 +54,7 @@ import kotlinx.coroutines.withContext
 
 /** The live jobs and downloads; voice names are read from the catalog once, off the main thread. */
 @Composable
-fun JobsRoute(onOpenMade: () -> Unit, onBack: () -> Unit) {
+fun JobsRoute(onBack: () -> Unit) {
     val context = LocalContext.current.applicationContext
     val jobs by LongJobs.jobs.collectAsStateWithLifecycle()
     val downloads by remember { DownloadJobs.observe(context) }.collectAsStateWithLifecycle(emptyList())
@@ -69,12 +68,11 @@ fun JobsRoute(onOpenMade: () -> Unit, onBack: () -> Unit) {
         downloads = downloads,
         voiceNames = voiceNames,
         onCancelDownload = { DownloadJobs.cancel(context, it) },
-        onOpenMade = onOpenMade,
         onBack = onBack,
     )
 }
 
-/** How many jobs and downloads are working now, for the badge on the library's Jobs button. */
+/** How many jobs and downloads are working now, for the Made place's Jobs row and the library's Jobs button. */
 @Composable
 fun rememberRunningJobCount(): Int {
     val context = LocalContext.current.applicationContext
@@ -95,7 +93,6 @@ fun JobsScreen(
     downloads: List<DownloadJob>,
     voiceNames: Map<String, String>,
     onCancelDownload: (DownloadJob) -> Unit,
-    onOpenMade: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -117,12 +114,6 @@ fun JobsScreen(
             contentPadding = PaddingValues(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
             verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
         ) {
-            // What finished jobs made is one tap away, where people look for it after a job ends (ADR-068).
-            item {
-                OutlinedButton(onClick = onOpenMade, Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.made_open_all))
-                }
-            }
             if (jobs.isEmpty() && downloads.isEmpty()) {
                 item { Text(stringResource(R.string.jobs_empty), style = MaterialTheme.typography.bodyLarge) }
             }

@@ -94,3 +94,13 @@ internal fun ColorScheme.trueBlack(): ColorScheme = copy(
     surfaceContainerHigh = surfaceContainer,
     surfaceContainerHighest = surfaceContainerHigh,
 )
+
+/** Collection markers (the tablet sidebar): mid tones that read on light and dark surfaces alike, never alone. */
+internal val ShelfDotColours: List<Color> = listOf(
+    Color(0xFF9C5A33),
+    Color(0xFF2F7A5F),
+    Color(0xFF3F5FA8),
+    Color(0xFF7A4C9A),
+    Color(0xFFB0832A),
+    Color(0xFF3E8A99),
+)

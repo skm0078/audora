@@ -6,16 +6,17 @@ package io.github.skm0078.audora.ui
 import io.github.skm0078.audora.core.library.BookId
 
 /**
- * A few screens, at most three deep: three tabs (Library, Notes, Settings; ADR-036) with the library as the root,
- * the reader or the full player on top of the library, Voices (P4-01) and Voices & licences (P3-06) on Settings, and
- * background reading setup (P1-06) on the library or Settings. Encoded as a string so it survives process death
- * through saved state. Still flat enough that Navigation Compose is not needed.
+ * A few screens, at most three deep: four places (Library, Notes, Made, You; ADR 2026-10-28-four-places) with the
+ * library as the root, the reader or the full player on top of a place, Voices (P4-01) and Voices & licences (P3-06)
+ * on You, and background reading setup (P1-06) on the library or You. Encoded as a string so it survives process
+ * death through saved state. Still flat enough that Navigation Compose is not needed.
  */
 sealed interface AppDestination {
     data object Library : AppDestination
 
     data object Notes : AppDestination
 
+    /** The You place: settings, voices, storage and help (its route stays "settings" for older saved states). */
     data object Settings : AppDestination
 
     /** Settings → Voices (P4-01); [fromStorage] when Storage's Manage opened it, so back returns there. */
@@ -26,10 +27,10 @@ sealed interface AppDestination {
     /** Settings → Storage (UI plan): what Audora's data takes and how to free it. */
     data object Storage : AppDestination
 
-    /** Every long job and download with its progress (ADR-067), from the library's top bar or a job's notification. */
+    /** Every long job and download with its progress (ADR-067), from the Made place or a job's notification. */
     data object Jobs : AppDestination
 
-    /** Everything the app made from the books (ADR-068): audiobooks, studio files, copies; from the Jobs screen. */
+    /** The Made place: everything the app made from the books (ADR-068), with the running jobs one tap away. */
     data object Made : AppDestination
 
     /**
@@ -58,8 +59,8 @@ sealed interface AppDestination {
     data class BatterySetup(val fromSettings: Boolean) : AppDestination
 
     /**
-     * Where back goes: Voices and licences to Settings; setup, the reader and the player to where they were opened
-     * from; the other tabs to the library.
+     * Where back goes: Voices and licences to You; Jobs to Made; setup, the reader and the player to where they were
+     * opened from; the other places to the library.
      */
     val parent: AppDestination?
         get() = when (this) {
@@ -67,12 +68,11 @@ sealed interface AppDestination {
             is Voices -> if (fromStorage) Storage else Settings
             Licences, Storage -> Settings
             is BatterySetup -> if (fromSettings) Settings else Library
-            Jobs -> Library
-            Made -> Jobs
+            Jobs -> Made
             is MadePlayer -> if (fromMade) Made else Library
             is Reader -> if (viaPlayer) Player(id, from) else from.destination
             is Player -> from.destination
-            Notes, Settings -> Library
+            Notes, Made, Settings -> Library
         }
 
     /** The tab this screen shows under; null for screens drawn over the tabs (reader, player, sub-pages). */
@@ -80,8 +80,9 @@ sealed interface AppDestination {
         get() = when (this) {
             Library -> AppTab.LIBRARY
             Notes -> AppTab.NOTES
-            Settings -> AppTab.SETTINGS
-            is Voices, Licences, Storage, Jobs, Made, is MadePlayer, is BatterySetup, is Reader, is Player -> null
+            Made -> AppTab.MADE
+            Settings -> AppTab.YOU
+            is Voices, Licences, Storage, Jobs, is MadePlayer, is BatterySetup, is Reader, is Player -> null
         }
 
     /**
@@ -90,10 +91,10 @@ sealed interface AppDestination {
      */
     val screen: String
         get() = when (this) {
-            Library, Notes, Settings -> TABS_SCREEN
+            Library, Notes, Made, Settings -> TABS_SCREEN
             is Reader -> BOOK_PREFIX + id.value
             is Player -> BOOK_PREFIX + id.value
-            is Voices, Licences, Storage, Jobs, Made, is MadePlayer, is BatterySetup -> toRoute()
+            is Voices, Licences, Storage, Jobs, is MadePlayer, is BatterySetup -> toRoute()
         }
 
     fun toRoute(): String = when (this) {
@@ -187,9 +188,10 @@ sealed interface AppDestination {
     }
 }
 
-/** The bottom bar's tabs, in order (ADR-036). */
+/** The four places, in order, the same on every screen size (ADR 2026-10-28-four-places). */
 enum class AppTab(val destination: AppDestination) {
     LIBRARY(AppDestination.Library),
     NOTES(AppDestination.Notes),
-    SETTINGS(AppDestination.Settings),
+    MADE(AppDestination.Made),
+    YOU(AppDestination.Settings),
 }
