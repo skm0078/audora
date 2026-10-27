@@ -96,7 +96,9 @@ Document *open(const char *path, std::string &error) {
     }
     const ddjvu_document_type_t type =
         doc->document == nullptr ? DDJVU_DOCTYPE_UNKNOWN : ddjvu_document_get_type(doc->document);
-    if (doc->document == nullptr || ddjvu_document_decoding_error(doc->document)) {
+    if (doc->document == nullptr || ddjvu_document_decoding_error(doc->document) ||
+        type == DDJVU_DOCTYPE_UNKNOWN || ddjvu_document_get_pagenum(doc->document) <= 0) {
+        // A file that is not a DjVu does not always end in a decoding error: no type or no pages refuses it too.
         error = doc->lastError.empty() ? "not a readable DjVu" : doc->lastError;
     } else if (type == DDJVU_DOCTYPE_INDIRECT || type == DDJVU_DOCTYPE_OLD_INDEXED) {
         // Its pages are separate files beside it, which an app given one file cannot reach.

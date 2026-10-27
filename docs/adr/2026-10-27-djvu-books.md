@@ -34,8 +34,9 @@ decoder is DjVuLibre (C++, GPL-2.0-or-later), which every Android DjVu reader us
   `PhotoConfig.maxLongSidePx`, stored as JPEG in a picture PDF, and read by the existing OCR path. A toast says it is
   being made; it opens when ready. Limit: `PhotoConfig.maxDjvuScanPages` = 600.
 - **The file is read where it lies.** DjVuLibre opens the provider's descriptor through `/proc/self/fd`, reading only
-  what it needs. A provider whose descriptor has no size (a pipe) gets its file copied to the cache first, up to
-  `TextBookConfig.maxDjvuCopyBytes` = 512 MB, deleted on close.
+  what it needs. A provider whose descriptor has no size (a pipe), or whose file DjVuLibre may not open again by
+  that path (Downloads through MediaStore refused it on the CI emulator), gets its file copied to the cache first, up
+  to `TextBookConfig.maxDjvuCopyBytes` = 512 MB, deleted on close.
 - **Refused:** indirect DjVu (pages in separate files beside an index, which an app given one file cannot reach) and
   anything DjVuLibre cannot open; both show "damaged" through `TextBookError.Damaged`, and a failed scan shows
   `djvu_unreadable`.
