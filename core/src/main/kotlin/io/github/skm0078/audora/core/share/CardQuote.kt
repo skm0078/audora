@@ -48,7 +48,8 @@ data class CardQuote(val text: String, val cut: Boolean, val script: Lang) {
         fun scriptOf(text: String): Lang {
             val letters = text.codePoints().toArray().asList().mapNotNull(ScriptLang::of)
             val counts = letters.groupingBy { it }.eachCount()
-            return counts.entries.maxByOrNull { (lang, count) -> count * Lang.entries.size - lang.ordinal }?.key ?: Lang.EN
+            val best = counts.entries.maxByOrNull { (lang, count) -> count * Lang.entries.size - lang.ordinal }
+            return best?.key ?: Lang.EN
         }
 
         private fun endsSentence(word: String): Boolean = word.trimEnd { it in CLOSERS }.lastOrNull() in SENTENCE_ENDS
