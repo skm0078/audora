@@ -9,6 +9,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import io.github.skm0078.audora.core.files.readUpTo
+import io.github.skm0078.audora.core.library.DocumentFormats
 import io.github.skm0078.audora.core.logging.AudoraLog
 import java.io.Closeable
 import java.io.File
@@ -107,6 +109,7 @@ class DjvuFile private constructor(
     companion object {
         private const val TAG = "Audora.Djvu"
         private const val BUFFER_BYTES = 64 * 1024
+        private const val HEADER_BYTES = 16
 
         /** The cache folder a DjVu from a pipe-only provider is copied into while it is open. */
         private const val COPY_FOLDER = "djvu-copies"
@@ -120,6 +123,9 @@ class DjvuFile private constructor(
          * [SecurityException].
          */
         fun open(resolver: ContentResolver, uri: Uri, copyFolder: File, maxCopyBytes: Long): DjvuFile {
+            // DjVuLibre does not always refuse a file that is not a DjVu at all (seen on Android): check the header.
+            val head = resolver.openInputStream(uri)?.use { it.readUpTo(HEADER_BYTES) }
+            if (head == null || !DocumentFormats.isDjvu(head)) throw DjvuException("not a DjVu file")
             val descriptor = resolver.openFileDescriptor(uri, "r") ?: throw FileNotFoundException("no descriptor")
             if (descriptor.statSize > 0) {
                 try {
