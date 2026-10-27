@@ -3,15 +3,16 @@
 //          bundled voice) on CI's emulator: first run, "Open with", play without the notification permission, the
 //          media controls a notification or lock screen sends and its own buttons (CF-1), a new voice, a book's
 //          language and a reading setting applying at once, Settings rows, pages and Back, Hide app content, the
-//          ListenLock name, a scan read after the OCR download, and the e-book formats and comic archives of ADR
-//          2026-10-26-more-ebook-formats. One test on one fresh install, as one listener would use the app:
-//          AndroidJUnitRunner finishes every activity between tests, so the steps are named blocks inside it and the
-//          first broken one stops it.
+//          ListenLock name, a scan read after the OCR download, the e-book formats and comic archives of ADR
+//          2026-10-26-more-ebook-formats, and the cover inside exported audiobooks. One test on one fresh install, as
+//          one listener would use the app: AndroidJUnitRunner finishes every activity between tests, so the steps are
+//          named blocks inside it and the first broken one stops it.
 
 package io.github.skm0078.audora.release
 
 import android.Manifest
 import android.app.Activity
+import android.media.MediaMetadataRetriever
 import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
@@ -41,14 +42,24 @@ import com.google.common.util.concurrent.ListenableFuture
 import io.github.skm0078.audora.MainActivity
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookField
+import io.github.skm0078.audora.core.library.DocumentFormat
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.result.getOrNull
 import io.github.skm0078.audora.di.LibraryEntryPoint
 import io.github.skm0078.audora.playback.contract.LockScreenCommands
 import io.github.skm0078.audora.playback.contract.PlaybackContract
+import io.github.skm0078.audora.playback.covers.CoverFolders
+import io.github.skm0078.audora.playback.export.AacAudioSink
+import io.github.skm0078.audora.playback.export.AudioChapter
+import io.github.skm0078.audora.playback.export.BookTags
+import io.github.skm0078.audora.playback.export.CoverJpeg
+import io.github.skm0078.audora.playback.export.LocalChapterFiles
 import io.github.skm0078.audora.privacy.PrivacyPreferences
 import io.github.skm0078.audora.privacy.PrivacySettings
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
+import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
 import io.github.skm0078.audora.speech.voices.VoiceStatus
@@ -56,6 +67,7 @@ import io.github.skm0078.audora.ui.firstrun.FirstRunStep
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
 import io.github.skm0078.audora.ui.reader.ReadingPosition
+import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -96,6 +108,7 @@ class ReleaseJourneyTest {
             step("14 Open with makes a comic archive into a photo book", ::openWithMakesAComicIntoAPhotoBook)
             step("15 Open with reads a DjVu's text and makes a DjVu scan a photo book", ::openWithReadsDjvuBooks)
             step("16 Supertonic's licence rules show before its download", ::supertonicRulesShowBeforeItsDownload)
+            step("17 an exported chapter carries the book's title and library cover", ::anExportedChapterCarriesTheCover)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -506,6 +519,34 @@ class ReleaseJourneyTest {
         backToTabs()
     }
 
+    /**
+     * The export's tagging on the installed app: the library's own cover for a PDF the journey opened, made into the
+     * JPEG the export embeds, ends up in a chapter file where any audiobook player reads it.
+     */
+    private fun anExportedChapterCarriesTheCover() {
+        val entry = LibraryEntryPoint.of(app)
+        val book = runBlocking { entry.library().books().first() }.first { it.format == DocumentFormat.PDF }
+        assertTrue("the library cover to be drawn", runBlocking { entry.covers().cover(book) } != null)
+        val cover = requireNotNull(CoverJpeg.of(CoverFolders(app.filesDir).shownFile(book))) { "No cover JPEG" }
+        val folder = File(app.cacheDir, "journey-export").apply {
+            deleteRecursively()
+            mkdirs()
+        }
+        try {
+            val sink = AacAudioSink(LocalChapterFiles(folder), 1, book = BookTags(book.title, book.author, cover))
+            val writer = requireNotNull(sink.open(AudioChapter(1, 0, 0), EXPORT_RATE).getOrNull()) { "No encoder" }
+            assertTrue(writer.write(PcmAudio(ShortArray(EXPORT_RATE / 2), EXPORT_RATE)) is Outcome.Success)
+            val exported = requireNotNull(writer.finish().getOrNull()) { "Chapter not finished" }
+            MediaMetadataRetriever().use { tags ->
+                tags.setDataSource(File(folder, exported.name).path)
+                assertEquals(book.title, tags.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM))
+                assertTrue("no cover in the file", tags.embeddedPicture?.contentEquals(cover) == true)
+            }
+        } finally {
+            folder.deleteRecursively()
+        }
+    }
+
     /** False (logged, the step passes) on a build with only one English voice. */
     private fun chooseAnotherEnglishVoice(): Boolean {
         val library = VoiceLibrary.get(app)
@@ -579,6 +620,7 @@ class ReleaseJourneyTest {
         // The service's own words when it acts on a change (AudoraPlaybackService.followReadingChanges).
         const val VOICE_RESTART = "Reading voices changed; restarting the sentence"
         const val LANGUAGE_RESTART = "Book language changed"
+        const val EXPORT_RATE = 22_050
         const val OTHER_BOOK_LANGUAGE = "fr"
         const val TEXT_REREAD = "Reading text settings changed; reading the open book again"
         const val LOCK_SCREEN_BOOKMARK = "Lock screen bookmark added"
