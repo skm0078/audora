@@ -673,9 +673,11 @@ class ReleaseJourneyTest {
         tapText(R.string.tab_notes)
         tapText(R.string.tab_made)
         tapText(R.string.made_jobs_short)
-        waitForNode(hasText(text(R.string.jobs_title)))
+        // Made's chip says "Jobs" too: the Jobs page is known by its heading.
+        val jobsPage = hasText(text(R.string.jobs_title)) and SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading)
+        waitForNode(jobsPage)
         back()
-        gone(hasText(text(R.string.jobs_title)))
+        gone(jobsPage)
         waitForNode(hasText(text(R.string.made_jobs_short)))
         tapText(R.string.tab_you)
         waitForNode(hasText(text(R.string.settings_voices_title)))
