@@ -1,12 +1,12 @@
-// File: core/src/main/kotlin/io/github/skm0078/audora/core/config/LibraryLoadBudget.kt
+// File: core/src/testFixtures/kotlin/io/github/skm0078/audora/core/config/LibraryLoadBudget.kt
 // Purpose: The performance budget a big library must stay inside (ADR 2026-10-28-performance-budget): the numbers the
 //          JVM load test, the emulator list test and the release journey's step 40 check, in one place.
 
 package io.github.skm0078.audora.core.config
 
 /**
- * Read by tests only, so R8 leaves it out of the app. Kept here, not in a test folder, because three test sets (JVM,
- * emulator, journey) check the same numbers and the ADR points at one file. CI machines are slower and noisier than a
+ * In :core's test fixtures, never in the app: three test sets (JVM, emulator, journey) check the same numbers and the
+ * ADR points at one file. CI machines are slower and noisier than a
  * phone, so each JVM limit is about ten times what a CI machine took when it was set (ADR): a limit catches a design
  * mistake (work done per keystroke, an O(n²) loop, I/O on the main thread), not a few percent; [maxGrowth] catches a
  * loop that compares every book with every other on any machine.

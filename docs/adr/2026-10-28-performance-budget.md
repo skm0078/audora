@@ -10,7 +10,7 @@ memory of the debug build against the dev build (ADR-072, `scripts/perf/time_bui
 size was never checked.
 
 ## Decision
-1. **One budget, in `LibraryLoadBudget`** (`:core` config, read by tests only, so R8 leaves it out of the app). Three
+1. **One budget, in `LibraryLoadBudget`** (in `:core`'s test fixtures, shared by the JVM, emulator and journey tests and never in the app). Three
    test sets check the same numbers.
 2. **JVM load test** (`LibraryLoadTest`): 1,000 and 5,000 books in three scripts, with authors, formats,
    collections and reading positions, through the real `Library` and `LibraryController` with in-memory stores. Best

@@ -3,6 +3,9 @@
 
 plugins {
     id("audora.jvm.library")
+    // The load tests' made-up library and budget (ADR 2026-10-28-performance-budget), shared with :app's JVM and
+    // emulator tests without shipping in the app.
+    `java-test-fixtures`
 }
 
 dependencies {

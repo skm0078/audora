@@ -1,4 +1,4 @@
-// File: core/src/main/kotlin/io/github/skm0078/audora/core/library/SyntheticLibrary.kt
+// File: core/src/testFixtures/kotlin/io/github/skm0078/audora/core/library/SyntheticLibrary.kt
 // Purpose: A made-up reader's library of any size for the load tests (ADR 2026-10-28-performance-budget): the same
 //          books on the JVM, on the emulator and in the release journey.
 
@@ -7,10 +7,10 @@ package io.github.skm0078.audora.core.library
 import io.github.skm0078.audora.core.resume.ResumeAnchor
 
 /**
- * Read by tests only, so R8 leaves it out of the app; kept beside [Book] so the JVM and emulator tests build the very
- * same books. Three scripts, authors (some missing), four formats, [COLLECTIONS] collections, and every
- * [READING_EVERY]th book half read. Every title ends in a 4-digit number, so no title is part of another and a search
- * for one finds that book alone (up to 9,999 books).
+ * In :core's test fixtures, never in the app, so the JVM and emulator tests build the very same books. Three scripts,
+ * authors (some missing), four formats, [COLLECTIONS] collections, and every [READING_EVERY]th book half read. Every
+ * title ends in a 4-digit number, so no title is part of another and a search for one finds that book alone (up to
+ * 9,999 books).
  */
 object SyntheticLibrary {
     const val COLLECTIONS = 20
