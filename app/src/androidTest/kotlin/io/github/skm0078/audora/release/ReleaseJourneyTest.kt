@@ -148,6 +148,11 @@ class ReleaseJourneyTest {
             step("18 the app font draws English, Hindi and Bengali", ::theAppFontDrawsAllThreeScripts)
             step("19 the four places open and Jobs goes back to Made", ::theFourPlacesOpenAndJobsLiveInMade)
             step("20 the book menu's Save as opens and the sort sheet turns covers to a list", ::bookMenuAndSortSheet)
+            // Right after 20, on its library: from 24b on, the library's search can still hold a setting's words.
+            step(
+                "42 a phone book says it is on this phone",
+                SourceJourney(rule, ::backToTabs)::aPhoneBookSaysWhereItLives,
+            )
             step("21 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
             step("22 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
             step("23 a quote video is written with the AI voice label", ::aQuoteVideoIsWritten)
@@ -156,10 +161,6 @@ class ReleaseJourneyTest {
                 ::aPhoneKeepsTheSheets,
             )
             step("24b a search finds a setting, opens it on You, and Back returns to the search", ::searchOpensASetting)
-            step(
-                "42 a phone book says it is on this phone",
-                SourceJourney(rule, ::backToTabs)::aPhoneBookSaysWhereItLives,
-            )
             val share = ShareJourney(rule, ::activity, ::backToTabs)
             step("25 Share as a video reads the quote in the book's voice into an MP4", share::aQuoteVideoIsShared)
             step("26 part of the shown page is shared as a picture with its credit") {

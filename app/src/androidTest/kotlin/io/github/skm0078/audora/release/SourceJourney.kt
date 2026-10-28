@@ -10,7 +10,6 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
@@ -44,8 +43,8 @@ internal class SourceJourney(private val rule: ComposeTestRule, private val back
         rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(hasText(text(R.string.library_title))) }
         val namedMenu = text(R.string.library_book_menu_named, NAME_MARK).split(NAME_MARK).maxBy { it.length }.trim()
         val menuButton = hasContentDescription(namedMenu, substring = true) and hasClickAction()
-        // The first book's menu may be on screen already; otherwise the library's list (lazy or not) scrolls to it.
-        val list = hasScrollToIndexAction() or hasScrollAction()
+        // The first book's menu may be on screen already; otherwise the library's list scrolls to it.
+        val list = hasScrollToIndexAction()
         runCatching { rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(menuButton) || rule.shows(list) } }
         if (!rule.shows(menuButton)) {
             check(rule.shows(list)) { "No book menu or list on the library:\n${screen()}" }
