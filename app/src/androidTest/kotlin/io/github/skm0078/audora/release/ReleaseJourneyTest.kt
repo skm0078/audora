@@ -85,6 +85,7 @@ import io.github.skm0078.audora.privacy.PrivacyPreferences
 import io.github.skm0078.audora.privacy.PrivacySettings
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
+import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.audio.WordTimes
 import io.github.skm0078.audora.speech.voices.VoiceKind
@@ -155,6 +156,14 @@ class ReleaseJourneyTest {
                 ::aPhoneKeepsTheSheets,
             )
             step("24b a search finds a setting, opens it on You, and Back returns to the search", ::searchOpensASetting)
+            val share = ShareJourney(rule, ::activity, ::backToTabs)
+            step("25 Share as a video reads the quote in the book's voice into an MP4", share::aQuoteVideoIsShared)
+            step("26 part of the shown page is shared as a picture with its credit") {
+                share.aPageSnippetIsShared(BOOK)
+            }
+            step("27 Turn pages shows a text book a screenful at a time with its arrows") {
+                share.aTextBookTurnsPages(MORE_FORMATS.first())
+            }
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -181,7 +190,7 @@ class ReleaseJourneyTest {
     private fun text(id: Int, vararg args: Any): String = app.getString(id, *args)
 
     private fun waitForNode(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) {
-        rule.waitUntil(timeoutMs) { rule.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(timeoutMs) { rule.shows(matcher) }
     }
 
     private fun node(matcher: SemanticsMatcher): SemanticsNodeInteraction {

@@ -1,6 +1,7 @@
 // File: playback/src/androidTest/kotlin/io/github/skm0078/audora/playback/export/video/QuoteVideoWriterDeviceTest.kt
 // Purpose: ADR 2026-10-28-quote-video on a device: the phone's encoder writes a playable 720 x 1280 MP4 with the
-//          voice, each frame shows the picture for its moment, the "AI voice" label is on it, and the cap cuts it.
+//          voice, each frame shows the picture for its moment, the "AI voice" label is on it, the cap cuts it, and
+//          its progress counts every frame.
 
 package io.github.skm0078.audora.playback.export.video
 
@@ -95,6 +96,26 @@ class QuoteVideoWriterDeviceTest {
             // The label's dark pill sits in the top left corner of every frame.
             assertTrue("the label is drawn", Color.red(first.labelPoint()) < LABEL_MAX_RED)
         }
+    }
+
+    @Test
+    fun progressCountsEveryFrameUpToTheLast() {
+        val reported = mutableListOf<Pair<Int, Int>>()
+        val writer = QuoteVideoWriter(CONFIG) { done, total -> reported += done to total }
+
+        val result = writer.write(
+            File(folder, "progress.mp4"),
+            tone(TWO_SECONDS_MS),
+            twoWords.timeline,
+            twoWords,
+            LABEL,
+        )
+
+        assertTrue(result is Outcome.Success)
+        val total = twoWords.timeline.frameCount
+        assertEquals("once per frame", total, reported.size)
+        assertTrue("always out of every frame", reported.all { it.second == total })
+        assertEquals((1..total).toList(), reported.map { it.first })
     }
 
     @Test

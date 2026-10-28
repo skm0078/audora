@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="text_look_turn_pages">পাতা ওল্টান</string>
+    <string name="text_look_turn_pages_body">একবারে এক স্ক্রিন দেখান, আর ওল্টাতে পাশে সোয়াইপ করুন বা তীর চাপুন। বন্ধ থাকলে: লেখা স্ক্রল হয়।</string>
+    <string name="text_pages_continued">পৃষ্ঠা %1$d / %2$d, চলছে</string>
+    <string name="text_pages_previous">আগের স্ক্রিন</string>
+    <string name="text_pages_next">পরের স্ক্রিন</string>
+</resources>

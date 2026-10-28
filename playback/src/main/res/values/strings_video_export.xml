@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: playback/src/main/res/values/strings_video_export.xml
+  Purpose: Strings for a quote shared as a short video, read aloud in the book's voice (ADR 2026-10-28-quote-video).
+-->
+<resources>
+    <string name="video_channel">Quote videos</string>
+    <string name="video_making">Making the quote video…</string>
+    <string name="video_ready">Quote video ready</string>
+    <string name="video_share">Share</string>
+    <string name="video_chooser_title">Share the quote video</string>
+    <string name="video_failed">Could not make the video from this quote</string>
+    <!-- Shown on every frame of the video: the voice is made by a computer. -->
+    <string name="video_ai_label">AI voice</string>
+    <!-- Text sent with the video: %1$s the quote, %2$s the book's title. -->
+    <string name="video_share_text">“%1$s” (%2$s)</string>
+</resources>

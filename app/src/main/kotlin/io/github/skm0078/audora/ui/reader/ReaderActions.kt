@@ -13,6 +13,7 @@ import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.Highlight
+import io.github.skm0078.audora.core.share.SnippetBox
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.contract.StudyAction
@@ -114,6 +115,20 @@ interface ReaderActions {
 
     /** "Share as a picture" (ADR 2026-10-27-share-cards): [lines] from zero-based [page] as a quote card. */
     fun onSharePicture(lines: String, page: Int) = Unit
+
+    /** "Share as a video" (ADR 2026-10-28-quote-video): [lines] read aloud over a quote card in the book's voice. */
+    fun onShareVideo(lines: String, page: Int) = Unit
+
+    /** "Share part of the page" (ADR 2026-10-28-page-snippet): a box around [unit] to drag on the drawn page. */
+    fun onSharePagePart(unit: ReadingUnit) = Unit
+
+    /** The snippet's box dragged or resized. */
+    fun onSnippetChanged(box: SnippetBox) = Unit
+
+    /** The snippet's Share: the box's part of the page goes to the card screen. */
+    fun onSnippetShare() = Unit
+
+    fun onSnippetCancel() = Unit
 
     /** A fix offered after "This sounded wrong" ([SoundedWrongFixes]). */
     fun onSoundedWrongFix(fix: SoundedWrongFix) = Unit

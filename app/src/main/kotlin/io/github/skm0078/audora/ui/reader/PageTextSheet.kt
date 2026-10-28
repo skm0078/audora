@@ -113,6 +113,13 @@ private fun TypeRows(look: ReadingLook, onLookChange: (ReadingLook) -> Unit) {
         { onLookChange(look.copy(reflow = it)) },
         help = stringResource(R.string.text_look_reflow_body),
     )
+    OptionDivider()
+    SwitchOption(
+        stringResource(R.string.text_look_turn_pages),
+        look.turnPages,
+        { onLookChange(look.copy(turnPages = it)) },
+        help = stringResource(R.string.text_look_turn_pages_body),
+    )
 }
 
 @Composable

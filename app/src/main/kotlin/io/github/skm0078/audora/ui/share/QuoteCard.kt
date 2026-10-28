@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/share/QuoteCard.kt
-// Purpose: The two cards drawn inside a ShareCardFrame: a quote with its credit, and a book on its own.
+// Purpose: The cards drawn inside a ShareCardFrame: a quote with its credit, part of a page with its credit, and a
+//          book on its own.
 
 package io.github.skm0078.audora.ui.share
 
@@ -50,10 +51,11 @@ data class BookCardText(val kicker: String, val title: String, val author: Strin
 /**
  * The quote fills the space between the quote mark and the credit: its size steps down from 34 to 16 card sp until
  * it fits, so a short line reads big on a story and 60 words still fit a square. The credit (title, author, page) is
- * always drawn; there is no way to share a quote without it.
+ * always drawn; there is no way to share a quote without it. Without [quoteShown] the space stays empty: a quote
+ * video's backdrop, whose words the video draws over it, lit one at a time.
  */
 @Composable
-fun QuoteCard(text: QuoteCardText, look: CardLook, background: ImageBitmap?) {
+fun QuoteCard(text: QuoteCardText, look: CardLook, background: ImageBitmap?, quoteShown: Boolean = true) {
     CardBackdrop(look, background) {
         Column(Modifier.fillMaxSize().padding(horizontal = SIDE, vertical = TOP_BOTTOM)) {
             Text(
@@ -63,14 +65,47 @@ fun QuoteCard(text: QuoteCardText, look: CardLook, background: ImageBitmap?) {
                 modifier = Modifier.height(MARK_BOX),
             )
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
-                BasicText(
-                    text.quote.text,
-                    style = TextStyle(
-                        fontFamily = QuoteFonts.of(text.quote.script),
-                        color = look.ink,
-                        lineHeight = QUOTE_LINE_HEIGHT,
-                    ),
-                    autoSize = TextAutoSize.StepBased(QUOTE_MIN, QUOTE_MAX, QUOTE_STEP),
+                if (quoteShown) QuoteText(text, look)
+            }
+            Spacer(Modifier.height(SPACE_ABOVE_CREDIT))
+            Box(Modifier.width(RULE_WIDTH).height(RULE_HEIGHT).background(look.accent))
+            Spacer(Modifier.height(SPACE_IN_CREDIT))
+            Credit(text.title, listOfNotNull(text.author, text.pageLabel).joinToString(" · "), text.dedication, look)
+        }
+    }
+}
+
+@Composable
+private fun QuoteText(text: QuoteCardText, look: CardLook) {
+    BasicText(
+        text.quote.text,
+        style = TextStyle(
+            fontFamily = QuoteFonts.of(text.quote.script),
+            color = look.ink,
+            lineHeight = QUOTE_LINE_HEIGHT,
+        ),
+        autoSize = TextAutoSize.StepBased(QUOTE_MIN, QUOTE_MAX, QUOTE_STEP),
+    )
+}
+
+/** What a page snippet's card says under the picture: the book, its author and the page. */
+data class SnippetCardText(val title: String, val author: String?, val pageLabel: String?, val dedication: String = "")
+
+/**
+ * Part of a page as drawn, on the card's background with its credit: the picture as large as the space lets it be,
+ * never stretched, its corners rounded like a clipping.
+ */
+@Composable
+fun SnippetCard(text: SnippetCardText, look: CardLook, snippet: ImageBitmap, backdrop: ImageBitmap?) {
+    CardBackdrop(look, backdrop) {
+        Column(Modifier.fillMaxSize().padding(horizontal = SIDE, vertical = TOP_BOTTOM)) {
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Image(
+                    snippet,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    filterQuality = FilterQuality.High,
+                    modifier = Modifier.clip(RoundedCornerShape(SNIPPET_CORNER)),
                 )
             }
             Spacer(Modifier.height(SPACE_ABOVE_CREDIT))
@@ -183,3 +218,4 @@ private val MARK_CLEARANCE = 20.dp
 private val COVER_WIDTH = 168.dp
 private val COVER_HEIGHT = 240.dp
 private val COVER_CORNER = 10.dp
+private val SNIPPET_CORNER = 6.dp

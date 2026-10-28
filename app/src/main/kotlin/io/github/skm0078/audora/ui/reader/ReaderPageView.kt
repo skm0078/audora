@@ -4,6 +4,7 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
@@ -101,10 +102,19 @@ internal fun PageView(
                 val sentences = remember(units) { units.filter { it.text.isNotBlank() } }
                 val perSentence = rememberSentenceActions(sentences, state.playerReady, actions)
                 val pages = FlipPages(state.page, state.pageCount ?: 1, state.nearbyPages, tone)
-                PageFlip(pages, enabled = !zoom.zoomed, config = flip, onTurn = actions::onGoToPage) {
+                val picking = state.snippet != null
+                // While a snippet is picked, a drag moves its box: the page neither turns nor reads.
+                PageFlip(pages, enabled = !zoom.zoomed && !picking, config = flip, onTurn = actions::onGoToPage) {
                     DrawnPage(state, shown.image, PageLook(pageNote(units), tone, zoom, perSentence), viewport, actions)
                 }
-                if (zoom.zoomed) {
+                if (picking) {
+                    BackHandler(onBack = actions::onSnippetCancel)
+                    SnippetBar(
+                        actions::onSnippetCancel,
+                        actions::onSnippetShare,
+                        Modifier.align(Alignment.BottomCenter),
+                    )
+                } else if (zoom.zoomed) {
                     FilledTonalButton(
                         onClick = zoom::reset,
                         modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
@@ -213,8 +223,11 @@ private fun DrawnPage(state: ReaderState, image: PageImage, look: PageLook, view
                 .width(pageWidth)
                 .aspectRatio(image.aspectRatio)
                 .onSizeChanged { pageSize = it }
-                .pageTaps(state.playerReady, actions, LocalHapticFeedback.current),
-        ) { PageLayers(state, image, look, highlight) }
+                .pageTaps(state.playerReady && state.snippet == null, actions, LocalHapticFeedback.current),
+        ) {
+            PageLayers(state, image, look, highlight)
+            state.snippet?.let { SnippetPicker(it, actions::onSnippetChanged) }
+        }
     }
 }
 

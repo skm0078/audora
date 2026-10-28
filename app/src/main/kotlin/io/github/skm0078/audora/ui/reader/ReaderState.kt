@@ -5,6 +5,7 @@ package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.share.SnippetBox
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.outline.ChapterList
 import io.github.skm0078.audora.pdf.render.ViewRect
@@ -81,6 +82,8 @@ data class TimeLeftEstimate(val bookMs: Long, val chapterMs: Long?)
  * @property chapters the chapter list (plan item 11), from the PDF outline; empty without one.
  * @property chapterStarts the pages chapters start on, as the end-of-chapter sleep timer counts them.
  * @property unreadableTapped a greyed sentence the listener tapped (RI-9), while the screen explains why it is skipped.
+ * @property snippet while part of the shown page is picked to share as a picture, its box (ADR
+ *   2026-10-28-page-snippet); cleared when the page turns.
  */
 data class ReaderState(
     val bookId: BookId,
@@ -103,8 +106,12 @@ data class ReaderState(
     val skipRefused: ParagraphSkipRefusal? = null,
     /** The book opened where it was left: said once, then cleared ([ReaderModel.resumedShown]). */
     val resumedAt: ResumedAt? = null,
+    val snippet: SnippetBox? = null,
 ) {
     val pageCount: Int? get() = (document as? DocumentState.Open)?.pageCount
+
+    /** The drawn image of the page shown, once it is ready; null while it renders or shows another page. */
+    val shownPageImage: PageImage? get() = (pageImage as? PageImageState.Ready)?.takeIf { it.page == page }?.image
 
     /** Where the player is in THIS book; null when it holds nothing or another book. */
     val readingPosition: ReadingPosition? get() = playback.position?.takeIf { it.bookId == bookId }
@@ -157,7 +164,7 @@ data class ReaderState(
     /** The lines of every unreadable sentence on the page image, to grey (RI-9); empty as for [spokenHighlight]. */
     val unreadableHighlight: List<ViewRect>
         get() {
-            val image = (pageImage as? PageImageState.Ready)?.takeIf { it.page == page }?.image ?: return emptyList()
+            val image = shownPageImage ?: return emptyList()
             val units = (content as? PageContent.Ready)?.units ?: return emptyList()
             val reading = UnitReading(playback.readingModes)
             return units.filter(reading::isUnreadable).flatMap { it.bounds.orEmpty() }.map(image.transform::toView)
@@ -169,7 +176,7 @@ data class ReaderState(
      */
     val spokenHighlight: List<ViewRect>
         get() {
-            val image = (pageImage as? PageImageState.Ready)?.takeIf { it.page == page }?.image ?: return emptyList()
+            val image = shownPageImage ?: return emptyList()
             val index = spokenUnitIndex ?: return emptyList()
             val units = (content as? PageContent.Ready)?.units ?: return emptyList()
             return units[index].bounds.orEmpty().map(image.transform::toView)

@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
@@ -38,7 +39,9 @@ import kotlin.math.roundToInt
  * [content] laid out on a [CardShape.DESIGN_WIDTH_DP]-wide canvas at [shape]'s full pixel size (one card dp is
  * width / 360 px, text ignores the phone's font size so the picture matches the preview), then scaled down to fit
  * this frame's space. The ListenLock mark is drawn by the frame itself in [markColor], so no card can leave it out
- * (the maintainer's rule: always on). Stats, finished-book and video cards reuse this frame.
+ * (the maintainer's rule: always on). Stats, finished-book and video cards reuse this frame. [overlay], when given,
+ * draws over the card in its full-size pixels on screen only: it is not recorded, so a capture leaves it out (the
+ * video's words, which the video draws itself over the captured card).
  */
 @Composable
 fun ShareCardFrame(
@@ -46,6 +49,7 @@ fun ShareCardFrame(
     recorder: CardRecorder,
     markColor: Color,
     modifier: Modifier = Modifier,
+    overlay: (DrawScope.() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
@@ -67,6 +71,7 @@ fun ShareCardFrame(
                 .drawWithContent {
                     recorder.layer.record { this@drawWithContent.drawContent() }
                     drawLayer(recorder.layer)
+                    overlay?.invoke(this)
                 },
         ) {
             val cardDensity = Density(shape.widthPx / CardShape.DESIGN_WIDTH_DP, fontScale = 1f)

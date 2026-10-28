@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/strings_text_pages.xml
+  Purpose: The text view shown a screenful at a time, turned like a book's pages (ADR 2026-10-28-text-pages).
+-->
+<resources>
+    <string name="text_look_turn_pages">Turn pages</string>
+    <string name="text_look_turn_pages_body">Show a screenful at a time and swipe sideways, or use the arrows, to turn. Off: the text scrolls.</string>
+    <!-- Said by TalkBack after a turn within the same page of the book. %1$d the page, %2$d the pages. -->
+    <string name="text_pages_continued">Page %1$d of %2$d, continued</string>
+    <string name="text_pages_previous">Previous screen</string>
+    <string name="text_pages_next">Next screen</string>
+</resources>
