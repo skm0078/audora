@@ -1,0 +1,54 @@
+// File: app/src/main/kotlin/io/github/skm0078/audora/TabsRoute.kt
+// Purpose: The four places' frame: the app shell with its tabs or sidebar and the mini player (ADR-036, ADR
+//          2026-10-28-four-places), moved out of MainActivity to keep it small.
+
+package io.github.skm0078.audora
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.skm0078.audora.ui.AppDestination
+import io.github.skm0078.audora.ui.AppTab
+import io.github.skm0078.audora.ui.kids.LocalKidsMode
+import io.github.skm0078.audora.ui.library.BookCovers
+import io.github.skm0078.audora.ui.library.LibraryController
+import io.github.skm0078.audora.ui.library.MiniPlayer
+import io.github.skm0078.audora.ui.library.nowPlaying
+import io.github.skm0078.audora.ui.library.sidebarShelves
+import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
+import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
+import io.github.skm0078.audora.ui.shell.AppShell
+
+/** The shell around a place; the mini player shows while a book plays and opens the full player. */
+@Composable
+internal fun TabsRoute(
+    tab: AppTab,
+    library: LibraryController,
+    port: MediaControllerPlaybackPort,
+    covers: BookCovers,
+    navigate: (AppDestination) -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val playback by port.state.collectAsStateWithLifecycle()
+    val playWithPermission = rememberPlayWithNotificationPermission()
+    val playing = nowPlaying(playback, library.listState)
+    AppShell(
+        selected = tab,
+        onSelect = { navigate(it.destination) },
+        tabs = if (LocalKidsMode.current) listOf(AppTab.LIBRARY) else AppTab.entries,
+        shelves = sidebarShelves(library) { navigate(AppDestination.Library) },
+        miniPlayer = {
+            playing?.let { now ->
+                MiniPlayer(
+                    playing = now,
+                    onOpen = { navigate(AppDestination.Player(now.bookId, tab)) },
+                    onPlayPause = {
+                        if (port.state.value.wantsToPlay) port.pause() else playWithPermission(port::play)
+                    },
+                    covers = covers,
+                )
+            }
+        },
+        content = content,
+    )
+}

@@ -6,7 +6,6 @@
 
 package io.github.skm0078.audora.ui.settings
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,11 +26,8 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -91,64 +87,64 @@ fun SettingsScreen(
     actedVoice: ActedVoiceSettings? = null,
     storyBrain: StoryBrainSettings? = null,
     privacy: PrivacyControls? = null,
+    focus: SettingFocus = SettingFocus.None,
 ) {
-    var page by rememberSaveable { mutableStateOf(SettingsPage.MAIN) }
-    BackHandler(enabled = page != SettingsPage.MAIN) { page = SettingsPage.MAIN }
+    val pages = rememberSettingsPages(focus)
+    val page = pages.page
     // Each page opens at its top, not where the last one was scrolled to.
-    key(page) {
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .windowInsetsPadding(
-                    WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
-                )
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Dimens.ScreenPadding)
-                .padding(bottom = Dimens.SpaceXl),
-            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
-        ) {
-            PageHeader(page) { page = SettingsPage.MAIN }
-            when (page) {
-                SettingsPage.MAIN -> {
-                    ListeningGroup(
-                        onOpenVoices,
-                        ModelPack(ocrModels, onOcrModels),
-                        actedVoice?.let { ModelPack(it.state, it.onAction) },
-                        storyBrain?.let { ModelPack(it.state, it.onAction) },
-                        skipCitations,
-                        onSkipCitationsChange,
+    CompositionLocalProvider(LocalSettingFocus provides focus) {
+        key(page) {
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
                     )
-                    AppearanceGroup(appearance, onAppearanceChange, language, onLanguageChange, keepScreenOn) {
-                        onKeepScreenOnChange(it)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = Dimens.ScreenPadding)
+                    .padding(bottom = Dimens.SpaceXl),
+                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
+            ) {
+                PageHeader(page) { pages.open(SettingsPage.MAIN) }
+                when (page) {
+                    SettingsPage.MAIN -> {
+                        ListeningGroup(
+                            onOpenVoices,
+                            ModelPack(ocrModels, onOcrModels),
+                            actedVoice?.let { ModelPack(it.state, it.onAction) },
+                            storyBrain?.let { ModelPack(it.state, it.onAction) },
+                            skipCitations,
+                            onSkipCitationsChange,
+                        )
+                        AppearanceGroup(appearance, onAppearanceChange, language, onLanguageChange, keepScreenOn) {
+                            onKeepScreenOnChange(it)
+                        }
+                        AppGroup(
+                            AppLinks(onOpenBatterySetup, onOpenLicences, onKidsMode, onOpenStorage),
+                            batteryExempt,
+                            versionName,
+                        )
+                        PagesGroup(pages::open)
                     }
-                    AppGroup(
-                        AppLinks(onOpenBatterySetup, onOpenLicences, onKidsMode, onOpenStorage),
-                        batteryExempt,
-                        versionName,
+
+                    SettingsPage.PRIVACY -> PrivacyGroup(privacy)
+
+                    SettingsPage.ADVANCED -> AdvancedPage(
+                        ModelPack(punctuationModel, onPunctuationModel),
+                        ocrReady = ocrModels is OcrModelsState.Ready,
+                        volumeKeysSkip,
+                        onVolumeKeysSkipChange,
+                        voiceCommands,
+                        pronunciation,
+                        shareState,
+                        onShareLogs,
+                        onSimulateReadingSession.takeIf { showDebugTools },
                     )
-                    PagesGroup { page = it }
                 }
-
-                SettingsPage.PRIVACY -> PrivacyGroup(privacy)
-
-                SettingsPage.ADVANCED -> AdvancedPage(
-                    ModelPack(punctuationModel, onPunctuationModel),
-                    ocrReady = ocrModels is OcrModelsState.Ready,
-                    volumeKeysSkip,
-                    onVolumeKeysSkipChange,
-                    voiceCommands,
-                    pronunciation,
-                    shareState,
-                    onShareLogs,
-                    onSimulateReadingSession.takeIf { showDebugTools },
-                )
             }
         }
     }
 }
-
-/** The tab's own page and the two it opens. */
-private enum class SettingsPage { MAIN, PRIVACY, ADVANCED }
 
 /** The rows that open Settings' other pages. */
 @Composable
@@ -171,11 +167,6 @@ private fun PagesGroup(onOpen: (SettingsPage) -> Unit) {
 /** "You" on the main page, the name of its place; a back arrow and the page's name on the others. */
 @Composable
 private fun PageHeader(page: SettingsPage, onBack: () -> Unit) {
-    val title = when (page) {
-        SettingsPage.MAIN -> R.string.tab_you
-        SettingsPage.PRIVACY -> R.string.settings_group_privacy
-        SettingsPage.ADVANCED -> R.string.settings_advanced_title
-    }
     Row(Modifier.padding(top = Dimens.SpaceL), verticalAlignment = Alignment.CenterVertically) {
         if (page != SettingsPage.MAIN) {
             IconButton(onClick = onBack) {
@@ -183,7 +174,7 @@ private fun PageHeader(page: SettingsPage, onBack: () -> Unit) {
             }
         }
         Text(
-            stringResource(title),
+            stringResource(page.title),
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.semantics { heading() },
         )
@@ -207,19 +198,23 @@ private fun AdvancedPage(
     onSimulateReadingSession: (() -> Unit)?,
 ) {
     OptionGroup(stringResource(R.string.settings_group_advanced_reading)) {
-        SwitchOption(
-            stringResource(R.string.settings_volume_keys_title),
-            volumeKeysSkip,
-            onVolumeKeysSkipChange,
-            help = stringResource(R.string.settings_volume_keys_body),
-        )
-        voiceCommands?.let { VoiceCommandsItems(it) }
+        SettingAnchor(SettingKey.VOLUME_KEYS) {
+            SwitchOption(
+                stringResource(R.string.settings_volume_keys_title),
+                volumeKeysSkip,
+                onVolumeKeysSkipChange,
+                help = stringResource(R.string.settings_volume_keys_body),
+            )
+        }
+        voiceCommands?.let { SettingAnchor(SettingKey.VOICE_COMMANDS) { VoiceCommandsItems(it) } }
         // It only touches scanned pages, so it says so while scanned pages cannot be read yet.
         val texts = if (ocrReady) ModelPackTexts.PUNCTUATION else ModelPackTexts.PUNCTUATION_NEEDS_OCR
-        ModelPackRow(punctuation, texts)
+        ModelPackRow(punctuation, texts, SettingKey.PAUSES_IN_SCANS)
     }
-    pronunciation?.let { PronunciationGroup(it) }
-    OptionGroup(stringResource(R.string.settings_group_help)) { ShareLogsItem(shareState, onShareLogs) }
+    pronunciation?.let { SettingAnchor(SettingKey.PRONUNCIATION) { PronunciationGroup(it) } }
+    OptionGroup(stringResource(R.string.settings_group_help)) {
+        SettingAnchor(SettingKey.SHARE_LOGS) { ShareLogsItem(shareState, onShareLogs) }
+    }
     onSimulateReadingSession?.let { simulate ->
         OptionGroup(stringResource(R.string.settings_group_debug)) {
             LinkOption(
@@ -242,14 +237,16 @@ private class AppLinks(
 @Composable
 private fun AppGroup(links: AppLinks, batteryExempt: Boolean, versionName: String) {
     OptionGroup(stringResource(R.string.settings_group_app)) {
-        LinkOption(
-            stringResource(R.string.settings_battery_title),
-            onClick = links.onOpenBatterySetup,
-            subtitle = stringResource(
-                if (batteryExempt) R.string.settings_battery_allowed else R.string.settings_battery_limited,
-            ),
-            subtitleIsError = !batteryExempt,
-        )
+        SettingAnchor(SettingKey.BACKGROUND_READING) {
+            LinkOption(
+                stringResource(R.string.settings_battery_title),
+                onClick = links.onOpenBatterySetup,
+                subtitle = stringResource(
+                    if (batteryExempt) R.string.settings_battery_allowed else R.string.settings_battery_limited,
+                ),
+                subtitleIsError = !batteryExempt,
+            )
+        }
         OptionDivider()
         LinkOption(
             stringResource(R.string.storage_title),
@@ -257,7 +254,7 @@ private fun AppGroup(links: AppLinks, batteryExempt: Boolean, versionName: Strin
             subtitle = stringResource(R.string.settings_storage_body),
         )
         OptionDivider()
-        KidsModeItem(links.onKidsMode)
+        SettingAnchor(SettingKey.KIDS_MODE) { KidsModeItem(links.onKidsMode) }
         OptionDivider()
         LinkOption(stringResource(R.string.licences_title), onClick = links.onOpenLicences)
         OptionDivider()
@@ -268,9 +265,14 @@ private fun AppGroup(links: AppLinks, batteryExempt: Boolean, versionName: Strin
 /** A downloadable model pack's state (null while it loads) and what its buttons do. */
 private class ModelPack(val state: OcrModelsState?, val onAction: (OcrModelsAction) -> Unit)
 
-/** A model pack's row with the divider before it; nothing while its state is still loading. */
+/** A model pack's row with the divider before it, found by search as [key]; nothing while its state still loads. */
 @Composable
-private fun ModelPackRow(pack: ModelPack, texts: ModelPackTexts) = ModelPackRow(pack.state, pack.onAction, texts)
+private fun ModelPackRow(pack: ModelPack, texts: ModelPackTexts, key: SettingKey) {
+    pack.state?.let {
+        OptionDivider()
+        SettingAnchor(key) { OcrModelsItem(it, pack.onAction, texts) }
+    }
+}
 
 /** A model pack's row with the divider before it, for rows inside a group; nothing while its state still loads. */
 @Composable
@@ -302,20 +304,22 @@ private fun ListeningGroup(
             subtitle = stringResource(R.string.settings_voices_body),
         )
         // Studio mode's slow Hindi voice (ADR-059), next to the voices it stands in for.
-        acted?.let { ModelPackRow(it, ModelPackTexts.ACTED) }
+        acted?.let { ModelPackRow(it, ModelPackTexts.ACTED, SettingKey.ACTED_VOICE) }
         // Who speaks each line and how (ADR story-brain): for every voice, so next to them too.
-        brain?.let { ModelPackRow(it, ModelPackTexts.STORY_BRAIN) }
-        ModelPackRow(ocr, ModelPackTexts.OCR)
+        brain?.let { ModelPackRow(it, ModelPackTexts.STORY_BRAIN, SettingKey.STORY_BRAIN) }
+        ModelPackRow(ocr, ModelPackTexts.OCR, SettingKey.SCANNED_PAGES)
         OptionDivider()
-        SwitchOption(
-            stringResource(R.string.settings_skip_citations_title),
-            skipCitations,
-            onSkipCitationsChange,
-            subtitle = stringResource(R.string.settings_skip_citations_short),
-            help = stringResource(R.string.settings_skip_citations_body),
-        )
+        SettingAnchor(SettingKey.SKIP_CITATIONS) {
+            SwitchOption(
+                stringResource(R.string.settings_skip_citations_title),
+                skipCitations,
+                onSkipCitationsChange,
+                subtitle = stringResource(R.string.settings_skip_citations_short),
+                help = stringResource(R.string.settings_skip_citations_body),
+            )
+        }
         OptionDivider()
-        ResumeOnReconnectItem()
+        SettingAnchor(SettingKey.RESUME_ON_RECONNECT) { ResumeOnReconnectItem() }
     }
 }
 

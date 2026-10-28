@@ -298,7 +298,7 @@ class LibraryController(
         query = query.copy(narrow = query.narrow.keptBy(facets, own.collections.mapTo(HashSet()) { it.id }))
         listState = LibraryListState.Loaded(
             items = query.apply(items, { it.book }, { it.progress }, index, own.members),
-            continueReading = latest.takeIf { query.isDefault },
+            latest = latest,
             all = items,
             query = query,
             collections = own.collections,
