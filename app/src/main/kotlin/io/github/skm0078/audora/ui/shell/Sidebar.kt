@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.ui.AppTab
+import io.github.skm0078.audora.ui.firstrun.tourTarget
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.ShelfDotColours
 
@@ -80,6 +81,7 @@ internal fun Sidebar(tabs: List<AppTab>, selected: AppTab, onSelect: (AppTab) ->
                         if (tab == AppTab.LIBRARY && shelves.selected != null) shelves.onOpen(null)
                         onSelect(tab)
                     },
+                    modifier = Modifier.tourTarget(tab),
                 )
             }
             if (shelves.shelves.isNotEmpty()) Shelves(shelves, libraryShowing = selected == AppTab.LIBRARY)

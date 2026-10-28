@@ -96,6 +96,8 @@ class UiTourTest {
         OnboardingPreferences(app).apply {
             firstRunDone = false
             gestureTipsSeen = false
+            // The tour has its own screens test; here its offer would cover every pass's library.
+            tourOffered = true
         }
         scenario?.close()
         scenario = ActivityScenario.launch(MainActivity::class.java)

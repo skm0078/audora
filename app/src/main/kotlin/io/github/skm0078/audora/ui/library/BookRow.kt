@@ -57,6 +57,7 @@ internal fun BookRow(
     onAction: (BookAction) -> Unit = {},
     onPlay: () -> Unit = {},
     pane: PaneChoice? = null,
+    modifier: Modifier = Modifier,
 ) {
     var menuOpen by rememberSaveable(item.book.id.value) { mutableStateOf(false) }
     val kids = LocalKidsMode.current
@@ -89,7 +90,7 @@ internal fun BookRow(
         } else {
             ListItemDefaults.colors()
         },
-        modifier = Modifier
+        modifier = modifier
             .combinedClickable(
                 onClickLabel = stringResource(R.string.a11y_open_book),
                 onLongClickLabel = stringResource(R.string.library_book_menu_named, displayTitle(item.book)),

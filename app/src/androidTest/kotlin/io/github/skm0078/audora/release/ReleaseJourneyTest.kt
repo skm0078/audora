@@ -91,6 +91,8 @@ import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
 import io.github.skm0078.audora.speech.voices.VoiceStatus
 import io.github.skm0078.audora.ui.firstrun.FirstRunStep
+import io.github.skm0078.audora.ui.firstrun.TOUR_TAG
+import io.github.skm0078.audora.ui.firstrun.TourStop
 import io.github.skm0078.audora.ui.library.BOOK_PANE_TAG
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
@@ -125,7 +127,10 @@ class ReleaseJourneyTest {
     fun aListenerUsesTheAppFromFirstRunToAScan() {
         JourneyDevice.captureLogs()
         try {
-            step("01 first run plays a voice sample; Try a sample opens the reader", ::firstRunWalksThroughAndFinishes)
+            step(
+                "01 first run plays a voice sample; Try a sample opens the reader; the tour is offered once",
+                ::firstRunWalksThroughAndFinishes,
+            )
             step("02 the launcher says ListenLock", ::theLauncherSaysListenLock)
             step("03 Open with adds the book and opens the reader", ::openWithAddsTheBookAndOpensTheReader)
             step("04 play starts without the notification permission", ::playStartsWithoutTheNotificationPermission)
@@ -155,6 +160,7 @@ class ReleaseJourneyTest {
                 ::aPhoneKeepsTheSheets,
             )
             step("24b a search finds a setting, opens it on You, and Back returns to the search", ::searchOpensASetting)
+            step("24c You › Show me around walks the 5 stops and Done returns to the library", ::theTourReplays)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -260,6 +266,10 @@ class ReleaseJourneyTest {
         waitForNode(hasContentDescription(text(R.string.reader_play)), OPEN_TIMEOUT_MS)
         gone(stepOne)
         backToTabs()
+        // The library has its first book, so the tour offers itself once; Maybe later answers it for good.
+        waitForNode(hasText(text(R.string.tour_offer_title), substring = true))
+        tapText(R.string.tour_later)
+        gone(hasText(text(R.string.tour_later)))
     }
 
     /** The bundled voice's "Play a sample" on the voices step, heard to the end (the stop button goes away). */
@@ -836,6 +846,20 @@ class ReleaseJourneyTest {
         waitForNode(hasTestTag(FOUND_TAG))
         back()
         gone(hasTestTag(FOUND_TAG))
+        waitForNode(hasText(text(R.string.library_title)))
+    }
+
+    /** Replayed from You: each stop says which it is, Next walks them, and Done leaves the library as it was. */
+    private fun theTourReplays() {
+        tapText(R.string.tab_you)
+        tapText(R.string.settings_tour_title)
+        val stops = TourStop.entries.size
+        repeat(stops) { index ->
+            waitForNode(hasText(text(R.string.tour_step, index + 1, stops)))
+            if (index < stops - 1) tapText(R.string.tour_next)
+        }
+        tapText(R.string.tour_done)
+        gone(hasTestTag(TOUR_TAG))
         waitForNode(hasText(text(R.string.library_title)))
     }
 

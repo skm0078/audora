@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -48,6 +47,8 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.BookProgress
 import io.github.skm0078.audora.core.library.BookTitles
+import io.github.skm0078.audora.ui.firstrun.TourTarget
+import io.github.skm0078.audora.ui.firstrun.tourTarget
 import io.github.skm0078.audora.ui.motion.sharedCover
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
 import io.github.skm0078.audora.ui.theme.Dimens
@@ -73,7 +74,11 @@ data class NowPlaying(
         get() = pageCount?.takeIf { it > 0 }?.let { ((page + 1).toFloat() / it).coerceIn(0f, 1f) }
 }
 
-/** The book read last, with its cover, where it stands and one big Continue button (ADR-036). */
+/**
+ * The book read last on one compact row (ADR-036, ADR 2026-10-28-home-and-tour): its cover, where it stands and a
+ * round Play, so the books start higher on the screen. A tap on the card opens the book; Play reads on from where
+ * the listener stopped. Play is what the tour's first stop points at.
+ */
 @Composable
 internal fun ContinueReadingCard(
     item: LibraryItem,
@@ -89,31 +94,37 @@ internal fun ContinueReadingCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(Dimens.SpaceL),
-            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
+            modifier = Modifier.padding(Dimens.SpaceM),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            BookCover(item.book, covers, Modifier.size(Dimens.CoverMedium, Dimens.CoverMedium * COVER_RATIO))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+            BookCover(item.book, covers, Modifier.size(Dimens.CoverSmall, Dimens.CoverSmall * COVER_RATIO))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
                 Text(
                     stringResource(R.string.library_continue_label),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                 )
                 Text(
                     displayTitle(item.book),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     maxLines = TITLE_LINES,
                     overflow = TextOverflow.Ellipsis,
                 )
                 ProgressLine(progress)
-                Button(onClick = onContinue, modifier = Modifier.heightIn(min = Dimens.TouchTarget)) {
-                    Icon(painterResource(R.drawable.ic_play), contentDescription = null)
-                    Text(stringResource(R.string.library_continue), Modifier.padding(start = Dimens.SpaceS))
-                }
+            }
+            FilledIconButton(
+                onClick = onContinue,
+                modifier = Modifier.size(CONTINUE_PLAY).tourTarget(TourTarget.PLAY),
+            ) {
+                Icon(painterResource(R.drawable.ic_play), stringResource(R.string.library_continue))
             }
         }
     }
 }
+
+/** Bigger than the 48 dp minimum: it is the one thing most listeners come to the library to press. */
+private val CONTINUE_PLAY = 52.dp
 
 /** "Page 12 of 300 · 4 %" over a thin bar. */
 @Composable

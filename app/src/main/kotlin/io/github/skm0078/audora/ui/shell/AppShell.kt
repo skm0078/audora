@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.ui.AppTab
+import io.github.skm0078.audora.ui.firstrun.tourTarget
 import io.github.skm0078.audora.ui.theme.WindowWidths
 
 /**
@@ -98,6 +99,7 @@ private fun TabBar(tabs: List<AppTab>, selected: AppTab, onSelect: (AppTab) -> U
                 onClick = { onSelect(tab) },
                 icon = { Icon(painterResource(tabIcon(tab)), contentDescription = null) },
                 label = { Text(stringResource(tabLabel(tab))) },
+                modifier = Modifier.tourTarget(tab),
             )
         }
     }
@@ -124,6 +126,7 @@ private fun TabRail(tabs: List<AppTab>, selected: AppTab, onSelect: (AppTab) -> 
                 onClick = { onSelect(tab) },
                 icon = { Icon(painterResource(tabIcon(tab)), contentDescription = null) },
                 label = { Text(stringResource(tabLabel(tab))) },
+                modifier = Modifier.tourTarget(tab),
             )
         }
         Spacer(Modifier.weight(1f))

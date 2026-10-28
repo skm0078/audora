@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The lighter library home and the 1-minute tour (ADR 2026-10-28-home-and-tour). -->
+<resources>
+    <string name="library_greeting_morning">Good morning</string>
+    <string name="library_greeting_afternoon">Good afternoon</string>
+    <string name="library_greeting_evening">Good evening</string>
+    <string name="tour_offer_first_book">Your first book is in.</string>
+    <string name="tour_offer_title">Want a 1-minute tour?</string>
+    <string name="tour_offer_body">Five quick stops: listening, your book\'s menu, notes, what you can make, and where things live.</string>
+    <string name="tour_later">Maybe later</string>
+    <string name="tour_start">Show me around</string>
+    <string name="tour_replay_hint">You can replay it any time from You › Show me around.</string>
+    <string name="tour_step">Step %1$d of %2$d</string>
+    <string name="tour_skip">Skip</string>
+    <string name="tour_next">Next</string>
+    <string name="tour_done">Done</string>
+    <string name="tour_listen_title">Tap a book to listen</string>
+    <string name="tour_listen_body">It opens where you stopped. Press Play and the player stays at the bottom on every tab.</string>
+    <string name="tour_menu_title">Press and hold a book</string>
+    <string name="tour_menu_body">Everything for that book is here: play next, share, save as an audiobook, mark finished.</string>
+    <string name="tour_notes_title">Your notes</string>
+    <string name="tour_notes_body">Bookmarks, highlights and voice notes from every book, in one place.</string>
+    <string name="tour_made_title">What you make</string>
+    <string name="tour_made_body">Audiobooks, quote cards and videos you make land here, with their progress.</string>
+    <string name="tour_you_title">Make it yours</string>
+    <string name="tour_you_body">Voices, look, language, privacy and help live on You. Search in Library finds settings too.</string>
+    <string name="settings_tour_title">Show me around</string>
+    <string name="settings_tour_body">The 1-minute tour, again</string>
+    <string name="found_terms_tour">tour guide help how tutorial</string>
+</resources>
