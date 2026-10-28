@@ -23,10 +23,9 @@ object ForegroundJobs {
  * A partial wake lock that keeps the work going with the screen off. Not reference counted: each `acquire(timeout)`
  * replaces the last timeout instead of stacking holds, so one [releaseIfHeld] always lets go.
  */
-fun Service.jobWakeLock(tag: String): PowerManager.WakeLock =
-    getSystemService(PowerManager::class.java)
-        .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, tag)
-        .apply { setReferenceCounted(false) }
+fun Service.jobWakeLock(tag: String): PowerManager.WakeLock = getSystemService(PowerManager::class.java)
+    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, tag)
+    .apply { setReferenceCounted(false) }
 
 /** Lets go of the lock if it still holds it (its timeout may already have). */
 fun PowerManager.WakeLock.releaseIfHeld() {
