@@ -13,8 +13,12 @@ package io.github.skm0078.audora.release
 
 import android.Manifest
 import android.app.Activity
+import android.graphics.BitmapFactory
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.graphics.fonts.Font
+import android.graphics.fonts.FontFamily as PlatformFontFamily
+import android.graphics.fonts.FontStyle
 import android.media.MediaMetadataRetriever
 import android.os.Bundle
 import android.util.Log
@@ -70,6 +74,9 @@ import io.github.skm0078.audora.ui.firstrun.FirstRunStep
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
 import io.github.skm0078.audora.ui.reader.ReadingPosition
+import io.github.skm0078.audora.ui.share.ShareCardActivity
+import io.github.skm0078.audora.ui.share.ShareCardFiles
+import io.github.skm0078.audora.ui.share.ShareEntry
 import io.github.skm0078.audora.ui.theme.AppFont
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -77,7 +84,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -115,6 +121,7 @@ class ReleaseJourneyTest {
             step("16 Supertonic's licence rules show before its download", ::supertonicRulesShowBeforeItsDownload)
             step("17 an exported chapter carries the book's cover", ::anExportedChapterCarriesTheCover)
             step("18 the app font draws English, Hindi and Bengali", ::theAppFontDrawsAllThreeScripts)
+            step("19 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -553,18 +560,37 @@ class ReleaseJourneyTest {
         }
     }
 
-    /** Each weight loads from the APK and each script draws in Anek; a failed load measures like the phone's sans. */
+    /**
+     * Each weight loads from the APK and each script is drawn by its own Anek file: the joined typeface measures
+     * exactly like that file alone, and the three weights of a script measure differently, so no weight is drawn
+     * with another's file. Not "unlike the phone's sans": two fonts can measure alike by chance.
+     */
     private fun theAppFontDrawsAllThreeScripts() {
-        AppFont.Weight.entries.forEach { weight ->
+        // Without spaces: the joined typeface takes the space from the Latin file, the first in the chain, so a
+        // spaced Hindi or Bengali line measures a little apart from its own file alone.
+        val samples = listOf(FONT_ENGLISH, FONT_HINDI, FONT_BENGALI).map { it.replace(" ", "") }
+        val widths = AppFont.Weight.entries.map { weight ->
             val anek = requireNotNull(AppFont.typeface(app, weight)) { "${weight.name} did not load" }
-            listOf(FONT_ENGLISH, FONT_HINDI, FONT_BENGALI).forEach { sample ->
-                val phone = widthOf(sample, Typeface.SANS_SERIF)
-                assertNotEquals("${weight.name} draws '$sample' in the app font", phone, widthOf(sample, anek))
+            weight.scripts.zip(samples).map { (file, sample) ->
+                val drawn = widthOf(sample, anek)
+                val alone = widthOf(sample, own(file, weight))
+                assertEquals("${weight.name} draws '$sample' with its own file", alone, drawn, FONT_WIDTH_TOLERANCE)
+                drawn
             }
+        }
+        samples.indices.forEach { script ->
+            val byWeight = widths.map { it[script] }
+            assertEquals("'${samples[script]}' at 400, 500 and 600: $byWeight", byWeight.size, byWeight.distinct().size)
         }
     }
 
-    private fun widthOf(text: String, face: Typeface): Float = Paint().apply {
+    /** One Anek file on its own, at the weight it was trimmed to. */
+    private fun own(file: Int, weight: AppFont.Weight): Typeface = Typeface.CustomFallbackBuilder(
+        PlatformFontFamily.Builder(Font.Builder(app.resources, file).build()).build(),
+    ).setStyle(FontStyle(weight.weight.weight, FontStyle.FONT_SLANT_UPRIGHT)).build()
+
+    /** Subpixel and unhinted, so widths are exact sums of the font's advances, not whole pixels. */
+    private fun widthOf(text: String, face: Typeface): Float = Paint(EXACT_WIDTHS).apply {
         typeface = face
         textSize = FONT_TEXT_SIZE
     }.measureText(text)
@@ -580,6 +606,35 @@ class ReleaseJourneyTest {
         }
         library.readingVoices.choose(Lang.EN, other.id)
         return true
+    }
+
+    /**
+     * "Share as a picture" on the installed app (ADR 2026-10-27-share-cards): the card screen opens from the reader's
+     * call with the journey's PDF, Share writes a 1080 x 1920 PNG into the share folder and hands it to the share
+     * sheet, and Back returns to the app.
+     */
+    private fun aQuoteCardIsShared() {
+        val entry = LibraryEntryPoint.of(app)
+        val book = runBlocking { entry.library().books().first() }.first { it.format == DocumentFormat.PDF }
+        val folder = File(app.cacheDir, ShareCardFiles.FOLDER).apply { deleteRecursively() }
+        val reader = activity()
+        JourneyDevice.onMain { ShareEntry.quote(reader, book.id, CARD_QUOTE, page = 0) }
+        waitForNode(hasText(text(R.string.share_card_title)), OPEN_TIMEOUT_MS)
+        node(hasText(text(R.string.share_card_send)) and hasClickAction()).performScrollTo().performClick()
+        val card = { folder.listFiles()?.firstOrNull { it.name.endsWith(".png") } }
+        awaitTrue("the card in the share folder", state = { "Files: ${folder.list()?.toList()}" }) { card() != null }
+        val size = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(requireNotNull(card()).path, size)
+        assertEquals(CARD_WIDTH, size.outWidth)
+        assertEquals(CARD_HEIGHT, size.outHeight)
+        // The share sheet (another app's window) covers the card screen; Back closes it, then the card screen.
+        awaitTrue("the share sheet") { JourneyDevice.resumedActivity() !is ShareCardActivity }
+        repeat(MAX_BACKS) {
+            if (JourneyDevice.resumedActivity() is MainActivity) return@repeat
+            JourneyDevice.pressBackKey()
+            Thread.sleep(POLL_MS)
+        }
+        awaitTrue("the reader back on screen") { JourneyDevice.resumedActivity() is MainActivity }
     }
 
     private fun savedPrivacy(): PrivacySettings = runBlocking { PrivacyPreferences(app).settings.first() }
@@ -644,11 +699,18 @@ class ReleaseJourneyTest {
         const val LANGUAGE_RESTART = "Book language changed"
         const val EXPORT_RATE = 22_050
         const val FONT_TEXT_SIZE = 48f
+        const val FONT_WIDTH_TOLERANCE = 0.01f
+        const val EXACT_WIDTHS = Paint.LINEAR_TEXT_FLAG or Paint.SUBPIXEL_TEXT_FLAG
         const val FONT_ENGLISH = "Listen to every book"
         const val FONT_HINDI = "हर किताब सुनिए"
         const val FONT_BENGALI = "প্রতিটি বই শুনুন"
         const val OTHER_BOOK_LANGUAGE = "fr"
         const val TEXT_REREAD = "Reading text settings changed; reading the open book again"
         const val LOCK_SCREEN_BOOKMARK = "Lock screen bookmark added"
+
+        // Step 19: a line of the journey's PDF, made into a story-sized card.
+        const val CARD_QUOTE = "All human beings are born free and equal in dignity and rights."
+        const val CARD_WIDTH = 1080
+        const val CARD_HEIGHT = 1920
     }
 }

@@ -184,6 +184,21 @@
                 android:value="true" />
         </service>
 
+        <!-- "Share as a picture" (ADR 2026-10-27-share-cards): the card screen, opened only from the app's own Share
+             actions, and the picture handed to the app the listener picks (cacheDir/shared-cards only). -->
+        <activity
+            android:name=".ui.share.ShareCardActivity"
+            android:exported="false" />
+        <provider
+            android:name=".ui.share.ShareCardFileProvider"
+            android:authorities="${applicationId}.cards"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/share_card_paths" />
+        </provider>
+
         <!-- Hands the Share logs zip (cacheDir/shared-logs only) to the app the user picks (P1-07). -->
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -31,6 +31,7 @@ import io.github.skm0078.audora.ui.reader.ReaderModel
 import io.github.skm0078.audora.ui.reader.ReaderView
 import io.github.skm0078.audora.ui.reader.SleepTimerSetting
 import io.github.skm0078.audora.ui.reader.SoundedWrongFix
+import io.github.skm0078.audora.ui.share.ShareEntry
 
 /** One per open book; [playWithPermission] asks for the notification permission before work that posts one. */
 @Suppress("TooManyFunctions") // One per control on the reader screen.
@@ -96,6 +97,9 @@ internal class BookReaderActions(
             model.openPassword,
         )
     }
+
+    override fun onSharePicture(lines: String, page: Int) =
+        ShareEntry.quote(context, model.state.value.bookId, lines, page)
 
     // From the reader, a password-protected PDF can be saved too: its password goes along in memory (ADR-034).
     override fun onSaveAudiobook() = context.startLongJob(LongJobKind.AUDIOBOOK) {

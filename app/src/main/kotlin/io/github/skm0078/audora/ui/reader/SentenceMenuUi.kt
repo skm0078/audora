@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/SentenceMenuUi.kt
-// Purpose: The sentence menu with a line under each item saying what it is for (copy and share its words too), and
-//          the bar and notice of a highlight over several sentences (phone test issues 5, 6 and 8).
+// Purpose: The sentence menu with a line under each item saying what it is for (copy its words; Share as audio, a
+//          picture or text), and the bar and notice of a highlight over several sentences (phone test issues 5, 6, 8).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -29,7 +29,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedback
@@ -51,11 +55,18 @@ import io.github.skm0078.audora.ui.theme.Dimens
 /** One row of the sentence menu: what it does, and a line saying what for. */
 private class MenuEntry(@StringRes val label: Int, @StringRes val hint: Int, val onClick: () -> Unit)
 
-/** "Share as audio": the highlighted passage when the sentence has one, else to the end of the paragraph. */
-private fun shareEntry(highlight: Highlight?, onClick: () -> Unit) = MenuEntry(
-    R.string.sentence_menu_share_clip,
-    if (highlight != null) R.string.sentence_hint_share_highlight else R.string.sentence_hint_share_clip,
-    onClick,
+/**
+ * The Share choices (ADR 2026-10-27-share-cards): "As audio" (the highlighted passage when the sentence has one, else
+ * to the end of the paragraph), "As a picture" (a quote card) and the words as text, all of the same passage.
+ */
+private fun shareChoices(highlight: Highlight?, audio: () -> Unit, picture: () -> Unit, text: () -> Unit) = listOf(
+    MenuEntry(
+        R.string.sentence_menu_share_clip,
+        if (highlight != null) R.string.sentence_hint_share_highlight else R.string.sentence_hint_share_clip,
+        audio,
+    ),
+    MenuEntry(R.string.share_as_picture, R.string.share_hint_picture, picture),
+    MenuEntry(R.string.sentence_menu_share_text, R.string.sentence_hint_share_text, text),
 )
 
 /** What the menu's rows act through. */
@@ -98,7 +109,7 @@ private class WordsOut(private val context: Context) {
  * The rows for [unit]. On a highlighted sentence, Remove and Share act on the whole highlighted passage (the first,
  * when two merged into this sentence); a sentence with no words ("* * *") can never show a band, so it offers none.
  */
-private fun MenuSources.sentenceMenu(unit: ReadingUnit, notes: NotesState): List<MenuEntry> {
+private fun MenuSources.sentenceMenu(unit: ReadingUnit, notes: NotesState, onShare: () -> Unit): List<MenuEntry> {
     val highlight = notes.highlightsOn(unit).firstOrNull()
     val canHighlight = highlight == null && unit.text.any(Char::isLetterOrDigit)
     fun closing(action: () -> Unit): () -> Unit = {
@@ -108,7 +119,6 @@ private fun MenuSources.sentenceMenu(unit: ReadingUnit, notes: NotesState): List
     val record = closing { voice.askToRecord(unit) }
     val define = closing { lookUp.actions.open(unit) }
     val report = closing { reader.onReportSentence(unit) }
-    val share = closing { if (highlight != null) reader.onShareHighlight(highlight) else reader.onShareClip(unit) }
     // A highlighted passage's whole quote, else this sentence.
     val text = highlight?.quote?.takeIf { it.isNotBlank() } ?: unit.text
     val copyHint = if (highlight != null) R.string.sentence_hint_copy_highlight else R.string.sentence_hint_copy
@@ -130,10 +140,26 @@ private fun MenuSources.sentenceMenu(unit: ReadingUnit, notes: NotesState): List
         MenuEntry(R.string.sentence_menu_look_up, R.string.sentence_hint_look_up, define)
             .takeIf { lookUp.enabled },
         MenuEntry(R.string.sentence_menu_copy, copyHint, closing { words.copy(text) }),
-        MenuEntry(R.string.sentence_menu_share_text, R.string.sentence_hint_share_text, closing { words.share(text) }),
+        MenuEntry(R.string.sentence_menu_share, R.string.sentence_hint_share, onShare),
         MenuEntry(R.string.sentence_menu_fix, R.string.sentence_hint_fix) { actions.fix(unit) },
         MenuEntry(R.string.report_title, R.string.sentence_hint_report, report),
-        shareEntry(highlight, share),
+    )
+}
+
+/** The rows behind "Share…", for the same passage the menu acts on: a highlight's whole quote, else [unit]. */
+private fun MenuSources.shareMenu(unit: ReadingUnit, notes: NotesState): List<MenuEntry> {
+    val highlight = notes.highlightsOn(unit).firstOrNull()
+    val text = highlight?.quote?.takeIf { it.isNotBlank() } ?: unit.text
+    val page = highlight?.anchor?.page ?: unit.page
+    fun closing(action: () -> Unit): () -> Unit = {
+        actions.dismissMenu()
+        action()
+    }
+    return shareChoices(
+        highlight,
+        audio = closing { if (highlight != null) reader.onShareHighlight(highlight) else reader.onShareClip(unit) },
+        picture = closing { reader.onSharePicture(text, page) },
+        text = closing { words.share(text) },
     )
 }
 
@@ -149,15 +175,19 @@ internal fun SentenceMenu(
 ) {
     val context = LocalContext.current
     val words = remember(context) { WordsOut(context) }
-    val entries = MenuSources(
-        actions,
-        reader,
-        voice,
-        lookUp,
-        words,
-        LocalHapticFeedback.current,
-    ).sentenceMenu(unit, notes)
-    SentenceMenuDialog(entries, onDismiss = actions::dismissMenu)
+    // "Share…" turns the same dialog into its choices, so a dialog never opens on top of another.
+    var sharing by rememberSaveable(unit.page, unit.index) { mutableStateOf(false) }
+    val sources = MenuSources(actions, reader, voice, lookUp, words, LocalHapticFeedback.current)
+    if (sharing) {
+        SentenceMenuDialog(
+            sources.shareMenu(unit, notes),
+            onDismiss = actions::dismissMenu,
+            title = R.string.share_choices_title,
+            note = R.string.share_choices_note,
+        )
+    } else {
+        SentenceMenuDialog(sources.sentenceMenu(unit, notes) { sharing = true }, onDismiss = actions::dismissMenu)
+    }
 }
 
 /**
@@ -175,14 +205,27 @@ internal fun PassageOverlays(notes: NotesState, actions: BookNotesActions) {
 }
 
 @Composable
-private fun SentenceMenuDialog(rows: List<MenuEntry>, onDismiss: () -> Unit) {
+private fun SentenceMenuDialog(
+    rows: List<MenuEntry>,
+    onDismiss: () -> Unit,
+    @StringRes title: Int = R.string.sentence_menu_title,
+    @StringRes note: Int? = null,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.sentence_menu_title)) },
+        title = { Text(stringResource(title)) },
         text = {
             // Ten rows with their hints are taller than a phone's dialog: it scrolls.
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 rows.forEach { MenuRow(it.label, it.hint, it.onClick) }
+                note?.let {
+                    Text(
+                        stringResource(it),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = Dimens.SpaceS),
+                    )
+                }
             }
         },
         confirmButton = {},

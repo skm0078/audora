@@ -106,6 +106,9 @@ interface ReaderActions {
     /** "Share as audio" on a highlighted sentence: the whole highlighted passage, as a clip. */
     fun onShareHighlight(highlight: Highlight) = Unit
 
+    /** "Share as a picture" (ADR 2026-10-27-share-cards): [lines] from zero-based [page] as a quote card. */
+    fun onSharePicture(lines: String, page: Int) = Unit
+
     /** A fix offered after "This sounded wrong" ([SoundedWrongFixes]). */
     fun onSoundedWrongFix(fix: SoundedWrongFix) = Unit
 
