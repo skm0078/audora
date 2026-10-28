@@ -238,9 +238,8 @@ class ShareCardScreenTest {
                 node.config.getOrNull(SemanticsActions.CustomActions)?.any { it.label == label } == true
             },
         )
-        rule.runOnIdle {
-            node.fetchSemanticsNode().config[SemanticsActions.CustomActions].first { it.label == label }.action()
-        }
+        val move = node.fetchSemanticsNode().config[SemanticsActions.CustomActions].first { it.label == label }
+        rule.runOnIdle { move.action() }
         rule.waitForIdle()
         assertEquals(PhotoFocus.NUDGE, requireNotNull(photo).focus.x, 1e-4f)
     }
