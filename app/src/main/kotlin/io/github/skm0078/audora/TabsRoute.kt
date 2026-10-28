@@ -43,15 +43,15 @@ internal fun TabsRoute(
     library: LibraryController,
     port: MediaControllerPlaybackPort,
     covers: BookCovers,
-    navigate: (AppDestination) -> Unit,
+    nav: AppNavigation,
     tour: GuidedTour,
-    onLibraryAction: (LibraryAction) -> Unit,
     content: @Composable () -> Unit,
 ) {
+    val navigate = nav::navigate
     val targets = remember { TourTargets() }
     Box(Modifier.fillMaxSize()) {
         CompositionLocalProvider(LocalTourTargets provides targets) {
-            val drawer = phoneDrawer(tab, library, navigate, onLibraryAction) {
+            val drawer = phoneDrawer(tab, library, nav) {
                 tour.start()
                 navigate(AppDestination.Library)
             }
@@ -102,20 +102,14 @@ private fun Shell(
 
 /** The phone drawer's rows: the library's shelves and collections, Made, the listening stats, the tour and Settings. */
 @Composable
-private fun phoneDrawer(
-    tab: AppTab,
-    library: LibraryController,
-    navigate: (AppDestination) -> Unit,
-    onLibraryAction: (LibraryAction) -> Unit,
-    onTour: () -> Unit,
-): PhoneDrawer {
-    val toLibrary = { navigate(AppDestination.Library) }
+private fun phoneDrawer(tab: AppTab, library: LibraryController, nav: AppNavigation, onTour: () -> Unit): PhoneDrawer {
+    val toLibrary = { nav.navigate(AppDestination.Library) }
     return PhoneDrawer(
         shelves = drawerShelves(library, libraryShowing = tab == AppTab.LIBRARY, onOpened = toLibrary),
         collections = sidebarShelves(library, toLibrary),
-        onMade = { navigate(AppDestination.Made) },
-        onListeningStats = { onLibraryAction(LibraryAction.LISTENING_STATS) },
+        onMade = { nav.navigate(AppDestination.Made) },
+        onListeningStats = { nav.openLibraryAction(LibraryAction.LISTENING_STATS) },
         onTour = onTour,
-        onSettings = { navigate(AppDestination.Settings) },
+        onSettings = nav::openSettingsHome,
     )
 }

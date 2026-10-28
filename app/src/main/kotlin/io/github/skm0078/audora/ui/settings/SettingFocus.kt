@@ -29,8 +29,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import kotlinx.coroutines.delay
 
-/** The setting to show, once: [onShown] runs when it has been, so going back to You later shows nothing again. */
-class SettingFocus(val key: SettingKey?, val onShown: () -> Unit) {
+/**
+ * The setting to show, once: [onShown] runs when it has been, so going back to You later shows nothing again. With
+ * no [key], [home] asks for Settings' own page, whichever page was left open.
+ */
+class SettingFocus(val key: SettingKey?, val home: Boolean = false, val onShown: () -> Unit) {
     companion object {
         val None = SettingFocus(null) {}
     }
@@ -67,7 +70,15 @@ internal fun rememberSettingsPages(focus: SettingFocus): SettingsPages {
     val fromSearch = rememberSaveable { mutableStateOf(false) }
     val pages = remember { SettingsPages(page, fromSearch) }
     BackHandler(enabled = pages.page != SettingsPage.MAIN && !pages.fromSearch) { pages.open(SettingsPage.MAIN) }
-    LaunchedEffect(focus.key) { focus.key?.let(pages::show) }
+    LaunchedEffect(focus.key, focus.home) {
+        val key = focus.key
+        if (key != null) {
+            pages.show(key)
+        } else if (focus.home) {
+            pages.open(SettingsPage.MAIN)
+            focus.onShown()
+        }
+    }
     return pages
 }
 

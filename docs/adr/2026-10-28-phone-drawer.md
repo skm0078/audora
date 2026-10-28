@@ -45,4 +45,5 @@ Settings: they live on the You place, whose page said "You" and nowhere "Setting
   screen under it keeps its state when the width changes, such as a phone turned sideways.
 - Strings: new `strings_phone_drawer.xml` in English, Hindi and Bengali.
 - Tests: `PhoneDrawerTest` on the emulator (rows, close-then-act, a collection, hidden when closed, none on a wide
-  window or in kids mode, state kept across a width change); release journey step 45 (menu button, Settings).
+  window or in kids mode, state kept across a width change); `SettingsHomeTest` (the drawer's Settings opens
+  Settings' own page, not Privacy or Advanced left open); release journey step 45 (menu button, Settings).
