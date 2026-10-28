@@ -561,7 +561,9 @@ class ReleaseJourneyTest {
      * with another's file. Not "unlike the phone's sans": two fonts can measure alike by chance.
      */
     private fun theAppFontDrawsAllThreeScripts() {
-        val samples = listOf(FONT_ENGLISH, FONT_HINDI, FONT_BENGALI)
+        // Without spaces: the joined typeface takes the space from the Latin file, the first in the chain, so a
+        // spaced Hindi or Bengali line measures a little apart from its own file alone.
+        val samples = listOf(FONT_ENGLISH, FONT_HINDI, FONT_BENGALI).map { it.replace(" ", "") }
         val widths = AppFont.Weight.entries.map { weight ->
             val anek = requireNotNull(AppFont.typeface(app, weight)) { "${weight.name} did not load" }
             weight.scripts.zip(samples).map { (file, sample) ->
