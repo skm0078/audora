@@ -110,6 +110,9 @@ data class ReaderState(
 ) {
     val pageCount: Int? get() = (document as? DocumentState.Open)?.pageCount
 
+    /** The drawn image of the page shown, once it is ready; null while it renders or shows another page. */
+    val shownPageImage: PageImage? get() = (pageImage as? PageImageState.Ready)?.takeIf { it.page == page }?.image
+
     /** Where the player is in THIS book; null when it holds nothing or another book. */
     val readingPosition: ReadingPosition? get() = playback.position?.takeIf { it.bookId == bookId }
 
@@ -161,7 +164,7 @@ data class ReaderState(
     /** The lines of every unreadable sentence on the page image, to grey (RI-9); empty as for [spokenHighlight]. */
     val unreadableHighlight: List<ViewRect>
         get() {
-            val image = (pageImage as? PageImageState.Ready)?.takeIf { it.page == page }?.image ?: return emptyList()
+            val image = shownPageImage ?: return emptyList()
             val units = (content as? PageContent.Ready)?.units ?: return emptyList()
             val reading = UnitReading(playback.readingModes)
             return units.filter(reading::isUnreadable).flatMap { it.bounds.orEmpty() }.map(image.transform::toView)
@@ -173,7 +176,7 @@ data class ReaderState(
      */
     val spokenHighlight: List<ViewRect>
         get() {
-            val image = (pageImage as? PageImageState.Ready)?.takeIf { it.page == page }?.image ?: return emptyList()
+            val image = shownPageImage ?: return emptyList()
             val index = spokenUnitIndex ?: return emptyList()
             val units = (content as? PageContent.Ready)?.units ?: return emptyList()
             return units[index].bounds.orEmpty().map(image.transform::toView)

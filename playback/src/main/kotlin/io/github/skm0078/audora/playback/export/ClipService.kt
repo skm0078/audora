@@ -4,8 +4,6 @@
 package io.github.skm0078.audora.playback.export
 
 import android.app.Service
-import android.content.ActivityNotFoundException
-import android.content.ClipData
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
@@ -186,25 +184,12 @@ class ClipService : Service() {
             getString(R.string.clip_file_name, AudiobookFolder.folderName(title, config), start.page + 1) + ".m4a"
         val file =
             encode(folder, name, start, clip, pitch) ?: return notices.showFailed(getString(R.string.clip_failed_text))
-        val uri = AudioClips.uriFor(this, file)
         val quote = clip.units.joinToString(" ") { it.text }
-        val send = Intent(Intent.ACTION_SEND).apply {
-            type = MIME_TYPE
-            putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_TEXT, getString(R.string.clip_share_text, quote, title, start.page + 1))
-            // ClipData carries the grant through the chooser to the app the user picks.
-            clipData = ClipData.newRawUri(file.name, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        val chooser = Intent.createChooser(send, getString(R.string.clip_chooser_title))
+        val text = getString(R.string.clip_share_text, quote, title, start.page + 1)
+        val chooser = ShareSheet.chooserFor(this, file, MIME_TYPE, text, getString(R.string.clip_chooser_title))
         AudoraLog.i(TAG, "Clip ready, book=${book.book.id.logLabel} page=${start.page}, ${clip.audio.durationMs} ms")
         notices.showReady(chooser)
-        try {
-            // Opens at once while Audora is on screen; Android blocks it from the background, then the notice is there.
-            startActivity(Intent(chooser).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        } catch (e: ActivityNotFoundException) {
-            AudoraLog.w(TAG, "No app to share the clip with", e)
-        }
+        ShareSheet.open(this, chooser, TAG)
     }
 
     /**

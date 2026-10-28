@@ -179,7 +179,7 @@ class ShareCardScreenTest {
         val page = Bitmap.createBitmap(SNIPPET_WIDTH, SNIPPET_HEIGHT, Bitmap.Config.ARGB_8888).apply {
             eraseColor(android.graphics.Color.WHITE)
         }
-        show(subject(null).copy(pageLabel = "Page 12", snippet = page.asImageBitmap()), "en", 2f)
+        show(subjectOf(CardBody.Snippet(page.asImageBitmap(), "Page 12")), "en", 2f)
         rule.onNodeWithText(text(R.string.share_card_snippet_title)).assertExists()
         rule.onNodeWithText(text(R.string.share_card_kind_video)).assertDoesNotExist()
         Screens.save("share-card-snippet-2x", rule.onRoot().captureToImage().asAndroidBitmap())
@@ -193,18 +193,11 @@ class ShareCardScreenTest {
         madePicture("share-card-book", CardShape.STORY)
     }
 
-    private fun subject(quote: String?): CardSubject {
-        val cut = quote?.let { CardQuote.of(it) }
-        val page = cut?.let { "Page 12" }
-        return CardSubject(
-            "The Sample Book",
-            "A. Writer",
-            cover = null,
-            softCover = null,
-            quote = cut,
-            pageLabel = page,
-        )
-    }
+    private fun subject(quote: String?): CardSubject = subjectOf(
+        quote?.let { CardBody.Quote(CardQuote.of(it), page = 11, pageLabel = "Page 12") } ?: CardBody.WholeBook,
+    )
+
+    private fun subjectOf(body: CardBody) = CardSubject("The Sample Book", "A. Writer", null, null, body)
 
     private fun text(id: Int, language: String = "en"): String {
         val config = Configuration(context.resources.configuration)

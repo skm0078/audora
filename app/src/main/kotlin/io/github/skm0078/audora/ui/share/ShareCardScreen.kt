@@ -86,11 +86,10 @@ fun ShareCardScreen(
     BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
         val height = maxHeight
         val sideBySide = maxWidth > height && height < SIDE_BY_SIDE_BELOW
-        val title = when {
-            subject.snippet != null -> R.string.share_card_snippet_title
-            subject.quote == null -> R.string.share_card_book_title
-            choices.video -> R.string.share_card_video_title
-            else -> R.string.share_card_title
+        val title = when (subject.body) {
+            CardBody.WholeBook -> R.string.share_card_book_title
+            is CardBody.Snippet -> R.string.share_card_snippet_title
+            is CardBody.Quote -> if (choices.video) R.string.share_card_video_title else R.string.share_card_title
         }
         val preview = @Composable { modifier: Modifier ->
             CardPreview(subject, choices, picture, recorder, modifier)
@@ -142,34 +141,35 @@ private fun CardPreview(
     modifier: Modifier,
 ) {
     val look = choices.look
-    val quote = subject.quote
-    val video = choices.video && quote != null
+    val body = subject.body
+    // The quote read aloud over the card, in Video mode; a book or a snippet has no words to read.
+    val videoQuote = subject.quote?.takeIf { choices.video }
+    val video = videoQuote != null
     val description = stringResource(if (video) R.string.share_card_video_preview else R.string.share_card_preview)
     ShareCardFrame(
         choices.shownShape,
         recorder,
         markColor = look.quiet,
         modifier = modifier.semantics { contentDescription = description },
-        overlay = if (video && quote != null) rememberVideoWords(quote, look, choices.shownShape) else null,
+        overlay = videoQuote?.let { rememberVideoWords(it, look, choices.shownShape) },
     ) {
         val backdrop = if (look == CardLook.PICTURE) picture else subject.softCover
-        val snippet = subject.snippet
-        if (snippet != null) {
-            SnippetCard(
-                SnippetCardText(subject.title, subject.author, subject.pageLabel, choices.dedication),
+        when (body) {
+            is CardBody.Snippet -> SnippetCard(
+                SnippetCardText(subject.title, subject.author, body.pageLabel, choices.dedication),
                 look,
-                snippet,
+                body.picture,
                 backdrop,
             )
-        } else if (quote != null) {
-            QuoteCard(
-                QuoteCardText(quote, subject.title, subject.author, subject.pageLabel, choices.dedication),
+
+            is CardBody.Quote -> QuoteCard(
+                QuoteCardText(body.quote, subject.title, subject.author, body.pageLabel, choices.dedication),
                 look,
                 backdrop,
                 quoteShown = !video,
             )
-        } else {
-            BookCard(
+
+            CardBody.WholeBook -> BookCard(
                 BookCardText(
                     stringResource(R.string.share_card_now_listening),
                     subject.title,

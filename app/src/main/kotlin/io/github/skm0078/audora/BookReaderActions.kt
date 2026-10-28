@@ -120,7 +120,7 @@ internal class BookReaderActions(
     override fun onSnippetShare() {
         val current = model.state.value
         val box = current.snippet ?: return
-        val image = (current.pageImage as? PageImageState.Ready)?.takeIf { it.page == current.page }?.image
+        val image = current.shownPageImage
         model.endSnippet()
         if (image == null || !PageSnippets.hold(image.imageBitmap().asAndroidBitmap(), box)) {
             Toast.makeText(context, R.string.share_card_failed, Toast.LENGTH_LONG).show()

@@ -233,7 +233,7 @@ class ReaderModel(
     fun startSnippet(unit: ReadingUnit) {
         if (state.value.view != ReaderView.PAGE) setView(ReaderView.PAGE)
         val current = state.value
-        val image = (current.pageImage as? PageImageState.Ready)?.takeIf { it.page == current.page }?.image
+        val image = current.shownPageImage
         val lines = image?.let { shown ->
             unit.bounds.orEmpty().map(shown.transform::toView)
                 .filter { it.right > it.left && it.bottom > it.top }
@@ -251,7 +251,7 @@ class ReaderModel(
     /** The sentence under a tap on the page image at [point], if the tap is on (or right next to) one. */
     fun sentenceAt(point: ViewPoint): ReadingUnit? {
         val current = state.value
-        val image = (current.pageImage as? PageImageState.Ready)?.takeIf { it.page == current.page }?.image
+        val image = current.shownPageImage
         val units = (current.content as? PageContent.Ready)?.units
         if (image == null || units == null) return null
         return SentenceHitTest.unitAt(units, image.transform.toPage(point), config.pageTapSlopPoints)

@@ -5,8 +5,6 @@
 package io.github.skm0078.audora.playback.export.video
 
 import android.app.Service
-import android.content.ActivityNotFoundException
-import android.content.ClipData
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
@@ -27,8 +25,8 @@ import io.github.skm0078.audora.core.share.CardQuote
 import io.github.skm0078.audora.core.share.VideoTimeline
 import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.backup.Backups
-import io.github.skm0078.audora.playback.export.AudioClips
 import io.github.skm0078.audora.playback.export.JobSlots
+import io.github.skm0078.audora.playback.export.ShareSheet
 import io.github.skm0078.audora.playback.studio.BookRendering
 import java.io.File
 import javax.inject.Inject
@@ -37,8 +35,9 @@ import kotlinx.coroutines.runBlocking
 /**
  * One video at a time, on its own thread; a request while one is made is dropped (logged). The quote is read by
  * [QuoteVoice], drawn by [QuoteVideoPainter] over the backdrop the card screen wrote ([QuoteVideos.backdropFile]) and
- * encoded by [QuoteVideoWriter] into `cacheDir/shared-videos/`, then handed to the share sheet through the clip
- * FileProvider with a one-off read grant. The [ClipConfig.keptVideos] newest stay for an app that reads one late.
+ * encoded by [QuoteVideoWriter] into `cacheDir/shared-videos/`, then handed to the share sheet ([ShareSheet]) through
+ * the clip FileProvider with a one-off read grant. The [ClipConfig.keptVideos] newest stay for an app that reads one
+ * late.
  */
 @AndroidEntryPoint
 class QuoteVideoService : Service() {
@@ -181,24 +180,11 @@ class QuoteVideoService : Service() {
 
     private fun share(book: Book, request: QuoteVideoRequest, file: File) {
         val title = book.title.takeUnless { it == BookTitles.UNTITLED } ?: getString(R.string.export_untitled)
-        val uri = AudioClips.uriFor(this, file)
-        val send = Intent(Intent.ACTION_SEND).apply {
-            type = MIME_TYPE
-            putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_TEXT, getString(R.string.video_share_text, request.quote, title))
-            clipData = ClipData.newRawUri(file.name, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        val chooser = Intent.createChooser(send, getString(R.string.video_chooser_title))
+        val text = getString(R.string.video_share_text, request.quote, title)
+        val chooser = ShareSheet.chooserFor(this, file, MIME_TYPE, text, getString(R.string.video_chooser_title))
         AudoraLog.i(TAG, "Video ready, book=${book.id.logLabel} bytes=${file.length()}")
         notices.showReady(chooser)
-        try {
-            // Opens at once while ListenLock is on screen; from the background Android blocks it, and the notice is
-            // there.
-            startActivity(Intent(chooser).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        } catch (e: ActivityNotFoundException) {
-            AudoraLog.w(TAG, "No app to share the video with", e)
-        }
+        ShareSheet.open(this, chooser, TAG)
     }
 
     private companion object {
