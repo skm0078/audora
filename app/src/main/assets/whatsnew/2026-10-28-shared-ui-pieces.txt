@@ -1,0 +1,3 @@
+en: Section titles look the same on every screen, and the sleep options' bedtime choices stay visible at large text sizes.
+hi: हर स्क्रीन पर सेक्शन के शीर्षक अब एक जैसे दिखते हैं, और बड़े अक्षरों में भी स्लीप विकल्पों के सोने के समय वाले विकल्प दिखते रहते हैं।
+bn: প্রতিটি স্ক্রিনে অংশের শিরোনাম এখন একই রকম দেখায়, আর বড় লেখাতেও স্লিপ বিকল্পের ঘুমের সময়ের পছন্দগুলো দেখা যায়।
