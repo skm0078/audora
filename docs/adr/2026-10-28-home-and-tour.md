@@ -27,6 +27,11 @@ the book menu, Notes, Made and You were; they found them by chance or not at all
 - **Offered once.** As a sheet ("Your first book is in. Want a 1-minute tour?", Maybe later / Show me around) the first
   time the library holds a book, out of kids mode, after What's new is closed. Any answer, including a swipe down,
   marks it offered for good. Testers who already have books see it once too.
+- **Forest green by day.** The maintainer asked (2026-10-28) for a greener light mode instead of the cream paper:
+  the light palette is now a pale sage page (`#EEF4EA`) with a deep forest green accent (`#2E6B3F`), the lamp
+  amber kept as tertiary. All of `LampContrastTest`'s pairs still pass (lowest: outline on the page 4.0:1, primary on
+  surfaceVariant 5.0:1). The dark lamp palette and wallpaper colours are unchanged; colour choice is a later
+  Premium feature.
 - **Replay.** You's first row, "Show me around", starts the tour on the library. Search finds it ("tour", "help").
 
 ## Alternatives

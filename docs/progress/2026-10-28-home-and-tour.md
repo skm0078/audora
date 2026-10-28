@@ -3,6 +3,8 @@
   collections in one chip row, and the battery card as a one-line banner.
 - Tour: offered once when the library first has a book (Maybe later / Show me around); five stops point at Play, the
   first book, Notes, Made and You; replay from You › Show me around, which search finds too.
+- Light mode is forest green: a pale sage page and a deep green accent instead of cream and amber (dark mode and
+  wallpaper colours unchanged); the splash matches.
 - "What's new" entry: `app/src/main/assets/whatsnew/2026-10-28-home-and-tour.txt`. `:pdf` unchanged. No new
   dependency.
 - **Cost:** no new dependency or asset; five tiny bounds reporters on layout (a state write only when a target moves),
