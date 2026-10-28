@@ -30,18 +30,25 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.share.SnippetBox
 import io.github.skm0078.audora.core.share.SnippetCorner
+import io.github.skm0078.audora.core.share.SnippetNudge
+import io.github.skm0078.audora.core.share.nudged
 import io.github.skm0078.audora.ui.theme.Dimens
+import kotlin.math.roundToInt
 
 /**
  * Over the page image, in its own coordinates: the page outside [box] dimmed, the box ringed with a handle at each
  * corner. A drag that starts on a handle resizes from it, one inside the box moves it; elsewhere nothing happens.
- * TalkBack users get the box already drawn around the sentence they picked, and the bar's Share.
+ * TalkBack users get the box already drawn around the sentence they picked, actions that move or resize it a step at a
+ * time ([SnippetNudge]), how much of the page it covers, and the bar's Share.
  */
 @Composable
 internal fun SnippetPicker(box: SnippetBox, onBox: (SnippetBox) -> Unit) {
@@ -49,10 +56,21 @@ internal fun SnippetPicker(box: SnippetBox, onBox: (SnippetBox) -> Unit) {
     val report by rememberUpdatedState(onBox)
     val ring = MaterialTheme.colorScheme.primary
     val description = stringResource(R.string.reader_snippet_box)
+    val covers = stringResource(R.string.a11y_snippet_state, (box.area * PERCENT).roundToInt())
+    val actions = SnippetNudge.entries.map { way ->
+        CustomAccessibilityAction(stringResource(way.label)) {
+            report(current.nudged(way))
+            true
+        }
+    }
     Canvas(
         Modifier
             .fillMaxSize()
-            .semantics { contentDescription = description }
+            .semantics {
+                contentDescription = description
+                stateDescription = covers
+                customActions = actions
+            }
             .pointerInput(Unit) {
                 var grab: Grab? = null
                 // The box as this drag has made it: drag events can come faster than the screen redraws.
@@ -131,6 +149,16 @@ internal fun SnippetBar(onCancel: () -> Unit, onShare: () -> Unit, modifier: Mod
     }
 }
 
+private val SnippetNudge.label: Int
+    get() = when (this) {
+        SnippetNudge.UP -> R.string.a11y_snippet_up
+        SnippetNudge.DOWN -> R.string.a11y_snippet_down
+        SnippetNudge.LEFT -> R.string.a11y_snippet_left
+        SnippetNudge.RIGHT -> R.string.a11y_snippet_right
+        SnippetNudge.BIGGER -> R.string.a11y_snippet_bigger
+        SnippetNudge.SMALLER -> R.string.a11y_snippet_smaller
+    }
+
 private sealed interface Grab {
     data object Move : Grab
 
@@ -162,3 +190,5 @@ private val BAR_ELEVATION = 3.dp
 
 // The page outside the box, darkened enough to show what is left out while staying readable.
 private const val SHADE_ALPHA = 0.45f
+
+private const val PERCENT = 100

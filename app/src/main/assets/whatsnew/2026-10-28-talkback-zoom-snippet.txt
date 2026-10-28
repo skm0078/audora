@@ -1,0 +1,3 @@
+en: With TalkBack, the page can now zoom in and out from the actions menu, and the box for sharing part of a page moves and resizes the same way.
+hi: TalkBack के साथ अब पेज को ऐक्शन मेन्यू से ज़ूम इन और आउट किया जा सकता है, और पेज का हिस्सा शेयर करने वाला बॉक्स भी वहीं से हिलता और छोटा-बड़ा होता है।
+bn: TalkBack দিয়ে এখন অ্যাকশন মেনু থেকে পৃষ্ঠা জুম ইন ও আউট করা যায়, আর পৃষ্ঠার অংশ শেয়ার করার বাক্সও সেখান থেকে সরানো ও ছোট-বড় করা যায়।

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_gesture_actions.xml -->
+<!-- Purpose: TalkBack actions for what is otherwise only a drag or a pinch: the page snippet box and page zoom. -->
+<resources>
+    <string name="a11y_snippet_up">Move the box up</string>
+    <string name="a11y_snippet_down">Move the box down</string>
+    <string name="a11y_snippet_left">Move the box left</string>
+    <string name="a11y_snippet_right">Move the box right</string>
+    <string name="a11y_snippet_bigger">Make the box bigger</string>
+    <string name="a11y_snippet_smaller">Make the box smaller</string>
+    <string name="a11y_snippet_state">Covers %1$d%% of the page</string>
+    <string name="a11y_page_zoom_in">Zoom in</string>
+    <string name="a11y_page_zoom_out">Zoom out</string>
+</resources>
