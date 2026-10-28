@@ -46,4 +46,5 @@ Settings: they live on the You place, whose page said "You" and nowhere "Setting
 - Strings: new `strings_phone_drawer.xml` in English, Hindi and Bengali.
 - Tests: `PhoneDrawerTest` on the emulator (rows, close-then-act, a collection, hidden when closed, none on a wide
   window or in kids mode, state kept across a width change); `SettingsHomeTest` (the drawer's Settings opens
-  Settings' own page, not Privacy or Advanced left open); release journey step 45 (menu button, Settings).
+  Settings' own page, not Privacy or Advanced left open, and a found setting left mid-flash is cleared rather than
+  reopening You on Advanced every time after, a bug the drawer's journey step found); release journey step 45 (menu button, Settings).
