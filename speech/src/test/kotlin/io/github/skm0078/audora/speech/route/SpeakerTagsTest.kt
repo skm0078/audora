@@ -86,6 +86,22 @@ class SpeakerTagsTest {
     }
 
     @Test
+    fun hindiSubjectsTellTheirGenderOnlyByTheirOwnVerb() {
+        // The first clause's verb is his laugh; थमा दिया, after और, agrees with what he handed over.
+        assertEquals(
+            Speaker("टिल्लू", MALE),
+            tags.subjectOf("टिल्लू हँसा और पीछे से गुब्बारा निकालकर उसके हाथ में थमा दिया।", Lang.HI),
+        )
+        // Her face fell: गया is the face's, so चुन्नी is not this sentence's subject at all.
+        assertEquals(null, tags.subjectOf("चुन्नी का मुँह उतर गया।", Lang.HI))
+    }
+
+    @Test
+    fun aBengaliClauseOfOnDoingOpensBeforeTheSubject() {
+        assertEquals("মালতী", tags.subjectOf("বাড়ি ফিরতেই মালতী থলেটা দেখল।", Lang.BN)?.name)
+    }
+
+    @Test
     fun keysFoldCaseAndSpacing() {
         assertEquals("mira sen", Speaker("Mira  Sen", UNKNOWN).key)
         assertEquals(null, Speaker(null, FEMALE).key)

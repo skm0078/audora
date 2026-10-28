@@ -1,0 +1,3 @@
+en: Characters now speak in a voice of their own gender far more often, in English, Hindi and Bengali. For Bengali women's lines in a male-voiced book, install the SYSPIN female voice too.
+hi: अब पात्र कहीं ज़्यादा बार अपने ही लिंग की आवाज़ में बोलते हैं, अंग्रेज़ी, हिंदी और बांग्ला में।
+bn: এখন চরিত্ররা অনেক বেশিবার নিজের লিঙ্গের ভয়েসে কথা বলে, ইংরেজি, হিন্দি আর বাংলায়। পুরুষ ভয়েসে পড়া বইয়ে মেয়েদের কথার জন্য SYSPIN মহিলা ভয়েসও ইনস্টল করুন।

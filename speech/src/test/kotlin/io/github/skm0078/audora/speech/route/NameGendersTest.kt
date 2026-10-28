@@ -30,4 +30,32 @@ class NameGendersTest {
         assertEquals(SpeakerGender.UNKNOWN, NameGenders.of("Inspector Ward", Lang.EN))
         assertEquals(SpeakerGender.UNKNOWN, NameGenders.of("Dr Clark", Lang.EN))
     }
+
+    @Test
+    fun `a Hindi or Bengali name the lists lack gets the gender its ending most likely tells`() {
+        listOf("नीलिमा" to Lang.HI, "সুখমতী" to Lang.HI, "ঝুমকি" to Lang.BN).forEach { (name, lang) ->
+            assertEquals(name, SpeakerGender.UNKNOWN, NameGenders.of(name, lang))
+        }
+        assertEquals(SpeakerGender.FEMALE, NameGenders.likely("नीलिमा", Lang.HI))
+        assertEquals(SpeakerGender.FEMALE, NameGenders.likely("রঞ্জনা", Lang.BN))
+        assertEquals(SpeakerGender.FEMALE, NameGenders.likely("সুরবালী", Lang.BN))
+        assertEquals(SpeakerGender.MALE, NameGenders.likely("टिल्लू", Lang.HI))
+        assertEquals(SpeakerGender.MALE, NameGenders.likely("रमेसर", Lang.HI))
+        assertEquals(SpeakerGender.MALE, NameGenders.likely("হরিপদ", Lang.BN))
+        assertEquals(SpeakerGender.MALE, NameGenders.likely("বিনয়", Lang.BN))
+        assertEquals(SpeakerGender.MALE, NameGenders.likely("दूधवाला", Lang.HI))
+    }
+
+    @Test
+    fun `an ending that tells nothing, an English name and a known role word are not guessed`() {
+        // -i and -u in Bengali are both genders' (রবি, টুনি; অপু, মিনু); English endings tell nothing.
+        assertEquals(SpeakerGender.UNKNOWN, NameGenders.likely("ঝুমকি", Lang.BN))
+        assertEquals(SpeakerGender.UNKNOWN, NameGenders.likely("পল্টু", Lang.BN))
+        assertEquals(SpeakerGender.UNKNOWN, NameGenders.likely("Okafor", Lang.EN))
+        assertEquals(SpeakerGender.UNKNOWN, NameGenders.likely("Kit", Lang.EN))
+        // Role words ending in -ā are men's: the hand list decides before the ending.
+        assertEquals(SpeakerGender.MALE, NameGenders.likely("দারোগা", Lang.BN))
+        assertEquals(SpeakerGender.MALE, NameGenders.likely("मुखिया", Lang.HI))
+        assertEquals(SpeakerGender.MALE, NameGenders.likely("बड़े बाबू", Lang.HI))
+    }
 }

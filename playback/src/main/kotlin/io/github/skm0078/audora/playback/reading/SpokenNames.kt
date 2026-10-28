@@ -41,10 +41,10 @@ internal object SpokenNames {
     /** How many words [text] holds. */
     fun words(text: String): Int = WORD.findAll(text).count()
 
-    /** A name called at a speech's start ("Mrs Patel, …") or end ("…, Nora."): a title and up to two words. */
+    /** A name called at a speech's start ("Mrs Patel, …", "Lucy!") or end ("…, Nora."): a title and up to two words. */
     private const val TITLE = "(?:Mr|Mrs|Ms|Miss|Dr|Inspector|Captain|Aunt|Uncle)"
     private val VOCATIVE = Regex(
-        "^[“‘\"]?((?:$TITLE\\.?\\s+)?[A-Z][a-z]+(?:\\s+[A-Z][a-z]+)?),\\s+\\p{L}" +
+        "^[“‘\"]?((?:$TITLE\\.?\\s+)?[A-Z][a-z]+(?:\\s+[A-Z][a-z]+)?)(?:,\\s+\\p{L}|!)" +
             "|,\\s*((?:$TITLE\\.?\\s+)?[A-Z][a-z]+)[.!?]",
     )
 

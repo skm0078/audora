@@ -324,6 +324,22 @@ fun SherpaSpeechEngine.castSpeakers(voice: VoiceId): List<CastSpeaker> {
 }
 
 /**
+ * The voices [voice]'s characters may borrow from the other models installed for its language ([CastPartners]).
+ * Cheap: reads the voice list, never loads a model; a model is loaded only when a character first speaks with it.
+ */
+fun SherpaSpeechEngine.castPartners(voice: VoiceId): CastPartners {
+    val (base, requested) = CastSpeakers.parse(voice)
+    val specs = source.byId()
+    val spec = specs[base] ?: return CastPartners.NONE
+    // Another archive (contentVersion is its SHA-256) is another model; the narrator's own speakers are castSpeakers'.
+    val others = specs.values
+        .filter { it.lang == spec.lang && it.contentVersion != spec.contentVersion }
+        .sortedWith(compareByDescending<SherpaVoiceSpec> { it.id.commonPrefixWith(spec.id).length }.thenBy { it.id })
+    val narrator = CastSpeakers.genderOf(spec, requested ?: spec.speakerId)
+    return CastPartners(narrator, others.flatMap(CastSpeakers::voicesOf))
+}
+
+/**
  * Whether [voice] honours expressiveness (plan item 8): only Piper and MMS (VITS) voices have noise values to change.
  * False for any other voice, or one not installed. Cheap: reads the voice list, never loads a model.
  */
