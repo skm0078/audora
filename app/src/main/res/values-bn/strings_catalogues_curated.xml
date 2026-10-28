@@ -3,7 +3,5 @@
      they are the sources' own names. -->
 <resources>
     <string name="catalogue_about_gutenberg">৭০,০০০-এর বেশি ক্লাসিক বই যাদের কপিরাইট শেষ হয়েছে, বেশিরভাগ ইংরেজিতে, সঙ্গে ফরাসি, জার্মান, স্প্যানিশ আর আরও।</string>
-    <string name="catalogue_about_wikisource_en">স্বেচ্ছাসেবকদের লাইব্রেরি উইকিসংকলনের মিলিয়ে দেখা লেখা: উপন্যাস, কবিতা, বক্তৃতা আর ঐতিহাসিক নথি।</string>
-    <string name="catalogue_about_feedbooks">জনপ্রিয় সর্বজনীন উপন্যাস আর গল্প, পড়ার জন্য তৈরি।</string>
     <string name="catalogue_about_unglue_it">এমন বই যা লেখকেরা Creative Commons লাইসেন্সে বিনামূল্যে ভাগ করে নিয়েছেন, পাঠ্যবইও।</string>
 </resources>

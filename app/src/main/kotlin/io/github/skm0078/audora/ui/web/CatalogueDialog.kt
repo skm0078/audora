@@ -169,8 +169,6 @@ private fun CatalogueRow(catalogue: OpdsCatalogue, onOpen: () -> Unit, onRemove:
 @StringRes
 internal fun aboutOf(curated: CuratedCatalogue): Int = when (curated) {
     CuratedCatalogue.GUTENBERG -> R.string.catalogue_about_gutenberg
-    CuratedCatalogue.WIKISOURCE_EN -> R.string.catalogue_about_wikisource_en
-    CuratedCatalogue.FEEDBOOKS -> R.string.catalogue_about_feedbooks
     CuratedCatalogue.UNGLUE_IT -> R.string.catalogue_about_unglue_it
 }
 

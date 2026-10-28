@@ -3,7 +3,5 @@
      they are the sources' own names. -->
 <resources>
     <string name="catalogue_about_gutenberg">70,000 से ज़्यादा क्लासिक किताबें जिनका कॉपीराइट ख़त्म हो चुका है, ज़्यादातर अंग्रेज़ी में, साथ में फ़्रेंच, जर्मन, स्पेनिश और भी।</string>
-    <string name="catalogue_about_wikisource_en">स्वयंसेवकों की लाइब्रेरी विकिस्रोत के जाँचे हुए पाठ: उपन्यास, कविताएँ, भाषण और ऐतिहासिक दस्तावेज़।</string>
-    <string name="catalogue_about_feedbooks">लोकप्रिय सार्वजनिक उपन्यास और कहानियाँ, पढ़ने के लिए तैयार।</string>
     <string name="catalogue_about_unglue_it">ऐसी किताबें जिन्हें लेखकों ने Creative Commons लाइसेंस के तहत मुफ़्त बाँटना चुना, पाठ्यपुस्तकें भी।</string>
 </resources>

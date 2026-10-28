@@ -60,7 +60,7 @@ jobs:
         # Only the live test runs: :pdf's tests (which this module's test task waits on for the listening score) are
         # skipped, and --rerun makes Gradle ask the sites again even when nothing in the code changed.
         env:
-          TRY: ${{ github.event.inputs.try || 'https://www.gutenberg.org/ebooks/search.opds/?query=l.bn,https://www.gutenberg.org/ebooks/search.opds/?query=l.hi,https://openbookshelf.dp.la/OB/groups/3,https://open.minitex.org/textbooks,https://www.ebooksgratuits.com/opds/,https://gallica.bnf.fr/opds,https://openlibrary.org/opds/,https://www.globalgreyebooks.com/opds,https://catalog.feedbooks.com/catalog/index.atom,https://ws-export.wmcloud.org/opds/fr/Bon_pour_export.xml' }}
+          TRY: ${{ github.event.inputs.try }}
         run: |
           status=0
           ./gradlew :playback:testDebugUnitTest -x :pdf:testDebugUnitTest --rerun \

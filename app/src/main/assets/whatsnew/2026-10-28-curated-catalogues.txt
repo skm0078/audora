@@ -1,3 +1,3 @@
-en: Free book catalogues is now a hand-picked list, checked every week, each with a line on what it offers. No more typing catalogue addresses.
-hi: मुफ़्त किताबों की सूचियाँ अब चुनी हुई हैं और हर हफ़्ते जाँची जाती हैं, हर एक के साथ बताया गया है कि उसमें क्या है। अब कोई पता टाइप नहीं करना पड़ता।
-bn: বিনামূল্যের বইয়ের তালিকা এখন বেছে নেওয়া, প্রতি সপ্তাহে যাচাই করা, প্রতিটির সঙ্গে লেখা আছে তাতে কী পাবেন। আর ঠিকানা টাইপ করতে হবে না।
+en: Free book catalogues is now a hand-picked list, checked every week, each with a line on what it offers. No more typing catalogue addresses, and searching Project Gutenberg works again.
+hi: मुफ़्त किताबों की सूचियाँ अब चुनी हुई हैं और हर हफ़्ते जाँची जाती हैं, हर एक के साथ बताया गया है कि उसमें क्या है। अब कोई पता टाइप नहीं करना पड़ता, और Project Gutenberg में खोज फिर से काम करती है।
+bn: বিনামূল্যের বইয়ের তালিকা এখন বেছে নেওয়া, প্রতি সপ্তাহে যাচাই করা, প্রতিটির সঙ্গে লেখা আছে তাতে কী পাবেন। আর ঠিকানা টাইপ করতে হবে না, আর Project Gutenberg-এ খোঁজা আবার কাজ করে।

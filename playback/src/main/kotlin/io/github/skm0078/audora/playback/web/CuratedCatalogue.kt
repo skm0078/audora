@@ -13,8 +13,6 @@ package io.github.skm0078.audora.playback.web
  */
 enum class CuratedCatalogue(val title: String, val address: String, val languages: List<String>) {
     GUTENBERG("Project Gutenberg", "https://www.gutenberg.org/ebooks.opds/", listOf("en", "fr", "de", "es", "pt")),
-    WIKISOURCE_EN("English Wikisource", "https://ws-export.wmcloud.org/opds/en/Ready_for_export.xml", listOf("en")),
-    FEEDBOOKS("Feedbooks public domain", "https://catalog.feedbooks.com/publicdomain/browse/top.atom", listOf("en")),
     UNGLUE_IT("Unglue.it", "https://unglue.it/api/opds/", listOf("en")),
     ;
 
