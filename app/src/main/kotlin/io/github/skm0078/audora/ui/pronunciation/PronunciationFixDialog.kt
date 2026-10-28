@@ -33,9 +33,6 @@ import io.github.skm0078.audora.core.notes.PronunciationRule
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.SwitchLine
 
-/** A fix as typed: [written] as the book prints it, [spoken] as it should sound; both untrimmed. */
-internal data class FixDraft(val written: String, val spoken: String, val wholeWord: Boolean)
-
 /**
  * Two fields, Whole word only, then [options], Add fix, and the fixes in use, each with its own Delete. The typed words
  * clear after Add and start over when [draftKey] changes (another sentence); they survive rotation.
