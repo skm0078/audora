@@ -29,6 +29,11 @@
     <string name="share_card_look_picture">আপনার নিজের ছবি</string>
     <string name="share_card_picture_note">এমন ছবি নিন যা আপনি তুলেছেন বা শেয়ার করার অনুমতি আছে।</string>
     <string name="share_card_picture_failed">ছবিটি খোলা গেল না। অন্য একটি চেষ্টা করুন।</string>
+    <string name="share_card_picture_drag">কার্ডের ওপর ছবিটি টেনে বেছে নিন কোন অংশ দেখা যাবে।</string>
+    <string name="share_card_picture_left">ছবিটি বাঁ দিকে সরান</string>
+    <string name="share_card_picture_right">ছবিটি ডান দিকে সরান</string>
+    <string name="share_card_picture_up">ছবিটি ওপরে সরান</string>
+    <string name="share_card_picture_down">ছবিটি নিচে সরান</string>
     <string name="share_card_dedication">উৎসর্গ (ইচ্ছে হলে)</string>
     <string name="share_card_dedication_hint">মায়ের জন্য</string>
     <string name="share_card_cut_note">৬০ শব্দে ছোট করা হয়েছে, যাতে উদ্ধৃতি ছোট থাকে আর লেখকের প্রতি সুবিচার হয়।</string>

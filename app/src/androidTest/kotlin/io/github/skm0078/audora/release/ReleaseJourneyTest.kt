@@ -164,6 +164,9 @@ class ReleaseJourneyTest {
             step("27 Turn pages shows a text book a screenful at a time with its arrows") {
                 share.aTextBookTurnsPages(MORE_FORMATS.first())
             }
+            step("28 a text turn slides in and settles where the text was") {
+                share.aTextTurnSlidesAndSettles(MORE_FORMATS.first())
+            }
         } finally {
             JourneyDevice.onMain {
                 port?.pause()

@@ -1,8 +1,8 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/reader/TextPagesTest.kt
 // Purpose: "Turn pages" in the text view (ADR 2026-10-28-text-pages): a swipe or the arrow turns a screenful with no
 //          sentence cut at the top, the last screen turns on to the book's next page, the first turns back to the page
-//          before (to open at its end), and reading on keeps the spoken sentence on screen. Bengali at double text
-//          size; screenshots go to CI's "player-screens".
+//          before (to open at its end), a turn slides in from the side it came from, and reading on keeps the spoken
+//          sentence on screen. Bengali at double text size; screenshots go to CI's "player-screens".
 
 package io.github.skm0078.audora.ui.reader
 
@@ -105,6 +105,21 @@ class TextPagesTest {
     }
 
     @Test
+    fun aTurnSlidesTheNewScreenInFromTheRightAndSettlesWhereItBelongs() {
+        show()
+        val settled = leftOf(shownFirst())
+        rule.mainClock.autoAdvance = false
+        rule.onNodeWithContentDescription(text(R.string.text_pages_next)).performClick()
+        rule.mainClock.advanceTimeBy(PART_OF_A_TURN_MS)
+        val turned = shownFirst()
+        assertTrue("turned on", turned > 0)
+        assertTrue("sliding in from the right", leftOf(turned) > settled + 1f)
+        rule.mainClock.advanceTimeBy(PAST_A_TURN_MS)
+        assertEquals(settled, leftOf(turned), 0.5f)
+        rule.mainClock.autoAdvance = true
+    }
+
+    @Test
     fun readingOnKeepsTheSpokenSentenceOnScreen() {
         show()
         state = stateOn(page = 1, reading = SENTENCES - 1)
@@ -117,6 +132,9 @@ class TextPagesTest {
     private fun shownFirst(): Int = units(state.page).indexOfFirst { unit ->
         rule.onAllNodes(hasText(unit.text)).fetchSemanticsNodes().isNotEmpty()
     }
+
+    private fun leftOf(row: Int): Float =
+        rule.onNodeWithText(units(state.page)[row].text).fetchSemanticsNode().boundsInRoot.left
 
     private fun units(page: Int): List<ReadingUnit> = List(SENTENCES) { index ->
         val line = "$BENGALI ${index + 1}."
@@ -142,6 +160,10 @@ class TextPagesTest {
         val BOOK = BookId("text-pages-test")
         val PHONE = DpSize(411.dp, 700.dp)
         const val PAGES = 5
+
+        // A turn's slide takes 200 ms: part way it is still to the side, past it the screen is back in place.
+        const val PART_OF_A_TURN_MS = 64L
+        const val PAST_A_TURN_MS = 400L
         const val SENTENCES = 30
         const val LINE_CHARS = 200
         const val BENGALI = "সমস্ত মানুষ স্বাধীনভাবে সমান মর্যাদা এবং অধিকার নিয়ে জন্মগ্রহণ করে"

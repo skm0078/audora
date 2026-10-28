@@ -4,6 +4,9 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +24,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -104,6 +108,32 @@ internal class TextScreens(private val list: LazyListState) {
     }
 }
 
+/**
+ * The turn's slide: the new screen comes in from the side it was turned from, a fifth of the width, fading up as it
+ * settles. Drawn by the list's layer only, so a turn lays nothing out again; with the phone's animations off the
+ * slide finishes at once (Compose follows the system's animation scale).
+ */
+@Stable
+internal class TurnSlide {
+    private val offset = Animatable(0f)
+
+    /** [on]: the new screen comes in from the right, as a page turned on; else from the left. */
+    suspend fun play(on: Boolean) {
+        offset.snapTo(if (on) 1f else -1f)
+        offset.animateTo(0f, tween(TURN_MS, easing = FastOutSlowInEasing))
+    }
+
+    /** Where the slide is: 1 or -1 as it starts, 0 settled. */
+    val at: Float get() = offset.value
+}
+
+/** [slide] read in the layer, so each frame of a turn only redraws. */
+internal fun Modifier.turnSlide(slide: TurnSlide): Modifier = graphicsLayer {
+    val at = slide.at
+    translationX = at * size.width * SLIDE_SHARE
+    alpha = 1f - abs(at) * FADE
+}
+
 /** A sideways swipe past [threshold] dp turns: right to left on, left to right back. */
 internal fun Modifier.screenSwipes(onNext: () -> Unit, onPrevious: () -> Unit, threshold: Float = SWIPE_DP): Modifier =
     pointerInput(onNext, onPrevious) {
@@ -155,6 +185,11 @@ internal fun TextPagesBar(
         }
     }
 }
+
+// Short enough not to hold up a fast reader, long enough to see which way the page went.
+private const val TURN_MS = 200
+private const val SLIDE_SHARE = 0.2f
+private const val FADE = 0.6f
 
 // Far enough that a slightly slanted scroll or a tap's wobble never turns.
 private const val SWIPE_DP = 56f
