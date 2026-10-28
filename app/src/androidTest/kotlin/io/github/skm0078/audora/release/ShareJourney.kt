@@ -1,6 +1,7 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/release/ShareJourney.kt
 // Purpose: The release journey's share and text-page steps on the installed app (a quote video, a page snippet,
-//          Turn pages), kept apart from ReleaseJourneyTest so neither file grows past detekt's class size.
+//          Turn pages and its slide), kept apart from ReleaseJourneyTest so neither file grows past detekt's class
+//          size.
 
 package io.github.skm0078.audora.release
 
@@ -136,11 +137,33 @@ internal class ShareJourney(
 
     /**
      * "Turn pages" on the installed app (ADR 2026-10-28-text-pages): with it on, a text book opens a screenful at a
-     * time with the arrows and where it is under the text, and the arrow turns without leaving the reader. The look
-     * is put back as it was, so later runs start from the default. [textBook] is an asset, its type and a sentence
-     * in it.
+     * time with the arrows and where it is under the text, and the arrow turns without leaving the reader.
      */
-    fun aTextBookTurnsPages(textBook: Triple<String, String, String>) {
+    fun aTextBookTurnsPages(textBook: Triple<String, String, String>) = withTurnPages(textBook) {
+        tap(hasContentDescription(text(R.string.text_pages_next)))
+        waitForNode(hasContentDescription(text(R.string.text_pages_previous)))
+        awaitTrue("the reader still on screen") { JourneyDevice.resumedActivity() is MainActivity }
+    }
+
+    /**
+     * A text turn's slide on the installed app (ADR 2026-10-28-text-pages): a turn on and back slides the first
+     * screen in again and it settles exactly where it was, so the slide never leaves the text off to one side.
+     */
+    fun aTextTurnSlidesAndSettles(textBook: Triple<String, String, String>) = withTurnPages(textBook) {
+        val sentence = hasText(textBook.third, substring = true)
+        val left = { node(sentence).fetchSemanticsNode().boundsInRoot.left }
+        val before = left()
+        tap(hasContentDescription(text(R.string.text_pages_next)))
+        tap(hasContentDescription(text(R.string.text_pages_previous)))
+        rule.waitForIdle()
+        assertEquals("the screen settled where it was", before, left(), SETTLED_PX)
+    }
+
+    /**
+     * [textBook] (an asset, its type and a sentence in it) opened with Turn pages on, then [check]. The look is put
+     * back as it was, so later runs start from the default.
+     */
+    private fun withTurnPages(textBook: Triple<String, String, String>, check: () -> Unit) {
         val looks = ReadingLookPreferences(app)
         val before = runBlocking { looks.look.first() }
         runBlocking { looks.save(before.copy(turnPages = true)) }
@@ -151,9 +174,7 @@ internal class ShareJourney(
             val current = activity()
             JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, type)) }
             waitForNode(hasText(sentence, substring = true), OPEN_TIMEOUT_MS)
-            tap(hasContentDescription(text(R.string.text_pages_next)))
-            waitForNode(hasContentDescription(text(R.string.text_pages_previous)))
-            awaitTrue("the reader still on screen") { JourneyDevice.resumedActivity() is MainActivity }
+            check()
         } finally {
             runBlocking { looks.save(before) }
         }
@@ -174,5 +195,6 @@ internal class ShareJourney(
         // Where a page snippet's long-press is tried, as fractions of the page across and down.
         val SNIPPET_PRESS_POINTS = listOf(0.3f to 0.3f, 0.3f to 0.45f, 0.5f to 0.6f, 0.3f to 0.75f)
         const val MENU_TIMEOUT_MS = 3_000L
+        const val SETTLED_PX = 1f
     }
 }
