@@ -67,11 +67,10 @@ private fun minHeightDp(node: SemanticsNode): Float =
     if (SemanticsActions.SetProgress in node.config) MATERIAL_SLIDER_DP else MIN_TARGET_DP
 
 /** One line per name that more than one control reads, with how many do. */
-private fun sameNames(controls: List<SemanticsNode>): List<String> =
-    controls
-        .groupBy(::spokenName)
-        .filter { (name, same) -> name.isNotBlank() && same.size > 1 }
-        .map { (name, same) -> "${same.size} controls all read \"$name\"" }
+private fun sameNames(controls: List<SemanticsNode>): List<String> = controls
+    .groupBy(::spokenName)
+    .filter { (name, same) -> name.isNotBlank() && same.size > 1 }
+    .map { (name, same) -> "${same.size} controls all read \"$name\"" }
 
 /**
  * Each pair of controls where one covers the middle of the other, neither holding the other (a button inside a card
