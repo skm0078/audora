@@ -55,26 +55,41 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.config.PageFlipConfig
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.pdf.render.ViewRect
+import io.github.skm0078.audora.ui.reader.flip.FlipPages
+import io.github.skm0078.audora.ui.reader.flip.PageFlip
 import io.github.skm0078.audora.ui.theme.readingBand
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 
 /**
  * Fills the space below the page bar; reports the width to render the page at (the screen's, times the zoom). While
- * a sharper render of the same page is drawn, the last one stays on screen, so zooming never flashes a spinner.
+ * a sharper render of the same page is drawn, the last one stays on screen, so zooming never flashes a spinner. A
+ * sideways swipe turns the page while it is not zoomed in ([PageFlip]).
  */
 @Composable
-internal fun PageView(state: ReaderState, units: List<ReadingUnit>, actions: ReaderActions, tone: PageTone) {
+internal fun PageView(
+    state: ReaderState,
+    units: List<ReadingUnit>,
+    actions: ReaderActions,
+    tone: PageTone,
+    flip: PageFlipConfig = PageFlipConfig(),
+) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val widthPx = constraints.maxWidth
         val viewport = IntSize(widthPx, constraints.maxHeight)
         val zoom = remember { PageZoom() }
         LaunchedEffect(widthPx, zoom.scale) {
-            if (zoom.zoomed) delay(RENDER_DELAY_MS) // a pinch in progress re-renders once it rests
+            // Zoomed in is said before the zoomed width, back to width after it, so pages are drawn ahead only at it.
+            if (zoom.zoomed) {
+                actions.onPageZoomed(true)
+                delay(RENDER_DELAY_MS) // a pinch in progress re-renders once it rests
+            }
             actions.onPageWidth(renderWidthPx(widthPx, zoom.scale))
+            if (!zoom.zoomed) actions.onPageZoomed(false)
         }
         val lastDrawn = remember { LastDrawn() }
         val image = state.pageImage
@@ -85,7 +100,10 @@ internal fun PageView(state: ReaderState, units: List<ReadingUnit>, actions: Rea
             shown != null -> {
                 val sentences = remember(units) { units.filter { it.text.isNotBlank() } }
                 val perSentence = rememberSentenceActions(sentences, state.playerReady, actions)
-                DrawnPage(state, shown.image, PageLook(pageNote(units), tone, zoom, perSentence), viewport, actions)
+                val pages = FlipPages(state.page, state.pageCount ?: 1, state.nearbyPages, tone)
+                PageFlip(pages, enabled = !zoom.zoomed, config = flip, onTurn = actions::onGoToPage) {
+                    DrawnPage(state, shown.image, PageLook(pageNote(units), tone, zoom, perSentence), viewport, actions)
+                }
                 if (zoom.zoomed) {
                     FilledTonalButton(
                         onClick = zoom::reset,

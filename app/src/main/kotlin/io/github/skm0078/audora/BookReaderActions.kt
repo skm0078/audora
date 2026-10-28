@@ -55,9 +55,10 @@ internal class BookReaderActions(
 
     override fun onSentenceTapped(unit: ReadingUnit) = tapped(unit)
 
-    // Asks for the notification permission only when the tap is on a sentence.
+    // Asks for the notification permission only when the tap is on a sentence; away from one, an edge tap turns.
     override fun onPageTapped(point: ViewPoint) {
-        model.sentenceAt(point)?.let(::tapped)
+        val unit = model.sentenceAt(point)
+        if (unit != null) tapped(unit) else model.turnAtEdge(point)
     }
 
     // While a highlighted passage's end is being picked, a tap picks it instead of reading.
@@ -152,6 +153,8 @@ internal class BookReaderActions(
     override fun onViewChanged(view: ReaderView) = model.setView(view)
 
     override fun onPageWidth(widthPx: Int) = model.setPageWidth(widthPx)
+
+    override fun onPageZoomed(zoomed: Boolean) = model.setZoomed(zoomed)
 
     override fun onPlayPause() {
         if (model.state.value.isReading) model.playOrPause() else playWithPermission(model::playOrPause)
