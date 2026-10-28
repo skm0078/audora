@@ -126,62 +126,8 @@ class ReleaseJourneyTest {
     fun aListenerUsesTheAppFromFirstRunToAScan() {
         JourneyDevice.captureLogs()
         try {
-            step("01 first run plays a voice sample; Try a sample opens the reader", ::firstRunWalksThroughAndFinishes)
-            step("02 the launcher says ListenLock", ::theLauncherSaysListenLock)
-            step("03 Open with adds the book and opens the reader", ::openWithAddsTheBookAndOpensTheReader)
-            step("04 play starts without the notification permission", ::playStartsWithoutTheNotificationPermission)
-            step("05 media controls pause, resume and skip", ::mediaControlsPauseResumeAndSkip)
-            step("05b the lock screen's buttons go back, on and bookmark", ::lockScreenButtonsGoBackOnAndBookmark)
-            step("06 a new voice applies while playing", ::aNewVoiceAppliesWhilePlaying)
-            step("07 a new voice applies while paused", ::aNewVoiceAppliesWhilePaused)
-            step("07b a book language set in Edit details applies at once", ::aBookLanguageAppliesAtOnce)
-            step("08 a Settings row toggles from its title and applies at once", ::aRowTogglesFromItsTitle)
-            step("09 help opens without toggling", ::helpOpensWithoutToggling)
-            step("10 Privacy and Advanced open and go back", ::privacyAndAdvancedOpenAndGoBack)
-            step("11 Hide app content blocks screenshots", ::hideAppContentBlocksScreenshots)
-            step("12 a scan offers OCR and reads after the download", ::aScanOffersOcrAndReadsAfterTheDownload)
-            step("13 Open with reads FB2, Kindle and help-file books", ::openWithReadsMoreEbookFormats)
-            step("14 Open with makes a comic archive into a photo book", ::openWithMakesAComicIntoAPhotoBook)
-            step("15 Open with reads a DjVu's text and makes a DjVu scan a photo book", ::openWithReadsDjvuBooks)
-            step("16 Supertonic's licence rules show before its download", ::supertonicRulesShowBeforeItsDownload)
-            step("17 an exported chapter carries the book's cover", ::anExportedChapterCarriesTheCover)
-            step("18 the app font draws English, Hindi and Bengali", ::theAppFontDrawsAllThreeScripts)
-            step("19 the four places open and Jobs goes back to Made", ::theFourPlacesOpenAndJobsLiveInMade)
-            step("20 the book menu's Save as opens and the sort sheet turns covers to a list", ::bookMenuAndSortSheet)
-            // Right after 20, on its library: from 24b on, the library's search can still hold a setting's words.
-            step(
-                "42 a phone book says it is on this phone",
-                SourceJourney(rule, ::backToTabs)::aPhoneBookSaysWhereItLives,
-            )
-            step("21 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
-            step("22 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
-            step("23 a quote video is written with the AI voice label", ::aQuoteVideoIsWritten)
-            step(
-                "24 a phone keeps the reader's bookmarks sheet and the library has no book pane",
-                ::aPhoneKeepsTheSheets,
-            )
-            step("24b a search finds a setting, opens it on You, and Back returns to the search", ::searchOpensASetting)
-            val share = ShareJourney(rule, ::activity, ::backToTabs)
-            step("25 Share as a video reads the quote in the book's voice into an MP4", share::aQuoteVideoIsShared)
-            step("26 part of the shown page is shared as a picture with its credit") {
-                share.aPageSnippetIsShared(BOOK)
-            }
-            step("27 Turn pages shows a text book a screenful at a time with its arrows") {
-                share.aTextBookTurnsPages(MORE_FORMATS.first())
-            }
-            step("28 a text turn slides in and settles where the text was") {
-                share.aTextTurnSlidesAndSettles(MORE_FORMATS.first())
-            }
-            step(
-                "29 a story's women and men each get a voice of their own gender",
-                CharacterJourney::womenAndMenGetVoicesOfTheirGender,
-            )
-            step("43 arrows, maths and emoji reach the voice as words or not at all") {
-                SymbolJourney.symbolsAreSaidOrLeftOut()
-            }
-            step("41 the curated book catalogues are listed, with no field to type one") {
-                CatalogueJourney(rule, ::backToTabs).theCuratedCataloguesAreListed()
-            }
+            firstRunToTheLibrary()
+            readingSharingAndVoices()
             // Last on purpose: run after step 19, the thousand books' background work left step 26 without its menu.
             step("40 search finds the last of 1,000 books", LoadJourney(rule, ::backToTabs)::lastOfManyIsFound)
         } finally {
@@ -191,6 +137,65 @@ class ReleaseJourneyTest {
             }
             scenario?.close()
         }
+    }
+
+    /** Steps 01 to 20: first run, playback, settings, every format, and the library's menus. */
+    private fun firstRunToTheLibrary() {
+        step("01 first run plays a voice sample; Try a sample opens the reader", ::firstRunWalksThroughAndFinishes)
+        step("02 the launcher says ListenLock", ::theLauncherSaysListenLock)
+        step("03 Open with adds the book and opens the reader", ::openWithAddsTheBookAndOpensTheReader)
+        step("04 play starts without the notification permission", ::playStartsWithoutTheNotificationPermission)
+        step("05 media controls pause, resume and skip", ::mediaControlsPauseResumeAndSkip)
+        step("05b the lock screen's buttons go back, on and bookmark", ::lockScreenButtonsGoBackOnAndBookmark)
+        step("06 a new voice applies while playing", ::aNewVoiceAppliesWhilePlaying)
+        step("07 a new voice applies while paused", ::aNewVoiceAppliesWhilePaused)
+        step("07b a book language set in Edit details applies at once", ::aBookLanguageAppliesAtOnce)
+        step("08 a Settings row toggles from its title and applies at once", ::aRowTogglesFromItsTitle)
+        step("09 help opens without toggling", ::helpOpensWithoutToggling)
+        step("10 Privacy and Advanced open and go back", ::privacyAndAdvancedOpenAndGoBack)
+        step("11 Hide app content blocks screenshots", ::hideAppContentBlocksScreenshots)
+        step("12 a scan offers OCR and reads after the download", ::aScanOffersOcrAndReadsAfterTheDownload)
+        step("13 Open with reads FB2, Kindle and help-file books", ::openWithReadsMoreEbookFormats)
+        step("14 Open with makes a comic archive into a photo book", ::openWithMakesAComicIntoAPhotoBook)
+        step("15 Open with reads a DjVu's text and makes a DjVu scan a photo book", ::openWithReadsDjvuBooks)
+        step("16 Supertonic's licence rules show before its download", ::supertonicRulesShowBeforeItsDownload)
+        step("17 an exported chapter carries the book's cover", ::anExportedChapterCarriesTheCover)
+        step("18 the app font draws English, Hindi and Bengali", ::theAppFontDrawsAllThreeScripts)
+        step("19 the four places open and Jobs goes back to Made", ::theFourPlacesOpenAndJobsLiveInMade)
+        step("20 the book menu's Save as opens and the sort sheet turns covers to a list", ::bookMenuAndSortSheet)
+        // Right after 20, on its library: from 24b on, the library's search can still hold a setting's words.
+        step("42 a phone book says it is on this phone", SourceJourney(rule, ::backToTabs)::aPhoneBookSaysWhereItLives)
+    }
+
+    /** Steps 21 on: sharing, page turns, character voices, symbols and catalogues. */
+    private fun readingSharingAndVoices() {
+        step("21 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
+        step("22 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
+        step("23 a quote video is written with the AI voice label", ::aQuoteVideoIsWritten)
+        step(
+            "24 a phone keeps the reader's bookmarks sheet and the library has no book pane",
+            ::aPhoneKeepsTheSheets,
+        )
+        step("24b a search finds a setting, opens it on You, and Back returns to the search", ::searchOpensASetting)
+        val share = ShareJourney(rule, ::activity, ::backToTabs)
+        step("25 Share as a video reads the quote in the book's voice into an MP4", share::aQuoteVideoIsShared)
+        step("26 part of the shown page is shared as a picture with its credit") {
+            share.aPageSnippetIsShared(BOOK)
+        }
+        step("27 Turn pages shows a text book a screenful at a time with its arrows") {
+            share.aTextBookTurnsPages(MORE_FORMATS.first())
+        }
+        step("28 a text turn slides in and settles where the text was") {
+            share.aTextTurnSlidesAndSettles(MORE_FORMATS.first())
+        }
+        step(
+            "29 a story's women and men each get a voice of their own gender",
+            CharacterJourney::womenAndMenGetVoicesOfTheirGender,
+        )
+        step("43 arrows, maths and emoji reach the voice as words or not at all") {
+            SymbolJourney.symbolsAreSaidOrLeftOut()
+        }
+        step("41 catalogues are a curated list", CatalogueJourney(rule, ::backToTabs)::theCuratedCataloguesAreListed)
     }
 
     /**
