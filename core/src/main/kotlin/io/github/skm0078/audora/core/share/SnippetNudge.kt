@@ -19,9 +19,13 @@ fun SnippetBox.nudged(way: SnippetNudge, config: ShareCardConfig = ShareCardConf
     val half = step / 2
     return when (way) {
         SnippetNudge.UP -> moved(0f, -step)
+
         SnippetNudge.DOWN -> moved(0f, step)
+
         SnippetNudge.LEFT -> moved(-step, 0f)
+
         SnippetNudge.RIGHT -> moved(step, 0f)
+
         SnippetNudge.BIGGER -> resized(SnippetCorner.TOP_LEFT, -half, -half, config)
             .resized(SnippetCorner.BOTTOM_RIGHT, half, half, config)
 
