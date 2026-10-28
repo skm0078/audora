@@ -16,6 +16,8 @@ package io.github.skm0078.audora.core.config
  * @property snippetMinSide a snippet's side is never narrower than this share of the page's, so a handle stays
  *   grabbable and the picture readable.
  * @property snippetPad the box first drawn around a sentence leaves this share of the page around its lines.
+ * @property snippetNudgeStep one TalkBack action ("Move up", "Make bigger") moves or grows the box by this share of
+ *   the page: small enough to aim, big enough that a few steps cross the page.
  */
 data class ShareCardConfig(
     val maxWords: Int = 60,
@@ -25,6 +27,7 @@ data class ShareCardConfig(
     val snippetMaxShare: Float = A_THIRD,
     val snippetMinSide: Float = 0.08f,
     val snippetPad: Float = 0.015f,
+    val snippetNudgeStep: Float = 0.05f,
 ) {
     init {
         require(maxWords >= 1) { "maxWords must be >= 1, was $maxWords" }
@@ -38,6 +41,9 @@ data class ShareCardConfig(
             "snippetMinSide ($snippetMinSide) must be > 0 and its square within snippetMaxShare ($snippetMaxShare)"
         }
         require(snippetPad >= 0f) { "snippetPad must be >= 0, was $snippetPad" }
+        require(snippetNudgeStep > 0f && snippetNudgeStep < 1f) {
+            "snippetNudgeStep must be in (0, 1), was $snippetNudgeStep"
+        }
     }
 
     private companion object {

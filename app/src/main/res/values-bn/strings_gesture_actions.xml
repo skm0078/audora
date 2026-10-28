@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_gesture_actions.xml -->
+<!-- Purpose: TalkBack actions for what is otherwise only a drag or a pinch: the page snippet box and page zoom. -->
+<resources>
+    <string name="a11y_snippet_up">বাক্স ওপরে সরান</string>
+    <string name="a11y_snippet_down">বাক্স নিচে সরান</string>
+    <string name="a11y_snippet_left">বাক্স বাঁয়ে সরান</string>
+    <string name="a11y_snippet_right">বাক্স ডানে সরান</string>
+    <string name="a11y_snippet_bigger">বাক্স বড় করুন</string>
+    <string name="a11y_snippet_smaller">বাক্স ছোট করুন</string>
+    <string name="a11y_snippet_state">পৃষ্ঠার %1$d%% জুড়ে</string>
+    <string name="a11y_page_zoom_in">জুম ইন করুন</string>
+    <string name="a11y_page_zoom_out">জুম আউট করুন</string>
+</resources>
