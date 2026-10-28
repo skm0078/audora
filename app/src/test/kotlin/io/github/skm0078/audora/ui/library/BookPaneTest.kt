@@ -27,19 +27,19 @@ class BookPaneTest {
 
     @Test
     fun `the picked book wins`() {
-        val list = LibraryListState.Loaded(listOf(a, b, c), continueReading = b)
+        val list = LibraryListState.Loaded(listOf(a, b, c), latest = b)
         assertEquals(c, paneBook(list, pickedId = "c"))
     }
 
     @Test
     fun `with nothing picked the pane shows the book being read`() {
-        val list = LibraryListState.Loaded(listOf(a, b, c), continueReading = b)
+        val list = LibraryListState.Loaded(listOf(a, b, c), latest = b)
         assertEquals(b, paneBook(list, pickedId = null))
     }
 
     @Test
     fun `a picked book filtered out falls back, so the pane never shows a book the grid hides`() {
-        val list = LibraryListState.Loaded(listOf(a, b), continueReading = c)
+        val list = LibraryListState.Loaded(listOf(a, b), latest = c)
         assertEquals(a, paneBook(list, pickedId = "c"))
     }
 
