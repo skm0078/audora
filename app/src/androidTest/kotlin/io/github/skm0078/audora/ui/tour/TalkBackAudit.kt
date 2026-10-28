@@ -1,6 +1,7 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/tour/TalkBackAudit.kt
 // Purpose: What TalkBack would trip over on one screen: a control with nothing to say, a control too small to find
-//          by touch, and a screen with no heading to jump to.
+//          by touch, controls that all say the same thing, a control lying under another one, and a screen with no
+//          heading to jump to.
 
 package io.github.skm0078.audora.ui.tour
 
@@ -16,13 +17,16 @@ import androidx.compose.ui.semantics.getOrNull
  * anything TalkBack can activate: a click, a long press, a switch or a slider. Its name is what TalkBack reads before
  * the role and state: its description or text, merged from what it holds. Its size is what TalkBack and touch use:
  * its touch bounds, which Compose widens to the minimum touch target where nothing else is in the way. A control cut
- * off by the edge of its window (a list item half scrolled away) is not measured. Only the topmost window must have
- * a heading: a menu has none ([needsHeading] false).
+ * off by the edge of its window (a list item half scrolled away) is not measured. Within one window, controls that
+ * read the same ("Delete", "Delete") cannot be told apart by ear, and two that overlap (a list row under a floating
+ * button) are hard to reach by touch. Only the topmost window must have a heading: a menu has none ([needsHeading]
+ * false).
  */
 internal fun talkBackProblems(roots: List<SemanticsNode>, needsHeading: Boolean): List<String> {
     val problems = roots.flatMap { root ->
         val window = root.boundsInRoot
-        root.descendants().filter(::isControl).mapNotNull { controlProblem(it, window) }
+        val controls = root.descendants().filter(::isControl).filterNot { it.boundsInRoot.isEmpty }.toList()
+        controls.mapNotNull { controlProblem(it, window) } + sameNames(controls) + overlaps(controls)
     }
     val top = roots.lastOrNull() ?: return problems
     val headed = (sequenceOf(top) + top.descendants()).any { SemanticsProperties.Heading in it.config }
@@ -56,6 +60,32 @@ private fun controlProblem(node: SemanticsNode, window: Rect): String? {
  */
 private fun minHeightDp(node: SemanticsNode): Float =
     if (SemanticsActions.SetProgress in node.config) MATERIAL_SLIDER_DP else MIN_TARGET_DP
+
+/** One line per name that more than one control reads, with how many do. */
+private fun sameNames(controls: List<SemanticsNode>): List<String> =
+    controls
+        .groupBy(::spokenName)
+        .filter { (name, same) -> name.isNotBlank() && same.size > 1 }
+        .map { (name, same) -> "${same.size} controls all read \"$name\"" }
+
+/**
+ * Each pair of controls where one covers the middle of the other, neither holding the other (a button inside a card
+ * is fine). The middle is what a finger aims at.
+ */
+private fun overlaps(controls: List<SemanticsNode>): List<String> = controls.flatMapIndexed { i, a ->
+    controls
+        .drop(i + 1)
+        .filter { b -> !a.holds(b) && !b.holds(a) && (a.coversMiddleOf(b) || b.coversMiddleOf(a)) }
+        .map { b -> "\"${spokenName(a)}\" and \"${spokenName(b)}\" overlap at ${b.boundsInRoot.center.text()} px" }
+}
+
+private fun SemanticsNode.coversMiddleOf(other: SemanticsNode): Boolean =
+    boundsInRoot.contains(other.boundsInRoot.center)
+
+private fun SemanticsNode.holds(other: SemanticsNode): Boolean =
+    generateSequence(other.parent) { it.parent }.any { it.id == id }
+
+private fun Offset.text(): String = "${x.toInt()},${y.toInt()}"
 
 private fun isControl(node: SemanticsNode): Boolean = with(node.config) {
     SemanticsActions.OnClick in this || SemanticsActions.OnLongClick in this ||
