@@ -170,7 +170,7 @@ class ReleaseJourneyTest {
         step("42 a phone book says it is on this phone", SourceJourney(rule, ::backToTabs)::aPhoneBookSaysWhereItLives)
     }
 
-    /** Steps 21 on: sharing, page turns, the tour, character voices, symbols, Made and catalogues. */
+    /** Steps 21 on: sharing, page turns, the tour, character voices, symbols, Made, catalogues and the home. */
     private fun readingSharingAndVoices() {
         step("21 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
         step("22 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
@@ -201,6 +201,7 @@ class ReleaseJourneyTest {
         }
         step("32 Made plays a saved audiobook like the book player", MadeJourney(rule, ::backToTabs)::playsLikeBook)
         step("41 catalogues are a curated list", CatalogueJourney(rule, ::backToTabs)::theCuratedCataloguesAreListed)
+        step("44 Make it yours names the greeting and adds a part", HomeJourney(rule, ::backToTabs)::makesItYours)
     }
 
     /**

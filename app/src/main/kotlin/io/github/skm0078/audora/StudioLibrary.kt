@@ -228,6 +228,7 @@ internal class StudioLibrary(
         LibraryAction.QUIZ -> sheet.value = StudioSheet.QUIZ
         LibraryAction.LISTENING_STATS -> sheet.value = StudioSheet.LISTENING_STATS
         LibraryAction.TRY_SAMPLE -> parts.onText(sampleBook(parts.activity))
+        LibraryAction.MAKE_IT_YOURS -> Unit // The library screen opens its own sheet.
     }
 
     /** The sheet open now, if any; [books] (null while the list loads) holds the character guide's book. */

@@ -142,7 +142,7 @@ private fun ShowChoices(selected: LibraryFilter, onFilter: (LibraryFilter) -> Un
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LayoutChoice(showsList: Boolean, onLayout: (LibraryLayout) -> Unit) {
+internal fun LayoutChoice(showsList: Boolean, onLayout: (LibraryLayout) -> Unit) {
     val choices = listOf(
         Triple(LibraryLayout.GRID, R.string.library_layout_grid, R.drawable.ic_grid_view),
         Triple(LibraryLayout.LIST, R.string.library_layout_list, R.drawable.ic_view_list),
