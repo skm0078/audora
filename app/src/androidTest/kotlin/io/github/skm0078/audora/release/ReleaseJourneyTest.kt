@@ -41,7 +41,6 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -78,7 +77,6 @@ import io.github.skm0078.audora.playback.export.LocalChapterFiles
 import io.github.skm0078.audora.playback.export.video.AiVoiceLabel
 import io.github.skm0078.audora.playback.export.video.QuoteVideoFrames
 import io.github.skm0078.audora.playback.export.video.QuoteVideoWriter
-import io.github.skm0078.audora.playback.export.video.QuoteVideos
 import io.github.skm0078.audora.privacy.PrivacyPreferences
 import io.github.skm0078.audora.privacy.PrivacySettings
 import io.github.skm0078.audora.release.JourneyDevice.app
@@ -91,7 +89,6 @@ import io.github.skm0078.audora.speech.voices.VoiceStatus
 import io.github.skm0078.audora.ui.firstrun.FirstRunStep
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
-import io.github.skm0078.audora.ui.reader.ReadingLookPreferences
 import io.github.skm0078.audora.ui.reader.ReadingPosition
 import io.github.skm0078.audora.ui.share.ShareCardActivity
 import io.github.skm0078.audora.ui.share.ShareCardFiles
@@ -145,9 +142,12 @@ class ReleaseJourneyTest {
             step("21 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
             step("22 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
             step("23 a quote video is written with the AI voice label", ::aQuoteVideoIsWritten)
-            step("25 Share as a video reads the quote in the book's voice into an MP4", ::aQuoteVideoIsShared)
-            step("26 part of the shown page is shared as a picture with its credit", ::aPageSnippetIsShared)
-            step("27 Turn pages shows a text book a screenful at a time with its arrows", ::aTextBookTurnsPages)
+            val share = ShareJourney(rule, ::activity, ::backToTabs)
+            step("25 Share as a video reads the quote in the book's voice into an MP4", share::aQuoteVideoIsShared)
+            step("26 part of the shown page is shared as a picture with its credit", share::aPageSnippetIsShared)
+            step("27 Turn pages shows a text book a screenful at a time with its arrows") {
+                share.aTextBookTurnsPages(MORE_FORMATS.first())
+            }
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -797,102 +797,6 @@ class ReleaseJourneyTest {
         return flags and WindowManager.LayoutParams.FLAG_SECURE != 0
     }
 
-    /**
-     * "Share as a video" on the installed app (ADR 2026-10-28-quote-video): the card screen opens on Video, Make the
-     * video captures the card without its words, and the service reads the quote in the book's own voice into a
-     * 720 x 1280 MP4 with both tracks in the video share folder; then Back returns to the app. The permission is
-     * granted first so the progress notification is part of the run (step 04 already covered refusing it).
-     */
-    private fun aQuoteVideoIsShared() {
-        val entry = LibraryEntryPoint.of(app)
-        val book = runBlocking { entry.library().books().first() }.first { it.format == DocumentFormat.PDF }
-        val folder = File(app.cacheDir, QuoteVideos.FOLDER).apply { deleteRecursively() }
-        JourneyDevice.shell("pm grant ${app.packageName} ${Manifest.permission.POST_NOTIFICATIONS}")
-        val reader = activity()
-        JourneyDevice.onMain { ShareEntry.video(reader, book.id, VIDEO_QUOTE, page = 0) }
-        waitForNode(hasText(text(R.string.share_card_video_title)), OPEN_TIMEOUT_MS)
-        node(hasText(text(R.string.share_card_make_video)) and hasClickAction()).performScrollTo().performClick()
-        val video = { folder.listFiles()?.firstOrNull { it.name.endsWith(".mp4") } }
-        awaitTrue("the video in the share folder", VIDEO_TIMEOUT_MS, { "Files: ${folder.list()?.toList()}" }) {
-            video() != null && !QuoteVideos.busy
-        }
-        MediaMetadataRetriever().use { made ->
-            made.setDataSource(requireNotNull(video()).path)
-            assertEquals("720", made.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH))
-            assertEquals("1280", made.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT))
-            assertEquals("yes", made.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO))
-        }
-        repeat(MAX_BACKS) {
-            if (JourneyDevice.resumedActivity() is MainActivity) return@repeat
-            JourneyDevice.pressBackKey()
-            Thread.sleep(POLL_MS)
-        }
-        awaitTrue("the reader back on screen") { JourneyDevice.resumedActivity() is MainActivity }
-    }
-
-    /**
-     * "Share part of the page" on the installed app (ADR 2026-10-28-page-snippet): the reader's own call opens the
-     * snippet's box on the journey's PDF page, Share cuts the page as drawn and opens the card screen on it, and the
-     * card's Share writes a 1080 x 1920 picture into the share folder.
-     */
-    private fun aPageSnippetIsShared() {
-        val folder = File(app.cacheDir, ShareCardFiles.FOLDER).apply { deleteRecursively() }
-        // Any page's picture: its description after the page number is the same on every page.
-        val pageImage = hasContentDescription(text(R.string.reader_page_image, 1).substringAfter("1"), substring = true)
-        val menu = hasText(text(R.string.sentence_menu_share))
-        // A long-press on a line opens its menu; the test page's text starts below its heading, so a few are tried.
-        val opened = SNIPPET_PRESS_POINTS.any { (u, v) ->
-            node(pageImage).performTouchInput { longClick(percentOffset(u, v)) }
-            runCatching { waitForNode(menu, MENU_TIMEOUT_MS) }.isSuccess
-        }
-        assertTrue("no sentence menu from a long-press on the page", opened)
-        tap(menu)
-        node(hasText(text(R.string.share_page_part))).performScrollTo().performClick()
-        waitForNode(hasText(text(R.string.reader_snippet_hint)))
-        tap(hasText(text(R.string.share_card_send)) and hasClickAction())
-        waitForNode(hasText(text(R.string.share_card_snippet_title)), OPEN_TIMEOUT_MS)
-        node(hasText(text(R.string.share_card_send)) and hasClickAction()).performScrollTo().performClick()
-        val card = { folder.listFiles()?.firstOrNull { it.extension == "png" || it.extension == "jpg" } }
-        awaitTrue("the snippet card in the share folder", state = { "Files: ${folder.list()?.toList()}" }) {
-            card() != null
-        }
-        val size = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeFile(requireNotNull(card()).path, size)
-        assertEquals(CARD_WIDTH, size.outWidth)
-        assertEquals(CARD_HEIGHT, size.outHeight)
-        awaitTrue("the share sheet") { JourneyDevice.resumedActivity() !is ShareCardActivity }
-        repeat(MAX_BACKS) {
-            if (JourneyDevice.resumedActivity() is MainActivity) return@repeat
-            JourneyDevice.pressBackKey()
-            Thread.sleep(POLL_MS)
-        }
-        awaitTrue("the reader back on screen") { JourneyDevice.resumedActivity() is MainActivity }
-    }
-
-    /**
-     * "Turn pages" on the installed app (ADR 2026-10-28-text-pages): with it on, a text book opens a screenful at a
-     * time with the arrows and where it is under the text, and the arrow turns without leaving the reader. The look
-     * is put back as it was, so later runs start from the default.
-     */
-    private fun aTextBookTurnsPages() {
-        val looks = ReadingLookPreferences(app)
-        val before = runBlocking { looks.look.first() }
-        runBlocking { looks.save(before.copy(turnPages = true)) }
-        try {
-            val (asset, type, sentence) = MORE_FORMATS.first()
-            backToTabs()
-            val uri = JourneyDevice.downloadedBook(asset)
-            val current = activity()
-            JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, type)) }
-            waitForNode(hasText(sentence, substring = true), OPEN_TIMEOUT_MS)
-            tap(hasContentDescription(text(R.string.text_pages_next)))
-            waitForNode(hasContentDescription(text(R.string.text_pages_previous)))
-            awaitTrue("the reader still on screen") { JourneyDevice.resumedActivity() is MainActivity }
-        } finally {
-            runBlocking { looks.save(before) }
-        }
-    }
-
     private companion object {
         const val SUPERTONIC = "supertonic-hi"
         const val LOG_TAG = "ReleaseJourney"
@@ -938,13 +842,6 @@ class ReleaseJourneyTest {
         const val UI_TIMEOUT_MS = 15_000L
         const val NAME_MARK = "\u0001"
         const val OPEN_TIMEOUT_MS = 60_000L
-
-        // The voice renders the quote, then the frames are encoded; an emulator without a GPU is slow at both.
-        const val VIDEO_TIMEOUT_MS = 300_000L
-
-        // Where a page snippet's long-press is tried, as fractions of the page across and down.
-        val SNIPPET_PRESS_POINTS = listOf(0.3f to 0.3f, 0.3f to 0.45f, 0.5f to 0.6f, 0.3f to 0.75f)
-        const val MENU_TIMEOUT_MS = 3_000L
         const val PLAY_TIMEOUT_MS = 90_000L
         const val OCR_DOWNLOAD_TIMEOUT_MS = 360_000L
 
