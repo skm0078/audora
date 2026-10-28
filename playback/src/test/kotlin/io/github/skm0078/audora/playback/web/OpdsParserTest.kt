@@ -72,6 +72,25 @@ class OpdsParserTest {
     }
 
     @Test
+    fun `plain http addresses in a feed are tried as https, which the fetcher accepts`() {
+        // Project Gutenberg's OpenSearch description names an http template: search failed with "not an address".
+        val described = """<OpenSearchDescription><Url type="application/atom+xml"
+            template="http://m.gutenberg.org/ebooks/search.opds/?query={searchTerms}"/></OpenSearchDescription>"""
+        assertEquals(
+            "https://m.gutenberg.org/ebooks/search.opds/?query={searchTerms}",
+            parser.searchTemplate(described, "https://www.gutenberg.org/catalog/osd-books.xml"),
+        )
+
+        val feed = requireNotNull(parser.parse(HTTP_LINKS, "https://books.example.org/opds/"))
+        val book = feed.entries.single()
+        assertEquals("https://books.example.org/1.epub", book.download?.address)
+        assertEquals("https://books.example.org/1.opds", book.section)
+        assertEquals("https://books.example.org/opds/?page=2", feed.next)
+        assertEquals("https://books.example.org/search?q={searchTerms}", feed.search?.template)
+        assertEquals("https://books.example.org/osd.xml", feed.search?.description)
+    }
+
+    @Test
     fun `entities are not expanded from outside the page`() {
         val xml = """<?xml version="1.0"?><!DOCTYPE feed [<!ENTITY x SYSTEM "file:///etc/passwd">]>
             <feed xmlns="http://www.w3.org/2005/Atom"><title>&x;</title></feed>"""
@@ -123,6 +142,21 @@ class OpdsParserTest {
                 <title>Kindle Only</title>
                 <link rel="http://opds-spec.org/acquisition" type="application/x-mobipocket-ebook" href="/7.mobi"/>
                 <link rel="http://opds-spec.org/acquisition/buy" type="application/epub+zip" href="/7.epub"/>
+              </entry>
+            </feed>
+        """.trimIndent()
+
+        val HTTP_LINKS = """<feed xmlns="http://www.w3.org/2005/Atom">
+              <title>Old Links</title>
+              <link rel="next" type="application/atom+xml" href="http://books.example.org/opds/?page=2"/>
+              <link rel="search" type="application/atom+xml" href="http://books.example.org/search?q={searchTerms}"/>
+              <link rel="search" type="application/opensearchdescription+xml" href="HTTP://books.example.org/osd.xml"/>
+              <entry>
+                <title>One</title>
+                <link rel="http://opds-spec.org/acquisition" type="application/epub+zip"
+                  href="http://books.example.org/1.epub"/>
+                <link rel="related" type="application/atom+xml;profile=opds-catalog"
+                  href="http://books.example.org/1.opds"/>
               </entry>
             </feed>
         """.trimIndent()

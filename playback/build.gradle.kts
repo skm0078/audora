@@ -97,6 +97,14 @@ dependencies {
     androidTestImplementation(libs.junit)
 }
 
+// The weekly live catalogue check (ADR 2026-10-28-curated-catalogues, .github/workflows/catalogue-check.yml):
+// CuratedCataloguesLiveTest runs only with -Pcatalogue.live=true; -Pcatalogue.try=<address>,... also tries addresses
+// before one is curated. Every other test run leaves the network alone.
+tasks.withType<Test>().configureEach {
+    systemProperty("audora.catalogue.live", providers.gradleProperty("catalogue.live").getOrElse("false"))
+    systemProperty("audora.catalogue.try", providers.gradleProperty("catalogue.try").getOrElse(""))
+}
+
 // A failed unit test prints its message in the CI log: SchemaHashesTest names the hash to add after a schema bump,
 // and threads cannot download the test reports.
 tasks.withType<Test>().configureEach {

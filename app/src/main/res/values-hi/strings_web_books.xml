@@ -5,7 +5,7 @@
     <string name="library_read_web_page">वेब पेज पढ़वाएँ</string>
     <string name="menu_hint_read_web_page">वेब पता लिखें या पेस्ट करें। ListenLock वही एक पेज एक बार डाउनलोड करता है और मेन्यू या विज्ञापन के बिना उसका लेख पढ़ता है।</string>
     <string name="library_book_catalogues">मुफ़्त किताबों की सूचियाँ</string>
-    <string name="menu_hint_book_catalogues">Project Gutenberg या आपकी जोड़ी कोई और सूची देखें और मुफ़्त किताबें डाउनलोड करें। सिर्फ़ वही किताब डाउनलोड होती है जिस पर आप टैप करते हैं।</string>
+    <string name="menu_hint_book_catalogues">चुनी हुई मुफ़्त सूचियों में सार्वजनिक और खुले लाइसेंस वाली किताबें देखें, जिन्हें हर हफ़्ते जाँचा जाता है। सिर्फ़ वही किताब डाउनलोड होती है जिस पर आप टैप करते हैं।</string>
 
     <string name="web_page_title">वेब पेज पढ़वाएँ</string>
     <string name="web_page_explain">ListenLock यह पेज एक बार डाउनलोड करता है, सिर्फ़ लेख रखता है और उसे किताब की तरह पढ़ता है। आपके बारे में कुछ नहीं भेजा जाता।</string>
@@ -28,12 +28,6 @@
 
     <string name="catalogues_title">मुफ़्त किताबों की सूचियाँ</string>
     <string name="catalogues_explain">किताब तभी डाउनलोड होती है जब आप डाउनलोड पर टैप करते हैं, सीधे सूची की अपनी वेबसाइट से। न कोई खाता, न आपके बारे में कुछ भेजा जाता है।</string>
-    <string name="catalogues_add_hint">सूची जोड़ें (OPDS पता)</string>
-    <string name="catalogues_add">सूची जोड़ें</string>
-    <string name="catalogues_added">सूची जोड़ दी गई।</string>
-    <string name="catalogues_already">यह सूची पहले से जुड़ी है।</string>
-    <string name="catalogues_too_many">सूचियाँ भर गई हैं। पहले कोई एक हटाएँ।</string>
-    <string name="catalogues_not_saved">सूचियाँ सेव नहीं हो सकीं। फिर कोशिश करें।</string>
     <string name="catalogues_remove">हटाएँ</string>
     <string name="catalogues_search_hint">इस सूची में खोजें</string>
     <string name="catalogues_search">खोजें</string>
