@@ -54,7 +54,10 @@ sealed interface PageContent {
         val units: List<ReadingUnit>,
         val origin: PageOrigin = PageOrigin.TEXT,
         val ocrConfidence: Int? = null,
-    ) : PageContent
+    ) : PageContent {
+        /** Read for good: not waiting for the OCR models or failed, so it may be kept for a later turn to it. */
+        val isFinal: Boolean get() = origin == PageOrigin.TEXT || origin == PageOrigin.OCR
+    }
 
     data object Failed : PageContent
 }
@@ -71,6 +74,8 @@ data class TimeLeftEstimate(val bookMs: Long, val chapterMs: Long?)
  *   the listener starts reading again or goes back to the reading position.
  * @property view the page drawn as in the PDF, or its sentences as text; the listener's choice, remembered.
  * @property pageImage the shown page drawn, in the page view.
+ * @property nearbyPages the pages beside the shown one drawn ahead, by page, for the page view to slide in under a
+ *   finger (ADR 2026-10-28-page-flip).
  * @property reporting the sentence a long-press picked for "This sounded wrong" (RI-8b), while its reasons show.
  * @property soundedWrong the reason picked for it and the fixes offered, while they show.
  * @property chapters the chapter list (plan item 11), from the PDF outline; empty without one.
@@ -87,6 +92,7 @@ data class ReaderState(
     val playback: PlaybackSnapshot = PlaybackSnapshot.Connecting,
     val view: ReaderView = ReaderView.PAGE,
     val pageImage: PageImageState = PageImageState.None,
+    val nearbyPages: Map<Int, PageImage> = emptyMap(),
     val reporting: ReadingUnit? = null,
     val soundedWrong: SoundedWrongOffer? = null,
     val unreadableTapped: ReadingUnit? = null,

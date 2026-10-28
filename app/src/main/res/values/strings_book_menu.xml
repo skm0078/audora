@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The book menu and the library's sort sheet (ADR 2026-10-28-book-menu-sort-sheet). -->
+<resources>
+    <string name="menu_play">Play</string>
+    <string name="menu_save_as">Save as</string>
+    <string name="menu_save_audiobook">Audiobook</string>
+    <string name="menu_save_audiobook_line">One file per chapter, with the cover</string>
+    <string name="menu_save_talking_book">Talking EPUB</string>
+    <string name="menu_save_talking_book_line">Text and voice in step</string>
+    <string name="menu_save_accessible">Accessible copy</string>
+    <string name="menu_save_accessible_line">Clean text for screen readers</string>
+    <string name="menu_save_notes">Notes</string>
+    <string name="menu_save_notes_line">Your highlights as text</string>
+    <string name="library_layout">Layout</string>
+    <string name="library_layout_grid">Grid</string>
+    <string name="library_layout_list">List</string>
+    <string name="library_sort_reset">Reset</string>
+    <plurals name="library_sort_show">
+        <item quantity="one">Show %1$d book</item>
+        <item quantity="other">Show %1$d books</item>
+    </plurals>
+</resources>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The book menu and the library's sort sheet (ADR 2026-10-28-book-menu-sort-sheet). -->
+<resources>
+    <string name="menu_play">চালান</string>
+    <string name="menu_save_as">এই রূপে সেভ করুন</string>
+    <string name="menu_save_audiobook">অডিওবুক</string>
+    <string name="menu_save_audiobook_line">প্রতি অধ্যায়ে একটি ফাইল, প্রচ্ছদসহ</string>
+    <string name="menu_save_talking_book">কথা বলা EPUB</string>
+    <string name="menu_save_talking_book_line">লেখা আর কণ্ঠ একসাথে</string>
+    <string name="menu_save_accessible">সহজে পড়ার কপি</string>
+    <string name="menu_save_accessible_line">স্ক্রিন রিডারের জন্য পরিষ্কার টেক্সট</string>
+    <string name="menu_save_notes">নোট</string>
+    <string name="menu_save_notes_line">আপনার হাইলাইট, টেক্সট হিসেবে</string>
+    <string name="library_layout">লেআউট</string>
+    <string name="library_layout_grid">গ্রিড</string>
+    <string name="library_layout_list">তালিকা</string>
+    <string name="library_sort_reset">রিসেট</string>
+    <plurals name="library_sort_show">
+        <item quantity="one">%1$dটি বই দেখান</item>
+        <item quantity="other">%1$dটি বই দেখান</item>
+    </plurals>
+</resources>

@@ -138,8 +138,9 @@ private fun Detail(text: String) {
 }
 
 /**
- * Continue, Open, Up next and Save as audiobook while the file can be read (a missing one is found from its tile),
- * then Remove.
+ * Continue, Open, Up next, Save as audiobook and the [MenuPlace.DETAILS] actions (the character guide) while the file
+ * can be read (a missing one is found from its tile); Mark as not started for a book half read, since the menu's
+ * Finished button only marks a finished book not started again; then Remove.
  */
 @Composable
 private fun DetailActions(item: LibraryItem, actions: LibraryActions, then: (() -> Unit) -> Unit) {
@@ -160,6 +161,17 @@ private fun DetailActions(item: LibraryItem, actions: LibraryActions, then: (() 
             }
             OutlinedButton(onClick = { then { actions.onExportAudiobook(book) } }, Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.library_export_audiobook))
+            }
+            BookAction.entries.filter { it.place == MenuPlace.DETAILS && it.appliesTo(item) }.forEach { action ->
+                OutlinedButton(onClick = { then { actions.onBookAction(book, action) } }, Modifier.fillMaxWidth()) {
+                    Text(stringResource(action.label))
+                }
+            }
+            if (BookAction.MARK_NOT_STARTED.appliesTo(item) && item.progress?.isFinished != true) {
+                TextButton(
+                    onClick = { then { actions.onBookAction(book, BookAction.MARK_NOT_STARTED) } },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.library_mark_not_started)) }
             }
         }
         TextButton(onClick = { then { actions.onRequestRemoval(book) } }, Modifier.fillMaxWidth()) {

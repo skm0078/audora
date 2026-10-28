@@ -32,6 +32,17 @@ internal val BUNDLED_FONTS = listOf(
         "Copyright 2012-2019 Abbie Gonzalez, Reserved Font Name OpenDyslexic",
         "https://opendyslexic.org",
     ),
+    // The quote cards' type (ADR 2026-10-27-share-cards); trimmed to their scripts and Latin.
+    FontCredit(
+        "Tiro Devanagari Hindi",
+        "Copyright 2020 The Indigo Project Authors (https://github.com/TiroTypeworks/Indigo)",
+        "https://github.com/TiroTypeworks/Indigo",
+    ),
+    FontCredit(
+        "Tiro Bangla",
+        "Copyright 2020 The Indigo Project Authors (https://github.com/TiroTypeworks/Indigo)",
+        "https://github.com/TiroTypeworks/Indigo",
+    ),
 )
 
 /** A "Fonts" caption and one row per bundled font: its name, copyright and licence, and a link to its source. */

@@ -120,6 +120,7 @@ import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.LibraryScreen
 import io.github.skm0078.audora.ui.library.MiniPlayer
 import io.github.skm0078.audora.ui.library.nowPlaying
+import io.github.skm0078.audora.ui.library.rememberLibraryLayout
 import io.github.skm0078.audora.ui.library.rememberRemovalUndoMs
 import io.github.skm0078.audora.ui.library.restoreMessageOf
 import io.github.skm0078.audora.ui.library.showFinishRestoringIfNeeded
@@ -783,6 +784,7 @@ class MainActivity : ComponentActivity() {
             },
             covers = bookCovers,
             runningJobs = rememberRunningJobCount(),
+            view = rememberLibraryLayout(),
         )
         studio.Sheets((controller.listState as? LibraryListState.Loaded)?.all?.map { it.book })
     }

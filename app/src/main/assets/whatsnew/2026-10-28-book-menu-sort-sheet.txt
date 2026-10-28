@@ -1,0 +1,3 @@
+en: A cleaner book menu: Play, Up next and Finished up top, and Save as opens into tiles for an audiobook, a talking EPUB, an accessible copy or your notes. Press and hold a book to open it. The sort button now also switches between grid and list.
+hi: किताब का मेनू अब साफ़: ऊपर चलाएँ, आगे सुनें और पूरी हुई, और "इस रूप में सेव करें" में ऑडियोबुक, बोलती EPUB, सुलभ कॉपी या आपके नोट्स के टाइल। मेनू खोलने के लिए किताब को दबाकर रखें। क्रम का बटन अब ग्रिड और सूची में भी बदलता है।
+bn: বইয়ের মেনু এখন পরিষ্কার: ওপরে চালান, এরপর শুনবেন আর শেষ, আর "এই রূপে সেভ করুন" খুললে অডিওবুক, কথা বলা EPUB, সহজে পড়ার কপি বা আপনার নোটের টাইল। মেনু খুলতে বইটি চেপে ধরে রাখুন। সাজানোর বোতাম এখন গ্রিড আর তালিকাও বদলায়।

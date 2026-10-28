@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-hi/strings_share_cards.xml
+  Purpose: Hindi copy of strings_share_cards.xml.
+-->
+<resources>
+    <string name="sentence_menu_share">शेयर करें…</string>
+    <string name="sentence_hint_share">ऑडियो, तस्वीर या शब्दों के रूप में। तस्वीर पर हमेशा किताब का नाम और लेखक रहते हैं।</string>
+    <string name="share_choices_title">ये पंक्तियाँ शेयर करें</string>
+    <string name="share_as_picture">तस्वीर के रूप में शेयर करें</string>
+    <string name="share_hint_picture">किताब, लेखक और पृष्ठ के साथ एक कोट कार्ड, स्टेटस, स्टोरी या पोस्ट के नाप में।</string>
+    <string name="share_choices_note">हर तस्वीर पर किताब, उसके लेखक और ListenLock का छोटा निशान रहता है।</string>
+
+    <string name="share_card_title">तस्वीर के रूप में शेयर करें</string>
+    <string name="share_card_book_title">यह किताब शेयर करें</string>
+    <string name="menu_quick_share">शेयर</string>
+    <string name="share_card_back">वापस</string>
+    <string name="share_card_preview">तस्वीर की झलक</string>
+    <string name="share_card_shape">नाप</string>
+    <string name="share_card_square">चौकोर</string>
+    <string name="share_card_story">स्टोरी 9:16</string>
+    <string name="share_card_post">पोस्ट 4:5</string>
+    <string name="share_card_look">पृष्ठभूमि</string>
+    <string name="share_card_look_light">काग़ज़</string>
+    <string name="share_card_look_sepia">सीपिया</string>
+    <string name="share_card_look_dark">रात</string>
+    <string name="share_card_look_dusk">शाम का नीला</string>
+    <string name="share_card_look_cover">किताब का कवर</string>
+    <string name="share_card_look_picture">आपकी अपनी तस्वीर</string>
+    <string name="share_card_picture_note">ऐसी तस्वीर लें जो आपने खींची हो या जिसे शेयर करने की अनुमति हो।</string>
+    <string name="share_card_picture_failed">वह तस्वीर नहीं खुल सकी। कोई दूसरी आज़माएँ।</string>
+    <string name="share_card_dedication">समर्पण (चाहें तो)</string>
+    <string name="share_card_dedication_hint">माँ के लिए</string>
+    <string name="share_card_cut_note">60 शब्दों तक छोटा किया गया, ताकि कोट छोटा रहे और लेखक के साथ न्याय हो।</string>
+    <string name="share_card_send">शेयर करें</string>
+    <string name="share_card_failed">तस्वीर नहीं बन सकी। कृपया लॉग शेयर करें।</string>
+    <string name="share_card_no_app">इस फ़ोन पर कोई ऐप तस्वीर नहीं ले सकता।</string>
+    <string name="share_card_page">पृष्ठ %1$d</string>
+    <string name="share_card_now_listening">अभी सुन रहे हैं</string>
+    <string name="share_card_book_missing">यह किताब अब आपकी लाइब्रेरी में नहीं है।</string>
+    <string name="menu_hint_share_card">किताब के कवर, नाम और लेखक की तस्वीर, किसी भी ऐप में शेयर करने के लिए। ऐप चुनने तक यह फ़ोन में ही रहती है।</string>
+</resources>

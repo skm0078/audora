@@ -13,6 +13,9 @@ package io.github.skm0078.audora.release
 
 import android.Manifest
 import android.app.Activity
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.fonts.Font
@@ -23,13 +26,17 @@ import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
 import androidx.annotation.OptIn
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.isToggleable
@@ -37,7 +44,11 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.printToString
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionCommand
@@ -47,11 +58,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.util.concurrent.ListenableFuture
 import io.github.skm0078.audora.MainActivity
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.config.QuoteVideoConfig
 import io.github.skm0078.audora.core.library.BookField
 import io.github.skm0078.audora.core.library.DocumentFormat
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.getOrNull
+import io.github.skm0078.audora.core.share.VideoTimeline
 import io.github.skm0078.audora.di.LibraryEntryPoint
 import io.github.skm0078.audora.playback.contract.LockScreenCommands
 import io.github.skm0078.audora.playback.contract.PlaybackContract
@@ -61,11 +74,15 @@ import io.github.skm0078.audora.playback.export.AudioChapter
 import io.github.skm0078.audora.playback.export.BookTags
 import io.github.skm0078.audora.playback.export.CoverJpeg
 import io.github.skm0078.audora.playback.export.LocalChapterFiles
+import io.github.skm0078.audora.playback.export.video.AiVoiceLabel
+import io.github.skm0078.audora.playback.export.video.QuoteVideoFrames
+import io.github.skm0078.audora.playback.export.video.QuoteVideoWriter
 import io.github.skm0078.audora.privacy.PrivacyPreferences
 import io.github.skm0078.audora.privacy.PrivacySettings
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
 import io.github.skm0078.audora.speech.audio.PcmAudio
+import io.github.skm0078.audora.speech.audio.WordTimes
 import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
 import io.github.skm0078.audora.speech.voices.VoiceStatus
@@ -73,6 +90,9 @@ import io.github.skm0078.audora.ui.firstrun.FirstRunStep
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
 import io.github.skm0078.audora.ui.reader.ReadingPosition
+import io.github.skm0078.audora.ui.share.ShareCardActivity
+import io.github.skm0078.audora.ui.share.ShareCardFiles
+import io.github.skm0078.audora.ui.share.ShareEntry
 import io.github.skm0078.audora.ui.theme.AppFont
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -118,6 +138,10 @@ class ReleaseJourneyTest {
             step("17 an exported chapter carries the book's cover", ::anExportedChapterCarriesTheCover)
             step("18 the app font draws English, Hindi and Bengali", ::theAppFontDrawsAllThreeScripts)
             step("19 the four places open and Jobs goes back to Made", ::theFourPlacesOpenAndJobsLiveInMade)
+            step("20 the book menu's Save as opens and the sort sheet turns covers to a list", ::bookMenuAndSortSheet)
+            step("21 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
+            step("22 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
+            step("23 a quote video is written with the AI voice label", ::aQuoteVideoIsWritten)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -557,6 +581,42 @@ class ReleaseJourneyTest {
     }
 
     /**
+     * The quote video's encoder in the installed app (ADR 2026-10-28-quote-video): the phone's H.264 and
+     * AAC encoders write a 720 x 1280 MP4 with both tracks, the word lit by the voice's own timing.
+     */
+    private fun aQuoteVideoIsWritten() {
+        val audio =
+            PcmAudio(ShortArray(EXPORT_RATE * 3 / 2) { ((it % TONE_PERIOD) * TONE_STEP).toShort() }, EXPORT_RATE)
+        val starts = requireNotNull(WordTimes().of(VIDEO_QUOTE, audio)) { "No word times" }
+        val timeline = VideoTimeline(audio.samples.size * MS_PER_S / EXPORT_RATE, starts, QuoteVideoConfig())
+        val words = VIDEO_QUOTE.split(' ')
+        val frames = object : QuoteVideoFrames {
+            private val ink = Paint().apply { textSize = FONT_TEXT_SIZE }
+
+            override fun lookOf(frame: Int) = timeline.wordAt(frame)
+
+            override fun draw(canvas: Canvas, frame: Int) {
+                canvas.drawColor(Color.WHITE)
+                val lit = timeline.wordAt(frame)
+                canvas.drawText(words.getOrElse(lit) { "" }, FONT_TEXT_SIZE, canvas.height / 2f, ink)
+            }
+        }
+        val file = File(app.cacheDir, "journey-quote.mp4")
+        try {
+            val written = QuoteVideoWriter().write(file, audio, timeline, frames, AiVoiceLabel("AI voice"))
+            assertTrue("video not written: $written", written is Outcome.Success)
+            MediaMetadataRetriever().use { video ->
+                video.setDataSource(file.path)
+                assertEquals("720", video.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH))
+                assertEquals("1280", video.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT))
+                assertEquals("yes", video.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO))
+            }
+        } finally {
+            file.delete()
+        }
+    }
+
+    /**
      * Each weight loads from the APK and each script is drawn by its own Anek file: the joined typeface measures
      * exactly like that file alone, and the three weights of a script measure differently, so no weight is drawn
      * with another's file. Not "unlike the phone's sans": two fonts can measure alike by chance.
@@ -598,6 +658,51 @@ class ReleaseJourneyTest {
         waitForNode(hasText(text(R.string.library_title)))
     }
 
+    /**
+     * A book's menu shows its big buttons and opens Save as in place; the sort sheet's List shows rows at once and
+     * Reset brings the covers back. The emulator's screen is small, so the books can sit below Continue reading,
+     * not yet composed: each check scrolls the library to what it looks for. Sheets close by their handle: Back
+     * reaches the activity, not the sheet's window.
+     */
+    private fun bookMenuAndSortSheet() {
+        // The words around the book's name, whichever side of it they sit in this language.
+        val namedMenu = text(R.string.library_book_menu_named, NAME_MARK).split(NAME_MARK).maxBy { it.length }.trim()
+        val menuButton = hasContentDescription(namedMenu, substring = true) and hasClickAction()
+        scrollLibraryTo(menuButton)
+        tap(menuButton)
+        waitForNode(hasText(text(R.string.menu_play)))
+        tapText(R.string.menu_save_as)
+        waitForNode(hasText(text(R.string.menu_save_audiobook)))
+        tap(sheetHandle())
+        gone(hasText(text(R.string.menu_play)))
+
+        val openBook = text(R.string.a11y_open_book)
+        val listRow = SemanticsMatcher("a list row") { node ->
+            node.config.getOrNull(SemanticsActions.OnClick)?.label == openBook
+        }
+        val coverTile = SemanticsMatcher("a cover tile") { node ->
+            node.config.getOrNull(SemanticsActions.OnLongClick)?.label?.contains(namedMenu) == true &&
+                node.config.getOrNull(SemanticsActions.OnClick)?.label != openBook
+        }
+        tap(hasContentDescription(text(R.string.library_sort_filter)))
+        tapText(R.string.library_layout_list)
+        scrollLibraryTo(listRow)
+        tapText(R.string.library_sort_reset)
+        scrollLibraryTo(coverTile)
+        tap(sheetHandle())
+        gone(hasText(text(R.string.library_sort_reset)))
+    }
+
+    /** The sheet's own handle: Material's scrim behind every sheet carries the same name and fills the screen. */
+    private fun sheetHandle(): SemanticsMatcher = hasContentDescription(text(R.string.a11y_sheet_close)) and
+        SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
+
+    /** Scrolls the library's grid or list until [matcher]'s node is composed and on screen; fails if it has none. */
+    private fun scrollLibraryTo(matcher: SemanticsMatcher) {
+        rule.waitForIdle()
+        node(hasScrollToIndexAction()).performScrollToNode(matcher)
+    }
+
     /** One Anek file on its own, at the weight it was trimmed to. */
     private fun own(file: Int, weight: AppFont.Weight): Typeface = Typeface.CustomFallbackBuilder(
         PlatformFontFamily.Builder(Font.Builder(app.resources, file).build()).build(),
@@ -622,6 +727,57 @@ class ReleaseJourneyTest {
         return true
     }
 
+    /**
+     * "Share as a picture" on the installed app (ADR 2026-10-27-share-cards): the card screen opens from the reader's
+     * call with the journey's PDF, Share writes a 1080 x 1920 PNG into the share folder and hands it to the share
+     * sheet, and Back returns to the app.
+     */
+    private fun aQuoteCardIsShared() {
+        val entry = LibraryEntryPoint.of(app)
+        val book = runBlocking { entry.library().books().first() }.first { it.format == DocumentFormat.PDF }
+        val folder = File(app.cacheDir, ShareCardFiles.FOLDER).apply { deleteRecursively() }
+        val reader = activity()
+        JourneyDevice.onMain { ShareEntry.quote(reader, book.id, CARD_QUOTE, page = 0) }
+        waitForNode(hasText(text(R.string.share_card_title)), OPEN_TIMEOUT_MS)
+        node(hasText(text(R.string.share_card_send)) and hasClickAction()).performScrollTo().performClick()
+        val card = { folder.listFiles()?.firstOrNull { it.name.endsWith(".png") } }
+        awaitTrue("the card in the share folder", state = { "Files: ${folder.list()?.toList()}" }) { card() != null }
+        val size = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(requireNotNull(card()).path, size)
+        assertEquals(CARD_WIDTH, size.outWidth)
+        assertEquals(CARD_HEIGHT, size.outHeight)
+        // The share sheet (another app's window) covers the card screen; Back closes it, then the card screen.
+        awaitTrue("the share sheet") { JourneyDevice.resumedActivity() !is ShareCardActivity }
+        repeat(MAX_BACKS) {
+            if (JourneyDevice.resumedActivity() is MainActivity) return@repeat
+            JourneyDevice.pressBackKey()
+            Thread.sleep(POLL_MS)
+        }
+        awaitTrue("the reader back on screen") { JourneyDevice.resumedActivity() is MainActivity }
+    }
+
+    /**
+     * The test book opened again (Open with) and paused; a sideways swipe on its page turns it (ADR
+     * 2026-10-28-page-flip): back a page if there is one, else on to the next.
+     */
+    private fun aSwipeTurnsThePdfPage() {
+        pause()
+        val uri = JourneyDevice.downloadedPdf(BOOK)
+        val current = activity()
+        JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri)) }
+        val pageImage = { page: Int -> hasContentDescription(text(R.string.reader_page_image, page)) }
+        val onScreen = { page: Int -> rule.onAllNodes(pageImage(page)).fetchSemanticsNodes().isNotEmpty() }
+        var shown: Int? = null
+        awaitTrue("a drawn page on screen") {
+            shown = (1..MAX_SCANNED_PAGES).firstOrNull(onScreen)
+            shown != null
+        }
+        val from = requireNotNull(shown)
+        val to = if (from > 1) from - 1 else from + 1
+        node(pageImage(from)).performTouchInput { if (to < from) swipeRight() else swipeLeft() }
+        waitForNode(pageImage(to), OPEN_TIMEOUT_MS)
+    }
+
     private fun savedPrivacy(): PrivacySettings = runBlocking { PrivacyPreferences(app).settings.first() }
 
     private fun windowState(): String {
@@ -639,6 +795,9 @@ class ReleaseJourneyTest {
         const val SUPERTONIC = "supertonic-hi"
         const val LOG_TAG = "ReleaseJourney"
         const val BOOK = "en-udhr-noto.pdf"
+
+        /** Pages looked through for the one on screen: more than the test book has. */
+        const val MAX_SCANNED_PAGES = 40
         const val SCAN = "en-udhr-noto-scan200bad-p1.pdf"
 
         // assets/ebooks, written by scripts/fixtures/make_ebook_fixtures.py, with the type a Files app sends and
@@ -675,6 +834,7 @@ class ReleaseJourneyTest {
         const val HOLD_MS = 2_000L
         const val PERMISSION_PROMPT_MS = 5_000L
         const val UI_TIMEOUT_MS = 15_000L
+        const val NAME_MARK = "\u0001"
         const val OPEN_TIMEOUT_MS = 60_000L
         const val PLAY_TIMEOUT_MS = 90_000L
         const val OCR_DOWNLOAD_TIMEOUT_MS = 360_000L
@@ -683,6 +843,10 @@ class ReleaseJourneyTest {
         const val VOICE_RESTART = "Reading voices changed; restarting the sentence"
         const val LANGUAGE_RESTART = "Book language changed"
         const val EXPORT_RATE = 22_050
+        const val VIDEO_QUOTE = "Every book, read aloud."
+        const val TONE_PERIOD = 50
+        const val TONE_STEP = 300
+        const val MS_PER_S = 1_000L
         const val FONT_TEXT_SIZE = 48f
         const val FONT_WIDTH_TOLERANCE = 0.01f
         const val EXACT_WIDTHS = Paint.LINEAR_TEXT_FLAG or Paint.SUBPIXEL_TEXT_FLAG
@@ -692,5 +856,10 @@ class ReleaseJourneyTest {
         const val OTHER_BOOK_LANGUAGE = "fr"
         const val TEXT_REREAD = "Reading text settings changed; reading the open book again"
         const val LOCK_SCREEN_BOOKMARK = "Lock screen bookmark added"
+
+        // Step 19: a line of the journey's PDF, made into a story-sized card.
+        const val CARD_QUOTE = "All human beings are born free and equal in dignity and rights."
+        const val CARD_WIDTH = 1080
+        const val CARD_HEIGHT = 1920
     }
 }

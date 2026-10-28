@@ -35,7 +35,10 @@ interface ReaderActions {
 
     fun onSentenceTapped(unit: ReadingUnit)
 
-    /** A tap on the page image, in fractions of its size: reads from the sentence there, if any. */
+    /**
+     * A tap on the page image, in fractions of its size: reads from the sentence there, if any; away from any, a tap
+     * in the page's outer edge turns the page (ADR 2026-10-28-page-flip).
+     */
     fun onPageTapped(point: ViewPoint)
 
     /** "This sounded wrong" (RI-8b): a long-press on a sentence offers the reasons. */
@@ -60,6 +63,9 @@ interface ReaderActions {
 
     /** The page view's width in pixels, so pages are drawn at the screen's resolution. */
     fun onPageWidth(widthPx: Int)
+
+    /** The page view was zoomed in, or back to its width: pages are drawn ahead for a swipe only at its width. */
+    fun onPageZoomed(zoomed: Boolean) = Unit
 
     fun onPlayPause()
 
@@ -105,6 +111,9 @@ interface ReaderActions {
 
     /** "Share as audio" on a highlighted sentence: the whole highlighted passage, as a clip. */
     fun onShareHighlight(highlight: Highlight) = Unit
+
+    /** "Share as a picture" (ADR 2026-10-27-share-cards): [lines] from zero-based [page] as a quote card. */
+    fun onSharePicture(lines: String, page: Int) = Unit
 
     /** A fix offered after "This sounded wrong" ([SoundedWrongFixes]). */
     fun onSoundedWrongFix(fix: SoundedWrongFix) = Unit

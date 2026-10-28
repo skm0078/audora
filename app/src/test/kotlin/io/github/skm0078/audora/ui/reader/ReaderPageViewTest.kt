@@ -43,12 +43,14 @@ class ReaderPageViewTest {
         model.setPageWidth(WIDTH)
         val image = model.state.value.pageImage as PageImageState.Ready
         assertEquals(0, image.page)
-        val render = document.renders.single()
+        val render = document.renders.first()
+        assertEquals("the shown page is drawn first", 0, render.page)
         assertEquals(WIDTH, render.widthPx)
         assertEquals(config.pageMaxPixels, render.maxPixels)
 
+        val drawn = document.renders.size
         model.setPageWidth(WIDTH)
-        assertEquals("the same width draws nothing again", 1, document.renders.size)
+        assertEquals("the same width draws nothing again", drawn, document.renders.size)
     }
 
     @Test
@@ -57,7 +59,7 @@ class ReaderPageViewTest {
         model.setPageWidth(WIDTH)
         model.nextPage()
         assertEquals(1, (model.state.value.pageImage as PageImageState.Ready).page)
-        assertEquals(listOf(0, 1), document.renders.map { it.page })
+        assertEquals("page 1 was drawn ahead, once", 1, document.renders.count { it.page == 1 })
     }
 
     @Test
@@ -108,8 +110,10 @@ class ReaderPageViewTest {
         assertEquals(PageImageState.None, model.state.value.pageImage)
         assertEquals(ReaderView.TEXT, views.saved)
 
+        val drawn = document.renders.size
         model.nextPage()
-        assertEquals(1, document.renders.size)
+        assertEquals("nothing drawn in the text view", drawn, document.renders.size)
+        assertTrue("and nothing held for a swipe", model.state.value.nearbyPages.isEmpty())
 
         model.setView(ReaderView.PAGE)
         assertEquals(1, (model.state.value.pageImage as PageImageState.Ready).page)
