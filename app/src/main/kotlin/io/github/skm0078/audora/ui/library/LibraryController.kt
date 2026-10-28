@@ -305,6 +305,7 @@ class LibraryController(
             members = own.members,
             facets = facets,
             leaving = hidden,
+            latest = latest,
         )
     }
 

@@ -40,7 +40,7 @@
     <string name="library_remove_body">फ़ाइल आपके फ़ोन पर बनी रहेगी। आप इसे बाद में फिर से जोड़ सकते हैं।</string>
     <string name="library_cancel">रद्द करें</string>
     <string name="library_search">लाइब्रेरी में खोजें</string>
-    <string name="library_search_hint">शीर्षक और लेखक खोजें</string>
+    <string name="library_search_hint">किताबें, कार्य और सेटिंग खोजें</string>
     <string name="library_search_close">खोज बंद करें</string>
     <string name="library_sort_filter">क्रम और फ़िल्टर</string>
     <string name="library_sort_by">क्रम</string>

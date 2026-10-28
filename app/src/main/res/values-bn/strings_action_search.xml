@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="found_heading">কাজ আর সেটিং</string>
+    <string name="found_books_heading">বই</string>
+    <string name="found_no_book">\"%1$s\" নামে কোনো বই নেই।</string>
+    <string name="found_path">%1$s › %2$s</string>
+    <string name="found_now">%1$s · এখন %2$s</string>
+    <string name="found_dot">%1$s · %2$s</string>
+    <string name="found_on">চালু</string>
+    <string name="found_off">বন্ধ</string>
+    <string name="found_where_reading">যে বইটি পড়ছেন</string>
+    <string name="found_where_library">আপনার লাইব্রেরি থেকে</string>
+    <string name="found_where_place">নিজস্ব জায়গা</string>
+    <string name="found_more">আরও</string>
+    <string name="found_book_play">%1$s চালান</string>
+    <string name="found_book_up_next">%1$s এরপর শোনার তালিকায় যোগ করুন</string>
+    <string name="found_book_audiobook">%1$s অডিওবুক হিসেবে সেভ করুন</string>
+    <string name="found_book_talking">%1$s কথা বলা EPUB হিসেবে সেভ করুন</string>
+    <string name="found_book_accessible">%1$s-এর সহজে পড়ার কপি সেভ করুন</string>
+    <string name="found_book_notes">%1$s-এর নোট সেভ করুন</string>
+    <string name="found_book_share">%1$s ছবি হিসেবে শেয়ার করুন</string>
+    <string name="found_book_guide">%1$s-এ কে কে আছে</string>
+    <string name="found_book_studio">%1$s-এর জন্য স্টুডিও মোড</string>
+    <string name="found_book_finished">%1$s শেষ হিসেবে চিহ্নিত করুন</string>
+    <string name="found_book_not_started">%1$s শুরু হয়নি হিসেবে চিহ্নিত করুন</string>
+    <string name="found_terms_play">শুনুন পড়ুন শুরু</string>
+    <string name="found_terms_audiobook">অডিও ফাইল</string>
+    <string name="found_terms_share">ছবি কার্ড</string>
+    <string name="found_terms_guide">চরিত্র মানুষ কে</string>
+    <string name="found_terms_studio">চার্জিং আগে</string>
+    <string name="found_terms_scanned_pages">স্ক্যান ওসিআর ছবি</string>
+    <string name="found_terms_citations">উদ্ধৃতি সূত্র সংখ্যা</string>
+    <string name="found_terms_reconnect">হেডফোন ব্লুটুথ ইয়ারবাড</string>
+    <string name="found_terms_keep_screen_on">স্ক্রিন জেগে ঘুম</string>
+    <string name="found_terms_theme">ডার্ক লাইট রাত চেহারা</string>
+    <string name="found_terms_wallpaper_colours">রং ওয়ালপেপার</string>
+    <string name="found_terms_true_black">কালো রাত ব্যাটারি</string>
+    <string name="found_terms_language">ভাষা হিন্দি বাংলা ইংরেজি</string>
+    <string name="found_terms_background_reading">ব্যাটারি ব্যাকগ্রাউন্ড</string>
+    <string name="found_terms_kids">শিশু বাচ্চা</string>
+    <string name="found_terms_app_lock">লক ফিঙ্গারপ্রিন্ট পিন পাসওয়ার্ড</string>
+    <string name="found_terms_hide_content">স্ক্রিনশট লুকান ব্যক্তিগত</string>
+    <string name="found_terms_volume_keys">ভলিউম বোতাম</string>
+    <string name="found_terms_voice_commands">ভয়েস কমান্ড মাইক</string>
+    <string name="found_terms_pronunciation">উচ্চারণ শব্দ</string>
+    <string name="found_terms_share_logs">লগ সমস্যা সাহায্য</string>
+</resources>

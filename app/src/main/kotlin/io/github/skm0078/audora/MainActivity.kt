@@ -46,7 +46,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.battery.OnboardingPreferences
 import io.github.skm0078.audora.core.config.ReaderConfig
@@ -119,13 +118,10 @@ import io.github.skm0078.audora.ui.library.LibraryActions
 import io.github.skm0078.audora.ui.library.LibraryController
 import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.LibraryScreen
-import io.github.skm0078.audora.ui.library.MiniPlayer
-import io.github.skm0078.audora.ui.library.nowPlaying
 import io.github.skm0078.audora.ui.library.rememberLibraryLayout
 import io.github.skm0078.audora.ui.library.rememberRemovalUndoMs
 import io.github.skm0078.audora.ui.library.restoreMessageOf
 import io.github.skm0078.audora.ui.library.showFinishRestoringIfNeeded
-import io.github.skm0078.audora.ui.library.sidebarShelves
 import io.github.skm0078.audora.ui.licences.LicenceSource
 import io.github.skm0078.audora.ui.licences.LicencesRoute
 import io.github.skm0078.audora.ui.loggingFailures
@@ -164,6 +160,9 @@ import io.github.skm0078.audora.ui.reader.ViewPreference
 import io.github.skm0078.audora.ui.reader.VolumeKeySkips
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.reader.rememberSpokenWord
+import io.github.skm0078.audora.ui.settings.KnownSettings
+import io.github.skm0078.audora.ui.settings.SettingFocus
+import io.github.skm0078.audora.ui.settings.SettingKey
 import io.github.skm0078.audora.ui.settings.SettingsScreen
 import io.github.skm0078.audora.ui.settings.rememberActedVoiceSettings
 import io.github.skm0078.audora.ui.settings.rememberOcrModelsSetting
@@ -172,7 +171,7 @@ import io.github.skm0078.audora.ui.settings.rememberPunctuationModelSetting
 import io.github.skm0078.audora.ui.settings.rememberSkipCitationsSetting
 import io.github.skm0078.audora.ui.settings.rememberStoryBrainSettings
 import io.github.skm0078.audora.ui.settings.rememberVoiceCommandsSettings
-import io.github.skm0078.audora.ui.shell.AppShell
+import io.github.skm0078.audora.ui.settings.settingValues
 import io.github.skm0078.audora.ui.shell.ReadableWidth
 import io.github.skm0078.audora.ui.storage.StorageRoute
 import io.github.skm0078.audora.ui.theme.Appearance
@@ -431,9 +430,9 @@ class MainActivity : ComponentActivity() {
             if (tab == null) {
                 ScreenRoute(screen, nav, voicesController, battery, books)
             } else {
-                TabsRoute(tab, libraryController, miniPort, nav::navigate) {
+                TabsRoute(tab, libraryController, miniPort, bookCovers, nav::navigate) {
                     when (tab) {
-                        AppTab.LIBRARY -> LibraryRoute(libraryController, nav::navigate, nav::continueReading) {
+                        AppTab.LIBRARY -> LibraryRoute(libraryController, nav, appearance, battery.exempt) {
                             if (kids.on) {
                                 KidsBanner(onLeave = { scope.launch { turnOffKidsMode(kids) } })
                             } else if (battery.showCard) {
@@ -449,7 +448,7 @@ class MainActivity : ComponentActivity() {
                         AppTab.MADE -> ReadableWidth { MadePlaceRoute(nav::navigate) }
 
                         AppTab.YOU -> ReadableWidth {
-                            SettingsRoute(diagnostics, battery, nav::navigate, appearance) {
+                            SettingsRoute(diagnostics, battery, nav, appearance) {
                                 scope.launch { turnOnKidsMode() }
                             }
                         }
@@ -589,38 +588,6 @@ class MainActivity : ComponentActivity() {
 
     /** The places' frame with the mini player, which follows whatever the player holds (ADR-036). */
     @Composable
-    private fun TabsRoute(
-        tab: AppTab,
-        library: LibraryController,
-        port: MediaControllerPlaybackPort,
-        navigate: (AppDestination) -> Unit,
-        content: @Composable () -> Unit,
-    ) {
-        val playback by port.state.collectAsStateWithLifecycle()
-        val playWithPermission = rememberPlayWithNotificationPermission()
-        val playing = nowPlaying(playback, library.listState)
-        AppShell(
-            selected = tab,
-            onSelect = { navigate(it.destination) },
-            tabs = if (LocalKidsMode.current) listOf(AppTab.LIBRARY) else AppTab.entries,
-            shelves = sidebarShelves(library) { navigate(AppDestination.Library) },
-            miniPlayer = {
-                playing?.let { now ->
-                    MiniPlayer(
-                        playing = now,
-                        onOpen = { navigate(AppDestination.Player(now.bookId, tab)) },
-                        onPlayPause = {
-                            if (port.state.value.wantsToPlay) port.pause() else playWithPermission(port::play)
-                        },
-                        covers = bookCovers,
-                    )
-                }
-            },
-            content = content,
-        )
-    }
-
-    @Composable
     private fun NotesRoute(books: List<Book>, onOpen: (ResumeAnchor) -> Unit) {
         val groups by remember(books) { bookNotes(NoteSources(bookmarkStore, highlightStore, voiceNoteStore), books) }
             .collectAsStateWithLifecycle(initialValue = emptyList())
@@ -631,10 +598,11 @@ class MainActivity : ComponentActivity() {
     private fun SettingsRoute(
         diagnostics: DiagnosticsController,
         battery: BatterySetupController,
-        navigate: (AppDestination) -> Unit,
+        nav: AppNavigation,
         appearance: Appearance,
         onKidsMode: () -> Unit,
     ) {
+        val navigate = nav::navigate
         val ocr = rememberOcrModelsSetting(ocrModels)
         val punctuation = rememberPunctuationModelSetting(punctuationModels)
         val volumeKeys by remember { screenPreference.volumeKeysSkip() }.collectAsStateWithLifecycle(false)
@@ -675,6 +643,7 @@ class MainActivity : ComponentActivity() {
             language = appLanguageStore.load(),
             onLanguageChange = ::switchLanguage,
             privacy = privacy.controls(),
+            focus = SettingFocus(nav.pendingSetting) { nav.pendingSetting = null },
         )
     }
 
@@ -709,10 +678,13 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun LibraryRoute(
         controller: LibraryController,
-        navigate: (AppDestination) -> Unit,
-        onContinue: (BookId) -> Unit,
+        nav: AppNavigation,
+        appearance: Appearance,
+        backgroundReading: Boolean,
         banner: @Composable () -> Unit,
     ) {
+        val navigate = nav::navigate
+        val onContinue = nav::continueReading
         val context = LocalContext.current.applicationContext
         val undoMs = rememberRemovalUndoMs()
         val playWithPermission = rememberPlayWithNotificationPermission()
@@ -762,6 +734,10 @@ class MainActivity : ComponentActivity() {
                 override fun onOpenJobs() = navigate(AppDestination.Jobs)
 
                 override fun onPlayMade(setKey: String) = navigate(AppDestination.MadePlayer(setKey))
+
+                override fun onOpenSetting(key: SettingKey) = nav.openSetting(key)
+
+                override fun onGoTo(destination: AppDestination) = navigate(destination)
             }
         }
         val loaded = controller.listState as? LibraryListState.Loaded
@@ -786,6 +762,15 @@ class MainActivity : ComponentActivity() {
             covers = bookCovers,
             runningJobs = rememberRunningJobCount(),
             view = rememberLibraryLayout(),
+            settingValues = settingValues(
+                KnownSettings(
+                    appearance,
+                    appLanguageStore.load(),
+                    screenPreference,
+                    backgroundReading,
+                    privacy.controls()?.settings,
+                ),
+            ),
         )
         studio.Sheets((controller.listState as? LibraryListState.Loaded)?.all?.map { it.book })
     }
@@ -1002,6 +987,14 @@ internal class AppNavigation(routeState: MutableState<String>) {
     fun continueReading(id: BookId) {
         autoResumeBook = id
         navigate(AppDestination.Reader(id))
+    }
+
+    /** A setting found by search, shown once on You (ADR 2026-10-28-action-search); not saveable, like a place. */
+    var pendingSetting by mutableStateOf<SettingKey?>(null)
+
+    fun openSetting(key: SettingKey) {
+        pendingSetting = key
+        navigate(AppDestination.Settings)
     }
 
     fun openPlace(anchor: ResumeAnchor) {

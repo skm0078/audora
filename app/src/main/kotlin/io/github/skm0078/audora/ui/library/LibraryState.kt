@@ -30,7 +30,8 @@ sealed interface LibraryListState {
      * book matches" and "the library is empty" can be told apart, and the mini player finds a filtered-out book.
      * [collections], [members] (each book's collections) and [facets] (what the library holds to filter by) feed
      * the collection chips and the filter sheet (ADR-069). [leaving]: books removed but still undoable (CF-3), left
-     * out of [items] and [all]; their covers and files are kept until the removal runs.
+     * out of [items] and [all]; their covers and files are kept until the removal runs. [latest]: the book read most
+     * recently even while something is searched, the one search's book actions name (ADR 2026-10-28-action-search).
      */
     data class Loaded(
         val items: List<LibraryItem>,
@@ -41,6 +42,7 @@ sealed interface LibraryListState {
         val members: Map<BookId, Set<String>> = emptyMap(),
         val facets: LibraryFacets = LibraryFacets.EMPTY,
         val leaving: Set<BookId> = emptySet(),
+        val latest: LibraryItem? = continueReading,
     ) : LibraryListState
 
     /** The database could not be read; the log has the cause. */

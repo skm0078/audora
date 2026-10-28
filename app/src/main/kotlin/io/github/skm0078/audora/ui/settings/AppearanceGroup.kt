@@ -26,40 +26,50 @@ internal fun AppearanceGroup(
     onKeepScreenOnChange: (Boolean) -> Unit,
 ) {
     OptionGroup(stringResource(R.string.settings_group_reading)) {
-        SwitchOption(
-            stringResource(R.string.settings_keep_screen_on_title),
-            keepScreenOn,
-            onKeepScreenOnChange,
-            help = stringResource(R.string.settings_keep_screen_on_body),
-        )
+        SettingAnchor(SettingKey.KEEP_SCREEN_ON) {
+            SwitchOption(
+                stringResource(R.string.settings_keep_screen_on_title),
+                keepScreenOn,
+                onKeepScreenOnChange,
+                help = stringResource(R.string.settings_keep_screen_on_body),
+            )
+        }
         OptionDivider()
-        ChoiceOption(
-            stringResource(R.string.settings_dark_mode_title),
-            DarkMode.entries,
-            appearance.darkMode,
-            label = { stringResource(darkModeLabel(it)) },
-            onPick = { onChange(appearance.copy(darkMode = it)) },
-        )
+        SettingAnchor(SettingKey.THEME) {
+            ChoiceOption(
+                stringResource(R.string.settings_dark_mode_title),
+                DarkMode.entries,
+                appearance.darkMode,
+                label = { stringResource(darkModeLabel(it)) },
+                onPick = { onChange(appearance.copy(darkMode = it)) },
+            )
+        }
         OptionDivider()
-        SwitchOption(
-            stringResource(R.string.settings_wallpaper_colors_title),
-            appearance.wallpaperColors,
-            { onChange(appearance.copy(wallpaperColors = it)) },
-            help = stringResource(R.string.settings_wallpaper_colors_body),
-        )
+        SettingAnchor(SettingKey.WALLPAPER_COLOURS) {
+            SwitchOption(
+                stringResource(R.string.settings_wallpaper_colors_title),
+                appearance.wallpaperColors,
+                { onChange(appearance.copy(wallpaperColors = it)) },
+                help = stringResource(R.string.settings_wallpaper_colors_body),
+            )
+        }
         OptionDivider()
-        SwitchOption(
-            stringResource(R.string.settings_true_black_title),
-            appearance.trueBlack,
-            { onChange(appearance.copy(trueBlack = it)) },
-            help = stringResource(R.string.settings_true_black_body),
-        )
+        SettingAnchor(SettingKey.TRUE_BLACK) {
+            SwitchOption(
+                stringResource(R.string.settings_true_black_title),
+                appearance.trueBlack,
+                { onChange(appearance.copy(trueBlack = it)) },
+                help = stringResource(R.string.settings_true_black_body),
+            )
+        }
         OptionDivider()
-        LanguageItem(language, onLanguageChange)
+        SettingAnchor(SettingKey.LANGUAGE) {
+            LanguageItem(language, onLanguageChange)
+        }
     }
 }
 
-private fun darkModeLabel(mode: DarkMode): Int = when (mode) {
+internal fun darkModeLabel(mode: DarkMode): Int = when (mode) {
     DarkMode.SYSTEM -> R.string.settings_dark_mode_system
     DarkMode.LIGHT -> R.string.settings_dark_mode_light
     DarkMode.DARK -> R.string.settings_dark_mode_dark
