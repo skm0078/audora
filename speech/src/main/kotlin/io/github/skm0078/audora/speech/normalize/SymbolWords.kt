@@ -142,7 +142,7 @@ internal object SymbolWords {
     /** "<" and ">" between two operands ("p < 0.05", "x>y"); anything else (a quote's ">") is left out later. */
     private val COMPARISON = Regex("""(?<=[\p{L}\p{M}\p{N}\s)])\s*([<>])\s*(?=[\p{L}\p{N}(−-])""")
     private val CARET_POWER =
-        Regex("""(?<=[\p{L}\p{N})])\s?\^\s?(?:\{([^{}]{1,12})}|\(([^()]{1,12})\)|(-?[\p{L}\p{M}\p{N}]+))""")
+        Regex("""(?<=[\p{L}\p{N})])\s?\^\s?(?:\{([^\{\}]{1,12})\}|\(([^()]{1,12})\)|(-?[\p{L}\p{M}\p{N}]+))""")
     private val STAR_TIMES = Regex("""(?<=[\p{N})])\s*\*\s*(?=[\p{N}(])""")
     private val ABOUT = Regex("""~\s?(?=[\p{L}\p{N}])""")
     private val SHARP = Regex("""(?<![\p{L}])([CF])#""")
