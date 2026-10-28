@@ -852,7 +852,12 @@ class ReleaseJourneyTest {
     /** Replayed from You: each stop says which it is, Next walks them, and Done leaves the library as it was. */
     private fun theTourReplays() {
         tapText(R.string.tab_you)
-        tapText(R.string.settings_tour_title)
+        // You keeps the page it was on: step 24b left it on Advanced, whose back arrow returns to You's own page.
+        val row = hasText(text(R.string.settings_tour_title))
+        val pageBack = hasContentDescription(text(R.string.navigate_back))
+        rule.waitUntil(UI_TIMEOUT_MS) { !none(row) || !none(pageBack) }
+        if (none(row)) tap(pageBack)
+        tap(row)
         val stops = TourStop.entries.size
         repeat(stops) { index ->
             waitForNode(hasText(text(R.string.tour_step, index + 1, stops)))
