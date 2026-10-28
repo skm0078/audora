@@ -4,6 +4,7 @@
 
 package io.github.skm0078.audora.privacy
 
+import android.content.res.Configuration
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.DeviceConfigurationOverride
@@ -27,6 +28,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.ui.Screens
 import io.github.skm0078.audora.ui.theme.AudoraTheme
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -53,9 +55,14 @@ class LockSaverTest {
         rule.waitForIdle()
     }
 
-    private fun text(id: Int): String = context.getString(id)
+    private fun text(id: Int, language: String = "en"): String {
+        val config = Configuration(context.resources.configuration).apply { setLocale(Locale.forLanguageTag(language)) }
+        return context.createConfigurationContext(config).getString(id)
+    }
 
-    private val unlock get() = hasText(text(R.string.app_lock_unlock)) and hasClickAction()
+    private fun unlockIn(language: String) = hasText(text(R.string.app_lock_unlock, language)) and hasClickAction()
+
+    private val unlock get() = unlockIn("en")
     private val pause get() = hasContentDescription(text(R.string.lock_saver_pause)) and hasClickAction()
 
     @Test
@@ -88,7 +95,7 @@ class LockSaverTest {
     fun unlockIsReachableAtLargeBengaliText() {
         show(reading = true, fontScale = LARGE_TEXT, language = "bn")
         Screens.save("lock-saver-bn-large", rule.onRoot().captureToImage().asAndroidBitmap())
-        rule.onNode(unlock).performScrollTo().performClick()
+        rule.onNode(unlockIn("bn")).performScrollTo().performClick()
         assertEquals(1, unlocks)
     }
 
