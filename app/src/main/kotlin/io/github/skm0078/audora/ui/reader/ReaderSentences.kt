@@ -1,6 +1,7 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReaderSentences.kt
 // Purpose: The text view's sentences: tap to read, follow-along centring and highlight styles (plan item 13), the
-//          spoken word (plan item 14), Focus view and bold word starts (plan item 77).
+//          spoken word (plan item 14), Focus view and bold word starts (plan item 77), scrolled or turned a screenful
+//          at a time (ADR 2026-10-28-text-pages).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -10,6 +11,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,6 +26,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -41,11 +45,13 @@ import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.ui.shell.readableSidePadding
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.readingBand
+import kotlinx.coroutines.launch
 
 /**
  * @param spokenWord the characters of the word being spoken in the spoken sentence (plan item 14); null when its
  *   timing is unknown or the word highlight is off. Read inside each row, so only the spoken row redraws per word.
  * @param isHighlighted the listener highlighted this sentence (plan item 30); it gets a soft band, in both views.
+ * @param turnBack with "Turn pages" on (ADR 2026-10-28-text-pages), whether this page opens at its last screen.
  */
 @Composable
 internal fun Sentences(
@@ -55,21 +61,84 @@ internal fun Sentences(
     look: ReadingLook,
     spokenWord: () -> IntRange? = { null },
     isHighlighted: (ReadingUnit) -> Boolean = { false },
+    turnBack: TextTurnBack = remember { TextTurnBack() },
 ) {
     // A new list state per page, so every page opens at its top.
     val listState = remember(state.page) { LazyListState() }
+    val screens = remember(listState) { TextScreens(listState) }
     val spoken = state.spokenUnitIndex
     val paragraphs = remember(units) { paragraphs(units) }
     val drawn = remember(units) { drawnUnits(units) }
     LaunchedEffect(spoken, state.page, look.followAlong, look.reflow) {
         if (spoken == null || !state.following || !look.followAlong) return@LaunchedEffect
         val item = if (look.reflow) paragraphs.indexOfFirst { spoken in it } else drawn.indexOf(spoken)
-        if (item >= 0) listState.centre(item + HEADER_ITEMS)
+        when {
+            item < 0 -> Unit
+            look.turnPages -> screens.keepInView(item)
+            else -> listState.centre(item + HEADER_ITEMS)
+        }
+    }
+    LaunchedEffect(listState, look.turnPages) {
+        if (look.turnPages && turnBack.openAtEnd) {
+            turnBack.openAtEnd = false
+            withFrameNanos { } // laid out first, so the list knows its last item
+            screens.toEnd()
+        }
     }
     // On a tablet or in landscape the lines keep a readable length in the middle; the paper still fills the screen.
     BoxWithConstraints(Modifier.fillMaxSize().background(look.tone.paper ?: Color.Transparent)) {
         val side = readableSidePadding(maxWidth, Dimens.SpaceL)
-        SentenceList(units, paragraphs, drawn, state, look, spokenWord, isHighlighted, actions, listState, side)
+        val list = @Composable { modifier: Modifier ->
+            SentenceList(
+                units,
+                paragraphs,
+                drawn,
+                state,
+                look,
+                spokenWord,
+                isHighlighted,
+                actions,
+                listState,
+                side,
+                modifier,
+            )
+        }
+        if (look.turnPages) TurnedSentences(state, actions, screens, turnBack, list) else list(Modifier.fillMaxSize())
+    }
+}
+
+/**
+ * The sentences a screenful at a time, with the arrows under them. At a page's last screen a turn on shows the book's
+ * next page; at its first, a turn back shows the page before at its last screen.
+ */
+@Composable
+private fun TurnedSentences(
+    state: ReaderState,
+    actions: ReaderActions,
+    screens: TextScreens,
+    turnBack: TextTurnBack,
+    list: @Composable (Modifier) -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    val pageCount = state.pageCount ?: 1
+    val next = {
+        scope.launch {
+            if (!screens.next() && state.page + 1 < pageCount) actions.onNextPage()
+        }
+        Unit
+    }
+    val previous = {
+        scope.launch {
+            if (!screens.previous() && state.page > 0) {
+                turnBack.openAtEnd = true
+                actions.onPreviousPage()
+            }
+        }
+        Unit
+    }
+    Column(Modifier.fillMaxSize()) {
+        list(Modifier.weight(1f).screenSwipes(next, previous))
+        TextPagesBar(state.page, pageCount, screens.turned, previous, next)
     }
 }
 
@@ -85,10 +154,13 @@ private fun SentenceList(
     actions: ReaderActions,
     listState: LazyListState,
     side: Dp,
+    modifier: Modifier = Modifier.fillMaxSize(),
 ) {
+    // Turned a screenful at a time, the list does not scroll under a finger: a swipe turns it instead.
     LazyColumn(
         state = listState,
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier,
+        userScrollEnabled = !look.turnPages,
         contentPadding = PaddingValues(horizontal = side, vertical = Dimens.SpaceS),
         verticalArrangement = Arrangement.spacedBy(SENTENCE_GAP),
     ) {

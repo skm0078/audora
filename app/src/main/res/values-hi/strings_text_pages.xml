@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="text_look_turn_pages">पन्ने पलटें</string>
+    <string name="text_look_turn_pages_body">एक बार में एक स्क्रीन जितना दिखाएँ, और पलटने के लिए बगल में स्वाइप करें या तीर दबाएँ। बंद: टेक्स्ट स्क्रॉल होता है।</string>
+    <string name="text_pages_continued">पेज %1$d / %2$d, आगे जारी</string>
+    <string name="text_pages_previous">पिछली स्क्रीन</string>
+    <string name="text_pages_next">अगली स्क्रीन</string>
+</resources>

@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -147,6 +148,8 @@ private fun OpenBook(
     val isHighlighted: (ReadingUnit) -> Boolean = notes::showsHighlight
     val pageCount = document.pageCount
     var picking by rememberSaveable { mutableStateOf(false) }
+    // Outlives each page's text, so a turn back from one page opens the page before at its end.
+    val turnBack = remember { TextTurnBack() }
     Column(Modifier.fillMaxSize()) {
         PageBar(state.page, pageCount, actions, announce = !state.isReading, onPick = { picking = true })
         PageScrubber(state.page, pageCount, thumbnails, actions::onGoToPage)
@@ -166,7 +169,7 @@ private fun OpenBook(
                     state.view == ReaderView.PAGE -> PageView(state, content.units, actions, look.tone, config.flip)
 
                     content.units.isNotEmpty() ->
-                        Sentences(state, content.units, actions, look, spokenWord, isHighlighted)
+                        Sentences(state, content.units, actions, look, spokenWord, isHighlighted, turnBack)
 
                     content.origin == PageOrigin.TEXT -> Message(stringResource(R.string.reader_page_no_text))
                 }

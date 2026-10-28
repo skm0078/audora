@@ -91,6 +91,7 @@ import io.github.skm0078.audora.speech.voices.VoiceStatus
 import io.github.skm0078.audora.ui.firstrun.FirstRunStep
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
+import io.github.skm0078.audora.ui.reader.ReadingLookPreferences
 import io.github.skm0078.audora.ui.reader.ReadingPosition
 import io.github.skm0078.audora.ui.share.ShareCardActivity
 import io.github.skm0078.audora.ui.share.ShareCardFiles
@@ -146,6 +147,7 @@ class ReleaseJourneyTest {
             step("23 a quote video is written with the AI voice label", ::aQuoteVideoIsWritten)
             step("25 Share as a video reads the quote in the book's voice into an MP4", ::aQuoteVideoIsShared)
             step("26 part of the shown page is shared as a picture with its credit", ::aPageSnippetIsShared)
+            step("27 Turn pages shows a text book a screenful at a time with its arrows", ::aTextBookTurnsPages)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -865,6 +867,30 @@ class ReleaseJourneyTest {
             Thread.sleep(POLL_MS)
         }
         awaitTrue("the reader back on screen") { JourneyDevice.resumedActivity() is MainActivity }
+    }
+
+    /**
+     * "Turn pages" on the installed app (ADR 2026-10-28-text-pages): with it on, a text book opens a screenful at a
+     * time with the arrows and where it is under the text, and the arrow turns without leaving the reader. The look
+     * is put back as it was, so later runs start from the default.
+     */
+    private fun aTextBookTurnsPages() {
+        val looks = ReadingLookPreferences(app)
+        val before = runBlocking { looks.look.first() }
+        runBlocking { looks.save(before.copy(turnPages = true)) }
+        try {
+            val (asset, type, sentence) = MORE_FORMATS.first()
+            backToTabs()
+            val uri = JourneyDevice.downloadedBook(asset)
+            val current = activity()
+            JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, type)) }
+            waitForNode(hasText(sentence, substring = true), OPEN_TIMEOUT_MS)
+            tap(hasContentDescription(text(R.string.text_pages_next)))
+            waitForNode(hasContentDescription(text(R.string.text_pages_previous)))
+            awaitTrue("the reader still on screen") { JourneyDevice.resumedActivity() is MainActivity }
+        } finally {
+            runBlocking { looks.save(before) }
+        }
     }
 
     private companion object {
