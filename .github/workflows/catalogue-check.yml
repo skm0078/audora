@@ -1,0 +1,70 @@
+# File: .github/workflows/catalogue-check.yml
+# Purpose: Every week, opens each curated book catalogue (playback/.../web/CuratedCatalogue.kt) the way the app does:
+#          first page, a book it can read a few sections down, that book's download answering, and search. Fails
+#          naming the broken catalogue, so it is fixed or taken out before listeners meet it (ADR 2026-10-28-curated-
+#          catalogues). Also runs when the list, the reader of catalogue pages or this check changes.
+#          "Run workflow" can try other addresses before one is curated; those are reported and never fail the run.
+
+name: Catalogue check
+
+on:
+  schedule:
+    - cron: "17 4 * * 1"  # Mondays 04:17 UTC (09:47 IST)
+  workflow_dispatch:
+    inputs:
+      try:
+        description: "Addresses to try as well, comma-separated (reported only)"
+        required: false
+        default: ""
+  push:
+    branches: ["**"]
+    paths:
+      - playback/src/main/kotlin/io/github/skm0078/audora/playback/web/CuratedCatalogue.kt
+      - playback/src/main/kotlin/io/github/skm0078/audora/playback/web/OpdsFeed.kt
+      - playback/src/main/kotlin/io/github/skm0078/audora/playback/web/WebFetcher.kt
+      - playback/src/main/kotlin/io/github/skm0078/audora/playback/web/WebCatalogues.kt
+      - playback/src/test/kotlin/io/github/skm0078/audora/playback/web/FeedCheck.kt
+      - playback/src/test/kotlin/io/github/skm0078/audora/playback/web/CuratedCataloguesLiveTest.kt
+      - .github/workflows/catalogue-check.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Curated catalogues answer
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+          cache-read-only: true
+
+      - name: Open every curated catalogue
+        # Only the live test runs: :pdf's tests (which this module's test task waits on for the listening score) are
+        # skipped, and --rerun makes Gradle ask the sites again even when nothing in the code changed.
+        env:
+          TRY: ${{ github.event.inputs.try || 'https://standardebooks.org/feeds/opds,https://openlibrary.org/opds,https://bookserver.archive.org/catalog/,https://ws-export.wmcloud.org/opds/fr/Bon_pour_export.xml,https://ws-export.wmcloud.org/opds/hi/,https://ws-export.wmcloud.org/opds/bn/,https://catalog.feedbooks.com/catalog/public_domain.atom,https://www.feedbooks.com/publicdomain/catalog.atom,https://m.gutenberg.org/ebooks.opds/,https://ws-export.wmcloud.org/opds/' }}
+        run: |
+          status=0
+          ./gradlew :playback:testDebugUnitTest -x :pdf:testDebugUnitTest --rerun \
+            --tests 'io.github.skm0078.audora.playback.web.CuratedCataloguesLiveTest' \
+            -Pcatalogue.live=true -Pcatalogue.try="$TRY" --stacktrace || status=$?
+          cat "$GITHUB_STEP_SUMMARY" || true
+          exit "$status"

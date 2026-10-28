@@ -5,6 +5,7 @@
 package io.github.skm0078.audora.ui.web
 
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,7 +23,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -39,20 +39,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.result.Outcome
-import io.github.skm0078.audora.playback.web.CatalogueAdd
+import io.github.skm0078.audora.playback.web.CuratedCatalogue
 import io.github.skm0078.audora.playback.web.OpdsCatalogue
 import io.github.skm0078.audora.playback.web.OpdsDownload
 import io.github.skm0078.audora.playback.web.OpdsEntry
@@ -119,32 +117,15 @@ internal fun CatalogueDialog(books: WebBooks, onDownloadStarted: (Boolean) -> Un
     }
 }
 
-/** The catalogues: the built-in one, those added, and a field to add one by its address. */
+/**
+ * The curated catalogues, each with what it offers, then any the listener added before the list was curated (with
+ * Remove). There is no field to add one by its address (ADR 2026-10-28-curated-catalogues).
+ */
 @Composable
 private fun CatalogueList(books: WebBooks, onOpen: (String) -> Unit) {
-    val context = LocalContext.current
-    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     var catalogues by remember { mutableStateOf<List<OpdsCatalogue>?>(null) }
-    var typed by rememberSaveable { mutableStateOf("") }
-    var adding by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { catalogues = books.browser.all() }
-    val add = {
-        if (!adding && typed.isNotBlank()) {
-            adding = true
-            scope.launch {
-                val added = books.browser.add(typed)
-                val message = when (added) {
-                    is Outcome.Failure -> webErrorText(context, added.error)
-                    is Outcome.Success -> resources.getString(addMessage(added.value))
-                }
-                if ((added as? Outcome.Success)?.value == CatalogueAdd.ADDED) typed = ""
-                catalogues = books.browser.all()
-                adding = false
-                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-            }
-        }
-    }
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = Dimens.ScreenPadding)) {
         item {
             Text(
@@ -161,26 +142,6 @@ private fun CatalogueList(books: WebBooks, onOpen: (String) -> Unit) {
                 }
             }
         }
-        item { AddCatalogueField(typed, { typed = it }, adding) { add() } }
-    }
-}
-
-@Composable
-private fun AddCatalogueField(typed: String, onTyped: (String) -> Unit, adding: Boolean, onAdd: () -> Unit) {
-    Column(Modifier.padding(vertical = Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-        OutlinedTextField(
-            value = typed,
-            onValueChange = onTyped,
-            label = { Text(stringResource(R.string.catalogues_add_hint)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { onAdd() }),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        OutlinedButton(onClick = onAdd, enabled = !adding && typed.isNotBlank()) {
-            Text(stringResource(R.string.catalogues_add))
-        }
-        if (adding) LinearProgressIndicator(Modifier.fillMaxWidth())
     }
 }
 
@@ -190,8 +151,9 @@ private fun CatalogueRow(catalogue: OpdsCatalogue, onOpen: () -> Unit, onRemove:
         Modifier.fillMaxWidth().clickable(onClick = onOpen).padding(vertical = Dimens.SpaceM),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
             Text(catalogue.title, style = MaterialTheme.typography.titleMedium)
+            catalogue.curated?.let { Text(stringResource(aboutOf(it)), style = MaterialTheme.typography.bodyMedium) }
             Text(
                 WebAddress.hostOf(catalogue.address),
                 style = MaterialTheme.typography.bodySmall,
@@ -201,6 +163,15 @@ private fun CatalogueRow(catalogue: OpdsCatalogue, onOpen: () -> Unit, onRemove:
         if (!catalogue.builtIn) TextButton(onClick = onRemove) { Text(stringResource(R.string.catalogues_remove)) }
     }
     HorizontalDivider()
+}
+
+/** What a curated catalogue offers, in the listener's language. */
+@StringRes
+internal fun aboutOf(curated: CuratedCatalogue): Int = when (curated) {
+    CuratedCatalogue.GUTENBERG -> R.string.catalogue_about_gutenberg
+    CuratedCatalogue.WIKISOURCE_EN -> R.string.catalogue_about_wikisource_en
+    CuratedCatalogue.FEEDBOOKS -> R.string.catalogue_about_feedbooks
+    CuratedCatalogue.UNGLUE_IT -> R.string.catalogue_about_unglue_it
 }
 
 /** One catalogue page: its search, its sections and books, and More when it has another page. */
@@ -348,13 +319,6 @@ private fun EntryRow(entry: OpdsEntry, onOpen: (String) -> Unit, onDownload: (Op
         }
     }
     HorizontalDivider()
-}
-
-private fun addMessage(added: CatalogueAdd): Int = when (added) {
-    CatalogueAdd.ADDED -> R.string.catalogues_added
-    CatalogueAdd.ALREADY_THERE -> R.string.catalogues_already
-    CatalogueAdd.TOO_MANY -> R.string.catalogues_too_many
-    CatalogueAdd.NOT_SAVED -> R.string.catalogues_not_saved
 }
 
 private const val STACK_SEPARATOR = "\n"

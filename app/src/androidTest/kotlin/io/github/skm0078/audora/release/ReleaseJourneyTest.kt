@@ -164,6 +164,9 @@ class ReleaseJourneyTest {
             step("27 Turn pages shows a text book a screenful at a time with its arrows") {
                 share.aTextBookTurnsPages(MORE_FORMATS.first())
             }
+            step("41 the curated book catalogues are listed, with no field to type one") {
+                CatalogueJourney(rule, ::backToTabs).theCuratedCataloguesAreListed()
+            }
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
