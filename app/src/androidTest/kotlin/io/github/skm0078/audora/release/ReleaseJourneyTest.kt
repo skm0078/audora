@@ -15,6 +15,9 @@ import android.Manifest
 import android.app.Activity
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.graphics.fonts.Font
+import android.graphics.fonts.FontFamily as PlatformFontFamily
+import android.graphics.fonts.FontStyle
 import android.media.MediaMetadataRetriever
 import android.os.Bundle
 import android.util.Log
@@ -77,7 +80,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -554,14 +556,25 @@ class ReleaseJourneyTest {
         }
     }
 
-    /** Each weight loads from the APK and each script draws in Anek; a failed load measures like the phone's sans. */
+    /**
+     * Each weight loads from the APK and each script is drawn by its own Anek file: the joined typeface measures
+     * exactly like that file alone, and the three weights of a script measure differently, so no weight is drawn
+     * with another's file. Not "unlike the phone's sans": two fonts can measure alike by chance.
+     */
     private fun theAppFontDrawsAllThreeScripts() {
-        AppFont.Weight.entries.forEach { weight ->
+        val samples = listOf(FONT_ENGLISH, FONT_HINDI, FONT_BENGALI)
+        val widths = AppFont.Weight.entries.map { weight ->
             val anek = requireNotNull(AppFont.typeface(app, weight)) { "${weight.name} did not load" }
-            listOf(FONT_ENGLISH, FONT_HINDI, FONT_BENGALI).forEach { sample ->
-                val phone = widthOf(sample, Typeface.SANS_SERIF)
-                assertNotEquals("${weight.name} draws '$sample' in the app font", phone, widthOf(sample, anek))
+            weight.scripts.zip(samples).map { (file, sample) ->
+                val drawn = widthOf(sample, anek)
+                val alone = widthOf(sample, own(file, weight))
+                assertEquals("${weight.name} draws '$sample' with its own file", alone, drawn, FONT_WIDTH_TOLERANCE)
+                drawn
             }
+        }
+        samples.indices.forEach { script ->
+            val byWeight = widths.map { it[script] }
+            assertEquals("'${samples[script]}' at 400, 500 and 600: $byWeight", byWeight.size, byWeight.distinct().size)
         }
     }
 
@@ -583,7 +596,13 @@ class ReleaseJourneyTest {
         waitForNode(hasText(text(R.string.library_title)))
     }
 
-    private fun widthOf(text: String, face: Typeface): Float = Paint().apply {
+    /** One Anek file on its own, at the weight it was trimmed to. */
+    private fun own(file: Int, weight: AppFont.Weight): Typeface = Typeface.CustomFallbackBuilder(
+        PlatformFontFamily.Builder(Font.Builder(app.resources, file).build()).build(),
+    ).setStyle(FontStyle(weight.weight.weight, FontStyle.FONT_SLANT_UPRIGHT)).build()
+
+    /** Subpixel and unhinted, so widths are exact sums of the font's advances, not whole pixels. */
+    private fun widthOf(text: String, face: Typeface): Float = Paint(EXACT_WIDTHS).apply {
         typeface = face
         textSize = FONT_TEXT_SIZE
     }.measureText(text)
@@ -663,6 +682,8 @@ class ReleaseJourneyTest {
         const val LANGUAGE_RESTART = "Book language changed"
         const val EXPORT_RATE = 22_050
         const val FONT_TEXT_SIZE = 48f
+        const val FONT_WIDTH_TOLERANCE = 0.01f
+        const val EXACT_WIDTHS = Paint.LINEAR_TEXT_FLAG or Paint.SUBPIXEL_TEXT_FLAG
         const val FONT_ENGLISH = "Listen to every book"
         const val FONT_HINDI = "हर किताब सुनिए"
         const val FONT_BENGALI = "প্রতিটি বই শুনুন"
