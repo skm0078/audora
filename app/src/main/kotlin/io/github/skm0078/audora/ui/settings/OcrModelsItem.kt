@@ -18,6 +18,7 @@ import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.ui.jobs.DownloadTimeLeft
 import io.github.skm0078.audora.ui.theme.ConfirmedTextButton
 import io.github.skm0078.audora.ui.theme.HelpButton
+import io.github.skm0078.audora.ui.theme.buttonNamedFor
 import io.github.skm0078.audora.ui.theme.optionRowColors
 import io.github.skm0078.audora.ui.voices.megabytes
 
@@ -71,17 +72,22 @@ private fun PackActionButton(state: OcrModelsState, texts: ModelPackTexts, onAct
 
         OcrModelsState.Unavailable -> null
     }
+    val title = stringResource(texts.title)
     action?.let { (what, label) ->
+        val text = stringResource(label)
+        // Settings shows several packs, each with its own Download: TalkBack hears which one.
+        val named = buttonNamedFor(text, title)
         when (what) {
             // Deleting means a download of tens of megabytes to get it back: ask first.
             OcrModelsAction.DELETE -> ConfirmedTextButton(
-                stringResource(label),
-                stringResource(R.string.model_delete_question, stringResource(texts.title)),
+                text,
+                stringResource(R.string.model_delete_question, title),
+                named,
             ) { onAction(what) }
 
-            OcrModelsAction.DOWNLOAD -> FilledTonalButton(onClick = { onAction(what) }) { Text(stringResource(label)) }
+            OcrModelsAction.DOWNLOAD -> FilledTonalButton(onClick = { onAction(what) }, modifier = named) { Text(text) }
 
-            OcrModelsAction.CANCEL -> TextButton(onClick = { onAction(what) }) { Text(stringResource(label)) }
+            OcrModelsAction.CANCEL -> TextButton(onClick = { onAction(what) }, modifier = named) { Text(text) }
         }
     }
 }

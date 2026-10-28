@@ -25,7 +25,12 @@ import androidx.compose.ui.semantics.getOrNull
 internal fun talkBackProblems(roots: List<SemanticsNode>, needsHeading: Boolean): List<String> {
     val problems = roots.flatMap { root ->
         val window = root.boundsInRoot
-        val controls = root.descendants().filter(::isControl).filterNot { it.boundsInRoot.isEmpty }.toList()
+        // A sheet's scrim (Close sheet) fills its window and lies under everything on it: not a control to compare.
+        val controls = root
+            .descendants()
+            .filter(::isControl)
+            .filterNot { it.boundsInRoot.isEmpty || it.boundsInRoot.fills(window) }
+            .toList()
         controls.mapNotNull { controlProblem(it, window) } + sameNames(controls) + overlaps(controls)
     }
     val top = roots.lastOrNull() ?: return problems
@@ -84,6 +89,9 @@ private fun SemanticsNode.coversMiddleOf(other: SemanticsNode): Boolean =
 
 private fun SemanticsNode.holds(other: SemanticsNode): Boolean =
     generateSequence(other.parent) { it.parent }.any { it.id == id }
+
+private fun Rect.fills(window: Rect): Boolean =
+    left <= window.left && top <= window.top && right >= window.right && bottom >= window.bottom
 
 private fun Offset.text(): String = "${x.toInt()},${y.toInt()}"
 
