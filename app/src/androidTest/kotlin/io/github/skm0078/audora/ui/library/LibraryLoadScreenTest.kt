@@ -33,7 +33,7 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.BookProgress
-import io.github.skm0078.audora.core.library.DocumentFormat
+import io.github.skm0078.audora.core.library.SyntheticLibrary
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import java.util.concurrent.CopyOnWriteArrayList
 import org.junit.Assert.assertTrue
@@ -55,7 +55,7 @@ class LibraryLoadScreenTest {
     fun fiveThousandRowsDrawScrollAndReachTheLastBook() = checkLayout(LibraryLayout.LIST)
 
     private fun checkLayout(layout: LibraryLayout) {
-        val items = List(budget.largeLibraryBooks, ::itemAt)
+        val items = itemsOf(budget.largeLibraryBooks)
         val shown = SystemClock.elapsedRealtime()
         rule.setContent {
             AudoraTheme {
@@ -174,32 +174,12 @@ class LibraryLoadScreenTest {
         const val TAG = "AudoraLoadTest"
         const val FLINGS = 10
         const val NANOS_PER_MS = 1_000_000L
-        const val NOW = 1_800_000_000_000L
-        const val MINUTE_MS = 60_000L
-        const val READING_EVERY = 3
-        val TITLES = listOf("Gitanjali", "गोदान", "পথের পাঁচালী", "Pride and Prejudice", "निर्मला", "গোরা")
-        val AUTHORS = listOf("Rabindranath Tagore", "प्रेमचंद", "বিভূতিভূষণ", "Jane Austen", null)
-        val LANGUAGES = listOf("en", "hi", "bn")
-        val FORMATS = listOf(DocumentFormat.PDF, DocumentFormat.EPUB, DocumentFormat.TEXT, DocumentFormat.DOCX)
 
-        /** Book [i] of a reader's library: three scripts, some without an author, a third half read. */
-        fun itemAt(i: Int): LibraryItem {
-            val pages = 100 + i % 400
-            val book = Book(
-                id = BookId("load-$i"),
-                documentUri = "content://load/$i",
-                title = "${TITLES[i % TITLES.size]} ${"%04d".format(i + 1)}",
-                sizeBytes = 1_000L + i,
-                fingerprint = "v1:load-$i",
-                pageCount = pages,
-                addedAtMillis = NOW - i * MINUTE_MS,
-                lastOpenedAtMillis = null,
-                author = AUTHORS[i % AUTHORS.size],
-                language = LANGUAGES[i % LANGUAGES.size],
-                format = FORMATS[i % FORMATS.size],
-            )
-            val progress = BookProgress(i % (pages / 2), pages, NOW - i).takeIf { i % READING_EVERY == 0 }
-            return LibraryItem(book, BookAvailability.AVAILABLE, progress)
+        /** The JVM load test's books, each shown as the library shows it: on hand, with its reading progress. */
+        fun itemsOf(count: Int): List<LibraryItem> {
+            val books = SyntheticLibrary.books(count)
+            val anchors = SyntheticLibrary.anchors(books).associateBy { it.bookId }
+            return books.map { LibraryItem(it, BookAvailability.AVAILABLE, BookProgress.of(it, anchors[it.id])) }
         }
     }
 }

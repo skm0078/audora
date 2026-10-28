@@ -9,13 +9,11 @@ package io.github.skm0078.audora.ui.library
 import io.github.skm0078.audora.core.config.LibraryLoadBudget
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookAvailability
-import io.github.skm0078.audora.core.library.BookCollection
 import io.github.skm0078.audora.core.library.BookFingerprinter
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.BookStore
 import io.github.skm0078.audora.core.library.DocumentAccess
 import io.github.skm0078.audora.core.library.DocumentError
-import io.github.skm0078.audora.core.library.DocumentFormat
 import io.github.skm0078.audora.core.library.DocumentInfo
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.library.LibraryFacets
@@ -24,8 +22,8 @@ import io.github.skm0078.audora.core.library.LibraryIndex
 import io.github.skm0078.audora.core.library.LibraryQuery
 import io.github.skm0078.audora.core.library.LibrarySort
 import io.github.skm0078.audora.core.library.StorageError
+import io.github.skm0078.audora.core.library.SyntheticLibrary
 import io.github.skm0078.audora.core.result.Outcome
-import io.github.skm0078.audora.core.resume.ResumeAnchor
 import java.io.File
 import java.io.InputStream
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -211,52 +209,10 @@ class LibraryLoadTest {
         override fun pruneUnused(inUse: Set<String>) = Unit
     }
 
-    /** Books like a real reader's: three scripts, authors (some missing), formats, collections, a third being read. */
-    private object SyntheticLibrary {
-        private val TITLES = listOf("Gitanjali", "गोदान", "পথের পাঁচালী", "Pride and Prejudice", "निर्मला", "গোরা")
-        private val AUTHORS = listOf("Rabindranath Tagore", "प्रेमचंद", "বিভূতিভূষণ", "Jane Austen", null)
-        private val LANGUAGES = listOf("en", "hi", "bn")
-        private val FORMATS = listOf(DocumentFormat.PDF, DocumentFormat.EPUB, DocumentFormat.TEXT, DocumentFormat.DOCX)
-        private const val COLLECTIONS = 20
-        private const val READING_EVERY = 3
-
-        fun books(count: Int): List<Book> = List(count) { i ->
-            Book(
-                id = BookId("load-$i"),
-                documentUri = "content://load/$i",
-                // The number makes every title unique, so a search for the last one finds one book.
-                title = "${TITLES[i % TITLES.size]} ${i + 1}",
-                sizeBytes = 1_000L + i,
-                fingerprint = "v1:load-$i",
-                pageCount = 100 + i % 400,
-                addedAtMillis = NOW - i * MINUTE_MS,
-                lastOpenedAtMillis = (NOW - i * MINUTE_MS).takeIf { i % READING_EVERY == 0 },
-                author = AUTHORS[i % AUTHORS.size],
-                language = LANGUAGES[i % LANGUAGES.size],
-                format = FORMATS[i % FORMATS.size],
-            )
-        }
-
-        /** The books being read: each has a reading position. */
-        fun read(books: List<Book>): List<Book> = books.filterIndexed { i, _ -> i % READING_EVERY == 0 }
-
-        /** Positions in each read book's first half, so none counts as finished. */
-        fun anchors(books: List<Book>): List<ResumeAnchor> = read(books).mapIndexed { i, book ->
-            val page = i % ((book.pageCount ?: 2) / 2)
-            ResumeAnchor(book.id, page, 0, 0L, 0L, 1, NOW - i * MINUTE_MS)
-        }
-
-        fun collections(): List<BookCollection> = List(COLLECTIONS) { BookCollection("c$it", "Shelf $it", NOW) }
-
-        fun members(books: List<Book>): Map<BookId, Set<String>> =
-            books.withIndex().associate { (i, book) -> book.id to setOf("c${i % COLLECTIONS}") }
-    }
-
     private companion object {
         const val RUNS = 3
         const val NANOS_PER_MS = 1_000_000L
         const val NOW = 1_800_000_000_000L
-        const val MINUTE_MS = 60_000L
 
         /** Longer than the controller's wait for typing to pause, so the search has run when it ends. */
         const val TYPING_PAUSE_MS = 1_000L

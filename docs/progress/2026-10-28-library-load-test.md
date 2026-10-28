@@ -1,6 +1,8 @@
 # Library load test and performance budget (2026-10-28, ADR 2026-10-28-performance-budget)
 - `LibraryLoadBudget` (`:core` config, tests only): the limits for a 1,000 and 5,000-book library, the emulator list
   and the release journey's big-library step.
+- `SyntheticLibrary` (`:core`, tests only): the one made-up library the three tests below share, with
+  `SyntheticLibraryTest` holding its promises (unique titles, no read book finished).
 - `LibraryLoadTest` (JVM): first list, sort and shelf, typed search and file check at 1,000 and 5,000 books, limits
   and growth checked, search narrowing only once typing pauses; numbers on the CI run's summary page.
 - `LibraryLoadScreenTest` (emulator): 5,000 covers and 5,000 rows drawn, flung and scrolled to the last book, every

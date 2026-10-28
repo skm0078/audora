@@ -23,6 +23,7 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.LibraryLoadBudget
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
+import io.github.skm0078.audora.core.library.SyntheticLibrary
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.di.LibraryEntryPoint
 import io.github.skm0078.audora.playback.documents.SharedPdfCopies
@@ -107,8 +108,9 @@ internal class LoadJourney(private val rule: ComposeTestRule, private val backTo
         const val TAG = "AudoraLoadTest"
         const val UI_TIMEOUT_MS = 15_000L
         const val MAX_BACKS = 3
+        const val TITLE = "Load"
 
         /** Every title has 4 digits, so none is part of another: a search for one finds that book alone. */
-        fun titleOf(i: Int) = "Load ${"%04d".format(i + 1)}"
+        fun titleOf(i: Int) = SyntheticLibrary.titleOf(i, TITLE)
     }
 }
