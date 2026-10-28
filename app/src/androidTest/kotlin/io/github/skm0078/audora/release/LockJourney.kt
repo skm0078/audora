@@ -5,10 +5,12 @@
 package io.github.skm0078.audora.release
 
 import android.app.KeyguardManager
+import android.os.ParcelFileDescriptor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.performClick
+import androidx.test.platform.app.InstrumentationRegistry
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.privacy.AppLockSession
 import io.github.skm0078.audora.privacy.PrivacyPreferences
@@ -30,7 +32,7 @@ internal class LockJourney(private val rule: ComposeTestRule) {
      */
     fun theSaverCoversTheAppAndUnlockAsks() {
         val preferences = PrivacyPreferences(app)
-        val pinSet = JourneyDevice.shell("locksettings set-pin $PIN")
+        val pinSet = lockSettings("set-pin $PIN")
         try {
             // Without a screen lock the saver opens at once by design, so the PIN must be in force first.
             val keyguard = app.getSystemService(KeyguardManager::class.java)
@@ -56,9 +58,19 @@ internal class LockJourney(private val rule: ComposeTestRule) {
         } finally {
             JourneyDevice.onMain { AppLockSession.process.unlock() }
             runBlocking { preferences.saveAppLock(false) }
-            JourneyDevice.shell("locksettings clear --old $PIN")
+            lockSettings("clear --old $PIN")
         }
         rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasText(text(R.string.lock_saver_hidden))) }
+    }
+
+    /** Android's lock settings command, with what it printed to both outputs, so a refusal says why. */
+    private fun lockSettings(arguments: String): String {
+        val streams = InstrumentationRegistry.getInstrumentation().uiAutomation
+            .executeShellCommandRwe("cmd lock_settings $arguments")
+        streams[1].close()
+        val out = ParcelFileDescriptor.AutoCloseInputStream(streams[0]).use { String(it.readBytes()) }
+        val err = ParcelFileDescriptor.AutoCloseInputStream(streams[2]).use { String(it.readBytes()) }
+        return "$out$err".trim()
     }
 
     private fun recentLog(): String {
