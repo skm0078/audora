@@ -41,6 +41,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -144,6 +145,7 @@ class ReleaseJourneyTest {
             step("22 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
             step("23 a quote video is written with the AI voice label", ::aQuoteVideoIsWritten)
             step("25 Share as a video reads the quote in the book's voice into an MP4", ::aQuoteVideoIsShared)
+            step("26 part of the shown page is shared as a picture with its credit", ::aPageSnippetIsShared)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -826,6 +828,45 @@ class ReleaseJourneyTest {
         awaitTrue("the reader back on screen") { JourneyDevice.resumedActivity() is MainActivity }
     }
 
+    /**
+     * "Share part of the page" on the installed app (ADR 2026-10-28-page-snippet): the reader's own call opens the
+     * snippet's box on the journey's PDF page, Share cuts the page as drawn and opens the card screen on it, and the
+     * card's Share writes a 1080 x 1920 picture into the share folder.
+     */
+    private fun aPageSnippetIsShared() {
+        val folder = File(app.cacheDir, ShareCardFiles.FOLDER).apply { deleteRecursively() }
+        // Any page's picture: its description after the page number is the same on every page.
+        val pageImage = hasContentDescription(text(R.string.reader_page_image, 1).substringAfter("1"), substring = true)
+        val menu = hasText(text(R.string.sentence_menu_share))
+        // A long-press on a line opens its menu; the test page's text starts below its heading, so a few are tried.
+        val opened = SNIPPET_PRESS_POINTS.any { (u, v) ->
+            node(pageImage).performTouchInput { longClick(percentOffset(u, v)) }
+            runCatching { waitForNode(menu, MENU_TIMEOUT_MS) }.isSuccess
+        }
+        assertTrue("no sentence menu from a long-press on the page", opened)
+        tap(menu)
+        node(hasText(text(R.string.share_page_part))).performScrollTo().performClick()
+        waitForNode(hasText(text(R.string.reader_snippet_hint)))
+        tap(hasText(text(R.string.share_card_send)) and hasClickAction())
+        waitForNode(hasText(text(R.string.share_card_snippet_title)), OPEN_TIMEOUT_MS)
+        node(hasText(text(R.string.share_card_send)) and hasClickAction()).performScrollTo().performClick()
+        val card = { folder.listFiles()?.firstOrNull { it.extension == "png" || it.extension == "jpg" } }
+        awaitTrue("the snippet card in the share folder", state = { "Files: ${folder.list()?.toList()}" }) {
+            card() != null
+        }
+        val size = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(requireNotNull(card()).path, size)
+        assertEquals(CARD_WIDTH, size.outWidth)
+        assertEquals(CARD_HEIGHT, size.outHeight)
+        awaitTrue("the share sheet") { JourneyDevice.resumedActivity() !is ShareCardActivity }
+        repeat(MAX_BACKS) {
+            if (JourneyDevice.resumedActivity() is MainActivity) return@repeat
+            JourneyDevice.pressBackKey()
+            Thread.sleep(POLL_MS)
+        }
+        awaitTrue("the reader back on screen") { JourneyDevice.resumedActivity() is MainActivity }
+    }
+
     private companion object {
         const val SUPERTONIC = "supertonic-hi"
         const val LOG_TAG = "ReleaseJourney"
@@ -874,6 +915,10 @@ class ReleaseJourneyTest {
 
         // The voice renders the quote, then the frames are encoded; an emulator without a GPU is slow at both.
         const val VIDEO_TIMEOUT_MS = 300_000L
+
+        // Where a page snippet's long-press is tried, as fractions of the page across and down.
+        val SNIPPET_PRESS_POINTS = listOf(0.3f to 0.3f, 0.3f to 0.45f, 0.5f to 0.6f, 0.3f to 0.75f)
+        const val MENU_TIMEOUT_MS = 3_000L
         const val PLAY_TIMEOUT_MS = 90_000L
         const val OCR_DOWNLOAD_TIMEOUT_MS = 360_000L
 

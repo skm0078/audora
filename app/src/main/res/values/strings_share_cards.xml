@@ -59,4 +59,11 @@
     <string name="share_card_make_video">Make the video</string>
     <string name="share_card_video_started">Making the video. The share sheet opens when it is ready; the notification shows how far it is.</string>
     <string name="share_card_video_busy">A video is already being made. Try again when it is done.</string>
+    <!-- Share part of the page (ADR 2026-10-28-page-snippet). -->
+    <string name="share_page_part">Share part of the page</string>
+    <string name="share_hint_page_part">Drag a box over up to a third of the page and share it as a picture, with the book and page under it.</string>
+    <string name="reader_snippet_box">Part of the page to share. Drag inside to move it, or a corner to resize it.</string>
+    <string name="reader_snippet_hint">Drag the box or its corners. It can cover up to a third of the page.</string>
+    <string name="share_card_snippet_title">Share part of the page</string>
+    <string name="share_card_snippet_gone">That part of the page is no longer here. Go back and pick it again on the page.</string>
 </resources>

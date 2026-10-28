@@ -38,6 +38,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.logging.AudoraLog
@@ -74,6 +76,16 @@ class ShareCardActivity : ComponentActivity() {
             return
         }
         lifecycle.addObserver(privacy)
+        // A page snippet is held only for this screen: closing it lets the picture go.
+        if (request is ShareCardRequest.Snippet) {
+            lifecycle.addObserver(
+                object : DefaultLifecycleObserver {
+                    override fun onDestroy(owner: LifecycleOwner) {
+                        if (isFinishing) PageSnippets.release()
+                    }
+                },
+            )
+        }
         val appearance = AppearancePreferences(applicationContext).appearance
         setContent {
             val look by remember { appearance }.collectAsStateWithLifecycle(initialValue = Appearance())
@@ -104,6 +116,10 @@ internal fun ShareCardRoute(request: ShareCardRequest, onClose: () -> Unit) {
 
         CardSubjectState.Missing -> Box(Modifier.fillMaxSize().padding(Dimens.ScreenPadding), Alignment.Center) {
             Text(stringResource(R.string.share_card_book_missing), style = MaterialTheme.typography.bodyLarge)
+        }
+
+        CardSubjectState.SnippetGone -> Box(Modifier.fillMaxSize().padding(Dimens.ScreenPadding), Alignment.Center) {
+            Text(stringResource(R.string.share_card_snippet_gone), style = MaterialTheme.typography.bodyLarge)
         }
 
         is CardSubjectState.Ready -> ReadyCard(request, loaded.subject, onClose)

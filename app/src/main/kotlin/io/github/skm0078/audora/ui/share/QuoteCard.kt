@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/share/QuoteCard.kt
-// Purpose: The two cards drawn inside a ShareCardFrame: a quote with its credit, and a book on its own.
+// Purpose: The cards drawn inside a ShareCardFrame: a quote with its credit, part of a page with its credit, and a
+//          book on its own.
 
 package io.github.skm0078.audora.ui.share
 
@@ -85,6 +86,34 @@ private fun QuoteText(text: QuoteCardText, look: CardLook) {
         ),
         autoSize = TextAutoSize.StepBased(QUOTE_MIN, QUOTE_MAX, QUOTE_STEP),
     )
+}
+
+/** What a page snippet's card says under the picture: the book, its author and the page. */
+data class SnippetCardText(val title: String, val author: String?, val pageLabel: String?, val dedication: String = "")
+
+/**
+ * Part of a page as drawn, on the card's background with its credit: the picture as large as the space lets it be,
+ * never stretched, its corners rounded like a clipping.
+ */
+@Composable
+fun SnippetCard(text: SnippetCardText, look: CardLook, snippet: ImageBitmap, backdrop: ImageBitmap?) {
+    CardBackdrop(look, backdrop) {
+        Column(Modifier.fillMaxSize().padding(horizontal = SIDE, vertical = TOP_BOTTOM)) {
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Image(
+                    snippet,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    filterQuality = FilterQuality.High,
+                    modifier = Modifier.clip(RoundedCornerShape(SNIPPET_CORNER)),
+                )
+            }
+            Spacer(Modifier.height(SPACE_ABOVE_CREDIT))
+            Box(Modifier.width(RULE_WIDTH).height(RULE_HEIGHT).background(look.accent))
+            Spacer(Modifier.height(SPACE_IN_CREDIT))
+            Credit(text.title, listOfNotNull(text.author, text.pageLabel).joinToString(" · "), text.dedication, look)
+        }
+    }
 }
 
 /** A book on its own, for the library's Share: its cover big in the middle, then what it is. */
@@ -189,3 +218,4 @@ private val MARK_CLEARANCE = 20.dp
 private val COVER_WIDTH = 168.dp
 private val COVER_HEIGHT = 240.dp
 private val COVER_CORNER = 10.dp
+private val SNIPPET_CORNER = 6.dp

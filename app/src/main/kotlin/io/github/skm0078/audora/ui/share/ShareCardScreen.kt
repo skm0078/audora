@@ -87,6 +87,7 @@ fun ShareCardScreen(
         val height = maxHeight
         val sideBySide = maxWidth > height && height < SIDE_BY_SIDE_BELOW
         val title = when {
+            subject.snippet != null -> R.string.share_card_snippet_title
             subject.quote == null -> R.string.share_card_book_title
             choices.video -> R.string.share_card_video_title
             else -> R.string.share_card_title
@@ -152,7 +153,15 @@ private fun CardPreview(
         overlay = if (video && quote != null) rememberVideoWords(quote, look, choices.shownShape) else null,
     ) {
         val backdrop = if (look == CardLook.PICTURE) picture else subject.softCover
-        if (quote != null) {
+        val snippet = subject.snippet
+        if (snippet != null) {
+            SnippetCard(
+                SnippetCardText(subject.title, subject.author, subject.pageLabel, choices.dedication),
+                look,
+                snippet,
+                backdrop,
+            )
+        } else if (quote != null) {
             QuoteCard(
                 QuoteCardText(quote, subject.title, subject.author, subject.pageLabel, choices.dedication),
                 look,

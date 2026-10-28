@@ -5,6 +5,8 @@
 package io.github.skm0078.audora
 
 import android.content.Context
+import android.widget.Toast
+import androidx.compose.ui.graphics.asAndroidBitmap
 import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
@@ -15,6 +17,7 @@ import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.Highlight
+import io.github.skm0078.audora.core.share.SnippetBox
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.playback.contract.StudyAction
@@ -26,11 +29,13 @@ import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.ui.jobs.startLongJob
 import io.github.skm0078.audora.ui.reader.BookNotesModel
+import io.github.skm0078.audora.ui.reader.PageImageState
 import io.github.skm0078.audora.ui.reader.ReaderActions
 import io.github.skm0078.audora.ui.reader.ReaderModel
 import io.github.skm0078.audora.ui.reader.ReaderView
 import io.github.skm0078.audora.ui.reader.SleepTimerSetting
 import io.github.skm0078.audora.ui.reader.SoundedWrongFix
+import io.github.skm0078.audora.ui.share.PageSnippets
 import io.github.skm0078.audora.ui.share.ShareEntry
 
 /** One per open book; [playWithPermission] asks for the notification permission before work that posts one. */
@@ -104,6 +109,25 @@ internal class BookReaderActions(
 
     override fun onShareVideo(lines: String, page: Int) =
         ShareEntry.video(context, model.state.value.bookId, lines, page)
+
+    override fun onSharePagePart(unit: ReadingUnit) = model.startSnippet(unit)
+
+    override fun onSnippetChanged(box: SnippetBox) = model.moveSnippet(box)
+
+    override fun onSnippetCancel() = model.endSnippet()
+
+    // The page as drawn on screen is cut, so a locked PDF needs no password again and nothing is rendered twice.
+    override fun onSnippetShare() {
+        val current = model.state.value
+        val box = current.snippet ?: return
+        val image = (current.pageImage as? PageImageState.Ready)?.takeIf { it.page == current.page }?.image
+        model.endSnippet()
+        if (image == null || !PageSnippets.hold(image.imageBitmap().asAndroidBitmap(), box)) {
+            Toast.makeText(context, R.string.share_card_failed, Toast.LENGTH_LONG).show()
+            return
+        }
+        ShareEntry.snippet(context, current.bookId, current.page)
+    }
 
     // From the reader, a password-protected PDF can be saved too: its password goes along in memory (ADR-034).
     override fun onSaveAudiobook() = context.startLongJob(LongJobKind.AUDIOBOOK) {

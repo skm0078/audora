@@ -21,11 +21,15 @@ sealed interface ShareCardRequest {
 
     data class WholeBook(override val book: BookId) : ShareCardRequest
 
+    /** Part of zero-based [page] as drawn, held by [PageSnippets] (ADR 2026-10-28-page-snippet). */
+    data class Snippet(override val book: BookId, val page: Int) : ShareCardRequest
+
     companion object {
         internal const val EXTRA_BOOK = "io.github.skm0078.audora.share.BOOK"
         internal const val EXTRA_LINES = "io.github.skm0078.audora.share.LINES"
         internal const val EXTRA_PAGE = "io.github.skm0078.audora.share.PAGE"
         internal const val EXTRA_VIDEO = "io.github.skm0078.audora.share.VIDEO"
+        internal const val EXTRA_SNIPPET = "io.github.skm0078.audora.share.SNIPPET"
         private const val NO_PAGE = -1
 
         // A card shows 60 words; this much is plenty to cut them from and keeps the intent small.
@@ -36,7 +40,11 @@ sealed interface ShareCardRequest {
             val lines = intent.getStringExtra(EXTRA_LINES)
             val page = intent.getIntExtra(EXTRA_PAGE, NO_PAGE).takeIf { it >= 0 }
             val video = intent.getBooleanExtra(EXTRA_VIDEO, false)
-            return if (lines == null) WholeBook(book) else Quote(book, lines, page, video)
+            return when {
+                intent.getBooleanExtra(EXTRA_SNIPPET, false) -> Snippet(book, page ?: 0)
+                lines == null -> WholeBook(book)
+                else -> Quote(book, lines, page, video)
+            }
         }
 
         internal fun Intent.put(request: ShareCardRequest): Intent = apply {
@@ -45,6 +53,10 @@ sealed interface ShareCardRequest {
                 putExtra(EXTRA_LINES, TextCuts.take(request.lines, MAX_LINES_CHARS))
                 putExtra(EXTRA_PAGE, request.page ?: NO_PAGE)
                 putExtra(EXTRA_VIDEO, request.video)
+            }
+            if (request is Snippet) {
+                putExtra(EXTRA_SNIPPET, true)
+                putExtra(EXTRA_PAGE, request.page)
             }
         }
     }
@@ -64,6 +76,9 @@ object ShareEntry {
     /** The same lines as a quote video: the card screen opens on Video, read aloud in the book's voice. */
     fun video(context: Context, book: BookId, lines: String, page: Int?) =
         open(context, ShareCardRequest.Quote(book, lines, page, video = true))
+
+    /** Part of a drawn page, cut by [PageSnippets.hold] just before; [page] is zero-based. */
+    fun snippet(context: Context, book: BookId, page: Int) = open(context, ShareCardRequest.Snippet(book, page))
 
     /** The book itself: cover, title and author. */
     fun book(context: Context, book: BookId) = open(context, ShareCardRequest.WholeBook(book))

@@ -7,6 +7,9 @@ package io.github.skm0078.audora.ui.reader
 
 import android.content.ClipboardManager
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.isDialog
@@ -22,6 +25,7 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.TableMode
+import io.github.skm0078.audora.core.model.TextBox
 import io.github.skm0078.audora.core.notes.Highlight
 import io.github.skm0078.audora.core.resume.ResumeAnchor
 import io.github.skm0078.audora.pdf.render.ViewPoint
@@ -72,6 +76,10 @@ class SentenceMenuTest {
 
         override fun onShareVideo(lines: String, page: Int) {
             calls += "video $page: $lines"
+        }
+
+        override fun onSharePagePart(unit: ReadingUnit) {
+            calls += "page part ${unit.index}"
         }
     }
 
@@ -126,6 +134,21 @@ class SentenceMenuTest {
         rule.onNodeWithText(text(R.string.share_hint_video)).performScrollTo().assertExists()
         rule.onNodeWithText(text(R.string.share_as_video)).performScrollTo().performClick()
         assertEquals(listOf("dismiss", "video ${PASSAGE.anchor.page}: ${PASSAGE.quote}"), calls)
+    }
+
+    @Test
+    fun sharePartOfThePageShowsOnlyForASentenceOnADrawnPage() {
+        var menuFor by mutableStateOf(UNIT)
+        rule.setContent { AudoraTheme { NotesOverlays(NotesState(menuFor = menuFor), notes, reader) } }
+
+        rule.onNodeWithText(text(R.string.sentence_menu_share)).performScrollTo().performClick()
+        rule.onNodeWithText(text(R.string.share_page_part)).assertDoesNotExist()
+
+        menuFor = PLACED
+        rule.onNodeWithText(text(R.string.sentence_menu_share)).performScrollTo().performClick()
+        rule.onNodeWithText(text(R.string.share_hint_page_part)).performScrollTo().assertExists()
+        rule.onNodeWithText(text(R.string.share_page_part)).performScrollTo().performClick()
+        assertEquals("page part ${PLACED.index}", calls.last())
     }
 
     @Test
@@ -208,6 +231,9 @@ class SentenceMenuTest {
         val BOOK = BookId("menu-book")
         const val TEXT = "Some years ago, never mind how long precisely, I thought I would sail about a little."
         val UNIT = ReadingUnit(4, 1, 20, 20 + TEXT.length, TEXT, Lang.EN, 0, null)
+
+        // The same sentence with its line's box on the page: a PDF's, drawn as a page.
+        val PLACED = UNIT.copy(index = 2, bounds = listOf(TextBox(72f, 700f, 520f, 686f)))
         val PASSAGE = Highlight(
             id = 7,
             anchor = ResumeAnchor(BOOK, page = 3, charStart = 400, fingerprint = 0L, tailFingerprint = 0L, 1, 0L),

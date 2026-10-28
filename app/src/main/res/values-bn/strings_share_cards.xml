@@ -53,4 +53,10 @@
     <string name="share_card_make_video">ভিডিও তৈরি করুন</string>
     <string name="share_card_video_started">ভিডিও তৈরি হচ্ছে। তৈরি হলে শেয়ার করার তালিকা খুলবে; নোটিফিকেশনে অগ্রগতি দেখা যায়।</string>
     <string name="share_card_video_busy">একটি ভিডিও আগে থেকেই তৈরি হচ্ছে। সেটি শেষ হলে আবার চেষ্টা করুন।</string>
+    <string name="share_page_part">পৃষ্ঠার অংশ শেয়ার করুন</string>
+    <string name="share_hint_page_part">পৃষ্ঠার এক-তৃতীয়াংশ পর্যন্ত অংশে একটি বাক্স টানুন আর ছবি হিসেবে শেয়ার করুন, নিচে বই আর পৃষ্ঠার নাম সহ।</string>
+    <string name="reader_snippet_box">শেয়ার করার জন্য পৃষ্ঠার অংশ। সরাতে ভেতর থেকে টানুন, আকার বদলাতে কোণ থেকে।</string>
+    <string name="reader_snippet_hint">বাক্স বা তার কোণগুলো টানুন। এটি পৃষ্ঠার এক-তৃতীয়াংশ পর্যন্ত হতে পারে।</string>
+    <string name="share_card_snippet_title">পৃষ্ঠার অংশ শেয়ার করুন</string>
+    <string name="share_card_snippet_gone">পৃষ্ঠার সেই অংশটি আর এখানে নেই। ফিরে গিয়ে পৃষ্ঠায় আবার বেছে নিন।</string>
 </resources>

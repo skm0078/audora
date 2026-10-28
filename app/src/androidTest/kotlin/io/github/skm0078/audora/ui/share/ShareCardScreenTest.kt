@@ -7,6 +7,7 @@
 package io.github.skm0078.audora.ui.share
 
 import android.content.res.Configuration
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.LocaleList
 import androidx.activity.ComponentActivity
@@ -14,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.test.DeviceConfigurationOverride
 import androidx.compose.ui.test.FontScale
 import androidx.compose.ui.test.ForcedSize
@@ -173,6 +175,18 @@ class ShareCardScreenTest {
     }
 
     @Test
+    fun aPageSnippetCardShowsThePartOfThePageWithItsCreditAndNoVideoChoice() {
+        val page = Bitmap.createBitmap(SNIPPET_WIDTH, SNIPPET_HEIGHT, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(android.graphics.Color.WHITE)
+        }
+        show(subject(null).copy(pageLabel = "Page 12", snippet = page.asImageBitmap()), "en", 2f)
+        rule.onNodeWithText(text(R.string.share_card_snippet_title)).assertExists()
+        rule.onNodeWithText(text(R.string.share_card_kind_video)).assertDoesNotExist()
+        Screens.save("share-card-snippet-2x", rule.onRoot().captureToImage().asAndroidBitmap())
+        madePicture("share-card-snippet", CardShape.STORY)
+    }
+
+    @Test
     fun aBookCardShowsTheBookWithoutAQuote() {
         show(subject(null), "en", 1f)
         rule.onNodeWithText(text(R.string.share_card_book_title)).assertExists()
@@ -201,6 +215,8 @@ class ShareCardScreenTest {
     private companion object {
         val TEST_PHONE_SIZE = DpSize(411.dp, 914.dp)
         const val LONG_REPEATS = 8
+        const val SNIPPET_WIDTH = 900
+        const val SNIPPET_HEIGHT = 420
 
         // Across the middle of the quote's space, inside the card's sides: only the background is there.
         const val WORDS_ROW = 0.4f

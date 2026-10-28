@@ -5,6 +5,7 @@ package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.ReadingUnit
+import io.github.skm0078.audora.core.share.SnippetBox
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
 import io.github.skm0078.audora.pdf.outline.ChapterList
 import io.github.skm0078.audora.pdf.render.ViewRect
@@ -81,6 +82,8 @@ data class TimeLeftEstimate(val bookMs: Long, val chapterMs: Long?)
  * @property chapters the chapter list (plan item 11), from the PDF outline; empty without one.
  * @property chapterStarts the pages chapters start on, as the end-of-chapter sleep timer counts them.
  * @property unreadableTapped a greyed sentence the listener tapped (RI-9), while the screen explains why it is skipped.
+ * @property snippet while part of the shown page is picked to share as a picture, its box (ADR
+ *   2026-10-28-page-snippet); cleared when the page turns.
  */
 data class ReaderState(
     val bookId: BookId,
@@ -103,6 +106,7 @@ data class ReaderState(
     val skipRefused: ParagraphSkipRefusal? = null,
     /** The book opened where it was left: said once, then cleared ([ReaderModel.resumedShown]). */
     val resumedAt: ResumedAt? = null,
+    val snippet: SnippetBox? = null,
 ) {
     val pageCount: Int? get() = (document as? DocumentState.Open)?.pageCount
 
