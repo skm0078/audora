@@ -18,7 +18,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import io.github.skm0078.audora.R
 
-/** Title and back; the book's buttons and [moreMenu] once it is open. */
+/**
+ * Title and back; the book's buttons and [moreMenu] once it is open. [panelShown]: the side panel already holds the
+ * chapters and bookmarks, so their buttons go.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ReaderTopBar(
@@ -26,6 +29,7 @@ internal fun ReaderTopBar(
     actions: ReaderActions,
     notes: NotesState,
     notesActions: BookNotesActions,
+    panelShown: Boolean = false,
     moreMenu: @Composable () -> Unit,
 ) {
     TopAppBar(
@@ -33,8 +37,10 @@ internal fun ReaderTopBar(
         navigationIcon = { BackButton(actions::onBack) },
         actions = {
             if (state.document is DocumentState.Open) {
-                BookmarksButton(notes, notesActions)
-                ChaptersButton(state, actions)
+                if (!panelShown) {
+                    BookmarksButton(notes, notesActions)
+                    ChaptersButton(state, actions)
+                }
                 ViewToggle(state.view, actions)
                 moreMenu()
             }

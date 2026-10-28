@@ -100,6 +100,7 @@ import io.github.skm0078.audora.ui.diagnostics.DiagnosticsController
 import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
 import io.github.skm0078.audora.ui.firstrun.FirstRunScreen
 import io.github.skm0078.audora.ui.firstrun.shouldShowFirstRun
+import io.github.skm0078.audora.ui.guide.CharacterGuidePanel
 import io.github.skm0078.audora.ui.jobs.LongJobsPanel
 import io.github.skm0078.audora.ui.jobs.OpenJobsEffect
 import io.github.skm0078.audora.ui.jobs.rememberRunningJobCount
@@ -959,6 +960,7 @@ class MainActivity : ComponentActivity() {
                 lookUp = studio.lookUp,
                 onTutor = { tutorOpen = true },
                 voicePacks = remember { voicePackActions(voiceManager) },
+                people = { panel -> CharacterGuidePanel(target.id, state.page, resumeAnchors, panel) },
             )
         }
         // What is playing, not the book on screen: with A playing, B's reader must not hide B from the sheet.

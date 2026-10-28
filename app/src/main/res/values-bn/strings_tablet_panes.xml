@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The library's book pane and the reader's side panel on a wide screen (ADR 2026-10-28-tablet-panes). -->
+<resources>
+    <string name="reader_panel_contents">সূচিপত্র</string>
+    <string name="reader_panel_notes">নোট</string>
+    <string name="reader_panel_people">চরিত্র</string>
+</resources>

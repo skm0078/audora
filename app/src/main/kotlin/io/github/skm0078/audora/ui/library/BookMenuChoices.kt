@@ -69,6 +69,25 @@ internal class BookMenuActions(
     val onAction: (BookAction) -> Unit,
 )
 
+internal fun QuickChoice.perform(actions: BookMenuActions) = when (this) {
+    QuickChoice.Play -> actions.onPlay()
+    QuickChoice.UpNext -> actions.onAddToUpNext()
+    is QuickChoice.Action -> actions.onAction(action)
+    is QuickChoice.Finished -> actions.onAction(action)
+}
+
+internal fun SaveChoice.perform(actions: BookMenuActions) = when (this) {
+    SaveChoice.Audiobook -> actions.onExport()
+    is SaveChoice.Action -> actions.onAction(action)
+}
+
+/**
+ * On a wide screen a tap picks a book and the pane shows its menu; the ⋮ and a long press pick it too, so no sheet
+ * covers the books. [selected] marks the picked book's tile or row.
+ */
+@Immutable
+internal class PaneChoice(val selected: Boolean, val onPick: () -> Unit)
+
 @DrawableRes
 internal fun actionIcon(action: BookAction): Int = when (action) {
     BookAction.STUDIO -> R.drawable.ic_studio

@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/guide/CharacterGuideRoute.kt
-// Purpose: The character guide dialog: who is who so far, with add, edit and delete (plan item 80).
+// Purpose: The character guide: who is who so far, with add, edit and delete (plan item 80), as a dialog or as the
+//          People tab of the reader's side panel on a wide screen (ADR 2026-10-28-tablet-panes).
 
 package io.github.skm0078.audora.ui.guide
 
@@ -42,21 +43,18 @@ import io.github.skm0078.audora.core.config.CharacterGuideConfig
 import io.github.skm0078.audora.core.guide.CharacterGuideStore
 import io.github.skm0078.audora.core.guide.GuideEntry
 import io.github.skm0078.audora.core.library.Book
+import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.text.TextCuts
 import io.github.skm0078.audora.ui.library.titleOrUntitled
+import io.github.skm0078.audora.ui.theme.Dimens
 import java.io.File
 
 /** While [book] is set, shows its character guide up to the book's resume point. */
 @Composable
 fun CharacterGuideRoute(book: Book?, anchors: ResumeAnchorStore, onClose: () -> Unit) {
     if (book == null) return
-    val context = LocalContext.current.applicationContext
-    val scope = rememberCoroutineScope()
-    val model = remember(book.id) {
-        val store = CharacterGuideStore(File(context.filesDir, CharacterGuideStore.FOLDER_NAME))
-        CharacterGuideModel(book.id, store, anchors, scope).apply { start() }
-    }
+    val model = rememberGuideModel(book.id, anchors, book.id.value)
     val state by model.state.collectAsStateWithLifecycle()
     // The id being edited (NEW_ENTRY for a new one), saved so a rotation keeps the editor and what was typed.
     var editingId by rememberSaveable(book.id) { mutableStateOf<Long?>(null) }
@@ -73,6 +71,39 @@ fun CharacterGuideRoute(book: Book?, anchors: ResumeAnchorStore, onClose: () -> 
     )
     state?.let { current ->
         GuideEditor(current, editingId, model) { editingId = null }
+    }
+}
+
+/**
+ * The guide without a dialog around it, for the reader's side panel. [page]: the page shown, so turning on shows the
+ * people met by then and still none further on (the guide reads the saved place, which follows the reading).
+ */
+@Composable
+fun CharacterGuidePanel(bookId: BookId, page: Int, anchors: ResumeAnchorStore, modifier: Modifier = Modifier) {
+    val model = rememberGuideModel(bookId, anchors, page)
+    val state by model.state.collectAsStateWithLifecycle()
+    var editingId by rememberSaveable(bookId.value) { mutableStateOf<Long?>(null) }
+    Column(modifier.padding(horizontal = Dimens.SpaceXl)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = { editingId = NEW_ENTRY }, enabled = state != null) {
+                Text(stringResource(R.string.guide_add))
+            }
+        }
+        GuideList(state, model) { editingId = it.id }
+    }
+    state?.let { current ->
+        GuideEditor(current, editingId, model) { editingId = null }
+    }
+}
+
+/** One model per book, made again when [refresh] changes. */
+@Composable
+private fun rememberGuideModel(bookId: BookId, anchors: ResumeAnchorStore, refresh: Any): CharacterGuideModel {
+    val context = LocalContext.current.applicationContext
+    val scope = rememberCoroutineScope()
+    return remember(bookId, refresh) {
+        val store = CharacterGuideStore(File(context.filesDir, CharacterGuideStore.FOLDER_NAME))
+        CharacterGuideModel(bookId, store, anchors, scope).apply { start() }
     }
 }
 

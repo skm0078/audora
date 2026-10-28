@@ -4,6 +4,7 @@
 
 package io.github.skm0078.audora.ui.library
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,7 +27,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookProgress
 import io.github.skm0078.audora.playback.jobs.LongJob
@@ -52,9 +55,13 @@ internal fun BookTile(
     onDetails: () -> Unit = {},
     onAction: (BookAction) -> Unit = {},
     onPlay: () -> Unit = {},
+    pane: PaneChoice? = null,
 ) {
     var menuOpen by rememberSaveable(item.book.id.value) { mutableStateOf(false) }
     val kids = LocalKidsMode.current
+    val openMenu: () -> Unit = pane?.onPick ?: { menuOpen = true }
+    val picked = pane?.selected == true
+    val ring = if (picked) Modifier.border(PICKED_BORDER, MaterialTheme.colorScheme.primary, SHAPE) else Modifier
     val title = displayTitle(item.book)
     val status = availabilityWarning(item.availability) ?: tileStatus(item.progress)
     val job = runningJobFor(item.book.id)
@@ -66,13 +73,17 @@ internal fun BookTile(
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
         Box(
             modifier = Modifier
-                .clip(MaterialTheme.shapes.small)
+                .then(ring)
+                .clip(SHAPE)
                 .combinedClickable(
                     onLongClickLabel = stringResource(R.string.library_book_menu_named, title),
-                    onLongClick = if (kids) null else ({ menuOpen = true }),
+                    onLongClick = if (kids) null else openMenu,
                     onClick = onTap,
                 )
-                .clearAndSetSemantics { contentDescription = description },
+                .clearAndSetSemantics {
+                    contentDescription = description
+                    if (pane != null) selected = picked
+                },
         ) {
             BookCover(item.book, covers, Modifier.fillMaxWidth().aspectRatio(1f / COVER_RATIO))
             item.progress?.let { progress ->
@@ -84,7 +95,7 @@ internal fun BookTile(
         }
         Row(verticalAlignment = Alignment.Top) {
             TileText(title, author, status, item.needsLocating, job, jobLine, Modifier.weight(1f))
-            BookMenuButton(item) { menuOpen = true }
+            BookMenuButton(item, openMenu)
         }
     }
     if (menuOpen) {
@@ -150,3 +161,9 @@ private fun tileStatus(progress: BookProgress?): String = when {
 }
 
 private const val PERCENT = 100
+
+/** The picked book's cover in the wide screen's grid: a ring in the accent colour, as wide as a focus ring. */
+private val PICKED_BORDER = 3.dp
+
+private val SHAPE
+    @Composable get() = MaterialTheme.shapes.small
