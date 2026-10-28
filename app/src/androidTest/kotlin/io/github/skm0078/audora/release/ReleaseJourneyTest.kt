@@ -164,6 +164,11 @@ class ReleaseJourneyTest {
             step("27 Turn pages shows a text book a screenful at a time with its arrows") {
                 share.aTextBookTurnsPages(MORE_FORMATS.first())
             }
+            val lock = LockJourney(rule)
+            step(
+                "29 the app lock covers the app with the screen saver, and Unlock asks",
+                lock::theSaverCoversTheAppAndUnlockAsks,
+            )
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
