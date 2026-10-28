@@ -1,6 +1,7 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/made/MadeAndEditScreensTest.kt
-// Purpose: The Made list, the in-app player and Edit details (ADR-068) on a phone-sized screen: what each shows, that
-//          an edit shows on the library at once, and a screenshot of each for review in CI's "player-screens" artifact.
+// Purpose: The Made grid and list, the in-app player and Edit details (ADR-068, ADR 2026-10-28-made-tab) on a
+//          phone-sized screen: what each shows, that an edit shows on the library at once, and a screenshot of each
+//          for review in CI's "player-screens" artifact.
 
 package io.github.skm0078.audora.ui.made
 
@@ -19,6 +20,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.DeviceConfigurationOverride
 import androidx.compose.ui.test.ForcedSize
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
@@ -44,6 +46,8 @@ import io.github.skm0078.audora.core.library.OutputSet
 import io.github.skm0078.audora.ui.library.BookEditSheet
 import io.github.skm0078.audora.ui.library.BookRow
 import io.github.skm0078.audora.ui.library.LibraryItem
+import io.github.skm0078.audora.ui.library.LibraryLayout
+import io.github.skm0078.audora.ui.library.LibraryLayoutState
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import java.util.Locale
 import org.junit.Assert.assertEquals
@@ -59,7 +63,7 @@ class MadeAndEditScreensTest {
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Test
-    fun theMadeListNamesEachSetAndItsBookAndPlaysTheOneTapped() {
+    fun theMadeGridShowsEachSetsCoverAndPlaysFromItsIconButton() {
         val played = mutableListOf<String>()
         var jobsOpened = 0
         val sets = listOf(MadeSet(AUDIOBOOK, AUDIOBOOK.files), MadeSet(COPY, emptyList()))
@@ -72,35 +76,84 @@ class MadeAndEditScreensTest {
                     runningJobs = 2,
                     onOpenJobs = { jobsOpened++ },
                     Modifier.testTag(SCREEN),
+                    look = MadeLook(view = LibraryLayoutState(LibraryLayout.GRID) {}),
                 )
             }
         }
-        rule.onNodeWithText(context.getString(R.string.made_kind_audiobook)).assertExists()
+        val named = "Gitanjali, ${context.getString(R.string.made_kind_audiobook)}"
+        rule.onNodeWithContentDescription(context.getString(R.string.made_share_named, named)).assertExists()
+        rule.onNodeWithContentDescription(context.getString(R.string.made_more_named, named)).assertExists()
         rule.onNodeWithText(context.getString(R.string.made_missing)).assertExists()
         rule.onNodeWithText(context.getString(R.string.made_forget)).assertExists()
-        save("made-list", rule.onNodeWithTag(SCREEN).captureToImage().asAndroidBitmap())
+        save("made-grid", rule.onNodeWithTag(SCREEN).captureToImage().asAndroidBitmap())
 
-        rule.onNodeWithText(context.getString(R.string.made_play)).performClick()
+        rule.onNodeWithContentDescription(context.getString(R.string.made_play_named, named)).performClick()
         rule.waitForIdle()
         assertEquals(listOf(AUDIOBOOK.key), played)
 
-        // The running jobs are the first row of the place, with how many work now.
-        val running = context.resources.getQuantityString(R.plurals.made_jobs_running, 2, 2)
-        rule.onNodeWithText(running).assertExists()
-        rule.onNodeWithText(context.getString(R.string.made_jobs)).performClick()
+        // Jobs sits in the top bar, saying how many are making now.
+        val making = context.resources.getQuantityString(R.plurals.made_jobs_making, 2, 2)
+        rule.onNodeWithText(making).performClick()
         rule.waitForIdle()
         assertEquals(1, jobsOpened)
+    }
+
+    @Test
+    fun theMadeListShowsRowsAndItsToggleSetsTheLibrarysLayout() {
+        val picked = mutableListOf<LibraryLayout>()
+        val sets = listOf(MadeSet(AUDIOBOOK, AUDIOBOOK.files))
+        rule.setContent {
+            Phone {
+                MadeScreen(
+                    sets,
+                    mapOf(BOOK to "Gitanjali"),
+                    {},
+                    runningJobs = 0,
+                    onOpenJobs = {},
+                    Modifier.testTag(SCREEN),
+                    look = MadeLook(view = LibraryLayoutState(LibraryLayout.LIST) { picked += it }),
+                )
+            }
+        }
+        // A row names the kind beside its details; a tile leaves it to the cover's badge.
+        rule.onNodeWithText(context.getString(R.string.made_kind_audiobook), substring = true).assertExists()
+        save("made-list", rule.onNodeWithTag(SCREEN).captureToImage().asAndroidBitmap())
+
+        rule.onNodeWithContentDescription(context.getString(R.string.library_layout_grid)).performClick()
+        rule.waitForIdle()
+        assertEquals(listOf(LibraryLayout.GRID), picked)
+    }
+
+    @Test
+    fun aKindChipShowsOnlyThatKind() {
+        val sets = listOf(MadeSet(AUDIOBOOK, AUDIOBOOK.files), MadeSet(COPY, COPY.files))
+        rule.setContent { Phone { MadeScreen(sets, mapOf(BOOK to "Gitanjali"), {}, runningJobs = 0, onOpenJobs = {}) } }
+        val audiobook = context.getString(R.string.made_kind_audiobook)
+        val copy = context.getString(R.string.made_kind_accessible)
+        val play = context.getString(R.string.made_play_named, "Gitanjali, $audiobook")
+        rule.onNodeWithText(
+            context.getString(R.string.made_filter_count, context.getString(R.string.made_filter_all), 2),
+        )
+            .assertIsSelected()
+        rule.onNodeWithContentDescription(play).assertExists()
+
+        rule.onNodeWithText(context.getString(R.string.made_filter_count, copy, 1)).performClick()
+        rule.waitForIdle()
+        rule.onNodeWithContentDescription(play).assertDoesNotExist()
+        rule.onNodeWithContentDescription(
+            context.getString(R.string.made_open_named, "Gitanjali, $copy"),
+        ).assertExists()
     }
 
     @Test
     fun theMadeListSaysWhatShowsThereWhenNothingWasMade() {
         rule.setContent { Phone { MadeScreen(emptyList(), emptyMap(), {}, runningJobs = 0, onOpenJobs = {}) } }
         rule.onNodeWithText(context.getString(R.string.made_empty)).assertExists()
-        rule.onNodeWithText(context.getString(R.string.made_jobs_idle)).assertExists()
+        rule.onNodeWithText(context.getString(R.string.made_jobs_short)).assertExists()
     }
 
     @Test
-    fun thePlayerShowsTheChapterWhereItIsAndItsSpeed() {
+    fun thePlayerLooksLikeTheBookPlayerWithItsSpeedAndSleepTimer() {
         val state = MadePlayerState(
             connected = true,
             playing = true,
@@ -116,11 +169,38 @@ class MadeAndEditScreensTest {
             }
         }
         rule.onNodeWithText(context.getString(R.string.made_player_chapter, 1, 2)).assertExists()
-        rule.onNodeWithText(context.getString(R.string.made_player_position, "1:05", "30:00")).assertExists()
-        rule.onNodeWithText(context.getString(R.string.made_player_speed, "1.25")).assertExists()
+        rule.onNodeWithText("Gitanjali - 1.m4a").assertExists()
+        rule.onNodeWithText(context.getString(R.string.reader_speed, "1.25")).assertExists()
         rule.onNodeWithContentDescription(context.getString(R.string.made_player_pause)).assertExists()
         rule.onNodeWithContentDescription(context.getString(R.string.made_player_previous)).assertIsNotEnabled()
+        rule.onNodeWithContentDescription(context.getString(R.string.made_player_back)).assertExists()
+        rule.onNodeWithContentDescription(context.getString(R.string.reader_sleep_timer)).assertExists()
         save("made-player", rule.onNodeWithTag(SCREEN).captureToImage().asAndroidBitmap())
+
+        // The book player's speed control, and why there is no voice to pick.
+        rule.onNodeWithText(context.getString(R.string.reader_speed, "1.25")).performClick()
+        rule.waitForIdle()
+        rule.onNodeWithContentDescription(context.getString(R.string.speech_sheet_faster)).assertExists()
+        rule.onNodeWithText(context.getString(R.string.made_voice_title)).assertExists()
+    }
+
+    @Test
+    fun theSleepTimerOffersMinutesAndChaptersButNotPages() {
+        val state = MadePlayerState(connected = true, count = 2, durationMs = 1_800_000)
+        rule.setContent { Phone { MadePlayerScreen(AUDIOBOOK, "Gitanjali", state, controls = null, onBack = {}) } }
+        rule.onNodeWithContentDescription(context.getString(R.string.reader_sleep_timer)).performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText(context.getString(R.string.reader_sleep_end_of_chapter)).assertExists()
+        rule.onNodeWithText(context.getString(R.string.reader_sleep_end_of_page)).assertDoesNotExist()
+    }
+
+    @Test
+    fun theChaptersSheetListsEachFile() {
+        val state = MadePlayerState(connected = true, count = 2, durationMs = 1_800_000)
+        rule.setContent { Phone { MadePlayerScreen(AUDIOBOOK, "Gitanjali", state, controls = null, onBack = {}) } }
+        rule.onNodeWithContentDescription(context.getString(R.string.chapters_title)).performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("Gitanjali - 2.m4a").assertExists()
     }
 
     @Test

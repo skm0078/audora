@@ -1,0 +1,3 @@
+en: Light mode is now forest green, and the library is lighter: a greeting, a compact Continue card and one row of shelves and collections. New: a 1-minute tour of where things live; replay it any time from You › Show me around.
+hi: लाइट मोड अब गहरा हरा है, और लाइब्रेरी हल्की है: अभिवादन, छोटा "पढ़ना जारी रखें" कार्ड और शेल्फ़ व संग्रहों की एक ही पंक्ति। नया: कौन सी चीज़ कहाँ है, इसका 1 मिनट का टूर; इसे कभी भी आप › मुझे दिखाएँ से फिर देखें।
+bn: লাইট মোড এখন গাঢ় সবুজ, আর লাইব্রেরি হালকা: শুভেচ্ছা, ছোট "পড়া চালিয়ে যান" কার্ড আর তাক ও সংগ্রহের একটাই সারি। নতুন: কোথায় কী আছে তার ১ মিনিটের ঘুরে দেখা; যেকোনো সময় আপনি › ঘুরিয়ে দেখান থেকে আবার দেখুন।

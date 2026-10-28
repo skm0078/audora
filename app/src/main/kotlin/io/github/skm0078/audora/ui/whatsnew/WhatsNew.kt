@@ -52,10 +52,11 @@ private fun readEntry(assets: AssetManager, name: String): WhatsNewEntry? {
 /**
  * Decided once per start from [library] (read as state, so its first settled value is used), then shown until "Got
  * it". Never in kids mode. Placed after the first-run screens, so a new listener's first launch never shows it.
+ * Returns true until it is decided and closed, so the tour's offer waits for it instead of opening over it.
  */
 @Composable
-fun WhatsNewDialog(library: () -> LibraryListState) {
-    if (LocalKidsMode.current) return
+fun WhatsNewDialog(library: () -> LibraryListState): Boolean {
+    if (LocalKidsMode.current) return false
     val context = LocalContext.current
     val preferences = remember(context) { OnboardingPreferences(context.applicationContext) }
     val language = stringResource(R.string.whats_new_language)
@@ -77,17 +78,26 @@ fun WhatsNewDialog(library: () -> LibraryListState) {
                 items = fresh.mapTo(ArrayList()) { it.textIn(language) }
             }
 
-            WhatsNewStart.MARK_SEEN -> preferences.markWhatsNewSeen(all)
+            WhatsNewStart.MARK_SEEN -> {
+                preferences.markWhatsNewSeen(all)
+                items = ArrayList()
+            }
 
-            WhatsNewStart.NOTHING -> Unit
+            WhatsNewStart.NOTHING -> items = ArrayList()
         }
     }
     val shown = items
-    if (shown.isNullOrEmpty()) return
-    val done = {
-        items = ArrayList()
-        preferences.markWhatsNewSeen(names.toSet()) // an apply(): written in the background
+    if (!shown.isNullOrEmpty()) {
+        WhatsNewItems(shown) {
+            items = ArrayList()
+            preferences.markWhatsNewSeen(names.toSet()) // an apply(): written in the background
+        }
     }
+    return shown == null || shown.isNotEmpty()
+}
+
+@Composable
+private fun WhatsNewItems(shown: List<String>, done: () -> Unit) {
     AlertDialog(
         onDismissRequest = done,
         title = { Text(stringResource(R.string.whats_new_title)) },

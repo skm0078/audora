@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/theme/AudoraColors.kt
-// Purpose: Audora's own "reading lamp" colours, used when wallpaper colours are off, and the true-black dark variant.
+// Purpose: Audora's own colours, used when wallpaper colours are off: forest green by day, the reading lamp by
+//          night, and the true-black dark variant.
 
 @file:Suppress("MagicNumber") // A palette is its literal colour values.
 
@@ -10,39 +11,40 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
-// Warm paper and ink for daylight; the accent is a lamp amber dark enough for white text on it (4.5:1).
+// Daylight in forest green (maintainer's pick, 2026-10-28): a pale sage page instead of the old cream, deep forest
+// green for the accent (6.4:1 under white text), and the lamp's amber kept as the tertiary colour.
 internal val LampLightColors: ColorScheme = lightColorScheme(
-    primary = Color(0xFFA8520E),
+    primary = Color(0xFF2E6B3F),
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFF7DFC4),
-    onPrimaryContainer = Color(0xFF3A1E05),
-    inversePrimary = Color(0xFFF2A65A),
-    secondary = Color(0xFF2F6B66),
+    primaryContainer = Color(0xFFC6E9CC),
+    onPrimaryContainer = Color(0xFF0A2913),
+    inversePrimary = Color(0xFF9BD3A6),
+    secondary = Color(0xFF52634F),
     onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFCFE6E2),
-    onSecondaryContainer = Color(0xFF0E2A27),
-    tertiary = Color(0xFF5B3F8C),
+    secondaryContainer = Color(0xFFD3E8CE),
+    onSecondaryContainer = Color(0xFF102010),
+    tertiary = Color(0xFF8A5A12),
     onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFFE9DDFB),
-    onTertiaryContainer = Color(0xFF1F0B45),
-    background = Color(0xFFF8F2E8),
-    onBackground = Color(0xFF24190F),
-    surface = Color(0xFFF8F2E8),
-    onSurface = Color(0xFF24190F),
-    surfaceVariant = Color(0xFFF0E6D6),
-    onSurfaceVariant = Color(0xFF5E4F41),
-    surfaceTint = Color(0xFFA8520E),
-    inverseSurface = Color(0xFF3A2A1C),
-    inverseOnSurface = Color(0xFFFFF6EA),
-    outline = Color(0xFF8C7B69),
-    outlineVariant = Color(0xFFD6C6AF),
-    surfaceBright = Color(0xFFFFFCF7),
-    surfaceDim = Color(0xFFE6DACA),
+    tertiaryContainer = Color(0xFFFFDDB3),
+    onTertiaryContainer = Color(0xFF2B1700),
+    background = Color(0xFFEEF4EA),
+    onBackground = Color(0xFF171D17),
+    surface = Color(0xFFEEF4EA),
+    onSurface = Color(0xFF171D17),
+    surfaceVariant = Color(0xFFDCE6D7),
+    onSurfaceVariant = Color(0xFF414A40),
+    surfaceTint = Color(0xFF2E6B3F),
+    inverseSurface = Color(0xFF2C322B),
+    inverseOnSurface = Color(0xFFEDF2E9),
+    outline = Color(0xFF717A6F),
+    outlineVariant = Color(0xFFC1CABD),
+    surfaceBright = Color(0xFFF6FAF3),
+    surfaceDim = Color(0xFFD8E0D4),
     surfaceContainerLowest = Color(0xFFFFFFFF),
-    surfaceContainerLow = Color(0xFFFFFCF7),
-    surfaceContainer = Color(0xFFF4ECDF),
-    surfaceContainerHigh = Color(0xFFF0E6D6),
-    surfaceContainerHighest = Color(0xFFEADCC8),
+    surfaceContainerLow = Color(0xFFF4F9F1),
+    surfaceContainer = Color(0xFFE8EFE4),
+    surfaceContainerHigh = Color(0xFFE2EADE),
+    surfaceContainerHighest = Color(0xFFDCE5D8),
 )
 
 // The same lamp at night: a light amber on deep brown, so night reading is not a blue-white glare.

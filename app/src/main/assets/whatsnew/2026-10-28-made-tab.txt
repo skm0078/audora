@@ -1,0 +1,3 @@
+en: Made shows your saved audiobooks with their covers, as a grid or a list, with Play, Share and more as buttons. Its player now looks like the book player, with the same speed control and a sleep timer.
+hi: रचनाएँ अब आपकी सहेजी ऑडियोबुक उनके कवर के साथ, ग्रिड या सूची में, चलाएँ, शेयर और और विकल्प बटनों के साथ दिखाता है। इसका प्लेयर अब किताब के प्लेयर जैसा है, वही गति नियंत्रण और स्लीप टाइमर के साथ।
+bn: সৃষ্টি এখন আপনার সেভ করা অডিওবুক তাদের প্রচ্ছদ সহ, গ্রিড বা তালিকায়, চালান, শেয়ার আর আরও বিকল্পের বোতাম সহ দেখায়। এর প্লেয়ার এখন বইয়ের প্লেয়ারের মতো, একই গতি নিয়ন্ত্রণ আর স্লিপ টাইমার সহ।

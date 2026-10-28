@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_made_tab.xml -->
+<!-- Purpose: The Made place as a grid or list with icon buttons, and its player's speed and voice note, in Bengali. -->
+<resources>
+    <plurals name="made_jobs_making">
+        <item quantity="one">%1$dটি তৈরি হচ্ছে</item>
+        <item quantity="other">%1$dটি তৈরি হচ্ছে</item>
+    </plurals>
+    <string name="made_jobs_short">কাজ</string>
+    <string name="made_filter_all">সব</string>
+    <string name="made_filter_count">%1$s · %2$d</string>
+    <string name="made_play_named">%1$s চালান</string>
+    <string name="made_open_named">%1$s খুলুন</string>
+    <string name="made_share_named">%1$s শেয়ার করুন</string>
+    <string name="made_more_named">%1$s-এর আরও বিকল্প</string>
+    <string name="made_player_kind">সৃষ্টি · %1$s</string>
+    <string name="made_player_left">−%1$s</string>
+    <string name="made_player_saved">%1$s তারিখে সেভ করা</string>
+    <string name="made_voice_title">ভয়েস ফাইলের অংশ</string>
+    <string name="made_voice_body">সেভ করা ফাইল যে ভয়েসে তৈরি, সেই ভয়েসেই থাকে। অন্য ভয়েসের জন্য বইয়ের মেনুর \"এই রূপে সেভ করুন\" থেকে আবার তৈরি করুন।</string>
+</resources>

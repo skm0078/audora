@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookOutput
 import io.github.skm0078.audora.core.library.OutputSet
 import io.github.skm0078.audora.core.logging.AudoraLog
@@ -30,6 +31,9 @@ data class MadeSet(val set: OutputSet, val present: List<BookOutput>) {
     val missing: Int get() = set.files.size - present.size
     val allMissing: Boolean get() = present.isEmpty()
 }
+
+/** What a tile or row shows: the set, its book's title (null in the book's own details) and the book for its cover. */
+internal class MadeSetItem(val made: MadeSet, val bookTitle: String?, val book: Book?)
 
 /**
  * [outputs] grouped into sets, newest first, each checked against shared storage once per change (one small query

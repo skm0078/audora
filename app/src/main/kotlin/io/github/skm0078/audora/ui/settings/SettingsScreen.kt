@@ -2,7 +2,8 @@
 // Purpose: Settings tab: Voices (P4-01), OCR models (P3-05), citation numbers (P2-03), keep screen on, appearance
 //          and app language (ADR-036, plan item 44), background reading (P1-06), kids mode (plan item 71), licences
 //          (P3-06); privacy and security (ADR-061) and Advanced (ADR-056: punctuation, volume keys, voice commands,
-//          pronunciation, Share logs (P1-07), the debug tool) each on a page of their own (ADR-062).
+//          pronunciation, Share logs (P1-07), the debug tool) each on a page of their own (ADR-062); the tour's
+//          replay on top (ADR 2026-10-28-home-and-tour).
 
 package io.github.skm0078.audora.ui.settings
 
@@ -79,6 +80,7 @@ fun SettingsScreen(
     appearance: Appearance = Appearance(),
     onAppearanceChange: (Appearance) -> Unit = {},
     onKidsMode: () -> Unit = {},
+    onShowTour: (() -> Unit)? = null,
     language: AppLanguage = AppLanguage.DEFAULT,
     onLanguageChange: (AppLanguage) -> Unit = {},
     onOpenStorage: () -> Unit = {},
@@ -108,6 +110,7 @@ fun SettingsScreen(
                 PageHeader(page) { pages.open(SettingsPage.MAIN) }
                 when (page) {
                     SettingsPage.MAIN -> {
+                        onShowTour?.let { TourGroup(it) }
                         ListeningGroup(
                             onOpenVoices,
                             ModelPack(ocrModels, onOcrModels),

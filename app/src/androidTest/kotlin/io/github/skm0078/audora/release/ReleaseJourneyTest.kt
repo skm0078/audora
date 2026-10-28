@@ -141,7 +141,10 @@ class ReleaseJourneyTest {
 
     /** Steps 01 to 20: first run, playback, settings, every format, and the library's menus. */
     private fun firstRunToTheLibrary() {
-        step("01 first run plays a voice sample; Try a sample opens the reader", ::firstRunWalksThroughAndFinishes)
+        step(
+            "01 first run plays a sample, opens the reader and offers the tour once",
+            ::firstRunWalksThroughAndFinishes,
+        )
         step("02 the launcher says ListenLock", ::theLauncherSaysListenLock)
         step("03 Open with adds the book and opens the reader", ::openWithAddsTheBookAndOpensTheReader)
         step("04 play starts without the notification permission", ::playStartsWithoutTheNotificationPermission)
@@ -167,7 +170,7 @@ class ReleaseJourneyTest {
         step("42 a phone book says it is on this phone", SourceJourney(rule, ::backToTabs)::aPhoneBookSaysWhereItLives)
     }
 
-    /** Steps 21 on: sharing, page turns, character voices, symbols and catalogues. */
+    /** Steps 21 on: sharing, page turns, the tour, character voices, symbols, Made and catalogues. */
     private fun readingSharingAndVoices() {
         step("21 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
         step("22 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
@@ -177,6 +180,7 @@ class ReleaseJourneyTest {
             ::aPhoneKeepsTheSheets,
         )
         step("24b a search finds a setting, opens it on You, and Back returns to the search", ::searchOpensASetting)
+        step("24c You › Show me around walks the 5 stops and Done returns to the library", TourJourney(rule)::replays)
         val share = ShareJourney(rule, ::activity, ::backToTabs)
         step("25 Share as a video reads the quote in the book's voice into an MP4", share::aQuoteVideoIsShared)
         step("26 part of the shown page is shared as a picture with its credit") {
@@ -196,6 +200,7 @@ class ReleaseJourneyTest {
         step("43 arrows, maths and emoji reach the voice as words or not at all") {
             SymbolJourney.symbolsAreSaidOrLeftOut()
         }
+        step("32 Made plays a saved audiobook like the book player", MadeJourney(rule, ::backToTabs)::playsLikeBook)
         step("41 catalogues are a curated list", CatalogueJourney(rule, ::backToTabs)::theCuratedCataloguesAreListed)
     }
 
@@ -295,6 +300,7 @@ class ReleaseJourneyTest {
         waitForNode(hasContentDescription(text(R.string.reader_play)), OPEN_TIMEOUT_MS)
         gone(stepOne)
         backToTabs()
+        TourJourney(rule).isOfferedOnceAndPutOff()
     }
 
     /** The bundled voice's "Play a sample" on the voices step, heard to the end (the stop button goes away). */
@@ -688,22 +694,10 @@ class ReleaseJourneyTest {
         }
     }
 
-    /** Library, Notes, Made and You from the bar; Jobs is Made's first row and Back from it returns there. */
+    /** Library, Notes, Made and You from the bar, with the book paused (MadeJourney.fourPlacesAndJobs). */
     private fun theFourPlacesOpenAndJobsLiveInMade() {
         pause()
-        backToTabs()
-        tapText(R.string.tab_notes)
-        tapText(R.string.tab_made)
-        waitForNode(hasText(text(R.string.made_jobs)))
-        tapText(R.string.made_jobs)
-        waitForNode(hasText(text(R.string.jobs_title)))
-        back()
-        gone(hasText(text(R.string.jobs_title)))
-        waitForNode(hasText(text(R.string.made_jobs)))
-        tapText(R.string.tab_you)
-        waitForNode(hasText(text(R.string.settings_voices_title)))
-        tapText(R.string.tab_library)
-        waitForNode(hasText(text(R.string.library_title)))
+        MadeJourney(rule, ::backToTabs, ::back).fourPlacesAndJobs()
     }
 
     /**

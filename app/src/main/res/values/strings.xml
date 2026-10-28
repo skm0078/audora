@@ -246,7 +246,6 @@
     <string name="battery_step_vivo_background_power">In Settings, open Battery, then Background power consumption management, and set ListenLock to Allow.</string>
     <string name="battery_step_lock_recents">Open recent apps, then long-press ListenLock\'s card (or tap its menu) and choose Lock, so clearing recent apps does not stop reading.</string>
     <string name="battery_card_title">Keep reading with the screen off</string>
-    <string name="battery_card_body">This phone may stop ListenLock in the background. It takes a minute to set up.</string>
     <string name="battery_card_set_up">Set up</string>
     <string name="battery_card_not_now">Not now</string>
     <string name="settings_battery_title">Background reading</string>
