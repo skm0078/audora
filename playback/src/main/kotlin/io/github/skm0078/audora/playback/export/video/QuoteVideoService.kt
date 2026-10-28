@@ -6,11 +6,8 @@ package io.github.skm0078.audora.playback.export.video
 
 import android.app.Service
 import android.content.Intent
-import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
-import android.os.Build
 import android.os.IBinder
-import android.os.PowerManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.core.config.ClipConfig
 import io.github.skm0078.audora.core.config.QuoteVideoConfig
@@ -27,6 +24,10 @@ import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.export.JobSlots
 import io.github.skm0078.audora.playback.export.ShareSheet
+import io.github.skm0078.audora.playback.jobs.ForegroundJobs
+import io.github.skm0078.audora.playback.jobs.jobWakeLock
+import io.github.skm0078.audora.playback.jobs.leaveForeground
+import io.github.skm0078.audora.playback.jobs.releaseIfHeld
 import io.github.skm0078.audora.playback.studio.BookRendering
 import java.io.File
 import javax.inject.Inject
@@ -65,7 +66,7 @@ class QuoteVideoService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(VideoNotices.RUNNING_ID, notices.making(), foregroundType())
+        startForeground(VideoNotices.RUNNING_ID, notices.making(), ForegroundJobs.type())
         val request = QuoteVideos.requestOf(intent)
         when {
             request == null -> AudoraLog.w(TAG, "Bad video request ${intent?.action}")
@@ -91,8 +92,7 @@ class QuoteVideoService : Service() {
     override fun onTimeout(startId: Int, fgsType: Int) {
         AudoraLog.w(TAG, "Android's time limit for long jobs reached; stopping the video")
         JobSlots.VIDEO.interrupt()
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        leaveForeground()
     }
 
     override fun onDestroy() {
@@ -102,8 +102,7 @@ class QuoteVideoService : Service() {
 
     /** On the worker thread. */
     private fun makeVideo(request: QuoteVideoRequest) {
-        val wakeLock = getSystemService(PowerManager::class.java)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)
+        val wakeLock = jobWakeLock(WAKE_LOCK_TAG)
             .apply { acquire(clipConfig.wakeLockMs) }
         try {
             val book = runBlocking { library.book(request.book) }
@@ -111,10 +110,9 @@ class QuoteVideoService : Service() {
         } catch (interrupted: InterruptedException) {
             AudoraLog.i(TAG, "Video cancelled, book=${request.book.logLabel}")
         } finally {
-            if (wakeLock.isHeld) wakeLock.release()
+            wakeLock.releaseIfHeld()
             mine = false
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
+            leaveForeground()
         }
     }
 
@@ -194,11 +192,5 @@ class QuoteVideoService : Service() {
         const val MIME_TYPE = "video/mp4"
         const val FULL = 100
         const val PROGRESS_STEP = 5
-
-        fun foregroundType(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
-        } else {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-        }
     }
 }
