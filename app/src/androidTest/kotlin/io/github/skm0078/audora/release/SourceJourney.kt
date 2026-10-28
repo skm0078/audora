@@ -10,12 +10,15 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.printToString
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.shows
@@ -23,6 +26,8 @@ import io.github.skm0078.audora.release.JourneyDevice.shows
 /** [backToTabs] leaves any screen for the main tabs, as the journey does. */
 internal class SourceJourney(private val rule: ComposeTestRule, private val backToTabs: () -> Unit) {
     private fun text(id: Int, vararg args: Any): String = app.getString(id, *args)
+
+    private fun screen(): String = rule.onAllNodes(isRoot()).printToString()
 
     private fun tap(matcher: SemanticsMatcher) {
         rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(matcher) }
@@ -34,14 +39,18 @@ internal class SourceJourney(private val rule: ComposeTestRule, private val back
      * phone", and "Keep on this phone" is not offered. The details sheet closes by its handle, as the book menu's do.
      */
     fun aPhoneBookSaysWhereItLives() {
-        // The step before this one ends on You: the books are on the Library tab.
         backToTabs()
-        tap(hasText(text(R.string.tab_library)))
+        tap(hasText(text(R.string.tab_library)) and hasClickAction())
         rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(hasText(text(R.string.library_title))) }
         val namedMenu = text(R.string.library_book_menu_named, NAME_MARK).split(NAME_MARK).maxBy { it.length }.trim()
         val menuButton = hasContentDescription(namedMenu, substring = true) and hasClickAction()
-        rule.waitForIdle()
-        rule.onAllNodes(hasScrollToIndexAction()).onFirst().performScrollToNode(menuButton)
+        // The first book's menu may be on screen already; otherwise the library's list (lazy or not) scrolls to it.
+        val list = hasScrollToIndexAction() or hasScrollAction()
+        runCatching { rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(menuButton) || rule.shows(list) } }
+        if (!rule.shows(menuButton)) {
+            check(rule.shows(list)) { "No book menu or list on the library:\n${screen()}" }
+            rule.onAllNodes(list).onFirst().performScrollToNode(menuButton)
+        }
         tap(menuButton)
         tap(hasText(text(R.string.book_details_title)))
         val where = hasText(text(R.string.book_details_source, text(R.string.book_source_phone)))
