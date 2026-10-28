@@ -17,10 +17,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.DeviceConfigurationOverride
 import androidx.compose.ui.test.FontScale
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -37,6 +40,7 @@ import io.github.skm0078.audora.ui.Screens
 import io.github.skm0078.audora.ui.share.PageSnippets
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -95,6 +99,31 @@ class SnippetPickerTest {
     }
 
     @Test
+    fun talkBackMovesAndResizesTheBoxAStepAtATime() {
+        show()
+        val step = ShareCardConfig().snippetNudgeStep
+        runAction(R.string.a11y_snippet_down)
+        assertEquals(START.top + step, box.top, EPSILON)
+        assertEquals(START.height, box.height, EPSILON)
+        runAction(R.string.a11y_snippet_bigger)
+        assertEquals(START.width + step, box.width, EPSILON)
+        val covers = context.getString(R.string.a11y_snippet_state, (box.area * PERCENT).roundToInt())
+        val state = rule.onNodeWithContentDescription(context.getString(R.string.reader_snippet_box))
+            .fetchSemanticsNode().config[SemanticsProperties.StateDescription]
+        assertEquals(covers, state)
+    }
+
+    /** Runs the box's TalkBack action named [label], as TalkBack's actions menu would. */
+    private fun runAction(label: Int) {
+        val name = context.getString(label)
+        val node = rule.onNodeWithContentDescription(context.getString(R.string.reader_snippet_box))
+            .fetchSemanticsNode()
+        val action = node.config[SemanticsActions.CustomActions].single { it.label == name }
+        rule.runOnUiThread { action.action() }
+        rule.waitForIdle()
+    }
+
+    @Test
     fun theBarKeepsItsButtonsAtDoubleTextSize() {
         var shared = 0
         var cancelled = 0
@@ -137,5 +166,6 @@ class SnippetPickerTest {
         const val MIN_MOVE = 0.1f
         const val EPSILON = 1e-3f
         const val PAGE_PX = 200
+        const val PERCENT = 100
     }
 }

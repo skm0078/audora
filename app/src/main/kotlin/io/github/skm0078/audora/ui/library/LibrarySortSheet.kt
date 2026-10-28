@@ -43,6 +43,7 @@ import io.github.skm0078.audora.core.library.LibraryQuery
 import io.github.skm0078.audora.core.library.LibrarySort
 import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.SectionTitle
 
 /**
  * Everything here applies the moment it is picked, so the books behind the sheet already show the result; the button
@@ -78,11 +79,11 @@ internal fun LibrarySortSheet(
                     view.onLayout(LibraryLayout.AUTO)
                 }) { Text(stringResource(R.string.library_sort_reset)) }
             }
-            SectionTitle(R.string.library_sort_by)
+            SectionTitle(stringResource(R.string.library_sort_by), Modifier.padding(top = Dimens.SpaceL))
             SortChoices(query.sort) { onQuery(query.copy(sort = it)) }
-            SectionTitle(R.string.library_show)
+            SectionTitle(stringResource(R.string.library_show), Modifier.padding(top = Dimens.SpaceL))
             ShowChoices(query.filter) { onQuery(query.copy(filter = it)) }
-            SectionTitle(R.string.library_layout)
+            SectionTitle(stringResource(R.string.library_layout), Modifier.padding(top = Dimens.SpaceL))
             LayoutChoice(layout.showsList(LocalDensity.current.fontScale), view.onLayout)
             Button(
                 onClick = onDismiss,
@@ -92,16 +93,6 @@ internal fun LibrarySortSheet(
             }
         }
     }
-}
-
-@Composable
-private fun SectionTitle(@StringRes title: Int) {
-    Text(
-        stringResource(title),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = Dimens.SpaceL).semantics { heading() },
-    )
 }
 
 /** One line per order, as radio buttons: five orders do not split evenly into rows of chips. */

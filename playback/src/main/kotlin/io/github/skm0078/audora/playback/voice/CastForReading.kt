@@ -6,12 +6,14 @@ package io.github.skm0078.audora.playback.voice
 import android.content.Context
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.core.result.getOrNull
+import io.github.skm0078.audora.speech.sherpa.CastPartners
+import io.github.skm0078.audora.speech.sherpa.castPartners
 import io.github.skm0078.audora.speech.sherpa.castSpeakers
 
 /**
  * The app's character cast, the same for playback and the audiobook export: the other speakers of the narrator's
- * model ([castSpeakers]), never the voice [shaping] gives quotes or headings, kept in the process's
- * [CharacterCasts] so both see and save the same characters.
+ * model ([castSpeakers]) and, for a gender it lacks, another installed model's ([castPartners]); never the voice
+ * [shaping] gives quotes or headings; kept in the process's [CharacterCasts] so both see and save the same characters.
  */
 fun CharacterCast.Companion.forReading(
     context: Context,
@@ -23,4 +25,5 @@ fun CharacterCast.Companion.forReading(
     speakers = { voice -> engines.bundled().getOrNull()?.engine?.castSpeakers(voice).orEmpty() },
     taken = { lang -> shaping().let { setOfNotNull(it.dialogueVoices[lang], it.headingVoices[lang]) } },
     casts = CharacterCasts.forContext(context),
+    partners = { voice -> engines.bundled().getOrNull()?.engine?.castPartners(voice) ?: CastPartners.NONE },
 )

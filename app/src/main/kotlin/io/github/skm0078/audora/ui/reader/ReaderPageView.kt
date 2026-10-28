@@ -202,6 +202,7 @@ private fun DrawnPage(state: ReaderState, image: PageImage, look: PageLook, view
             }
         }
     }
+    val zoomActions = zoomActions(zoom, viewport, horizontal, vertical)
     val pageWidth = with(LocalDensity.current) { (viewport.width * zoom.scale).toDp() }
     Column(
         Modifier
@@ -225,15 +226,45 @@ private fun DrawnPage(state: ReaderState, image: PageImage, look: PageLook, view
                 .onSizeChanged { pageSize = it }
                 .pageTaps(state.playerReady && state.snippet == null, actions, LocalHapticFeedback.current),
         ) {
-            PageLayers(state, image, look, highlight)
+            PageLayers(state, image, look, highlight, zoomActions)
             state.snippet?.let { SnippetPicker(it, actions::onSnippetChanged) }
         }
     }
 }
 
+/**
+ * TalkBack cannot pinch: Zoom in and Zoom out step the zoom about the middle of the screen, each offered only while it
+ * can still go that way. Fit width (the button shown while zoomed) goes back in one step.
+ */
+@Composable
+private fun zoomActions(
+    zoom: PageZoom,
+    viewport: IntSize,
+    horizontal: ScrollState,
+    vertical: ScrollState,
+): List<CustomAccessibilityAction> {
+    val zoomIn = stringResource(R.string.a11y_page_zoom_in)
+    val zoomOut = stringResource(R.string.a11y_page_zoom_out)
+    fun step(factor: Float) = CustomAccessibilityAction(if (factor > 1f) zoomIn else zoomOut) {
+        val middle = Offset(viewport.width / 2f, viewport.height / 2f)
+        zoom.zoomBy(factor, middle, Offset(horizontal.value.toFloat(), vertical.value.toFloat()))
+        true
+    }
+    return listOfNotNull(
+        step(PageZoom.ACTION_STEP).takeIf { zoom.scale < PageZoom.MAX_SCALE },
+        step(1f / PageZoom.ACTION_STEP).takeIf { zoom.zoomed },
+    )
+}
+
 /** The page drawn in its colours, then the greyed lines and the spoken sentence's band over it. */
 @Composable
-private fun PageLayers(state: ReaderState, image: PageImage, look: PageLook, highlight: List<ViewRect>) {
+private fun PageLayers(
+    state: ReaderState,
+    image: PageImage,
+    look: PageLook,
+    highlight: List<ViewRect>,
+    zoomActions: List<CustomAccessibilityAction>,
+) {
     val tone = look.tone
     Image(
         bitmap = image.imageBitmap(),
@@ -241,7 +272,8 @@ private fun PageLayers(state: ReaderState, image: PageImage, look: PageLook, hig
         contentScale = ContentScale.FillBounds,
         colorFilter = remember(tone) { tone.colorMatrix()?.let { ColorFilter.colorMatrix(ColorMatrix(it)) } },
         modifier = Modifier.fillMaxSize().semantics {
-            if (look.sentenceActions.isNotEmpty()) customActions = look.sentenceActions
+            val pageActions = zoomActions + look.sentenceActions
+            if (pageActions.isNotEmpty()) customActions = pageActions
         },
     )
     Dimmed(state.unreadableHighlight, tone.paper ?: MaterialTheme.colorScheme.surface)

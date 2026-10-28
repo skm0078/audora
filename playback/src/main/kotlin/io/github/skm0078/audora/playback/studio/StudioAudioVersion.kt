@@ -16,7 +16,9 @@ package io.github.skm0078.audora.playback.studio
  *     found in single quotes, short lines and Hindi and Bengali tags, so more lines get a character's voice.
  * 5 = tables read like a person explaining them ("Ram: Age 34 and City Delhi."); footnotes a little quicker and softer.
  * 6 = narration rises and falls across a paragraph, slows after a heading and breathes in long sentences (Q-3).
+ * 7 = more characters get a voice of their gender (Hindi "I" forms, Hindi and Bengali name endings, clues later on
+ *     the page); a one-speaker narrator's other gender borrows another installed voice (ADR character-genders).
  * 8 = arrows, maths signs, Greek letters and powers in sentences are said in the part's language; emoji, stars and
- *     broken-font glyphs are left out (ADR 2026-10-28-symbols-in-sentences). 7 is the character-genders change's.
+ *     broken-font glyphs are left out (ADR 2026-10-28-symbols-in-sentences).
  */
 const val STUDIO_AUDIO_VERSION: Int = 8
