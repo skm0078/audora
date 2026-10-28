@@ -41,7 +41,7 @@ internal class StatsJourney(private val rule: ComposeTestRule, private val backT
      * week and the month, and its card is saved to the phone's pictures and shared as a story-sized picture. The
      * earlier steps played books, so there is something to share.
      */
-    fun theStatsScreenOpensAndItsCardIsSavedAndShared() {
+    fun cardIsSavedAndShared() {
         backToTabs()
         tap(hasContentDescription(text(R.string.library_search)))
         rule.onAllNodes(hasSetTextAction()).onFirst().performTextInput(text(R.string.library_listening_stats))

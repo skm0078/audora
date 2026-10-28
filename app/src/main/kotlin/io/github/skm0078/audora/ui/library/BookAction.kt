@@ -37,12 +37,16 @@ enum class BookAction(@StringRes val label: Int, @StringRes val hint: Int, val p
 
     /** Forgets the book's place: Not started, and it opens on its first page. */
     MARK_NOT_STARTED(R.string.library_mark_not_started, R.string.menu_hint_mark_not_started, MenuPlace.FINISHED),
+
+    /** ListenLock's own copy of a book read through Drive or another app (ADR 2026-10-28-book-source); in details. */
+    KEEP_ON_PHONE(R.string.library_keep_on_phone, R.string.menu_hint_keep_on_phone, MenuPlace.DETAILS),
     ;
 
     /** Whether the action means anything for [item] now: a finished book is not marked finished again. */
     fun appliesTo(item: LibraryItem): Boolean = when (this) {
         MARK_FINISHED -> item.book.pageCount != null && item.progress?.isFinished != true
         MARK_NOT_STARTED -> item.progress != null
+        KEEP_ON_PHONE -> !item.source.isOnPhone
         else -> true
     }
 }

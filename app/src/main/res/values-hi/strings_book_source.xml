@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="book_source_phone">इस फ़ोन पर</string>
+    <string name="book_source_other_app">दूसरे ऐप से</string>
+    <string name="book_details_source">कहाँ है: %1$s</string>
+    <string name="book_source_needs_app">%1$s से पढ़ी जाती है, इसलिए इंटरनेट लग सकता है।</string>
+    <string name="library_keep_on_phone">इस फ़ोन पर रखें</string>
+    <string name="menu_hint_keep_on_phone">ListenLock अपनी कॉपी रख लेता है, ताकि किताब बिना इंटरनेट के पढ़ी जाए। किताब जितनी जगह लेती है।</string>
+    <string name="keep_on_phone_started">“%1$s” इस फ़ोन पर कॉपी हो रही है…</string>
+    <string name="keep_on_phone_done">“%1$s” अब इस फ़ोन पर है। यह बिना इंटरनेट के पढ़ी जाएगी।</string>
+    <string name="keep_on_phone_not_copied">“%1$s” कॉपी नहीं हो पाई। इंटरनेट और खाली जगह देखकर फिर कोशिश करें।</string>
+    <string name="keep_on_phone_not_moved">“%1$s” इस फ़ोन पर नहीं रखी जा सकी। किताब जहाँ थी वहीं है।</string>
+    <string name="keep_on_phone_already">यह किताब पहले से इस फ़ोन पर है।</string>
+    <string name="keep_on_phone_busy">एक किताब अभी कॉपी हो रही है। उसके बाद फिर कोशिश करें।</string>
+    <string name="found_book_keep">%1$s को इस फ़ोन पर रखें</string>
+    <string name="found_terms_keep">ऑफ़लाइन डाउनलोड ड्राइव क्लाउड कॉपी</string>
+</resources>

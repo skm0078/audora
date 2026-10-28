@@ -70,8 +70,8 @@ What changed and what still needs checking on a phone: [docs/PROGRESS.md](docs/P
 - The internet is used only for downloads you choose (voices, OCR, dictionaries, voice commands). They come from
   this project's GitHub releases or the upstream project's own GitHub, over HTTPS, and each file is checked against a
   fingerprint built into the app.
-- A web page you ask ListenLock to read, and a book you tap Download on in a free catalogue (Project Gutenberg or one
-  you add), are fetched once, over HTTPS, straight from that website; nothing about you is sent.
+- A web page you ask ListenLock to read, and a book you tap Download on in a free catalogue (one of the curated
+  catalogues listed in the app, such as Project Gutenberg), are fetched once, over HTTPS, straight from that website; nothing about you is sent.
 - **App lock** (off by default) asks for your phone's own fingerprint, face or screen lock. **Hide app content** blocks
   screenshots and the recent-apps preview.
 - Android's cloud backup and phone-to-phone transfer are off; Back up and restore makes a file that you keep.
