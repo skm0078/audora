@@ -1,27 +1,130 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Listening stats and streaks, kept on the phone only (CF-8). -->
+<!-- Listening stats, streaks, milestones and the stats share card, kept on the phone only (CF-8, stats screen). -->
 <resources>
     <string name="library_listening_stats">सुनने के आँकड़े</string>
-    <string name="menu_hint_listening_stats">कितना सुना, लगातार दिन और पूरी हुई किताबें। सिर्फ़ इसी फ़ोन पर रहते हैं।</string>
-    <string name="stats_today">आज</string>
-    <string name="stats_week">इस हफ़्ते</string>
-    <string name="stats_streak">लगातार दिन</string>
-    <string name="stats_best_streak">सबसे लंबा सिलसिला</string>
-    <string name="stats_books_finished">पूरी हुई किताबें</string>
-    <string name="stats_total">अब तक कुल</string>
+    <string name="menu_hint_listening_stats">कितना सुना, लगातार दिन, भाषाएँ और पूरी हुई किताबें। सिर्फ़ इसी फ़ोन पर रहते हैं।</string>
+    <string name="stats_title">आपका सुनना</string>
+    <string name="stats_close">बंद करें</string>
+    <string name="stats_share">शेयर करें</string>
+    <string name="stats_period_week">हफ़्ता</string>
+    <string name="stats_period_month">महीना</string>
+    <string name="stats_period_year">साल</string>
+    <string name="stats_period_all">अब तक</string>
     <string name="stats_minutes">%1$d मिनट</string>
+    <string name="stats_hours">%1$d घंटे</string>
     <string name="stats_hours_minutes">%1$d घंटे %2$d मिनट</string>
-    <plurals name="stats_days">
-        <item quantity="one">%d दिन</item>
-        <item quantity="other">%d दिन</item>
+    <string name="stats_total_week">इस हफ़्ते %1$s</string>
+    <string name="stats_total_in">%2$s में %1$s</string>
+    <string name="stats_total_all">अब तक कुल %1$s</string>
+    <string name="stats_goal">लक्ष्य %1$s</string>
+    <string name="stats_goal_set">लक्ष्य रखें</string>
+    <string name="stats_goal_progress">लक्ष्य का %1$d%%</string>
+    <string name="stats_goal_title">हफ़्ते का सुनने का लक्ष्य</string>
+    <string name="stats_goal_off">कोई लक्ष्य नहीं</string>
+    <plurals name="stats_goal_hours">
+        <item quantity="one">हफ़्ते में %d घंटा</item>
+        <item quantity="other">हफ़्ते में %d घंटे</item>
     </plurals>
-    <string name="stats_chart_title">पिछले 7 दिन</string>
+    <string name="stats_more_week">पिछले हफ़्ते से %1$s ज़्यादा</string>
+    <string name="stats_less_week">पिछले हफ़्ते से %1$s कम</string>
+    <string name="stats_more_month">पिछले महीने से %1$s ज़्यादा</string>
+    <string name="stats_less_month">पिछले महीने से %1$s कम</string>
+    <string name="stats_more_year">पिछले साल से %1$s ज़्यादा</string>
+    <string name="stats_less_year">पिछले साल से %1$s कम</string>
+    <string name="stats_same_as_before">पिछली बार जितना</string>
     <string name="stats_chart_day">%1$s: %2$s</string>
-    <string name="stats_empty">कोई किताब चलाइए, आपका सुनने का समय यहाँ दिखेगा। जिस दिन एक मिनट या ज़्यादा सुनें, वह दिन सिलसिले में गिना जाता है।</string>
-    <string name="stats_private">सिर्फ़ इसी फ़ोन पर रहते हैं। कुछ भी कहीं भेजा नहीं जाता।</string>
+    <string name="stats_streak_caption">लगातार दिन · सबसे ज़्यादा %1$d</string>
+    <plurals name="stats_rest_days">
+        <item quantity="one">इस सिलसिले में %d आराम का दिन</item>
+        <item quantity="other">इस सिलसिले में %d आराम के दिन</item>
+    </plurals>
+    <string name="stats_books_week">इस हफ़्ते पूरी हुई किताबें</string>
+    <string name="stats_books_in">%1$s में पूरी हुई किताबें</string>
+    <string name="stats_books_all">पूरी हुई किताबें</string>
+    <string name="stats_words_value">≈%1$s</string>
+    <string name="stats_words_caption">शब्द सुने</string>
+    <plurals name="stats_words_novels">
+        <item quantity="one">शब्द सुने, लगभग %d उपन्यास</item>
+        <item quantity="other">शब्द सुने, लगभग %d उपन्यास</item>
+    </plurals>
+    <string name="stats_languages">जिन भाषाओं में सुना</string>
+    <plurals name="stats_calendar">
+        <item quantity="one">जिस-जिस दिन सुना, पिछला %d हफ़्ता</item>
+        <item quantity="other">जिस-जिस दिन सुना, पिछले %d हफ़्ते</item>
+    </plurals>
+    <plurals name="stats_days_this_year">
+        <item quantity="one">इस साल %d दिन सुना</item>
+        <item quantity="other">इस साल %d दिन सुना</item>
+    </plurals>
+    <string name="stats_most_listened">सबसे ज़्यादा सुनी</string>
+    <string name="stats_removed_book">एक किताब जो अब आपकी लाइब्रेरी में नहीं है</string>
+    <string name="stats_when">आप कब सुनते हैं</string>
+    <string name="stats_part_morning">सुबह</string>
+    <string name="stats_part_day">दिन</string>
+    <string name="stats_part_evening">शाम</string>
+    <string name="stats_part_night">रात</string>
+    <string name="stats_peak">आप सबसे ज़्यादा %1$s से %2$s तक सुनते हैं</string>
+    <string name="stats_milestones">पड़ाव</string>
+    <plurals name="stats_badge_streak">
+        <item quantity="one">लगातार %d दिन</item>
+        <item quantity="other">लगातार %d दिन</item>
+    </plurals>
+    <plurals name="stats_badge_hours">
+        <item quantity="one">%d घंटा</item>
+        <item quantity="other">%d घंटे</item>
+    </plurals>
+    <plurals name="stats_badge_languages">
+        <item quantity="one">%d भाषा</item>
+        <item quantity="other">%d भाषाएँ</item>
+    </plurals>
+    <string name="stats_badge_first_audiobook">पहली ऑडियोबुक</string>
+    <plurals name="stats_badge_books">
+        <item quantity="one">%d किताब</item>
+        <item quantity="other">%d किताबें</item>
+    </plurals>
+    <string name="stats_badge_reached">%1$s: पूरा हुआ</string>
+    <string name="stats_badge_not_yet">%1$s: अभी नहीं</string>
+    <string name="stats_empty">कोई किताब चलाइए, आपका सुनना यहाँ दिखेगा। जिस दिन एक मिनट या ज़्यादा सुनें, वह दिन सिलसिले में गिना जाता है, और हफ़्ते में एक छूटा दिन माफ़ है।</string>
+    <string name="stats_private">सिर्फ़ इसी फ़ोन पर गिना जाता है। जब तक आप शेयर न करें, कुछ भी कहीं नहीं भेजा जाता।</string>
     <string name="stats_clear">आँकड़े मिटाएँ</string>
     <string name="stats_clear_title">सुनने के आँकड़े मिटाएँ?</string>
-    <string name="stats_clear_body">हर दिन का सुनने का समय और आपका सिलसिला भूल जाएगा। आपकी किताबें और जगहें बनी रहेंगी।</string>
+    <string name="stats_clear_body">आपका सारा सुनने का समय, सिलसिले और पड़ाव भूल जाएँगे। आपकी किताबें और जगहें बनी रहेंगी।</string>
     <string name="stats_clear_confirm">मिटाएँ</string>
     <string name="stats_cancel">रद्द करें</string>
+    <string name="stats_share_title">अपना सुनना शेयर करें</string>
+    <string name="stats_card_streak">सिलसिला</string>
+    <string name="stats_card_forest">जंगल हरा</string>
+    <string name="stats_card_teal">नीला-हरा</string>
+    <string name="stats_card_indigo">नील</string>
+    <string name="stats_card_night">रात</string>
+    <string name="stats_card_paper">काग़ज़</string>
+    <string name="stats_card_my_week">मेरा हफ़्ता</string>
+    <string name="stats_card_my">मेरा %1$s</string>
+    <string name="stats_card_my_streak">मेरा सिलसिला</string>
+    <string name="stats_card_headline">मैंने %2$s में %1$s सुनीं</string>
+    <string name="stats_card_headline_time">मैंने %1$s सुना</string>
+    <plurals name="stats_card_books">
+        <item quantity="one">%d किताब</item>
+        <item quantity="other">%d किताबें</item>
+    </plurals>
+    <plurals name="stats_card_languages">
+        <item quantity="one">%d भाषा</item>
+        <item quantity="other">%d भाषाओं</item>
+    </plurals>
+    <string name="stats_card_listened">सुना</string>
+    <string name="stats_card_day_streak">लगातार दिन</string>
+    <string name="stats_card_languages_label">भाषाएँ</string>
+    <string name="stats_card_bars_week">इस हफ़्ते हर दिन</string>
+    <string name="stats_card_bars_month">%1$s में हर दिन</string>
+    <string name="stats_card_bars_year">%1$s में हर महीना</string>
+    <string name="stats_card_bars_all">हर साल</string>
+    <plurals name="stats_card_streak_headline">
+        <item quantity="one">लगातार %d दिन</item>
+        <item quantity="other">लगातार %d दिन</item>
+    </plurals>
+    <string name="stats_card_best">सबसे लंबा सिलसिला</string>
+    <string name="stats_card_days_year">इस साल के दिन</string>
+    <string name="stats_save">तस्वीर सहेजें</string>
+    <string name="stats_saved">Pictures/ListenLock में सहेजी गई</string>
+    <string name="stats_not_saved">तस्वीर सहेजी नहीं जा सकी</string>
 </resources>

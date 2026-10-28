@@ -16,8 +16,10 @@ class ListeningReportTest {
     private fun report(slots: Map<ListeningSlot, Heard>, period: ListeningPeriod, today: LocalDate = TODAY) =
         ListeningReport.of(slots, period, today, DayOfWeek.MONDAY)
 
-    private fun at(day: LocalDate, hour: Int?, ms: Long, book: String? = "a", lang: Lang? = Lang.EN, words: Long = 0) =
-        ListeningSlot(day, hour, book, lang) to Heard(ms, words)
+    private fun at(day: LocalDate, hour: Int?, ms: Long, book: String? = "a", lang: Lang? = Lang.EN) =
+        ListeningSlot(day, hour, book, lang) to Heard(ms)
+
+    private fun Pair<ListeningSlot, Heard>.withWords(words: Long) = first to second.copy(words = words)
 
     @Test
     fun `nothing listened is empty`() {
@@ -33,8 +35,8 @@ class ListeningReportTest {
     @Test
     fun `a week starts on the first day of the week and marks the days still to come`() {
         val slots = mapOf(
-            at(TODAY, 9, MIN * 10, words = 100),
-            at(TODAY.minusDays(2), 21, MIN * 20, words = 50), // Monday
+            at(TODAY, 9, MIN * 10).withWords(100),
+            at(TODAY.minusDays(2), 21, MIN * 20).withWords(50), // Monday
             at(TODAY.minusDays(3), 21, MIN * 40), // Sunday: last week
         )
         val week = report(slots, ListeningPeriod.WEEK)
@@ -102,6 +104,7 @@ class ListeningReportTest {
 
         assertEquals(listOf(Lang.BN to MIN * 9, Lang.EN to MIN * 5, Lang.HI to MIN * 3), week.languages)
         assertEquals(listOf("b" to MIN * 9, "a" to MIN * 5, "c" to MIN * 2), week.books)
+        assertEquals(4, week.booksHeard)
         assertEquals(MIN * 67, week.ms)
         assertEquals(MIN * 17, week.hours.sum())
     }

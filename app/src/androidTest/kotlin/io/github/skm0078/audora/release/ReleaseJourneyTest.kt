@@ -164,6 +164,11 @@ class ReleaseJourneyTest {
             step("27 Turn pages shows a text book a screenful at a time with its arrows") {
                 share.aTextBookTurnsPages(MORE_FORMATS.first())
             }
+            val stats = StatsJourney(rule, ::backToTabs)
+            step(
+                "30 the stats screen opens and its card is saved and shared",
+                stats::theStatsScreenOpensAndItsCardIsSavedAndShared,
+            )
         } finally {
             JourneyDevice.onMain {
                 port?.pause()

@@ -27,7 +27,8 @@ data class ListeningBar(val start: LocalDate, val ms: Long, val later: Boolean)
  *   so "more than last week" compares like with like; null for all time.
  * @property bars week: 7 days; month: every day; year: 12 months; all time: one per year.
  * @property languages time per language heard, most first; time from before languages were kept is left out.
- * @property books the [ListeningStatsConfig.topBooks] most listened books' ids with their time, most first.
+ * @property books the [ListeningStatsConfig.topBooks] most listened books' ids with their time, most first;
+ *   [booksHeard] counts every book listened to in the period.
  * @property hours time per local hour of the day, 0 to 23; [peakStart] starts the busiest
  *   [ListeningStatsConfig.peakHours] hours (wrapping past midnight), null with no hours known.
  * @property daysListened days in the period that reached the streak minimum.
@@ -42,6 +43,7 @@ data class ListeningReport(
     val bars: List<ListeningBar>,
     val languages: List<Pair<Lang, Long>>,
     val books: List<Pair<String, Long>>,
+    val booksHeard: Int,
     val hours: List<Long>,
     val peakStart: Int?,
     val daysListened: Int,
@@ -58,6 +60,7 @@ data class ListeningReport(
         ): ListeningReport {
             val from = startOf(period, slots, today, firstDayOfWeek)
             val inPeriod = slots.filterKeys { it.day in from..today }
+            val books = ranked(inPeriod) { it.book }
             val hours = LongArray(HOURS_A_DAY).also { sums ->
                 inPeriod.forEach { (slot, heard) -> slot.hour?.let { sums[it] += heard.ms } }
             }.toList()
@@ -70,7 +73,8 @@ data class ListeningReport(
                 words = inPeriod.values.sumOf { it.words },
                 bars = bars(inPeriod.msByDay(), period, from, today),
                 languages = ranked(inPeriod) { it.lang },
-                books = ranked(inPeriod) { it.book }.take(config.topBooks),
+                books = books.take(config.topBooks),
+                booksHeard = books.size,
                 hours = hours,
                 peakStart = peakStart(hours, config.peakHours),
                 daysListened = inPeriod.msByDay().count { it.value >= config.streakDayMs },
