@@ -36,7 +36,7 @@ text, but not as a picture. Everything must stay on the phone, cost little, and 
   any Share button opens it with `ShareEntry.quote(...)` or `ShareEntry.book(...)` and no route in the app's
   navigation. Files go to `cacheDir/shared-cards` (its own FileProvider, the 5 newest kept), then Android's share
   sheet. Nothing is uploaded by ListenLock.
-- **Book card**: the library's book menu gets "Share this book" (cover, title, author, "Now listening").
+- **Book card**: the library's book menu gets a big **Share** button beside Play and Up next, for "Share this book" (cover, title, author, "Now listening").
 
 ## Alternatives
 

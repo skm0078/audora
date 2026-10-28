@@ -15,10 +15,10 @@
 - **Verified in CI:** `CardQuoteTest` (60-word cut, sentence ends in en/hi/bn, tidying, script), `BookActionTest`,
   `SentenceMenuTest` (Share choices, picture of a highlight and of a sentence), `ShareCardScreenTest` (story, square
   and post pictures decode at exactly 1080 x 1920 / 1080 x 1080 / 1080 x 1350; English 1x, Hindi and Bengali 2x;
-  screenshots of the screen and the pictures), `ReleaseJourneyTest` step 19 (card made from the installed app, share
+  screenshots of the screen and the pictures), `ReleaseJourneyTest` step 21 (card made from the installed app, share
   sheet opens, Back returns).
 
 **Real-device checks (the test phone):** long-press a sentence in an English, a Hindi and a Bengali book, Share… →
 Share as a picture: the quote's letters join correctly (conjuncts, matras), the page reads in the book's language,
 the mark sits in the corner. Try each size and background, pick your own photo, add a dedication, share to WhatsApp
-Status: the picture is sharp and nothing is cut off. Library → a book's menu → Share this book.
+Status: the picture is sharp and nothing is cut off. Library → a book's menu → Share.

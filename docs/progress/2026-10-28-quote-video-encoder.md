@@ -5,7 +5,7 @@
 - No screen yet (2b), so no "What's new" entry. `:pdf` not changed (PIPELINE_VERSION unchanged).
 - **Could affect:** nothing existing; new code only.
 - **Verified in CI:** `VideoTimelineTest`, `QuoteVideoWriterDeviceTest` (sizes, tracks, every frame written, the right
-  picture at each moment, the label drawn, the cap), release journey step 21 in the installed app.
+  picture at each moment, the label drawn, the cap), release journey step 23 in the installed app.
 
 **Cost:** about 15 KB of code; 3.7 MB bitmap plus the encoders' buffers only while a video is written; no change at
 cold start. The device test logs how long two seconds of video took.

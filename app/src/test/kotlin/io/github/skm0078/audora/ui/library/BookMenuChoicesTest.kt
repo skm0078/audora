@@ -40,7 +40,8 @@ class BookMenuChoicesTest {
 
     @Test
     fun `a book never opened has no Finished button, since its length is unknown`() {
-        assertEquals(listOf(QuickChoice.Play, QuickChoice.UpNext, SHARE), BookMenuChoices.of(item(pageCount = null)).quick)
+        val quick = BookMenuChoices.of(item(pageCount = null)).quick
+        assertEquals(listOf(QuickChoice.Play, QuickChoice.UpNext, SHARE), quick)
     }
 
     @Test

@@ -5,6 +5,7 @@
 package io.github.skm0078.audora.ui.library
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -108,11 +109,15 @@ private fun quickIcon(choice: QuickChoice): Int = when (choice) {
     is QuickChoice.Finished -> R.drawable.ic_check
 }
 
+// The big buttons are a quarter of the sheet wide: Share, not Share this book (the hint keeps the long name).
+@StringRes
+private fun quickActionLabel(action: BookAction): Int =
+    if (action == BookAction.SHARE_CARD) R.string.menu_quick_share else action.label
+
 private fun quickLabel(choice: QuickChoice): Int = when (choice) {
     QuickChoice.Play -> R.string.menu_play
     QuickChoice.UpNext -> R.string.up_next_title
-    // The big buttons are a quarter of the sheet wide: Share, not Share this book (the row label and the hint keep it).
-    is QuickChoice.Action -> if (choice.action == BookAction.SHARE_CARD) R.string.menu_quick_share else choice.action.label
+    is QuickChoice.Action -> quickActionLabel(choice.action)
     is QuickChoice.Finished -> R.string.library_status_finished
 }
 
