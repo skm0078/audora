@@ -20,10 +20,12 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.Book
+import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.library.BookOutput
 import io.github.skm0078.audora.core.library.DocumentFormat
 import io.github.skm0078.audora.core.library.OutputKind
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.result.getOrNull
 import io.github.skm0078.audora.di.LibraryEntryPoint
 import io.github.skm0078.audora.playback.export.AacAudioSink
 import io.github.skm0078.audora.playback.export.AudioChapter
@@ -32,7 +34,6 @@ import io.github.skm0078.audora.playback.export.LocalChapterFiles
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.speech.audio.PcmAudio
-import io.github.skm0078.audora.ui.library.titleOrUntitled
 import java.io.File
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -80,7 +81,8 @@ internal class MadeJourney(private val rule: ComposeTestRule, private val backTo
             assertTrue(runBlocking { entry.outputs().add(outputs) } is Outcome.Success)
             backToTabs()
             tap(hasText(text(R.string.tab_made)))
-            val named = "${titleOrUntitled(book.title)}, ${text(R.string.made_kind_audiobook)}"
+            val title = book.title.takeUnless { it == BookTitles.UNTITLED } ?: text(R.string.library_untitled)
+            val named = "$title, ${text(R.string.made_kind_audiobook)}"
             node(hasContentDescription(text(R.string.made_share_named, named))).assertExists()
             tap(hasContentDescription(text(R.string.made_play_named, named)))
 
