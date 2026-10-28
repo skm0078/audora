@@ -32,6 +32,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.isToggleable
@@ -39,6 +40,7 @@ import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.printToString
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
@@ -603,12 +605,16 @@ class ReleaseJourneyTest {
 
     /**
      * A book's menu shows its big buttons and opens Save as in place; the sort sheet's List shows rows at once and
-     * Reset brings the covers back. Sheets close by their handle: Back reaches the activity, not the sheet's window.
+     * Reset brings the covers back. The emulator's screen is small, so the books can sit below Continue reading,
+     * not yet composed: each check scrolls the library to what it looks for. Sheets close by their handle: Back
+     * reaches the activity, not the sheet's window.
      */
     private fun bookMenuAndSortSheet() {
         // The words around the book's name, whichever side of it they sit in this language.
         val namedMenu = text(R.string.library_book_menu_named, NAME_MARK).split(NAME_MARK).maxBy { it.length }.trim()
-        tap(hasContentDescription(namedMenu, substring = true))
+        val menuButton = hasContentDescription(namedMenu, substring = true) and hasClickAction()
+        scrollLibraryTo(menuButton)
+        tap(menuButton)
         waitForNode(hasText(text(R.string.menu_play)))
         tapText(R.string.menu_save_as)
         waitForNode(hasText(text(R.string.menu_save_audiobook)))
@@ -619,13 +625,23 @@ class ReleaseJourneyTest {
         val listRow = SemanticsMatcher("a list row") { node ->
             node.config.getOrNull(SemanticsActions.OnClick)?.label == openBook
         }
+        val coverTile = SemanticsMatcher("a cover tile") { node ->
+            node.config.getOrNull(SemanticsActions.OnLongClick)?.label?.contains(namedMenu) == true &&
+                node.config.getOrNull(SemanticsActions.OnClick)?.label != openBook
+        }
         tap(hasContentDescription(text(R.string.library_sort_filter)))
         tapText(R.string.library_layout_list)
-        waitForNode(listRow)
+        scrollLibraryTo(listRow)
         tapText(R.string.library_sort_reset)
-        gone(listRow)
+        scrollLibraryTo(coverTile)
         tap(hasContentDescription(text(R.string.a11y_sheet_close)))
         gone(hasText(text(R.string.library_sort_reset)))
+    }
+
+    /** Scrolls the library's grid or list until [matcher]'s node is composed and on screen; fails if it has none. */
+    private fun scrollLibraryTo(matcher: SemanticsMatcher) {
+        rule.waitForIdle()
+        node(hasScrollToIndexAction()).performScrollToNode(matcher)
     }
 
     /** One Anek file on its own, at the weight it was trimmed to. */
