@@ -694,7 +694,7 @@ class MainActivity : ComponentActivity() {
     ) {
         val navigate = nav::navigate
         val onContinue = nav::continueReading
-        val books = (controller.listState as? LibraryListState.Loaded)?.all?.map { it.book }
+        val loadedBooks = (controller.listState as? LibraryListState.Loaded)?.all?.map { it.book }
         val context = LocalContext.current.applicationContext
         val undoMs = rememberRemovalUndoMs()
         val playWithPermission = rememberPlayWithNotificationPermission()
@@ -772,7 +772,7 @@ class MainActivity : ComponentActivity() {
             covers = bookCovers,
             runningJobs = rememberRunningJobCount(),
             view = rememberLibraryLayout(),
-            home = rememberLibraryHome(highlightStore, books, nav::openPlace),
+            home = rememberLibraryHome(highlightStore, loadedBooks, nav::openPlace),
             settingValues = settingValues(
                 KnownSettings(
                     appearance,
@@ -783,7 +783,7 @@ class MainActivity : ComponentActivity() {
                 ),
             ),
         )
-        studio.Sheets(books)
+        studio.Sheets(loadedBooks)
     }
 
     /** The OCR models' state; a scanned page waiting for them is read as soon as they are in. */
