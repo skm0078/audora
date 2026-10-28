@@ -44,7 +44,8 @@ import io.github.skm0078.audora.ui.theme.WindowWidths
  * width up (a phone in landscape, a foldable open, a small tablet) the places move to a rail at the side, and from an
  * expanded width (a big tablet) to a sidebar that also lists [shelves], as Material's window size classes ask. The
  * same four places keep the same names and order in every form, and the mini player stays at the bottom of the
- * content beside a rail or sidebar.
+ * content beside a rail or sidebar. With the bottom bar, [drawer] adds the side drawer the library's menu button opens
+ * (ADR 2026-10-28-phone-drawer); beside a sidebar its rows are already in view.
  */
 @Composable
 fun AppShell(
@@ -54,6 +55,7 @@ fun AppShell(
     miniPlayer: @Composable () -> Unit = {},
     tabs: List<AppTab> = AppTab.entries,
     shelves: SidebarShelves = SidebarShelves(),
+    drawer: PhoneDrawer? = null,
     // The window's own width, not this box's: the root's cutout padding must not push a 600-640 dp landscape phone
     // back to the bottom bar. Not Configuration.screenWidthDp, which leaves out a side cutout and a side three-button
     // navigation bar before Android 15.
@@ -62,6 +64,24 @@ fun AppShell(
 ) {
     // Kids mode (plan item 71) has the library only, so no bar, rail or sidebar at all.
     val form = placesForm(showPlaces = tabs.size > 1, windowWidth)
+    if (form == PlacesForm.BAR && drawer != null) {
+        PhoneDrawerFrame(drawer) { Places(form, selected, onSelect, modifier, miniPlayer, tabs, shelves, content) }
+    } else {
+        Places(form, selected, onSelect, modifier, miniPlayer, tabs, shelves, content)
+    }
+}
+
+@Composable
+private fun Places(
+    form: PlacesForm,
+    selected: AppTab,
+    onSelect: (AppTab) -> Unit,
+    modifier: Modifier,
+    miniPlayer: @Composable () -> Unit,
+    tabs: List<AppTab>,
+    shelves: SidebarShelves,
+    content: @Composable () -> Unit,
+) {
     Box(modifier.fillMaxSize()) {
         val beside = form == PlacesForm.RAIL || form == PlacesForm.SIDEBAR
         Row(Modifier.fillMaxSize()) {

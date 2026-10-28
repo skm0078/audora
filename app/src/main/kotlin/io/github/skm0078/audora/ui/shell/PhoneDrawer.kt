@@ -1,0 +1,159 @@
+// File: app/src/main/kotlin/io/github/skm0078/audora/ui/shell/PhoneDrawer.kt
+// Purpose: The phone's side drawer (ADR 2026-10-28-phone-drawer): the tablet sidebar's shelves and collections, what
+//          the listener made, the tour and Settings, opened from the library's menu button over the bottom bar.
+
+package io.github.skm0078.audora.ui.shell
+
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import io.github.skm0078.audora.R
+import io.github.skm0078.audora.ui.theme.Dimens
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+
+/** One of the library's shelves (All books, Reading, Not started, Finished) as the drawer lists it. */
+@Immutable
+data class DrawerShelf(
+    @StringRes val label: Int,
+    @DrawableRes val icon: Int,
+    val books: Int,
+    val selected: Boolean,
+    val onOpen: () -> Unit,
+)
+
+/**
+ * What the drawer lists and where each row goes. [shelves] and [collections] narrow the library; the rest open a
+ * place or a sheet. The drawer closes before any of them runs, so a sheet never opens on top of it.
+ */
+@Immutable
+class PhoneDrawer(
+    val shelves: List<DrawerShelf>,
+    val collections: SidebarShelves,
+    val onMade: () -> Unit,
+    val onListeningStats: () -> Unit,
+    val onTour: () -> Unit,
+    val onSettings: () -> Unit,
+)
+
+/** Opens the drawer, for the library's menu button; null where there is none (tablets, kids mode, previews). */
+val LocalOpenDrawer = staticCompositionLocalOf<(() -> Unit)?> { null }
+
+/**
+ * The drawer over [content], the bottom bar and the mini player. It opens only from the menu button: a swipe from
+ * the edge would fight the sideways rows and Android's back gesture, so swiping only closes it. Back closes it too;
+ * the sheet takes the predictive back gesture itself.
+ */
+@Composable
+internal fun PhoneDrawerFrame(drawer: PhoneDrawer, content: @Composable () -> Unit) {
+    val state = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    val open = remember(state, scope) {
+        {
+            scope.launch { state.open() }
+            Unit
+        }
+    }
+    ModalNavigationDrawer(
+        drawerState = state,
+        gesturesEnabled = state.isOpen,
+        drawerContent = { DrawerSheet(drawer, state, scope) },
+    ) {
+        CompositionLocalProvider(LocalOpenDrawer provides open) { content() }
+    }
+}
+
+@Composable
+private fun DrawerSheet(drawer: PhoneDrawer, state: DrawerState, scope: CoroutineScope) {
+    val then: (() -> Unit) -> () -> Unit = { action ->
+        {
+            scope.launch {
+                state.close()
+                action()
+            }
+        }
+    }
+    // A closed drawer stays composed just off screen; its rows leave the semantics tree, so neither TalkBack nor a
+    // test finds a Settings or Show me around that cannot be seen.
+    val showing = state.currentValue == DrawerValue.Open || state.targetValue == DrawerValue.Open
+    val reachable = if (showing) Modifier.testTag(DRAWER_TAG) else Modifier.clearAndSetSemantics {}
+    ModalDrawerSheet(drawerState = state) {
+        Column(
+            reachable.verticalScroll(rememberScrollState()).padding(Dimens.SpaceM),
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
+        ) {
+            AppName()
+            SectionHeading(R.string.drawer_shelves)
+            drawer.shelves.forEach { shelf ->
+                NavigationDrawerItem(
+                    label = { Text(stringResource(shelf.label)) },
+                    icon = { Icon(painterResource(shelf.icon), contentDescription = null) },
+                    badge = { Text(shelf.books.toString(), style = MaterialTheme.typography.labelMedium) },
+                    selected = shelf.selected,
+                    onClick = then(shelf.onOpen),
+                )
+            }
+            val collections = drawer.collections
+            if (collections.shelves.isNotEmpty()) {
+                Shelves(collections.copy(onOpen = { id -> then { collections.onOpen(id) }() }), libraryShowing = true)
+            }
+            HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceM))
+            SectionHeading(R.string.drawer_made)
+            DrawerRow(R.string.drawer_made_audio, R.drawable.ic_made, then(drawer.onMade))
+            DrawerRow(R.string.library_listening_stats, R.drawable.ic_bar_chart, then(drawer.onListeningStats))
+            HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceM))
+            DrawerRow(R.string.settings_tour_title, R.drawable.ic_explore, then(drawer.onTour))
+            DrawerRow(R.string.settings_title, R.drawable.ic_settings, then(drawer.onSettings))
+        }
+    }
+}
+
+@Composable
+private fun SectionHeading(@StringRes text: Int) {
+    Text(
+        stringResource(text),
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS).semantics { heading() },
+    )
+}
+
+@Composable
+private fun DrawerRow(@StringRes label: Int, @DrawableRes icon: Int, onClick: () -> Unit) {
+    NavigationDrawerItem(
+        label = { Text(stringResource(label)) },
+        icon = { Icon(painterResource(icon), contentDescription = null) },
+        selected = false,
+        onClick = onClick,
+    )
+}
+
+/** For UI tests: the drawer's sheet. */
+internal const val DRAWER_TAG = "phone_drawer"

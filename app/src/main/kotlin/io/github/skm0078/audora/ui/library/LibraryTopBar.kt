@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -39,6 +40,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.LibraryQuery
+import io.github.skm0078.audora.ui.shell.LocalOpenDrawer
 import io.github.skm0078.audora.ui.theme.HelpButton
 import java.time.LocalTime
 
@@ -66,7 +68,7 @@ internal fun LibraryTopBar(
  * Search and the sort sheet's button show once the library has a book; [shown] is how many books the sheet leaves.
  * Closing the search clears its text but keeps the sort and filter, which stay until changed. Jobs live in the Made
  * place; the Jobs button here is only a shortcut while something runs, with a badge counting what works now (ADR
- * 2026-10-28-four-places).
+ * 2026-10-28-four-places). On a phone the menu button at the start opens the side drawer (ADR 2026-10-28-phone-drawer).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,9 +101,14 @@ internal fun LibraryTopBar(
             }
         },
         navigationIcon = {
+            val openDrawer = LocalOpenDrawer.current
             if (searching) {
                 IconButton(onClick = closeSearch) {
                     Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.library_search_close))
+                }
+            } else if (openDrawer != null) {
+                IconButton(onClick = openDrawer, modifier = Modifier.testTag(DRAWER_BUTTON_TAG)) {
+                    Icon(painterResource(R.drawable.ic_menu), stringResource(R.string.drawer_open))
                 }
             }
         },
@@ -146,6 +153,9 @@ internal fun greetingFor(hour: Int): Int = when (hour) {
     in AFTERNOON_FROM until EVENING_FROM -> R.string.library_greeting_afternoon
     else -> R.string.library_greeting_evening
 }
+
+/** For UI tests: the phone's menu button. */
+internal const val DRAWER_BUTTON_TAG = "drawer_button"
 
 private const val MORNING_FROM = 5
 private const val AFTERNOON_FROM = 12

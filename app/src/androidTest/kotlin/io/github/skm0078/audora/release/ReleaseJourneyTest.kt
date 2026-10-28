@@ -201,6 +201,7 @@ class ReleaseJourneyTest {
         }
         step("32 Made plays a saved audiobook like the book player", MadeJourney(rule, ::backToTabs)::playsLikeBook)
         step("41 catalogues are a curated list", CatalogueJourney(rule, ::backToTabs)::theCuratedCataloguesAreListed)
+        step("45 the phone drawer opens Settings", DrawerJourney(rule, ::backToTabs)::opensSettings)
     }
 
     /**

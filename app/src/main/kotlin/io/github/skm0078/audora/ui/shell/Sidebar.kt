@@ -90,7 +90,7 @@ internal fun Sidebar(tabs: List<AppTab>, selected: AppTab, onSelect: (AppTab) ->
 }
 
 @Composable
-private fun AppName() {
+internal fun AppName() {
     Row(
         Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceL),
         verticalAlignment = Alignment.CenterVertically,
@@ -110,7 +110,7 @@ private fun AppName() {
 }
 
 @Composable
-private fun Shelves(shelves: SidebarShelves, libraryShowing: Boolean) {
+internal fun Shelves(shelves: SidebarShelves, libraryShowing: Boolean) {
     HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceM))
     Text(
         stringResource(R.string.sidebar_collections),

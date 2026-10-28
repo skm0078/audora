@@ -433,7 +433,7 @@ class MainActivity : ComponentActivity() {
             if (tab == null) {
                 ScreenRoute(screen, nav, voicesController, battery, books)
             } else {
-                TabsRoute(tab, libraryController, miniPort, bookCovers, nav::navigate, tour) {
+                TabsRoute(tab, libraryController, miniPort, bookCovers, nav::navigate, tour, nav::openLibraryAction) {
                     when (tab) {
                         AppTab.LIBRARY -> LibraryRoute(libraryController, nav, appearance, battery.exempt) {
                             if (kids.on) {
@@ -780,6 +780,12 @@ class MainActivity : ComponentActivity() {
             ),
         )
         studio.Sheets((controller.listState as? LibraryListState.Loaded)?.all?.map { it.book })
+        LaunchedEffect(nav.pendingLibraryAction) {
+            nav.pendingLibraryAction?.let { action ->
+                nav.pendingLibraryAction = null
+                studio.onLibraryAction(action)
+            }
+        }
     }
 
     /** The OCR models' state; a scanned page waiting for them is read as soon as they are in. */
@@ -1002,6 +1008,14 @@ internal class AppNavigation(routeState: MutableState<String>) {
     fun openSetting(key: SettingKey) {
         pendingSetting = key
         navigate(AppDestination.Settings)
+    }
+
+    /** A library action asked for outside the library (the phone drawer's Listening stats), run once it shows. */
+    var pendingLibraryAction by mutableStateOf<LibraryAction?>(null)
+
+    fun openLibraryAction(action: LibraryAction) {
+        pendingLibraryAction = action
+        navigate(AppDestination.Library)
     }
 
     fun openPlace(anchor: ResumeAnchor) {
