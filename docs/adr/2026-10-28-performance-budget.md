@@ -22,7 +22,7 @@ size was never checked.
    book. Numbers in logcat under `AudoraLoadTest`.
 4. **Release journey step 40** (`LoadJourney`): 1,000 small text books added to the installed app through the real
    library, one at a time as a folder of books arrives; the search finds the last one; all are removed again. It runs
-   after step 19 (the library is on screen there and no other change adds a step there).
+   last: run after step 19, the thousand books' background work left step 26's long-press without its menu on CI.
 5. **APK size gate** (`scripts/perf/check_apk_size.py`, budget `scripts/perf/apk-budget.json`): the dev and release
    APKs fail the build over their budget; the dev APK's change from the published dev build shows on the summary
    page, with a warning past 1 MB.
@@ -52,8 +52,9 @@ books, 4 ms for a sort, 2 ms for a search): a limit catches a design mistake, no
 (dev-build ce1caf2), so its budget leaves about 10 %.
 
 **Emulator numbers are not phone numbers.** CI's emulator draws with a software GPU, so many frames miss their
-deadline there; only frozen frames fail, and jank is a number to watch from run to run. A phone check is still the
-judge of smoothness (the progress entry lists it).
+deadline there; only frozen frames fail, and jank is a number to watch from run to run. The first CI run reported no
+frame metrics at all (`frames=0`), so the test also logs each fling's time, and warns when no frames were measured
+rather than reading "0 frozen" as a pass. A phone check is still the judge of smoothness (the progress entry lists it).
 
 ## Not done (flagged, for the maintainer to decide)
 - **Baseline profile.** It would ship the app's hot code paths precompiled, usually 15 to 30 % faster cold start and

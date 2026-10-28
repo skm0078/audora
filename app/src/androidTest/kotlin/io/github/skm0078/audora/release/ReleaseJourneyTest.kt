@@ -147,8 +147,6 @@ class ReleaseJourneyTest {
             step("17 an exported chapter carries the book's cover", ::anExportedChapterCarriesTheCover)
             step("18 the app font draws English, Hindi and Bengali", ::theAppFontDrawsAllThreeScripts)
             step("19 the four places open and Jobs goes back to Made", ::theFourPlacesOpenAndJobsLiveInMade)
-            // Numbered after the others, run on the library step 19 ends on; nothing else adds a step here.
-            step("40 search finds the last of 1,000 books", LoadJourney(rule, ::backToTabs)::lastOfManyIsFound)
             step("20 the book menu's Save as opens and the sort sheet turns covers to a list", ::bookMenuAndSortSheet)
             step("21 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
             step("22 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
@@ -166,6 +164,8 @@ class ReleaseJourneyTest {
             step("27 Turn pages shows a text book a screenful at a time with its arrows") {
                 share.aTextBookTurnsPages(MORE_FORMATS.first())
             }
+            // Last on purpose: run after step 19, the thousand books' background work left step 26 without its menu.
+            step("40 search finds the last of 1,000 books", LoadJourney(rule, ::backToTabs)::lastOfManyIsFound)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()

@@ -74,10 +74,15 @@ class LibraryLoadScreenTest {
         val list = sameNode(rule.onNode(hasScrollToIndexAction() and hasAnyDescendant(book(items.first()))))
 
         val frames = FrameTimes().apply { attach(rule.activity.window) }
+        var slowestFlingMs = 0L
         repeat(FLINGS) {
+            val flung = SystemClock.elapsedRealtime()
             rule.onNode(list).performTouchInput { swipeUp() }
             rule.waitForIdle()
+            slowestFlingMs = maxOf(slowestFlingMs, SystemClock.elapsedRealtime() - flung)
         }
+        // Frame metrics arrive after the frame, on their own thread: the last flings' frames land within a moment.
+        SystemClock.sleep(FRAME_REPORT_MS)
         frames.detach(rule.activity.window)
 
         val scrolled = SystemClock.elapsedRealtime()
@@ -89,8 +94,11 @@ class LibraryLoadScreenTest {
         Log.i(
             TAG,
             "$layout books=${items.size} firstScreenMs=$firstFrameMs scrollToLastMs=$scrollMs " +
-                "frames=${frames.count} janky=${frames.janky} slowestMs=${frames.slowestMs} frozen=$frozen",
+                "slowestFlingMs=$slowestFlingMs frames=${frames.count} janky=${frames.janky} " +
+                "slowestMs=${frames.slowestMs} frozen=$frozen",
         )
+        // Some emulator images report no frame metrics at all; then "0 frozen" would mean nothing, so say so.
+        if (frames.count == 0) Log.w(TAG, "$layout: no frame metrics were reported, frozen frames were not measured")
         assertTrue(
             "First screen took $firstFrameMs ms (budget ${budget.firstFrameMs} ms)",
             firstFrameMs <= budget.firstFrameMs,
@@ -173,6 +181,7 @@ class LibraryLoadScreenTest {
     private companion object {
         const val TAG = "AudoraLoadTest"
         const val FLINGS = 10
+        const val FRAME_REPORT_MS = 500L
         const val NANOS_PER_MS = 1_000_000L
 
         /** The JVM load test's books, each shown as the library shows it: on hand, with its reading progress. */
