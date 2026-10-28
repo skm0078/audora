@@ -84,7 +84,6 @@ fun ReaderScreen(
         PageTextSheet(look, onLookChange, textView = state.view == ReaderView.TEXT) { pageTextOpen = false }
     }
     val panel = showsSidePanel(windowWidth) && state.document is DocumentState.Open
-    val sidePanel = if (panel) ({ ReaderSidePanel(state, actions, notes, notesActions, voiceNotes, people) }) else null
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -127,7 +126,7 @@ fun ReaderScreen(
 
                 is DocumentState.Open -> {
                     PlaceHighlights(state, notesActions)
-                    BesidePanel(sidePanel) {
+                    BesidePanel(panel, { ReaderSidePanel(state, actions, notes, notesActions, voiceNotes, people) }) {
                         OpenBook(state, document, config, actions, ocrModels, look, spokenWord, thumbnails, pack, notes)
                     }
                     NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)

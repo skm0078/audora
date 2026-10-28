@@ -93,10 +93,10 @@ internal fun ReaderSidePanel(
     }
 }
 
-/** The page, with the side panel at its start when there is one (a wide screen). */
+/** The page, with the side [panel] at its start when [shown] (a wide screen). */
 @Composable
-internal fun BesidePanel(panel: (@Composable () -> Unit)?, page: @Composable () -> Unit) {
-    if (panel == null) {
+internal fun BesidePanel(shown: Boolean, panel: @Composable () -> Unit, page: @Composable () -> Unit) {
+    if (!shown) {
         page()
         return
     }
