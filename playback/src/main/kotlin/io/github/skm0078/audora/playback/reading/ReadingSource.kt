@@ -78,11 +78,14 @@ class ReadingSource(
 
     /**
      * Who says [unit]: the rules' speaker when they also know the gender (a tag like "said Mira": they are rarely
-     * wrong then), else the story brain's, else the rules' (ADR story-brain).
+     * wrong then), else the story brain's when it tells a gender, else the rules' (ADR story-brain), whose gender
+     * may be only the name's likely one (ADR character-genders), else the brain's.
      */
     fun speakerOf(unit: ReadingUnit): Speaker? {
         val ruled = quotes.speakerOf(unit)
-        return ruled?.takeIf { it.gender != SpeakerGender.UNKNOWN } ?: brain?.speakerOf(unit) ?: ruled
+        val sure = ruled?.takeIf { it.gender != SpeakerGender.UNKNOWN && !quotes.genderGuessed(unit) }
+        val judged = brain?.speakerOf(unit)
+        return sure ?: judged?.takeIf { it.gender != SpeakerGender.UNKNOWN } ?: ruled ?: judged
     }
 
     /** The modes as they are now, for one render epoch's playlist. */

@@ -32,6 +32,11 @@
     <string name="share_card_look_picture">Your own picture</string>
     <string name="share_card_picture_note">Use a picture you took or are allowed to share.</string>
     <string name="share_card_picture_failed">That picture could not be opened. Try another one.</string>
+    <string name="share_card_picture_drag">Drag the picture on the card to choose what shows.</string>
+    <string name="share_card_picture_left">Move the picture left</string>
+    <string name="share_card_picture_right">Move the picture right</string>
+    <string name="share_card_picture_up">Move the picture up</string>
+    <string name="share_card_picture_down">Move the picture down</string>
     <string name="share_card_dedication">Dedication (optional)</string>
     <string name="share_card_dedication_hint">For Ma</string>
     <string name="share_card_cut_note">Shortened to 60 words, so the quote stays short and fair to the author.</string>

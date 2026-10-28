@@ -8,8 +8,10 @@ import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.speech.route.Speaker
+import io.github.skm0078.audora.speech.sherpa.CastPartners
 import io.github.skm0078.audora.speech.sherpa.CastSpeaker
 import io.github.skm0078.audora.speech.sherpa.CastSpeakers
+import io.github.skm0078.audora.speech.sherpa.PartnerVoice
 import io.github.skm0078.audora.speech.sherpa.SpeakerGender
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -40,6 +42,43 @@ class CharacterCastTest {
         taken = { taken },
         casts = casts,
     ).also { it.open(BOOK) }
+
+    private fun oneSpeakerCast(narrator: SpeakerGender, partners: List<PartnerVoice>) = CharacterCast(
+        narrator = { SYSPIN_MALE },
+        speakers = { emptyList() },
+        casts = casts,
+        partners = { CastPartners(narrator, partners) },
+    ).also { it.open(BOOK) }
+
+    @Test
+    fun `a one-speaker narrator's women borrow the partner voice, its men keep the narrator`() {
+        val cast = oneSpeakerCast(
+            SpeakerGender.MALE,
+            listOf(PartnerVoice(SYSPIN_FEMALE, SpeakerGender.FEMALE), PartnerVoice(RASA_MALE, SpeakerGender.MALE)),
+        )
+
+        assertEquals(SYSPIN_FEMALE, cast.voiceFor(Lang.BN, Speaker("মালতী", SpeakerGender.FEMALE)))
+        assertEquals(SYSPIN_FEMALE, cast.voiceFor(Lang.BN, Speaker(null, SpeakerGender.FEMALE)))
+        // A man is read by the man narrating: no second model loaded for the narrator's own gender.
+        assertNull(cast.voiceFor(Lang.BN, Speaker("হরিপদ", SpeakerGender.MALE)))
+    }
+
+    @Test
+    fun `only one partner model reads a gender, and a narrator of unknown gender borrows nothing`() {
+        val rasaFemale = VoiceId(EngineId.SHERPA, "rasa-bn#2")
+        val partners = listOf(
+            PartnerVoice(SYSPIN_FEMALE, SpeakerGender.FEMALE),
+            PartnerVoice(rasaFemale, SpeakerGender.FEMALE),
+        )
+        val cast = oneSpeakerCast(SpeakerGender.MALE, partners)
+
+        val women = listOf("মালতী", "টুনি", "নীলিমা").map { cast.voiceFor(Lang.BN, Speaker(it, SpeakerGender.FEMALE)) }
+
+        assertEquals(listOf(SYSPIN_FEMALE, SYSPIN_FEMALE, SYSPIN_FEMALE), women)
+        assertNull(
+            oneSpeakerCast(SpeakerGender.UNKNOWN, partners).voiceFor(Lang.BN, Speaker("রমা", SpeakerGender.FEMALE)),
+        )
+    }
 
     @Test
     fun `a narrator that is another speaker of its model casts from that model and never reads a character`() {
@@ -177,6 +216,9 @@ class CharacterCastTest {
         val BOOK = BookId("book-1")
         val NARRATOR = VoiceId(EngineId.SHERPA, "kokoro-en")
         val OTHER = VoiceId(EngineId.SHERPA, "piper-hi")
+        val SYSPIN_MALE = VoiceId(EngineId.SHERPA, "syspin-bn-male")
+        val SYSPIN_FEMALE = VoiceId(EngineId.SHERPA, "syspin-bn-female")
+        val RASA_MALE = VoiceId(EngineId.SHERPA, "rasa-bn#3")
         val SPEAKERS = listOf(
             CastSpeaker(FEMALE_A, "A", SpeakerGender.FEMALE),
             CastSpeaker(FEMALE_B, "B", SpeakerGender.FEMALE),

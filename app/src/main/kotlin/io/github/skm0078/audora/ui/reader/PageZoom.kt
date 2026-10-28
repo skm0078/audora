@@ -53,6 +53,9 @@ internal class PageZoom {
     companion object {
         const val MIN_SCALE = 1f
         const val MAX_SCALE = 4f
+
+        /** One TalkBack Zoom in or Zoom out: three steps from the page's width to its largest zoom. */
+        const val ACTION_STEP = 1.6f
     }
 }
 

@@ -29,6 +29,11 @@
     <string name="share_card_look_picture">आपकी अपनी तस्वीर</string>
     <string name="share_card_picture_note">ऐसी तस्वीर लें जो आपने खींची हो या जिसे शेयर करने की अनुमति हो।</string>
     <string name="share_card_picture_failed">वह तस्वीर नहीं खुल सकी। कोई दूसरी आज़माएँ।</string>
+    <string name="share_card_picture_drag">कार्ड पर तस्वीर को खींचकर चुनें कि क्या दिखे।</string>
+    <string name="share_card_picture_left">तस्वीर बाईं ओर खिसकाएँ</string>
+    <string name="share_card_picture_right">तस्वीर दाईं ओर खिसकाएँ</string>
+    <string name="share_card_picture_up">तस्वीर ऊपर खिसकाएँ</string>
+    <string name="share_card_picture_down">तस्वीर नीचे खिसकाएँ</string>
     <string name="share_card_dedication">समर्पण (चाहें तो)</string>
     <string name="share_card_dedication_hint">माँ के लिए</string>
     <string name="share_card_cut_note">60 शब्दों तक छोटा किया गया, ताकि कोट छोटा रहे और लेखक के साथ न्याय हो।</string>

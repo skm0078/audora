@@ -34,8 +34,15 @@ class MathSymbolsTest {
     }
 
     @Test
-    fun `body text keeps its symbols for the general rules`() {
-        assertEquals("P → Q", spoken("P → Q", role = TextRole.BODY))
+    fun `body text reads its symbols with the running-text words, not the equation's`() {
+        assertEquals("P to Q", spoken("P → Q", role = TextRole.BODY))
         assertEquals("well-known", spoken("well-known"))
+    }
+
+    @Test
+    fun `a symbol the equation table lacks has its running-text word in the part's language`() {
+        assertEquals("x proportional to y", spoken("x ∝ y"))
+        assertEquals("अल्फ़ा बराबर दो", spoken("α = 2", Lang.HI))
+        assertEquals("a times b", spoken("a * b"))
     }
 }

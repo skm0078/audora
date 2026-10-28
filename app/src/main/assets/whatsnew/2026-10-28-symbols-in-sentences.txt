@@ -1,0 +1,3 @@
+en: Arrows, maths signs, Greek letters and powers are read as words (→ "to", ≤ "at most", x² "x squared"), and emoji, stars and broken symbols are skipped instead of being read as noise.
+hi: तीर, गणित के चिह्न, ग्रीक अक्षर और घात अब शब्दों में पढ़े जाते हैं (→ "से", ≤ "से कम या बराबर", x² "x का वर्ग"), और इमोजी, सितारे व टूटे चिह्न शोर की तरह पढ़ने के बजाय छोड़ दिए जाते हैं।
+bn: তীর, গণিতের চিহ্ন, গ্রিক অক্ষর আর ঘাত এখন কথায় পড়া হয় (→ "থেকে", ≤ "এর চেয়ে কম বা সমান", x² "x এর বর্গ"), আর ইমোজি, তারা ও ভাঙা চিহ্ন আওয়াজের মতো না পড়ে বাদ দেওয়া হয়।

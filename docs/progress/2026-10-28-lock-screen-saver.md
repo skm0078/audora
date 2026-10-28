@@ -6,7 +6,7 @@
   dependency. APK about 45 KB bigger (36 KB of it the sharp logo).
 - **Could affect:** the app lock and its prompt (`AppLockGate`, `DeviceUnlock`), "Hide app content".
 - **Verified in CI:** `LockClockTest` (minute wake-ups), `LockSaverTest` (Pause only while reading, Unlock always,
-  Bengali at double text size and sideways reach Unlock; screenshots), release journey step 29 (PIN on the emulator,
+  Bengali at double text size and sideways reach Unlock; screenshots), release journey step 31 (PIN on the emulator,
   the saver covers the app, Unlock asks again).
 
 **Real-device checks (the test phone):** turn on App lock, play a book, leave the app for 30 s and come back: the

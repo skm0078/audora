@@ -52,6 +52,7 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.di.LibraryEntryPoint
 import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.SectionTitle
 import kotlinx.coroutines.launch
 
 /** Saves through the library, so the list, its covers and the reader see the change at once. */
@@ -177,7 +178,7 @@ private fun LanguageChoice(offer: LanguageOffer, onSelect: (String) -> Unit, onA
     val selected = offer.selected
     val tags = (BookEditDraft.LANGUAGES + offer.offline.orEmpty() + selected).filter { it.isNotEmpty() }
     val names = tags.associateWith { languageName(it) }
-    SectionTitle(R.string.book_edit_language)
+    SectionTitle(stringResource(R.string.book_edit_language))
     Column(Modifier.selectableGroup()) {
         Choice(stringResource(R.string.book_edit_language_auto), selected.isEmpty()) { onSelect("") }
         BookEditDraft.LANGUAGES.forEach { tag -> Choice(names.getValue(tag), selected == tag) { onSelect(tag) } }
@@ -201,7 +202,7 @@ private fun LanguageChoice(offer: LanguageOffer, onSelect: (String) -> Unit, onA
 
 @Composable
 private fun CoverChoices(book: Book, draft: BookEditDraft, onDraft: (BookEditDraft) -> Unit, onPick: () -> Unit) {
-    SectionTitle(R.string.book_edit_cover)
+    SectionTitle(stringResource(R.string.book_edit_cover))
     Column(Modifier.selectableGroup()) {
         BookEditDraft.coverOptions(book).forEach { option ->
             val label = stringResource(coverLabel(option))
@@ -234,16 +235,6 @@ private fun CoverChoices(book: Book, draft: BookEditDraft, onDraft: (BookEditDra
             }
         }
     }
-}
-
-@Composable
-private fun SectionTitle(label: Int) {
-    Text(
-        stringResource(label),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.semantics { heading() },
-    )
 }
 
 /** One radio row; the whole row is the target, at least a touch target tall. */

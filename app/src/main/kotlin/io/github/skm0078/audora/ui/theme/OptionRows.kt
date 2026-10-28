@@ -34,8 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import io.github.skm0078.audora.R
 
@@ -46,14 +44,7 @@ import io.github.skm0078.audora.R
 @Composable
 fun OptionGroup(title: String?, modifier: Modifier = Modifier, rows: @Composable ColumnScope.() -> Unit) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-        title?.let {
-            Text(
-                it,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = Dimens.SpaceXs, top = Dimens.SpaceXs).semantics { heading() },
-            )
-        }
+        title?.let { SectionTitle(it, Modifier.padding(start = Dimens.SpaceXs, top = Dimens.SpaceXs)) }
         Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.large) {
             Column(content = rows)
         }

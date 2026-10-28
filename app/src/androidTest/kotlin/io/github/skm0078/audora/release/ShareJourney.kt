@@ -1,23 +1,25 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/release/ShareJourney.kt
 // Purpose: The release journey's share and text-page steps on the installed app (a quote video, a page snippet,
-//          Turn pages), kept apart from ReleaseJourneyTest so neither file grows past detekt's class size.
+//          Turn pages and its slide), kept apart from ReleaseJourneyTest so neither file grows past detekt's class
+//          size.
 
 package io.github.skm0078.audora.release
 
 import android.Manifest
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
-import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performTouchInput
 import io.github.skm0078.audora.MainActivity
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.DocumentFormat
@@ -34,7 +36,6 @@ import java.io.File
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 
 /** [activity] is the app on screen now; [backToTabs] leaves any screen for the main tabs, as the journey does. */
 internal class ShareJourney(
@@ -109,17 +110,17 @@ internal class ShareJourney(
         // Any page's picture: its description after the page number is the same on every page.
         val pageImage = hasContentDescription(text(R.string.reader_page_image, 1).substringAfter("1"), substring = true)
         waitForNode(pageImage, OPEN_TIMEOUT_MS)
-        // The reader's one-time tips, if no earlier test cleared them, leave the page a sliver of the screen.
-        val gotIt = hasText(text(R.string.gesture_tips_got_it)) and hasClickAction()
-        if (rule.shows(gotIt)) tap(gotIt)
-        val menu = hasText(text(R.string.sentence_menu_share))
-        // A long-press on a line opens its menu; the test page's text starts below its heading, so a few are tried.
-        val opened = SNIPPET_PRESS_POINTS.any { (u, v) ->
-            node(pageImage).performTouchInput { longClick(percentOffset(u, v)) }
-            runCatching { waitForNode(menu, MENU_TIMEOUT_MS) }.isSuccess
+        // The page's first "Options for" action, as TalkBack offers it: the same menu a long-press on the line opens,
+        // without guessing where on a page (scrolled, partly under the player) a line is.
+        val optionsPrefix = text(R.string.a11y_sentence_options, "")
+        val isOptions = { action: CustomAccessibilityAction -> action.label.startsWith(optionsPrefix) }
+        val withLines = SemanticsMatcher("a page with its lines") {
+            it.config.getOrNull(SemanticsActions.CustomActions)?.any(isOptions) == true
         }
-        assertTrue("no sentence menu from a long-press on the page", opened)
-        tap(menu)
+        val options = node(pageImage and withLines).fetchSemanticsNode().config[SemanticsActions.CustomActions]
+            .first(isOptions)
+        JourneyDevice.onMain { options.action() }
+        tap(hasText(text(R.string.sentence_menu_share)))
         node(hasText(text(R.string.share_page_part))).performScrollTo().performClick()
         waitForNode(hasText(text(R.string.reader_snippet_hint)))
         tap(hasText(text(R.string.share_card_send)) and hasClickAction())
@@ -139,11 +140,33 @@ internal class ShareJourney(
 
     /**
      * "Turn pages" on the installed app (ADR 2026-10-28-text-pages): with it on, a text book opens a screenful at a
-     * time with the arrows and where it is under the text, and the arrow turns without leaving the reader. The look
-     * is put back as it was, so later runs start from the default. [textBook] is an asset, its type and a sentence
-     * in it.
+     * time with the arrows and where it is under the text, and the arrow turns without leaving the reader.
      */
-    fun aTextBookTurnsPages(textBook: Triple<String, String, String>) {
+    fun aTextBookTurnsPages(textBook: Triple<String, String, String>) = withTurnPages(textBook) {
+        tap(hasContentDescription(text(R.string.text_pages_next)))
+        waitForNode(hasContentDescription(text(R.string.text_pages_previous)))
+        awaitTrue("the reader still on screen") { JourneyDevice.resumedActivity() is MainActivity }
+    }
+
+    /**
+     * A text turn's slide on the installed app (ADR 2026-10-28-text-pages): a turn on and back slides the first
+     * screen in again and it settles exactly where it was, so the slide never leaves the text off to one side.
+     */
+    fun aTextTurnSlidesAndSettles(textBook: Triple<String, String, String>) = withTurnPages(textBook) {
+        val sentence = hasText(textBook.third, substring = true)
+        val left = { node(sentence).fetchSemanticsNode().boundsInRoot.left }
+        val before = left()
+        tap(hasContentDescription(text(R.string.text_pages_next)))
+        tap(hasContentDescription(text(R.string.text_pages_previous)))
+        rule.waitForIdle()
+        assertEquals("the screen settled where it was", before, left(), SETTLED_PX)
+    }
+
+    /**
+     * [textBook] (an asset, its type and a sentence in it) opened with Turn pages on, then [check]. The look is put
+     * back as it was, so later runs start from the default.
+     */
+    private fun withTurnPages(textBook: Triple<String, String, String>, check: () -> Unit) {
         val looks = ReadingLookPreferences(app)
         val before = runBlocking { looks.look.first() }
         runBlocking { looks.save(before.copy(turnPages = true)) }
@@ -154,9 +177,7 @@ internal class ShareJourney(
             val current = activity()
             JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, type)) }
             waitForNode(hasText(sentence, substring = true), OPEN_TIMEOUT_MS)
-            tap(hasContentDescription(text(R.string.text_pages_next)))
-            waitForNode(hasContentDescription(text(R.string.text_pages_previous)))
-            awaitTrue("the reader still on screen") { JourneyDevice.resumedActivity() is MainActivity }
+            check()
         } finally {
             runBlocking { looks.save(before) }
         }
@@ -174,8 +195,6 @@ internal class ShareJourney(
         // The voice renders the quote, then the frames are encoded; an emulator without a GPU is slow at both.
         const val VIDEO_TIMEOUT_MS = 300_000L
 
-        // Where a page snippet's long-press is tried, as fractions of the page across and down.
-        val SNIPPET_PRESS_POINTS = listOf(0.3f to 0.3f, 0.3f to 0.45f, 0.5f to 0.6f, 0.3f to 0.75f)
-        const val MENU_TIMEOUT_MS = 3_000L
+        const val SETTLED_PX = 1f
     }
 }

@@ -5,6 +5,8 @@ package io.github.skm0078.audora.ui.reader
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -13,7 +15,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,7 +33,7 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.model.SleepOptions
 import io.github.skm0078.audora.ui.theme.Dimens
-import io.github.skm0078.audora.ui.theme.switchRow
+import io.github.skm0078.audora.ui.theme.SwitchLine
 import java.util.Locale
 
 /** Edits a copy of [options]; Save sends it to the service, which keeps it across restarts. */
@@ -49,15 +50,21 @@ fun SleepOptionsDialog(
         title = { Text(stringResource(R.string.sleep_options_title)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                SwitchRow(stringResource(R.string.sleep_options_shake), draft.shakeToExtend) {
-                    draft = draft.copy(shakeToExtend = it)
-                }
-                SwitchRow(stringResource(R.string.sleep_options_fade), draft.fadeOut) {
-                    draft = draft.copy(fadeOut = it)
-                }
-                SwitchRow(stringResource(R.string.sleep_options_bedtime), draft.bedtime) {
-                    draft = draft.copy(bedtime = it)
-                }
+                SwitchLine(
+                    stringResource(R.string.sleep_options_shake),
+                    draft.shakeToExtend,
+                    { draft = draft.copy(shakeToExtend = it) },
+                )
+                SwitchLine(
+                    stringResource(R.string.sleep_options_fade),
+                    draft.fadeOut,
+                    { draft = draft.copy(fadeOut = it) },
+                )
+                SwitchLine(
+                    stringResource(R.string.sleep_options_bedtime),
+                    draft.bedtime,
+                    { draft = draft.copy(bedtime = it) },
+                )
                 if (draft.bedtime) BedtimeSection(draft, config) { draft = it }
             }
         },
@@ -68,6 +75,7 @@ fun SleepOptionsDialog(
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun BedtimeSection(draft: SleepOptions, config: ReaderConfig, onChange: (SleepOptions) -> Unit) {
     val step = config.bedtimeStepMinutes
@@ -82,7 +90,8 @@ private fun BedtimeSection(draft: SleepOptions, config: ReaderConfig, onChange: 
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier.padding(top = Dimens.SpaceS),
     )
-    Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+    // Wraps onto a second line at large text sizes instead of pushing the last choice off the dialog.
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
         config.sleepMinutes.forEach { minutes ->
             FilterChip(
                 selected = draft.bedtimeMinutes == minutes,
@@ -90,14 +99,6 @@ private fun BedtimeSection(draft: SleepOptions, config: ReaderConfig, onChange: 
                 label = { Text(stringResource(R.string.reader_sleep_minutes, minutes)) },
             )
         }
-    }
-}
-
-@Composable
-private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.switchRow(checked, onChange = onChange), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, Modifier.weight(1f))
-        Switch(checked = checked, onCheckedChange = null)
     }
 }
 

@@ -6,6 +6,7 @@ package io.github.skm0078.audora.ui.share
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.share.PhotoFocus
 import io.github.skm0078.audora.ui.theme.Dimens
 
 /**
@@ -68,6 +69,9 @@ interface CardScreenActions {
 
     /** Video mode's button: the card is captured without its words and the video made in the background. */
     fun onMakeVideo() = Unit
+
+    /** The listener dragged their own picture on the card, or moved it with a TalkBack action. */
+    fun onPhotoFocus(focus: PhotoFocus) = Unit
 }
 
 /**
@@ -78,7 +82,7 @@ interface CardScreenActions {
 fun ShareCardScreen(
     subject: CardSubject,
     choices: CardChoices,
-    picture: ImageBitmap?,
+    picture: CardPhoto?,
     busy: Boolean,
     recorder: CardRecorder,
     actions: CardScreenActions,
@@ -92,7 +96,7 @@ fun ShareCardScreen(
             is CardBody.Quote -> if (choices.video) R.string.share_card_video_title else R.string.share_card_title
         }
         val preview = @Composable { modifier: Modifier ->
-            CardPreview(subject, choices, picture, recorder, modifier)
+            CardPreview(subject, choices, picture, recorder, actions::onPhotoFocus, modifier)
         }
         val controls = @Composable { modifier: Modifier ->
             CardControls(subject, choices, busy, actions, modifier)
@@ -136,12 +140,12 @@ private fun TopBar(title: Int, onBack: () -> Unit) {
 private fun CardPreview(
     subject: CardSubject,
     choices: CardChoices,
-    picture: ImageBitmap?,
+    picture: CardPhoto?,
     recorder: CardRecorder,
+    onPhotoFocus: (PhotoFocus) -> Unit,
     modifier: Modifier,
 ) {
     val look = choices.look
-    val body = subject.body
     // The quote read aloud over the card, in Video mode; a book or a snippet has no words to read.
     val videoQuote = subject.quote?.takeIf { choices.video }
     val video = videoQuote != null
@@ -153,34 +157,45 @@ private fun CardPreview(
         modifier = modifier.semantics { contentDescription = description },
         overlay = videoQuote?.let { rememberVideoWords(it, look, choices.shownShape) },
     ) {
-        val backdrop = if (look == CardLook.PICTURE) picture else subject.softCover
-        when (body) {
-            is CardBody.Snippet -> SnippetCard(
-                SnippetCardText(subject.title, subject.author, body.pageLabel, choices.dedication),
-                look,
-                body.picture,
-                backdrop,
-            )
-
-            is CardBody.Quote -> QuoteCard(
-                QuoteCardText(body.quote, subject.title, subject.author, body.pageLabel, choices.dedication),
-                look,
-                backdrop,
-                quoteShown = !video,
-            )
-
-            CardBody.WholeBook -> BookCard(
-                BookCardText(
-                    stringResource(R.string.share_card_now_listening),
-                    subject.title,
-                    subject.author,
-                    choices.dedication,
-                ),
-                look,
-                subject.cover,
-                backdrop,
-            )
+        // Only the listener's own picture moves; the book's softened cover stays centred.
+        val own = picture?.takeIf { look == CardLook.PICTURE }
+        val backdrop = own ?: subject.softCover?.let(::CardPhoto)
+        val placing = if (own != null) Modifier.photoDrag(own, onPhotoFocus) else Modifier
+        Box(Modifier.fillMaxSize().then(placing)) {
+            CardContent(subject, choices, backdrop, quoteShown = !video)
         }
+    }
+}
+
+@Composable
+private fun CardContent(subject: CardSubject, choices: CardChoices, backdrop: CardPhoto?, quoteShown: Boolean) {
+    val look = choices.look
+    when (val body = subject.body) {
+        is CardBody.Snippet -> SnippetCard(
+            SnippetCardText(subject.title, subject.author, body.pageLabel, choices.dedication),
+            look,
+            body.picture,
+            backdrop,
+        )
+
+        is CardBody.Quote -> QuoteCard(
+            QuoteCardText(body.quote, subject.title, subject.author, body.pageLabel, choices.dedication),
+            look,
+            backdrop,
+            quoteShown = quoteShown,
+        )
+
+        CardBody.WholeBook -> BookCard(
+            BookCardText(
+                stringResource(R.string.share_card_now_listening),
+                subject.title,
+                subject.author,
+                choices.dedication,
+            ),
+            look,
+            subject.cover,
+            backdrop,
+        )
     }
 }
 
