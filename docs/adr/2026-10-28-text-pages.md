@@ -24,11 +24,19 @@ where it is.
 5. **TalkBack:** the line between the arrows says "Page 5 of 40", then "Page 5 of 40, continued", as a polite live
    region; the arrows are labelled "Previous screen" and "Next screen".
 
-## Not done yet (flagged, not dropped)
-- A slide or curl animation for text turns (PDF pages slide; text turns at once for now).
-- Volume keys turning screens while not reading aloud (they move by sentence while reading, plan item 20).
+6. **A turn slides** (added 2026-10-28, after 3b): the new screen comes in from the side it was turned from, a fifth
+   of the width, fading up, over 200 ms. It is the list's graphics layer only (a translation and an alpha read in the
+   layer), so a turn lays out nothing again and each frame only redraws; with the phone's animations off, Compose
+   finishes it at once. Turns made by reading on (Follow along) jump without a slide, so the text does not move
+   about while the listener is listening.
+
+## Not done (decided or flagged)
+- A curl animation: a page-shaped mesh drawn every frame, far heavier than a slide on an entry phone.
+- Volume keys turning screens: **not doing** (maintainer, 2026-10-28). A key that turned the screen and also
+  changed the volume would fight with reading aloud.
 - "Turn pages" as the default for text books: proposed after the maintainer tries it on the test phone.
 
 ## Consequences
-- No new dependency; nothing at cold start. A turn is one `scrollToItem` of an already composed list.
+- No new dependency; nothing at cold start. A turn is one `scrollToItem` of an already composed list, then about
+  12 frames of a layer-only slide.
 - Taps still read from a sentence and long-presses open its menu; only a sideways swipe turns.

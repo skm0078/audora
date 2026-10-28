@@ -34,7 +34,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -44,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.share.PhotoFocus
 import io.github.skm0078.audora.playback.export.video.QuoteVideoRequest
 import io.github.skm0078.audora.playback.export.video.QuoteVideos
 import io.github.skm0078.audora.privacy.PrivacyHost
@@ -137,7 +137,7 @@ private fun ReadyCard(request: ShareCardRequest, subject: CardSubject, onClose: 
     var choices by rememberSaveable(stateSaver = CardChoicesSaver) {
         mutableStateOf(CardChoices(video = (request as? ShareCardRequest.Quote)?.video == true))
     }
-    var picture by remember { mutableStateOf<ImageBitmap?>(null) }
+    var photo by remember { mutableStateOf<CardPhoto?>(null) }
     var busy by remember { mutableStateOf(false) }
     val pick = rememberLauncherForActivityResult(PickVisualMedia()) { uri: Uri? ->
         if (uri != null) {
@@ -146,19 +146,23 @@ private fun ReadyCard(request: ShareCardRequest, subject: CardSubject, onClose: 
                 if (decoded == null) {
                     Toast.makeText(context, R.string.share_card_picture_failed, Toast.LENGTH_LONG).show()
                 } else {
-                    picture = decoded
+                    photo = CardPhoto(decoded)
                     choices = choices.copy(look = CardLook.PICTURE)
                 }
             }
         }
     }
     // A picture look without its picture (the screen was recreated) shows the default until one is picked again.
-    val shown = if (choices.look == CardLook.PICTURE && picture == null) choices.copy(look = CardLook.DUSK) else choices
+    val shown = if (choices.look == CardLook.PICTURE && photo == null) choices.copy(look = CardLook.DUSK) else choices
     val actions = object : CardScreenActions {
         override fun onBack() = onClose()
 
         override fun onChoices(next: CardChoices) {
             choices = next
+        }
+
+        override fun onPhotoFocus(next: PhotoFocus) {
+            photo = photo?.copy(focus = next)
         }
 
         override fun onPickPicture() = pick.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
@@ -202,7 +206,7 @@ private fun ReadyCard(request: ShareCardRequest, subject: CardSubject, onClose: 
             }
         }
     }
-    ShareCardScreen(subject, shown, picture, busy, recorder, actions)
+    ShareCardScreen(subject, shown, photo, busy, recorder, actions)
 }
 
 /** The video of [body]'s quote as [shown]: its words in the look's ink, the one being said on its accent. */

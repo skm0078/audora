@@ -4,13 +4,9 @@
 package io.github.skm0078.audora.playback.epub
 
 import android.app.Notification
-import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
-import android.content.pm.ServiceInfo
-import android.os.Build
 import android.os.IBinder
-import android.os.PowerManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.core.config.EpubConfig
 import io.github.skm0078.audora.core.library.BookId
@@ -27,9 +23,13 @@ import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.export.JobSlots
+import io.github.skm0078.audora.playback.jobs.ForegroundJobs
 import io.github.skm0078.audora.playback.jobs.LongJobEnd
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.jobs.LongJobs
+import io.github.skm0078.audora.playback.jobs.jobWakeLock
+import io.github.skm0078.audora.playback.jobs.leaveForeground
+import io.github.skm0078.audora.playback.jobs.releaseIfHeld
 import io.github.skm0078.audora.playback.outputs.MadeFile
 import io.github.skm0078.audora.playback.outputs.MadeFiles
 import io.github.skm0078.audora.playback.studio.BookRendering
@@ -111,8 +111,7 @@ class BookCopyService : Service() {
         JobSlots.COPY.interrupt()
         // Android throws if the service is still in the foreground a few seconds after this; the worker may be
         // inside a long native call, so stop now and let it finish its notice on its own thread.
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        leaveForeground()
     }
 
     override fun onDestroy() {
@@ -126,7 +125,7 @@ class BookCopyService : Service() {
         val preparing = getString(R.string.copy_preparing)
         val notice =
             lastRunning?.takeIf { mine } ?: notifications.running(preparing, preparing, percent = null, publish = false)
-        startForeground(CopyNotifications.RUNNING_ID, notice, foregroundType())
+        startForeground(CopyNotifications.RUNNING_ID, notice, ForegroundJobs.type())
         when {
             id == null || kind == null -> AudoraLog.w(TAG, "Copy request without a book or kind")
 
@@ -151,12 +150,8 @@ class BookCopyService : Service() {
 
     /** On the worker thread. */
     private fun runCopy(id: BookId, kind: CopyKind) {
-        val wakeLock = getSystemService(PowerManager::class.java)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)
-            .apply {
-                setReferenceCounted(false) // Each renewal replaces the last timeout instead of stacking holds.
-                acquire(config.wakeLockMs)
-            }
+        val wakeLock = jobWakeLock(WAKE_LOCK_TAG)
+            .apply { acquire(config.wakeLockMs) }
         val keepAwake = { wakeLock.acquire(config.wakeLockMs) }
         try {
             val books = LibraryBookSource(this, library)
@@ -174,13 +169,10 @@ class BookCopyService : Service() {
                 notifications.showCancelled()
             }
         } finally {
-            if (wakeLock.isHeld) wakeLock.release()
+            wakeLock.releaseIfHeld()
             lastRunning = null
             mine = false
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            // A late progress update may have re-posted it after the service left the foreground.
-            getSystemService(NotificationManager::class.java)?.cancel(CopyNotifications.RUNNING_ID)
-            stopSelf()
+            leaveForeground(runningNoticeId = CopyNotifications.RUNNING_ID)
         }
     }
 
@@ -238,12 +230,5 @@ class BookCopyService : Service() {
         const val TAG = "Copy.Service"
         const val THREAD_NAME = "book-copy"
         const val WAKE_LOCK_TAG = "Audora:BookCopy"
-
-        /** mediaProcessing is the type made for this (Android 15+); dataSync before it existed. */
-        fun foregroundType(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
-        } else {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-        }
     }
 }

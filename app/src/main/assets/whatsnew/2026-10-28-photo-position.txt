@@ -1,0 +1,3 @@
+en: Drag your own picture on a share card or video to choose which part shows. Text pages now slide as they turn.
+hi: शेयर कार्ड या वीडियो पर अपनी तस्वीर खींचकर चुनें कि कौन-सा हिस्सा दिखे। टेक्स्ट के पन्ने अब पलटते समय सरकते हैं।
+bn: শেয়ার কার্ড বা ভিডিওতে নিজের ছবি টেনে বেছে নিন কোন অংশ দেখা যাবে। লেখার পাতা এখন ওল্টানোর সময় সরে যায়।

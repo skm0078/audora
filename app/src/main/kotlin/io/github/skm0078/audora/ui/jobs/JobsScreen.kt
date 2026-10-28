@@ -48,6 +48,7 @@ import io.github.skm0078.audora.speech.download.DownloadJobs
 import io.github.skm0078.audora.speech.download.DownloadKind
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.SectionTitle
 import io.github.skm0078.audora.ui.tutor.langName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -118,11 +119,15 @@ fun JobsScreen(
                 item { Text(stringResource(R.string.jobs_empty), style = MaterialTheme.typography.bodyLarge) }
             }
             if (jobs.isNotEmpty()) {
-                item { SectionTitle(R.string.jobs_section_books) }
+                item {
+                    SectionTitle(stringResource(R.string.jobs_section_books), Modifier.padding(top = Dimens.SpaceM))
+                }
                 items(jobs, key = { "job-${it.kind}" }) { LongJobCard(it) }
             }
             if (downloads.isNotEmpty()) {
-                item { SectionTitle(R.string.jobs_section_downloads) }
+                item {
+                    SectionTitle(stringResource(R.string.jobs_section_downloads), Modifier.padding(top = Dimens.SpaceM))
+                }
                 items(downloads, key = { "download-${it.id}" }) { download ->
                     DownloadCard(download, downloadName(download, voiceNames)) { onCancelDownload(download) }
                 }
@@ -136,16 +141,6 @@ fun JobsScreen(
             }
         }
     }
-}
-
-@Composable
-private fun SectionTitle(label: Int) {
-    Text(
-        stringResource(label),
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = Dimens.SpaceM).semantics { heading() },
-    )
 }
 
 /** "Voice: Bruno", "34 MB of 120 MB", a bar, the time left, and Cancel. */

@@ -52,6 +52,12 @@ internal object MathStructure {
         return UNARY_MINUS.replace(minus, " − ")
     }
 
+    /** "squared", "cubed" or "to the power [exponent]" in [lang]'s words; running text's powers use it too. */
+    fun powerWords(exponent: String, lang: Lang): String = WORDS.getValue(lang).powerOf(exponent)
+
+    /** "one half" for '½' in [lang]'s words; null for a character that is not a vulgar fraction. */
+    fun fractionWords(fraction: Char, lang: Lang): String? = WORDS.getValue(lang).vulgar[fraction]
+
     private fun String.spelled(): String = toList().joinToString(" ")
 
     /** Groups: the top's d or ∂, its order, the variable, the bottom's d or ∂, its variable, its order. */
@@ -122,11 +128,12 @@ internal object MathStructure {
     private const val BOTTOM_BY = 5
     private const val BOTTOM_ORDER = 6
 
-    private val SUPERSCRIPTS = mapOf(
+    /** Superscript characters and what they stand for; [SymbolWords] reads running text's powers with them. */
+    val SUPERSCRIPTS = mapOf(
         '⁰' to '0', '¹' to '1', '²' to '2', '³' to '3', '⁴' to '4', '⁵' to '5', '⁶' to '6', '⁷' to '7', '⁸' to '8',
         '⁹' to '9', '⁺' to '+', '⁻' to '-', 'ⁿ' to 'n', 'ⁱ' to 'i', '⁽' to '(', '⁾' to ')',
     )
-    private val SUBSCRIPTS = mapOf(
+    val SUBSCRIPTS = mapOf(
         '₀' to '0', '₁' to '1', '₂' to '2', '₃' to '3', '₄' to '4', '₅' to '5', '₆' to '6', '₇' to '7', '₈' to '8',
         '₉' to '9', '₊' to '+', '₋' to '-', 'ₙ' to 'n', 'ᵢ' to 'i', 'ⱼ' to 'j', 'ₖ' to 'k', 'ₓ' to 'x',
     )

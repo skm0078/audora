@@ -13,14 +13,12 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +46,7 @@ import io.github.skm0078.audora.ui.reader.durationText
 import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.ConfirmedTextButton
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.SwitchLine
 
 /**
  * @param library every book in the library, to name queued books and offer the rest; a queued book it no longer
@@ -102,17 +100,17 @@ fun UpNextSheet(
             }
             if (adding) addable.forEach { book -> AddableRow(book, covers) { queue.add(book.id) } }
             HorizontalDivider()
-            SwitchRow(
+            SwitchLine(
                 stringResource(R.string.up_next_keep_going),
-                stringResource(R.string.up_next_keep_going_body),
                 state.keepGoingToNextChapter,
                 queue::setKeepGoingToNextChapter,
+                detail = stringResource(R.string.up_next_keep_going_body),
             )
-            SwitchRow(
+            SwitchLine(
                 stringResource(R.string.up_next_play_queue),
-                stringResource(R.string.up_next_play_queue_body),
                 state.thenPlayQueue,
                 queue::setThenPlayQueue,
+                detail = stringResource(R.string.up_next_play_queue_body),
             )
         }
     }
@@ -200,29 +198,6 @@ private fun AddableRow(book: Book, covers: CoverSource, onAdd: () -> Unit) {
 @Composable
 private fun SmallCover(book: Book, covers: CoverSource) {
     BookCover(book, covers, Modifier.size(Dimens.CoverSmall, Dimens.CoverSmall * COVER_RATIO))
-}
-
-/** The whole row toggles; the switch only shows the state, so it is not a second target for TalkBack. */
-@Composable
-private fun SwitchRow(title: String, body: String, on: Boolean, onChange: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .toggleable(value = on, role = Role.Switch, onValueChange = onChange)
-            .padding(vertical = Dimens.SpaceS),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                body,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Switch(checked = on, onCheckedChange = null)
-    }
 }
 
 private const val DETAIL_SEPARATOR = " · "

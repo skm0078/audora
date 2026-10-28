@@ -44,8 +44,7 @@ class QuoteCarry(
 
     private class PageQuotes(
         val opened: Set<Int>,
-        val speakers: Map<Int, Speaker>,
-        val end: Turns,
+        val spoken: SpeakerTurns.Page,
         val endsOpen: Boolean,
         val moods: Map<Int, Feeling>,
         val places: Map<Int, ParagraphPlace>,
@@ -59,10 +58,10 @@ class QuoteCarry(
         val page = units.firstOrNull()?.page ?: return
         val before = pages[page - 1]
         val (paragraphs, endsOpen) = paragraphs(units, before?.endsOpen == true, continuesPreviousPage)
-        val spoken = turns.page(paragraphs, before?.end ?: Turns())
+        val spoken = turns.page(paragraphs, before?.spoken?.end ?: Turns())
         val opened = paragraphs.flatMap { it.sentences }.filter { it.carried }
             .mapTo(HashSet()) { UnitKey.of(it.unit).index }
-        pages[page] = PageQuotes(opened, spoken.speakers, spoken.end, endsOpen, moods(paragraphs), places(paragraphs))
+        pages[page] = PageQuotes(opened, spoken, endsOpen, moods(paragraphs), places(paragraphs))
         synchronized(order) {
             order.remove(page)
             order.addLast(page)
@@ -73,7 +72,10 @@ class QuoteCarry(
     fun startsInQuote(unit: ReadingUnit): Boolean = pages[unit.page]?.opened?.contains(unit.index) == true
 
     /** Who says this sentence's quotes, when known (plan item 63). */
-    fun speakerOf(unit: ReadingUnit): Speaker? = pages[unit.page]?.speakers?.get(unit.index)
+    fun speakerOf(unit: ReadingUnit): Speaker? = pages[unit.page]?.spoken?.speakers?.get(unit.index)
+
+    /** Whether [speakerOf]'s gender is only the speaker's name's likely one, which the story brain may know better. */
+    fun genderGuessed(unit: ReadingUnit): Boolean = pages[unit.page]?.spoken?.guessed?.contains(unit.index) == true
 
     /** The mood the sentence before leaves on this one ([SceneMoods]); null for none. */
     fun moodOf(unit: ReadingUnit): Feeling? = pages[unit.page]?.moods?.get(unit.index)
@@ -113,16 +115,6 @@ class QuoteCarry(
         return paragraphs.map { (sentences, speech) -> Paragraph(sentences, speech) } to open
     }
 
-    /** Each prose paragraph's carried moods, by unit index; a heading or table row never carries one. */
-    private fun moods(paragraphs: List<Paragraph>): Map<Int, Feeling> = buildMap {
-        paragraphs.forEach { paragraph ->
-            val units = paragraph.sentences.map { it.unit }.filter { it.kind in PROSE }
-            SceneMoods.of(units.map { it.text }).forEachIndexed { i, mood ->
-                if (mood != null) put(UnitKey.of(units[i]).index, mood)
-            }
-        }
-    }
-
     /**
      * Each sentence's place in its paragraph, by unit index (Q-3). A paragraph right after a heading opens a section;
      * the page's first paragraph never counts as one, since its heading, if any, may be on the page before.
@@ -138,6 +130,16 @@ class QuoteCarry(
 
     private fun sameParagraph(previous: ReadingUnit, unit: ReadingUnit): Boolean =
         previous.kind == unit.kind && previous.pauseAfterMs <= unitConfig.sentencePauseMs
+}
+
+/** Each prose paragraph's carried moods, by unit index; a heading or table row never carries one. */
+private fun moods(paragraphs: List<Paragraph>): Map<Int, Feeling> = buildMap {
+    paragraphs.forEach { paragraph ->
+        val units = paragraph.sentences.map { it.unit }.filter { it.kind in PROSE }
+        SceneMoods.of(units.map { it.text }).forEachIndexed { i, mood ->
+            if (mood != null) put(UnitKey.of(units[i]).index, mood)
+        }
+    }
 }
 
 /** The kinds a quote can open in and a character can speak; a heading or a table row is never dialogue. */

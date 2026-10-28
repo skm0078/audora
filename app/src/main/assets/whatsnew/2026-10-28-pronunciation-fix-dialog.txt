@@ -1,0 +1,3 @@
+en: Fixing how a word sounds is easier with TalkBack and large text: each Delete says which fix it removes.
+hi: TalkBack और बड़े अक्षरों के साथ किसी शब्द का उच्चारण ठीक करना अब आसान है: हर "हटाएँ" बताता है कि वह कौन-सा सुधार हटाएगा।
+bn: TalkBack আর বড় লেখায় শব্দের উচ্চারণ ঠিক করা এখন সহজ: প্রতিটি "মুছুন" বলে দেয় কোন সংশোধন মুছবে।
