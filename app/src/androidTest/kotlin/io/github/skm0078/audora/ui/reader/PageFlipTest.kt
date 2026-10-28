@@ -19,6 +19,7 @@ import androidx.compose.ui.test.DeviceConfigurationOverride
 import androidx.compose.ui.test.FontScale
 import androidx.compose.ui.test.ForcedSize
 import androidx.compose.ui.test.Locales
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.battery.OnboardingPreferences
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.Lang
@@ -59,6 +61,8 @@ class PageFlipTest {
     private val readFrom = mutableListOf<ReadingUnit>()
 
     private fun show(page: Int, language: String = "en", fontScale: Float = 1f) {
+        // The one-time gesture tips grow the controls at the bottom; other tests may leave them pending or not.
+        OnboardingPreferences(context).gestureTipsSeen = true
         val state = stateOn(page)
         rule.setContent {
             val config = DeviceConfigurationOverride.ForcedSize(TEST_PHONE_SIZE) then
@@ -116,7 +120,8 @@ class PageFlipTest {
     private fun readFromHere(language: String) {
         show(PAGE, language, fontScale = 2f)
         Screens.save("page-flip-read-from-here-$language-2x", rule.onRoot().captureToImage().asAndroidBitmap())
-        rule.onNodeWithText(text(R.string.reader_read_from_here, language)).performClick()
+        rule.onNodeWithText(text(R.string.reader_read_from_here, language)).assertIsDisplayed().performClick()
+        rule.waitForIdle()
         assertEquals(listOf(PAGE), readFrom.map { it.page })
         assertEquals(0, readFrom.single().index)
     }
