@@ -185,8 +185,8 @@ class ReleaseJourneyTest {
         )
         val lock = LockJourney(rule)
         step(
-            "31 the app lock covers the app with the screen saver, and Unlock asks",
-            lock::theSaverCoversTheAppAndUnlockAsks,
+            "31 the app lock covers the app with the screen saver, or opens on a device with no screen lock",
+            lock::theLockCoversTheAppOrOpensWithoutAScreenLock,
         )
         step("43 arrows, maths and emoji reach the voice as words or not at all") {
             SymbolJourney.symbolsAreSaidOrLeftOut()

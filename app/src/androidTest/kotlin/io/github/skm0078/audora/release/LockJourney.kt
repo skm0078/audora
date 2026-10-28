@@ -5,6 +5,7 @@
 package io.github.skm0078.audora.release
 
 import android.app.KeyguardManager
+import android.content.pm.PackageManager
 import android.os.ParcelFileDescriptor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
@@ -20,23 +21,38 @@ import io.github.skm0078.audora.release.JourneyDevice.logCount
 import io.github.skm0078.audora.release.JourneyDevice.logTail
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 
 internal class LockJourney(private val rule: ComposeTestRule) {
     private fun text(id: Int): String = app.getString(id)
 
     /**
-     * With a PIN on the emulator, turning the lock on covers whatever is open with the saver, which asks for the
-     * phone's lock by itself; Unlock asks again. The proof itself is Android's screen, so the step opens the lock the
-     * way a passed proof does, and the saver's leaving takes the system prompt away with it.
+     * Turning the lock on covers whatever is open. A device with a secure lock screen gets the full path (see
+     * [saverAsksAndUnlockAsksAgain]); one without (CI's emulator image has none, so no PIN can be set) gets the path
+     * such a phone takes: the lock opens by itself, so nobody is locked out of their own library.
      */
-    fun theSaverCoversTheAppAndUnlockAsks() {
+    fun theLockCoversTheAppOrOpensWithoutAScreenLock() {
         val preferences = PrivacyPreferences(app)
+        val secure = app.packageManager.hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN)
+        try {
+            if (secure) saverAsksAndUnlockAsksAgain(preferences) else opensWithoutAScreenLock(preferences)
+        } finally {
+            JourneyDevice.onMain { AppLockSession.process.unlock() }
+            runBlocking { preferences.saveAppLock(false) }
+        }
+        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasText(text(R.string.lock_saver_hidden))) }
+    }
+
+    /**
+     * With a PIN, the saver asks for the phone's lock by itself and Unlock asks again. The proof itself is Android's
+     * screen, so the step opens the lock the way a passed proof does, and the saver's leaving takes the prompt away.
+     */
+    private fun saverAsksAndUnlockAsksAgain(preferences: PrivacyPreferences) {
         val pinSet = lockSettings("set-pin $PIN")
         try {
-            // Without a screen lock the saver opens at once by design, so the PIN must be in force first.
             val keyguard = app.getSystemService(KeyguardManager::class.java)
-            awaitTrue("the emulator to have a PIN", state = { "locksettings said: $pinSet" }) {
+            awaitTrue("the device to have a PIN", state = { "lock_settings said: $pinSet" }) {
                 keyguard.isDeviceSecure
             }
             val asked = logCount(ASKING)
@@ -56,11 +72,20 @@ internal class LockJourney(private val rule: ComposeTestRule) {
             rule.onNode(hasText(text(R.string.app_lock_unlock)) and hasClickAction()).performClick()
             awaitTrue("Unlock to ask for the phone's lock again", state = ::recentLog) { logCount(ASKING) > before }
         } finally {
-            JourneyDevice.onMain { AppLockSession.process.unlock() }
-            runBlocking { preferences.saveAppLock(false) }
             lockSettings("clear --old $PIN")
         }
+    }
+
+    /** No screen lock to prove: the lock says so in the log and opens, never asking for a proof that cannot come. */
+    private fun opensWithoutAScreenLock(preferences: PrivacyPreferences) {
+        val opened = logCount(NO_SCREEN_LOCK)
+        val asked = logCount(ASKING)
+        runBlocking { preferences.saveAppLock(true) }
+        awaitTrue("the lock to open on a device with no screen lock", state = ::recentLog) {
+            logCount(NO_SCREEN_LOCK) > opened
+        }
         rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasText(text(R.string.lock_saver_hidden))) }
+        assertEquals("The lock asked for a proof the device cannot give", asked, logCount(ASKING))
     }
 
     /** Android's lock settings command, with what it printed to both outputs, so a refusal says why. */
@@ -81,6 +106,7 @@ internal class LockJourney(private val rule: ComposeTestRule) {
     private companion object {
         const val PIN = "2580"
         const val ASKING = "Asking for the phone's lock"
+        const val NO_SCREEN_LOCK = "the phone has no screen lock; opening"
         const val UI_TIMEOUT_MS = 15_000L
         const val LOG_LINES = 8
     }

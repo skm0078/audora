@@ -39,5 +39,7 @@ stay private and cost next to nothing.
 - About 45 KB more APK (36 KB logo, the rest code and strings). No new dependency.
 - While the saver is in sight and moving, the screen draws every frame (10 small layers). It stops with the screen
   off, with the app out of sight, with "Remove animations" and with battery saver.
-- Release journey step 31 sets a PIN on the emulator, turns the lock on, checks the saver and that Unlock asks for
-  the phone's lock, then clears the PIN.
+- Release journey step 31: on a device with a secure lock screen it sets a PIN, turns the lock on, checks the saver
+  and that Unlock asks for the phone's lock, then clears the PIN. CI's emulator image has no secure lock screen (no
+  PIN can be set), so there it checks the no-screen-lock path: the lock opens by itself and never asks for a proof.
+  The saver itself is covered by `LockSaverTest`; the PIN path is a phone check.
