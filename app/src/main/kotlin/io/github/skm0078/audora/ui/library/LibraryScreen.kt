@@ -62,6 +62,13 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.ui.kids.LocalKidsMode
+import io.github.skm0078.audora.ui.search.FoundCard
+import io.github.skm0078.audora.ui.search.FoundOnly
+import io.github.skm0078.audora.ui.search.FoundRow
+import io.github.skm0078.audora.ui.search.FoundTarget
+import io.github.skm0078.audora.ui.search.open
+import io.github.skm0078.audora.ui.search.rememberFoundRows
+import io.github.skm0078.audora.ui.settings.SettingKey
 import io.github.skm0078.audora.ui.shell.readableSidePadding
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import io.github.skm0078.audora.ui.theme.Dimens
@@ -84,6 +91,7 @@ fun LibraryScreen(
     covers: CoverSource = CoverSource.None,
     runningJobs: Int = 0,
     view: LibraryLayoutState = LibraryLayoutState(LibraryLayout.AUTO) {},
+    settingValues: Map<SettingKey, String> = emptyMap(),
 ) {
     val snackbar = remember { SnackbarHostState() }
     // Saveable: the picker can outlive this process, and its result must still reach the right book.
@@ -133,7 +141,7 @@ fun LibraryScreen(
                 onTap = onTap,
                 onDetails = { details = it.book.id.value },
                 modifier = Modifier.weight(1f).fillMaxHeight(),
-                parts = LibraryParts(banner, covers, runningJobs, view),
+                parts = LibraryParts(banner, covers, runningJobs, view, settingValues),
                 picked = pane?.let { shown -> PanePick(shown.book.id.value) { picked = it.book.id.value } },
             )
             pane?.let { shown ->
@@ -147,12 +155,16 @@ fun LibraryScreen(
     duplicate?.let { DuplicateDialog(it, listState, actions) }
 }
 
-/** What the library's frame shows besides the books: the banner, covers, the Jobs badge and grid or list. */
+/**
+ * What the library's frame shows besides the books: the banner, covers, the Jobs badge, grid or list, and the current
+ * values search shows beside the settings it finds.
+ */
 private class LibraryParts(
     val banner: @Composable () -> Unit,
     val covers: CoverSource,
     val runningJobs: Int,
     val view: LibraryLayoutState,
+    val settingValues: Map<SettingKey, String>,
 )
 
 /** The top bar, the books and Add book; beside the book pane ([picked]) the pane keeps clear of the end side. */
@@ -193,6 +205,7 @@ private fun LibraryMain(
                 onDetails = onDetails,
                 layout = parts.view.layout,
                 picked = picked,
+                settingValues = parts.settingValues,
             )
         }
     }
@@ -209,6 +222,7 @@ private fun LibraryContent(
     onDetails: (LibraryItem) -> Unit,
     layout: LibraryLayout?,
     picked: PanePick? = null,
+    settingValues: Map<SettingKey, String> = emptyMap(),
 ) {
     if (layout == null) {
         Centered { CircularProgressIndicator() }
@@ -231,7 +245,11 @@ private fun LibraryContent(
             Column {
                 ShelfRow(listState, menu::onQuery)
                 CatalogueRow(listState, menu::onQuery)
-                if (listState.items.isEmpty()) {
+                // Actions and settings the search names, above the books (ADR 2026-10-28-action-search).
+                val found = rememberFoundRows(listState, settingValues)
+                if (listState.items.isEmpty() && found.isNotEmpty()) {
+                    FoundOnly(found, listState.query.text) { menu.open(it) }
+                } else if (listState.items.isEmpty()) {
                     Centered {
                         Text(
                             stringResource(R.string.library_no_match),
@@ -240,7 +258,7 @@ private fun LibraryContent(
                         )
                     }
                 } else {
-                    val books = BookCallbacks(onTap, menu, onDetails, picked)
+                    val books = BookCallbacks(onTap, menu, onDetails, picked, found)
                     if (layout.showsList(LocalDensity.current.fontScale)) {
                         BookList(listState, books, covers)
                     } else {
@@ -267,13 +285,18 @@ private fun RemovalDialog(book: Book, actions: LibraryActions) {
     )
 }
 
-/** What a tap on a book, its menu or the Continue button does; [picked] beside the wide screen's book pane. */
+/**
+ * What a tap on a book, its menu or the Continue button does; [picked] beside the wide screen's book pane; [found] the
+ * actions and settings the search names, shown above the books.
+ */
 private class BookCallbacks(
     val onTap: (LibraryItem) -> Unit,
     actions: LibraryActions,
     val onDetails: (LibraryItem) -> Unit,
     val picked: PanePick?,
+    val found: List<FoundRow>,
 ) {
+    val onFound: (FoundTarget) -> Unit = { actions.open(it) }
     val onRemove: (Book) -> Unit = actions::onRequestRemoval
     val onExport: (Book) -> Unit = actions::onExportAudiobook
     val onContinue: (Book) -> Unit = actions::onContinue
@@ -301,6 +324,9 @@ private fun BookGrid(list: LibraryListState.Loaded, books: BookCallbacks, covers
         horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXl),
     ) {
+        if (books.found.isNotEmpty()) {
+            item(key = FOUND_KEY, span = { GridItemSpan(maxLineSpan) }) { FoundCard(books.found, books.onFound) }
+        }
         list.continueReading?.let { latest ->
             item(key = CONTINUE_KEY, span = { GridItemSpan(maxLineSpan) }) {
                 ContinueReadingCard(
@@ -335,6 +361,15 @@ private fun BookList(list: LibraryListState.Loaded, books: BookCallbacks, covers
         val side = readableSidePadding(maxWidth)
         val bottom = FAB_CLEARANCE * LocalDensity.current.fontScale.coerceAtLeast(1f)
         LazyColumn(contentPadding = PaddingValues(start = side, end = side, bottom = bottom)) {
+            if (books.found.isNotEmpty()) {
+                item(key = FOUND_KEY) {
+                    FoundCard(
+                        books.found,
+                        books.onFound,
+                        Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS),
+                    )
+                }
+            }
             list.continueReading?.let { latest ->
                 item(key = CONTINUE_KEY) {
                     Box(Modifier.padding(horizontal = Dimens.ScreenPadding, vertical = Dimens.SpaceS)) {
@@ -407,8 +442,9 @@ private val TAB_INSETS: WindowInsets
 private val BESIDE_PANE_INSETS: WindowInsets
     @Composable get() = ScaffoldDefaults.contentWindowInsets.only(WindowInsetsSides.Top + WindowInsetsSides.Start)
 
-/** Book ids are UUIDs, so this key never clashes with a row's. */
+/** Book ids are UUIDs, so these keys never clash with a row's. */
 private const val CONTINUE_KEY = "continue-reading"
+private const val FOUND_KEY = "found-actions"
 
 /**
  * OpenDocument filters by MIME type; providers that mislabel files are caught by the header check. PDFs, EPUBs and

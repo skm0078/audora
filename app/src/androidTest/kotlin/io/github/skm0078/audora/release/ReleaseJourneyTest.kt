@@ -34,9 +34,11 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToIndexAction
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
@@ -46,6 +48,7 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.swipeLeft
@@ -93,6 +96,8 @@ import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
 import io.github.skm0078.audora.ui.reader.ReadingPosition
 import io.github.skm0078.audora.ui.reader.SIDE_PANEL_TAG
+import io.github.skm0078.audora.ui.search.FOUND_TAG
+import io.github.skm0078.audora.ui.settings.FOCUSED_TAG
 import io.github.skm0078.audora.ui.share.ShareCardActivity
 import io.github.skm0078.audora.ui.share.ShareCardFiles
 import io.github.skm0078.audora.ui.share.ShareEntry
@@ -149,6 +154,7 @@ class ReleaseJourneyTest {
                 "24 a phone keeps the reader's bookmarks sheet and the library has no book pane",
                 ::aPhoneKeepsTheSheets,
             )
+            step("24b a search finds a setting, opens it on You, and Back returns to the search", ::searchOpensASetting)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -815,6 +821,24 @@ class ReleaseJourneyTest {
         assertTrue("no book pane on a phone", none(hasTestTag(BOOK_PANE_TAG)))
     }
 
+    /**
+     * The library's search finds a setting on Advanced; its row opens You on that page with the setting focused, and
+     * Back returns to the search, its words still there (ADR 2026-10-28-action-search).
+     */
+    private fun searchOpensASetting() {
+        tap(hasContentDescription(text(R.string.library_search)))
+        node(hasSetTextAction()).performTextInput(SEARCHED_SETTING)
+        val found = hasAnyAncestor(hasTestTag(FOUND_TAG))
+        tap(hasText(text(R.string.settings_volume_keys_title)) and found)
+        waitForNode(hasTestTag(FOCUSED_TAG))
+        waitForNode(hasText(text(R.string.settings_advanced_title)))
+        back()
+        waitForNode(hasTestTag(FOUND_TAG))
+        back()
+        gone(hasTestTag(FOUND_TAG))
+        waitForNode(hasText(text(R.string.library_title)))
+    }
+
     private fun none(matcher: SemanticsMatcher): Boolean = rule.onAllNodes(matcher).fetchSemanticsNodes().isEmpty()
 
     private companion object {
@@ -887,5 +911,8 @@ class ReleaseJourneyTest {
         const val CARD_QUOTE = "All human beings are born free and equal in dignity and rights."
         const val CARD_WIDTH = 1080
         const val CARD_HEIGHT = 1920
+
+        // Step 24b: a word that names a setting on Advanced, not a book.
+        const val SEARCHED_SETTING = "volume"
     }
 }

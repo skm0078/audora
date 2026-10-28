@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="found_heading">कार्य और सेटिंग</string>
+    <string name="found_books_heading">किताबें</string>
+    <string name="found_no_book">\"%1$s\" नाम की कोई किताब नहीं।</string>
+    <string name="found_path">%1$s › %2$s</string>
+    <string name="found_now">%1$s · अभी %2$s</string>
+    <string name="found_dot">%1$s · %2$s</string>
+    <string name="found_on">चालू</string>
+    <string name="found_off">बंद</string>
+    <string name="found_where_reading">आप जो किताब पढ़ रहे हैं</string>
+    <string name="found_where_library">आपकी लाइब्रेरी से</string>
+    <string name="found_where_place">अपनी अलग जगह</string>
+    <string name="found_more">और</string>
+    <string name="found_book_play">%1$s चलाएँ</string>
+    <string name="found_book_up_next">%1$s को आगे सुनें में जोड़ें</string>
+    <string name="found_book_audiobook">%1$s को ऑडियोबुक के रूप में सेव करें</string>
+    <string name="found_book_talking">%1$s को बोलती EPUB के रूप में सेव करें</string>
+    <string name="found_book_accessible">%1$s की सुलभ कॉपी सेव करें</string>
+    <string name="found_book_notes">%1$s के नोट्स सेव करें</string>
+    <string name="found_book_share">%1$s को तस्वीर के रूप में शेयर करें</string>
+    <string name="found_book_guide">%1$s में कौन कौन है</string>
+    <string name="found_book_studio">%1$s के लिए स्टूडियो मोड</string>
+    <string name="found_book_finished">%1$s को पूरी हुई चिह्नित करें</string>
+    <string name="found_book_not_started">%1$s को शुरू नहीं की चिह्नित करें</string>
+    <string name="found_terms_play">सुनें पढ़ें शुरू</string>
+    <string name="found_terms_audiobook">ऑडियो फ़ाइल</string>
+    <string name="found_terms_share">तस्वीर कार्ड</string>
+    <string name="found_terms_guide">पात्र लोग कौन</string>
+    <string name="found_terms_studio">चार्जिंग पहले</string>
+    <string name="found_terms_scanned_pages">स्कैन ओसीआर फ़ोटो</string>
+    <string name="found_terms_citations">हवाला संदर्भ संख्या</string>
+    <string name="found_terms_reconnect">हेडफ़ोन ब्लूटूथ ईयरबड</string>
+    <string name="found_terms_keep_screen_on">स्क्रीन जागी नींद</string>
+    <string name="found_terms_theme">डार्क लाइट रात रूप</string>
+    <string name="found_terms_wallpaper_colours">रंग वॉलपेपर</string>
+    <string name="found_terms_true_black">काला रात बैटरी</string>
+    <string name="found_terms_language">भाषा हिंदी बांग्ला अंग्रेज़ी</string>
+    <string name="found_terms_background_reading">बैटरी पृष्ठभूमि</string>
+    <string name="found_terms_kids">बच्चे बच्चों</string>
+    <string name="found_terms_app_lock">लॉक फ़िंगरप्रिंट पिन पासवर्ड</string>
+    <string name="found_terms_hide_content">स्क्रीनशॉट छिपाएँ निजी</string>
+    <string name="found_terms_volume_keys">वॉल्यूम बटन</string>
+    <string name="found_terms_voice_commands">आवाज़ आदेश माइक</string>
+    <string name="found_terms_pronunciation">उच्चारण शब्द</string>
+    <string name="found_terms_share_logs">लॉग समस्या मदद</string>
+</resources>

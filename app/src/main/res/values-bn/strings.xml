@@ -40,7 +40,7 @@
     <string name="library_remove_body">ফাইলটি আপনার ফোনেই থাকবে। পরে আবার যোগ করতে পারবেন।</string>
     <string name="library_cancel">বাতিল</string>
     <string name="library_search">লাইব্রেরিতে খুঁজুন</string>
-    <string name="library_search_hint">নাম ও লেখক দিয়ে খুঁজুন</string>
+    <string name="library_search_hint">বই, কাজ আর সেটিং খুঁজুন</string>
     <string name="library_search_close">খোঁজা বন্ধ করুন</string>
     <string name="library_sort_filter">সাজান ও ফিল্টার করুন</string>
     <string name="library_sort_by">সাজানোর ক্রম</string>

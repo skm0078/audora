@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The library's search for actions and settings (ADR 2026-10-28-action-search). found_terms_* are other words
+     people type for a row, separated by spaces; English ones work in every language too. -->
+<resources>
+    <string name="found_heading">Actions and settings</string>
+    <string name="found_books_heading">Books</string>
+    <string name="found_no_book">No book titles match \"%1$s\".</string>
+    <string name="found_path">%1$s › %2$s</string>
+    <string name="found_now">%1$s · now %2$s</string>
+    <string name="found_dot">%1$s · %2$s</string>
+    <string name="found_on">On</string>
+    <string name="found_off">Off</string>
+    <string name="found_where_reading">The book you\'re reading</string>
+    <string name="found_where_library">From your library</string>
+    <string name="found_where_place">A place of its own</string>
+    <string name="found_more">More</string>
+    <string name="found_book_play">Play %1$s</string>
+    <string name="found_book_up_next">Add %1$s to Up next</string>
+    <string name="found_book_audiobook">Save %1$s as an audiobook</string>
+    <string name="found_book_talking">Save %1$s as a talking EPUB</string>
+    <string name="found_book_accessible">Save an accessible copy of %1$s</string>
+    <string name="found_book_notes">Save your notes from %1$s</string>
+    <string name="found_book_share">Share %1$s as a picture</string>
+    <string name="found_book_guide">Who is who in %1$s</string>
+    <string name="found_book_studio">Studio mode for %1$s</string>
+    <string name="found_book_finished">Mark %1$s as finished</string>
+    <string name="found_book_not_started">Mark %1$s as not started</string>
+    <string name="found_terms_play">listen read aloud start</string>
+    <string name="found_terms_audiobook">mp3 audio file offline</string>
+    <string name="found_terms_share">picture image card</string>
+    <string name="found_terms_guide">characters people who</string>
+    <string name="found_terms_studio">render ahead charging</string>
+    <string name="found_terms_scanned_pages">ocr scan scanned photo text recognition</string>
+    <string name="found_terms_citations">citation footnote references numbers brackets</string>
+    <string name="found_terms_reconnect">headphones bluetooth earbuds connect resume</string>
+    <string name="found_terms_keep_screen_on">screen awake sleep display</string>
+    <string name="found_terms_theme">dark light night mode appearance</string>
+    <string name="found_terms_wallpaper_colours">colour color dynamic palette</string>
+    <string name="found_terms_true_black">black amoled oled night dark battery</string>
+    <string name="found_terms_language">hindi bengali bangla english</string>
+    <string name="found_terms_background_reading">battery background screen off optimisation optimization</string>
+    <string name="found_terms_kids">children child kid</string>
+    <string name="found_terms_app_lock">lock fingerprint pin password secure</string>
+    <string name="found_terms_hide_content">screenshot recents private hide</string>
+    <string name="found_terms_volume_keys">volume buttons keys skip sentence</string>
+    <string name="found_terms_voice_commands">voice command speak hands free microphone</string>
+    <string name="found_terms_pronunciation">pronounce pronunciation words dictionary say</string>
+    <string name="found_terms_share_logs">logs bug report problem help support</string>
+</resources>

@@ -24,21 +24,25 @@ internal fun PrivacyGroup(controls: PrivacyControls?) {
         )
         controls?.let {
             OptionDivider()
-            SwitchOption(
-                stringResource(R.string.app_lock_title),
-                it.settings.appLock,
-                it.onAppLock,
-                subtitle = stringResource(R.string.app_lock_short),
-                help = stringResource(R.string.app_lock_body),
-            )
+            SettingAnchor(SettingKey.APP_LOCK) {
+                SwitchOption(
+                    stringResource(R.string.app_lock_title),
+                    it.settings.appLock,
+                    it.onAppLock,
+                    subtitle = stringResource(R.string.app_lock_short),
+                    help = stringResource(R.string.app_lock_body),
+                )
+            }
             OptionDivider()
-            SwitchOption(
-                stringResource(R.string.hide_content_title),
-                it.settings.hideContent,
-                it.onHideContent,
-                subtitle = stringResource(R.string.hide_content_short),
-                help = stringResource(R.string.hide_content_body),
-            )
+            SettingAnchor(SettingKey.HIDE_CONTENT) {
+                SwitchOption(
+                    stringResource(R.string.hide_content_title),
+                    it.settings.hideContent,
+                    it.onHideContent,
+                    subtitle = stringResource(R.string.hide_content_short),
+                    help = stringResource(R.string.hide_content_body),
+                )
+            }
         }
         OptionDivider()
         PrivacyPolicyItem()

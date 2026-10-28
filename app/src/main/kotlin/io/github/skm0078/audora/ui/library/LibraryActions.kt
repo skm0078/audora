@@ -8,6 +8,8 @@ import android.net.Uri
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.LibraryQuery
+import io.github.skm0078.audora.ui.AppDestination
+import io.github.skm0078.audora.ui.settings.SettingKey
 
 /** One interface instead of a dozen lambdas keeps [LibraryScreen]'s signature readable. */
 @Suppress("TooManyFunctions") // One per control on the screen.
@@ -54,4 +56,10 @@ interface LibraryActions {
 
     /** Play on a saved audiobook or studio file in a book's details (ADR-068): the in-app player opens. */
     fun onPlayMade(setKey: String) = Unit
+
+    /** A setting found by search (ADR 2026-10-28-action-search): You opens on its row, scrolled to and tinted. */
+    fun onOpenSetting(key: SettingKey) = Unit
+
+    /** A place or screen found by search: Voices, Storage, Jobs, Made, Notes. */
+    fun onGoTo(destination: AppDestination) = Unit
 }
