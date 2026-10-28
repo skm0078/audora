@@ -5,8 +5,10 @@
 package io.github.skm0078.audora.release
 
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -28,9 +30,12 @@ internal class HomeJourney(private val rule: ComposeTestRule, private val backTo
         rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(matcher) }
     }
 
+    /** Scrolls to [matcher] first only inside a scrolling list (the menu, the sheet); the ⋮ button has none. */
     private fun tap(matcher: SemanticsMatcher) {
         waitFor(matcher)
-        rule.onAllNodes(matcher).onFirst().performScrollTo().performClick()
+        val node = rule.onAllNodes(matcher).onFirst()
+        if (rule.shows(matcher and hasAnyAncestor(hasScrollAction()))) node.performScrollTo()
+        node.performClick()
     }
 
     /** The greeting takes the typed name and Recently added shows, then both go back to how they were. */

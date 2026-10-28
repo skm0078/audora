@@ -10,9 +10,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -64,8 +67,12 @@ class MakeItYoursScreenTest {
         }
     }
 
-    private fun tap(matcher: androidx.compose.ui.test.SemanticsMatcher) {
-        rule.onAllNodes(matcher).onFirst().performScrollTo().performClick()
+    /** Scrolls to [matcher] first only inside a scrolling list (the menu, the sheet); the ⋮ button has none. */
+    private fun tap(matcher: SemanticsMatcher) {
+        val node = rule.onAllNodes(matcher).onFirst()
+        val scrolls = rule.onAllNodes(matcher and hasAnyAncestor(hasScrollAction())).fetchSemanticsNodes().isNotEmpty()
+        if (scrolls) node.performScrollTo()
+        node.performClick()
         rule.waitForIdle()
     }
 
