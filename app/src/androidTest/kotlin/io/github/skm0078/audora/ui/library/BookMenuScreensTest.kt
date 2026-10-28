@@ -11,7 +11,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.DeviceConfigurationOverride
 import androidx.compose.ui.test.ForcedSize
@@ -157,7 +159,11 @@ class BookMenuScreensTest {
         showLibrary()
         openMenuByLongPress()
         rule.onNodeWithText(text(R.string.menu_save_as)).performClick()
-        rule.onNodeWithContentDescription(text(R.string.a11y_sheet_close)).performClick()
+        // The handle, not Material's scrim, which carries the same name.
+        rule.onNode(
+            hasContentDescription(text(R.string.a11y_sheet_close)) and
+                SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button),
+        ).performClick()
         rule.waitForIdle()
 
         rule.onNodeWithContentDescription(text(R.string.book_actions_title, "Gora")).assertDoesNotExist()

@@ -52,10 +52,8 @@ fun AppSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = skipPartiallyExpanded)
     val scope = rememberCoroutineScope()
-    // A tap on the handle always closes: a sheet whose content just grew re-settles to its new height, which can
-    // interrupt the hide, and that must not leave the sheet up after the listener asked it to go.
     val close: () -> Unit = {
-        scope.launch { sheetState.hide() }.invokeOnCompletion { onDismissRequest() }
+        scope.launch { sheetState.hide() }.invokeOnCompletion { if (!sheetState.isVisible) onDismissRequest() }
     }
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,

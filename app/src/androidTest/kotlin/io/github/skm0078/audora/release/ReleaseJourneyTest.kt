@@ -23,6 +23,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
 import androidx.annotation.OptIn
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -618,7 +619,7 @@ class ReleaseJourneyTest {
         waitForNode(hasText(text(R.string.menu_play)))
         tapText(R.string.menu_save_as)
         waitForNode(hasText(text(R.string.menu_save_audiobook)))
-        tap(hasContentDescription(text(R.string.a11y_sheet_close)))
+        tap(sheetHandle())
         gone(hasText(text(R.string.menu_play)))
 
         val openBook = text(R.string.a11y_open_book)
@@ -634,9 +635,13 @@ class ReleaseJourneyTest {
         scrollLibraryTo(listRow)
         tapText(R.string.library_sort_reset)
         scrollLibraryTo(coverTile)
-        tap(hasContentDescription(text(R.string.a11y_sheet_close)))
+        tap(sheetHandle())
         gone(hasText(text(R.string.library_sort_reset)))
     }
+
+    /** The sheet's own handle: Material's scrim behind every sheet carries the same name and fills the screen. */
+    private fun sheetHandle(): SemanticsMatcher = hasContentDescription(text(R.string.a11y_sheet_close)) and
+        SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
 
     /** Scrolls the library's grid or list until [matcher]'s node is composed and on screen; fails if it has none. */
     private fun scrollLibraryTo(matcher: SemanticsMatcher) {
