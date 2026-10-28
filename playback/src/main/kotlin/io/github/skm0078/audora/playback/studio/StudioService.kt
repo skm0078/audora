@@ -3,11 +3,8 @@
 
 package io.github.skm0078.audora.playback.studio
 
-import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
-import android.content.pm.ServiceInfo
-import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.os.SystemClock
@@ -28,8 +25,12 @@ import io.github.skm0078.audora.playback.book.BookText
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.export.JobSlots
+import io.github.skm0078.audora.playback.jobs.ForegroundJobs
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.jobs.LongJobs
+import io.github.skm0078.audora.playback.jobs.jobWakeLock
+import io.github.skm0078.audora.playback.jobs.leaveForeground
+import io.github.skm0078.audora.playback.jobs.releaseIfHeld
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -99,8 +100,7 @@ class StudioService : Service() {
         stop("Android's time limit for background jobs")
         // Android throws if the service is still in the foreground a few seconds after this; the worker may be
         // inside a long native call, so stop now and let it finish its notice on its own thread.
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        leaveForeground()
     }
 
     override fun onDestroy() {
@@ -113,7 +113,7 @@ class StudioService : Service() {
         // Foreground first, always: Android requires it within seconds of startForegroundService. While a run is going
         // its own notification is re-posted, so a second tap does not drop "Start now".
         val shown = notifications.lastRunning?.takeIf { mine } ?: notifications.preparing()
-        startForeground(StudioNotifications.RUNNING_ID, shown, foregroundType())
+        startForeground(StudioNotifications.RUNNING_ID, shown, ForegroundJobs.type())
         val untitled = getString(R.string.studio_untitled)
         when {
             id == null -> AudoraLog.w(TAG, "Studio request without a book")
@@ -150,9 +150,8 @@ class StudioService : Service() {
 
     /** On the worker thread. */
     private fun runStudio(id: BookId) {
-        val wakeLock = getSystemService(PowerManager::class.java)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)
-            .apply { setReferenceCounted(false) } // The gate's receiver and the worker both take it (ChargingGate).
+        // Not reference counted: the gate's receiver and the worker both take it (ChargingGate).
+        val wakeLock = jobWakeLock(WAKE_LOCK_TAG)
         try {
             val books = LibraryBookSource(this, library)
             when (val opened = runBlocking { books.open(id, password = null) }) {
@@ -168,13 +167,10 @@ class StudioService : Service() {
         } finally {
             gate?.close()
             gate = null
-            if (wakeLock.isHeld) wakeLock.release()
+            wakeLock.releaseIfHeld()
             // The worker is done: the service goes with it.
             mine = false
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            // A late progress update may have re-posted it after the service left the foreground.
-            getSystemService(NotificationManager::class.java)?.cancel(StudioNotifications.RUNNING_ID)
-            stopSelf()
+            leaveForeground(runningNoticeId = StudioNotifications.RUNNING_ID)
         }
     }
 
@@ -273,12 +269,5 @@ class StudioService : Service() {
         const val THREAD_NAME = "studio-mode"
 
         const val WAKE_LOCK_TAG = "Audora:StudioMode"
-
-        /** mediaProcessing is the type made for this (Android 15+); dataSync before it existed. */
-        fun foregroundType(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
-        } else {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-        }
     }
 }
