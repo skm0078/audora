@@ -206,27 +206,6 @@ class SentenceMenuTest {
         assertEquals(listOf<SoundedWrongFix>(SoundedWrongFix.Tables(TableMode.ROWS)), picked)
     }
 
-    private object NoReaderActions : ReaderActions {
-        override fun onBack() = Unit
-        override fun onPreviousPage() = Unit
-        override fun onNextPage() = Unit
-        override fun onGoToPage(page: Int) = Unit
-        override fun onShowReadingPosition() = Unit
-        override fun onSentenceTapped(unit: ReadingUnit) = Unit
-        override fun onPageTapped(point: ViewPoint) = Unit
-        override fun onViewChanged(view: ReaderView) = Unit
-        override fun onPageWidth(widthPx: Int) = Unit
-        override fun onPlayPause() = Unit
-        override fun onSkipBack() = Unit
-        override fun onSkipForward() = Unit
-        override fun onSpeed(speed: Float) = Unit
-        override fun onSleepTimer(setting: SleepTimerSetting) = Unit
-        override fun onPasswordSubmitted(password: String) = Unit
-        override fun onPasswordDismissed() = Unit
-        override fun onAskForPassword() = Unit
-        override fun onRetry() = Unit
-    }
-
     private companion object {
         val BOOK = BookId("menu-book")
         const val TEXT = "Some years ago, never mind how long precisely, I thought I would sail about a little."
