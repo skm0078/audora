@@ -606,13 +606,11 @@ class ReaderModel(
         // A page read ahead for a turn by hand shows at once (ADR 2026-10-28-page-flip).
         val ahead = neighbours.content(page)
         // A box picked on one page means nothing on another.
-        mutableState.update {
-            it.copy(
+        mutableState.update { shown ->
+            shown.copy(
                 page = page,
                 content = ahead ?: PageContent.Loading,
-                snippet = it.snippet.takeIf {
-                    page == it.page
-                },
+                snippet = shown.snippet.takeIf { page == shown.page },
             )
         }
         if (ahead != null) {
