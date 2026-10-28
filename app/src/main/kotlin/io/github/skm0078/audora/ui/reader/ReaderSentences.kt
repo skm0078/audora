@@ -120,24 +120,37 @@ private fun TurnedSentences(
     list: @Composable (Modifier) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val slide = remember { TurnSlide() }
     val pageCount = state.pageCount ?: 1
     val next = {
         scope.launch {
-            if (!screens.next() && state.page + 1 < pageCount) actions.onNextPage()
+            when {
+                screens.next() -> slide.play(on = true)
+
+                state.page + 1 < pageCount -> {
+                    actions.onNextPage()
+                    slide.play(on = true)
+                }
+            }
         }
         Unit
     }
     val previous = {
         scope.launch {
-            if (!screens.previous() && state.page > 0) {
-                turnBack.openAtEnd = true
-                actions.onPreviousPage()
+            when {
+                screens.previous() -> slide.play(on = false)
+
+                state.page > 0 -> {
+                    turnBack.openAtEnd = true
+                    actions.onPreviousPage()
+                    slide.play(on = false)
+                }
             }
         }
         Unit
     }
     Column(Modifier.fillMaxSize()) {
-        list(Modifier.weight(1f).screenSwipes(next, previous))
+        list(Modifier.weight(1f).turnSlide(slide).screenSwipes(next, previous))
         TextPagesBar(state.page, pageCount, screens.turned, previous, next)
     }
 }

@@ -58,4 +58,4 @@ English, 53 % of Hindi and 30 % of Bengali spoken lines came out in the other ge
   by the narrator. Bengali verbs carry no gender, so Bengali relies on names, titles and pronouns.
 - Tests: `SelfGendersTest`, new cases in `NameGendersTest`, `SpeakerTagsTest`, `CastSpeakersTest`,
   `CharacterCastTest`, `QuoteCarryTest`, `ReadingSourceBrainTest`; `ExpressiveEvalTest` pins wrong-gender counts;
-  release journey step 28 renders a story's women and men in voices of their gender on the installed app.
+  release journey step 29 renders a story's women and men in voices of their gender on the installed app.

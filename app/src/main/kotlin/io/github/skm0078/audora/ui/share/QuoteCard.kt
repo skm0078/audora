@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.FilterQuality
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import io.github.skm0078.audora.core.share.CardQuote
+import io.github.skm0078.audora.core.share.PhotoFocus
 
 /** What a quote card says; [pageLabel] and the book's lines are already in the quote's language. */
 data class QuoteCardText(
@@ -44,6 +46,14 @@ data class QuoteCardText(
     val pageLabel: String?,
     val dedication: String = "",
 )
+
+/**
+ * A picture behind a card, cropped to fill it with [focus] kept in view (ADR 2026-10-28-photo-position): the
+ * listener's own, placed by a drag, or the book's softened cover, centred.
+ */
+data class CardPhoto(val image: ImageBitmap, val focus: PhotoFocus = PhotoFocus.CENTRE) {
+    internal val alignment: Alignment get() = BiasAlignment(focus.x * 2 - 1, focus.y * 2 - 1)
+}
 
 /** What a book card says: [kicker] ("Now listening") above the book's own title and author. */
 data class BookCardText(val kicker: String, val title: String, val author: String?, val dedication: String = "")
@@ -55,7 +65,7 @@ data class BookCardText(val kicker: String, val title: String, val author: Strin
  * video's backdrop, whose words the video draws over it, lit one at a time.
  */
 @Composable
-fun QuoteCard(text: QuoteCardText, look: CardLook, background: ImageBitmap?, quoteShown: Boolean = true) {
+fun QuoteCard(text: QuoteCardText, look: CardLook, background: CardPhoto?, quoteShown: Boolean = true) {
     CardBackdrop(look, background) {
         Column(Modifier.fillMaxSize().padding(horizontal = SIDE, vertical = TOP_BOTTOM)) {
             Text(
@@ -96,7 +106,7 @@ data class SnippetCardText(val title: String, val author: String?, val pageLabel
  * never stretched, its corners rounded like a clipping.
  */
 @Composable
-fun SnippetCard(text: SnippetCardText, look: CardLook, snippet: ImageBitmap, backdrop: ImageBitmap?) {
+fun SnippetCard(text: SnippetCardText, look: CardLook, snippet: ImageBitmap, backdrop: CardPhoto?) {
     CardBackdrop(look, backdrop) {
         Column(Modifier.fillMaxSize().padding(horizontal = SIDE, vertical = TOP_BOTTOM)) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -118,7 +128,7 @@ fun SnippetCard(text: SnippetCardText, look: CardLook, snippet: ImageBitmap, bac
 
 /** A book on its own, for the library's Share: its cover big in the middle, then what it is. */
 @Composable
-fun BookCard(text: BookCardText, look: CardLook, cover: ImageBitmap?, backdrop: ImageBitmap?) {
+fun BookCard(text: BookCardText, look: CardLook, cover: ImageBitmap?, backdrop: CardPhoto?) {
     CardBackdrop(look, backdrop) {
         Column(
             Modifier.fillMaxSize().padding(horizontal = SIDE, vertical = TOP_BOTTOM),
@@ -181,13 +191,14 @@ private fun Credit(title: String, byline: String, dedication: String, look: Card
 
 /** The look's colour, or a photo under its scrim so the card's white text stays readable on any picture. */
 @Composable
-private fun CardBackdrop(look: CardLook, photo: ImageBitmap?, content: @Composable () -> Unit) {
+private fun CardBackdrop(look: CardLook, photo: CardPhoto?, content: @Composable () -> Unit) {
     Box(Modifier.fillMaxSize().background(look.brush)) {
         if (look.isPhoto && photo != null) {
             Image(
-                photo,
+                photo.image,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
+                alignment = photo.alignment,
                 filterQuality = FilterQuality.High,
                 modifier = Modifier.fillMaxSize(),
             )

@@ -15,7 +15,7 @@
   (re-rendered once); voice loading in Bengali books.
 - **Verified in CI:** `SelfGendersTest`, `NameGendersTest`, `SpeakerTagsTest`, `CastSpeakersTest`,
   `CharacterCastTest`, `QuoteCarryTest`, `ReadingSourceBrainTest`, `ExpressiveEvalTest` (wrong-gender counts pinned,
-  floors raised), release journey step 28.
+  floors raised), release journey step 29.
 
 **Real-device checks:** an English story with a man and a woman talking: each gets a voice of their gender, not the
 narrator's. A Hindi story where a woman says "मैं जाऊँगी": a woman's voice. A Bengali book on SYSPIN male with SYSPIN

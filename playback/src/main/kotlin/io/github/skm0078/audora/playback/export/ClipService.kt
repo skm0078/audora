@@ -5,10 +5,7 @@ package io.github.skm0078.audora.playback.export
 
 import android.app.Service
 import android.content.Intent
-import android.content.pm.ServiceInfo
-import android.os.Build
 import android.os.IBinder
-import android.os.PowerManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.core.config.AudiobookConfig
 import io.github.skm0078.audora.core.config.ClipConfig
@@ -26,6 +23,10 @@ import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
+import io.github.skm0078.audora.playback.jobs.ForegroundJobs
+import io.github.skm0078.audora.playback.jobs.jobWakeLock
+import io.github.skm0078.audora.playback.jobs.leaveForeground
+import io.github.skm0078.audora.playback.jobs.releaseIfHeld
 import io.github.skm0078.audora.playback.queue.UnitKey
 import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.studio.BookVoice
@@ -70,7 +71,7 @@ class ClipService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(ClipNotices.RUNNING_ID, notices.making(), foregroundType())
+        startForeground(ClipNotices.RUNNING_ID, notices.making(), ForegroundJobs.type())
         val id = intent?.getStringExtra(AudioClips.EXTRA_BOOK)?.let(::BookId)
         val page = intent?.getIntExtra(AudioClips.EXTRA_PAGE, 0) ?: 0
         val start = UnitKey(page, intent?.getIntExtra(AudioClips.EXTRA_INDEX, 0) ?: 0)
@@ -105,8 +106,7 @@ class ClipService : Service() {
         JobSlots.CLIP.interrupt()
         // Android throws if the service is still in the foreground a few seconds after this; the worker may be
         // inside a long native call, so stop now and let it finish its notice on its own thread.
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        leaveForeground()
     }
 
     override fun onDestroy() {
@@ -129,8 +129,7 @@ class ClipService : Service() {
     /** On the worker thread. */
     private fun makeClip(id: BookId, start: UnitKey, passage: ClipPassage?) {
         // A long Kokoro clip renders for minutes: the CPU must not sleep when the screen times out.
-        val wakeLock = getSystemService(PowerManager::class.java)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)
+        val wakeLock = jobWakeLock(WAKE_LOCK_TAG)
             .apply { acquire(clipConfig.wakeLockMs) }
         try {
             val books = LibraryBookSource(this, library)
@@ -141,10 +140,9 @@ class ClipService : Service() {
         } catch (interrupted: InterruptedException) {
             AudoraLog.i(TAG, "Clip cancelled, book=${id.logLabel}")
         } finally {
-            if (wakeLock.isHeld) wakeLock.release()
+            wakeLock.releaseIfHeld()
             mine = false
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
+            leaveForeground()
         }
     }
 
@@ -219,11 +217,5 @@ class ClipService : Service() {
         /** A page with no text is skipped (as playback skips it); a book that cannot be read stops the clip. */
         fun PdfPageError.isPageOnly(): Boolean =
             this is PdfPageError.ExtractionFailed || this is PdfPageError.PageOutOfRange
-
-        fun foregroundType(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
-        } else {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-        }
     }
 }
