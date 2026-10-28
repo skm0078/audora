@@ -77,7 +77,7 @@ class PageFlipModelTest {
     }
 
     @Test
-    fun `zoomed in, nothing is drawn ahead; back at the page's width, it is again`() =
+    fun `zoomed in, nothing is drawn ahead, and back at the page's width it is again`() =
         runTest(UnconfinedTestDispatcher()) {
             val model = model()
             model.setZoomed(true)
