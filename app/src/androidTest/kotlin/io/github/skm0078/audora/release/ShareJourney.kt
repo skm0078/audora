@@ -44,7 +44,15 @@ internal class ShareJourney(
     private fun text(id: Int, vararg args: Any): String = app.getString(id, *args)
 
     private fun waitForNode(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) {
-        rule.waitUntil(timeoutMs) { rule.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(timeoutMs) { shown(matcher) }
+    }
+
+    /** False, not a failure, while one screen hands over to the next and no window holds a composition yet. */
+    private fun shown(matcher: SemanticsMatcher): Boolean = try {
+        rule.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()
+    } catch (_: IllegalStateException) {
+        // A real miss still fails: waitUntil times out naming the wait.
+        false
     }
 
     private fun node(matcher: SemanticsMatcher): SemanticsNodeInteraction {
