@@ -1,0 +1,3 @@
+en: Four places in the bottom bar: Library, Notes, Made and You. Everything you made, and the jobs still running, now live in Made. On big tablets a sidebar also lists your collections.
+hi: नीचे की पट्टी में चार जगहें: लाइब्रेरी, नोट्स, रचनाएँ और आप। आपने जो कुछ बनाया और जो काम अभी चल रहे हैं, वे अब रचनाएँ में हैं। बड़े टैबलेट पर एक साइड पट्टी आपके संग्रह भी दिखाती है।
+bn: নিচের বারে চারটি জায়গা: লাইব্রেরি, নোট, সৃষ্টি আর আপনি। আপনার তৈরি সবকিছু আর চলতে থাকা কাজ এখন সৃষ্টি-তে। বড় ট্যাবলেটে একটি সাইডবার আপনার সংগ্রহও দেখায়।

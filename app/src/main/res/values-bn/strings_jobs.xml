@@ -3,7 +3,6 @@
 <!-- Purpose: The Jobs screen (ADR-067), in Bengali. -->
 <resources>
     <string name="jobs_title">কাজ</string>
-    <string name="jobs_open">কাজ</string>
     <plurals name="jobs_open_running">
         <item quantity="one">কাজ, %1$dটি চলছে</item>
         <item quantity="other">কাজ, %1$dটি চলছে</item>

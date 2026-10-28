@@ -123,10 +123,12 @@ import io.github.skm0078.audora.ui.library.nowPlaying
 import io.github.skm0078.audora.ui.library.rememberRemovalUndoMs
 import io.github.skm0078.audora.ui.library.restoreMessageOf
 import io.github.skm0078.audora.ui.library.showFinishRestoringIfNeeded
+import io.github.skm0078.audora.ui.library.sidebarShelves
 import io.github.skm0078.audora.ui.licences.LicenceSource
 import io.github.skm0078.audora.ui.licences.LicencesRoute
 import io.github.skm0078.audora.ui.loggingFailures
 import io.github.skm0078.audora.ui.made.JobsAndMadeRoute
+import io.github.skm0078.audora.ui.made.MadePlaceRoute
 import io.github.skm0078.audora.ui.motion.AnimatedScreens
 import io.github.skm0078.audora.ui.motion.isLeavingScreen
 import io.github.skm0078.audora.ui.notes.NoteSources
@@ -400,7 +402,6 @@ class MainActivity : ComponentActivity() {
                 VoicesController(voiceManager, scope, sampler, BUILD_VOICE_LIST).also { it.start() }
             }
         }
-        val destination = nav.destination
         // Above the screens, so the mini player is there from the first frame of a back swipe to the tabs and the
         // cover has somewhere to shrink back into.
         val miniPort = rememberConnectedPlaybackPort()
@@ -423,7 +424,7 @@ class MainActivity : ComponentActivity() {
         WhatsNewDialog { libraryController.listState }
 
         // Back, with its preview, goes through AnimatedScreens; screens' own sheets and menus register after it.
-        AnimatedScreens(destination, onBack = nav::navigate) { screen ->
+        AnimatedScreens(nav.destination, onBack = nav::navigate) { screen ->
             val tab = screen.tab
             if (tab == null) {
                 ScreenRoute(screen, nav, voicesController, battery, books)
@@ -443,7 +444,9 @@ class MainActivity : ComponentActivity() {
 
                         AppTab.NOTES -> ReadableWidth { NotesRoute(books, nav::openPlace) }
 
-                        AppTab.SETTINGS -> ReadableWidth {
+                        AppTab.MADE -> ReadableWidth { MadePlaceRoute(nav::navigate) }
+
+                        AppTab.YOU -> ReadableWidth {
                             SettingsRoute(diagnostics, battery, nav::navigate, appearance) {
                                 scope.launch { turnOnKidsMode() }
                             }
@@ -520,7 +523,7 @@ class MainActivity : ComponentActivity() {
         books: List<Book>,
     ) {
         when (destination) {
-            AppDestination.Library, AppDestination.Notes, AppDestination.Settings -> Unit
+            AppDestination.Library, AppDestination.Notes, AppDestination.Made, AppDestination.Settings -> Unit
 
             is AppDestination.Voices -> ReadableWidth {
                 VoicesRoute(voicesController.value) { nav.navigate(destination.parent ?: AppDestination.Settings) }
@@ -543,7 +546,7 @@ class MainActivity : ComponentActivity() {
                 BatterySetupRoute(battery) { nav.navigate(destination.parent ?: AppDestination.Library) }
             }
 
-            AppDestination.Jobs, AppDestination.Made, is AppDestination.MadePlayer -> ReadableWidth {
+            AppDestination.Jobs, is AppDestination.MadePlayer -> ReadableWidth {
                 JobsAndMadeRoute(destination, nav::navigate)
             }
 
@@ -582,7 +585,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** The tabs' frame with the mini player, which follows whatever the player holds (ADR-036). */
+    /** The places' frame with the mini player, which follows whatever the player holds (ADR-036). */
     @Composable
     private fun TabsRoute(
         tab: AppTab,
@@ -598,6 +601,7 @@ class MainActivity : ComponentActivity() {
             selected = tab,
             onSelect = { navigate(it.destination) },
             tabs = if (LocalKidsMode.current) listOf(AppTab.LIBRARY) else AppTab.entries,
+            shelves = sidebarShelves(library) { navigate(AppDestination.Library) },
             miniPlayer = {
                 playing?.let { now ->
                     MiniPlayer(

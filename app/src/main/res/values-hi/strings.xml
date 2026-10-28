@@ -217,7 +217,6 @@
     <string name="password_cancel">रद्द करें</string>
 
     <!-- Settings and diagnostics (P1-07) -->
-    <string name="settings_title">सेटिंग्स</string>
     <string name="navigate_back">वापस</string>
     <string name="settings_version_title">वर्शन</string>
     <string name="share_logs_title">लॉग शेयर करें</string>
@@ -354,7 +353,6 @@
     <!-- App shell and screens (ADR-036) -->
     <string name="tab_library">लाइब्रेरी</string>
     <string name="tab_notes">नोट्स</string>
-    <string name="tab_settings">सेटिंग्स</string>
     <string name="library_add_to_up_next">आगे सुनें में जोड़ें</string>
     <string name="library_status_new">नई</string>
     <string name="library_status_finished">पूरी हुई</string>

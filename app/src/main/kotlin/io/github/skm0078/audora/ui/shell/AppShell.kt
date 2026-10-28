@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/shell/AppShell.kt
-// Purpose: The tabs' frame: Library, Notes and Settings in a bottom bar (a side rail on wide windows), with the mini
-//          player above the bar (ADR-036).
+// Purpose: The places' frame: Library, Notes, Made and You in a bottom bar on phones, a rail from 600 dp and a sidebar
+//          from 840 dp, with the mini player above the bar (ADR-036, ADR 2026-10-28-four-places).
 
 package io.github.skm0078.audora.ui.shell
 
@@ -38,10 +38,12 @@ import io.github.skm0078.audora.ui.AppTab
 import io.github.skm0078.audora.ui.theme.WindowWidths
 
 /**
- * The bar and the mini player stay put while the tab content changes, so the listener can always reach play and
+ * The bar and the mini player stay put while the place's content changes, so the listener can always reach play and
  * pause with a thumb. The content gets no system insets of its own at the bottom: the bar takes them. From a medium
- * width up (a phone in landscape, a foldable open, a tablet) the tabs move to a rail at the side, as Material's
- * window size classes ask, and the mini player stays at the bottom of the content.
+ * width up (a phone in landscape, a foldable open, a small tablet) the places move to a rail at the side, and from an
+ * expanded width (a big tablet) to a sidebar that also lists [shelves], as Material's window size classes ask. The
+ * same four places keep the same names and order in every form, and the mini player stays at the bottom of the
+ * content beside a rail or sidebar.
  */
 @Composable
 fun AppShell(
@@ -50,32 +52,37 @@ fun AppShell(
     modifier: Modifier = Modifier,
     miniPlayer: @Composable () -> Unit = {},
     tabs: List<AppTab> = AppTab.entries,
+    shelves: SidebarShelves = SidebarShelves(),
     // The window's own width, not this box's: the root's cutout padding must not push a 600-640 dp landscape phone
     // back to the bottom bar. Not Configuration.screenWidthDp, which leaves out a side cutout and a side three-button
     // navigation bar before Android 15.
     windowWidth: Dp = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() },
     content: @Composable () -> Unit,
 ) {
-    // Kids mode (plan item 71) has the library only, so no bar or rail at all.
-    val showTabs = tabs.size > 1
+    // Kids mode (plan item 71) has the library only, so no bar, rail or sidebar at all.
+    val form = placesForm(showPlaces = tabs.size > 1, windowWidth)
     Box(modifier.fillMaxSize()) {
-        val rail = showTabs && windowWidth >= WindowWidths.MEDIUM
+        val beside = form == PlacesForm.RAIL || form == PlacesForm.SIDEBAR
         Row(Modifier.fillMaxSize()) {
-            if (rail) TabRail(tabs, selected, onSelect)
+            when (form) {
+                PlacesForm.RAIL -> TabRail(tabs, selected, onSelect)
+                PlacesForm.SIDEBAR -> Sidebar(tabs, selected, onSelect, shelves)
+                PlacesForm.BAR, PlacesForm.NONE -> Unit
+            }
             Scaffold(
                 modifier = Modifier.weight(1f).fillMaxHeight(),
                 contentWindowInsets = WindowInsets(0),
                 bottomBar = {
-                    val barBelow = showTabs && !rail
+                    val barBelow = form == PlacesForm.BAR
                     // Without the bar under it, the mini player keeps clear of the navigation bar itself.
-                    Column(if (barBelow) Modifier else Modifier.windowInsetsPadding(miniPlayerInsets(rail))) {
+                    Column(if (barBelow) Modifier else Modifier.windowInsetsPadding(miniPlayerInsets(beside))) {
                         miniPlayer()
                         if (barBelow) TabBar(tabs, selected, onSelect)
                     }
                 },
             ) { innerPadding ->
-                // The rail already keeps clear of the system bars on its side, so the content does not pad again.
-                val start = if (rail) Modifier.consumeWindowInsets(START) else Modifier
+                // The rail or sidebar already keeps clear of the system bars on its side, so the content does not.
+                val start = if (beside) Modifier.consumeWindowInsets(START) else Modifier
                 Box(Modifier.padding(innerPadding).then(start).fillMaxSize()) { content() }
             }
         }
@@ -96,6 +103,16 @@ private fun TabBar(tabs: List<AppTab>, selected: AppTab, onSelect: (AppTab) -> U
     }
 }
 
+/** Which form the places take: none in kids mode, else by the window's width class. */
+internal enum class PlacesForm { NONE, BAR, RAIL, SIDEBAR }
+
+internal fun placesForm(showPlaces: Boolean, windowWidth: Dp): PlacesForm = when {
+    !showPlaces -> PlacesForm.NONE
+    windowWidth >= WindowWidths.EXPANDED -> PlacesForm.SIDEBAR
+    windowWidth >= WindowWidths.MEDIUM -> PlacesForm.RAIL
+    else -> PlacesForm.BAR
+}
+
 /** The rail takes the system bars' top, bottom and start insets itself; the root already pads for a cutout. */
 @Composable
 private fun TabRail(tabs: List<AppTab>, selected: AppTab, onSelect: (AppTab) -> Unit) {
@@ -113,31 +130,34 @@ private fun TabRail(tabs: List<AppTab>, selected: AppTab, onSelect: (AppTab) -> 
     }
 }
 
-/** For UI tests: which form the tabs took. */
+/** For UI tests: which form the places took. */
 internal const val TAB_BAR_TAG = "tab_bar"
 internal const val TAB_RAIL_TAG = "tab_rail"
+internal const val SIDEBAR_TAG = "sidebar"
 
 /** System bars only: the keyboard (in safeDrawing) must not shift the rail's items when search opens. */
-private val RAIL_INSETS: WindowInsets
+internal val RAIL_INSETS: WindowInsets
     @Composable get() = WindowInsets.systemBars.only(WindowInsetsSides.Vertical + WindowInsetsSides.Start)
 
-/** Beside the rail only the end side is still open; with no tabs at all (kids mode) both sides are. No keyboard. */
+/** Beside a rail or sidebar only the end side is still open; with no places (kids mode) both are. No keyboard. */
 @Composable
-private fun miniPlayerInsets(rail: Boolean): WindowInsets = WindowInsets.systemBars.only(
-    WindowInsetsSides.Bottom + if (rail) WindowInsetsSides.End else WindowInsetsSides.Horizontal,
+private fun miniPlayerInsets(beside: Boolean): WindowInsets = WindowInsets.systemBars.only(
+    WindowInsetsSides.Bottom + if (beside) WindowInsetsSides.End else WindowInsetsSides.Horizontal,
 )
 
 private val START: WindowInsets
     @Composable get() = WindowInsets.systemBars.only(WindowInsetsSides.Start)
 
-private fun tabIcon(tab: AppTab): Int = when (tab) {
+internal fun tabIcon(tab: AppTab): Int = when (tab) {
     AppTab.LIBRARY -> R.drawable.ic_library
-    AppTab.NOTES -> R.drawable.ic_bookmark
-    AppTab.SETTINGS -> R.drawable.ic_settings
+    AppTab.NOTES -> R.drawable.ic_bookmark_border
+    AppTab.MADE -> R.drawable.ic_made
+    AppTab.YOU -> R.drawable.ic_person
 }
 
-private fun tabLabel(tab: AppTab): Int = when (tab) {
+internal fun tabLabel(tab: AppTab): Int = when (tab) {
     AppTab.LIBRARY -> R.string.tab_library
     AppTab.NOTES -> R.string.tab_notes
-    AppTab.SETTINGS -> R.string.tab_settings
+    AppTab.MADE -> R.string.tab_made
+    AppTab.YOU -> R.string.tab_you
 }

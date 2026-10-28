@@ -62,8 +62,8 @@ internal fun LibraryTopBar(listState: LibraryListState, actions: LibraryActions,
 
 /**
  * Search and the sort menu show once the library has a book. Closing the search clears its text but keeps the sort
- * and filter, which stay until changed. The Jobs button is always there (a download can run before the first book),
- * with a badge counting what works now.
+ * and filter, which stay until changed. Jobs live in the Made place; the Jobs button here is only a shortcut while
+ * something runs, with a badge counting what works now (ADR 2026-10-28-four-places).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,7 +114,7 @@ internal fun LibraryTopBar(
                 }
             }
             if (hasBooks) SortMenu(query, onQuery)
-            if (!searching) JobsButton(runningJobs, onOpenJobs)
+            if (!searching && runningJobs > 0) JobsButton(runningJobs, onOpenJobs)
             if (!searching) LibraryActionsMenu(onAction)
         },
     )
@@ -123,13 +123,9 @@ internal fun LibraryTopBar(
 /** TalkBack hears "Jobs, 2 running"; the badge shows the number. */
 @Composable
 private fun JobsButton(running: Int, onClick: () -> Unit) {
-    val label = if (running > 0) {
-        pluralStringResource(R.plurals.jobs_open_running, running, running)
-    } else {
-        stringResource(R.string.jobs_open)
-    }
     IconButton(onClick = onClick) {
-        BadgedBox(badge = { if (running > 0) Badge { Text(running.toString()) } }) {
+        BadgedBox(badge = { Badge { Text(running.toString()) } }) {
+            val label = pluralStringResource(R.plurals.jobs_open_running, running, running)
             Icon(painterResource(R.drawable.ic_jobs), label)
         }
     }

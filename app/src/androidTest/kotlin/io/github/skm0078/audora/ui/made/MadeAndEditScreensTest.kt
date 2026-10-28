@@ -61,10 +61,18 @@ class MadeAndEditScreensTest {
     @Test
     fun theMadeListNamesEachSetAndItsBookAndPlaysTheOneTapped() {
         val played = mutableListOf<String>()
+        var jobsOpened = 0
         val sets = listOf(MadeSet(AUDIOBOOK, AUDIOBOOK.files), MadeSet(COPY, emptyList()))
         rule.setContent {
             Phone {
-                MadeScreen(sets, mapOf(BOOK to "Gitanjali"), { played += it }, onBack = {}, Modifier.testTag(SCREEN))
+                MadeScreen(
+                    sets,
+                    mapOf(BOOK to "Gitanjali"),
+                    { played += it },
+                    runningJobs = 2,
+                    onOpenJobs = { jobsOpened++ },
+                    Modifier.testTag(SCREEN),
+                )
             }
         }
         rule.onNodeWithText(context.getString(R.string.made_kind_audiobook)).assertExists()
@@ -75,12 +83,20 @@ class MadeAndEditScreensTest {
         rule.onNodeWithText(context.getString(R.string.made_play)).performClick()
         rule.waitForIdle()
         assertEquals(listOf(AUDIOBOOK.key), played)
+
+        // The running jobs are the first row of the place, with how many work now.
+        val running = context.resources.getQuantityString(R.plurals.made_jobs_running, 2, 2)
+        rule.onNodeWithText(running).assertExists()
+        rule.onNodeWithText(context.getString(R.string.made_jobs)).performClick()
+        rule.waitForIdle()
+        assertEquals(1, jobsOpened)
     }
 
     @Test
     fun theMadeListSaysWhatShowsThereWhenNothingWasMade() {
-        rule.setContent { Phone { MadeScreen(emptyList(), emptyMap(), {}, onBack = {}) } }
+        rule.setContent { Phone { MadeScreen(emptyList(), emptyMap(), {}, runningJobs = 0, onOpenJobs = {}) } }
         rule.onNodeWithText(context.getString(R.string.made_empty)).assertExists()
+        rule.onNodeWithText(context.getString(R.string.made_jobs_idle)).assertExists()
     }
 
     @Test

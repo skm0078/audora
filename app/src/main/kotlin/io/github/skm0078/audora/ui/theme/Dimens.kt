@@ -32,4 +32,7 @@ object Dimens {
 
     /** Mini player height; it sits above the tabs on every tab. */
     val MiniPlayerHeight = 64.dp
+
+    /** The big-tablet sidebar with the four places and the collections (ADR 2026-10-28-four-places). */
+    val SidebarWidth = 280.dp
 }

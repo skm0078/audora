@@ -102,8 +102,8 @@ class UiTourTest {
         settle()
         visit("first-run", ::firstRun)
         visit("library", ::library)
-        visit("jobs", ::jobs)
         visit("notes", ::notes)
+        visit("made", ::made)
         visit("settings", ::settings)
         visit("reader", ::reader)
         visit("player", ::player)
@@ -140,13 +140,6 @@ class UiTourTest {
         scrollCaptures("library")
     }
 
-    private fun jobs() {
-        tap(hasContentDescription(text(R.string.jobs_open), substring = true))
-        settle()
-        capture("jobs")
-        backToTabs()
-    }
-
     private fun notes() {
         tap(hasText(text(R.string.tab_notes)))
         settle()
@@ -154,8 +147,20 @@ class UiTourTest {
         tap(hasText(text(R.string.tab_library)))
     }
 
+    /** The Made place, then Jobs from its first row. */
+    private fun made() {
+        tap(hasText(text(R.string.tab_made)))
+        settle()
+        capture("made")
+        tap(hasText(text(R.string.made_jobs)))
+        settle()
+        capture("jobs")
+        backToTabs()
+        tap(hasText(text(R.string.tab_library)))
+    }
+
     private fun settings() {
-        tap(hasText(text(R.string.tab_settings)))
+        tap(hasText(text(R.string.tab_you)))
         settle()
         capture("settings")
         scrollCaptures("settings")
@@ -177,7 +182,7 @@ class UiTourTest {
     }
 
     private fun openFromSettings(title: Int) {
-        tap(hasText(text(R.string.tab_settings)))
+        tap(hasText(text(R.string.tab_you)))
         settle()
         rule.onAllNodes(hasText(text(title))).onFirst().performScrollTo().performClick()
         settle()
@@ -371,7 +376,7 @@ class UiTourTest {
 
     /** Back until the tab bar shows, or a fresh start of the app when Back cannot get there (or it left the screen). */
     private fun backToTabs() {
-        val tabs = hasText(text(R.string.tab_settings))
+        val tabs = hasText(text(R.string.tab_you))
         val onTabs = { runCatching { rule.onAllNodes(tabs).fetchSemanticsNodes().isNotEmpty() }.getOrDefault(false) }
         repeat(MAX_BACKS) {
             if (onTabs()) return

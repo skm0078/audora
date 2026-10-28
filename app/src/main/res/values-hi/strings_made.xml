@@ -2,8 +2,12 @@
 <!-- File: app/src/main/res/values-hi/strings_made.xml -->
 <!-- Purpose: What the app made from each book, the in-app player and editing a book's details (ADR-068), in Hindi. -->
 <resources>
-    <string name="made_title">आपकी किताबों से बना</string>
-    <string name="made_open_all">आपकी किताबों से बना सब कुछ</string>
+    <string name="made_jobs">काम और डाउनलोड</string>
+    <plurals name="made_jobs_running">
+        <item quantity="one">%1$d अभी चल रहा है</item>
+        <item quantity="other">%1$d अभी चल रहे हैं</item>
+    </plurals>
+    <string name="made_jobs_idle">अभी कुछ नहीं चल रहा</string>
     <string name="made_from_book">इस किताब से बना</string>
     <string name="made_empty">अभी कुछ नहीं बना। सहेजी गई ऑडियोबुक, स्टूडियो ऑडियो फ़ाइलें, सुलभ कॉपियाँ और बोलती किताबें यहाँ दिखती हैं, चलाने, शेयर करने और मिटाने के साथ।</string>
     <string name="made_kind_audiobook">ऑडियोबुक</string>

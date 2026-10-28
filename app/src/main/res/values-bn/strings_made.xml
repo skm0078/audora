@@ -2,8 +2,12 @@
 <!-- File: app/src/main/res/values-bn/strings_made.xml -->
 <!-- Purpose: What the app made from each book, the in-app player and editing a book's details (ADR-068), in Bengali. -->
 <resources>
-    <string name="made_title">আপনার বই থেকে তৈরি</string>
-    <string name="made_open_all">আপনার বই থেকে তৈরি সবকিছু</string>
+    <string name="made_jobs">কাজ ও ডাউনলোড</string>
+    <plurals name="made_jobs_running">
+        <item quantity="one">%1$dটি এখন চলছে</item>
+        <item quantity="other">%1$dটি এখন চলছে</item>
+    </plurals>
+    <string name="made_jobs_idle">এখন কিছু চলছে না</string>
     <string name="made_from_book">এই বই থেকে তৈরি</string>
     <string name="made_empty">এখনও কিছু তৈরি হয়নি। সেভ করা অডিওবুক, স্টুডিও অডিও ফাইল, সহজপাঠ্য কপি আর কথা-বলা বই এখানে দেখা যায়, চালানো, শেয়ার আর মোছার বোতাম সহ।</string>
     <string name="made_kind_audiobook">অডিওবুক</string>

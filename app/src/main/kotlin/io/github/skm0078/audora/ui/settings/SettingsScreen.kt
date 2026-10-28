@@ -168,11 +168,11 @@ private fun PagesGroup(onOpen: (SettingsPage) -> Unit) {
     }
 }
 
-/** "Settings" on the main page; a back arrow and the page's name on the others. */
+/** "You" on the main page, the name of its place; a back arrow and the page's name on the others. */
 @Composable
 private fun PageHeader(page: SettingsPage, onBack: () -> Unit) {
     val title = when (page) {
-        SettingsPage.MAIN -> R.string.settings_title
+        SettingsPage.MAIN -> R.string.tab_you
         SettingsPage.PRIVACY -> R.string.settings_group_privacy
         SettingsPage.ADVANCED -> R.string.settings_advanced_title
     }

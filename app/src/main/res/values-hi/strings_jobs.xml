@@ -3,7 +3,6 @@
 <!-- Purpose: The Jobs screen (ADR-067), in Hindi. -->
 <resources>
     <string name="jobs_title">काम</string>
-    <string name="jobs_open">काम</string>
     <plurals name="jobs_open_running">
         <item quantity="one">काम, %1$d चल रहा है</item>
         <item quantity="other">काम, %1$d चल रहे हैं</item>

@@ -217,7 +217,6 @@
     <string name="password_cancel">বাতিল</string>
 
     <!-- Settings and diagnostics (P1-07) -->
-    <string name="settings_title">সেটিংস</string>
     <string name="navigate_back">পিছনে</string>
     <string name="settings_version_title">ভার্সন</string>
     <string name="share_logs_title">লগ শেয়ার করুন</string>
@@ -354,7 +353,6 @@
     <!-- App shell and screens (ADR-036) -->
     <string name="tab_library">লাইব্রেরি</string>
     <string name="tab_notes">নোট</string>
-    <string name="tab_settings">সেটিংস</string>
     <string name="library_add_to_up_next">এরপর শোনার তালিকায় যোগ করুন</string>
     <string name="library_status_new">নতুন</string>
     <string name="library_status_finished">শেষ</string>

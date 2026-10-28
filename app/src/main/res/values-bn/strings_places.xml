@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_places.xml -->
+<!-- Purpose: The four places' new names and the tablet sidebar (ADR 2026-10-28-four-places), in Bengali. -->
+<resources>
+    <string name="tab_made">সৃষ্টি</string>
+    <string name="tab_you">আপনি</string>
+    <string name="sidebar_collections">আপনার সংগ্রহ</string>
+</resources>

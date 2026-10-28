@@ -1,5 +1,5 @@
 // File: app/src/test/kotlin/io/github/skm0078/audora/ui/AppDestinationTest.kt
-// Purpose: Every screen survives its saved route, back goes where expected, and tabs belong to the right screens.
+// Purpose: Every screen survives its saved route, back goes where expected, and places belong to the right screens.
 
 package io.github.skm0078.audora.ui
 
@@ -14,18 +14,19 @@ class AppDestinationTest {
     private val all = listOf(
         AppDestination.Library,
         AppDestination.Notes,
+        AppDestination.Made,
         AppDestination.Settings,
         AppDestination.Voices(),
         AppDestination.Voices(fromStorage = true),
         AppDestination.Licences,
         AppDestination.Storage,
         AppDestination.Jobs,
-        AppDestination.Made,
         AppDestination.MadePlayer("set-1"),
         AppDestination.MadePlayer("set-2", fromMade = true),
         AppDestination.Reader(book),
         AppDestination.Reader(book, AppTab.NOTES),
-        AppDestination.Reader(book, AppTab.SETTINGS, viaPlayer = true),
+        AppDestination.Reader(book, AppTab.YOU, viaPlayer = true),
+        AppDestination.Reader(book, AppTab.MADE),
         AppDestination.Player(book),
         AppDestination.Player(book, AppTab.NOTES),
         AppDestination.BatterySetup(fromSettings = false),
@@ -54,14 +55,24 @@ class AppDestinationTest {
     }
 
     @Test
-    fun jobsGoBackToTheLibraryWithNoTab() {
-        assertEquals(AppDestination.Library, AppDestination.Jobs.parent)
+    fun theFourPlacesAreLibraryNotesMadeAndYouInThatOrder() {
+        assertEquals(
+            listOf(AppDestination.Library, AppDestination.Notes, AppDestination.Made, AppDestination.Settings),
+            AppTab.entries.map { it.destination },
+        )
+        assertEquals(AppTab.MADE, AppDestination.Made.tab)
+        assertEquals(AppTab.YOU, AppDestination.Settings.tab)
+    }
+
+    @Test
+    fun jobsGoBackToMadeWithNoPlace() {
+        assertEquals(AppDestination.Made, AppDestination.Jobs.parent)
         assertNull(AppDestination.Jobs.tab)
     }
 
     @Test
-    fun madeGoesBackToJobsAndItsPlayerToWhereItWasOpened() {
-        assertEquals(AppDestination.Jobs, AppDestination.Made.parent)
+    fun madeIsAPlaceAndItsPlayerGoesBackToWhereItWasOpened() {
+        assertEquals(AppDestination.Library, AppDestination.Made.parent)
         assertEquals(AppDestination.Made, AppDestination.MadePlayer("s", fromMade = true).parent)
         assertEquals(AppDestination.Library, AppDestination.MadePlayer("s").parent)
         assertEquals(AppDestination.Library, AppDestination.fromRoute("made/play/"))
@@ -76,7 +87,8 @@ class AppDestinationTest {
     @Test
     fun backReturnsWhereTheBookWasOpened() {
         assertEquals(AppDestination.Notes, AppDestination.Reader(book, AppTab.NOTES).parent)
-        assertEquals(AppDestination.Settings, AppDestination.Player(book, AppTab.SETTINGS).parent)
+        assertEquals(AppDestination.Settings, AppDestination.Player(book, AppTab.YOU).parent)
+        assertEquals(AppDestination.Made, AppDestination.Reader(book, AppTab.MADE).parent)
         assertEquals(
             AppDestination.Player(book, AppTab.NOTES),
             AppDestination.Reader(book, AppTab.NOTES, viaPlayer = true).parent,

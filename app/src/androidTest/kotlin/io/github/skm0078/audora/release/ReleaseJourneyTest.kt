@@ -4,8 +4,8 @@
 //          media controls a notification or lock screen sends and its own buttons (CF-1), a new voice, a book's
 //          language and a reading setting applying at once, Settings rows, pages and Back, Hide app content, the
 //          ListenLock name, a scan read after the OCR download, the e-book formats and comic archives of ADR
-//          2026-10-26-more-ebook-formats, the cover inside exported audiobooks and the app's own font in English, Hindi
-//          and Bengali. One test on one fresh install, as
+//          2026-10-26-more-ebook-formats, the cover inside exported audiobooks, the app's own font in English, Hindi
+//          and Bengali, and the four places with Jobs under Made. One test on one fresh install, as
 //          one listener would use the app: AndroidJUnitRunner finishes every activity between tests, so the steps are
 //          named blocks inside it and the first broken one stops it.
 
@@ -117,6 +117,7 @@ class ReleaseJourneyTest {
             step("16 Supertonic's licence rules show before its download", ::supertonicRulesShowBeforeItsDownload)
             step("17 an exported chapter carries the book's cover", ::anExportedChapterCarriesTheCover)
             step("18 the app font draws English, Hindi and Bengali", ::theAppFontDrawsAllThreeScripts)
+            step("19 the four places open and Jobs goes back to Made", ::theFourPlacesOpenAndJobsLiveInMade)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -199,7 +200,7 @@ class ReleaseJourneyTest {
 
     /** Back until the tab bar shows (the library, from a reader or player opened on top of it). */
     private fun backToTabs() {
-        val settingsTab = hasText(text(R.string.tab_settings))
+        val settingsTab = hasText(text(R.string.tab_you))
         repeat(MAX_BACKS) {
             if (rule.onAllNodes(settingsTab).fetchSemanticsNodes().isNotEmpty()) return
             back()
@@ -367,7 +368,7 @@ class ReleaseJourneyTest {
         // screens are driven paused; the service acting on the setting and reading on afterwards is what is checked.
         pause()
         backToTabs()
-        tapText(R.string.tab_settings)
+        tapText(R.string.tab_you)
         val row = toggleRow(text(R.string.settings_skip_citations_title))
         val before = toggleState(row)
         val rereads = JourneyDevice.logCount(TEXT_REREAD)
@@ -514,7 +515,7 @@ class ReleaseJourneyTest {
     private fun supertonicRulesShowBeforeItsDownload() {
         pause()
         backToTabs()
-        tapText(R.string.tab_settings)
+        tapText(R.string.tab_you)
         node(hasText(text(R.string.settings_voices_title))).performScrollTo().performClick()
         tap(hasText(text(R.string.voice_pack_download)) and hasClickAction())
         val agree = hasText(text(R.string.use_terms_agree))
@@ -577,6 +578,24 @@ class ReleaseJourneyTest {
             val byWeight = widths.map { it[script] }
             assertEquals("'${samples[script]}' at 400, 500 and 600: $byWeight", byWeight.size, byWeight.distinct().size)
         }
+    }
+
+    /** Library, Notes, Made and You from the bar; Jobs is Made's first row and Back from it returns there. */
+    private fun theFourPlacesOpenAndJobsLiveInMade() {
+        pause()
+        backToTabs()
+        tapText(R.string.tab_notes)
+        tapText(R.string.tab_made)
+        waitForNode(hasText(text(R.string.made_jobs)))
+        tapText(R.string.made_jobs)
+        waitForNode(hasText(text(R.string.jobs_title)))
+        back()
+        gone(hasText(text(R.string.jobs_title)))
+        waitForNode(hasText(text(R.string.made_jobs)))
+        tapText(R.string.tab_you)
+        waitForNode(hasText(text(R.string.settings_voices_title)))
+        tapText(R.string.tab_library)
+        waitForNode(hasText(text(R.string.library_title)))
     }
 
     /** One Anek file on its own, at the weight it was trimmed to. */
