@@ -153,6 +153,18 @@ class BookMenuScreensTest {
     }
 
     @Test
+    fun theHandleClosesTheMenuRightAfterSaveAsOpens() {
+        showLibrary()
+        openMenuByLongPress()
+        rule.onNodeWithText(text(R.string.menu_save_as)).performClick()
+        rule.onNodeWithContentDescription(text(R.string.a11y_sheet_close)).performClick()
+        rule.waitForIdle()
+
+        rule.onNodeWithContentDescription(text(R.string.book_actions_title, "Gora")).assertDoesNotExist()
+        assertEquals(emptyList<String>(), asked)
+    }
+
+    @Test
     fun finishedMarksTheBookAndRemoveAsksToRemoveIt() {
         showLibrary()
         openMenuByLongPress()
