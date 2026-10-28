@@ -28,7 +28,7 @@ class WebBooksTest {
     private val source = FakeSource()
 
     private fun TestScope.books(config: WebBooksConfig = WebBooksConfig()) = WebBooks(
-        catalogues = OpdsCatalogues(File(temp.root, "catalogues.txt"), config.maxCatalogues),
+        catalogues = OpdsCatalogues(File(temp.root, CATALOGUES_FILE)),
         newBookFile = { name -> File(temp.newFolder(), name) },
         config = config,
         fetcher = source,
@@ -112,21 +112,18 @@ class WebBooksTest {
     }
 
     @Test
-    fun `a catalogue is added under its own title only when it is one`() = runTest {
-        source.answers["https://books.example.org/opds"] =
-            """<feed xmlns="http://www.w3.org/2005/Atom"><title>My Shelf</title></feed>""".toByteArray() to
-            "application/atom+xml"
-        source.answers["https://example.org/page"] = ARTICLE.toByteArray() to "text/html"
+    fun `catalogues added before the list was curated stay listed after it until removed`() = runTest {
+        File(temp.root, CATALOGUES_FILE).writeText(
+            "My Shelf\thttps://books.example.org/opds\nGutenberg again\t${CuratedCatalogue.GUTENBERG.address}\n",
+        )
         val catalogues = books().browser
+        val curated = CuratedCatalogue.entries.map { it.title }
 
-        assertEquals(Outcome.Success(CatalogueAdd.ADDED), catalogues.add("books.example.org/opds"))
-        assertEquals(Outcome.Success(CatalogueAdd.ALREADY_THERE), catalogues.add("https://books.example.org/opds"))
-        assertEquals(Outcome.Failure(WebError.NotACatalogue), catalogues.add("https://example.org/page"))
-        assertEquals(Outcome.Failure(WebError.BadAddress), catalogues.add("not an address"))
-        assertEquals(listOf("Project Gutenberg", "My Shelf"), catalogues.all().map { it.title })
+        assertEquals(curated + "My Shelf", catalogues.all().map { it.title })
+        assertNull(catalogues.all().last().curated)
 
         assertTrue(catalogues.remove("https://books.example.org/opds"))
-        assertEquals(listOf("Project Gutenberg"), catalogues.all().map { it.title })
+        assertEquals(curated, catalogues.all().map { it.title })
     }
 
     @Test
@@ -179,6 +176,7 @@ class WebBooksTest {
     }
 
     private companion object {
+        const val CATALOGUES_FILE = "catalogues.txt"
         const val EPUB = "application/epub+zip"
         const val PDF = "application/pdf"
         val ARTICLE = "<html><head><title>The River Story</title></head><body><nav>Home</nav><article>" +

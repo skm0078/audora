@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What each curated book catalogue offers (ADR 2026-10-28-curated-catalogues). Catalogue names stay untranslated:
+     they are the sources' own names. -->
+<resources>
+    <string name="catalogue_about_gutenberg">Over 70,000 classics whose copyright has ended, mostly English, with French, German, Spanish and more.</string>
+    <string name="catalogue_about_unglue_it">Books their authors chose to share for free under Creative Commons licences, including textbooks.</string>
+</resources>

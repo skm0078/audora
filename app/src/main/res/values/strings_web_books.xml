@@ -5,7 +5,7 @@
     <string name="library_read_web_page">Read a web page</string>
     <string name="menu_hint_read_web_page">Type or paste a web address. ListenLock downloads that one page once and reads its article, without menus or ads.</string>
     <string name="library_book_catalogues">Free book catalogues</string>
-    <string name="menu_hint_book_catalogues">Browse Project Gutenberg, or another catalogue you add, and download free books. Only the book you tap is downloaded.</string>
+    <string name="menu_hint_book_catalogues">Browse free catalogues of public-domain and openly licensed books, chosen for you and checked every week. Only the book you tap is downloaded.</string>
 
     <string name="web_page_title">Read a web page</string>
     <string name="web_page_explain">ListenLock downloads this page once, keeps only the article and reads it like a book. Nothing about you is sent.</string>
@@ -28,12 +28,6 @@
 
     <string name="catalogues_title">Free book catalogues</string>
     <string name="catalogues_explain">A book downloads only when you tap Download, straight from the catalogue\'s own website. No account, and nothing about you is sent.</string>
-    <string name="catalogues_add_hint">Add a catalogue (OPDS address)</string>
-    <string name="catalogues_add">Add catalogue</string>
-    <string name="catalogues_added">Catalogue added.</string>
-    <string name="catalogues_already">That catalogue is already in the list.</string>
-    <string name="catalogues_too_many">The list is full. Remove a catalogue first.</string>
-    <string name="catalogues_not_saved">Could not save the list. Try again.</string>
     <string name="catalogues_remove">Remove</string>
     <string name="catalogues_search_hint">Search this catalogue</string>
     <string name="catalogues_search">Search</string>

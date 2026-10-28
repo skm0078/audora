@@ -1,5 +1,6 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/web/OpdsCatalogues.kt
-// Purpose: The catalogues on the Book catalogues screen: the built-in public-domain one and those the listener added.
+// Purpose: The catalogues on the Book catalogues screen: the curated ones, then any a listener added before the
+//          list was curated (ADR 2026-10-28-curated-catalogues).
 
 package io.github.skm0078.audora.playback.web
 
@@ -8,31 +9,18 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import java.io.File
 import java.io.IOException
 
-/** A catalogue's name and first page; [builtIn] ones cannot be removed. */
-data class OpdsCatalogue(val title: String, val address: String, val builtIn: Boolean = false)
-
-/** How adding a catalogue went; each has its own message. */
-enum class CatalogueAdd { ADDED, ALREADY_THERE, TOO_MANY, NOT_SAVED }
+/** A catalogue's name and first page; a [curated] one ([CuratedCatalogue]) cannot be removed. */
+data class OpdsCatalogue(val title: String, val address: String, val curated: CuratedCatalogue? = null)
 
 /**
- * The listener's catalogues are kept in one small text file, a line each (`title<TAB>address`), written whole and
- * durably ([TextFiles.writeDurably]); a line this build cannot read is skipped. Not in the backup: re-adding an
- * address is quick, and a backup is the listener's books and notes. Callers keep calls off the main thread.
+ * Catalogues can no longer be added by address (typed OPDS links mostly failed, and a curated list is checked every
+ * week), but those added by earlier versions stay listed until the listener removes them. They are kept in one small
+ * text file, a line each (`title<TAB>address`), written whole and durably ([TextFiles.writeDurably]); a line this
+ * build cannot read is skipped, as is one now curated. Callers keep calls off the main thread.
  */
-class OpdsCatalogues(private val file: File, private val maxCatalogues: Int) {
-    /** The built-in catalogues, then the listener's in the order added. */
-    fun all(): List<OpdsCatalogue> = BUILT_IN + added()
-
-    /** Adds [catalogue] unless its address is already listed or the list is full. */
-    fun add(catalogue: OpdsCatalogue): CatalogueAdd {
-        val added = added()
-        return when {
-            all().any { it.address == catalogue.address } -> CatalogueAdd.ALREADY_THERE
-            added.size >= maxCatalogues -> CatalogueAdd.TOO_MANY
-            save(added + catalogue.copy(builtIn = false)) -> CatalogueAdd.ADDED
-            else -> CatalogueAdd.NOT_SAVED
-        }
-    }
+class OpdsCatalogues(private val file: File) {
+    /** The curated catalogues, then the listener's in the order added. */
+    fun all(): List<OpdsCatalogue> = CURATED + added().filter { own -> CURATED.none { it.address == own.address } }
 
     /** Removes the listener's catalogue at [address]; false when it could not be saved. */
     fun remove(address: String): Boolean = save(added().filter { it.address != address })
@@ -66,9 +54,6 @@ class OpdsCatalogues(private val file: File, private val maxCatalogues: Int) {
         private const val TAB = '\t'
         private val LINE_BREAKS = Regex("""[\t\r\n]+""")
 
-        /** Project Gutenberg's own OPDS catalogue: over 70,000 free public-domain books, no account. */
-        const val GUTENBERG = "https://www.gutenberg.org/ebooks.opds/"
-
-        val BUILT_IN = listOf(OpdsCatalogue("Project Gutenberg", GUTENBERG, builtIn = true))
+        val CURATED: List<OpdsCatalogue> = CuratedCatalogue.entries.map { it.catalogue }
     }
 }

@@ -68,9 +68,10 @@ object OpdsFormats {
 
 /**
  * jsoup's XML parser: forgiving of the small mistakes real catalogues make, and it never loads external entities.
- * Addresses in the feed are made absolute against the page's own address. Only free downloads count as books
- * (`acquisition` and `acquisition/open-access`); buy, borrow and subscribe links are left out, as is anything in a
- * format ListenLock cannot read. Pure: no network, no Android.
+ * Addresses in the feed are made absolute against the page's own address, and an http one is tried as https (as
+ * [WebAddress] does: the fetcher refuses plain http, and Project Gutenberg's search template is http). Only free
+ * downloads count as books (`acquisition` and `acquisition/open-access`); buy, borrow and subscribe links are left
+ * out, as is anything in a format ListenLock cannot read. Pure: no network, no Android.
  */
 class OpdsParser(private val config: WebBooksConfig = WebBooksConfig()) {
     /** The page in [xml] fetched from [address], or null when it is not an Atom feed. */
@@ -85,7 +86,7 @@ class OpdsParser(private val config: WebBooksConfig = WebBooksConfig()) {
         return OpdsFeed(
             title = childText(feed, TITLE).orEmpty(),
             entries = entries,
-            next = links.firstOrNull { rel(it) == NEXT }?.absUrl(HREF)?.takeIf(String::isNotEmpty),
+            next = links.firstOrNull { rel(it) == NEXT }?.let { address(it, HREF) },
             search = searchOf(links),
         )
     }
@@ -95,8 +96,7 @@ class OpdsParser(private val config: WebBooksConfig = WebBooksConfig()) {
         val document: Document = Jsoup.parse(xml, address, Parser.xmlParser())
         val urls = document.getElementsByTag(URL_TAG).filter { it.hasAttr(TEMPLATE) }
         val atom = urls.firstOrNull { it.attr(TYPE).contains(ATOM, ignoreCase = true) } ?: urls.firstOrNull()
-        return atom?.absUrl(TEMPLATE)?.takeIf { SEARCH_TERMS in it }
-            ?: atom?.attr(TEMPLATE)?.takeIf { SEARCH_TERMS in it }
+        return atom?.let { address(it, TEMPLATE) }?.takeIf { SEARCH_TERMS in it }
     }
 
     private fun entryOf(entry: Element): OpdsEntry? = childText(entry, TITLE)?.let { title -> entryOf(entry, title) }
@@ -107,12 +107,12 @@ class OpdsParser(private val config: WebBooksConfig = WebBooksConfig()) {
             val type = link.attr(TYPE)
             type.contains(ATOM, ignoreCase = true) && !type.contains(ENTRY_TYPE, ignoreCase = true) &&
                 !isAcquisition(link) && rel(link) !in NOT_SECTIONS
-        }?.absUrl(HREF)?.takeIf(String::isNotEmpty)
+        }?.let { address(it, HREF) }
         val download = links.filter(::isFreeDownload)
             .mapNotNull { link ->
                 val type = OpdsFormats.baseType(link.attr(TYPE))
                 val rank = OpdsFormats.READABLE.indexOf(type)
-                link.absUrl(HREF).takeIf { rank >= 0 && it.isNotEmpty() }?.let { rank to OpdsDownload(it, type) }
+                address(link, HREF)?.takeIf { rank >= 0 }?.let { rank to OpdsDownload(it, type) }
             }
             .minByOrNull { it.first }?.second
         if (section == null && download == null) return null
@@ -126,9 +126,9 @@ class OpdsParser(private val config: WebBooksConfig = WebBooksConfig()) {
 
     private fun searchOf(links: List<Element>): OpdsSearch? {
         val search = links.filter { rel(it) == SEARCH }
-        val template = search.map { it.absUrl(HREF).ifEmpty { it.attr(HREF) } }.firstOrNull { SEARCH_TERMS in it }
+        val template = search.mapNotNull { address(it, HREF) }.firstOrNull { SEARCH_TERMS in it }
         val description = search.firstOrNull { it.attr(TYPE).contains(OPENSEARCH, ignoreCase = true) }
-            ?.absUrl(HREF)?.takeIf(String::isNotEmpty)
+            ?.let { address(it, HREF) }
         return if (template == null && description == null) null else OpdsSearch(template, description)
     }
 
@@ -177,3 +177,15 @@ class OpdsParser(private val config: WebBooksConfig = WebBooksConfig()) {
         val SPACES = Regex("""\s+""")
     }
 }
+
+/**
+ * [element]'s [attribute] made absolute (jsoup keeps a template's `{searchTerms}` braces), with an http address tried
+ * as https; null when it is empty or cannot be resolved.
+ */
+private fun address(element: Element, attribute: String): String? {
+    val absolute = element.absUrl(attribute).takeIf(String::isNotEmpty) ?: return null
+    return if (absolute.startsWith(HTTP, ignoreCase = true)) HTTPS + absolute.drop(HTTP.length) else absolute
+}
+
+private const val HTTP = "http://"
+private const val HTTPS = "https://"

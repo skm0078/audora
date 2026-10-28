@@ -128,6 +128,8 @@ class ReleaseJourneyTest {
         try {
             firstRunToTheLibrary()
             readingSharingAndVoices()
+            // Last on purpose: run after step 19, the thousand books' background work left step 26 without its menu.
+            step("40 search finds the last of 1,000 books", LoadJourney(rule, ::backToTabs)::lastOfManyIsFound)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -168,7 +170,7 @@ class ReleaseJourneyTest {
         step("42 a phone book says it is on this phone", SourceJourney(rule, ::backToTabs)::aPhoneBookSaysWhereItLives)
     }
 
-    /** Steps 21 on: sharing, page turns, the tour, character voices, symbols and Made. */
+    /** Steps 21 on: sharing, page turns, the tour, character voices, symbols, Made and catalogues. */
     private fun readingSharingAndVoices() {
         step("21 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
         step("22 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
@@ -198,6 +200,7 @@ class ReleaseJourneyTest {
             SymbolJourney.symbolsAreSaidOrLeftOut()
         }
         step("32 Made plays a saved audiobook like the book player", MadeJourney(rule, ::backToTabs)::playsLikeBook)
+        step("41 catalogues are a curated list", CatalogueJourney(rule, ::backToTabs)::theCuratedCataloguesAreListed)
     }
 
     /**

@@ -1,21 +1,25 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/web/WebBooksScreenTest.kt
 // Purpose: The web dialogs (ADR 2026-10-26-web-books) without the network: Read is offered only for a web address, a
-//          shared link asks first and names its site, and the catalogue list shows Project Gutenberg and Add.
+//          shared link asks first and names its site, and the catalogue list shows the curated catalogues with
+//          what each offers, none removable, and no field to add one by address.
 
 package io.github.skm0078.audora.ui.web
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.playback.web.CuratedCatalogue
 import io.github.skm0078.audora.ui.library.LibraryAction
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import org.junit.After
@@ -88,16 +92,23 @@ class WebBooksScreenTest {
     }
 
     @Test
-    fun theCatalogueListShowsGutenbergAndAdd() {
+    fun theCatalogueListShowsEveryCuratedCatalogueAndNoAddField() {
         rule.runOnUiThread { WebBooksUi.sheet = WebSheet.CATALOGUES }
 
         rule.waitUntil(UI_TIMEOUT_MS) {
-            rule.onAllNodes(hasText("Project Gutenberg")).fetchSemanticsNodes().isNotEmpty()
+            rule.onAllNodes(hasText(CuratedCatalogue.GUTENBERG.title)).fetchSemanticsNodes().isNotEmpty()
         }
         rule.onNodeWithText(text(R.string.catalogues_explain)).assertExists()
-        rule.onNodeWithText(text(R.string.catalogues_add)).assertIsNotEnabled()
-        // Gutenberg is built in: it has no Remove.
+        val list = rule.onNode(hasScrollToNodeAction())
+        CuratedCatalogue.entries.forEach { curated ->
+            list.performScrollToNode(hasText(curated.title))
+            rule.onNodeWithText(curated.title).assertExists()
+            list.performScrollToNode(hasText(text(aboutOf(curated))))
+            rule.onNodeWithText(text(aboutOf(curated))).assertExists()
+        }
+        // Curated catalogues cannot be removed, and none is added by typing an address.
         rule.onNodeWithText(text(R.string.catalogues_remove)).assertDoesNotExist()
+        rule.onNode(hasSetTextAction()).assertDoesNotExist()
     }
 
     private companion object {

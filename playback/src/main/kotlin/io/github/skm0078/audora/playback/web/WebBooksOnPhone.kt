@@ -27,7 +27,7 @@ object WebBooksOnPhone {
         val config = WebBooksConfig()
         val copies = SharedPdfCopies(app)
         return WebBooks(
-            catalogues = OpdsCatalogues(File(app.filesDir, CATALOGUES_FILE), config.maxCatalogues),
+            catalogues = OpdsCatalogues(File(app.filesDir, CATALOGUES_FILE)),
             newBookFile = copies::newCopy,
             config = config,
         )
