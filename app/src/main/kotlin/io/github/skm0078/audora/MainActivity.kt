@@ -91,13 +91,15 @@ import io.github.skm0078.audora.speech.punct.PunctuationModels
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.ui.AppDestination
 import io.github.skm0078.audora.ui.AppTab
-import io.github.skm0078.audora.ui.battery.BatterySetupCard
+import io.github.skm0078.audora.ui.battery.BatterySetupBanner
 import io.github.skm0078.audora.ui.battery.BatterySetupController
 import io.github.skm0078.audora.ui.battery.BatterySetupRoute
 import io.github.skm0078.audora.ui.battery.rememberBatterySetup
 import io.github.skm0078.audora.ui.diagnostics.DiagnosticsController
 import io.github.skm0078.audora.ui.diagnostics.UnfinishedSessionDialog
 import io.github.skm0078.audora.ui.firstrun.FirstRunScreen
+import io.github.skm0078.audora.ui.firstrun.GuidedTour
+import io.github.skm0078.audora.ui.firstrun.rememberGuidedTour
 import io.github.skm0078.audora.ui.firstrun.shouldShowFirstRun
 import io.github.skm0078.audora.ui.guide.CharacterGuidePanel
 import io.github.skm0078.audora.ui.jobs.LongJobsPanel
@@ -422,7 +424,8 @@ class MainActivity : ComponentActivity() {
         OpenJobsEffect(openJobs, onHandled = { openJobs = false }) { nav.navigate(AppDestination.Jobs) }
         val books = libraryBooks(libraryController.listState)
         if (firstRunShowing(libraryController, voicesController, battery, kids.on)) return
-        WhatsNewDialog { libraryController.listState }
+        val whatsNew = WhatsNewDialog { libraryController.listState }
+        val tour = rememberGuidedTour({ libraryController.listState }, kids.on, waiting = whatsNew)
 
         // Back, with its preview, goes through AnimatedScreens; screens' own sheets and menus register after it.
         AnimatedScreens(nav.destination, onBack = nav::navigate) { screen ->
@@ -430,16 +433,15 @@ class MainActivity : ComponentActivity() {
             if (tab == null) {
                 ScreenRoute(screen, nav, voicesController, battery, books)
             } else {
-                TabsRoute(tab, libraryController, miniPort, bookCovers, nav::navigate) {
+                TabsRoute(tab, libraryController, miniPort, bookCovers, nav::navigate, tour) {
                     when (tab) {
                         AppTab.LIBRARY -> LibraryRoute(libraryController, nav, appearance, battery.exempt) {
                             if (kids.on) {
                                 KidsBanner(onLeave = { scope.launch { turnOffKidsMode(kids) } })
                             } else if (battery.showCard) {
-                                BatterySetupCard(
-                                    onSetUp = { nav.navigate(AppDestination.BatterySetup(fromSettings = false)) },
-                                    onNotNow = battery::dismissCard,
-                                )
+                                BatterySetupBanner(onNotNow = battery::dismissCard) {
+                                    nav.navigate(AppDestination.BatterySetup(fromSettings = false))
+                                }
                             }
                         }
 
@@ -448,7 +450,7 @@ class MainActivity : ComponentActivity() {
                         AppTab.MADE -> ReadableWidth { MadePlaceRoute(nav::navigate) }
 
                         AppTab.YOU -> ReadableWidth {
-                            SettingsRoute(diagnostics, battery, nav, appearance) {
+                            SettingsRoute(diagnostics, battery, nav, appearance, tour) {
                                 scope.launch { turnOnKidsMode() }
                             }
                         }
@@ -600,6 +602,7 @@ class MainActivity : ComponentActivity() {
         battery: BatterySetupController,
         nav: AppNavigation,
         appearance: Appearance,
+        tour: GuidedTour,
         onKidsMode: () -> Unit,
     ) {
         val navigate = nav::navigate
@@ -640,6 +643,10 @@ class MainActivity : ComponentActivity() {
             appearance = appearance,
             onAppearanceChange = { changed -> scope.launch { appearancePreferences.save(changed) } },
             onKidsMode = onKidsMode,
+            onShowTour = {
+                tour.start()
+                navigate(AppDestination.Library)
+            },
             language = appLanguageStore.load(),
             onLanguageChange = ::switchLanguage,
             privacy = privacy.controls(),

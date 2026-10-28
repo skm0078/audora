@@ -105,13 +105,13 @@ class CatalogueScreensTest {
                     facets = FACETS,
                 )
                 Column(Modifier.testTag(SHEET)) {
-                    ShelfRow(list, onQuery = { query = it })
-                    CatalogueRow(list, onQuery = { query = it })
+                    LibraryChipRow(list, onQuery = { query = it })
                     list.items.forEach { Text("Row ${it.book.title}") }
                 }
             }
         }
-        rule.onNodeWithText(shelf("For school", 2)).performClick()
+        // One chip row for shelves and collections: a collection waits past the shelves, a sideways scroll away.
+        rule.onNodeWithText(shelf("For school", 2)).performScrollTo().performClick()
         rule.waitForIdle()
 
         rule.onNodeWithText(shelf("For school", 2)).assertIsSelected()

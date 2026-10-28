@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The lighter library home and the 1-minute tour (ADR 2026-10-28-home-and-tour). -->
+<resources>
+    <string name="library_greeting_morning">সুপ্রভাত</string>
+    <string name="library_greeting_afternoon">শুভ দুপুর</string>
+    <string name="library_greeting_evening">শুভ সন্ধ্যা</string>
+    <string name="tour_offer_first_book">আপনার প্রথম বই এসে গেছে।</string>
+    <string name="tour_offer_title">১ মিনিটের একটা ঘুরে দেখা?</string>
+    <string name="tour_offer_body">পাঁচটি ছোট ধাপ: শোনা, বইয়ের মেনু, নোট, আপনি কী বানাতে পারেন, আর কোথায় কী আছে।</string>
+    <string name="tour_later">পরে</string>
+    <string name="tour_start">ঘুরিয়ে দেখান</string>
+    <string name="tour_replay_hint">যেকোনো সময় আপনি › ঘুরিয়ে দেখান থেকে আবার দেখতে পারেন।</string>
+    <string name="tour_step">%2$d-এর মধ্যে ধাপ %1$d</string>
+    <string name="tour_skip">বাদ দিন</string>
+    <string name="tour_next">পরবর্তী</string>
+    <string name="tour_done">হয়ে গেছে</string>
+    <string name="tour_listen_title">শুনতে বইয়ে ট্যাপ করুন</string>
+    <string name="tour_listen_body">যেখানে থেমেছিলেন সেখান থেকেই খোলে। চালান টিপুন, প্লেয়ার প্রতিটি ট্যাবে নিচে থাকে।</string>
+    <string name="tour_menu_title">বই চেপে ধরে রাখুন</string>
+    <string name="tour_menu_body">সেই বইয়ের সবকিছু এখানে: এরপর চালান, শেয়ার, অডিওবুক হিসেবে সেভ, শেষ হয়েছে চিহ্ন।</string>
+    <string name="tour_notes_title">আপনার নোট</string>
+    <string name="tour_notes_body">প্রতিটি বইয়ের বুকমার্ক, হাইলাইট আর ভয়েস নোট, এক জায়গায়।</string>
+    <string name="tour_made_title">আপনার সৃষ্টি</string>
+    <string name="tour_made_body">আপনার বানানো অডিওবুক, উক্তি কার্ড আর ভিডিও এখানে আসে, তাদের অগ্রগতি সহ।</string>
+    <string name="tour_you_title">নিজের মতো করুন</string>
+    <string name="tour_you_body">ভয়েস, চেহারা, ভাষা, গোপনীয়তা আর সাহায্য আপনি-তে আছে। লাইব্রেরির খোঁজ সেটিংও খুঁজে দেয়।</string>
+    <string name="settings_tour_title">ঘুরিয়ে দেখান</string>
+    <string name="settings_tour_body">১ মিনিটের ঘুরে দেখা, আবার</string>
+    <string name="found_terms_tour">ঘুরে দেখা গাইড সাহায্য কীভাবে শিখুন</string>
+</resources>

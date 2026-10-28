@@ -56,6 +56,7 @@ internal fun BookTile(
     onAction: (BookAction) -> Unit = {},
     onPlay: () -> Unit = {},
     pane: PaneChoice? = null,
+    modifier: Modifier = Modifier,
 ) {
     var menuOpen by rememberSaveable(item.book.id.value) { mutableStateOf(false) }
     val kids = LocalKidsMode.current
@@ -71,7 +72,7 @@ internal fun BookTile(
     val named = listOfNotNull(title, author, source).joinToString(", ")
     val described = stringResource(R.string.library_tile_description, named, status)
     val description = jobLine?.let { "$described. $it" } ?: described
-    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
         Box(
             modifier = Modifier
                 .then(ring)

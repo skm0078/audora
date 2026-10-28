@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The lighter library home and the 1-minute tour (ADR 2026-10-28-home-and-tour). -->
+<resources>
+    <string name="library_greeting_morning">सुप्रभात</string>
+    <string name="library_greeting_afternoon">शुभ दोपहर</string>
+    <string name="library_greeting_evening">शुभ संध्या</string>
+    <string name="tour_offer_first_book">आपकी पहली किताब आ गई।</string>
+    <string name="tour_offer_title">1 मिनट का टूर देखें?</string>
+    <string name="tour_offer_body">पाँच छोटे पड़ाव: सुनना, किताब का मेन्यू, नोट्स, आप क्या बना सकते हैं, और कौन सी चीज़ कहाँ है।</string>
+    <string name="tour_later">बाद में</string>
+    <string name="tour_start">मुझे दिखाएँ</string>
+    <string name="tour_replay_hint">इसे कभी भी आप › मुझे दिखाएँ से फिर देख सकते हैं।</string>
+    <string name="tour_step">%2$d में से चरण %1$d</string>
+    <string name="tour_skip">छोड़ें</string>
+    <string name="tour_next">आगे</string>
+    <string name="tour_done">हो गया</string>
+    <string name="tour_listen_title">सुनने के लिए किताब पर टैप करें</string>
+    <string name="tour_listen_body">यह वहीं से खुलती है जहाँ आप रुके थे। चलाएँ दबाएँ, और प्लेयर हर टैब पर नीचे बना रहता है।</string>
+    <string name="tour_menu_title">किताब को दबाकर रखें</string>
+    <string name="tour_menu_body">उस किताब का सब कुछ यहाँ है: आगे चलाएँ, शेयर करें, ऑडियोबुक के रूप में सहेजें, पूरी हुई चिह्नित करें।</string>
+    <string name="tour_notes_title">आपके नोट्स</string>
+    <string name="tour_notes_body">हर किताब के बुकमार्क, हाइलाइट और आवाज़ वाले नोट, एक ही जगह।</string>
+    <string name="tour_made_title">आपकी रचनाएँ</string>
+    <string name="tour_made_body">आपकी बनाई ऑडियोबुक, कोट कार्ड और वीडियो यहाँ आते हैं, उनकी प्रगति के साथ।</string>
+    <string name="tour_you_title">इसे अपना बनाएँ</string>
+    <string name="tour_you_body">आवाज़ें, रूप, भाषा, निजता और मदद आप में हैं। लाइब्रेरी की खोज सेटिंग भी ढूँढती है।</string>
+    <string name="settings_tour_title">मुझे दिखाएँ</string>
+    <string name="settings_tour_body">1 मिनट का टूर, फिर से</string>
+    <string name="found_terms_tour">टूर गाइड मदद कैसे सीखें</string>
+</resources>

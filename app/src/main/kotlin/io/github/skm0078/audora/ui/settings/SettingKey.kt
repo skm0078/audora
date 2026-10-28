@@ -25,6 +25,7 @@ enum class SettingKey(
     @StringRes val group: Int?,
     @StringRes val terms: Int? = null,
 ) {
+    TOUR(R.string.settings_tour_title, SettingsPage.MAIN, null, R.string.found_terms_tour),
     ACTED_VOICE(R.string.acted_model_title, SettingsPage.MAIN, R.string.settings_group_listening),
     STORY_BRAIN(R.string.brain_model_title, SettingsPage.MAIN, R.string.settings_group_listening),
     SCANNED_PAGES(

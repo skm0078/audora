@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_made_tab.xml -->
+<!-- Purpose: The Made place as a grid or list with icon buttons, and its player's speed and voice note, in Hindi. -->
+<resources>
+    <plurals name="made_jobs_making">
+        <item quantity="one">%1$d बन रहा है</item>
+        <item quantity="other">%1$d बन रहे हैं</item>
+    </plurals>
+    <string name="made_jobs_short">काम</string>
+    <string name="made_filter_all">सब</string>
+    <string name="made_filter_count">%1$s · %2$d</string>
+    <string name="made_play_named">%1$s चलाएँ</string>
+    <string name="made_open_named">%1$s खोलें</string>
+    <string name="made_share_named">%1$s शेयर करें</string>
+    <string name="made_more_named">%1$s के और विकल्प</string>
+    <string name="made_player_kind">रचनाएँ · %1$s</string>
+    <string name="made_player_left">−%1$s</string>
+    <string name="made_player_saved">%1$s को सहेजा</string>
+    <string name="made_voice_title">आवाज़ फ़ाइल का हिस्सा है</string>
+    <string name="made_voice_body">सहेजी गई फ़ाइल उसी आवाज़ में रहती है जिसमें वह बनी थी। दूसरी आवाज़ के लिए किताब के मेन्यू में \"इस रूप में सेव करें\" से उसे फिर से बनाएँ।</string>
+</resources>
