@@ -28,6 +28,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.then
 import androidx.compose.ui.text.intl.LocaleList as ComposeLocales
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
