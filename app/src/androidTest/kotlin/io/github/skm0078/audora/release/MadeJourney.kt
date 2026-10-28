@@ -18,6 +18,7 @@ import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookOutput
@@ -84,7 +85,9 @@ internal class MadeJourney(private val rule: ComposeTestRule, private val backTo
             val title = book.title.takeUnless { it == BookTitles.UNTITLED } ?: text(R.string.library_untitled)
             val named = "$title, ${text(R.string.made_kind_audiobook)}"
             node(hasContentDescription(text(R.string.made_share_named, named))).assertExists()
-            tap(hasContentDescription(text(R.string.made_play_named, named)))
+            // One tile across the emulator's narrow screen: its buttons sit under a tall cover, below the fold.
+            node(hasContentDescription(text(R.string.made_play_named, named))).performScrollTo().performClick()
+            waitForNode(hasText(text(R.string.made_player_kind, text(R.string.made_kind_audiobook))))
 
             // Speed and the timer wait for the player service, then work as on the book player.
             tap(hasText(text(R.string.reader_speed, "1")) and isEnabled())
