@@ -33,6 +33,8 @@ import kotlinx.coroutines.flow.map
  * @property spacing how far apart the text view's lines are.
  * @property reflow runs a paragraph's sentences together as running text; off, each sentence is its own row (easier
  *   to step through one sentence at a time with TalkBack).
+ * @property turnPages the text view shows a screenful at a time and a swipe turns to the next, like a book (ADR
+ *   2026-10-28-text-pages); off, it scrolls.
  */
 data class ReadingLook(
     val focus: Boolean = false,
@@ -45,6 +47,7 @@ data class ReadingLook(
     val textScale: Float = DEFAULT_TEXT_SCALE,
     val spacing: LineSpacing = LineSpacing.NORMAL,
     val reflow: Boolean = true,
+    val turnPages: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_TEXT_SCALE = 1f
@@ -99,6 +102,7 @@ class ReadingLookPreferences(context: Context) {
                 textScale = prefs[TEXT_SCALE]?.coerceIn(ReadingLook.TEXT_SCALES) ?: defaults.textScale,
                 spacing = LineSpacing.entries.firstOrNull { it.name == prefs[SPACING] } ?: defaults.spacing,
                 reflow = prefs[REFLOW] ?: defaults.reflow,
+                turnPages = prefs[TURN_PAGES] ?: defaults.turnPages,
             )
         }
 
@@ -115,6 +119,7 @@ class ReadingLookPreferences(context: Context) {
                 it[TEXT_SCALE] = look.textScale
                 it[SPACING] = look.spacing.name
                 it[REFLOW] = look.reflow
+                it[TURN_PAGES] = look.turnPages
             }
         } catch (e: IOException) {
             AudoraLog.w(TAG, "Could not save the reading look", e)
@@ -133,6 +138,7 @@ class ReadingLookPreferences(context: Context) {
         val TEXT_SCALE = floatPreferencesKey("text_scale")
         val SPACING = stringPreferencesKey("line_spacing")
         val REFLOW = booleanPreferencesKey("reflow")
+        val TURN_PAGES = booleanPreferencesKey("turn_pages")
     }
 }
 

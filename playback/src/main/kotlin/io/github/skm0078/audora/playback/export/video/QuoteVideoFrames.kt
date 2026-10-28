@@ -34,9 +34,12 @@ class AiVoiceLabel(val text: String) {
     private val ink = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
     private val pill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = BACKING }
 
-    /** Top left, in a dark pill that reads on any card colour; sized to the frame's height. */
-    internal fun draw(canvas: Canvas) {
-        val unit = canvas.height / UNITS
+    /**
+     * Top left, in a dark pill that reads on any card colour; sized to [frameHeight], the canvas's own height unless
+     * the canvas is larger than the frame (the card screen's preview draws onto the screen's canvas).
+     */
+    fun draw(canvas: Canvas, frameHeight: Int = canvas.height) {
+        val unit = frameHeight / UNITS
         ink.textSize = unit * TEXT_UNITS
         val width = ink.measureText(text)
         val metrics = ink.fontMetrics

@@ -18,6 +18,7 @@ package io.github.skm0078.audora.core.config
  * @property codecTimeoutUs how long one encoder buffer request may wait, in microseconds.
  * @property codecDrainAttempts timed-out requests tolerated while flushing the end of a stream before the encoder is
  *   declared stuck; bounds the wait to `codecTimeoutUs * codecDrainAttempts`.
+ * @property sentenceGapMs the breath between two sentences of a quote, each rendered on its own.
  */
 data class QuoteVideoConfig(
     val widthPx: Int = 720,
@@ -29,6 +30,7 @@ data class QuoteVideoConfig(
     val aacBitRate: Int = 64_000,
     val codecTimeoutUs: Long = 10_000,
     val codecDrainAttempts: Int = 500,
+    val sentenceGapMs: Int = 250,
 ) {
     init {
         // H.264 encoders want even sides (4:2:0 chroma is subsampled by two both ways).
@@ -41,9 +43,20 @@ data class QuoteVideoConfig(
         require(aacBitRate > 0) { "aacBitRate must be > 0, was $aacBitRate" }
         require(codecTimeoutUs > 0) { "codecTimeoutUs must be > 0, was $codecTimeoutUs" }
         require(codecDrainAttempts >= 1) { "codecDrainAttempts must be >= 1, was $codecDrainAttempts" }
+        require(sentenceGapMs >= 0) { "sentenceGapMs must be >= 0, was $sentenceGapMs" }
     }
 
-    private companion object {
-        const val MAX_FPS = 60
+    companion object {
+        private const val MAX_FPS = 60
+        private const val SHARP_WIDTH = 1080
+        private const val SHARP_HEIGHT = 1920
+        private const val SHARP_BIT_RATE = 5_000_000
+
+        /**
+         * The listener's "Sharp" choice: 1080 x 1920 at twice the bit rate. About 2.25 times the pixels to draw and
+         * encode, and an 8 MB frame instead of 3.7 MB; a few phones' encoders refuse a second 1080p stream.
+         */
+        fun sharp(): QuoteVideoConfig =
+            QuoteVideoConfig(widthPx = SHARP_WIDTH, heightPx = SHARP_HEIGHT, videoBitRate = SHARP_BIT_RATE)
     }
 }

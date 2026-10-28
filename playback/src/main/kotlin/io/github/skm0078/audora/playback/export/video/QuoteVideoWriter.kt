@@ -34,9 +34,12 @@ data class QuoteVideoError(val detail: String)
  * between video frames by time.
  *
  * Cost: one 720 x 1280 bitmap (3.7 MB) and the encoder's own buffers; no new dependency (MediaCodec, MediaMuxer and
- * EGL are the platform's).
+ * EGL are the platform's). [onProgress] hears each frame handed to the encoder, on the writing thread.
  */
-class QuoteVideoWriter(private val config: QuoteVideoConfig = QuoteVideoConfig()) {
+class QuoteVideoWriter(
+    private val config: QuoteVideoConfig = QuoteVideoConfig(),
+    private val onProgress: (done: Int, total: Int) -> Unit = { _, _ -> },
+) {
     /**
      * Writes [frames] over [audio] into [target] (replaced), as [timeline] times them, with [label] on every frame.
      * Blocks: call it on one background thread, which the GPU context is bound to. On failure [target] is deleted.
@@ -137,6 +140,7 @@ class QuoteVideoWriter(private val config: QuoteVideoConfig = QuoteVideoConfig()
                 }
                 canvas.present(timeline.timeUs(frame) * NS_PER_US)
                 drain(codec, endOfStream = false)
+                onProgress(frame + 1, timeline.frameCount)
             }
             return drawn
         }

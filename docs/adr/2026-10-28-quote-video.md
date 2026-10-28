@@ -1,7 +1,7 @@
 # ADR 2026-10-28-quote-video: a quote video from the phone's own encoders, its frames timed through OpenGL
 
 **Status:** Accepted (2026-10-28). Part 2a of the share plan (share cards, quote video, page flips), approved by the
-maintainer for v0.1.0. 2b adds the screen that makes one from a share card.
+maintainer for v0.1.0. 2b (below) adds the screen that makes one from a share card.
 
 ## Context
 A share card is a still picture. A quote read aloud, with each word lit as the voice says it, says what the app does
@@ -42,3 +42,26 @@ always on (the card frame already draws it), and edge-device limits respected wi
 - A dropped frame (none seen) still plays and is logged, not failed.
 - The writer blocks and must run on one background thread, the one its GL context is bound to.
 - `PIPELINE_VERSION` is unchanged: `:pdf` is not touched.
+
+## 2b: the screen (2026-10-28)
+1. **One card screen, two kinds.** A quote card has Picture and Video chips; "Share as a video" in the sentence menu
+   opens it on Video. A video is always a story (9:16), Standard 720 x 1280 by default, Sharp 1080 x 1920 to choose.
+2. **The card is the backdrop.** In video mode the card is drawn without its quote's words; Make the video captures
+   it (look, cover or picture, credit, ListenLock mark) as a PNG in `cacheDir/shared-videos/`. The words are drawn
+   by `QuoteVideoPainter` (StaticLayout, the same Tiro fonts, moved to `:playback`) over that backdrop, so the
+   service needs no Compose. The screen's preview draws the same painter as an unrecorded overlay of the card frame,
+   so what the listener sees is the video's first moment, label included.
+3. **The book's own voice, no book open.** `QuoteVoice` builds the book's `BookVoice` over a stand-in text holding
+   only the quote (no password, no page parsing), renders it a sentence at a time with the book's voices and
+   settings, times its words (`WordTimes`), joins the sentences with a short gap and applies the book's pitch.
+4. **A short foreground service** (`QuoteVideoService`, one at a time through `JobSlots.VIDEO`), like the audio
+   clip's: progress in a notification, then the share sheet (and a Share button on the notification for when Android
+   blocks opening it from the background). The three newest videos are kept for an app that reads one late.
+
+### Not done yet (flagged, not dropped)
+- Dragging an own picture to position it: the picture is centre-cropped, as on the picture card.
+
+### Consequences of 2b
+- Memory while making: the backdrop bitmap (3.7 MB at 720p, 8.3 MB at 1080p) on top of 2a's; the voice's model is
+  the one reading uses, loaded only for the video and closed after. Sharp is about 2.25 times the pixels to draw and
+  encode. Nothing new at cold start; the fonts moved module, the APK does not grow by them.

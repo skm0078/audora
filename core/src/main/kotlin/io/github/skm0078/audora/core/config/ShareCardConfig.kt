@@ -11,17 +11,36 @@ package io.github.skm0078.audora.core.config
  * @property sentenceEndShare a sentence end counts as close when it keeps at least this share of [maxWords].
  * @property maxDedicationChars the optional "For Ma" line under the credit.
  * @property keptCards cards kept in the share folder; older ones are deleted when a new one is written.
+ * @property snippetMaxShare a page snippet covers at most this share of the page's area (a third: a passage with its
+ *   look, never the page; the same fair-dealing guard as [maxWords]).
+ * @property snippetMinSide a snippet's side is never narrower than this share of the page's, so a handle stays
+ *   grabbable and the picture readable.
+ * @property snippetPad the box first drawn around a sentence leaves this share of the page around its lines.
  */
 data class ShareCardConfig(
     val maxWords: Int = 60,
     val sentenceEndShare: Float = 0.5f,
     val maxDedicationChars: Int = 40,
     val keptCards: Int = 5,
+    val snippetMaxShare: Float = A_THIRD,
+    val snippetMinSide: Float = 0.08f,
+    val snippetPad: Float = 0.015f,
 ) {
     init {
         require(maxWords >= 1) { "maxWords must be >= 1, was $maxWords" }
         require(sentenceEndShare in 0f..1f) { "sentenceEndShare must be in 0..1, was $sentenceEndShare" }
         require(maxDedicationChars >= 1) { "maxDedicationChars must be >= 1, was $maxDedicationChars" }
         require(keptCards >= 1) { "keptCards must be >= 1, was $keptCards" }
+        require(snippetMaxShare > 0f && snippetMaxShare <= 1f) {
+            "snippetMaxShare must be in (0, 1], was $snippetMaxShare"
+        }
+        require(snippetMinSide > 0f && snippetMinSide * snippetMinSide <= snippetMaxShare) {
+            "snippetMinSide ($snippetMinSide) must be > 0 and its square within snippetMaxShare ($snippetMaxShare)"
+        }
+        require(snippetPad >= 0f) { "snippetPad must be >= 0, was $snippetPad" }
+    }
+
+    private companion object {
+        const val A_THIRD = 1f / 3
     }
 }

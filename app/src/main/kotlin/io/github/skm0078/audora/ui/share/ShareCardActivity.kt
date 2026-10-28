@@ -5,6 +5,7 @@
 package io.github.skm0078.audora.ui.share
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -34,16 +35,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.playback.export.video.QuoteVideoRequest
+import io.github.skm0078.audora.playback.export.video.QuoteVideos
 import io.github.skm0078.audora.privacy.PrivacyHost
+import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.theme.Appearance
 import io.github.skm0078.audora.ui.theme.AppearancePreferences
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import io.github.skm0078.audora.ui.theme.Dimens
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -66,6 +77,16 @@ class ShareCardActivity : ComponentActivity() {
             return
         }
         lifecycle.addObserver(privacy)
+        // A page snippet is held only for this screen: closing it lets the picture go.
+        if (request is ShareCardRequest.Snippet) {
+            lifecycle.addObserver(
+                object : DefaultLifecycleObserver {
+                    override fun onDestroy(owner: LifecycleOwner) {
+                        if (isFinishing) PageSnippets.release()
+                    }
+                },
+            )
+        }
         val appearance = AppearancePreferences(applicationContext).appearance
         setContent {
             val look by remember { appearance }.collectAsStateWithLifecycle(initialValue = Appearance())
@@ -98,17 +119,24 @@ internal fun ShareCardRoute(request: ShareCardRequest, onClose: () -> Unit) {
             Text(stringResource(R.string.share_card_book_missing), style = MaterialTheme.typography.bodyLarge)
         }
 
-        is CardSubjectState.Ready -> ReadyCard(loaded.subject, onClose)
+        CardSubjectState.SnippetGone -> Box(Modifier.fillMaxSize().padding(Dimens.ScreenPadding), Alignment.Center) {
+            Text(stringResource(R.string.share_card_snippet_gone), style = MaterialTheme.typography.bodyLarge)
+        }
+
+        is CardSubjectState.Ready -> ReadyCard(request, loaded.subject, onClose)
     }
 }
 
 @Composable
-private fun ReadyCard(subject: CardSubject, onClose: () -> Unit) {
+private fun ReadyCard(request: ShareCardRequest, subject: CardSubject, onClose: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val recorder = rememberCardRecorder()
     val files = remember(context) { ShareCardFiles(context) }
-    var choices by rememberSaveable(stateSaver = CardChoicesSaver) { mutableStateOf(CardChoices()) }
+    val withNotices = rememberPlayWithNotificationPermission()
+    var choices by rememberSaveable(stateSaver = CardChoicesSaver) {
+        mutableStateOf(CardChoices(video = (request as? ShareCardRequest.Quote)?.video == true))
+    }
     var picture by remember { mutableStateOf<ImageBitmap?>(null) }
     var busy by remember { mutableStateOf(false) }
     val pick = rememberLauncherForActivityResult(PickVisualMedia()) { uri: Uri? ->
@@ -138,44 +166,103 @@ private fun ReadyCard(subject: CardSubject, onClose: () -> Unit) {
         override fun onShare() {
             if (busy) return
             busy = true
-            scope.shareCard(recorder, files, shown.look.isPhoto, context) { busy = false }
+            val photo = shown.look.isPhoto
+            scope.captureCard(recorder, write = { files.write(it, photo) }) { card ->
+                busy = false
+                when {
+                    card == null -> Toast.makeText(context, R.string.share_card_failed, Toast.LENGTH_LONG).show()
+
+                    !context.sendCard(files.uri(card), card.mimeType) ->
+                        Toast.makeText(context, R.string.share_card_no_app, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+
+        // The video's progress and its Share button are in a notification, so that permission is asked first.
+        override fun onMakeVideo() {
+            val body = subject.body as? CardBody.Quote
+            when {
+                busy || body == null -> Unit
+                QuoteVideos.busy -> Toast.makeText(context, R.string.share_card_video_busy, Toast.LENGTH_LONG).show()
+                else -> withNotices { makeVideo(videoRequest(request.book, body, shown)) }
+            }
+        }
+
+        // The card is captured without its words as the video's backdrop; the video's notification takes over.
+        private fun makeVideo(video: QuoteVideoRequest) {
+            busy = true
+            scope.captureCard(recorder, write = { writeBackdrop(it, QuoteVideos.backdropFile(context)) }) { backdrop ->
+                busy = false
+                if (backdrop == null) {
+                    Toast.makeText(context, R.string.share_card_failed, Toast.LENGTH_LONG).show()
+                } else {
+                    QuoteVideos.make(context, video)
+                    Toast.makeText(context, R.string.share_card_video_started, Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
     ShareCardScreen(subject, shown, picture, busy, recorder, actions)
 }
 
-/** Captures the card, writes it off the main thread and opens the share sheet; [done] runs on the main thread. */
-private fun CoroutineScope.shareCard(
-    recorder: CardRecorder,
-    files: ShareCardFiles,
-    photo: Boolean,
-    context: Context,
-    done: () -> Unit,
-) = launch {
-    val card = try {
-        val bitmap = recorder.capture()
-        withContext(Dispatchers.IO) { files.write(bitmap, photo) }
-    } catch (e: IllegalStateException) {
-        AudoraLog.e("ShareCard", "Card could not be captured", e)
-        null
-    }
-    done()
-    when {
-        card == null -> Toast.makeText(context, R.string.share_card_failed, Toast.LENGTH_LONG).show()
+/** The video of [body]'s quote as [shown]: its words in the look's ink, the one being said on its accent. */
+private fun videoRequest(book: BookId, body: CardBody.Quote, shown: CardChoices) = QuoteVideoRequest(
+    book = book,
+    quote = body.quote.text,
+    page = body.page ?: 0,
+    ink = shown.look.ink.toArgb(),
+    accent = shown.look.accent.toArgb(),
+    sharp = shown.sharp,
+)
 
-        !context.sendCard(files.uri(card), card.mimeType) ->
-            Toast.makeText(context, R.string.share_card_no_app, Toast.LENGTH_LONG).show()
+/**
+ * Captures the card as drawn and hands it to [write] off the main thread; [then] gets what was written, or null if the
+ * capture failed (logged), back on the main thread whatever thread the scope resumes on (a test's composition clock
+ * resumes off it).
+ */
+private fun <T : Any> CoroutineScope.captureCard(recorder: CardRecorder, write: (Bitmap) -> T?, then: (T?) -> Unit) =
+    launch {
+        val written = try {
+            val card = recorder.capture()
+            withContext(Dispatchers.IO) { write(card) }
+        } catch (e: IllegalStateException) {
+            AudoraLog.e("ShareCard", "Card could not be captured", e)
+            null
+        }
+        withContext(Dispatchers.Main) { then(written) }
     }
+
+/**
+ * PNG: the backdrop is read once, by the video, and a lossless one keeps the credit sharp. Blocking; [file] once
+ * written, else null (logged).
+ */
+private fun writeBackdrop(backdrop: Bitmap, file: File): File? = try {
+    val written = FileOutputStream(file).use { out ->
+        backdrop.compress(Bitmap.CompressFormat.PNG, PNG_QUALITY, out)
+    }
+    file.takeIf { written }.also { if (!written) AudoraLog.w("ShareCard", "Video backdrop was not encoded") }
+} catch (e: IOException) {
+    AudoraLog.e("ShareCard", "Video backdrop could not be written", e)
+    null
 }
+
+// PNG ignores the quality; the platform asks for one.
+private const val PNG_QUALITY = 100
+
+// Where the saver keeps the video choices (after shape, look and dedication); missing in a state saved before them.
+private const val SAVED_VIDEO = 3
+private const val SAVED_SHARP = 4
 
 /** The choices survive rotation; the picked picture does not (it is decoded again only if picked again). */
 private val CardChoicesSaver = listSaver<CardChoices, String>(
-    save = { listOf(it.shape.name, it.look.name, it.dedication) },
+    save = { listOf(it.shape.name, it.look.name, it.dedication, it.video.toString(), it.sharp.toString()) },
     restore = { saved ->
         CardChoices(
             shape = CardShape.entries.firstOrNull { it.name == saved[0] } ?: CardShape.STORY,
             look = CardLook.entries.firstOrNull { it.name == saved[1] } ?: CardLook.DUSK,
             dedication = saved[2],
+            video = saved.getOrNull(SAVED_VIDEO) == true.toString(),
+            sharp = saved.getOrNull(SAVED_SHARP) == true.toString(),
         )
     },
 )

@@ -43,7 +43,8 @@ object JobSlots {
     val COPY = JobSlot()
     val CLIP = JobSlot()
     val STUDIO = JobSlot()
+    val VIDEO = JobSlot()
 
     /** Any long job is running, even one a stopped service left behind. */
-    val anyBusy: Boolean get() = listOf(EXPORT, COPY, CLIP, STUDIO).any { it.busy }
+    val anyBusy: Boolean get() = listOf(EXPORT, COPY, CLIP, STUDIO, VIDEO).any { it.busy }
 }

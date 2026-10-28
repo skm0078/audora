@@ -85,14 +85,13 @@ import io.github.skm0078.audora.privacy.PrivacyPreferences
 import io.github.skm0078.audora.privacy.PrivacySettings
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
+import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.audio.WordTimes
 import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
 import io.github.skm0078.audora.speech.voices.VoiceStatus
 import io.github.skm0078.audora.ui.firstrun.FirstRunStep
-import io.github.skm0078.audora.ui.firstrun.TOUR_TAG
-import io.github.skm0078.audora.ui.firstrun.TourStop
 import io.github.skm0078.audora.ui.library.BOOK_PANE_TAG
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
@@ -160,7 +159,18 @@ class ReleaseJourneyTest {
                 ::aPhoneKeepsTheSheets,
             )
             step("24b a search finds a setting, opens it on You, and Back returns to the search", ::searchOpensASetting)
-            step("24c You › Show me around walks the 5 stops and Done returns to the library", ::theTourReplays)
+            step(
+                "24c You › Show me around walks the 5 stops and Done returns to the library",
+                TourJourney(rule)::replays,
+            )
+            val share = ShareJourney(rule, ::activity, ::backToTabs)
+            step("25 Share as a video reads the quote in the book's voice into an MP4", share::aQuoteVideoIsShared)
+            step("26 part of the shown page is shared as a picture with its credit") {
+                share.aPageSnippetIsShared(BOOK)
+            }
+            step("27 Turn pages shows a text book a screenful at a time with its arrows") {
+                share.aTextBookTurnsPages(MORE_FORMATS.first())
+            }
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -187,7 +197,7 @@ class ReleaseJourneyTest {
     private fun text(id: Int, vararg args: Any): String = app.getString(id, *args)
 
     private fun waitForNode(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) {
-        rule.waitUntil(timeoutMs) { rule.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(timeoutMs) { rule.shows(matcher) }
     }
 
     private fun node(matcher: SemanticsMatcher): SemanticsNodeInteraction {
@@ -846,25 +856,6 @@ class ReleaseJourneyTest {
         waitForNode(hasTestTag(FOUND_TAG))
         back()
         gone(hasTestTag(FOUND_TAG))
-        waitForNode(hasText(text(R.string.library_title)))
-    }
-
-    /** Replayed from You: each stop says which it is, Next walks them, and Done leaves the library as it was. */
-    private fun theTourReplays() {
-        tapText(R.string.tab_you)
-        // You keeps the page it was on: step 24b left it on Advanced, whose back arrow returns to You's own page.
-        val row = hasText(text(R.string.settings_tour_title))
-        val pageBack = hasContentDescription(text(R.string.navigate_back))
-        rule.waitUntil(UI_TIMEOUT_MS) { !none(row) || !none(pageBack) }
-        if (none(row)) tap(pageBack)
-        tap(row)
-        val stops = TourStop.entries.size
-        repeat(stops) { index ->
-            waitForNode(hasText(text(R.string.tour_step, index + 1, stops)))
-            if (index < stops - 1) tapText(R.string.tour_next)
-        }
-        tapText(R.string.tour_done)
-        gone(hasTestTag(TOUR_TAG))
         waitForNode(hasText(text(R.string.library_title)))
     }
 

@@ -18,6 +18,8 @@ package io.github.skm0078.audora.core.config
  * @property passageMaxPages pages a highlighted passage's clip reads at most, from its first.
  * @property wakeLockMs the clip's wake lock is held at most this long: a 44 s Kokoro clip renders in about 2 minutes on
  *   the test phone, so this is a safety limit for a stuck render, not a working limit.
+ * @property keptVideos the newest quote videos kept in the share folder, for an app that reads one late; older ones
+ *   are deleted when a new one is written (each is a few MB).
  */
 data class ClipConfig(
     val minMs: Long = 5_000L,
@@ -27,6 +29,7 @@ data class ClipConfig(
     val passageMaxMs: Long = 120_000L,
     val passageMaxPages: Int = 10,
     val wakeLockMs: Long = 600_000L, // 10 min
+    val keptVideos: Int = 3,
 ) {
     init {
         require(minMs in 0..maxMs) { "minMs ($minMs) must be in 0..maxMs ($maxMs)" }
@@ -35,5 +38,6 @@ data class ClipConfig(
         require(passageMaxMs > 0) { "passageMaxMs must be > 0, was $passageMaxMs" }
         require(passageMaxPages >= 1) { "passageMaxPages must be >= 1, was $passageMaxPages" }
         require(wakeLockMs > 0) { "wakeLockMs must be > 0, was $wakeLockMs" }
+        require(keptVideos >= 1) { "keptVideos must be >= 1, was $keptVideos" }
     }
 }

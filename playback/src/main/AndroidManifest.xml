@@ -89,7 +89,13 @@
             android:exported="false"
             android:foregroundServiceType="dataSync|mediaProcessing" />
 
-        <!-- Hands the shared clip (cacheDir/shared-clips only) to the app the user picks (plan item 41). -->
+        <!-- Share as a video: reads a card's quote aloud over the card; started only from the card screen. -->
+        <service
+            android:name=".export.video.QuoteVideoService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|mediaProcessing" />
+
+        <!-- Hands the shared clip or quote video (cacheDir/shared-clips and shared-videos only) to the app the user picks (plan item 41). -->
         <provider
             android:name=".export.ClipFileProvider"
             android:authorities="${applicationId}.clips"

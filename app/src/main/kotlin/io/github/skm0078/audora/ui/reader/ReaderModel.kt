@@ -21,6 +21,7 @@ import io.github.skm0078.audora.core.progress.TimeLeft
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.resume.ReAnchoring
 import io.github.skm0078.audora.core.resume.ResumeAnchor
+import io.github.skm0078.audora.core.share.SnippetBox
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
@@ -225,10 +226,32 @@ class ReaderModel(
 
     fun dismissReport() = mutableState.update { it.copy(reporting = null) }
 
+    /**
+     * "Share part of the page" on [unit] (ADR 2026-10-28-page-snippet): the page view shows a box around its lines,
+     * or across the middle of a page whose lines have no positions, for the listener to drag.
+     */
+    fun startSnippet(unit: ReadingUnit) {
+        if (state.value.view != ReaderView.PAGE) setView(ReaderView.PAGE)
+        val current = state.value
+        val image = current.shownPageImage
+        val lines = image?.let { shown ->
+            unit.bounds.orEmpty().map(shown.transform::toView)
+                .filter { it.right > it.left && it.bottom > it.top }
+                .map { SnippetBox(it.left, it.top, it.right, it.bottom) }
+        }.orEmpty()
+        val box = SnippetBox.around(lines) ?: SnippetBox.middle()
+        mutableState.update { it.copy(snippet = box) }
+    }
+
+    /** The box dragged; ignored once the snippet is shared or cancelled. */
+    fun moveSnippet(box: SnippetBox) = mutableState.update { if (it.snippet == null) it else it.copy(snippet = box) }
+
+    fun endSnippet() = mutableState.update { it.copy(snippet = null) }
+
     /** The sentence under a tap on the page image at [point], if the tap is on (or right next to) one. */
     fun sentenceAt(point: ViewPoint): ReadingUnit? {
         val current = state.value
-        val image = (current.pageImage as? PageImageState.Ready)?.takeIf { it.page == current.page }?.image
+        val image = current.shownPageImage
         val units = (current.content as? PageContent.Ready)?.units
         if (image == null || units == null) return null
         return SentenceHitTest.unitAt(units, image.transform.toPage(point), config.pageTapSlopPoints)
@@ -582,7 +605,14 @@ class ReaderModel(
         pageJob?.cancel()
         // A page read ahead for a turn by hand shows at once (ADR 2026-10-28-page-flip).
         val ahead = neighbours.content(page)
-        mutableState.update { it.copy(page = page, content = ahead ?: PageContent.Loading) }
+        // A box picked on one page means nothing on another.
+        mutableState.update { shown ->
+            shown.copy(
+                page = page,
+                content = ahead ?: PageContent.Loading,
+                snippet = shown.snippet.takeIf { page == shown.page },
+            )
+        }
         if (ahead != null) {
             samples[page] = ahead.units
             refreshTimeLeft()

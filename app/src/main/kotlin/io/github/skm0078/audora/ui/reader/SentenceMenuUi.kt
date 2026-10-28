@@ -49,25 +49,10 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.HighlightConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
-import io.github.skm0078.audora.core.notes.Highlight
 import io.github.skm0078.audora.ui.theme.Dimens
 
 /** One row of the sentence menu: what it does, and a line saying what for. */
 private class MenuEntry(@StringRes val label: Int, @StringRes val hint: Int, val onClick: () -> Unit)
-
-/**
- * The Share choices (ADR 2026-10-27-share-cards): "As audio" (the highlighted passage when the sentence has one, else
- * to the end of the paragraph), "As a picture" (a quote card) and the words as text, all of the same passage.
- */
-private fun shareChoices(highlight: Highlight?, audio: () -> Unit, picture: () -> Unit, text: () -> Unit) = listOf(
-    MenuEntry(
-        R.string.sentence_menu_share_clip,
-        if (highlight != null) R.string.sentence_hint_share_highlight else R.string.sentence_hint_share_clip,
-        audio,
-    ),
-    MenuEntry(R.string.share_as_picture, R.string.share_hint_picture, picture),
-    MenuEntry(R.string.sentence_menu_share_text, R.string.sentence_hint_share_text, text),
-)
 
 /** What the menu's rows act through. */
 private data class MenuSources(
@@ -146,7 +131,12 @@ private fun MenuSources.sentenceMenu(unit: ReadingUnit, notes: NotesState, onSha
     )
 }
 
-/** The rows behind "Share…", for the same passage the menu acts on: a highlight's whole quote, else [unit]. */
+/**
+ * The rows behind "Share…" (ADR 2026-10-27-share-cards), for the same passage the menu acts on, a highlight's whole
+ * quote, else [unit]: as audio (the highlighted passage, else to the end of the paragraph), as a picture (a quote
+ * card), as a video, part of the page (a sentence placed on a drawn page only: a text book's has no page to cut) and
+ * the words as text.
+ */
 private fun MenuSources.shareMenu(unit: ReadingUnit, notes: NotesState): List<MenuEntry> {
     val highlight = notes.highlightsOn(unit).firstOrNull()
     val text = highlight?.quote?.takeIf { it.isNotBlank() } ?: unit.text
@@ -155,11 +145,24 @@ private fun MenuSources.shareMenu(unit: ReadingUnit, notes: NotesState): List<Me
         actions.dismissMenu()
         action()
     }
-    return shareChoices(
-        highlight,
-        audio = closing { if (highlight != null) reader.onShareHighlight(highlight) else reader.onShareClip(unit) },
-        picture = closing { reader.onSharePicture(text, page) },
-        text = closing { words.share(text) },
+    val audioHint = if (highlight != null) R.string.sentence_hint_share_highlight else R.string.sentence_hint_share_clip
+    return listOfNotNull(
+        MenuEntry(
+            R.string.sentence_menu_share_clip,
+            audioHint,
+            closing { if (highlight != null) reader.onShareHighlight(highlight) else reader.onShareClip(unit) },
+        ),
+        MenuEntry(
+            R.string.share_as_picture,
+            R.string.share_hint_picture,
+            closing {
+                reader.onSharePicture(text, page)
+            },
+        ),
+        MenuEntry(R.string.share_as_video, R.string.share_hint_video, closing { reader.onShareVideo(text, page) }),
+        MenuEntry(R.string.share_page_part, R.string.share_hint_page_part, closing { reader.onSharePagePart(unit) })
+            .takeIf { !unit.bounds.isNullOrEmpty() },
+        MenuEntry(R.string.sentence_menu_share_text, R.string.sentence_hint_share_text, closing { words.share(text) }),
     )
 }
 
