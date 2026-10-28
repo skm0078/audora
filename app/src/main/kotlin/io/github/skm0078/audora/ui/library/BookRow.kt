@@ -74,6 +74,7 @@ internal fun BookRow(
             } else {
                 Column {
                     item.book.author?.let { Text(stringResource(R.string.book_details_author, it), maxLines = 1) }
+                    sourceLabel(item.source)?.let { SourceLine(it) }
                     Text(bookDetails(item.book))
                     item.progress?.let { ProgressLine(it) }
                     runningJobFor(item.book.id)?.let { job ->
