@@ -34,7 +34,10 @@ internal class SourceJourney(private val rule: ComposeTestRule, private val back
      * phone", and "Keep on this phone" is not offered. The details sheet closes by its handle, as the book menu's do.
      */
     fun aPhoneBookSaysWhereItLives() {
+        // The step before this one ends on You: the books are on the Library tab.
         backToTabs()
+        tap(hasText(text(R.string.tab_library)))
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(hasText(text(R.string.library_title))) }
         val namedMenu = text(R.string.library_book_menu_named, NAME_MARK).split(NAME_MARK).maxBy { it.length }.trim()
         val menuButton = hasContentDescription(namedMenu, substring = true) and hasClickAction()
         rule.waitForIdle()
