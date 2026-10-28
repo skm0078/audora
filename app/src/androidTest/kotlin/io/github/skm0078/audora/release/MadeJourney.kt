@@ -68,10 +68,12 @@ internal class MadeJourney(private val rule: ComposeTestRule, private val backTo
     fun playsLikeBook() {
         val entry = LibraryEntryPoint.of(app)
         val book = runBlocking { entry.library().books().first() }.first { it.format == DocumentFormat.PDF }
-        val uri = savedChapter(book)
+        // Two chapters, each its own file (a file is listed once): the timer offers chapter ends only for a set of more
+        // than one.
+        val uris = (1..2).map { savedChapter(book, it) }
         try {
-            // Two chapters of the same file: the timer offers chapter ends only for a set of more than one.
-            val outputs = (1..2).map { part ->
+            val outputs = uris.mapIndexed { index, uri ->
+                val part = index + 1
                 BookOutput(
                     book.id, OutputKind.AUDIOBOOK, SET_KEY, part, "Journey chapter $part.m4a", uri.toString(),
                     "audio/mp4", createdAtMillis = System.currentTimeMillis(),
@@ -107,7 +109,7 @@ internal class MadeJourney(private val rule: ComposeTestRule, private val backTo
             backToTabs()
         } finally {
             runBlocking { entry.outputs().deleteSet(SET_KEY) }
-            app.contentResolver.delete(uri, null, null)
+            uris.forEach { app.contentResolver.delete(it, null, null) }
         }
     }
 
@@ -116,7 +118,7 @@ internal class MadeJourney(private val rule: ComposeTestRule, private val backTo
         SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
 
     /** Half a minute of quiet, encoded as the app encodes a chapter, then put where saved audiobooks live. */
-    private fun savedChapter(book: Book): Uri {
+    private fun savedChapter(book: Book, part: Int): Uri {
         val folder = File(app.cacheDir, "journey-made").apply {
             deleteRecursively()
             mkdirs()
@@ -127,7 +129,7 @@ internal class MadeJourney(private val rule: ComposeTestRule, private val backTo
             assertTrue(writer.write(PcmAudio(ShortArray(RATE * CHAPTER_SECONDS), RATE)) is Outcome.Success)
             val exported = requireNotNull(writer.finish().getOrNull()) { "Chapter not finished" }
             val values = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, "listenlock-journey.m4a")
+                put(MediaStore.Downloads.DISPLAY_NAME, "listenlock-journey-$part.m4a")
                 put(MediaStore.Downloads.MIME_TYPE, "audio/mp4")
                 put(MediaStore.Downloads.RELATIVE_PATH, FOLDER)
             }
