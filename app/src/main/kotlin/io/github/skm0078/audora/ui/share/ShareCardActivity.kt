@@ -238,12 +238,15 @@ private fun CoroutineScope.makeVideo(
         AudoraLog.e("ShareCard", "Video backdrop could not be captured", e)
         false
     }
-    done()
-    if (written) {
-        QuoteVideos.make(context, request)
-        Toast.makeText(context, R.string.share_card_video_started, Toast.LENGTH_LONG).show()
-    } else {
-        Toast.makeText(context, R.string.share_card_failed, Toast.LENGTH_LONG).show()
+    // Back on the main thread whatever the scope resumes on: a test's composition clock resumes off it.
+    withContext(Dispatchers.Main) {
+        done()
+        if (written) {
+            QuoteVideos.make(context, request)
+            Toast.makeText(context, R.string.share_card_video_started, Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(context, R.string.share_card_failed, Toast.LENGTH_LONG).show()
+        }
     }
 }
 
