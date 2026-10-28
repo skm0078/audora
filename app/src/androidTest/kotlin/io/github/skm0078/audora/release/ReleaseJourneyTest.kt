@@ -14,6 +14,8 @@ package io.github.skm0078.audora.release
 import android.Manifest
 import android.app.Activity
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.fonts.Font
@@ -56,11 +58,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.util.concurrent.ListenableFuture
 import io.github.skm0078.audora.MainActivity
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.config.QuoteVideoConfig
 import io.github.skm0078.audora.core.library.BookField
 import io.github.skm0078.audora.core.library.DocumentFormat
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.getOrNull
+import io.github.skm0078.audora.core.share.VideoTimeline
 import io.github.skm0078.audora.di.LibraryEntryPoint
 import io.github.skm0078.audora.playback.contract.LockScreenCommands
 import io.github.skm0078.audora.playback.contract.PlaybackContract
@@ -70,11 +74,15 @@ import io.github.skm0078.audora.playback.export.AudioChapter
 import io.github.skm0078.audora.playback.export.BookTags
 import io.github.skm0078.audora.playback.export.CoverJpeg
 import io.github.skm0078.audora.playback.export.LocalChapterFiles
+import io.github.skm0078.audora.playback.export.video.AiVoiceLabel
+import io.github.skm0078.audora.playback.export.video.QuoteVideoFrames
+import io.github.skm0078.audora.playback.export.video.QuoteVideoWriter
 import io.github.skm0078.audora.privacy.PrivacyPreferences
 import io.github.skm0078.audora.privacy.PrivacySettings
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
 import io.github.skm0078.audora.speech.audio.PcmAudio
+import io.github.skm0078.audora.speech.audio.WordTimes
 import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
 import io.github.skm0078.audora.speech.voices.VoiceStatus
@@ -133,6 +141,7 @@ class ReleaseJourneyTest {
             step("20 the book menu's Save as opens and the sort sheet turns covers to a list", ::bookMenuAndSortSheet)
             step("21 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
             step("22 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
+            step("23 a quote video is written with the AI voice label", ::aQuoteVideoIsWritten)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -572,6 +581,42 @@ class ReleaseJourneyTest {
     }
 
     /**
+     * The quote video's encoder in the installed app (ADR 2026-10-28-quote-video): the phone's H.264 and
+     * AAC encoders write a 720 x 1280 MP4 with both tracks, the word lit by the voice's own timing.
+     */
+    private fun aQuoteVideoIsWritten() {
+        val audio =
+            PcmAudio(ShortArray(EXPORT_RATE * 3 / 2) { ((it % TONE_PERIOD) * TONE_STEP).toShort() }, EXPORT_RATE)
+        val starts = requireNotNull(WordTimes().of(VIDEO_QUOTE, audio)) { "No word times" }
+        val timeline = VideoTimeline(audio.samples.size * MS_PER_S / EXPORT_RATE, starts, QuoteVideoConfig())
+        val words = VIDEO_QUOTE.split(' ')
+        val frames = object : QuoteVideoFrames {
+            private val ink = Paint().apply { textSize = FONT_TEXT_SIZE }
+
+            override fun lookOf(frame: Int) = timeline.wordAt(frame)
+
+            override fun draw(canvas: Canvas, frame: Int) {
+                canvas.drawColor(Color.WHITE)
+                val lit = timeline.wordAt(frame)
+                canvas.drawText(words.getOrElse(lit) { "" }, FONT_TEXT_SIZE, canvas.height / 2f, ink)
+            }
+        }
+        val file = File(app.cacheDir, "journey-quote.mp4")
+        try {
+            val written = QuoteVideoWriter().write(file, audio, timeline, frames, AiVoiceLabel("AI voice"))
+            assertTrue("video not written: $written", written is Outcome.Success)
+            MediaMetadataRetriever().use { video ->
+                video.setDataSource(file.path)
+                assertEquals("720", video.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH))
+                assertEquals("1280", video.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT))
+                assertEquals("yes", video.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO))
+            }
+        } finally {
+            file.delete()
+        }
+    }
+
+    /**
      * Each weight loads from the APK and each script is drawn by its own Anek file: the joined typeface measures
      * exactly like that file alone, and the three weights of a script measure differently, so no weight is drawn
      * with another's file. Not "unlike the phone's sans": two fonts can measure alike by chance.
@@ -798,6 +843,10 @@ class ReleaseJourneyTest {
         const val VOICE_RESTART = "Reading voices changed; restarting the sentence"
         const val LANGUAGE_RESTART = "Book language changed"
         const val EXPORT_RATE = 22_050
+        const val VIDEO_QUOTE = "Every book, read aloud."
+        const val TONE_PERIOD = 50
+        const val TONE_STEP = 300
+        const val MS_PER_S = 1_000L
         const val FONT_TEXT_SIZE = 48f
         const val FONT_WIDTH_TOLERANCE = 0.01f
         const val EXACT_WIDTHS = Paint.LINEAR_TEXT_FLAG or Paint.SUBPIXEL_TEXT_FLAG
