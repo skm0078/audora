@@ -254,7 +254,7 @@ class EnglishNormalizerTest {
         Case("symbol", "2 + 2 = 4", "two plus two equals four"),
         Case("symbol", "~10 km away", "about ten kilometres away"),
         Case("symbol", "5 ± 0.5 mm", "five plus or minus zero point five millimetres"),
-        Case("symbol", "C++ code", "C++ code"),
+        Case("symbol", "C++ code", "C plus plus code"),
         // Initials read as letters, not as sentence ends (item 57)
         Case("initials", "Dr. A. P. J. Abdul Kalam spoke.", "Doctor A P J Abdul Kalam spoke."),
         Case("initials", "A.P.J. Abdul Kalam spoke.", "A P J Abdul Kalam spoke."),

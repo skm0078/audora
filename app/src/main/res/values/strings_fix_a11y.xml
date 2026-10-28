@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_fix_a11y.xml -->
+<!-- Purpose: What TalkBack says for each Delete in the pronunciation fixes list, so the buttons can be told apart. -->
+<resources>
+    <string name="a11y_fix_delete">Delete the fix: %1$s, say it like %2$s</string>
+</resources>

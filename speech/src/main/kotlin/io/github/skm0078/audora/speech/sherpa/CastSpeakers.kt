@@ -10,6 +10,20 @@ enum class SpeakerGender { FEMALE, MALE, UNKNOWN }
 /** One speaker of a model: its sherpa-onnx speaker id, a short name for the screen, and how it sounds. */
 data class CastSpeaker(val speakerId: Int, val label: String, val gender: SpeakerGender)
 
+/** A voice that can read a character, a speaker of a model ([CastSpeakers.variant]) or a one-speaker voice. */
+data class PartnerVoice(val voice: VoiceId, val gender: SpeakerGender)
+
+/**
+ * What a narrator's characters may borrow from the other voices installed for its language: [narrator], the
+ * narrator's own gender ([SpeakerGender.UNKNOWN] when no table tells it), and [voices], the speakers of every other
+ * model, the likeliest partner model first (the one whose id shares most with the narrator's, then by id).
+ */
+data class CastPartners(val narrator: SpeakerGender, val voices: List<PartnerVoice>) {
+    companion object {
+        val NONE = CastPartners(SpeakerGender.UNKNOWN, emptyList())
+    }
+}
+
 /**
  * A voice id can name another speaker of the same model: `kokoro-en-heart#11` is speaker 11 (Adam) of the Kokoro
  * model the `kokoro-en-heart` voice installed. The engine loads the model once and picks the speaker per render, so
@@ -87,6 +101,22 @@ object CastSpeakers {
     /** The speakers [spec]'s model holds; empty for a one-speaker model or a voice no table is keyed on. */
     fun of(spec: SherpaVoiceSpec): List<CastSpeaker> = TABLES[spec.id]?.speakers.orEmpty()
 
+    /** How [spec]'s speaker [speakerId] sounds: from its model's table, or a one-speaker catalog voice's own. */
+    fun genderOf(spec: SherpaVoiceSpec, speakerId: Int): SpeakerGender =
+        of(spec).firstOrNull { it.speakerId == speakerId }?.gender
+            ?: ONE_SPEAKER[spec.id]?.takeIf { speakerId == spec.speakerId }
+            ?: SpeakerGender.UNKNOWN
+
+    /** The voices of [spec]'s model that may read a character from another narrator's book. */
+    fun voicesOf(spec: SherpaVoiceSpec): List<PartnerVoice> {
+        val speakers = of(spec)
+        if (speakers.isEmpty()) return ONE_SPEAKER[spec.id]?.let { listOf(PartnerVoice(spec.voiceId, it)) }.orEmpty()
+        return speakers.map { PartnerVoice(variant(spec.voiceId, it.speakerId), it.gender) }
+    }
+
+    /** The one-speaker catalog voices whose gender is known, for [genderOf] and [voicesOf]. */
+    internal val oneSpeakerVoices: Set<String> get() = ONE_SPEAKER.keys
+
     /** [base]'s model read by its speaker [speakerId]. */
     fun variant(base: VoiceId, speakerId: Int): VoiceId = VoiceId(base.engine, "${base.name}$SEPARATOR$speakerId")
 
@@ -118,6 +148,17 @@ object CastSpeakers {
 
     /** [modelSpeakers]: how many speakers in all (every language) the model in [archive] holds. */
     private class CastTable(val archive: String, val speakers: List<CastSpeaker>, val modelSpeakers: Int)
+
+    /**
+     * One-speaker catalog voices and how they sound (their labels say so; a test checks each is in a catalog), so a
+     * SYSPIN male narrator's women can be read by the SYSPIN female voice when it is installed.
+     */
+    private val ONE_SPEAKER = mapOf(
+        "syspin-bn-male" to SpeakerGender.MALE,
+        "syspin-bn-female" to SpeakerGender.FEMALE,
+        "piper-en-cori" to SpeakerGender.FEMALE,
+        "piper-en-ljspeech" to SpeakerGender.FEMALE,
+    )
 
     private const val KOKORO_VOICE = "kokoro-en-heart"
     private const val KOKORO_ARCHIVE = "kokoro-int8-multi-lang-v1_0"

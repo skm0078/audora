@@ -6,19 +6,10 @@ package io.github.skm0078.audora.ui.settings
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,11 +17,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.logging.AudoraLog
@@ -39,6 +27,7 @@ import io.github.skm0078.audora.core.notes.PronunciationRule
 import io.github.skm0078.audora.core.notes.PronunciationStore
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.ui.loggingFailures
+import io.github.skm0078.audora.ui.pronunciation.PronunciationFixDialog
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.LinkOption
 import io.github.skm0078.audora.ui.theme.OptionGroup
@@ -98,68 +87,30 @@ internal fun PronunciationGroup(settings: PronunciationSettings) {
     if (open) PronunciationDialog(settings) { open = false }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PronunciationDialog(settings: PronunciationSettings, onDismiss: () -> Unit) {
     var lang by rememberSaveable { mutableStateOf(Lang.EN) }
-    var written by rememberSaveable { mutableStateOf("") }
-    var spoken by rememberSaveable { mutableStateOf("") }
-    var wholeWord by rememberSaveable { mutableStateOf(true) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.settings_pronunciation_title)) },
-        text = {
-            Column(
-                Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                    Lang.entries.forEach { option ->
-                        FilterChip(
-                            selected = option == lang,
-                            onClick = { lang = option },
-                            label = { Text(stringResource(languageName(option))) },
-                        )
-                    }
+    PronunciationFixDialog(
+        title = stringResource(R.string.settings_pronunciation_title),
+        rules = settings.rules.orEmpty(),
+        where = { rule -> stringResource(languageName(rule.lang)) },
+        onAdd = { settings.onAdd(PronunciationRule(0, null, lang, it.written.trim(), it.spoken.trim(), it.wholeWord)) },
+        onDelete = settings.onDelete,
+        onDismiss = onDismiss,
+        above = {
+            // Wraps at large text sizes instead of pushing the last language off the dialog.
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+                Lang.entries.forEach { option ->
+                    FilterChip(
+                        selected = option == lang,
+                        onClick = { lang = option },
+                        label = { Text(stringResource(languageName(option))) },
+                    )
                 }
-                OutlinedTextField(written, { written = it }, label = { Text(stringResource(R.string.fix_written)) })
-                OutlinedTextField(spoken, { spoken = it }, label = { Text(stringResource(R.string.fix_spoken)) })
-                WholeWordSwitch(wholeWord) { wholeWord = it }
-                TextButton(
-                    onClick = {
-                        settings.onAdd(PronunciationRule(0, null, lang, written.trim(), spoken.trim(), wholeWord))
-                        written = ""
-                        spoken = ""
-                    },
-                    enabled = written.isNotBlank() && spoken.isNotBlank(),
-                ) { Text(stringResource(R.string.fix_add)) }
-                settings.rules.orEmpty().forEach { rule -> RuleRow(rule) { settings.onDelete(rule) } }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.notes_done)) } },
     )
-}
-
-@Composable
-private fun WholeWordSwitch(checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().toggleable(value = checked, role = Role.Switch, onValueChange = onChange),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(stringResource(R.string.fix_whole_word), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-        Switch(checked = checked, onCheckedChange = null)
-    }
-}
-
-@Composable
-private fun RuleRow(rule: PronunciationRule, onDelete: () -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            stringResource(R.string.fix_rule, rule.written, rule.spoken, stringResource(languageName(rule.lang))),
-            Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        TextButton(onClick = onDelete) { Text(stringResource(R.string.notes_delete)) }
-    }
 }
 
 private const val TAG = "Audora.Pronunciation"

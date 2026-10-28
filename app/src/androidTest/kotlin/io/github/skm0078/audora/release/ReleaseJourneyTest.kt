@@ -158,16 +158,21 @@ class ReleaseJourneyTest {
             step("24b a search finds a setting, opens it on You, and Back returns to the search", ::searchOpensASetting)
             val share = ShareJourney(rule, ::activity, ::backToTabs)
             step("25 Share as a video reads the quote in the book's voice into an MP4", share::aQuoteVideoIsShared)
-            step("26 part of the shown page is shared as a picture with its credit") {
-                share.aPageSnippetIsShared(BOOK)
-            }
+            step("26 a page snippet is shared as a picture with its credit") { share.aPageSnippetIsShared(BOOK) }
             step("27 Turn pages shows a text book a screenful at a time with its arrows") {
                 share.aTextBookTurnsPages(MORE_FORMATS.first())
             }
+            step("28 a text turn slides in and settles where the text was") {
+                share.aTextTurnSlidesAndSettles(MORE_FORMATS.first())
+            }
             step(
-                "32 a saved audiobook plays in Made with the book player's speed sheet and sleep timer",
-                MadeJourney(rule, ::backToTabs)::aSavedAudiobookPlaysInTheSamePlayer,
+                "29 a story's women and men each get a voice of their own gender",
+                CharacterJourney::womenAndMenGetVoicesOfTheirGender,
             )
+            step("32 Made plays a saved audiobook like the book player", MadeJourney(rule, ::backToTabs)::playsLikeBook)
+            step("43 arrows, maths and emoji reach the voice as words or not at all") {
+                SymbolJourney.symbolsAreSaidOrLeftOut()
+            }
         } finally {
             JourneyDevice.onMain {
                 port?.pause()

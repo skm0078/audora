@@ -10,7 +10,8 @@ import io.github.skm0078.audora.core.model.Lang
  * Applies the English rules in a fixed order. Each rule turns digits and symbols into words, so a later, more
  * general rule never re-reads what an earlier one produced; that is also why the order runs from specific
  * (links, money, clock times) to general (plain numbers). The output contains no digits a rule could read, which
- * makes normalizing twice the same as once.
+ * makes normalizing twice the same as once. Symbols in running text are read in two passes around the number rules
+ * ([SymbolWords]); whatever no rule could read is left out last ([SpeakableText]).
  *
  * Indian-English choices: day-first dates, lakh and crore for rupees, British spelling of units, "Smt."/"Shri".
  * Devanagari and Bengali digits belong to the Indic normalizers (P3-02).
@@ -25,10 +26,12 @@ class EnglishNormalizer(config: NormalizerConfig = NormalizerConfig()) : TextNor
         AbbreviationRule(),
         InitialsRule(),
         DateRule(config),
+        SymbolWords.scriptsRule(Lang.EN),
         SignRule(),
         SymbolRule(),
         QuantityRule(numbers),
         PunctuationRule(),
+        SymbolWords.symbolsRule(Lang.EN),
         RomanNumeralRule(),
         NumberRule(numbers),
     )
@@ -36,7 +39,7 @@ class EnglishNormalizer(config: NormalizerConfig = NormalizerConfig()) : TextNor
     override fun normalize(text: String, role: TextRole): String {
         val symbols = if (role == TextRole.EQUATION) MathSymbols.speak(text, Lang.EN) else text
         val rewritten = rules.fold(symbols) { result, rule -> rule.apply(result, role) }
-        return EXTRA_SPACES.replace(rewritten, " ").trim()
+        return EXTRA_SPACES.replace(SpeakableText.clean(rewritten), " ").trim()
     }
 
     private companion object {

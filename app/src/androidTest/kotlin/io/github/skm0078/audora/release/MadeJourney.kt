@@ -65,7 +65,7 @@ internal class MadeJourney(private val rule: ComposeTestRule, private val backTo
      * Speed opens the book player's Voice and speed sheet with the saved file's voice note, and End of chapter shows
      * on the timer once the service has it, Off once it is cleared. The file and its listing go again at the end.
      */
-    fun aSavedAudiobookPlaysInTheSamePlayer() {
+    fun playsLikeBook() {
         val entry = LibraryEntryPoint.of(app)
         val book = runBlocking { entry.library().books().first() }.first { it.format == DocumentFormat.PDF }
         val uri = savedChapter(book)

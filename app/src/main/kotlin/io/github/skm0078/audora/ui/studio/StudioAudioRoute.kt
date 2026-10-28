@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,6 +41,7 @@ import io.github.skm0078.audora.playback.studio.studioDuration
 import io.github.skm0078.audora.ui.jobs.JobProgressBar
 import io.github.skm0078.audora.ui.library.titleOrUntitled
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.SectionTitle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -162,7 +162,7 @@ private fun ReadyActions(
 private fun RunSection(job: LongJob?, otherBookRunning: Boolean) {
     when {
         job?.running == true -> {
-            SectionHeading(R.string.studio_sheet_running)
+            SectionTitle(stringResource(R.string.studio_sheet_running))
             JobProgressBar(job, Modifier.padding(vertical = Dimens.SpaceXs))
             Text(job.detail, style = MaterialTheme.typography.bodyMedium)
             // Start now takes the dialog's main button while it waits for the charger; Stop stays reachable here.
@@ -173,7 +173,7 @@ private fun RunSection(job: LongJob?, otherBookRunning: Boolean) {
         }
 
         job != null -> {
-            SectionHeading(R.string.studio_sheet_last_run)
+            SectionTitle(stringResource(R.string.studio_sheet_last_run))
             Text(job.detail, style = MaterialTheme.typography.bodyMedium)
         }
 
@@ -185,7 +185,7 @@ private fun RunSection(job: LongJob?, otherBookRunning: Boolean) {
 @Composable
 private fun ReadySection(ready: StudioBookAudio?) {
     val context = LocalContext.current
-    SectionHeading(R.string.studio_sheet_on_phone)
+    SectionTitle(stringResource(R.string.studio_sheet_on_phone))
     val text = ready?.let {
         stringResource(
             R.string.studio_sheet_ready,
@@ -196,15 +196,6 @@ private fun ReadySection(ready: StudioBookAudio?) {
         )
     } ?: stringResource(R.string.studio_sheet_nothing_ready)
     Text(text, style = MaterialTheme.typography.bodyMedium)
-}
-
-@Composable
-private fun SectionHeading(label: Int) {
-    Text(
-        stringResource(label),
-        style = MaterialTheme.typography.titleSmall,
-        modifier = Modifier.semantics { heading() },
-    )
 }
 
 @Composable

@@ -38,6 +38,38 @@ data class Judged(
             goldGender -> "right"
             else -> "wrong"
         }
+
+    /**
+     * The gender a listener hears on this line with [narrator]'s voice: a character voice of the speaker's gender
+     * when the narrator's model (or a partner voice) has one ([castable]), else the narrator's own, which reads every
+     * quote whose speaker or gender is unknown. Null for narration.
+     */
+    fun heard(narrator: Narrator): SpeakerGender? {
+        if (line.speaker == null) return null
+        val gender = speaker?.gender ?: SpeakerGender.UNKNOWN
+        return if (gender in narrator.castable) gender else narrator.gender
+    }
+
+    /** Whether the listener hears the other gender's voice on this spoken line. */
+    fun heardWrong(narrator: Narrator): Boolean = heard(narrator)?.let { it != goldGender } == true
+}
+
+/** A narrator voice as the eval models it: its own [gender] and the genders its cast can give a character. */
+data class Narrator(val label: String, val gender: SpeakerGender, val castable: Set<SpeakerGender>) {
+    companion object {
+        private val BOTH = setOf(SpeakerGender.FEMALE, SpeakerGender.MALE)
+
+        /**
+         * The voices each language reads with out of the box: English's bundled Bruno and Hindi's Supertonic (both
+         * models hold women and men), Bengali's recommended SYSPIN male with the SYSPIN female voice installed too,
+         * which reads its women.
+         */
+        val DEFAULTS = mapOf(
+            Lang.EN to Narrator("Kitten Bruno", SpeakerGender.MALE, BOTH),
+            Lang.HI to Narrator("Supertonic", SpeakerGender.FEMALE, BOTH),
+            Lang.BN to Narrator("SYSPIN male and female", SpeakerGender.MALE, BOTH),
+        )
+    }
 }
 
 /**
@@ -140,9 +172,10 @@ object ExpressiveEval {
     /** Scores by language, then every failure, as Markdown. */
     fun report(judged: List<Judged>): String = buildString {
         appendLine(
-            "| Lang | Lines with speech | Speech found | Right speaker | Right-gender voice | Wrong-gender voice |",
+            "| Lang | Lines with speech | Speech found | Right speaker | Right-gender voice | Wrong-gender voice | " +
+                "Heard in the wrong gender |",
         )
-        appendLine("|---|---:|---:|---:|---:|---:|")
+        appendLine("|---|---:|---:|---:|---:|---:|---:|")
         val byLang = judged.groupBy { it.passage.lang }
         byLang.forEach { (lang, rows) ->
             val speech = rows.filter { it.line.speaker != null }
@@ -150,9 +183,16 @@ object ExpressiveEval {
                 "| ${lang.name} | ${speech.size} | ${pct(speech.count { it.heardSpeech }, speech.size)} | " +
                     "${pct(speech.count { it.speakerRight }, speech.size)} | " +
                     "${pct(speech.count { it.voice == "right" }, speech.size)} | " +
-                    "${pct(speech.count { it.voice == "wrong" }, speech.size)} |",
+                    "${pct(speech.count { it.voice == "wrong" }, speech.size)} | " +
+                    "${pct(speech.count { it.heardWrong(Narrator.DEFAULTS.getValue(lang)) }, speech.size)} |",
             )
         }
+        appendLine()
+        appendLine(
+            "Heard in the wrong gender: the line's voice with the default narrators (${
+                Narrator.DEFAULTS.values.joinToString { it.label }
+            }), the narrator's own reading every line whose speaker or gender is unknown.",
+        )
         appendLine()
         appendLine("| Lang | Lines | Feeling right | Near enough | Feeling missed | Neutral coloured | Opposite |")
         appendLine("|---|---:|---:|---:|---:|---:|---:|")

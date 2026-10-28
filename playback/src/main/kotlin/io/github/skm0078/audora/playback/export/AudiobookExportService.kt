@@ -3,11 +3,8 @@
 
 package io.github.skm0078.audora.playback.export
 
-import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
-import android.content.pm.ServiceInfo
-import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import dagger.hilt.android.AndroidEntryPoint
@@ -26,8 +23,12 @@ import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.book.LibraryBookSource
 import io.github.skm0078.audora.playback.book.OpenedBook
 import io.github.skm0078.audora.playback.covers.CoverFolders
+import io.github.skm0078.audora.playback.jobs.ForegroundJobs
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.jobs.LongJobs
+import io.github.skm0078.audora.playback.jobs.jobWakeLock
+import io.github.skm0078.audora.playback.jobs.leaveForeground
+import io.github.skm0078.audora.playback.jobs.releaseIfHeld
 import io.github.skm0078.audora.playback.outputs.MadeFiles
 import io.github.skm0078.audora.playback.studio.BookRendering
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
@@ -105,8 +106,7 @@ class AudiobookExportService : Service() {
         cancel("Android's time limit for background jobs")
         // Android throws if the service is still in the foreground a few seconds after this; the worker may be
         // inside a long native call, so stop now and let it post its notice on its own thread.
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        leaveForeground()
     }
 
     override fun onDestroy() {
@@ -121,7 +121,7 @@ class AudiobookExportService : Service() {
         startForeground(
             ExportNotifications.RUNNING_ID,
             notifications.running(untitled, chapter = null, chapterCount = 0, percent = 0),
-            foregroundType(),
+            ForegroundJobs.type(),
         )
         // Taken first, whatever happens next, so a refused start never leaves the password behind.
         val password = id?.let(PasswordHandoff.shared::take)
@@ -161,12 +161,8 @@ class AudiobookExportService : Service() {
 
     /** On the worker thread. */
     private fun runExport(id: BookId, password: String?) {
-        val lock = getSystemService(PowerManager::class.java)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)
-            .apply {
-                setReferenceCounted(false) // Each renewal replaces the timeout; one release lets go.
-                acquire(config.wakeLockMs)
-            }
+        val lock = jobWakeLock(WAKE_LOCK_TAG)
+            .apply { acquire(config.wakeLockMs) }
         wakeLock = lock
         try {
             val books = LibraryBookSource(this, library)
@@ -182,7 +178,7 @@ class AudiobookExportService : Service() {
             AudoraLog.i(TAG, "Export interrupted before it started, timedOut=$timedOut, book=${id.logLabel}")
             if (timedOut) notifications.showTimedOut(id, getString(R.string.export_untitled))
         } finally {
-            if (lock.isHeld) lock.release()
+            lock.releaseIfHeld()
             wakeLock = null
             onWorkerDone()
         }
@@ -242,10 +238,7 @@ class AudiobookExportService : Service() {
 
     private fun onWorkerDone() {
         mine = false
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        // A late progress update may have re-posted it after the service left the foreground.
-        getSystemService(NotificationManager::class.java)?.cancel(ExportNotifications.RUNNING_ID)
-        stopSelf()
+        leaveForeground(runningNoticeId = ExportNotifications.RUNNING_ID)
     }
 
     private inner class ProgressListener(
@@ -290,12 +283,5 @@ class AudiobookExportService : Service() {
         const val TAG = "Export.Service"
         const val THREAD_NAME = "audiobook-export"
         const val WAKE_LOCK_TAG = "Audora:AudiobookExport"
-
-        /** mediaProcessing is the type made for this (Android 15+); dataSync before it existed. */
-        fun foregroundType(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING
-        } else {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-        }
     }
 }

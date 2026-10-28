@@ -6,12 +6,14 @@ package io.github.skm0078.audora.playback.reading
 
 import io.github.skm0078.audora.core.config.StoryBrainConfig
 import io.github.skm0078.audora.core.model.Feeling
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.playback.brain.BrainSource
 import io.github.skm0078.audora.playback.brain.StoryBrainReader
 import io.github.skm0078.audora.playback.unit
 import io.github.skm0078.audora.speech.brain.BrainModel
 import io.github.skm0078.audora.speech.normalize.PronunciationFixer
+import io.github.skm0078.audora.speech.sherpa.SpeakerGender
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -74,6 +76,37 @@ class ReadingSourceBrainTest {
         assertEquals("Tom", book.speakerOf(units[1])?.name)
         assertEquals(Feeling.NEUTRAL, book.judgedFeeling(units[1]))
         assertNull(book.judgedFeeling(units[2]))
+        brain.close()
+    }
+
+    /** Calls the line নীলিমা's and, against her name's ending, a man's. */
+    private class NamedModel : BrainModel {
+        override fun answer(prompt: String, grammar: String, maxTokens: Int) = "1|নীলিমা|neutral\ncast: নীলিমা=M\n"
+
+        override fun cancel() = Unit
+
+        override fun close() = Unit
+    }
+
+    @Test
+    fun `a gender the rules only guessed from a name's ending yields to the brain's`() {
+        val executor: ExecutorService = Executors.newSingleThreadExecutor()
+        val brain = StoryBrainReader(
+            config = StoryBrainConfig(pagesAhead = 0),
+            source = BrainSource(load = { NamedModel() }, installed = { true }),
+            store = null,
+            wanted = { true },
+            executor = executor,
+        )
+        val line = unit(0, 0, Lang.BN).copy(text = "“কাল যাব,” নীলিমা বলল।", pauseAfterMs = paragraph)
+        val rules = ReadingSource().apply { page(listOf(line), continuesPreviousPage = false) }
+        val source = ReadingSource(brain = brain)
+        brain.open("book") { null }
+        source.page(listOf(line), continuesPreviousPage = false)
+        executor.submit {}.get(WAIT_SECONDS, TimeUnit.SECONDS)
+
+        assertEquals(SpeakerGender.FEMALE, rules.book(::fixer).speakerOf(line)?.gender)
+        assertEquals(SpeakerGender.MALE, source.book(::fixer).speakerOf(line)?.gender)
         brain.close()
     }
 

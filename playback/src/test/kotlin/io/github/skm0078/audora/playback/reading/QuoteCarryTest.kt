@@ -423,4 +423,85 @@ class QuoteCarryTest {
 
         assertNull(carry.speakerOf(units[1]))
     }
+
+    @Test
+    fun `a Hindi speaker saying I tells their gender, named or not`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "“मैं कल सुबह आऊँगी,” बिंदिया ने कहा।", pause = paragraphPauseMs).copy(lang = Lang.HI),
+            sentence(1, "“मैं थक गया हूँ।”", pause = paragraphPauseMs).copy(lang = Lang.HI),
+        )
+
+        carry.page(units)
+
+        assertEquals(Speaker("बिंदिया", SpeakerGender.FEMALE), carry.speakerOf(units[0]))
+        assertEquals(false, carry.genderGuessed(units[0]))
+        // Nobody is named: a generic man's voice, not the narrator's.
+        assertEquals(SpeakerGender.MALE, carry.speakerOf(units[1])?.gender)
+    }
+
+    @Test
+    fun `a gender the page tells after a speaker's lines reaches those lines`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "“Is she all right?” Ben asked.", pause = paragraphPauseMs),
+            sentence(1, "“She's awake,” Dr Okafor said.", pause = paragraphPauseMs),
+            sentence(2, "“Thank you,” Ben whispered.", pause = paragraphPauseMs),
+            sentence(3, "“Go on in,” she said.", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertEquals(Speaker("Dr Okafor", SpeakerGender.FEMALE), carry.speakerOf(units[1]))
+    }
+
+    @Test
+    fun `a Hindi or Bengali name no list knows gets the gender its ending most likely tells`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "“বাবার শরীর ভালো নেই,” নীলিমা ধরা গলায় বলল।", pause = paragraphPauseMs).copy(lang = Lang.BN),
+            sentence(1, "“কাল যাব,” হরিপদ বলল।", pause = paragraphPauseMs).copy(lang = Lang.BN),
+        )
+
+        carry.page(units)
+
+        assertEquals(Speaker("নীলিমা", SpeakerGender.FEMALE), carry.speakerOf(units[0]))
+        assertEquals(Speaker("হরিপদ", SpeakerGender.MALE), carry.speakerOf(units[1]))
+        // Only a guess: the story brain, when on, may know better (ReadingSource asks it first).
+        assertEquals(true, carry.genderGuessed(units[0]))
+    }
+
+    @Test
+    fun `in one paragraph each untagged line is said by whom the narration just before it is about`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "Tom stared at the bill."),
+            sentence(1, "“That much!”"),
+            sentence(2, "Mary looked in the bag."),
+            sentence(3, "“No fish?”", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertEquals("tom", carry.speakerOf(units[1])?.key)
+        assertEquals(Speaker("Mary", SpeakerGender.FEMALE), carry.speakerOf(units[3]))
+    }
+
+    @Test
+    fun `an answer that calls a name tells who said the line before it`() {
+        val carry = QuoteCarry()
+        val units = listOf(
+            sentence(0, "Mr Brennan looked up from the till.", pause = 0),
+            sentence(1, "“We're closed,” he said.", pause = paragraphPauseMs),
+            sentence(2, "“It's me, Dad.”", pause = paragraphPauseMs),
+            sentence(3, "He spun round.", pause = 0),
+            sentence(4, "“Lucy!", pause = 0),
+            sentence(5, "You're home!”", pause = paragraphPauseMs),
+        )
+
+        carry.page(units)
+
+        assertEquals(Speaker("Lucy", SpeakerGender.FEMALE), carry.speakerOf(units[2]))
+        assertEquals("mr brennan", carry.speakerOf(units[4])?.key)
+    }
 }

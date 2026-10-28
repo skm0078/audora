@@ -22,13 +22,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,9 +40,10 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.core.notes.PronunciationRule
+import io.github.skm0078.audora.ui.pronunciation.PronunciationFixDialog
 import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
-import io.github.skm0078.audora.ui.theme.switchRow
+import io.github.skm0078.audora.ui.theme.SwitchLine
 
 /** Top bar: opens the bookmarks sheet; filled while this book has bookmarks. */
 @Composable
@@ -214,58 +213,27 @@ private fun BookmarkNoteDialog(bookmark: Bookmark, onSave: (String) -> Unit, onD
 /** Adds a fix for a word of [unit]'s language and lists the fixes in use, each removable. */
 @Composable
 private fun PronunciationDialog(unit: ReadingUnit, rules: List<PronunciationRule>, actions: BookNotesActions) {
-    var written by rememberSaveable(unit.page, unit.charStart) { mutableStateOf("") }
-    var spoken by rememberSaveable(unit.page, unit.charStart) { mutableStateOf("") }
-    var wholeWord by remember { mutableStateOf(true) }
-    var thisBookOnly by remember { mutableStateOf(true) }
-    AlertDialog(
-        onDismissRequest = actions::dismissFix,
-        title = { Text(stringResource(R.string.fix_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                Text(
-                    unit.text,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                OutlinedTextField(written, { written = it }, label = { Text(stringResource(R.string.fix_written)) })
-                OutlinedTextField(spoken, { spoken = it }, label = { Text(stringResource(R.string.fix_spoken)) })
-                FixSwitch(stringResource(R.string.fix_whole_word), wholeWord) { wholeWord = it }
-                FixSwitch(stringResource(R.string.fix_this_book), thisBookOnly) { thisBookOnly = it }
-                TextButton(
-                    onClick = {
-                        actions.addRule(written, spoken, wholeWord, thisBookOnly)
-                        written = ""
-                        spoken = ""
-                    },
-                    enabled = written.isNotBlank() && spoken.isNotBlank(),
-                ) { Text(stringResource(R.string.fix_add)) }
-                rules.forEach { rule -> RuleRow(rule) { actions.deleteRule(rule) } }
-            }
+    val sentence = unit.page to unit.charStart
+    var thisBookOnly by rememberSaveable(sentence) { mutableStateOf(true) }
+    PronunciationFixDialog(
+        title = stringResource(R.string.fix_title),
+        rules = rules,
+        where = { rule ->
+            stringResource(if (rule.bookId == null) R.string.fix_every_book else R.string.fix_this_book_short)
         },
-        confirmButton = { TextButton(onClick = actions::dismissFix) { Text(stringResource(R.string.notes_done)) } },
+        onAdd = { actions.addRule(it.written, it.spoken, it.wholeWord, thisBookOnly) },
+        onDelete = actions::deleteRule,
+        onDismiss = actions::dismissFix,
+        draftKey = sentence,
+        above = {
+            Text(
+                unit.text,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        options = { SwitchLine(stringResource(R.string.fix_this_book), thisBookOnly, { thisBookOnly = it }) },
     )
-}
-
-@Composable
-private fun FixSwitch(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.switchRow(checked, onChange = onChange), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-        Switch(checked = checked, onCheckedChange = null)
-    }
-}
-
-@Composable
-private fun RuleRow(rule: PronunciationRule, onDelete: () -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        val scope = if (rule.bookId == null) R.string.fix_every_book else R.string.fix_this_book_short
-        Text(
-            stringResource(R.string.fix_rule, rule.written, rule.spoken, stringResource(scope)),
-            Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        TextButton(onClick = onDelete) { Text(stringResource(R.string.notes_delete)) }
-    }
 }

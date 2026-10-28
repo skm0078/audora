@@ -191,7 +191,8 @@ class RoutedSpeech(
     private fun spoken(text: String, reader: Reader, role: TextRole): String = if (reader.phone != null) {
         text
     } else {
-        normalizers[reader.lang]?.normalize(text, role)?.takeIf { it.isNotBlank() } ?: text
+        // Blank when the text was all symbols no voice can say ("★★★", "* * *"): the engine then gives silence.
+        normalizers[reader.lang]?.normalize(text, role) ?: text
     }
 }
 
