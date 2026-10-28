@@ -7,6 +7,7 @@ package io.github.skm0078.audora.ui.search
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.search.ActionEntry
 import io.github.skm0078.audora.core.search.ActionSearch
 import io.github.skm0078.audora.ui.AppDestination
@@ -16,7 +17,6 @@ import io.github.skm0078.audora.ui.library.LibraryItem
 import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.MenuPlace
 import io.github.skm0078.audora.ui.library.actionIcon
-import io.github.skm0078.audora.ui.library.displayTitle
 import io.github.skm0078.audora.ui.settings.SettingKey
 import io.github.skm0078.audora.ui.settings.SettingsPage
 
@@ -52,7 +52,7 @@ object FoundIndex {
         val typed = ActionSearch.words(query).filter { it.length >= MIN_TITLE_WORD }
         val named = list.all.firstOrNull { item ->
             !item.needsLocating &&
-                ActionSearch.words(displayTitle(item.book)).any { w -> typed.any { w.startsWith(it) } }
+                ActionSearch.words(item.book.title).any { w -> typed.any { w.startsWith(it) } }
         }
         val item = named ?: list.latest?.takeUnless { it.needsLocating } ?: return null
         return FoundBook(item, reading = item.book.id == list.latest?.book?.id)
@@ -119,7 +119,7 @@ object FoundIndex {
     private fun bookEntries(texts: FoundTexts, found: FoundBook?): List<ActionEntry<FoundRow>> {
         if (found == null || found.item.needsLocating) return emptyList()
         val book = found.item.book
-        val title = displayTitle(book)
+        val title = book.title.takeUnless { it == BookTitles.UNTITLED } ?: texts.text(R.string.library_untitled)
         val whose = texts.text(if (found.reading) R.string.found_where_reading else R.string.found_where_library)
         val saveAs = texts.format(R.string.found_dot, whose, texts.text(R.string.menu_save_as))
         val picks = listOf(
