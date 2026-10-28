@@ -1,6 +1,6 @@
-// File: app/src/main/kotlin/io/github/skm0078/audora/ui/made/MadeSetCard.kt
-// Purpose: One set of made files (an audiobook, a studio audio file, a copy) with what it is, how long and large,
-//          and Play or Open, Share and Delete (ADR-068).
+// File: app/src/main/kotlin/io/github/skm0078/audora/ui/made/MadeSetActions.kt
+// Purpose: What one made set (an audiobook, a studio audio file, a copy) says about itself and what can be done with
+//          it: Play or Open, Share, and Delete in its ⋮ menu, as icon buttons (ADR-068, ADR 2026-10-28-made-tab).
 
 package io.github.skm0078.audora.ui.made
 
@@ -11,17 +11,16 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -33,10 +32,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.OutputKind
 import io.github.skm0078.audora.core.logging.AudoraLog
@@ -50,39 +48,62 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/**
- * [bookTitle] is shown on the Made screen, where sets of many books are listed; a book's own details leave it out.
- * A set whose files are all gone offers only Remove from the list: there is nothing left to play or share.
- */
-@OptIn(ExperimentalLayoutApi::class)
+/** Play for audio, Open for a document: what the cover and the filled button do; nothing once the files are gone. */
 @Composable
-internal fun MadeSetCard(made: MadeSet, bookTitle: String?, onPlay: (String) -> Unit, modifier: Modifier = Modifier) {
+internal fun primaryAction(made: MadeSet, onPlay: (String) -> Unit): (() -> Unit)? {
+    val context = LocalContext.current
+    return when {
+        made.allMissing -> null
+        made.set.kind.isAudio -> ({ onPlay(made.set.key) })
+        else -> ({ MadeIntents.open(context, made.present[0]) })
+    }
+}
+
+/** The filled Play or Open; TalkBack hears what it plays, "Play Gitanjali, Audiobook". */
+@Composable
+internal fun PrimaryButton(made: MadeSet, named: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val (icon, label) = if (made.set.kind.isAudio) {
+        R.drawable.ic_play to stringResource(R.string.made_play_named, named)
+    } else {
+        kindIcon(made.set.kind) to stringResource(R.string.made_open_named, named)
+    }
+    FilledIconButton(onClick = onClick, modifier = modifier.size(Dimens.PlayButtonSmall - Dimens.SpaceXs)) {
+        Icon(painterResource(icon), label)
+    }
+}
+
+/**
+ * Share, then ⋮ with Delete; a set whose files are all gone offers only Remove from the list, as words, since
+ * there is nothing left to play or share.
+ */
+@Composable
+internal fun ShareAndMore(made: MadeSet, named: String) {
     val context = LocalContext.current
     val remover = rememberSetRemover(made)
+    var menu by remember { mutableStateOf(false) }
     var confirming by rememberSaveable(made.set.key) { mutableStateOf(false) }
-    Card(modifier.fillMaxWidth()) {
-        Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
-            Text(
-                bookTitle ?: kindLabel(made.set.kind),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.semantics { heading() },
+    if (made.allMissing) {
+        TextButton(onClick = remover.forget) { Text(stringResource(R.string.made_forget)) }
+        return
+    }
+    IconButton(onClick = { MadeIntents.share(context, made.present) }) {
+        Icon(painterResource(R.drawable.ic_share), stringResource(R.string.made_share_named, named))
+    }
+    Box {
+        IconButton(onClick = { menu = true }) {
+            Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.made_more_named, named))
+        }
+        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.made_delete), color = MaterialTheme.colorScheme.error) },
+                leadingIcon = {
+                    Icon(painterResource(R.drawable.ic_delete), null, tint = MaterialTheme.colorScheme.error)
+                },
+                onClick = {
+                    menu = false
+                    confirming = true
+                },
             )
-            if (bookTitle != null) Text(kindLabel(made.set.kind), style = MaterialTheme.typography.bodyMedium)
-            Text(
-                detailLine(made),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            missingLine(made)?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-            }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                if (made.allMissing) {
-                    TextButton(onClick = remover.forget) { Text(stringResource(R.string.made_forget)) }
-                } else {
-                    SetButtons(made, onPlay, onDelete = { confirming = true })
-                }
-            }
         }
     }
     if (confirming) {
@@ -96,21 +117,6 @@ internal fun MadeSetCard(made: MadeSet, bookTitle: String?, onPlay: (String) -> 
             },
             onDismiss = { confirming = false },
         )
-    }
-}
-
-/** Play for audio, Open for a document; then Share and Delete. */
-@Composable
-private fun SetButtons(made: MadeSet, onPlay: (String) -> Unit, onDelete: () -> Unit) {
-    val context = LocalContext.current
-    if (made.set.kind.isAudio) {
-        Button(onClick = { onPlay(made.set.key) }) { Text(stringResource(R.string.made_play)) }
-    } else {
-        Button(onClick = { MadeIntents.open(context, made.present[0]) }) { Text(stringResource(R.string.made_open)) }
-    }
-    OutlinedButton(onClick = { MadeIntents.share(context, made.present) }) { Text(stringResource(R.string.made_share)) }
-    TextButton(onClick = onDelete) {
-        Text(stringResource(R.string.made_delete), color = MaterialTheme.colorScheme.error)
     }
 }
 
@@ -185,9 +191,21 @@ internal fun kindLabel(kind: OutputKind): String = stringResource(
     },
 )
 
-/** "12 chapters · 5 h 20 min · 310 MB · 24 Oct 2026 · Pitch: 10% higher", leaving out what is not known. */
+/** The kind's own icon, on the cover's badge and on Open. */
+@DrawableRes
+internal fun kindIcon(kind: OutputKind): Int = when (kind) {
+    OutputKind.AUDIOBOOK -> R.drawable.ic_headphones
+    OutputKind.STUDIO_AUDIO -> R.drawable.ic_studio
+    OutputKind.ACCESSIBLE_COPY -> R.drawable.ic_article
+    OutputKind.TALKING_BOOK -> R.drawable.ic_talking_book
+}
+
+/**
+ * "12 chapters · 5 h 20 min · 310 MB", and with [full] the date and pitch too ("· 24 Oct 2026 · Pitch: 10% higher"),
+ * leaving out what is not known. A tile under a cover has room for the short line only.
+ */
 @Composable
-private fun detailLine(made: MadeSet): String {
+internal fun detailLine(made: MadeSet, full: Boolean): String {
     val context = LocalContext.current
     val set = made.set
     val count = set.files.size
@@ -201,24 +219,22 @@ private fun detailLine(made: MadeSet): String {
         )
         set.durationMs?.let { add(context.studioDuration(it)) }
         set.sizeBytes?.let { add(Formatter.formatShortFileSize(context, it)) }
-        add(
-            DateUtils.formatDateTime(
-                context,
-                set.createdAtMillis,
-                DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_YEAR,
-            ),
-        )
+        if (full) {
+            add(DateUtils.formatDateTime(context, set.createdAtMillis, DATE_FLAGS))
+            set.files.firstNotNullOfOrNull {
+                it.pitch
+            }?.let { add(stringResource(R.string.made_pitch, pitchLabel(it))) }
+        }
     }
-    val pitch = set.files.firstNotNullOfOrNull { it.pitch }?.let { stringResource(R.string.made_pitch, pitchLabel(it)) }
-    return (parts + listOfNotNull(pitch)).joinToString(SEPARATOR)
+    return parts.joinToString(DETAIL_SEPARATOR)
 }
 
 @Composable
-private fun missingLine(made: MadeSet): String? = when {
+internal fun missingLine(made: MadeSet): String? = when {
     made.missing == 0 -> null
     made.allMissing -> stringResource(R.string.made_missing)
     else -> stringResource(R.string.made_partly_missing, made.missing, made.set.files.size)
 }
 
 private const val TAG = "Library.Made"
-private const val SEPARATOR = " · "
+private const val DATE_FLAGS = DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_YEAR

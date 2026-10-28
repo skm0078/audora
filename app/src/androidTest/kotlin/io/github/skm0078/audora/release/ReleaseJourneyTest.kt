@@ -164,6 +164,10 @@ class ReleaseJourneyTest {
             step("27 Turn pages shows a text book a screenful at a time with its arrows") {
                 share.aTextBookTurnsPages(MORE_FORMATS.first())
             }
+            step(
+                "32 a saved audiobook plays in Made with the book player's speed sheet and sleep timer",
+                MadeJourney(rule, ::backToTabs)::aSavedAudiobookPlaysInTheSamePlayer,
+            )
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -662,18 +666,17 @@ class ReleaseJourneyTest {
         }
     }
 
-    /** Library, Notes, Made and You from the bar; Jobs is Made's first row and Back from it returns there. */
+    /** Library, Notes, Made and You from the bar; Jobs is in Made's top bar and Back from it returns there. */
     private fun theFourPlacesOpenAndJobsLiveInMade() {
         pause()
         backToTabs()
         tapText(R.string.tab_notes)
         tapText(R.string.tab_made)
-        waitForNode(hasText(text(R.string.made_jobs)))
-        tapText(R.string.made_jobs)
+        tapText(R.string.made_jobs_short)
         waitForNode(hasText(text(R.string.jobs_title)))
         back()
         gone(hasText(text(R.string.jobs_title)))
-        waitForNode(hasText(text(R.string.made_jobs)))
+        waitForNode(hasText(text(R.string.made_jobs_short)))
         tapText(R.string.tab_you)
         waitForNode(hasText(text(R.string.settings_voices_title)))
         tapText(R.string.tab_library)

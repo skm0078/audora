@@ -147,12 +147,12 @@ class UiTourTest {
         tap(hasText(text(R.string.tab_library)))
     }
 
-    /** The Made place, then Jobs from its first row. */
+    /** The Made place, then Jobs from its top bar. */
     private fun made() {
         tap(hasText(text(R.string.tab_made)))
         settle()
         capture("made")
-        tap(hasText(text(R.string.made_jobs)))
+        tap(hasText(text(R.string.made_jobs_short)))
         settle()
         capture("jobs")
         backToTabs()

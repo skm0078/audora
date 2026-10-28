@@ -188,7 +188,7 @@ private fun readingSummary(modes: ReadingModes): String = listOf(
 ).joinToString(SUMMARY_SEPARATOR)
 
 @Composable
-private fun SpeedBlock(speed: Float, config: ReaderConfig, onSpeed: (Float) -> Unit) {
+internal fun SpeedBlock(speed: Float, config: ReaderConfig, onSpeed: (Float) -> Unit) {
     val range = config.speech.minRate..config.speech.maxRate
     val step = config.speech.rateStep
     // Follows the player's speed, but shows the finger's position while dragging.
