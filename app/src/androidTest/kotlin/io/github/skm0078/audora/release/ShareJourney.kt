@@ -96,14 +96,19 @@ internal class ShareJourney(
     }
 
     /**
-     * "Share part of the page" on the installed app (ADR 2026-10-28-page-snippet): the reader's own call opens the
-     * snippet's box on the journey's PDF page, Share cuts the page as drawn and opens the card screen on it, and the
-     * card's Share writes a 1080 x 1920 picture into the share folder.
+     * "Share part of the page" on the installed app (ADR 2026-10-28-page-snippet): the journey's [pdf] opened again
+     * (Open with, as the step before may end anywhere), the sentence menu's Share part of the page opens the
+     * snippet's box on a drawn page, Share cuts the page as drawn and opens the card screen on it, and the card's
+     * Share writes a 1080 x 1920 picture into the share folder.
      */
-    fun aPageSnippetIsShared() {
+    fun aPageSnippetIsShared(pdf: String) {
         val folder = File(app.cacheDir, ShareCardFiles.FOLDER).apply { deleteRecursively() }
+        val uri = JourneyDevice.downloadedPdf(pdf)
+        val current = activity()
+        JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri)) }
         // Any page's picture: its description after the page number is the same on every page.
         val pageImage = hasContentDescription(text(R.string.reader_page_image, 1).substringAfter("1"), substring = true)
+        waitForNode(pageImage, OPEN_TIMEOUT_MS)
         val menu = hasText(text(R.string.sentence_menu_share))
         // A long-press on a line opens its menu; the test page's text starts below its heading, so a few are tried.
         val opened = SNIPPET_PRESS_POINTS.any { (u, v) ->

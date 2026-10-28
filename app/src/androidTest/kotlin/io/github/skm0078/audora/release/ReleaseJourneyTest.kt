@@ -152,7 +152,9 @@ class ReleaseJourneyTest {
             )
             val share = ShareJourney(rule, ::activity, ::backToTabs)
             step("25 Share as a video reads the quote in the book's voice into an MP4", share::aQuoteVideoIsShared)
-            step("26 part of the shown page is shared as a picture with its credit", share::aPageSnippetIsShared)
+            step("26 part of the shown page is shared as a picture with its credit") {
+                share.aPageSnippetIsShared(BOOK)
+            }
             step("27 Turn pages shows a text book a screenful at a time with its arrows") {
                 share.aTextBookTurnsPages(MORE_FORMATS.first())
             }
