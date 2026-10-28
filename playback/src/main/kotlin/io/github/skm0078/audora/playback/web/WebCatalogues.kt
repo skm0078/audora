@@ -1,5 +1,6 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/web/WebCatalogues.kt
-// Purpose: Browsing OPDS catalogues (CF-15): one page at a time, search, and adding or removing a catalogue.
+// Purpose: Browsing OPDS catalogues (CF-15): one page at a time, search, and removing a catalogue added before
+//          the list was curated.
 
 package io.github.skm0078.audora.playback.web
 
@@ -42,22 +43,6 @@ class WebCatalogues(private val catalogues: OpdsCatalogues, private val fetcher:
         return when (described) {
             is Outcome.Failure -> described
             is Outcome.Success -> Outcome.Success(fill(described.value, query))
-        }
-    }
-
-    /**
-     * Checks that [typed] is a catalogue, then adds it under its own title. A [WebError] when the address is wrong
-     * or not a catalogue; otherwise how the add went.
-     */
-    suspend fun add(typed: String): Outcome<CatalogueAdd, WebError> {
-        val address = WebAddress.normalize(typed) ?: return Outcome.Failure(WebError.BadAddress)
-        return when (val feed = feed(address)) {
-            is Outcome.Failure -> feed
-
-            is Outcome.Success -> withContext(Dispatchers.IO) {
-                val title = feed.value.title.ifBlank { WebAddress.hostOf(address) }
-                Outcome.Success(catalogues.add(OpdsCatalogue(title, address)))
-            }
         }
     }
 

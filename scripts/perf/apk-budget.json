@@ -1,0 +1,8 @@
+{
+  "_about": "APK size budget (ADR 2026-10-28-performance-budget), checked by scripts/perf/check_apk_size.py in CI. 1 MB = 1,000,000 bytes. The dev APK was 112.97 MB on 2026-10-28 (dev-build, ce1caf2): about 10 % headroom. Raise a limit only in the PR that needs it, and say why there.",
+  "warnGrowthMb": 1.0,
+  "variants": {
+    "dev": { "maxMb": 125 },
+    "release": { "maxMb": 125 }
+  }
+}
