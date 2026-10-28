@@ -9,10 +9,12 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
@@ -107,6 +109,8 @@ class MadeAudioService : MediaSessionService() {
         publishSleep()
     }
 
+    // pauseAtEndOfMediaItems is ExoPlayer's own end-of-chapter stop, still marked unstable in Media3.
+    @OptIn(UnstableApi::class)
     private fun publishSleep() {
         val player = session?.player as? ExoPlayer
         player?.pauseAtEndOfMediaItems = sleep.pausesAtThisChaptersEnd
@@ -115,6 +119,7 @@ class MadeAudioService : MediaSessionService() {
 
     /** Only this app's own screens set the timer; the notification and other apps get the usual commands. */
     private inner class SleepCommands : MediaSession.Callback {
+        @OptIn(UnstableApi::class)
         override fun onConnect(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
