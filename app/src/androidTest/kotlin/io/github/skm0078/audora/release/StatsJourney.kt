@@ -74,6 +74,8 @@ internal class StatsJourney(private val rule: ComposeTestRule, private val backT
             Thread.sleep(POLL_MS)
         }
         backToTabs()
+        // The search this step opened would hide the library's ⋮ menu from the steps after it.
+        tap(hasContentDescription(text(R.string.library_search_close)))
     }
 
     /** The stats pictures this app has saved, counted from the phone's own pictures. */
