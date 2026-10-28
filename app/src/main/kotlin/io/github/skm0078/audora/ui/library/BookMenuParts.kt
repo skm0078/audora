@@ -11,6 +11,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -30,17 +31,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
@@ -49,15 +53,32 @@ import io.github.skm0078.audora.ui.theme.HelpButton
 
 /**
  * Play, Up next, any [MenuPlace.QUICK] action and Finished, all the same width. Play is filled, as the one thing most
- * people open the menu for; Finished reads as a switch, on once the book is finished.
+ * people open the menu for; Finished reads as a switch, on once the book is finished. As many sit in a row as leave
+ * every label's longest word whole: all of them at normal text, two to a row at large text on a phone.
  */
 @Composable
 internal fun QuickButtons(choices: List<QuickChoice>, modifier: Modifier = Modifier, onChoose: (QuickChoice) -> Unit) {
-    Row(
-        modifier.fillMaxWidth().padding(bottom = Dimens.SpaceL),
-        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
-    ) {
-        choices.forEach { choice -> QuickButton(choice, Modifier.weight(1f)) { onChoose(choice) } }
+    val measurer = rememberTextMeasurer()
+    val style = MaterialTheme.typography.labelLarge
+    val labels = choices.map { stringResource(quickLabel(it)) }
+    val density = LocalDensity.current
+    BoxWithConstraints(modifier.fillMaxWidth().padding(bottom = Dimens.SpaceL)) {
+        val gap = Dimens.SpaceM
+        val longestWord = remember(labels, style, density) {
+            labels.flatMap { it.split(' ') }.maxOfOrNull { measurer.measure(it, style).size.width } ?: 0
+        }
+        val fitting = (choices.size downTo 1).firstOrNull { count ->
+            with(density) { ((maxWidth - gap * (count - 1)) / count).roundToPx() } >= longestWord
+        } ?: 1
+        Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+            choices.chunked(fitting).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap)) {
+                    row.forEach { choice -> QuickButton(choice, Modifier.weight(1f)) { onChoose(choice) } }
+                    // A short last row keeps the buttons the same width as those above it.
+                    repeat(fitting - row.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+        }
     }
 }
 
