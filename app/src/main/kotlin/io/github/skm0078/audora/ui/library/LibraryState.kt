@@ -8,6 +8,8 @@ import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.core.library.BookCollection
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.BookProgress
+import io.github.skm0078.audora.core.library.BookSource
+import io.github.skm0078.audora.core.library.BookSources
 import io.github.skm0078.audora.core.library.LibraryError
 import io.github.skm0078.audora.core.library.LibraryFacets
 import io.github.skm0078.audora.core.library.LibraryQuery
@@ -19,6 +21,12 @@ import io.github.skm0078.audora.core.library.LibraryQuery
 data class LibraryItem(val book: Book, val availability: BookAvailability?, val progress: BookProgress? = null) {
     val needsLocating: Boolean
         get() = availability == BookAvailability.MISSING || availability == BookAvailability.ACCESS_LOST
+
+    /**
+     * Where the file lives, from its URI's authority (ADR 2026-10-28-book-source): a string check, no I/O, made once
+     * per item since the row, the tile, the menu and search all ask.
+     */
+    val source: BookSource = BookSources.of(book.documentUri)
 }
 
 sealed interface LibraryListState {

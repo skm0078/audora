@@ -148,6 +148,11 @@ class ReleaseJourneyTest {
             step("18 the app font draws English, Hindi and Bengali", ::theAppFontDrawsAllThreeScripts)
             step("19 the four places open and Jobs goes back to Made", ::theFourPlacesOpenAndJobsLiveInMade)
             step("20 the book menu's Save as opens and the sort sheet turns covers to a list", ::bookMenuAndSortSheet)
+            // Right after 20, on its library: from 24b on, the library's search can still hold a setting's words.
+            step(
+                "42 a phone book says it is on this phone",
+                SourceJourney(rule, ::backToTabs)::aPhoneBookSaysWhereItLives,
+            )
             step("21 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
             step("22 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
             step("23 a quote video is written with the AI voice label", ::aQuoteVideoIsWritten)

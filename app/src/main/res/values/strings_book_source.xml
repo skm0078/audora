@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Where a book's file lives (this phone, Google Drive, OneDrive, Dropbox, another app) and "Keep on this phone"
+     (ADR 2026-10-28-book-source). App names stay as each app spells them. -->
+<resources>
+    <string name="book_source_phone">On this phone</string>
+    <string name="book_source_google_drive" translatable="false">Google Drive</string>
+    <string name="book_source_onedrive" translatable="false">OneDrive</string>
+    <string name="book_source_dropbox" translatable="false">Dropbox</string>
+    <string name="book_source_other_app">From another app</string>
+    <string name="book_details_source">Where: %1$s</string>
+    <string name="book_source_needs_app">Read through %1$s, so it may need the internet.</string>
+    <string name="library_keep_on_phone">Keep on this phone</string>
+    <string name="menu_hint_keep_on_phone">Saves ListenLock\'s own copy, so the book reads with no internet. Uses as much space as the book.</string>
+    <string name="keep_on_phone_started">Copying “%1$s” to this phone…</string>
+    <string name="keep_on_phone_done">“%1$s” is on this phone now. It reads with no internet.</string>
+    <string name="keep_on_phone_not_copied">Couldn\'t copy “%1$s”. Check the internet and free space, then try again.</string>
+    <string name="keep_on_phone_not_moved">Couldn\'t keep “%1$s” on this phone. The book stays where it was.</string>
+    <string name="keep_on_phone_already">This book is already on this phone.</string>
+    <string name="keep_on_phone_busy">Still copying a book. Try again when it\'s done.</string>
+    <string name="found_book_keep">Keep %1$s on this phone</string>
+    <string name="found_terms_keep">offline download drive cloud copy</string>
+</resources>

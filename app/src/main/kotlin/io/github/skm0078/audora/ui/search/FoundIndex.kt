@@ -178,12 +178,14 @@ object FoundIndex {
         BookAction.CHARACTER_GUIDE -> R.string.found_book_guide
         BookAction.MARK_FINISHED -> R.string.found_book_finished
         BookAction.MARK_NOT_STARTED -> R.string.found_book_not_started
+        BookAction.KEEP_ON_PHONE -> R.string.found_book_keep
     }
 
     private fun termsOf(action: BookAction): Int? = when (action) {
         BookAction.STUDIO -> R.string.found_terms_studio
         BookAction.SHARE_CARD -> R.string.found_terms_share
         BookAction.CHARACTER_GUIDE -> R.string.found_terms_guide
+        BookAction.KEEP_ON_PHONE -> R.string.found_terms_keep
         else -> null
     }
 

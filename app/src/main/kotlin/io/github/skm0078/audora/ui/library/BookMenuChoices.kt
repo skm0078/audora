@@ -97,6 +97,7 @@ internal fun actionIcon(action: BookAction): Int = when (action) {
     BookAction.SHARE_CARD -> R.drawable.ic_share
     BookAction.CHARACTER_GUIDE -> R.drawable.ic_person
     BookAction.MARK_FINISHED, BookAction.MARK_NOT_STARTED -> R.drawable.ic_check
+    BookAction.KEEP_ON_PHONE -> R.drawable.ic_download
 }
 
 /** A tile's short name and the line under it; the row label stays the long one the info text uses. */
