@@ -120,7 +120,7 @@ class WebBooksTest {
         val curated = CuratedCatalogue.entries.map { it.title }
 
         assertEquals(curated + "My Shelf", catalogues.all().map { it.title })
-        assertFalse(catalogues.all().last().builtIn)
+        assertNull(catalogues.all().last().curated)
 
         assertTrue(catalogues.remove("https://books.example.org/opds"))
         assertEquals(curated, catalogues.all().map { it.title })

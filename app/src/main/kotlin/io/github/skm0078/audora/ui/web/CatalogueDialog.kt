@@ -160,7 +160,9 @@ private fun CatalogueRow(catalogue: OpdsCatalogue, onOpen: () -> Unit, onRemove:
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        if (!catalogue.builtIn) TextButton(onClick = onRemove) { Text(stringResource(R.string.catalogues_remove)) }
+        if (catalogue.curated == null) {
+            TextButton(onClick = onRemove) { Text(stringResource(R.string.catalogues_remove)) }
+        }
     }
     HorizontalDivider()
 }

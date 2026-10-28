@@ -10,9 +10,7 @@ import java.io.File
 import java.io.IOException
 
 /** A catalogue's name and first page; a [curated] one ([CuratedCatalogue]) cannot be removed. */
-data class OpdsCatalogue(val title: String, val address: String, val curated: CuratedCatalogue? = null) {
-    val builtIn: Boolean get() = curated != null
-}
+data class OpdsCatalogue(val title: String, val address: String, val curated: CuratedCatalogue? = null)
 
 /**
  * Catalogues can no longer be added by address (typed OPDS links mostly failed, and a curated list is checked every

@@ -40,7 +40,7 @@ class CuratedCataloguesTest {
         val all = OpdsCatalogues(File(temp.root, "catalogues.txt")).all()
 
         assertEquals(CuratedCatalogue.entries.map { it.address }, all.map { it.address })
-        assertTrue(all.all { it.builtIn })
+        assertTrue(all.all { it.curated != null })
         assertEquals(CuratedCatalogue.entries, all.map { it.curated })
     }
 
