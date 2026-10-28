@@ -7,6 +7,7 @@ package io.github.skm0078.audora.release
 import android.app.KeyguardManager
 import android.content.pm.PackageManager
 import android.os.ParcelFileDescriptor
+import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
@@ -58,9 +59,7 @@ internal class LockJourney(private val rule: ComposeTestRule) {
             val asked = logCount(ASKING)
             runBlocking { preferences.saveAppLock(true) }
             // This process never unlocked, so the lock closes at once.
-            awaitTrue("the lock to ask for the phone's lock by itself", state = ::recentLog) {
-                logCount(ASKING) > asked
-            }
+            awaitComposed("the lock to ask for the phone's lock by itself") { logCount(ASKING) > asked }
             val saver = hasText(text(R.string.lock_saver_hidden))
             rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(saver) }
             val title = hasText(text(R.string.app_lock_locked_title)) or hasText(text(R.string.lock_saver_reading))
@@ -70,7 +69,7 @@ internal class LockJourney(private val rule: ComposeTestRule) {
 
             val before = logCount(ASKING)
             rule.onNode(hasText(text(R.string.app_lock_unlock)) and hasClickAction()).performClick()
-            awaitTrue("Unlock to ask for the phone's lock again", state = ::recentLog) { logCount(ASKING) > before }
+            awaitComposed("Unlock to ask for the phone's lock again") { logCount(ASKING) > before }
         } finally {
             lockSettings("clear --old $PIN")
         }
@@ -81,9 +80,7 @@ internal class LockJourney(private val rule: ComposeTestRule) {
         val opened = logCount(NO_SCREEN_LOCK)
         val asked = logCount(ASKING)
         runBlocking { preferences.saveAppLock(true) }
-        awaitTrue("the lock to open on a device with no screen lock", state = ::recentLog) {
-            logCount(NO_SCREEN_LOCK) > opened
-        }
+        awaitComposed("the lock to open on a device with no screen lock") { logCount(NO_SCREEN_LOCK) > opened }
         rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasText(text(R.string.lock_saver_hidden))) }
         assertEquals("The lock asked for a proof the device cannot give", asked, logCount(ASKING))
     }
@@ -98,6 +95,18 @@ internal class LockJourney(private val rule: ComposeTestRule) {
         return "$out$err".trim()
     }
 
+    /**
+     * Waits through the compose rule, not a plain sleep: under the journey's rule the app's screens only recompose
+     * while the rule waits, so the lock window is never drawn (and never asks) during a sleep.
+     */
+    private fun awaitComposed(what: String, condition: () -> Boolean) {
+        try {
+            rule.waitUntil(LOG_TIMEOUT_MS, condition)
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Timed out waiting for: $what. ${recentLog()}", e)
+        }
+    }
+
     private fun recentLog(): String {
         val resumed = JourneyDevice.resumedActivity()?.javaClass?.simpleName
         return "Resumed: $resumed; log: ${logTail(LOG_LINES).joinToString(" | ")}"
@@ -108,6 +117,7 @@ internal class LockJourney(private val rule: ComposeTestRule) {
         const val ASKING = "Asking for the phone's lock"
         const val NO_SCREEN_LOCK = "the phone has no screen lock; opening"
         const val UI_TIMEOUT_MS = 15_000L
+        const val LOG_TIMEOUT_MS = 30_000L
         const val LOG_LINES = 8
     }
 }
