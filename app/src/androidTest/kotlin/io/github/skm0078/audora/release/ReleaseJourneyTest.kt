@@ -156,6 +156,10 @@ class ReleaseJourneyTest {
                 ::aPhoneKeepsTheSheets,
             )
             step("24b a search finds a setting, opens it on You, and Back returns to the search", ::searchOpensASetting)
+            step(
+                "42 a phone book says it is on this phone",
+                SourceJourney(rule, ::backToTabs)::aPhoneBookSaysWhereItLives,
+            )
             val share = ShareJourney(rule, ::activity, ::backToTabs)
             step("25 Share as a video reads the quote in the book's voice into an MP4", share::aQuoteVideoIsShared)
             step("26 part of the shown page is shared as a picture with its credit") {

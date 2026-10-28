@@ -1,0 +1,3 @@
+en: Books from Google Drive and other apps now show a small cloud. Open a book's details and tap Keep on this phone to read it with no internet.
+hi: Google Drive और दूसरे ऐप की किताबों पर अब एक छोटा बादल दिखता है। किताब की जानकारी खोलें और इस फ़ोन पर रखें दबाएँ, ताकि बिना इंटरनेट के पढ़ सकें।
+bn: Google Drive আর অন্য অ্যাপের বইয়ে এখন একটি ছোট মেঘ দেখা যায়। বইয়ের তথ্য খুলে এই ফোনে রাখুন চাপুন, তাহলে ইন্টারনেট ছাড়াই পড়তে পারবেন।
