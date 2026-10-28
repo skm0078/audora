@@ -59,13 +59,20 @@ private class MenuEntry(@StringRes val label: Int, @StringRes val hint: Int, val
  * The Share choices (ADR 2026-10-27-share-cards): "As audio" (the highlighted passage when the sentence has one, else
  * to the end of the paragraph), "As a picture" (a quote card) and the words as text, all of the same passage.
  */
-private fun shareChoices(highlight: Highlight?, audio: () -> Unit, picture: () -> Unit, text: () -> Unit) = listOf(
+private fun shareChoices(
+    highlight: Highlight?,
+    audio: () -> Unit,
+    picture: () -> Unit,
+    video: () -> Unit,
+    text: () -> Unit,
+) = listOf(
     MenuEntry(
         R.string.sentence_menu_share_clip,
         if (highlight != null) R.string.sentence_hint_share_highlight else R.string.sentence_hint_share_clip,
         audio,
     ),
     MenuEntry(R.string.share_as_picture, R.string.share_hint_picture, picture),
+    MenuEntry(R.string.share_as_video, R.string.share_hint_video, video),
     MenuEntry(R.string.sentence_menu_share_text, R.string.sentence_hint_share_text, text),
 )
 
@@ -159,6 +166,7 @@ private fun MenuSources.shareMenu(unit: ReadingUnit, notes: NotesState): List<Me
         highlight,
         audio = closing { if (highlight != null) reader.onShareHighlight(highlight) else reader.onShareClip(unit) },
         picture = closing { reader.onSharePicture(text, page) },
+        video = closing { reader.onShareVideo(text, page) },
         text = closing { words.share(text) },
     )
 }

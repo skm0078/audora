@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   File: playback/src/main/res/xml/clip_share_paths.xml
-  Purpose: The only folder the clip FileProvider may hand out: the clip made by "Share as audio" (plan item 41).
+  Purpose: The only folders the clip FileProvider may hand out: the clip made by "Share as audio" (plan item 41) and
+           the quote video (ADR 2026-10-28-quote-video).
 -->
 <paths>
     <cache-path name="shared_clips" path="shared-clips/" />
+    <cache-path name="shared_videos" path="shared-videos/" />
 </paths>

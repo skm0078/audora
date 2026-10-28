@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="video_channel">উদ্ধৃতির ভিডিও</string>
+    <string name="video_making">উদ্ধৃতির ভিডিও তৈরি হচ্ছে…</string>
+    <string name="video_ready">উদ্ধৃতির ভিডিও তৈরি</string>
+    <string name="video_share">শেয়ার</string>
+    <string name="video_chooser_title">উদ্ধৃতির ভিডিও শেয়ার করুন</string>
+    <string name="video_failed">এই উদ্ধৃতি থেকে ভিডিও তৈরি করা গেল না</string>
+    <string name="video_ai_label">AI ভয়েস</string>
+    <string name="video_share_text">“%1$s” (%2$s)</string>
+</resources>

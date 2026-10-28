@@ -5,11 +5,11 @@
 -->
 <resources>
     <string name="sentence_menu_share">शेयर करें…</string>
-    <string name="sentence_hint_share">ऑडियो, तस्वीर या शब्दों के रूप में। तस्वीर पर हमेशा किताब का नाम और लेखक रहते हैं।</string>
+    <string name="sentence_hint_share">ऑडियो, तस्वीर, वीडियो या शब्दों के रूप में। तस्वीर और वीडियो पर हमेशा किताब का नाम और लेखक रहते हैं।</string>
     <string name="share_choices_title">ये पंक्तियाँ शेयर करें</string>
     <string name="share_as_picture">तस्वीर के रूप में शेयर करें</string>
     <string name="share_hint_picture">किताब, लेखक और पृष्ठ के साथ एक कोट कार्ड, स्टेटस, स्टोरी या पोस्ट के नाप में।</string>
-    <string name="share_choices_note">हर तस्वीर पर किताब, उसके लेखक और ListenLock का छोटा निशान रहता है।</string>
+    <string name="share_choices_note">हर तस्वीर और वीडियो पर किताब, उसके लेखक और ListenLock का छोटा निशान रहता है।</string>
 
     <string name="share_card_title">तस्वीर के रूप में शेयर करें</string>
     <string name="share_card_book_title">यह किताब शेयर करें</string>
@@ -39,4 +39,18 @@
     <string name="share_card_now_listening">अभी सुन रहे हैं</string>
     <string name="share_card_book_missing">यह किताब अब आपकी लाइब्रेरी में नहीं है।</string>
     <string name="menu_hint_share_card">किताब के कवर, नाम और लेखक की तस्वीर, किसी भी ऐप में शेयर करने के लिए। ऐप चुनने तक यह फ़ोन में ही रहती है।</string>
+    <string name="share_as_video">वीडियो के रूप में शेयर करें</string>
+    <string name="share_hint_video">पंक्तियाँ किताब की आवाज़ में पढ़ी जाती हैं, हर शब्द बोलते समय चमकता है, एक उद्धरण कार्ड पर। 60 सेकंड तक।</string>
+    <string name="share_card_video_title">वीडियो के रूप में शेयर करें</string>
+    <string name="share_card_kind">किस रूप में</string>
+    <string name="share_card_kind_picture">तस्वीर</string>
+    <string name="share_card_kind_video">वीडियो</string>
+    <string name="share_card_video_preview">वीडियो की शुरुआत का पूर्वावलोकन</string>
+    <string name="share_card_video_quality">वीडियो की गुणवत्ता</string>
+    <string name="share_card_video_standard">सामान्य 720p</string>
+    <string name="share_card_video_sharp">साफ़ 1080p</string>
+    <string name="share_card_video_sharp_note">साफ़ वीडियो बनने में लगभग दोगुना समय लगता है, और फ़ाइल बड़ी होती है।</string>
+    <string name="share_card_make_video">वीडियो बनाएँ</string>
+    <string name="share_card_video_started">वीडियो बन रहा है। तैयार होने पर शेयर करने का विकल्प खुलेगा; सूचना में प्रगति दिखती है।</string>
+    <string name="share_card_video_busy">एक वीडियो पहले से बन रहा है। उसके पूरा होने के बाद फिर से कोशिश करें।</string>
 </resources>

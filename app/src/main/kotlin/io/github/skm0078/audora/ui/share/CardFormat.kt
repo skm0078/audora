@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.playback.R as PlaybackR
 
 /**
  * The picture's size in pixels. 1080 wide is what Instagram, WhatsApp Status and Facebook show at full quality; every
@@ -80,10 +81,11 @@ private fun solid(argb: Long) = SolidColor(Color(argb))
 /**
  * Tiro (Tiro Typeworks, SIL Open Font License 1.1): bookish serifs drawn for Devanagari and Bengali with matching
  * Latin, trimmed to their script and Latin (about 0.2 MB for both). English quotes use Tiro Devanagari Hindi's Latin.
+ * The files live in :playback, whose quote video draws its words with the same fonts (QuoteVideoFonts).
  */
 internal object QuoteFonts {
-    private val devanagari = FontFamily(Font(R.font.tiro_devanagari_hindi_regular))
-    private val bangla = FontFamily(Font(R.font.tiro_bangla_regular))
+    private val devanagari = FontFamily(Font(PlaybackR.font.tiro_devanagari_hindi_regular))
+    private val bangla = FontFamily(Font(PlaybackR.font.tiro_bangla_regular))
 
     fun of(script: Lang): FontFamily = if (script == Lang.BN) bangla else devanagari
 }

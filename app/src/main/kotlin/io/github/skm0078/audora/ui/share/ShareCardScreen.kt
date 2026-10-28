@@ -4,6 +4,7 @@
 
 package io.github.skm0078.audora.ui.share
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -39,12 +40,20 @@ import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.ui.theme.Dimens
 
-/** The listener's choices on the card screen. */
+/**
+ * The listener's choices on the card screen. A [video] is always a story (9:16, what Status, Reels and Shorts show
+ * full screen), at 1080 x 1920 when [sharp], else 720 x 1280.
+ */
 data class CardChoices(
     val shape: CardShape = CardShape.STORY,
     val look: CardLook = CardLook.DUSK,
     val dedication: String = "",
-)
+    val video: Boolean = false,
+    val sharp: Boolean = false,
+) {
+    /** The card's size as drawn: a video's is the story's, whatever size the picture had. */
+    val shownShape: CardShape get() = if (video) CardShape.STORY else shape
+}
 
 /** What the screen's controls do; the route keeps the state and does the work. */
 interface CardScreenActions {
@@ -56,6 +65,9 @@ interface CardScreenActions {
     fun onPickPicture()
 
     fun onShare()
+
+    /** Video mode's button: the card is captured without its words and the video made in the background. */
+    fun onMakeVideo() = Unit
 }
 
 /**
@@ -74,7 +86,11 @@ fun ShareCardScreen(
     BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
         val height = maxHeight
         val sideBySide = maxWidth > height && height < SIDE_BY_SIDE_BELOW
-        val title = if (subject.quote != null) R.string.share_card_title else R.string.share_card_book_title
+        val title = when {
+            subject.quote == null -> R.string.share_card_book_title
+            choices.video -> R.string.share_card_video_title
+            else -> R.string.share_card_title
+        }
         val preview = @Composable { modifier: Modifier ->
             CardPreview(subject, choices, picture, recorder, modifier)
         }
@@ -125,20 +141,23 @@ private fun CardPreview(
     modifier: Modifier,
 ) {
     val look = choices.look
-    val description = stringResource(R.string.share_card_preview)
+    val quote = subject.quote
+    val video = choices.video && quote != null
+    val description = stringResource(if (video) R.string.share_card_video_preview else R.string.share_card_preview)
     ShareCardFrame(
-        choices.shape,
+        choices.shownShape,
         recorder,
         markColor = look.quiet,
         modifier = modifier.semantics { contentDescription = description },
+        overlay = if (video && quote != null) rememberVideoWords(quote, look, choices.shownShape) else null,
     ) {
         val backdrop = if (look == CardLook.PICTURE) picture else subject.softCover
-        val quote = subject.quote
         if (quote != null) {
             QuoteCard(
                 QuoteCardText(quote, subject.title, subject.author, subject.pageLabel, choices.dedication),
                 look,
                 backdrop,
+                quoteShown = !video,
             )
         } else {
             BookCard(
@@ -175,7 +194,12 @@ private fun CardControls(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        ShapeChips(choices.shape) { actions.onChoices(choices.copy(shape = it)) }
+        if (subject.quote != null) KindChips(choices.video) { actions.onChoices(choices.copy(video = it)) }
+        if (choices.video) {
+            QualityChips(choices.sharp) { actions.onChoices(choices.copy(sharp = it)) }
+        } else {
+            ShapeChips(choices.shape) { actions.onChoices(choices.copy(shape = it)) }
+        }
         LookSwatches(
             choices.look,
             hasCover = subject.softCover != null,
@@ -183,12 +207,16 @@ private fun CardControls(
             onPickPicture = actions::onPickPicture,
         )
         DedicationField(choices.dedication) { actions.onChoices(choices.copy(dedication = it)) }
-        ShareButton(busy, actions::onShare)
+        if (choices.video) {
+            ShareButton(busy, R.string.share_card_make_video, actions::onMakeVideo)
+        } else {
+            ShareButton(busy, R.string.share_card_send, actions::onShare)
+        }
     }
 }
 
 @Composable
-private fun ShareButton(busy: Boolean, onShare: () -> Unit) {
+private fun ShareButton(busy: Boolean, @StringRes label: Int, onShare: () -> Unit) {
     Button(
         onClick = onShare,
         enabled = !busy,
@@ -198,7 +226,7 @@ private fun ShareButton(busy: Boolean, onShare: () -> Unit) {
             CircularProgressIndicator(Modifier.size(PROGRESS_SIZE), strokeWidth = PROGRESS_STROKE)
             Spacer(Modifier.width(Dimens.SpaceS))
         }
-        Text(stringResource(R.string.share_card_send), textAlign = TextAlign.Center)
+        Text(stringResource(label), textAlign = TextAlign.Center)
     }
 }
 

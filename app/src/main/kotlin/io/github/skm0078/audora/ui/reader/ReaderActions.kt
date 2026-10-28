@@ -115,6 +115,9 @@ interface ReaderActions {
     /** "Share as a picture" (ADR 2026-10-27-share-cards): [lines] from zero-based [page] as a quote card. */
     fun onSharePicture(lines: String, page: Int) = Unit
 
+    /** "Share as a video" (ADR 2026-10-28-quote-video): [lines] read aloud over a quote card in the book's voice. */
+    fun onShareVideo(lines: String, page: Int) = Unit
+
     /** A fix offered after "This sounded wrong" ([SoundedWrongFixes]). */
     fun onSoundedWrongFix(fix: SoundedWrongFix) = Unit
 

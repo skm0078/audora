@@ -15,8 +15,9 @@ import io.github.skm0078.audora.core.text.TextCuts
 sealed interface ShareCardRequest {
     val book: BookId
 
-    /** [lines] the listener picked, on zero-based [page] when it is known. */
-    data class Quote(override val book: BookId, val lines: String, val page: Int?) : ShareCardRequest
+    /** [lines] the listener picked, on zero-based [page] when it is known; [video] opens the screen on Video. */
+    data class Quote(override val book: BookId, val lines: String, val page: Int?, val video: Boolean = false) :
+        ShareCardRequest
 
     data class WholeBook(override val book: BookId) : ShareCardRequest
 
@@ -24,6 +25,7 @@ sealed interface ShareCardRequest {
         internal const val EXTRA_BOOK = "io.github.skm0078.audora.share.BOOK"
         internal const val EXTRA_LINES = "io.github.skm0078.audora.share.LINES"
         internal const val EXTRA_PAGE = "io.github.skm0078.audora.share.PAGE"
+        internal const val EXTRA_VIDEO = "io.github.skm0078.audora.share.VIDEO"
         private const val NO_PAGE = -1
 
         // A card shows 60 words; this much is plenty to cut them from and keeps the intent small.
@@ -33,7 +35,8 @@ sealed interface ShareCardRequest {
             val book = intent.getStringExtra(EXTRA_BOOK)?.takeIf(String::isNotBlank)?.let(::BookId) ?: return null
             val lines = intent.getStringExtra(EXTRA_LINES)
             val page = intent.getIntExtra(EXTRA_PAGE, NO_PAGE).takeIf { it >= 0 }
-            return if (lines == null) WholeBook(book) else Quote(book, lines, page)
+            val video = intent.getBooleanExtra(EXTRA_VIDEO, false)
+            return if (lines == null) WholeBook(book) else Quote(book, lines, page, video)
         }
 
         internal fun Intent.put(request: ShareCardRequest): Intent = apply {
@@ -41,6 +44,7 @@ sealed interface ShareCardRequest {
             if (request is Quote) {
                 putExtra(EXTRA_LINES, TextCuts.take(request.lines, MAX_LINES_CHARS))
                 putExtra(EXTRA_PAGE, request.page ?: NO_PAGE)
+                putExtra(EXTRA_VIDEO, request.video)
             }
         }
     }
@@ -56,6 +60,10 @@ object ShareEntry {
     /** Lines from a book as a quote card; [page] is zero-based, as the reader counts. */
     fun quote(context: Context, book: BookId, lines: String, page: Int?) =
         open(context, ShareCardRequest.Quote(book, lines, page))
+
+    /** The same lines as a quote video: the card screen opens on Video, read aloud in the book's voice. */
+    fun video(context: Context, book: BookId, lines: String, page: Int?) =
+        open(context, ShareCardRequest.Quote(book, lines, page, video = true))
 
     /** The book itself: cover, title and author. */
     fun book(context: Context, book: BookId) = open(context, ShareCardRequest.WholeBook(book))

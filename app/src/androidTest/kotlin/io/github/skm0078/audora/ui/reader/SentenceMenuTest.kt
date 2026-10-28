@@ -69,6 +69,10 @@ class SentenceMenuTest {
         override fun onSharePicture(lines: String, page: Int) {
             calls += "picture $page: $lines"
         }
+
+        override fun onShareVideo(lines: String, page: Int) {
+            calls += "video $page: $lines"
+        }
     }
 
     private fun text(id: Int) = context.getString(id)
@@ -111,6 +115,17 @@ class SentenceMenuTest {
         rule.onNodeWithText(text(R.string.share_hint_picture)).assertExists()
         rule.onNodeWithText(text(R.string.share_as_picture)).performClick()
         assertEquals(listOf("dismiss", "picture ${PASSAGE.anchor.page}: ${PASSAGE.quote}"), calls)
+    }
+
+    @Test
+    fun shareAsAVideoSendsTheWholeHighlightedQuoteAndItsPage() {
+        val placed = PlacedHighlights(UNIT.page, mapOf(UNIT.index to listOf(PASSAGE)))
+        rule.setContent { AudoraTheme { NotesOverlays(NotesState(menuFor = UNIT, placed = placed), notes, reader) } }
+
+        rule.onNodeWithText(text(R.string.sentence_menu_share)).performScrollTo().performClick()
+        rule.onNodeWithText(text(R.string.share_hint_video)).performScrollTo().assertExists()
+        rule.onNodeWithText(text(R.string.share_as_video)).performScrollTo().performClick()
+        assertEquals(listOf("dismiss", "video ${PASSAGE.anchor.page}: ${PASSAGE.quote}"), calls)
     }
 
     @Test

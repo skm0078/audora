@@ -50,10 +50,11 @@ data class BookCardText(val kicker: String, val title: String, val author: Strin
 /**
  * The quote fills the space between the quote mark and the credit: its size steps down from 34 to 16 card sp until
  * it fits, so a short line reads big on a story and 60 words still fit a square. The credit (title, author, page) is
- * always drawn; there is no way to share a quote without it.
+ * always drawn; there is no way to share a quote without it. Without [quoteShown] the space stays empty: a quote
+ * video's backdrop, whose words the video draws over it, lit one at a time.
  */
 @Composable
-fun QuoteCard(text: QuoteCardText, look: CardLook, background: ImageBitmap?) {
+fun QuoteCard(text: QuoteCardText, look: CardLook, background: ImageBitmap?, quoteShown: Boolean = true) {
     CardBackdrop(look, background) {
         Column(Modifier.fillMaxSize().padding(horizontal = SIDE, vertical = TOP_BOTTOM)) {
             Text(
@@ -63,15 +64,7 @@ fun QuoteCard(text: QuoteCardText, look: CardLook, background: ImageBitmap?) {
                 modifier = Modifier.height(MARK_BOX),
             )
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
-                BasicText(
-                    text.quote.text,
-                    style = TextStyle(
-                        fontFamily = QuoteFonts.of(text.quote.script),
-                        color = look.ink,
-                        lineHeight = QUOTE_LINE_HEIGHT,
-                    ),
-                    autoSize = TextAutoSize.StepBased(QUOTE_MIN, QUOTE_MAX, QUOTE_STEP),
-                )
+                if (quoteShown) QuoteText(text, look)
             }
             Spacer(Modifier.height(SPACE_ABOVE_CREDIT))
             Box(Modifier.width(RULE_WIDTH).height(RULE_HEIGHT).background(look.accent))
@@ -79,6 +72,19 @@ fun QuoteCard(text: QuoteCardText, look: CardLook, background: ImageBitmap?) {
             Credit(text.title, listOfNotNull(text.author, text.pageLabel).joinToString(" · "), text.dedication, look)
         }
     }
+}
+
+@Composable
+private fun QuoteText(text: QuoteCardText, look: CardLook) {
+    BasicText(
+        text.quote.text,
+        style = TextStyle(
+            fontFamily = QuoteFonts.of(text.quote.script),
+            color = look.ink,
+            lineHeight = QUOTE_LINE_HEIGHT,
+        ),
+        autoSize = TextAutoSize.StepBased(QUOTE_MIN, QUOTE_MAX, QUOTE_STEP),
+    )
 }
 
 /** A book on its own, for the library's Share: its cover big in the middle, then what it is. */

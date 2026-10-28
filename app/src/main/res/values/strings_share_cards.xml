@@ -7,11 +7,11 @@
 <resources>
     <!-- The sentence menu's one Share row; it opens the choices below. -->
     <string name="sentence_menu_share">Share…</string>
-    <string name="sentence_hint_share">As audio, as a picture or as words. Pictures always carry the book\'s title and author.</string>
+    <string name="sentence_hint_share">As audio, a picture, a video or words. Pictures and videos always carry the book\'s title and author.</string>
     <string name="share_choices_title">Share these lines</string>
     <string name="share_as_picture">Share as a picture</string>
     <string name="share_hint_picture">A quote card with the book, author and page, sized for Status, Stories or a post.</string>
-    <string name="share_choices_note">Every picture carries the book, its author and a small ListenLock mark.</string>
+    <string name="share_choices_note">Every picture and video carries the book, its author and a small ListenLock mark.</string>
 
     <!-- The quote card screen. -->
     <string name="share_card_title">Share as a picture</string>
@@ -44,4 +44,19 @@
     <string name="share_card_now_listening">Now listening</string>
     <string name="share_card_book_missing">This book is no longer in your library.</string>
     <string name="menu_hint_share_card">A picture of the book\'s cover, title and author to share in any app. It stays on the phone until you pick an app.</string>
+    <!-- Share as a video (ADR 2026-10-28-quote-video): the same card, the lines read aloud over it. -->
+    <string name="share_as_video">Share as a video</string>
+    <string name="share_hint_video">The lines read aloud in the book\'s voice, each word lit as it is said, over a quote card. Up to 60 seconds.</string>
+    <string name="share_card_video_title">Share as a video</string>
+    <string name="share_card_kind">Share as</string>
+    <string name="share_card_kind_picture">Picture</string>
+    <string name="share_card_kind_video">Video</string>
+    <string name="share_card_video_preview">Preview of the video as it starts</string>
+    <string name="share_card_video_quality">Video quality</string>
+    <string name="share_card_video_standard">Standard 720p</string>
+    <string name="share_card_video_sharp">Sharp 1080p</string>
+    <string name="share_card_video_sharp_note">Sharp takes about twice as long to make, and the file is bigger.</string>
+    <string name="share_card_make_video">Make the video</string>
+    <string name="share_card_video_started">Making the video. The share sheet opens when it is ready; the notification shows how far it is.</string>
+    <string name="share_card_video_busy">A video is already being made. Try again when it is done.</string>
 </resources>

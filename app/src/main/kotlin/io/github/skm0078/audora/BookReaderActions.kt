@@ -102,6 +102,9 @@ internal class BookReaderActions(
     override fun onSharePicture(lines: String, page: Int) =
         ShareEntry.quote(context, model.state.value.bookId, lines, page)
 
+    override fun onShareVideo(lines: String, page: Int) =
+        ShareEntry.video(context, model.state.value.bookId, lines, page)
+
     // From the reader, a password-protected PDF can be saved too: its password goes along in memory (ADR-034).
     override fun onSaveAudiobook() = context.startLongJob(LongJobKind.AUDIOBOOK) {
         playWithPermission {

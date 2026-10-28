@@ -77,6 +77,7 @@ import io.github.skm0078.audora.playback.export.LocalChapterFiles
 import io.github.skm0078.audora.playback.export.video.AiVoiceLabel
 import io.github.skm0078.audora.playback.export.video.QuoteVideoFrames
 import io.github.skm0078.audora.playback.export.video.QuoteVideoWriter
+import io.github.skm0078.audora.playback.export.video.QuoteVideos
 import io.github.skm0078.audora.privacy.PrivacyPreferences
 import io.github.skm0078.audora.privacy.PrivacySettings
 import io.github.skm0078.audora.release.JourneyDevice.app
@@ -142,6 +143,7 @@ class ReleaseJourneyTest {
             step("21 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
             step("22 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
             step("23 a quote video is written with the AI voice label", ::aQuoteVideoIsWritten)
+            step("25 Share as a video reads the quote in the book's voice into an MP4", ::aQuoteVideoIsShared)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -791,6 +793,39 @@ class ReleaseJourneyTest {
         return flags and WindowManager.LayoutParams.FLAG_SECURE != 0
     }
 
+    /**
+     * "Share as a video" on the installed app (ADR 2026-10-28-quote-video): the card screen opens on Video, Make the
+     * video captures the card without its words, and the service reads the quote in the book's own voice into a
+     * 720 x 1280 MP4 with both tracks in the video share folder; then Back returns to the app. The permission is
+     * granted first so the progress notification is part of the run (step 04 already covered refusing it).
+     */
+    private fun aQuoteVideoIsShared() {
+        val entry = LibraryEntryPoint.of(app)
+        val book = runBlocking { entry.library().books().first() }.first { it.format == DocumentFormat.PDF }
+        val folder = File(app.cacheDir, QuoteVideos.FOLDER).apply { deleteRecursively() }
+        JourneyDevice.shell("pm grant ${app.packageName} ${Manifest.permission.POST_NOTIFICATIONS}")
+        val reader = activity()
+        JourneyDevice.onMain { ShareEntry.video(reader, book.id, VIDEO_QUOTE, page = 0) }
+        waitForNode(hasText(text(R.string.share_card_video_title)), OPEN_TIMEOUT_MS)
+        node(hasText(text(R.string.share_card_make_video)) and hasClickAction()).performScrollTo().performClick()
+        val video = { folder.listFiles()?.firstOrNull { it.name.endsWith(".mp4") } }
+        awaitTrue("the video in the share folder", VIDEO_TIMEOUT_MS, { "Files: ${folder.list()?.toList()}" }) {
+            video() != null && !QuoteVideos.busy
+        }
+        MediaMetadataRetriever().use { made ->
+            made.setDataSource(requireNotNull(video()).path)
+            assertEquals("720", made.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH))
+            assertEquals("1280", made.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT))
+            assertEquals("yes", made.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO))
+        }
+        repeat(MAX_BACKS) {
+            if (JourneyDevice.resumedActivity() is MainActivity) return@repeat
+            JourneyDevice.pressBackKey()
+            Thread.sleep(POLL_MS)
+        }
+        awaitTrue("the reader back on screen") { JourneyDevice.resumedActivity() is MainActivity }
+    }
+
     private companion object {
         const val SUPERTONIC = "supertonic-hi"
         const val LOG_TAG = "ReleaseJourney"
@@ -836,6 +871,9 @@ class ReleaseJourneyTest {
         const val UI_TIMEOUT_MS = 15_000L
         const val NAME_MARK = "\u0001"
         const val OPEN_TIMEOUT_MS = 60_000L
+
+        // The voice renders the quote, then the frames are encoded; an emulator without a GPU is slow at both.
+        const val VIDEO_TIMEOUT_MS = 300_000L
         const val PLAY_TIMEOUT_MS = 90_000L
         const val OCR_DOWNLOAD_TIMEOUT_MS = 360_000L
 
