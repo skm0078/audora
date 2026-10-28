@@ -109,6 +109,9 @@ internal class ShareJourney(
         // Any page's picture: its description after the page number is the same on every page.
         val pageImage = hasContentDescription(text(R.string.reader_page_image, 1).substringAfter("1"), substring = true)
         waitForNode(pageImage, OPEN_TIMEOUT_MS)
+        // The reader's one-time tips, if no earlier test cleared them, leave the page a sliver of the screen.
+        val gotIt = hasText(text(R.string.gesture_tips_got_it)) and hasClickAction()
+        if (rule.shows(gotIt)) tap(gotIt)
         val menu = hasText(text(R.string.sentence_menu_share))
         // A long-press on a line opens its menu; the test page's text starts below its heading, so a few are tried.
         val opened = SNIPPET_PRESS_POINTS.any { (u, v) ->
