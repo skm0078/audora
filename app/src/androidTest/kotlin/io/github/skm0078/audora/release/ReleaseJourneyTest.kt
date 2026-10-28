@@ -164,27 +164,32 @@ class ReleaseJourneyTest {
             step("27 Turn pages shows a text book a screenful at a time with its arrows") {
                 share.aTextBookTurnsPages(MORE_FORMATS.first())
             }
-            step("28 a text turn slides in and settles where the text was") {
-                share.aTextTurnSlidesAndSettles(MORE_FORMATS.first())
-            }
-            step(
-                "29 a story's women and men each get a voice of their own gender",
-                CharacterJourney::womenAndMenGetVoicesOfTheirGender,
-            )
-            val stats = StatsJourney(rule, ::backToTabs)
-            step(
-                "30 the stats screen opens and its card is saved and shared",
-                stats::theStatsScreenOpensAndItsCardIsSavedAndShared,
-            )
-            step("43 arrows, maths and emoji reach the voice as words or not at all") {
-                SymbolJourney.symbolsAreSaidOrLeftOut()
-            }
+            laterSteps(share)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
                 port?.release()
             }
             scenario?.close()
+        }
+    }
+
+    /** Steps 28 on, kept apart so the journey's main body stays within detekt's method length. */
+    private fun laterSteps(share: ShareJourney) {
+        step("28 a text turn slides in and settles where the text was") {
+            share.aTextTurnSlidesAndSettles(MORE_FORMATS.first())
+        }
+        step(
+            "29 a story's women and men each get a voice of their own gender",
+            CharacterJourney::womenAndMenGetVoicesOfTheirGender,
+        )
+        val stats = StatsJourney(rule, ::backToTabs)
+        step(
+            "30 the stats screen opens and its card is saved and shared",
+            stats::theStatsScreenOpensAndItsCardIsSavedAndShared,
+        )
+        step("43 arrows, maths and emoji reach the voice as words or not at all") {
+            SymbolJourney.symbolsAreSaidOrLeftOut()
         }
     }
 
