@@ -75,6 +75,7 @@ internal fun actionIcon(action: BookAction): Int = when (action) {
     BookAction.ACCESSIBLE_COPY -> R.drawable.ic_article
     BookAction.TALKING_BOOK -> R.drawable.ic_talking_book
     BookAction.EXPORT_NOTES -> R.drawable.ic_bookmark_border
+    BookAction.SHARE_CARD -> R.drawable.ic_share
     BookAction.CHARACTER_GUIDE -> R.drawable.ic_person
     BookAction.MARK_FINISHED, BookAction.MARK_NOT_STARTED -> R.drawable.ic_check
 }

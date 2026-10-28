@@ -26,6 +26,9 @@ enum class BookAction(@StringRes val label: Int, @StringRes val hint: Int, val p
     /** The book's highlights, bookmarks and voice notes as Markdown and text (plan item 30). */
     EXPORT_NOTES(R.string.library_export_notes, R.string.menu_hint_export_notes, MenuPlace.SAVE_AS),
 
+    /** The book as a picture to share: cover, title and author (ADR 2026-10-27-share-cards); a big button. */
+    SHARE_CARD(R.string.share_card_book_title, R.string.menu_hint_share_card, MenuPlace.QUICK),
+
     /** The listener's own list of who is who, shown up to where they are (plan item 80); in the book's details. */
     CHARACTER_GUIDE(R.string.library_character_guide, R.string.menu_hint_character_guide, MenuPlace.DETAILS),
 

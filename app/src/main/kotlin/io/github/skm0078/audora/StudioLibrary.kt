@@ -55,6 +55,7 @@ import io.github.skm0078.audora.ui.library.LibraryAction
 import io.github.skm0078.audora.ui.library.WatchedFoldersRoute
 import io.github.skm0078.audora.ui.library.restartForRestore
 import io.github.skm0078.audora.ui.quiz.QuizRoute
+import io.github.skm0078.audora.ui.share.ShareEntry
 import io.github.skm0078.audora.ui.stats.ListeningStatsRoute
 import io.github.skm0078.audora.ui.studio.StudioAudioActions
 import io.github.skm0078.audora.ui.studio.StudioAudioRoute
@@ -117,6 +118,8 @@ internal class StudioLibrary(
         }
 
         BookAction.EXPORT_NOTES -> parts.activity.exportNotes(parts.activity.lifecycleScope, parts.notes, book)
+
+        BookAction.SHARE_CARD -> ShareEntry.book(parts.activity, book.id)
 
         BookAction.CHARACTER_GUIDE -> guideBookId.value = book.id.value
 

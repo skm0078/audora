@@ -24,9 +24,9 @@ class BookMenuChoicesTest {
     )
 
     @Test
-    fun `a book being read gets Play, Up next and an unpressed Finished`() {
+    fun `a book being read gets Play, Up next, Share and an unpressed Finished`() {
         assertEquals(
-            listOf(QuickChoice.Play, QuickChoice.UpNext, QuickChoice.Finished(finished = false)),
+            listOf(QuickChoice.Play, QuickChoice.UpNext, SHARE, QuickChoice.Finished(finished = false)),
             BookMenuChoices.of(item(page = 4)).quick,
         )
     }
@@ -40,7 +40,7 @@ class BookMenuChoicesTest {
 
     @Test
     fun `a book never opened has no Finished button, since its length is unknown`() {
-        assertEquals(listOf(QuickChoice.Play, QuickChoice.UpNext), BookMenuChoices.of(item(pageCount = null)).quick)
+        assertEquals(listOf(QuickChoice.Play, QuickChoice.UpNext, SHARE), BookMenuChoices.of(item(pageCount = null)).quick)
     }
 
     @Test
@@ -85,5 +85,6 @@ class BookMenuChoicesTest {
 
     private companion object {
         const val MAX_LINES = 8
+        val SHARE = QuickChoice.Action(BookAction.SHARE_CARD)
     }
 }

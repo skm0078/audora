@@ -42,5 +42,6 @@ class BookActionTest {
     @Test
     fun `the other actions always apply`() {
         assertEquals(true, BookAction.STUDIO.appliesTo(item(pageCount = null, page = null)))
+        assertEquals(true, BookAction.SHARE_CARD.appliesTo(item(pageCount = null, page = null)))
     }
 }

@@ -111,7 +111,8 @@ private fun quickIcon(choice: QuickChoice): Int = when (choice) {
 private fun quickLabel(choice: QuickChoice): Int = when (choice) {
     QuickChoice.Play -> R.string.menu_play
     QuickChoice.UpNext -> R.string.up_next_title
-    is QuickChoice.Action -> choice.action.label
+    // The big buttons are a quarter of the sheet wide: Share, not Share this book (the row label and the hint keep it).
+    is QuickChoice.Action -> if (choice.action == BookAction.SHARE_CARD) R.string.menu_quick_share else choice.action.label
     is QuickChoice.Finished -> R.string.library_status_finished
 }
 
