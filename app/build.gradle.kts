@@ -157,8 +157,10 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
 
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(testFixtures(project(":core")))
 
     // Compose UI tests of the main flows on the CI emulator, hosted in a plain ComponentActivity with fakes.
+    androidTestImplementation(testFixtures(project(":core")))
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.runner)
