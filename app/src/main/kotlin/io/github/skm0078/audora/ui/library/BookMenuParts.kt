@@ -143,12 +143,18 @@ private fun quickLabel(choice: QuickChoice): Int = when (choice) {
 }
 
 /**
- * Save as, closed until tapped so the menu stays short; open, its tiles sit two to a row, the same size, with a line
- * each on what comes out. The info button holds the long text for all of them: where each file goes, what it costs.
+ * Save as, closed until tapped so the menu stays short ([startsOpen] where there is room, as in the book pane); open,
+ * its tiles sit two to a row, the same size, with a line each on what comes out. The info button holds the long text
+ * for all of them: where each file goes, what it costs.
  */
 @Composable
-internal fun SaveAsCard(choices: List<SaveChoice>, modifier: Modifier = Modifier, onChoose: (SaveChoice) -> Unit) {
-    var open by rememberSaveable { mutableStateOf(false) }
+internal fun SaveAsCard(
+    choices: List<SaveChoice>,
+    modifier: Modifier = Modifier,
+    startsOpen: Boolean = false,
+    onChoose: (SaveChoice) -> Unit,
+) {
+    var open by rememberSaveable { mutableStateOf(startsOpen) }
     val colours = MaterialTheme.colorScheme
     Surface(
         modifier.fillMaxWidth().padding(vertical = Dimens.SpaceXs),

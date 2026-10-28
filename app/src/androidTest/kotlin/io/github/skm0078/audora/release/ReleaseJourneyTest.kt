@@ -37,6 +37,7 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToIndexAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.isToggleable
@@ -87,9 +88,11 @@ import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceLibrary
 import io.github.skm0078.audora.speech.voices.VoiceStatus
 import io.github.skm0078.audora.ui.firstrun.FirstRunStep
+import io.github.skm0078.audora.ui.library.BOOK_PANE_TAG
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
 import io.github.skm0078.audora.ui.reader.ReadingPosition
+import io.github.skm0078.audora.ui.reader.SIDE_PANEL_TAG
 import io.github.skm0078.audora.ui.share.ShareCardActivity
 import io.github.skm0078.audora.ui.share.ShareCardFiles
 import io.github.skm0078.audora.ui.share.ShareEntry
@@ -142,6 +145,10 @@ class ReleaseJourneyTest {
             step("21 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
             step("22 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
             step("23 a quote video is written with the AI voice label", ::aQuoteVideoIsWritten)
+            step(
+                "24 a phone keeps the reader's bookmarks sheet and the library has no book pane",
+                ::aPhoneKeepsTheSheets,
+            )
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -790,6 +797,25 @@ class ReleaseJourneyTest {
         JourneyDevice.onMain { flags = activity.window.attributes.flags }
         return flags and WindowManager.LayoutParams.FLAG_SECURE != 0
     }
+
+    /**
+     * The emulator is a phone: the reader (still open from step 22) has no side panel and its Bookmarks button opens
+     * the sheet; the library has no book pane (ADR 2026-10-28-tablet-panes).
+     */
+    private fun aPhoneKeepsTheSheets() {
+        waitForNode(hasContentDescription(text(R.string.bookmarks_title)) and hasClickAction(), OPEN_TIMEOUT_MS)
+        assertTrue("no side panel on a phone", none(hasTestTag(SIDE_PANEL_TAG)))
+        tap(hasContentDescription(text(R.string.bookmarks_title)) and hasClickAction())
+        waitForNode(hasText(text(R.string.bookmarks_add_here)))
+        tap(sheetHandle())
+        gone(hasText(text(R.string.bookmarks_add_here)))
+        backToTabs()
+        tapText(R.string.tab_library)
+        waitForNode(hasText(text(R.string.library_title)))
+        assertTrue("no book pane on a phone", none(hasTestTag(BOOK_PANE_TAG)))
+    }
+
+    private fun none(matcher: SemanticsMatcher): Boolean = rule.onAllNodes(matcher).fetchSemanticsNodes().isEmpty()
 
     private companion object {
         const val SUPERTONIC = "supertonic-hi"
