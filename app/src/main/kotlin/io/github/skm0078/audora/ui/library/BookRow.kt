@@ -1,12 +1,13 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/BookRow.kt
-// Purpose: A library book as a list row or a grid tile: cover, title, progress, a warning when the file is gone, menu.
+// Purpose: A library book as a list row or a grid tile: cover, title, progress, a warning when the file is gone, menu
+//          (a long press opens it too).
 
 package io.github.skm0078.audora.ui.library
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,7 +18,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +40,7 @@ import io.github.skm0078.audora.core.library.LibraryError
 import io.github.skm0078.audora.ui.jobs.JobProgressBar
 import io.github.skm0078.audora.ui.jobs.jobStatus
 import io.github.skm0078.audora.ui.jobs.runningJobFor
+import io.github.skm0078.audora.ui.kids.LocalKidsMode
 
 @Composable
 internal fun BookRow(
@@ -47,7 +52,10 @@ internal fun BookRow(
     onAddToUpNext: () -> Unit = {},
     onDetails: () -> Unit = {},
     onAction: (BookAction) -> Unit = {},
+    onPlay: () -> Unit = {},
 ) {
+    var menuOpen by rememberSaveable(item.book.id.value) { mutableStateOf(false) }
+    val kids = LocalKidsMode.current
     ListItem(
         leadingContent = { BookCover(item.book, covers, Modifier.size(COVER_WIDTH, COVER_HEIGHT)) },
         headlineContent = {
@@ -69,9 +77,18 @@ internal fun BookRow(
                 }
             }
         },
-        trailingContent = { BookMenu(item, onRemove, onExport, onAddToUpNext, onDetails, onAction) },
-        modifier = Modifier.clickable(onClickLabel = stringResource(R.string.a11y_open_book), onClick = onTap),
+        trailingContent = { BookMenuButton(item) { menuOpen = true } },
+        modifier = Modifier.combinedClickable(
+            onClickLabel = stringResource(R.string.a11y_open_book),
+            onLongClickLabel = stringResource(R.string.library_book_menu_named, displayTitle(item.book)),
+            onLongClick = if (kids) null else ({ menuOpen = true }),
+            onClick = onTap,
+        ),
     )
+    if (menuOpen) {
+        val actions = BookMenuActions(onPlay, onAddToUpNext, onExport, onDetails, onRemove, onAction)
+        BookMenuSheet(item, covers, actions) { menuOpen = false }
+    }
 }
 
 @Composable

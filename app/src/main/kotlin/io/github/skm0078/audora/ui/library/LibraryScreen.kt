@@ -65,7 +65,11 @@ import io.github.skm0078.audora.ui.theme.AudoraTheme
 import io.github.skm0078.audora.ui.theme.Dimens
 import kotlinx.coroutines.withTimeoutOrNull
 
-/** [runningJobs]: how many jobs and downloads work now, for the badge on the Jobs button (ADR-067). */
+/**
+ * [runningJobs]: how many jobs and downloads work now, for the badge on the Jobs button (ADR-067). [view]: grid or
+ * list as picked in the sort sheet; the books wait the few milliseconds the saved choice takes to read, so they never
+ * jump from one layout to the other on opening.
+ */
 @Composable
 fun LibraryScreen(
     listState: LibraryListState,
@@ -77,6 +81,7 @@ fun LibraryScreen(
     banner: @Composable () -> Unit = {},
     covers: CoverSource = CoverSource.None,
     runningJobs: Int = 0,
+    view: LibraryLayoutState = LibraryLayoutState(LibraryLayout.AUTO) {},
 ) {
     val snackbar = remember { SnackbarHostState() }
     // Saveable: the picker can outlive this process, and its result must still reach the right book.
@@ -102,7 +107,7 @@ fun LibraryScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         contentWindowInsets = TAB_INSETS,
-        topBar = { LibraryTopBar(listState, actions, runningJobs) },
+        topBar = { LibraryTopBar(listState, actions, runningJobs, view) },
         floatingActionButton = {
             if (!LocalKidsMode.current && listState is LibraryListState.Loaded && listState.all.isNotEmpty()) {
                 AddBookButton { if (!busy) pickPdf() }
@@ -128,6 +133,7 @@ fun LibraryScreen(
                 covers = covers,
                 menu = actions,
                 onDetails = { details = it.book.id.value },
+                layout = view.layout,
             )
         }
     }
@@ -145,7 +151,12 @@ private fun LibraryContent(
     covers: CoverSource,
     menu: LibraryActions,
     onDetails: (LibraryItem) -> Unit,
+    layout: LibraryLayout?,
 ) {
+    if (layout == null) {
+        Centered { CircularProgressIndicator() }
+        return
+    }
     when (listState) {
         LibraryListState.Loading -> Centered { CircularProgressIndicator() }
 
@@ -173,8 +184,7 @@ private fun LibraryContent(
                     }
                 } else {
                     val books = BookCallbacks(onTap, menu, onDetails)
-                    // At 150 % text and above, two lines of title no longer fit under a cover: a list (item 39).
-                    if (LocalDensity.current.fontScale >= LARGE_TEXT_SCALE) {
+                    if (layout.showsList(LocalDensity.current.fontScale)) {
                         BookList(listState, books, covers)
                     } else {
                         BookGrid(listState, books, covers)
@@ -211,6 +221,7 @@ private class BookCallbacks(
     val onContinue: (Book) -> Unit = actions::onContinue
     val onAddToUpNext: (Book) -> Unit = actions::onAddToUpNext
     val onAction: (Book, BookAction) -> Unit = actions::onBookAction
+    val onPlay: (Book) -> Unit = actions::onContinue
 }
 
 @Composable
@@ -246,6 +257,7 @@ private fun BookGrid(list: LibraryListState.Loaded, books: BookCallbacks, covers
                 onAddToUpNext = { books.onAddToUpNext(item.book) },
                 onDetails = { books.onDetails(item) },
                 onAction = { action -> books.onAction(item.book, action) },
+                onPlay = { books.onPlay(item.book) },
             )
         }
     }
@@ -280,6 +292,7 @@ private fun BookList(list: LibraryListState.Loaded, books: BookCallbacks, covers
                     onAddToUpNext = { books.onAddToUpNext(item.book) },
                     onDetails = { books.onDetails(item) },
                     onAction = { action -> books.onAction(item.book, action) },
+                    onPlay = { books.onPlay(item.book) },
                 )
                 HorizontalDivider()
             }
@@ -349,9 +362,6 @@ private val FAB_CLEARANCE = 88.dp
 /** The app shell's bottom bar takes the bottom inset (ADR-036). */
 private val TAB_INSETS: WindowInsets
     @Composable get() = ScaffoldDefaults.contentWindowInsets.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
-
-/** Font scale from which the grid becomes a list (item 39). */
-private const val LARGE_TEXT_SCALE = 1.5f
 
 /** Book ids are UUIDs, so this key never clashes with a row's. */
 private const val CONTINUE_KEY = "continue-reading"

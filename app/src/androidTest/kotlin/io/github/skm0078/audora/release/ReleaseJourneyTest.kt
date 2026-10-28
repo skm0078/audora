@@ -23,7 +23,9 @@ import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
 import androidx.annotation.OptIn
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.SemanticsMatcher
@@ -118,6 +120,7 @@ class ReleaseJourneyTest {
             step("17 an exported chapter carries the book's cover", ::anExportedChapterCarriesTheCover)
             step("18 the app font draws English, Hindi and Bengali", ::theAppFontDrawsAllThreeScripts)
             step("19 the four places open and Jobs goes back to Made", ::theFourPlacesOpenAndJobsLiveInMade)
+            step("20 the book menu's Save as opens and the sort sheet turns covers to a list", ::bookMenuAndSortSheet)
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
@@ -598,6 +601,33 @@ class ReleaseJourneyTest {
         waitForNode(hasText(text(R.string.library_title)))
     }
 
+    /**
+     * A book's menu shows its big buttons and opens Save as in place; the sort sheet's List shows rows at once and
+     * Reset brings the covers back. Sheets close by their handle: Back reaches the activity, not the sheet's window.
+     */
+    private fun bookMenuAndSortSheet() {
+        // The words around the book's name, whichever side of it they sit in this language.
+        val namedMenu = text(R.string.library_book_menu_named, NAME_MARK).split(NAME_MARK).maxBy { it.length }.trim()
+        tap(hasContentDescription(namedMenu, substring = true))
+        waitForNode(hasText(text(R.string.menu_play)))
+        tapText(R.string.menu_save_as)
+        waitForNode(hasText(text(R.string.menu_save_audiobook)))
+        tap(hasContentDescription(text(R.string.a11y_sheet_close)))
+        gone(hasText(text(R.string.menu_play)))
+
+        val openBook = text(R.string.a11y_open_book)
+        val listRow = SemanticsMatcher("a list row") { node ->
+            node.config.getOrNull(SemanticsActions.OnClick)?.label == openBook
+        }
+        tap(hasContentDescription(text(R.string.library_sort_filter)))
+        tapText(R.string.library_layout_list)
+        waitForNode(listRow)
+        tapText(R.string.library_sort_reset)
+        gone(listRow)
+        tap(hasContentDescription(text(R.string.a11y_sheet_close)))
+        gone(hasText(text(R.string.library_sort_reset)))
+    }
+
     /** One Anek file on its own, at the weight it was trimmed to. */
     private fun own(file: Int, weight: AppFont.Weight): Typeface = Typeface.CustomFallbackBuilder(
         PlatformFontFamily.Builder(Font.Builder(app.resources, file).build()).build(),
@@ -675,6 +705,7 @@ class ReleaseJourneyTest {
         const val HOLD_MS = 2_000L
         const val PERMISSION_PROMPT_MS = 5_000L
         const val UI_TIMEOUT_MS = 15_000L
+        const val NAME_MARK = "\u0001"
         const val OPEN_TIMEOUT_MS = 60_000L
         const val PLAY_TIMEOUT_MS = 90_000L
         const val OCR_DOWNLOAD_TIMEOUT_MS = 360_000L
