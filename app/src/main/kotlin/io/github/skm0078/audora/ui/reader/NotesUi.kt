@@ -80,7 +80,7 @@ fun NotesOverlays(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BookmarksSheet(
     bookmarks: List<Bookmark>,
@@ -89,46 +89,73 @@ private fun BookmarksSheet(
     voice: VoiceNotesBinding,
 ) {
     AppSheet(onDismissRequest = actions::hideList) {
-        Column(Modifier.navigationBarsPadding().padding(bottom = Dimens.SpaceL)) {
-            // Wraps "Bookmark here" under the title when both do not fit, rather than squeezing the title.
-            FlowRow(
-                Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                itemVerticalAlignment = Alignment.CenterVertically,
-            ) {
+        BookmarksList(
+            bookmarks,
+            actions,
+            reader,
+            voice,
+            onOpened = actions::hideList,
+            modifier = Modifier.navigationBarsPadding().padding(bottom = Dimens.SpaceL),
+        )
+    }
+}
+
+/**
+ * The book's bookmarks and voice notes, with "Bookmark here": in the bookmarks sheet, or in the reader's side panel on
+ * a wide screen. [onOpened] runs after one is opened (the sheet closes; the panel stays).
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun BookmarksList(
+    bookmarks: List<Bookmark>,
+    actions: BookNotesActions,
+    reader: ReaderActions,
+    voice: VoiceNotesBinding,
+    onOpened: () -> Unit,
+    modifier: Modifier = Modifier,
+    titled: Boolean = true,
+) {
+    Column(modifier) {
+        // Wraps "Bookmark here" under the title when both do not fit, rather than squeezing the title.
+        FlowRow(
+            Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceXl),
+            horizontalArrangement = if (titled) Arrangement.SpaceBetween else Arrangement.End,
+            itemVerticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (titled) {
                 Text(
                     stringResource(R.string.bookmarks_title),
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.semantics { heading() },
                 )
-                TextButton(onClick = reader::onBookmarkHere) { Text(stringResource(R.string.bookmarks_add_here)) }
             }
-            if (bookmarks.isEmpty()) {
-                Text(
-                    stringResource(R.string.bookmarks_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceL),
+            TextButton(onClick = reader::onBookmarkHere) { Text(stringResource(R.string.bookmarks_add_here)) }
+        }
+        if (bookmarks.isEmpty()) {
+            Text(
+                stringResource(R.string.bookmarks_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceL),
+            )
+        }
+        LazyColumn {
+            items(bookmarks, key = { it.id }) { bookmark ->
+                BookmarkRow(
+                    bookmark,
+                    onOpen = {
+                        onOpened()
+                        reader.onBookmark(bookmark)
+                    },
+                    onEdit = { actions.editNote(bookmark) },
+                    onDelete = { actions.delete(bookmark) },
                 )
+                HorizontalDivider()
             }
-            LazyColumn {
-                items(bookmarks, key = { it.id }) { bookmark ->
-                    BookmarkRow(
-                        bookmark,
-                        onOpen = {
-                            actions.hideList()
-                            reader.onBookmark(bookmark)
-                        },
-                        onEdit = { actions.editNote(bookmark) },
-                        onDelete = { actions.delete(bookmark) },
-                    )
-                    HorizontalDivider()
-                }
-                // A voice note opens where it was recorded, found again the way a bookmark is.
-                voiceNoteItems(voice) { note ->
-                    actions.hideList()
-                    reader.onBookmark(Bookmark(0, note.anchor))
-                }
+            // A voice note opens where it was recorded, found again the way a bookmark is.
+            voiceNoteItems(voice) { note ->
+                onOpened()
+                reader.onBookmark(Bookmark(0, note.anchor))
             }
         }
     }

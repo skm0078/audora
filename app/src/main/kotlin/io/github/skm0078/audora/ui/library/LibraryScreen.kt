@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
@@ -87,6 +89,7 @@ fun LibraryScreen(
     // Saveable: the picker can outlive this process, and its result must still reach the right book.
     var locating by rememberSaveable { mutableStateOf<String?>(null) }
     var details by rememberSaveable { mutableStateOf<String?>(null) } // the book whose details sheet is open
+    var picked by rememberSaveable { mutableStateOf<String?>(null) } // the book the wide screen's pane shows
     val addPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let(actions::onAddPdf)
     }
@@ -104,42 +107,95 @@ fun LibraryScreen(
     val duplicate = message?.let(::duplicateOf)
     MessageEffect(message.takeIf { duplicate == null }, snackbar, actions::onUndoRemoval, actions::onMessageShown)
 
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        val loaded = listState as? LibraryListState.Loaded
+        val pane = loaded?.takeIf { showsBookPane(maxWidth, LocalKidsMode.current) }?.let { paneBook(it, picked) }
+        val onTap: (LibraryItem) -> Unit = { item ->
+            when {
+                item.needsLocating -> {
+                    locating = item.book.id.value
+                    locatePicker.launch(BOOK_MIME_TYPES)
+                }
+
+                // Beside the pane a first tap picks the book; a tap on the picked one opens it.
+                pane != null && pane.book.id != item.book.id -> picked = item.book.id.value
+
+                else -> actions.onOpenBook(item.book)
+            }
+        }
+        Row(Modifier.fillMaxSize()) {
+            LibraryMain(
+                listState = listState,
+                busy = busy,
+                actions = actions,
+                snackbar = snackbar,
+                onAddPdf = pickPdf,
+                onTap = onTap,
+                onDetails = { details = it.book.id.value },
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                parts = LibraryParts(banner, covers, runningJobs, view),
+                picked = pane?.let { shown -> PanePick(shown.book.id.value) { picked = it.book.id.value } },
+            )
+            pane?.let { shown ->
+                val choices = paneActions(shown.book, actions) { details = shown.book.id.value }
+                BookPane(shown, covers, choices, onOpen = { actions.onOpenBook(shown.book) })
+            }
+        }
+    }
+    BookSheets(listState, actions, covers, details) { details = null }
+    pendingRemoval?.let { RemovalDialog(it, actions) }
+    duplicate?.let { DuplicateDialog(it, listState, actions) }
+}
+
+/** What the library's frame shows besides the books: the banner, covers, the Jobs badge and grid or list. */
+private class LibraryParts(
+    val banner: @Composable () -> Unit,
+    val covers: CoverSource,
+    val runningJobs: Int,
+    val view: LibraryLayoutState,
+)
+
+/** The top bar, the books and Add book; beside the book pane ([picked]) the pane keeps clear of the end side. */
+@Composable
+private fun LibraryMain(
+    listState: LibraryListState,
+    busy: Boolean,
+    actions: LibraryActions,
+    snackbar: SnackbarHostState,
+    onAddPdf: () -> Unit,
+    onTap: (LibraryItem) -> Unit,
+    onDetails: (LibraryItem) -> Unit,
+    modifier: Modifier,
+    parts: LibraryParts,
+    picked: PanePick?,
+) {
     Scaffold(
-        modifier = modifier.fillMaxSize(),
-        contentWindowInsets = TAB_INSETS,
-        topBar = { LibraryTopBar(listState, actions, runningJobs, view) },
+        modifier = modifier,
+        contentWindowInsets = if (picked == null) TAB_INSETS else BESIDE_PANE_INSETS,
+        topBar = { LibraryTopBar(listState, actions, parts.runningJobs, parts.view) },
         floatingActionButton = {
             if (!LocalKidsMode.current && listState is LibraryListState.Loaded && listState.all.isNotEmpty()) {
-                AddBookButton { if (!busy) pickPdf() }
+                AddBookButton { if (!busy) onAddPdf() }
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             if (busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            banner()
+            parts.banner()
             LibraryContent(
                 listState = listState,
                 busy = busy,
-                onAddPdf = pickPdf,
-                onTap = { item ->
-                    if (item.needsLocating) {
-                        locating = item.book.id.value
-                        locatePicker.launch(BOOK_MIME_TYPES)
-                    } else {
-                        actions.onOpenBook(item.book)
-                    }
-                },
-                covers = covers,
+                onAddPdf = onAddPdf,
+                onTap = onTap,
+                covers = parts.covers,
                 menu = actions,
-                onDetails = { details = it.book.id.value },
-                layout = view.layout,
+                onDetails = onDetails,
+                layout = parts.view.layout,
+                picked = picked,
             )
         }
     }
-    BookSheets(listState, actions, covers, details) { details = null }
-    pendingRemoval?.let { RemovalDialog(it, actions) }
-    duplicate?.let { DuplicateDialog(it, listState, actions) }
 }
 
 @Composable
@@ -152,6 +208,7 @@ private fun LibraryContent(
     menu: LibraryActions,
     onDetails: (LibraryItem) -> Unit,
     layout: LibraryLayout?,
+    picked: PanePick? = null,
 ) {
     if (layout == null) {
         Centered { CircularProgressIndicator() }
@@ -183,7 +240,7 @@ private fun LibraryContent(
                         )
                     }
                 } else {
-                    val books = BookCallbacks(onTap, menu, onDetails)
+                    val books = BookCallbacks(onTap, menu, onDetails, picked)
                     if (layout.showsList(LocalDensity.current.fontScale)) {
                         BookList(listState, books, covers)
                     } else {
@@ -210,11 +267,12 @@ private fun RemovalDialog(book: Book, actions: LibraryActions) {
     )
 }
 
-/** What a tap on a book, its menu or the Continue button does. */
+/** What a tap on a book, its menu or the Continue button does; [picked] beside the wide screen's book pane. */
 private class BookCallbacks(
     val onTap: (LibraryItem) -> Unit,
     actions: LibraryActions,
     val onDetails: (LibraryItem) -> Unit,
+    val picked: PanePick?,
 ) {
     val onRemove: (Book) -> Unit = actions::onRequestRemoval
     val onExport: (Book) -> Unit = actions::onExportAudiobook
@@ -222,7 +280,13 @@ private class BookCallbacks(
     val onAddToUpNext: (Book) -> Unit = actions::onAddToUpNext
     val onAction: (Book, BookAction) -> Unit = actions::onBookAction
     val onPlay: (Book) -> Unit = actions::onContinue
+
+    fun pane(item: LibraryItem): PaneChoice? =
+        picked?.let { pick -> PaneChoice(item.book.id.value == pick.shownId) { pick.onPick(item) } }
 }
+
+/** Beside the book pane: the book it shows, and how a ⋮ or a long press picks another one for it. */
+private class PanePick(val shownId: String, val onPick: (LibraryItem) -> Unit)
 
 @Composable
 private fun BookGrid(list: LibraryListState.Loaded, books: BookCallbacks, covers: CoverSource) {
@@ -258,6 +322,7 @@ private fun BookGrid(list: LibraryListState.Loaded, books: BookCallbacks, covers
                 onDetails = { books.onDetails(item) },
                 onAction = { action -> books.onAction(item.book, action) },
                 onPlay = { books.onPlay(item.book) },
+                pane = books.pane(item),
             )
         }
     }
@@ -293,37 +358,12 @@ private fun BookList(list: LibraryListState.Loaded, books: BookCallbacks, covers
                     onDetails = { books.onDetails(item) },
                     onAction = { action -> books.onAction(item.book, action) },
                     onPlay = { books.onPlay(item.book) },
+                    pane = books.pane(item),
                 )
                 HorizontalDivider()
             }
         }
     }
-}
-
-/**
- * Plan item 27: a picked PDF the library already has. Audora keeps one copy, never a second: the fingerprint keys the
- * book's place, so two copies would fight over it (ADR-036). The dialog says so and offers the book.
- */
-@Composable
-private fun DuplicateDialog(notice: DuplicateNotice, listState: LibraryListState, actions: LibraryActions) {
-    val title = titleOrUntitled(notice.title)
-    val onDismiss = actions::onMessageShown
-    val onOpen: () -> Unit = {
-        actions.onMessageShown()
-        bookIn(listState, notice.id)?.let(actions::onOpenBook)
-    }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.library_duplicate_title)) },
-        text = {
-            val body = if (notice.moved) R.string.library_duplicate_moved else R.string.library_duplicate_same
-            Text(stringResource(body, title))
-        },
-        confirmButton = { TextButton(onClick = onOpen) { Text(stringResource(R.string.library_duplicate_open)) } },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.library_duplicate_close)) }
-        },
-    )
 }
 
 @Composable
@@ -362,6 +402,10 @@ private val FAB_CLEARANCE = 88.dp
 /** The app shell's bottom bar takes the bottom inset (ADR-036). */
 private val TAB_INSETS: WindowInsets
     @Composable get() = ScaffoldDefaults.contentWindowInsets.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+
+/** Beside the book pane, which keeps clear of the end side itself. */
+private val BESIDE_PANE_INSETS: WindowInsets
+    @Composable get() = ScaffoldDefaults.contentWindowInsets.only(WindowInsetsSides.Top + WindowInsetsSides.Start)
 
 /** Book ids are UUIDs, so this key never clashes with a row's. */
 private const val CONTINUE_KEY = "continue-reading"

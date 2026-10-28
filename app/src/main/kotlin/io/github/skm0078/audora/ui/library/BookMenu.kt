@@ -5,6 +5,7 @@
 package io.github.skm0078.audora.ui.library
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,64 +63,86 @@ internal fun BookMenuButton(item: LibraryItem, onClick: () -> Unit) {
 @Composable
 internal fun BookMenuSheet(item: LibraryItem, covers: CoverSource, actions: BookMenuActions, onDismiss: () -> Unit) {
     if (LocalKidsMode.current) return
-    val choices = BookMenuChoices.of(item)
-    val choose = { action: () -> Unit ->
-        onDismiss()
-        action()
-    }
     AppSheet(onDismissRequest = onDismiss, skipPartiallyExpanded = true) {
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = Dimens.SpaceXl)) {
-            MenuBook(item, covers)
-            if (choices.quick.isNotEmpty()) {
-                QuickButtons(choices.quick, Modifier.padding(horizontal = Dimens.ScreenPadding)) { quick ->
-                    choose { quick.perform(actions) }
-                }
-            }
-            MenuDivider()
-            MenuRow(R.drawable.ic_info, stringResource(R.string.book_details_title), trailing = { Chevron() }) {
-                choose(actions.onDetails)
-            }
-            if (choices.saveAs.isNotEmpty()) {
-                SaveAsCard(choices.saveAs, Modifier.padding(horizontal = Dimens.ScreenPadding - Dimens.SpaceS)) {
-                    choose { it.perform(actions) }
-                }
-            }
-            choices.rows.forEach { action ->
-                val label = stringResource(action.label)
-                MenuRow(actionIcon(action), label, trailing = { HelpButton(label, stringResource(action.hint)) }) {
-                    choose { actions.onAction(action) }
-                }
-            }
-            MenuDivider()
-            val remove = stringResource(R.string.library_remove)
-            MenuRow(
-                R.drawable.ic_delete,
-                remove,
-                colour = MaterialTheme.colorScheme.error,
-                trailing = { HelpButton(remove, stringResource(R.string.menu_hint_remove)) },
-            ) { choose(actions.onRemove) }
+        BookMenuContent(
+            item,
+            covers,
+            actions,
+            Modifier.verticalScroll(rememberScrollState()).padding(bottom = Dimens.SpaceXl),
+        ) { action ->
+            onDismiss()
+            action()
         }
     }
 }
 
-private fun QuickChoice.perform(actions: BookMenuActions) = when (this) {
-    QuickChoice.Play -> actions.onPlay()
-    QuickChoice.UpNext -> actions.onAddToUpNext()
-    is QuickChoice.Action -> actions.onAction(action)
-    is QuickChoice.Finished -> actions.onAction(action)
-}
-
-private fun SaveChoice.perform(actions: BookMenuActions) = when (this) {
-    SaveChoice.Audiobook -> actions.onExport()
-    is SaveChoice.Action -> actions.onAction(action)
-}
-
-/** The book the menu is for: its cover, title, where reading stands. TalkBack hears "What to do with …" first. */
+/**
+ * The menu's parts top to bottom, shared by the sheet and the wide screen's book pane so both offer the same choices
+ * in the same order. [choose] runs a choice: the sheet closes first, the pane stays. [saveAsOpen]: the pane has room
+ * to show the Save as tiles from the start. [onOpen]: the pane's cover and title open the book.
+ */
 @Composable
-private fun MenuBook(item: LibraryItem, covers: CoverSource) {
+internal fun BookMenuContent(
+    item: LibraryItem,
+    covers: CoverSource,
+    actions: BookMenuActions,
+    modifier: Modifier = Modifier,
+    saveAsOpen: Boolean = false,
+    onOpen: (() -> Unit)? = null,
+    choose: (() -> Unit) -> Unit,
+) {
+    val choices = BookMenuChoices.of(item)
+    Column(modifier) {
+        MenuBook(item, covers, onOpen)
+        if (choices.quick.isNotEmpty()) {
+            QuickButtons(choices.quick, Modifier.padding(horizontal = Dimens.ScreenPadding)) { quick ->
+                choose { quick.perform(actions) }
+            }
+        }
+        MenuDivider()
+        MenuRow(R.drawable.ic_info, stringResource(R.string.book_details_title), trailing = { Chevron() }) {
+            choose(actions.onDetails)
+        }
+        if (choices.saveAs.isNotEmpty()) {
+            SaveAsCard(
+                choices.saveAs,
+                Modifier.padding(horizontal = Dimens.ScreenPadding - Dimens.SpaceS),
+                startsOpen = saveAsOpen,
+            ) { choose { it.perform(actions) } }
+        }
+        choices.rows.forEach { action ->
+            val label = stringResource(action.label)
+            MenuRow(actionIcon(action), label, trailing = { HelpButton(label, stringResource(action.hint)) }) {
+                choose { actions.onAction(action) }
+            }
+        }
+        MenuDivider()
+        val remove = stringResource(R.string.library_remove)
+        MenuRow(
+            R.drawable.ic_delete,
+            remove,
+            colour = MaterialTheme.colorScheme.error,
+            trailing = { HelpButton(remove, stringResource(R.string.menu_hint_remove)) },
+        ) { choose(actions.onRemove) }
+    }
+}
+
+/**
+ * The book the menu is for: its cover, title, where reading stands. TalkBack hears "What to do with …" first. With
+ * [onOpen] (the book pane) the whole line opens the book.
+ */
+@Composable
+private fun MenuBook(item: LibraryItem, covers: CoverSource, onOpen: (() -> Unit)?) {
     val spoken = stringResource(R.string.book_actions_title, displayTitle(item.book))
+    val opens = onOpen?.let {
+        Modifier.clickable(onClickLabel = stringResource(R.string.a11y_open_book), onClick = it)
+    } ?: Modifier
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = Dimens.ScreenPadding).padding(bottom = Dimens.SpaceL),
+        Modifier
+            .fillMaxWidth()
+            .then(opens)
+            .padding(horizontal = Dimens.ScreenPadding)
+            .padding(bottom = Dimens.SpaceL),
         horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
         verticalAlignment = Alignment.CenterVertically,
     ) {

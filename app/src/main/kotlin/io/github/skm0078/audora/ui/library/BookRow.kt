@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +31,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
@@ -53,9 +56,12 @@ internal fun BookRow(
     onDetails: () -> Unit = {},
     onAction: (BookAction) -> Unit = {},
     onPlay: () -> Unit = {},
+    pane: PaneChoice? = null,
 ) {
     var menuOpen by rememberSaveable(item.book.id.value) { mutableStateOf(false) }
     val kids = LocalKidsMode.current
+    val openMenu: () -> Unit = pane?.onPick ?: { menuOpen = true }
+    val picked = pane?.selected == true
     ListItem(
         leadingContent = { BookCover(item.book, covers, Modifier.size(COVER_WIDTH, COVER_HEIGHT)) },
         headlineContent = {
@@ -77,13 +83,20 @@ internal fun BookRow(
                 }
             }
         },
-        trailingContent = { BookMenuButton(item) { menuOpen = true } },
-        modifier = Modifier.combinedClickable(
-            onClickLabel = stringResource(R.string.a11y_open_book),
-            onLongClickLabel = stringResource(R.string.library_book_menu_named, displayTitle(item.book)),
-            onLongClick = if (kids) null else ({ menuOpen = true }),
-            onClick = onTap,
-        ),
+        trailingContent = { BookMenuButton(item, openMenu) },
+        colors = if (picked) {
+            ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+        } else {
+            ListItemDefaults.colors()
+        },
+        modifier = Modifier
+            .combinedClickable(
+                onClickLabel = stringResource(R.string.a11y_open_book),
+                onLongClickLabel = stringResource(R.string.library_book_menu_named, displayTitle(item.book)),
+                onLongClick = if (kids) null else openMenu,
+                onClick = onTap,
+            )
+            .semantics { if (pane != null) selected = picked },
     )
     if (menuOpen) {
         val actions = BookMenuActions(onPlay, onAddToUpNext, onExport, onDetails, onRemove, onAction)

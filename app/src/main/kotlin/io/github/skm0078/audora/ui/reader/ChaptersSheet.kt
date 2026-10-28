@@ -64,18 +64,29 @@ fun ChaptersSheet(
     onChapter: (ChapterEntry) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val first = ((current ?: 0) - CONTEXT_ROWS).coerceAtLeast(0)
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = first)
     AppSheet(onDismissRequest = onDismiss) {
         Text(
             stringResource(R.string.chapters_title),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = Dimens.SpaceXl, vertical = Dimens.SpaceS).semantics { heading() },
         )
-        LazyColumn(state = listState) {
-            itemsIndexed(chapters) { index, chapter ->
-                ChapterRow(chapter, isCurrent = index == current) { onChapter(chapter) }
-            }
+        ChapterList(chapters, current, onChapter)
+    }
+}
+
+/** The chapters, scrolled to [current] when shown: in the chapters sheet, or the reader's side panel. */
+@Composable
+internal fun ChapterList(
+    chapters: List<ChapterEntry>,
+    current: Int?,
+    onChapter: (ChapterEntry) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val first = ((current ?: 0) - CONTEXT_ROWS).coerceAtLeast(0)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = first)
+    LazyColumn(modifier, state = listState) {
+        itemsIndexed(chapters) { index, chapter ->
+            ChapterRow(chapter, isCurrent = index == current) { onChapter(chapter) }
         }
     }
 }

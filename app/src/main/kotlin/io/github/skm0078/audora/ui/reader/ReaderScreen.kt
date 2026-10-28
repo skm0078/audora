@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -38,6 +39,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.library.BookId
@@ -71,6 +73,8 @@ fun ReaderScreen(
     lookUp: LookUpBinding = LookUpBinding.None,
     onTutor: (() -> Unit)? = null,
     voicePacks: VoicePackActions = VoicePackActions(),
+    people: (@Composable (Modifier) -> Unit)? = null,
+    windowWidth: Dp = currentWindowWidth(),
 ) {
     var pageTextOpen by rememberSaveable { mutableStateOf(false) }
     val offer = rememberVoicePackOffer(state.bookId, voices, voicePacks)
@@ -80,10 +84,11 @@ fun ReaderScreen(
     if (pageTextOpen) {
         PageTextSheet(look, onLookChange, textView = state.view == ReaderView.TEXT) { pageTextOpen = false }
     }
+    val panel = showsSidePanel(windowWidth) && state.document is DocumentState.Open
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            ReaderTopBar(state, actions, notes, notesActions) {
+            ReaderTopBar(state, actions, notes, notesActions, panelShown = panel) {
                 MoreMenu(
                     onOpenPageText = { pageTextOpen = true },
                     onOpenUpNext = onOpenUpNext,
@@ -122,7 +127,9 @@ fun ReaderScreen(
 
                 is DocumentState.Open -> {
                     PlaceHighlights(state, notesActions)
-                    OpenBook(state, document, config, actions, ocrModels, look, spokenWord, thumbnails, pack, notes)
+                    BesidePanel(panel, { ReaderSidePanel(state, actions, notes, notesActions, voiceNotes, people) }) {
+                        OpenBook(state, document, config, actions, ocrModels, look, spokenWord, thumbnails, pack, notes)
+                    }
                     NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)
                 }
             }
