@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.speech.sherpa
 
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.getOrNull
 import java.io.File
@@ -93,6 +94,40 @@ class CastSpeakersTest {
             assertTrue("no catalog has $voice", entries.isNotEmpty())
             entries.forEach { assertTrue("$voice no longer installs $archive", installs.containsMatchIn(it)) }
         }
+    }
+
+    @Test
+    fun `every one-speaker voice whose gender is listed is a catalog voice that says so`() {
+        val catalogs = listOf("models.json", "bundled-voices.json").joinToString("\n") { name ->
+            (File(name).takeIf { it.isFile } ?: File("speech/$name")).readText()
+        }
+        CastSpeakers.oneSpeakerVoices.forEach { id ->
+            assertTrue("no catalog has $id", Regex(""""id"\s*:\s*"${Regex.escape(id)}"""").containsMatchIn(catalogs))
+            assertTrue(id, CastSpeakers.of(spec(id)).isEmpty())
+        }
+        assertEquals(SpeakerGender.MALE, CastSpeakers.genderOf(spec("syspin-bn-male", Lang.BN), 0))
+        assertEquals(SpeakerGender.FEMALE, CastSpeakers.genderOf(spec("syspin-bn-female", Lang.BN), 0))
+        assertEquals(SpeakerGender.UNKNOWN, CastSpeakers.genderOf(spec("custom-my-voice-1a2b"), 0))
+    }
+
+    @Test
+    fun `a narrator's partners are its language's other models, the likeliest sibling first`() {
+        fun bengali(id: String, speakerId: Int = 0) = spec(id, Lang.BN, speakerId).copy(contentVersion = id)
+        val male = bengali("syspin-bn-male")
+        val engine = SherpaSpeechEngine(
+            listOf(male, bengali("rasa-bn", speakerId = 2), bengali("syspin-bn-female"), kokoro),
+            SherpaSynthesizerFactory { Outcome.Success(FakeSynthesizer()) },
+            Dispatchers.IO.limitedParallelism(1),
+        )
+
+        val partners = engine.castPartners(male.voiceId)
+
+        assertEquals(SpeakerGender.MALE, partners.narrator)
+        assertEquals(
+            listOf("syspin-bn-female", "rasa-bn#2", "rasa-bn#3"),
+            partners.voices.map { it.voice.name },
+        )
+        assertEquals(CastPartners.NONE, engine.castPartners(spec("not-installed").voiceId))
     }
 
     @Test

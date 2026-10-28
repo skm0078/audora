@@ -174,11 +174,16 @@ class SpeakerTags(private val splitter: QuoteSplitter = QuoteSplitter()) {
             "(?<![\\p{L}\\p{M}])(?:${verbs.sortedByDescending { it.length }.joinToString("|")})(?![\\p{L}\\p{M}])",
         )
 
-        /** The tag after a quote: its first clause, up to the sentence's end. */
+        /**
+         * The tag after a quote: its first clause, up to the sentence's end. With no speech verb, a short clause is
+         * the speaker's own action ("“भूख किसे है?” बिरजू ने मुँह फेर लिया।", "‘जी,’ वह हकलाया।"): its doer.
+         */
         override fun after(narration: String): Speaker? {
             val clause = narration.substringBefore('।').substringBefore('.')
-            val said = verb.find(clause) ?: return null
-            return speakerOf(clause.substring(0, said.range.first), said.value)
+            val said = verb.find(clause)
+            if (said != null) return speakerOf(clause.substring(0, said.range.first), said.value)
+            val words = words(clause)
+            return if (words.size in 2..MAX_BEAT_WORDS) pick(words, words.last()) else null
         }
 
         /** The tag before a quote: the narration's last sentence, which ends on the verb ("मंत्री … कहिलेন,"). */
@@ -188,10 +193,15 @@ class SpeakerTags(private val splitter: QuoteSplitter = QuoteSplitter()) {
             return speakerOf(clause.substring(0, said.range.first), said.value)
         }
 
+        /**
+         * The verb that tells the subject's gender ends the sentence's first clause: "टिल्लू हँसा और … थमा दिया" is
+         * his laugh, not what he handed over (which agrees with its object).
+         */
         override fun subject(sentence: String): Speaker? {
             val words = words(sentence)
             if (words.size < 2) return null
-            return pick(words, sentence.trimEnd().trimEnd('।', '.', '!', '?').substringAfterLast(' '))
+            val clause = words(sentence.split(CLAUSE_ENDS).first()).takeIf { it.size >= 2 } ?: words
+            return pick(words, clause.last())
         }
 
         private fun speakerOf(lead: String, verb: String): Speaker? = pick(words(lead), verb)
@@ -226,6 +236,10 @@ class SpeakerTags(private val splitter: QuoteSplitter = QuoteSplitter()) {
 
         private companion object {
             val WORDS = Regex("[\\p{L}\\p{M}]+")
+
+            /** The longest clause after a quote taken as its speaker's action when it has no speech verb. */
+            const val MAX_BEAT_WORDS = 5
+            val CLAUSE_ENDS = Regex("\\s+(?:और|এবং|আর)\\s+|[,;]")
             val HONORIFICS = setOf("जी", "साहब", "বাবু", "মশাই")
         }
     }
@@ -240,6 +254,8 @@ class SpeakerTags(private val splitter: QuoteSplitter = QuoteSplitter()) {
         ),
         skip = setOf("तब", "फिर", "और", "तो", "भी", "यह", "ये", "कुछ", "अब", "आख़िर", "आखिर", "अचानक"),
         pronouns = setOf("वह", "वो", "वे", "मैं", "हम", "तुम", "आप"),
+        // "चुन्नी का मुँह उतर गया": her face fell, so गया is not hers; "राम से कहा": Ram is told.
+        objectMarkers = setOf("का", "की", "के", "को", "से", "में", "पर"),
     ) {
         private val doer = Regex("([\\p{L}\\p{M}]+)(?:\\s+(जी))?\\s+ने(?![\\p{L}\\p{M}])")
         private val ownNe = setOf("उसने", "उन्होंने", "मैंने", "हमने", "तुमने", "आपने", "इसने", "इन्होंने")
@@ -293,7 +309,9 @@ class SpeakerTags(private val splitter: QuoteSplitter = QuoteSplitter()) {
          * who the sentence is about, and Bengali names seldom end that way.
          */
         override fun subjectAt(words: List<String>): Int {
-            var at = super.subjectAt(words)
+            // "বাড়ি ফিরতেই মালতী …": a clause of "on doing" opens the sentence; its subject comes after it.
+            val opener = words.take(MAX_OPENER_WORDS).indexOfLast { it.endsWith(ON_DOING) }
+            var at = if (opener >= 0) opener + 1 else super.subjectAt(words)
             while (at in words.indices && words[at] !in pronouns) {
                 val word = words[at]
                 // An owner takes the noun after it with it: "মাছের দাম".
@@ -307,6 +325,8 @@ class SpeakerTags(private val splitter: QuoteSplitter = QuoteSplitter()) {
         }
 
         private const val OWNER = "ের"
+        private const val ON_DOING = "তেই"
+        private const val MAX_OPENER_WORDS = 3
         private val OPENER_ENDINGS = listOf("ে", "তেই")
     }
 

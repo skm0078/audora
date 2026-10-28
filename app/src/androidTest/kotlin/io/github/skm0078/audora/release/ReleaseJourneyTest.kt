@@ -164,6 +164,10 @@ class ReleaseJourneyTest {
             step("27 Turn pages shows a text book a screenful at a time with its arrows") {
                 share.aTextBookTurnsPages(MORE_FORMATS.first())
             }
+            step(
+                "28 a story's women and men each get a voice of their own gender",
+                CharacterJourney::womenAndMenGetVoicesOfTheirGender,
+            )
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
