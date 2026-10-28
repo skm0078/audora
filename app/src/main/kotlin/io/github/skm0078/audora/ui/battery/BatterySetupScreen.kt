@@ -20,10 +20,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -119,16 +121,26 @@ private fun statusTexts(access: BackgroundAccess): Triple<Int, Int?, Int?> = whe
     )
 }
 
-/** Shown at the top of the library until Audora is exempt or the user taps "Not now". */
+/**
+ * One line at the top of the library until Audora is exempt or the user taps Not now (the X): what it is for, and
+ * Set up, which opens the setup screen that explains the rest (ADR 2026-10-28-home-and-tour).
+ */
 @Composable
-fun BatterySetupCard(onSetUp: () -> Unit, onNotNow: () -> Unit, modifier: Modifier = Modifier) {
-    Card(modifier = modifier.fillMaxWidth().padding(horizontal = SCREEN_PADDING, vertical = SPACING)) {
-        Column(modifier = Modifier.padding(SCREEN_PADDING), verticalArrangement = Arrangement.spacedBy(SPACING)) {
-            Text(stringResource(R.string.battery_card_title), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.battery_card_body), style = MaterialTheme.typography.bodyMedium)
-            Row(horizontalArrangement = Arrangement.spacedBy(SPACING)) {
-                Button(onClick = onSetUp) { Text(stringResource(R.string.battery_card_set_up)) }
-                TextButton(onClick = onNotNow) { Text(stringResource(R.string.battery_card_not_now)) }
+fun BatterySetupBanner(onNotNow: () -> Unit, modifier: Modifier = Modifier, onSetUp: () -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shape = MaterialTheme.shapes.medium,
+        modifier = modifier.fillMaxWidth().padding(horizontal = SCREEN_PADDING, vertical = SPACING),
+    ) {
+        Row(Modifier.padding(start = SCREEN_PADDING), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.battery_card_title),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f).padding(vertical = SPACING),
+            )
+            TextButton(onClick = onSetUp) { Text(stringResource(R.string.battery_card_set_up)) }
+            IconButton(onClick = onNotNow) {
+                Icon(painterResource(R.drawable.ic_close), stringResource(R.string.battery_card_not_now))
             }
         }
     }
@@ -164,6 +176,6 @@ private fun BatterySetupScreenPreview() {
 
 @Preview(showBackground = true)
 @Composable
-private fun BatterySetupCardPreview() {
-    AudoraTheme { BatterySetupCard(onSetUp = {}, onNotNow = {}) }
+private fun BatterySetupBannerPreview() {
+    AudoraTheme { BatterySetupBanner(onNotNow = {}) {} }
 }

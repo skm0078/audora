@@ -40,8 +40,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
 
-/** [backToTabs] leaves any screen for the main tabs, as the journey does. */
-internal class MadeJourney(private val rule: ComposeTestRule, private val backToTabs: () -> Unit) {
+/** [backToTabs] leaves any screen for the main tabs, as the journey does; [back] is the system Back. */
+internal class MadeJourney(
+    private val rule: ComposeTestRule,
+    private val backToTabs: () -> Unit,
+    private val back: () -> Unit = {},
+) {
     private fun text(id: Int, vararg args: Any): String = app.getString(id, *args)
 
     private fun waitForNode(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) {
@@ -57,6 +61,24 @@ internal class MadeJourney(private val rule: ComposeTestRule, private val backTo
 
     private fun gone(matcher: SemanticsMatcher) {
         rule.waitUntil(UI_TIMEOUT_MS) { rule.onAllNodes(matcher).fetchSemanticsNodes().isEmpty() }
+    }
+
+    /** Step 19: Library, Notes, Made and You from the bar; Jobs is in Made's top bar and Back from it returns there. */
+    fun fourPlacesAndJobs() {
+        backToTabs()
+        tap(hasText(text(R.string.tab_notes)))
+        tap(hasText(text(R.string.tab_made)))
+        tap(hasText(text(R.string.made_jobs_short)))
+        // Made's chip says "Jobs" too: the Jobs page is known by its heading.
+        val jobsPage = hasText(text(R.string.jobs_title)) and SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading)
+        waitForNode(jobsPage)
+        back()
+        gone(jobsPage)
+        waitForNode(hasText(text(R.string.made_jobs_short)))
+        tap(hasText(text(R.string.tab_you)))
+        waitForNode(hasText(text(R.string.settings_voices_title)))
+        tap(hasText(text(R.string.tab_library)))
+        waitForNode(hasText(text(R.string.library_title)))
     }
 
     /**

@@ -1,7 +1,7 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/battery/OnboardingPreferences.kt
 // Purpose: Remembers that the user said "Not now" to the battery setup card, so it does not nag, and that the
-//          first-run screens were finished (UI plan, wave 4), that the reader's long-press tips were read, and which
-//          "What's new" entries were shown.
+//          first-run screens were finished (UI plan, wave 4), that the reader's long-press tips were read, which
+//          "What's new" entries were shown, and that the 1-minute tour was offered (ADR 2026-10-28-home-and-tour).
 
 package io.github.skm0078.audora.battery
 
@@ -26,6 +26,11 @@ class OnboardingPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_GESTURE_TIPS_SEEN, false)
         set(value) = prefs.edit { putBoolean(KEY_GESTURE_TIPS_SEEN, value) }
 
+    /** The 1-minute tour was offered once, whatever the answer; You › Show me around replays it. */
+    var tourOffered: Boolean
+        get() = prefs.getBoolean(KEY_TOUR_OFFERED, false)
+        set(value) = prefs.edit { putBoolean(KEY_TOUR_OFFERED, value) }
+
     /** The numbered "What's new" list seen last, from builds before entries had names; 0 before any. Read only. */
     val whatsNewSeenList: Int
         get() = prefs.getInt(KEY_WHATS_NEW_SEEN, 0)
@@ -43,5 +48,6 @@ class OnboardingPreferences(context: Context) {
         const val KEY_BATTERY_DISMISSED = "battery_card_dismissed"
         const val KEY_FIRST_RUN_DONE = "first_run_done"
         const val KEY_GESTURE_TIPS_SEEN = "gesture_tips_seen"
+        const val KEY_TOUR_OFFERED = "tour_offered"
     }
 }

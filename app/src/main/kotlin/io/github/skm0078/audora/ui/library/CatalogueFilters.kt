@@ -1,12 +1,11 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/CatalogueFilters.kt
-// Purpose: The library's second chip row (ADR-069): Filters with how many are set, one chip per collection, and
-//          New or Edit collections; and the filter sheet (author, file type, language, collection), which applies
-//          each choice at once.
+// Purpose: The library's catalogue chips (ADR-069), after the shelves in the one chip row: Filters with how many
+//          are set, one chip per collection, and New or Edit collections; and the filter sheet (author, file type,
+//          language, collection), which applies each choice at once.
 
 package io.github.skm0078.audora.ui.library
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -55,54 +53,46 @@ internal fun collectionCounts(members: Map<BookId, Set<String>>): Map<String, In
     members.values.flatten().groupingBy { it }.eachCount()
 
 /**
- * Under the shelves: a collection chip narrows the library to it (tap again to leave it), and search, sort and the
+ * After the shelves: a collection chip narrows the library to it (tap again to leave it), and search, sort and the
  * shelf still apply inside it. The sheets open from here, so the library screen holds none of their state.
  */
 @Composable
-internal fun CatalogueRow(list: LibraryListState.Loaded, onQuery: (LibraryQuery) -> Unit) {
+internal fun CatalogueChips(list: LibraryListState.Loaded, onQuery: (LibraryQuery) -> Unit) {
     var filtering by rememberSaveable { mutableStateOf(false) }
     var managing by rememberSaveable { mutableStateOf(false) }
     val counts = remember(list.members) { collectionCounts(list.members) }
     val narrow = list.query.narrow
     val setNarrow = { next: LibraryNarrow -> onQuery(list.query.copy(narrow = next)) }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = Dimens.ScreenPadding),
-        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
-    ) {
+    FilterChip(
+        selected = !narrow.isEmpty,
+        onClick = { filtering = true },
+        label = {
+            Text(
+                if (narrow.isEmpty) {
+                    stringResource(R.string.catalogue_filters)
+                } else {
+                    stringResource(R.string.catalogue_filters_count, narrow.count)
+                },
+            )
+        },
+    )
+    list.collections.forEach { collection ->
+        val selected = narrow.collection == collection.id
         FilterChip(
-            selected = !narrow.isEmpty,
-            onClick = { filtering = true },
+            selected = selected,
+            onClick = { setNarrow(narrow.copy(collection = collection.id.takeUnless { selected })) },
             label = {
                 Text(
-                    if (narrow.isEmpty) {
-                        stringResource(R.string.catalogue_filters)
-                    } else {
-                        stringResource(R.string.catalogue_filters_count, narrow.count)
-                    },
+                    stringResource(R.string.library_shelf, collection.name, counts[collection.id] ?: 0),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.widthIn(max = CHIP_MAX_WIDTH),
                 )
             },
         )
-        list.collections.forEach { collection ->
-            val selected = narrow.collection == collection.id
-            FilterChip(
-                selected = selected,
-                onClick = { setNarrow(narrow.copy(collection = collection.id.takeUnless { selected })) },
-                label = {
-                    Text(
-                        stringResource(R.string.library_shelf, collection.name, counts[collection.id] ?: 0),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.widthIn(max = CHIP_MAX_WIDTH),
-                    )
-                },
-            )
-        }
-        val manage = if (list.collections.isEmpty()) R.string.collections_new else R.string.collections_edit
-        AssistChip(onClick = { managing = true }, label = { Text(stringResource(manage)) })
     }
+    val manage = if (list.collections.isEmpty()) R.string.collections_new else R.string.collections_edit
+    AssistChip(onClick = { managing = true }, label = { Text(stringResource(manage)) })
     if (filtering) {
         FilterSheet(list.facets, list.collections, counts, narrow, setNarrow, onDismiss = { filtering = false })
     }
