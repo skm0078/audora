@@ -28,6 +28,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.Book
+import io.github.skm0078.audora.core.library.BookOutputStore
 import io.github.skm0078.audora.core.library.OutputKind
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.stats.ListeningLog
@@ -71,7 +72,7 @@ fun ListeningStatsRoute(
             goal = withContext(Dispatchers.IO) { goalStore.weeklyHours }
         }
     }
-    val all = rememberStats(log, books, anchors, goal)
+    val all = rememberStats(log, books, anchors, library.outputs(), goal)
     var period by rememberSaveable { mutableStateOf(ListeningPeriod.WEEK) }
     var sharing by rememberSaveable { mutableStateOf(false) }
     val back: () -> Unit = {
@@ -118,14 +119,13 @@ private fun rememberStats(
     log: ListeningLog,
     books: List<Book>?,
     anchors: ResumeAnchorStore,
+    outputs: BookOutputStore,
     goal: Int,
 ): Map<ListeningPeriod, StatsData>? {
-    val context = LocalContext.current
     LaunchedEffect(log) { withContext(Dispatchers.IO) { log.load() } }
     val slots by log.slots.collectAsStateWithLifecycle()
     val places by remember(anchors) { anchors.observeAll().loggingFailures(TAG, "reading positions") }
         .collectAsStateWithLifecycle(initialValue = null)
-    val outputs = remember(context) { LibraryEntryPoint.of(context).outputs() }
     val madeAudiobook by remember(outputs) {
         outputs.observeAll().map { made -> made.any { it.kind == OutputKind.AUDIOBOOK } }
             .loggingFailures(TAG, "audiobooks made")
