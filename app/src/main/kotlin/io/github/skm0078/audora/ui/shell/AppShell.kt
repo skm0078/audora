@@ -64,9 +64,8 @@ fun AppShell(
 ) {
     // Kids mode (plan item 71) has the library only, so no bar, rail or sidebar at all.
     val form = placesForm(showPlaces = tabs.size > 1, windowWidth)
-    if (form == PlacesForm.BAR && drawer != null) {
-        PhoneDrawerFrame(drawer) { Places(form, selected, onSelect, modifier, miniPlayer, tabs, shelves, content) }
-    } else {
+    // One call site in every form, so the places keep their state when the width changes (a phone turned sideways).
+    PhoneDrawerFrame(drawer.takeIf { form == PlacesForm.BAR }) {
         Places(form, selected, onSelect, modifier, miniPlayer, tabs, shelves, content)
     }
 }

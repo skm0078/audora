@@ -24,6 +24,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -69,10 +70,11 @@ val LocalOpenDrawer = staticCompositionLocalOf<(() -> Unit)?> { null }
 /**
  * The drawer over [content], the bottom bar and the mini player. It opens only from the menu button: a swipe from
  * the edge would fight the sideways rows and Android's back gesture, so swiping only closes it. Back closes it too;
- * the sheet takes the predictive back gesture itself.
+ * the sheet takes the predictive back gesture itself. With no [drawer] (a rail, a sidebar, kids mode) the frame stays
+ * but holds nothing and has no menu button, so [content] keeps its place in the tree, and its state, either way.
  */
 @Composable
-internal fun PhoneDrawerFrame(drawer: PhoneDrawer, content: @Composable () -> Unit) {
+internal fun PhoneDrawerFrame(drawer: PhoneDrawer?, content: @Composable () -> Unit) {
     val state = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val open = remember(state, scope) {
@@ -81,12 +83,18 @@ internal fun PhoneDrawerFrame(drawer: PhoneDrawer, content: @Composable () -> Un
             Unit
         }
     }
+    // A drawer left open on a phone that then widens has nothing left to show; close it rather than keep a scrim.
+    if (drawer == null &&
+        state.targetValue == DrawerValue.Open
+    ) {
+        LaunchedEffect(state) { state.snapTo(DrawerValue.Closed) }
+    }
     ModalNavigationDrawer(
         drawerState = state,
-        gesturesEnabled = state.isOpen,
-        drawerContent = { DrawerSheet(drawer, state, scope) },
+        gesturesEnabled = drawer != null && state.isOpen,
+        drawerContent = { drawer?.let { DrawerSheet(it, state, scope) } },
     ) {
-        CompositionLocalProvider(LocalOpenDrawer provides open) { content() }
+        CompositionLocalProvider(LocalOpenDrawer provides open.takeIf { drawer != null }) { content() }
     }
 }
 

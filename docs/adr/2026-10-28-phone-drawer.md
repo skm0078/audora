@@ -41,7 +41,8 @@ Settings: they live on the You place, whose page said "You" and nowhere "Setting
 
 - Cost on the device: no new dependency; four small vector icons. The drawer is composed off screen while closed (a
   dozen rows, laid out once), the drawer's counts reuse the chips' count, worked out once per library change. APK
-  about 6 KB (estimate).
+  about 6 KB (estimate). On a rail or sidebar the empty drawer frame stays in place (no rows, nothing drawn), so the
+  screen under it keeps its state when the width changes, such as a phone turned sideways.
 - Strings: new `strings_phone_drawer.xml` in English, Hindi and Bengali.
 - Tests: `PhoneDrawerTest` on the emulator (rows, close-then-act, a collection, hidden when closed, none on a wide
-  window or in kids mode); release journey step 45 (menu button, Settings).
+  window or in kids mode, state kept across a width change); release journey step 45 (menu button, Settings).

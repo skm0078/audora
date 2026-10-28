@@ -8,8 +8,14 @@ package io.github.skm0078.audora.ui.shell
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.material3.Button
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -116,6 +122,26 @@ class PhoneDrawerTest {
         show(TABLET)
         rule.onNodeWithText(MENU).assertDoesNotExist()
         assertTrue(opened.isEmpty())
+    }
+
+    @Test
+    fun turningThePhoneSidewaysKeepsThePlaceAsItWas() {
+        var width by mutableStateOf(PHONE)
+        rule.setContent {
+            AudoraTheme {
+                Box(Modifier.requiredWidth(width)) {
+                    AppShell(selected = AppTab.LIBRARY, onSelect = {}, drawer = drawer, windowWidth = width) {
+                        var taps by remember { mutableIntStateOf(0) }
+                        Button(onClick = { taps++ }) { Text("taps $taps") }
+                    }
+                }
+            }
+        }
+        rule.onNodeWithText("taps 0").performClick()
+        rule.runOnIdle { width = TABLET }
+        rule.onNodeWithText("taps 1").assertExists()
+        rule.runOnIdle { width = PHONE }
+        rule.onNodeWithText("taps 1").assertExists()
     }
 
     @Test
