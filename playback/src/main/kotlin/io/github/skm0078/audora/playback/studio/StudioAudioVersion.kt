@@ -18,5 +18,7 @@ package io.github.skm0078.audora.playback.studio
  * 6 = narration rises and falls across a paragraph, slows after a heading and breathes in long sentences (Q-3).
  * 7 = more characters get a voice of their gender (Hindi "I" forms, Hindi and Bengali name endings, clues later on
  *     the page); a one-speaker narrator's other gender borrows another installed voice (ADR character-genders).
+ * 8 = arrows, maths signs, Greek letters and powers in sentences are said in the part's language; emoji, stars and
+ *     broken-font glyphs are left out (ADR 2026-10-28-symbols-in-sentences).
  */
-const val STUDIO_AUDIO_VERSION: Int = 7
+const val STUDIO_AUDIO_VERSION: Int = 8

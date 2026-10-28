@@ -19,8 +19,8 @@ import io.github.skm0078.audora.core.model.Lang
  * [NormalizerConfig.maxCardinalDigits] read digit by digit; a bare year from 1100 to 1999 reads as "उन्नीस सौ
  * सैंतालीस". Clock times, dates, ordinals, units, abbreviations, initials and Roman numerals after a
  * numbering word come first ([IndicTextPack], plan items 3 and 57). A slash between
- * words reads "या"/"বা" and "&" reads "और"/"এবং" (RI-6). Text with none of these is
- * returned unchanged.
+ * words reads "या"/"বা" and "&" reads "और"/"এবং" (RI-6). Arrows, maths signs, Greek letters and powers read in the
+ * part's language ([SymbolWords]); what no rule can read (emoji, broken-font glyphs) is left out ([SpeakableText]).
  */
 class IndicNormalizer internal constructor(
     private val words: IndicNumberWords,
@@ -38,9 +38,16 @@ class IndicNormalizer internal constructor(
             // Clock times first, while "a.m." is still whole (the initials step would take its dots).
             pack.romanNumerals(pack.abbreviations(pack.times(asciiDigits(text))))
         }
-        val spoken = speakSymbols(written)
-        val ascii = asciiDigits(spoken)
-        if (ascii.none(Char::isAsciiDigit)) return if (spoken == text) text else tidy(spoken)
+        var spoken = readNumbers(asciiDigits(speakSymbols(written)))
+        if (role != TextRole.EQUATION) {
+            // After the numbers, so "37°C" and "25 m²" are the unit rule's; a power's digits are read in a second pass.
+            spoken = readNumbers(SymbolWords.speak(SymbolWords.scripts(spoken, lang), lang))
+        }
+        return tidy(SpeakableText.clean(spoken))
+    }
+
+    private fun readNumbers(ascii: String): String {
+        if (ascii.none(Char::isAsciiDigit)) return ascii
         // A sign before a number ("-5°C", "−3.2") is said first; a dash between numbers ("2019-20") is a range.
         val signed = SIGN.replace(ascii, "${words.minus} ")
         var result = pack.units(pack.ordinals(pack.dates(signed)))
@@ -64,8 +71,7 @@ class IndicNormalizer internal constructor(
         result = HYPHENATED_CODE.replace(result) { match ->
             match.value.split('-').joinToString(", ", transform = words::digits)
         }
-        result = PLAIN.replace(result) { match -> read(match.value) }
-        return tidy(result)
+        return PLAIN.replace(result) { match -> read(match.value) }
     }
 
     private fun tidy(text: String): String = EXTRA_SPACES.replace(text, " ").trim()
