@@ -12,6 +12,8 @@ import android.net.Uri
 import android.os.Environment
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
@@ -113,6 +115,16 @@ object JourneyDevice {
             Thread.sleep(POLL_MS)
         }
         fail("Timed out after $timeoutMs ms waiting for: $what. ${state()}")
+    }
+
+    /**
+     * Whether a node matching [matcher] is on screen. False, not a failure, while one activity hands over to the next
+     * and no window holds a composition yet; a real miss still fails when the caller's wait times out.
+     */
+    fun ComposeTestRule.shows(matcher: SemanticsMatcher): Boolean = try {
+        onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()
+    } catch (_: IllegalStateException) {
+        false
     }
 
     private const val PDF = "application/pdf"

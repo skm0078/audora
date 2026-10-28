@@ -82,6 +82,7 @@ import io.github.skm0078.audora.privacy.PrivacyPreferences
 import io.github.skm0078.audora.privacy.PrivacySettings
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
+import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.audio.WordTimes
 import io.github.skm0078.audora.speech.voices.VoiceKind
@@ -181,7 +182,7 @@ class ReleaseJourneyTest {
     private fun text(id: Int, vararg args: Any): String = app.getString(id, *args)
 
     private fun waitForNode(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) {
-        rule.waitUntil(timeoutMs) { rule.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(timeoutMs) { rule.shows(matcher) }
     }
 
     private fun node(matcher: SemanticsMatcher): SemanticsNodeInteraction {

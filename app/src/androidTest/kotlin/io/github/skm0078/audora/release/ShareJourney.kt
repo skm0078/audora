@@ -25,6 +25,7 @@ import io.github.skm0078.audora.di.LibraryEntryPoint
 import io.github.skm0078.audora.playback.export.video.QuoteVideos
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
+import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.ui.reader.ReadingLookPreferences
 import io.github.skm0078.audora.ui.share.ShareCardActivity
 import io.github.skm0078.audora.ui.share.ShareCardFiles
@@ -44,15 +45,7 @@ internal class ShareJourney(
     private fun text(id: Int, vararg args: Any): String = app.getString(id, *args)
 
     private fun waitForNode(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) {
-        rule.waitUntil(timeoutMs) { shown(matcher) }
-    }
-
-    /** False, not a failure, while one screen hands over to the next and no window holds a composition yet. */
-    private fun shown(matcher: SemanticsMatcher): Boolean = try {
-        rule.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()
-    } catch (_: IllegalStateException) {
-        // A real miss still fails: waitUntil times out naming the wait.
-        false
+        rule.waitUntil(timeoutMs) { rule.shows(matcher) }
     }
 
     private fun node(matcher: SemanticsMatcher): SemanticsNodeInteraction {
