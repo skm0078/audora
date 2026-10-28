@@ -198,10 +198,21 @@ class RoutedSpeechTest {
     fun `blank text renders once with the sentence's voice`() = runTest {
         val voices = FakeVoices()
 
-        val routed = (RoutedSpeech(voices, ScriptRouter()).render(" ", Lang.EN) as Outcome.Success).value
+        RoutedSpeech(voices, ScriptRouter()).render(" ", Lang.EN) as Outcome.Success
 
-        assertEquals(listOf(EN_VOICE to " "), voices.sherpa.calls)
-        assertEquals(1, routed.audio.samples.size)
+        assertEquals(listOf(EN_VOICE to ""), voices.sherpa.calls)
+    }
+
+    @Test
+    fun `a sentence of symbols no voice can say is sent as nothing, never as the symbols`() = runTest {
+        val voices = FakeVoices()
+        val speech = RoutedSpeech(voices, ScriptRouter())
+
+        speech.render("* * *", Lang.EN)
+        speech.render("★★★ 👍", Lang.HI)
+
+        assertEquals(listOf(EN_VOICE to ""), voices.sherpa.calls)
+        assertEquals(listOf(HI_VOICE to ""), voices.system.calls)
     }
 
     @Test

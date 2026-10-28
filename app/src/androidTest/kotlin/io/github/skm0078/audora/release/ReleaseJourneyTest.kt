@@ -167,6 +167,9 @@ class ReleaseJourneyTest {
             step("28 a text turn slides in and settles where the text was") {
                 share.aTextTurnSlidesAndSettles(MORE_FORMATS.first())
             }
+            step("43 arrows, maths and emoji reach the voice as words or not at all") {
+                SymbolJourney.symbolsAreSaidOrLeftOut()
+            }
         } finally {
             JourneyDevice.onMain {
                 port?.pause()
