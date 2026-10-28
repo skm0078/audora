@@ -33,14 +33,24 @@ internal class FeedCheck(
     private val maxPages: Int = 12,
     private val maxDepth: Int = 3,
 ) {
-    private val browser = WebCatalogues(OpdsCatalogues(catalogueFile), WebFetcher(config), config)
+    private val fetcher = WebFetcher(config)
+    private val browser = WebCatalogues(OpdsCatalogues(catalogueFile), fetcher, config)
 
     suspend fun check(name: String, address: String): FeedReport {
         val start = FeedReport(name, address)
         return when (val first = browser.feed(address)) {
-            is Outcome.Failure -> start.copy(problem = "first page: ${first.error}")
+            is Outcome.Failure -> start.copy(problem = "first page: ${first.error}${seen(address, first.error)}")
             is Outcome.Success -> checkFrom(start.copy(entries = first.value.entries.size), first.value)
         }
+    }
+
+    /** For a page that is not a catalogue: what came instead (its type and first characters), to see why. */
+    private suspend fun seen(address: String, error: WebError): String {
+        val fetched = if (error == WebError.NotACatalogue) fetcher.page(address, ANY) else null
+        return (fetched as? Outcome.Success)?.value?.let {
+            val start = String(it.bytes.take(SNIPPET_BYTES).toByteArray()).replace(SPACES, " ")
+            " (got ${it.contentType} from ${it.address}: $start)"
+        }.orEmpty()
     }
 
     private suspend fun checkFrom(start: FeedReport, first: OpdsFeed): FeedReport {
@@ -79,7 +89,7 @@ internal class FeedCheck(
         is Outcome.Failure -> "no search address: ${found.error}"
 
         is Outcome.Success -> when (val page = browser.feed(found.value)) {
-            is Outcome.Failure -> "results page: ${page.error}"
+            is Outcome.Failure -> "results page ${found.value}: ${page.error}"
             is Outcome.Success -> "$OK ${page.value.entries.size} results for \"$QUERY\""
         }
     }
@@ -112,6 +122,9 @@ internal class FeedCheck(
         const val HTTPS = "https"
         const val QUERY = "love"
         const val SECTIONS_PER_PAGE = 3
+        const val ANY = "*/*"
+        const val SNIPPET_BYTES = 160
+        val SPACES = Regex("""\s+""")
         val SUCCESS = 200..299
     }
 }
