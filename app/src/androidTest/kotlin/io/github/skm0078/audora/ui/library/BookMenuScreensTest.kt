@@ -34,7 +34,6 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.skm0078.audora.R
@@ -47,6 +46,7 @@ import io.github.skm0078.audora.core.library.LibrarySort
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.words.LookedUpWord
 import io.github.skm0078.audora.di.LibraryEntryPoint
+import io.github.skm0078.audora.release.JourneyDevice
 import io.github.skm0078.audora.ui.Screens
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import org.junit.Assert.assertEquals
@@ -231,7 +231,7 @@ class BookMenuScreensTest {
             rule.onNodeWithText(text(R.string.book_words_title)).performScrollTo().performClick()
             rule.onNodeWithText("conscience").assertExists()
             rule.onNodeWithText(meaning).assertExists()
-            Espresso.pressBack()
+            JourneyDevice.pressBackKey()
             rule.waitForIdle()
 
             rule.onNodeWithText("conscience").assertDoesNotExist()

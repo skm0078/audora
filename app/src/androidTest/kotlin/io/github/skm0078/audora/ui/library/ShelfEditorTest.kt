@@ -13,13 +13,13 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
-import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookCollection
 import io.github.skm0078.audora.core.library.ShelfColour
 import io.github.skm0078.audora.core.library.ShelfEmoji
 import io.github.skm0078.audora.core.library.ShelfLook
+import io.github.skm0078.audora.release.JourneyDevice
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -97,7 +97,7 @@ class ShelfEditorTest {
     fun backLeavesTheEditPageButNotTheSheet() {
         show()
         tap(hasContentDescription(text(R.string.shelf_edit_named, "Bedtime")))
-        Espresso.pressBack()
+        JourneyDevice.pressBackKey()
         rule.waitForIdle()
 
         rule.onNode(editPage()).assertDoesNotExist()
