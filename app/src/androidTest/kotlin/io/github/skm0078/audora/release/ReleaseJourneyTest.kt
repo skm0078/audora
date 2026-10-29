@@ -197,6 +197,7 @@ class ReleaseJourneyTest {
             CharacterJourney::womenAndMenGetVoicesOfTheirGender,
         )
         step("30 the stats screen saves and shares its card", StatsJourney(rule, ::backToTabs)::cardIsSavedAndShared)
+        step("31 the app lock shows the saver, or opens with no screen lock", LockJourney(rule)::coversOrOpens)
         step("43 arrows, maths and emoji reach the voice as words or not at all") {
             SymbolJourney.symbolsAreSaidOrLeftOut()
         }

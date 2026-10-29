@@ -1,36 +1,29 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/privacy/AppLockGate.kt
-// Purpose: Covers every screen while the app lock (ADR-061) is closed, and keeps app content out of screenshots
-//          and the recent-apps preview when the person asks for it.
+// Purpose: Covers every screen with the screen saver while the app lock (ADR-061) is closed, and keeps app content
+//          out of screenshots and the recent-apps preview when the person asks for it.
 
 package io.github.skm0078.audora.privacy
 
 import android.app.Activity
 import android.os.Build
+import android.os.CancellationSignal
 import android.view.WindowManager
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import io.github.skm0078.audora.R
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.core.logging.AudoraLog
-import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.reader.rememberConnectedPlaybackPort
 
 /**
  * [content] stays composed under the lock, so the open book, the scroll position and any shared file wait behind
@@ -76,9 +69,10 @@ private fun LockWindow(activity: Activity, content: @Composable () -> Unit) {
 @Composable
 private fun LockedScreen(activity: Activity, session: AppLockSession) {
     val unlock = DeviceUnlock(activity)
+    var prompt by remember { mutableStateOf<CancellationSignal?>(null) }
     val ask = {
         if (unlock.hasScreenLock()) {
-            unlock.ask { proved -> if (proved) session.unlock() }
+            prompt = unlock.ask { proved -> if (proved) session.unlock() }
         } else {
             // The phone's screen lock was removed: there is nothing left to prove, and asking would lock the person
             // out of their own library. Anyone able to remove it already knew it.
@@ -91,21 +85,13 @@ private fun LockedScreen(activity: Activity, session: AppLockSession) {
         if (session.takeAutoPrompt()) ask()
         onPauseOrDispose {}
     }
-    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(
-            Modifier.fillMaxSize().padding(Dimens.ScreenPadding),
-            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL, Alignment.CenterVertically),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                stringResource(R.string.app_lock_locked_title),
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.semantics { heading() },
-            )
-            Button(onClick = ask) { Text(stringResource(R.string.app_lock_unlock)) }
-        }
-    }
+    // A prompt left open by a lock that went away some other way (the lock turned off) would cover the open app.
+    DisposableEffect(Unit) { onDispose { prompt?.cancel() } }
+    // Its own controller, so the lock never reaches into the screens it hides; the mini player under it has the
+    // service bound already, so this binds nothing new. Whether it reads, and Pause: never what it reads.
+    val playback = rememberConnectedPlaybackPort()
+    val snapshot by playback.state.collectAsStateWithLifecycle()
+    LockSaver(reading = snapshot.wantsToPlay, onPause = playback::pause, onUnlock = ask)
 }
 
 /**
