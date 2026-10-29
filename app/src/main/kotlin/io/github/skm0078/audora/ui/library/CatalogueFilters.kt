@@ -101,8 +101,7 @@ internal fun CatalogueChips(list: LibraryListState.Loaded, onQuery: (LibraryQuer
         FilterSheet(list.facets, list.collections, counts, narrow, setNarrow, onDismiss = { filtering = false })
     }
     if (managing) {
-        val suggestions = rememberShelfSuggestions(list.all, list.collections, list.members)
-        CollectionsRoute(list.collections, counts, suggestions) { managing = false }
+        CollectionsRoute(list, counts) { managing = false }
     }
 }
 

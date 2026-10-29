@@ -49,19 +49,15 @@ import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.TitleAndTrailing
 
 /**
- * Opened from the library's collection chips and the side panel; [counts] is how many books each collection holds,
- * [suggestions] the shelves offered under them.
+ * Opened from the library's collection chips and the side panel, for [list]'s collections; [counts] is how many books
+ * each holds. The shelves its books suggest are offered under them, worked out only while the sheet is open.
  */
 @Composable
-internal fun CollectionsRoute(
-    collections: List<BookCollection>,
-    counts: Map<String, Int>,
-    suggestions: List<ShelfSuggestion>,
-    onDismiss: () -> Unit,
-) {
+internal fun CollectionsRoute(list: LibraryListState.Loaded, counts: Map<String, Int>, onDismiss: () -> Unit) {
     val writer = rememberCollectionWriter()
+    val suggestions = rememberShelfSuggestions(list.all, list.collections, list.members)
     CollectionsSheet(
-        collections,
+        list.collections,
         counts,
         rememberShelfLooks(),
         onCreate = { name, look -> writer.create(name, look = look) },
