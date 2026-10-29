@@ -6,7 +6,7 @@
   dependency.
 - **Cost:** four small icons; the closed drawer stays composed off screen (a dozen rows). APK about 6 KB.
 - **Could affect:** the library's top bar (a button at the start), the app shell on phones, the You page's heading.
-- **Verified in CI:** `PhoneDrawerTest`, `AppShellTest`, release journey step 45.
+- **Verified in CI:** `PhoneDrawerTest`, `AppShellTest`, release journey step 50.
 
 **Real-device checks (the test phone):** tap the menu button: the drawer slides in over the bar. Tap Finished: the
 drawer closes and the library shows finished books. Open it, tap Listening stats: the drawer closes first, then the

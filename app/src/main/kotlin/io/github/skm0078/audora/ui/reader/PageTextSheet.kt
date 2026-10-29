@@ -1,7 +1,8 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/PageTextSheet.kt
 // Purpose: The reader's "Page and text" sheet (ADR-062): page colours (plan item 18) in both views; in the text view,
 //          follow-along, word highlight and its style (items 13, 14), Focus view and bold word starts (item 77), and
-//          the type settings (item 15) with a sample line that shows each change at once.
+//          the type settings (item 15) with a sample line that shows each change at once; how pages turn in both views
+//          (ADR 2026-10-29-page-curl).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -18,6 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.ui.reader.flip.TurnShadow
+import io.github.skm0078.audora.ui.reader.flip.TurnSpeed
+import io.github.skm0078.audora.ui.reader.flip.TurnStyle
 import io.github.skm0078.audora.ui.theme.ChoiceOption
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.OptionBlock
@@ -43,6 +47,8 @@ internal fun PageTextSheet(
     OptionSheet(stringResource(R.string.page_text_title), onDismiss) {
         OptionGroup(title = null) {
             ToneBlock(look, onLookChange)
+            OptionDivider()
+            TurnRows(look, onLookChange)
             if (textView) {
                 OptionDivider()
                 TypeRows(look, onLookChange)
@@ -74,6 +80,38 @@ private fun ToneBlock(look: ReadingLook, onLookChange: (ReadingLook) -> Unit) {
             }
         }
     }
+}
+
+/** How pages turn: the style, then its speed and (for a curl) its shadow, shown only when they apply. */
+@Composable
+private fun TurnRows(look: ReadingLook, onLookChange: (ReadingLook) -> Unit) {
+    val turn = look.turn
+    ChoiceOption(
+        stringResource(R.string.page_turn_style),
+        TurnStyle.entries,
+        turn.style,
+        label = { stringResource(it.label) },
+        onPick = { onLookChange(look.copy(turn = turn.copy(style = it))) },
+        help = stringResource(R.string.page_turn_style_help),
+    )
+    if (turn.style == TurnStyle.NONE) return
+    OptionDivider()
+    ChoiceOption(
+        stringResource(R.string.page_turn_speed),
+        TurnSpeed.entries,
+        turn.speed,
+        label = { stringResource(it.label) },
+        onPick = { onLookChange(look.copy(turn = turn.copy(speed = it))) },
+    )
+    if (turn.style != TurnStyle.CURL) return
+    OptionDivider()
+    ChoiceOption(
+        stringResource(R.string.page_turn_shadow),
+        TurnShadow.entries,
+        turn.shadow,
+        label = { stringResource(it.label) },
+        onPick = { onLookChange(look.copy(turn = turn.copy(shadow = it))) },
+    )
 }
 
 /** Size as a slider with its percentage; font, spacing and running paragraphs as rows that show what is set. */
@@ -185,6 +223,27 @@ private val PageTone.label: Int
         PageTone.ORIGINAL -> R.string.page_tone_original
         PageTone.SEPIA -> R.string.page_tone_sepia
         PageTone.DARK -> R.string.page_tone_dark
+    }
+
+private val TurnStyle.label: Int
+    @StringRes get() = when (this) {
+        TurnStyle.CURL -> R.string.page_turn_curl
+        TurnStyle.SLIDE -> R.string.page_turn_slide
+        TurnStyle.NONE -> R.string.page_turn_none
+    }
+
+private val TurnSpeed.label: Int
+    @StringRes get() = when (this) {
+        TurnSpeed.QUICK -> R.string.page_turn_quick
+        TurnSpeed.NORMAL -> R.string.page_turn_normal
+        TurnSpeed.SLOW -> R.string.page_turn_slow
+    }
+
+private val TurnShadow.label: Int
+    @StringRes get() = when (this) {
+        TurnShadow.LIGHT -> R.string.page_turn_shadow_light
+        TurnShadow.NORMAL -> R.string.page_turn_normal
+        TurnShadow.STRONG -> R.string.page_turn_shadow_deep
     }
 
 private val HighlightStyle.label: Int

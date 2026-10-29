@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="page_turn_style">पन्ना पलटना</string>
+    <string name="page_turn_style_help">मुड़ना: पन्ना कागज़ की तरह कोने से उठकर पलटता है। सरकना: पन्ना बगल में खिसकता है। कुछ नहीं: अगला पन्ना तुरंत दिखता है। पढ़कर सुनाते समय पन्ने इसी तरह, पर जल्दी पलटते हैं।</string>
+    <string name="page_turn_curl">मुड़ना</string>
+    <string name="page_turn_slide">सरकना</string>
+    <string name="page_turn_none">कुछ नहीं</string>
+    <string name="page_turn_speed">पलटने की रफ़्तार</string>
+    <string name="page_turn_quick">तेज़</string>
+    <string name="page_turn_normal">सामान्य</string>
+    <string name="page_turn_slow">धीमी</string>
+    <string name="page_turn_shadow">मोड़ की छाया</string>
+    <string name="page_turn_shadow_light">हल्की</string>
+    <string name="page_turn_shadow_deep">गहरी</string>
+</resources>

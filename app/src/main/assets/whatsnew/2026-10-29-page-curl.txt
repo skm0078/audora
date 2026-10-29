@@ -1,0 +1,3 @@
+en: Pages now curl like paper when they turn, in PDFs and text books alike. Pick Curl, Slide or None, and the speed, in Page and text.
+hi: पन्ने अब पलटते समय कागज़ की तरह मुड़ते हैं, PDF में भी और टेक्स्ट वाली किताबों में भी। पेज और टेक्स्ट में मुड़ना, सरकना या कुछ नहीं, और रफ़्तार चुनें।
+bn: পাতা এখন ওল্টানোর সময় কাগজের মতো ভাঁজ হয়, PDF আর লেখার বই দুটোতেই। পৃষ্ঠা আর লেখা-য় ভাঁজ, সরানো বা কিছু না, আর গতি বেছে নিন।
