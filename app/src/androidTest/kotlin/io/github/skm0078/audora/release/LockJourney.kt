@@ -18,9 +18,9 @@ import io.github.skm0078.audora.privacy.AppLockSession
 import io.github.skm0078.audora.privacy.PrivacyPreferences
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
+import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.logCount
 import io.github.skm0078.audora.release.JourneyDevice.logTail
-import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
