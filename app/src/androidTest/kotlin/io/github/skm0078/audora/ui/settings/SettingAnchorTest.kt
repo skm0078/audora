@@ -1,6 +1,7 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/settings/SettingAnchorTest.kt
 // Purpose: A setting anchor holding several rows stacks them: voice commands' model row and its switch were drawn on
-//          top of each other, their texts unreadable. Every Download in Settings says which pack it fetches.
+//          top of each other, their texts unreadable, before and after the model is installed. The pack's button says
+//          which pack it acts on.
 
 package io.github.skm0078.audora.ui.settings
 
@@ -47,6 +48,32 @@ class SettingAnchorTest {
         val switchRow = rule.onNodeWithText(text(R.string.commands_switch_title), substring = true)
         val switch = switchRow.fetchSemanticsNode().boundsInRoot
         assertTrue("switch at ${switch.top} is above Download's end, ${model.bottom}", switch.top >= model.bottom)
+    }
+
+    /** As on the test phone: the model installed, its Delete, then the switch (on) and the screen-off row. */
+    @Test
+    fun installedModelsDeleteSwitchAndScreenOffRowStack() {
+        val settings = VoiceCommandsSettings(
+            model = OcrModelsState.Ready(bytes = MODEL_BYTES),
+            mode = VoiceCommandsMode.WHILE_VISIBLE,
+            onModel = {},
+            onChange = {},
+        )
+        rule.setContent { AudoraTheme { SettingAnchor(SettingKey.VOICE_COMMANDS) { VoiceCommandsItems(settings) } } }
+
+        val delete = text(
+            R.string.a11y_named_button,
+            text(R.string.ocr_models_delete),
+            text(R.string.commands_model_title),
+        )
+        val rows = listOf(
+            rule.onNodeWithContentDescription(delete),
+            rule.onNodeWithText(text(R.string.commands_switch_title), substring = true),
+            rule.onNodeWithText(text(R.string.commands_screen_off_title), substring = true),
+        ).map { it.fetchSemanticsNode().boundsInRoot }
+        rows.zipWithNext().forEach { (above, below) ->
+            assertTrue("row at ${below.top} starts above the one before's end, ${above.bottom}", below.top >= above.bottom)
+        }
     }
 
     private companion object {
