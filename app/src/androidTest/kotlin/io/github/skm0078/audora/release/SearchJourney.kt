@@ -36,8 +36,8 @@ internal class SearchJourney(private val rule: ComposeTestRule, private val back
         first(hasContentDescription(text(R.string.library_search))).performClick()
         waitFor(hasSetTextAction())
         first(hasSetTextAction()).performTextInput(SEARCHED_SETTING)
-        // The found rows first show above every book, then alone once the search's pause has narrowed the books to
-        // none. A tap landing on that swap is lost (seen on CI), so tap once the screen has settled, as a listener does.
+        // The found rows first show above every book, then alone once the search's pause has narrowed the books
+        // to none. A tap landing on that swap is lost (seen on CI), so tap once the screen has settled.
         waitFor(hasText(text(R.string.found_no_book, SEARCHED_SETTING)))
         val row = hasText(text(R.string.settings_volume_keys_title)) and hasAnyAncestor(hasTestTag(FOUND_TAG))
         first(row).performClick()
