@@ -190,6 +190,9 @@ class ReleaseJourneyTest {
         step("28 a text turn slides in and settles where the text was") {
             share.aTextTurnSlidesAndSettles(MORE_FORMATS.first())
         }
+        step("50 a PDF page curls as it turns, and Page and text keeps Slide when picked") {
+            CurlJourney(rule, ::activity).aPdfPageCurlsAndSlideCanBePicked(BOOK)
+        }
         step(
             "29 a story's women and men each get a voice of their own gender",
             CharacterJourney::womenAndMenGetVoicesOfTheirGender,

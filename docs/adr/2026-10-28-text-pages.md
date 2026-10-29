@@ -31,10 +31,10 @@ where it is.
    about while the listener is listening.
 
 ## Not done (decided or flagged)
-- A curl animation: a page-shaped mesh drawn every frame, far heavier than a slide on an entry phone.
+- A curl animation: done since as a flat fold on a Canvas, not a mesh (ADR 2026-10-29-page-curl).
 - Volume keys turning screens: **not doing** (maintainer, 2026-10-28). A key that turned the screen and also
   changed the volume would fight with reading aloud.
-- "Turn pages" as the default for text books: proposed after the maintainer tries it on the test phone.
+- "Turn pages" as the default for text books: on since ADR 2026-10-29-page-curl (maintainer, 2026-10-29).
 
 ## Consequences
 - No new dependency; nothing at cold start. A turn is one `scrollToItem` of an already composed list, then about
