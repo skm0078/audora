@@ -1,9 +1,11 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/release/HomeJourney.kt
-// Purpose: Release journey step 44 (ADR 2026-10-28-make-it-yours): "Make it yours" names the greeting and turns a
-//          home part on, at once and without a Save, and both undo the same way.
+// Purpose: Release journey steps 44 and 47 (ADR 2026-10-28-make-it-yours, ADR 2026-10-29-personal-touches-2): "Make
+//          it yours" names the greeting and turns a home part on, at once and without a Save, and both undo the same
+//          way; "This week" is one of its parts, and its card opens Your listening.
 
 package io.github.skm0078.audora.release
 
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
@@ -55,6 +57,26 @@ internal class HomeJourney(private val rule: ComposeTestRule, private val backTo
         closeSheet()
         rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(namedGreeting()) }
         waitFor(hasText(text(R.string.library_title)))
+    }
+
+    /**
+     * The sheet lists This week. The journey has listened by now (step 30's stats), so the card is on the home: a tap
+     * opens Your listening. On a phone whose log was cleared the card is rightly absent and only the sheet is checked.
+     */
+    fun offersThisWeek() {
+        backToTabs()
+        tap(hasText(text(R.string.tab_library)) and hasClickAction())
+        openSheet()
+        waitFor(hasContentDescription(text(R.string.home_section_week)) and hasClickAction())
+        closeSheet()
+        val card = SemanticsMatcher("click labelled ${text(R.string.home_week_open)}") {
+            it.config.getOrNull(SemanticsActions.OnClick)?.label == text(R.string.home_week_open)
+        }
+        if (!rule.shows(card)) return
+        rule.onAllNodes(card).onFirst().performScrollTo().performClick()
+        waitFor(hasText(text(R.string.stats_title)))
+        JourneyDevice.pressBackKey()
+        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasText(text(R.string.stats_title))) }
     }
 
     private fun openSheet() {
