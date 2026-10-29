@@ -76,7 +76,9 @@ internal fun VoiceCommandsItems(settings: VoiceCommandsSettings) {
         stringResource(R.string.commands_switch_title),
         on,
         { turnOn -> settings.onChange(if (turnOn) VoiceCommandsMode.WHILE_VISIBLE else VoiceCommandsMode.OFF) },
-        subtitle = if (ready) null else stringResource(R.string.commands_switch_needs_model),
+        subtitle = stringResource(
+            if (ready) R.string.row_line_voice_commands else R.string.commands_switch_needs_model,
+        ),
         help = stringResource(R.string.commands_switch_body),
         enabled = ready,
     )
@@ -88,6 +90,7 @@ internal fun VoiceCommandsItems(settings: VoiceCommandsSettings) {
             { screenOff ->
                 settings.onChange(if (screenOff) VoiceCommandsMode.SCREEN_OFF else VoiceCommandsMode.WHILE_VISIBLE)
             },
+            subtitle = stringResource(R.string.row_line_commands_screen_off),
             help = pluralStringResource(R.plurals.commands_screen_off_body, IDLE_MINUTES, IDLE_MINUTES),
         )
     }

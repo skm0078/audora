@@ -2,7 +2,7 @@
 <!-- File: app/src/main/res/values-bn/strings_studio.xml -->
 <!-- Purpose: Bengali copy of values/strings_studio.xml. -->
 <resources>
-    <string name="library_studio_mode">স্টুডিও মোড</string>
+    <string name="library_studio_mode">আগে থেকে তৈরি করুন (স্টুডিও মোড)</string>
     <string name="studio_sheet_title">স্টুডিও মোড: “%1$s”</string>
     <string name="studio_sheet_what">স্টুডিও মোড এই বইয়ের কথা আগে থেকে রেকর্ড করে রাখে, আপনি যেখানে আছেন সেখান থেকে, যে ভয়েস আর গতিতে আপনি শোনেন সেভাবেই, একবারে ৬ ঘণ্টা পর্যন্ত। তারপর শোনার সময় ভয়েসের জন্য অপেক্ষা না করে রেকর্ডিং চলে। ধীর ভয়েসের জন্য এটি সবচেয়ে কাজের (ডাউনলোড করা Kokoro ভয়েস, অভিনয়ের হিন্দি); বিল্ট-ইন ভয়েস সরাসরি পড়ার মতো যথেষ্ট দ্রুত। ফোন চার্জে থাকলেই এটি চলে, যদি না আপনি এখনই শুরু করুন টেপেন।</string>
     <string name="studio_sheet_running">এখন</string>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-bn/strings_row_lines.xml
+  Purpose: One line under each option row saying what it changes and what it costs, in Bengali, so its effect shows
+           without the info button (ADR 2026-10-29-say-what-it-does).
+-->
+<resources>
+    <string name="row_line_clause_pauses">ড্যাশ, কোলন আর উদ্ধৃতিতে ছোট বিরতি</string>
+    <string name="row_line_even_loudness">প্রতিটি বাক্য আর ভয়েস একই আওয়াজে</string>
+    <string name="row_line_trim_pauses">ভয়েসের নিজের লম্বা নীরবতা ছোট করে</string>
+    <string name="row_line_smart_speed">দ্রুত কথা স্পষ্ট রাখে · 1×-এ কোনো বদল নেই</string>
+    <string name="row_line_cast_characters">গল্পের সংলাপ পায় নিজস্ব ভয়েস</string>
+    <string name="row_line_reflow">বইয়ের মতো একটানা · বন্ধ: প্রতি সারিতে একটি বাক্য</string>
+    <string name="row_line_turn_pages">একবারে এক স্ক্রিন, ওল্টাতে সোয়াইপ করুন</string>
+    <string name="row_line_word_highlight">বলার সময় প্রতিটি শব্দ চিহ্নিত করে</string>
+    <string name="row_line_bold_word_starts">ইংরেজি শব্দের শুরু বোল্ড করে</string>
+    <string name="row_line_study_loop">A থেকে B বারবার, যতক্ষণ না মুছে দেন</string>
+    <string name="row_line_keep_screen_on">পড়ার সময় বেশি ব্যাটারি খরচ হয়</string>
+    <string name="row_line_wallpaper_colours">সবুজের বদলে আপনার ওয়ালপেপারের রং</string>
+    <string name="row_line_true_black">পুরো কালো ডার্ক মোড · OLED-এ ব্যাটারি বাঁচায়</string>
+    <string name="row_line_volume_keys">ভলিউম বোতামে এক বাক্য এগোয়-পিছোয়</string>
+    <string name="row_line_voice_commands">“ListenLock, pause” বলুন · একটু ব্যাটারি লাগে</string>
+    <string name="row_line_commands_screen_off">মাইক্রোফোন চালু থাকে · বেশি ব্যাটারি</string>
+    <string name="row_line_pack_ocr">ছবি বা স্ক্যান করা পৃষ্ঠা পড়ে</string>
+    <string name="row_line_pack_punctuation">ইংরেজি স্ক্যানে স্বাভাবিক বিরতি</string>
+    <string name="row_line_pack_acted">স্টুডিও মোডের জন্য অভিনয়ের হিন্দি · ধীর</string>
+    <string name="row_line_pack_story_brain">চরিত্রের আরও ঠিক ভয়েস · 6 GB ফোন</string>
+    <string name="row_line_pack_voice_commands">না ছুঁয়ে থামান, চালান আর এগোন</string>
+</resources>

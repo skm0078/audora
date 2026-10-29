@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-hi/strings_row_lines.xml
+  Purpose: One line under each option row saying what it changes and what it costs, in Hindi, so its effect shows
+           without the info button (ADR 2026-10-29-say-what-it-does).
+-->
+<resources>
+    <string name="row_line_clause_pauses">डैश, कोलन और उद्धरण पर छोटा ठहराव</string>
+    <string name="row_line_even_loudness">हर वाक्य और आवाज़ एक ही वॉल्यूम पर</string>
+    <string name="row_line_trim_pauses">आवाज़ की अपनी लंबी चुप्पी छोटी करता है</string>
+    <string name="row_line_smart_speed">तेज़ बोली साफ़ रखता है · 1× पर कोई बदलाव नहीं</string>
+    <string name="row_line_cast_characters">कहानी के संवादों को उनकी अपनी आवाज़ें</string>
+    <string name="row_line_reflow">किताब की तरह बहता है · बंद: हर पंक्ति में एक वाक्य</string>
+    <string name="row_line_turn_pages">एक बार में एक स्क्रीन, पलटने के लिए स्वाइप करें</string>
+    <string name="row_line_word_highlight">हर शब्द को बोलते समय चिह्नित करता है</string>
+    <string name="row_line_bold_word_starts">अंग्रेज़ी शब्दों की शुरुआत बोल्ड करता है</string>
+    <string name="row_line_study_loop">A से B तक दोहराता है, जब तक आप हटा न दें</string>
+    <string name="row_line_keep_screen_on">पढ़ते समय ज़्यादा बैटरी लगती है</string>
+    <string name="row_line_wallpaper_colours">हरे रंग की जगह आपके वॉलपेपर के रंग</string>
+    <string name="row_line_true_black">पूरा काला डार्क मोड · OLED पर बैटरी बचाता है</string>
+    <string name="row_line_volume_keys">वॉल्यूम बटन एक वाक्य आगे-पीछे करते हैं</string>
+    <string name="row_line_voice_commands">“ListenLock, pause” बोलें · थोड़ी बैटरी लगती है</string>
+    <string name="row_line_commands_screen_off">माइक्रोफ़ोन चालू रहता है · ज़्यादा बैटरी</string>
+    <string name="row_line_pack_ocr">फ़ोटो या स्कैन वाले पेज पढ़ता है</string>
+    <string name="row_line_pack_punctuation">अंग्रेज़ी स्कैन में स्वाभाविक ठहराव</string>
+    <string name="row_line_pack_acted">स्टूडियो मोड के लिए अभिनय वाली हिंदी · धीमी</string>
+    <string name="row_line_pack_story_brain">पात्रों की सही आवाज़ें · 6 GB वाले फ़ोन</string>
+    <string name="row_line_pack_voice_commands">बिना छुए रोकें, चलाएँ और आगे बढ़ें</string>
+</resources>
