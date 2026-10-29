@@ -128,7 +128,7 @@ private fun Header(canClear: Boolean, onClear: () -> Unit) {
             ConfirmedTextButton(
                 stringResource(R.string.up_next_clear),
                 stringResource(R.string.up_next_clear_question),
-                onClear,
+                onConfirm = onClear,
             )
         }
     }
