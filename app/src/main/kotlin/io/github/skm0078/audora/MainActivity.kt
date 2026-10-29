@@ -779,7 +779,9 @@ class MainActivity : ComponentActivity() {
             covers = bookCovers,
             runningJobs = rememberRunningJobCount(),
             view = rememberLibraryLayout(),
-            home = rememberLibraryHome(highlightStore, loadedBooks, nav::openPlace),
+            home = rememberLibraryHome(highlightStore, loadedBooks, nav::openPlace) {
+                studio.onLibraryAction(LibraryAction.LISTENING_STATS)
+            },
             requested = nav.pendingLibraryAction,
             onRequestTaken = { nav.pendingLibraryAction = null },
             settingValues = settingValues(
