@@ -28,7 +28,9 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.notes.Highlight
 import io.github.skm0078.audora.core.notes.HighlightStore
 import io.github.skm0078.audora.core.resume.ResumeAnchor
+import io.github.skm0078.audora.core.stats.WeekGlance
 import io.github.skm0078.audora.di.HomeEntryPoint
+import io.github.skm0078.audora.ui.stats.rememberWeekGlance
 import java.io.IOException
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
@@ -42,9 +44,14 @@ import kotlinx.coroutines.withContext
 @Immutable
 data class DayLine(val quote: String, val book: Book, val page: Int, val anchor: ResumeAnchor)
 
+/** The week's listening for the home's "This week", and what a tap on it opens. */
+@Immutable
+class HomeWeek(val glance: WeekGlance, val onOpen: () -> Unit)
+
 /**
  * The library's personal parts. [layout] is null for the few milliseconds until it is read, so the home never jumps
- * from the default sections to the listener's. [glances] by book; [line] null without a highlight.
+ * from the default sections to the listener's. [glances] by book; [line] null without a highlight; [week] null until
+ * the listening log is read, and while nothing was ever listened.
  */
 @Immutable
 class LibraryHome(
@@ -53,6 +60,7 @@ class LibraryHome(
     val glances: Map<BookId, BookGlance> = emptyMap(),
     val line: DayLine? = null,
     val onOpenLine: (ResumeAnchor) -> Unit = {},
+    val week: HomeWeek? = null,
 ) {
     companion object {
         /** The default home, for previews and screens without the listener's choices. */
@@ -90,13 +98,15 @@ class HomePreferences(context: Context) {
 
 /**
  * The listener's home for [books]: their saved choices, the glances (loaded off the main thread; books no longer in
- * the library are forgotten) and today's line from [highlights], which [onOpenLine] opens at its sentence.
+ * the library are forgotten), today's line from [highlights], which [onOpenLine] opens at its sentence, and the week's
+ * listening, which [onOpenWeek] opens in full.
  */
 @Composable
 fun rememberLibraryHome(
     highlights: HighlightStore,
     books: List<Book>?,
     onOpenLine: (ResumeAnchor) -> Unit,
+    onOpenWeek: () -> Unit,
 ): LibraryHome {
     val context = LocalContext.current.applicationContext
     val preferences = remember(context) { HomePreferences(context) }
@@ -111,7 +121,15 @@ fun rememberLibraryHome(
         withContext(Dispatchers.IO) { glances.prune(kept) }
     }
     val line = remember(all, books) { dayLine(all, books.orEmpty(), LocalDate.now().toEpochDay()) }
-    return LibraryHome(layout, { picked -> scope.launch { preferences.save(picked) } }, shown, line, onOpenLine)
+    val week = rememberWeekGlance()?.let { HomeWeek(it, onOpenWeek) }
+    return LibraryHome(
+        layout,
+        { picked -> scope.launch { preferences.save(picked) } },
+        shown,
+        line,
+        onOpenLine,
+        week,
+    )
 }
 
 /** Only a highlight whose book is still in the library: the card names it and opens it. */

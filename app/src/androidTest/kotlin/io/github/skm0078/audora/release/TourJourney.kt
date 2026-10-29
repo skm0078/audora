@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.release.JourneyDevice.app
+import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.ui.firstrun.TOUR_TAG
 import io.github.skm0078.audora.ui.firstrun.TourStop
@@ -29,7 +30,7 @@ internal class TourJourney(private val rule: ComposeTestRule) {
     fun isOfferedOnceAndPutOff() {
         rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(hasText(text(R.string.tour_offer_title), substring = true)) }
         tap(hasText(text(R.string.tour_later)))
-        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasText(text(R.string.tour_later))) }
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(hasText(text(R.string.tour_later))) }
     }
 
     /** Replayed from You: each stop says which it is, Next walks them, and Done leaves the library as it was. */
@@ -47,7 +48,7 @@ internal class TourJourney(private val rule: ComposeTestRule) {
             if (index < stops - 1) tap(hasText(text(R.string.tour_next)))
         }
         tap(hasText(text(R.string.tour_done)))
-        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasTestTag(TOUR_TAG)) }
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(hasTestTag(TOUR_TAG)) }
         rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(hasText(text(R.string.library_title))) }
     }
 

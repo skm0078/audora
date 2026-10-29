@@ -1,0 +1,21 @@
+---
+layout: default
+title: Blog
+description: Notes from the people making ListenLock, on reading aloud, Indian languages, listening and what's new in the app.
+---
+<h1>Blog</h1>
+<p class="summary">Notes on reading aloud, Hindi and Bengali, listening habits and what's new in ListenLock.
+  <a href="{{ '/blog/feed.xml' | relative_url }}">Follow with RSS</a>.</p>
+{% if site.posts.size > 0 %}
+<ol class="post-list">
+  {% for post in site.posts %}
+  <li>
+    <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%-d %B %Y" }}</time>
+    <a href="{{ post.url | relative_url }}"><h2>{{ post.title }}</h2></a>
+    {% if post.description %}<p>{{ post.description }}</p>{% endif %}
+  </li>
+  {% endfor %}
+</ol>
+{% else %}
+<p class="empty">The first post arrives with ListenLock 0.1.0. Meanwhile, the <a href="{{ '/recipes/' | relative_url }}">recipes</a> show what the app can do.</p>
+{% endif %}

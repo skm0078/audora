@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/LibraryScreen.kt
-// Purpose: Library tab: the listener's home parts, a cover grid (a list at large text), Add book, the duplicate check
-//          (ADR-036, ADR 2026-10-28-make-it-yours).
+// Purpose: Library tab: the listener's home parts, a cover grid (a list at large text), Add book and its sheet, the
+//          duplicate check (ADR-036, ADR 2026-10-28-make-it-yours, ADR 2026-10-29-add-a-book).
 
 package io.github.skm0078.audora.ui.library
 
@@ -145,7 +145,7 @@ fun LibraryScreen(
                 busy = busy,
                 actions = screenActions,
                 snackbar = snackbar,
-                onAddPdf = pickPdf,
+                onAddPdf = { screenActions.onLibraryAction(LibraryAction.ADD_BOOK) },
                 onTap = onTap,
                 onDetails = { details = it.book.id.value },
                 modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -161,7 +161,7 @@ fun LibraryScreen(
     BookSheets(listState, actions, covers, details) { details = null }
     pendingRemoval?.let { RemovalDialog(it, actions) }
     duplicate?.let { DuplicateDialog(it, listState, actions) }
-    OwnSheetHost(ownSheets, listState, home, view)
+    OwnSheetHost(ownSheets, listState, home, view, onFile = pickPdf)
 }
 
 /**
@@ -262,7 +262,7 @@ private fun LibraryContent(
                 // Actions and settings the search names, above the books (ADR 2026-10-28-action-search).
                 val found = rememberFoundRows(listState, settingValues)
                 if (listState.items.isEmpty() && found.isNotEmpty()) {
-                    FoundOnly(found, listState.query.text) { menu.open(it) }
+                    FoundOnly(found, listState.narrowedFor) { menu.open(it) }
                 } else if (listState.items.isEmpty()) {
                     Centered {
                         Text(

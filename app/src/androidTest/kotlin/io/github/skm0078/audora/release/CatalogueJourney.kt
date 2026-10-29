@@ -10,6 +10,7 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onFirst
@@ -19,6 +20,8 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.playback.web.CuratedCatalogue
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.shows
+import io.github.skm0078.audora.ui.library.ADD_BOOK_SHEET_TAG
+import io.github.skm0078.audora.ui.library.AddBookSource
 import io.github.skm0078.audora.ui.web.aboutOf
 import org.junit.Assert.assertTrue
 
@@ -36,13 +39,18 @@ internal class CatalogueJourney(private val rule: ComposeTestRule, private val b
     }
 
     /**
-     * The library's ⋮ menu opens Free book catalogues: every curated catalogue is listed with what it offers, and
-     * there is no field to type a catalogue's address. Close goes back to the library.
+     * Add book opens the Add a book sheet, which names every way in with its line (ADR 2026-10-29-add-a-book); its
+     * Free book catalogues closes the sheet and lists every curated catalogue with what it offers, and there is no
+     * field to type a catalogue's address. Close goes back to the library.
      */
     fun theCuratedCataloguesAreListed() {
         backToTabs()
         tap(hasText(text(R.string.tab_library)) and hasClickAction())
-        tap(hasContentDescription(text(R.string.reader_more)))
+        tap(hasContentDescription(text(R.string.library_add_pdf)))
+        waitForNode(hasTestTag(ADD_BOOK_SHEET_TAG))
+        AddBookSource.all.forEach { source ->
+            assertTrue("Add a book offers ${text(source.label)}", rule.shows(hasText(text(source.line))))
+        }
         tap(hasText(text(R.string.library_book_catalogues)))
         val explain = hasText(text(R.string.catalogues_explain))
         waitForNode(explain)

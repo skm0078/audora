@@ -12,6 +12,9 @@ import dagger.hilt.components.SingletonComponent
 import io.github.skm0078.audora.core.library.BookOutputStore
 import io.github.skm0078.audora.core.library.CollectionStore
 import io.github.skm0078.audora.core.library.Library
+import io.github.skm0078.audora.core.library.ShelfLooks
+import io.github.skm0078.audora.core.notes.BookSettingsStore
+import io.github.skm0078.audora.core.words.LookedUpWords
 import io.github.skm0078.audora.ui.library.BookCovers
 
 @EntryPoint
@@ -24,6 +27,12 @@ interface LibraryEntryPoint {
     fun covers(): BookCovers
 
     fun collections(): CollectionStore
+
+    fun shelfLooks(): ShelfLooks
+
+    fun bookSettings(): BookSettingsStore
+
+    fun lookedUpWords(): LookedUpWords
 
     companion object {
         fun of(context: Context): LibraryEntryPoint =

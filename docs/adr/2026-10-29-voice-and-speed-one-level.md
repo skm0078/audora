@@ -29,7 +29,7 @@ player said which voice was reading.
 - **Guarded by** `SpeechSpotTest` (group order, shortcut targets, header summaries), `BookVoicesSectionTest` (the
   chip's voice), `SpeechSheetGroupsTest` (a group opens in place and closes when another opens; a shortcut opens its
   group; one sheet title), `PlayerLayoutTest` (chip left, play centred, sleep right at every font size) and release
-  journey step 49.
+  journey step 50.
 
 ## Consequences
 

@@ -52,8 +52,9 @@ internal fun BookPane(
                         .windowInsetsPadding(PANE_INSETS)
                         .verticalScroll(rememberScrollState())
                         .padding(vertical = Dimens.SpaceL),
-                    saveAsOpen = true,
                     onOpen = onOpen,
+                    saveAsOpen = true,
+                    coverOpens = true,
                 ) { choice -> choice() }
             }
         }

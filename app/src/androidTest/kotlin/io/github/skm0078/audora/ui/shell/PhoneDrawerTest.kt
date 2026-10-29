@@ -54,9 +54,7 @@ class PhoneDrawerTest {
         collections = SidebarShelves(listOf(Shelf("c1", "For Ma", 3))) { opened += "collection $it" },
         onMade = { opened += "made" },
         links = PanelLinks(
-            onMakeItYours = { opened += "make it yours" },
-            onEditCollections = { opened += "collections" },
-            onListeningStats = { opened += "stats" },
+            onLibraryAction = { opened += it.name },
             onTour = { opened += "tour" },
             onSettings = { opened += "settings" },
         ),
@@ -96,8 +94,13 @@ class PhoneDrawerTest {
             R.string.sidebar_collections,
             R.string.drawer_made_audio,
             R.string.drawer_your_library,
+            R.string.library_add_pdf,
             R.string.library_make_it_yours,
             R.string.collections_edit,
+            R.string.library_watched_folders,
+            R.string.library_sync_folder,
+            R.string.library_backup,
+            R.string.library_quiz,
             R.string.library_listening_stats,
             R.string.settings_tour_title,
             R.string.settings_title,
@@ -124,7 +127,7 @@ class PhoneDrawerTest {
             rule.waitForIdle()
             rule.onNodeWithTag(DRAWER_TAG).assertDoesNotExist()
         }
-        assertEquals(listOf("make it yours", "collections"), opened)
+        assertEquals(listOf("MAKE_IT_YOURS", "EDIT_COLLECTIONS"), opened)
     }
 
     @Test

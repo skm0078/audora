@@ -240,7 +240,7 @@ internal class StudioLibrary(
         LibraryAction.TRY_SAMPLE -> parts.onText(sampleBook(parts.activity))
 
         // The library screen opens these sheets itself.
-        LibraryAction.MAKE_IT_YOURS, LibraryAction.EDIT_COLLECTIONS -> Unit
+        LibraryAction.MAKE_IT_YOURS, LibraryAction.EDIT_COLLECTIONS, LibraryAction.ADD_BOOK -> Unit
     }
 
     /** The sheet open now, if any; [books] (null while the list loads) holds the character guide's book. */
