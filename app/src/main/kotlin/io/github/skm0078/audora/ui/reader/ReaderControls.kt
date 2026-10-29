@@ -202,7 +202,8 @@ private fun SleepTimerButton(
     enabled: Boolean,
     actions: ReaderActions,
 ) {
-    var editingOptions by remember { mutableStateOf(false) }
+    // Kept across a rotation, as the dialog's unsaved choices are.
+    var editingOptions by rememberSaveable { mutableStateOf(false) }
     SleepTimerMenuButton(
         timer = playback.sleepTimer,
         choices = sleepTimerChoices(playback.hasChapters, config),

@@ -49,6 +49,7 @@ import io.github.skm0078.audora.core.library.CollectionNames
 import io.github.skm0078.audora.core.library.ShelfColour
 import io.github.skm0078.audora.core.library.ShelfEmoji
 import io.github.skm0078.audora.core.library.ShelfLook
+import io.github.skm0078.audora.core.text.TextCuts
 import io.github.skm0078.audora.ui.shell.ShelfBadge
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.ShelfColours
@@ -88,7 +89,7 @@ internal fun ShelfEditor(
         }
         OutlinedTextField(
             value = name,
-            onValueChange = { name = it.take(CollectionNames.MAX_LENGTH) },
+            onValueChange = { name = TextCuts.take(it, CollectionNames.MAX_LENGTH) },
             label = { Text(stringResource(R.string.collections_name)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
