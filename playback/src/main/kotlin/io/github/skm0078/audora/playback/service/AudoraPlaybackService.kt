@@ -19,6 +19,7 @@ import androidx.media3.session.MediaSession
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.core.config.QueueConfig
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
+import io.github.skm0078.audora.core.home.BookGlances
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.AfterSentence
@@ -142,6 +143,9 @@ class AudoraPlaybackService : MediaLibraryService() {
 
     @Inject
     lateinit var bookmarks: BookmarkStore
+
+    @Inject
+    lateinit var bookGlances: BookGlances
 
     // A task that throws (a damaged file, a database error) is logged and the rest of the service keeps playing;
     // without the handler one such failure would end the process mid-book.
@@ -397,7 +401,7 @@ class AudoraPlaybackService : MediaLibraryService() {
         return SessionPublisher(
             mediaSession,
             DiagnosticsBridge(tracker, scope),
-            ResumeBridge(recorder, resumeScope),
+            ResumeBridge(recorder, resumeScope, bookGlances),
             heard,
             stores.sleepOptions::current,
             bookSettings = { stores.book.settings },

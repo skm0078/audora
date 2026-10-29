@@ -48,6 +48,7 @@ internal fun LibraryTopBar(
     actions: LibraryActions,
     runningJobs: Int = 0,
     view: LibraryLayoutState = LibraryLayoutState(LibraryLayout.AUTO) {},
+    name: String = "",
 ) {
     val loaded = listState as? LibraryListState.Loaded
     LibraryTopBar(
@@ -59,6 +60,7 @@ internal fun LibraryTopBar(
         onOpenJobs = actions::onOpenJobs,
         shown = loaded?.items?.size ?: 0,
         view = view,
+        name = name,
     )
 }
 
@@ -66,7 +68,7 @@ internal fun LibraryTopBar(
  * Search and the sort sheet's button show once the library has a book; [shown] is how many books the sheet leaves.
  * Closing the search clears its text but keeps the sort and filter, which stay until changed. Jobs live in the Made
  * place; the Jobs button here is only a shortcut while something runs, with a badge counting what works now (ADR
- * 2026-10-28-four-places).
+ * 2026-10-28-four-places). [name]: what the greeting calls the listener, from "Make it yours"; blank greets no one.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,6 +81,7 @@ internal fun LibraryTopBar(
     onOpenJobs: () -> Unit = {},
     shown: Int = 0,
     view: LibraryLayoutState = LibraryLayoutState(LibraryLayout.AUTO) {},
+    name: String = "",
 ) {
     var searching by rememberSaveable { mutableStateOf(query.text.isNotEmpty()) }
     // The keyboard rises only after a tap on search, never when the library is rebuilt with a search still open (a
@@ -95,7 +98,7 @@ internal fun LibraryTopBar(
             if (searching) {
                 SearchField(query.text, focusOnOpen) { onQuery(query.copy(text = it)) }
             } else {
-                LibraryTitle()
+                LibraryTitle(name)
             }
         },
         navigationIcon = {
@@ -121,13 +124,23 @@ internal fun LibraryTopBar(
     )
 }
 
-/** "Good evening" over "Library": the hour of the day the library was opened, so it does not change under the eye. */
+/**
+ * "Good evening" (or "Good evening, Asha") over "Library": the hour of the day the library was opened, so it does not
+ * change under the eye.
+ */
 @Composable
-private fun LibraryTitle() {
+private fun LibraryTitle(name: String) {
     val hour = remember { LocalTime.now().hour }
+    val greeting = if (name.isBlank()) {
+        stringResource(
+            greetingFor(hour),
+        )
+    } else {
+        stringResource(greetingFor(hour, true), name)
+    }
     Column {
         Text(
-            stringResource(greetingFor(hour)),
+            greeting,
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -139,12 +152,16 @@ private fun LibraryTitle() {
     }
 }
 
-/** Morning from 5, afternoon from noon, evening from 5 pm until 5 the next morning. */
+/** Morning from 5, afternoon from noon, evening from 5 pm until 5 the next morning; [named] takes the name as %1$s. */
 @StringRes
-internal fun greetingFor(hour: Int): Int = when (hour) {
-    in MORNING_FROM until AFTERNOON_FROM -> R.string.library_greeting_morning
-    in AFTERNOON_FROM until EVENING_FROM -> R.string.library_greeting_afternoon
-    else -> R.string.library_greeting_evening
+internal fun greetingFor(hour: Int, named: Boolean = false): Int = when (hour) {
+    in MORNING_FROM until AFTERNOON_FROM ->
+        if (named) R.string.library_greeting_morning_named else R.string.library_greeting_morning
+
+    in AFTERNOON_FROM until EVENING_FROM ->
+        if (named) R.string.library_greeting_afternoon_named else R.string.library_greeting_afternoon
+
+    else -> if (named) R.string.library_greeting_evening_named else R.string.library_greeting_evening
 }
 
 private const val MORNING_FROM = 5
