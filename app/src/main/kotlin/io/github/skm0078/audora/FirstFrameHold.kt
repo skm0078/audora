@@ -4,6 +4,8 @@
 
 package io.github.skm0078.audora
 
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.activity.ComponentActivity
@@ -19,14 +21,18 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Holds the window's first frame back, so the system's splash screen stays up, until [release]. A held frame is
- * skipped and tried again on the next one; [release] must therefore always come, which [rememberSavedAppearance]'s
- * time limit guarantees. Main thread only.
+ * Holds the window's first frame back, so the system's splash screen stays up, until [release] or [maxHoldMs],
+ * whichever comes first. A held frame is skipped and tried again on the next one, so the hold must always end.
+ *
+ * The cap runs on the main thread's own clock, not on Compose's: under a UI test, Compose's clock only moves once
+ * the main thread goes idle, which a held frame never lets it do, so a cap measured by Compose alone (the wait in
+ * [rememberSavedAppearance]) would never fire. Main thread only.
  */
-internal class FirstFrameHold {
+internal class FirstFrameHold(private val maxHoldMs: Long) {
     private var released = false
 
     fun hold(activity: ComponentActivity) {
+        Handler(Looper.getMainLooper()).postDelayed(::release, maxHoldMs)
         val content = activity.findViewById<View>(android.R.id.content)
         content.viewTreeObserver.addOnPreDrawListener(
             object : ViewTreeObserver.OnPreDrawListener {

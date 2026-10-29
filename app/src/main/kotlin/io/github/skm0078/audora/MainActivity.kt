@@ -312,7 +312,9 @@ class MainActivity : ComponentActivity() {
 
     private val privacy: PrivacyHost by lazy { PrivacyHost(this) }
 
-    private val firstFrame = FirstFrameHold()
+    private val startup = StartupConfig()
+
+    private val firstFrame = FirstFrameHold(startup.firstFrameMaxHoldMs)
 
     // Built from the base context in attachBaseContext, before applicationContext can be relied on.
     private lateinit var appLanguageStore: AppLanguageStore
@@ -354,7 +356,7 @@ class MainActivity : ComponentActivity() {
         // The splash stays until the saved look is known, so the first screen is built once, in the right colours.
         firstFrame.hold(this)
         setContent {
-            val appearance = rememberSavedAppearance(appearancePreferences.appearance, StartupConfig().appearanceWaitMs)
+            val appearance = rememberSavedAppearance(appearancePreferences.appearance, startup.appearanceWaitMs)
             if (appearance != null) {
                 SideEffect { firstFrame.release() }
                 val dark = appearance.isDark(isSystemInDarkTheme())

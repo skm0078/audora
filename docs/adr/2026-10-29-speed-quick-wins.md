@@ -32,7 +32,9 @@ An audit of dev at 8c13ad0 and of the published dev APK found time still spent w
    not a user action and C7 still holds.
 2. **Draw the first screen once** (`FirstFrameHold.kt`). The window's first frame is held, so the system splash stays,
    until the saved look is read, at most `StartupConfig.appearanceWaitMs` (300 ms; the default look after that).
-   The screen is composed only once the look is known.
+   The screen is composed only once the look is known. The hold itself ends after
+   `StartupConfig.firstFrameMaxHoldMs` (600 ms) by the main thread's clock whatever happens, because Compose's clock
+   stands still under a UI test while a frame is held, so a limit measured by Compose alone never ends the hold there.
 3. **Lighter page turns.** A page bitmap starts its copy to the graphics chip as soon as it is drawn
    (`Bitmap.prepareToDraw`, on the render thread). `CurlFrame` keeps its four outlines and traces them again each
    frame instead of making new ones.
@@ -47,7 +49,8 @@ An audit of dev at 8c13ad0 and of the published dev APK found time still spent w
   if the listener only reads with their eyes. It is the same memory Play would use, given back on the same trim and
   release as before (`SpeechConfig.maxLoadedVoices`). A one-time CPU burst of about a second to load it. Nothing when
   something is playing, nothing for books flicked past in under a second, nothing for phone voices.
-- First frame: the splash stays up to the read of the saved look (tens of milliseconds); bounded at 300 ms.
+- First frame: the splash stays up to the read of the saved look (tens of milliseconds); bounded at 300 ms
+  (600 ms at the very most).
 - Page turns: the graphics chip memory for the two neighbour pages is taken when they are drawn ahead rather than at
   the turn (the same amount).
 - Stability config and resource shrinking: none at run time; resource shrinking adds a few seconds to a release build.
