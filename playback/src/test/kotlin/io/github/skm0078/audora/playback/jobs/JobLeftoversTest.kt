@@ -110,7 +110,7 @@ class JobLeftoversTest {
     }
 
     @Test
-    fun `a running export keeps its record and is not counted; a queued download keeps its file`() = runTest {
+    fun `a running export keeps its record and is not counted, a queued download keeps its file`() = runTest {
         val download = oldDownload()
         oldAudiobook()
         downloading = true
