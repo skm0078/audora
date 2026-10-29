@@ -44,7 +44,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.battery.OnboardingPreferences
@@ -160,6 +159,7 @@ import io.github.skm0078.audora.ui.reader.ScreenPreference
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
 import io.github.skm0078.audora.ui.reader.VolumeKeySkips
+import io.github.skm0078.audora.ui.reader.rememberConnectedPlaybackPort
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.reader.rememberSpokenWord
 import io.github.skm0078.audora.ui.settings.KnownSettings
@@ -1061,18 +1061,6 @@ private fun AutoResumeRequests(model: ReaderModel, autoResume: Boolean, onTaken:
 
 /** Which book the reader route opens, and whether as the full player (ADR-036). */
 internal data class ReaderTarget(val id: BookId, val autoResume: Boolean, val asPlayer: Boolean = false)
-
-/** A player controller connected only while visible: a connected one keeps the playback service bound. */
-@Composable
-private fun rememberConnectedPlaybackPort(): MediaControllerPlaybackPort {
-    val context = LocalContext.current.applicationContext
-    val port = remember { MediaControllerPlaybackPort(context) }
-    LifecycleStartEffect(port) {
-        port.connect()
-        onStopOrDispose { port.release() }
-    }
-    return port
-}
 
 @Composable
 private fun UnfinishedSessionPrompt(diagnostics: DiagnosticsController, resume: (BookId) -> Unit) {

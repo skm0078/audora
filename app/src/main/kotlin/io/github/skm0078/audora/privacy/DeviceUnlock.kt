@@ -20,8 +20,12 @@ class DeviceUnlock(private val activity: Activity) {
     /** False when the phone has no screen lock at all, so there is nothing to ask for. */
     fun hasScreenLock(): Boolean = activity.getSystemService(KeyguardManager::class.java)?.isDeviceSecure == true
 
-    /** [onResult] runs on the main thread: true once the person proved it is them, false on cancel or error. */
-    fun ask(onResult: (Boolean) -> Unit) {
+    /**
+     * [onResult] runs on the main thread: true once the person proved it is them, false on cancel or error. Cancelling
+     * the returned signal takes the prompt away (the lock screen does when it leaves).
+     */
+    fun ask(onResult: (Boolean) -> Unit): CancellationSignal {
+        AudoraLog.i(TAG, "Asking for the phone's lock")
         val prompt = BiometricPrompt.Builder(activity)
             .setTitle(activity.getString(R.string.app_lock_prompt_title))
             .setSubtitle(activity.getString(R.string.app_lock_prompt_subtitle))
@@ -40,12 +44,14 @@ class DeviceUnlock(private val activity: Activity) {
                 onResult(false)
             }
         }
+        val signal = CancellationSignal()
         try {
-            prompt.authenticate(CancellationSignal(), activity.mainExecutor, callback)
+            prompt.authenticate(signal, activity.mainExecutor, callback)
         } catch (e: IllegalArgumentException) {
             AudoraLog.e(TAG, "Unlock prompt refused its settings", e)
             onResult(false)
         }
+        return signal
     }
 
     private companion object {
