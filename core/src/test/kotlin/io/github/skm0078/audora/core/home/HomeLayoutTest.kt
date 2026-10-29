@@ -12,7 +12,15 @@ class HomeLayoutTest {
     @Test
     fun `the default home is light`() {
         val home = HomeLayout()
-        assertEquals(listOf(HomeSection.THIS_WEEK, HomeSection.CONTINUE, HomeSection.LINE_OF_THE_DAY), home.shownOrder)
+        assertEquals(
+            listOf(
+                HomeSection.THIS_WEEK,
+                HomeSection.CONTINUE,
+                HomeSection.LINE_OF_THE_DAY,
+                HomeSection.FROM_LISTENLOCK,
+            ),
+            home.shownOrder,
+        )
         assertTrue(home.shows(HomeSection.SHELF_CHIPS))
         assertTrue(home.coverTint)
         assertEquals("", home.name)
@@ -33,7 +41,7 @@ class HomeLayoutTest {
     fun `a move stops at either end`() {
         val home = HomeLayout()
         assertEquals(home, home.moved(HomeSection.THIS_WEEK, up = true))
-        assertEquals(home, home.moved(HomeSection.RECENTLY_ADDED, up = false))
+        assertEquals(home, home.moved(HomeSection.FROM_LISTENLOCK, up = false))
         assertEquals(home, home.moved(HomeSection.SHELF_CHIPS, up = true))
         assertEquals(
             listOf(
@@ -41,6 +49,7 @@ class HomeLayoutTest {
                 HomeSection.LINE_OF_THE_DAY,
                 HomeSection.CONTINUE,
                 HomeSection.RECENTLY_ADDED,
+                HomeSection.FROM_LISTENLOCK,
             ),
             home.moved(HomeSection.CONTINUE, up = false).order,
         )
@@ -75,6 +84,7 @@ class HomeLayoutTest {
                 HomeSection.THIS_WEEK,
                 HomeSection.CONTINUE,
                 HomeSection.LINE_OF_THE_DAY,
+                HomeSection.FROM_LISTENLOCK,
             ),
             home.order,
         )
@@ -82,10 +92,12 @@ class HomeLayoutTest {
     }
 
     @Test
-    fun `a home saved before This week came gets it at the end, shown`() {
-        val home = HomeLayout.decode("LINE_OF_THE_DAY,CONTINUE,RECENTLY_ADDED|RECENTLY_ADDED|tint|")
-        assertEquals(HomeSection.THIS_WEEK, home.order.last())
+    fun `a home saved before This week and From ListenLock came gets both at the end, shown`() {
+        val home = HomeLayout.decode("LINE_OF_THE_DAY,CONTINUE,RECENTLY_ADDED|RECENTLY_ADDED|tint|Ria")
+        assertEquals(listOf(HomeSection.THIS_WEEK, HomeSection.FROM_LISTENLOCK), home.order.takeLast(2))
         assertTrue(home.shows(HomeSection.THIS_WEEK))
+        assertTrue(home.shows(HomeSection.FROM_LISTENLOCK))
+        assertEquals("Ria", home.name)
     }
 
     @Test(expected = IllegalArgumentException::class)

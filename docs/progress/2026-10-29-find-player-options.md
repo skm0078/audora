@@ -12,7 +12,7 @@
   layout change on the player. A few KB of APK.
 - **Could affect:** the library search's "Actions and settings" rows (more rows for "voice" or "sound"); You's
   Listening group (one row more); opening a book from search or You.
-- **Verified in CI:** `FoundIndexTest`, `SpeechRequestTest`, `SettingsSpeechDoorTest`, release journey step.
+- **Verified in CI:** `FoundIndexTest`, `SpeechRequestTest`, `SettingsSpeechDoorTest`, release journey step 54.
 
 **Real-device checks (the test phone):** with a book read before, type "focus" in the library search: a "Focus sound"
 row says "The book you're reading · Voice and speed"; tap it: the book opens with the sheet's Focus sound group open.

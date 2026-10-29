@@ -88,6 +88,8 @@ data class TimeLeftEstimate(val bookMs: Long, val chapterMs: Long?)
 data class ReaderState(
     val bookId: BookId,
     val title: String? = null,
+    /** The book's author when known, for the credit beside shared lines. */
+    val author: String? = null,
     val document: DocumentState = DocumentState.Loading,
     val page: Int = 0,
     val content: PageContent = PageContent.Loading,

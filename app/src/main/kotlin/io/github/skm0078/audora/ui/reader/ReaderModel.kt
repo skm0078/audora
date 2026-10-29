@@ -513,7 +513,7 @@ class ReaderModel(
                 return@launch
             }
             book = found
-            mutableState.update { it.copy(title = found.title) }
+            mutableState.update { it.copy(title = found.title, author = found.author) }
             when (val opened = opener.open(found.documentUri, password, logContext)) {
                 is Outcome.Success -> onOpened(opened.value, password)
                 is Outcome.Failure -> mutableState.update { it.copy(document = documentStateFor(opened.error)) }

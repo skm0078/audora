@@ -1,5 +1,5 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/release/FindOptionsJourney.kt
-// Purpose: Release journey step for ADR 2026-10-29-find-player-options: on the installed app, the library's search
+// Purpose: Release journey step 54 (ADR 2026-10-29-find-player-options): on the installed app, the library's search
 //          finds Focus sound and opens the book's Voice and speed sheet with that group open, and You's Listening
 //          group opens the same sheet at its top for the book read last.
 

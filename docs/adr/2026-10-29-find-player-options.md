@@ -33,7 +33,7 @@ listener who looked for speed in Settings, where most apps keep it, found no way
 - **Guarded by** `FoundIndexTest` (rows, where line, words, none without a book), `SpeechRequestTest` (a request
   opens its place once and is handed back; the top opens with every group closed; no request opens nothing),
   `SettingsSpeechDoorTest` (the row opens the book read last; with none it says to open one and cannot be tapped)
-  and a release journey step (search "focus" opens Focus sound in the book; You's row opens the sheet's top).
+  and release journey step 54 (search "focus" opens Focus sound in the book; You's row opens the sheet's top).
 
 ## Consequences
 

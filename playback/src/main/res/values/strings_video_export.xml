@@ -13,5 +13,4 @@
     <!-- Shown on every frame of the video: the voice is made by a computer. -->
     <string name="video_ai_label">AI voice</string>
     <!-- Text sent with the video: %1$s the quote, %2$s the book's title. -->
-    <string name="video_share_text">“%1$s” (%2$s)</string>
 </resources>
