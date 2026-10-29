@@ -1,6 +1,7 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReadingLook.kt
 // Purpose: How the text view looks while reading (Focus view, bold word starts, follow-along, highlight, page
-//          colours, font, size, spacing and reflow; plan items 77, 13, 14, 18, 15), kept across launches.
+//          colours, font, size, spacing and reflow; plan items 77, 13, 14, 18, 15) and how pages turn (ADR
+//          2026-10-29-page-curl), kept across launches.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -14,6 +15,10 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.ui.reader.flip.PageTurn
+import io.github.skm0078.audora.ui.reader.flip.TurnShadow
+import io.github.skm0078.audora.ui.reader.flip.TurnSpeed
+import io.github.skm0078.audora.ui.reader.flip.TurnStyle
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -34,7 +39,8 @@ import kotlinx.coroutines.flow.map
  * @property reflow runs a paragraph's sentences together as running text; off, each sentence is its own row (easier
  *   to step through one sentence at a time with TalkBack).
  * @property turnPages the text view shows a screenful at a time and a swipe turns to the next, like a book (ADR
- *   2026-10-28-text-pages); off, it scrolls.
+ *   2026-10-28-text-pages); off, it scrolls. On by default since ADR 2026-10-29-page-curl: a book's feel first.
+ * @property turn how a page turns, in both views: a curl, a slide or none, its speed and shadow.
  */
 data class ReadingLook(
     val focus: Boolean = false,
@@ -47,7 +53,8 @@ data class ReadingLook(
     val textScale: Float = DEFAULT_TEXT_SCALE,
     val spacing: LineSpacing = LineSpacing.NORMAL,
     val reflow: Boolean = true,
-    val turnPages: Boolean = false,
+    val turnPages: Boolean = true,
+    val turn: PageTurn = PageTurn(),
 ) {
     companion object {
         const val DEFAULT_TEXT_SCALE = 1f
@@ -103,6 +110,11 @@ class ReadingLookPreferences(context: Context) {
                 spacing = LineSpacing.entries.firstOrNull { it.name == prefs[SPACING] } ?: defaults.spacing,
                 reflow = prefs[REFLOW] ?: defaults.reflow,
                 turnPages = prefs[TURN_PAGES] ?: defaults.turnPages,
+                turn = PageTurn(
+                    style = TurnStyle.entries.firstOrNull { it.name == prefs[TURN_STYLE] } ?: defaults.turn.style,
+                    speed = TurnSpeed.entries.firstOrNull { it.name == prefs[TURN_SPEED] } ?: defaults.turn.speed,
+                    shadow = TurnShadow.entries.firstOrNull { it.name == prefs[TURN_SHADOW] } ?: defaults.turn.shadow,
+                ),
             )
         }
 
@@ -120,6 +132,9 @@ class ReadingLookPreferences(context: Context) {
                 it[SPACING] = look.spacing.name
                 it[REFLOW] = look.reflow
                 it[TURN_PAGES] = look.turnPages
+                it[TURN_STYLE] = look.turn.style.name
+                it[TURN_SPEED] = look.turn.speed.name
+                it[TURN_SHADOW] = look.turn.shadow.name
             }
         } catch (e: IOException) {
             AudoraLog.w(TAG, "Could not save the reading look", e)
@@ -138,7 +153,13 @@ class ReadingLookPreferences(context: Context) {
         val TEXT_SCALE = floatPreferencesKey("text_scale")
         val SPACING = stringPreferencesKey("line_spacing")
         val REFLOW = booleanPreferencesKey("reflow")
-        val TURN_PAGES = booleanPreferencesKey("turn_pages")
+
+        // A new key: save() writes every field, so the old one held "off" for anyone who ever changed any look
+        // setting, and the new default (on) would never have reached them.
+        val TURN_PAGES = booleanPreferencesKey("turn_pages_v2")
+        val TURN_STYLE = stringPreferencesKey("turn_style")
+        val TURN_SPEED = stringPreferencesKey("turn_speed")
+        val TURN_SHADOW = stringPreferencesKey("turn_shadow")
     }
 }
 

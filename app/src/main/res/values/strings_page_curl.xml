@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/strings_page_curl.xml
+  Purpose: How pages turn, in the page view and the text view (ADR 2026-10-29-page-curl).
+-->
+<resources>
+    <string name="page_turn_style">Page turn</string>
+    <string name="page_turn_style_help">Curl lifts the page from its corner like paper. Slide moves it sideways. None shows the next page at once. Turns made by reading aloud play quickly in the same style.</string>
+    <string name="page_turn_curl">Curl</string>
+    <string name="page_turn_slide">Slide</string>
+    <string name="page_turn_none">None</string>
+    <string name="page_turn_speed">Turn speed</string>
+    <string name="page_turn_quick">Quick</string>
+    <string name="page_turn_normal">Normal</string>
+    <string name="page_turn_slow">Slow</string>
+    <string name="page_turn_shadow">Curl shadow</string>
+    <string name="page_turn_shadow_light">Light</string>
+    <string name="page_turn_shadow_deep">Deep</string>
+</resources>
