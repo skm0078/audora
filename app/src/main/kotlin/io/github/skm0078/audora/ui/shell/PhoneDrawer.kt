@@ -66,7 +66,7 @@ val LocalOpenDrawer = staticCompositionLocalOf<(() -> Unit)?> { null }
 /**
  * The drawer over [content], the bottom bar and the mini player. It opens only from the menu button: a swipe from
  * the edge would fight the sideways rows and Android's back gesture, so swiping only closes it. Back closes it too;
- * the sheet takes the predictive back gesture itself. With no [drawer] (a rail, a sidebar, kids mode) the frame stays
+ * the sheet takes the predictive back gesture itself. With no [drawer] (a sidebar, kids mode) the frame stays
  * but holds nothing and has no menu button, so [content] keeps its place in the tree, and its state, either way.
  */
 @Composable

@@ -1,7 +1,7 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/shell/PhoneDrawerTest.kt
-// Purpose: On a phone the menu button opens the side drawer with the shelves, collections, Made, Your library, the
-//          tour and Settings, and a row closes the drawer before it acts; wider windows and kids mode have no drawer
-//          (ADR 2026-10-28-phone-drawer).
+// Purpose: On a phone, and beside a rail, the menu button opens the side drawer with the shelves, collections, Made,
+//          Your library, the tour and Settings, and a row closes the drawer before it acts; a sidebar and kids mode
+//          have none (ADR 2026-10-28-phone-drawer).
 
 package io.github.skm0078.audora.ui.shell
 
@@ -137,8 +137,15 @@ class PhoneDrawerTest {
     }
 
     @Test
-    fun aWideWindowHasNoDrawer() {
+    fun aRailStillHasTheDrawer() {
         show(TABLET)
+        openDrawer()
+        rule.onNode(hasText(text(R.string.library_make_it_yours))).performScrollTo().assertExists()
+    }
+
+    @Test
+    fun aSidebarHasNoDrawer() {
+        show(BIG_TABLET)
         rule.onNodeWithText(MENU).assertDoesNotExist()
         assertTrue(opened.isEmpty())
     }
@@ -157,7 +164,7 @@ class PhoneDrawerTest {
             }
         }
         rule.onNodeWithText("taps 0").performClick()
-        rule.runOnIdle { width = TABLET }
+        rule.runOnIdle { width = BIG_TABLET }
         rule.onNodeWithText("taps 1").assertExists()
         rule.runOnIdle { width = PHONE }
         rule.onNodeWithText("taps 1").assertExists()
@@ -173,5 +180,6 @@ class PhoneDrawerTest {
         const val MENU = "menu"
         val PHONE = 360.dp
         val TABLET = 700.dp
+        val BIG_TABLET = 900.dp
     }
 }

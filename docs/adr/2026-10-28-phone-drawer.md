@@ -24,7 +24,8 @@ Settings: they live on the You place, whose page said "You" and nowhere "Setting
   gesture, so swiping only closes it; Back closes it (with the predictive back preview).
 - **A closed drawer is out of reach:** it stays composed just off screen, so its rows leave the semantics tree while
   closed; TalkBack and tests never find a row that cannot be seen.
-- **Only with the bottom bar.** The rail (600 dp) and the sidebar (840 dp) keep their forms; kids mode has none.
+- **With the bottom bar or the rail.** The rail (600 dp) holds only the places, so the panel rows stay behind the menu
+  button there; the sidebar (840 dp) shows them itself; kids mode has none.
 - **Settings by name:** the You page is headed "Settings", and the drawer has a Settings row. The place keeps its name
   "You" in the bar.
 
@@ -50,18 +51,19 @@ the menu, the chip, search and the panel.
 - **Repeat the four places in the drawer** (as the tablet sidebar does): they are one tap away in the bar already.
 - **Help and tips row** (in the mockup): the app has no help page yet; Show me around and each option's ⓘ cover it.
 - **Edge swipe to open:** see above.
-- **Fold the ⋮ menu and the sheets into the drawer:** proposed, then turned down by the maintainer: the top bar is
-  where search, filter and ⋮ are expected, and sheets suit quick changes.
+- **Fold the ⋮ menu into the panel:** the maintainer chose it (2026-10-29, "the side panel is more action oriented
+  than 3 dots"), as the next PR on `PanelLinks`, so this one ships as it is. Sheets stay for quick changes.
 
 ## Consequences
 
-- Cost on the device: no new dependency; six small vector icons (Material Icons, Apache-2.0). The drawer is composed off screen while closed (a
-  dozen and a half rows, laid out once), the drawer's counts reuse the chips' count, worked out once per library change. APK
-  about 6 KB (estimate). On a rail or sidebar the empty drawer frame stays in place (no rows, nothing drawn), so the
-  screen under it keeps its state when the width changes, such as a phone turned sideways.
+- Cost on the device: no new dependency; six small vector icons (Material Icons, Apache-2.0). The drawer is composed
+  off screen while closed (a dozen and a half rows, laid out once), and its counts reuse the chips' count, worked out
+  once per library change. APK about 7 KB (estimate). Beside a sidebar the empty drawer frame stays in place (no
+  rows, nothing drawn), so the screen under it keeps its state when the width changes, such as a phone turned
+  sideways.
 - Strings: new `strings_phone_drawer.xml` in English, Hindi and Bengali.
-- Tests: `PhoneDrawerTest` on the emulator (rows, close-then-act, a collection, hidden when closed, none on a wide
-  window or in kids mode, state kept across a width change); `SettingsHomeTest` (the drawer's Settings opens
+- Tests: `PhoneDrawerTest` on the emulator (rows, close-then-act, a collection, hidden when closed, there beside a rail, none
+  beside a sidebar or in kids mode, state kept across a width change); `SettingsHomeTest` (the drawer's Settings opens
   Settings' own page, not Privacy or Advanced left open, and a found setting left mid-flash is cleared rather than
   reopening You on Advanced every time after, a bug the drawer's journey step found); release journey steps 45 (menu button, Settings) and 46 (Make it yours from the drawer); `AppShellTest` (the
   sidebar's shared rows); `MakeItYoursScreenTest` (a request from the panel opens Make it yours or the collections,
