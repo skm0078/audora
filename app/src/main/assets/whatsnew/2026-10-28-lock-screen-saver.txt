@@ -1,0 +1,3 @@
+en: With App lock on, the locked screen is now a calm screen saver: the time, the logo breathing, and Pause while a book reads. Your books stay hidden.
+hi: ऐप लॉक चालू होने पर लॉक स्क्रीन अब एक शांत स्क्रीन सेवर है: समय, धीरे साँस लेता लोगो, और किताब पढ़ते समय रोकने का बटन। आपकी किताबें छिपी रहती हैं।
+bn: অ্যাপ লক চালু থাকলে লক স্ক্রিন এখন একটি শান্ত স্ক্রিন সেভার: সময়, ধীরে শ্বাস নেওয়া লোগো, আর বই পড়ার সময় থামানোর বোতাম। আপনার বই লুকানো থাকে।
