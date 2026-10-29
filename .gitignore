@@ -42,3 +42,9 @@ models/
 __pycache__/
 *.pyc
 pdf/src/androidTest/assets/ocr/
+
+# Local preview of the site (docs/CONTENT.md)
+docs/Gemfile
+docs/Gemfile.lock
+docs/_site/
+docs/.jekyll-cache/

@@ -12,7 +12,7 @@
   new entry), shared-text books (the cookbook is saved the same way).
 - **Verified in CI:** `CookbookTextTest` (unit: introduction first, one chapter per recipe, no markup symbols left),
   `HomeLayoutTest` (an older saved home gets From ListenLock last), `LibraryHomeTest` (it shows last and can be
-  turned off), `ReleaseJourneyTest` step 45 (every language's book is in the APK with the same recipes and no site
+  turned off), `ReleaseJourneyTest` step 49 (every language's book is in the APK with the same recipes and no site
   markup; the home card and the ⋮ entry open it in the reader).
 
 **Real-device checks (the test phone):**

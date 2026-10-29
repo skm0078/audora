@@ -1,0 +1,27 @@
+---
+layout: default
+---
+<article class="recipe">
+  <p class="eyebrow"><a href="{{ '/recipes/' | relative_url }}">Recipes</a> · {{ page.category }}</p>
+  <h1>{{ page.title }}</h1>
+  <p class="summary">{{ page.description }}</p>
+  {% if page.tags.size > 0 %}
+  <ul class="chips" aria-label="Good for">
+    {% for tag in page.tags %}<li>{{ tag }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  <dl class="recipe-facts">
+    <div><dt>You need</dt><dd>{{ page.needs }}</dd></div>
+    <div><dt>Set-up</dt><dd>{{ page.setup }}</dd></div>
+    <div><dt>Features combined</dt><dd>{{ page.features | join: " · " }}</dd></div>
+    <div><dt>Phone cost</dt><dd>{{ page.cost }}</dd></div>
+  </dl>
+  <div class="prose">
+{{ content }}
+  </div>
+  <p class="checked">Steps checked against ListenLock {{ page.checked_with }}. Something look different?
+    <a href="https://github.com/skm0078/audora/issues">Tell us</a>.</p>
+</article>
+<nav class="more" aria-label="More recipes">
+  <a href="{{ '/recipes/' | relative_url }}">All recipes</a>
+</nav>

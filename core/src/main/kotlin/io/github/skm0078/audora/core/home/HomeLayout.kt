@@ -10,6 +10,7 @@ package io.github.skm0078.audora.core.home
  * pinned above them, so it can be turned off but not moved.
  */
 enum class HomeSection {
+    THIS_WEEK,
     CONTINUE,
     LINE_OF_THE_DAY,
     RECENTLY_ADDED,
@@ -76,6 +77,7 @@ data class HomeLayout(
         private val MOVABLE: Set<HomeSection> = HomeSection.entries.filter { it.movable }.toSet()
         val DEFAULT_ORDER: List<HomeSection> =
             listOf(
+                HomeSection.THIS_WEEK,
                 HomeSection.CONTINUE,
                 HomeSection.LINE_OF_THE_DAY,
                 HomeSection.RECENTLY_ADDED,

@@ -83,8 +83,10 @@ class LibraryLoadTest {
         target.indices.forEach { end -> controller.setQuery(LibraryQuery(text = target.take(end + 1))) }
 
         assertEquals("No narrowing while keys keep coming", books.size, controller.loaded().items.size)
+        assertEquals("What search finds waits with the books", "", controller.loaded().narrowedFor)
         typingPauses()
         assertEquals(listOf(books.last().id), controller.loaded().items.map { it.book.id })
+        assertEquals(target, controller.loaded().narrowedFor)
     }
 
     /** The best of a few runs per step: the first warms the JIT, and a slow neighbour on CI only ever adds time. */

@@ -1,10 +1,14 @@
 // File: app/src/test/kotlin/io/github/skm0078/audora/ui/library/LibraryShelvesTest.kt
-// Purpose: The sidebar's collections keep the library's order and count only the books the listener can see.
+// Purpose: The sidebar's collections keep the library's order, count only the books the listener can see, and wear
+//          the colour and emoji the listener gave them.
 
 package io.github.skm0078.audora.ui.library
 
 import io.github.skm0078.audora.core.library.BookCollection
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.library.ShelfColour
+import io.github.skm0078.audora.core.library.ShelfEmoji
+import io.github.skm0078.audora.core.library.ShelfLook
 import io.github.skm0078.audora.ui.shell.Shelf
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -31,5 +35,12 @@ class LibraryShelvesTest {
     fun aBookBeingRemovedIsNotCounted() {
         val members = mapOf(BookId("a") to setOf("c1"), BookId("gone") to setOf("c1"))
         assertEquals(listOf(Shelf("c1", "For school", 1)), shelvesOf(listOf(school), members, listOf(BookId("a"))))
+    }
+
+    @Test
+    fun eachCollectionWearsItsLookAndOneWithoutOneHasTheDefault() {
+        val look = ShelfLook(ShelfColour.entries.first(), ShelfEmoji.entries.first())
+        val shelves = shelvesOf(listOf(bedtime, school), emptyMap(), emptyList(), mapOf("c2" to look))
+        assertEquals(listOf(look, ShelfLook.DEFAULT), shelves.map { it.look })
     }
 }

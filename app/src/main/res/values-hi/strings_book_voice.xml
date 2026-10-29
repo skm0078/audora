@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="book_voice_reads_at">इसे %1$s की आवाज़ पढ़ती है, %2$s× पर</string>
+    <string name="book_voice_reads">इसे %1$s की आवाज़ पढ़ती है</string>
+    <string name="book_voice_at">यह किताब %1$s× पर चलती है</string>
+    <string name="book_voice_kept">सिर्फ़ इस किताब के लिए रखा गया</string>
+    <string name="book_voice_change">बदलें</string>
+</resources>

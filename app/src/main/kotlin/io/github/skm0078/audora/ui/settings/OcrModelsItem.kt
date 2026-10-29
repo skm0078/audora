@@ -95,9 +95,11 @@ private fun PackActionButton(state: OcrModelsState, texts: ModelPackTexts, onAct
 @Composable
 private fun OcrModelsStatus(state: OcrModelsState, texts: ModelPackTexts) {
     when (state) {
-        is OcrModelsState.NotDownloaded -> Text(
-            stringResource(R.string.pack_not_downloaded, megabytes(state.missingBytes)),
-        )
+        // What the pack adds comes first, so the row says why to download before what it costs.
+        is OcrModelsState.NotDownloaded -> {
+            Text(stringResource(texts.pitch))
+            Text(stringResource(R.string.pack_not_downloaded, megabytes(state.missingBytes)))
+        }
 
         OcrModelsState.Queued -> Text(stringResource(R.string.ocr_models_queued))
 
@@ -116,33 +118,49 @@ private fun OcrModelsStatus(state: OcrModelsState, texts: ModelPackTexts) {
     }
 }
 
-/** A pack's row title, what it does and fetches (`%1$d` MB, its help) and what it is once ready (`%1$d` MB). */
-internal data class ModelPackTexts(@StringRes val title: Int, @StringRes val missing: Int, @StringRes val ready: Int) {
+/**
+ * A pack's row title, what it does and fetches (`%1$d` MB, its help), what it is once ready (`%1$d` MB), and [pitch]:
+ * what it adds in one line, shown while it is not downloaded (ADR 2026-10-29-say-what-it-does).
+ */
+internal data class ModelPackTexts(
+    @StringRes val title: Int,
+    @StringRes val missing: Int,
+    @StringRes val ready: Int,
+    @StringRes val pitch: Int,
+) {
     companion object {
-        val OCR =
-            ModelPackTexts(R.string.settings_ocr_title, R.string.settings_ocr_missing, R.string.settings_ocr_ready)
+        val OCR = ModelPackTexts(
+            R.string.settings_ocr_title,
+            R.string.settings_ocr_missing,
+            R.string.settings_ocr_ready,
+            R.string.row_line_pack_ocr,
+        )
         val PUNCTUATION = ModelPackTexts(
             R.string.settings_punct_title,
             R.string.settings_punct_missing,
             R.string.settings_punct_ready,
+            R.string.row_line_pack_punctuation,
         )
 
         /** [PUNCTUATION] while scanned pages (OCR) are not downloaded: ready, but nothing for it to work on yet. */
-        val PUNCTUATION_NEEDS_OCR = ModelPackTexts(
-            R.string.settings_punct_title,
-            R.string.settings_punct_missing,
-            R.string.settings_punct_ready_needs_ocr,
+        val PUNCTUATION_NEEDS_OCR = PUNCTUATION.copy(ready = R.string.settings_punct_ready_needs_ocr)
+        val ACTED = ModelPackTexts(
+            R.string.acted_model_title,
+            R.string.acted_model_missing,
+            R.string.acted_model_ready,
+            R.string.row_line_pack_acted,
         )
-        val ACTED = ModelPackTexts(R.string.acted_model_title, R.string.acted_model_missing, R.string.acted_model_ready)
         val STORY_BRAIN = ModelPackTexts(
             R.string.brain_model_title,
             R.string.brain_model_missing,
             R.string.brain_model_ready,
+            R.string.row_line_pack_story_brain,
         )
         val VOICE_COMMANDS = ModelPackTexts(
             R.string.commands_model_title,
             R.string.commands_model_missing,
             R.string.commands_model_ready,
+            R.string.row_line_pack_voice_commands,
         )
     }
 }

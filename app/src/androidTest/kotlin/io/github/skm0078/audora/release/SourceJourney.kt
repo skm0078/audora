@@ -21,6 +21,7 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.printToString
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.release.JourneyDevice.app
+import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.shows
 
 /** [backToTabs] leaves any screen for the main tabs, as the journey does. */
@@ -61,7 +62,7 @@ internal class SourceJourney(private val rule: ComposeTestRule, private val back
             hasContentDescription(text(R.string.a11y_sheet_close)) and
                 SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button),
         )
-        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(where) }
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(where) }
     }
 
     private companion object {

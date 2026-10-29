@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/HomePart.kt
-// Purpose: The parts above the books the listener orders in "Make it yours": Continue listening, the line of the day,
-//          Recently added and From ListenLock, built once for the grid and the list alike (ADR
+// Purpose: The parts above the books the listener orders in "Make it yours": This week, Continue listening, the line
+//          of the day, Recently added and From ListenLock, built once for the grid and the list alike (ADR
 //          2026-10-28-make-it-yours, ADR 2026-10-29-in-app-cookbook).
 
 package io.github.skm0078.audora.ui.library
@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.home.HomeLayout
 import io.github.skm0078.audora.core.home.HomeSection
+import io.github.skm0078.audora.ui.stats.ThisWeekCard
 import io.github.skm0078.audora.ui.theme.Dimens
 
 /** One part above the books: [key] for the lazy list, [content] drawn edge to edge of the books' column. */
@@ -49,6 +50,10 @@ internal fun homeParts(
     val layout = home.layout?.takeIf { list.query.isDefault } ?: return emptyList()
     return layout.shownOrder.mapNotNull { section ->
         when (section) {
+            HomeSection.THIS_WEEK -> home.week?.let { week ->
+                HomePart(WEEK_KEY) { ThisWeekCard(week.glance, week.onOpen) }
+            }
+
             HomeSection.CONTINUE -> list.continueReading?.let { latest ->
                 HomePart(CONTINUE_KEY) {
                     ContinueReadingCard(
@@ -153,6 +158,7 @@ internal fun RecentlyAddedRow(books: List<LibraryItem>, covers: CoverSource, onT
     }
 }
 
+internal const val WEEK_KEY = "this-week"
 internal const val CONTINUE_KEY = "continue-reading"
 internal const val LINE_KEY = "line-of-the-day"
 internal const val RECENT_KEY = "recently-added"

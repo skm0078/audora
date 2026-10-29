@@ -34,11 +34,9 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
-import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToIndexAction
-import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
@@ -48,7 +46,6 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
-import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.swipeLeft
@@ -85,6 +82,7 @@ import io.github.skm0078.audora.privacy.PrivacyPreferences
 import io.github.skm0078.audora.privacy.PrivacySettings
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
+import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.audio.WordTimes
@@ -97,8 +95,6 @@ import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
 import io.github.skm0078.audora.ui.reader.ReadingPosition
 import io.github.skm0078.audora.ui.reader.SIDE_PANEL_TAG
-import io.github.skm0078.audora.ui.search.FOUND_TAG
-import io.github.skm0078.audora.ui.settings.FOCUSED_TAG
 import io.github.skm0078.audora.ui.share.ShareCardActivity
 import io.github.skm0078.audora.ui.share.ShareCardFiles
 import io.github.skm0078.audora.ui.share.ShareEntry
@@ -179,7 +175,9 @@ class ReleaseJourneyTest {
             "24 a phone keeps the reader's bookmarks sheet and the library has no book pane",
             ::aPhoneKeepsTheSheets,
         )
-        step("24b a search finds a setting, opens it on You, and Back returns to the search", ::searchOpensASetting)
+        step("24b a search finds a setting, opens it on You, and Back returns to the search") {
+            SearchJourney(rule, ::back).opensASetting()
+        }
         step("24c You › Show me around walks the 5 stops and Done returns to the library", TourJourney(rule)::replays)
         val share = ShareJourney(rule, ::activity, ::backToTabs)
         step("25 Share as a video reads the quote in the book's voice into an MP4", share::aQuoteVideoIsShared)
@@ -204,7 +202,11 @@ class ReleaseJourneyTest {
         step("32 Made plays a saved audiobook like the book player", MadeJourney(rule, ::backToTabs)::playsLikeBook)
         step("41 catalogues are a curated list", CatalogueJourney(rule, ::backToTabs)::theCuratedCataloguesAreListed)
         step("44 Make it yours names the greeting and adds a part", HomeJourney(rule, ::backToTabs)::makesItYours)
-        step("45 From ListenLock opens the cookbook", CookbookJourney(rule, ::backToTabs)::opensFromTheLibrary)
+        step("45 the phone drawer opens Settings", DrawerJourney(rule, ::backToTabs)::opensSettings)
+        step("46 the phone drawer opens Make it yours", DrawerJourney(rule, ::backToTabs)::opensMakeItYours)
+        step("47 Settings' switches say what they cost", RowLinesJourney(rule, ::backToTabs)::settingsSayWhatTheyCost)
+        step("48 This week is a home part and opens Your listening", HomeJourney(rule, ::backToTabs)::offersThisWeek)
+        step("49 From ListenLock opens the cookbook", CookbookJourney(rule, ::backToTabs)::opensFromTheLibrary)
     }
 
     /**
@@ -239,7 +241,7 @@ class ReleaseJourneyTest {
     private fun tapText(id: Int, vararg args: Any) = tap(hasText(text(id, *args)))
 
     private fun gone(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) {
-        rule.waitUntil(timeoutMs) { rule.onAllNodes(matcher).fetchSemanticsNodes().isEmpty() }
+        rule.waitUntil(timeoutMs) { rule.hides(matcher) }
     }
 
     private fun back() {
@@ -522,7 +524,7 @@ class ReleaseJourneyTest {
             val current = activity()
             JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, type)) }
             awaitTrue("$asset to show \"$sentence\" in the reader", OPEN_TIMEOUT_MS, state = ::textBookLog) {
-                rule.onAllNodes(hasText(sentence, substring = true)).fetchSemanticsNodes().isNotEmpty()
+                rule.shows(hasText(sentence, substring = true))
             }
         }
     }
@@ -545,7 +547,7 @@ class ReleaseJourneyTest {
             JourneyDevice.logCount(PHOTO_BOOK_ADDED) > added
         }
         awaitSynced("the comic to open in the reader", OPEN_TIMEOUT_MS) {
-            rule.onAllNodes(hasText(COMIC_TITLE)).fetchSemanticsNodes().isNotEmpty()
+            rule.shows(hasText(COMIC_TITLE))
         }
     }
 
@@ -560,7 +562,7 @@ class ReleaseJourneyTest {
         val textHost = activity()
         JourneyDevice.onMain { textHost.startActivity(JourneyDevice.openWith(textUri, DJVU_TYPE)) }
         awaitSynced("$DJVU_TEXT to show \"$DJVU_SENTENCE\" in the reader", OPEN_TIMEOUT_MS) {
-            rule.onAllNodes(hasText(DJVU_SENTENCE, substring = true)).fetchSemanticsNodes().isNotEmpty()
+            rule.shows(hasText(DJVU_SENTENCE, substring = true))
         }
         backToTabs()
         val added = JourneyDevice.logCount(PHOTO_BOOK_ADDED)
@@ -571,7 +573,7 @@ class ReleaseJourneyTest {
             JourneyDevice.logCount(PHOTO_BOOK_ADDED) > added
         }
         awaitSynced("the DjVu scan to open in the reader", OPEN_TIMEOUT_MS) {
-            rule.onAllNodes(hasText(DJVU_SCAN_TITLE)).fetchSemanticsNodes().isNotEmpty()
+            rule.shows(hasText(DJVU_SCAN_TITLE))
         }
     }
 
@@ -811,7 +813,7 @@ class ReleaseJourneyTest {
         val current = activity()
         JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri)) }
         val pageImage = { page: Int -> hasContentDescription(text(R.string.reader_page_image, page)) }
-        val onScreen = { page: Int -> rule.onAllNodes(pageImage(page)).fetchSemanticsNodes().isNotEmpty() }
+        val onScreen = { page: Int -> rule.shows(pageImage(page)) }
         var shown: Int? = null
         awaitTrue("a drawn page on screen") {
             shown = (1..MAX_SCANNED_PAGES).firstOrNull(onScreen)
@@ -851,24 +853,6 @@ class ReleaseJourneyTest {
         tapText(R.string.tab_library)
         waitForNode(hasText(text(R.string.library_title)))
         assertTrue("no book pane on a phone", none(hasTestTag(BOOK_PANE_TAG)))
-    }
-
-    /**
-     * The library's search finds a setting on Advanced; its row opens You on that page with the setting focused, and
-     * Back returns to the search, its words still there (ADR 2026-10-28-action-search).
-     */
-    private fun searchOpensASetting() {
-        tap(hasContentDescription(text(R.string.library_search)))
-        node(hasSetTextAction()).performTextInput(SEARCHED_SETTING)
-        val found = hasAnyAncestor(hasTestTag(FOUND_TAG))
-        tap(hasText(text(R.string.settings_volume_keys_title)) and found)
-        waitForNode(hasTestTag(FOCUSED_TAG))
-        waitForNode(hasText(text(R.string.settings_advanced_title)))
-        back()
-        waitForNode(hasTestTag(FOUND_TAG))
-        back()
-        gone(hasTestTag(FOUND_TAG))
-        waitForNode(hasText(text(R.string.library_title)))
     }
 
     private fun none(matcher: SemanticsMatcher): Boolean = rule.onAllNodes(matcher).fetchSemanticsNodes().isEmpty()
@@ -945,6 +929,5 @@ class ReleaseJourneyTest {
         const val CARD_HEIGHT = 1920
 
         // Step 24b: a word that names a setting on Advanced, not a book.
-        const val SEARCHED_SETTING = "volume"
     }
 }

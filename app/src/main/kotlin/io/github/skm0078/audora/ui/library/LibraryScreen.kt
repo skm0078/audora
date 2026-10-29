@@ -96,14 +96,16 @@ fun LibraryScreen(
     view: LibraryLayoutState = LibraryLayoutState(LibraryLayout.AUTO) {},
     settingValues: Map<SettingKey, String> = emptyMap(),
     home: LibraryHome = LibraryHome.Default,
+    requested: LibraryAction? = null,
+    onRequestTaken: () -> Unit = {},
 ) {
     val snackbar = remember { SnackbarHostState() }
     // Saveable: the picker can outlive this process, and its result must still reach the right book.
     var locating by rememberSaveable { mutableStateOf<String?>(null) }
     var details by rememberSaveable { mutableStateOf<String?>(null) } // the book whose details sheet is open
     var picked by rememberSaveable { mutableStateOf<String?>(null) } // the book the wide screen's pane shows
-    var makingItYours by rememberSaveable { mutableStateOf(false) }
-    val screenActions = remember(actions) { OpensMakeItYours(actions) { makingItYours = true } }
+    val ownSheets = rememberOwnSheets(actions, requested, onRequestTaken)
+    val screenActions = ownSheets.actions
     val addPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let(actions::onAddPdf)
     }
@@ -159,15 +161,7 @@ fun LibraryScreen(
     BookSheets(listState, actions, covers, details) { details = null }
     pendingRemoval?.let { RemovalDialog(it, actions) }
     duplicate?.let { DuplicateDialog(it, listState, actions) }
-    if (makingItYours) home.layout?.let { MakeItYoursSheet(it, home.onLayout, view) { makingItYours = false } }
-}
-
-/** "Make it yours" opens its sheet here, from the ⋮ menu and from search alike; every other action goes on. */
-private class OpensMakeItYours(private val actions: LibraryActions, private val open: () -> Unit) :
-    LibraryActions by actions {
-    override fun onLibraryAction(action: LibraryAction) {
-        if (action == LibraryAction.MAKE_IT_YOURS) open() else actions.onLibraryAction(action)
-    }
+    OwnSheetHost(ownSheets, listState, home, view)
 }
 
 /**
@@ -273,7 +267,7 @@ private fun LibraryContent(
                 // Actions and settings the search names, above the books (ADR 2026-10-28-action-search).
                 val found = rememberFoundRows(listState, settingValues)
                 if (listState.items.isEmpty() && found.isNotEmpty()) {
-                    FoundOnly(found, listState.query.text) { menu.open(it) }
+                    FoundOnly(found, listState.narrowedFor) { menu.open(it) }
                 } else if (listState.items.isEmpty()) {
                     Centered {
                         Text(

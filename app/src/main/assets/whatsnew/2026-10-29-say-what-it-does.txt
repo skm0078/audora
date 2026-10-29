@@ -1,0 +1,3 @@
+en: Every switch now says on its own row what it changes and what it costs, such as "Uses more battery while it reads", and downloads say what they add before their size. Studio mode is now "Prepare ahead", and the reading tutor is "Practise reading aloud".
+hi: अब हर स्विच अपनी ही पंक्ति में बताता है कि वह क्या बदलता है और उसकी क्या कीमत है, जैसे "पढ़ते समय ज़्यादा बैटरी लगती है", और डाउनलोड अपने साइज़ से पहले बताते हैं कि वे क्या जोड़ते हैं। स्टूडियो मोड अब "पहले से तैयार करें" है, और पढ़ने का ट्यूटर "ज़ोर से पढ़ने का अभ्यास"।
+bn: এখন প্রতিটি সুইচ নিজের সারিতেই বলে সেটি কী বদলায় আর তার খরচ কী, যেমন "পড়ার সময় বেশি ব্যাটারি খরচ হয়", আর ডাউনলোড তার সাইজের আগে বলে সেটি কী যোগ করে। স্টুডিও মোড এখন "আগে থেকে তৈরি করুন", আর পড়ার টিউটর "জোরে পড়ার অনুশীলন"।

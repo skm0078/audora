@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/strings_book_words.xml
+  Purpose: "Words you looked up": a book's looked-up words with their meanings, and the quick quiz on them.
+-->
+<resources>
+    <string name="book_words_title">Words you looked up</string>
+    <plurals name="book_words_count">
+        <item quantity="one">%d word · kept on this phone only</item>
+        <item quantity="other">%d words · kept on this phone only</item>
+    </plurals>
+    <plurals name="book_words_quiz">
+        <item quantity="one">Quiz me on %d word</item>
+        <item quantity="other">Quiz me on %d words</item>
+    </plurals>
+    <string name="book_words_page">p. %d</string>
+    <string name="book_words_quiz_title">Words quiz</string>
+    <string name="book_words_quiz_ask">What does this word mean?</string>
+    <string name="book_words_quiz_score">%1$d of %2$d right.</string>
+    <string name="book_words_quiz_means">It means “%1$s”.</string>
+    <string name="book_words_quiz_right">Right: “%1$s”.</string>
+    <string name="book_words_quiz_wrong">Not quite. It means “%1$s”.</string>
+</resources>

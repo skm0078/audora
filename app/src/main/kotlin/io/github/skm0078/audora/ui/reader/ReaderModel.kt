@@ -69,6 +69,7 @@ class ReaderModel(
     private val pipelineVersion: Int = PIPELINE_VERSION,
     private val textSettings: Flow<Int> = emptyFlow(),
     shownPage: Int? = null,
+    private val now: () -> Long = System::currentTimeMillis,
 ) {
     private val mutableState = MutableStateFlow(ReaderState(bookId))
     val state: StateFlow<ReaderState> = mutableState.asStateFlow()
@@ -422,6 +423,24 @@ class ReaderModel(
 
     fun resumedShown() = mutableState.update { it.copy(resumedAt = null) }
 
+    /** "Hear them again": reads from the recap's first sentence. */
+    fun hearRecapAgain() {
+        val recap = state.value.previouslyOn ?: return
+        recapClosed()
+        startReading(recap.from)
+    }
+
+    /** "Go on": reads on from where the book was left, unless it is already reading. */
+    fun goOnFromRecap() {
+        recapClosed()
+        val position = savedPosition ?: return
+        if (!state.value.isReading) startReading(position)
+    }
+
+    fun recapClosed() = mutableState.update { it.copy(previouslyOn = null) }
+
+    fun openingLineShown() = mutableState.update { it.copy(firstOpen = false) }
+
     /**
      * Study loops (plan item 31): marks A or B at the sentence being read in this book, turns looping on or off, or
      * clears the range. A mark needs this book to be the one being read.
@@ -518,15 +537,24 @@ class ReaderModel(
             savedPosition = resume.locate(bookId, opened.pageCount) { page ->
                 (opened.units(page) as? Outcome.Success)?.value?.also { read[page] = it }
             }?.let { ReadingPosition(bookId, it.page, it.charStart) }
-            savedPosition?.takeIf { !reopened }?.let { position ->
-                mutableState.update { it.copy(resumedAt = resumedAt(position, read[position.page].orEmpty())) }
-            }
+            savedPosition?.takeIf { !reopened }?.let { position -> sayWhereResumed(position, read[position.page]) }
         }
+        val firstOpen = !reopened && playing == null && savedPosition == null && book?.lastOpenedAtMillis == null
+        if (firstOpen) mutableState.update { it.copy(firstOpen = true) }
         val startPage = keepPage?.also { keepPage = null } ?: playing?.page ?: savedPosition?.page ?: 0
         loadPage(startPage.coerceIn(0, opened.pageCount - 1))
         loadChapters(opened)
         books.markOpened(bookId, opened.pageCount)
         autoResumeIfDue()
+    }
+
+    /** After days away, the recap ([previouslyOn]); otherwise the one-line "Picked up on page N". */
+    private suspend fun sayWhereResumed(position: ReadingPosition, units: List<ReadingUnit>?) {
+        val page = units.orEmpty()
+        val recap = resume.savedAtMillis(bookId)?.let { previouslyOn(position, page, it, now()) }
+        mutableState.update {
+            if (recap != null) it.copy(previouslyOn = recap) else it.copy(resumedAt = resumedAt(position, page))
+        }
     }
 
     private fun autoResumeIfDue() {

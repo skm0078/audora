@@ -126,7 +126,16 @@ class CatalogueScreensTest {
         val deleted = mutableListOf<String>()
         rule.setContent {
             Phone {
-                CollectionsSheet(COLLECTIONS, COUNTS, {}, { _, _ -> }, { deleted += it }, {}, Modifier.testTag(SHEET))
+                CollectionsSheet(
+                    COLLECTIONS,
+                    COUNTS,
+                    emptyMap(),
+                    { _, _ -> },
+                    { _, _, _, _ -> },
+                    { deleted += it },
+                    {},
+                    Modifier.testTag(SHEET),
+                )
             }
         }
         rule.onNodeWithText("For school").assertExists()

@@ -52,4 +52,10 @@ enum class LibraryAction(@StringRes val label: Int, @StringRes val hint: Int, va
 
     /** A short page about ListenLock in the app's language, saved as a text book and opened (empty library only). */
     TRY_SAMPLE(R.string.sample_try, R.string.sample_try_hint, inMenu = false),
+
+    /**
+     * Makes, renames and removes the listener's collections, from the side panel; the library's own chip opens the
+     * same sheet. Not in the ⋮ menu, which the chip already sits beside.
+     */
+    EDIT_COLLECTIONS(R.string.collections_edit, R.string.menu_hint_edit_collections, inMenu = false),
 }
