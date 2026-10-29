@@ -99,6 +99,7 @@ private fun StudyLoopRows(controls: StudyControls) {
             stringResource(R.string.study_loop),
             loop,
             { controls.onStudy(StudyAction.SET_LOOP, it) },
+            subtitle = stringResource(R.string.row_line_study_loop),
             help = stringResource(R.string.study_loop_detail),
             enabled = range != null,
         )

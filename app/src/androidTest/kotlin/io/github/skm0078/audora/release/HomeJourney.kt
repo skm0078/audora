@@ -1,5 +1,5 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/release/HomeJourney.kt
-// Purpose: Release journey steps 44 and 47 (ADR 2026-10-28-make-it-yours, ADR 2026-10-29-personal-touches-2): "Make
+// Purpose: Release journey steps 44 and 48 (ADR 2026-10-28-make-it-yours, ADR 2026-10-29-personal-touches-2): "Make
 //          it yours" names the greeting and turns a home part on, at once and without a Save, and both undo the same
 //          way; "This week" is one of its parts, and its card opens Your listening.
 

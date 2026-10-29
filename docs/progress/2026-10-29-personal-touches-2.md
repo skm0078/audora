@@ -19,7 +19,7 @@
   `WeekGlanceTest`, `HomeLayoutTest`, `LibraryHomeTest`, `LibraryShelvesTest`, `PreviouslyOnTest`, `OpeningLineTest`,
   `WordQuizModelTest`, `BookVoiceNoteTest`, `BackupArchiveTest`, device tests `ShelfEditorTest`,
   `ShelfSuggestionsTest`, `BookWordsTest`, `BookMenuScreensTest`, `PreviouslyOnCardTest`, `OpeningLineCardTest`,
-  `ThisWeekCardTest`, `MakeItYoursScreenTest`, release journey step 47.
+  `ThisWeekCardTest`, `MakeItYoursScreenTest`, release journey step 48.
 
 **Real-device checks (the test phone):** Collections sheet › Edit a collection, pick Teal and a star: the chip, the
 drawer row and the sheet show both. Add a fresh book and open it: its first line shows large, Play works under it,

@@ -111,6 +111,7 @@ private fun TypeRows(look: ReadingLook, onLookChange: (ReadingLook) -> Unit) {
         stringResource(R.string.text_look_reflow),
         look.reflow,
         { onLookChange(look.copy(reflow = it)) },
+        subtitle = stringResource(R.string.row_line_reflow),
         help = stringResource(R.string.text_look_reflow_body),
     )
     OptionDivider()
@@ -118,6 +119,7 @@ private fun TypeRows(look: ReadingLook, onLookChange: (ReadingLook) -> Unit) {
         stringResource(R.string.text_look_turn_pages),
         look.turnPages,
         { onLookChange(look.copy(turnPages = it)) },
+        subtitle = stringResource(R.string.row_line_turn_pages),
         help = stringResource(R.string.text_look_turn_pages_body),
     )
 }
@@ -136,6 +138,7 @@ private fun WhileReadingGroup(look: ReadingLook, onLookChange: (ReadingLook) -> 
             stringResource(R.string.reader_word_highlight),
             look.wordHighlight,
             { onLookChange(look.copy(wordHighlight = it)) },
+            subtitle = stringResource(R.string.row_line_word_highlight),
             help = stringResource(R.string.reader_hint_word_highlight),
         )
         OptionDivider()
@@ -164,6 +167,7 @@ private fun AidsGroup(look: ReadingLook, onLookChange: (ReadingLook) -> Unit) {
             stringResource(R.string.reader_bold_word_starts),
             look.boldWordStarts,
             { onLookChange(look.copy(boldWordStarts = it)) },
+            subtitle = stringResource(R.string.row_line_bold_word_starts),
             help = stringResource(R.string.reader_hint_bold_word_starts),
         )
     }
