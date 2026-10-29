@@ -381,7 +381,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun libraryController(scope: CoroutineScope): LibraryController {
-        val collections = LibraryEntryPoint.of(applicationContext).collections()
+        val entry = LibraryEntryPoint.of(applicationContext)
+        val collections = entry.collections()
         return LibraryController(
             library,
             scope,
@@ -390,6 +391,8 @@ class MainActivity : ComponentActivity() {
             collections.observe(),
             collections.observeMembers(),
             comics = { takeComic(photoBooks, it) || takeScannedDjvu(photoBooks, it) },
+            // A removed book's looked-up words are its text: they go with it.
+            onRemoved = { id -> withContext(Dispatchers.IO) { entry.lookedUpWords().forget(id) } },
         ).apply { start() }
     }
 

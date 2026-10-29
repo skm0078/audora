@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.ui.quiz
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -98,11 +99,36 @@ private fun ConfirmButton(state: QuizState, round: QuizRound?, model: QuizModel,
     }
 }
 
+/** What a quiz screen answers with: the highlight quiz ([QuizModel]) and a book's word quiz both do. */
+interface QuizAnswers {
+    fun choose(choice: String)
+
+    fun grade(knewIt: Boolean)
+}
+
+/** The lines that differ between quizzes: the highlight quiz's answer is a word, the word quiz's a meaning. */
+data class QuizWording(
+    @StringRes val score: Int,
+    @StringRes val answerWas: Int,
+    @StringRes val right: Int,
+    @StringRes val wrong: Int,
+) {
+    companion object {
+        val Highlights = QuizWording(
+            score = R.string.quiz_score,
+            answerWas = R.string.quiz_answer_was,
+            right = R.string.quiz_right,
+            wrong = R.string.quiz_wrong,
+        )
+    }
+}
+
+/** One card of [round]: the question, its choices or its revealed answer, and the verdict; the score once over. */
 @Composable
-private fun RoundBody(round: QuizRound, model: QuizModel) {
+fun RoundBody(round: QuizRound, answers: QuizAnswers, wording: QuizWording = QuizWording.Highlights) {
     val card = round.current
     if (card == null) {
-        Text(stringResource(R.string.quiz_score, round.right, round.cards.size))
+        Text(stringResource(wording.score, round.right, round.cards.size))
         return
     }
     Text(
@@ -120,23 +146,23 @@ private fun RoundBody(round: QuizRound, model: QuizModel) {
             Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) { Text(choice) }
         } else {
             OutlinedButton(
-                onClick = { model.choose(choice) },
+                onClick = { answers.choose(choice) },
                 enabled = round.verdict == null,
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(choice) }
         }
     }
     if (round.revealed && round.verdict == null) {
-        Text(stringResource(R.string.quiz_answer_was, card.answer), style = MaterialTheme.typography.titleMedium)
-        OutlinedButton(onClick = { model.grade(knewIt = true) }, Modifier.fillMaxWidth()) {
+        Text(stringResource(wording.answerWas, card.answer), style = MaterialTheme.typography.titleMedium)
+        OutlinedButton(onClick = { answers.grade(knewIt = true) }, Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.quiz_knew_it))
         }
-        OutlinedButton(onClick = { model.grade(knewIt = false) }, Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { answers.grade(knewIt = false) }, Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.quiz_did_not))
         }
     }
     round.verdict?.let { right ->
-        val verdict = if (right) R.string.quiz_right else R.string.quiz_wrong
+        val verdict = if (right) wording.right else wording.wrong
         Text(
             stringResource(verdict, card.answer),
             style = MaterialTheme.typography.titleMedium,

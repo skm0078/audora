@@ -20,6 +20,8 @@ import io.github.skm0078.audora.core.library.DocumentAccess
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.library.ShelfLookStore
 import io.github.skm0078.audora.core.library.ShelfLooks
+import io.github.skm0078.audora.core.words.LookedUpWordStore
+import io.github.skm0078.audora.core.words.LookedUpWords
 import io.github.skm0078.audora.playback.details.FileDetailsReader
 import io.github.skm0078.audora.playback.documents.SafDocumentAccess
 import io.github.skm0078.audora.playback.outputs.EarlierAudiobooks
@@ -72,6 +74,11 @@ object LibraryModule {
     @Singleton
     fun shelfLooks(@ApplicationContext context: Context): ShelfLooks =
         ShelfLooks(ShelfLookStore(File(context.filesDir, ShelfLookStore.FILE_NAME)))
+
+    @Provides
+    @Singleton
+    fun lookedUpWords(@ApplicationContext context: Context): LookedUpWords =
+        LookedUpWords(LookedUpWordStore(File(context.filesDir, LookedUpWordStore.FILE_NAME)))
 
     @Provides
     @Singleton

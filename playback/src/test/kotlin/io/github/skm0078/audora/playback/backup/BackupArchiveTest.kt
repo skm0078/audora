@@ -6,6 +6,7 @@ package io.github.skm0078.audora.playback.backup
 import io.github.skm0078.audora.core.config.BackupConfig
 import io.github.skm0078.audora.core.library.ShelfLookStore
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.words.LookedUpWordStore
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.file.Files
@@ -211,6 +212,11 @@ class BackupArchiveTest {
     @Test
     fun `the colours and emoji given to collections travel with the backup`() {
         assertTrue(BackupContents.DEFAULT.allows("files/${ShelfLookStore.FILE_NAME}"))
+    }
+
+    @Test
+    fun `the words looked up in each book travel with the backup`() {
+        assertTrue(BackupContents.DEFAULT.allows("files/${LookedUpWordStore.FILE_NAME}"))
     }
 
     private companion object {
