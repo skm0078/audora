@@ -209,7 +209,7 @@ fun OptionBlock(
 }
 
 @Composable
-private fun OptionTitle(title: String, enabled: Boolean) {
+internal fun OptionTitle(title: String, enabled: Boolean) {
     Text(
         title,
         color = if (enabled) Color.Unspecified else MaterialTheme.colorScheme.onSurface.copy(alpha = DISABLED_ALPHA),
@@ -221,7 +221,7 @@ private fun OptionTitle(title: String, enabled: Boolean) {
  * warning is never cut, since its end is usually what to do about it ("Tap to set up").
  */
 @Composable
-private fun OptionSubtitle(text: String, isError: Boolean = false) {
+internal fun OptionSubtitle(text: String, isError: Boolean = false) {
     Text(
         text,
         maxLines = if (isError) Int.MAX_VALUE else SUBTITLE_LINES,
