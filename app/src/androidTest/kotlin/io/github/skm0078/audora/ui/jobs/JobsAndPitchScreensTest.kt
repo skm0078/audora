@@ -21,6 +21,9 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -34,8 +37,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.SpeechStyleConfig
+import io.github.skm0078.audora.core.files.LeftoverKind
+import io.github.skm0078.audora.core.files.LeftoverTally
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.playback.jobs.LeftoverState
 import io.github.skm0078.audora.playback.jobs.LongJob
+import io.github.skm0078.audora.playback.jobs.LongJobEnd
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.speech.download.DownloadJob
 import io.github.skm0078.audora.speech.download.DownloadKind
@@ -82,6 +89,48 @@ class JobsAndPitchScreensTest {
         )
         rule.onNodeWithContentDescription(cancel).performClick()
         assertEquals(listOf(VOICE), cancelled)
+    }
+
+    @Test
+    fun aStoppedJobOffersItsUnfinishedFilesAndUnfinishedWorkAsksBeforeCleaning() {
+        var deleted = 0
+        var cleaned = 0
+        rule.setContent {
+            Phone {
+                JobsScreen(
+                    jobs = listOf(FAILED_TALKING_BOOK),
+                    downloads = emptyList(),
+                    voiceNames = emptyMap(),
+                    onCancelDownload = {},
+                    onBack = {},
+                    modifier = Modifier.testTag(SCREEN),
+                    leftovers = LeftoverState(
+                        waiting = LeftoverTally.of(LeftoverKind.DOWNLOAD, 2, 312_000_000L),
+                        lastCleaned = LeftoverTally.of(LeftoverKind.AUDIOBOOK, 1, 90_000_000L),
+                        lastCleanedAtMs = System.currentTimeMillis(),
+                        keepDays = 7,
+                    ),
+                    onCleanUp = { cleaned++ },
+                    unfinished = { UnfinishedFiles(180_000_000L) { deleted++ } },
+                )
+            }
+        }
+        rule.onNodeWithText(context.getString(R.string.jobs_status_failed)).assertExists()
+        save("jobs-unfinished", rule.onNodeWithTag(SCREEN).captureToImage().asAndroidBitmap())
+
+        // Each delete asks first; Keep does nothing.
+        val delete = context.getString(R.string.jobs_unfinished_delete)
+        rule.onNodeWithText(delete).performScrollTo().performClick()
+        rule.onNodeWithText(context.getString(R.string.confirm_keep)).performClick()
+        assertEquals(0, deleted)
+        rule.onNodeWithText(delete).performClick()
+        rule.onNode(hasText(delete) and hasAnyAncestor(isDialog())).performClick()
+        assertEquals(1, deleted)
+
+        val clean = context.getString(R.string.jobs_leftovers_clean)
+        rule.onNodeWithText(clean).performScrollTo().performClick()
+        rule.onNode(hasText(clean) and hasAnyAncestor(isDialog())).performClick()
+        assertEquals(1, cleaned)
     }
 
     @Test
@@ -161,6 +210,13 @@ class JobsAndPitchScreensTest {
             percent = 25,
         )
         val VOICE = DownloadJob(UUID.randomUUID(), DownloadKind.VOICE, "en-bruno", true, 34_000_000L, 120_000_000L)
+        val FAILED_TALKING_BOOK = LongJob(
+            kind = LongJobKind.COPY,
+            bookId = BookId("jobs-book"),
+            title = "Couldn't save the talking book",
+            detail = "The phone ran out of space.",
+            end = LongJobEnd.FAILED,
+        )
         val DICTIONARY_WAITING = DownloadJob(UUID.randomUUID(), DownloadKind.DICTIONARY, "bn", running = false)
     }
 }
