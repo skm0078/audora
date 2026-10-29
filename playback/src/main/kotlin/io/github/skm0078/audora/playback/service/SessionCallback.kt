@@ -130,9 +130,15 @@ class SessionCallback(
         PlaybackContract.ACTION_STUDY -> study(args)
         PlaybackContract.ACTION_SET_FOCUS_SOUND -> Futures.immediateFuture(setFocusSound(args))
         PlaybackContract.ACTION_SKIP_PARAGRAPH -> later { skipParagraph(args) }
-        VoiceWarmUpCommand.ACTION -> warmVoice(args)
-        else -> Futures.immediateFuture(lockScreen(customCommand.customAction))
+        else -> commandOutsideTheContract(customCommand.customAction, args)
     }
+
+    /** The commands kept in their own objects: the voice warm-up and the notification's and lock screen's buttons. */
+    private fun commandOutsideTheContract(action: String, args: Bundle): ListenableFuture<SessionResult> =
+        when (action) {
+            VoiceWarmUpCommand.ACTION -> Futures.immediateFuture(warmVoice(args))
+            else -> Futures.immediateFuture(lockScreen(action))
+        }
 
     override fun onMediaButtonEvent(
         session: MediaSession,
@@ -382,11 +388,19 @@ class SessionCallback(
      * Loads the book's voice ahead of Play (ADR 2026-10-29-speed-quick-wins). Answered at once: the reader does not
      * wait for the model, and a load still running when Play comes is simply waited for by the first render.
      */
-    private fun warmVoice(args: Bundle): ListenableFuture<SessionResult> {
-        val request = VoiceWarmUpCommand.from(args) ?: return Futures.immediateFuture(badRequest())
-        val warmer = warmUp ?: return Futures.immediateFuture(SessionResult(SessionError.ERROR_NOT_SUPPORTED))
-        scope.launch(Dispatchers.IO) { warmer.warm(request.book, request.lang) }
-        return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+    private fun warmVoice(args: Bundle): SessionResult {
+        val request = VoiceWarmUpCommand.from(args)
+        val warmer = warmUp
+        return when {
+            request == null -> badRequest()
+
+            warmer == null -> SessionResult(SessionError.ERROR_NOT_SUPPORTED)
+
+            else -> {
+                scope.launch(Dispatchers.IO) { warmer.warm(request.book, request.lang) }
+                SessionResult(SessionResult.RESULT_SUCCESS)
+            }
+        }
     }
 
     private fun undoJump(): SessionResult = if (bookSession().undoJump()) {

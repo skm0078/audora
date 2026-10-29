@@ -30,9 +30,9 @@ object VoiceWarmUpCommand {
 
     /** Parses [args]; null when the book or the language is missing or unknown. */
     fun from(args: Bundle): Request? {
-        val book = args.getString(ARG_BOOK_ID)?.takeIf { it.isNotBlank() } ?: return null
-        val lang = args.getString(ARG_LANG)?.let { name -> Lang.entries.firstOrNull { it.name == name } } ?: return null
-        return Request(BookId(book), lang)
+        val book = args.getString(ARG_BOOK_ID)?.takeIf { it.isNotBlank() }
+        val lang = args.getString(ARG_LANG)?.let { name -> Lang.entries.firstOrNull { it.name == name } }
+        return if (book != null && lang != null) Request(BookId(book), lang) else null
     }
 
     data class Request(val book: BookId, val lang: Lang)

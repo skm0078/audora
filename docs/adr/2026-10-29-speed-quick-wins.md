@@ -30,7 +30,7 @@ An audit of dev at 8c13ad0 and of the published dev APK found time still spent w
    text, which loads the model and speaks nothing. Phone voices are already bound by finding them; the acted Hindi
    voice is large and opt-in, so it is left alone. The command never starts, changes or queues playback, so it is
    not a user action and C7 still holds.
-2. **Draw the first screen once** (`FirstFrame.kt`). The window's first frame is held, so the system splash stays,
+2. **Draw the first screen once** (`FirstFrameHold.kt`). The window's first frame is held, so the system splash stays,
    until the saved look is read, at most `StartupConfig.appearanceWaitMs` (300 ms; the default look after that).
    The screen is composed only once the look is known.
 3. **Lighter page turns.** A page bitmap starts its copy to the graphics chip as soon as it is drawn

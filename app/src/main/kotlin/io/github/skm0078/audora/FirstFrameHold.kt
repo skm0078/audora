@@ -1,4 +1,4 @@
-// File: app/src/main/kotlin/io/github/skm0078/audora/FirstFrame.kt
+// File: app/src/main/kotlin/io/github/skm0078/audora/FirstFrameHold.kt
 // Purpose: Draws the first screen once, in the listener's saved look, instead of in the default look and again in
 //          theirs a moment later (ADR 2026-10-29-speed-quick-wins).
 

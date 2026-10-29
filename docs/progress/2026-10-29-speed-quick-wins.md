@@ -2,7 +2,7 @@
 - The voice a book will be read with loads about a second after the book opens, when nothing is playing, so the first
   Play no longer waits for the model (`ReaderVoiceWarmUp`, `VoiceWarmUpCommand`, `VoiceWarmUp`).
 - The first screen is drawn once, in the saved look: the splash stays until the look is read, at most 300 ms
-  (`FirstFrame.kt`, `StartupConfig`).
+  (`FirstFrameHold.kt`, `StartupConfig`).
 - Page turns: page bitmaps start their copy to the graphics chip as soon as they are drawn; `CurlFrame` reuses its
   outlines instead of making four new ones every frame.
 - Library rows redraw only when their own book changes (`app/compose-stability.conf`: `Book`, `BookId`,
@@ -11,8 +11,8 @@
   (PIPELINE_VERSION unchanged). No new dependency.
 - **Could affect:** opening a book and its first Play, the first screen at launch (look, dark mode), PDF and text page
   turns, the library list, any resource only reached by name (none found).
-- **Verified in CI:** `VoiceWarmUpTest` (book voice first, phone voices not loaded, failures never thrown),
-  `ReaderVoiceWarmUpTest` and `ReaderVoiceWarmUpModelTest` (once, after the wait, never while playing, not after
+- **Verified in CI:** `VoiceWarmUpTest` (the voice reading will use for that book, phone voices not loaded,
+  failures never thrown), `ReaderVoiceWarmUpTest` and `ReaderVoiceWarmUpModelTest` (once, after the wait, never while playing, not after
   close, a late player connection), the existing reader, curl
   and library tests, release journey step 56, the APK size gate (the saving shows on the run's summary page).
 

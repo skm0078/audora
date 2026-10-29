@@ -35,10 +35,10 @@ class VoiceWarmUp(
 
             is Outcome.Failure -> {
                 logFailure(book, lang, found.error)
-                return null
+                null
             }
         }
-        if (voice.engine != EngineId.SHERPA) return null
+        if (voice?.engine != EngineId.SHERPA) return null
         return when (val loaded = load(voice)) {
             is Outcome.Success -> {
                 AudoraLog.i(TAG, "Warmed voice=$voice for book=${book.logLabel}")
