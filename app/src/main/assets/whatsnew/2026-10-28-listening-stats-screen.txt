@@ -1,0 +1,3 @@
+en: Listening stats is now a full screen: week, month, year and all time, a weekly goal, your streak, languages, a calendar of days listened, favourite books and milestones. Share it as a picture card.
+hi: सुनने के आँकड़े अब पूरी स्क्रीन पर: हफ़्ता, महीना, साल और अब तक, हफ़्ते का लक्ष्य, आपका सिलसिला, भाषाएँ, सुनने के दिनों का कैलेंडर, पसंदीदा किताबें और पड़ाव। इसे तस्वीर वाले कार्ड की तरह शेयर करें।
+bn: শোনার হিসাব এখন পুরো স্ক্রিনে: সপ্তাহ, মাস, বছর আর এ পর্যন্ত, সাপ্তাহিক লক্ষ্য, আপনার টানা দিন, ভাষা, শোনার দিনের ক্যালেন্ডার, প্রিয় বই আর মাইলফলক। ছবির কার্ড হিসেবে শেয়ার করুন।

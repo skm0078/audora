@@ -224,7 +224,7 @@ private fun videoRequest(book: BookId, body: CardBody.Quote, shown: CardChoices)
  * capture failed (logged), back on the main thread whatever thread the scope resumes on (a test's composition clock
  * resumes off it).
  */
-private fun <T : Any> CoroutineScope.captureCard(recorder: CardRecorder, write: (Bitmap) -> T?, then: (T?) -> Unit) =
+internal fun <T : Any> CoroutineScope.captureCard(recorder: CardRecorder, write: (Bitmap) -> T?, then: (T?) -> Unit) =
     launch {
         val written = try {
             val card = recorder.capture()
