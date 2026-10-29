@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.release.JourneyDevice.app
+import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.ui.library.MAKE_IT_YOURS_TAG
 import io.github.skm0078.audora.ui.shell.DRAWER_TAG
@@ -38,7 +39,7 @@ internal class DrawerJourney(private val rule: ComposeTestRule, private val back
         tapInDrawer(R.string.library_make_it_yours)
         waitFor(hasTestTag(MAKE_IT_YOURS_TAG))
         JourneyDevice.pressBackKey()
-        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasTestTag(MAKE_IT_YOURS_TAG)) }
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(hasTestTag(MAKE_IT_YOURS_TAG)) }
     }
 
     /** From the library, opens the drawer and taps the row named [row]; the drawer closes first. */
@@ -50,7 +51,7 @@ internal class DrawerJourney(private val rule: ComposeTestRule, private val back
         rule.onAllNodes(hasContentDescription(text(R.string.drawer_open))).onFirst().performClick()
         waitFor(hasTestTag(DRAWER_TAG))
         rule.onNode(hasText(text(row)) and hasClickAction()).performScrollTo().performClick()
-        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasTestTag(DRAWER_TAG)) }
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(hasTestTag(DRAWER_TAG)) }
     }
 
     private companion object {
