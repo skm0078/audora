@@ -9,7 +9,8 @@ import io.github.skm0078.audora.R
 
 /** The You place's own page and the two it opens (ADR-062). */
 internal enum class SettingsPage(@StringRes val title: Int) {
-    MAIN(R.string.tab_you),
+    // "Settings", not the place's name "You": listeners look for the word (ADR 2026-10-28-phone-drawer).
+    MAIN(R.string.settings_title),
     PRIVACY(R.string.settings_group_privacy),
     ADVANCED(R.string.settings_advanced_title),
 }

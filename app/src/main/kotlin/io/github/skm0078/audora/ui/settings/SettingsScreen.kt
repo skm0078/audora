@@ -167,7 +167,7 @@ private fun PagesGroup(onOpen: (SettingsPage) -> Unit) {
     }
 }
 
-/** "You" on the main page, the name of its place; a back arrow and the page's name on the others. */
+/** "Settings" on the main page; a back arrow and the page's name on the others. */
 @Composable
 private fun PageHeader(page: SettingsPage, onBack: () -> Unit) {
     Row(Modifier.padding(top = Dimens.SpaceL), verticalAlignment = Alignment.CenterVertically) {

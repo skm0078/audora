@@ -218,17 +218,29 @@ internal class StudioLibrary(
 
     fun onLibraryAction(action: LibraryAction) = when (action) {
         LibraryAction.POINT_AND_READ -> parts.activity.pointAndRead(parts.photoBooks, takePhoto)
+
         LibraryAction.READ_PICTURES -> pickPictures.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+
         LibraryAction.READ_CLIPBOARD -> parts.activity.readClipboard(parts.onText)
+
         LibraryAction.READ_WEB_PAGE -> WebBooksUi.sheet = WebSheet.ADDRESS
+
         LibraryAction.BOOK_CATALOGUES -> WebBooksUi.sheet = WebSheet.CATALOGUES
+
         LibraryAction.WATCHED_FOLDERS -> sheet.value = StudioSheet.WATCHED_FOLDERS
+
         LibraryAction.SYNC_FOLDER -> FolderSyncUi.open = true
+
         LibraryAction.BACKUP -> sheet.value = StudioSheet.BACKUP
+
         LibraryAction.QUIZ -> sheet.value = StudioSheet.QUIZ
+
         LibraryAction.LISTENING_STATS -> sheet.value = StudioSheet.LISTENING_STATS
+
         LibraryAction.TRY_SAMPLE -> parts.onText(sampleBook(parts.activity))
-        LibraryAction.MAKE_IT_YOURS -> Unit // The library screen opens its own sheet.
+
+        // The library screen opens these sheets itself.
+        LibraryAction.MAKE_IT_YOURS, LibraryAction.EDIT_COLLECTIONS -> Unit
     }
 
     /** The sheet open now, if any; [books] (null while the list loads) holds the character guide's book. */
