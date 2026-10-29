@@ -102,9 +102,8 @@ fun LibraryScreen(
     var locating by rememberSaveable { mutableStateOf<String?>(null) }
     var details by rememberSaveable { mutableStateOf<String?>(null) } // the book whose details sheet is open
     var picked by rememberSaveable { mutableStateOf<String?>(null) } // the book the wide screen's pane shows
-    var makingItYours by rememberSaveable { mutableStateOf(false) }
-    var adding by rememberSaveable { mutableStateOf(false) } // the Add a book sheet
-    val screenActions = remember(actions) { OpensMakeItYours(actions) { makingItYours = true } }
+    var sheet by rememberSaveable { mutableStateOf<LibrarySheet?>(null) }
+    val screenActions = remember(actions) { OpensMakeItYours(actions) { sheet = LibrarySheet.MAKE_IT_YOURS } }
     val addPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let(actions::onAddPdf)
     }
@@ -144,7 +143,7 @@ fun LibraryScreen(
                 busy = busy,
                 actions = screenActions,
                 snackbar = snackbar,
-                onAddPdf = { adding = true },
+                onAddPdf = { sheet = LibrarySheet.ADD_BOOK },
                 onTap = onTap,
                 onDetails = { details = it.book.id.value },
                 modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -160,8 +159,7 @@ fun LibraryScreen(
     BookSheets(listState, actions, covers, details) { details = null }
     pendingRemoval?.let { RemovalDialog(it, actions) }
     duplicate?.let { DuplicateDialog(it, listState, actions) }
-    if (makingItYours) home.layout?.let { MakeItYoursSheet(it, home.onLayout, view) { makingItYours = false } }
-    if (adding) AddBookSheet(onFile = pickPdf, onTool = screenActions::onLibraryAction) { adding = false }
+    sheet?.let { LibrarySheetFor(it, home, view, pickPdf, screenActions::onLibraryAction) { sheet = null } }
 }
 
 /** "Make it yours" opens its sheet here, from the ⋮ menu and from search alike; every other action goes on. */
