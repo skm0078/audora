@@ -1,0 +1,3 @@
+en: A side menu on phones: tap the menu button at the top left of your library for your shelves, collections, what you made, listening stats, the tour and Settings. Settings is now called Settings.
+hi: फ़ोन पर साइड मेनू: अपनी लाइब्रेरी में ऊपर बाईं ओर मेनू बटन दबाएँ, वहाँ आपकी शेल्फ़, संग्रह, आपके बनाए, सुनने का हिसाब, टूर और सेटिंग्स हैं। सेटिंग्स अब सेटिंग्स नाम से है।
+bn: ফোনে পাশের মেনু: লাইব্রেরির ওপরে বাঁদিকের মেনু বোতাম চাপুন, সেখানে আপনার তাক, সংগ্রহ, আপনার বানানো, শোনার হিসেব, ঘুরে দেখা আর সেটিংস। সেটিংস এখন সেটিংস নামেই আছে।

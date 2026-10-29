@@ -439,7 +439,7 @@ class MainActivity : ComponentActivity() {
             if (tab == null) {
                 ScreenRoute(screen, nav, voicesController, battery, books)
             } else {
-                TabsRoute(tab, libraryController, miniPort, bookCovers, nav::navigate, tour) {
+                TabsRoute(tab, libraryController, miniPort, bookCovers, nav, tour) {
                     when (tab) {
                         AppTab.LIBRARY -> LibraryRoute(libraryController, nav, appearance, battery.exempt) {
                             if (kids.on) {
@@ -656,7 +656,10 @@ class MainActivity : ComponentActivity() {
             language = appLanguageStore.load(),
             onLanguageChange = ::switchLanguage,
             privacy = privacy.controls(),
-            focus = SettingFocus(nav.pendingSetting) { nav.pendingSetting = null },
+            focus = SettingFocus(nav.pendingSetting, home = nav.pendingSettingsHome) {
+                nav.pendingSetting = null
+                nav.pendingSettingsHome = false
+            },
         )
     }
 
@@ -777,6 +780,8 @@ class MainActivity : ComponentActivity() {
             runningJobs = rememberRunningJobCount(),
             view = rememberLibraryLayout(),
             home = rememberLibraryHome(highlightStore, loadedBooks, nav::openPlace),
+            requested = nav.pendingLibraryAction,
+            onRequestTaken = { nav.pendingLibraryAction = null },
             settingValues = settingValues(
                 KnownSettings(
                     appearance,
@@ -1012,6 +1017,22 @@ internal class AppNavigation(routeState: MutableState<String>) {
     fun openSetting(key: SettingKey) {
         pendingSetting = key
         navigate(AppDestination.Settings)
+    }
+
+    /** Settings asked for by name (the phone drawer): its own page, not the Privacy or Advanced page left open. */
+    var pendingSettingsHome by mutableStateOf(false)
+
+    fun openSettingsHome() {
+        pendingSettingsHome = true
+        navigate(AppDestination.Settings)
+    }
+
+    /** A library action asked for outside the library (the side panel's rows), run once the library shows. */
+    var pendingLibraryAction by mutableStateOf<LibraryAction?>(null)
+
+    fun openLibraryAction(action: LibraryAction) {
+        pendingLibraryAction = action
+        navigate(AppDestination.Library)
     }
 
     fun openPlace(anchor: ResumeAnchor) {

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The phone's side drawer and Settings by name (ADR 2026-10-28-phone-drawer). -->
+<resources>
+    <string name="drawer_open">Open menu</string>
+    <string name="drawer_shelves">Shelves</string>
+    <string name="drawer_made">Made by you</string>
+    <string name="drawer_made_audio">Audiobooks and clips</string>
+    <string name="settings_title">Settings</string>
+    <string name="drawer_your_library">Your library</string>
+    <string name="menu_hint_edit_collections">Make, rename or remove your collections.</string>
+</resources>
