@@ -88,9 +88,9 @@ fun ShareCardFrame(
 }
 
 /**
- * The small mark in the card's corner: the real logo and the name, quiet enough not to compete with the quote, and
- * under it where to get ListenLock, for the apps that post the picture without its caption (Stories, Status; ADR
- * 2026-10-29-share-credit-and-link).
+ * The small mark in the card's corner: the real logo and the name, quiet enough not to compete with the quote; under
+ * it the short domain once [ShareLinkConfig.cardLink] is set (ADR 2026-10-29-share-credit-and-link). The full link
+ * travels in the message beside the picture.
  */
 @Composable
 private fun ListenLockMark(color: Color, modifier: Modifier = Modifier) {
@@ -107,11 +107,13 @@ private fun ListenLockMark(color: Color, modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.labelMedium.copy(fontSize = MARK_TEXT, letterSpacing = MARK_SPACING),
             )
         }
-        Text(
-            ShareLinkConfig().shownHost,
-            color = color.copy(alpha = color.alpha * LINK_ALPHA),
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = LINK_TEXT),
-        )
+        ShareLinkConfig().cardLink?.let { link ->
+            Text(
+                link,
+                color = color.copy(alpha = color.alpha * LINK_ALPHA),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = LINK_TEXT),
+            )
+        }
     }
 }
 

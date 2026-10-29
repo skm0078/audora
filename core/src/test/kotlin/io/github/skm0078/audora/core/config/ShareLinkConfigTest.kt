@@ -14,9 +14,9 @@ class ShareLinkConfigTest {
     }
 
     @Test
-    fun `a picture prints the link without its scheme or trailing slash`() {
-        assertEquals("skm0078.github.io/audora", ShareLinkConfig().shownHost)
-        assertEquals("listenlock.app", ShareLinkConfig("https://listenlock.app").shownHost)
+    fun `pictures print no link until a short domain is set`() {
+        assertEquals(null, ShareLinkConfig().cardLink)
+        assertEquals("listenlock.app", ShareLinkConfig(cardLink = "listenlock.app").cardLink)
     }
 
     @Test
@@ -24,6 +24,8 @@ class ShareLinkConfigTest {
         listOf(
             { ShareLinkConfig("http://example.org") },
             { ShareLinkConfig("https://example.org/a b") },
+            { ShareLinkConfig(cardLink = " ") },
+            { ShareLinkConfig(cardLink = "skm0078.github.io/audora/long") },
             { ShareCardConfig(maxWords = 60, maxTextWords = 10) },
         ).forEach { build -> assertThrows(IllegalArgumentException::class.java) { build() } }
     }

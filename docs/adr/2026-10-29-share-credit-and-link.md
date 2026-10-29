@@ -16,8 +16,9 @@ and title but no link; text had none of it. Every Share lived inside the sentenc
 2. **The link lives in one place, `ShareLinkConfig.appLink`:** the site's home from `prod` (GitHub Pages serves
    prod's /docs), never `dev`, never tracked, never a link to the book. The domain or the Play listing replaces it in
    one line once live.
-3. **Pictures print the link small under the ListenLock mark** (`ShareCardFrame`), for apps that post the picture
-   without its caption (Stories, Status). Videos inherit it: their backdrop is the card.
+3. **Pictures carry the logo and name only, as Spotify, Kindle and Goodreads cards do** (the maintainer's pick,
+   2026-10-29): the long github.io link cluttered the card. `ShareLinkConfig.cardLink` prints a short domain under
+   the mark once one is live (one line); videos inherit it, their backdrop being the card.
 4. **Shared text is capped at `ShareCardConfig.maxTextWords` (150)**, cut at a sentence end when one is close: longer
    than a card's 60-word quote, still a passage and never a page (the guard of ADR 2026-10-27-share-cards and
    2026-10-28-page-snippet).
@@ -32,7 +33,8 @@ and title but no link; text had none of it. Every Share lived inside the sentenc
 ## Alternatives
 - **Free word-level selection (Moon+):** conflicts with tap-to-read, long-press and page swipes (as in the snippet
   ADR); lines snap to sentences, which also matches the audio clip.
-- **The link only in the caption:** Instagram Stories and WhatsApp Status drop it, so the picture prints it too.
+- **The long link printed on every picture, or a QR code:** both reach Stories and Status, which drop the caption,
+  but clutter the card; the short domain will do that cleanly.
 - **A share button in the player row:** that row is being reworked (voice and speed); the findability work's player
   Share, if kept, calls the same `openShare`.
 
