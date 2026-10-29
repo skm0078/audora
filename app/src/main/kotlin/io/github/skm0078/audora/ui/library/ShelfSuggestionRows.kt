@@ -15,7 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -37,11 +37,11 @@ internal fun rememberShelfSuggestions(
     collections: List<BookCollection>,
     members: Map<BookId, Set<String>>,
 ): List<ShelfSuggestion> {
-    val context = LocalContext.current
-    return remember(books, collections, members) {
+    val resources = LocalResources.current
+    return remember(books, collections, members, resources) {
         ShelfSuggestions.of(books.map { it.book }, collections, members) { tag ->
             val language = Locale.forLanguageTag(tag).let { it.getDisplayLanguage(it) }.ifEmpty { tag }
-            context.getString(R.string.smart_shelf_language, language)
+            resources.getString(R.string.smart_shelf_language, language)
         }
     }
 }
