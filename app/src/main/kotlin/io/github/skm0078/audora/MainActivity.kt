@@ -119,6 +119,7 @@ import io.github.skm0078.audora.ui.library.LibraryActions
 import io.github.skm0078.audora.ui.library.LibraryController
 import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.LibraryScreen
+import io.github.skm0078.audora.ui.library.rememberLibraryHome
 import io.github.skm0078.audora.ui.library.rememberLibraryLayout
 import io.github.skm0078.audora.ui.library.rememberRemovalUndoMs
 import io.github.skm0078.audora.ui.library.restoreMessageOf
@@ -155,6 +156,7 @@ import io.github.skm0078.audora.ui.reader.ReaderToasts
 import io.github.skm0078.audora.ui.reader.ReaderVoiceCommands
 import io.github.skm0078.audora.ui.reader.ReadingLook
 import io.github.skm0078.audora.ui.reader.ReadingLookPreferences
+import io.github.skm0078.audora.ui.reader.RecordTimeLeft
 import io.github.skm0078.audora.ui.reader.ScreenPreference
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
@@ -692,6 +694,7 @@ class MainActivity : ComponentActivity() {
     ) {
         val navigate = nav::navigate
         val onContinue = nav::continueReading
+        val loadedBooks = (controller.listState as? LibraryListState.Loaded)?.all?.map { it.book }
         val context = LocalContext.current.applicationContext
         val undoMs = rememberRemovalUndoMs()
         val playWithPermission = rememberPlayWithNotificationPermission()
@@ -769,6 +772,7 @@ class MainActivity : ComponentActivity() {
             covers = bookCovers,
             runningJobs = rememberRunningJobCount(),
             view = rememberLibraryLayout(),
+            home = rememberLibraryHome(highlightStore, loadedBooks, nav::openPlace),
             settingValues = settingValues(
                 KnownSettings(
                     appearance,
@@ -779,7 +783,7 @@ class MainActivity : ComponentActivity() {
                 ),
             ),
         )
-        studio.Sheets((controller.listState as? LibraryListState.Loaded)?.all?.map { it.book })
+        studio.Sheets(loadedBooks)
     }
 
     /** The OCR models' state; a scanned page waiting for them is read as soon as they are in. */
@@ -832,6 +836,7 @@ class MainActivity : ComponentActivity() {
         PlayerConnectionEffect(port, listeningInBackground)
         DisposableEffect(model) { onDispose { model.close() } }
         AutoResumeRequests(model, target.autoResume, onAutoResumeTaken)
+        RecordTimeLeft(model)
         val state by model.state.collectAsStateWithLifecycle()
         PageOnScreenEffect(state) { shownPage = it }
         val ocrState = rememberOcrState(model)

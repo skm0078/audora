@@ -23,6 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,9 +41,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.home.BookGlance
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.BookProgress
@@ -51,6 +57,7 @@ import io.github.skm0078.audora.ui.firstrun.TourTarget
 import io.github.skm0078.audora.ui.firstrun.tourTarget
 import io.github.skm0078.audora.ui.motion.sharedCover
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
+import io.github.skm0078.audora.ui.reader.durationText
 import io.github.skm0078.audora.ui.theme.Dimens
 import kotlin.math.roundToInt
 
@@ -77,7 +84,8 @@ data class NowPlaying(
 /**
  * The book read last on one compact row (ADR-036, ADR 2026-10-28-home-and-tour): its cover, where it stands and a
  * round Play, so the books start higher on the screen. A tap on the card opens the book; Play reads on from where
- * the listener stopped. Play is what the tour's first stop points at.
+ * the listener stopped. Play is what the tour's first stop points at. With a [glance] (ADR 2026-10-28-make-it-yours)
+ * it says the time left at the listener's speed and the last line heard; with [tinted] its colours come from the cover.
  */
 @Composable
 internal fun ContinueReadingCard(
@@ -85,43 +93,88 @@ internal fun ContinueReadingCard(
     onContinue: () -> Unit,
     onOpen: () -> Unit,
     covers: CoverSource = CoverSource.None,
+    glance: BookGlance? = null,
+    tinted: Boolean = false,
 ) {
     val progress = item.progress ?: return
+    val colours = MaterialTheme.colorScheme
+    val tint = rememberCoverTint(item.book, covers, colours.surfaceContainerHigh, colours.onSurface, tinted)
     Card(
         onClick = onOpen,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        colors = CardDefaults.cardColors(containerColor = tint?.container ?: colours.surfaceContainerHigh),
         shape = MaterialTheme.shapes.large,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(
-            modifier = Modifier.padding(Dimens.SpaceM),
-            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            BookCover(item.book, covers, Modifier.size(Dimens.CoverSmall, Dimens.CoverSmall * COVER_RATIO))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
-                Text(
-                    stringResource(R.string.library_continue_label),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    displayTitle(item.book),
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = TITLE_LINES,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                ProgressLine(progress)
-            }
-            FilledIconButton(
-                onClick = onContinue,
-                modifier = Modifier.size(CONTINUE_PLAY).tourTarget(TourTarget.PLAY),
+        Column(Modifier.padding(Dimens.SpaceM), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(painterResource(R.drawable.ic_play), stringResource(R.string.library_continue))
+                BookCover(item.book, covers, Modifier.size(Dimens.CoverSmall, Dimens.CoverSmall * COVER_RATIO))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+                    Text(
+                        stringResource(R.string.library_continue_label),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = tint?.accent ?: colours.primary,
+                    )
+                    Text(
+                        displayTitle(item.book),
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = TITLE_LINES,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    val msLeft = glance?.msLeftNow(progress.pageCount - progress.page)
+                    if (msLeft != null) TimeLeftAtYourSpeed(msLeft, progress, tint) else ProgressLine(progress)
+                }
+                FilledIconButton(
+                    onClick = onContinue,
+                    modifier = Modifier.size(CONTINUE_PLAY).tourTarget(TourTarget.PLAY),
+                ) {
+                    Icon(painterResource(R.drawable.ic_play), stringResource(R.string.library_continue))
+                }
             }
+            glance?.line?.let { LastHeard(it) }
         }
     }
 }
+
+/** "14 min left at your speed" over the bar, in the cover's colour (personal touch 13). */
+@Composable
+private fun TimeLeftAtYourSpeed(msLeft: Long, progress: BookProgress, tint: CoverTint?) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+        Text(
+            stringResource(R.string.library_left_at_your_speed, durationText(msLeft)),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        LinearProgressIndicator(
+            progress = { progress.fraction },
+            modifier = Modifier.fillMaxWidth(),
+            color = tint?.accent ?: ProgressIndicatorDefaults.linearColor,
+        )
+    }
+}
+
+/** "Last heard: “…”" in two lines at most, so the listener knows where the book will pick up (personal touch 4). */
+@Composable
+private fun LastHeard(line: String) {
+    val label = stringResource(R.string.library_last_heard)
+    val quoted = stringResource(R.string.library_last_heard_line, line)
+    val strong = SpanStyle(fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+    Text(
+        buildAnnotatedString {
+            withStyle(strong) { append(label) }
+            append(" ")
+            append(quoted)
+        },
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = LAST_HEARD_LINES,
+        overflow = TextOverflow.Ellipsis,
+    )
+}
+
+private const val LAST_HEARD_LINES = 2
 
 /** Bigger than the 48 dp minimum: it is the one thing most listeners come to the library to press. */
 private val CONTINUE_PLAY = 52.dp
