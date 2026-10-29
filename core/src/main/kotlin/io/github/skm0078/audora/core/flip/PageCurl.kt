@@ -31,7 +31,7 @@ data class Fold(val mid: CurlPoint, val nx: Float, val ny: Float) {
      */
     fun reflection(): FloatArray {
         val a = 1 - 2 * nx * nx
-        val b = -2 * nx * ny
+        val b = -(2 * nx * ny)
         val d = 1 - 2 * ny * ny
         val k = 2 * (mid.x * nx + mid.y * ny)
         return floatArrayOf(a, b, b, d, k * nx, k * ny)

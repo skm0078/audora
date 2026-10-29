@@ -11,7 +11,6 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,8 +25,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -43,11 +40,9 @@ import androidx.compose.ui.unit.Dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.PageFlipConfig
 import io.github.skm0078.audora.core.model.ReadingUnit
-import io.github.skm0078.audora.ui.reader.flip.TurnStyle
 import io.github.skm0078.audora.ui.shell.readableSidePadding
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.readingBand
-import kotlinx.coroutines.launch
 
 /**
  * @param spokenWord the characters of the word being spoken in the spoken sentence (plan item 14); null when its
@@ -108,108 +103,6 @@ internal fun Sentences(
             TurnedSentences(state, actions, turning, list)
         } else {
             list(Modifier.fillMaxSize())
-        }
-    }
-}
-
-/**
- * As each page of the book shows: open it at its end after a turn back, then play the turn begun on the page before.
- * A screen kept for reading's turn onto the next page is let go once reading stops.
- */
-@Composable
-private fun PageStartTurns(state: ReaderState, listState: LazyListState, turning: TextTurning) {
-    val turnBack = turning.turnBack
-    LaunchedEffect(listState) {
-        if (turnBack.openAtEnd) {
-            turnBack.openAtEnd = false
-            withFrameNanos { } // laid out first, so the list knows its last item
-            turning.screens.toEnd()
-        }
-        val pending = turnBack.pending
-        turnBack.pending = null
-        if (pending != null && pending.page == state.page) {
-            turning.turner.play(pending.forward, pending.shot, pending.reading)
-        }
-    }
-    LaunchedEffect(state.isReading) {
-        if (!state.isReading && turnBack.pending?.reading == true) turnBack.pending = null
-    }
-}
-
-/**
- * Reading moved to [item]: a screen it is not wholly on turns to it, in the look's style. On the page's [last] item,
- * the screen is kept, so the turn onto the next page can curl it away once that page shows.
- */
-private suspend fun followInScreens(turning: TextTurning, item: Int, last: Boolean, page: Int) {
-    val way = turning.screens.turnFor(item)
-    if (way != 0) {
-        val shot = turning.turner.before()
-        turning.screens.keepInView(item)
-        turning.turner.play(forward = way > 0, shot = shot, reading = true)
-    }
-    if (last && turning.turner.turn.style != TurnStyle.NONE) {
-        turning.turnBack.pending = PendingTurn(page + 1, forward = true, shot = turning.turner.before(), reading = true)
-    }
-}
-
-/** What turning the text view needs, held together. */
-private class TextTurning(
-    val screens: TextScreens,
-    val turner: TextTurner,
-    val turnBack: TextTurnBack,
-    val look: ReadingLook,
-)
-
-/**
- * The sentences a screenful at a time, with the arrows under them. At a page's last screen a turn on shows the book's
- * next page; at its first, a turn back shows the page before at its last screen. Each turn plays in the look's style.
- */
-@Composable
-private fun TurnedSentences(
-    state: ReaderState,
-    actions: ReaderActions,
-    turning: TextTurning,
-    list: @Composable (Modifier) -> Unit,
-) {
-    val scope = rememberCoroutineScope()
-    val pageCount = state.pageCount ?: 1
-    val next = {
-        scope.launch { turnOn(state, pageCount, actions, turning) }
-        Unit
-    }
-    val previous = {
-        scope.launch { turnBackOne(state, actions, turning) }
-        Unit
-    }
-    Column(Modifier.fillMaxSize()) {
-        TurningText(turning.turner, turning.look, Modifier.weight(1f).screenSwipes(next, previous), list)
-        TextPagesBar(state.page, pageCount, turning.screens.turned, previous, next)
-    }
-}
-
-private suspend fun turnOn(state: ReaderState, pageCount: Int, actions: ReaderActions, turning: TextTurning) {
-    val lastPage = state.page + 1 >= pageCount
-    if (turning.screens.atEnd && lastPage) return
-    val shot = turning.turner.before()
-    when {
-        turning.screens.next() -> turning.turner.play(forward = true, shot = shot, reading = false)
-
-        !lastPage -> {
-            turning.turnBack.pending = PendingTurn(state.page + 1, forward = true, shot = shot, reading = false)
-            actions.onNextPage()
-        }
-    }
-}
-
-private suspend fun turnBackOne(state: ReaderState, actions: ReaderActions, turning: TextTurning) {
-    val shot = turning.turner.before()
-    when {
-        turning.screens.previous() -> turning.turner.play(forward = false, shot = shot, reading = false)
-
-        state.page > 0 -> {
-            turning.turnBack.openAtEnd = true
-            turning.turnBack.pending = PendingTurn(state.page - 1, forward = false, shot = shot, reading = false)
-            actions.onPreviousPage()
         }
     }
 }

@@ -52,8 +52,12 @@ class PageCurlTest {
     fun `the reflection matrix mirrors exactly as reflect does`() {
         val fold = requireNotNull(PageCurl.fold(W, H, CurlPoint(250f, 900f), H))
         val m = fold.reflection()
-        val (a, b, c, d) = m.toList()
-        val (e, f) = m[4] to m[5]
+        val a = m[0]
+        val b = m[1]
+        val c = m[2]
+        val d = m[3]
+        val e = m[4]
+        val f = m[5]
         for (p in listOf(CurlPoint(0f, 0f), CurlPoint(W, H), CurlPoint(321f, 654f))) {
             val r = fold.reflect(p)
             assertEquals(r.x, a * p.x + c * p.y + e, EPS)

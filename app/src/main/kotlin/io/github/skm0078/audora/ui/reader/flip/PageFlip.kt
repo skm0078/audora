@@ -89,7 +89,13 @@ internal fun PageFlip(
         }
         val flingPx = with(LocalDensity.current) { config.flingDpPerSecond * density }
         val geometry = FlipGeometry(width, height, flingPx)
-        Box(Modifier.fillMaxSize().flipGestures(enabled, flip, geometry, { current }, { style }, { turnTo(it) })) {
+        // Zoomed in or picking text: no turns, and a drag under way goes back to its place.
+        val gestures = if (enabled) {
+            Modifier.flipGestures(flip, geometry, { current }, { style }, { turnTo(it) })
+        } else {
+            Modifier
+        }
+        Box(Modifier.fillMaxSize().then(gestures)) {
             when (turn.style) {
                 TurnStyle.CURL -> {
                     // A printed page is white paper, whatever the app's theme.
@@ -140,14 +146,12 @@ internal class FlipGeometry(val widthPx: Float, val heightPx: Float, val flingPx
  * (which consumes a vertical drag), so neither is ever taken for a turn.
  */
 private fun Modifier.flipGestures(
-    enabled: Boolean,
     flip: FlipState,
     geometry: FlipGeometry,
     pages: () -> FlipPages,
     turn: () -> PageTurn,
     onTurn: (Int) -> Unit,
-): Modifier = pointerInput(enabled, geometry.widthPx, geometry.heightPx) {
-    if (!enabled) return@pointerInput
+): Modifier = pointerInput(geometry.widthPx, geometry.heightPx) {
     // Zoomed in or rotated mid-drag: this input restarts, and the page goes back to its place.
     try {
         flipGesture(flip, geometry, pages, turn, onTurn)
