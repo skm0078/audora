@@ -56,9 +56,9 @@ internal class StatsJourney(private val rule: ComposeTestRule, private val backT
         awaitTrue("the stats picture in the phone's pictures") { picturesSaved() > saved }
 
         val folder = File(app.cacheDir, ShareCardFiles.FOLDER).apply { deleteRecursively() }
-        val shares = rule.onAllNodes(hasText(text(R.string.stats_share)) and hasClickAction())
-        rule.waitUntil(UI_TIMEOUT_MS) { shares.fetchSemanticsNodes().isNotEmpty() }
-        shares.onFirst().performClick()
+        val share = hasText(text(R.string.stats_share)) and hasClickAction()
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(share) }
+        rule.onAllNodes(share).onFirst().performClick()
         val card = { folder.listFiles()?.firstOrNull { it.extension == "png" } }
         awaitTrue("the stats card in the share folder", state = { "Files: ${folder.list()?.toList()}" }) {
             card() != null

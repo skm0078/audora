@@ -2,7 +2,7 @@
 <!-- File: app/src/main/res/values-hi/strings_studio.xml -->
 <!-- Purpose: Hindi copy of values/strings_studio.xml. -->
 <resources>
-    <string name="library_studio_mode">स्टूडियो मोड</string>
+    <string name="library_studio_mode">पहले से तैयार करें (स्टूडियो मोड)</string>
     <string name="studio_sheet_title">स्टूडियो मोड: “%1$s”</string>
     <string name="studio_sheet_what">स्टूडियो मोड इस किताब की बोली पहले से रिकॉर्ड करता है, जहाँ आप हैं वहाँ से, उसी आवाज़ और गति में जिसमें आप सुनते हैं, एक बार में 6 घंटे तक। फिर सुनते समय आवाज़ का इंतज़ार नहीं होता, रिकॉर्डिंग चलती है। यह धीमी आवाज़ों के लिए सबसे काम का है (डाउनलोड की गई Kokoro आवाज़ें, अभिनय वाली हिंदी); बिल्ट-इन आवाज़ सीधे पढ़ने के लिए काफ़ी तेज़ है। यह सिर्फ़ फ़ोन चार्जर पर लगे होने पर चलता है, जब तक आप अभी शुरू करें न दबाएँ।</string>
     <string name="studio_sheet_running">अभी</string>

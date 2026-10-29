@@ -42,6 +42,7 @@ fun CastVoicesSection(rows: List<VoiceRow>, shaping: VoiceShaping, onChange: (Vo
             stringResource(R.string.speech_cast_characters),
             shaping.characterVoices,
             { onChange(shaping.copy(characterVoices = it)) },
+            subtitle = stringResource(R.string.row_line_cast_characters),
             help = stringResource(R.string.speech_cast_characters_detail),
         )
     }

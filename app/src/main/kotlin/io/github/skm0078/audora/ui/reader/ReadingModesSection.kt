@@ -67,28 +67,28 @@ private fun SkipSwitches(modes: ReadingModes, onChange: (ReadingModes) -> Unit) 
             stringResource(R.string.reading_skip_parentheses),
             modes.skipParentheses,
             { onChange(modes.copy(skipParentheses = it)) },
-            help = stringResource(R.string.reading_skip_parentheses_detail),
+            subtitle = stringResource(R.string.reading_skip_parentheses_detail),
         )
         OptionDivider()
         SwitchOption(
             stringResource(R.string.reading_skip_brackets),
             modes.skipBrackets,
             { onChange(modes.copy(skipBrackets = it)) },
-            help = stringResource(R.string.reading_skip_brackets_detail),
+            subtitle = stringResource(R.string.reading_skip_brackets_detail),
         )
         OptionDivider()
         SwitchOption(
             stringResource(R.string.reading_skip_links),
             modes.skipLinks,
             { onChange(modes.copy(skipLinks = it)) },
-            help = stringResource(R.string.reading_skip_links_detail),
+            subtitle = stringResource(R.string.reading_skip_links_detail),
         )
         OptionDivider()
         SwitchOption(
             stringResource(R.string.reading_announce_pages),
             modes.announcePages,
             { onChange(modes.copy(announcePages = it)) },
-            help = stringResource(R.string.reading_announce_pages_detail),
+            subtitle = stringResource(R.string.reading_announce_pages_detail),
         )
     }
 }

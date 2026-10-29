@@ -29,8 +29,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import kotlinx.coroutines.delay
 
-/** The setting to show, once: [onShown] runs when it has been, so going back to You later shows nothing again. */
-class SettingFocus(val key: SettingKey?, val onShown: () -> Unit) {
+/**
+ * The setting to show, once: [onShown] runs when it has been, so going back to You later shows nothing again. With
+ * [home], Settings' own page shows instead, whichever page was left open and whatever [key] asks.
+ */
+class SettingFocus(val key: SettingKey?, val home: Boolean = false, val onShown: () -> Unit) {
     companion object {
         val None = SettingFocus(null) {}
     }
@@ -67,7 +70,15 @@ internal fun rememberSettingsPages(focus: SettingFocus): SettingsPages {
     val fromSearch = rememberSaveable { mutableStateOf(false) }
     val pages = remember { SettingsPages(page, fromSearch) }
     BackHandler(enabled = pages.page != SettingsPage.MAIN && !pages.fromSearch) { pages.open(SettingsPage.MAIN) }
-    LaunchedEffect(focus.key) { focus.key?.let(pages::show) }
+    LaunchedEffect(focus.key, focus.home) {
+        // Asked for by name, Settings' own page wins over a found setting not yet shown.
+        if (focus.home) {
+            pages.open(SettingsPage.MAIN)
+            focus.onShown()
+        } else {
+            focus.key?.let(pages::show)
+        }
+    }
     return pages
 }
 
@@ -85,13 +96,17 @@ internal fun SettingAnchor(key: SettingKey, row: @Composable () -> Unit) {
     val colour = MaterialTheme.colorScheme.primaryContainer
     LaunchedEffect(shown) {
         if (!shown) return@LaunchedEffect
-        withFrameNanos { } // laid out first, so there is somewhere to scroll to
-        view.bringIntoView()
-        runCatching { focusRequester.requestFocus() }
-        tint.snapTo(1f)
-        delay(HOLD_MS)
-        tint.animateTo(0f, tween(FLASH_MS))
-        focus.onShown()
+        // Cleared even when the listener leaves mid-flash, or You would reopen on this row every time after.
+        try {
+            withFrameNanos { } // laid out first, so there is somewhere to scroll to
+            view.bringIntoView()
+            runCatching { focusRequester.requestFocus() }
+            tint.snapTo(1f)
+            delay(HOLD_MS)
+            tint.animateTo(0f, tween(FLASH_MS))
+        } finally {
+            focus.onShown()
+        }
     }
     val marked = if (shown) Modifier.focusRequester(focusRequester).focusable().testTag(FOCUSED_TAG) else Modifier
     // A Column, not a Box: some anchors hold several rows (voice commands' model, switch and screen-off rows), and a

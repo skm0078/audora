@@ -17,7 +17,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItem
@@ -59,9 +58,16 @@ data class SidebarShelves(
 /**
  * The look the listener liked in the drawer mockup, kept open beside the content: nothing to swipe or find. Tapping
  * Library while a collection is open shows the whole library again; tapping a collection opens the library on it.
+ * [links] adds the rows the phone drawer shares (Your library, the tour, Settings); null in previews and tests.
  */
 @Composable
-internal fun Sidebar(tabs: List<AppTab>, selected: AppTab, onSelect: (AppTab) -> Unit, shelves: SidebarShelves) {
+internal fun Sidebar(
+    tabs: List<AppTab>,
+    selected: AppTab,
+    onSelect: (AppTab) -> Unit,
+    shelves: SidebarShelves,
+    links: PanelLinks?,
+) {
     PermanentDrawerSheet(
         Modifier.width(Dimens.SidebarWidth).testTag(SIDEBAR_TAG),
         drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -85,12 +91,13 @@ internal fun Sidebar(tabs: List<AppTab>, selected: AppTab, onSelect: (AppTab) ->
                 )
             }
             if (shelves.shelves.isNotEmpty()) Shelves(shelves, libraryShowing = selected == AppTab.LIBRARY)
+            links?.let { PanelLinkRows(it, hasCollections = shelves.shelves.isNotEmpty()) }
         }
     }
 }
 
 @Composable
-private fun AppName() {
+internal fun AppName() {
     Row(
         Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceL),
         verticalAlignment = Alignment.CenterVertically,
@@ -110,14 +117,9 @@ private fun AppName() {
 }
 
 @Composable
-private fun Shelves(shelves: SidebarShelves, libraryShowing: Boolean) {
-    HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceM))
-    Text(
-        stringResource(R.string.sidebar_collections),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS).semantics { heading() },
-    )
+internal fun Shelves(shelves: SidebarShelves, libraryShowing: Boolean) {
+    PanelDivider()
+    PanelHeading(R.string.sidebar_collections)
     shelves.shelves.forEach { shelf ->
         NavigationDrawerItem(
             label = { Text(shelf.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },

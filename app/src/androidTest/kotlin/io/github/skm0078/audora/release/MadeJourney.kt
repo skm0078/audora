@@ -33,6 +33,7 @@ import io.github.skm0078.audora.playback.export.AudioChapter
 import io.github.skm0078.audora.playback.export.BookTags
 import io.github.skm0078.audora.playback.export.LocalChapterFiles
 import io.github.skm0078.audora.release.JourneyDevice.app
+import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import java.io.File
@@ -60,7 +61,7 @@ internal class MadeJourney(
     private fun tap(matcher: SemanticsMatcher) = node(matcher).performClick()
 
     private fun gone(matcher: SemanticsMatcher) {
-        rule.waitUntil(UI_TIMEOUT_MS) { rule.onAllNodes(matcher).fetchSemanticsNodes().isEmpty() }
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(matcher) }
     }
 
     /** Step 19: Library, Notes, Made and You from the bar; Jobs is in Made's top bar and Back from it returns there. */

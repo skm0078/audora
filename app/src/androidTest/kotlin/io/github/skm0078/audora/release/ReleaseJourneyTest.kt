@@ -85,6 +85,7 @@ import io.github.skm0078.audora.privacy.PrivacyPreferences
 import io.github.skm0078.audora.privacy.PrivacySettings
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
+import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.audio.WordTimes
@@ -204,6 +205,9 @@ class ReleaseJourneyTest {
         step("32 Made plays a saved audiobook like the book player", MadeJourney(rule, ::backToTabs)::playsLikeBook)
         step("41 catalogues are a curated list", CatalogueJourney(rule, ::backToTabs)::theCuratedCataloguesAreListed)
         step("44 Make it yours names the greeting and adds a part", HomeJourney(rule, ::backToTabs)::makesItYours)
+        step("45 the phone drawer opens Settings", DrawerJourney(rule, ::backToTabs)::opensSettings)
+        step("46 the phone drawer opens Make it yours", DrawerJourney(rule, ::backToTabs)::opensMakeItYours)
+        step("47 Settings' switches say what they cost", RowLinesJourney(rule, ::backToTabs)::settingsSayWhatTheyCost)
     }
 
     /**
@@ -238,7 +242,7 @@ class ReleaseJourneyTest {
     private fun tapText(id: Int, vararg args: Any) = tap(hasText(text(id, *args)))
 
     private fun gone(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) {
-        rule.waitUntil(timeoutMs) { rule.onAllNodes(matcher).fetchSemanticsNodes().isEmpty() }
+        rule.waitUntil(timeoutMs) { rule.hides(matcher) }
     }
 
     private fun back() {
@@ -521,7 +525,7 @@ class ReleaseJourneyTest {
             val current = activity()
             JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, type)) }
             awaitTrue("$asset to show \"$sentence\" in the reader", OPEN_TIMEOUT_MS, state = ::textBookLog) {
-                rule.onAllNodes(hasText(sentence, substring = true)).fetchSemanticsNodes().isNotEmpty()
+                rule.shows(hasText(sentence, substring = true))
             }
         }
     }
@@ -544,7 +548,7 @@ class ReleaseJourneyTest {
             JourneyDevice.logCount(PHOTO_BOOK_ADDED) > added
         }
         awaitSynced("the comic to open in the reader", OPEN_TIMEOUT_MS) {
-            rule.onAllNodes(hasText(COMIC_TITLE)).fetchSemanticsNodes().isNotEmpty()
+            rule.shows(hasText(COMIC_TITLE))
         }
     }
 
@@ -559,7 +563,7 @@ class ReleaseJourneyTest {
         val textHost = activity()
         JourneyDevice.onMain { textHost.startActivity(JourneyDevice.openWith(textUri, DJVU_TYPE)) }
         awaitSynced("$DJVU_TEXT to show \"$DJVU_SENTENCE\" in the reader", OPEN_TIMEOUT_MS) {
-            rule.onAllNodes(hasText(DJVU_SENTENCE, substring = true)).fetchSemanticsNodes().isNotEmpty()
+            rule.shows(hasText(DJVU_SENTENCE, substring = true))
         }
         backToTabs()
         val added = JourneyDevice.logCount(PHOTO_BOOK_ADDED)
@@ -570,7 +574,7 @@ class ReleaseJourneyTest {
             JourneyDevice.logCount(PHOTO_BOOK_ADDED) > added
         }
         awaitSynced("the DjVu scan to open in the reader", OPEN_TIMEOUT_MS) {
-            rule.onAllNodes(hasText(DJVU_SCAN_TITLE)).fetchSemanticsNodes().isNotEmpty()
+            rule.shows(hasText(DJVU_SCAN_TITLE))
         }
     }
 
@@ -810,7 +814,7 @@ class ReleaseJourneyTest {
         val current = activity()
         JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri)) }
         val pageImage = { page: Int -> hasContentDescription(text(R.string.reader_page_image, page)) }
-        val onScreen = { page: Int -> rule.onAllNodes(pageImage(page)).fetchSemanticsNodes().isNotEmpty() }
+        val onScreen = { page: Int -> rule.shows(pageImage(page)) }
         var shown: Int? = null
         awaitTrue("a drawn page on screen") {
             shown = (1..MAX_SCANNED_PAGES).firstOrNull(onScreen)

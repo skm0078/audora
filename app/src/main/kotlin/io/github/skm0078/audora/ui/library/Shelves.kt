@@ -71,7 +71,7 @@ private fun ShelfChips(list: LibraryListState.Loaded, onQuery: (LibraryQuery) ->
 
 private val CHIP_RULE_HEIGHT = 24.dp
 
-private val LibraryFilter.label: Int
+internal val LibraryFilter.label: Int
     get() = when (this) {
         LibraryFilter.ALL -> R.string.library_filter_all
         LibraryFilter.IN_PROGRESS -> R.string.library_shelf_reading
