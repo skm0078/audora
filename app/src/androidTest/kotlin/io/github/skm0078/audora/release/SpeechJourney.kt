@@ -49,6 +49,11 @@ internal class SpeechJourney(
         JourneyDevice.onMain { activity.startActivity(JourneyDevice.openWith(uri)) }
         waitFor(hasContentDescription(text(R.string.reader_play)), OPEN_TIMEOUT_MS)
 
+        // The shortcuts wait for the first-run tips to be put away.
+        val gotIt = hasText(text(R.string.gesture_tips_got_it)) and hasClickAction()
+        rule.waitForIdle()
+        if (rule.shows(gotIt)) tap(gotIt)
+
         // A row only What to read holds, shown as soon as its shortcut opens the sheet.
         val readingLine = hasText(text(R.string.reading_skim_short))
         tap(hasText(text(R.string.reading_modes_title)) and hasClickAction())

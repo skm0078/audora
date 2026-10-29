@@ -3,7 +3,8 @@
   header that says what is set in them, one at a time. No more sheets over the sheet.
 - The player's "Speed 1×" button is now a chip: tune icon, speed, and the voice reading under it.
 - A shortcut row under the player's buttons: Voices, What to read, Focus sound. Each opens the sheet at its group.
-- Sleep timer stays at the right end of the main row.
+- Sleep timer stays at the right end of the main row. The shortcut row waits until the first-run gesture tips are
+  put away (Got it), so the two never squeeze the page together.
 - "What's new" entry: `app/src/main/assets/whatsnew/2026-10-29-voice-and-speed-one-level.txt`. `:pdf` unchanged. No
   new dependency. New strings: `speech_group_all_off`, `speech_chip_state` (three languages); new icon `ic_tune`
   (Material, Apache-2.0).

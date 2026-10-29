@@ -22,6 +22,8 @@ player said which voice was reading.
   every book uses). Its content description is "Voice and speed"; its state is "Speed 1.25×, Bruno".
 - **Shortcuts:** a row under the player's buttons (`SpeechShortcut`): Voices, What to read and Focus sound. Each opens
   the same sheet at its place (`SpeechSpot`), with that group open and scrolled into view.
+- **Not while the first-run tips show:** the reader hides the shortcut row while its gesture tips sit under the
+  page, and shows it after Got it. Both together left a 640 dp emulator's page too short for the snippet picker.
 - **Sleep stays in the main row**, at the right end, where `PlayerLayoutTest` pins it; the shortcut row holds the
   three choices the audit found hardest to find.
 - **Guarded by** `SpeechSpotTest` (group order, shortcut targets, header summaries), `BookVoicesSectionTest` (the

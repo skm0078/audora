@@ -66,7 +66,9 @@ fun ReaderControls(
             // Which place in the Voice and speed sheet is open, if it is: the chip opens its top, a shortcut its group.
             var speechAt by rememberSaveable { mutableStateOf<SpeechSpot?>(null) }
             ControlsRow(state, config, actions, voices) { speechAt = SpeechSpot.TOP }
-            SpeechShortcuts(enabled = state.playerReady, onOpen = { speechAt = it })
+            // Not while the first-run tips show: both under the page would leave it too short on small screens
+            // (an emulator's 640 dp: the snippet picker's Share button had no room). They appear after Got it.
+            if (onTipsSeen == null) SpeechShortcuts(enabled = state.playerReady, onOpen = { speechAt = it })
             speechAt?.let { spot -> ControlsSpeechSheet(spot, state, config, actions, voices) { speechAt = null } }
         }
     }
