@@ -132,17 +132,25 @@ object JourneyDevice {
     /**
      * How many nodes match [matcher] now, or null for a moment the tree cannot be read: one activity handing over to
      * the next with no composition yet (IllegalStateException), or the read landing mid layout as a card leaves the
-     * reader ("performMeasureAndLayout called during measure layout", IllegalArgumentException). Both pass on the
-     * next poll; the app's own frames are not affected.
+     * reader ("performMeasureAndLayout called during measure layout"). Both pass on the next poll; the app's own
+     * frames are not affected. The mid-layout one reaches here wrapped by Espresso's idle sync
+     * (RuntimeException > ExecutionException > IllegalArgumentException), so it is told by its cause chain.
      */
     private fun ComposeTestRule.countNow(matcher: SemanticsMatcher): Int? = try {
         onAllNodes(matcher).fetchSemanticsNodes().size
     } catch (_: IllegalStateException) {
         null
-    } catch (_: IllegalArgumentException) {
+    } catch (failure: RuntimeException) {
+        if (!failure.isMidLayoutRead()) throw failure
         null
     }
 
+    private fun Throwable.isMidLayoutRead(): Boolean {
+        val chain = generateSequence(this) { it.cause }
+        return chain.any { it is IllegalArgumentException && it.message?.contains(MID_LAYOUT) == true }
+    }
+
+    private const val MID_LAYOUT = "performMeasureAndLayout called during measure layout"
     private const val PDF = "application/pdf"
     private const val ANY_FILE = "application/octet-stream"
     private const val POLL_MS = 200L
