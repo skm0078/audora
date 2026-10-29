@@ -13,7 +13,7 @@
     <string name="found_where_reading">The book you\'re reading</string>
     <string name="found_where_library">From your library</string>
     <string name="found_where_place">A place of its own</string>
-    <string name="found_more">More</string>
+    <string name="found_menu">Menu</string>
     <string name="found_book_play">Play %1$s</string>
     <string name="found_book_up_next">Add %1$s to Up next</string>
     <string name="found_book_audiobook">Save %1$s as an audiobook</string>

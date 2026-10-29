@@ -44,8 +44,8 @@ class FolderSyncScreenTest {
     }
 
     @Test
-    fun theLibraryMenuOffersFolderSync() {
-        assertTrue(LibraryAction.SYNC_FOLDER in LibraryAction.entries.filter { it.inMenu })
+    fun theSidePanelOffersFolderSync() {
+        assertTrue(LibraryAction.SYNC_FOLDER in LibraryAction.inPanel)
     }
 
     @Test
