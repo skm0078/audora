@@ -49,9 +49,9 @@ import io.github.skm0078.audora.core.library.CollectionNames
 import io.github.skm0078.audora.core.library.ShelfColour
 import io.github.skm0078.audora.core.library.ShelfEmoji
 import io.github.skm0078.audora.core.library.ShelfLook
+import io.github.skm0078.audora.ui.shell.ShelfBadge
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.ShelfColours
-import io.github.skm0078.audora.ui.theme.shelfDotColour
 
 /**
  * Name, colour and emoji, with a live badge at the top. Save stays off until the name has a letter. A chosen colour
@@ -163,22 +163,6 @@ private fun ColourSwatch(colour: ShelfColour, selected: Boolean, onClick: () -> 
     }
 }
 
-/**
- * A collection's dot, in its colour, with its emoji beside it when it has one. Decoration only: the name next to it
- * is what TalkBack reads.
- */
-@Composable
-internal fun ShelfBadge(id: String, look: ShelfLook, modifier: Modifier = Modifier) {
-    Row(
-        modifier.clearAndSetSemantics {},
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
-    ) {
-        Box(Modifier.size(DOT_SIZE).clip(CircleShape).background(shelfDotColour(id, look.colour)))
-        look.emoji?.let { Text(it.glyph, style = MaterialTheme.typography.bodyMedium) }
-    }
-}
-
 @StringRes
 internal fun colourName(colour: ShelfColour): Int = when (colour) {
     ShelfColour.CLAY -> R.string.shelf_colour_clay
@@ -201,7 +185,6 @@ internal fun emojiName(emoji: ShelfEmoji): Int = when (emoji) {
 private val SWATCH_SIZE = 36.dp
 private val RING_WIDTH = 2.dp
 private val RING_GAP = 2.dp
-private val DOT_SIZE = 12.dp
 
 // White reads on all six mid tones (each at least 3:1 against it, as an icon needs).
 private val SWATCH_TICK = Color.White

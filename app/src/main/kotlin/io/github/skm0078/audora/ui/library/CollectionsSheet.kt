@@ -43,6 +43,7 @@ import io.github.skm0078.audora.core.library.BookCollection
 import io.github.skm0078.audora.core.library.CollectionNames
 import io.github.skm0078.audora.core.library.ShelfLook
 import io.github.skm0078.audora.core.library.ShelfSuggestion
+import io.github.skm0078.audora.ui.shell.ShelfBadge
 import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.TitleAndTrailing

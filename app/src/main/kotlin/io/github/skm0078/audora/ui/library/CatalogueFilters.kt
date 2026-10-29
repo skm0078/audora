@@ -46,6 +46,7 @@ import io.github.skm0078.audora.core.library.LibraryFacets
 import io.github.skm0078.audora.core.library.LibraryNarrow
 import io.github.skm0078.audora.core.library.LibraryQuery
 import io.github.skm0078.audora.core.library.ShelfLook
+import io.github.skm0078.audora.ui.shell.ShelfBadge
 import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
 
