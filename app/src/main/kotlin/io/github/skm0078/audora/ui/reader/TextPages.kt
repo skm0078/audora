@@ -41,6 +41,9 @@ import kotlin.math.abs
  */
 internal class TextTurnBack {
     var openAtEnd = false
+
+    /** A turn begun on the page before, to play once the new page shows (ADR 2026-10-29-page-curl). */
+    var pending: PendingTurn? = null
 }
 
 /**
@@ -62,7 +65,7 @@ internal class TextScreens(private val list: LazyListState) {
         val visible = info.visibleItemsInfo
         val last = visible.lastOrNull()
         val end = info.viewportEndOffset
-        if (last == null || (last.index == info.totalItemsCount - 1 && last.offset + last.size <= end)) return false
+        if (last == null || atEnd) return false
         earlier.addLast(list.firstVisibleItemIndex to list.firstVisibleItemScrollOffset)
         val cut = visible.firstOrNull { it.offset + it.size > end } ?: last
         if (cut.index == list.firstVisibleItemIndex) {
@@ -89,13 +92,30 @@ internal class TextScreens(private val list: LazyListState) {
         return true
     }
 
-    /** Reading moved to [item]: it starts a screen of its own unless it is wholly on this one already. */
-    suspend fun keepInView(item: Int) {
+    /** Which way [keepInView] will turn for [item]: 1 on, -1 back, 0 not at all (it is wholly on this screen). */
+    fun turnFor(item: Int): Int {
         val info = list.layoutInfo
         val shown = info.visibleItemsInfo.firstOrNull { it.index == item }
         val whole = shown != null && shown.offset >= info.viewportStartOffset &&
             shown.offset + shown.size <= info.viewportEndOffset
-        if (whole) return
+        return when {
+            whole -> 0
+            item >= list.firstVisibleItemIndex -> 1
+            else -> -1
+        }
+    }
+
+    /** True once the page's last item is wholly on screen: the next turn shows the book's next page. */
+    val atEnd: Boolean
+        get() {
+            val info = list.layoutInfo
+            val last = info.visibleItemsInfo.lastOrNull() ?: return false
+            return last.index == info.totalItemsCount - 1 && last.offset + last.size <= info.viewportEndOffset
+        }
+
+    /** Reading moved to [item]: it starts a screen of its own unless it is wholly on this one already. */
+    suspend fun keepInView(item: Int) {
+        if (turnFor(item) == 0) return
         earlier.clear()
         list.scrollToItem(item)
         turned++
@@ -117,10 +137,10 @@ internal class TextScreens(private val list: LazyListState) {
 internal class TurnSlide {
     private val offset = Animatable(0f)
 
-    /** [on]: the new screen comes in from the right, as a page turned on; else from the left. */
-    suspend fun play(on: Boolean) {
+    /** [on]: the new screen comes in from the right, as a page turned on; else from the left; over [ms]. */
+    suspend fun play(on: Boolean, ms: Int = TURN_MS) {
         offset.snapTo(if (on) 1f else -1f)
-        offset.animateTo(0f, tween(TURN_MS, easing = FastOutSlowInEasing))
+        offset.animateTo(0f, tween(ms, easing = FastOutSlowInEasing))
     }
 
     /** Where the slide is: 1 or -1 as it starts, 0 settled. */

@@ -1,5 +1,5 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/library/MakeItYoursScreenTest.kt
-// Purpose: "Make it yours" opens from the library's ⋮ menu and the side panel, and each choice shows on the library at
+// Purpose: "Make it yours" opens from the side panel, and each choice shows on the library at
 //          once: the name in the greeting, a part turned on or off, the chips hidden, a part moved up (ADR
 //          2026-10-28-make-it-yours).
 
@@ -70,7 +70,7 @@ class MakeItYoursScreenTest {
         }
     }
 
-    /** Scrolls to [matcher] first only inside a scrolling list (the menu, the sheet); the ⋮ button has none. */
+    /** Scrolls to [matcher] first only inside a scrolling list (the sheet). */
     private fun tap(matcher: SemanticsMatcher) {
         val node = rule.onAllNodes(matcher).onFirst()
         val scrolls = rule.onAllNodes(matcher and hasAnyAncestor(hasScrollAction())).fetchSemanticsNodes().isNotEmpty()
@@ -79,9 +79,9 @@ class MakeItYoursScreenTest {
         rule.waitForIdle()
     }
 
+    /** The library with Make it yours asked for, as the side panel's row asks: the ⋮ menu that held it is gone. */
     private fun openSheet() {
-        tap(hasContentDescription(text(R.string.reader_more)))
-        tap(hasText(text(R.string.library_make_it_yours)))
+        showLibrary(LibraryAction.MAKE_IT_YOURS)
         rule.onNode(hasText(text(R.string.home_sheet_body))).assertExists()
     }
 
@@ -104,7 +104,6 @@ class MakeItYoursScreenTest {
 
     @Test
     fun aNameIsGreetedAtOnce() {
-        showLibrary()
         openSheet()
         rule.onAllNodes(hasSetTextAction()).onFirst().performTextReplacement("  Ria ")
         rule.waitForIdle()
@@ -119,7 +118,6 @@ class MakeItYoursScreenTest {
 
     @Test
     fun recentlyAddedTurnsOnAndMovesUp() {
-        showLibrary()
         openSheet()
         rule.onNode(switchFor(R.string.home_section_recent)).assertIsOff()
         tap(switchFor(R.string.home_section_recent))
@@ -132,7 +130,6 @@ class MakeItYoursScreenTest {
 
     @Test
     fun theChipsAndTheContinueCardCanBeTurnedOff() {
-        showLibrary()
         openSheet()
         tap(switchFor(R.string.home_section_chips))
         tap(switchFor(R.string.home_section_continue))

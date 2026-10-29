@@ -5,19 +5,23 @@
 package io.github.skm0078.audora.release
 
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import io.github.skm0078.audora.COOKBOOK_ASSET_DIR
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.playback.text.MarkdownParser
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.shows
+import io.github.skm0078.audora.ui.shell.DRAWER_TAG
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -38,7 +42,7 @@ internal class CookbookJourney(private val rule: ComposeTestRule, private val ba
     /**
      * The APK carries the cookbook in English, Hindi and Bengali with the same recipes, none with the site's markup
      * left in. The library's home labels it "From ListenLock" and its card opens it in the reader, ready to play; the
-     * ⋮ menu opens the same book.
+     * side panel's row opens the same book.
      */
     fun opensFromTheLibrary() {
         val chapters = LANGS.associateWith { lang ->
@@ -59,8 +63,11 @@ internal class CookbookJourney(private val rule: ComposeTestRule, private val ba
         opensTheCookbook()
 
         tap(hasText(text(R.string.tab_library)) and hasClickAction())
-        tap(hasContentDescription(text(R.string.reader_more)))
-        tap(hasText(text(R.string.cookbook_open)))
+        tap(hasContentDescription(text(R.string.drawer_open)))
+        val inPanel =
+            hasText(text(R.string.cookbook_open)) and hasClickAction() and hasAnyAncestor(hasTestTag(DRAWER_TAG))
+        waitForNode(inPanel)
+        rule.onNode(inPanel).performScrollTo().performClick()
         opensTheCookbook()
     }
 

@@ -8,6 +8,8 @@
     <string name="speech_sheet_title">ভয়েস আর গতি</string>
     <string name="speech_speed_title">গতি</string>
     <string name="speech_speed_value">%1$s×</string>
+    <string name="speech_group_all_off">সব বন্ধ</string>
+    <string name="speech_chip_state">গতি %1$s×, %2$s</string>
     <string name="reading_skim_short">শুধু শিরোনাম আর মূল বাক্য</string>
     <string name="reading_skip_unreadable_short">এলোমেলো স্ক্যান লেখা হালকা শব্দ হয়ে যায়</string>
     <string name="settings_skip_citations_short">[12] আর [4–7] বাদ দেয়</string>

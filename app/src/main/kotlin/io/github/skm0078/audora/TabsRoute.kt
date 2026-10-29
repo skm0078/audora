@@ -21,7 +21,6 @@ import io.github.skm0078.audora.ui.firstrun.LocalTourTargets
 import io.github.skm0078.audora.ui.firstrun.TourTargets
 import io.github.skm0078.audora.ui.kids.LocalKidsMode
 import io.github.skm0078.audora.ui.library.BookCovers
-import io.github.skm0078.audora.ui.library.LibraryAction
 import io.github.skm0078.audora.ui.library.LibraryController
 import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.MiniPlayer
@@ -102,8 +101,9 @@ private fun Shell(
 }
 
 /**
- * The side panel's rows: the library's shelves and collections, Made, then Your library (Make it yours, Edit
- * collections, the listening stats), the tour and Settings. The tablet sidebar shows the same [PanelLinks].
+ * The side panel's rows: the library's shelves and collections, Made, then Your library (Add a book, Make it yours,
+ * the collections and the rest of the library's tools), the tour and Settings. The tablet sidebar shows the same
+ * [PanelLinks].
  */
 @Composable
 private fun phoneDrawer(tab: AppTab, library: LibraryController, nav: AppNavigation, onTour: () -> Unit): PhoneDrawer {
@@ -113,9 +113,7 @@ private fun phoneDrawer(tab: AppTab, library: LibraryController, nav: AppNavigat
         collections = sidebarShelves(library, toLibrary),
         onMade = { nav.navigate(AppDestination.Made) },
         links = PanelLinks(
-            onMakeItYours = { nav.openLibraryAction(LibraryAction.MAKE_IT_YOURS) },
-            onEditCollections = { nav.openLibraryAction(LibraryAction.EDIT_COLLECTIONS) },
-            onListeningStats = { nav.openLibraryAction(LibraryAction.LISTENING_STATS) },
+            onLibraryAction = nav::openLibraryAction,
             onTour = onTour,
             onSettings = nav::openSettingsHome,
         ),

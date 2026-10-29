@@ -67,6 +67,16 @@ internal fun shownVoiceChoices(choices: Map<Lang, List<VoiceRow>>, bookLang: Lan
     return listOfNotNull(first).toMap() + others
 }
 
+/**
+ * The name of the voice reading [lang] now, for the player's chip: [own] (this book's picks, while it keeps its own
+ * settings) first, else the one every book uses. Null when no voice reads it.
+ */
+internal fun readingVoiceName(rows: List<VoiceRow>, own: Map<Lang, VoiceId>, lang: Lang): String? {
+    val choices = bookVoiceChoices(rows)[lang].orEmpty()
+    val reading = own[lang] ?: choices.firstOrNull { it.readsLanguage }?.id ?: choices.firstOrNull()?.id
+    return choices.firstOrNull { it.id == reading }?.label
+}
+
 /** The voices a book can use now, by language: built in or installed, and not measured too slow. */
 internal fun bookVoiceChoices(rows: List<VoiceRow>): Map<Lang, List<VoiceRow>> = rows
     .filter {

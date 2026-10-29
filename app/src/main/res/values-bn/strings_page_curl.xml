@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="page_turn_style">পাতা ওল্টানো</string>
+    <string name="page_turn_style_help">ভাঁজ: পাতা কাগজের মতো কোণ থেকে উঠে উল্টে যায়। সরানো: পাতা পাশে সরে যায়। কিছু না: পরের পাতা সঙ্গে সঙ্গে দেখায়। পড়ে শোনানোর সময় পাতা একই ভাবে, তবে দ্রুত ওল্টায়।</string>
+    <string name="page_turn_curl">ভাঁজ</string>
+    <string name="page_turn_slide">সরানো</string>
+    <string name="page_turn_none">কিছু না</string>
+    <string name="page_turn_speed">ওল্টানোর গতি</string>
+    <string name="page_turn_quick">দ্রুত</string>
+    <string name="page_turn_normal">স্বাভাবিক</string>
+    <string name="page_turn_slow">ধীর</string>
+    <string name="page_turn_shadow">ভাঁজের ছায়া</string>
+    <string name="page_turn_shadow_light">হালকা</string>
+    <string name="page_turn_shadow_deep">গাঢ়</string>
+</resources>

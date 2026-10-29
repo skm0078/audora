@@ -66,7 +66,7 @@ class PlayerLayoutTest {
             Screens.save("player-font-${(scale * PERCENT).toInt()}", player.captureToImage().asAndroidBitmap())
             // The player's own bounds: the emulator's screen need not have the test phone's shape around it.
             val root = player.fetchSemanticsNode().boundsInRoot
-            val speed = boundsOf(context.getString(R.string.reader_speed, speedLabel(1f)), byText = true)
+            val speed = boundsOf(context.getString(R.string.speech_sheet_title))
             val sleep = boundsOf(context.getString(R.string.reader_sleep_timer))
             val play = boundsOf(context.getString(R.string.reader_play))
             // In shares of the width: ForcedSize changes the density inside, so the device's dp would not match.
@@ -79,18 +79,13 @@ class PlayerLayoutTest {
         }
     }
 
-    /** The node's bounds, by content description, or by its text for a text button. */
-    private fun boundsOf(label: String, byText: Boolean = false): Rect = rule.onRoot().fetchSemanticsNode()
+    /** The node's bounds, by its content description. */
+    private fun boundsOf(label: String): Rect = rule.onRoot().fetchSemanticsNode()
         .let { root ->
             val found = generateSequence(listOf(root)) { level -> level.flatMap { it.children }.ifEmpty { null } }
                 .flatten()
                 .firstOrNull { node ->
-                    val config = node.config
-                    if (byText) {
-                        config.getOrElse(SemanticsProperties.Text) { emptyList() }.any { it.text == label }
-                    } else {
-                        config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() }.contains(label)
-                    }
+                    node.config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() }.contains(label)
                 }
             requireNotNull(found) { "No node labelled \"$label\" on the player" }.boundsInRoot
         }

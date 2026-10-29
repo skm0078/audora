@@ -1,0 +1,3 @@
+en: The library's tools moved from the ⋮ menu to the side menu (☰): backup, folder sync, watched folders, the quiz and your listening stats.
+hi: लाइब्रेरी के टूल ⋮ मेनू से साइड मेनू (☰) में आ गए हैं: बैकअप, फ़ोल्डर सिंक, देखे जाने वाले फ़ोल्डर, क्विज़ और आपके सुनने के आँकड़े।
+bn: লাইব্রেরির টুলগুলো ⋮ মেনু থেকে পাশের মেনুতে (☰) এসেছে: ব্যাকআপ, ফোল্ডার সিঙ্ক, নজরে রাখা ফোল্ডার, কুইজ আর আপনার শোনার পরিসংখ্যান।

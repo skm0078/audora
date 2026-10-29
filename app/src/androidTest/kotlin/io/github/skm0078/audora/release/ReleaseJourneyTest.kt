@@ -190,6 +190,9 @@ class ReleaseJourneyTest {
         step("28 a text turn slides in and settles where the text was") {
             share.aTextTurnSlidesAndSettles(MORE_FORMATS.first())
         }
+        step("50 a PDF page curls as it turns, and Page and text keeps Slide when picked") {
+            CurlJourney(rule, ::activity).aPdfPageCurlsAndSlideCanBePicked(BOOK)
+        }
         step(
             "29 a story's women and men each get a voice of their own gender",
             CharacterJourney::womenAndMenGetVoicesOfTheirGender,
@@ -206,7 +209,9 @@ class ReleaseJourneyTest {
         step("46 the phone drawer opens Make it yours", DrawerJourney(rule, ::backToTabs)::opensMakeItYours)
         step("47 Settings' switches say what they cost", RowLinesJourney(rule, ::backToTabs)::settingsSayWhatTheyCost)
         step("48 This week is a home part and opens Your listening", HomeJourney(rule, ::backToTabs)::offersThisWeek)
-        step("49 From ListenLock opens the cookbook", CookbookJourney(rule, ::backToTabs)::opensFromTheLibrary)
+        step("49 the side panel holds the library's tools", DrawerJourney(rule, ::backToTabs)::holdsTheLibrarysTools)
+        step("51 player shortcuts open their group", SpeechJourney(rule, BOOK, ::backToTabs)::shortcutsOpenTheirGroup)
+        step("52 From ListenLock opens the cookbook", CookbookJourney(rule, ::backToTabs)::opensFromTheLibrary)
     }
 
     /**

@@ -61,7 +61,7 @@ class LibraryHomeTest {
         assertTrue(FROM_LISTENLOCK_KEY in keys(LibraryHome(HomeLayout())))
         val off = HomeLayout().toggled(HomeSection.FROM_LISTENLOCK)
         assertFalse(FROM_LISTENLOCK_KEY in keys(LibraryHome(off)))
-        assertTrue(AppDocument.entries.all { it.action.inMenu })
+        assertTrue(AppDocument.entries.all { it.action in LibraryAction.inPanel })
     }
 
     @Test

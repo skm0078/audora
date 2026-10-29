@@ -5,6 +5,7 @@ package io.github.skm0078.audora.core.config
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PageFlipConfigTest {
@@ -46,6 +47,15 @@ class PageFlipConfigTest {
         assertThrows(IllegalArgumentException::class.java) { PageFlipConfig(edgeShare = 0.6f) }
         assertThrows(IllegalArgumentException::class.java) { PageFlipConfig(turnShare = 1f) }
         assertThrows(IllegalArgumentException::class.java) { PageFlipConfig(flingDpPerSecond = 0f) }
+        assertThrows(IllegalArgumentException::class.java) { PageFlipConfig(curlMs = 0) }
+        assertThrows(IllegalArgumentException::class.java) { PageFlipConfig(readingLift = 0.8f) }
+        assertThrows(IllegalArgumentException::class.java) { PageFlipConfig(backAlpha = 2f) }
+        assertThrows(IllegalArgumentException::class.java) { PageFlipConfig(shadowShare = 0f) }
+    }
+
+    @Test
+    fun `a turn made by reading aloud is quicker than a curl by hand`() {
+        assertTrue(config.readingTurnMs < config.curlMs)
     }
 
     private companion object {
