@@ -5,19 +5,20 @@
 package io.github.skm0078.audora.playback.text
 
 import io.github.skm0078.audora.core.result.Outcome
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.nio.charset.Charset
+import java.util.zip.ZipEntry
+import java.util.zip.ZipException
+import java.util.zip.ZipFile
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.nio.charset.Charset
-import java.util.zip.ZipEntry
-import java.util.zip.ZipException
-import java.util.zip.ZipInputStream
-import java.util.zip.ZipOutputStream
 
 class ZipNamesTest {
     @get:Rule
@@ -49,6 +50,8 @@ class ZipNamesTest {
         return out.toByteArray()
     }
 
+    private fun streamOf(bytes: ByteArray) = ByteArrayInputStream(bytes)
+
     private fun names(zip: ZipInputStream): List<String> = generateSequence { zip.nextEntry }.map { it.name }.toList()
 
     @Test
@@ -58,22 +61,22 @@ class ZipNamesTest {
         val refused = runCatching { ZipInputStream(ByteArrayInputStream(bytes)).use(::names) }.exceptionOrNull()
         assertTrue("Java should refuse it: $refused", refused is IllegalArgumentException)
 
-        var opened = 0
-        val read = ZipNames.stream({ opened++; ByteArrayInputStream(bytes) }, ::names)
+        var opens = 0
+        val read = ZipNames.stream({ streamOf(bytes).also { opens++ } }, ::names)
 
         assertEquals(listOf("cover.png", "images/café.png"), read)
-        assertEquals(2, opened)
+        assertEquals(2, opens)
     }
 
     @Test
     fun `a UTF-8 zip is read once with its names as they are`() {
         val bytes = zip(mapOf("পাতা/প্রথম.xhtml" to byteArrayOf(1)), Charsets.UTF_8)
-        var opened = 0
+        var opens = 0
 
-        val read = ZipNames.stream({ opened++; ByteArrayInputStream(bytes) }, ::names)
+        val read = ZipNames.stream({ streamOf(bytes).also { opens++ } }, ::names)
 
         assertEquals(listOf("পাতা/প্রথম.xhtml"), read)
-        assertEquals(1, opened)
+        assertEquals(1, opens)
     }
 
     @Test
@@ -104,7 +107,7 @@ class ZipNamesTest {
 
         assertEquals(ZipNames.FALLBACK, charset)
         assertEquals(listOf("página1.png", "página2.png"), names)
-        java.util.zip.ZipFile(file, charset).use { zip -> assertNotNull(zip.getEntry(names.last())) }
+        ZipFile(file, charset).use { zip -> assertNotNull(zip.getEntry(names.last())) }
     }
 
     @Test
