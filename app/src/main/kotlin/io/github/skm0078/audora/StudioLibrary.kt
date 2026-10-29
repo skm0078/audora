@@ -228,6 +228,7 @@ internal class StudioLibrary(
         LibraryAction.QUIZ -> sheet.value = StudioSheet.QUIZ
         LibraryAction.LISTENING_STATS -> sheet.value = StudioSheet.LISTENING_STATS
         LibraryAction.TRY_SAMPLE -> parts.onText(sampleBook(parts.activity))
+        LibraryAction.COOKBOOK -> parts.onText(cookbookBook(parts.activity))
         LibraryAction.MAKE_IT_YOURS -> Unit // The library screen opens its own sheet.
     }
 

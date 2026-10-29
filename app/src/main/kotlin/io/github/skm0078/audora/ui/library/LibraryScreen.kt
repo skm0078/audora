@@ -261,7 +261,12 @@ private fun LibraryContent(
         }
 
         is LibraryListState.Loaded -> if (listState.all.isEmpty()) {
-            EmptyLibrary(enabled = !busy, onAddPdf = onAddPdf) { menu.onLibraryAction(LibraryAction.TRY_SAMPLE) }
+            EmptyLibrary(
+                enabled = !busy,
+                onAddPdf = onAddPdf,
+                onTrySample = { menu.onLibraryAction(LibraryAction.TRY_SAMPLE) },
+                onCookbook = { menu.onLibraryAction(LibraryAction.COOKBOOK) },
+            )
         } else {
             Column {
                 if (showsShelfChips(home)) LibraryChipRow(listState, menu::onQuery)
@@ -279,7 +284,14 @@ private fun LibraryContent(
                     }
                 } else {
                     val books = BookCallbacks(onTap, menu, onDetails, picked, found)
-                    val top = homeParts(listState, home, covers, { menu.onContinue(it.book) }, onTap)
+                    val top = homeParts(
+                        listState,
+                        home,
+                        covers,
+                        onContinue = { menu.onContinue(it.book) },
+                        onTap = onTap,
+                        onLibraryAction = menu::onLibraryAction,
+                    )
                     if (layout.showsList(LocalDensity.current.fontScale)) {
                         BookList(listState, books, covers, top)
                     } else {
@@ -415,7 +427,7 @@ private fun BookList(list: LibraryListState.Loaded, books: BookCallbacks, covers
 }
 
 @Composable
-private fun EmptyLibrary(enabled: Boolean, onAddPdf: () -> Unit, onTrySample: () -> Unit) {
+private fun EmptyLibrary(enabled: Boolean, onAddPdf: () -> Unit, onTrySample: () -> Unit, onCookbook: () -> Unit) {
     Centered {
         Icon(
             painterResource(R.drawable.ic_library),
@@ -431,6 +443,8 @@ private fun EmptyLibrary(enabled: Boolean, onAddPdf: () -> Unit, onTrySample: ()
         Button(onClick = onAddPdf, enabled = enabled) { Text(stringResource(R.string.library_add_pdf)) }
         // Hear the app work in one tap before finding a file: a short page that also says how to use it.
         OutlinedButton(onClick = onTrySample, enabled = enabled) { Text(stringResource(R.string.sample_try)) }
+        // Then how to combine features for real situations, read aloud like any book.
+        TextButton(onClick = onCookbook, enabled = enabled) { Text(stringResource(R.string.cookbook_open)) }
     }
 }
 

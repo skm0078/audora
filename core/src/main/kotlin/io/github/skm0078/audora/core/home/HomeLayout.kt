@@ -13,6 +13,9 @@ enum class HomeSection {
     CONTINUE,
     LINE_OF_THE_DAY,
     RECENTLY_ADDED,
+
+    /** Documents that come with the app, such as the ListenLock Cookbook (ADR 2026-10-29-in-app-cookbook). */
+    FROM_LISTENLOCK,
     SHELF_CHIPS,
     ;
 
@@ -72,7 +75,12 @@ data class HomeLayout(
 
         private val MOVABLE: Set<HomeSection> = HomeSection.entries.filter { it.movable }.toSet()
         val DEFAULT_ORDER: List<HomeSection> =
-            listOf(HomeSection.CONTINUE, HomeSection.LINE_OF_THE_DAY, HomeSection.RECENTLY_ADDED)
+            listOf(
+                HomeSection.CONTINUE,
+                HomeSection.LINE_OF_THE_DAY,
+                HomeSection.RECENTLY_ADDED,
+                HomeSection.FROM_LISTENLOCK,
+            )
 
         /** A light home by default (ADR 2026-10-28-home-and-tour): Recently added is the listener's to turn on. */
         val DEFAULT_HIDDEN: Set<HomeSection> = setOf(HomeSection.RECENTLY_ADDED)

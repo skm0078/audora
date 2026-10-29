@@ -1,6 +1,7 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/HomePart.kt
-// Purpose: The parts above the books the listener orders in "Make it yours": Continue listening, the line of the day
-//          and Recently added, built once for the grid and the list alike (ADR 2026-10-28-make-it-yours).
+// Purpose: The parts above the books the listener orders in "Make it yours": Continue listening, the line of the day,
+//          Recently added and From ListenLock, built once for the grid and the list alike (ADR
+//          2026-10-28-make-it-yours, ADR 2026-10-29-in-app-cookbook).
 
 package io.github.skm0078.audora.ui.library
 
@@ -43,6 +44,7 @@ internal fun homeParts(
     covers: CoverSource,
     onContinue: (LibraryItem) -> Unit,
     onTap: (LibraryItem) -> Unit,
+    onLibraryAction: (LibraryAction) -> Unit = {},
 ): List<HomePart> {
     val layout = home.layout?.takeIf { list.query.isDefault } ?: return emptyList()
     return layout.shownOrder.mapNotNull { section ->
@@ -66,6 +68,10 @@ internal fun homeParts(
 
             HomeSection.RECENTLY_ADDED -> recentlyAdded(list).takeIf { it.isNotEmpty() }?.let { recent ->
                 HomePart(RECENT_KEY) { RecentlyAddedRow(recent, covers, onTap) }
+            }
+
+            HomeSection.FROM_LISTENLOCK -> HomePart(FROM_LISTENLOCK_KEY) {
+                FromListenLockRow(AppDocument.entries) { onLibraryAction(it.action) }
             }
 
             HomeSection.SHELF_CHIPS -> null // Pinned above the books, not one of these.
@@ -150,6 +156,7 @@ internal fun RecentlyAddedRow(books: List<LibraryItem>, covers: CoverSource, onT
 internal const val CONTINUE_KEY = "continue-reading"
 internal const val LINE_KEY = "line-of-the-day"
 internal const val RECENT_KEY = "recently-added"
+internal const val FROM_LISTENLOCK_KEY = "from-listenlock"
 internal const val RECENT_COUNT = 12
 private const val LINE_LINES = 3
 private val RECENT_COVER_WIDTH = 96.dp

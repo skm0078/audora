@@ -47,6 +47,9 @@ enum class LibraryAction(@StringRes val label: Int, @StringRes val hint: Int, va
      */
     MAKE_IT_YOURS(R.string.library_make_it_yours, R.string.menu_hint_make_it_yours),
 
+    /** The ListenLock Cookbook: the site's recipes as a book in the app's language (ADR 2026-10-29-in-app-cookbook). */
+    COOKBOOK(R.string.cookbook_open, R.string.menu_hint_cookbook),
+
     /** A short page about ListenLock in the app's language, saved as a text book and opened (empty library only). */
     TRY_SAMPLE(R.string.sample_try, R.string.sample_try_hint, inMenu = false),
 }

@@ -43,13 +43,24 @@ class LibraryHomeTest {
             .moved(HomeSection.RECENTLY_ADDED, up = true)
             .moved(HomeSection.RECENTLY_ADDED, up = true)
             .toggled(HomeSection.LINE_OF_THE_DAY)
-        assertEquals(listOf(RECENT_KEY, CONTINUE_KEY), keys(LibraryHome(layout, line = line)))
+        assertEquals(listOf(RECENT_KEY, CONTINUE_KEY, FROM_LISTENLOCK_KEY), keys(LibraryHome(layout, line = line)))
     }
 
     @Test
     fun `a part with nothing to show is left out`() {
-        assertEquals(listOf(CONTINUE_KEY), keys(LibraryHome(HomeLayout(), line = null)))
-        assertEquals(listOf(CONTINUE_KEY, LINE_KEY), keys(LibraryHome(HomeLayout(), line = line)))
+        assertEquals(listOf(CONTINUE_KEY, FROM_LISTENLOCK_KEY), keys(LibraryHome(HomeLayout(), line = null)))
+        assertEquals(
+            listOf(CONTINUE_KEY, LINE_KEY, FROM_LISTENLOCK_KEY),
+            keys(LibraryHome(HomeLayout(), line = line)),
+        )
+    }
+
+    @Test
+    fun `From ListenLock is labelled apart from the books and can be turned off`() {
+        assertTrue(FROM_LISTENLOCK_KEY in keys(LibraryHome(HomeLayout())))
+        val off = HomeLayout().toggled(HomeSection.FROM_LISTENLOCK)
+        assertFalse(FROM_LISTENLOCK_KEY in keys(LibraryHome(off)))
+        assertTrue(AppDocument.entries.all { it.action.inMenu })
     }
 
     @Test
