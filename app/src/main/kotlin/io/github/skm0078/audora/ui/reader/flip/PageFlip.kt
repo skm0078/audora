@@ -10,7 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
-import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.aspectRatio
@@ -29,6 +28,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerId
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
@@ -178,7 +181,7 @@ private suspend fun PointerInputScope.flipGesture(
         } ?: return@awaitEachGesture
         flip.touch(down.position.y, geometry.heightPx)
         flip.drag(pages(), slop, start.position.y - down.position.y, geometry.widthPx)
-        val finished = horizontalDrag(start.id) { change ->
+        val finished = claimedDrag(start.id) { change ->
             tracker.addPosition(change.uptimeMillis, change.position)
             val moved = change.positionChange()
             flip.drag(pages(), moved.x, moved.y, geometry.widthPx)
@@ -191,4 +194,20 @@ private suspend fun PointerInputScope.flipGesture(
             flip.abandon()
         }
     }
+}
+
+/**
+ * Follows pointer [id] once the turn has begun, until it lifts (true) or a second finger comes down for a pinch
+ * (false). Its moves are taken in the initial pass, before the page's vertical scroll sees them, so a corner lifted
+ * up or down with the finger stays a turn and is never taken over as a scroll part way.
+ */
+private suspend fun AwaitPointerEventScope.claimedDrag(id: PointerId, onDrag: (PointerInputChange) -> Unit): Boolean {
+    var event = awaitPointerEvent(PointerEventPass.Initial)
+    var change = event.changes.firstOrNull { it.id == id }
+    while (change != null && change.pressed && event.changes.count { it.pressed } == 1) {
+        onDrag(change)
+        event = awaitPointerEvent(PointerEventPass.Initial)
+        change = event.changes.firstOrNull { it.id == id }
+    }
+    return change != null && !change.pressed
 }

@@ -111,8 +111,10 @@ class PageCurlTest {
     fun aDragFromTheBottomCornerCurlsItUpAndTurns() {
         show(PageTurn())
         pageNode(PAGE).performTouchInput {
+            // As a hand does: sideways first, so the turn takes hold, then lifting the corner as it goes.
             down(Offset(width * CORNER_SHARE, height * CORNER_SHARE))
-            moveBy(Offset(-width * DRAG_SHARE, -height * LIFT_SHARE))
+            moveBy(Offset(-width * START_SHARE, 0f))
+            moveBy(Offset(-width * (DRAG_SHARE - START_SHARE), -height * LIFT_SHARE))
         }
         rule.waitForIdle()
         Screens.save("page-curl-corner", rule.onRoot().captureToImage().asAndroidBitmap())
@@ -204,6 +206,7 @@ class PageCurlTest {
         const val PAGE_HEIGHT = 792
         const val NUMBER_SIZE = 120f
         const val DRAG_SHARE = 0.4f
+        const val START_SHARE = 0.1f
         const val CORNER_SHARE = 0.92f
         const val LIFT_SHARE = 0.1f
         const val SAMPLE_PX = 4
