@@ -27,8 +27,8 @@ An audit of dev at 8c13ad0 and of the published dev APK found time still spent w
    `ReaderConfig.voiceWarmUpDelayMs` (1 s), then, if the player is connected and nothing is playing, asks the service
    once to load the voice for that page's language, and once more after each lost connection (the service may have
    stopped and released the voice while the reader was away). The service picks the voice as reading will (the
-   book's own voice while installed, else the language's voice) and loads it when it is a sherpa-onnx model, by rendering empty
-   text, which loads the model and speaks nothing. Phone voices are already bound by finding them; the acted Hindi
+   book's own voice while installed, else the language's voice) and loads it when it is a sherpa-onnx model, by
+   rendering empty text, which loads the model and speaks nothing. Phone voices are already bound by finding them; the acted Hindi
    voice is large and opt-in, so it is left alone. The command never starts, changes or queues playback, so it is
    not a user action and C7 still holds.
 2. **Draw the first screen once** (`FirstFrameHold.kt`). The window's first frame is held, so the system splash stays,
