@@ -1,27 +1,130 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Listening stats and streaks, kept on the phone only (CF-8). -->
+<!-- Listening stats, streaks, milestones and the stats share card, kept on the phone only (CF-8, stats screen). -->
 <resources>
     <string name="library_listening_stats">Listening stats</string>
-    <string name="menu_hint_listening_stats">Time listened, your streak and books finished. Kept on this phone only.</string>
-    <string name="stats_today">Today</string>
-    <string name="stats_week">This week</string>
-    <string name="stats_streak">Streak</string>
-    <string name="stats_best_streak">Longest streak</string>
-    <string name="stats_books_finished">Books finished</string>
-    <string name="stats_total">All time</string>
+    <string name="menu_hint_listening_stats">Time listened, your streak, languages and books finished. Kept on this phone only.</string>
+    <string name="stats_title">Your listening</string>
+    <string name="stats_close">Close</string>
+    <string name="stats_share">Share</string>
+    <string name="stats_period_week">Week</string>
+    <string name="stats_period_month">Month</string>
+    <string name="stats_period_year">Year</string>
+    <string name="stats_period_all">All time</string>
     <string name="stats_minutes">%1$d min</string>
+    <string name="stats_hours">%1$d h</string>
     <string name="stats_hours_minutes">%1$d h %2$d min</string>
-    <plurals name="stats_days">
-        <item quantity="one">%d day</item>
-        <item quantity="other">%d days</item>
+    <string name="stats_total_week">%1$s this week</string>
+    <string name="stats_total_in">%1$s in %2$s</string>
+    <string name="stats_total_all">%1$s in all</string>
+    <string name="stats_goal">Goal %1$s</string>
+    <string name="stats_goal_set">Set a goal</string>
+    <string name="stats_goal_progress">%1$d%% of your goal</string>
+    <string name="stats_goal_title">Weekly listening goal</string>
+    <string name="stats_goal_off">No goal</string>
+    <plurals name="stats_goal_hours">
+        <item quantity="one">%d hour a week</item>
+        <item quantity="other">%d hours a week</item>
     </plurals>
-    <string name="stats_chart_title">Last 7 days</string>
+    <string name="stats_more_week">%1$s more than last week</string>
+    <string name="stats_less_week">%1$s less than last week</string>
+    <string name="stats_more_month">%1$s more than last month</string>
+    <string name="stats_less_month">%1$s less than last month</string>
+    <string name="stats_more_year">%1$s more than last year</string>
+    <string name="stats_less_year">%1$s less than last year</string>
+    <string name="stats_same_as_before">The same as last time</string>
     <string name="stats_chart_day">%1$s: %2$s</string>
-    <string name="stats_empty">Play a book and your listening time shows up here. A day with a minute or more of listening keeps your streak going.</string>
-    <string name="stats_private">Kept on this phone only. Nothing is sent anywhere.</string>
+    <string name="stats_streak_caption">day streak · best %1$d</string>
+    <plurals name="stats_rest_days">
+        <item quantity="one">%d rest day this run</item>
+        <item quantity="other">%d rest days this run</item>
+    </plurals>
+    <string name="stats_books_week">books finished this week</string>
+    <string name="stats_books_in">books finished in %1$s</string>
+    <string name="stats_books_all">books finished</string>
+    <string name="stats_words_value">≈%1$s</string>
+    <string name="stats_words_caption">words heard</string>
+    <plurals name="stats_words_novels">
+        <item quantity="one">words heard, about %d novel</item>
+        <item quantity="other">words heard, about %d novels</item>
+    </plurals>
+    <string name="stats_languages">Languages you listened in</string>
+    <plurals name="stats_calendar">
+        <item quantity="one">Every day you listened, last %d week</item>
+        <item quantity="other">Every day you listened, last %d weeks</item>
+    </plurals>
+    <plurals name="stats_days_this_year">
+        <item quantity="one">%d day with listening this year</item>
+        <item quantity="other">%d days with listening this year</item>
+    </plurals>
+    <string name="stats_most_listened">Most listened</string>
+    <string name="stats_removed_book">A book no longer in your library</string>
+    <string name="stats_when">When you listen</string>
+    <string name="stats_part_morning">Morning</string>
+    <string name="stats_part_day">Day</string>
+    <string name="stats_part_evening">Evening</string>
+    <string name="stats_part_night">Night</string>
+    <string name="stats_peak">You listen most from %1$s to %2$s</string>
+    <string name="stats_milestones">Milestones</string>
+    <plurals name="stats_badge_streak">
+        <item quantity="one">%d-day streak</item>
+        <item quantity="other">%d-day streak</item>
+    </plurals>
+    <plurals name="stats_badge_hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <plurals name="stats_badge_languages">
+        <item quantity="one">%d language</item>
+        <item quantity="other">%d languages</item>
+    </plurals>
+    <string name="stats_badge_first_audiobook">First audiobook</string>
+    <plurals name="stats_badge_books">
+        <item quantity="one">%d book</item>
+        <item quantity="other">%d books</item>
+    </plurals>
+    <string name="stats_badge_reached">%1$s: reached</string>
+    <string name="stats_badge_not_yet">%1$s: not yet</string>
+    <string name="stats_empty">Play a book and your listening shows up here. A day with a minute or more of listening keeps your streak going, and one missed day a week is forgiven.</string>
+    <string name="stats_private">Counted on this phone only. Nothing is sent anywhere unless you share it.</string>
     <string name="stats_clear">Clear stats</string>
     <string name="stats_clear_title">Clear listening stats?</string>
-    <string name="stats_clear_body">Every day\'s listening time and your streak are forgotten. Your books and places stay.</string>
+    <string name="stats_clear_body">All your listening time, streaks and milestones are forgotten. Your books and places stay.</string>
     <string name="stats_clear_confirm">Clear</string>
     <string name="stats_cancel">Cancel</string>
+    <string name="stats_share_title">Share your listening</string>
+    <string name="stats_card_streak">Streak</string>
+    <string name="stats_card_forest">Forest</string>
+    <string name="stats_card_teal">Teal</string>
+    <string name="stats_card_indigo">Indigo</string>
+    <string name="stats_card_night">Night</string>
+    <string name="stats_card_paper">Paper</string>
+    <string name="stats_card_my_week">My week</string>
+    <string name="stats_card_my">My %1$s</string>
+    <string name="stats_card_my_streak">My streak</string>
+    <string name="stats_card_headline">I listened to %1$s in %2$s</string>
+    <string name="stats_card_headline_time">I listened for %1$s</string>
+    <plurals name="stats_card_books">
+        <item quantity="one">%d book</item>
+        <item quantity="other">%d books</item>
+    </plurals>
+    <plurals name="stats_card_languages">
+        <item quantity="one">%d language</item>
+        <item quantity="other">%d languages</item>
+    </plurals>
+    <string name="stats_card_listened">listened</string>
+    <string name="stats_card_day_streak">day streak</string>
+    <string name="stats_card_languages_label">languages</string>
+    <string name="stats_card_bars_week">Every day this week</string>
+    <string name="stats_card_bars_month">Every day in %1$s</string>
+    <string name="stats_card_bars_year">Every month in %1$s</string>
+    <string name="stats_card_bars_all">Every year</string>
+    <plurals name="stats_card_streak_headline">
+        <item quantity="one">%d day in a row</item>
+        <item quantity="other">%d days in a row</item>
+    </plurals>
+    <string name="stats_card_best">best streak</string>
+    <string name="stats_card_days_year">days this year</string>
+    <string name="stats_save">Save picture</string>
+    <string name="stats_saved">Saved in Pictures/ListenLock</string>
+    <string name="stats_not_saved">The picture could not be saved</string>
 </resources>

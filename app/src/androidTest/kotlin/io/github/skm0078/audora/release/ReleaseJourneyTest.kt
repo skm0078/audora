@@ -196,6 +196,7 @@ class ReleaseJourneyTest {
             "29 a story's women and men each get a voice of their own gender",
             CharacterJourney::womenAndMenGetVoicesOfTheirGender,
         )
+        step("30 the stats screen saves and shares its card", StatsJourney(rule, ::backToTabs)::cardIsSavedAndShared)
         step("43 arrows, maths and emoji reach the voice as words or not at all") {
             SymbolJourney.symbolsAreSaidOrLeftOut()
         }

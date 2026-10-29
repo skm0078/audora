@@ -62,7 +62,7 @@ class SessionPublisher(
 
     override fun onReading(bookId: String, page: Int) {
         diagnostics.reading(bookId, page)
-        listening?.reading()
+        listening?.reading(bookId)
     }
 
     override fun onNotReading() {
@@ -74,6 +74,7 @@ class SessionPublisher(
 
     override fun onSentenceStarted(bookId: BookId, unit: ReadingUnit) {
         resume.sentenceStarted(bookId, unit)
+        listening?.sentence(bookId.value, unit.lang, unit.text)
         // Voice commands (plan item 38) ignore the book's own voice while it says the app's name.
         NarratorEcho.shared.sentenceStarted(unit.text, SystemClock.elapsedRealtime())
         val key = UnitKey.of(unit)
