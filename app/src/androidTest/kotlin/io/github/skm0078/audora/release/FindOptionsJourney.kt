@@ -52,8 +52,10 @@ internal class FindOptionsJourney(private val rule: ComposeTestRule, private val
         waitFor(hasSetTextAction())
         rule.onAllNodes(hasSetTextAction()).onFirst().performTextInput(SEARCHED)
         tap(hasText(text(R.string.focus_title)) and hasAnyAncestor(hasTestTag(FOUND_TAG)))
-        // The book opens, and its sheet with Focus sound's rows already showing.
-        waitFor(hasText(text(R.string.focus_level)), OPEN_TIMEOUT_MS)
+        // The book opens, and its sheet with Focus sound's own row already showing: its help button is in the group,
+        // not on the header (the volume row shows only once a sound is picked).
+        val focusHelp = app.getString(R.string.option_help_about, text(R.string.focus_title))
+        waitFor(hasContentDescription(focusHelp), OPEN_TIMEOUT_MS)
         closeTheSheet()
     }
 
