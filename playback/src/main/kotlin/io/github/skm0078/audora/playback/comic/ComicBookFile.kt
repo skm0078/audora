@@ -81,14 +81,14 @@ internal class ComicBookFile(
      * [pages] of [copy] as the pages of a PDF in [target], as gallery pictures are; returns how many were left blank
      * because they could not be read or decoded.
      */
-    fun write(copy: File, pages: ComicArchivePages, target: File): Int =
-        ZipFile(copy, pages.charset).use { zip ->
-            val blank = pdf.writeKeepingBadPages(pages.names.size, { index ->
-                ImageDecoder.createSource(ByteBuffer.wrap(pageBytes(zip, pages.names[index], index)))
-            }, target)
-            AudoraLog.i(TAG, "Comic book made, pages=${pages.names.size}, blank=$blank")
-            blank
+    fun write(copy: File, pages: ComicArchivePages, target: File): Int = ZipFile(copy, pages.charset).use { zip ->
+        val sourceAt = { index: Int ->
+            ImageDecoder.createSource(ByteBuffer.wrap(pageBytes(zip, pages.names[index], index)))
         }
+        val blank = pdf.writeKeepingBadPages(pages.names.size, sourceAt, target)
+        AudoraLog.i(TAG, "Comic book made, pages=${pages.names.size}, blank=$blank")
+        blank
+    }
 
     /**
      * A page's picture, still encoded. Read whole, as ImageDecoder needs, but never past
@@ -98,9 +98,9 @@ internal class ComicBookFile(
     private fun pageBytes(zip: ZipFile, name: String, index: Int): ByteArray {
         val entry = zip.getEntry(name) ?: throw IOException("page $index is gone")
         val limit = config.maxComicPageBytes
-        if (entry.size > limit) throw ComicPageTooLargeException(index)
-        val bytes = zip.getInputStream(entry).use { it.readUpTo(limit + 1) }
-        if (bytes.size > limit) throw ComicPageTooLargeException(index)
+        // The declared size refuses most oversize pages unread; the bounded read catches a size that lied.
+        val bytes = if (entry.size > limit) null else zip.getInputStream(entry).use { it.readUpTo(limit + 1) }
+        if (bytes == null || bytes.size > limit) throw ComicPageTooLargeException(index)
         return bytes
     }
 
