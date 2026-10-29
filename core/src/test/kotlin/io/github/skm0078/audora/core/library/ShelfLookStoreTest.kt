@@ -1,6 +1,6 @@
 // File: core/src/test/kotlin/io/github/skm0078/audora/core/library/ShelfLookStoreTest.kt
-// Purpose: A collection's colour and emoji survive in their file; defaults are not written, and a file in another
-//          format is set aside rather than overwritten.
+// Purpose: A collection's colour and emoji survive in their file and show at once; defaults are not written, and a
+//          file in another format is set aside rather than overwritten.
 
 package io.github.skm0078.audora.core.library
 
@@ -76,6 +76,28 @@ class ShelfLookStoreTest {
 
         assertFalse(stuck.save(mapOf("c1" to ShelfLook(ShelfColour.INDIGO))))
         assertEquals("something else\n", file.readText())
+    }
+
+    @Test
+    fun `a look set is shown at once and kept, and the default clears it`() {
+        val looks = ShelfLooks(store)
+        val moon = ShelfLook(ShelfColour.TEAL, ShelfEmoji.MOON)
+
+        assertTrue(looks.set("c1", moon))
+        assertEquals(mapOf("c1" to moon), looks.looks.value)
+        assertEquals(mapOf("c1" to moon), ShelfLookStore(file).load())
+
+        assertTrue(looks.set("c1", ShelfLook.DEFAULT))
+        assertEquals(emptyMap<String, ShelfLook>(), looks.looks.value)
+    }
+
+    @Test
+    fun `a look that cannot be saved is not shown as saved`() {
+        file.writeText("something else\n")
+        val looks = ShelfLooks(ShelfLookStore(file) { false })
+
+        assertFalse(looks.set("c1", ShelfLook(ShelfColour.INDIGO)))
+        assertEquals(emptyMap<String, ShelfLook>(), looks.looks.value)
     }
 
     @Test

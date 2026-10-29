@@ -4,6 +4,7 @@
 
 package io.github.skm0078.audora.ui.library
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -40,63 +41,67 @@ import androidx.compose.ui.semantics.semantics
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookCollection
 import io.github.skm0078.audora.core.library.CollectionNames
+import io.github.skm0078.audora.core.library.ShelfLook
 import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.TitleAndTrailing
 
-/** Opened from the library's collection chips; [counts] is how many books each collection holds. */
+/** Opened from the library's collection chips and the side panel; [counts] is how many books each collection holds. */
 @Composable
 internal fun CollectionsRoute(collections: List<BookCollection>, counts: Map<String, Int>, onDismiss: () -> Unit) {
     val writer = rememberCollectionWriter()
-    CollectionsSheet(collections, counts, writer::create, writer::rename, writer::delete, onDismiss)
+    CollectionsSheet(
+        collections,
+        counts,
+        rememberShelfLooks(),
+        onCreate = { name, look -> writer.create(name, look = look) },
+        onEdit = writer::edit,
+        onDelete = writer::delete,
+        onDismiss = onDismiss,
+    )
 }
 
-/** Every collection with its number of books, Rename and Delete, and New collection; deleting asks first. */
+/**
+ * Every collection with its badge, number of books, Edit and Delete, and New collection; deleting asks first. Edit
+ * and New swap the list for the edit page in the same sheet, and Back returns to the list.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun CollectionsSheet(
     collections: List<BookCollection>,
     counts: Map<String, Int>,
-    onCreate: (String) -> Unit,
-    onRename: (String, String) -> Unit,
+    looks: Map<String, ShelfLook>,
+    onCreate: (String, ShelfLook) -> Unit,
+    onEdit: (id: String, name: String, nameBefore: String, look: ShelfLook) -> Unit,
     onDelete: (String) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var creating by rememberSaveable { mutableStateOf(false) }
-    var renaming by rememberSaveable { mutableStateOf<String?>(null) }
+    var editing by rememberSaveable { mutableStateOf<String?>(null) } // a collection's id, or NEW_COLLECTION
     var deleting by rememberSaveable { mutableStateOf<String?>(null) }
     AppSheet(onDismissRequest = onDismiss, modifier = modifier) {
-        LazyColumn(Modifier.navigationBarsPadding().padding(horizontal = Dimens.ScreenPadding)) {
-            item {
-                Text(
-                    stringResource(R.string.collections_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.semantics { heading() },
-                )
+        val edited = collections.firstOrNull { it.id == editing }
+        when {
+            editing == NEW_COLLECTION -> {
+                BackHandler { editing = null }
+                ShelfEditor(R.string.collections_new, NEW_COLLECTION, "", ShelfLook.DEFAULT, { name, look ->
+                    onCreate(name, look)
+                    editing = null
+                }) { editing = null }
             }
-            if (collections.isEmpty()) {
-                item { Text(stringResource(R.string.collections_empty), Modifier.padding(vertical = Dimens.SpaceS)) }
+
+            edited != null -> {
+                BackHandler { editing = null }
+                val look = looks[edited.id] ?: ShelfLook.DEFAULT
+                ShelfEditor(R.string.shelf_edit_title, edited.id, edited.name, look, { name, chosen ->
+                    onEdit(edited.id, name, edited.name, chosen)
+                    editing = null
+                }) { editing = null }
             }
-            items(collections, key = { it.id }) { collection ->
-                CollectionLine(collection, counts[collection.id] ?: 0, { renaming = collection.id }) {
-                    deleting = collection.id
-                }
+
+            else -> CollectionList(collections, counts, looks, { editing = it }, { deleting = it }) {
+                editing = NEW_COLLECTION
             }
-            item {
-                Button(onClick = { creating = true }, Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS)) {
-                    Icon(painterResource(R.drawable.ic_add), contentDescription = null)
-                    Text(stringResource(R.string.collections_new))
-                }
-            }
-        }
-    }
-    if (creating) {
-        NameDialog(stringResource(R.string.collections_new), "", onSave = onCreate) { creating = false }
-    }
-    collections.firstOrNull { it.id == renaming }?.let { collection ->
-        NameDialog(stringResource(R.string.collections_rename), collection.name, { onRename(collection.id, it) }) {
-            renaming = null
         }
     }
     collections.firstOrNull { it.id == deleting }?.let { collection ->
@@ -105,11 +110,53 @@ internal fun CollectionsSheet(
 }
 
 @Composable
-private fun CollectionLine(collection: BookCollection, books: Int, onRename: () -> Unit, onDelete: () -> Unit) {
-    val renameLabel = stringResource(R.string.collections_rename_named, collection.name)
+private fun CollectionList(
+    collections: List<BookCollection>,
+    counts: Map<String, Int>,
+    looks: Map<String, ShelfLook>,
+    onEdit: (String) -> Unit,
+    onDelete: (String) -> Unit,
+    onNew: () -> Unit,
+) {
+    LazyColumn(Modifier.navigationBarsPadding().padding(horizontal = Dimens.ScreenPadding)) {
+        item {
+            Text(
+                stringResource(R.string.collections_title),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.semantics { heading() },
+            )
+        }
+        if (collections.isEmpty()) {
+            item { Text(stringResource(R.string.collections_empty), Modifier.padding(vertical = Dimens.SpaceS)) }
+        }
+        items(collections, key = { it.id }) { collection ->
+            val look = looks[collection.id] ?: ShelfLook.DEFAULT
+            CollectionLine(collection, look, counts[collection.id] ?: 0, { onEdit(collection.id) }) {
+                onDelete(collection.id)
+            }
+        }
+        item {
+            Button(onClick = onNew, Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceS)) {
+                Icon(painterResource(R.drawable.ic_add), contentDescription = null)
+                Text(stringResource(R.string.collections_new))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CollectionLine(
+    collection: BookCollection,
+    look: ShelfLook,
+    books: Int,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val editLabel = stringResource(R.string.shelf_edit_named, collection.name)
     val deleteLabel = stringResource(R.string.collections_delete_named, collection.name)
-    // Rename and Delete go under the name when both buttons and the name do not fit on one line (large text).
+    // Edit and Delete go under the name when both buttons and the name do not fit on one line (large text).
     ListItem(
+        leadingContent = { ShelfBadge(collection.id, look) },
         headlineContent = {
             TitleAndTrailing(
                 title = {
@@ -124,8 +171,8 @@ private fun CollectionLine(collection: BookCollection, books: Int, onRename: () 
                 },
                 trailing = {
                     Row {
-                        TextButton(onClick = onRename, Modifier.semantics { contentDescription = renameLabel }) {
-                            Text(stringResource(R.string.collections_rename))
+                        TextButton(onClick = onEdit, Modifier.semantics { contentDescription = editLabel }) {
+                            Text(stringResource(R.string.shelf_edit))
                         }
                         TextButton(onClick = onDelete, Modifier.semantics { contentDescription = deleteLabel }) {
                             Text(stringResource(R.string.collections_delete), color = MaterialTheme.colorScheme.error)
@@ -228,3 +275,6 @@ internal fun BookCollectionChips(
         NameDialog(stringResource(R.string.collections_new), "", onSave = onCreate) { creating = false }
     }
 }
+
+/** The edit page's key for a collection not made yet; no real id is blank. */
+private const val NEW_COLLECTION = ""

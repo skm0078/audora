@@ -18,6 +18,8 @@ import io.github.skm0078.audora.core.library.BookOutputStore
 import io.github.skm0078.audora.core.library.CollectionStore
 import io.github.skm0078.audora.core.library.DocumentAccess
 import io.github.skm0078.audora.core.library.Library
+import io.github.skm0078.audora.core.library.ShelfLookStore
+import io.github.skm0078.audora.core.library.ShelfLooks
 import io.github.skm0078.audora.playback.details.FileDetailsReader
 import io.github.skm0078.audora.playback.documents.SafDocumentAccess
 import io.github.skm0078.audora.playback.outputs.EarlierAudiobooks
@@ -25,6 +27,7 @@ import io.github.skm0078.audora.playback.storage.AudoraStorage
 import io.github.skm0078.audora.ui.library.BookCovers
 import io.github.skm0078.audora.ui.library.BookDetailsFill
 import io.github.skm0078.audora.ui.library.CoverImage
+import java.io.File
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 
@@ -63,6 +66,12 @@ object LibraryModule {
     @Provides
     @Singleton
     fun collections(storage: AudoraStorage): CollectionStore = storage.collections
+
+    /** Under filesDir, by the name the backup lists, so a shelf's colour and emoji move with a backup. */
+    @Provides
+    @Singleton
+    fun shelfLooks(@ApplicationContext context: Context): ShelfLooks =
+        ShelfLooks(ShelfLookStore(File(context.filesDir, ShelfLookStore.FILE_NAME)))
 
     @Provides
     @Singleton

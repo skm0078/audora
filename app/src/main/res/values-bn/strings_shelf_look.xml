@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shelf_edit_title">সংগ্রহ সম্পাদনা</string>
+    <string name="shelf_edit">সম্পাদনা</string>
+    <string name="shelf_edit_named">%1$s সম্পাদনা</string>
+    <string name="shelf_colour">রং</string>
+    <string name="shelf_emoji">ইমোজি</string>
+    <string name="shelf_emoji_none">কোনোটি নয়</string>
+    <string name="shelf_colour_clay">মাটি</string>
+    <string name="shelf_colour_saffron">জাফরান</string>
+    <string name="shelf_colour_forest">সবুজ</string>
+    <string name="shelf_colour_teal">নীলচে সবুজ</string>
+    <string name="shelf_colour_indigo">নীল</string>
+    <string name="shelf_colour_plum">বেগুনি</string>
+    <string name="shelf_emoji_books">বই</string>
+    <string name="shelf_emoji_moon">চাঁদ</string>
+    <string name="shelf_emoji_lamp">প্রদীপ</string>
+    <string name="shelf_emoji_heart">হৃদয়</string>
+    <string name="shelf_emoji_school">পড়াশোনা</string>
+</resources>

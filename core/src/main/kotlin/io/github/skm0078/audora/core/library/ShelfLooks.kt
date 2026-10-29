@@ -8,6 +8,9 @@ import io.github.skm0078.audora.core.files.TextFiles
 import io.github.skm0078.audora.core.logging.AudoraLog
 import java.io.File
 import java.io.IOException
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /** Six fixed colours, so every one is checked for contrast in both themes; a free picker is Premium later. */
 enum class ShelfColour { CLAY, SAFFRON, FOREST, TEAL, INDIGO, PLUM }
@@ -96,5 +99,32 @@ class ShelfLookStore(private val file: File, private val moveAside: (File) -> Bo
         private const val HEADER = "audora-shelf-looks 1"
         private const val SEPARATOR = "\t"
         private const val FIELDS = 3
+    }
+}
+
+/**
+ * Every collection's look, loaded once and kept in [looks] for the screens; each change is written through [store]
+ * at once (a few dozen bytes). Call from a background thread: [load] and [set] touch the file.
+ */
+class ShelfLooks(private val store: ShelfLookStore) {
+    private val state = MutableStateFlow<Map<String, ShelfLook>>(emptyMap())
+    val looks: StateFlow<Map<String, ShelfLook>> = state.asStateFlow()
+
+    @Volatile
+    private var loaded = false
+
+    @Synchronized
+    fun load() {
+        if (loaded) return
+        state.value = store.load()
+        loaded = true
+    }
+
+    /** Gives collection [id] [look] (the default clears it); false (logged by the store) if it was not saved. */
+    @Synchronized
+    fun set(id: String, look: ShelfLook): Boolean {
+        load()
+        val next = if (look.isDefault) state.value - id else state.value + (id to look)
+        return store.save(next).also { saved -> if (saved) state.value = next }
     }
 }

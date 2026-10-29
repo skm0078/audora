@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A collection's colour and emoji ("Make it yours", touch 9). -->
+<resources>
+    <string name="shelf_edit_title">Edit collection</string>
+    <string name="shelf_edit">Edit</string>
+    <string name="shelf_edit_named">Edit %1$s</string>
+    <string name="shelf_colour">Colour</string>
+    <string name="shelf_emoji">Emoji</string>
+    <string name="shelf_emoji_none">None</string>
+    <string name="shelf_colour_clay">Clay</string>
+    <string name="shelf_colour_saffron">Saffron</string>
+    <string name="shelf_colour_forest">Forest</string>
+    <string name="shelf_colour_teal">Teal</string>
+    <string name="shelf_colour_indigo">Indigo</string>
+    <string name="shelf_colour_plum">Plum</string>
+    <string name="shelf_emoji_books">Books</string>
+    <string name="shelf_emoji_moon">Moon</string>
+    <string name="shelf_emoji_lamp">Lamp</string>
+    <string name="shelf_emoji_heart">Heart</string>
+    <string name="shelf_emoji_school">Study</string>
+</resources>
