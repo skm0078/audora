@@ -33,6 +33,7 @@ object CollectionNames {
     /** Longer than a chip can show; the name is cut here. */
     const val MAX_LENGTH = 60
 
-    /** [raw] trimmed and cut, or null when nothing is left. */
-    fun clean(raw: String): String? = TextCuts.take(raw.trim().replace(Regex("\\s+"), " "), MAX_LENGTH).trimEnd().ifEmpty { null }
+    /** [raw] trimmed and cut between whole characters ([TextCuts]), or null when nothing is left. */
+    fun clean(raw: String): String? =
+        TextCuts.take(raw.trim().replace(Regex("\\s+"), " "), MAX_LENGTH).trimEnd().ifEmpty { null }
 }
