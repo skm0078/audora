@@ -180,8 +180,9 @@ library when they switch.
   language switch needs the Hindi and Bengali strings on every phone.
 - **Privacy policy:** `docs/privacy.html`, served by GitHub Pages at https://skm0078.github.io/audora/privacy.html
   and linked from Settings → Privacy policy. Pages setup (once): https://github.com/skm0078/audora/settings/pages →
-  *Source* **Deploy from a branch** → branch **dev**, folder **/docs** → **Save**. `docs/.nojekyll` makes Pages
-  serve the files as they are, without building the Markdown docs. Update the date on the page with every change,
+  *Source* **Deploy from a branch** → branch **prod**, folder **/docs** → **Save**. Pages builds the site with its
+  built-in Jekyll: the hand-written pages are copied as they are, recipes and blog posts are built from Markdown
+  (docs/CONTENT.md), and the developer docs are left out by `docs/_config.yml`. Update the date on the page with every change,
   and update Play Console's Data safety form in the same release if what Audora sends or keeps changes.
 - **Data safety form** (answers from the audit in ADR-061): *Does your app collect or share any of the required user
   data types?* **No**. The app sends nothing about the person or their books anywhere; the only network use is a

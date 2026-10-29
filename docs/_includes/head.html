@@ -1,0 +1,14 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- No external requests: the site keeps the app's no-tracking promise. The SEO block's JSON-LD is data, not script. -->
+<meta http-equiv="Content-Security-Policy"
+  content="default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'; media-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+{% seo %}
+{% feed_meta %}
+<meta name="theme-color" content="#f8f2e8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#17120d" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="48x48" href="{{ '/assets/favicon-48.png' | relative_url }}">
+<link rel="apple-touch-icon" href="{{ '/assets/apple-touch-icon.png' | relative_url }}">
+<link rel="stylesheet" href="{{ '/assets/site.css' | relative_url }}">
+<link rel="stylesheet" href="{{ '/assets/content.css' | relative_url }}">

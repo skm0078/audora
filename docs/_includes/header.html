@@ -1,0 +1,10 @@
+<a class="skip" href="#main">Skip to content</a>
+<header class="wrap top">
+  <a class="brand" href="{{ '/' | relative_url }}"><img src="{{ '/assets/favicon-48.png' | relative_url }}" alt="" width="32" height="32">ListenLock</a>
+  <nav aria-label="Site">
+    <ul class="site-nav">
+      <li><a href="{{ '/recipes/' | relative_url }}"{% if page.url contains '/recipes/' %} aria-current="page"{% endif %}>Recipes</a></li>
+      <li><a href="{{ '/blog/' | relative_url }}"{% if page.url contains '/blog/' %} aria-current="page"{% endif %}>Blog</a></li>
+    </ul>
+  </nav>
+</header>

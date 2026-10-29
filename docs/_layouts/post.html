@@ -1,0 +1,15 @@
+---
+layout: default
+---
+<article class="post">
+  <p class="eyebrow"><a href="{{ '/blog/' | relative_url }}">Blog</a> · <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%-d %B %Y" }}</time></p>
+  <h1>{{ page.title }}</h1>
+  {% if page.description %}<p class="summary">{{ page.description }}</p>{% endif %}
+  <p class="byline">By {{ page.author | default: site.author }}</p>
+  <div class="prose">
+{{ content }}
+  </div>
+</article>
+<nav class="more" aria-label="More posts">
+  <a href="{{ '/blog/' | relative_url }}">All posts</a>
+</nav>

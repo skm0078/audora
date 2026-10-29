@@ -1,0 +1,19 @@
+---
+layout: default
+title: Recipes
+description: Real situations solved by combining ListenLock's features, in exact steps. Study on a commute, fall asleep to a book, read old Hindi and Bengali PDFs, and more.
+---
+<h1>Recipes</h1>
+<p class="summary">Each recipe takes one real situation and solves it by combining a few of ListenLock's features, step by step.
+  The steps use the names you see on screen. If you can't find something, search for it in the Library: search finds
+  settings and actions too.</p>
+{% assign recipes = site.recipes | sort: "order" %}
+<ol class="recipe-list">
+  {% for r in recipes %}{% if r.lang and r.lang != "en" %}{% continue %}{% endif %}
+  <li>
+    <a href="{{ r.url | relative_url }}"><h2>{{ r.title }}</h2></a>
+    <p>{{ r.description }}</p>
+    <p class="combo">{{ r.features | join: " · " }}</p>
+  </li>
+  {% endfor %}
+</ol>
