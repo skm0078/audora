@@ -439,6 +439,8 @@ class ReaderModel(
 
     fun recapClosed() = mutableState.update { it.copy(previouslyOn = null) }
 
+    fun openingLineShown() = mutableState.update { it.copy(firstOpen = false) }
+
     /**
      * Study loops (plan item 31): marks A or B at the sentence being read in this book, turns looping on or off, or
      * clears the range. A mark needs this book to be the one being read.
@@ -537,6 +539,8 @@ class ReaderModel(
             }?.let { ReadingPosition(bookId, it.page, it.charStart) }
             savedPosition?.takeIf { !reopened }?.let { position -> sayWhereResumed(position, read[position.page]) }
         }
+        val firstOpen = !reopened && playing == null && savedPosition == null && book?.lastOpenedAtMillis == null
+        if (firstOpen) mutableState.update { it.copy(firstOpen = true) }
         val startPage = keepPage?.also { keepPage = null } ?: playing?.page ?: savedPosition?.page ?: 0
         loadPage(startPage.coerceIn(0, opened.pageCount - 1))
         loadChapters(opened)

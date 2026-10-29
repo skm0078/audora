@@ -108,6 +108,8 @@ data class ReaderState(
     val resumedAt: ResumedAt? = null,
     /** Opened after days away: the recap shown instead of [resumedAt], until a button or a tap outside clears it. */
     val previouslyOn: PreviouslyOn? = null,
+    /** The book's first open: its opening line shows once the first page has words ([ReaderModel.openingLineShown]). */
+    val firstOpen: Boolean = false,
     val snippet: SnippetBox? = null,
 ) {
     val pageCount: Int? get() = (document as? DocumentState.Open)?.pageCount
@@ -123,6 +125,11 @@ data class ReaderState(
 
     val playerReady: Boolean
         get() = document is DocumentState.Open && playback.connection == PlaybackSnapshot.Connection.CONNECTED
+
+    /** The first open's opening line: the first page's first sentence with a letter in it, once that page is read. */
+    val openingLine: ReadingUnit?
+        get() = (content as? PageContent.Ready)?.units?.takeIf { firstOpen && page == 0 }
+            ?.firstOrNull { unit -> unit.text.any(Char::isLetter) }
 
     /** Where "Undo jump" goes back to in this book (plan item 78), if anywhere. */
     val undoJumpTo: ReadingPosition? get() = playback.undoJumpTo?.takeIf { it.bookId == bookId }

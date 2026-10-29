@@ -161,6 +161,7 @@ import io.github.skm0078.audora.ui.reader.ScreenPreference
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
 import io.github.skm0078.audora.ui.reader.VolumeKeySkips
+import io.github.skm0078.audora.ui.reader.WithOpeningLine
 import io.github.skm0078.audora.ui.reader.rememberConnectedPlaybackPort
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.reader.rememberSpokenWord
@@ -861,15 +862,16 @@ class MainActivity : ComponentActivity() {
         }
         BookWindowEffects(model, state, listeningInBackground)
         WidgetTimeLeftEffect(model.state)
-        val opened = state.document is DocumentState.Open
-        LaunchedEffect(model, opened, openPlace) {
-            if (opened && openPlace != null) {
+        LaunchedEffect(model, state.document is DocumentState.Open, openPlace) {
+            if (state.document is DocumentState.Open && openPlace != null) {
                 model.goToPlace(openPlace)
                 onPlaceOpened()
             }
         }
         val screen = BookScreen(target, books, onShowPage, onOtherBookPlaying)
-        ReaderContent(screen, state, actions, ocrState, notesState, notes, voiceRows, port, thumbs, studio)
+        WithOpeningLine(state.openingLine, model::openingLineShown) {
+            ReaderContent(screen, state, actions, ocrState, notesState, notes, voiceRows, port, thumbs, studio)
+        }
     }
 
     /**
