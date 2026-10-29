@@ -1,5 +1,5 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/release/RowLinesJourney.kt
-// Purpose: Release journey step 46 (ADR 2026-10-29-say-what-it-does): Settings' switches say what they change and
+// Purpose: Release journey step 47 (ADR 2026-10-29-say-what-it-does): Settings' switches say what they change and
 //          cost on their own rows, so "Keep screen on" names its battery cost without the info button.
 
 package io.github.skm0078.audora.release
