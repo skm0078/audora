@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.playback.backup
 
 import io.github.skm0078.audora.core.config.BackupConfig
+import io.github.skm0078.audora.core.library.ShelfLookStore
 import io.github.skm0078.audora.core.result.Outcome
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -205,6 +206,11 @@ class BackupArchiveTest {
         zip.putNextEntry(ZipEntry(name))
         zip.write(text.toByteArray())
         zip.closeEntry()
+    }
+
+    @Test
+    fun `the colours and emoji given to collections travel with the backup`() {
+        assertTrue(BackupContents.DEFAULT.allows("files/${ShelfLookStore.FILE_NAME}"))
     }
 
     private companion object {
