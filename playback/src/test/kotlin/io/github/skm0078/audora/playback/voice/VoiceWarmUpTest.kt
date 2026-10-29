@@ -44,7 +44,7 @@ class VoiceWarmUpTest {
     }
 
     @Test
-    fun `a phone voice is not loaded: finding it already bound it`() = runTest {
+    fun `a phone voice is not loaded, finding it already bound it`() = runTest {
         assertNull(warmUp(voice = Outcome.Success(phone)).warm(book, Lang.HI))
         assertEquals(emptyList<VoiceId>(), loaded)
     }
