@@ -1,6 +1,6 @@
 // File: app/src/test/kotlin/io/github/skm0078/audora/ui/library/AddBookSourceTest.kt
-// Purpose: The Add a book sheet offers every way a book comes in, each once, and none of them is left in the ⋮ menu
-//          as well (ADR 2026-10-29-add-a-book).
+// Purpose: The Add a book sheet offers every way a book comes in, each once, and none of them is a side panel row
+//          as well (ADR 2026-10-29-add-a-book, ADR 2026-10-29-tools-in-the-panel).
 
 package io.github.skm0078.audora.ui.library
 
@@ -24,15 +24,14 @@ class AddBookSourceTest {
             LibraryAction.READ_CLIPBOARD,
             LibraryAction.READ_WEB_PAGE,
             LibraryAction.BOOK_CATALOGUES,
-            LibraryAction.WATCHED_FOLDERS,
         )
         assertEquals(expected, tools)
     }
 
     @Test
-    fun noWayInStaysInTheMenu() {
-        val inMenu = LibraryAction.entries.filter { it.inMenu }
-        assertTrue("in both the sheet and ⋮: ${tools.intersect(inMenu.toSet())}", tools.none { it in inMenu })
+    fun noWayInIsAlsoAPanelRow() {
+        val inPanel = LibraryAction.inPanel
+        assertTrue("in both the sheet and the panel: ${tools.intersect(inPanel.toSet())}", tools.none { it in inPanel })
     }
 
     @Test

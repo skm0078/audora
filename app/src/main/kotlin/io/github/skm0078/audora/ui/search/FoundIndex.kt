@@ -108,14 +108,14 @@ object FoundIndex {
         @DrawableRes val icon: Int,
     )
 
-    /** The ⋮ menu's tools say "Library › More", the Add a book sheet's "Library › Add book". */
+    /** The side panel's tools say "Menu › Your library", the Add a book sheet's "Library › Add book". */
     private fun libraryEntries(texts: FoundTexts): List<ActionEntry<FoundRow>> {
-        val library = texts.text(R.string.tab_library)
-        val inMenu = texts.format(R.string.found_path, library, texts.text(R.string.found_more))
-        val inSheet = texts.format(R.string.found_path, library, texts.text(R.string.library_add_pdf))
+        fun path(first: Int, second: Int) = texts.format(R.string.found_path, texts.text(first), texts.text(second))
+        val inPanel = path(R.string.found_menu, R.string.drawer_your_library)
+        val inSheet = path(R.string.tab_library, R.string.library_add_pdf)
         return LibraryAction.entries.filter { it.place != LibraryActionPlace.BUTTON }.map { action ->
-            val where = if (action.inMenu) inMenu else inSheet
-            val row = FoundRow(FoundTarget.Library(action), texts.text(action.label), where, R.drawable.ic_library)
+            val where = if (action.place == LibraryActionPlace.PANEL) inPanel else inSheet
+            val row = FoundRow(FoundTarget.Library(action), texts.text(action.label), where, action.icon)
             entry(texts, row, action.label)
         }
     }

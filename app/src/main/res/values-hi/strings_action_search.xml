@@ -11,7 +11,7 @@
     <string name="found_where_reading">आप जो किताब पढ़ रहे हैं</string>
     <string name="found_where_library">आपकी लाइब्रेरी से</string>
     <string name="found_where_place">अपनी अलग जगह</string>
-    <string name="found_more">और</string>
+    <string name="found_menu">मेनू</string>
     <string name="found_book_play">%1$s चलाएँ</string>
     <string name="found_book_up_next">%1$s को आगे सुनें में जोड़ें</string>
     <string name="found_book_audiobook">%1$s को ऑडियोबुक के रूप में सेव करें</string>

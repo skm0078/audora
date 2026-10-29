@@ -14,5 +14,4 @@
     <string name="add_book_line_clipboard">The text you copied last, from any app</string>
     <string name="add_book_line_web">One article, without menus or ads</string>
     <string name="add_book_line_catalogues">Free public-domain books, one tap each</string>
-    <string name="add_book_line_watched">New books in a folder join by themselves</string>
 </resources>

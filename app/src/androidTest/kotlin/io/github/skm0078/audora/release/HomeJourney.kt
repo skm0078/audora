@@ -21,6 +21,7 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.ui.library.MAKE_IT_YOURS_TAG
+import io.github.skm0078.audora.ui.shell.DRAWER_TAG
 
 /** [backToTabs] leaves any screen for the main tabs, as the journey does. */
 internal class HomeJourney(private val rule: ComposeTestRule, private val backToTabs: () -> Unit) {
@@ -30,7 +31,7 @@ internal class HomeJourney(private val rule: ComposeTestRule, private val backTo
         rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(matcher) }
     }
 
-    /** Scrolls to [matcher] first only inside a scrolling list (the menu, the sheet); the ⋮ button has none. */
+    /** Scrolls to [matcher] first only inside a scrolling list (the drawer, the sheet); the menu button has none. */
     private fun tap(matcher: SemanticsMatcher) {
         waitFor(matcher)
         val node = rule.onAllNodes(matcher).onFirst()
@@ -57,9 +58,11 @@ internal class HomeJourney(private val rule: ComposeTestRule, private val backTo
         waitFor(hasText(text(R.string.library_title)))
     }
 
+    /** From the side panel, where the library's own tools are (ADR 2026-10-29-tools-in-the-panel). */
     private fun openSheet() {
-        tap(hasContentDescription(text(R.string.reader_more)))
-        tap(hasText(text(R.string.library_make_it_yours)))
+        tap(hasContentDescription(text(R.string.drawer_open)))
+        waitFor(hasTestTag(DRAWER_TAG))
+        tap(hasText(text(R.string.library_make_it_yours)) and hasAnyAncestor(hasTestTag(DRAWER_TAG)))
         waitFor(hasTestTag(MAKE_IT_YOURS_TAG))
     }
 

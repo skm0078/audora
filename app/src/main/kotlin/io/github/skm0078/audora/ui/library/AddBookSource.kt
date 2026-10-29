@@ -25,7 +25,7 @@ internal sealed interface AddBookSource {
     data class Tool(val action: LibraryAction) : AddBookSource {
         override val label get() = action.label
         override val line get() = lineOf(action)
-        override val icon get() = iconOf(action)
+        override val icon get() = action.icon
     }
 
     companion object {
@@ -42,17 +42,5 @@ private fun lineOf(action: LibraryAction): Int = when (action) {
     LibraryAction.READ_CLIPBOARD -> R.string.add_book_line_clipboard
     LibraryAction.READ_WEB_PAGE -> R.string.add_book_line_web
     LibraryAction.BOOK_CATALOGUES -> R.string.add_book_line_catalogues
-    LibraryAction.WATCHED_FOLDERS -> R.string.add_book_line_watched
     else -> action.hint
-}
-
-@DrawableRes
-private fun iconOf(action: LibraryAction): Int = when (action) {
-    LibraryAction.POINT_AND_READ -> R.drawable.ic_camera
-    LibraryAction.READ_PICTURES -> R.drawable.ic_photos
-    LibraryAction.READ_CLIPBOARD -> R.drawable.ic_paste
-    LibraryAction.READ_WEB_PAGE -> R.drawable.ic_globe
-    LibraryAction.BOOK_CATALOGUES -> R.drawable.ic_library
-    LibraryAction.WATCHED_FOLDERS -> R.drawable.ic_folder
-    else -> R.drawable.ic_add
 }
