@@ -67,6 +67,18 @@ class ReaderVoiceWarmUpModelTest {
     }
 
     @Test
+    fun `coming back to the book after the player went away asks again`() = runTest(UnconfinedTestDispatcher()) {
+        port.connect()
+        open()
+        waitForWarmUp()
+        port.disconnect()
+        port.connect()
+        waitForWarmUp()
+
+        assertEquals(listOf(BOOK to Lang.EN, BOOK to Lang.EN), port.warmed)
+    }
+
+    @Test
     fun `a book closed before the wait ends asks nothing`() = runTest(UnconfinedTestDispatcher()) {
         port.connect()
         open().close()

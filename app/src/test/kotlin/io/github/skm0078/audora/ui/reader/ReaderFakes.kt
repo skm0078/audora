@@ -100,6 +100,11 @@ class FakePlaybackPort : PlaybackPort {
         state.value = PlaybackSnapshot(PlaybackSnapshot.Connection.CONNECTED, styleKnown = styleKnown, speed = speed)
     }
 
+    /** The service went away, as when the reader leaves the screen; [connect] brings it back. */
+    fun disconnect() {
+        state.value = PlaybackSnapshot.Connecting
+    }
+
     fun readingAt(position: ReadingPosition, playing: Boolean = true) {
         state.value = state.value.copy(position = position, wantsToPlay = playing)
     }

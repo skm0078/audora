@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -140,6 +141,11 @@ class ReaderModel(
         // Skip citation numbers changed (ADR-064): the sentences are built again, as the playback service does.
         scope.launch { textSettings.drop(1).collect { reopenForTextSettings() } }
         scope.launch { state.map { it.voiceToWarm }.distinctUntilChanged().collect(voiceWarmUp::offer) }
+        scope.launch {
+            state.map { it.playback.connection == PlaybackSnapshot.Connection.CONNECTED }.distinctUntilChanged()
+                .filter { connected -> !connected }
+                .collect { voiceWarmUp.rearm() }
+        }
         open(password = null)
     }
 

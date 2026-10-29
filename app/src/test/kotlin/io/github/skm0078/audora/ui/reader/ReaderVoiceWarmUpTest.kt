@@ -34,7 +34,7 @@ class ReaderVoiceWarmUpTest {
     }
 
     @Test
-    fun `once asked, later pages and reconnects ask nothing more`() = runTest {
+    fun `once asked, later pages and pauses ask nothing more`() = runTest {
         val warmUp = warmUp()
         warmUp.offer(Lang.EN)
         waitPast(DELAY_MS)
@@ -43,6 +43,30 @@ class ReaderVoiceWarmUpTest {
         waitPast(DELAY_MS)
 
         assertEquals(listOf(Lang.EN), warmed)
+    }
+
+    @Test
+    fun `after a lost connection the next one asks again`() = runTest {
+        val warmUp = warmUp()
+        warmUp.offer(Lang.EN)
+        waitPast(DELAY_MS)
+        warmUp.offer(null)
+        warmUp.rearm()
+        warmUp.offer(Lang.EN)
+        waitPast(DELAY_MS)
+
+        assertEquals(listOf(Lang.EN, Lang.EN), warmed)
+    }
+
+    @Test
+    fun `a closed book is not asked for again by a later connection`() = runTest {
+        val warmUp = warmUp()
+        warmUp.stop()
+        warmUp.rearm()
+        warmUp.offer(Lang.EN)
+        waitPast(DELAY_MS)
+
+        assertEquals(emptyList<Lang>(), warmed)
     }
 
     @Test
