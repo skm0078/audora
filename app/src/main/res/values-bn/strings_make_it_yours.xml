@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-bn/strings_make_it_yours.xml
+  Purpose: The "Make it yours" sheet and the home's personal touches, in Bengali (ADR 2026-10-28-make-it-yours).
+-->
+<resources>
+    <string name="library_make_it_yours">নিজের মতো করে</string>
+    <string name="menu_hint_make_it_yours">আপনার নাম, আর লাইব্রেরিতে কী কোন ক্রমে দেখাবে।</string>
+    <string name="home_sheet_body">ছুঁলেই পেছনের লাইব্রেরি বদলে যায়।</string>
+    <string name="home_name_label">অ্যাপ আপনাকে কী নামে ডাকবে?</string>
+    <string name="home_name_hint">শুধু এই ফোনেই থাকে। নাম না চাইলে খালি রাখুন।</string>
+    <string name="home_books_as">বই দেখাবে</string>
+    <string name="home_sections">লাইব্রেরিতে, এই ক্রমে</string>
+    <string name="home_section_continue">শোনা চালিয়ে যান</string>
+    <string name="home_section_line">আজকের আপনার লাইন</string>
+    <string name="home_section_recent">সম্প্রতি যোগ করা</string>
+    <string name="home_section_chips">তাক আর সংগ্রহ</string>
+    <string name="home_move_up">%1$s ওপরে সরান</string>
+    <string name="home_move_down">%1$s নিচে সরান</string>
+    <string name="home_cover_tint">বইয়ের প্রচ্ছদের রং</string>
+    <string name="library_greeting_morning_named">সুপ্রভাত, %1$s</string>
+    <string name="library_greeting_afternoon_named">শুভ দুপুর, %1$s</string>
+    <string name="library_greeting_evening_named">শুভ সন্ধ্যা, %1$s</string>
+    <string name="library_last_heard">শেষ শোনা:</string>
+    <string name="library_last_heard_line">“%1$s”</string>
+    <string name="library_left_at_your_speed">আপনার গতিতে আর %1$s</string>
+    <string name="library_line_of_the_day_where">%1$s · পাতা %2$d</string>
+    <string name="library_line_of_the_day_open">বইটি এই লাইনে খুলুন</string>
+</resources>

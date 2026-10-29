@@ -1,6 +1,7 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/shell/PhoneDrawer.kt
-// Purpose: The phone's side drawer (ADR 2026-10-28-phone-drawer): the tablet sidebar's shelves and collections, what
-//          the listener made, the tour and Settings, opened from the library's menu button over the bottom bar.
+// Purpose: The phone's side panel (ADR 2026-10-28-phone-drawer): the library's shelves and collections, what the
+//          listener made, then the sidebar's own rows (Your library, the tour, Settings), opened from the library's
+//          menu button over the bottom bar.
 
 package io.github.skm0078.audora.ui.shell
 
@@ -13,7 +14,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
@@ -33,8 +33,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.ui.theme.Dimens
 import kotlinx.coroutines.CoroutineScope
@@ -51,17 +49,15 @@ data class DrawerShelf(
 )
 
 /**
- * What the drawer lists and where each row goes. [shelves] and [collections] narrow the library; the rest open a
- * place or a sheet. The drawer closes before any of them runs, so a sheet never opens on top of it.
+ * What the drawer lists and where each row goes. [shelves] and [collections] narrow the library; [onMade] and
+ * [links] open a place or a sheet. The drawer closes before any of them runs, so a sheet never opens on top of it.
  */
 @Immutable
 class PhoneDrawer(
     val shelves: List<DrawerShelf>,
     val collections: SidebarShelves,
     val onMade: () -> Unit,
-    val onListeningStats: () -> Unit,
-    val onTour: () -> Unit,
-    val onSettings: () -> Unit,
+    val links: PanelLinks,
 )
 
 /** Opens the drawer, for the library's menu button; null where there is none (tablets, kids mode, previews). */
@@ -118,7 +114,7 @@ private fun DrawerSheet(drawer: PhoneDrawer, state: DrawerState, scope: Coroutin
             verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
         ) {
             AppName()
-            SectionHeading(R.string.drawer_shelves)
+            PanelHeading(R.string.drawer_shelves)
             drawer.shelves.forEach { shelf ->
                 NavigationDrawerItem(
                     label = { Text(stringResource(shelf.label)) },
@@ -132,35 +128,12 @@ private fun DrawerSheet(drawer: PhoneDrawer, state: DrawerState, scope: Coroutin
             if (collections.shelves.isNotEmpty()) {
                 Shelves(collections.copy(onOpen = { id -> then { collections.onOpen(id) }() }), libraryShowing = true)
             }
-            HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceM))
-            SectionHeading(R.string.drawer_made)
-            DrawerRow(R.string.drawer_made_audio, R.drawable.ic_made, then(drawer.onMade))
-            DrawerRow(R.string.library_listening_stats, R.drawable.ic_bar_chart, then(drawer.onListeningStats))
-            HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceM))
-            DrawerRow(R.string.settings_tour_title, R.drawable.ic_explore, then(drawer.onTour))
-            DrawerRow(R.string.settings_title, R.drawable.ic_settings, then(drawer.onSettings))
+            PanelDivider()
+            PanelHeading(R.string.drawer_made)
+            PanelRow(R.string.drawer_made_audio, R.drawable.ic_made, then(drawer.onMade))
+            PanelLinkRows(drawer.links, hasCollections = collections.shelves.isNotEmpty(), then)
         }
     }
-}
-
-@Composable
-private fun SectionHeading(@StringRes text: Int) {
-    Text(
-        stringResource(text),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS).semantics { heading() },
-    )
-}
-
-@Composable
-private fun DrawerRow(@StringRes label: Int, @DrawableRes icon: Int, onClick: () -> Unit) {
-    NavigationDrawerItem(
-        label = { Text(stringResource(label)) },
-        icon = { Icon(painterResource(icon), contentDescription = null) },
-        selected = false,
-        onClick = onClick,
-    )
 }
 
 /** For UI tests: the drawer's sheet. */

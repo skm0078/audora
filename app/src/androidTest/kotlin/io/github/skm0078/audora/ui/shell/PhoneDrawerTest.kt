@@ -1,7 +1,7 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/shell/PhoneDrawerTest.kt
-// Purpose: On a phone the menu button opens the side drawer with the shelves, collections, Made, stats, the tour and
-//          Settings, and a row closes the drawer before it acts; wider windows and kids mode have no drawer (ADR
-//          2026-10-28-phone-drawer).
+// Purpose: On a phone the menu button opens the side drawer with the shelves, collections, Made, Your library, the
+//          tour and Settings, and a row closes the drawer before it acts; wider windows and kids mode have no drawer
+//          (ADR 2026-10-28-phone-drawer).
 
 package io.github.skm0078.audora.ui.shell
 
@@ -53,9 +53,13 @@ class PhoneDrawerTest {
         ),
         collections = SidebarShelves(listOf(Shelf("c1", "For Ma", 3))) { opened += "collection $it" },
         onMade = { opened += "made" },
-        onListeningStats = { opened += "stats" },
-        onTour = { opened += "tour" },
-        onSettings = { opened += "settings" },
+        links = PanelLinks(
+            onMakeItYours = { opened += "make it yours" },
+            onEditCollections = { opened += "collections" },
+            onListeningStats = { opened += "stats" },
+            onTour = { opened += "tour" },
+            onSettings = { opened += "settings" },
+        ),
     )
 
     private fun show(width: Dp, tabs: List<AppTab> = AppTab.entries) = rule.setContent {
@@ -91,6 +95,9 @@ class PhoneDrawerTest {
             R.string.library_filter_all,
             R.string.sidebar_collections,
             R.string.drawer_made_audio,
+            R.string.drawer_your_library,
+            R.string.library_make_it_yours,
+            R.string.collections_edit,
             R.string.library_listening_stats,
             R.string.settings_tour_title,
             R.string.settings_title,
@@ -106,6 +113,18 @@ class PhoneDrawerTest {
         rule.waitForIdle()
         rule.onNodeWithTag(DRAWER_TAG).assertDoesNotExist()
         assertEquals(listOf("settings"), opened)
+    }
+
+    @Test
+    fun theLibrarysOwnSheetsOpenFromTheDrawer() {
+        show(PHONE)
+        for (row in listOf(R.string.library_make_it_yours, R.string.collections_edit)) {
+            openDrawer()
+            rule.onNode(hasText(text(row))).performScrollTo().performClick()
+            rule.waitForIdle()
+            rule.onNodeWithTag(DRAWER_TAG).assertDoesNotExist()
+        }
+        assertEquals(listOf("make it yours", "collections"), opened)
     }
 
     @Test

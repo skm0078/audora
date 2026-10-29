@@ -45,7 +45,8 @@ import io.github.skm0078.audora.ui.theme.WindowWidths
  * expanded width (a big tablet) to a sidebar that also lists [shelves], as Material's window size classes ask. The
  * same four places keep the same names and order in every form, and the mini player stays at the bottom of the
  * content beside a rail or sidebar. With the bottom bar, [drawer] adds the side drawer the library's menu button opens
- * (ADR 2026-10-28-phone-drawer); beside a sidebar its rows are already in view.
+ * (ADR 2026-10-28-phone-drawer); beside a sidebar, its shelves are already in view and its shared rows (Your
+ * library, the tour, Settings) sit under the collections.
  */
 @Composable
 fun AppShell(
@@ -66,7 +67,7 @@ fun AppShell(
     val form = placesForm(showPlaces = tabs.size > 1, windowWidth)
     // One call site in every form, so the places keep their state when the width changes (a phone turned sideways).
     PhoneDrawerFrame(drawer.takeIf { form == PlacesForm.BAR }) {
-        Places(form, selected, onSelect, modifier, miniPlayer, tabs, shelves, content)
+        Places(form, selected, onSelect, modifier, miniPlayer, tabs, shelves, drawer?.links, content)
     }
 }
 
@@ -79,6 +80,7 @@ private fun Places(
     miniPlayer: @Composable () -> Unit,
     tabs: List<AppTab>,
     shelves: SidebarShelves,
+    links: PanelLinks?,
     content: @Composable () -> Unit,
 ) {
     Box(modifier.fillMaxSize()) {
@@ -86,7 +88,7 @@ private fun Places(
         Row(Modifier.fillMaxSize()) {
             when (form) {
                 PlacesForm.RAIL -> TabRail(tabs, selected, onSelect)
-                PlacesForm.SIDEBAR -> Sidebar(tabs, selected, onSelect, shelves)
+                PlacesForm.SIDEBAR -> Sidebar(tabs, selected, onSelect, shelves, links)
                 PlacesForm.BAR, PlacesForm.NONE -> Unit
             }
             Scaffold(

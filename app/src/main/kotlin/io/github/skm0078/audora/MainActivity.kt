@@ -44,7 +44,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.battery.OnboardingPreferences
@@ -120,6 +119,7 @@ import io.github.skm0078.audora.ui.library.LibraryActions
 import io.github.skm0078.audora.ui.library.LibraryController
 import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.LibraryScreen
+import io.github.skm0078.audora.ui.library.rememberLibraryHome
 import io.github.skm0078.audora.ui.library.rememberLibraryLayout
 import io.github.skm0078.audora.ui.library.rememberRemovalUndoMs
 import io.github.skm0078.audora.ui.library.restoreMessageOf
@@ -156,10 +156,12 @@ import io.github.skm0078.audora.ui.reader.ReaderToasts
 import io.github.skm0078.audora.ui.reader.ReaderVoiceCommands
 import io.github.skm0078.audora.ui.reader.ReadingLook
 import io.github.skm0078.audora.ui.reader.ReadingLookPreferences
+import io.github.skm0078.audora.ui.reader.RecordTimeLeft
 import io.github.skm0078.audora.ui.reader.ScreenPreference
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
 import io.github.skm0078.audora.ui.reader.VolumeKeySkips
+import io.github.skm0078.audora.ui.reader.rememberConnectedPlaybackPort
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.reader.rememberSpokenWord
 import io.github.skm0078.audora.ui.settings.KnownSettings
@@ -695,6 +697,7 @@ class MainActivity : ComponentActivity() {
     ) {
         val navigate = nav::navigate
         val onContinue = nav::continueReading
+        val loadedBooks = (controller.listState as? LibraryListState.Loaded)?.all?.map { it.book }
         val context = LocalContext.current.applicationContext
         val undoMs = rememberRemovalUndoMs()
         val playWithPermission = rememberPlayWithNotificationPermission()
@@ -772,6 +775,9 @@ class MainActivity : ComponentActivity() {
             covers = bookCovers,
             runningJobs = rememberRunningJobCount(),
             view = rememberLibraryLayout(),
+            home = rememberLibraryHome(highlightStore, loadedBooks, nav::openPlace),
+            requested = nav.pendingLibraryAction,
+            onRequestTaken = { nav.pendingLibraryAction = null },
             settingValues = settingValues(
                 KnownSettings(
                     appearance,
@@ -782,13 +788,7 @@ class MainActivity : ComponentActivity() {
                 ),
             ),
         )
-        studio.Sheets((controller.listState as? LibraryListState.Loaded)?.all?.map { it.book })
-        LaunchedEffect(nav.pendingLibraryAction) {
-            nav.pendingLibraryAction?.let { action ->
-                nav.pendingLibraryAction = null
-                studio.onLibraryAction(action)
-            }
-        }
+        studio.Sheets(loadedBooks)
     }
 
     /** The OCR models' state; a scanned page waiting for them is read as soon as they are in. */
@@ -841,6 +841,7 @@ class MainActivity : ComponentActivity() {
         PlayerConnectionEffect(port, listeningInBackground)
         DisposableEffect(model) { onDispose { model.close() } }
         AutoResumeRequests(model, target.autoResume, onAutoResumeTaken)
+        RecordTimeLeft(model)
         val state by model.state.collectAsStateWithLifecycle()
         PageOnScreenEffect(state) { shownPage = it }
         val ocrState = rememberOcrState(model)
@@ -1021,7 +1022,7 @@ internal class AppNavigation(routeState: MutableState<String>) {
         navigate(AppDestination.Settings)
     }
 
-    /** A library action asked for outside the library (the phone drawer's Listening stats), run once it shows. */
+    /** A library action asked for outside the library (the side panel's rows), run once the library shows. */
     var pendingLibraryAction by mutableStateOf<LibraryAction?>(null)
 
     fun openLibraryAction(action: LibraryAction) {
@@ -1086,18 +1087,6 @@ private fun AutoResumeRequests(model: ReaderModel, autoResume: Boolean, onTaken:
 
 /** Which book the reader route opens, and whether as the full player (ADR-036). */
 internal data class ReaderTarget(val id: BookId, val autoResume: Boolean, val asPlayer: Boolean = false)
-
-/** A player controller connected only while visible: a connected one keeps the playback service bound. */
-@Composable
-private fun rememberConnectedPlaybackPort(): MediaControllerPlaybackPort {
-    val context = LocalContext.current.applicationContext
-    val port = remember { MediaControllerPlaybackPort(context) }
-    LifecycleStartEffect(port) {
-        port.connect()
-        onStopOrDispose { port.release() }
-    }
-    return port
-}
 
 @Composable
 private fun UnfinishedSessionPrompt(diagnostics: DiagnosticsController, resume: (BookId) -> Unit) {

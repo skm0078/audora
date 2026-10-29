@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app lock's screen saver (ADR 2026-10-28-lock-screen-saver): never a book title, only whether it is reading. -->
+<resources>
+    <string name="lock_saver_reading">Still reading to you</string>
+    <string name="lock_saver_pause">Pause reading</string>
+    <string name="lock_saver_hidden">Your books and notes stay hidden until you unlock</string>
+</resources>

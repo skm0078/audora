@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lock_saver_reading">अब भी आपको पढ़कर सुना रहा है</string>
+    <string name="lock_saver_pause">पढ़ना रोकें</string>
+    <string name="lock_saver_hidden">अनलॉक करने तक आपकी किताबें और नोट्स छिपे रहते हैं</string>
+</resources>

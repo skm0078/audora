@@ -5,4 +5,6 @@
     <string name="drawer_made">आपके बनाए</string>
     <string name="drawer_made_audio">ऑडियोबुक और क्लिप</string>
     <string name="settings_title">सेटिंग्स</string>
+    <string name="drawer_your_library">आपकी लाइब्रेरी</string>
+    <string name="menu_hint_edit_collections">अपने संग्रह बनाएँ, उनका नाम बदलें या हटाएँ।</string>
 </resources>

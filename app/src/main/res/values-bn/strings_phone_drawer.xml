@@ -5,4 +5,6 @@
     <string name="drawer_made">আপনার বানানো</string>
     <string name="drawer_made_audio">অডিওবই আর ক্লিপ</string>
     <string name="settings_title">সেটিংস</string>
+    <string name="drawer_your_library">আপনার লাইব্রেরি</string>
+    <string name="menu_hint_edit_collections">আপনার সংগ্রহ বানান, নাম বদলান বা সরান।</string>
 </resources>

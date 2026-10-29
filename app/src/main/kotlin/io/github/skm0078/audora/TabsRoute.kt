@@ -31,6 +31,7 @@ import io.github.skm0078.audora.ui.library.sidebarShelves
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.shell.AppShell
+import io.github.skm0078.audora.ui.shell.PanelLinks
 import io.github.skm0078.audora.ui.shell.PhoneDrawer
 
 /**
@@ -100,7 +101,10 @@ private fun Shell(
     )
 }
 
-/** The phone drawer's rows: the library's shelves and collections, Made, the listening stats, the tour and Settings. */
+/**
+ * The side panel's rows: the library's shelves and collections, Made, then Your library (Make it yours, Edit
+ * collections, the listening stats), the tour and Settings. The tablet sidebar shows the same [PanelLinks].
+ */
 @Composable
 private fun phoneDrawer(tab: AppTab, library: LibraryController, nav: AppNavigation, onTour: () -> Unit): PhoneDrawer {
     val toLibrary = { nav.navigate(AppDestination.Library) }
@@ -108,8 +112,12 @@ private fun phoneDrawer(tab: AppTab, library: LibraryController, nav: AppNavigat
         shelves = drawerShelves(library, libraryShowing = tab == AppTab.LIBRARY, onOpened = toLibrary),
         collections = sidebarShelves(library, toLibrary),
         onMade = { nav.navigate(AppDestination.Made) },
-        onListeningStats = { nav.openLibraryAction(LibraryAction.LISTENING_STATS) },
-        onTour = onTour,
-        onSettings = nav::openSettingsHome,
+        links = PanelLinks(
+            onMakeItYours = { nav.openLibraryAction(LibraryAction.MAKE_IT_YOURS) },
+            onEditCollections = { nav.openLibraryAction(LibraryAction.EDIT_COLLECTIONS) },
+            onListeningStats = { nav.openLibraryAction(LibraryAction.LISTENING_STATS) },
+            onTour = onTour,
+            onSettings = nav::openSettingsHome,
+        ),
     )
 }

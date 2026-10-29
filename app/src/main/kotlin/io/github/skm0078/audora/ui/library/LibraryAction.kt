@@ -41,6 +41,18 @@ enum class LibraryAction(@StringRes val label: Int, @StringRes val hint: Int, va
     /** Time listened, streaks and books finished, kept on the phone only (CF-8). */
     LISTENING_STATS(R.string.library_listening_stats, R.string.menu_hint_listening_stats),
 
+    /**
+     * The library screen's own sheet: a name, grid or list, and which home sections show (ADR
+     * 2026-10-28-make-it-yours). Last, so the entries above keep their places.
+     */
+    MAKE_IT_YOURS(R.string.library_make_it_yours, R.string.menu_hint_make_it_yours),
+
     /** A short page about ListenLock in the app's language, saved as a text book and opened (empty library only). */
     TRY_SAMPLE(R.string.sample_try, R.string.sample_try_hint, inMenu = false),
+
+    /**
+     * Makes, renames and removes the listener's collections, from the side panel; the library's own chip opens the
+     * same sheet. Not in the ⋮ menu, which the chip already sits beside.
+     */
+    EDIT_COLLECTIONS(R.string.collections_edit, R.string.menu_hint_edit_collections, inMenu = false),
 }

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-hi/strings_make_it_yours.xml
+  Purpose: The "Make it yours" sheet and the home's personal touches, in Hindi (ADR 2026-10-28-make-it-yours).
+-->
+<resources>
+    <string name="library_make_it_yours">अपने हिसाब से</string>
+    <string name="menu_hint_make_it_yours">आपका नाम, और लाइब्रेरी में क्या किस क्रम में दिखे।</string>
+    <string name="home_sheet_body">छूते ही पीछे की लाइब्रेरी बदल जाती है।</string>
+    <string name="home_name_label">ऐप आपको किस नाम से बुलाए?</string>
+    <string name="home_name_hint">सिर्फ़ इसी फ़ोन पर रहता है। कोई नाम न चाहें तो खाली छोड़ दें।</string>
+    <string name="home_books_as">किताबें ऐसे दिखें</string>
+    <string name="home_sections">लाइब्रेरी में, इसी क्रम में</string>
+    <string name="home_section_continue">सुनना जारी रखें</string>
+    <string name="home_section_line">आज की आपकी पंक्ति</string>
+    <string name="home_section_recent">हाल में जोड़ी गईं</string>
+    <string name="home_section_chips">शेल्फ़ और संग्रह</string>
+    <string name="home_move_up">%1$s ऊपर ले जाएँ</string>
+    <string name="home_move_down">%1$s नीचे ले जाएँ</string>
+    <string name="home_cover_tint">किताब के कवर का रंग</string>
+    <string name="library_greeting_morning_named">सुप्रभात, %1$s</string>
+    <string name="library_greeting_afternoon_named">शुभ दोपहर, %1$s</string>
+    <string name="library_greeting_evening_named">शुभ संध्या, %1$s</string>
+    <string name="library_last_heard">आख़िरी सुना:</string>
+    <string name="library_last_heard_line">“%1$s”</string>
+    <string name="library_left_at_your_speed">आपकी रफ़्तार से %1$s बाक़ी</string>
+    <string name="library_line_of_the_day_where">%1$s · पेज %2$d</string>
+    <string name="library_line_of_the_day_open">किताब इसी पंक्ति पर खोलें</string>
+</resources>

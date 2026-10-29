@@ -170,7 +170,7 @@ class ReleaseJourneyTest {
         step("42 a phone book says it is on this phone", SourceJourney(rule, ::backToTabs)::aPhoneBookSaysWhereItLives)
     }
 
-    /** Steps 21 on: sharing, page turns, the tour, character voices, symbols, Made and catalogues. */
+    /** Steps 21 on: sharing, page turns, the tour, character voices, symbols, Made, catalogues and the home. */
     private fun readingSharingAndVoices() {
         step("21 Share as a picture makes a story-sized card and opens the share sheet", ::aQuoteCardIsShared)
         step("22 a swipe turns the PDF page", ::aSwipeTurnsThePdfPage)
@@ -196,12 +196,16 @@ class ReleaseJourneyTest {
             "29 a story's women and men each get a voice of their own gender",
             CharacterJourney::womenAndMenGetVoicesOfTheirGender,
         )
+        step("30 the stats screen saves and shares its card", StatsJourney(rule, ::backToTabs)::cardIsSavedAndShared)
+        step("31 the app lock shows the saver, or opens with no screen lock", LockJourney(rule)::coversOrOpens)
         step("43 arrows, maths and emoji reach the voice as words or not at all") {
             SymbolJourney.symbolsAreSaidOrLeftOut()
         }
         step("32 Made plays a saved audiobook like the book player", MadeJourney(rule, ::backToTabs)::playsLikeBook)
         step("41 catalogues are a curated list", CatalogueJourney(rule, ::backToTabs)::theCuratedCataloguesAreListed)
+        step("44 Make it yours names the greeting and adds a part", HomeJourney(rule, ::backToTabs)::makesItYours)
         step("45 the phone drawer opens Settings", DrawerJourney(rule, ::backToTabs)::opensSettings)
+        step("46 the phone drawer opens Make it yours", DrawerJourney(rule, ::backToTabs)::opensMakeItYours)
     }
 
     /**
