@@ -22,7 +22,9 @@ object ShareWords {
                 context.getString(R.string.share_credit_author_page, source.title, author, page)
 
             author != null -> context.getString(R.string.share_credit_author, source.title, author)
+
             page != null -> context.getString(R.string.share_credit_page, source.title, page)
+
             else -> source.title
         }
     }

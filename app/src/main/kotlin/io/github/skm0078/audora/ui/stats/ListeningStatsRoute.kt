@@ -191,6 +191,7 @@ private fun StatsShareRoute(
                 busy = false
                 when {
                     card == null -> toast(context, R.string.share_card_failed)
+
                     !context.sendCard(files.uri(card), card.mimeType, ShareWords.caption(context, source = null)) ->
                         toast(context, R.string.share_card_no_app)
                 }

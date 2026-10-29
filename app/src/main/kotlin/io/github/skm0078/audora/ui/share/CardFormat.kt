@@ -14,8 +14,8 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.Lang
-import io.github.skm0078.audora.ui.reader.PageTone
 import io.github.skm0078.audora.playback.R as PlaybackR
+import io.github.skm0078.audora.ui.reader.PageTone
 
 /**
  * The picture's size in pixels. 1080 wide is what Instagram, WhatsApp Status and Facebook show at full quality; every
