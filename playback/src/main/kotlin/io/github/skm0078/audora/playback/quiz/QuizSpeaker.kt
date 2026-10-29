@@ -51,6 +51,7 @@ class QuizSpeaker(context: Context, private val idleMs: Long = QuizConfig().spea
         .setUsage(AudioAttributes.USAGE_MEDIA)
         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
         .build()
+
     // A call or another app taking the sound stops the line; a short duck (a notification) lets it go on.
     private val focus = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
         .setAudioAttributes(attributes)
@@ -82,7 +83,7 @@ class QuizSpeaker(context: Context, private val idleMs: Long = QuizConfig().spea
         val mine = generation.incrementAndGet()
         stop()
         val rendered = rendering.withLock {
-            if (closed || mine != generation.get()) return@withContext null
+            if (superseded(mine)) return@withContext null
             idleRelease?.cancel()
             val unit = ReadingUnit(0, 0, 0, text.length, text, lang, pauseAfterMs = 0, bounds = null)
             val renderer = rendererLocked()
@@ -156,6 +157,9 @@ class QuizSpeaker(context: Context, private val idleMs: Long = QuizConfig().spea
         return granted
     }
 
+    /** A newer line or [close] came after line [mine]. */
+    private fun superseded(mine: Long) = closed || mine != generation.get()
+
     /**
      * Plays [pcm] unless a newer line or [close] came first, or the sound is taken (a call); false (logged) if the
      * audio output refused it.
@@ -163,7 +167,7 @@ class QuizSpeaker(context: Context, private val idleMs: Long = QuizConfig().spea
     @Suppress("TooGenericExceptionCaught") // AudioTrack throws several unchecked types; none may crash the quiz.
     @Synchronized
     private fun play(pcm: PcmAudio, mine: Long): Boolean {
-        if (pcm.samples.isEmpty() || closed || mine != generation.get() || !takeFocus()) return false
+        if (pcm.samples.isEmpty() || superseded(mine) || !takeFocus()) return false
         var made: AudioTrack? = null
         return try {
             made = build(pcm)
