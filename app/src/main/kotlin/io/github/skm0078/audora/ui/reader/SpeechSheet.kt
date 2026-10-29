@@ -1,14 +1,17 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/SpeechSheet.kt
 // Purpose: The player's speech sheet (ADR-062): speed, pitch (ADR-067), pace, reading to suit the book (ADR-056)
 //          and this book's own settings first; what to read (ADR-035), sound, cast voices (item 7), study and focus
-//          sounds each one row that opens its own sheet.
+//          sounds each a group that opens in place (ADR 2026-10-29-voice-and-speed-one-level).
 
 package io.github.skm0078.audora.ui.reader
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -20,12 +23,14 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -45,7 +50,6 @@ import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.model.VoiceShaping
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.ui.theme.Dimens
-import io.github.skm0078.audora.ui.theme.LinkOption
 import io.github.skm0078.audora.ui.theme.OptionBlock
 import io.github.skm0078.audora.ui.theme.OptionDivider
 import io.github.skm0078.audora.ui.theme.OptionGroup
@@ -61,7 +65,8 @@ import kotlin.math.roundToInt
  * What most listeners change comes first, each row its own control: speed, pitch, pace, reading to suit the book
  * (with what the book reads as, [readingIntent]) and this book's own settings. Pitch is sent when the finger lifts
  * too, though it restarts nothing (ADR-067): each change is saved by the service. The finer options wait one tap
- * away, each group in a sheet of its own over this one, so this sheet stays short (ADR-062).
+ * away, each group opening in place under its header, which says what is set in it, so this sheet stays short
+ * (ADR-062, ADR 2026-10-29-voice-and-speed-one-level). [opensAt]: where a shortcut opens it, scrolled into view.
  */
 @Composable
 fun SpeechSheet(
@@ -89,8 +94,21 @@ fun SpeechSheet(
     readingIntent: ContentIntent? = null,
     pitch: Float = SpeechStyle.NORMAL_PITCH,
     onPitch: (Float) -> Unit = {},
+    opensAt: SpeechSpot = SpeechSpot.TOP,
 ) {
-    var page by rememberSaveable { mutableStateOf<SpeechPage?>(null) }
+    // One group open at a time, in place: no sheet ever opens over this one (ADR 2026-10-29-voice-and-speed-one-level).
+    var open by rememberSaveable { mutableStateOf(opensAt.takeIf { it.expands }) }
+    val target = remember { BringIntoViewRequester() }
+    // A shortcut's group or the voices, scrolled to once the sheet has laid out.
+    LaunchedEffect(opensAt) {
+        if (opensAt == SpeechSpot.TOP) return@LaunchedEffect
+        withFrameNanos { } // laid out first, so there is somewhere to scroll to
+        target.bringIntoView()
+    }
+    val at = { spot: SpeechSpot -> if (spot == opensAt) Modifier.bringIntoViewRequester(target) else Modifier }
+    val group: @Composable (SpeechSpot, String, @Composable () -> Unit) -> Unit = { spot, summary, content ->
+        SpeechGroup(spot, summary, open == spot, { open = spot.takeUnless { it == open } }, at(spot), content)
+    }
     OptionSheet(
         stringResource(R.string.speech_sheet_title),
         onDismiss,
@@ -109,26 +127,9 @@ fun SpeechSheet(
             OptionDivider()
             OwnSettingsRow(ownSettings, enabled = bookInPlayer || ownSettings, onOwnSettings)
         }
-        // The voice is always one tap away (UI audit): this book's own while it keeps its own settings, else the
-        // voice every book uses, the same choice as Settings → Voices.
-        if (ownSettings) {
-            val title = stringResource(R.string.speech_book_voices)
-            BookVoicesSection(voices.rows, voices.chosen, title, voices.bookLang, voices.onVoice)
-        } else {
-            val title = stringResource(R.string.speech_voices)
-            BookVoicesSection(voices.rows, emptyMap(), title, voices.bookLang) { lang, id ->
-                voices.rows.firstOrNull { it.lang == lang && it.id == id }?.let(voices.onDefault)
-            }
-        }
-        PageLinks(readingModes, focusSound) { page = it }
-    }
-    val close = { page = null }
-    when (page) {
-        SpeechPage.READING -> OptionSheet(stringResource(R.string.reading_modes_title), close) {
-            ReadingModesSection(readingModes, onReadingModes)
-        }
-
-        SpeechPage.SOUND -> OptionSheet(stringResource(R.string.speech_sound), close) {
+        Box(at(SpeechSpot.VOICE)) { VoiceChoices(voices, ownSettings) }
+        group(SpeechSpot.READING, readingSummary(readingModes)) { ReadingModesSection(readingModes, onReadingModes) }
+        group(SpeechSpot.SOUND, namesOrAllOff(soundSummary(voiceShaping, clausePauses))) {
             VoiceShapingSection(voiceShaping, config.voiceShaping, expressive, clausePauses, onClausePauses) {
                 onVoiceShaping(it)
             }
@@ -136,47 +137,28 @@ fun SpeechSheet(
                 NarratorBlendSection(voiceShaping, own, blend.neededBytes, onVoiceShaping)
             }
         }
-
-        SpeechPage.CAST -> OptionSheet(stringResource(R.string.speech_cast), close) {
+        group(SpeechSpot.CAST, namesOrAllOff(castSummary(voiceShaping))) {
             CastVoicesSection(voices.rows, voiceShaping, onVoiceShaping)
         }
-
-        SpeechPage.STUDY -> OptionSheet(stringResource(R.string.study_title), close) {
-            StudySection(readingModes, study, onReadingModes)
-        }
-
-        SpeechPage.FOCUS -> OptionSheet(stringResource(R.string.focus_title), close) {
-            FocusSoundSection(focusSound, onFocusSound)
-        }
-
-        null -> Unit
+        group(SpeechSpot.STUDY, studySummary(readingModes)) { StudySection(readingModes, study, onReadingModes) }
+        group(SpeechSpot.FOCUS, focusSummary(focusSound)) { FocusSoundSection(focusSound, onFocusSound) }
     }
 }
 
-/** The groups of finer options, each opened in its own sheet from a row of the speech sheet. */
-private enum class SpeechPage { READING, SOUND, CAST, STUDY, FOCUS }
-
-/** One row per group; What to read and Focus sound say what is set, so the common answers need no tap. */
+/**
+ * The voice is always one tap away (UI audit): this book's own while it keeps its own settings, else the voice every
+ * book uses, the same choice as Settings → Voices.
+ */
 @Composable
-private fun PageLinks(modes: ReadingModes, focus: FocusSoundOptions, onOpen: (SpeechPage) -> Unit) {
-    OptionGroup(title = null) {
-        LinkOption(
-            stringResource(R.string.reading_modes_title),
-            onClick = { onOpen(SpeechPage.READING) },
-            subtitle = readingSummary(modes),
-        )
-        OptionDivider()
-        LinkOption(stringResource(R.string.speech_sound), onClick = { onOpen(SpeechPage.SOUND) })
-        OptionDivider()
-        LinkOption(stringResource(R.string.speech_cast), onClick = { onOpen(SpeechPage.CAST) })
-        OptionDivider()
-        LinkOption(stringResource(R.string.study_title), onClick = { onOpen(SpeechPage.STUDY) })
-        OptionDivider()
-        LinkOption(
-            stringResource(R.string.focus_title),
-            onClick = { onOpen(SpeechPage.FOCUS) },
-            value = stringResource(focusSoundLabel(focus.sound)),
-        )
+private fun VoiceChoices(voices: BookVoices, ownSettings: Boolean) {
+    if (ownSettings) {
+        val title = stringResource(R.string.speech_book_voices)
+        BookVoicesSection(voices.rows, voices.chosen, title, voices.bookLang, voices.onVoice)
+    } else {
+        val title = stringResource(R.string.speech_voices)
+        BookVoicesSection(voices.rows, emptyMap(), title, voices.bookLang) { lang, id ->
+            voices.rows.firstOrNull { it.lang == lang && it.id == id }?.let(voices.onDefault)
+        }
     }
 }
 

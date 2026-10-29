@@ -45,14 +45,33 @@ class BookVoicesSectionTest {
         assertEquals(listOf(Lang.EN, Lang.HI), shownVoiceChoices(bookVoiceChoices(noBengali), Lang.BN).keys.toList())
     }
 
-    private fun row(name: String, lang: Lang, kind: VoiceKind = VoiceKind.CATALOG) = VoiceRow(
-        VoiceId(EngineId.SHERPA, name),
-        name,
-        lang,
-        "MIT",
-        0,
-        kind,
-        if (kind == VoiceKind.BUILT_IN) VoiceStatus.BuiltIn else VoiceStatus.Installed,
-        readsLanguage = false,
-    )
+    @Test
+    fun `the player's chip names the voice every book uses when the book keeps no picks`() {
+        val withDefault = rows.map { if (it.label == "loona") row("loona", Lang.EN, VoiceKind.BUILT_IN, true) else it }
+        assertEquals("loona", readingVoiceName(withDefault, emptyMap(), Lang.EN))
+    }
+
+    @Test
+    fun `the player's chip names the book's own pick over the voice every book uses`() {
+        val own = mapOf(Lang.HI to VoiceId(EngineId.SHERPA, "chatterbox"))
+        assertEquals("chatterbox", readingVoiceName(rows, own, Lang.HI))
+    }
+
+    @Test
+    fun `with no voice marked the chip names the language's first voice, and none for a language with none`() {
+        assertEquals("bruno", readingVoiceName(rows, emptyMap(), Lang.EN))
+        assertEquals(null, readingVoiceName(rows.filter { it.lang != Lang.BN }, emptyMap(), Lang.BN))
+    }
+
+    private fun row(name: String, lang: Lang, kind: VoiceKind = VoiceKind.CATALOG, readsLanguage: Boolean = false) =
+        VoiceRow(
+            VoiceId(EngineId.SHERPA, name),
+            name,
+            lang,
+            "MIT",
+            0,
+            kind,
+            if (kind == VoiceKind.BUILT_IN) VoiceStatus.BuiltIn else VoiceStatus.Installed,
+            readsLanguage = readsLanguage,
+        )
 }
