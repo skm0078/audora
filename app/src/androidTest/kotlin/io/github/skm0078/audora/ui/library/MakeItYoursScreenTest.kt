@@ -1,6 +1,7 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/library/MakeItYoursScreenTest.kt
-// Purpose: "Make it yours" opens from the library's ⋮ menu, and each choice shows on the library at once: the name in
-//          the greeting, a part turned on or off, the chips hidden, a part moved up (ADR 2026-10-28-make-it-yours).
+// Purpose: "Make it yours" opens from the library's ⋮ menu and the side panel, and each choice shows on the library at
+//          once: the name in the greeting, a part turned on or off, the chips hidden, a part moved up (ADR
+//          2026-10-28-make-it-yours).
 
 package io.github.skm0078.audora.ui.library
 
@@ -48,7 +49,7 @@ class MakeItYoursScreenTest {
 
     private fun text(id: Int, vararg args: Any): String = rule.activity.getString(id, *args)
 
-    private fun showLibrary() {
+    private fun showLibrary(requested: LibraryAction? = null, onRequestTaken: () -> Unit = {}) {
         rule.setContent {
             var layout by remember { mutableStateOf(saved) }
             AudoraTheme {
@@ -62,6 +63,8 @@ class MakeItYoursScreenTest {
                         layout = it
                         saved = it
                     }),
+                    requested = requested,
+                    onRequestTaken = onRequestTaken,
                 )
             }
         }
@@ -83,6 +86,21 @@ class MakeItYoursScreenTest {
     }
 
     private fun switchFor(id: Int) = hasContentDescription(text(id)) and hasClickAction()
+
+    /** The side panel's rows reach the library as a request: each opens its own sheet, once. */
+    @Test
+    fun theSidePanelOpensTheLibrarysOwnSheets() {
+        var taken = 0
+        showLibrary(LibraryAction.MAKE_IT_YOURS) { taken++ }
+        rule.onNode(hasText(text(R.string.home_sheet_body))).assertExists()
+        rule.runOnIdle { assertEquals(1, taken) }
+    }
+
+    @Test
+    fun theSidePanelOpensTheCollectionsSheet() {
+        showLibrary(LibraryAction.EDIT_COLLECTIONS)
+        rule.onNode(hasText(text(R.string.collections_title))).assertExists()
+    }
 
     @Test
     fun aNameIsGreetedAtOnce() {
