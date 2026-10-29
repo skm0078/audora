@@ -183,6 +183,9 @@ class PhotoBooks(
                 mutableMade.value = comicFailed(e)
             } catch (e: SecurityException) {
                 mutableMade.value = comicFailed(e)
+            } catch (e: IllegalArgumentException) {
+                // A zip Java refuses even with the fallback names: damage, never a crash of the app.
+                mutableMade.value = comicFailed(e)
             } finally {
                 busy.set(false)
             }
@@ -198,10 +201,11 @@ class PhotoBooks(
         val copy = comicFile.copyIn(archive)
         try {
             val pages = comicFile.pages(copy)
-            AudoraLog.i(TAG, "Comic archive read, pages=${pages.size}")
+            val count = pages.names.size
+            AudoraLog.i(TAG, "Comic archive read, pages=$count")
             return when {
-                pages.isEmpty() -> Outcome.Failure(PhotoError.ComicUnreadable("no pictures"))
-                pages.size > config.maxComicPages -> Outcome.Failure(PhotoError.ComicTooLong(config.maxComicPages))
+                count == 0 -> Outcome.Failure(PhotoError.ComicUnreadable("no pictures"))
+                count > config.maxComicPages -> Outcome.Failure(PhotoError.ComicTooLong(config.maxComicPages))
                 else -> addMade(title, { comicFile.write(copy, pages, madeFile) }) {}
             }
         } finally {
