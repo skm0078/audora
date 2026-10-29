@@ -14,6 +14,7 @@ import io.github.skm0078.audora.core.library.BookProgress
 import io.github.skm0078.audora.core.library.LibraryQuery
 import io.github.skm0078.audora.core.notes.Highlight
 import io.github.skm0078.audora.core.resume.ResumeAnchor
+import io.github.skm0078.audora.core.stats.WeekGlance
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -50,6 +51,14 @@ class LibraryHomeTest {
     fun `a part with nothing to show is left out`() {
         assertEquals(listOf(CONTINUE_KEY), keys(LibraryHome(HomeLayout(), line = null)))
         assertEquals(listOf(CONTINUE_KEY, LINE_KEY), keys(LibraryHome(HomeLayout(), line = line)))
+    }
+
+    @Test
+    fun `this week leads the home once there is listening`() {
+        val week = HomeWeek(WeekGlance(ms = 0, goalMs = null, streak = 0)) {}
+        assertEquals(listOf(WEEK_KEY, CONTINUE_KEY), keys(LibraryHome(HomeLayout(), week = week)))
+        val off = HomeLayout().toggled(HomeSection.THIS_WEEK)
+        assertEquals(listOf(CONTINUE_KEY), keys(LibraryHome(off, week = week)))
     }
 
     @Test

@@ -39,11 +39,21 @@ fun ResumedNotice(resumed: ResumedAt?, onShown: () -> Unit) {
     }
 }
 
-/** The reader's toasts, once each: a paragraph skip that found nothing, and where the book was picked up. */
+/**
+ * The reader's one-time notices: a paragraph skip that found nothing, and where the book was picked up (a toast,
+ * or after days away the recap).
+ */
 @Composable
 fun ReaderToasts(state: ReaderState, model: ReaderModel) {
     ParagraphSkipNotice(state.skipRefused, model::skipRefusalShown)
     ResumedNotice(state.resumedAt, model::resumedShown)
+    PreviouslyOnCard(
+        state.previouslyOn,
+        ready = state.playerReady,
+        onHearAgain = model::hearRecapAgain,
+        onGoOn = model::goOnFromRecap,
+        onDismiss = model::recapClosed,
+    )
 }
 
 /** Enough to recognise the sentence, short enough for one toast line. */

@@ -10,30 +10,33 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookCollection
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.LibraryFilter
+import io.github.skm0078.audora.core.library.ShelfLook
 import io.github.skm0078.audora.ui.shell.DrawerShelf
 import io.github.skm0078.audora.ui.shell.Shelf
 import io.github.skm0078.audora.ui.shell.SidebarShelves
 
 /**
  * The collections with how many of the library's books each holds, in the library's own order (by name). A book
- * whose removal can still be undone is not counted: it is not on the shelf the listener sees.
+ * whose removal can still be undone is not counted: it is not on the shelf the listener sees. Each wears its [looks].
  */
 internal fun shelvesOf(
     collections: List<BookCollection>,
     members: Map<BookId, Set<String>>,
     books: Collection<BookId>,
+    looks: Map<String, ShelfLook> = emptyMap(),
 ): List<Shelf> {
     val counts = HashMap<String, Int>()
     books.forEach { book -> members[book]?.forEach { counts[it] = (counts[it] ?: 0) + 1 } }
-    return collections.map { Shelf(it.id, it.name, counts[it.id] ?: 0) }
+    return collections.map { Shelf(it.id, it.name, counts[it.id] ?: 0, looks[it.id] ?: ShelfLook.DEFAULT) }
 }
 
 /** What the sidebar lists, worked out once per change of the library; opening one narrows the library to it. */
 @Composable
 fun sidebarShelves(library: LibraryController, onOpened: () -> Unit): SidebarShelves {
+    val looks = rememberShelfLooks()
     val loaded = library.listState as? LibraryListState.Loaded ?: return SidebarShelves()
-    val shelves = remember(loaded.collections, loaded.members, loaded.all) {
-        shelvesOf(loaded.collections, loaded.members, loaded.all.map { it.book.id })
+    val shelves = remember(loaded.collections, loaded.members, loaded.all, looks) {
+        shelvesOf(loaded.collections, loaded.members, loaded.all.map { it.book.id }, looks)
     }
     val query = loaded.query
     return SidebarShelves(shelves, query.narrow.collection) { id ->
