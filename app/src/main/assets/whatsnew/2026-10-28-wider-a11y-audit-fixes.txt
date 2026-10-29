@@ -1,0 +1,3 @@
+en: The voice commands settings are readable again, and with TalkBack each Download, Delete and Source button says which voice or download it is for.
+hi: वॉइस कमांड की सेटिंग फिर से साफ़ पढ़ी जा सकती है, और TalkBack में हर डाउनलोड, हटाएँ और स्रोत बटन बताता है कि वह किस आवाज़ या डाउनलोड के लिए है।
+bn: ভয়েস কমান্ডের সেটিংস আবার পড়া যায়, আর TalkBack-এ প্রতিটি ডাউনলোড, মুছুন আর উৎস বোতাম বলে দেয় সেটি কোন ভয়েস বা ডাউনলোডের জন্য।

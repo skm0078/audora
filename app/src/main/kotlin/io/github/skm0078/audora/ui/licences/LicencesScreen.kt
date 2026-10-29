@@ -44,6 +44,7 @@ import io.github.skm0078.audora.speech.voices.LicenceKind
 import io.github.skm0078.audora.speech.voices.VoiceCredits
 import io.github.skm0078.audora.speech.voices.VoiceLicence
 import io.github.skm0078.audora.ui.theme.AudoraTheme
+import io.github.skm0078.audora.ui.theme.buttonNamedFor
 import io.github.skm0078.audora.ui.voices.HEADER_PADDING
 import io.github.skm0078.audora.ui.voices.HORIZONTAL_PADDING
 import io.github.skm0078.audora.ui.voices.languageName
@@ -108,7 +109,7 @@ private fun LicencesList(voices: List<VoiceLicence>, openLink: (String) -> Unit,
             ListItem(
                 headlineContent = { Text(software.name) },
                 supportingContent = { Text(stringResource(software.licence)) },
-                trailingContent = { LinkButton(R.string.licences_source) { openLink(software.url) } },
+                trailingContent = { LinkButton(R.string.licences_source, software.name) { openLink(software.url) } },
             )
             HorizontalDivider()
         }
@@ -127,11 +128,11 @@ private fun VoiceLicenceItem(voice: VoiceLicence, openLink: (String) -> Unit, on
                 voice.credits?.let { Text(it.credit, style = MaterialTheme.typography.bodySmall) }
                 Row {
                     voice.credits?.let { credits ->
-                        LinkButton(R.string.licences_licence) { openLink(credits.licenceUrl) }
-                        LinkButton(R.string.licences_source) { openLink(credits.sourceUrl) }
+                        LinkButton(R.string.licences_licence, voice.label) { openLink(credits.licenceUrl) }
+                        LinkButton(R.string.licences_source, voice.label) { openLink(credits.sourceUrl) }
                     }
                     if (voice.installed && voice.kind != LicenceKind.BUILT_IN) {
-                        LinkButton(R.string.licences_files) { onOpenTexts(voice) }
+                        LinkButton(R.string.licences_files, voice.label) { onOpenTexts(voice) }
                     }
                 }
             }
@@ -179,9 +180,11 @@ private fun Caption(@StringRes text: Int, header: Boolean = true) {
     )
 }
 
+/** A link; with [about], TalkBack reads what it is for ("Source: Piper"), as a list repeats the same links. */
 @Composable
-internal fun LinkButton(@StringRes label: Int, onClick: () -> Unit) {
-    TextButton(onClick = onClick) { Text(stringResource(label)) }
+internal fun LinkButton(@StringRes label: Int, about: String? = null, onClick: () -> Unit) {
+    val text = stringResource(label)
+    TextButton(onClick = onClick, modifier = about?.let { buttonNamedFor(text, it) } ?: Modifier) { Text(text) }
 }
 
 /** Opens a link in the user's browser; a phone without one logs it instead of crashing. */

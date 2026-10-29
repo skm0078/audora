@@ -11,14 +11,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.skm0078.audora.R
 
-/** [label] opens a question ([question]); only its [label] button runs [onConfirm], Keep and outside taps do not. */
+/**
+ * [label] opens a question ([question]); only its [label] button runs [onConfirm], Keep and outside taps do not.
+ * [modifier] is the first button's, as for naming it after what it deletes.
+ */
 @Composable
-fun ConfirmedTextButton(label: String, question: String, onConfirm: () -> Unit) {
+fun ConfirmedTextButton(label: String, question: String, modifier: Modifier = Modifier, onConfirm: () -> Unit) {
     var asking by rememberSaveable { mutableStateOf(false) }
-    TextButton(onClick = { asking = true }) { Text(label) }
+    TextButton(onClick = { asking = true }, modifier = modifier) { Text(label) }
     if (!asking) return
     AlertDialog(
         onDismissRequest = { asking = false },

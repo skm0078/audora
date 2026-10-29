@@ -47,6 +47,7 @@ import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.speech.voices.VoiceStatus
 import io.github.skm0078.audora.ui.jobs.DownloadTimeLeft
+import io.github.skm0078.audora.ui.theme.buttonNamedFor
 
 /**
  * The radio picks the reading voice; it is shown only for voices that can speak now and is enabled unless the voice
@@ -243,26 +244,28 @@ private fun statusText(row: VoiceRow): String = when (row.status) {
 private fun RowAction(row: VoiceRow, actions: VoicesActions) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         when (row.status) {
-            VoiceStatus.NotDownloaded, is VoiceStatus.Failed -> ActionButton(R.string.voices_download) {
+            VoiceStatus.NotDownloaded, is VoiceStatus.Failed -> ActionButton(R.string.voices_download, row) {
                 actions.onDownload(row)
             }
 
-            VoiceStatus.UpdateAvailable -> ActionButton(R.string.voices_update) { actions.onDownload(row) }
+            VoiceStatus.UpdateAvailable -> ActionButton(R.string.voices_update, row) { actions.onDownload(row) }
 
-            VoiceStatus.Queued, is VoiceStatus.Downloading -> ActionButton(R.string.voices_cancel) {
+            VoiceStatus.Queued, is VoiceStatus.Downloading -> ActionButton(R.string.voices_cancel, row) {
                 actions.onCancel(row)
             }
 
             else -> Unit
         }
         val deletable = row.status is VoiceStatus.Installed || row.status is VoiceStatus.UpdateAvailable
-        if (deletable) ActionButton(R.string.voices_delete) { actions.onRequestDelete(row) }
+        if (deletable) ActionButton(R.string.voices_delete, row) { actions.onRequestDelete(row) }
     }
 }
 
+/** Named after [row]'s voice for TalkBack: the list repeats the same buttons. */
 @Composable
-private fun ActionButton(@StringRes label: Int, onClick: () -> Unit) {
-    TextButton(onClick = onClick) { Text(stringResource(label)) }
+private fun ActionButton(@StringRes label: Int, row: VoiceRow, onClick: () -> Unit) {
+    val text = stringResource(label)
+    TextButton(onClick = onClick, modifier = buttonNamedFor(text, row.label)) { Text(text) }
 }
 
 /** Hindi and Bengali read with the phone's own voice unless a neural voice is picked (Build Spec §3). */
