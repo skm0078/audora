@@ -238,6 +238,7 @@ internal class StudioLibrary(
         LibraryAction.LISTENING_STATS -> sheet.value = StudioSheet.LISTENING_STATS
 
         LibraryAction.TRY_SAMPLE -> parts.onText(sampleBook(parts.activity))
+
         LibraryAction.COOKBOOK -> parts.onText(cookbookBook(parts.activity))
 
         // The library screen opens these sheets itself.

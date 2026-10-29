@@ -35,7 +35,7 @@ class LibraryHomeTest {
     private val line = DayLine("A line.", a.book, 1, anchor("a"))
 
     private fun keys(home: LibraryHome, shown: LibraryListState.Loaded = list) =
-        homeParts(shown, home, CoverSource.None, {}, {}).map { it.key }
+        homeParts(shown, home, CoverSource.None, HomeActions({}, {})).map { it.key }
 
     @Test
     fun `the parts follow the listener's order and leave out what is off`() {

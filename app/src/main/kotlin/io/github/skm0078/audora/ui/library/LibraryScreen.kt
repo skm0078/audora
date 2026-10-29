@@ -278,14 +278,12 @@ private fun LibraryContent(
                     }
                 } else {
                     val books = BookCallbacks(onTap, menu, onDetails, picked, found)
-                    val top = homeParts(
-                        listState,
-                        home,
-                        covers,
+                    val actions = HomeActions(
                         onContinue = { menu.onContinue(it.book) },
                         onTap = onTap,
                         onLibraryAction = menu::onLibraryAction,
                     )
+                    val top = homeParts(listState, home, covers, actions)
                     if (layout.showsList(LocalDensity.current.fontScale)) {
                         BookList(listState, books, covers, top)
                     } else {

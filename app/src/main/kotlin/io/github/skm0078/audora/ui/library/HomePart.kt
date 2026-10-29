@@ -35,6 +35,13 @@ import io.github.skm0078.audora.ui.theme.Dimens
 /** One part above the books: [key] for the lazy list, [content] drawn edge to edge of the books' column. */
 internal class HomePart(val key: String, val content: @Composable () -> Unit)
 
+/** What the home's parts do when tapped: resume or open a book, or run a library action (From ListenLock's cards). */
+internal class HomeActions(
+    val onContinue: (LibraryItem) -> Unit,
+    val onTap: (LibraryItem) -> Unit,
+    val onLibraryAction: (LibraryAction) -> Unit = {},
+)
+
 /**
  * The parts to show above [list]'s books, in the listener's order. Only on the whole library: while a search, a shelf
  * or a filter narrows it, the books come first, as the Continue card always did.
@@ -43,9 +50,7 @@ internal fun homeParts(
     list: LibraryListState.Loaded,
     home: LibraryHome,
     covers: CoverSource,
-    onContinue: (LibraryItem) -> Unit,
-    onTap: (LibraryItem) -> Unit,
-    onLibraryAction: (LibraryAction) -> Unit = {},
+    actions: HomeActions,
 ): List<HomePart> {
     val layout = home.layout?.takeIf { list.query.isDefault } ?: return emptyList()
     return layout.shownOrder.mapNotNull { section ->
@@ -58,8 +63,8 @@ internal fun homeParts(
                 HomePart(CONTINUE_KEY) {
                     ContinueReadingCard(
                         latest,
-                        onContinue = { onContinue(latest) },
-                        onOpen = { onTap(latest) },
+                        onContinue = { actions.onContinue(latest) },
+                        onOpen = { actions.onTap(latest) },
                         covers = covers,
                         glance = home.glances[latest.book.id],
                         tinted = layout.coverTint,
@@ -72,11 +77,11 @@ internal fun homeParts(
             }
 
             HomeSection.RECENTLY_ADDED -> recentlyAdded(list).takeIf { it.isNotEmpty() }?.let { recent ->
-                HomePart(RECENT_KEY) { RecentlyAddedRow(recent, covers, onTap) }
+                HomePart(RECENT_KEY) { RecentlyAddedRow(recent, covers, actions.onTap) }
             }
 
             HomeSection.FROM_LISTENLOCK -> HomePart(FROM_LISTENLOCK_KEY) {
-                FromListenLockRow(AppDocument.entries) { onLibraryAction(it.action) }
+                FromListenLockRow(AppDocument.entries) { actions.onLibraryAction(it.action) }
             }
 
             HomeSection.SHELF_CHIPS -> null // Pinned above the books, not one of these.
