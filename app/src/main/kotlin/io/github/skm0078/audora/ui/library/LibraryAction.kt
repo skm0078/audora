@@ -15,7 +15,7 @@ enum class LibraryActionPlace {
     /** The Add a book sheet, under Choose a file: every way a book comes in (ADR 2026-10-29-add-a-book). */
     ADD_SHEET,
 
-    /** A button of its own elsewhere on the library (the empty library's Try a sample). */
+    /** Elsewhere, not in ⋮ or the sheet: its own button or chip (Try a sample, Add book) and the side panel. */
     BUTTON,
 }
 
@@ -65,6 +65,15 @@ enum class LibraryAction(
 
     /** A short page about ListenLock in the app's language, saved as a text book and opened (empty library only). */
     TRY_SAMPLE(R.string.sample_try, R.string.sample_try_hint, LibraryActionPlace.BUTTON),
+
+    /**
+     * Makes, renames and removes the listener's collections, from the side panel; the library's own chip opens the
+     * same sheet. Not in the ⋮ menu, which the chip already sits beside.
+     */
+    EDIT_COLLECTIONS(R.string.collections_edit, R.string.menu_hint_edit_collections, LibraryActionPlace.BUTTON),
+
+    /** The Add a book sheet, from the library's Add book button and the side panel (ADR 2026-10-29-add-a-book). */
+    ADD_BOOK(R.string.library_add_pdf, R.string.add_book_hint, LibraryActionPlace.BUTTON),
     ;
 
     /** Whether it shows in the library's ⋮ menu. */

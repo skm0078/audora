@@ -6,6 +6,7 @@
 -->
 <resources>
     <string name="add_book_title">Add a book</string>
+    <string name="add_book_hint">Every way a book comes in: a file, a photo, copied text, a web page or a free catalogue.</string>
     <string name="add_book_file">Choose a file</string>
     <string name="add_book_line_file">PDF, EPUB, Word, text, comics and more</string>
     <string name="add_book_line_photo">Reads a printed page aloud</string>

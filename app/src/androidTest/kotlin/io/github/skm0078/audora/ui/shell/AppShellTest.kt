@@ -22,6 +22,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -137,6 +138,36 @@ class AppShellTest {
             assertEquals(listOf("c1", null), opened)
             assertEquals(listOf(AppTab.LIBRARY), selected)
         }
+    }
+
+    @Test
+    fun theSidebarHasTheDrawersOwnRowsUnderTheCollections() {
+        val opened = mutableListOf<String>()
+        val links = PanelLinks(
+            onMakeItYours = { opened += "make it yours" },
+            onEditCollections = { opened += "collections" },
+            onListeningStats = { opened += "stats" },
+            onTour = { opened += "tour" },
+            onSettings = { opened += "settings" },
+        )
+        val drawer = PhoneDrawer(emptyList(), SidebarShelves(SHELVES), onMade = {}, links = links)
+        rule.setContent {
+            DeviceConfigurationOverride(DeviceConfigurationOverride.ForcedSize(BIG_TABLET)) {
+                AudoraTheme {
+                    AppShell(
+                        selected = AppTab.LIBRARY,
+                        onSelect = {},
+                        shelves = drawer.collections,
+                        drawer = drawer,
+                        windowWidth = BIG_TABLET.width,
+                    ) {}
+                }
+            }
+        }
+        for (row in listOf(R.string.library_make_it_yours, R.string.collections_edit, R.string.settings_title)) {
+            rule.onNodeWithText(text(row)).performScrollTo().performClick()
+        }
+        rule.runOnIdle { assertEquals(listOf("make it yours", "collections", "settings"), opened) }
     }
 
     @Test

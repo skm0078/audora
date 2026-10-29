@@ -6,6 +6,7 @@
 -->
 <resources>
     <string name="add_book_title">বই যোগ করুন</string>
+    <string name="add_book_hint">বই আনার সব উপায়: ফাইল, ছবি, কপি করা লেখা, ওয়েব পেজ বা বিনামূল্যের ক্যাটালগ।</string>
     <string name="add_book_file">ফাইল বেছে নিন</string>
     <string name="add_book_line_file">PDF, EPUB, Word, টেক্সট, কমিকস আর আরও</string>
     <string name="add_book_line_photo">ছাপা পৃষ্ঠা পড়ে শোনায়</string>

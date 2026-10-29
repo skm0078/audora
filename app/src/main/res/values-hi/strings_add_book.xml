@@ -6,6 +6,7 @@
 -->
 <resources>
     <string name="add_book_title">किताब जोड़ें</string>
+    <string name="add_book_hint">किताब लाने के सारे तरीके: फ़ाइल, फ़ोटो, कॉपी किया गया टेक्स्ट, वेब पेज या मुफ़्त कैटलॉग।</string>
     <string name="add_book_file">फ़ाइल चुनें</string>
     <string name="add_book_line_file">PDF, EPUB, Word, टेक्स्ट, कॉमिक्स और भी</string>
     <string name="add_book_line_photo">छपा हुआ पेज पढ़कर सुनाता है</string>
