@@ -1,3 +1,3 @@
-en: EPUBs, Word files and comics zipped on Windows or with older tools, whose file names are not in Unicode, now open. Before, they could close the app.
-hi: Windows पर या पुराने टूल से ज़िप की गई EPUB, Word फ़ाइलें और कॉमिक्स, जिनकी फ़ाइलों के नाम यूनिकोड में नहीं हैं, अब खुलती हैं। पहले इनसे ऐप बंद हो सकता था।
-bn: Windows-এ বা পুরোনো টুলে জিপ করা EPUB, Word ফাইল আর কমিক, যাদের ফাইলের নাম ইউনিকোডে নয়, এখন খোলে। আগে এগুলো অ্যাপ বন্ধ করে দিতে পারত।
+en: EPUBs, Word files and comics zipped on Windows or with older tools, whose file names are not in Unicode, now open. A comic with a damaged or very large page opens with that page left blank. Before, these could close the app.
+hi: Windows पर या पुराने टूल से ज़िप की गई EPUB, Word फ़ाइलें और कॉमिक्स, जिनकी फ़ाइलों के नाम यूनिकोड में नहीं हैं, अब खुलती हैं। किसी कॉमिक का कोई पन्ना खराब या बहुत बड़ा हो, तो वह पन्ना खाली छोड़कर कॉमिक खुल जाती है। पहले इनसे ऐप बंद हो सकता था।
+bn: Windows-এ বা পুরোনো টুলে জিপ করা EPUB, Word ফাইল আর কমিক, যাদের ফাইলের নাম ইউনিকোডে নয়, এখন খোলে। কোনো কমিকের একটা পাতা খারাপ বা খুব বড় হলে সেই পাতা ফাঁকা রেখে কমিক খোলে। আগে এগুলো অ্যাপ বন্ধ করে দিতে পারত।
