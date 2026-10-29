@@ -1,10 +1,10 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/flip/PageFlip.kt
-// Purpose: Swipe a PDF page to turn it: the page follows the finger with its neighbour sliding in beside it, then
-//          slides the rest of the way (ADR 2026-10-28-page-flip).
+// Purpose: Swipe a PDF page to turn it (ADR 2026-10-28-page-flip): the page curls up from its corner under the
+//          finger, or slides with its neighbour beside it, or turns at once, as the reading look chooses (ADR
+//          2026-10-29-page-curl). A turn made by reading on or by an arrow plays the same way, on its own.
 
 package io.github.skm0078.audora.ui.reader.flip
 
-import androidx.compose.animation.core.animate
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -20,14 +20,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.graphicsLayer
@@ -40,19 +38,31 @@ import androidx.compose.ui.platform.LocalDensity
 import io.github.skm0078.audora.core.config.PageFlipConfig
 import io.github.skm0078.audora.ui.reader.PageImage
 import io.github.skm0078.audora.ui.reader.PageTone
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
-/** What the page view knows of the pages around the one it shows. */
-internal class FlipPages(val page: Int, val pageCount: Int, val nearby: Map<Int, PageImage>, val tone: PageTone)
+/**
+ * What the page view knows of the pages around the one it shows; [reading] while reading aloud moves the pages on,
+ * so a turn it makes plays quickly.
+ */
+internal class FlipPages(
+    val page: Int,
+    val pageCount: Int,
+    val nearby: Map<Int, PageImage>,
+    val tone: PageTone,
+    val reading: Boolean = false,
+)
+
+/** The page shown last time the page view looked, so a change of page can tell which way it went. */
+private class ShownPage {
+    var page: Int? = null
+
+    fun swap(now: Int): Int? = page.also { page = now }
+}
 
 /**
  * Wraps the drawn page. While [enabled] (not zoomed: then a sideways drag pans the page instead), a sideways drag
- * moves [content] with the finger and slides the neighbour drawn ahead in beside it; let go far or fast enough, the
- * page slides the rest of the way and [onTurn] is told the page to show. A neighbour not drawn yet slides in as blank
- * paper and appears when drawn. TalkBack users turn with the page buttons, which TalkBack's own swipes leave alone.
+ * turns the page in [turn]'s style; let go far or fast enough and it turns the rest of the way and [onTurn] is told
+ * the page to show. A neighbour not drawn yet shows as blank paper until drawn. TalkBack users turn with the page
+ * buttons, which TalkBack's own swipes leave alone.
  */
 @Composable
 internal fun PageFlip(
@@ -60,29 +70,48 @@ internal fun PageFlip(
     enabled: Boolean,
     config: PageFlipConfig,
     onTurn: (Int) -> Unit,
+    turn: PageTurn = PageTurn(),
     content: @Composable () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val flip = remember(config) { FlipState(config, scope) }
     // Read when a finger lets go, not when it touches: reading may turn the page during a drag.
     val current by rememberUpdatedState(pages)
-    val turn by rememberUpdatedState(onTurn)
-    // The turn is over once the page shown is the one turned to; the slid-in neighbour covers it until then.
-    LaunchedEffect(pages.page, flip.target) { flip.settled(pages.page) }
+    val style by rememberUpdatedState(turn)
+    val turnTo by rememberUpdatedState(onTurn)
+    val before = remember { ShownPage() }
     BoxWithConstraints(Modifier.fillMaxSize().clipToBounds()) {
         val width = constraints.maxWidth.toFloat()
+        val height = constraints.maxHeight.toFloat()
+        // The end of a finger's turn, or a turn made some other way, which then plays by itself.
+        LaunchedEffect(pages.page, flip.target) {
+            flip.shown(pages.page, before.swap(pages.page).takeIf { it != pages.page }, current, style, width)
+        }
         val flingPx = with(LocalDensity.current) { config.flingDpPerSecond * density }
-        Box(
-            Modifier
-                .fillMaxSize()
-                .flipGestures(enabled, flip, FlipGeometry(width, flingPx), { current }, { turn(it) }),
-        ) {
-            Box(Modifier.fillMaxSize().graphicsLayer { translationX = flip.offset }) { content() }
-            flip.from?.let { from ->
-                Neighbour(pages.nearby[from - 1], pages.tone, translation = { flip.offset - width })
-                Neighbour(pages.nearby[from + 1], pages.tone, translation = { flip.offset + width })
+        val geometry = FlipGeometry(width, height, flingPx)
+        Box(Modifier.fillMaxSize().flipGestures(enabled, flip, geometry, { current }, { style }, { turnTo(it) })) {
+            when (turn.style) {
+                TurnStyle.CURL -> {
+                    // A printed page is white paper, whatever the app's theme.
+                    val paint = CurlPaint(pages.tone, pages.tone.paper ?: Color.White, turn.shadow, config)
+                    CurlFrame({ flip.curl(current, width, height) }, paint, content)
+                }
+
+                TurnStyle.SLIDE -> Sliding(flip, pages, width, content)
+
+                TurnStyle.NONE -> content()
             }
         }
+    }
+}
+
+/** The page follows the finger, its neighbour sliding in beside it. */
+@Composable
+private fun Sliding(flip: FlipState, pages: FlipPages, width: Float, content: @Composable () -> Unit) {
+    Box(Modifier.fillMaxSize().graphicsLayer { translationX = flip.offset }) { content() }
+    flip.from?.let { from ->
+        Neighbour(pages.nearby[from - 1], pages.tone, translation = { flip.offset - width })
+        Neighbour(pages.nearby[from + 1], pages.tone, translation = { flip.offset + width })
     }
 }
 
@@ -104,7 +133,7 @@ private fun Neighbour(image: PageImage?, tone: PageTone, translation: () -> Floa
     }
 }
 
-internal class FlipGeometry(val widthPx: Float, val flingPx: Float)
+internal class FlipGeometry(val widthPx: Float, val heightPx: Float, val flingPx: Float)
 
 /**
  * The drag runs in the main pass, after the page's own pinch (which consumes two-finger moves) and vertical scroll
@@ -115,12 +144,13 @@ private fun Modifier.flipGestures(
     flip: FlipState,
     geometry: FlipGeometry,
     pages: () -> FlipPages,
+    turn: () -> PageTurn,
     onTurn: (Int) -> Unit,
-): Modifier = pointerInput(enabled, geometry.widthPx) {
+): Modifier = pointerInput(enabled, geometry.widthPx, geometry.heightPx) {
     if (!enabled) return@pointerInput
     // Zoomed in or rotated mid-drag: this input restarts, and the page goes back to its place.
     try {
-        flipGesture(flip, geometry, pages, onTurn)
+        flipGesture(flip, geometry, pages, turn, onTurn)
     } finally {
         flip.abandon()
     }
@@ -130,6 +160,7 @@ private suspend fun PointerInputScope.flipGesture(
     flip: FlipState,
     geometry: FlipGeometry,
     pages: () -> FlipPages,
+    turn: () -> PageTurn,
     onTurn: (Int) -> Unit,
 ) {
     awaitEachGesture {
@@ -141,90 +172,19 @@ private suspend fun PointerInputScope.flipGesture(
             change.consume()
             slop = over
         } ?: return@awaitEachGesture
-        flip.drag(pages(), slop, geometry.widthPx)
+        flip.touch(down.position.y, geometry.heightPx)
+        flip.drag(pages(), slop, start.position.y - down.position.y, geometry.widthPx)
         val finished = horizontalDrag(start.id) { change ->
             tracker.addPosition(change.uptimeMillis, change.position)
-            flip.drag(pages(), change.positionChange().x, geometry.widthPx)
+            val moved = change.positionChange()
+            flip.drag(pages(), moved.x, moved.y, geometry.widthPx)
             change.consume()
         }
         // Not finished: a second finger started a pinch, which takes over; the page goes back.
         if (finished) {
-            flip.release(pages().pageCount, tracker.calculateVelocity().x, geometry, onTurn)
+            flip.release(pages().pageCount, tracker.calculateVelocity().x, geometry, turn(), onTurn)
         } else {
             flip.abandon()
         }
-    }
-}
-
-/**
- * Where the page is while a finger turns it. [offset] is how far the shown page has moved (negative: left, towards
- * the next page); [from] the page the drag began on (null when no turn is under way), so the neighbours keep their
- * places even if reading turns the page meanwhile; [target] the page a finished turn asked for.
- */
-internal class FlipState(private val config: PageFlipConfig, private val scope: CoroutineScope) {
-    var offset by mutableFloatStateOf(0f)
-        private set
-    var from by mutableStateOf<Int?>(null)
-        private set
-    var target by mutableStateOf<Int?>(null)
-        private set
-    private var settling: Job? = null
-
-    /** Moves the page by [delta]; towards a page that does not exist (before the first, after the last) it gives. */
-    fun drag(pages: FlipPages, delta: Float, widthPx: Float) {
-        settling?.cancel()
-        target = null
-        val start = from ?: pages.page.also { from = it }
-        val next = offset + delta
-        val beyond = (next < 0f && start >= pages.pageCount - 1) || (next > 0f && start <= 0)
-        offset = (offset + if (beyond) delta * config.edgeResistance else delta).coerceIn(-widthPx, widthPx)
-    }
-
-    /** Let go at [velocity] px/s: slides on to the next or previous page, or back. */
-    fun release(pageCount: Int, velocity: Float, geometry: FlipGeometry, onTurn: (Int) -> Unit) {
-        val start = from ?: return
-        val way = config.swipeTurn(offset, velocity, geometry.widthPx, geometry.flingPx)
-        val destination = start + way
-        settling = scope.launch {
-            if (way != 0 && destination in 0 until pageCount) {
-                animate(offset, -way * geometry.widthPx) { value, _ -> offset = value }
-                target = destination
-                onTurn(destination)
-                // A turn the reader refused (the book closed meanwhile) must not leave the page off screen.
-                delay(SETTLE_TIMEOUT_MS)
-                reset()
-            } else {
-                animate(offset, 0f) { value, _ -> offset = value }
-                reset()
-            }
-        }
-    }
-
-    /** A drag that will not finish (a pinch took over, the input restarted) puts the page back; a slide carries on. */
-    fun abandon() {
-        if (from != null && settling?.isActive != true) {
-            settling = scope.launch {
-                animate(offset, 0f) { value, _ -> offset = value }
-                reset()
-            }
-        }
-    }
-
-    /** The page shown is now [page]: if it is the one turned to, the turn is over. */
-    fun settled(page: Int) {
-        if (target != null && target == page) {
-            settling?.cancel()
-            reset()
-        }
-    }
-
-    private fun reset() {
-        offset = 0f
-        from = null
-        target = null
-    }
-
-    private companion object {
-        const val SETTLE_TIMEOUT_MS = 2_000L
     }
 }

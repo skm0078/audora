@@ -1,8 +1,9 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/reader/TextPagesTest.kt
 // Purpose: "Turn pages" in the text view (ADR 2026-10-28-text-pages): a swipe or the arrow turns a screenful with no
 //          sentence cut at the top, the last screen turns on to the book's next page, the first turns back to the page
-//          before (to open at its end), a turn slides in from the side it came from, and reading on keeps the spoken
-//          sentence on screen. Bengali at double text size; screenshots go to CI's "player-screens".
+//          before (to open at its end), a turn slides in from the side it came from or curls over the text without
+//          moving it (ADR 2026-10-29-page-curl), and reading on keeps the spoken sentence on screen. Bengali at double
+//          text size; screenshots go to CI's "player-screens".
 
 package io.github.skm0078.audora.ui.reader
 
@@ -34,8 +35,11 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.ui.Screens
+import io.github.skm0078.audora.ui.reader.flip.PageTurn
+import io.github.skm0078.audora.ui.reader.flip.TurnStyle
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -62,7 +66,7 @@ class TextPagesTest {
     }
 
     // One sentence per row, so the list's rows are the sentences and the test can find them by index.
-    private val look = ReadingLook(turnPages = true, reflow = false)
+    private var look = ReadingLook(turnPages = true, reflow = false)
 
     private fun show() {
         rule.setContent {
@@ -106,6 +110,7 @@ class TextPagesTest {
 
     @Test
     fun aTurnSlidesTheNewScreenInFromTheRightAndSettlesWhereItBelongs() {
+        look = look.copy(turn = PageTurn(style = TurnStyle.SLIDE))
         show()
         val settled = leftOf(shownFirst())
         rule.mainClock.autoAdvance = false
@@ -116,6 +121,31 @@ class TextPagesTest {
         assertTrue("sliding in from the right", leftOf(turned) > settled + 1f)
         rule.mainClock.advanceTimeBy(PAST_A_TURN_MS)
         assertEquals(settled, leftOf(turned), 0.5f)
+        rule.mainClock.autoAdvance = true
+    }
+
+    @Test
+    fun aCurlDrawsOverTheTextWhileItTurnsAndNeverMovesIt() {
+        show()
+        val settled = leftOf(shownFirst())
+        rule.mainClock.autoAdvance = false
+        rule.onNodeWithContentDescription(text(R.string.text_pages_next)).performClick()
+        // The screen is kept as a picture first (on the GPU, in real time), then the list turns under it.
+        var waited = 0
+        while (shownFirst() == 0 && waited < MAX_WAIT_FRAMES) {
+            rule.mainClock.advanceTimeByFrame()
+            Thread.sleep(FRAME_MS)
+            waited++
+        }
+        val turned = shownFirst()
+        assertTrue("turned on", turned > 0)
+        rule.mainClock.advanceTimeBy(PART_OF_A_CURL_MS)
+        assertEquals("a curl never moves the text itself", settled, leftOf(turned), 0.5f)
+        val mid = rule.onRoot().captureToImage().asAndroidBitmap()
+        Screens.save("text-pages-bn-2x-curl", mid)
+        rule.mainClock.advanceTimeBy(PAST_A_CURL_MS)
+        val end = rule.onRoot().captureToImage().asAndroidBitmap()
+        assertFalse("the old screen curled over the new one part way", mid.sameAs(end))
         rule.mainClock.autoAdvance = true
     }
 
@@ -164,6 +194,12 @@ class TextPagesTest {
         // A turn's slide takes 200 ms: part way it is still to the side, past it the screen is back in place.
         const val PART_OF_A_TURN_MS = 64L
         const val PAST_A_TURN_MS = 400L
+
+        // A curl by hand takes 400 ms at normal speed.
+        const val PART_OF_A_CURL_MS = 150L
+        const val PAST_A_CURL_MS = 800L
+        const val MAX_WAIT_FRAMES = 60
+        const val FRAME_MS = 16L
         const val SENTENCES = 30
         const val LINE_CHARS = 200
         const val BENGALI = "সমস্ত মানুষ স্বাধীনভাবে সমান মর্যাদা এবং অধিকার নিয়ে জন্মগ্রহণ করে"

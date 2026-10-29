@@ -138,6 +138,28 @@ fun ReaderScreen(
     }
 }
 
+/** The page as drawn or as its text, whichever view is chosen; a text page with no words says so. */
+@Composable
+private fun ReadingArea(
+    state: ReaderState,
+    content: PageContent.Ready,
+    actions: ReaderActions,
+    look: ReadingLook,
+    config: ReaderConfig,
+    spokenWord: () -> IntRange?,
+    isHighlighted: (ReadingUnit) -> Boolean,
+    turnBack: TextTurnBack,
+) {
+    when {
+        state.view == ReaderView.PAGE -> PageView(state, content.units, actions, look.tone, config.flip, look.turn)
+
+        content.units.isNotEmpty() ->
+            Sentences(state, content.units, actions, look, spokenWord, isHighlighted, turnBack, config.flip)
+
+        content.origin == PageOrigin.TEXT -> Message(stringResource(R.string.reader_page_no_text))
+    }
+}
+
 @Composable
 private fun OpenBook(
     state: ReaderState,
@@ -172,14 +194,7 @@ private fun OpenBook(
                 val badge = ocrBadgeText(content.origin, content.ocrConfidence, config)
                 PageOriginNotice(content.origin, ocrModels, badge, actions::onDownloadOcrModels)
                 VoicePackNotice(content.units, voicePack)
-                when {
-                    state.view == ReaderView.PAGE -> PageView(state, content.units, actions, look.tone, config.flip)
-
-                    content.units.isNotEmpty() ->
-                        Sentences(state, content.units, actions, look, spokenWord, isHighlighted, turnBack)
-
-                    content.origin == PageOrigin.TEXT -> Message(stringResource(R.string.reader_page_no_text))
-                }
+                ReadingArea(state, content, actions, look, config, spokenWord, isHighlighted, turnBack)
             }
         }
     }

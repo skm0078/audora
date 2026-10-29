@@ -62,6 +62,7 @@ import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.pdf.render.ViewRect
 import io.github.skm0078.audora.ui.reader.flip.FlipPages
 import io.github.skm0078.audora.ui.reader.flip.PageFlip
+import io.github.skm0078.audora.ui.reader.flip.PageTurn
 import io.github.skm0078.audora.ui.theme.readingBand
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
@@ -78,6 +79,7 @@ internal fun PageView(
     actions: ReaderActions,
     tone: PageTone,
     flip: PageFlipConfig = PageFlipConfig(),
+    turn: PageTurn = PageTurn(),
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val widthPx = constraints.maxWidth
@@ -101,10 +103,10 @@ internal fun PageView(
             shown != null -> {
                 val sentences = remember(units) { units.filter { it.text.isNotBlank() } }
                 val perSentence = rememberSentenceActions(sentences, state.playerReady, actions)
-                val pages = FlipPages(state.page, state.pageCount ?: 1, state.nearbyPages, tone)
+                val pages = FlipPages(state.page, state.pageCount ?: 1, state.nearbyPages, tone, state.isReading)
                 val picking = state.snippet != null
                 // While a snippet is picked, a drag moves its box: the page neither turns nor reads.
-                PageFlip(pages, enabled = !zoom.zoomed && !picking, config = flip, onTurn = actions::onGoToPage) {
+                PageFlip(pages, !zoom.zoomed && !picking, flip, actions::onGoToPage, turn) {
                     DrawnPage(state, shown.image, PageLook(pageNote(units), tone, zoom, perSentence), viewport, actions)
                 }
                 if (picking) {
