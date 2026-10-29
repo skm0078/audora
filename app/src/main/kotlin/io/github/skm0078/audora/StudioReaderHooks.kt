@@ -16,7 +16,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.notes.VoiceNoteStore
+import io.github.skm0078.audora.core.words.LookedUpWord
+import io.github.skm0078.audora.di.LibraryEntryPoint
 import io.github.skm0078.audora.pdf.PIPELINE_VERSION
 import io.github.skm0078.audora.playback.notes.VoiceNoteAudio
 import io.github.skm0078.audora.playback.search.SearchIndexes
@@ -91,15 +94,20 @@ internal fun SearchRoute(search: SearchModel, onGoToPage: (Int) -> Unit, onClose
 /**
  * The dictionary on tap (plan item 33, ADR-047): the sentence menu's "Look up a word". The download state follows
  * the dictionary in use (the picked word's script, else the sentence's language); a word looked up while its
- * dictionary was missing is looked up again once it is installed.
+ * dictionary was missing is looked up again once it is installed. Each word found joins the book's "Words you looked
+ * up".
  */
 @Composable
 private fun rememberLookUp(id: BookId): LookUpBinding {
     val context = LocalContext.current.applicationContext
     val dictionaries = remember { Dictionaries.get(context) }
     val scope = rememberCoroutineScope()
+    val words = remember { LibraryEntryPoint.of(context).lookedUpWords() }
     val model = remember(id) {
-        LookUpModel(dictionaries::forLanguage, scope, dictionaries::download, dictionaries::cancel)
+        val found: (String, String, ReadingUnit) -> Unit = { word, meaning, at ->
+            words.add(LookedUpWord(id, word, meaning, at.page, at.text, at.lang, System.currentTimeMillis()))
+        }
+        LookUpModel(dictionaries::forLanguage, scope, dictionaries::download, dictionaries::cancel, onFound = found)
     }
     val state by model.state.collectAsStateWithLifecycle()
     val lang = state?.dictionaryLang ?: Lang.EN

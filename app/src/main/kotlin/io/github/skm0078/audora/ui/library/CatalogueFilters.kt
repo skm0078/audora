@@ -45,6 +45,8 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.LibraryFacets
 import io.github.skm0078.audora.core.library.LibraryNarrow
 import io.github.skm0078.audora.core.library.LibraryQuery
+import io.github.skm0078.audora.core.library.ShelfLook
+import io.github.skm0078.audora.ui.shell.ShelfBadge
 import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
 
@@ -76,11 +78,13 @@ internal fun CatalogueChips(list: LibraryListState.Loaded, onQuery: (LibraryQuer
             )
         },
     )
+    val looks = rememberShelfLooks()
     list.collections.forEach { collection ->
         val selected = narrow.collection == collection.id
         FilterChip(
             selected = selected,
             onClick = { setNarrow(narrow.copy(collection = collection.id.takeUnless { selected })) },
+            leadingIcon = { ShelfBadge(collection.id, looks[collection.id] ?: ShelfLook.DEFAULT) },
             label = {
                 Text(
                     stringResource(R.string.library_shelf, collection.name, counts[collection.id] ?: 0),
@@ -96,7 +100,9 @@ internal fun CatalogueChips(list: LibraryListState.Loaded, onQuery: (LibraryQuer
     if (filtering) {
         FilterSheet(list.facets, list.collections, counts, narrow, setNarrow, onDismiss = { filtering = false })
     }
-    if (managing) CollectionsRoute(list.collections, counts) { managing = false }
+    if (managing) {
+        CollectionsRoute(list, counts) { managing = false }
+    }
 }
 
 /** Each list shows only what the library holds, with its number of books; "Any" leaves that one open. */

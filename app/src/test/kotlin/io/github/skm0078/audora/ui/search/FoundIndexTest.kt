@@ -13,6 +13,7 @@ import io.github.skm0078.audora.core.library.LibraryQuery
 import io.github.skm0078.audora.core.search.ActionSearch
 import io.github.skm0078.audora.ui.AppDestination
 import io.github.skm0078.audora.ui.library.BookAction
+import io.github.skm0078.audora.ui.library.LibraryAction
 import io.github.skm0078.audora.ui.library.LibraryItem
 import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.settings.SettingKey
@@ -72,6 +73,16 @@ class FoundIndexTest {
         assertEquals(FoundTarget.Screen(AppDestination.Voices()), find("voices", english, library(null)).first().target)
         val stats = find("stats", english, library(null)).map { it.target }
         assertTrue(stats.toString(), stats.any { it is FoundTarget.Library })
+    }
+
+    @Test
+    fun `a tool says whether it is in the side panel or the Add a book sheet`() {
+        val backup = find("restore", english, library(null)).first { it.target is FoundTarget.Library }
+        assertEquals(FoundTarget.Library(LibraryAction.BACKUP), backup.target)
+        assertEquals("Menu › Your library", backup.where)
+        val web = find("web page", english, library(null)).first { it.target is FoundTarget.Library }
+        assertEquals(FoundTarget.Library(LibraryAction.READ_WEB_PAGE), web.target)
+        assertEquals("Library › Add book", web.where)
     }
 
     @Test

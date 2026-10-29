@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-bn/strings_this_week.xml
+  Purpose: The home's "This week" card (personal touch 7): the week's listening against the goal, and the streak.
+-->
+<resources>
+    <string name="home_section_week">এই সপ্তাহে</string>
+    <string name="home_week_of_goal">%2$s-এর মধ্যে %1$s</string>
+    <plurals name="home_week_streak">
+        <item quantity="one">টানা %d দিন</item>
+        <item quantity="other">টানা %d দিন</item>
+    </plurals>
+    <string name="home_week_open">আপনার শোনা খুলুন</string>
+</resources>

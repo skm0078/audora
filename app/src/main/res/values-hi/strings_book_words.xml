@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-hi/strings_book_words.xml
+  Purpose: "Words you looked up": a book's looked-up words with their meanings, and the quick quiz on them.
+-->
+<resources>
+    <string name="book_words_title">आपके खोजे शब्द</string>
+    <plurals name="book_words_count">
+        <item quantity="one">%d शब्द · सिर्फ़ इस फ़ोन पर</item>
+        <item quantity="other">%d शब्द · सिर्फ़ इस फ़ोन पर</item>
+    </plurals>
+    <plurals name="book_words_quiz">
+        <item quantity="one">%d शब्द पर क्विज़</item>
+        <item quantity="other">%d शब्दों पर क्विज़</item>
+    </plurals>
+    <string name="book_words_page">पृ. %d</string>
+    <string name="book_words_quiz_title">शब्द क्विज़</string>
+    <string name="book_words_quiz_ask">इस शब्द का अर्थ क्या है?</string>
+    <string name="book_words_quiz_score">%2$d में से %1$d सही।</string>
+    <string name="book_words_quiz_means">इसका अर्थ है “%1$s”।</string>
+    <string name="book_words_quiz_right">सही: “%1$s”।</string>
+    <string name="book_words_quiz_wrong">ठीक नहीं। इसका अर्थ है “%1$s”।</string>
+</resources>

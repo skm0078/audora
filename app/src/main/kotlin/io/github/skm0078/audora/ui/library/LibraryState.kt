@@ -39,7 +39,9 @@ sealed interface LibraryListState {
      * mini player finds a filtered-out book.
      * [collections], [members] (each book's collections) and [facets] (what the library holds to filter by) feed
      * the collection chips and the filter sheet (ADR-069). [leaving]: books removed but still undoable (CF-3), left
-     * out of [items] and [all]; their covers and files are kept until the removal runs.
+     * out of [items] and [all]; their covers and files are kept until the removal runs. [narrowedFor]: the search
+     * text [items] were narrowed for, behind [query]'s while typing pauses, so what search finds beside the books
+     * shows with them and the screen changes once, not again under a finger (a tap on that change was lost).
      */
     data class Loaded(
         val items: List<LibraryItem>,
@@ -50,6 +52,7 @@ sealed interface LibraryListState {
         val members: Map<BookId, Set<String>> = emptyMap(),
         val facets: LibraryFacets = LibraryFacets.EMPTY,
         val leaving: Set<BookId> = emptySet(),
+        val narrowedFor: String = query.text,
     ) : LibraryListState {
         /** [latest], offered on top while nothing is searched or filtered. */
         val continueReading: LibraryItem?

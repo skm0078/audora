@@ -17,7 +17,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItem
@@ -36,14 +35,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.library.ShelfLook
 import io.github.skm0078.audora.ui.AppTab
 import io.github.skm0078.audora.ui.firstrun.tourTarget
 import io.github.skm0078.audora.ui.theme.Dimens
-import io.github.skm0078.audora.ui.theme.ShelfDotColours
 
-/** One of the listener's collections, as the sidebar lists it. */
+/** One of the listener's collections, as the sidebar lists it, with the colour and emoji the listener gave it. */
 @Immutable
-data class Shelf(val id: String, val name: String, val books: Int)
+data class Shelf(val id: String, val name: String, val books: Int, val look: ShelfLook = ShelfLook.DEFAULT)
 
 /**
  * The collections the sidebar lists under the places, which one the library is narrowed to, and how to open one;
@@ -59,9 +58,16 @@ data class SidebarShelves(
 /**
  * The look the listener liked in the drawer mockup, kept open beside the content: nothing to swipe or find. Tapping
  * Library while a collection is open shows the whole library again; tapping a collection opens the library on it.
+ * [links] adds the rows the phone drawer shares (Your library, the tour, Settings); null in previews and tests.
  */
 @Composable
-internal fun Sidebar(tabs: List<AppTab>, selected: AppTab, onSelect: (AppTab) -> Unit, shelves: SidebarShelves) {
+internal fun Sidebar(
+    tabs: List<AppTab>,
+    selected: AppTab,
+    onSelect: (AppTab) -> Unit,
+    shelves: SidebarShelves,
+    links: PanelLinks?,
+) {
     PermanentDrawerSheet(
         Modifier.width(Dimens.SidebarWidth).testTag(SIDEBAR_TAG),
         drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -85,12 +91,13 @@ internal fun Sidebar(tabs: List<AppTab>, selected: AppTab, onSelect: (AppTab) ->
                 )
             }
             if (shelves.shelves.isNotEmpty()) Shelves(shelves, libraryShowing = selected == AppTab.LIBRARY)
+            links?.let { PanelLinkRows(it, hasCollections = shelves.shelves.isNotEmpty()) }
         }
     }
 }
 
 @Composable
-private fun AppName() {
+internal fun AppName() {
     Row(
         Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceL),
         verticalAlignment = Alignment.CenterVertically,
@@ -110,18 +117,13 @@ private fun AppName() {
 }
 
 @Composable
-private fun Shelves(shelves: SidebarShelves, libraryShowing: Boolean) {
-    HorizontalDivider(Modifier.padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceM))
-    Text(
-        stringResource(R.string.sidebar_collections),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS).semantics { heading() },
-    )
+internal fun Shelves(shelves: SidebarShelves, libraryShowing: Boolean) {
+    PanelDivider()
+    PanelHeading(R.string.sidebar_collections)
     shelves.shelves.forEach { shelf ->
         NavigationDrawerItem(
             label = { Text(shelf.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-            icon = { ShelfDot(shelf.id) },
+            icon = { ShelfBadge(shelf.id, shelf.look) },
             badge = { Text(shelf.books.toString(), style = MaterialTheme.typography.labelMedium) },
             selected = libraryShowing && shelf.id == shelves.selected,
             onClick = { shelves.onOpen(shelf.id) },
@@ -129,16 +131,4 @@ private fun Shelves(shelves: SidebarShelves, libraryShowing: Boolean) {
     }
 }
 
-/** A small colour per collection, the same every time, so a shelf is recognised before its name is read. */
-@Composable
-private fun ShelfDot(id: String) {
-    Box(
-        Modifier
-            .size(SHELF_DOT_SIZE)
-            .clip(CircleShape)
-            .background(ShelfDotColours[Math.floorMod(id.hashCode(), ShelfDotColours.size)]),
-    )
-}
-
 private val LOGO_SIZE = 32.dp
-private val SHELF_DOT_SIZE = 10.dp

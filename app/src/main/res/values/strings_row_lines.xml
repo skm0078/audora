@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/strings_row_lines.xml
+  Purpose: One line under each option row saying what it changes and what it costs, so its effect shows
+           without the info button (ADR 2026-10-29-say-what-it-does).
+-->
+<resources>
+    <string name="row_line_clause_pauses">Short breaths at dashes, colons and quotes</string>
+    <string name="row_line_even_loudness">Every sentence and voice at one volume</string>
+    <string name="row_line_trim_pauses">Cuts the voice\'s own long silences</string>
+    <string name="row_line_smart_speed">Keeps fast speech clear · no change at 1×</string>
+    <string name="row_line_cast_characters">Story dialogue gets its own voices</string>
+    <string name="row_line_reflow">Flows like a book · off: a sentence per row</string>
+    <string name="row_line_turn_pages">A screen at a time, swipe to turn</string>
+    <string name="row_line_word_highlight">Marks each word as it is spoken</string>
+    <string name="row_line_bold_word_starts">Bolds the start of English words</string>
+    <string name="row_line_study_loop">Repeats A to B until you clear it</string>
+    <string name="row_line_keep_screen_on">Uses more battery while it reads</string>
+    <string name="row_line_wallpaper_colours">Colours from your wallpaper, not forest green</string>
+    <string name="row_line_true_black">Pure black dark mode · saves battery on OLED</string>
+    <string name="row_line_volume_keys">Volume buttons move one sentence</string>
+    <string name="row_line_voice_commands">Say “ListenLock, pause” · a little battery</string>
+    <string name="row_line_commands_screen_off">Microphone stays on · more battery</string>
+    <string name="row_line_pack_ocr">Reads pages that are photos or scans</string>
+    <string name="row_line_pack_punctuation">Natural pauses in English scans</string>
+    <string name="row_line_pack_acted">Acted Hindi for studio mode · slow</string>
+    <string name="row_line_pack_story_brain">Truer character voices · 6 GB phones</string>
+    <string name="row_line_pack_voice_commands">Hands-free pause, play and next</string>
+</resources>

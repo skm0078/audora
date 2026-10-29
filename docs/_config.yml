@@ -1,0 +1,56 @@
+# File: docs/_config.yml
+# Purpose: GitHub Pages builds the public site from prod /docs with its built-in Jekyll. Hand-written pages
+# (index.html, privacy.html) have no front matter, so they are copied as they are. Recipes and blog posts are
+# Markdown; how to write them is in docs/CONTENT.md. ADR 2026-10-29-site-recipes-and-blog.
+
+title: ListenLock
+description: >-
+  A free Android app that reads PDFs, books and photos of pages aloud in natural voices, in English, Hindi and
+  Bengali. Offline, no account, no ads, no tracking.
+url: https://skm0078.github.io
+baseurl: /audora
+lang: en
+author: TelosMind Labs
+logo: /assets/logo-440.png
+
+# All three run at build time and add no request to the reader's browser. Each is on GitHub Pages' allowed list.
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+markdown: kramdown
+permalink: /blog/:year/:title/
+feed:
+  path: blog/feed.xml
+
+collections:
+  recipes:
+    output: true
+    permalink: /recipes/:name/
+
+defaults:
+  - scope: { path: "" }
+    values: { image: /store/feature-graphic.png }
+  - scope: { path: "", type: recipes }
+    values: { layout: recipe }
+  - scope: { path: "", type: posts }
+    values: { layout: post }
+
+# Repository documents live in docs/ for developers and are read on GitHub, not on the site.
+exclude:
+  - README.md
+  - CONTENT.md
+  - BUILD-SPEC.md
+  - DECISIONS-OPEN.md
+  - LISTENING.md
+  - PERFORMANCE.md
+  - PROGRESS.md
+  - QUALITY.md
+  - RELEASING.md
+  - TICKET-PLAN.md
+  - adr/
+  - archive/
+  - progress/
+  - Gemfile
+  - Gemfile.lock

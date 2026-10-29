@@ -1,6 +1,7 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/library/MakeItYoursScreenTest.kt
-// Purpose: "Make it yours" opens from the library's ⋮ menu, and each choice shows on the library at once: the name in
-//          the greeting, a part turned on or off, the chips hidden, a part moved up (ADR 2026-10-28-make-it-yours).
+// Purpose: "Make it yours" opens from the side panel, and each choice shows on the library at
+//          once: the name in the greeting, a part turned on or off, the chips hidden, a part moved up (ADR
+//          2026-10-28-make-it-yours).
 
 package io.github.skm0078.audora.ui.library
 
@@ -48,7 +49,7 @@ class MakeItYoursScreenTest {
 
     private fun text(id: Int, vararg args: Any): String = rule.activity.getString(id, *args)
 
-    private fun showLibrary() {
+    private fun showLibrary(requested: LibraryAction? = null, onRequestTaken: () -> Unit = {}) {
         rule.setContent {
             var layout by remember { mutableStateOf(saved) }
             AudoraTheme {
@@ -62,12 +63,14 @@ class MakeItYoursScreenTest {
                         layout = it
                         saved = it
                     }),
+                    requested = requested,
+                    onRequestTaken = onRequestTaken,
                 )
             }
         }
     }
 
-    /** Scrolls to [matcher] first only inside a scrolling list (the menu, the sheet); the ⋮ button has none. */
+    /** Scrolls to [matcher] first only inside a scrolling list (the sheet). */
     private fun tap(matcher: SemanticsMatcher) {
         val node = rule.onAllNodes(matcher).onFirst()
         val scrolls = rule.onAllNodes(matcher and hasAnyAncestor(hasScrollAction())).fetchSemanticsNodes().isNotEmpty()
@@ -76,17 +79,31 @@ class MakeItYoursScreenTest {
         rule.waitForIdle()
     }
 
+    /** The library with Make it yours asked for, as the side panel's row asks: the ⋮ menu that held it is gone. */
     private fun openSheet() {
-        tap(hasContentDescription(text(R.string.reader_more)))
-        tap(hasText(text(R.string.library_make_it_yours)))
+        showLibrary(LibraryAction.MAKE_IT_YOURS)
         rule.onNode(hasText(text(R.string.home_sheet_body))).assertExists()
     }
 
     private fun switchFor(id: Int) = hasContentDescription(text(id)) and hasClickAction()
 
+    /** The side panel's rows reach the library as a request: each opens its own sheet, once. */
+    @Test
+    fun theSidePanelOpensTheLibrarysOwnSheets() {
+        var taken = 0
+        showLibrary(LibraryAction.MAKE_IT_YOURS) { taken++ }
+        rule.onNode(hasText(text(R.string.home_sheet_body))).assertExists()
+        rule.runOnIdle { assertEquals(1, taken) }
+    }
+
+    @Test
+    fun theSidePanelOpensTheCollectionsSheet() {
+        showLibrary(LibraryAction.EDIT_COLLECTIONS)
+        rule.onNode(hasText(text(R.string.collections_title))).assertExists()
+    }
+
     @Test
     fun aNameIsGreetedAtOnce() {
-        showLibrary()
         openSheet()
         rule.onAllNodes(hasSetTextAction()).onFirst().performTextReplacement("  Ria ")
         rule.waitForIdle()
@@ -101,19 +118,18 @@ class MakeItYoursScreenTest {
 
     @Test
     fun recentlyAddedTurnsOnAndMovesUp() {
-        showLibrary()
         openSheet()
         rule.onNode(switchFor(R.string.home_section_recent)).assertIsOff()
         tap(switchFor(R.string.home_section_recent))
         assertTrue(saved.shows(HomeSection.RECENTLY_ADDED))
-        tap(hasContentDescription(text(R.string.home_move_up, text(R.string.home_section_recent))))
-        tap(hasContentDescription(text(R.string.home_move_up, text(R.string.home_section_recent))))
+        repeat(HomeLayout.DEFAULT_ORDER.size - 1) {
+            tap(hasContentDescription(text(R.string.home_move_up, text(R.string.home_section_recent))))
+        }
         assertEquals(HomeSection.RECENTLY_ADDED, saved.order.first())
     }
 
     @Test
     fun theChipsAndTheContinueCardCanBeTurnedOff() {
-        showLibrary()
         openSheet()
         tap(switchFor(R.string.home_section_chips))
         tap(switchFor(R.string.home_section_continue))

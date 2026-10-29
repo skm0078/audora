@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-bn/strings_add_book.xml
+  Purpose: The Add a book sheet: every way a book comes in, each with one line on what it reads, in Bengali
+           (ADR 2026-10-29-add-a-book).
+-->
+<resources>
+    <string name="add_book_title">বই যোগ করুন</string>
+    <string name="add_book_hint">বই আনার সব উপায়: ফাইল, ছবি, কপি করা লেখা, ওয়েব পেজ বা বিনামূল্যের ক্যাটালগ।</string>
+    <string name="add_book_file">ফাইল বেছে নিন</string>
+    <string name="add_book_line_file">PDF, EPUB, Word, টেক্সট, কমিকস আর আরও</string>
+    <string name="add_book_line_photo">ছাপা পৃষ্ঠা পড়ে শোনায়</string>
+    <string name="add_book_line_pictures">পৃষ্ঠার ছবি, একটি বই হিসেবে</string>
+    <string name="add_book_line_clipboard">যেকোনো অ্যাপ থেকে শেষ কপি করা লেখা</string>
+    <string name="add_book_line_web">একটি লেখা, মেনু বা বিজ্ঞাপন ছাড়া</string>
+    <string name="add_book_line_catalogues">বিনামূল্যের পাবলিক-ডোমেন বই, এক ট্যাপে</string>
+</resources>
