@@ -52,10 +52,10 @@ internal class CookbookJourney(private val rule: ComposeTestRule, private val ba
 
         backToTabs()
         tap(hasText(text(R.string.tab_library)) and hasClickAction())
-        val heading = hasText(text(R.string.home_section_from_listenlock))
+        val fromListenLock = hasText(text(R.string.home_section_from_listenlock))
         waitForNode(hasScrollToNodeAction())
-        rule.onAllNodes(hasScrollToNodeAction()).onFirst().performScrollToNode(heading)
-        tap(hasText(text(R.string.cookbook_line), substring = true) and hasClickAction())
+        rule.onAllNodes(hasScrollToNodeAction()).onFirst().performScrollToNode(fromListenLock)
+        tap(fromListenLock and hasClickAction())
         opensTheCookbook()
 
         tap(hasText(text(R.string.tab_library)) and hasClickAction())

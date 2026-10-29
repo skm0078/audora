@@ -16,9 +16,9 @@
   markup; the home card and the ⋮ entry open it in the reader).
 
 **Real-device checks (the test phone):**
-1. Library home, scroll to From ListenLock: the heading, the "come with the app" line and the cookbook card show, in
-   light and dark, and at the largest text size. Tap the card: the reader opens on "How to use this cookbook"; play
-   reads it, then the first recipe. The chapter list shows every recipe.
+1. Library home, scroll to From ListenLock: one row labelled "From ListenLock" with "ListenLock Cookbook" under it
+   shows, in light and dark; at the largest text size the first book stays clear of Add book. Tap the row: the
+   reader opens on "How to use this cookbook"; play reads it, then the first recipe. The chapter list shows every recipe.
 2. Switch the app to Hindi, open it again: the first chapter is in Hindi and the recipes are in English (not translated
    yet), with English labels.
 3. Tap it a second time: the same book opens; the library does not get a second copy.

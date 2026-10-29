@@ -8,6 +8,4 @@
     <string name="cookbook_intro_title">How to use this cookbook</string>
     <string name="cookbook_intro">Each chapter is one recipe: a real situation, what you need, and the steps, using the names you see on screen. If you can\'t find something, search for it in the Library: search finds settings and actions too.\n\nThe same recipes are on the ListenLock website, with new ones added over time. This book comes with the app and needs no internet.</string>
     <string name="home_section_from_listenlock">From ListenLock</string>
-    <string name="from_listenlock_line">Guides that come with the app, read aloud like any book.</string>
-    <string name="cookbook_line">How to combine features for real situations</string>
 </resources>

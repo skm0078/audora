@@ -15,8 +15,10 @@ first and sends nothing about the listener anywhere.
   recipe of the same file name; a recipe not translated yet stays in English, so no book misses a recipe. A recipe
   missing a front-matter field fails the build with its file name.
 - **From ListenLock** is a part of the library's home ("Make it yours" can move it or turn it off), last by
-  default, with a line saying these come with the app. It holds one slim card per document the app provides
-  (`AppDocument`); the cookbook is the first. A card opens its document like the sample book: saved as a text book
+  default. It holds one slim full-width row per document the app provides (`AppDocument`), each labelled "From
+  ListenLock" above its title; the cookbook is the first. The row is kept to two short lines: at 200% text a taller
+  part (heading, explanatory line and card) pushed the first book under the Add book button, which the UI tour's
+  TalkBack audit rejects. A card opens its document like the sample book: saved as a text book
   and read by the Markdown reader, where each recipe is a chapter. The cookbook's first chapter, from strings in the
   app's language, says how to use it. The library's ⋮ menu (and the empty library) open it too, and library search
   finds it.

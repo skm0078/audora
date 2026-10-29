@@ -8,6 +8,4 @@
     <string name="cookbook_intro_title">यह कुकबुक कैसे इस्तेमाल करें</string>
     <string name="cookbook_intro">हर अध्याय एक रेसिपी है: एक असली हालात, क्या चाहिए, और स्क्रीन पर दिखने वाले नामों के साथ कदम। कुछ न मिले तो लाइब्रेरी में खोजें: खोज सेटिंग और काम भी ढूँढती है।\n\nजिन रेसिपी का अभी अनुवाद नहीं हुआ, वे अंग्रेज़ी में हैं। यही रेसिपी ListenLock की वेबसाइट पर भी हैं, और समय के साथ नई जुड़ती हैं। यह किताब ऐप के साथ आती है और इसके लिए इंटरनेट नहीं चाहिए।</string>
     <string name="home_section_from_listenlock">ListenLock की ओर से</string>
-    <string name="from_listenlock_line">ऐप के साथ आने वाली गाइड, किसी भी किताब की तरह पढ़कर सुनाई जाती हैं।</string>
-    <string name="cookbook_line">असली हालात के लिए सुविधाओं को साथ कैसे जोड़ें</string>
 </resources>
