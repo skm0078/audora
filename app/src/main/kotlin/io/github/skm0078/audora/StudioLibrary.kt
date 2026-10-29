@@ -239,6 +239,8 @@ internal class StudioLibrary(
 
         LibraryAction.TRY_SAMPLE -> parts.onText(sampleBook(parts.activity))
 
+        LibraryAction.COOKBOOK -> parts.onText(cookbookBook(parts.activity))
+
         // The library screen opens these sheets itself.
         LibraryAction.MAKE_IT_YOURS, LibraryAction.EDIT_COLLECTIONS, LibraryAction.ADD_BOOK -> Unit
     }
