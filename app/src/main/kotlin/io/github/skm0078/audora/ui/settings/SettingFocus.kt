@@ -8,7 +8,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material3.MaterialTheme
@@ -94,7 +94,11 @@ internal fun SettingAnchor(key: SettingKey, row: @Composable () -> Unit) {
         focus.onShown()
     }
     val marked = if (shown) Modifier.focusRequester(focusRequester).focusable().testTag(FOCUSED_TAG) else Modifier
-    Box(Modifier.bringIntoViewRequester(view).then(marked).drawBehind { drawRect(colour.copy(alpha = tint.value)) }) {
+    // A Column, not a Box: some anchors hold several rows (voice commands' model, switch and screen-off rows), and a
+    // Box drew them on top of each other.
+    Column(
+        Modifier.bringIntoViewRequester(view).then(marked).drawBehind { drawRect(colour.copy(alpha = tint.value)) },
+    ) {
         row()
     }
 }

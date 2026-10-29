@@ -52,7 +52,7 @@ internal fun LazyListScope.fontLicenceItems(caption: @Composable () -> Unit, ope
         ListItem(
             headlineContent = { Text(font.name) },
             supportingContent = { Text(font.copyright + "\n" + stringResource(R.string.licences_ofl)) },
-            trailingContent = { LinkButton(R.string.licences_source) { openLink(font.url) } },
+            trailingContent = { LinkButton(R.string.licences_source, font.name) { openLink(font.url) } },
         )
         HorizontalDivider()
     }

@@ -1,6 +1,7 @@
 // File: app/src/test/kotlin/io/github/skm0078/audora/ui/theme/LampContrastTest.kt
-// Purpose: The lamp palette keeps WCAG AA contrast in light, dark and true black: 4.5:1 for text, 3:1 for bars;
-//          the reading band stands out from the paper.
+// Purpose: The app palette (forest green by day, the lamp by night) keeps WCAG AA contrast in light, dark and true
+//          black, on the page and on every card, sheet and dialog surface: 4.5:1 for text, 3:1 for bars; the reading
+//          band stands out from the paper.
 
 package io.github.skm0078.audora.ui.theme
 
@@ -34,6 +35,14 @@ class LampContrastTest {
         "mini player: inverseOnSurface on inverseSurface" to { it.inverseOnSurface to it.inverseSurface },
         "mini player button: inverseSurface on inversePrimary" to { it.inverseSurface to it.inversePrimary },
         "links and text buttons: primary on surface" to { it.primary to it.surface },
+        "settings cards: onSurface on surfaceContainerLow" to { it.onSurface to it.surfaceContainerLow },
+        "settings cards: onSurfaceVariant on surfaceContainerLow" to {
+            it.onSurfaceVariant to it.surfaceContainerLow
+        },
+        "sheets: onSurface on surfaceContainer" to { it.onSurface to it.surfaceContainer },
+        "dialogs: onSurfaceVariant on surfaceContainerHigh" to { it.onSurfaceVariant to it.surfaceContainerHigh },
+        "dialog buttons: primary on surfaceContainerHigh" to { it.primary to it.surfaceContainerHigh },
+        "chips and fields: primary on surfaceContainerHighest" to { it.primary to it.surfaceContainerHighest },
     )
 
     /** Bars and marks that carry meaning without text (progress, chapter ticks, outlines). */
