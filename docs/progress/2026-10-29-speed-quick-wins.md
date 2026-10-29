@@ -12,7 +12,8 @@
 - **Could affect:** opening a book and its first Play, the first screen at launch (look, dark mode), PDF and text page
   turns, the library list, any resource only reached by name (none found).
 - **Verified in CI:** `VoiceWarmUpTest` (book voice first, phone voices not loaded, failures never thrown),
-  `ReaderVoiceWarmUpTest` (once, after the wait, never while playing, cancelled on close), the existing reader, curl
+  `ReaderVoiceWarmUpTest` and `ReaderVoiceWarmUpModelTest` (once, after the wait, never while playing, not after
+  close, a late player connection), the existing reader, curl
   and library tests, release journey step 56, the APK size gate (the saving shows on the run's summary page).
 
 **Cost:** see the ADR's "Performance cost". In short: the voice's memory a second after a book opens instead of at

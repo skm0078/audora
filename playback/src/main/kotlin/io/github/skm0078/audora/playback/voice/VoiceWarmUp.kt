@@ -13,7 +13,7 @@ import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.speech.SpeechError
 
 /**
- * Picks the voice the way reading will (the book's own voice while it is installed, else the language's voice), and
+ * Picks the voice the way reading will (the book's own voice while it is installed, else the language's voice) and
  * loads it when it is a sherpa-onnx model. Only those are worth it: loading one takes about a second and happens on
  * the first sentence otherwise. The phone's own voices bind while [voiceFor] finds them, which already warms them,
  * and the acted Hindi voice is a large opt-in model a listener may never press Play for, so it is left alone.
@@ -21,18 +21,16 @@ import io.github.skm0078.audora.speech.SpeechError
  * Loading costs the model's memory (60 to 150 MB) a little earlier than Play would; the engine keeps at most
  * `SpeechConfig.maxLoadedVoices` and gives them back when Android asks, as for any voice that has read.
  *
- * @param bookVoice the book's own voice for a language, null when it has none (or it was deleted).
- * @param voiceFor the voice that reads a language in books without their own.
+ * @param voiceFor the voice that would read a language in a book ([SpeechVoices.voiceForBook]).
  * @param load makes the engine load [VoiceId]'s model without speaking.
  */
 class VoiceWarmUp(
-    private val bookVoice: suspend (BookId, Lang) -> VoiceId?,
-    private val voiceFor: suspend (Lang) -> Outcome<VoiceId, SpeechError>,
+    private val voiceFor: suspend (BookId, Lang) -> Outcome<VoiceId, SpeechError>,
     private val load: suspend (VoiceId) -> Outcome<Unit, SpeechError>,
 ) {
     /** The voice loaded for [book]'s [lang]; null when it needs no loading. A failure is logged, never thrown. */
     suspend fun warm(book: BookId, lang: Lang): VoiceId? {
-        val voice = bookVoice(book, lang) ?: when (val found = voiceFor(lang)) {
+        val voice = when (val found = voiceFor(book, lang)) {
             is Outcome.Success -> found.value
 
             is Outcome.Failure -> {

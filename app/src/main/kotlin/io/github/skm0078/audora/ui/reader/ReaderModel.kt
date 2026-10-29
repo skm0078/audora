@@ -39,8 +39,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -117,12 +119,9 @@ class ReaderModel(
     private var pendingAutoResume = autoResume
 
     /** Loads the voice while the book is open and quiet, so the first Play does not wait for it. */
-    private val voiceWarmUp = ReaderVoiceWarmUp(
-        scope = scope,
-        delayMs = config.voiceWarmUpDelayMs,
-        mayWarm = { state.value.let { it.playerReady && !it.playback.wantsToPlay } },
-        warm = { lang -> player.warmVoice(bookId, lang) },
-    )
+    private val voiceWarmUp = ReaderVoiceWarmUp(scope, config.voiceWarmUpDelayMs) { lang ->
+        player.warmVoice(bookId, lang)
+    }
 
     private val timeLeft = TimeLeft(config.timeLeft, config.speech)
     private val reAnchoring = ReAnchoring()
@@ -140,6 +139,7 @@ class ReaderModel(
         scope.launch { views.loadView()?.let(::applyView) }
         // Skip citation numbers changed (ADR-064): the sentences are built again, as the playback service does.
         scope.launch { textSettings.drop(1).collect { reopenForTextSettings() } }
+        scope.launch { state.map { it.voiceToWarm }.distinctUntilChanged().collect(voiceWarmUp::offer) }
         open(password = null)
     }
 
@@ -482,7 +482,7 @@ class ReaderModel(
 
     /** Releases the PDF. Reading continues: the service has its own copy. */
     fun close() {
-        voiceWarmUp.cancel()
+        voiceWarmUp.stop()
         openJob?.cancel()
         pageJob?.cancel()
         renderJob?.cancel()
@@ -587,7 +587,6 @@ class ReaderModel(
             !(previous.connection == PlaybackSnapshot.Connection.CONNECTED && previous.styleKnown)
         if (styleArrived && !snapshot.ownSettings) applySavedSpeed(snapshot.speed)
         autoResumeIfDue()
-        offerVoiceWarmUp()
         if (snapshot.errorCode != null && snapshot.errorCode != previous.errorCode) {
             AudoraLog.w(TAG, "Playback error, $logContext code=${snapshot.errorCode}")
         }
@@ -653,7 +652,6 @@ class ReaderModel(
         }
         if (ahead != null) {
             samples[page] = ahead.units
-            offerVoiceWarmUp()
             refreshTimeLeft()
             renderPage(page)
             return
@@ -672,15 +670,10 @@ class ReaderModel(
                 if (content.isFinal) neighbours.keepContent(page, content)
             }
             mutableState.update { if (it.page == page) it.copy(content = content) else it }
-            offerVoiceWarmUp()
             refreshTimeLeft()
         }
         renderPage(page)
     }
-
-    /** The shown page's first sentence says which language's voice the first Play would need. */
-    private fun offerVoiceWarmUp() =
-        voiceWarmUp.offer((state.value.content as? PageContent.Ready)?.units?.firstOrNull()?.lang)
 
     private fun applyView(view: ReaderView) {
         // An EPUB or text book has no page images (ADR-042): it always shows as text, the saved choice is kept.

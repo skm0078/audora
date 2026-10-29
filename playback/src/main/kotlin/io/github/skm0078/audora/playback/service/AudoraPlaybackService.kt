@@ -310,8 +310,7 @@ class AudoraPlaybackService : MediaLibraryService() {
      * voice is read from its saved settings, as reading will once the book is opened for playback.
      */
     private fun voiceWarmUp() = VoiceWarmUp(
-        bookVoice = { id, lang -> bookSettings.get(id)?.voices?.get(lang)?.takeIf(voices::canSpeak) },
-        voiceFor = voices::voiceFor,
+        voiceFor = { id, lang -> voices.voiceForBook(lang, bookVoice = bookSettings.get(id)?.voices?.get(lang)) },
         load = { voice -> voices.engine(voice.engine).flatMap { it.render(text = "", voice = voice) }.map { } },
     )
 

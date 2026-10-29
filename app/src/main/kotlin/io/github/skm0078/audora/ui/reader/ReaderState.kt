@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.share.SnippetBox
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
@@ -125,6 +126,15 @@ data class ReaderState(
 
     val playerReady: Boolean
         get() = document is DocumentState.Open && playback.connection == PlaybackSnapshot.Connection.CONNECTED
+
+    /**
+     * The language whose voice the first Play would need, while loading it ahead makes sense: the shown page's
+     * sentences are known, the player is connected and nothing plays (a second model loading beside one that reads
+     * would slow it). Null otherwise (ADR 2026-10-29-speed-quick-wins).
+     */
+    val voiceToWarm: Lang?
+        get() = (content as? PageContent.Ready)?.units?.firstOrNull()?.lang
+            ?.takeIf { playerReady && !playback.wantsToPlay }
 
     /** The first open's opening line: the first page's first sentence with a letter in it, once that page is read. */
     val openingLine: ReadingUnit?

@@ -18,17 +18,18 @@ import org.junit.Test
 class VoiceWarmUpTest {
     private val book = BookId("book-1")
     private val bundled = VoiceId(EngineId.SHERPA, "kitten-en-micro")
-    private val ownVoice = VoiceId(EngineId.SHERPA, "piper-en-cori")
     private val phone = VoiceId(EngineId.SYSTEM, "hi-in-x-hia-local")
     private val loaded = mutableListOf<VoiceId>()
+    private val asked = mutableListOf<Pair<BookId, Lang>>()
 
     private fun warmUp(
-        bookVoice: VoiceId? = null,
         voice: Outcome<VoiceId, SpeechError> = Outcome.Success(bundled),
         load: Outcome<Unit, SpeechError> = Outcome.Success(Unit),
     ) = VoiceWarmUp(
-        bookVoice = { _, _ -> bookVoice },
-        voiceFor = { voice },
+        voiceFor = { id, lang ->
+            asked += id to lang
+            voice
+        },
         load = { asked ->
             loaded += asked
             load
@@ -36,15 +37,10 @@ class VoiceWarmUpTest {
     )
 
     @Test
-    fun `the language's voice is loaded for a book without its own`() = runTest {
+    fun `the voice reading the book's language is picked for that book and loaded`() = runTest {
         assertEquals(bundled, warmUp().warm(book, Lang.EN))
+        assertEquals(listOf(book to Lang.EN), asked)
         assertEquals(listOf(bundled), loaded)
-    }
-
-    @Test
-    fun `the book's own voice wins, as it does when reading`() = runTest {
-        assertEquals(ownVoice, warmUp(bookVoice = ownVoice).warm(book, Lang.EN))
-        assertEquals(listOf(ownVoice), loaded)
     }
 
     @Test
