@@ -262,7 +262,7 @@ private fun LibraryContent(
                 // Actions and settings the search names, above the books (ADR 2026-10-28-action-search).
                 val found = rememberFoundRows(listState, settingValues)
                 if (listState.items.isEmpty() && found.isNotEmpty()) {
-                    FoundOnly(found, listState.query.text) { menu.open(it) }
+                    FoundOnly(found, listState.narrowedFor) { menu.open(it) }
                 } else if (listState.items.isEmpty()) {
                     Centered {
                         Text(

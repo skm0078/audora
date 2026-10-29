@@ -55,6 +55,7 @@ class LibraryController(
     private val collections: Flow<List<BookCollection>> = flowOf(emptyList()),
     private val members: Flow<Map<BookId, Set<String>>> = flowOf(emptyMap()),
     private val comics: suspend (String) -> Boolean = { false },
+    private val onRemoved: suspend (BookId) -> Unit = {},
 ) {
     var listState: LibraryListState by mutableStateOf(LibraryListState.Loading)
         private set
@@ -255,6 +256,8 @@ class LibraryController(
             removing = removing - book.id
             message = LibraryMessage.Failed(removed.error)
             publish()
+        } else {
+            onRemoved(book.id)
         }
         // On success the book stays hidden until the library's next list no longer has it, so it never flickers back.
     }

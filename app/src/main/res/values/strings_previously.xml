@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/strings_previously.xml
+  Purpose: "Previously, N days ago", the recap a book shows when it is opened after some days away; and the
+  opening line card a new book shows the first time it is opened.
+-->
+<resources>
+    <plurals name="reader_previously_days">
+        <item quantity="one">Previously, %d day ago</item>
+        <item quantity="other">Previously, %d days ago</item>
+    </plurals>
+    <string name="reader_previously_quote">“%1$s”</string>
+    <string name="reader_previously_hear_again">Hear them again</string>
+    <string name="reader_previously_go_on">Go on</string>
+
+    <string name="reader_opening_line">The opening line</string>
+</resources>

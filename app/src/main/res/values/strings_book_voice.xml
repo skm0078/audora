@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The book menu's note of the voice and speed a book keeps for itself (touch 8). -->
+<resources>
+    <string name="book_voice_reads_at">%1$s reads this one, at %2$s×</string>
+    <string name="book_voice_reads">%1$s reads this one</string>
+    <string name="book_voice_at">This book plays at %1$s×</string>
+    <string name="book_voice_kept">Kept for this book only</string>
+    <string name="book_voice_change">Change</string>
+</resources>

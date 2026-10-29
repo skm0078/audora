@@ -9,6 +9,7 @@ import io.github.skm0078.audora.core.library.Library
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.core.resume.ResumePoint
 import kotlinx.coroutines.flow.Flow
@@ -26,14 +27,19 @@ fun interface ReaderResume {
     /** Null when the book was never read. [unitsOf] returns null for a page that cannot be read now. */
     suspend fun locate(id: BookId, pageCount: Int, unitsOf: suspend (Int) -> List<ReadingUnit>?): ResumePoint?
 
+    /** When the place was last saved, for "Previously, N days ago"; null when there is none (or it is not known). */
+    suspend fun savedAtMillis(id: BookId): Long? = null
+
     companion object {
         val None = ReaderResume { _, _, _ -> null }
     }
 }
 
-class LocatorReaderResume(private val locator: ResumeLocator) : ReaderResume {
+class LocatorReaderResume(private val locator: ResumeLocator, private val anchors: ResumeAnchorStore) : ReaderResume {
     override suspend fun locate(id: BookId, pageCount: Int, unitsOf: suspend (Int) -> List<ReadingUnit>?) =
         locator.locate(id, pageCount, unitsOf)
+
+    override suspend fun savedAtMillis(id: BookId): Long? = anchors.get(id)?.savedAtMillis
 }
 
 /** The last speed the listener picked, kept across app restarts. */

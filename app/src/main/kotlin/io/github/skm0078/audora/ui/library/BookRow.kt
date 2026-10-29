@@ -102,7 +102,7 @@ internal fun BookRow(
     )
     if (menuOpen) {
         val actions = BookMenuActions(onPlay, onAddToUpNext, onExport, onDetails, onRemove, onAction)
-        BookMenuSheet(item, covers, actions) { menuOpen = false }
+        BookMenuSheet(item, covers, actions, onTap) { menuOpen = false }
     }
 }
 
