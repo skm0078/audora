@@ -40,6 +40,7 @@ When you add a document, add a line here in the same change. ADRs and progress e
 | [index.html](index.html) | Public home page, English, Hindi and Bengali (GitHub Pages, served from `prod` `/docs`); no trackers or external requests |
 | [assets/](assets/) | The home page's stylesheet, Hindi and Bengali text (`i18n.js`), web-sized logo and icons |
 | [privacy.html](privacy.html) | Public privacy policy (the URL Play links to) |
+| [CONTENT.md](CONTENT.md) | How to write recipes and blog posts for the site (Markdown in `_recipes/` and `_posts/`, built by GitHub Pages) |
 | [store/](store/) | Play icon and feature graphic (SVG sources and PNGs) |
 
 ## Research in the repository

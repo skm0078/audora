@@ -161,6 +161,7 @@ import io.github.skm0078.audora.ui.reader.ScreenPreference
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
 import io.github.skm0078.audora.ui.reader.VolumeKeySkips
+import io.github.skm0078.audora.ui.reader.WithOpeningLine
 import io.github.skm0078.audora.ui.reader.rememberConnectedPlaybackPort
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.reader.rememberSpokenWord
@@ -380,7 +381,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun libraryController(scope: CoroutineScope): LibraryController {
-        val collections = LibraryEntryPoint.of(applicationContext).collections()
+        val entry = LibraryEntryPoint.of(applicationContext)
+        val collections = entry.collections()
         return LibraryController(
             library,
             scope,
@@ -389,6 +391,8 @@ class MainActivity : ComponentActivity() {
             collections.observe(),
             collections.observeMembers(),
             comics = { takeComic(photoBooks, it) || takeScannedDjvu(photoBooks, it) },
+            // A removed book's looked-up words are its text: they go with it.
+            onRemoved = { id -> withContext(Dispatchers.IO) { entry.lookedUpWords().forget(id) } },
         ).apply { start() }
     }
 
@@ -775,7 +779,9 @@ class MainActivity : ComponentActivity() {
             covers = bookCovers,
             runningJobs = rememberRunningJobCount(),
             view = rememberLibraryLayout(),
-            home = rememberLibraryHome(highlightStore, loadedBooks, nav::openPlace),
+            home = rememberLibraryHome(highlightStore, loadedBooks, nav::openPlace) {
+                studio.onLibraryAction(LibraryAction.LISTENING_STATS)
+            },
             requested = nav.pendingLibraryAction,
             onRequestTaken = { nav.pendingLibraryAction = null },
             settingValues = settingValues(
@@ -828,7 +834,7 @@ class MainActivity : ComponentActivity() {
                 speeds = speedPreference,
                 config = readerConfig,
                 scope = scope,
-                resume = LocatorReaderResume(resumeLocator),
+                resume = LocatorReaderResume(resumeLocator, resumeAnchors),
                 autoResume = target.autoResume,
                 views = viewPreference,
                 textSettings = ReadingTextPreferences.changes,
@@ -866,15 +872,16 @@ class MainActivity : ComponentActivity() {
         }
         BookWindowEffects(model, state, listeningInBackground)
         WidgetTimeLeftEffect(model.state)
-        val opened = state.document is DocumentState.Open
-        LaunchedEffect(model, opened, openPlace) {
-            if (opened && openPlace != null) {
+        LaunchedEffect(model, state.document is DocumentState.Open, openPlace) {
+            if (state.document is DocumentState.Open && openPlace != null) {
                 model.goToPlace(openPlace)
                 onPlaceOpened()
             }
         }
         val screen = BookScreen(target, books, onShowPage, onOtherBookPlaying)
-        ReaderContent(screen, state, actions, ocrState, notesState, notes, voiceRows, port, thumbs, studio)
+        WithOpeningLine(state.openingLine, model::openingLineShown) {
+            ReaderContent(screen, state, actions, ocrState, notesState, notes, voiceRows, port, thumbs, studio)
+        }
     }
 
     /**

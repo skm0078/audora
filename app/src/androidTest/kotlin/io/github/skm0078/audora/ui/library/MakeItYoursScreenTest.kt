@@ -122,8 +122,9 @@ class MakeItYoursScreenTest {
         rule.onNode(switchFor(R.string.home_section_recent)).assertIsOff()
         tap(switchFor(R.string.home_section_recent))
         assertTrue(saved.shows(HomeSection.RECENTLY_ADDED))
-        tap(hasContentDescription(text(R.string.home_move_up, text(R.string.home_section_recent))))
-        tap(hasContentDescription(text(R.string.home_move_up, text(R.string.home_section_recent))))
+        repeat(HomeLayout.DEFAULT_ORDER.size - 1) {
+            tap(hasContentDescription(text(R.string.home_move_up, text(R.string.home_section_recent))))
+        }
         assertEquals(HomeSection.RECENTLY_ADDED, saved.order.first())
     }
 

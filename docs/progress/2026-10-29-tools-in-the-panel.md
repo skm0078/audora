@@ -11,7 +11,7 @@
 - **Could affect:** the library top bar, the phone drawer, the tablet sidebar, search's library rows and anything that
   reached a tool through ⋮.
 - **Verified in CI:** `LibraryPanelRowsTest`, `AddBookSourceTest`, `FoundIndexTest`, `PhoneDrawerTest`,
-  `AppShellTest`, `MakeItYoursScreenTest`, `FolderSyncScreenTest`, release journey steps 44 and 48.
+  `AppShellTest`, `MakeItYoursScreenTest`, `FolderSyncScreenTest`, release journey steps 44 and 49.
 
 **Real-device checks (the test phone):** the library's top bar shows ☰, search and sort, no ⋮. ☰ shows Your library
 with eight rows; each opens its tool (Add a book its sheet, Backup its sheet, Quiz its sheet) with the drawer gone

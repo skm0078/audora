@@ -69,7 +69,8 @@ class LookUpBinding(val state: LookUpState?, val download: OcrModelsState?, val 
 /**
  * Plain state holder, one per open book. Words looked up are the book's text: never logged. [dictionary] opens a
  * language's downloaded dictionary (null while it is not installed); look-ups read the file on [io]. Downloads act on
- * the dictionary in use ([LookUpState.dictionaryLang]).
+ * the dictionary in use ([LookUpState.dictionaryLang]). A word found is handed to [onFound] with its first meaning
+ * and the sentence it was picked from ("Words you looked up"), off the main thread.
  */
 class LookUpModel(
     private val dictionary: (Lang) -> Dictionary?,
@@ -77,12 +78,15 @@ class LookUpModel(
     private val onDownload: (Lang) -> Unit,
     private val onCancelDownload: (Lang) -> Unit,
     private val io: CoroutineDispatcher = Dispatchers.IO,
+    private val onFound: (word: String, meaning: String, sentence: ReadingUnit) -> Unit = { _, _, _ -> },
 ) : LookUpActions {
     private val mutableState = MutableStateFlow<LookUpState?>(null)
     val state: StateFlow<LookUpState?> = mutableState.asStateFlow()
     private var lookUp: Job? = null
+    private var sentence: ReadingUnit? = null
 
     override fun open(unit: ReadingUnit) {
+        sentence = unit
         mutableState.value = LookUpState(WordKey.wordsOf(unit.text), lang = unit.lang)
     }
 
@@ -93,6 +97,9 @@ class LookUpModel(
         lookUp = scope.launch {
             val opened = withContext(io) { dictionary(DictionaryLanguage.of(word)) }
             val entries = withContext(io) { opened?.lookUp(word).orEmpty() }
+            val meaning = entries.firstNotNullOfOrNull { entry -> entry.senses.firstOrNull()?.definition }
+            val from = sentence
+            if (meaning != null && from != null) withContext(io) { onFound(word, meaning, from) }
             mutableState.update { if (it?.word == word) it.copy(entries = entries, missing = opened == null) else it }
         }
     }
@@ -104,6 +111,7 @@ class LookUpModel(
 
     override fun close() {
         lookUp?.cancel()
+        sentence = null
         mutableState.value = null
     }
 

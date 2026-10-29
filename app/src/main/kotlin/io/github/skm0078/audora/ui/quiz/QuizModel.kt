@@ -54,7 +54,7 @@ class QuizModel(
     config: QuizConfig = QuizConfig(),
     private val work: CoroutineDispatcher = Dispatchers.Default,
     private val io: CoroutineDispatcher = QUIZ_SAVES,
-) {
+) : QuizAnswers {
     private val builder = QuizCards(config)
     private val schedule = QuizSchedule(config)
     private val mutableState = MutableStateFlow<QuizState>(QuizState.Loading)
@@ -81,13 +81,17 @@ class QuizModel(
         ask(schedule.practise(ids, progress))
     }
 
-    fun choose(choice: String) = asking?.choose(choice)?.let(::record)
+    override fun choose(choice: String) {
+        asking?.choose(choice)?.let(::record)
+    }
 
     fun reveal() {
         asking?.let { mutableState.value = QuizState.Asking(it.reveal()) }
     }
 
-    fun grade(knewIt: Boolean) = asking?.grade(knewIt)?.let(::record)
+    override fun grade(knewIt: Boolean) {
+        asking?.grade(knewIt)?.let(::record)
+    }
 
     fun next() {
         val round = asking?.next() ?: return

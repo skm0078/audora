@@ -70,7 +70,7 @@ internal fun OwnSheetHost(
         LibraryAction.MAKE_IT_YOURS -> home.layout?.let { MakeItYoursSheet(it, home.onLayout, view, sheets::close) }
 
         LibraryAction.EDIT_COLLECTIONS -> (listState as? LibraryListState.Loaded)?.let { list ->
-            CollectionsRoute(list.collections, remember(list.members) { collectionCounts(list.members) }, sheets::close)
+            CollectionsRoute(list, remember(list.members) { collectionCounts(list.members) }, sheets::close)
         }
 
         LibraryAction.ADD_BOOK -> AddBookSheet(onFile, sheets.actions::onLibraryAction, sheets::close)

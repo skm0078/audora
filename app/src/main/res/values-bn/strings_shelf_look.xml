@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shelf_edit_title">সংগ্রহ সম্পাদনা</string>
+    <string name="shelf_edit">সম্পাদনা</string>
+    <string name="shelf_edit_named">%1$s সম্পাদনা</string>
+    <string name="shelf_colour">রং</string>
+    <string name="shelf_emoji">ইমোজি</string>
+    <string name="shelf_emoji_none">কোনোটি নয়</string>
+    <string name="shelf_colour_clay">মাটি</string>
+    <string name="shelf_colour_saffron">জাফরান</string>
+    <string name="shelf_colour_forest">সবুজ</string>
+    <string name="shelf_colour_teal">নীলচে সবুজ</string>
+    <string name="shelf_colour_indigo">নীল</string>
+    <string name="shelf_colour_plum">বেগুনি</string>
+    <string name="shelf_emoji_books">বই</string>
+    <string name="shelf_emoji_moon">চাঁদ</string>
+    <string name="shelf_emoji_lamp">প্রদীপ</string>
+    <string name="shelf_emoji_heart">হৃদয়</string>
+    <string name="shelf_emoji_school">পড়াশোনা</string>
+
+    <string name="smart_shelf_title">যে তাকগুলো ভালো লাগতে পারে</string>
+    <string name="smart_shelf_where">আপনার বইয়ের বিবরণ থেকে এই ফোনেই তৈরি। ট্যাপ না করা পর্যন্ত কিছুই তৈরি হয় না।</string>
+    <string name="smart_shelf_language">%1$s বই</string>
+    <plurals name="smart_shelf_series">
+        <item quantity="one">একটি সিরিজে %dটি বই, শিরোনাম থেকে</item>
+        <item quantity="other">একটি সিরিজে %dটি বই, শিরোনাম থেকে</item>
+    </plurals>
+    <plurals name="smart_shelf_author">
+        <item quantity="one">একই লেখকের %dটি বই</item>
+        <item quantity="other">একই লেখকের %dটি বই</item>
+    </plurals>
+    <plurals name="smart_shelf_language_line">
+        <item quantity="one">%dটি বই, ফাইলের ভাষা থেকে</item>
+        <item quantity="other">%dটি বই, ফাইলের ভাষা থেকে</item>
+    </plurals>
+    <string name="smart_shelf_make">তাক বানান</string>
+    <string name="smart_shelf_make_named">%1$s নামে তাক বানান</string>
+</resources>

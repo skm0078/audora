@@ -1,5 +1,5 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/release/DrawerJourney.kt
-// Purpose: Release journey steps 45, 46 and 48 (ADR 2026-10-28-phone-drawer, ADR 2026-10-29-tools-in-the-panel): the
+// Purpose: Release journey steps 45, 46 and 49 (ADR 2026-10-28-phone-drawer, ADR 2026-10-29-tools-in-the-panel): the
 //          library's menu button opens the side drawer; its Settings row opens the Settings page, Make it yours opens
 //          its sheet on the library, and every library tool is a row there, with no ⋮ menu left on the library.
 
@@ -17,6 +17,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.release.JourneyDevice.app
+import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.ui.library.ADD_BOOK_SHEET_TAG
 import io.github.skm0078.audora.ui.library.LibraryAction
@@ -43,7 +44,7 @@ internal class DrawerJourney(private val rule: ComposeTestRule, private val back
         tapInDrawer(R.string.library_make_it_yours)
         waitFor(hasTestTag(MAKE_IT_YOURS_TAG))
         JourneyDevice.pressBackKey()
-        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasTestTag(MAKE_IT_YOURS_TAG)) }
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(hasTestTag(MAKE_IT_YOURS_TAG)) }
     }
 
     /**
@@ -80,7 +81,7 @@ internal class DrawerJourney(private val rule: ComposeTestRule, private val back
         backToTabs()
         openDrawerOnTheLibrary()
         rule.onNode(hasText(text(row)) and hasClickAction()).performScrollTo().performClick()
-        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasTestTag(DRAWER_TAG)) }
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(hasTestTag(DRAWER_TAG)) }
     }
 
     private companion object {
