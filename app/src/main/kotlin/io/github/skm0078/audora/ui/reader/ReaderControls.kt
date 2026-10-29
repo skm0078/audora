@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +52,7 @@ fun ReaderControls(
     modifier: Modifier = Modifier,
     voices: List<VoiceRow> = emptyList(),
     onTipsSeen: (() -> Unit)? = null,
+    speech: SpeechRequest = SpeechRequest.NONE,
 ) {
     // A raised panel with rounded top corners, so the controls read as one block under the thumb (ADR-036).
     Surface(
@@ -65,6 +67,13 @@ fun ReaderControls(
             }
             // Which place in the Voice and speed sheet is open, if it is: the chip opens its top, a shortcut its group.
             var speechAt by rememberSaveable { mutableStateOf<SpeechSpot?>(null) }
+            // A search result or Settings asked for a place in the sheet: opened once, then handed back.
+            LaunchedEffect(speech.spot) {
+                speech.spot?.let {
+                    speechAt = it
+                    speech.onTaken()
+                }
+            }
             ControlsRow(state, config, actions, voices) { speechAt = SpeechSpot.TOP }
             // Not while the first-run tips show: both under the page would leave it too short on small screens
             // (an emulator's 640 dp: the snippet picker's Share button had no room). They appear after Got it.

@@ -259,6 +259,8 @@
     <!-- Voices (P4-01): Settings → Voices -->
     <string name="settings_voices_title">आवाज़ें</string>
     <string name="settings_voices_body">आवाज़ें डाउनलोड, इंपोर्ट करें और चुनें</string>
+    <string name="settings_speech_body">स्पीड, पिच, क्या पढ़ें और फ़ोकस साउंड, पिछली पढ़ी किताब में</string>
+    <string name="settings_speech_no_book">पहले कोई किताब खोलें, फिर उसकी स्पीड और आवाज़ यहाँ मिलेगी</string>
     <string name="voices_title">आवाज़ें</string>
     <string name="voices_load_failed">आवाज़ें लोड नहीं हो सकीं। अगर ऐसा बार-बार हो, तो सेटिंग्स से लॉग शेयर करें।</string>
     <string name="voices_lang_en">अंग्रेज़ी</string>

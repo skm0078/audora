@@ -1,0 +1,3 @@
+en: Search now finds the player's options too: type "speed", "pitch" or "focus" and the book opens with Voice and speed at that place. You › Listening also has a Voice and speed row for the book you read last.
+hi: अब सर्च प्लेयर के विकल्प भी ढूँढता है: "स्पीड", "पिच" या "फ़ोकस" लिखें और किताब आवाज़ और स्पीड में उसी जगह खुलती है। आप › सुनना में भी पिछली पढ़ी किताब के लिए आवाज़ और स्पीड की पंक्ति है।
+bn: এখন সার্চ প্লেয়ারের বিকল্পও খুঁজে দেয়: "গতি", "পিচ" বা "ফোকাস" লিখুন, বইটি ভয়েস আর গতিতে সেই জায়গায় খুলবে। আপনি › শোনা-তেও শেষ পড়া বইয়ের জন্য ভয়েস আর গতির সারি আছে।
