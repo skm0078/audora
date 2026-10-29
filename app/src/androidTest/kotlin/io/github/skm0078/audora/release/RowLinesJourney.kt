@@ -6,6 +6,7 @@ package io.github.skm0078.audora.release
 
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onFirst
@@ -29,6 +30,11 @@ internal class RowLinesJourney(private val rule: ComposeTestRule, private val ba
         val you = hasText(text(R.string.tab_you)) and hasClickAction()
         waitFor(you)
         rule.onAllNodes(you).onFirst().performClick()
+        // You keeps the page it was last on (an earlier step leaves Advanced open); its back arrow returns to the top.
+        val firstLine = hasText(text(R.string.row_line_keep_screen_on))
+        val pageBack = hasContentDescription(text(R.string.navigate_back))
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(firstLine) || rule.shows(pageBack) }
+        if (!rule.shows(firstLine)) rule.onAllNodes(pageBack).onFirst().performClick()
         listOf(R.string.row_line_keep_screen_on, R.string.row_line_true_black).forEach { line ->
             waitFor(hasText(text(line)))
             rule.onAllNodes(hasText(text(line))).onFirst().performScrollTo()
