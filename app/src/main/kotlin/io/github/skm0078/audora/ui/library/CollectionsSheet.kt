@@ -42,13 +42,22 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookCollection
 import io.github.skm0078.audora.core.library.CollectionNames
 import io.github.skm0078.audora.core.library.ShelfLook
+import io.github.skm0078.audora.core.library.ShelfSuggestion
 import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.TitleAndTrailing
 
-/** Opened from the library's collection chips and the side panel; [counts] is how many books each collection holds. */
+/**
+ * Opened from the library's collection chips and the side panel; [counts] is how many books each collection holds,
+ * [suggestions] the shelves offered under them.
+ */
 @Composable
-internal fun CollectionsRoute(collections: List<BookCollection>, counts: Map<String, Int>, onDismiss: () -> Unit) {
+internal fun CollectionsRoute(
+    collections: List<BookCollection>,
+    counts: Map<String, Int>,
+    suggestions: List<ShelfSuggestion>,
+    onDismiss: () -> Unit,
+) {
     val writer = rememberCollectionWriter()
     CollectionsSheet(
         collections,
@@ -58,12 +67,15 @@ internal fun CollectionsRoute(collections: List<BookCollection>, counts: Map<Str
         onEdit = writer::edit,
         onDelete = writer::delete,
         onDismiss = onDismiss,
+        suggestions = suggestions,
+        onMake = writer::make,
     )
 }
 
 /**
  * Every collection with its badge, number of books, Edit and Delete, and New collection; deleting asks first. Edit
- * and New swap the list for the edit page in the same sheet, and Back returns to the list.
+ * and New swap the list for the edit page in the same sheet, and Back returns to the list. Under them, the shelves
+ * the books suggest, each made by [onMake].
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,6 +88,8 @@ internal fun CollectionsSheet(
     onDelete: (String) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    suggestions: List<ShelfSuggestion> = emptyList(),
+    onMake: (ShelfSuggestion) -> Unit = {},
 ) {
     var editing by rememberSaveable { mutableStateOf<String?>(null) } // a collection's id, or NEW_COLLECTION
     var deleting by rememberSaveable { mutableStateOf<String?>(null) }
@@ -99,9 +113,16 @@ internal fun CollectionsSheet(
                 }) { editing = null }
             }
 
-            else -> CollectionList(collections, counts, looks, { editing = it }, { deleting = it }) {
-                editing = NEW_COLLECTION
-            }
+            else -> CollectionList(
+                collections,
+                counts,
+                looks,
+                suggestions,
+                onMake,
+                onEdit = { editing = it },
+                onDelete = { deleting = it },
+                onNew = { editing = NEW_COLLECTION },
+            )
         }
     }
     collections.firstOrNull { it.id == deleting }?.let { collection ->
@@ -114,6 +135,8 @@ private fun CollectionList(
     collections: List<BookCollection>,
     counts: Map<String, Int>,
     looks: Map<String, ShelfLook>,
+    suggestions: List<ShelfSuggestion>,
+    onMake: (ShelfSuggestion) -> Unit,
     onEdit: (String) -> Unit,
     onDelete: (String) -> Unit,
     onNew: () -> Unit,
@@ -141,6 +164,7 @@ private fun CollectionList(
                 Text(stringResource(R.string.collections_new))
             }
         }
+        shelfSuggestions(suggestions, onMake)
     }
 }
 

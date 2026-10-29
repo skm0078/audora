@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A collection's colour and emoji ("Make it yours", touch 9). -->
+<!-- A collection's colour and emoji ("Make it yours", touch 9), and the shelves the books suggest (touch 17). -->
 <resources>
     <string name="shelf_edit_title">Edit collection</string>
     <string name="shelf_edit">Edit</string>
@@ -18,4 +18,22 @@
     <string name="shelf_emoji_lamp">Lamp</string>
     <string name="shelf_emoji_heart">Heart</string>
     <string name="shelf_emoji_school">Study</string>
+
+    <string name="smart_shelf_title">Shelves you might like</string>
+    <string name="smart_shelf_where">Worked out on this phone from your books\' details. Nothing is made until you tap.</string>
+    <string name="smart_shelf_language">%1$s books</string>
+    <plurals name="smart_shelf_series">
+        <item quantity="one">%d book in a series, by title</item>
+        <item quantity="other">%d books in a series, by title</item>
+    </plurals>
+    <plurals name="smart_shelf_author">
+        <item quantity="one">%d book by the same author</item>
+        <item quantity="other">%d books by the same author</item>
+    </plurals>
+    <plurals name="smart_shelf_language_line">
+        <item quantity="one">%d book, from the files\' language</item>
+        <item quantity="other">%d books, from the files\' language</item>
+    </plurals>
+    <string name="smart_shelf_make">Make shelf</string>
+    <string name="smart_shelf_make_named">Make a shelf called %1$s</string>
 </resources>

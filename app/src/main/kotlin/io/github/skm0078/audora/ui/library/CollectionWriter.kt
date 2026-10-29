@@ -15,9 +15,11 @@ import androidx.compose.ui.platform.LocalContext
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookCollection
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.library.CollectionNames
 import io.github.skm0078.audora.core.library.CollectionStore
 import io.github.skm0078.audora.core.library.ShelfLook
 import io.github.skm0078.audora.core.library.ShelfLooks
+import io.github.skm0078.audora.core.library.ShelfSuggestion
 import io.github.skm0078.audora.core.library.StorageError
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.result.Outcome
@@ -53,6 +55,18 @@ internal class CollectionWriter(
     fun edit(id: String, name: String, nameBefore: String, look: ShelfLook) = write {
         saveLook(id, look)
         if (name != nameBefore) rename(id, name) else Outcome.Success(Unit)
+    }
+
+    /**
+     * "Make shelf" on a suggestion: the collection with all its books, one write after another; the first that fails
+     * stops it (logged, toasted), leaving the books already put in it.
+     */
+    fun make(suggestion: ShelfSuggestion) = write {
+        val name = CollectionNames.clean(suggestion.name) ?: return@write Outcome.Success(Unit)
+        val collection = BookCollection(UUID.randomUUID().toString(), name, clock())
+        suggestion.books.fold(create(collection)) { done, book ->
+            if (done is Outcome.Success) setMember(book, collection.id, member = true, clock()) else done
+        }
     }
 
     /** The collection and its look go; its books stay. */

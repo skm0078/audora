@@ -99,7 +99,10 @@ internal fun CatalogueChips(list: LibraryListState.Loaded, onQuery: (LibraryQuer
     if (filtering) {
         FilterSheet(list.facets, list.collections, counts, narrow, setNarrow, onDismiss = { filtering = false })
     }
-    if (managing) CollectionsRoute(list.collections, counts) { managing = false }
+    if (managing) {
+        val suggestions = rememberShelfSuggestions(list.all, list.collections, list.members)
+        CollectionsRoute(list.collections, counts, suggestions) { managing = false }
+    }
 }
 
 /** Each list shows only what the library holds, with its number of books; "Any" leaves that one open. */
