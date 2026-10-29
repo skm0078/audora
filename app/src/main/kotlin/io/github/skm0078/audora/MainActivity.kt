@@ -823,7 +823,7 @@ class MainActivity : ComponentActivity() {
                 speeds = speedPreference,
                 config = readerConfig,
                 scope = scope,
-                resume = LocatorReaderResume(resumeLocator),
+                resume = LocatorReaderResume(resumeLocator, resumeAnchors),
                 autoResume = target.autoResume,
                 views = viewPreference,
                 textSettings = ReadingTextPreferences.changes,

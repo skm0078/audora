@@ -106,6 +106,8 @@ data class ReaderState(
     val skipRefused: ParagraphSkipRefusal? = null,
     /** The book opened where it was left: said once, then cleared ([ReaderModel.resumedShown]). */
     val resumedAt: ResumedAt? = null,
+    /** Opened after days away: the recap shown instead of [resumedAt], until a button or a tap outside clears it. */
+    val previouslyOn: PreviouslyOn? = null,
     val snippet: SnippetBox? = null,
 ) {
     val pageCount: Int? get() = (document as? DocumentState.Open)?.pageCount
