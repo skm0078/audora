@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-hi/strings_add_book.xml
+  Purpose: The Add a book sheet: every way a book comes in, each with one line on what it reads, in Hindi
+           (ADR 2026-10-29-add-a-book).
+-->
+<resources>
+    <string name="add_book_title">किताब जोड़ें</string>
+    <string name="add_book_file">फ़ाइल चुनें</string>
+    <string name="add_book_line_file">PDF, EPUB, Word, टेक्स्ट, कॉमिक्स और भी</string>
+    <string name="add_book_line_photo">छपा हुआ पेज पढ़कर सुनाता है</string>
+    <string name="add_book_line_pictures">पेजों की फ़ोटो, एक किताब की तरह</string>
+    <string name="add_book_line_clipboard">किसी भी ऐप से आख़िरी बार कॉपी किया पाठ</string>
+    <string name="add_book_line_web">एक लेख, बिना मेनू या विज्ञापन के</string>
+    <string name="add_book_line_catalogues">मुफ़्त पब्लिक-डोमेन किताबें, एक टैप में</string>
+    <string name="add_book_line_watched">फ़ोल्डर की नई किताबें अपने आप जुड़ती हैं</string>
+</resources>

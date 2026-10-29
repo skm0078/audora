@@ -1,0 +1,3 @@
+en: Add book now shows every way to add one: a file, a photo of a page, pictures, copied text, a web page, free book catalogues or a watched folder.
+hi: "किताब जोड़ें" अब हर तरीका दिखाता है: फ़ाइल, पेज की फ़ोटो, तस्वीरें, कॉपी किया पाठ, वेब पेज, मुफ़्त किताबों के कैटलॉग या देखा जाने वाला फ़ोल्डर।
+bn: "বই যোগ করুন" এখন যোগ করার সব উপায় দেখায়: ফাইল, পৃষ্ঠার ছবি, ছবি, কপি করা লেখা, ওয়েব পেজ, বিনামূল্যের বইয়ের ক্যাটালগ বা নজরে রাখা ফোল্ডার।

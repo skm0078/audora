@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/LibraryScreen.kt
-// Purpose: Library tab: the listener's home parts, a cover grid (a list at large text), Add book, the duplicate check
-//          (ADR-036, ADR 2026-10-28-make-it-yours).
+// Purpose: Library tab: the listener's home parts, a cover grid (a list at large text), Add book and its sheet, the
+//          duplicate check (ADR-036, ADR 2026-10-28-make-it-yours, ADR 2026-10-29-add-a-book).
 
 package io.github.skm0078.audora.ui.library
 
@@ -103,6 +103,7 @@ fun LibraryScreen(
     var details by rememberSaveable { mutableStateOf<String?>(null) } // the book whose details sheet is open
     var picked by rememberSaveable { mutableStateOf<String?>(null) } // the book the wide screen's pane shows
     var makingItYours by rememberSaveable { mutableStateOf(false) }
+    var adding by rememberSaveable { mutableStateOf(false) } // the Add a book sheet
     val screenActions = remember(actions) { OpensMakeItYours(actions) { makingItYours = true } }
     val addPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let(actions::onAddPdf)
@@ -143,7 +144,7 @@ fun LibraryScreen(
                 busy = busy,
                 actions = screenActions,
                 snackbar = snackbar,
-                onAddPdf = pickPdf,
+                onAddPdf = { adding = true },
                 onTap = onTap,
                 onDetails = { details = it.book.id.value },
                 modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -160,6 +161,7 @@ fun LibraryScreen(
     pendingRemoval?.let { RemovalDialog(it, actions) }
     duplicate?.let { DuplicateDialog(it, listState, actions) }
     if (makingItYours) home.layout?.let { MakeItYoursSheet(it, home.onLayout, view) { makingItYours = false } }
+    if (adding) AddBookSheet(onFile = pickPdf, onTool = screenActions::onLibraryAction) { adding = false }
 }
 
 /** "Make it yours" opens its sheet here, from the ⋮ menu and from search alike; every other action goes on. */

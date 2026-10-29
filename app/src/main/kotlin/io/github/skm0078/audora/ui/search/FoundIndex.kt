@@ -13,6 +13,7 @@ import io.github.skm0078.audora.core.search.ActionSearch
 import io.github.skm0078.audora.ui.AppDestination
 import io.github.skm0078.audora.ui.library.BookAction
 import io.github.skm0078.audora.ui.library.LibraryAction
+import io.github.skm0078.audora.ui.library.LibraryActionPlace
 import io.github.skm0078.audora.ui.library.LibraryItem
 import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.MenuPlace
@@ -107,9 +108,13 @@ object FoundIndex {
         @DrawableRes val icon: Int,
     )
 
+    /** The ⋮ menu's tools say "Library › More", the Add a book sheet's "Library › Add book". */
     private fun libraryEntries(texts: FoundTexts): List<ActionEntry<FoundRow>> {
-        val where = texts.format(R.string.found_path, texts.text(R.string.tab_library), texts.text(R.string.found_more))
-        return LibraryAction.entries.filter { it.inMenu }.map { action ->
+        val library = texts.text(R.string.tab_library)
+        val inMenu = texts.format(R.string.found_path, library, texts.text(R.string.found_more))
+        val inSheet = texts.format(R.string.found_path, library, texts.text(R.string.library_add_pdf))
+        return LibraryAction.entries.filter { it.place != LibraryActionPlace.BUTTON }.map { action ->
+            val where = if (action.inMenu) inMenu else inSheet
             val row = FoundRow(FoundTarget.Library(action), texts.text(action.label), where, R.drawable.ic_library)
             entry(texts, row, action.label)
         }

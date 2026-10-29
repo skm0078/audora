@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/strings_add_book.xml
+  Purpose: The Add a book sheet: every way a book comes in, each with one line on what it reads
+           (ADR 2026-10-29-add-a-book).
+-->
+<resources>
+    <string name="add_book_title">Add a book</string>
+    <string name="add_book_file">Choose a file</string>
+    <string name="add_book_line_file">PDF, EPUB, Word, text, comics and more</string>
+    <string name="add_book_line_photo">Reads a printed page aloud</string>
+    <string name="add_book_line_pictures">Photos of pages, read as one book</string>
+    <string name="add_book_line_clipboard">The text you copied last, from any app</string>
+    <string name="add_book_line_web">One article, without menus or ads</string>
+    <string name="add_book_line_catalogues">Free public-domain books, one tap each</string>
+    <string name="add_book_line_watched">New books in a folder join by themselves</string>
+</resources>
