@@ -29,3 +29,11 @@ plays the word and then its sentence. Set the phone's date 4 days ahead and open
 sheet suggests a shelf; Make shelf makes it. Listen a few minutes and go back to the library: "This week" shows the
 time and ring; tap it: Your listening opens. TalkBack: the opening line is read once; each colour says its name; the
 This week card says "Open your listening".
+
+## Fixed on the way: a lost tap on a found setting
+
+Typing in the library's search showed what it finds (settings, actions) above every book at once, then 200 ms
+later, when the books narrowed to none, alone in their own list. A tap landing on that change was lost; CI's release
+journey (step 24b) hit it every time once this branch's home made the library a little heavier. What search finds now
+follows the text the books were narrowed for (`LibraryListState.Loaded.narrowedFor`), so both change together, once.
+A cleared search finds nothing at once. Cost: none; the found rows appear with the books, 200 ms after typing pauses.

@@ -23,7 +23,7 @@ import io.github.skm0078.audora.ui.settings.FOCUSED_TAG
 
 /** [back] presses Back in the app on screen, as the journey does. */
 internal class SearchJourney(private val rule: ComposeTestRule, private val back: () -> Unit) {
-    private fun text(id: Int, vararg args: Any): String = app.getString(id, *args)
+    private fun text(id: Int): String = app.getString(id)
 
     private fun waitFor(matcher: SemanticsMatcher) {
         rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(matcher) }
@@ -36,10 +36,10 @@ internal class SearchJourney(private val rule: ComposeTestRule, private val back
         first(hasContentDescription(text(R.string.library_search))).performClick()
         waitFor(hasSetTextAction())
         first(hasSetTextAction()).performTextInput(SEARCHED_SETTING)
-        // The found rows first show above every book, then alone once the search's pause has narrowed the books
-        // to none. A tap landing on that swap is lost (seen on CI), so tap once the screen has settled.
-        waitFor(hasText(text(R.string.found_no_book, SEARCHED_SETTING)))
+        // Tapped as soon as it shows: the found rows wait for the books to narrow, so the screen does not change
+        // again under the tap (it once did, and the tap was lost).
         val row = hasText(text(R.string.settings_volume_keys_title)) and hasAnyAncestor(hasTestTag(FOUND_TAG))
+        waitFor(row)
         first(row).performClick()
         waitFor(hasTestTag(FOCUSED_TAG))
         waitFor(hasText(text(R.string.settings_advanced_title)))
