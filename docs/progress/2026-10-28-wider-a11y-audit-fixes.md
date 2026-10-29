@@ -6,7 +6,7 @@
   actions and settings (#89).
 - **TalkBack:** buttons that repeat down a list now say what they act on, through `ui/theme/NamedButtons.kt`
   (`buttonNamedFor`, string `a11y_named_button` in en/hi/bn): Download, Retry, Cancel and Delete on each model pack
-  ("Download: Pauses in unpunctuated scans (English)"); Download, Update, Cancel and Delete on each voice; Licence,
+  ("Download: Pauses in unpunctuated scans (English)"); Download, Update, Cancel and Delete on each voice; Download and Cancel on each language pack ("Download: Hindi"); Licence,
   Source and Licence files on the Licences page. The buttons still show only their word.
 - **Wider screen tour audit** (`ui/tour/TalkBackAudit.kt`), per screen and window:
   - controls that all read the same ("Download", "Download");
