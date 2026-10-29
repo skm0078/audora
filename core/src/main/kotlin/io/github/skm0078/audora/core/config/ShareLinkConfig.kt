@@ -23,8 +23,11 @@ data class ShareLinkConfig(val appLink: String = APP_SITE, val cardLink: String?
     }
 
     companion object {
-        /** The site's home, from prod; swap for the domain or the Play listing once either is live. */
-        const val APP_SITE = "https://skm0078.github.io/audora/"
+        /**
+         * The site's "get" page, from prod (docs/get/index.html): Android phones go on to the Play listing once it is
+         * public, everyone else to the site, so links already shared follow the launch. Only the domain changes it.
+         */
+        const val APP_SITE = "https://skm0078.github.io/audora/get/"
 
         /** Nothing printed until the short domain is live; then its bare name, such as "listenlock.app". */
         val CARD_LINK: String? = null

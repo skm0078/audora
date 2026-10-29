@@ -13,9 +13,10 @@ and title but no link; text had none of it. Every Share lived inside the sentenc
    has no picture of them (text, audio clip, video), then "— Title, Author, page N", then an invitation and the link
    on the last line, where chat apps make it tappable. `ShareWords` (`:playback`) supplies the translated pieces, so
    the app's pictures and the services' clips and videos read the same.
-2. **The link lives in one place, `ShareLinkConfig.appLink`:** the site's home from `prod` (GitHub Pages serves
-   prod's /docs), never `dev`, never tracked, never a link to the book. The domain or the Play listing replaces it in
-   one line once live.
+2. **The link lives in one place, `ShareLinkConfig.appLink`, and is the site's "get" page** (`docs/get/`, served
+   from `prod`, never `dev`; never tracked; never a link to the book). The page sends an Android phone straight on to
+   the Play listing once its `PLAY` is set, and everyone else to the site: most people never go from a site to a
+   store, and links shared before the launch follow it. Before then it opens the site's home.
 3. **Pictures carry the logo and name only, as Spotify, Kindle and Goodreads cards do** (the maintainer's pick,
    2026-10-29): the long github.io link cluttered the card. `ShareLinkConfig.cardLink` prints a short domain under
    the mark once one is live (one line); videos inherit it, their backdrop being the card.

@@ -9,8 +9,8 @@ import org.junit.Test
 
 class ShareLinkConfigTest {
     @Test
-    fun `the default is the prod site`() {
-        assertEquals("https://skm0078.github.io/audora/", ShareLinkConfig().appLink)
+    fun `the default is the prod site's get page`() {
+        assertEquals("https://skm0078.github.io/audora/get/", ShareLinkConfig().appLink)
     }
 
     @Test
