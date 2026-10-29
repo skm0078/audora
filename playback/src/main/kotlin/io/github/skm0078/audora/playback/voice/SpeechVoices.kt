@@ -65,6 +65,9 @@ class SpeechVoices(
         AudoraLog.i(TAG, "Voice for ${lang.name} set to $voice")
     }
 
+    /** Whether [voice] is still on the phone; a book's own voice that was deleted is read with the language's voice. */
+    fun canSpeak(voice: VoiceId): Boolean = engines.canSpeak(voice)
+
     /** True when the open book reads [lang] with its own installed voice: a Settings → Voices pick does not apply. */
     fun bookOverrides(lang: Lang): Boolean = bookVoice(lang)?.let(engines::canSpeak) == true
 

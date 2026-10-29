@@ -116,6 +116,14 @@ class ReaderModel(
      */
     private var pendingAutoResume = autoResume
 
+    /** Loads the voice while the book is open and quiet, so the first Play does not wait for it. */
+    private val voiceWarmUp = ReaderVoiceWarmUp(
+        scope = scope,
+        delayMs = config.voiceWarmUpDelayMs,
+        mayWarm = { state.value.let { it.playerReady && !it.playback.wantsToPlay } },
+        warm = { lang -> player.warmVoice(bookId, lang) },
+    )
+
     private val timeLeft = TimeLeft(config.timeLeft, config.speech)
     private val reAnchoring = ReAnchoring()
 
@@ -474,6 +482,7 @@ class ReaderModel(
 
     /** Releases the PDF. Reading continues: the service has its own copy. */
     fun close() {
+        voiceWarmUp.cancel()
         openJob?.cancel()
         pageJob?.cancel()
         renderJob?.cancel()
@@ -578,6 +587,7 @@ class ReaderModel(
             !(previous.connection == PlaybackSnapshot.Connection.CONNECTED && previous.styleKnown)
         if (styleArrived && !snapshot.ownSettings) applySavedSpeed(snapshot.speed)
         autoResumeIfDue()
+        offerVoiceWarmUp()
         if (snapshot.errorCode != null && snapshot.errorCode != previous.errorCode) {
             AudoraLog.w(TAG, "Playback error, $logContext code=${snapshot.errorCode}")
         }
@@ -643,6 +653,7 @@ class ReaderModel(
         }
         if (ahead != null) {
             samples[page] = ahead.units
+            offerVoiceWarmUp()
             refreshTimeLeft()
             renderPage(page)
             return
@@ -661,10 +672,15 @@ class ReaderModel(
                 if (content.isFinal) neighbours.keepContent(page, content)
             }
             mutableState.update { if (it.page == page) it.copy(content = content) else it }
+            offerVoiceWarmUp()
             refreshTimeLeft()
         }
         renderPage(page)
     }
+
+    /** The shown page's first sentence says which language's voice the first Play would need. */
+    private fun offerVoiceWarmUp() =
+        voiceWarmUp.offer((state.value.content as? PageContent.Ready)?.units?.firstOrNull()?.lang)
 
     private fun applyView(view: ReaderView) {
         // An EPUB or text book has no page images (ADR-042): it always shows as text, the saved choice is kept.

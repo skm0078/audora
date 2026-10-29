@@ -36,6 +36,7 @@ import io.github.skm0078.audora.playback.contract.PlaybackContract
 import io.github.skm0078.audora.playback.contract.PlaybackErrorCode
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.contract.StudyAction
+import io.github.skm0078.audora.playback.contract.VoiceWarmUpCommand
 import io.github.skm0078.audora.playback.focus.FocusSoundStore
 import io.github.skm0078.audora.playback.notes.BookContext
 import io.github.skm0078.audora.playback.session.BookSession
@@ -43,8 +44,10 @@ import io.github.skm0078.audora.playback.session.SleepOptionsStore
 import io.github.skm0078.audora.playback.session.StudyMark
 import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
+import io.github.skm0078.audora.playback.voice.VoiceWarmUp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -69,6 +72,7 @@ class SessionCallback(
     private val buttons: MediaButtons? = null,
     private val library: LibraryBrowser? = null,
     private val lockScreen: LockScreenActions? = null,
+    private val warmUp: VoiceWarmUp? = null,
 ) : MediaLibrarySession.Callback {
     override fun onConnect(
         session: MediaSession,
@@ -100,6 +104,7 @@ class SessionCallback(
                     .add(PlaybackContract.STUDY)
                     .add(PlaybackContract.SET_FOCUS_SOUND)
                     .add(PlaybackContract.SKIP_PARAGRAPH)
+                    .add(VoiceWarmUpCommand.COMMAND)
                     .apply { LockScreenCommands.ALL.forEach { add(it) } }
                     .build(),
             )
@@ -125,6 +130,7 @@ class SessionCallback(
         PlaybackContract.ACTION_STUDY -> study(args)
         PlaybackContract.ACTION_SET_FOCUS_SOUND -> Futures.immediateFuture(setFocusSound(args))
         PlaybackContract.ACTION_SKIP_PARAGRAPH -> later { skipParagraph(args) }
+        VoiceWarmUpCommand.ACTION -> warmVoice(args)
         else -> Futures.immediateFuture(lockScreen(customCommand.customAction))
     }
 
@@ -370,6 +376,17 @@ class SessionCallback(
                 is Outcome.Failure -> failure(outcome.error.code)
             }
         }
+    }
+
+    /**
+     * Loads the book's voice ahead of Play (ADR 2026-10-29-speed-quick-wins). Answered at once: the reader does not
+     * wait for the model, and a load still running when Play comes is simply waited for by the first render.
+     */
+    private fun warmVoice(args: Bundle): ListenableFuture<SessionResult> {
+        val request = VoiceWarmUpCommand.from(args) ?: return Futures.immediateFuture(badRequest())
+        val warmer = warmUp ?: return Futures.immediateFuture(SessionResult(SessionError.ERROR_NOT_SUPPORTED))
+        scope.launch(Dispatchers.IO) { warmer.warm(request.book, request.lang) }
+        return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
     }
 
     private fun undoJump(): SessionResult = if (bookSession().undoJump()) {

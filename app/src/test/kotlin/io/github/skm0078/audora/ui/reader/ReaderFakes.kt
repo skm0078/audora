@@ -88,6 +88,13 @@ class FakePlaybackPort : PlaybackPort {
     val starts = mutableListOf<Pair<ReadingPosition, String?>>()
     val reports = mutableListOf<SoundedWrongReport>()
 
+    /** The voices asked to load ahead of Play, as (book, language); kept apart from [calls], which are controls. */
+    val warmed = mutableListOf<Pair<BookId, Lang>>()
+
+    override fun warmVoice(book: BookId, lang: Lang) {
+        warmed += book to lang
+    }
+
     /** [styleKnown] false: connected, but the service hasn't published its speech style yet. */
     fun connect(speed: Float = 1f, styleKnown: Boolean = true) {
         state.value = PlaybackSnapshot(PlaybackSnapshot.Connection.CONNECTED, styleKnown = styleKnown, speed = speed)

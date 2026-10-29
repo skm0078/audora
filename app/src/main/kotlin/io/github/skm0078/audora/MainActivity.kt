@@ -31,6 +31,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -48,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.battery.OnboardingPreferences
 import io.github.skm0078.audora.core.config.ReaderConfig
+import io.github.skm0078.audora.core.config.StartupConfig
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
@@ -310,6 +312,8 @@ class MainActivity : ComponentActivity() {
 
     private val privacy: PrivacyHost by lazy { PrivacyHost(this) }
 
+    private val firstFrame = FirstFrameHold()
+
     // Built from the base context in attachBaseContext, before applicationContext can be relied on.
     private lateinit var appLanguageStore: AppLanguageStore
 
@@ -347,13 +351,16 @@ class MainActivity : ComponentActivity() {
             Backups.takeStartResult()?.let { Toast.makeText(this, restoreMessageOf(it), Toast.LENGTH_LONG).show() }
             photoBooks.resumePending()
         }
+        // The splash stays until the saved look is known, so the first screen is built once, in the right colours.
+        firstFrame.hold(this)
         setContent {
-            val appearance by remember {
-                appearancePreferences.appearance
-            }.collectAsStateWithLifecycle(initialValue = Appearance())
-            val dark = appearance.isDark(isSystemInDarkTheme())
-            SystemBarsFollow(dark)
-            AudoraTheme(appearance, darkTheme = dark) { privacy.Gate { AppContent(appearance) } }
+            val appearance = rememberSavedAppearance(appearancePreferences.appearance, StartupConfig().appearanceWaitMs)
+            if (appearance != null) {
+                SideEffect { firstFrame.release() }
+                val dark = appearance.isDark(isSystemInDarkTheme())
+                SystemBarsFollow(dark)
+                AudoraTheme(appearance, darkTheme = dark) { privacy.Gate { AppContent(appearance) } }
+            }
         }
     }
 

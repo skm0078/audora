@@ -1,0 +1,3 @@
+en: Faster first sound: the voice now gets ready while a book is open, so pressing Play starts reading sooner. The app also opens straight into your own look, and page turns start more smoothly.
+hi: पहली आवाज़ जल्दी: किताब खुली रहते ही आवाज़ तैयार हो जाती है, इसलिए प्ले दबाते ही पढ़ना जल्दी शुरू होता है। ऐप अब सीधे आपके अपने रूप में खुलता है, और पन्ने पलटना ज़्यादा सहज शुरू होता है।
+bn: প্রথম শব্দ আরও তাড়াতাড়ি: বই খোলা থাকতেই ভয়েস তৈরি হয়ে যায়, তাই প্লে টিপলে পড়া আগে শুরু হয়। অ্যাপ এখন সরাসরি আপনার নিজের চেহারায় খোলে, আর পাতা ওল্টানো আরও মসৃণভাবে শুরু হয়।
