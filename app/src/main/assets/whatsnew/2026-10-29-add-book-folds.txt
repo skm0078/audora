@@ -1,0 +1,3 @@
+en: Add book shrinks to its + while you scroll down your books, so it no longer covers a book's menu at large text sizes. Scroll up to see its label again.
+hi: किताबें नीचे स्क्रॉल करते समय "किताब जोड़ें" सिर्फ़ + बन जाता है, ताकि बड़े अक्षरों में यह किसी किताब का मेन्यू न ढके। ऊपर स्क्रॉल करने पर उसका नाम फिर दिखता है।
+bn: বই নিচে স্ক্রোল করার সময় "বই যোগ করুন" শুধু + হয়ে যায়, তাই বড় লেখায় এটি আর কোনো বইয়ের মেনু ঢাকে না। উপরে স্ক্রোল করলে নামটা আবার দেখা যায়।
