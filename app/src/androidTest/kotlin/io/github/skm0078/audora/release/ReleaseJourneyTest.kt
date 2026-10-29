@@ -206,6 +206,7 @@ class ReleaseJourneyTest {
         step("44 Make it yours names the greeting and adds a part", HomeJourney(rule, ::backToTabs)::makesItYours)
         step("45 the phone drawer opens Settings", DrawerJourney(rule, ::backToTabs)::opensSettings)
         step("46 the phone drawer opens Make it yours", DrawerJourney(rule, ::backToTabs)::opensMakeItYours)
+        step("47 Settings' switches say what they cost", RowLinesJourney(rule, ::backToTabs)::settingsSayWhatTheyCost)
         step("48 the side panel holds the library's tools", DrawerJourney(rule, ::backToTabs)::holdsTheLibrarysTools)
     }
 

@@ -206,6 +206,7 @@ private fun AdvancedPage(
                 stringResource(R.string.settings_volume_keys_title),
                 volumeKeysSkip,
                 onVolumeKeysSkipChange,
+                subtitle = stringResource(R.string.row_line_volume_keys),
                 help = stringResource(R.string.settings_volume_keys_body),
             )
         }
