@@ -19,6 +19,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.release.JourneyDevice.app
+import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.ui.library.MAKE_IT_YOURS_TAG
 
@@ -53,7 +54,7 @@ internal class HomeJourney(private val rule: ComposeTestRule, private val backTo
         rule.onAllNodes(hasSetTextAction()).onFirst().performTextReplacement("")
         toggleRecentlyAdded()
         closeSheet()
-        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(namedGreeting()) }
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(namedGreeting()) }
         waitFor(hasText(text(R.string.library_title)))
     }
 
@@ -74,7 +75,7 @@ internal class HomeJourney(private val rule: ComposeTestRule, private val backTo
             JourneyDevice.pressBackKey()
             rule.waitForIdle()
         }
-        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasTestTag(MAKE_IT_YOURS_TAG)) }
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(hasTestTag(MAKE_IT_YOURS_TAG)) }
     }
 
     /** Any of the three greetings with the name: the hour decides which. */

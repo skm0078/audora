@@ -20,6 +20,7 @@ import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
 import io.github.skm0078.audora.release.JourneyDevice.logCount
 import io.github.skm0078.audora.release.JourneyDevice.logTail
+import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -42,7 +43,7 @@ internal class LockJourney(private val rule: ComposeTestRule) {
             JourneyDevice.onMain { AppLockSession.process.unlock() }
             runBlocking { preferences.saveAppLock(false) }
         }
-        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasText(text(R.string.lock_saver_hidden))) }
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(hasText(text(R.string.lock_saver_hidden))) }
     }
 
     /**
@@ -81,7 +82,7 @@ internal class LockJourney(private val rule: ComposeTestRule) {
         val asked = logCount(ASKING)
         runBlocking { preferences.saveAppLock(true) }
         awaitComposed("the lock to open on a device with no screen lock") { logCount(NO_SCREEN_LOCK) > opened }
-        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasText(text(R.string.lock_saver_hidden))) }
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(hasText(text(R.string.lock_saver_hidden))) }
         assertEquals("The lock asked for a proof the device cannot give", asked, logCount(ASKING))
     }
 
