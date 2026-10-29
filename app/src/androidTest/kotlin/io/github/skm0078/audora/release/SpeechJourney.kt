@@ -1,5 +1,5 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/release/SpeechJourney.kt
-// Purpose: Release journey step 50 (ADR 2026-10-29-voice-and-speed-one-level): on the installed app, the player's
+// Purpose: Release journey step 51 (ADR 2026-10-29-voice-and-speed-one-level): on the installed app, the player's
 //          What to read shortcut opens the Voice and speed sheet with that group already open, and the speed chip
 //          opens the same sheet at its top with every group closed, never a sheet over the sheet.
 

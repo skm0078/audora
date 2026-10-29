@@ -210,7 +210,7 @@ class ReleaseJourneyTest {
         step("47 Settings' switches say what they cost", RowLinesJourney(rule, ::backToTabs)::settingsSayWhatTheyCost)
         step("48 This week is a home part and opens Your listening", HomeJourney(rule, ::backToTabs)::offersThisWeek)
         step("49 the side panel holds the library's tools", DrawerJourney(rule, ::backToTabs)::holdsTheLibrarysTools)
-        step("50 player shortcuts open their group", SpeechJourney(rule, BOOK, ::backToTabs)::shortcutsOpenTheirGroup)
+        step("51 player shortcuts open their group", SpeechJourney(rule, BOOK, ::backToTabs)::shortcutsOpenTheirGroup)
     }
 
     /**

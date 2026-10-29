@@ -14,7 +14,7 @@
 - **Could affect:** the player's and reader's control panel height; the speech sheet's layout; screens that found
   the speed button by its "Speed" text (tests updated to its content description).
 - **Verified in CI:** `SpeechSpotTest`, `BookVoicesSectionTest`, `SpeechSheetGroupsTest`, `PlayerLayoutTest`,
-  `UiTourTest`, release journey step 50.
+  `UiTourTest`, release journey step 51.
 
 **Real-device checks (the test phone):** open a book. The chip shows "1×" and the voice's name; tap it: the sheet
 opens at its top with every group closed and each header saying what is on. Tap Sound, then Cast: Sound closes as
