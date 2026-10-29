@@ -212,6 +212,9 @@ class ReleaseJourneyTest {
         step("49 the side panel holds the library's tools", DrawerJourney(rule, ::backToTabs)::holdsTheLibrarysTools)
         step("51 player shortcuts open their group", SpeechJourney(rule, BOOK, ::backToTabs)::shortcutsOpenTheirGroup)
         step("52 From ListenLock opens the cookbook", CookbookJourney(rule, ::backToTabs)::opensFromTheLibrary)
+        step("53 the reader's Share button opens the choices and a card in the reader's colours") {
+            ShareHereJourney(rule, ::activity).theShareButtonOpensTheChoices(BOOK)
+        }
     }
 
     /**

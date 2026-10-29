@@ -183,7 +183,7 @@ class ClipService : Service() {
         val file =
             encode(folder, name, start, clip, pitch) ?: return notices.showFailed(getString(R.string.clip_failed_text))
         val quote = clip.units.joinToString(" ") { it.text }
-        val text = getString(R.string.clip_share_text, quote, title, start.page + 1)
+        val text = ShareWords.caption(this, ShareSource(title, book.book.author, start.page), lines = quote)
         val chooser = ShareSheet.chooserFor(this, file, MIME_TYPE, text, getString(R.string.clip_chooser_title))
         AudoraLog.i(TAG, "Clip ready, book=${book.book.id.logLabel} page=${start.page}, ${clip.audio.durationMs} ms")
         notices.showReady(chooser)
