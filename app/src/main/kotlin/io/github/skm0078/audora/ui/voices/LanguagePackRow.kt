@@ -26,6 +26,7 @@ import io.github.skm0078.audora.speech.voices.LanguagePack
 import io.github.skm0078.audora.speech.voices.VoiceStatus
 import io.github.skm0078.audora.ui.jobs.DownloadTimeLeft
 import io.github.skm0078.audora.ui.theme.Dimens
+import io.github.skm0078.audora.ui.theme.buttonNamedFor
 
 /** "Hindi": what it downloads and its size, then the percentage and megabytes while it runs, then "Ready". */
 @Composable
@@ -40,8 +41,16 @@ internal fun LanguagePackRow(pack: LanguagePack, onDownload: () -> Unit, onCance
                 PackStatus(pack, language)
                 when {
                     pack.ready -> Unit
-                    pack.downloading -> TextButton(onClick = onCancel) { Text(stringResource(R.string.voices_cancel)) }
-                    else -> Button(onClick = onDownload) { Text(stringResource(R.string.voice_pack_download)) }
+
+                    pack.downloading -> {
+                        val cancel = stringResource(R.string.voices_cancel)
+                        TextButton(onClick = onCancel, modifier = buttonNamedFor(cancel, language)) { Text(cancel) }
+                    }
+
+                    else -> {
+                        val download = stringResource(R.string.voice_pack_download)
+                        Button(onClick = onDownload, modifier = buttonNamedFor(download, language)) { Text(download) }
+                    }
                 }
             }
         },
