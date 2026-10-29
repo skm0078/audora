@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReaderControls.kt
-// Purpose: The reader's bottom bar: speed and pace, previous/next sentence, play/pause and the sleep timer.
+// Purpose: The reader's bottom bar: the Voice and speed chip, previous/next sentence, play/pause and the sleep timer,
+//          with shortcuts into the Voice and speed sheet under them (ADR 2026-10-29-voice-and-speed-one-level).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -21,13 +22,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,13 +63,49 @@ fun ReaderControls(
             onTipsSeen?.let {
                 GestureTips(it, Modifier.padding(start = Dimens.SpaceM, end = Dimens.SpaceM, top = Dimens.SpaceM))
             }
-            ControlsRow(state, config, actions, voices)
+            // Which place in the Voice and speed sheet is open, if it is: the chip opens its top, a shortcut its group.
+            var speechAt by rememberSaveable { mutableStateOf<SpeechSpot?>(null) }
+            ControlsRow(state, config, actions, voices) { speechAt = SpeechSpot.TOP }
+            SpeechShortcuts(enabled = state.playerReady, onOpen = { speechAt = it })
+            speechAt?.let { spot -> ControlsSpeechSheet(spot, state, config, actions, voices) { speechAt = null } }
         }
     }
 }
 
 @Composable
-private fun ControlsRow(state: ReaderState, config: ReaderConfig, actions: ReaderActions, voices: List<VoiceRow>) {
+private fun ControlsSpeechSheet(
+    spot: SpeechSpot,
+    state: ReaderState,
+    config: ReaderConfig,
+    actions: ReaderActions,
+    voices: List<VoiceRow>,
+    onDismiss: () -> Unit,
+) {
+    val study = StudyControls(state.study, canMark = state.readingPosition != null, onStudy = actions::onStudy)
+    PlayerSpeechSheet(
+        spot = spot,
+        playback = state.playback,
+        config = config,
+        actions = actions,
+        voices = voices,
+        study = study,
+        bookInPlayer = state.readingPosition != null,
+        bookLang = bookLanguage(state.content),
+        onDismiss = onDismiss,
+    )
+}
+
+/** The open page's language, so a Hindi or Bengali book's voices come first in the speech sheet. */
+private fun bookLanguage(content: PageContent): Lang? = (content as? PageContent.Ready)?.units?.let(::pageLanguage)
+
+@Composable
+private fun ControlsRow(
+    state: ReaderState,
+    config: ReaderConfig,
+    actions: ReaderActions,
+    voices: List<VoiceRow>,
+    onSpeech: () -> Unit,
+) {
     val enabled = state.playerReady
     val loaded = state.readingPosition != null
     // Full width, or SpaceBetween has no room to spread into and the row huddles at the start (seen on a phone).
@@ -78,10 +114,12 @@ private fun ControlsRow(state: ReaderState, config: ReaderConfig, actions: Reade
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        val study = StudyControls(state.study, canMark = state.readingPosition != null, onStudy = actions::onStudy)
-        // The open page's language, so a Hindi or Bengali book's voices come first in the speech sheet.
-        val bookLang = (state.content as? PageContent.Ready)?.units?.let(::pageLanguage)
-        SpeedButton(state.playback, config, enabled, actions, voices, study, state.readingPosition != null, bookLang)
+        val playback = state.playback
+        // Kept across the playback ticks that redraw this row: it changes only with the page, voices or picks.
+        val lang = remember(state.content) { bookLanguage(state.content) }
+        val own = playback.bookVoices.takeIf { playback.ownSettings }.orEmpty()
+        val voiceName = remember(voices, own, lang) { lang?.let { readingVoiceName(voices, own, it) } }
+        SpeechChip(playback.speed, voiceName, enabled, onSpeech)
         SkipButton(
             forward = false,
             enabled = enabled && loaded && state.playback.canSkipBack,
@@ -152,51 +190,6 @@ private fun PlayPauseButton(reading: Boolean, buffering: Boolean, enabled: Boole
                 Icon(painterResource(R.drawable.ic_play), stringResource(R.string.reader_play))
             }
         }
-    }
-}
-
-@Composable
-private fun SpeedButton(
-    playback: PlaybackSnapshot,
-    config: ReaderConfig,
-    enabled: Boolean,
-    actions: ReaderActions,
-    voices: List<VoiceRow>,
-    study: StudyControls,
-    bookInPlayer: Boolean,
-    bookLang: Lang?,
-) {
-    var open by remember { mutableStateOf(false) }
-    TextButton(onClick = { open = true }, enabled = enabled) {
-        Text(stringResource(R.string.reader_speed, speedLabel(playback.speed)))
-    }
-    if (open) {
-        SpeechSheet(
-            speed = playback.speed,
-            pace = playback.pace,
-            config = config,
-            onSpeed = actions::onSpeed,
-            pitch = playback.pitch,
-            onPitch = actions::onPitch,
-            onPace = actions::onPace,
-            clausePauses = playback.clausePauses,
-            onClausePauses = actions::onClausePauses,
-            readingModes = playback.readingModes,
-            onReadingModes = actions::onReadingModes,
-            voiceShaping = playback.voiceShaping,
-            onVoiceShaping = actions::onVoiceShaping,
-            ownSettings = playback.ownSettings,
-            onOwnSettings = actions::onOwnSettings,
-            voices = BookVoices(voices, playback.bookVoices, actions::onBookVoice, actions::onVoice, bookLang),
-            study = study,
-            focusSound = playback.focusSound,
-            onFocusSound = actions::onFocusSound,
-            blend = NarratorBlendState(playback.blendOwnSpeaker, playback.blendNeedsBytes),
-            bookInPlayer = bookInPlayer,
-            expressive = playback.voiceExpressive != false,
-            readingIntent = playback.readingIntent,
-            onDismiss = { open = false },
-        )
     }
 }
 

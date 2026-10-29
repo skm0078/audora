@@ -204,8 +204,7 @@ class UiTourTest {
         JourneyDevice.pressBackKey()
         settle()
         readerSheets()
-        // Clickable only: in Bengali the time-left line also holds the speed word and sits first.
-        tap(hasText(speedButtonText(), substring = true) and hasClickAction())
+        tap(hasContentDescription(text(R.string.speech_sheet_title)) and hasClickAction())
         settle()
         capture("speech-sheet")
         scrollCaptures("speech-sheet", pages = SHEET_PAGES)
@@ -265,9 +264,6 @@ class UiTourTest {
         capture("player")
         backToTabs()
     }
-
-    /** The speed button's words without the number ("Speed" from "Speed %1$s×"), in this pass's language. */
-    private fun speedButtonText(): String = textBefore(R.string.reader_speed).ifEmpty { "×" }
 
     /** A format string's words before its first argument ("Page " from "Page %1$d of %2$d"). */
     private fun textBefore(id: Int): String = localized().resources.getText(id).toString().substringBefore('%').trim()

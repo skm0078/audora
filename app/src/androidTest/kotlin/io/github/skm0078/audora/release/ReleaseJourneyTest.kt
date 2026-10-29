@@ -207,6 +207,7 @@ class ReleaseJourneyTest {
         step("45 the phone drawer opens Settings", DrawerJourney(rule, ::backToTabs)::opensSettings)
         step("46 the phone drawer opens Make it yours", DrawerJourney(rule, ::backToTabs)::opensMakeItYours)
         step("47 Settings' switches say what they cost", RowLinesJourney(rule, ::backToTabs)::settingsSayWhatTheyCost)
+        step("49 player shortcuts open their group", SpeechJourney(rule, BOOK, ::backToTabs)::shortcutsOpenTheirGroup)
     }
 
     /**
