@@ -79,7 +79,7 @@ class AudiobookLeftovers(private val records: ExportRecords, private val files: 
             "Unfinished audiobook files deleted=${deleted.size} kept=${failed.size} done=${record.complete}",
         )
         val jobs = if (deleted.isEmpty()) 0 else 1
-        return LeftoverTally.of(LeftoverKind.AUDIOBOOK, jobs, deleted.sumOf(sizes::getValue))
+        return LeftoverTally.of(LeftoverKind.AUDIOBOOK, jobs, deleted.sumOf { sizes.getValue(it) })
     }
 
     /** A finished export keeps its chapters; an unfinished one gives them all up. */
@@ -91,7 +91,7 @@ class AudiobookLeftovers(private val records: ExportRecords, private val files: 
         return unfinished.distinct().filterNot { it in made }
     }
 
-    private fun sizes(locations: List<String>): Long = locations.sumOf(files::sizeOf)
+    private fun sizes(locations: List<String>): Long = locations.sumOf { files.sizeOf(it) }
 
     private companion object {
         const val TAG = "Export.Leftovers"

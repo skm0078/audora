@@ -21,10 +21,10 @@ import java.io.File
 class TalkingBookLeftovers(private val root: File) {
     fun measure(): LeftoverTally {
         val folders = folders()
-        return LeftoverTally.of(LeftoverKind.TALKING_BOOK, folders.size, folders.sumOf(::sizeOf))
+        return LeftoverTally.of(LeftoverKind.TALKING_BOOK, folders.size, folders.sumOf { sizeOf(it) })
     }
 
-    fun bytesFor(bookId: String): Long = foldersOf(bookId).sumOf(::sizeOf)
+    fun bytesFor(bookId: String): Long = foldersOf(bookId).sumOf { sizeOf(it) }
 
     /**
      * Deletes what [policy] lets go. [library] holds the books still in the library, by [StagedChapters.bookPrefix]:

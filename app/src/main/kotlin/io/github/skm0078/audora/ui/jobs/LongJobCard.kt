@@ -72,6 +72,7 @@ internal fun toneOf(job: LongJob): JobTone = when (job.end) {
 private fun statusOf(job: LongJob): String = when (job.end) {
     null -> when {
         job.waitingForCharger -> stringResource(R.string.jobs_status_waiting)
+
         else -> job.percent?.let { stringResource(R.string.jobs_status_percent, it) }
             ?: stringResource(R.string.jobs_status_starting)
     }
