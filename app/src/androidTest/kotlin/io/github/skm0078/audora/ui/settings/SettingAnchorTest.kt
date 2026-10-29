@@ -72,7 +72,7 @@ class SettingAnchorTest {
             rule.onNodeWithText(text(R.string.commands_screen_off_title), substring = true),
         ).map { it.fetchSemanticsNode().boundsInRoot }
         rows.zipWithNext().forEach { (above, below) ->
-            assertTrue("row at ${below.top} starts above the end of the last, ${above.bottom}", below.top >= above.bottom)
+            assertTrue("row at ${below.top} overlaps the one ending at ${above.bottom}", below.top >= above.bottom)
         }
     }
 
