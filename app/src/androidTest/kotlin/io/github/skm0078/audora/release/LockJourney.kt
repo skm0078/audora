@@ -33,7 +33,7 @@ internal class LockJourney(private val rule: ComposeTestRule) {
      * [saverAsksAndUnlockAsksAgain]); one without (CI's emulator image has none, so no PIN can be set) gets the path
      * such a phone takes: the lock opens by itself, so nobody is locked out of their own library.
      */
-    fun theLockCoversTheAppOrOpensWithoutAScreenLock() {
+    fun coversOrOpens() {
         val preferences = PrivacyPreferences(app)
         val secure = app.packageManager.hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN)
         try {

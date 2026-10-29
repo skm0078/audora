@@ -1,11 +1,14 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/LibraryTopBar.kt
-// Purpose: The library's top bar: title, search field, the sort sheet's button (plan item 22, ADR
-//          2026-10-28-book-menu-sort-sheet), the Jobs button with its count (ADR-067), ⋮ tools menu.
+// Purpose: The library's top bar: a greeting over the title (ADR 2026-10-28-home-and-tour), search field, the sort
+//          sheet's button (plan item 22, ADR 2026-10-28-book-menu-sort-sheet), the Jobs button with its count
+//          (ADR-067), ⋮ tools menu.
 
 package io.github.skm0078.audora.ui.library
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.DropdownMenu
@@ -37,6 +40,7 @@ import androidx.compose.ui.semantics.semantics
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.LibraryQuery
 import io.github.skm0078.audora.ui.theme.HelpButton
+import java.time.LocalTime
 
 @Composable
 internal fun LibraryTopBar(
@@ -91,11 +95,7 @@ internal fun LibraryTopBar(
             if (searching) {
                 SearchField(query.text, focusOnOpen) { onQuery(query.copy(text = it)) }
             } else {
-                Text(
-                    stringResource(R.string.library_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.semantics { heading() },
-                )
+                LibraryTitle()
             }
         },
         navigationIcon = {
@@ -120,6 +120,36 @@ internal fun LibraryTopBar(
         },
     )
 }
+
+/** "Good evening" over "Library": the hour of the day the library was opened, so it does not change under the eye. */
+@Composable
+private fun LibraryTitle() {
+    val hour = remember { LocalTime.now().hour }
+    Column {
+        Text(
+            stringResource(greetingFor(hour)),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            stringResource(R.string.library_title),
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.semantics { heading() },
+        )
+    }
+}
+
+/** Morning from 5, afternoon from noon, evening from 5 pm until 5 the next morning. */
+@StringRes
+internal fun greetingFor(hour: Int): Int = when (hour) {
+    in MORNING_FROM until AFTERNOON_FROM -> R.string.library_greeting_morning
+    in AFTERNOON_FROM until EVENING_FROM -> R.string.library_greeting_afternoon
+    else -> R.string.library_greeting_evening
+}
+
+private const val MORNING_FROM = 5
+private const val AFTERNOON_FROM = 12
+private const val EVENING_FROM = 17
 
 /** TalkBack hears "Jobs, 2 running"; the badge shows the number. */
 @Composable

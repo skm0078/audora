@@ -250,7 +250,6 @@
     <string name="battery_step_vivo_background_power">सेटिंग्स में Battery खोलें, फिर Background power consumption management, और ListenLock को Allow पर सेट करें।</string>
     <string name="battery_step_lock_recents">हाल के ऐप खोलें, फिर ListenLock के कार्ड को देर तक दबाएँ (या उसका मेन्यू टैप करें) और Lock चुनें, ताकि हाल के ऐप साफ़ करने पर पढ़ना न रुके।</string>
     <string name="battery_card_title">स्क्रीन बंद होने पर भी पढ़ते रहें</string>
-    <string name="battery_card_body">यह फ़ोन बैकग्राउंड में ListenLock को रोक सकता है। सेट करने में एक मिनट लगता है।</string>
     <string name="battery_card_set_up">सेट करें</string>
     <string name="battery_card_not_now">अभी नहीं</string>
     <string name="settings_battery_title">बैकग्राउंड में पढ़ना</string>

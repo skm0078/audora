@@ -124,6 +124,8 @@ internal class StudioLibrary(
         BookAction.CHARACTER_GUIDE -> guideBookId.value = book.id.value
 
         BookAction.MARK_FINISHED, BookAction.MARK_NOT_STARTED -> markProgress(book, action)
+
+        BookAction.KEEP_ON_PHONE -> parts.activity.keepOnPhone(book)
     }
 
     /**

@@ -57,6 +57,7 @@ internal fun BookRow(
     onAction: (BookAction) -> Unit = {},
     onPlay: () -> Unit = {},
     pane: PaneChoice? = null,
+    modifier: Modifier = Modifier,
 ) {
     var menuOpen by rememberSaveable(item.book.id.value) { mutableStateOf(false) }
     val kids = LocalKidsMode.current
@@ -74,6 +75,7 @@ internal fun BookRow(
             } else {
                 Column {
                     item.book.author?.let { Text(stringResource(R.string.book_details_author, it), maxLines = 1) }
+                    sourceLabel(item.source)?.let { SourceLine(it) }
                     Text(bookDetails(item.book))
                     item.progress?.let { ProgressLine(it) }
                     runningJobFor(item.book.id)?.let { job ->
@@ -89,7 +91,7 @@ internal fun BookRow(
         } else {
             ListItemDefaults.colors()
         },
-        modifier = Modifier
+        modifier = modifier
             .combinedClickable(
                 onClickLabel = stringResource(R.string.a11y_open_book),
                 onLongClickLabel = stringResource(R.string.library_book_menu_named, displayTitle(item.book)),

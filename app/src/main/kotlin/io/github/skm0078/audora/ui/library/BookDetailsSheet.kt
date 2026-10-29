@@ -127,9 +127,18 @@ private fun DetailLines(item: LibraryItem) {
         book.language?.let { Detail(stringResource(R.string.book_details_language, languageName(it))) }
         book.pageCount?.let { Detail(pluralStringResource(R.plurals.library_pages, it, it)) }
         Detail(stringResource(R.string.book_details_size, Formatter.formatShortFileSize(context, book.sizeBytes)))
+        SourceDetail(item)
         Detail(stringResource(R.string.book_details_added, dateText(book.addedAtMillis)))
         book.lastOpenedAtMillis?.let { Detail(stringResource(R.string.book_details_opened, dateText(it))) }
     }
+}
+
+/** "Where: Google Drive", and for a book read through another app, that it may need the internet. */
+@Composable
+private fun SourceDetail(item: LibraryItem) {
+    val name = stringResource(sourceName(item.source))
+    Detail(stringResource(R.string.book_details_source, name))
+    if (!item.source.isOnPhone) Detail(stringResource(R.string.book_source_needs_app, name))
 }
 
 @Composable

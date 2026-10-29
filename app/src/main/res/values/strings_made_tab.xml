@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_made_tab.xml -->
+<!-- Purpose: The Made place as a grid or list with icon buttons, and its player's speed and voice note (ADR 2026-10-28-made-tab). -->
+<resources>
+    <plurals name="made_jobs_making">
+        <item quantity="one">%1$d making</item>
+        <item quantity="other">%1$d making</item>
+    </plurals>
+    <string name="made_jobs_short">Jobs</string>
+    <string name="made_filter_all">All</string>
+    <string name="made_filter_count">%1$s · %2$d</string>
+    <string name="made_play_named">Play %1$s</string>
+    <string name="made_open_named">Open %1$s</string>
+    <string name="made_share_named">Share %1$s</string>
+    <string name="made_more_named">More for %1$s</string>
+    <string name="made_player_kind">Made · %1$s</string>
+    <string name="made_player_left">−%1$s</string>
+    <string name="made_player_saved">Saved %1$s</string>
+    <string name="made_voice_title">The voice is part of the file</string>
+    <string name="made_voice_body">A saved file keeps the voice it was made with. For another voice, make it again from the book\'s menu, with Save as.</string>
+</resources>

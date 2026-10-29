@@ -23,7 +23,7 @@ enum class LibraryAction(@StringRes val label: Int, @StringRes val hint: Int, va
     /** A web page from its address, fetched once on the listener's tap and read as its article (CF-12). */
     READ_WEB_PAGE(R.string.library_read_web_page, R.string.menu_hint_read_web_page),
 
-    /** Free book catalogues (OPDS): Project Gutenberg, or one the listener adds; Download adds a book (CF-15). */
+    /** Free book catalogues (OPDS), a curated list checked weekly; Download adds a book (CF-15, ADR 2026-10-28). */
     BOOK_CATALOGUES(R.string.library_book_catalogues, R.string.menu_hint_book_catalogues),
 
     /** Lists the watched folders, whose new books join the library when it opens (plan item 26, ADR-044). */

@@ -61,6 +61,8 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.ui.firstrun.TourTarget
+import io.github.skm0078.audora.ui.firstrun.tourTarget
 import io.github.skm0078.audora.ui.kids.LocalKidsMode
 import io.github.skm0078.audora.ui.search.FoundCard
 import io.github.skm0078.audora.ui.search.FoundOnly
@@ -243,8 +245,7 @@ private fun LibraryContent(
             EmptyLibrary(enabled = !busy, onAddPdf = onAddPdf) { menu.onLibraryAction(LibraryAction.TRY_SAMPLE) }
         } else {
             Column {
-                ShelfRow(listState, menu::onQuery)
-                CatalogueRow(listState, menu::onQuery)
+                LibraryChipRow(listState, menu::onQuery)
                 // Actions and settings the search names, above the books (ADR 2026-10-28-action-search).
                 val found = rememberFoundRows(listState, settingValues)
                 if (listState.items.isEmpty() && found.isNotEmpty()) {
@@ -306,6 +307,10 @@ private class BookCallbacks(
 
     fun pane(item: LibraryItem): PaneChoice? =
         picked?.let { pick -> PaneChoice(item.book.id.value == pick.shownId) { pick.onPick(item) } }
+
+    /** The first book shown is what the tour's book menu stop points at. */
+    fun tourMark(item: LibraryItem, list: LibraryListState.Loaded): Modifier =
+        if (item === list.items.firstOrNull()) Modifier.tourTarget(TourTarget.BOOK) else Modifier
 }
 
 /** Beside the book pane: the book it shows, and how a ⋮ or a long press picks another one for it. */
@@ -349,6 +354,7 @@ private fun BookGrid(list: LibraryListState.Loaded, books: BookCallbacks, covers
                 onAction = { action -> books.onAction(item.book, action) },
                 onPlay = { books.onPlay(item.book) },
                 pane = books.pane(item),
+                modifier = books.tourMark(item, list),
             )
         }
     }
@@ -394,6 +400,7 @@ private fun BookList(list: LibraryListState.Loaded, books: BookCallbacks, covers
                     onAction = { action -> books.onAction(item.book, action) },
                     onPlay = { books.onPlay(item.book) },
                     pane = books.pane(item),
+                    modifier = books.tourMark(item, list),
                 )
                 HorizontalDivider()
             }

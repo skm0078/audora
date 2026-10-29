@@ -56,6 +56,7 @@ internal fun BookTile(
     onAction: (BookAction) -> Unit = {},
     onPlay: () -> Unit = {},
     pane: PaneChoice? = null,
+    modifier: Modifier = Modifier,
 ) {
     var menuOpen by rememberSaveable(item.book.id.value) { mutableStateOf(false) }
     val kids = LocalKidsMode.current
@@ -67,10 +68,11 @@ internal fun BookTile(
     val job = runningJobFor(item.book.id)
     val jobLine = job?.let { jobStatus(it) }
     val author = item.book.author?.let { stringResource(R.string.book_details_author, it) }
-    val named = listOfNotNull(title, author).joinToString(", ")
+    val source = sourceLabel(item.source)
+    val named = listOfNotNull(title, author, source).joinToString(", ")
     val described = stringResource(R.string.library_tile_description, named, status)
     val description = jobLine?.let { "$described. $it" } ?: described
-    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
         Box(
             modifier = Modifier
                 .then(ring)
@@ -86,6 +88,7 @@ internal fun BookTile(
                 },
         ) {
             BookCover(item.book, covers, Modifier.fillMaxWidth().aspectRatio(1f / COVER_RATIO))
+            if (source != null) SourceBadge(Modifier.align(Alignment.TopEnd))
             item.progress?.let { progress ->
                 LinearProgressIndicator(
                     progress = { progress.fraction },

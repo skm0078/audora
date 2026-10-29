@@ -5,7 +5,7 @@
     <string name="library_read_web_page">ওয়েব পেজ পড়ান</string>
     <string name="menu_hint_read_web_page">ওয়েব ঠিকানা লিখুন বা পেস্ট করুন। ListenLock শুধু সেই পেজটি একবার ডাউনলোড করে, মেনু বা বিজ্ঞাপন ছাড়া তার লেখাটি পড়ে।</string>
     <string name="library_book_catalogues">বিনামূল্যের বইয়ের তালিকা</string>
-    <string name="menu_hint_book_catalogues">Project Gutenberg বা আপনার যোগ করা অন্য তালিকা দেখুন আর বিনামূল্যের বই ডাউনলোড করুন। শুধু যে বইয়ে ট্যাপ করবেন সেটিই ডাউনলোড হয়।</string>
+    <string name="menu_hint_book_catalogues">বেছে নেওয়া বিনামূল্যের তালিকায় সর্বজনীন ও মুক্ত লাইসেন্সের বই দেখুন, প্রতি সপ্তাহে যাচাই করা হয়। শুধু যে বইয়ে ট্যাপ করবেন সেটিই ডাউনলোড হয়।</string>
 
     <string name="web_page_title">ওয়েব পেজ পড়ান</string>
     <string name="web_page_explain">ListenLock এই পেজটি একবার ডাউনলোড করে, শুধু লেখাটি রাখে আর বইয়ের মতো পড়ে। আপনার সম্পর্কে কিছুই পাঠানো হয় না।</string>
@@ -28,12 +28,6 @@
 
     <string name="catalogues_title">বিনামূল্যের বইয়ের তালিকা</string>
     <string name="catalogues_explain">ডাউনলোডে ট্যাপ করলে তবেই বই ডাউনলোড হয়, সরাসরি তালিকার নিজের ওয়েবসাইট থেকে। কোনো অ্যাকাউন্ট নেই, আপনার সম্পর্কে কিছুই পাঠানো হয় না।</string>
-    <string name="catalogues_add_hint">তালিকা যোগ করুন (OPDS ঠিকানা)</string>
-    <string name="catalogues_add">তালিকা যোগ করুন</string>
-    <string name="catalogues_added">তালিকা যোগ হয়েছে।</string>
-    <string name="catalogues_already">এই তালিকাটি আগেই আছে।</string>
-    <string name="catalogues_too_many">তালিকা ভরে গেছে। আগে একটি সরান।</string>
-    <string name="catalogues_not_saved">তালিকা সেভ করা গেল না। আবার চেষ্টা করুন।</string>
     <string name="catalogues_remove">সরান</string>
     <string name="catalogues_search_hint">এই তালিকায় খুঁজুন</string>
     <string name="catalogues_search">খুঁজুন</string>

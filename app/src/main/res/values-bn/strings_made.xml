@@ -3,11 +3,6 @@
 <!-- Purpose: What the app made from each book, the in-app player and editing a book's details (ADR-068), in Bengali. -->
 <resources>
     <string name="made_jobs">কাজ ও ডাউনলোড</string>
-    <plurals name="made_jobs_running">
-        <item quantity="one">%1$dটি এখন চলছে</item>
-        <item quantity="other">%1$dটি এখন চলছে</item>
-    </plurals>
-    <string name="made_jobs_idle">এখন কিছু চলছে না</string>
     <string name="made_from_book">এই বই থেকে তৈরি</string>
     <string name="made_empty">এখনও কিছু তৈরি হয়নি। সেভ করা অডিওবুক, স্টুডিও অডিও ফাইল, সহজপাঠ্য কপি আর কথা-বলা বই এখানে দেখা যায়, চালানো, শেয়ার আর মোছার বোতাম সহ।</string>
     <string name="made_kind_audiobook">অডিওবুক</string>
@@ -25,7 +20,6 @@
     <string name="made_pitch">পিচ: %1$s</string>
     <string name="made_missing">অ্যাপের বাইরে মোছা বা সরানো হয়েছে</string>
     <string name="made_partly_missing">%2$dটির মধ্যে %1$dটি ফাইল অ্যাপের বাইরে মোছা বা সরানো হয়েছে</string>
-    <string name="made_play">চালান</string>
     <string name="made_open">খুলুন</string>
     <string name="made_share">শেয়ার করুন</string>
     <string name="made_delete">মুছুন</string>
@@ -44,7 +38,6 @@
     <string name="made_player_next">পরের অধ্যায়</string>
     <string name="made_player_play">চালান</string>
     <string name="made_player_pause">থামান</string>
-    <string name="made_player_speed">গতি %1$s×</string>
     <string name="made_player_gone">এই অডিও আর ফোনে নেই।</string>
     <string name="made_player_position">%2$s-এর মধ্যে %1$s</string>
     <string name="book_edit">তথ্য বদলান</string>
