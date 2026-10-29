@@ -206,6 +206,9 @@ class ReleaseJourneyTest {
         step("46 the phone drawer opens Make it yours", DrawerJourney(rule, ::backToTabs)::opensMakeItYours)
         step("47 Settings' switches say what they cost", RowLinesJourney(rule, ::backToTabs)::settingsSayWhatTheyCost)
         step("48 This week is a home part and opens Your listening", HomeJourney(rule, ::backToTabs)::offersThisWeek)
+        step("52 the reader's Share button opens the choices and a card in the reader's colours") {
+            ShareHereJourney(rule, ::activity).theShareButtonOpensTheChoices(BOOK)
+        }
     }
 
     /**

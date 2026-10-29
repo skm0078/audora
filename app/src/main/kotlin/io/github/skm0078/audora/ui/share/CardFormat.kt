@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.ui.reader.PageTone
 import io.github.skm0078.audora.playback.R as PlaybackR
 
 /**
@@ -74,6 +75,18 @@ enum class CardLook(
 
     /** Drawn over a photo: shared as JPEG (a PNG of a photo is several MB); flat looks stay crisp PNG. */
     val isPhoto: Boolean get() = this == COVER || this == PICTURE
+
+    companion object {
+        /**
+         * The look matching the reader's page colours, so lines leave looking as they were read: sepia pages make a
+         * sepia card, dark pages a night one, and the book's own colours follow the app (paper, or night when dark).
+         */
+        fun forReading(tone: PageTone, darkApp: Boolean): CardLook = when (tone) {
+            PageTone.SEPIA -> SEPIA
+            PageTone.DARK -> NIGHT
+            PageTone.ORIGINAL -> if (darkApp) NIGHT else PAPER
+        }
+    }
 }
 
 private fun solid(argb: Long) = SolidColor(Color(argb))

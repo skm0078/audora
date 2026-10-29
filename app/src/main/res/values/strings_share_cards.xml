@@ -7,11 +7,11 @@
 <resources>
     <!-- The sentence menu's one Share row; it opens the choices below. -->
     <string name="sentence_menu_share">Share…</string>
-    <string name="sentence_hint_share">As audio, a picture, a video or words. Pictures and videos always carry the book\'s title and author.</string>
+    <string name="sentence_hint_share">As a picture, words, a video or audio, always with the book, its author and a link to ListenLock.</string>
     <string name="share_choices_title">Share these lines</string>
     <string name="share_as_picture">Share as a picture</string>
     <string name="share_hint_picture">A quote card with the book, author and page, sized for Status, Stories or a post.</string>
-    <string name="share_choices_note">Every picture and video carries the book, its author and a small ListenLock mark.</string>
+    <string name="share_choices_note">Everything you share carries the book, its author, a small ListenLock mark and a link to the app.</string>
 
     <!-- The quote card screen. -->
     <string name="share_card_title">Share as a picture</string>

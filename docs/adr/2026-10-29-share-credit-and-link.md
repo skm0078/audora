@@ -1,0 +1,43 @@
+# ADR 2026-10-29-share-credit-and-link: every share carries the book, ListenLock and its link; Share in sight
+
+**Status:** Accepted (2026-10-29). Asked for by the maintainer: Share was hidden behind a long-press, sent pictures
+with no words or link, and shared text with no credit at all.
+
+## Context
+Kindle, Goodreads, Spotify and Apple Books shares all carry three things: the work's credit, the app's name, and a
+link back. ListenLock's shares carried the credit and a small mark on pictures only; clips and videos had the quote
+and title but no link; text had none of it. Every Share lived inside the sentence long-press menu, which few find.
+
+## Decision
+1. **One caption for everything, built in `:core` (`ShareCaption`, unit tested):** the lines in quotes when the share
+   has no picture of them (text, audio clip, video), then "— Title, Author, page N", then an invitation and the link
+   on the last line, where chat apps make it tappable. `ShareWords` (`:playback`) supplies the translated pieces, so
+   the app's pictures and the services' clips and videos read the same.
+2. **The link lives in one place, `ShareLinkConfig.appLink`:** the site's home from `prod` (GitHub Pages serves
+   prod's /docs), never `dev`, never tracked, never a link to the book. The domain or the Play listing replaces it in
+   one line once live.
+3. **Pictures print the link small under the ListenLock mark** (`ShareCardFrame`), for apps that post the picture
+   without its caption (Stories, Status). Videos inherit it: their backdrop is the card.
+4. **Shared text is capped at `ShareCardConfig.maxTextWords` (150)**, cut at a sentence end when one is close: longer
+   than a card's 60-word quote, still a passage and never a page (the guard of ADR 2026-10-27-share-cards and
+   2026-10-28-page-snippet).
+5. **Share is in sight:** a Share button in the reader's top bar opens the Share choices for the line being read (else
+   the book's card); the long-press menu lists Share first. The choices quote the lines they act on, most-shared
+   first: picture, text, video, audio, part of the page, "Choose more lines…", "Share this book".
+6. **"Choose more lines…"** reuses the passage picker of "Highlight from here" with its own bar and limit; it opens
+   the Share choices for the lines and highlights nothing.
+7. **A quote or page-part card opens in the reader's colours** (sepia, night, or paper/night by the app's theme)
+   instead of a fixed default; a background the listener picks always wins. A book's card keeps its default.
+
+## Alternatives
+- **Free word-level selection (Moon+):** conflicts with tap-to-read, long-press and page swipes (as in the snippet
+  ADR); lines snap to sentences, which also matches the audio clip.
+- **The link only in the caption:** Instagram Stories and WhatsApp Status drop it, so the picture prints it too.
+- **A share button in the player row:** that row is being reworked (voice and speed); the findability work's player
+  Share, if kept, calls the same `openShare`.
+
+## Consequences
+- Perf: nothing at cold start and nothing while reading. The card screen reads the reading look once (one DataStore
+  read). No new dependency; strings and one small dialog only.
+- The reader's top bar gains one icon, so a long title shows a little less on a narrow phone.
+- When the domain or Play listing is live, change `ShareLinkConfig.APP_SITE` only.

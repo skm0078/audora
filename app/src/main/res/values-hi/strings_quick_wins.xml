@@ -30,7 +30,7 @@
     <string name="sentence_hint_copy">यह वाक्य कॉपी करता है, ताकि किसी भी ऐप में चिपका सकें।</string>
     <string name="sentence_hint_copy_highlight">पूरा हाइलाइट किया हिस्सा कॉपी करता है, ताकि किसी भी ऐप में चिपका सकें।</string>
     <string name="sentence_menu_share_text">टेक्स्ट शेयर करें</string>
-    <string name="sentence_hint_share_text">शब्दों को (अगर यह हाइलाइट है तो पूरा हिस्सा) चैट, मेल या नोट्स ऐप में भेजता है।</string>
+    <string name="sentence_hint_share_text">शब्द (अगर यह हाइलाइट है तो पूरा हिस्सा), किताब, उसके लेखक और ListenLock के लिंक के साथ, चैट, मेल या नोट्स ऐप में।</string>
     <string name="sentence_copied">कॉपी हो गया</string>
 
     <string name="shortcut_resume">आगे सुनें</string>
