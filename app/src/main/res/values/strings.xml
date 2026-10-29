@@ -255,8 +255,6 @@
     <!-- Voices (P4-01): Settings → Voices -->
     <string name="settings_voices_title">Voices</string>
     <string name="settings_voices_body">Download, import and choose voices</string>
-    <string name="settings_speech_body">Speed, pitch, what to read and focus sound, in the book you read last</string>
-    <string name="settings_speech_no_book">Open a book first, then its speed and voice are here</string>
     <string name="voices_title">Voices</string>
     <string name="voices_load_failed">Could not load the voices. Share logs from Settings if this keeps happening.</string>
     <string name="voices_lang_en">English</string>

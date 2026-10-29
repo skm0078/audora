@@ -259,8 +259,6 @@
     <!-- Voices (P4-01): Settings → Voices -->
     <string name="settings_voices_title">ভয়েস</string>
     <string name="settings_voices_body">ভয়েস ডাউনলোড, ইমপোর্ট করুন আর বেছে নিন</string>
-    <string name="settings_speech_body">গতি, পিচ, কী পড়বে আর ফোকাস সাউন্ড, শেষ পড়া বইয়ে</string>
-    <string name="settings_speech_no_book">আগে একটা বই খুলুন, তারপর তার গতি আর ভয়েস এখানে পাবেন</string>
     <string name="voices_title">ভয়েস</string>
     <string name="voices_load_failed">ভয়েসগুলো লোড করা যায়নি। বারবার এমন হলে সেটিংস থেকে লগ শেয়ার করুন।</string>
     <string name="voices_lang_en">ইংরেজি</string>
