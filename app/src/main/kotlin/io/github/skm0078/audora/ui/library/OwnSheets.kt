@@ -1,6 +1,7 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/OwnSheets.kt
-// Purpose: The library screen's own sheets, Make it yours and the collections, opened from the ⋮ menu, search and
-//          the side panel alike (ADR 2026-10-28-make-it-yours, ADR 2026-10-28-phone-drawer).
+// Purpose: The library screen's own sheets, Make it yours, the collections and Add a book, opened from the ⋮ menu,
+//          search, the Add book button and the side panel alike (ADR 2026-10-28-make-it-yours, ADR
+//          2026-10-28-phone-drawer, ADR 2026-10-29-add-a-book).
 
 package io.github.skm0078.audora.ui.library
 
@@ -12,7 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 
-/** Which own sheet is open, and [actions]: the screen's actions with these two opening here instead of going on. */
+/** Which own sheet is open, and [actions]: the screen's actions with these opening here instead of going on. */
 @Stable
 internal class OwnSheets(private val open: MutableState<LibraryAction?>, actions: LibraryActions) {
     val shown: LibraryAction? get() = open.value
@@ -28,7 +29,7 @@ internal class OwnSheets(private val open: MutableState<LibraryAction?>, actions
     }
 
     private companion object {
-        val OWN = setOf(LibraryAction.MAKE_IT_YOURS, LibraryAction.EDIT_COLLECTIONS)
+        val OWN = setOf(LibraryAction.MAKE_IT_YOURS, LibraryAction.EDIT_COLLECTIONS, LibraryAction.ADD_BOOK)
     }
 }
 
@@ -53,15 +54,26 @@ internal fun rememberOwnSheets(
     return sheets
 }
 
-/** Shows the open sheet; the collections wait for the list, Make it yours for the listener's home. */
+/**
+ * Shows the open sheet; the collections wait for the list, Make it yours for the listener's home. Add a book's file
+ * row runs [onFile], the system picker; its tools go on as the screen's own actions.
+ */
 @Composable
-internal fun OwnSheetHost(sheets: OwnSheets, listState: LibraryListState, home: LibraryHome, view: LibraryLayoutState) {
+internal fun OwnSheetHost(
+    sheets: OwnSheets,
+    listState: LibraryListState,
+    home: LibraryHome,
+    view: LibraryLayoutState,
+    onFile: () -> Unit,
+) {
     when (sheets.shown) {
         LibraryAction.MAKE_IT_YOURS -> home.layout?.let { MakeItYoursSheet(it, home.onLayout, view, sheets::close) }
 
         LibraryAction.EDIT_COLLECTIONS -> (listState as? LibraryListState.Loaded)?.let { list ->
             CollectionsRoute(list, remember(list.members) { collectionCounts(list.members) }, sheets::close)
         }
+
+        LibraryAction.ADD_BOOK -> AddBookSheet(onFile, sheets.actions::onLibraryAction, sheets::close)
 
         else -> Unit
     }
