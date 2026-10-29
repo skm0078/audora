@@ -31,6 +31,7 @@ internal fun AppearanceGroup(
                 stringResource(R.string.settings_keep_screen_on_title),
                 keepScreenOn,
                 onKeepScreenOnChange,
+                subtitle = stringResource(R.string.row_line_keep_screen_on),
                 help = stringResource(R.string.settings_keep_screen_on_body),
             )
         }
@@ -50,6 +51,7 @@ internal fun AppearanceGroup(
                 stringResource(R.string.settings_wallpaper_colors_title),
                 appearance.wallpaperColors,
                 { onChange(appearance.copy(wallpaperColors = it)) },
+                subtitle = stringResource(R.string.row_line_wallpaper_colours),
                 help = stringResource(R.string.settings_wallpaper_colors_body),
             )
         }
@@ -59,6 +61,7 @@ internal fun AppearanceGroup(
                 stringResource(R.string.settings_true_black_title),
                 appearance.trueBlack,
                 { onChange(appearance.copy(trueBlack = it)) },
+                subtitle = stringResource(R.string.row_line_true_black),
                 help = stringResource(R.string.settings_true_black_body),
             )
         }

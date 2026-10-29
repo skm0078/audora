@@ -48,6 +48,7 @@ fun VoiceShapingSection(
             stringResource(R.string.speech_clause_pauses),
             clausePauses,
             onClausePauses,
+            subtitle = stringResource(R.string.row_line_clause_pauses),
             help = stringResource(R.string.speech_clause_pauses_detail),
         )
         OptionDivider()
@@ -55,6 +56,7 @@ fun VoiceShapingSection(
             stringResource(R.string.speech_even_loudness),
             shaping.evenLoudness,
             { onChange(shaping.copy(evenLoudness = it)) },
+            subtitle = stringResource(R.string.row_line_even_loudness),
             help = stringResource(R.string.speech_even_loudness_detail),
         )
         OptionDivider()
@@ -62,6 +64,7 @@ fun VoiceShapingSection(
             stringResource(R.string.speech_trim_pauses),
             shaping.trimPauses,
             { onChange(shaping.copy(trimPauses = it)) },
+            subtitle = stringResource(R.string.row_line_trim_pauses),
             help = stringResource(R.string.speech_trim_pauses_detail),
         )
         OptionDivider()
@@ -69,6 +72,7 @@ fun VoiceShapingSection(
             stringResource(R.string.speech_smart_speed),
             shaping.smartSpeed,
             { onChange(shaping.copy(smartSpeed = it)) },
+            subtitle = stringResource(R.string.row_line_smart_speed),
             help = stringResource(R.string.speech_smart_speed_detail, SMART_SPEED_FROM, SMART_SPEED_ALWAYS_ABOVE),
         )
         OptionDivider()
