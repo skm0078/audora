@@ -50,6 +50,8 @@ import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.HelpButton
+import io.github.skm0078.audora.ui.theme.InPlaceGroup
+import io.github.skm0078.audora.ui.theme.rememberInPlaceOpening
 
 /**
  * Play, Up next, any [MenuPlace.QUICK] action and Finished, all the same width. Play is filled, as the one thing most
@@ -162,10 +164,19 @@ internal fun SaveAsCard(
         color = colours.surfaceContainerLow,
         border = BorderStroke(BORDER, colours.outlineVariant),
     ) {
-        Column(Modifier.animateContentSize()) {
-            SaveAsHeader(choices, open) { open = !open }
-            if (open) SaveTiles(choices, onChoose)
-        }
+        val opening = rememberInPlaceOpening()
+        InPlaceGroup(
+            opening,
+            open,
+            modifier = Modifier.animateContentSize(),
+            spacing = 0.dp,
+            header = {
+                SaveAsHeader(choices, open) {
+                    if (!open) opening.opened()
+                    open = !open
+                }
+            },
+        ) { SaveTiles(choices, onChoose) }
     }
 }
 

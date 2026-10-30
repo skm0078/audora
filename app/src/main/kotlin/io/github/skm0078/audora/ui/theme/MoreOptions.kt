@@ -4,7 +4,6 @@
 package io.github.skm0078.audora.ui.theme
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -46,34 +45,48 @@ fun MoreOptions(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
-    val state = stringResource(if (open) R.string.more_options_expanded else R.string.more_options_collapsed)
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = Dimens.TouchTarget)
-                .clickable(role = Role.Button) { open = !open }
-                .semantics { stateDescription = state }
-                .padding(horizontal = headerPadding, vertical = Dimens.SpaceS),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                if (!open) {
-                    Text(
-                        summary,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+    val opening = rememberInPlaceOpening()
+    InPlaceGroup(
+        opening,
+        open,
+        modifier = modifier.fillMaxWidth(),
+        header = {
+            MoreOptionsHeader(title, summary, open, headerPadding) {
+                if (!open) opening.opened()
+                open = !open
             }
-            Icon(
-                painterResource(R.drawable.ic_expand_more),
-                contentDescription = null,
-                modifier = Modifier.rotate(if (open) HALF_TURN else 0f),
-            )
+        },
+        content = content,
+    )
+}
+
+@Composable
+private fun MoreOptionsHeader(title: String, summary: String, open: Boolean, padding: Dp, onToggle: () -> Unit) {
+    val state = stringResource(if (open) R.string.more_options_expanded else R.string.more_options_collapsed)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = Dimens.TouchTarget)
+            .clickable(role = Role.Button, onClick = onToggle)
+            .semantics { stateDescription = state }
+            .padding(horizontal = padding, vertical = Dimens.SpaceS),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            if (!open) {
+                Text(
+                    summary,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
-        if (open) content()
+        Icon(
+            painterResource(R.drawable.ic_expand_more),
+            contentDescription = null,
+            modifier = Modifier.rotate(if (open) HALF_TURN else 0f),
+        )
     }
 }
 
