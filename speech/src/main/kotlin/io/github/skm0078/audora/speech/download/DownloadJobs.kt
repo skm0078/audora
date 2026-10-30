@@ -19,6 +19,7 @@ import io.github.skm0078.audora.speech.ocr.OcrModelDownloadWorker
 import io.github.skm0078.audora.speech.punct.PunctuationDownloadWorker
 import io.github.skm0078.audora.speech.voices.VoiceDownloadWorker
 import java.util.UUID
+import java.util.concurrent.ExecutionException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -69,12 +70,27 @@ object DownloadJobs {
     fun itemTag(item: String): String = ITEM_PREFIX + item
 
     /** Downloads waiting or running now, in the order WorkManager lists them. */
-    fun observe(context: Context): Flow<List<DownloadJob>> {
-        val query = WorkQuery.Builder.fromTags(byWorker.keys.toList())
-            .addStates(listOf(WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING, WorkInfo.State.BLOCKED))
-            .build()
-        return WorkManager.getInstance(context).getWorkInfosFlow(query).map { infos -> infos.mapNotNull(::jobOf) }
+    fun observe(context: Context): Flow<List<DownloadJob>> =
+        WorkManager.getInstance(context).getWorkInfosFlow(activeQuery()).map { infos -> infos.mapNotNull(::jobOf) }
+
+    /**
+     * Blocking, off the main thread: any download is waiting or running now, so its half-finished file must stay
+     * ([DownloadLeftovers]). When WorkManager cannot answer, says yes: keeping a file is the safe mistake.
+     */
+    fun anyActive(context: Context): Boolean = try {
+        WorkManager.getInstance(context).getWorkInfos(activeQuery()).get().any { jobOf(it) != null }
+    } catch (e: ExecutionException) {
+        AudoraLog.w(TAG, "Could not ask which downloads run; half downloads kept", e)
+        true
+    } catch (e: InterruptedException) {
+        Thread.currentThread().interrupt()
+        AudoraLog.w(TAG, "Interrupted asking which downloads run; half downloads kept", e)
+        true
     }
+
+    private fun activeQuery(): WorkQuery = WorkQuery.Builder.fromTags(byWorker.keys.toList())
+        .addStates(listOf(WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING, WorkInfo.State.BLOCKED))
+        .build()
 
     /**
      * Stops [job]. Like each feature's own Cancel for the tutor, dictionaries and models, what was received is kept,

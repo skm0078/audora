@@ -12,6 +12,9 @@ interface SavedFiles {
 
     /** False if the file could not be deleted (logged by the implementation). */
     fun delete(location: String): Boolean
+
+    /** The file's size, 0 when it is gone or cannot be read: for telling the listener what a clean-up frees. */
+    fun sizeOf(location: String): Long = 0L
 }
 
 /**

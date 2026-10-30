@@ -28,6 +28,9 @@ package io.github.skm0078.audora.core.config
  * @property slowPageNoticeMs a page still loading after this long gets a line saying why (a scanned page is being
  *   read with OCR, up to a minute) under its spinner, so a slow page never looks like a hang.
  * @property flip turning PDF pages by hand: swipe, edge taps, the pages drawn ahead.
+ * @property voiceWarmUpDelayMs how long a book must stay open, with nothing playing, before the voice that will read
+ *   it is loaded, so the first Play does not wait for the model (about a second for the bundled voice). Long enough
+ *   that flicking through books loads nothing; 0 loads it as soon as the first page is read.
  */
 data class ReaderConfig(
     val speeds: List<Float> = DEFAULT_SPEEDS,
@@ -46,6 +49,7 @@ data class ReaderConfig(
     val replayFactor: Float = DEFAULT_REPLAY_FACTOR,
     val slowPageNoticeMs: Long = DEFAULT_SLOW_PAGE_NOTICE_MS,
     val flip: PageFlipConfig = PageFlipConfig(),
+    val voiceWarmUpDelayMs: Long = DEFAULT_VOICE_WARM_UP_DELAY_MS,
 ) {
     init {
         require(speeds.isNotEmpty() && speeds == speeds.sorted()) { "speeds must be non-empty and ascending" }
@@ -57,6 +61,7 @@ data class ReaderConfig(
         require(pageMaxPixels > 0) { "pageMaxPixels must be positive" }
         require(pageTapSlopPoints >= 0f) { "pageTapSlopPoints must not be negative" }
         require(slowPageNoticeMs >= 0) { "slowPageNoticeMs must not be negative, was $slowPageNoticeMs" }
+        require(voiceWarmUpDelayMs >= 0) { "voiceWarmUpDelayMs must not be negative, was $voiceWarmUpDelayMs" }
         require(replayFactor in MIN_REPLAY_FACTOR..1f) { "replayFactor must be in 0.5..1, was $replayFactor" }
         require(chapterListDepth > 0) { "chapterListDepth must be > 0, was $chapterListDepth" }
         require(ocrFairFrom in 0..ocrGoodFrom && ocrGoodFrom <= MAX_OCR_CONFIDENCE) {
@@ -88,6 +93,7 @@ data class ReaderConfig(
         private const val DEFAULT_CHAPTER_LIST_DEPTH = 3
         private const val DEFAULT_REPLAY_FACTOR = 0.85f
         private const val DEFAULT_SLOW_PAGE_NOTICE_MS = 3_000L
+        private const val DEFAULT_VOICE_WARM_UP_DELAY_MS = 1_000L
         private const val MIN_REPLAY_FACTOR = 0.5f
     }
 }

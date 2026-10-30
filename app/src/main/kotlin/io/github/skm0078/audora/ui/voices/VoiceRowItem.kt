@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.text.TextCuts
 import io.github.skm0078.audora.speech.voices.VoiceKind
 import io.github.skm0078.audora.speech.voices.VoiceRow
 import io.github.skm0078.audora.speech.voices.VoiceStatus
@@ -309,7 +310,7 @@ internal fun ImportVoiceDialog(initialLang: Lang, onDismiss: () -> Unit, onChoos
                 }
                 OutlinedTextField(
                     value = label,
-                    onValueChange = { label = it.take(MAX_LABEL_INPUT) },
+                    onValueChange = { label = TextCuts.take(it, MAX_LABEL_INPUT) },
                     label = { Text(stringResource(R.string.voices_import_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),

@@ -141,7 +141,7 @@ class ReleaseJourneyTest {
             "01 first run plays a sample, opens the reader and offers the tour once",
             ::firstRunWalksThroughAndFinishes,
         )
-        step("02 the launcher says ListenLock", ::theLauncherSaysListenLock)
+        step("02 the launcher says ListenLock", BrandJourney::theLauncherSaysListenLock)
         step("03 Open with adds the book and opens the reader", ::openWithAddsTheBookAndOpensTheReader)
         step("04 play starts without the notification permission", ::playStartsWithoutTheNotificationPermission)
         step("05 media controls pause, resume and skip", ::mediaControlsPauseResumeAndSkip)
@@ -216,6 +216,8 @@ class ReleaseJourneyTest {
             ShareHereJourney(rule, ::activity).theShareButtonOpensTheChoices(BOOK)
         }
         step("54 search and You open the player's options", FindOptionsJourney(rule, ::backToTabs)::openTheSheet)
+        step("55 Jobs cleans up unfinished work", JobsCleanupJourney(rule, ::backToTabs)::cleansUpUnfinishedWork)
+        step("56 an open book loads its voice early", WarmUpJourney(rule, BOOK, { port }, ::backToTabs)::loadsTheVoice)
     }
 
     /**
@@ -324,12 +326,6 @@ class ReleaseJourneyTest {
         val stop = hasContentDescription(text(R.string.voices_sample_stop, ""), substring = true)
         gone(stop, PLAY_TIMEOUT_MS)
         node(play).assertExists()
-    }
-
-    private fun theLauncherSaysListenLock() {
-        val label = app.packageManager.getApplicationLabel(app.applicationInfo).toString()
-        assertTrue("Launcher label was \"$label\"", label.startsWith("ListenLock"))
-        assertFalse("Launcher label was \"$label\"", label.contains("Audora", ignoreCase = true))
     }
 
     private fun openWithAddsTheBookAndOpensTheReader() {
