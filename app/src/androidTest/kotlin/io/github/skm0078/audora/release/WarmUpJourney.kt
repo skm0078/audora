@@ -45,8 +45,9 @@ internal class WarmUpJourney(
                 .joinToString("\n")
         }
         awaitTrue("the book's voice loaded without Play", WARM_TIMEOUT_MS, recentLog) {
-            // The reader's one-second wait runs on the test's Compose clock, which moves only while the rule syncs.
-            rule.waitForIdle()
+            // The reader's one-second wait is a delay on the test's Compose clock, which moves only with frames; with
+            // nothing animating none come, so the step moves the clock itself.
+            rule.mainClock.advanceTimeBy(CLOCK_STEP_MS)
             logCount(WARMED) > warmedBefore
         }
         assertFalse("Loading the voice must not start reading", player.state.value.wantsToPlay)
@@ -64,6 +65,7 @@ internal class WarmUpJourney(
          */
         const val WARM_TIMEOUT_MS = 60_000L
         const val LOG_LINES = 200
+        const val CLOCK_STEP_MS = 250L
         const val SHOWN_LINES = 15
         val WARM_UP_WORDS = listOf("arm", "load the voice", "Voice to load", "refused", "Ignored", "Opened", "connect")
     }
