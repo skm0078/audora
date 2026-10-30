@@ -9,7 +9,7 @@
 - **Could affect:** share cards (the line under the mark), share captions, Settings → Privacy policy, the site's
   links and previews.
 - **Verified in CI:** `SiteConfigTest`, `ShareLinkConfigTest`, `CardMarkLinkTest` (the host on one line inside every
-  card shape), release journey step "shares and Settings link to listenlock.telosmindlabs.com".
+  card shape), release journey step 02 (extended: the launcher name and every link the app hands out).
 
 **Real-device checks (the test phone):**
 1. Share a quote card: under the ListenLock mark it reads `listenlock.telosmindlabs.com`, on one line, readable.

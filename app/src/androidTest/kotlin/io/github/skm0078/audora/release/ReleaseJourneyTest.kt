@@ -141,7 +141,7 @@ class ReleaseJourneyTest {
             "01 first run plays a sample, opens the reader and offers the tour once",
             ::firstRunWalksThroughAndFinishes,
         )
-        step("02 the launcher says ListenLock", BrandJourney::theLauncherSaysListenLock)
+        step("02 the launcher says ListenLock and links go to its site", BrandJourney::nameAndLinksAreListenLocks)
         step("03 Open with adds the book and opens the reader", ::openWithAddsTheBookAndOpensTheReader)
         step("04 play starts without the notification permission", ::playStartsWithoutTheNotificationPermission)
         step("05 media controls pause, resume and skip", ::mediaControlsPauseResumeAndSkip)
@@ -218,9 +218,6 @@ class ReleaseJourneyTest {
         step("54 search and You open the player's options", FindOptionsJourney(rule, ::backToTabs)::openTheSheet)
         step("55 Jobs cleans up unfinished work", JobsCleanupJourney(rule, ::backToTabs)::cleansUpUnfinishedWork)
         step("56 an open book loads its voice early", WarmUpJourney(rule, BOOK, { port }, ::backToTabs)::loadsTheVoice)
-        step("60 shares and Settings link to listenlock.telosmindlabs.com") {
-            DomainJourney.linksUseTheCompanySubdomain()
-        }
     }
 
     /**
