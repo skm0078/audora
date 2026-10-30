@@ -199,9 +199,8 @@ class ReleaseJourneyTest {
         )
         step("30 the stats screen saves and shares its card", StatsJourney(rule, ::backToTabs)::cardIsSavedAndShared)
         step("31 the app lock shows the saver, or opens with no screen lock", LockJourney(rule)::coversOrOpens)
-        step("43 arrows, maths and emoji reach the voice as words or not at all") {
-            SymbolJourney.symbolsAreSaidOrLeftOut()
-        }
+        step("43 arrows, maths and emoji reach a voice as words or not at all", SymbolJourney::symbolsAreSaidOrLeftOut)
+        step("64 a Bengali voice that reads letters is handed words as said", BengaliSpellingJourney::spelledAsSaid)
         step("32 Made plays a saved audiobook like the book player", MadeJourney(rule, ::backToTabs)::playsLikeBook)
         step("41 catalogues are a curated list", CatalogueJourney(rule, ::backToTabs)::theCuratedCataloguesAreListed)
         step("44 Make it yours names the greeting and adds a part", HomeJourney(rule, ::backToTabs)::makesItYours)

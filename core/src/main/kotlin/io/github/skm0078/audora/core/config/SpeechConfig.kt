@@ -1,5 +1,5 @@
 // File: core/src/main/kotlin/io/github/skm0078/audora/core/config/SpeechConfig.kt
-// Purpose: Tunables for the speech engines (P1-03): neural threads and loaded models, system TTS timeouts.
+// Purpose: Tunables for the speech engines (P1-03): neural threads and loaded models, system TTS timeouts, paces.
 
 package io.github.skm0078.audora.core.config
 
@@ -17,6 +17,9 @@ package io.github.skm0078.audora.core.config
  *   a chunk can be up to `getMaxSpeechInputLength()` (4000) characters on a slow engine.
  * @property blendHeadroomBytes free space a narrator blend's copy (plan item 75, ~28 MB) must leave on top of its
  *   own size, so the copy never fills the phone.
+ * @property bengaliPace how fast the Bengali voices that read letters (SYSPIN, Rasa) speak at the listener's 1x,
+ *   against their own speed: both were recorded faster than a story is told, and a native listener found 0.9 natural
+ *   where 1.0 was "too fast" (ADR 2026-10-30-bengali-spoken-spelling). Every speed the listener picks scales it.
  */
 data class SpeechConfig(
     val sherpaThreads: Int = 2,
@@ -24,6 +27,7 @@ data class SpeechConfig(
     val systemConnectTimeoutMs: Long = 15_000,
     val systemChunkTimeoutMs: Long = 120_000,
     val blendHeadroomBytes: Long = 67_108_864, // 64 MB
+    val bengaliPace: Float = 0.9f,
 ) {
     init {
         require(sherpaThreads > 0) { "sherpaThreads must be > 0, was $sherpaThreads" }
@@ -31,5 +35,6 @@ data class SpeechConfig(
         require(systemConnectTimeoutMs > 0) { "systemConnectTimeoutMs must be > 0, was $systemConnectTimeoutMs" }
         require(systemChunkTimeoutMs > 0) { "systemChunkTimeoutMs must be > 0, was $systemChunkTimeoutMs" }
         require(blendHeadroomBytes >= 0) { "blendHeadroomBytes must be >= 0, was $blendHeadroomBytes" }
+        require(bengaliPace > 0f && bengaliPace.isFinite()) { "bengaliPace must be > 0, was $bengaliPace" }
     }
 }

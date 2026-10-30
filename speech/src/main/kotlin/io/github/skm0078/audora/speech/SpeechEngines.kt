@@ -18,12 +18,12 @@ import io.github.skm0078.audora.speech.sherpa.BlendReport
 import io.github.skm0078.audora.speech.sherpa.FileSherpaSynthesizerFactory
 import io.github.skm0078.audora.speech.sherpa.NarratorBlend
 import io.github.skm0078.audora.speech.sherpa.RoutingSynthesizerFactory
-import io.github.skm0078.audora.speech.sherpa.SherpaFamily
 import io.github.skm0078.audora.speech.sherpa.SherpaSpeechEngine
 import io.github.skm0078.audora.speech.sherpa.SherpaVoiceManifest
 import io.github.skm0078.audora.speech.sherpa.SherpaVoiceSpec
 import io.github.skm0078.audora.speech.sherpa.VitsNoise
 import io.github.skm0078.audora.speech.sherpa.withNarratorBlend
+import io.github.skm0078.audora.speech.sherpa.withNoise
 import io.github.skm0078.audora.speech.system.AndroidSystemTtsClient
 import io.github.skm0078.audora.speech.system.SystemSpeechEngine
 import io.github.skm0078.audora.speech.voices.VoiceCredits
@@ -54,15 +54,16 @@ object SpeechEngines {
      * Voices (P4-01), seen as they come and go. Cheap: reads one small properties file; a model loads on its first
      * render. Fails only when the APK was built without its voice, which is a build bug worth surfacing.
      *
-     * [noise] is read on every render and given to the Piper and MMS (VITS) voices, so an expressiveness change
-     * (plan item 8) reloads the voice on its next sentence; the other families have no such values. [blend] is
-     * read the same way and given to the narrator's Kokoro voice only (narrator blend, plan item 75).
+     * [noise] is read on every render and given to the Piper and MMS (VITS) voices, `styled` for a model with
+     * speaking styles (Rasa, [withNoise]), so an expressiveness change (plan item 8) reloads the voice on its next
+     * sentence; the other families have no such values. [blend] is read the same way and given to the narrator's
+     * Kokoro voice only (narrator blend, plan item 75).
      */
     fun bundled(
         context: Context,
         config: SpeechConfig = SpeechConfig(),
         blend: () -> NarratorBlend? = { null },
-        noise: () -> VitsNoise? = { null },
+        noise: (styled: Boolean) -> VitsNoise? = { null },
     ): Outcome<BundledSpeech, SpeechError> {
         val assets = context.assets
         val spec = when (val read = readBundledSpec(assets)) {
@@ -89,16 +90,14 @@ object SpeechEngines {
         val fromDisk = FileSherpaSynthesizerFactory(library::voiceDir, config.sherpaThreads, blends)
         // The bundled voice first: it wins if a downloaded voice ever shares its id (after a bundled-voice swap).
         val engine = SherpaSpeechEngine(
-            source = { (listOf(spec) + library.installedSpecs()).withNoise(noise()).withNarratorBlend(blend()) },
+            source = { (listOf(spec) + library.installedSpecs()).withNoise(noise).withNarratorBlend(blend()) },
             factory = RoutingSynthesizerFactory(spec.id, fromAssets, fromDisk),
             maxLoadedVoices = config.maxLoadedVoices,
+            bengaliPace = config.bengaliPace,
         )
         AudoraLog.i(TAG, "Bundled voice ${spec.voiceId} (${spec.family}, ${spec.lang})")
         return Outcome.Success(BundledSpeech(engine, spec.toVoiceInfo(), blends.report))
     }
-
-    private fun List<SherpaVoiceSpec>.withNoise(noise: VitsNoise?): List<SherpaVoiceSpec> =
-        if (noise == null) this else map { if (it.family == SherpaFamily.VITS) it.copy(noise = noise) else it }
 
     /** Where the narrator blends' copies live (plan item 75): a cache, rebuilt when missing. */
     fun blendCache(context: Context, config: SpeechConfig = SpeechConfig()): BlendCache =
