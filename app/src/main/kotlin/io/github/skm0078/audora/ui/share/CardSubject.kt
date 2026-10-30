@@ -62,20 +62,12 @@ sealed interface CardBody {
      * [quote] from zero-based [page] when it is known; [pageLabel] in the quote's own language. [wholePage] is the
      * page's own text, when the reader sent it, for "Whole page".
      */
-    data class Quote(
-        val quote: CardQuote,
-        val page: Int?,
-        val pageLabel: String?,
-        val wholePage: CardQuote? = null,
-    ) : CardBody
+    data class Quote(val quote: CardQuote, val page: Int?, val pageLabel: String?, val wholePage: CardQuote? = null) :
+        CardBody
 
     /** Part of zero-based [page] as drawn ([PageSnippets]) and the [wholePage], with its page in the app's language. */
-    data class Snippet(
-        val picture: ImageBitmap,
-        val page: Int,
-        val pageLabel: String,
-        val wholePage: ImageBitmap,
-    ) : CardBody
+    data class Snippet(val picture: ImageBitmap, val page: Int, val pageLabel: String, val wholePage: ImageBitmap) :
+        CardBody
 }
 
 /** Loading, loaded, or the book is gone (removed while a Share was on its way). */
