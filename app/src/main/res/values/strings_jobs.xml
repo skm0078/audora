@@ -19,5 +19,4 @@
     <string name="jobs_download_waiting">Waiting for a connection, or for the download before it</string>
     <string name="jobs_download_progress">%1$s of %2$s</string>
     <string name="jobs_download_cancel">Cancel</string>
-    <string name="jobs_download_kept">Cancel keeps what was received: downloading it again goes on from there.</string>
 </resources>

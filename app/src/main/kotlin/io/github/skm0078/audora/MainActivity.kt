@@ -12,7 +12,6 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -349,10 +348,7 @@ class MainActivity : ComponentActivity() {
             Backups.takeStartResult()?.let { Toast.makeText(this, restoreMessageOf(it), Toast.LENGTH_LONG).show() }
             photoBooks.resumePending()
         }
-        setContent {
-            val appearance by remember {
-                appearancePreferences.appearance
-            }.collectAsStateWithLifecycle(initialValue = Appearance())
+        setContentInSavedLook(appearancePreferences.appearance) { appearance ->
             val dark = appearance.isDark(isSystemInDarkTheme())
             SystemBarsFollow(dark)
             AudoraTheme(appearance, darkTheme = dark) { privacy.Gate { AppContent(appearance) } }

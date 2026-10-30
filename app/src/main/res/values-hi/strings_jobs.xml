@@ -19,5 +19,4 @@
     <string name="jobs_download_waiting">इंटरनेट का, या पिछले डाउनलोड के पूरा होने का इंतज़ार</string>
     <string name="jobs_download_progress">%2$s में से %1$s</string>
     <string name="jobs_download_cancel">रद्द करें</string>
-    <string name="jobs_download_kept">रद्द करने पर जितना आ चुका है वह रहता है: दोबारा डाउनलोड वहीं से आगे चलता है।</string>
 </resources>

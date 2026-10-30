@@ -7,25 +7,15 @@ package io.github.skm0078.audora.ui.jobs
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookId
@@ -51,8 +41,10 @@ fun LongJobsPanel(modifier: Modifier = Modifier, book: BookId? = null, onStudioD
     if (shown.isEmpty()) return
     Column(modifier, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
         shown.forEach { job ->
-            val details = onStudioDetails?.takeIf { job.kind == LongJobKind.STUDIO }
-            LongJobCard(job, details?.let { open -> { open(job.bookId) } })
+            key(job.kind) {
+                val details = onStudioDetails?.takeIf { job.kind == LongJobKind.STUDIO }
+                LongJobCard(job, details?.let { open -> { open(job.bookId) } }, rememberUnfinishedFiles(job))
+            }
         }
     }
 }
@@ -72,56 +64,6 @@ fun JobProgressBar(job: LongJob, modifier: Modifier = Modifier) {
         LinearProgressIndicator(modifier.fillMaxWidth())
     } else {
         LinearProgressIndicator(progress = { percent / PERCENT }, modifier = modifier.fillMaxWidth())
-    }
-}
-
-@Composable
-internal fun LongJobCard(job: LongJob, onDetails: (() -> Unit)? = null) {
-    val context = LocalContext.current
-    val colors = when (job.end) {
-        LongJobEnd.FAILED -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-        null -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-        else -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
-    }
-    Card(colors = colors, modifier = Modifier.fillMaxWidth()) {
-        Column(
-            Modifier.padding(Dimens.SpaceL),
-            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
-        ) {
-            Text(job.title, style = MaterialTheme.typography.titleSmall)
-            if (job.running) {
-                JobProgressBar(job, Modifier.padding(vertical = Dimens.SpaceXs))
-                // Progress is not a live region: TalkBack reading every step would talk over the book.
-                Text(job.detail, style = MaterialTheme.typography.bodyMedium)
-            } else {
-                // How it ended is announced once, wherever the listener is in the app.
-                Column(Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }) {
-                    Text(job.detail, style = MaterialTheme.typography.bodyMedium)
-                    nextStep(job.end)?.let {
-                        Text(stringResource(it), style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)) {
-                onDetails?.let { JobButton(R.string.long_job_details, it) }
-                if (job.running) {
-                    if (job.waitingForCharger) {
-                        JobButton(R.string.long_job_start_now) { LongJobs.studioStartNow(context) }
-                    }
-                    val stop = if (job.kind == LongJobKind.STUDIO) R.string.long_job_stop else R.string.long_job_cancel
-                    JobButton(stop) { LongJobs.cancel(context, job.kind) }
-                } else {
-                    JobButton(R.string.long_job_dismiss) { LongJobs.dismiss(job.kind) }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun JobButton(label: Int, onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = Modifier.heightIn(min = Dimens.TouchTarget)) {
-        Text(stringResource(label))
     }
 }
 
