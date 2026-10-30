@@ -18,6 +18,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.release.JourneyDevice.app
+import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.release.JourneyDevice.toggleRow
 import io.github.skm0078.audora.ui.hints.HintsState
@@ -62,20 +63,20 @@ internal class HintsJourney(private val rule: ComposeTestRule, private val backT
         closeTheSearch()
     }
 
-    /** The library's search keeps its words after a result opened (ADR 2026-10-28-action-search): closed here. */
+    /**
+     * Back from Settings returns to the library's search, its words still there (ADR 2026-10-28-action-search). Closed
+     * with its own button, then waited on until it is gone, so the next step's search starts empty.
+     */
     private fun closeTheSearch() {
-        repeat(MAX_BACKS) {
-            if (!rule.shows(hasSetTextAction())) return@repeat
-            JourneyDevice.pressBackKey()
-            rule.waitForIdle()
-        }
-        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasTestTag(FOUND_TAG)) }
+        val close = hasContentDescription(text(R.string.library_search_close))
+        rule.waitForIdle()
+        if (rule.shows(close)) tap(close)
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(hasSetTextAction()) }
         waitFor(hasText(text(R.string.library_title)))
     }
 
     private companion object {
         const val UI_TIMEOUT_MS = 15_000L
         const val SEARCHED = "hints"
-        const val MAX_BACKS = 3
     }
 }
