@@ -38,7 +38,12 @@ internal class WarmUpJourney(
         awaitTrue("the book open", OPEN_TIMEOUT_MS) {
             rule.shows(hasContentDescription(app.getString(R.string.reader_play)))
         }
-        val recentLog = { logTail(LOG_LINES).joinToString("\n") }
+        // The test runner cuts a long failure message, so only the warm-up's own lines, newest last.
+        val recentLog = {
+            logTail(LOG_LINES).filter { line -> WARM_UP_WORDS.any { it in line } }
+                .takeLast(SHOWN_LINES)
+                .joinToString("\n")
+        }
         awaitTrue("the book's voice loaded without Play", WARM_TIMEOUT_MS, recentLog) {
             logCount(WARMED) > warmedBefore
         }
@@ -56,6 +61,8 @@ internal class WarmUpJourney(
          * one-second wait, then loading the model.
          */
         const val WARM_TIMEOUT_MS = 60_000L
-        const val LOG_LINES = 60
+        const val LOG_LINES = 200
+        const val SHOWN_LINES = 15
+        val WARM_UP_WORDS = listOf("arm", "load the voice", "Voice to load", "refused", "Ignored", "Opened", "connect")
     }
 }
