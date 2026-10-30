@@ -57,6 +57,18 @@ internal class FindOptionsJourney(private val rule: ComposeTestRule, private val
         val focusHelp = app.getString(R.string.option_help_about, text(R.string.focus_title))
         waitFor(hasContentDescription(focusHelp), OPEN_TIMEOUT_MS)
         closeTheSheet()
+        closeTheSearch()
+    }
+
+    /** Back from the book returns to the search, its words still there (ADR 2026-10-28-action-search): closed here. */
+    private fun closeTheSearch() {
+        repeat(MAX_BACKS) {
+            if (!rule.shows(hasSetTextAction())) return@repeat
+            JourneyDevice.pressBackKey()
+            rule.waitForIdle()
+        }
+        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasTestTag(FOUND_TAG)) }
+        waitFor(hasText(text(R.string.library_title)))
     }
 
     private fun settingsOpensTheSheet() {
@@ -77,5 +89,6 @@ internal class FindOptionsJourney(private val rule: ComposeTestRule, private val
         const val UI_TIMEOUT_MS = 15_000L
         const val OPEN_TIMEOUT_MS = 60_000L
         const val SEARCHED = "focus"
+        const val MAX_BACKS = 3
     }
 }
