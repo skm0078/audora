@@ -24,7 +24,7 @@ listener could not tell which view it would switch to without trying it.
 - **"Gestures and tips" in the reader's ⋮:** shows the tips card again until Got it (`GestureTipsState.show`).
 - **The view toggle is named:** a text button with its icon and "Text" or "Page" (the view it switches to). One
   named button, not a two-part switch, because the top bar already holds Bookmarks, Chapters, Share and ⋮, and a
-  two-part switch would leave the book title about 50dp on a phone. The maintainer is asked to confirm.
+  two-part switch would leave the book title about 50dp on a phone. The maintainer chose this on 2026-10-30.
 - **Guarded by** `PlayerLineActionsTest` (labels, highlight toggles and says so, share opens the line's choices,
   before words only the book's share works) and release journey step 58.
 
