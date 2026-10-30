@@ -39,12 +39,16 @@ internal class ShareHereJourney(private val rule: ComposeTestRule, private val a
     /**
      * [pdf] opened (Open with, as the step before may end anywhere) with sepia pages: the top bar's Share opens the
      * Share choices with "Choose more lines", which shows its bar until Cancel; Share again, then Share as a picture,
-     * opens the card screen on the Sepia background. The look is put back as it was.
+     * opens the card screen on the Sepia background, on Selection; "Whole page" retitles it (ADR
+     * 2026-10-30-whole-page-cards). The look and the card's last pick are put back as they were.
      */
     fun theShareButtonOpensTheChoices(pdf: String) {
         val looks = ReadingLookPreferences(app)
         val before = runBlocking { looks.look.first() }
         runBlocking { looks.save(before.copy(tone = PageTone.SEPIA)) }
+        val spans = CardSpanPreferences(app)
+        val spanBefore = runBlocking { spans.wholePage.first() }
+        runBlocking { spans.save(false) }
         try {
             val uri = JourneyDevice.downloadedPdf(pdf)
             val current = activity()
@@ -65,32 +69,11 @@ internal class ShareHereJourney(private val rule: ComposeTestRule, private val a
             node(hasText(text(R.string.share_as_picture))).performScrollTo().performClick()
             awaitTrue("the card screen") { JourneyDevice.resumedActivity() is ShareCardActivity }
             node(hasContentDescription(text(R.string.share_card_look_sepia)) and isSelected(), OPEN_TIMEOUT_MS)
-        } finally {
-            runBlocking { looks.save(before) }
-            backToTheApp()
-        }
-    }
-
-    /**
-     * [pdf] opened, top bar Share, then Share as a picture: the card offers "Whole page", which retitles the card
-     * screen. The card's last pick is put back as it was.
-     */
-    fun theCardOffersTheWholePage(pdf: String) {
-        val spans = CardSpanPreferences(app)
-        val before = runBlocking { spans.wholePage.first() }
-        runBlocking { spans.save(false) }
-        try {
-            val uri = JourneyDevice.downloadedPdf(pdf)
-            val current = activity()
-            JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri)) }
-            node(hasContentDescription(text(R.string.reader_page_image, 1).substringAfter("1"), true), OPEN_TIMEOUT_MS)
-            node(hasContentDescription(text(R.string.reader_share)) and hasClickAction()).performClick()
-            node(hasText(text(R.string.share_as_picture))).performScrollTo().performClick()
-            awaitTrue("the card screen") { JourneyDevice.resumedActivity() is ShareCardActivity }
-            node(hasText(text(R.string.share_card_span_page)), OPEN_TIMEOUT_MS).performScrollTo().performClick()
+            node(hasText(text(R.string.share_card_span_page))).performScrollTo().performClick()
             node(hasText(text(R.string.share_card_page_title)))
         } finally {
-            runBlocking { spans.save(before) }
+            runBlocking { looks.save(before) }
+            runBlocking { spans.save(spanBefore) }
             backToTheApp()
         }
     }

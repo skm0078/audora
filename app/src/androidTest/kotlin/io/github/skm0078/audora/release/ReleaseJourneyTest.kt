@@ -212,13 +212,10 @@ class ReleaseJourneyTest {
         step("49 the side panel holds the library's tools", DrawerJourney(rule, ::backToTabs)::holdsTheLibrarysTools)
         step("51 player shortcuts open their group", SpeechJourney(rule, BOOK, ::backToTabs)::shortcutsOpenTheirGroup)
         step("52 From ListenLock opens the cookbook", CookbookJourney(rule, ::backToTabs)::opensFromTheLibrary)
-        step("53 the reader's Share button opens the choices and a card in the reader's colours") {
+        step("53 the reader's Share opens the choices and a card in the reader's colours with Whole page") {
             ShareHereJourney(rule, ::activity).theShareButtonOpensTheChoices(BOOK)
         }
         step("54 search and You open the player's options", FindOptionsJourney(rule, ::backToTabs)::openTheSheet)
-        step("55 a page's card offers the whole page") {
-            ShareHereJourney(rule, ::activity).theCardOffersTheWholePage(BOOK)
-        }
     }
 
     /**
