@@ -121,6 +121,7 @@ class ReaderModel(
 
     /** Loads the voice while the book is open and quiet, so the first Play does not wait for it. */
     private val voiceWarmUp = ReaderVoiceWarmUp(scope, config.voiceWarmUpDelayMs) { lang ->
+        AudoraLog.i(TAG, "Asking the player to load the voice, book=${bookId.logLabel} lang=${lang.name}")
         player.warmVoice(bookId, lang)
     }
 
@@ -140,7 +141,12 @@ class ReaderModel(
         scope.launch { views.loadView()?.let(::applyView) }
         // Skip citation numbers changed (ADR-064): the sentences are built again, as the playback service does.
         scope.launch { textSettings.drop(1).collect { reopenForTextSettings() } }
-        scope.launch { state.map { it.voiceToWarm }.distinctUntilChanged().collect(voiceWarmUp::offer) }
+        scope.launch {
+            state.map { it.voiceToWarm }.distinctUntilChanged().collect { lang ->
+                AudoraLog.d(TAG, "Voice to load ahead: ${lang?.name ?: "none"}, $logContext")
+                voiceWarmUp.offer(lang)
+            }
+        }
         scope.launch {
             state.map { it.playback.connection == PlaybackSnapshot.Connection.CONNECTED }.distinctUntilChanged()
                 .filter { connected -> !connected }

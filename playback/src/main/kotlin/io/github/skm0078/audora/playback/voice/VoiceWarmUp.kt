@@ -38,7 +38,10 @@ class VoiceWarmUp(
                 null
             }
         }
-        if (voice?.engine != EngineId.SHERPA) return null
+        if (voice?.engine != EngineId.SHERPA) {
+            voice?.let { AudoraLog.i(TAG, "No warm-up needed for voice=$it, book=${book.logLabel}") }
+            return null
+        }
         return when (val loaded = load(voice)) {
             is Outcome.Success -> {
                 AudoraLog.i(TAG, "Warmed voice=$voice for book=${book.logLabel}")

@@ -54,6 +54,6 @@ internal class WarmUpJourney(
         /** The reader's one-second wait, plus loading the model on a slow emulator. */
         const val WARM_TIMEOUT_MS = 30_000L
         const val MAX_SCANNED_PAGES = 40
-        const val LOG_LINES = 30
+        const val LOG_LINES = 60
     }
 }
