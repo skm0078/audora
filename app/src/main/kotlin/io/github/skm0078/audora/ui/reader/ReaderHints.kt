@@ -70,7 +70,7 @@ internal fun readerHintFacts(
 internal fun actOnHint(
     hint: FirstUseHint,
     links: ReaderHintLinks,
-    actions: ReaderActions,
+    onPrepareAhead: () -> Unit,
     openSpeech: (SpeechSpot) -> Unit,
 ) {
     when (hint) {
@@ -79,7 +79,7 @@ internal fun actOnHint(
         FirstUseHint.CAST -> openSpeech(SpeechSpot.CAST)
         FirstUseHint.QUIZ -> links.onLibraryAction?.invoke(LibraryAction.QUIZ)
         FirstUseHint.FINISHED -> links.onLibraryAction?.invoke(LibraryAction.LISTENING_STATS)
-        FirstUseHint.PREPARE_AHEAD -> actions.onPrepareAhead()
+        FirstUseHint.PREPARE_AHEAD -> onPrepareAhead()
         FirstUseHint.MORE_BOOKS -> Unit // The library's own hint.
     }
 }
@@ -114,7 +114,9 @@ internal fun readerHint(
     val request = hintSpot?.let { spot -> SpeechRequest(spot) { hintSpot = null } } ?: speech
     val card: (@Composable (Modifier) -> Unit)? = hint?.let { shown ->
         { modifier ->
-            HintCard(shown, hints, onAct = { actOnHint(shown, links, actions) { hintSpot = it } }, modifier)
+            HintCard(shown, hints, onAct = {
+                actOnHint(shown, links, actions::onPrepareAhead) { hintSpot = it }
+            }, modifier)
         }
     }
     return ReaderHint(pending = hint != null, speech = request, card = card)

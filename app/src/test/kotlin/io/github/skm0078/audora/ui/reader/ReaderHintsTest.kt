@@ -93,12 +93,9 @@ class ReaderHintsTest {
     fun `each button goes where it says`() {
         val asked = mutableListOf<Any>()
         val routes = ReaderHintLinks(onLibraryAction = { asked += it }, onKeepOnPhone = { asked += "keep" })
-        val actions = object : ReaderActions {
-            override fun onPrepareAhead() {
-                asked += "studio"
-            }
+        FirstUseHint.entries.forEach { hint ->
+            actOnHint(hint, routes, onPrepareAhead = { asked += "studio" }) { spot -> asked += spot }
         }
-        FirstUseHint.entries.forEach { hint -> actOnHint(hint, routes, actions) { spot -> asked += spot } }
         val expected = listOf(
             "keep",
             SpeechSpot.SOUND,
