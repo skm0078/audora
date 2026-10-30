@@ -24,7 +24,8 @@ internal class AppUnderTest private constructor(val packageName: String, private
      */
     @SuppressLint("DiscouragedApi")
     fun text(name: String): String {
-        val id = resources.getIdentifier(name, "string", APP_NAMESPACE)
+        // The resource table carries the installed application id (.bench), not the code's namespace.
+        val id = resources.getIdentifier(name, "string", packageName)
         check(id != 0) { "The app under test ($packageName) has no string named \"$name\"" }
         return resources.getString(id)
     }
@@ -61,7 +62,7 @@ internal class AppUnderTest private constructor(val packageName: String, private
     }
 
     companion object {
-        // Resources keep the app's namespace whatever the build's application id (.bench, .debug).
+        // The code's namespace: MainActivity's class name, whatever the build's application id (.bench, .debug).
         private const val APP_NAMESPACE = "io.github.skm0078.audora"
         private const val PDF = "application/pdf"
         private const val MAIN_ACTIVITY = "$APP_NAMESPACE.MainActivity"
