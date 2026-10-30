@@ -9,7 +9,7 @@
 - **Could affect:** Voices & licences (new row; a voice's Files dialog now lists paragraphs lazily), the licence
   source wiring in `VoicesModule`.
 - **Verified in CI:** `AppNoticesTest` (GPL copy, index ↔ folder, catalog libraries credited, statements, order,
-  paragraphs), `LicencesControllerTest`, release journey step 59.
+  paragraphs), `LicencesControllerTest`, release journey step 61.
 
 **Real-device checks (the test phone):** You → Voices & licences → All licence texts → Read: the notices index shows
 first; scroll on to listenlock-GPL-3.0.txt and to onnxruntime-ThirdPartyNotices.txt (should scroll smoothly). A

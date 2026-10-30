@@ -1,5 +1,5 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/release/NoticesJourney.kt
-// Purpose: Release journey step 59 (ADR 2026-10-30-open-source-notices): on the installed app, Voices & licences
+// Purpose: Release journey step 61 (ADR 2026-10-30-open-source-notices): on the installed app, Voices & licences
 //          opens every licence text the APK carries, the notices index first and ListenLock's own GPL in reach.
 
 package io.github.skm0078.audora.release

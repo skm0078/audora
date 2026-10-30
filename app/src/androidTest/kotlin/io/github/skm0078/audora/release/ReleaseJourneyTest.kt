@@ -222,7 +222,7 @@ class ReleaseJourneyTest {
             ZipNamesJourney(rule, ::activity, ::backToTabs).booksWithCodePageNamesOpen()
         }
         step("58 the player names its line actions", LineActionsJourney(rule, BOOK, ::backToTabs)::namedAndInSight)
-        step("59 Voices & licences opens every licence text") {
+        step("61 Voices & licences opens every licence text") {
             NoticesJourney(rule, ::backToTabs).everyLicenceTextOpens()
         }
     }
