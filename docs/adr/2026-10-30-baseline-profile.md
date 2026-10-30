@@ -22,7 +22,7 @@ library, the reader, PDF page drawing and the curl.
    drives `:app`'s `benchmark` build (the dev build, optimised like release, for x86_64) on an emulator with
    Macrobenchmark's `BaselineProfileRule`. Each round starts the app cold, finishes first run with Skip when it shows,
    opens a small English PDF through "Open with" as a Files app would, waits for the reader, turns three pages and
-   goes back to the library. It finds buttons by the app's own strings, read by name from the installed app, so a
+   leaves the reader with Back. It finds buttons by the app's own strings, read by name from the installed app, so a
    renamed string fails by name.
 2. **The profile is source.** `scripts/ci/baseline_profile.sh` writes the result to `app/src/main/baseline-prof.txt`,
    which the build compiles into every APK (`assets/dexopt/baseline.prof`); R8 rewrites it for the shrunk code. The

@@ -32,15 +32,14 @@ internal class AppScreens(private val device: UiDevice, private val app: AppUnde
         }
     }
 
-    /** Back until the tab bar shows: the library, where the next round starts from. */
-    fun backToLibrary() {
-        val tab = By.text(app.text("tab_you"))
+    /** Back out of the reader to the library, the way a listener leaves a book (a first Back may close a sheet). */
+    fun leaveReader() {
+        val reader = By.desc(app.text("reader_play"))
         repeat(MAX_BACKS) {
-            if (device.hasObject(tab)) return
             device.pressBack()
-            device.waitForIdle()
+            if (device.wait(Until.gone(reader), UI_WAIT_MS)) return device.waitForIdle()
         }
-        await(tab, "the library's tab bar after going back", UI_WAIT_MS)
+        error("The reader was still open after $MAX_BACKS Backs")
     }
 
     private fun await(selector: BySelector, what: String, timeoutMs: Long) {
@@ -57,7 +56,7 @@ internal class AppScreens(private val device: UiDevice, private val app: AppUnde
 
         // Opening reads the PDF's text and draws the page; CI's emulator is slow at both.
         const val READER_WAIT_MS = 30_000L
-        const val MAX_BACKS = 5
+        const val MAX_BACKS = 3
         const val PERCENT = 100
         const val SWIPE_FROM = 80
         const val SWIPE_TO = 20

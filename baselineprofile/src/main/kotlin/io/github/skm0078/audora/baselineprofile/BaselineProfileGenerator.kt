@@ -21,7 +21,8 @@ class BaselineProfileGenerator {
     fun startOpenABookAndTurnPages() {
         val app = AppUnderTest.fromArguments()
         val book = app.downloadedPdf(BOOK)
-        // Each round starts the app cold and walks the same path; the rule keeps the code seen in every round.
+        // The rule stops the app before each round, so every round starts cold and walks the same path; it keeps the
+        // code seen in every round.
         rule.collect(packageName = app.packageName) {
             pressHome()
             startActivityAndWait()
@@ -30,7 +31,7 @@ class BaselineProfileGenerator {
             app.openWith(book)
             screens.awaitReader()
             screens.turnPages(PAGE_TURNS)
-            screens.backToLibrary()
+            screens.leaveReader()
         }
     }
 
