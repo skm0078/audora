@@ -241,13 +241,8 @@ class AudoraPlaybackService : MediaLibraryService() {
             env = sessionEnvironment(scope, AccelerometerShakes(this, config.sleep)),
         )
         followReadingChanges()
-        resumption = PlaybackResumption(
-            anchors = resumeAnchors,
-            library = library,
-            locator = locator,
-            scope = scope,
-            player = player,
-        ) { bookSession }
+        resumption = playbackResumption()
+        PlaybackServiceLife.created()
         AudoraLog.i(TAG, "Service created")
     }
 
@@ -451,10 +446,20 @@ class AudoraPlaybackService : MediaLibraryService() {
         }
     }
 
+    /** A headset's play or the system's resumption card with nothing loaded: the newest book, where it stopped. */
+    private fun playbackResumption() = PlaybackResumption(
+        anchors = resumeAnchors,
+        library = library,
+        locator = locator,
+        scope = scope,
+        player = player,
+    ) { bookSession }
+
     /** The open book's fixes changed while it plays: what was rendered ahead is rendered again. */
     private fun onBookRulesChanged() = bookSession.restartRendering()
 
     override fun onDestroy() {
+        PlaybackServiceLife.destroyed()
         if (restoring) {
             super.onDestroy()
             return

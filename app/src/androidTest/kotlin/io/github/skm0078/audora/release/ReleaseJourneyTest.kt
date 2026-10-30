@@ -135,8 +135,9 @@ class ReleaseJourneyTest {
         }
     }
 
-    /** Steps 01 to 20: first run, playback, settings, every format, and the library's menus. */
+    /** Steps 59 and 01 to 20: the first screen, first run, playback, settings, every format, the library's menus. */
     private fun firstRunToTheLibrary() {
+        step("59 the first screen leaves the player down", PlayerServiceJourney(rule) { scenario = it }::launchesDown)
         step(
             "01 first run plays a sample, opens the reader and offers the tour once",
             ::firstRunWalksThroughAndFinishes,
@@ -307,7 +308,6 @@ class ReleaseJourneyTest {
     }
 
     private fun firstRunWalksThroughAndFinishes() {
-        scenario = ActivityScenario.launch(MainActivity::class.java)
         val stepOne = hasText(text(R.string.first_run_step, 1, firstRunSteps))
         waitForNode(stepOne)
         node(hasText(text(R.string.first_run_privacy))).assertExists()
