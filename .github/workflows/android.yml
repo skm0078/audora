@@ -247,9 +247,8 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  # Instrumented tests need a real Android runtime: PDFium and our JNI library are native code.
-  # Plain sdkmanager/avdmanager/emulator calls instead of a third-party emulator action (AGENTS.md: no new
-  # dependencies). x86_64 because GitHub's Linux runners are x86_64 with KVM; :pdf builds that ABI for tests only.
+  # Instrumented tests need a real Android runtime: PDFium and our JNI library are native code. The emulator is
+  # x86_64 because GitHub's Linux runners are x86_64 with KVM; :pdf builds that ABI for tests only.
   device-tests:
     name: Device tests (emulator)
     runs-on: ubuntu-latest
@@ -288,39 +287,7 @@ jobs:
 
       - name: Start the emulator
         timeout-minutes: 15
-        run: |
-          tools="$ANDROID_HOME/cmdline-tools/latest/bin"
-          adb="$ANDROID_HOME/platform-tools/adb"
-          emulator="$ANDROID_HOME/emulator/emulator"
-          fail() {
-            echo "::error::$1"
-            tail -n 80 emulator.log 2> /dev/null || true
-            exit 1
-          }
-          yes | "$tools/sdkmanager" --licenses > /dev/null || true
-          "$tools/sdkmanager" --install emulator platform-tools "$EMULATOR_IMAGE" > /dev/null
-          # Pin where the AVD lives: the runner's older avdmanager and the new emulator disagree on the default.
-          export ANDROID_AVD_HOME="$RUNNER_TEMP/avd"
-          mkdir -p "$ANDROID_AVD_HOME"
-          echo no | "$tools/avdmanager" create avd --force --name ci --package "$EMULATOR_IMAGE"
-          if ! "$emulator" -list-avds | grep -qx ci; then
-            find "$HOME" "$RUNNER_TEMP" -name 'ci.ini' 2> /dev/null || true
-            fail "AVD 'ci' was not created in $ANDROID_AVD_HOME"
-          fi
-          "$emulator" -accel-check || true
-          "$adb" start-server
-          nohup "$emulator" -avd ci -no-window -no-audio -no-boot-anim -no-snapshot \
-            -gpu swiftshader_indirect -camera-back none -camera-front none -memory 4096 > emulator.log 2>&1 &
-          emulator_pid=$!
-          booted=""
-          for _ in $(seq 1 120); do
-            kill -0 "$emulator_pid" 2> /dev/null || fail "Emulator exited before booting"
-            booted="$(timeout 10 "$adb" shell getprop sys.boot_completed 2> /dev/null | tr -d '\r' || true)"
-            [ "$booted" = "1" ] && break
-            sleep 5
-          done
-          [ "$booted" = "1" ] || fail "Emulator did not finish booting"
-          echo "Emulator booted"
+        run: scripts/ci/start_emulator.sh
 
       # :app includes the release journey (app/src/androidTest/.../release): the real app, end to end, on this fresh
       # install. Its OCR step downloads the text recognition files from GitHub, as a phone would.
