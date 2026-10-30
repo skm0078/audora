@@ -212,7 +212,7 @@ class ReleaseJourneyTest {
         step("49 the side panel holds the library's tools", DrawerJourney(rule, ::backToTabs)::holdsTheLibrarysTools)
         step("51 player shortcuts open their group", SpeechJourney(rule, BOOK, ::backToTabs)::shortcutsOpenTheirGroup)
         step("56 an open book loads its voice without playing") {
-            WarmUpJourney(rule, ::activity) { port }.anOpenBookLoadsItsVoiceWithoutPlaying(BOOK)
+            WarmUpJourney(rule, { port }, ::backToTabs).anOpenBookLoadsItsVoiceWithoutPlaying(BOOK)
         }
     }
 

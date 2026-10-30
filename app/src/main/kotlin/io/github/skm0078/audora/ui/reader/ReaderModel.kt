@@ -147,6 +147,12 @@ class ReaderModel(
                 voiceWarmUp.offer(lang)
             }
         }
+        // What the warm-up waits on, for Share logs; collected apart so these changes never restart its wait.
+        scope.launch {
+            state.map { "player=${it.playback.connection} playing=${it.playback.wantsToPlay} ${it.pageForLog}" }
+                .distinctUntilChanged()
+                .collect { AudoraLog.d(TAG, "Warm-up waits on: $it, $logContext") }
+        }
         scope.launch {
             state.map { it.playback.connection == PlaybackSnapshot.Connection.CONNECTED }.distinctUntilChanged()
                 .filter { connected -> !connected }

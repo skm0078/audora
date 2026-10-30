@@ -124,6 +124,13 @@ data class ReaderState(
     /** This book is being read aloud (or buffering to be). */
     val isReading: Boolean get() = readingPosition != null && playback.wantsToPlay
 
+    /** The shown page and how far its text is, for the log: "page=2 Loading", "page=2 ready", "page=2 empty". */
+    val pageForLog: String
+        get() = "page=$page " + when (val shown = content) {
+            is PageContent.Ready -> if (shown.units.isEmpty()) "empty" else "ready"
+            else -> shown::class.simpleName.orEmpty()
+        }
+
     val playerReady: Boolean
         get() = document is DocumentState.Open && playback.connection == PlaybackSnapshot.Connection.CONNECTED
 
