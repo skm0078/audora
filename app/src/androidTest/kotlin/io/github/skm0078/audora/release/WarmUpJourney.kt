@@ -45,6 +45,8 @@ internal class WarmUpJourney(
                 .joinToString("\n")
         }
         awaitTrue("the book's voice loaded without Play", WARM_TIMEOUT_MS, recentLog) {
+            // The reader's one-second wait runs on the test's Compose clock, which moves only while the rule syncs.
+            rule.waitForIdle()
             logCount(WARMED) > warmedBefore
         }
         assertFalse("Loading the voice must not start reading", player.state.value.wantsToPlay)
