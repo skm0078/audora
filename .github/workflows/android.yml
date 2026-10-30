@@ -177,6 +177,21 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
 
+      - name: Baseline Profile in the dev APK
+        # app/src/main/baseline-prof.txt compiles into assets/dexopt/baseline.prof (ADR 2026-10-30-baseline-profile).
+        # The libraries' profiles alone were 5,487 bytes; far less than three times that means the app's own rules
+        # were dropped (a moved or emptied file, a build change), and the first launches would run interpreted again.
+        env:
+          MIN_PROFILE_BYTES: 16000
+        run: |
+          apk="$(find app/build/outputs/apk/dev -name '*.apk' | head -n 1)"
+          bytes="$(unzip -l "$apk" assets/dexopt/baseline.prof | awk '/baseline.prof/ {print $1}')"
+          echo "Baseline Profile in the dev APK: ${bytes:-none} bytes" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ -z "$bytes" ] || [ "$bytes" -lt "$MIN_PROFILE_BYTES" ]; then
+            echo "::error::The dev APK's baseline.prof is ${bytes:-missing}, under $MIN_PROFILE_BYTES bytes: the app's own profile is not in it."
+            exit 1
+          fi
+
       - name: Library load numbers
         # The JVM load test (LibraryLoadTest) writes its timings at 1,000 and 5,000 books; shown even when it failed.
         if: always()

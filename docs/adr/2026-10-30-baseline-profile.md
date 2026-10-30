@@ -43,8 +43,9 @@ library, the reader, PDF page drawing and the curl.
 - **Speed:** the first launches, first book opened and first page turns after install or update run compiled code
   instead of interpreted code. Google cites about 30 percent faster code from the first launch; the test phone is the
   judge (phone checks in the PR).
-- **Cost:** expected a few hundred KB of text in the repo and tens of KB of compiled profile in the APK (the PR states
-  the measured sizes). Install takes a
+- **Cost:** the first recording is 14,370 rules (3,844 of them the app's own), a 1.45 MB text file in the repo; the
+  compiled profile in the APK is far smaller (the PR states the measured size, and CI fails a dev APK whose profile
+  shrinks back to the libraries' alone). Install takes a
   little longer while Android compiles the listed code. No run-time cost; no new code in the APK.
 - **Drift:** the profile describes the code when it was recorded. Renamed or removed methods are ignored, new code is
   left out until the next recording. Re-record after big changes to start-up, the library or the reader.
