@@ -35,11 +35,12 @@ internal class AppScreens(private val device: UiDevice, private val app: AppUnde
     /** Back out of the reader to the library, the way a listener leaves a book (a first Back may close a sheet). */
     fun leaveReader() {
         val reader = By.desc(app.text("reader_play"))
-        repeat(MAX_BACKS) {
+        val closed = (1..MAX_BACKS).any {
             device.pressBack()
-            if (device.wait(Until.gone(reader), UI_WAIT_MS)) return device.waitForIdle()
+            device.wait(Until.gone(reader), UI_WAIT_MS)
         }
-        error("The reader was still open after $MAX_BACKS Backs")
+        check(closed) { "The reader was still open after $MAX_BACKS Backs" }
+        device.waitForIdle()
     }
 
     private fun await(selector: BySelector, what: String, timeoutMs: Long) {

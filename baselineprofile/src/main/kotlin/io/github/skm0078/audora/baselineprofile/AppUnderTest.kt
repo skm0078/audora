@@ -24,9 +24,8 @@ internal class AppUnderTest private constructor(val packageName: String, private
      */
     @SuppressLint("DiscouragedApi")
     fun text(name: String): String {
-        val id = RESOURCE_PACKAGES.map { resources.getIdentifier(name, "string", it ?: packageName) }
-            .firstOrNull { it != 0 }
-        checkNotNull(id) { "The app under test ($packageName) has no string named \"$name\"" }
+        val id = resources.getIdentifier(name, "string", APP_NAMESPACE)
+        check(id != 0) { "The app under test ($packageName) has no string named \"$name\"" }
         return resources.getString(id)
     }
 
@@ -62,12 +61,11 @@ internal class AppUnderTest private constructor(val packageName: String, private
     }
 
     companion object {
+        // Resources keep the app's namespace whatever the build's application id (.bench, .debug).
+        private const val APP_NAMESPACE = "io.github.skm0078.audora"
         private const val PDF = "application/pdf"
-        private const val MAIN_ACTIVITY = "io.github.skm0078.audora.MainActivity"
+        private const val MAIN_ACTIVITY = "$APP_NAMESPACE.MainActivity"
 
-        // Strings live under the app's namespace; null means the installed package name, should a build ever put
-        // them there instead.
-        private val RESOURCE_PACKAGES = listOf("io.github.skm0078.audora", null)
 
         /** The app named by the "targetAppId" runner argument (baselineprofile/build.gradle.kts). */
         fun fromArguments(): AppUnderTest {
