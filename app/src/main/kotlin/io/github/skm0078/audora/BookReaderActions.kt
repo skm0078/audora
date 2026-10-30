@@ -28,6 +28,7 @@ import io.github.skm0078.audora.playback.export.ClipPassage
 import io.github.skm0078.audora.playback.export.ShareSource
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
+import io.github.skm0078.audora.playback.studio.StudioMode
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.ui.jobs.startLongJob
 import io.github.skm0078.audora.ui.reader.BookNotesModel
@@ -150,6 +151,10 @@ internal class BookReaderActions(
         playWithPermission {
             AudiobookExport.start(context, model.state.value.bookId, model.openPassword)
         }
+    }
+
+    override fun onPrepareAhead() = context.startLongJob(LongJobKind.STUDIO) {
+        playWithPermission { StudioMode.start(context, model.state.value.bookId) }
     }
 
     override fun onBookmark(bookmark: Bookmark) = model.goToBookmark(bookmark)

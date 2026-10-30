@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_first_use_hints.xml -->
+<!-- Purpose: The first-use hints and their Settings switch, in Hindi (ADR 2026-10-30-first-use-hints). -->
+<resources>
+    <string name="hint_got_it">ठीक है</string>
+    <string name="hint_show_me">दिखाएँ</string>
+    <string name="hint_action_keep">कॉपी रखें</string>
+    <string name="hint_action_prepare">स्टूडियो मोड शुरू करें</string>
+    <string name="hint_keep_offline">यह किताब किसी दूसरे ऐप से पढ़ी जा रही है। बिना इंटरनेट के पढ़ने के लिए इसकी कॉपी इस फ़ोन पर रखें।</string>
+    <string name="hint_smart_speed">इस स्पीड पर स्मार्ट स्पीड आवाज़ को साफ़ रखती है। यह साउंड में है।</string>
+    <string name="hint_cast">यह कहानी जैसी लगती है। इसके संवाद और किरदारों को अपनी-अपनी आवाज़ें दें?</string>
+    <string name="hint_quiz">हाइलाइट सवाल बन जाते हैं। लाइब्रेरी में "मुझसे सवाल पूछें" देखें।</string>
+    <string name="hint_finished">आप अंत तक पहुँच गए। यह किताब शेयर करें, या सुनने के आँकड़े देखें।</string>
+    <string name="hint_prepare_ahead">फ़ोन चार्ज हो रहा है। स्टूडियो मोड इस किताब का बाकी हिस्सा अभी तैयार कर सकता है, ताकि कभी इंतज़ार न करना पड़े।</string>
+    <string name="hint_more_books">आप फ़ोटो, कॉपी किए गए टेक्स्ट, वेब पेज या मुफ़्त कैटलॉग से भी किताबें जोड़ सकते हैं।</string>
+    <string name="settings_hints_title">काम के सुझाव</string>
+    <string name="row_line_hints">ज़रूरत पर एक छोटा सुझाव · ऐप खुलने पर ज़्यादा से ज़्यादा एक</string>
+    <string name="settings_hints_body">कोई सुविधा उसी पल काम आए तो एक सुझाव दिखता है, जैसे स्पीड बढ़ाने पर स्मार्ट स्पीड या पहले हाइलाइट के बाद "मुझसे सवाल पूछें"। हर सुझाव एक बार दिखता है। कोई न देखना हो तो इसे बंद करें।</string>
+    <string name="found_terms_hints">सुझाव टिप्स मदद सलाह tips hints</string>
+</resources>

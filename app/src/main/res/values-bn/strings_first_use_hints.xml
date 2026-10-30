@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_first_use_hints.xml -->
+<!-- Purpose: The first-use hints and their Settings switch, in Bengali (ADR 2026-10-30-first-use-hints). -->
+<resources>
+    <string name="hint_got_it">বুঝেছি</string>
+    <string name="hint_show_me">দেখান</string>
+    <string name="hint_action_keep">কপি রাখুন</string>
+    <string name="hint_action_prepare">স্টুডিও মোড শুরু করুন</string>
+    <string name="hint_keep_offline">এই বই অন্য একটি অ্যাপের মাধ্যমে পড়া হচ্ছে। ইন্টারনেট ছাড়া পড়তে এর একটি কপি এই ফোনে রাখুন।</string>
+    <string name="hint_smart_speed">এই গতিতে স্মার্ট স্পিড ভয়েস পরিষ্কার রাখে। এটি সাউন্ডে আছে।</string>
+    <string name="hint_cast">এটি গল্পের মতো পড়ছে। এর সংলাপ আর চরিত্রদের আলাদা ভয়েস দেবেন?</string>
+    <string name="hint_quiz">হাইলাইট প্রশ্ন হয়ে যায়। লাইব্রেরিতে "আমাকে প্রশ্ন করুন" দেখুন।</string>
+    <string name="hint_finished">আপনি শেষে পৌঁছেছেন। বইটি শেয়ার করুন, বা শোনার হিসাব দেখুন।</string>
+    <string name="hint_prepare_ahead">ফোন চার্জ হচ্ছে। স্টুডিও মোড এখনই এই বইয়ের বাকিটা তৈরি করে রাখতে পারে, যাতে কখনও অপেক্ষা করতে না হয়।</string>
+    <string name="hint_more_books">ছবি, কপি করা লেখা, ওয়েব পেজ বা বিনামূল্যের ক্যাটালগ থেকেও বই যোগ করতে পারেন।</string>
+    <string name="settings_hints_title">কাজের টিপস</string>
+    <string name="row_line_hints">দরকারে একটি ছোট টিপ · অ্যাপ খুললে বড়জোর একটি</string>
+    <string name="settings_hints_body">কোনো সুবিধা ঠিক তখন কাজে লাগলে একটি টিপ দেখায়, যেমন গতি বাড়ালে স্মার্ট স্পিড বা প্রথম হাইলাইটের পরে "আমাকে প্রশ্ন করুন"। প্রতিটি টিপ একবারই দেখায়। কোনোটি না চাইলে এটি বন্ধ করুন।</string>
+    <string name="found_terms_hints">টিপস পরামর্শ সাহায্য tips hints</string>
+</resources>

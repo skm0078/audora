@@ -40,7 +40,6 @@ import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
-import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
@@ -84,6 +83,7 @@ import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
 import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.shows
+import io.github.skm0078.audora.release.JourneyDevice.toggleRow
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.audio.WordTimes
 import io.github.skm0078.audora.speech.voices.VoiceKind
@@ -222,6 +222,7 @@ class ReleaseJourneyTest {
             ZipNamesJourney(rule, ::activity, ::backToTabs).booksWithCodePageNamesOpen()
         }
         step("58 the player names its line actions", LineActionsJourney(rule, BOOK, ::backToTabs)::namedAndInSight)
+        step("59 search finds the switch that mutes tips", HintsJourney(rule, ::backToTabs)::searchFindsTheMute)
     }
 
     /**
@@ -289,8 +290,6 @@ class ReleaseJourneyTest {
         awaitTrue("the log line \"$fragment\"", state = { "Seen ${JourneyDevice.logCount(fragment)} time(s)" }) {
             JourneyDevice.logCount(fragment) > before
         }
-
-    private fun toggleRow(title: String): SemanticsMatcher = hasText(title) and isToggleable()
 
     private fun toggleState(matcher: SemanticsMatcher): ToggleableState =
         node(matcher).fetchSemanticsNode().config[SemanticsProperties.ToggleableState]
