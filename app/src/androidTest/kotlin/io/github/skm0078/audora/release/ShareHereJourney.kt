@@ -1,6 +1,7 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/release/ShareHereJourney.kt
-// Purpose: The release journey's step for the reader's Share button (ADR 2026-10-29-share-credit-and-link): it opens
-//          the Share choices, "Choose more lines" shows its bar, and a quote card opens in the reader's colours.
+// Purpose: The release journey's steps for the reader's Share button (ADR 2026-10-29-share-credit-and-link): it opens
+//          the Share choices, "Choose more lines" shows its bar, and a quote card opens in the reader's colours; the
+//          card offers the whole page (ADR 2026-10-30-whole-page-cards).
 
 package io.github.skm0078.audora.release
 
@@ -21,6 +22,7 @@ import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.ui.reader.PageTone
 import io.github.skm0078.audora.ui.reader.ReadingLookPreferences
+import io.github.skm0078.audora.ui.share.CardSpanPreferences
 import io.github.skm0078.audora.ui.share.ShareCardActivity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -65,12 +67,38 @@ internal class ShareHereJourney(private val rule: ComposeTestRule, private val a
             node(hasContentDescription(text(R.string.share_card_look_sepia)) and isSelected(), OPEN_TIMEOUT_MS)
         } finally {
             runBlocking { looks.save(before) }
-            repeat(MAX_BACKS) {
-                if (JourneyDevice.resumedActivity() is MainActivity) return@repeat
-                JourneyDevice.pressBackKey()
-                Thread.sleep(POLL_MS)
-            }
+            backToTheApp()
         }
+    }
+
+    /**
+     * [pdf] opened, top bar Share, then Share as a picture: the card offers "Whole page", which retitles the card
+     * screen. The card's last pick is put back as it was.
+     */
+    fun theCardOffersTheWholePage(pdf: String) {
+        val spans = CardSpanPreferences(app)
+        val before = runBlocking { spans.wholePage.first() }
+        runBlocking { spans.save(false) }
+        try {
+            val uri = JourneyDevice.downloadedPdf(pdf)
+            val current = activity()
+            JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri)) }
+            node(hasContentDescription(text(R.string.reader_page_image, 1).substringAfter("1"), true), OPEN_TIMEOUT_MS)
+            node(hasContentDescription(text(R.string.reader_share)) and hasClickAction()).performClick()
+            node(hasText(text(R.string.share_as_picture))).performScrollTo().performClick()
+            awaitTrue("the card screen") { JourneyDevice.resumedActivity() is ShareCardActivity }
+            node(hasText(text(R.string.share_card_span_page)), OPEN_TIMEOUT_MS).performScrollTo().performClick()
+            node(hasText(text(R.string.share_card_page_title)))
+        } finally {
+            runBlocking { spans.save(before) }
+            backToTheApp()
+        }
+    }
+
+    private fun backToTheApp() = repeat(MAX_BACKS) {
+        if (JourneyDevice.resumedActivity() is MainActivity) return@repeat
+        JourneyDevice.pressBackKey()
+        Thread.sleep(POLL_MS)
     }
 
     private companion object {

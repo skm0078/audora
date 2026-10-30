@@ -32,6 +32,14 @@ data class CardSubject(
     /** The quote, for a quote card; null for a book or a page snippet. */
     val quote: CardQuote? get() = (body as? CardBody.Quote)?.quote
 
+    /** The card can show its whole page instead of the selection (ADR 2026-10-30-whole-page-cards). */
+    val hasWholePage: Boolean
+        get() = when (body) {
+            CardBody.WholeBook -> false
+            is CardBody.Quote -> body.wholePage != null
+            is CardBody.Snippet -> true
+        }
+
     /** The book and page the caption beside the picture credits. */
     val source: ShareSource
         get() = ShareSource(
@@ -50,11 +58,20 @@ sealed interface CardBody {
     /** The book itself: its cover, title and author. */
     data object WholeBook : CardBody
 
-    /** [quote] from zero-based [page] when it is known; [pageLabel] in the quote's own language. */
-    data class Quote(val quote: CardQuote, val page: Int?, val pageLabel: String?) : CardBody
+    /**
+     * [quote] from zero-based [page] when it is known; [pageLabel] in the quote's own language. [wholePage] is the
+     * page's own text, when the reader sent it, for "Whole page".
+     */
+    data class Quote(
+        val quote: CardQuote,
+        val page: Int?,
+        val pageLabel: String?,
+        val wholePage: CardQuote? = null,
+    ) : CardBody
 
-    /** Part of zero-based [page] as drawn ([PageSnippets]), with its page in the app's language. */
-    data class Snippet(val picture: ImageBitmap, val page: Int, val pageLabel: String) : CardBody
+    /** Part of zero-based [page] as drawn ([PageSnippets]) and the [wholePage], with its page in the app's language. */
+    data class Snippet(val picture: ImageBitmap, val page: Int, val pageLabel: String, val wholePage: ImageBitmap) :
+        CardBody
 }
 
 /** Loading, loaded, or the book is gone (removed while a Share was on its way). */
@@ -96,12 +113,17 @@ internal object CardSubjects {
             is ShareCardRequest.WholeBook -> CardBody.WholeBook
 
             is ShareCardRequest.Quote -> CardQuote.of(request.lines, config).let { quote ->
-                CardBody.Quote(quote, request.page, request.page?.let { pageLabel(context, quote.script, it) })
+                CardBody.Quote(
+                    quote,
+                    request.page,
+                    request.page?.let { pageLabel(context, quote.script, it) },
+                    request.pageText?.takeIf(String::isNotBlank)?.let { CardQuote.ofPage(it, config) },
+                )
             }
 
-            is ShareCardRequest.Snippet -> PageSnippets.current()?.let { picture ->
+            is ShareCardRequest.Snippet -> PageSnippets.current()?.let { held ->
                 val label = context.getString(R.string.share_card_page, request.page + 1)
-                CardBody.Snippet(picture.asImageBitmap(), request.page, label)
+                CardBody.Snippet(held.part.asImageBitmap(), request.page, label, held.page.asImageBitmap())
             }
         }
 

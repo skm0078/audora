@@ -216,6 +216,9 @@ class ReleaseJourneyTest {
             ShareHereJourney(rule, ::activity).theShareButtonOpensTheChoices(BOOK)
         }
         step("54 search and You open the player's options", FindOptionsJourney(rule, ::backToTabs)::openTheSheet)
+        step("55 a page's card offers the whole page") {
+            ShareHereJourney(rule, ::activity).theCardOffersTheWholePage(BOOK)
+        }
     }
 
     /**

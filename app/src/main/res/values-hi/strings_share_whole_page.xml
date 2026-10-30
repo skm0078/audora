@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_card_span">कार्ड पर</string>
+    <string name="share_card_span_selection">चुना हुआ हिस्सा</string>
+    <string name="share_card_span_page">पूरा पृष्ठ</string>
+    <string name="share_card_page_title">पूरा पृष्ठ शेयर करें</string>
+    <string name="share_card_page_cut">इस पृष्ठ के पहले %1$d शब्द ही कार्ड पर आते हैं।</string>
+    <string name="share_card_page_overflow">पूरा पृष्ठ इस नाप में नहीं आता। स्टोरी में सबसे ज़्यादा आता है।</string>
+</resources>

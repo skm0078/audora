@@ -152,6 +152,13 @@ data class ReaderState(
             return spokenUnitIndex?.let(units::getOrNull) ?: units.firstOrNull()
         }
 
+    /** The text of zero-based [page] when it is the page shown and loaded, its sentences in order; else null. */
+    fun pageText(page: Int): String? {
+        if (page != this.page) return null
+        val units = (content as? PageContent.Ready)?.units ?: return null
+        return units.map { it.text }.filter(String::isNotBlank).joinToString(" ").takeIf(String::isNotBlank)
+    }
+
     /** The chapter-list row being read (or shown, when nothing of this book is read), if any. */
     val currentChapter: Int? get() = ChapterList.currentIndex(chapters, readingPosition?.page ?: page)
 

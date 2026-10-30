@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/share/QuoteCard.kt
-// Purpose: The cards drawn inside a ShareCardFrame: a quote with its credit, part of a page with its credit, and a
-//          book on its own.
+// Purpose: The cards drawn inside a ShareCardFrame: a quote (or a whole page of text) with its credit, part or all of a
+//          page as drawn with its credit, and a book on its own.
 
 package io.github.skm0078.audora.ui.share
 
@@ -32,6 +32,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -59,23 +60,42 @@ data class CardPhoto(val image: ImageBitmap, val focus: PhotoFocus = PhotoFocus.
 data class BookCardText(val kicker: String, val title: String, val author: String?, val dedication: String = "")
 
 /**
- * The quote fills the space between the quote mark and the credit: its size steps down from 34 to 16 card sp until
- * it fits, so a short line reads big on a story and 60 words still fit a square. The credit (title, author, page) is
- * always drawn; there is no way to share a quote without it. Without [quoteShown] the space stays empty: a quote
- * video's backdrop, whose words the video draws over it, lit one at a time.
+ * How the words fill a card. A [QUOTE] steps down from 34 to 16 card sp, so a short line reads big on a story and 60
+ * words still fit a square. A [PAGE] (ADR 2026-10-30-whole-page-cards) has no quote mark and steps down to 7 card sp
+ * (21 px on the 1080 px picture, still readable zoomed), with tighter lines, so a full page fits a story.
+ */
+enum class QuoteFit(val min: TextUnit, val max: TextUnit, val lineHeight: TextUnit, val quoteMark: Boolean) {
+    QUOTE(QUOTE_MIN, QUOTE_MAX, QUOTE_LINE_HEIGHT, quoteMark = true),
+    PAGE(PAGE_MIN, PAGE_MAX, PAGE_LINE_HEIGHT, quoteMark = false),
+}
+
+/**
+ * The quote fills the space between the quote mark and the credit, its size picked by [fit]. The credit (title,
+ * author, page) is always drawn; there is no way to share a quote without it. Without [quoteShown] the space stays
+ * empty: a quote video's backdrop, whose words the video draws over it, lit one at a time. [onOverflow] says whether
+ * the words were still too long at the smallest size (they end in "…").
  */
 @Composable
-fun QuoteCard(text: QuoteCardText, look: CardLook, background: CardPhoto?, quoteShown: Boolean = true) {
+fun QuoteCard(
+    text: QuoteCardText,
+    look: CardLook,
+    background: CardPhoto?,
+    quoteShown: Boolean = true,
+    fit: QuoteFit = QuoteFit.QUOTE,
+    onOverflow: (Boolean) -> Unit = {},
+) {
     CardBackdrop(look, background) {
         Column(Modifier.fillMaxSize().padding(horizontal = SIDE, vertical = TOP_BOTTOM)) {
-            Text(
-                OPEN_QUOTE,
-                color = look.accent,
-                style = TextStyle(fontFamily = QuoteFonts.of(text.quote.script), fontSize = MARK_SIZE),
-                modifier = Modifier.height(MARK_BOX),
-            )
+            if (fit.quoteMark) {
+                Text(
+                    OPEN_QUOTE,
+                    color = look.accent,
+                    style = TextStyle(fontFamily = QuoteFonts.of(text.quote.script), fontSize = MARK_SIZE),
+                    modifier = Modifier.height(MARK_BOX),
+                )
+            }
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
-                if (quoteShown) QuoteText(text, look)
+                if (quoteShown) QuoteText(text, look, fit, onOverflow)
             }
             Spacer(Modifier.height(SPACE_ABOVE_CREDIT))
             Box(Modifier.width(RULE_WIDTH).height(RULE_HEIGHT).background(look.accent))
@@ -86,15 +106,17 @@ fun QuoteCard(text: QuoteCardText, look: CardLook, background: CardPhoto?, quote
 }
 
 @Composable
-private fun QuoteText(text: QuoteCardText, look: CardLook) {
+private fun QuoteText(text: QuoteCardText, look: CardLook, fit: QuoteFit, onOverflow: (Boolean) -> Unit) {
     BasicText(
         text.quote.text,
         style = TextStyle(
             fontFamily = QuoteFonts.of(text.quote.script),
             color = look.ink,
-            lineHeight = QUOTE_LINE_HEIGHT,
+            lineHeight = fit.lineHeight,
         ),
-        autoSize = TextAutoSize.StepBased(QUOTE_MIN, QUOTE_MAX, QUOTE_STEP),
+        onTextLayout = { onOverflow(it.hasVisualOverflow) },
+        overflow = TextOverflow.Ellipsis,
+        autoSize = TextAutoSize.StepBased(fit.min, fit.max, QUOTE_STEP),
     )
 }
 
@@ -220,6 +242,9 @@ private val QUOTE_MIN = 16.sp
 private val QUOTE_MAX = 34.sp
 private val QUOTE_STEP = 1.sp
 private val QUOTE_LINE_HEIGHT = 1.45.em
+private val PAGE_MIN = 7.sp
+private val PAGE_MAX = 22.sp
+private val PAGE_LINE_HEIGHT = 1.3.em
 private val SPACE_ABOVE_CREDIT = 24.dp
 private val SPACE_IN_CREDIT = 8.dp
 private val SPACE_UNDER_COVER = 24.dp

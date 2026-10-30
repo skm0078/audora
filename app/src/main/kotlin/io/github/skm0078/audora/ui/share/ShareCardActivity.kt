@@ -154,6 +154,15 @@ private fun ReadyCard(request: ShareCardRequest, subject: CardSubject, onClose: 
         if (!lookSettled) choices = choices.copy(look = CardLook.forReading(tone, darkApp))
         lookSettled = true
     }
+    // "Card shows" opens on the listener's last pick, once; after that the screen's own pick (kept across rotation).
+    val spans = remember(context) { CardSpanPreferences(context) }
+    var spanSettled by rememberSaveable { mutableStateOf(!subject.hasWholePage) }
+    LaunchedEffect(Unit) {
+        if (spanSettled) return@LaunchedEffect
+        val wholePage = spans.wholePage.first()
+        if (!spanSettled) choices = choices.copy(wholePage = wholePage)
+        spanSettled = true
+    }
     val pick = rememberLauncherForActivityResult(PickVisualMedia()) { uri: Uri? ->
         if (uri != null) {
             scope.launch {
@@ -173,6 +182,10 @@ private fun ReadyCard(request: ShareCardRequest, subject: CardSubject, onClose: 
         override fun onBack() = onClose()
 
         override fun onChoices(next: CardChoices) {
+            if (next.wholePage != choices.wholePage) {
+                spanSettled = true
+                scope.launch { spans.save(next.wholePage) }
+            }
             choices = next
             lookSettled = true
         }
@@ -275,10 +288,20 @@ private const val PNG_QUALITY = 100
 // Where the saver keeps the video choices (after shape, look and dedication); missing in a state saved before them.
 private const val SAVED_VIDEO = 3
 private const val SAVED_SHARP = 4
+private const val SAVED_WHOLE_PAGE = 5
 
 /** The choices survive rotation; the picked picture does not (it is decoded again only if picked again). */
 private val CardChoicesSaver = listSaver<CardChoices, String>(
-    save = { listOf(it.shape.name, it.look.name, it.dedication, it.video.toString(), it.sharp.toString()) },
+    save = {
+        listOf(
+            it.shape.name,
+            it.look.name,
+            it.dedication,
+            it.video.toString(),
+            it.sharp.toString(),
+            it.wholePage.toString(),
+        )
+    },
     restore = { saved ->
         CardChoices(
             shape = CardShape.entries.firstOrNull { it.name == saved[0] } ?: CardShape.STORY,
@@ -286,6 +309,7 @@ private val CardChoicesSaver = listSaver<CardChoices, String>(
             dedication = saved[2],
             video = saved.getOrNull(SAVED_VIDEO) == true.toString(),
             sharp = saved.getOrNull(SAVED_SHARP) == true.toString(),
+            wholePage = saved.getOrNull(SAVED_WHOLE_PAGE) == true.toString(),
         )
     },
 )
