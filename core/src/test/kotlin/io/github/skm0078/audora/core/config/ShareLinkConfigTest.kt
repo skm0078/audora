@@ -10,13 +10,13 @@ import org.junit.Test
 class ShareLinkConfigTest {
     @Test
     fun `the default is the prod site's get page`() {
-        assertEquals("https://skm0078.github.io/audora/get/", ShareLinkConfig().appLink)
+        assertEquals("https://listenlock.telosmindlabs.com/get/", ShareLinkConfig().appLink)
     }
 
     @Test
-    fun `pictures print no link until a short domain is set`() {
-        assertEquals(null, ShareLinkConfig().cardLink)
-        assertEquals("listenlock.app", ShareLinkConfig(cardLink = "listenlock.app").cardLink)
+    fun `pictures print the site's bare host, or nothing when turned off`() {
+        assertEquals("listenlock.telosmindlabs.com", ShareLinkConfig().cardLink)
+        assertEquals(null, ShareLinkConfig(cardLink = null).cardLink)
     }
 
     @Test
@@ -27,6 +27,7 @@ class ShareLinkConfigTest {
             { ShareLinkConfig(cardLink = " ") },
             { ShareLinkConfig(cardLink = "skm0078.github.io/audora/long") },
             { ShareCardConfig(maxWords = 60, maxTextWords = 10) },
+            { ShareCardConfig(maxWords = 60, maxPageWords = 10) },
         ).forEach { build -> assertThrows(IllegalArgumentException::class.java) { build() } }
     }
 }

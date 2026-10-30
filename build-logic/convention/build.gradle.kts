@@ -25,6 +25,10 @@ gradlePlugin {
             id = "audora.android.library"
             implementationClass = "AndroidLibraryConventionPlugin"
         }
+        register("androidTest") {
+            id = "audora.android.test"
+            implementationClass = "AndroidTestConventionPlugin"
+        }
         register("jvmLibrary") {
             id = "audora.jvm.library"
             implementationClass = "JvmLibraryConventionPlugin"

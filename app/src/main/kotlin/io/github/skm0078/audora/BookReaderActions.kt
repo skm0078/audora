@@ -121,8 +121,11 @@ internal class BookReaderActions(
 
     override fun onShareBook() = ShareEntry.book(context, model.state.value.bookId)
 
-    override fun onSharePicture(lines: String, page: Int) =
-        ShareEntry.quote(context, model.state.value.bookId, lines, page)
+    // The shown page's own text goes along for the card's "Whole page" (ADR 2026-10-30-whole-page-cards).
+    override fun onSharePicture(lines: String, page: Int) {
+        val current = model.state.value
+        ShareEntry.quote(context, current.bookId, lines, page, current.pageText(page))
+    }
 
     override fun onShareVideo(lines: String, page: Int) =
         ShareEntry.video(context, model.state.value.bookId, lines, page)

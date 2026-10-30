@@ -11,7 +11,7 @@
 - **Could affect:** the reader's bottom bar (a card above Play, shortcuts hidden while it shows), the library's top
   (one card), Settings › Help (one switch), every instrumented test (the new runner).
 - **Verified in CI:** `FirstUseHintsTest`, `ReaderHintsTest`, `ReaderNoticeTest`, `FirstUseHintsUiTest` (screenshot
-  "first-use-hint"), release journey step 59 (provisional number).
+  "first-use-hint"), release journey step 60.
 
 **Real-device checks (the test phone):** clear the app's data. Open a book, set speed to 2x: the smart speed tip shows
 above Play; Show me opens Sound. Restart the app and open a story: the Cast tip shows (only one per start). Highlight

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_card_span">কার্ডে</string>
+    <string name="share_card_span_selection">বাছাই করা অংশ</string>
+    <string name="share_card_span_page">পুরো পৃষ্ঠা</string>
+    <string name="share_card_page_title">পুরো পৃষ্ঠা শেয়ার করুন</string>
+    <string name="share_card_page_cut">এই পৃষ্ঠার প্রথম %1$d শব্দই কার্ডে ধরে।</string>
+    <string name="share_card_page_overflow">পুরো পৃষ্ঠা এই মাপে ধরে না। স্টোরিতে সবচেয়ে বেশি ধরে।</string>
+</resources>

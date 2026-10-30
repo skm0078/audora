@@ -245,7 +245,7 @@ jobs:
           else
             gh release create "$TAG" dist/* \
               --target "$GITHUB_SHA" \
-              --title "Audora ${TAG}" \
+              --title "ListenLock ${TAG}" \
               --notes-file notes.md \
               --latest
           fi

@@ -6,7 +6,17 @@
 // a module. The trade-off is that detekt runs without type resolution, which only disables a few rules.
 
 val lintedModules =
-    listOf("app", "core", "pdf", "speech", "playback", "spikes/playback", "spikes/voices", "build-logic/convention")
+    listOf(
+        "app",
+        "core",
+        "pdf",
+        "speech",
+        "playback",
+        "baselineprofile",
+        "spikes/playback",
+        "spikes/voices",
+        "build-logic/convention",
+    )
 
 val ktlintCli: Configuration by configurations.creating
 val detektCli: Configuration by configurations.creating

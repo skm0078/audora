@@ -34,3 +34,6 @@ rule: at most a third of a page, always with the book, author and page under it 
   cold start; no new dependency.
 - While the box shows, the page neither turns nor reads on a tap; Back or Cancel closes it, a page turn drops it.
 - Text books (EPUB, TXT) have no drawn page, so no entry; flagged for the text-pages work (3b).
+
+**Update 2026-10-30:** the card screen can now show the whole page instead of the box, as a choice the listener makes
+(ADR 2026-10-30-whole-page-cards). The box itself keeps its third limit.
