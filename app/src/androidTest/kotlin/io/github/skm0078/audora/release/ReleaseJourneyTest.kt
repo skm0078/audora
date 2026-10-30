@@ -141,7 +141,7 @@ class ReleaseJourneyTest {
             "01 first run plays a sample, opens the reader and offers the tour once",
             ::firstRunWalksThroughAndFinishes,
         )
-        step("02 the launcher says ListenLock", BrandJourney::theLauncherSaysListenLock)
+        step("02 the launcher says ListenLock and links go to its site", BrandJourney::nameAndLinksAreListenLocks)
         step("03 Open with adds the book and opens the reader", ::openWithAddsTheBookAndOpensTheReader)
         step("04 play starts without the notification permission", ::playStartsWithoutTheNotificationPermission)
         step("05 media controls pause, resume and skip", ::mediaControlsPauseResumeAndSkip)
