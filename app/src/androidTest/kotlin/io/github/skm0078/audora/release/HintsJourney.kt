@@ -59,18 +59,18 @@ internal class HintsJourney(private val rule: ComposeTestRule, private val backT
         rule.waitUntil(UI_TIMEOUT_MS) { !hints.muted }
         tapRow(row)
         rule.waitUntil(UI_TIMEOUT_MS) { hints.muted }
-        backToTabs()
         closeTheSearch()
+        backToTabs()
     }
 
     /**
-     * Back from Settings returns to the library's search, its words still there (ADR 2026-10-28-action-search). Closed
-     * with its own button, then waited on until it is gone, so the next step's search starts empty.
+     * Back from Settings returns to the library's search, its words still there (ADR 2026-10-28-action-search). Waited
+     * for, then closed with its own button and waited on until it is gone, so the next step's search starts empty
+     * (closing it from the tab bar raced the search coming back).
      */
     private fun closeTheSearch() {
-        val close = hasContentDescription(text(R.string.library_search_close))
-        rule.waitForIdle()
-        if (rule.shows(close)) tap(close)
+        JourneyDevice.pressBackKey()
+        tap(hasContentDescription(text(R.string.library_search_close)))
         rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(hasSetTextAction()) }
         waitFor(hasText(text(R.string.library_title)))
     }
