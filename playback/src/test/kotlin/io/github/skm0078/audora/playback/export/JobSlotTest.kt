@@ -1,11 +1,14 @@
 // File: playback/src/test/kotlin/io/github/skm0078/audora/playback/export/JobSlotTest.kt
-// Purpose: A job slot refuses a second run until the first thread has ended, and frees itself after a failure.
+// Purpose: A job slot refuses a second run until the first thread has ended, and frees itself after a failure;
+//          short work on a job's files holds it on the calling thread.
 
 package io.github.skm0078.audora.playback.export
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -46,6 +49,36 @@ class JobSlotTest {
         )
         assertTrue(thrown.await(1, TimeUnit.SECONDS))
         waitUntilFree()
+        assertFalse(slot.busy)
+    }
+
+    @Test
+    fun `short work holds the slot on the calling thread, so a job cannot start meanwhile`() {
+        var refused = false
+        val result = slot.runIfFree {
+            refused = !slot.launch("job") {}
+            42
+        }
+        assertEquals(42, result)
+        assertTrue(refused)
+        assertFalse(slot.busy)
+    }
+
+    @Test
+    fun `short work is skipped while a job runs, and an interrupt meant for it is not left on the thread`() {
+        val release = CountDownLatch(1)
+        assertTrue(
+            slot.launch("job") {
+                var released = false
+                while (!released) released = awaitIgnoringInterrupts(release)
+            },
+        )
+        assertNull(slot.runIfFree { error("must not run") })
+        release.countDown()
+        waitUntilFree()
+
+        slot.runIfFree { slot.interrupt() }
+        assertFalse(Thread.currentThread().isInterrupted)
         assertFalse(slot.busy)
     }
 

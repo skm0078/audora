@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_job_leftovers.xml -->
+<!-- Purpose: The Jobs screen's new card (status pills) and what unfinished jobs leave behind (ADR 2026-10-29-jobs-card-and-leftovers). -->
+<resources>
+    <string name="jobs_status_starting">Starting</string>
+    <string name="jobs_status_percent">%1$d%%</string>
+    <string name="jobs_status_waiting">Waiting</string>
+    <string name="jobs_status_done">Done</string>
+    <string name="jobs_status_failed">Didn\'t finish</string>
+    <string name="jobs_status_stopped">Stopped</string>
+    <string name="jobs_download_line">%1$s · %2$s</string>
+    <plurals name="jobs_download_kept_days">
+        <item quantity="one">Cancel keeps what was received for %1$d day: downloading it again goes on from there.</item>
+        <item quantity="other">Cancel keeps what was received for %1$d days: downloading it again goes on from there.</item>
+    </plurals>
+    <plurals name="jobs_unfinished_kept">
+        <item quantity="one">The work already done (%1$s) is kept for %2$d day so you can carry on from the book\'s menu. After that it is cleaned up by itself.</item>
+        <item quantity="other">The work already done (%1$s) is kept for %2$d days so you can carry on from the book\'s menu. After that it is cleaned up by itself.</item>
+    </plurals>
+    <string name="jobs_unfinished_delete">Delete unfinished files</string>
+    <string name="jobs_unfinished_delete_question">Delete the unfinished files (%1$s)? Starting this again will then begin from the start.</string>
+    <string name="jobs_unfinished_deleted">Unfinished files deleted (%1$s).</string>
+    <string name="jobs_leftovers_section">Unfinished work</string>
+    <string name="jobs_leftovers_waiting">%1$s left by stopped jobs</string>
+    <string name="jobs_leftovers_nothing">Nothing left by stopped jobs</string>
+    <plurals name="jobs_leftovers_rule">
+        <item quantity="one">Kept for %1$d day so they can carry on, then cleaned up by themselves. Finished audiobooks, copies and studio audio are never touched.</item>
+        <item quantity="other">Kept for %1$d days so they can carry on, then cleaned up by themselves. Finished audiobooks, copies and studio audio are never touched.</item>
+    </plurals>
+    <string name="jobs_leftovers_last">Last cleaned %1$s: %2$s from %3$s.</string>
+    <string name="jobs_leftovers_join">, </string>
+    <plurals name="jobs_leftovers_downloads">
+        <item quantity="one">%1$d download</item>
+        <item quantity="other">%1$d downloads</item>
+    </plurals>
+    <plurals name="jobs_leftovers_audiobooks">
+        <item quantity="one">%1$d audiobook</item>
+        <item quantity="other">%1$d audiobooks</item>
+    </plurals>
+    <plurals name="jobs_leftovers_talking_books">
+        <item quantity="one">%1$d talking book</item>
+        <item quantity="other">%1$d talking books</item>
+    </plurals>
+    <string name="jobs_leftovers_clean">Clean up now</string>
+    <string name="jobs_leftovers_clean_question">Delete everything stopped jobs left (%1$s)? A download that is still running is left alone. A stopped job started again will begin from the start.</string>
+</resources>

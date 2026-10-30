@@ -7,40 +7,39 @@ package io.github.skm0078.audora.ui.jobs
 import android.text.format.Formatter
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.config.LeftoverConfig
 import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.di.LibraryEntryPoint
+import io.github.skm0078.audora.playback.jobs.JobLeftovers
+import io.github.skm0078.audora.playback.jobs.LeftoverState
 import io.github.skm0078.audora.playback.jobs.LongJob
 import io.github.skm0078.audora.playback.jobs.LongJobs
 import io.github.skm0078.audora.speech.download.DownloadJob
@@ -51,6 +50,7 @@ import io.github.skm0078.audora.ui.theme.Dimens
 import io.github.skm0078.audora.ui.theme.SectionTitle
 import io.github.skm0078.audora.ui.tutor.langName
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** The live jobs and downloads; voice names are read from the catalog once, off the main thread. */
@@ -64,12 +64,22 @@ fun JobsRoute(onBack: () -> Unit) {
             VoiceLibrary.get(context).catalog.voices.associate { it.id to it.spec.label }
         }
     }
+    val leftovers = remember(context) { JobLeftovers.get(context) }
+    val entry = remember(context) { LibraryEntryPoint.of(context) }
+    val leftoverState by leftovers.state.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    // Measured again when a download or a job starts or ends: what was live work may be a leftover now, or gone.
+    val settled = downloads.map { it.id to it.running } to jobs.values.map { it.kind to it.end }
+    LaunchedEffect(settled) { leftovers.refresh(entry.library(), entry.outputs()) }
     JobsScreen(
         jobs = shownJobs(jobs, book = null),
         downloads = downloads,
         voiceNames = voiceNames,
         onCancelDownload = { DownloadJobs.cancel(context, it) },
         onBack = onBack,
+        leftovers = leftoverState,
+        onCleanUp = { scope.launch { leftovers.cleanNow(entry.library(), entry.outputs()) } },
+        unfinished = { rememberUnfinishedFiles(it) },
     )
 }
 
@@ -87,6 +97,7 @@ fun rememberRunningJobCount(): Int {
  * ended, until it is dismissed, as on the library's cards. Nothing here is a live region except how a job ended
  * (its card announces that once): progress read aloud would talk over the book.
  */
+@Suppress("LongParameterList") // The screen's state and its three actions; the last three default for tests.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JobsScreen(
@@ -96,6 +107,9 @@ fun JobsScreen(
     onCancelDownload: (DownloadJob) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    leftovers: LeftoverState? = null,
+    onCleanUp: () -> Unit = {},
+    unfinished: @Composable (LongJob) -> UnfinishedFiles? = { null },
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -122,7 +136,7 @@ fun JobsScreen(
                 item {
                     SectionTitle(stringResource(R.string.jobs_section_books), Modifier.padding(top = Dimens.SpaceM))
                 }
-                items(jobs, key = { "job-${it.kind}" }) { LongJobCard(it) }
+                items(jobs, key = { "job-${it.kind}" }) { LongJobCard(it, unfinished = unfinished(it)) }
             }
             if (downloads.isNotEmpty()) {
                 item {
@@ -132,60 +146,74 @@ fun JobsScreen(
                     DownloadCard(download, downloadName(download, voiceNames)) { onCancelDownload(download) }
                 }
                 item {
+                    val days = LeftoverConfig().keepDays
                     Text(
-                        stringResource(R.string.jobs_download_kept),
+                        pluralStringResource(R.plurals.jobs_download_kept_days, days, days),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
+            leftovers?.takeIf { it.shown }?.let { state ->
+                item {
+                    SectionTitle(stringResource(R.string.jobs_leftovers_section), Modifier.padding(top = Dimens.SpaceM))
+                }
+                item(key = "leftovers") { LeftoversCard(state, onCleanUp) }
+            }
         }
     }
 }
 
-/** "Voice: Bruno", "34 MB of 120 MB", a bar, the time left, and Cancel. */
+/** "Voice: Bruno" with its percent, "34 MB of 120 MB · 12 min left", a bar, and Cancel. */
 @Composable
 private fun DownloadCard(download: DownloadJob, name: String, onCancel: () -> Unit) {
     val context = LocalContext.current
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        modifier = Modifier.fillMaxWidth(),
+    val sized = download.running && download.total > 0L
+    val detail = when {
+        !download.running -> stringResource(R.string.jobs_download_waiting)
+
+        sized -> stringResource(
+            R.string.jobs_download_line,
+            stringResource(
+                R.string.jobs_download_progress,
+                Formatter.formatShortFileSize(context, download.bytes),
+                Formatter.formatShortFileSize(context, download.total),
+            ),
+            downloadTimeLeft(download.bytes, download.total),
+        )
+
+        // Running, its size not known yet: the first bytes are on their way.
+        else -> null
+    }
+    val status = when {
+        !download.running -> stringResource(R.string.jobs_status_waiting)
+        sized -> stringResource(R.string.jobs_status_percent, percentOf(download))
+        else -> stringResource(R.string.jobs_status_starting)
+    }
+    JobCard(
+        icon = R.drawable.ic_download,
+        tone = if (download.running) JobTone.RUNNING else JobTone.WAITING,
+        title = name,
+        status = status,
+        detail = detail,
+        bar = when {
+            !download.running -> JobBar.None
+            sized -> JobBar.Filled(download.bytes.toFloat() / download.total)
+            else -> JobBar.Moving
+        },
     ) {
-        Column(Modifier.padding(Dimens.SpaceL), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
-            Text(name, style = MaterialTheme.typography.titleSmall)
-            when {
-                !download.running -> {
-                    LinearProgressIndicator(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceXs))
-                    Text(stringResource(R.string.jobs_download_waiting), style = MaterialTheme.typography.bodyMedium)
-                }
-
-                download.total > 0L -> {
-                    LinearProgressIndicator(
-                        progress = { (download.bytes.toFloat() / download.total).coerceIn(0f, 1f) },
-                        modifier = Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceXs),
-                    )
-                    val received = Formatter.formatShortFileSize(context, download.bytes)
-                    val total = Formatter.formatShortFileSize(context, download.total)
-                    Text(
-                        stringResource(R.string.jobs_download_progress, received, total),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    DownloadTimeLeft(download.bytes, download.total)
-                }
-
-                // Running, its size not known yet: the first bytes are on their way.
-                else -> LinearProgressIndicator(Modifier.fillMaxWidth().padding(vertical = Dimens.SpaceXs))
-            }
-            // TalkBack moving between buttons hears which download this one stops, not a bare "Cancel".
-            val cancel = stringResource(R.string.jobs_download_cancel)
-            val described = stringResource(R.string.storage_action_on, cancel, name)
-            TextButton(
-                onClick = onCancel,
-                modifier = Modifier.heightIn(min = Dimens.TouchTarget).semantics { contentDescription = described },
-            ) { Text(cancel) }
-        }
+        // TalkBack moving between buttons hears which download this one stops, not a bare "Cancel".
+        val cancel = stringResource(R.string.jobs_download_cancel)
+        val described = stringResource(R.string.storage_action_on, cancel, name)
+        JobOutlinedButton(cancel, onCancel, Modifier.semantics { contentDescription = described })
     }
 }
+
+/** Whole percent received, never 100 before the last byte. */
+internal fun percentOf(download: DownloadJob): Int =
+    if (download.total <= 0L) 0 else (download.bytes * PERCENT_FULL / download.total).toInt().coerceIn(0, PERCENT_FULL)
+
+private const val PERCENT_FULL = 100
 
 /** What a download fetches, in the listener's words: the voice's name, the language, or the model. */
 @Composable
