@@ -66,7 +66,6 @@ internal class AppUnderTest private constructor(val packageName: String, private
         private const val PDF = "application/pdf"
         private const val MAIN_ACTIVITY = "$APP_NAMESPACE.MainActivity"
 
-
         /** The app named by the "targetAppId" runner argument (baselineprofile/build.gradle.kts). */
         fun fromArguments(): AppUnderTest {
             val instrumentation = InstrumentationRegistry.getInstrumentation()
