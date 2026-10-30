@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_settings_speech.xml -->
+<!-- Purpose: You › Listening's door to the player's Voice and speed sheet (ADR 2026-10-29-find-player-options). -->
+<resources>
+    <string name="settings_speech_body">Speed, pitch, what to read and focus sound, in the book you read last</string>
+    <string name="settings_speech_no_book">Open a book first, then its speed and voice are here</string>
+</resources>

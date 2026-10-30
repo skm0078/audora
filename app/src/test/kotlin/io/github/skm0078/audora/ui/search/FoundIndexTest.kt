@@ -16,6 +16,7 @@ import io.github.skm0078.audora.ui.library.BookAction
 import io.github.skm0078.audora.ui.library.LibraryAction
 import io.github.skm0078.audora.ui.library.LibraryItem
 import io.github.skm0078.audora.ui.library.LibraryListState
+import io.github.skm0078.audora.ui.reader.SpeechSpot
 import io.github.skm0078.audora.ui.settings.SettingKey
 import java.io.File
 import java.util.Locale
@@ -83,6 +84,21 @@ class FoundIndexTest {
         val web = find("web page", english, library(null)).first { it.target is FoundTarget.Library }
         assertEquals(FoundTarget.Library(LibraryAction.READ_WEB_PAGE), web.target)
         assertEquals("Library › Add book", web.where)
+    }
+
+    @Test
+    fun `the player's options are found for the book being read, in its Voice and speed sheet`() {
+        val focus = find("focus", english, library(latest = gora)).first { it.target is FoundTarget.Speech }
+        assertEquals(FoundTarget.Speech(gora.book, SpeechSpot.FOCUS), focus.target)
+        assertEquals("Focus sound", focus.title)
+        assertEquals("The book you're reading · Voice and speed", focus.where)
+        val speed = find("faster", english, library(latest = gora)).first { it.target is FoundTarget.Speech }
+        assertEquals(FoundTarget.Speech(gora.book, SpeechSpot.TOP), speed.target)
+    }
+
+    @Test
+    fun `with no book to open, no player option is offered`() {
+        assertTrue(find("focus", english, library(latest = null)).none { it.target is FoundTarget.Speech })
     }
 
     @Test

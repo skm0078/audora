@@ -60,6 +60,10 @@ class LibraryController(
     var listState: LibraryListState by mutableStateOf(LibraryListState.Loading)
         private set
 
+    /** The book read last, when its file can still be opened: where You's Voice and speed row goes. */
+    val readLast: BookId?
+        get() = (listState as? LibraryListState.Loaded)?.latest?.takeUnless { it.needsLocating }?.book?.id
+
     /** A pick is being added or located; the screen shows progress and blocks a second pick. */
     var busy: Boolean by mutableStateOf(false)
         private set

@@ -4,6 +4,7 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Icon
@@ -29,21 +30,35 @@ import io.github.skm0078.audora.ui.theme.optionRowColors
 
 /**
  * Where the Voice and speed sheet opens: its top ([TOP]), the voice list, or one of the finer groups, open. The
- * player's shortcuts open it at [VOICE], [READING] and [FOCUS].
+ * player's shortcuts open it at [VOICE], [READING] and [FOCUS]; [icon] marks it where search offers it.
  */
-enum class SpeechSpot(@StringRes val title: Int, val expands: Boolean) {
+enum class SpeechSpot(
+    @StringRes val title: Int,
+    val expands: Boolean,
+    @DrawableRes val icon: Int = R.drawable.ic_tune,
+) {
     TOP(R.string.speech_sheet_title, expands = false),
-    VOICE(R.string.speech_voices, expands = false),
-    READING(R.string.reading_modes_title, expands = true),
+    VOICE(R.string.speech_voices, expands = false, R.drawable.ic_mic),
+    READING(R.string.reading_modes_title, expands = true, R.drawable.ic_article),
     SOUND(R.string.speech_sound, expands = true),
     CAST(R.string.speech_cast, expands = true),
     STUDY(R.string.study_title, expands = true),
-    FOCUS(R.string.focus_title, expands = true),
+    FOCUS(R.string.focus_title, expands = true, R.drawable.ic_headphones),
     ;
 
     companion object {
         /** The groups that open in place, in the sheet's order. */
         val groups: List<SpeechSpot> = entries.filter { it.expands }
+    }
+}
+
+/**
+ * A place in the sheet asked for from outside the player (a search result, Settings), opened once: [onTaken] clears
+ * the request so a rotation or a return to the player does not open the sheet again.
+ */
+class SpeechRequest(val spot: SpeechSpot?, val onTaken: () -> Unit) {
+    companion object {
+        val NONE = SpeechRequest(null) {}
     }
 }
 

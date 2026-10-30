@@ -26,6 +26,7 @@
     <string name="found_book_finished">Mark %1$s as finished</string>
     <string name="found_book_not_started">Mark %1$s as not started</string>
     <string name="found_terms_play">listen read aloud start</string>
+    <string name="found_terms_speech">speed pitch pace faster slower voice</string>
     <string name="found_terms_audiobook">mp3 audio file offline</string>
     <string name="found_terms_share">picture image card</string>
     <string name="found_terms_guide">characters people who</string>
