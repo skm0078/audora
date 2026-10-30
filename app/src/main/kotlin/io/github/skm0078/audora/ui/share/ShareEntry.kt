@@ -5,11 +5,15 @@
 package io.github.skm0078.audora.ui.share
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.text.TextCuts
+import io.github.skm0078.audora.playback.export.ShareSource
+import io.github.skm0078.audora.playback.export.ShareWords
 
 /** What the card screen was opened for. */
 sealed interface ShareCardRequest {
@@ -63,11 +67,12 @@ sealed interface ShareCardRequest {
 }
 
 /**
- * Called from the reader's sentence menu and the library's book menu (and, later, the reader's side panel), always
+ * Called from the reader's Share button and sentence menu and the library's book menu, always
  * from a tap while ListenLock is on screen. Nothing is shared until the listener presses Share on the card screen.
  */
 object ShareEntry {
     private const val TAG = "ShareCard"
+    private const val PLAIN_TEXT = "text/plain"
 
     /** Lines from a book as a quote card; [page] is zero-based, as the reader counts. */
     fun quote(context: Context, book: BookId, lines: String, page: Int?) =
@@ -82,6 +87,24 @@ object ShareEntry {
 
     /** The book itself: cover, title and author. */
     fun book(context: Context, book: BookId) = open(context, ShareCardRequest.WholeBook(book))
+
+    /**
+     * [lines] as plain text, in quotes and cut to the text limit, with [source]'s credit and ListenLock's link (ADR
+     * 2026-10-29-share-credit-and-link), straight to the app the listener picks.
+     */
+    fun text(context: Context, source: ShareSource, lines: String) {
+        val send = Intent(Intent.ACTION_SEND)
+            .setType(PLAIN_TEXT)
+            .putExtra(Intent.EXTRA_TEXT, ShareWords.caption(context, source, lines))
+        val chooser = Intent.createChooser(send, context.getString(R.string.sentence_menu_share_text))
+        if (context !is Activity) chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            context.startActivity(chooser)
+            AudoraLog.i(TAG, "Text share opened, page=${source.page}")
+        } catch (e: ActivityNotFoundException) {
+            AudoraLog.w(TAG, "No app to share text with: ${e.javaClass.simpleName}")
+        }
+    }
 
     private fun open(context: Context, request: ShareCardRequest) {
         AudoraLog.i(TAG, "Card screen opened for book=${request.book.logLabel} kind=${request.javaClass.simpleName}")

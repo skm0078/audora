@@ -16,6 +16,7 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.share.CardQuote
 import io.github.skm0078.audora.di.LibraryEntryPoint
+import io.github.skm0078.audora.playback.export.ShareSource
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -30,6 +31,18 @@ data class CardSubject(
 ) {
     /** The quote, for a quote card; null for a book or a page snippet. */
     val quote: CardQuote? get() = (body as? CardBody.Quote)?.quote
+
+    /** The book and page the caption beside the picture credits. */
+    val source: ShareSource
+        get() = ShareSource(
+            title,
+            author,
+            when (body) {
+                CardBody.WholeBook -> null
+                is CardBody.Quote -> body.page
+                is CardBody.Snippet -> body.page
+            },
+        )
 }
 
 /** What a card shows over its credit: one of the three, never a mix. */
@@ -40,8 +53,8 @@ sealed interface CardBody {
     /** [quote] from zero-based [page] when it is known; [pageLabel] in the quote's own language. */
     data class Quote(val quote: CardQuote, val page: Int?, val pageLabel: String?) : CardBody
 
-    /** Part of a page as drawn ([PageSnippets]), with its page in the app's language. */
-    data class Snippet(val picture: ImageBitmap, val pageLabel: String) : CardBody
+    /** Part of zero-based [page] as drawn ([PageSnippets]), with its page in the app's language. */
+    data class Snippet(val picture: ImageBitmap, val page: Int, val pageLabel: String) : CardBody
 }
 
 /** Loading, loaded, or the book is gone (removed while a Share was on its way). */
@@ -87,7 +100,8 @@ internal object CardSubjects {
             }
 
             is ShareCardRequest.Snippet -> PageSnippets.current()?.let { picture ->
-                CardBody.Snippet(picture.asImageBitmap(), context.getString(R.string.share_card_page, request.page + 1))
+                val label = context.getString(R.string.share_card_page, request.page + 1)
+                CardBody.Snippet(picture.asImageBitmap(), request.page, label)
             }
         }
 

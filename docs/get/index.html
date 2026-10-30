@@ -1,0 +1,27 @@
+<!doctype html>
+<!--
+  File: docs/get/index.html
+  Purpose: The one link every share carries (ADR 2026-10-29-share-credit-and-link). On an Android phone it opens the
+           Play listing once PLAY is set; everyone else, and every phone before then, lands on the site's home. Links
+           already shared keep working when the listing goes live: only PLAY below changes.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Get ListenLock</title>
+<link rel="canonical" href="https://skm0078.github.io/audora/">
+<script>
+  // Empty until the Play listing is public (a closed-test link shows "not found" to everyone else).
+  var PLAY = "";
+  var SITE = "../";
+  var android = /Android/i.test(navigator.userAgent || "");
+  location.replace(PLAY && android ? PLAY : SITE);
+</script>
+<noscript><meta http-equiv="refresh" content="0; url=../"></noscript>
+</head>
+<body>
+<p><a href="../">Get ListenLock: free, offline books read aloud</a></p>
+</body>
+</html>

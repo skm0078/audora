@@ -86,11 +86,13 @@ fun PlayerScreen(
     spokenWord: () -> IntRange? = { null },
     notes: NotesState = NotesState(),
     notesActions: BookNotesActions = BookNotesActions.None,
+    speech: SpeechRequest = SpeechRequest.NONE,
 ) {
     val title = state.title.orEmpty()
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-            val parts = PlayerParts(state, config, actions, onShowPage, onOpenUpNext, title, book, covers, notes)
+            val parts =
+                PlayerParts(state, config, actions, onShowPage, onOpenUpNext, title, book, covers, notes, speech)
             // A phone in landscape, a foldable open or a tablet on its side: book and progress on one side, the
             // sentence and the controls on the other, instead of one tall column squeezed into a short window.
             if (rememberPanes(maxWidth, maxHeight)) {
@@ -104,7 +106,7 @@ fun PlayerScreen(
                         PlayerBody(parts, spokenWord, compact = maxHeight < COMPACT_HEIGHT)
                     }
                     PlayerBookmarkNotice(notes.quickBookmark, notesActions)
-                    PlayerControls(state, config, actions, voices)
+                    PlayerControls(parts, voices)
                 }
             }
         }
@@ -141,10 +143,12 @@ private data class PlayerParts(
     val book: Book?,
     val covers: CoverSource,
     val notes: NotesState,
+    val speech: SpeechRequest,
 )
 
 @Composable
-private fun PlayerControls(state: ReaderState, config: ReaderConfig, actions: ReaderActions, voices: List<VoiceRow>) {
+private fun PlayerControls(parts: PlayerParts, voices: List<VoiceRow>) {
+    val (state, config, actions) = parts
     when {
         state.document !is DocumentState.Open -> Unit
 
@@ -155,7 +159,7 @@ private fun PlayerControls(state: ReaderState, config: ReaderConfig, actions: Re
             onForward = actions::onSkipForward,
         )
 
-        else -> ReaderControls(state, config, actions, voices = voices)
+        else -> ReaderControls(state, config, actions, voices = voices, speech = parts.speech)
     }
 }
 
@@ -221,7 +225,7 @@ private fun PlayerPanes(
                     .padding(horizontal = Dimens.ScreenPadding),
             )
             PlayerBookmarkNotice(parts.notes.quickBookmark, notesActions)
-            PlayerControls(parts.state, parts.config, parts.actions, voices)
+            PlayerControls(parts, voices)
         }
     }
 }

@@ -31,7 +31,7 @@
     <string name="sentence_hint_copy">Copies this sentence, to paste in any app.</string>
     <string name="sentence_hint_copy_highlight">Copies the whole highlighted passage, to paste in any app.</string>
     <string name="sentence_menu_share_text">Share text</string>
-    <string name="sentence_hint_share_text">Sends the words (the highlighted passage, if this is one) to a chat, mail or notes app.</string>
+    <string name="sentence_hint_share_text">The words (the highlighted passage, if this is one) with the book, its author and a link to ListenLock, to a chat, mail or notes app.</string>
     <string name="sentence_copied">Copied</string>
 
     <string name="shortcut_resume">Resume</string>

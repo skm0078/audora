@@ -192,7 +192,7 @@ class ShareCardScreenTest {
         val page = Bitmap.createBitmap(SNIPPET_WIDTH, SNIPPET_HEIGHT, Bitmap.Config.ARGB_8888).apply {
             eraseColor(android.graphics.Color.WHITE)
         }
-        show(subjectOf(CardBody.Snippet(page.asImageBitmap(), "Page 12")), "en", 2f)
+        show(subjectOf(CardBody.Snippet(page.asImageBitmap(), 11, "Page 12")), "en", 2f)
         rule.onNodeWithText(text(R.string.share_card_snippet_title)).assertExists()
         rule.onNodeWithText(text(R.string.share_card_kind_video)).assertDoesNotExist()
         Screens.save("share-card-snippet-2x", rule.onRoot().captureToImage().asAndroidBitmap())

@@ -18,6 +18,7 @@ import io.github.skm0078.audora.ui.library.LibraryItem
 import io.github.skm0078.audora.ui.library.LibraryListState
 import io.github.skm0078.audora.ui.library.MenuPlace
 import io.github.skm0078.audora.ui.library.actionIcon
+import io.github.skm0078.audora.ui.reader.SpeechSpot
 import io.github.skm0078.audora.ui.settings.SettingKey
 import io.github.skm0078.audora.ui.settings.SettingsPage
 
@@ -43,7 +44,8 @@ object FoundIndex {
         book: FoundBook?,
         values: Map<SettingKey, String> = emptyMap(),
     ): List<ActionEntry<FoundRow>> =
-        bookEntries(texts, book) + settingEntries(texts, values) + screenEntries(texts) + libraryEntries(texts)
+        bookEntries(texts, book) + speechEntries(texts, book) + settingEntries(texts, values) + screenEntries(texts) +
+            libraryEntries(texts)
 
     /**
      * The book a search's book actions name: the first one, most recent first, with a title word that starts with a
@@ -194,17 +196,34 @@ object FoundIndex {
         else -> null
     }
 
-    /** Matched by [title]'s words; its own [terms], and the English title and terms, answer too. */
-    private fun entry(
-        texts: FoundTexts,
-        row: FoundRow,
-        @StringRes title: Int,
-        @StringRes terms: Int? = null,
-        context: List<String> = emptyList(),
-    ): ActionEntry<FoundRow> {
-        val words = listOfNotNull(terms?.let(texts::text), texts.english(title), terms?.let(texts::english))
-        return ActionEntry(row, texts.text(title), words, context)
-    }
-
     private const val MIN_TITLE_WORD = 3
+}
+
+/**
+ * The player's options for the found book, "The book you're reading · Voice and speed": the sheet's top (speed and
+ * pitch), its voices and each group, opened in that book's reader (ADR 2026-10-29-find-player-options).
+ */
+private fun speechEntries(texts: FoundTexts, found: FoundBook?): List<ActionEntry<FoundRow>> {
+    if (found == null || found.item.needsLocating) return emptyList()
+    val book = found.item.book
+    val title = book.title.takeUnless { it == BookTitles.UNTITLED } ?: texts.text(R.string.library_untitled)
+    val whose = texts.text(if (found.reading) R.string.found_where_reading else R.string.found_where_library)
+    val where = texts.format(R.string.found_dot, whose, texts.text(R.string.speech_sheet_title))
+    return SpeechSpot.entries.map { spot ->
+        val row = FoundRow(FoundTarget.Speech(book, spot), texts.text(spot.title), where, spot.icon)
+        val terms = R.string.found_terms_speech.takeIf { spot == SpeechSpot.TOP }
+        entry(texts, row, spot.title, terms, context = listOf(title))
+    }
+}
+
+/** Matched by [title]'s words; its own [terms], and the English title and terms, answer too. */
+private fun entry(
+    texts: FoundTexts,
+    row: FoundRow,
+    @StringRes title: Int,
+    @StringRes terms: Int? = null,
+    context: List<String> = emptyList(),
+): ActionEntry<FoundRow> {
+    val words = listOfNotNull(terms?.let(texts::text), texts.english(title), terms?.let(texts::english))
+    return ActionEntry(row, texts.text(title), words, context)
 }
