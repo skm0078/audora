@@ -43,7 +43,8 @@ library, the reader, PDF page drawing and the curl.
 - **Speed:** the first launches, first book opened and first page turns after install or update run compiled code
   instead of interpreted code. Google cites about 30 percent faster code from the first launch; the test phone is the
   judge (phone checks in the PR).
-- **Cost:** the first recording is 14,370 rules (3,844 of them the app's own), a 1.45 MB text file in the repo; the
+- **Cost:** the first recording is 14,370 rules (3,844 of them the app's own), a 1.45 MB text file in the repo (re-recorded
+  after the speed quick wins: 14,646 rules, 3,967 the app's own, 1.49 MB); the
   compiled profile in the dev APK grows from 5,487 bytes (the libraries' alone) to 12,475, and CI fails a dev APK
   whose profile drops under 10,000. Install takes a
   little longer while Android compiles the listed code. No run-time cost; no new code in the APK.
