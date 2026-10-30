@@ -96,7 +96,7 @@ internal class CopyJob(
         store: StudioStore,
         onChapter: () -> Unit = {},
     ): Outcome<SavedCopy, CopyError> {
-        val root = File(context.cacheDir, STAGING_FOLDER)
+        val root = stagingRoot(context)
         // The pitch is in the folder's key too: chapters staged at another pitch are not mixed in (ADR-067).
         val signature = withPitch(rendering.key.signature.hash, rendering.style.pitch)
         val staging = StagedChapters.folderFor(root, book.book.id.value, signature)
@@ -183,8 +183,11 @@ internal class CopyJob(
     companion object {
         /** Deletes every staged talking-book chapter: the listener cancelled, so nothing is kept for later. */
         fun dropStaging(context: Context) {
-            File(context.cacheDir, STAGING_FOLDER).deleteRecursively()
+            stagingRoot(context).deleteRecursively()
         }
+
+        /** Where talking books' chapters are staged until the book is saved ([StagedChapters]). */
+        fun stagingRoot(context: Context): File = File(context.cacheDir, STAGING_FOLDER)
 
         private const val EPUB_EXTENSION = "epub"
         private const val TEXT_EXTENSION = "txt"

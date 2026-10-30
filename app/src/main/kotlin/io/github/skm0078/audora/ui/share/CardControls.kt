@@ -33,6 +33,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ShareCardConfig
+import io.github.skm0078.audora.core.text.TextCuts
 import io.github.skm0078.audora.ui.theme.Dimens
 
 /** Square, story, post: one row that scrolls sideways when large text makes it wider than the screen. */
@@ -123,7 +124,7 @@ internal fun DedicationField(value: String, onValue: (String) -> Unit) {
     val max = ShareCardConfig().maxDedicationChars
     OutlinedTextField(
         value = value,
-        onValueChange = { onValue(it.take(max)) },
+        onValueChange = { onValue(TextCuts.take(it, max)) },
         label = { Text(stringResource(R.string.share_card_dedication)) },
         placeholder = { Text(stringResource(R.string.share_card_dedication_hint)) },
         singleLine = true,

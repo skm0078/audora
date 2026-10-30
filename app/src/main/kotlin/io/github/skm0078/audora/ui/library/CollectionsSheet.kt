@@ -43,6 +43,7 @@ import io.github.skm0078.audora.core.library.BookCollection
 import io.github.skm0078.audora.core.library.CollectionNames
 import io.github.skm0078.audora.core.library.ShelfLook
 import io.github.skm0078.audora.core.library.ShelfSuggestion
+import io.github.skm0078.audora.core.text.TextCuts
 import io.github.skm0078.audora.ui.shell.ShelfBadge
 import io.github.skm0078.audora.ui.theme.AppSheet
 import io.github.skm0078.audora.ui.theme.Dimens
@@ -216,7 +217,7 @@ internal fun NameDialog(title: String, initial: String, onSave: (String) -> Unit
         text = {
             OutlinedTextField(
                 value = text,
-                onValueChange = { text = it.take(CollectionNames.MAX_LENGTH) },
+                onValueChange = { text = TextCuts.take(it, CollectionNames.MAX_LENGTH) },
                 label = { Text(stringResource(R.string.collections_name)) },
                 singleLine = true,
             )
