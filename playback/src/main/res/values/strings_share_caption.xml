@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: playback/src/main/res/values/strings_share_caption.xml
+  Purpose: The credit and invitation every share carries beside its picture, video, clip or text (ADR
+           2026-10-29-share-credit-and-link). The link itself is ShareLinkConfig's, never translated.
+-->
+<resources>
+    <string name="share_credit_author_page">%1$s, %2$s, page %3$d</string>
+    <string name="share_credit_author" translatable="false">%1$s, %2$s</string>
+    <string name="share_credit_page">%1$s, page %2$d</string>
+    <string name="share_invite">Listen to books read aloud, free and offline, with ListenLock:</string>
+</resources>

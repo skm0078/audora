@@ -94,6 +94,9 @@ enum class LibraryAction(
     /** Time listened, streaks and books finished, kept on the phone only (CF-8). */
     LISTENING_STATS(R.string.library_listening_stats, R.string.menu_hint_listening_stats, R.drawable.ic_bar_chart),
 
+    /** The ListenLock Cookbook: the site's recipes as a book in the app's language (ADR 2026-10-29-in-app-cookbook). */
+    COOKBOOK(R.string.cookbook_open, R.string.menu_hint_cookbook, R.drawable.ic_headphones),
+
     /** A short page about ListenLock in the app's language, saved as a text book and opened (empty library only). */
     TRY_SAMPLE(R.string.sample_try, R.string.sample_try_hint, R.drawable.ic_article, LibraryActionPlace.BUTTON),
     ;

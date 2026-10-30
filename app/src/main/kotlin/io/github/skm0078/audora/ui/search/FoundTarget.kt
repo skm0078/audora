@@ -10,6 +10,7 @@ import io.github.skm0078.audora.ui.AppDestination
 import io.github.skm0078.audora.ui.library.BookAction
 import io.github.skm0078.audora.ui.library.LibraryAction
 import io.github.skm0078.audora.ui.library.LibraryActions
+import io.github.skm0078.audora.ui.reader.SpeechSpot
 import io.github.skm0078.audora.ui.settings.SettingKey
 
 /** Each one goes through the same [LibraryActions] call as its button elsewhere, so it does exactly what that does. */
@@ -25,6 +26,9 @@ sealed interface FoundTarget {
 
     /** One of a book's menu choices, for [book]. */
     data class ForBook(val book: Book, val pick: BookPick) : FoundTarget
+
+    /** A place in [book]'s Voice and speed sheet, opened in its reader (ADR 2026-10-29-find-player-options). */
+    data class Speech(val book: Book, val spot: SpeechSpot) : FoundTarget
 }
 
 /** A book menu choice: the big buttons and Save as audiobook, then every [BookAction]. */
@@ -56,5 +60,7 @@ internal fun LibraryActions.open(target: FoundTarget) {
             BookPick.Audiobook -> onExportAudiobook(target.book)
             is BookPick.Action -> onBookAction(target.book, pick.action)
         }
+
+        is FoundTarget.Speech -> onOpenSpeech(target.book, target.spot)
     }
 }

@@ -172,3 +172,14 @@ dependencies {
     // Declares the ComponentActivity the tests host; in the UI-test variant only, so no shipped APK carries it.
     "uiTestImplementation"(libs.compose.ui.test.manifest)
 }
+
+// The in-app ListenLock Cookbook (ADR 2026-10-29-in-app-cookbook): the site's recipes, one Markdown book per language.
+val cookbookAssets = tasks.register<CookbookAssetsTask>("cookbookAssets") {
+    recipes.set(rootProject.layout.projectDirectory.dir("docs/_recipes"))
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(cookbookAssets, CookbookAssetsTask::outputDirectory)
+    }
+}

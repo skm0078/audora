@@ -15,17 +15,18 @@ import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import org.junit.Assert.assertFalse
 
-/** [port] is the journey's own connection to the player; [backToTabs] leaves whatever screen is open. */
+/** [pdf] is the book opened; [port] the journey's own connection to the player; [backToTabs] leaves any screen. */
 internal class WarmUpJourney(
     private val rule: ComposeTestRule,
+    private val pdf: String,
     private val port: () -> MediaControllerPlaybackPort?,
     private val backToTabs: () -> Unit,
 ) {
     /**
-     * With nothing playing, opening [pdf] loads its voice by itself a moment later, and loading it never starts
+     * With nothing playing, opening the book loads its voice by itself a moment later, and loading it never starts
      * reading: Play is still the listener's to press (C7).
      */
-    fun anOpenBookLoadsItsVoiceWithoutPlaying(pdf: String) {
+    fun loadsTheVoice() {
         val player = requireNotNull(port()) { "the journey is connected to the player by now" }
         JourneyDevice.onMain(player::pause)
         awaitTrue("nothing playing") { !player.state.value.wantsToPlay }

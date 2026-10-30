@@ -9,6 +9,7 @@ import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.LibraryQuery
 import io.github.skm0078.audora.ui.AppDestination
+import io.github.skm0078.audora.ui.reader.SpeechSpot
 import io.github.skm0078.audora.ui.settings.SettingKey
 
 /** One interface instead of a dozen lambdas keeps [LibraryScreen]'s signature readable. */
@@ -62,4 +63,7 @@ interface LibraryActions {
 
     /** A place or screen found by search: Voices, Storage, Jobs, Made, Notes. */
     fun onGoTo(destination: AppDestination) = Unit
+
+    /** A player option found by search: [book]'s reader opens with its Voice and speed sheet at [spot]. */
+    fun onOpenSpeech(book: Book, spot: SpeechSpot) = Unit
 }

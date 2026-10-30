@@ -211,9 +211,12 @@ class ReleaseJourneyTest {
         step("48 This week is a home part and opens Your listening", HomeJourney(rule, ::backToTabs)::offersThisWeek)
         step("49 the side panel holds the library's tools", DrawerJourney(rule, ::backToTabs)::holdsTheLibrarysTools)
         step("51 player shortcuts open their group", SpeechJourney(rule, BOOK, ::backToTabs)::shortcutsOpenTheirGroup)
-        step("56 an open book loads its voice without playing") {
-            WarmUpJourney(rule, { port }, ::backToTabs).anOpenBookLoadsItsVoiceWithoutPlaying(BOOK)
+        step("52 From ListenLock opens the cookbook", CookbookJourney(rule, ::backToTabs)::opensFromTheLibrary)
+        step("53 the reader's Share button opens the choices and a card in the reader's colours") {
+            ShareHereJourney(rule, ::activity).theShareButtonOpensTheChoices(BOOK)
         }
+        step("54 search and You open the player's options", FindOptionsJourney(rule, ::backToTabs)::openTheSheet)
+        step("56 an open book loads its voice early", WarmUpJourney(rule, BOOK, { port }, ::backToTabs)::loadsTheVoice)
     }
 
     /**
@@ -462,8 +465,9 @@ class ReleaseJourneyTest {
         val row = toggleRow(text(R.string.settings_skip_citations_title))
         val before = toggleState(row)
         val rereads = JourneyDevice.logCount(TEXT_REREAD)
-        // The title, not the switch: the whole row is the target (ADR-062).
-        tap(hasText(text(R.string.settings_skip_citations_title)))
+        // The title, not the switch: the whole row is the target (ADR-062). Scrolled to first: rows above it (Voice
+        // and speed) can leave it under the bottom bar on a small screen, where a tap lands on nothing.
+        node(hasText(text(R.string.settings_skip_citations_title))).performScrollTo().performClick()
         awaitTrue("the switch to flip") { toggleState(row) != before }
         awaitLog(TEXT_REREAD, rereads)
         JourneyDevice.onMain(requireNotNull(port)::play)
@@ -477,7 +481,7 @@ class ReleaseJourneyTest {
         val title = text(R.string.settings_skip_citations_title)
         val row = toggleRow(title)
         val before = toggleState(row)
-        tap(hasContentDescription(text(R.string.option_help_about, title)))
+        node(hasContentDescription(text(R.string.option_help_about, title))).performScrollTo().performClick()
         tapText(R.string.option_help_ok)
         assertEquals("The help button must not toggle its row", before, toggleState(row))
     }

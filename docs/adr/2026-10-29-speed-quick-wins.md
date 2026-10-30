@@ -71,7 +71,7 @@ An audit of dev at 8c13ad0 and of the published dev APK found time still spent w
 
 - New custom command `VoiceWarmUpCommand.ACTION`, offered to Audora's own controllers only. `PlaybackPort.warmVoice`
   defaults to doing nothing, so fakes and other ports need no change.
-- Release journey step 56 opens a book with nothing playing and waits for the service's "Warmed voice=" log line,
-  then checks reading did not start.
+- Release journey step 56 ("an open book loads its voice early") opens a book with nothing playing, waits for
+  the service's "Warmed voice=" log line, then checks reading did not start.
 - `Loaded voice=… loadMs=…` (sherpa engine) and `Warmed voice=…` (`Playback.VoiceWarmUp`) in Share logs show the
   warm-up on a phone; the first `Audora.RenderSpeed` line after it should no longer carry the load time.

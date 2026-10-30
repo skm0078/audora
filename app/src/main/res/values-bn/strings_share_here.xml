@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reader_share">শেয়ার করুন</string>
+    <string name="share_more_lines">আরও লাইন বাছুন…</string>
+    <string name="share_hint_more_lines">তারপর শেষ লাইনে ট্যাপ করুন, এই পৃষ্ঠায় বা পরের কোনো পৃষ্ঠায়। কিছুই হাইলাইট হয় না।</string>
+    <string name="share_this_book">এই বইটি শেয়ার করুন</string>
+    <string name="share_hint_this_book">এর প্রচ্ছদ, নাম আর লেখকের একটি ছবি।</string>
+    <string name="share_hint_lines_audio">এই লাইনগুলো অডিও ক্লিপ হিসেবে (২ মিনিট পর্যন্ত), যেকোনো অ্যাপে পাঠানোর জন্য।</string>
+    <string name="share_range_prompt">পৃষ্ঠা %1$d থেকে শেয়ার হচ্ছে। শেষ লাইনে ট্যাপ করুন।</string>
+    <string name="share_range_too_long">শেয়ার করার লাইন বড়জোর %1$dটি পৃষ্ঠা জুড়ে হতে পারে। শুরুর কাছাকাছি একটি শেষ লাইন বাছুন।</string>
+</resources>

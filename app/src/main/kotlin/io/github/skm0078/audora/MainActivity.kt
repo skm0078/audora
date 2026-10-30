@@ -12,7 +12,6 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -31,7 +30,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -49,7 +47,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.skm0078.audora.battery.OnboardingPreferences
 import io.github.skm0078.audora.core.config.ReaderConfig
-import io.github.skm0078.audora.core.config.StartupConfig
 import io.github.skm0078.audora.core.diagnostics.ReadingSessionTracker
 import io.github.skm0078.audora.core.library.Book
 import io.github.skm0078.audora.core.library.BookId
@@ -160,6 +157,8 @@ import io.github.skm0078.audora.ui.reader.ReadingLook
 import io.github.skm0078.audora.ui.reader.ReadingLookPreferences
 import io.github.skm0078.audora.ui.reader.RecordTimeLeft
 import io.github.skm0078.audora.ui.reader.ScreenPreference
+import io.github.skm0078.audora.ui.reader.SpeechRequest
+import io.github.skm0078.audora.ui.reader.SpeechSpot
 import io.github.skm0078.audora.ui.reader.SpeedPreference
 import io.github.skm0078.audora.ui.reader.ViewPreference
 import io.github.skm0078.audora.ui.reader.VolumeKeySkips
@@ -312,10 +311,6 @@ class MainActivity : ComponentActivity() {
 
     private val privacy: PrivacyHost by lazy { PrivacyHost(this) }
 
-    private val startup = StartupConfig()
-
-    private val firstFrame = FirstFrameHold(startup.firstFrameMaxHoldMs)
-
     // Built from the base context in attachBaseContext, before applicationContext can be relied on.
     private lateinit var appLanguageStore: AppLanguageStore
 
@@ -353,16 +348,10 @@ class MainActivity : ComponentActivity() {
             Backups.takeStartResult()?.let { Toast.makeText(this, restoreMessageOf(it), Toast.LENGTH_LONG).show() }
             photoBooks.resumePending()
         }
-        // The splash stays until the saved look is known, so the first screen is built once, in the right colours.
-        firstFrame.hold(this)
-        setContent {
-            val appearance = rememberSavedAppearance(appearancePreferences.appearance, startup.appearanceWaitMs)
-            if (appearance != null) {
-                SideEffect { firstFrame.release() }
-                val dark = appearance.isDark(isSystemInDarkTheme())
-                SystemBarsFollow(dark)
-                AudoraTheme(appearance, darkTheme = dark) { privacy.Gate { AppContent(appearance) } }
-            }
+        setContentInSavedLook(appearancePreferences.appearance) { appearance ->
+            val dark = appearance.isDark(isSystemInDarkTheme())
+            SystemBarsFollow(dark)
+            AudoraTheme(appearance, darkTheme = dark) { privacy.Gate { AppContent(appearance) } }
         }
     }
 
@@ -465,7 +454,7 @@ class MainActivity : ComponentActivity() {
                         AppTab.MADE -> ReadableWidth { MadePlaceRoute(nav::navigate) }
 
                         AppTab.YOU -> ReadableWidth {
-                            SettingsRoute(diagnostics, battery, nav, appearance, tour) {
+                            SettingsRoute(diagnostics, battery, nav, appearance, tour, libraryController.readLast) {
                                 scope.launch { turnOnKidsMode() }
                             }
                         }
@@ -597,6 +586,7 @@ class MainActivity : ComponentActivity() {
                 openPlace = nav.pendingPlace?.takeIf { it.bookId == id && !asPlayer },
                 onPlaceOpened = { nav.pendingPlace = null },
                 onOtherBookPlaying = { other -> nav.navigate(AppDestination.Player(other, from)) },
+                speech = nav.speechFor(id),
                 // Taken once, so opening the book again later never starts reading by itself.
                 onAutoResumeTaken = { nav.autoResumeBook = null },
             )
@@ -618,6 +608,7 @@ class MainActivity : ComponentActivity() {
         nav: AppNavigation,
         appearance: Appearance,
         tour: GuidedTour,
+        lastBook: BookId?,
         onKidsMode: () -> Unit,
     ) {
         val navigate = nav::navigate
@@ -634,6 +625,7 @@ class MainActivity : ComponentActivity() {
             showDebugTools = BuildConfig.DEV_TOOLS,
             onOpenBatterySetup = { navigate(AppDestination.BatterySetup(fromSettings = true)) },
             onOpenVoices = { navigate(AppDestination.Voices()) },
+            onOpenSpeech = lastBook?.let { id -> { nav.openSpeech(id, SpeechSpot.TOP) } },
             onOpenLicences = { navigate(AppDestination.Licences) },
             onOpenStorage = { navigate(AppDestination.Storage) },
             onShareLogs = { diagnostics.shareLogs { intent -> startActivity(intent) } },
@@ -764,6 +756,8 @@ class MainActivity : ComponentActivity() {
                 override fun onOpenSetting(key: SettingKey) = nav.openSetting(key)
 
                 override fun onGoTo(destination: AppDestination) = navigate(destination)
+
+                override fun onOpenSpeech(book: Book, spot: SpeechSpot) = nav.openSpeech(book.id, spot)
             }
         }
         val loaded = controller.listState as? LibraryListState.Loaded
@@ -826,6 +820,7 @@ class MainActivity : ComponentActivity() {
         openPlace: ResumeAnchor? = null,
         onPlaceOpened: () -> Unit = {},
         onOtherBookPlaying: (BookId) -> Unit = {},
+        speech: SpeechRequest = SpeechRequest.NONE,
         onAutoResumeTaken: () -> Unit = {},
     ) {
         val id = target.id
@@ -887,7 +882,7 @@ class MainActivity : ComponentActivity() {
                 onPlaceOpened()
             }
         }
-        val screen = BookScreen(target, books, onShowPage, onOtherBookPlaying)
+        val screen = BookScreen(target, books, onShowPage, onOtherBookPlaying, speech)
         WithOpeningLine(state.openingLine, model::openingLineShown) {
             ReaderContent(screen, state, actions, ocrState, notesState, notes, voiceRows, port, thumbs, studio)
         }
@@ -958,6 +953,7 @@ class MainActivity : ComponentActivity() {
                 spokenWord = { spokenWord.value },
                 notes = notesState,
                 notesActions = notes,
+                speech = screen.speech,
             )
         } else {
             ReaderScreen(
@@ -979,6 +975,7 @@ class MainActivity : ComponentActivity() {
                 onTutor = { tutorOpen = true },
                 voicePacks = remember { voicePackActions(voiceManager) },
                 people = { panel -> CharacterGuidePanel(target.id, state.page, resumeAnchors, panel) },
+                speech = screen.speech,
             )
         }
         // What is playing, not the book on screen: with A playing, B's reader must not hide B from the sheet.
@@ -1046,6 +1043,17 @@ internal class AppNavigation(routeState: MutableState<String>) {
         navigate(AppDestination.Library)
     }
 
+    /** A place in a book's Voice and speed sheet (a search result, Settings), opened once in its reader. */
+    var pendingSpeech by mutableStateOf<PendingSpeech?>(null)
+
+    fun openSpeech(id: BookId, spot: SpeechSpot) {
+        pendingSpeech = PendingSpeech(id, spot)
+        navigate(AppDestination.Reader(id))
+    }
+
+    /** [id]'s pending place in the sheet, if one was asked for, taken once its reader opens it. */
+    fun speechFor(id: BookId) = SpeechRequest(pendingSpeech?.takeIf { it.bookId == id }?.spot) { pendingSpeech = null }
+
     fun openPlace(anchor: ResumeAnchor) {
         pendingPlace = anchor
         navigate(AppDestination.Reader(anchor.bookId, AppTab.NOTES))
@@ -1058,12 +1066,16 @@ private fun rememberAppNavigation(): AppNavigation {
     return remember { AppNavigation(route) }
 }
 
+/** The Voice and speed sheet's [spot] asked for in [bookId]'s reader. */
+internal data class PendingSpeech(val bookId: BookId, val spot: SpeechSpot)
+
 /** The book screen's target and its ways out, bundled for ReaderContent. */
 internal data class BookScreen(
     val target: ReaderTarget,
     val books: List<Book>,
     val onShowPage: () -> Unit,
     val onOtherBookPlaying: (BookId) -> Unit,
+    val speech: SpeechRequest = SpeechRequest.NONE,
 )
 
 /**

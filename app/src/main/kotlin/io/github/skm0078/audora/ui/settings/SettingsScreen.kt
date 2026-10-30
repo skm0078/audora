@@ -90,6 +90,7 @@ fun SettingsScreen(
     storyBrain: StoryBrainSettings? = null,
     privacy: PrivacyControls? = null,
     focus: SettingFocus = SettingFocus.None,
+    onOpenSpeech: (() -> Unit)? = null,
 ) {
     val pages = rememberSettingsPages(focus)
     val page = pages.page
@@ -118,6 +119,7 @@ fun SettingsScreen(
                             storyBrain?.let { ModelPack(it.state, it.onAction) },
                             skipCitations,
                             onSkipCitationsChange,
+                            onOpenSpeech,
                         )
                         AppearanceGroup(appearance, onAppearanceChange, language, onLanguageChange, keepScreenOn) {
                             onKeepScreenOnChange(it)
@@ -300,12 +302,23 @@ private fun ListeningGroup(
     brain: ModelPack?,
     skipCitations: Boolean,
     onSkipCitationsChange: (Boolean) -> Unit,
+    onOpenSpeech: (() -> Unit)?,
 ) {
     OptionGroup(stringResource(R.string.settings_group_listening)) {
         LinkOption(
             stringResource(R.string.settings_voices_title),
             onClick = onOpenVoices,
             subtitle = stringResource(R.string.settings_voices_body),
+        )
+        // The player's own sheet (ADR 2026-10-29-find-player-options): speed and pitch belong to a book, so the row
+        // opens the one read last, and says so when there is none.
+        LinkOption(
+            stringResource(R.string.speech_sheet_title),
+            onClick = onOpenSpeech,
+            subtitle = stringResource(
+                if (onOpenSpeech != null) R.string.settings_speech_body else R.string.settings_speech_no_book,
+            ),
+            enabled = onOpenSpeech != null,
         )
         // Studio mode's slow Hindi voice (ADR-059), next to the voices it stands in for.
         acted?.let { ModelPackRow(it, ModelPackTexts.ACTED, SettingKey.ACTED_VOICE) }

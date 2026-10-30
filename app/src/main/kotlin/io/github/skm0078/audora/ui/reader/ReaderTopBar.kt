@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReaderTopBar.kt
-// Purpose: The reader's top bar: back, the book's title, and the book's buttons once it is open.
+// Purpose: The reader's top bar: back, the book's title, and the book's buttons (Share among them) once it is open.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -41,11 +41,23 @@ internal fun ReaderTopBar(
                     BookmarksButton(notes, notesActions)
                     ChaptersButton(state, actions)
                 }
+                ShareButton(state, actions, notesActions)
                 ViewToggle(state.view, actions)
                 moreMenu()
             }
         },
     )
+}
+
+/**
+ * Share, always in sight (ADR 2026-10-29-share-credit-and-link): the Share choices for the sentence being read on the
+ * shown page, else its first; before the page has words, the book's own card.
+ */
+@Composable
+private fun ShareButton(state: ReaderState, actions: ReaderActions, notes: BookNotesActions) {
+    IconButton(onClick = { state.sentenceHere?.let(notes::openShare) ?: actions.onShareBook() }) {
+        Icon(painterResource(R.drawable.ic_share), stringResource(R.string.reader_share))
+    }
 }
 
 @Composable
