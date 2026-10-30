@@ -19,9 +19,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import io.github.skm0078.audora.R
@@ -95,10 +98,19 @@ private fun ReaderTitle(title: String) {
 private fun ViewToggle(view: ReaderView, actions: ReaderActions) {
     val toText = view == ReaderView.PAGE
     val description = stringResource(if (toText) R.string.reader_show_text else R.string.reader_show_page)
+    val toggle = { actions.onViewChanged(if (toText) ReaderView.TEXT else ReaderView.PAGE) }
     TextButton(
-        onClick = { actions.onViewChanged(if (toText) ReaderView.TEXT else ReaderView.PAGE) },
+        onClick = toggle,
         contentPadding = ButtonDefaults.TextButtonWithIconContentPadding,
-        modifier = Modifier.semantics { contentDescription = description },
+        // One node with the full name ("Show the text"); the short label is for the eye, as the player's line actions.
+        modifier = Modifier.clearAndSetSemantics {
+            contentDescription = description
+            role = Role.Button
+            onClick {
+                toggle()
+                true
+            }
+        },
     ) {
         Icon(
             painterResource(if (toText) R.drawable.ic_view_text else R.drawable.ic_view_page),
@@ -109,7 +121,6 @@ private fun ViewToggle(view: ReaderView, actions: ReaderActions) {
         Text(
             stringResource(if (toText) R.string.reader_view_text else R.string.reader_view_page),
             maxLines = 1,
-            modifier = Modifier.clearAndSetSemantics {},
         )
     }
 }
