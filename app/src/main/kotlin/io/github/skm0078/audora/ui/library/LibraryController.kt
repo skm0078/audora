@@ -162,52 +162,65 @@ class LibraryController(
     fun add(documentUri: String) = runPick { addNow(documentUri) }
 
     /**
-     * A PDF opened or shared from another app ("Open with Audora"): added like a picked one, then [open]ed. When the
-     * other app's grant cannot be kept, the PDF is added through a copy made by `importShared`. [done] runs once the
-     * add has finished, never when it was cancelled (the screen went away), so the caller can try again.
+     * A PDF opened or shared from another app ("Open with Audora"): added like a picked one ([addKeeping]), then
+     * [open]ed. [done] runs once the add has finished, never when it was cancelled (the screen went away), so the
+     * caller can try again.
      */
     fun addShared(documentUri: String, open: (BookId) -> Unit, done: () -> Unit = {}) = runPick {
         if (comics(documentUri)) {
             done()
             return@runPick
         }
-        val kept = library.add(documentUri)
-        val added = if (kept.isCannotKeepAccess()) {
-            importShared(documentUri)?.let { copy -> library.add(copy) } ?: kept
-        } else {
-            kept
-        }
+        val added = addKeeping(documentUri)
         report(added, picked = false)
         done()
-        (added as? Outcome.Success)?.let { open(it.value.book.id) }
+        (added.outcome as? Outcome.Success)?.let { open(it.value.book.id) }
     }
 
     private suspend fun addNow(documentUri: String) {
-        if (!comics(documentUri)) report(library.add(documentUri))
+        if (!comics(documentUri)) report(addKeeping(documentUri))
     }
+
+    private suspend fun addKeeping(documentUri: String): Kept<AddResult> = keeping(documentUri, library::add)
+
+    /**
+     * [act] on [documentUri], or on a copy made by `importShared` when its grant cannot be kept: the other app lends
+     * the file only for a moment, or Audora holds as many lasting grants as Android allows (`LibraryError.GrantsFull`).
+     * Only a failed copy (most likely a full phone) reports the first error.
+     */
+    private suspend fun <T> keeping(documentUri: String, act: suspend (String) -> Outcome<T, LibraryError>): Kept<T> {
+        val kept = act(documentUri)
+        val error = (kept as? Outcome.Failure)?.error
+        val copy = if (error == LibraryError.CannotKeepAccess || error == LibraryError.GrantsFull) {
+            importShared(documentUri)
+        } else {
+            null
+        }
+        return if (copy == null) Kept(kept) else Kept(act(copy), copied = true)
+    }
+
+    /** [copied]: done through Audora's own copy, which the message says, as it takes phone space. */
+    private class Kept<T>(val outcome: Outcome<T, LibraryError>, val copied: Boolean = false)
 
     /**
      * [picked]: the user chose the file in the picker, so a duplicate offers to open the book (plan item 27). A shared
      * file opens by itself, so its duplicate only gets the snackbar.
      */
-    private fun report(added: Outcome<AddResult, LibraryError>, picked: Boolean = true) {
+    private fun report(added: Kept<AddResult>, picked: Boolean = true) {
         val id = { book: Book -> book.id.takeIf { picked } }
-        message = when (added) {
-            is Outcome.Failure -> LibraryMessage.Failed(added.error)
+        message = when (val outcome = added.outcome) {
+            is Outcome.Failure -> LibraryMessage.Failed(outcome.error)
 
-            is Outcome.Success -> when (val result = added.value) {
-                is AddResult.Added -> LibraryMessage.Added(result.book.title)
+            is Outcome.Success -> when (val result = outcome.value) {
+                is AddResult.Added -> LibraryMessage.Added(result.book.title, copied = added.copied)
                 is AddResult.AlreadyInLibrary -> LibraryMessage.AlreadyInLibrary(result.book.title, id(result.book))
                 is AddResult.FoundAgain -> LibraryMessage.FoundAgain(result.book.title, id(result.book))
             }
         }
     }
 
-    private fun Outcome<AddResult, LibraryError>.isCannotKeepAccess(): Boolean =
-        this is Outcome.Failure && error == LibraryError.CannotKeepAccess
-
     fun locate(id: BookId, documentUri: String) = runPick {
-        message = when (val moved = library.relocate(id, documentUri)) {
+        message = when (val moved = keeping(documentUri) { library.relocate(id, it) }.outcome) {
             is Outcome.Failure -> LibraryMessage.Failed(moved.error)
             is Outcome.Success -> LibraryMessage.FoundAgain(moved.value.title)
         }

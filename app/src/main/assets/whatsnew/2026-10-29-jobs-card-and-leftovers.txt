@@ -1,0 +1,3 @@
+en: The Jobs screen has clearer cards, with a status on each job and buttons where you expect them. Jobs that stopped part way keep their files for 7 days so you can carry on, then clean up by themselves, and Clean up now frees the space at once.
+hi: काम स्क्रीन के कार्ड अब ज़्यादा साफ़ हैं, हर काम पर उसकी स्थिति और बटन वहीं जहाँ आप ढूँढते हैं। बीच में रुके काम अपनी फ़ाइलें 7 दिन रखते हैं ताकि आप आगे बढ़ा सकें, फिर अपने-आप साफ़ हो जाते हैं, और अभी साफ़ करें से जगह तुरंत खाली होती है।
+bn: কাজ স্ক্রিনের কার্ড এখন আরও পরিষ্কার, প্রতিটি কাজে তার অবস্থা আর বোতাম যেখানে খোঁজেন সেখানেই। মাঝপথে থেমে যাওয়া কাজ তাদের ফাইল ৭ দিন রাখে যাতে এগিয়ে নিতে পারেন, তারপর নিজে থেকেই পরিষ্কার হয়, আর এখনই পরিষ্কার করুন দিয়ে জায়গা সঙ্গে সঙ্গে খালি হয়।

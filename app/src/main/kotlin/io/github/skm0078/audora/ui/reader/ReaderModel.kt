@@ -39,8 +39,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -116,6 +119,12 @@ class ReaderModel(
      */
     private var pendingAutoResume = autoResume
 
+    /** Loads the voice while the book is open and quiet, so the first Play does not wait for it. */
+    private val voiceWarmUp = ReaderVoiceWarmUp(scope, config.voiceWarmUpDelayMs) { lang ->
+        AudoraLog.i(TAG, "Asking the player to load the voice, book=${bookId.logLabel} lang=${lang.name}")
+        player.warmVoice(bookId, lang)
+    }
+
     private val timeLeft = TimeLeft(config.timeLeft, config.speech)
     private val reAnchoring = ReAnchoring()
 
@@ -132,6 +141,23 @@ class ReaderModel(
         scope.launch { views.loadView()?.let(::applyView) }
         // Skip citation numbers changed (ADR-064): the sentences are built again, as the playback service does.
         scope.launch { textSettings.drop(1).collect { reopenForTextSettings() } }
+        scope.launch {
+            state.map { it.voiceToWarm }.distinctUntilChanged().collect { lang ->
+                AudoraLog.d(TAG, "Voice to load ahead: ${lang?.name ?: "none"}, $logContext")
+                voiceWarmUp.offer(lang)
+            }
+        }
+        // What the warm-up waits on, for Share logs; collected apart so these changes never restart its wait.
+        scope.launch {
+            state.map { "player=${it.playback.connection} playing=${it.playback.wantsToPlay} ${it.pageForLog}" }
+                .distinctUntilChanged()
+                .collect { AudoraLog.d(TAG, "Warm-up waits on: $it, $logContext") }
+        }
+        scope.launch {
+            state.map { it.playback.connection == PlaybackSnapshot.Connection.CONNECTED }.distinctUntilChanged()
+                .filter { connected -> !connected }
+                .collect { voiceWarmUp.rearm() }
+        }
         open(password = null)
     }
 
@@ -474,6 +500,7 @@ class ReaderModel(
 
     /** Releases the PDF. Reading continues: the service has its own copy. */
     fun close() {
+        voiceWarmUp.stop()
         openJob?.cancel()
         pageJob?.cancel()
         renderJob?.cancel()

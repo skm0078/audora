@@ -1,0 +1,3 @@
+en: Add as many books as you like. Once your library is very large, ListenLock keeps its own copy of each new single-file book, so your oldest books keep opening, and a book from an app that only lends its file is now kept the same way.
+hi: जितनी चाहें किताबें जोड़ें। लाइब्रेरी बहुत बड़ी होने पर ListenLock हर नई अकेली फ़ाइल वाली किताब की अपनी कॉपी रखता है, ताकि आपकी पुरानी किताबें खुलती रहें, और जो ऐप फ़ाइल सिर्फ़ थोड़ी देर के लिए देता है, उसकी किताब भी अब इसी तरह रखी जाती है।
+bn: যত খুশি বই যোগ করুন। লাইব্রেরি খুব বড় হলে ListenLock প্রতিটি নতুন একক ফাইলের বইয়ের নিজের কপি রাখে, যাতে আপনার পুরোনো বইগুলো খুলতে থাকে, আর যে অ্যাপ ফাইল শুধু অল্প সময়ের জন্য দেয়, তার বইও এখন এভাবেই রাখা হয়।

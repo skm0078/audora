@@ -23,13 +23,19 @@ import io.github.skm0078.audora.ui.reader.durationText
 @Composable
 fun DownloadTimeLeft(bytes: Long, total: Long, modifier: Modifier = Modifier) {
     if (total <= 0L) return
-    val estimate = remember { WorkTimeLeft(WorkTimeLeftConfig().downloadMeasureMs) }
-    val left = remember(bytes, total) { estimate.update(SystemClock.elapsedRealtime(), bytes, total) }
     Text(
-        left?.let { stringResource(R.string.download_time_left, durationText(it)) }
-            ?: stringResource(R.string.download_time_measuring),
+        downloadTimeLeft(bytes, total),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier,
     )
+}
+
+/** "12 min left", or "working out the time left" for the first seconds; as [DownloadTimeLeft], as one string. */
+@Composable
+fun downloadTimeLeft(bytes: Long, total: Long): String {
+    val estimate = remember { WorkTimeLeft(WorkTimeLeftConfig().downloadMeasureMs) }
+    val left = remember(bytes, total) { estimate.update(SystemClock.elapsedRealtime(), bytes, total) }
+    return left?.let { stringResource(R.string.download_time_left, durationText(it)) }
+        ?: stringResource(R.string.download_time_measuring)
 }

@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.ui.reader
 
+import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.model.ContentIntent
 import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
@@ -95,6 +96,12 @@ interface PlaybackPort {
      * can poll it once a frame and map it through [PlaybackSnapshot.sentenceTiming].
      */
     fun positionInSentenceMs(): Long? = null
+
+    /**
+     * Loads the voice that would read [lang] in [book], without a sound, so a later Play starts at once (ADR
+     * 2026-10-29-speed-quick-wins). Not a user action: it never starts or changes playback.
+     */
+    fun warmVoice(book: BookId, lang: Lang) = Unit
 }
 
 /** The A–B marks (plan item 31): [end] null while only A is set. */

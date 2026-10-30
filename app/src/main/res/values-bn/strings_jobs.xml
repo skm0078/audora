@@ -19,5 +19,4 @@
     <string name="jobs_download_waiting">ইন্টারনেট বা আগের ডাউনলোড শেষ হওয়ার অপেক্ষায়</string>
     <string name="jobs_download_progress">%2$s-এর মধ্যে %1$s</string>
     <string name="jobs_download_cancel">বাতিল</string>
-    <string name="jobs_download_kept">বাতিল করলে যতটা এসেছে তা থাকে: আবার ডাউনলোড করলে সেখান থেকেই চলে।</string>
 </resources>

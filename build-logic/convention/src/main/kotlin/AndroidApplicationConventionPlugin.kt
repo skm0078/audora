@@ -6,6 +6,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
+import org.jetbrains.kotlin.compose.compiler.gradle.ComposeCompilerGradlePluginExtension
 
 class AndroidApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
@@ -44,6 +45,11 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
             }
         }
 
+        extensions.configure<ComposeCompilerGradlePluginExtension> {
+            // Plain-Kotlin model types Compose may compare by value (ADR 2026-10-29-speed-quick-wins).
+            stabilityConfigurationFiles.add(layout.projectDirectory.file(STABILITY_CONFIG))
+        }
+
         dependencies {
             add("testImplementation", libs.library("junit"))
         }
@@ -51,5 +57,6 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
 
     private companion object {
         const val ARM64_ABI = "arm64-v8a"
+        const val STABILITY_CONFIG = "compose-stability.conf"
     }
 }

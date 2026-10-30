@@ -55,13 +55,14 @@ internal class CurlPaint(val tone: PageTone, val paper: Color, val shadow: TurnS
 @Composable
 internal fun CurlFrame(scene: () -> CurlScene?, paint: CurlPaint, content: @Composable () -> Unit) {
     val filter = remember(paint.tone) { paint.tone.colorMatrix()?.let { ColorFilter.colorMatrix(ColorMatrix(it)) } }
+    val paths = remember { CurlPaths() }
     Box(Modifier.fillMaxSize()) {
         // Beneath the content: the page under a turning content sheet.
         Canvas(Modifier.fillMaxSize()) {
             val curl = scene()?.takeIf { it.contentOnTop } ?: return@Canvas
             drawSheet(curl.image, paint.paper, filter)
         }
-        Box(Modifier.fillMaxSize().clipToFlat(scene)) { content() }
+        Box(Modifier.fillMaxSize().clipToFlat(scene, paths.contentFlat)) { content() }
         // Over the content: a turning picture, the shadow and the back of the paper.
         Canvas(Modifier.fillMaxSize()) {
             val curl = scene() ?: return@Canvas
@@ -71,26 +72,26 @@ internal fun CurlFrame(scene: () -> CurlScene?, paint: CurlPaint, content: @Comp
                 if (fold == null) {
                     drawSheet(curl.image, paint.paper, filter)
                 } else {
-                    clipPath(path(PageCurl.flat(size.width, size.height, fold))) {
+                    clipPath(paths.sheetFlat.trace(PageCurl.flat(size.width, size.height, fold))) {
                         drawSheet(curl.image, paint.paper, filter)
                     }
                 }
             }
             if (fold == null) return@Canvas
-            drawShadow(fold, paint)
-            drawBack(fold, curl.back, filter, paint)
+            drawShadow(fold, paint, paths.lifted)
+            drawBack(fold, curl.back, filter, paint, paths.flap)
         }
     }
 }
 
 /** While the content is the sheet being turned, only its flat part shows; the page beneath shows where it lifted. */
-private fun Modifier.clipToFlat(scene: () -> CurlScene?): Modifier = drawWithContent {
+private fun Modifier.clipToFlat(scene: () -> CurlScene?, flat: Path): Modifier = drawWithContent {
     val curl = scene()
     val fold = curl?.takeIf { it.contentOnTop }?.let { PageCurl.fold(size.width, size.height, it.finger, it.cornerY) }
     if (fold == null) {
         drawContent()
     } else {
-        clipPath(path(PageCurl.flat(size.width, size.height, fold))) { this@drawWithContent.drawContent() }
+        clipPath(flat.trace(PageCurl.flat(size.width, size.height, fold))) { this@drawWithContent.drawContent() }
     }
 }
 
@@ -106,9 +107,9 @@ private fun DrawScope.widthFit(image: ImageBitmap): IntSize = IntSize(
 )
 
 /** On the page beneath, beside the fold: the shade the lifted paper casts. */
-private fun DrawScope.drawShadow(fold: Fold, paint: CurlPaint) {
+private fun DrawScope.drawShadow(fold: Fold, paint: CurlPaint, lifted: Path) {
     val reach = size.width * paint.config.shadowShare
-    clipPath(path(PageCurl.lifted(size.width, size.height, fold))) {
+    clipPath(lifted.trace(PageCurl.lifted(size.width, size.height, fold))) {
         drawRect(
             Brush.linearGradient(
                 0f to Color.Black.copy(alpha = paint.shadow.strength),
@@ -124,8 +125,8 @@ private fun DrawScope.drawShadow(fold: Fold, paint: CurlPaint) {
  * The back of the turned-over paper: paper colour, the sheet's print faintly mirrored through it, and a soft shade
  * that deepens towards the fold, where the paper bends.
  */
-private fun DrawScope.drawBack(fold: Fold, back: ImageBitmap?, filter: ColorFilter?, paint: CurlPaint) {
-    val flap = path(PageCurl.flap(size.width, size.height, fold))
+private fun DrawScope.drawBack(fold: Fold, back: ImageBitmap?, filter: ColorFilter?, paint: CurlPaint, shape: Path) {
+    val flap = shape.trace(PageCurl.flap(size.width, size.height, fold))
     val reach = size.width * paint.config.shadowShare
     clipPath(flap) {
         drawRect(paint.paper)
@@ -164,9 +165,21 @@ private fun mirror(fold: Fold): Matrix {
     }
 }
 
-private fun path(points: List<CurlPoint>): Path = Path().apply {
-    points.firstOrNull()?.let { moveTo(it.x, it.y) }
-    points.drop(1).forEach { lineTo(it.x, it.y) }
+/**
+ * The outlines a curl clips to, one per use, kept for the life of the frame and traced again on every frame: a turn
+ * draws about 20 frames, and four new paths each would only be garbage for the collector to stop for mid-turn.
+ */
+private class CurlPaths {
+    val contentFlat = Path()
+    val sheetFlat = Path()
+    val lifted = Path()
+    val flap = Path()
+}
+
+/** This path, emptied and traced through [points] as a closed outline. */
+private fun Path.trace(points: List<CurlPoint>): Path = apply {
+    rewind()
+    points.forEachIndexed { index, point -> if (index == 0) moveTo(point.x, point.y) else lineTo(point.x, point.y) }
     close()
 }
 

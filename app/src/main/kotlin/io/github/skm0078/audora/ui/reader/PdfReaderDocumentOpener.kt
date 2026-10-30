@@ -199,6 +199,13 @@ private class PdfReaderDocument(
 
 private class BitmapPageImage(page: RenderedPage) : PageImage {
     private val image = page.bitmap.asImageBitmap()
+
+    init {
+        // Starts copying the page to the graphics chip now, on the render thread, so the first frame that shows it (a
+        // page drawn ahead, at the start of a turn) does not stop to copy 8 to 10 MB (ADR 2026-10-29-speed-quick-wins).
+        page.bitmap.prepareToDraw()
+    }
+
     override val transform: PageTransform = page.transform
     override val aspectRatio: Float = page.aspectRatio
 
