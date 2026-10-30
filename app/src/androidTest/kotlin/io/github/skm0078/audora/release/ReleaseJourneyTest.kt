@@ -221,6 +221,7 @@ class ReleaseJourneyTest {
         step("57 books zipped with code-page names open") {
             ZipNamesJourney(rule, ::activity, ::backToTabs).booksWithCodePageNamesOpen()
         }
+        step("58 the player names its line actions", LineActionsJourney(rule, BOOK, ::backToTabs)::namedAndInSight)
     }
 
     /**
