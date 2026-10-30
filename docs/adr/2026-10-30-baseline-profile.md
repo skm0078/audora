@@ -52,6 +52,10 @@ library, the reader, PDF page drawing and the curl.
 - **Accepted limits:** recorded from the R8 build (names kept, `-dontobfuscate`), so code R8 inlines differently in
   release is matched loosely; recorded on an x86_64 emulator, which runs the same Kotlin code a phone does. No
   startup profile (DEX layout) yet: that needs the Gradle plugin and is a later call.
+- **Benchmark build keeps its resources:** the generator finds buttons by their string's name, and resource shrinking
+  (on since the speed quick wins) takes the names out. The benchmark build turns shrinking off; its code, and so the
+  profile, is unchanged. The recording step runs with `pipefail`, so a failed generator fails the run instead of
+  passing through `tee` and reprinting the committed profile.
 
 ## Alternatives considered
 

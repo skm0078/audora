@@ -100,6 +100,9 @@ android {
             initWith(getByName(devBuildType))
             applicationIdSuffix = ".bench"
             matchingFallbacks += "release"
+            // The Baseline Profile generator finds buttons by their string's name (getIdentifier), which shrinking
+            // takes out of the APK. Code, and so the recorded profile, is the same either way.
+            isShrinkResources = false
             ndk { abiFilters += "x86_64" }
         }
         // Only for the Compose UI tests on CI's x86_64 emulator, which cannot run arm64-only native code. Debug and
