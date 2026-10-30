@@ -11,6 +11,8 @@
   "expanded", the next swipe reads the first option, and the header is still there to close the group.
 - Audit of the same pattern: every section that opens in place now uses it. That is the Voice and speed groups
   (`SpeechGroup`), More options (`MoreOptions`, Voices screen) and the book menu's Save as card (`SaveAsCard`).
+- `ReleaseJourneyTest` was at detekt's class-size limit, so the comic and DjVu steps (14, 15) moved unchanged into
+  `release/PhotoBookJourney.kt`, as `ZipNamesJourney` did, which leaves room for the next steps.
 - Perf cost: one frame wait and one scroll animation when a group is opened by a tap. Nothing at rest.
 - "What's new" entry: `app/src/main/assets/whatsnew/2026-10-30-open-in-place.txt`. `:pdf` unchanged. No new dependency.
 - **Could affect:** the Voice and speed sheet, the Voices screen's More options, the book menu's Save as card.
