@@ -222,9 +222,7 @@ class ReleaseJourneyTest {
             ZipNamesJourney(rule, ::activity, ::backToTabs).booksWithCodePageNamesOpen()
         }
         step("58 the player names its line actions", LineActionsJourney(rule, BOOK, ::backToTabs)::namedAndInSight)
-        step("61 Voices & licences opens every licence text") {
-            NoticesJourney(rule, ::backToTabs).everyLicenceTextOpens()
-        }
+        step("61 Voices & licences opens every licence text", NoticesJourney(rule, ::backToTabs)::everyLicenceTextOpens)
     }
 
     /**
@@ -243,9 +241,8 @@ class ReleaseJourneyTest {
 
     private fun text(id: Int, vararg args: Any): String = app.getString(id, *args)
 
-    private fun waitForNode(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) {
+    private fun waitForNode(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) =
         rule.waitUntil(timeoutMs) { rule.shows(matcher) }
-    }
 
     private fun node(matcher: SemanticsMatcher): SemanticsNodeInteraction {
         waitForNode(matcher)
@@ -258,9 +255,8 @@ class ReleaseJourneyTest {
 
     private fun tapText(id: Int, vararg args: Any) = tap(hasText(text(id, *args)))
 
-    private fun gone(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) {
+    private fun gone(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) =
         rule.waitUntil(timeoutMs) { rule.hides(matcher) }
-    }
 
     private fun back() {
         val current = activity()
