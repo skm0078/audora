@@ -51,8 +51,11 @@ class QuizSpeaker(context: Context, private val idleMs: Long = QuizConfig().spea
         .setUsage(AudioAttributes.USAGE_MEDIA)
         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
         .build()
+
+    // A call or another app taking the sound stops the line; a short duck (a notification) lets it go on.
     private val focus = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
         .setAudioAttributes(attributes)
+        .setOnAudioFocusChangeListener { change -> if (QuizFocus.stopsOn(change)) stop() }
         .build()
     private val generation = AtomicLong()
     private val rendering = Mutex()
@@ -80,7 +83,7 @@ class QuizSpeaker(context: Context, private val idleMs: Long = QuizConfig().spea
         val mine = generation.incrementAndGet()
         stop()
         val rendered = rendering.withLock {
-            if (closed || mine != generation.get()) return@withContext null
+            if (superseded(mine)) return@withContext null
             idleRelease?.cancel()
             val unit = ReadingUnit(0, 0, 0, text.length, text, lang, pauseAfterMs = 0, bounds = null)
             val renderer = rendererLocked()
@@ -147,17 +150,29 @@ class QuizSpeaker(context: Context, private val idleMs: Long = QuizConfig().spea
         if (closed) scope.cancel() else AudoraLog.i(TAG, "Quiz voices freed")
     }
 
-    /** Plays [pcm] unless a newer line or [close] came first; false (logged) if the audio output refused it. */
+    /** Whether the line may sound now: refused while a call is going or another app holds the sound (logged). */
+    private fun takeFocus(): Boolean {
+        val granted = audio.requestAudioFocus(focus) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        if (!granted) AudoraLog.i(TAG, "Quiz line not played: audio focus refused")
+        return granted
+    }
+
+    /** A newer line or [close] came after line [mine]. */
+    private fun superseded(mine: Long) = closed || mine != generation.get()
+
+    /**
+     * Plays [pcm] unless a newer line or [close] came first, or the sound is taken (a call); false (logged) if the
+     * audio output refused it.
+     */
     @Suppress("TooGenericExceptionCaught") // AudioTrack throws several unchecked types; none may crash the quiz.
     @Synchronized
     private fun play(pcm: PcmAudio, mine: Long): Boolean {
-        if (pcm.samples.isEmpty() || closed || mine != generation.get()) return false
+        if (pcm.samples.isEmpty() || superseded(mine) || !takeFocus()) return false
         var made: AudioTrack? = null
         return try {
             made = build(pcm)
             made.write(pcm.samples, 0, pcm.samples.size)
             setSpeed(made)
-            audio.requestAudioFocus(focus)
             made.notificationMarkerPosition = pcm.samples.size
             made.setPlaybackPositionUpdateListener(
                 object : AudioTrack.OnPlaybackPositionUpdateListener {
