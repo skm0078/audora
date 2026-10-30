@@ -145,7 +145,10 @@ private fun relativeTime(millis: Long): String {
 
 @Composable
 internal fun messageText(message: LibraryMessage): String = when (message) {
-    is LibraryMessage.Added -> stringResource(R.string.library_added, titleOrUntitled(message.title))
+    is LibraryMessage.Added -> stringResource(
+        if (message.copied) R.string.library_added_copy else R.string.library_added,
+        titleOrUntitled(message.title),
+    )
     is LibraryMessage.AlreadyInLibrary -> stringResource(R.string.library_already, titleOrUntitled(message.title))
     is LibraryMessage.FoundAgain -> stringResource(R.string.library_found_again, titleOrUntitled(message.title))
     is LibraryMessage.Removed -> stringResource(R.string.library_removed, titleOrUntitled(message.title))
@@ -158,6 +161,7 @@ internal fun titleOrUntitled(title: String): String =
 
 private fun errorText(error: LibraryError): Int = when (error) {
     LibraryError.CannotKeepAccess -> R.string.library_error_cannot_keep
+    LibraryError.GrantsFull -> R.string.library_error_no_room_for_copy
     LibraryError.Unreadable -> R.string.library_error_unreadable
     LibraryError.NotAPdf -> R.string.library_error_not_pdf
     LibraryError.DifferentFile -> R.string.library_error_different_file

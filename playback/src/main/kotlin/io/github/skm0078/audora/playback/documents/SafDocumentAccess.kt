@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
+import io.github.skm0078.audora.core.config.LibraryConfig
 import io.github.skm0078.audora.core.library.BookAvailability
 import io.github.skm0078.audora.core.library.DocumentAccess
 import io.github.skm0078.audora.core.library.DocumentError
@@ -22,20 +23,36 @@ import java.io.InputStream
  * Error details name the exception type and the provider's authority only: a document URI usually spells out
  * the file's path and name, which must not reach the log (AGENTS.md: no PDF text, no titles).
  */
-class SafDocumentAccess(context: Context, private val copies: SharedPdfCopies = SharedPdfCopies(context)) :
-    DocumentAccess {
+class SafDocumentAccess(
+    context: Context,
+    private val copies: SharedPdfCopies = SharedPdfCopies(context),
+    private val maxGrants: Int = LibraryConfig().maxKeptFileGrants,
+) : DocumentAccess {
     private val resolver: ContentResolver = context.applicationContext.contentResolver
 
     override fun keepAccess(documentUri: String): Outcome<Unit, DocumentError> {
         val uri = Uri.parse(documentUri)
-        // Audora's own file, or a file in a watched folder (item 26), read through the folder's grant: nothing to keep.
-        if (copies.owns(uri) || resolver.inGrantedFolder(uri)) return Outcome.Success(Unit)
-        return try {
-            resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            Outcome.Success(Unit)
-        } catch (e: SecurityException) {
-            Outcome.Failure(DocumentError.CannotKeepAccess(detail(e, uri)))
+        val grants = resolver.persistedUriPermissions
+        return when {
+            // Audora's own file, or one in a watched folder (item 26) read through the folder's grant: none to keep.
+            copies.owns(uri) || resolver.inGrantedFolder(uri) -> Outcome.Success(Unit)
+
+            // Past the limit Android would silently drop the oldest grant, and with it an old book; the caller keeps
+            // a copy of this one instead. A file already granted (added again) costs nothing.
+            grants.none { it.uri == uri } && grants.size >= maxGrants -> {
+                AudoraLog.i(TAG, "Lasting grants at the limit, grants=${grants.size}; the book is kept as a copy")
+                Outcome.Failure(DocumentError.GrantsFull("grants=${grants.size} authority=${uri.authority}"))
+            }
+
+            else -> take(uri)
         }
+    }
+
+    private fun take(uri: Uri): Outcome<Unit, DocumentError> = try {
+        resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        Outcome.Success(Unit)
+    } catch (e: SecurityException) {
+        Outcome.Failure(DocumentError.CannotKeepAccess(detail(e, uri)))
     }
 
     override fun releaseAccess(documentUri: String) {
