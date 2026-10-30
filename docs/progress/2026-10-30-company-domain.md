@@ -18,3 +18,13 @@
 
 **After the release that brings this to prod:** https://github.com/skm0078/audora/settings/pages shows the custom
 domain; tick Enforce HTTPS. Then https://skm0078.github.io/audora/ redirects to the new address.
+
+**Play launch readiness (same PR, it shares RELEASING.md):**
+- `docs/store/listing.md`: the Play listing text in English, Hindi and Bengali (Hindi and Bengali need a native read
+  before upload), graphics with their licence status, category and contact.
+- RELEASING.md: developer name TelosMind Labs with `support@`, the Data safety wording now names web pages and
+  catalogues, and a new "Play Console app content" section with the answers for ads, app access, content rating,
+  target audience and the four foreground-service declarations (`mediaPlayback`, `mediaProcessing`, `dataSync`,
+  `microphone`) with what each video shows.
+- ADR-061's network row lists the web-page and catalogue fetches that came after it; the answer is unchanged.
+- GitHub releases are titled "ListenLock vX.Y.Z" (the APK file name stays, so Obtainium keeps updating).
