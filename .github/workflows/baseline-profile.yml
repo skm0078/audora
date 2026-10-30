@@ -73,6 +73,16 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      # The same file again, gzipped and base64 in a folded log group, for tools that read logs but cannot download
+      # artifacts: `base64 -d | gunzip` between the BEGIN and END lines gives baseline-prof.txt back.
+      - name: Profile in the log
+        run: |
+          echo "::group::baseline-prof.txt.gz (base64)"
+          echo "BEGIN baseline-prof.txt.gz"
+          gzip -9 -c app/src/main/baseline-prof.txt | base64 -w 100
+          echo "END baseline-prof.txt.gz"
+          echo "::endgroup::"
+
       - name: Generator log on failure
         if: failure()
         run: |
