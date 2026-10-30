@@ -29,6 +29,7 @@ import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.contract.SleepTimerMode
 import io.github.skm0078.audora.playback.contract.SpeechStyleChange
 import io.github.skm0078.audora.playback.contract.StudyAction
+import io.github.skm0078.audora.playback.contract.VoiceWarmUpCommand
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import io.github.skm0078.audora.playback.session.Spot
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -199,6 +200,10 @@ class MediaControllerPlaybackPort(private val context: Context) : PlaybackPort {
 
     override fun reportSoundedWrong(report: SoundedWrongReport) = withPlayer("report") { player ->
         send(player, PlaybackContract.REPORT_SOUNDED_WRONG, PlaybackContract.reportArgs(report), "report")
+    }
+
+    override fun warmVoice(book: BookId, lang: Lang) = withPlayer("warm voice") { player ->
+        send(player, VoiceWarmUpCommand.COMMAND, VoiceWarmUpCommand.args(book, lang), "warm voice")
     }
 
     override fun positionInSentenceMs(): Long? = controller?.takeIf { it.currentMediaItem != null }?.currentPosition

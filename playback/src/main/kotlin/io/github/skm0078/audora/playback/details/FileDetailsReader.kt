@@ -27,11 +27,11 @@ import io.github.skm0078.audora.playback.text.Fb2Parser
 import io.github.skm0078.audora.playback.text.FileMeta
 import io.github.skm0078.audora.playback.text.MobiFile
 import io.github.skm0078.audora.playback.text.TextBooks
+import io.github.skm0078.audora.playback.text.ZipNames
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
 import java.util.zip.ZipException
-import java.util.zip.ZipInputStream
 
 /** [details] of a file, and its own cover picture's bytes when it has one (an EPUB), still encoded. */
 class FileDetailsRead(val details: FileDetails, val coverImage: ByteArray? = null)
@@ -62,6 +62,8 @@ class FileDetailsReader(
         } catch (e: IOException) {
             unreadable(uri, format, e)
         } catch (e: SecurityException) {
+            unreadable(uri, format, e)
+        } catch (e: IllegalArgumentException) {
             unreadable(uri, format, e)
         }
     }
@@ -104,7 +106,7 @@ class FileDetailsReader(
     private fun fb2Head(uri: Uri): ByteArray {
         val zipped = stream(uri).use { DocumentFormats.isZip(it.readUpTo(ZIP_MAGIC_BYTES)) }
         if (!zipped) return head(uri)
-        return ZipInputStream(stream(uri)).use { zip ->
+        return ZipNames.stream({ stream(uri) }) { zip ->
             generateSequence { zip.nextEntry }.firstOrNull { Fb2Parser.isWanted(it.name) }
                 ?.let { zip.readUpTo(headBytes) } ?: ByteArray(0)
         }
@@ -158,7 +160,9 @@ class FileDetailsReader(
     /** The ZIP's [wanted] entries, each at most [limit] bytes (a larger one is left out). */
     private fun zipEntries(uri: Uri, limit: Int = headBytes, wanted: (String) -> Boolean): Map<String, ByteArray> {
         val entries = HashMap<String, ByteArray>()
-        ZipInputStream(stream(uri)).use { zip ->
+        ZipNames.stream({ stream(uri) }) { zip ->
+            // A second pass (names not UTF-8) starts afresh.
+            entries.clear()
             generateSequence { zip.nextEntry }
                 .filter { !it.isDirectory && wanted(it.name) }
                 .forEach { entry ->

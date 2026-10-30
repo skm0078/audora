@@ -25,7 +25,6 @@ import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
 import java.util.zip.ZipException
-import java.util.zip.ZipInputStream
 
 /**
  * Every book source (playback, the reader, the studio and the exports through them) asks [formatOf] first and
@@ -69,6 +68,9 @@ class TextBooks(
             Outcome.Failure(TextBookError.Unreadable("${e.javaClass.simpleName} authority=${uri.authority}"))
         } catch (e: SecurityException) {
             Outcome.Failure(TextBookError.Unreadable("${e.javaClass.simpleName} authority=${uri.authority}"))
+        } catch (e: IllegalArgumentException) {
+            // A malformed file a parser or Java's zip reader refuses: damage, never a crash of the reader or player.
+            Outcome.Failure(TextBookError.Damaged(e.javaClass.simpleName))
         }
         when (document) {
             is Outcome.Success ->
@@ -100,7 +102,10 @@ class TextBooks(
     private fun readZip(uri: Uri, wanted: (String) -> Boolean): Outcome<Map<String, ByteArray>, TextBookError> {
         val entries = HashMap<String, ByteArray>()
         var total = 0L
-        ZipInputStream(stream(uri)).use { zip ->
+        ZipNames.stream({ stream(uri) }) { zip ->
+            // A second pass (names not UTF-8) starts afresh.
+            entries.clear()
+            total = 0L
             generateSequence { zip.nextEntry }
                 .filter { !it.isDirectory && wanted(it.name) }
                 .forEach { entry ->
