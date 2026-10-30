@@ -14,6 +14,7 @@ import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.battery.OnboardingPreferences
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.shows
 
@@ -42,14 +43,13 @@ internal class LineActionsJourney(
     /** Opens [pdf] in the reader: ⋮ › Gestures and tips shows the tips card again; the view button has a name. */
     private fun tipsComeBackFromTheMenu() {
         backToTabs()
+        // Seen already, so only the menu can bring the card back (and a late first-run card cannot race the check).
+        OnboardingPreferences(app).gestureTipsSeen = true
         val activity = requireNotNull(JourneyDevice.resumedActivity()) { "No app on screen" }
         val uri = JourneyDevice.downloadedPdf(pdf)
         JourneyDevice.onMain { activity.startActivity(JourneyDevice.openWith(uri)) }
         waitFor(hasContentDescription(text(R.string.reader_play)), OPEN_TIMEOUT_MS)
         val gotIt = hasText(text(R.string.gesture_tips_got_it)) and hasClickAction()
-        rule.waitForIdle()
-        if (rule.shows(gotIt)) tap(gotIt)
-        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(gotIt) }
 
         tap(hasContentDescription(text(R.string.reader_more)))
         tap(hasText(text(R.string.gesture_tips_menu)))
