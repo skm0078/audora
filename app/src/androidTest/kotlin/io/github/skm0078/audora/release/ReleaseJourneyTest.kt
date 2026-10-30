@@ -216,6 +216,7 @@ class ReleaseJourneyTest {
             ShareHereJourney(rule, ::activity).theShareButtonOpensTheChoices(BOOK)
         }
         step("54 search and You open the player's options", FindOptionsJourney(rule, ::backToTabs)::openTheSheet)
+        step("58 the player names its line actions", LineActionsJourney(rule, BOOK, ::backToTabs)::namedAndInSight)
     }
 
     /**

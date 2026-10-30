@@ -1,18 +1,26 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReaderTopBar.kt
-// Purpose: The reader's top bar: back, the book's title, and the book's buttons (Share among them) once it is open.
+// Purpose: The reader's top bar: back, the book's title, and the book's buttons (Share and the named Page or Text
+//          switch among them) once it is open.
 
 package io.github.skm0078.audora.ui.reader
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -77,4 +85,31 @@ private fun ReaderTitle(title: String) {
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.semantics { heading() },
     )
+}
+
+/**
+ * Switches between the drawn page and its sentences as text, named in words (ADR 2026-10-30-player-line-actions): the
+ * two icons looked alike, so the button says where it goes ("Text" on the page, "Page" on the text) beside its icon.
+ */
+@Composable
+private fun ViewToggle(view: ReaderView, actions: ReaderActions) {
+    val toText = view == ReaderView.PAGE
+    val description = stringResource(if (toText) R.string.reader_show_text else R.string.reader_show_page)
+    TextButton(
+        onClick = { actions.onViewChanged(if (toText) ReaderView.TEXT else ReaderView.PAGE) },
+        contentPadding = ButtonDefaults.TextButtonWithIconContentPadding,
+        modifier = Modifier.semantics { contentDescription = description },
+    ) {
+        Icon(
+            painterResource(if (toText) R.drawable.ic_view_text else R.drawable.ic_view_page),
+            contentDescription = null,
+            modifier = Modifier.size(ButtonDefaults.IconSize),
+        )
+        Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+        Text(
+            stringResource(if (toText) R.string.reader_view_text else R.string.reader_view_page),
+            maxLines = 1,
+            modifier = Modifier.clearAndSetSemantics {},
+        )
+    }
 }
