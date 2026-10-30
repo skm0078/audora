@@ -15,6 +15,9 @@ package io.github.skm0078.audora.core.config
  * @property maxComicPages a comic archive (.cbz) of more pages is refused: a long graphic novel, a few hundred MB of
  *   book file, read by OCR page by page as it plays (ADR 2026-10-26-more-ebook-formats).
  * @property maxComicBytes a comic archive larger than this is not copied in (it is copied whole before reading).
+ * @property maxComicPageBytes a comic page that unpacks to more than this is not read (it is read whole before it is
+ *   decoded and scaled): a scanned double page is a few MB, and the cap keeps a page that unpacks to far more than the
+ *   archive's size (a zip bomb) from running the phone out of memory. Such a page becomes a blank page.
  * @property maxDjvuScanPages a DjVu with no text layer of more pages is refused: each page is drawn and kept as a
  *   picture, so a 600-page scan is several hundred MB of book file (ADR 2026-10-27-djvu-books).
  */
@@ -26,6 +29,7 @@ data class PhotoConfig(
     val maxImagesPerBook: Int = 50,
     val maxComicPages: Int = 400,
     val maxComicBytes: Long = DEFAULT_MAX_COMIC_BYTES,
+    val maxComicPageBytes: Int = DEFAULT_MAX_COMIC_PAGE_BYTES,
     val maxDjvuScanPages: Int = 600,
 ) {
     init {
@@ -35,11 +39,13 @@ data class PhotoConfig(
         require(maxImagesPerBook > 0) { "maxImagesPerBook must be > 0, was $maxImagesPerBook" }
         require(maxComicPages > 0) { "maxComicPages must be > 0, was $maxComicPages" }
         require(maxComicBytes > 0) { "maxComicBytes must be > 0, was $maxComicBytes" }
+        require(maxComicPageBytes > 0) { "maxComicPageBytes must be > 0, was $maxComicPageBytes" }
         require(maxDjvuScanPages > 0) { "maxDjvuScanPages must be > 0, was $maxDjvuScanPages" }
     }
 
     private companion object {
         const val MAX_QUALITY = 100
         const val DEFAULT_MAX_COMIC_BYTES = 512L * 1024L * 1024L
+        const val DEFAULT_MAX_COMIC_PAGE_BYTES = 64 * 1024 * 1024
     }
 }

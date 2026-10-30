@@ -37,7 +37,8 @@ internal fun boldWordStarts(text: String): AnnotatedString = buildAnnotatedStrin
 /**
  * The reader's overflow: actions only, each one line with an icon, so the menu scans at a glance (ADR-062). Page and
  * text opens every look option (plan items 13-15, 18, 77) in a sheet; then search (plan item 16), the Up next sheet
- * (plan item 25), Save as audiobook (ADR-034) and Read aloud to me (plan item 67). A null action is left out.
+ * (plan item 25), Save as audiobook (ADR-034), Read aloud to me (plan item 67) and Gestures and tips, the one-time card
+ * shown again (ADR 2026-10-30-player-line-actions). A null action is left out.
  */
 @Composable
 internal fun MoreMenu(
@@ -46,6 +47,7 @@ internal fun MoreMenu(
     onSearch: (() -> Unit)? = null,
     onSaveAudiobook: (() -> Unit)? = null,
     onReadAloudToMe: (() -> Unit)? = null,
+    onShowTips: (() -> Unit)? = null,
 ) {
     var open by remember { mutableStateOf(false) }
     val choose = { action: () -> Unit ->
@@ -65,6 +67,10 @@ internal fun MoreMenu(
                 MenuAction(R.string.library_export_audiobook, R.drawable.ic_download) { choose(it) }
             }
             onReadAloudToMe?.let { MenuAction(R.string.tutor_menu, R.drawable.ic_mic) { choose(it) } }
+            onShowTips?.let {
+                HorizontalDivider()
+                MenuAction(R.string.gesture_tips_menu, R.drawable.ic_info) { choose(it) }
+            }
         }
     }
 }

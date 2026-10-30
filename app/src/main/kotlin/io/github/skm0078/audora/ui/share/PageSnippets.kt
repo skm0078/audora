@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/share/PageSnippets.kt
-// Purpose: Hands the part of a page the listener boxed from the reader to the card screen, in memory (ADR
-//          2026-10-28-page-snippet).
+// Purpose: Hands the part of a page the listener boxed, and the whole page it came from, from the reader to the card
+//          screen, in memory (ADRs 2026-10-28-page-snippet, 2026-10-30-whole-page-cards).
 
 package io.github.skm0078.audora.ui.share
 
@@ -8,6 +8,9 @@ import android.graphics.Bitmap
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.share.SnippetBox
 import kotlin.math.roundToInt
+
+/** The boxed [part] of a drawn [page], and the page itself for the card's "Whole page". */
+class HeldSnippet(val part: Bitmap, val page: Bitmap)
 
 /**
  * The reader cuts the page as it is drawn on screen and the card screen opens on it: in memory, so a locked PDF is
@@ -19,9 +22,9 @@ object PageSnippets {
     private const val TAG = "ShareCard"
 
     @Volatile
-    private var held: Bitmap? = null
+    private var held: HeldSnippet? = null
 
-    /** [page] cut to [box]; false if it could not be cut (logged). */
+    /** [page] cut to [box], the page kept beside it; false if it could not be cut (logged). */
     fun hold(page: Bitmap, box: SnippetBox): Boolean {
         val x = (box.left * page.width).roundToInt().coerceIn(0, page.width - 1)
         val y = (box.top * page.height).roundToInt().coerceIn(0, page.height - 1)
@@ -30,7 +33,8 @@ object PageSnippets {
         return try {
             // A hardware bitmap cannot be cut on every phone; it is copied to memory first.
             val source = if (page.config == Bitmap.Config.HARDWARE) page.copy(Bitmap.Config.ARGB_8888, false) else page
-            held = Bitmap.createBitmap(requireNotNull(source) { "page could not be copied" }, x, y, width, height)
+            val readable = requireNotNull(source) { "page could not be copied" }
+            held = HeldSnippet(Bitmap.createBitmap(readable, x, y, width, height), readable)
             AudoraLog.i(TAG, "Snippet of ${width}x$height px from a ${page.width}x${page.height} page")
             true
         } catch (e: IllegalArgumentException) {
@@ -40,7 +44,7 @@ object PageSnippets {
     }
 
     /** The snippet held, if any. */
-    fun current(): Bitmap? = held
+    fun current(): HeldSnippet? = held
 
     fun release() {
         held = null

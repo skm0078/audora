@@ -96,6 +96,7 @@ fun ReaderScreen(
                     onSearch = onSearch,
                     onSaveAudiobook = actions::onSaveAudiobook,
                     onReadAloudToMe = onTutor,
+                    onShowTips = tips::show,
                 )
             }
         },
@@ -360,7 +361,7 @@ private object PreviewActions : ReaderActions {
 
 /** Tells the notes which sentences show, so highlights land on them after a pipeline change (plan item 30). */
 @Composable
-private fun PlaceHighlights(state: ReaderState, notes: BookNotesActions) {
+internal fun PlaceHighlights(state: ReaderState, notes: BookNotesActions) {
     val units = (state.content as? PageContent.Ready)?.units.orEmpty()
     LaunchedEffect(units) { notes.showing(units) }
 }

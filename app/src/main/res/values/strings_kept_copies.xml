@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Books kept as ListenLock's own copy, when the file's lasting access cannot be kept. -->
+<resources>
+    <string name="library_added_copy">Added “%1$s”. ListenLock keeps its own copy, so it always opens.</string>
+    <string name="library_error_no_room_for_copy">ListenLock could not keep a copy of this book. Free some space on the phone, or remove a book you have finished, then add it again.</string>
+</resources>

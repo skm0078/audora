@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/PlayerBookmark.kt
-// Purpose: The player's one-tap bookmark (CF-2): a button beside the book's title, and the notice it leaves with
+// Purpose: The player's one-tap bookmark (CF-2): the notice its button (PlayerLineActions) leaves, with
 //          Add note and Undo.
 
 package io.github.skm0078.audora.ui.reader
@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDefaults
@@ -19,7 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalAccessibilityManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -29,20 +26,6 @@ import io.github.skm0078.audora.core.config.PlayerControlsConfig
 import io.github.skm0078.audora.core.notes.Bookmark
 import io.github.skm0078.audora.ui.theme.Dimens
 import kotlinx.coroutines.delay
-
-/**
- * Filled when the sentence it would mark already has a bookmark; a tap then opens that bookmark's note instead of
- * saving a twin. Disabled while the page's sentences load.
- */
-@Composable
-internal fun PlayerBookmarkButton(marked: Boolean, enabled: Boolean, onClick: () -> Unit) {
-    IconButton(onClick = onClick, enabled = enabled) {
-        Icon(
-            painterResource(if (marked) R.drawable.ic_bookmark else R.drawable.ic_bookmark_border),
-            stringResource(if (marked) R.string.player_bookmark_edit else R.string.player_bookmark_add),
-        )
-    }
-}
 
 /**
  * "Bookmarked", with Add note and Undo, for [config]'s notice time (longer when the listener asked Android for more

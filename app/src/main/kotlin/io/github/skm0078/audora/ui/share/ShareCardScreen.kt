@@ -28,6 +28,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -38,12 +42,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.config.ShareCardConfig
 import io.github.skm0078.audora.core.share.PhotoFocus
 import io.github.skm0078.audora.ui.theme.Dimens
 
 /**
  * The listener's choices on the card screen. A [video] is always a story (9:16, what Status, Reels and Shorts show
- * full screen), at 1080 x 1920 when [sharp], else 720 x 1280.
+ * full screen), at 1080 x 1920 when [sharp], else 720 x 1280. [wholePage] shows the whole page instead of the lines
+ * or part picked (ADR 2026-10-30-whole-page-cards); a video always reads the lines picked.
  */
 data class CardChoices(
     val shape: CardShape = CardShape.STORY,
@@ -51,9 +57,13 @@ data class CardChoices(
     val dedication: String = "",
     val video: Boolean = false,
     val sharp: Boolean = false,
+    val wholePage: Boolean = false,
 ) {
     /** The card's size as drawn: a video's is the story's, whatever size the picture had. */
     val shownShape: CardShape get() = if (video) CardShape.STORY else shape
+
+    /** The whole page is what the card shows: picked, and not a video. */
+    val showsWholePage: Boolean get() = wholePage && !video
 }
 
 /** What the screen's controls do; the route keeps the state and does the work. */
@@ -90,16 +100,20 @@ fun ShareCardScreen(
     BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
         val height = maxHeight
         val sideBySide = maxWidth > height && height < SIDE_BY_SIDE_BELOW
-        val title = when (subject.body) {
-            CardBody.WholeBook -> R.string.share_card_book_title
-            is CardBody.Snippet -> R.string.share_card_snippet_title
-            is CardBody.Quote -> if (choices.video) R.string.share_card_video_title else R.string.share_card_title
+        val title = when {
+            subject.body == CardBody.WholeBook -> R.string.share_card_book_title
+            choices.video -> R.string.share_card_video_title
+            choices.showsWholePage -> R.string.share_card_page_title
+            subject.body is CardBody.Snippet -> R.string.share_card_snippet_title
+            else -> R.string.share_card_title
         }
+        // A whole page of text set too small to fit the size picked says so under the card.
+        var pageOverflow by remember { mutableStateOf(false) }
         val preview = @Composable { modifier: Modifier ->
-            CardPreview(subject, choices, picture, recorder, actions::onPhotoFocus, modifier)
+            CardPreview(subject, choices, picture, recorder, actions::onPhotoFocus, { pageOverflow = it }, modifier)
         }
         val controls = @Composable { modifier: Modifier ->
-            CardControls(subject, choices, busy, actions, modifier)
+            CardControls(subject, choices, busy, actions, pageOverflow, modifier)
         }
         if (sideBySide) {
             Row(Modifier.fillMaxSize()) {
@@ -143,6 +157,7 @@ private fun CardPreview(
     picture: CardPhoto?,
     recorder: CardRecorder,
     onPhotoFocus: (PhotoFocus) -> Unit,
+    onPageOverflow: (Boolean) -> Unit,
     modifier: Modifier,
 ) {
     val look = choices.look
@@ -162,28 +177,39 @@ private fun CardPreview(
         val backdrop = own ?: subject.softCover?.let(::CardPhoto)
         val placing = if (own != null) Modifier.photoDrag(own, onPhotoFocus) else Modifier
         Box(Modifier.fillMaxSize().then(placing)) {
-            CardContent(subject, choices, backdrop, quoteShown = !video)
+            CardContent(subject, choices, backdrop, quoteShown = !video, onPageOverflow)
         }
     }
 }
 
 @Composable
-private fun CardContent(subject: CardSubject, choices: CardChoices, backdrop: CardPhoto?, quoteShown: Boolean) {
+private fun CardContent(
+    subject: CardSubject,
+    choices: CardChoices,
+    backdrop: CardPhoto?,
+    quoteShown: Boolean,
+    onPageOverflow: (Boolean) -> Unit,
+) {
     val look = choices.look
     when (val body = subject.body) {
         is CardBody.Snippet -> SnippetCard(
             SnippetCardText(subject.title, subject.author, body.pageLabel, choices.dedication),
             look,
-            body.picture,
+            if (choices.showsWholePage) body.wholePage else body.picture,
             backdrop,
         )
 
-        is CardBody.Quote -> QuoteCard(
-            QuoteCardText(body.quote, subject.title, subject.author, body.pageLabel, choices.dedication),
-            look,
-            backdrop,
-            quoteShown = quoteShown,
-        )
+        is CardBody.Quote -> {
+            val page = body.wholePage?.takeIf { choices.showsWholePage }
+            QuoteCard(
+                QuoteCardText(page ?: body.quote, subject.title, subject.author, body.pageLabel, choices.dedication),
+                look,
+                backdrop,
+                quoteShown = quoteShown,
+                fit = if (page != null) QuoteFit.PAGE else QuoteFit.QUOTE,
+                onOverflow = onPageOverflow,
+            )
+        }
 
         CardBody.WholeBook -> BookCard(
             BookCardText(
@@ -205,20 +231,18 @@ private fun CardControls(
     choices: CardChoices,
     busy: Boolean,
     actions: CardScreenActions,
+    pageOverflow: Boolean,
     modifier: Modifier,
 ) {
     Column(
         modifier.verticalScroll(rememberScrollState()).padding(Dimens.ScreenPadding),
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM),
     ) {
-        if (subject.quote?.cut == true) {
-            Text(
-                stringResource(R.string.share_card_cut_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        CutNote(subject, choices, pageOverflow)
         if (subject.quote != null) KindChips(choices.video) { actions.onChoices(choices.copy(video = it)) }
+        if (subject.hasWholePage && !choices.video) {
+            SpanChips(choices.wholePage) { actions.onChoices(choices.copy(wholePage = it)) }
+        }
         if (choices.video) {
             QualityChips(choices.sharp) { actions.onChoices(choices.copy(sharp = it)) }
         } else {
@@ -236,6 +260,21 @@ private fun CardControls(
         } else {
             ShareButton(busy, R.string.share_card_send, actions::onShare)
         }
+    }
+}
+
+/** Why the card shows less than was picked: a quote cut to 60 words, or a page cut or too long for the size. */
+@Composable
+private fun CutNote(subject: CardSubject, choices: CardChoices, pageOverflow: Boolean) {
+    val page = (subject.body as? CardBody.Quote)?.wholePage?.takeIf { choices.showsWholePage }
+    val note = when {
+        page == null -> stringResource(R.string.share_card_cut_note).takeIf { subject.quote?.cut == true }
+        page.cut -> stringResource(R.string.share_card_page_cut, ShareCardConfig().maxPageWords)
+        pageOverflow -> stringResource(R.string.share_card_page_overflow)
+        else -> null
+    }
+    note?.let {
+        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
