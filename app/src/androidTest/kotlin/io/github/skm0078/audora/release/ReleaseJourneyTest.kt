@@ -218,6 +218,9 @@ class ReleaseJourneyTest {
         step("54 search and You open the player's options", FindOptionsJourney(rule, ::backToTabs)::openTheSheet)
         step("55 Jobs cleans up unfinished work", JobsCleanupJourney(rule, ::backToTabs)::cleansUpUnfinishedWork)
         step("56 an open book loads its voice early", WarmUpJourney(rule, BOOK, { port }, ::backToTabs)::loadsTheVoice)
+        step("60 shares and Settings link to listenlock.telosmindlabs.com") {
+            DomainJourney.linksUseTheCompanySubdomain()
+        }
     }
 
     /**

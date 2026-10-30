@@ -178,9 +178,13 @@ library when they switch.
   a versionCode it has already seen, so every upload needs a new `audora.versionName`.
 - **Language splits are off** (`bundle.language.enableSplit = false` in `app/build.gradle.kts`): the in-app
   language switch needs the Hindi and Bengali strings on every phone.
-- **Privacy policy:** `docs/privacy.html`, served by GitHub Pages at https://skm0078.github.io/audora/privacy.html
-  and linked from Settings → Privacy policy. Pages setup (once): https://github.com/skm0078/audora/settings/pages →
-  *Source* **Deploy from a branch** → branch **prod**, folder **/docs** → **Save**. Pages builds the site with its
+- **Privacy policy:** `docs/privacy.html`, served by GitHub Pages at https://listenlock.telosmindlabs.com/privacy.html
+  and linked from Settings → Privacy policy (`SiteConfig`). Pages setup (once): https://github.com/skm0078/audora/settings/pages →
+  *Source* **Deploy from a branch** → branch **prod**, folder **/docs** → **Save**. The custom domain comes from
+  `docs/CNAME` when it reaches `prod`: never type it in that settings page first, because the box commits straight to
+  `prod`. After the release that brings it, tick **Enforce HTTPS** there. DNS (Cloudflare, `telosmindlabs.com`): CNAME
+  `listenlock` → `skm0078.github.io`, DNS only; the domain is verified for the account at
+  https://github.com/settings/pages, so nobody else can claim it (ADR 2026-10-30-company-domain). Pages builds the site with its
   built-in Jekyll: the hand-written pages are copied as they are, recipes and blog posts are built from Markdown
   (docs/CONTENT.md), and the developer docs are left out by `docs/_config.yml`. Update the date on the page with every change,
   and update Play Console's Data safety form in the same release if what Audora sends or keeps changes.
