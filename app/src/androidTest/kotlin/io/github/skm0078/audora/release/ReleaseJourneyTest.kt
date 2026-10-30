@@ -135,9 +135,9 @@ class ReleaseJourneyTest {
         }
     }
 
-    /** Steps 59 and 01 to 20: the first screen, first run, playback, settings, every format, the library's menus. */
+    /** Steps 63 and 01 to 20: the first screen, first run, playback, settings, every format, the library's menus. */
     private fun firstRunToTheLibrary() {
-        step("59 the first screen leaves the player down", PlayerServiceJourney(rule) { scenario = it }::launchesDown)
+        step("63 the first screen leaves the player down", PlayerServiceJourney(rule) { scenario = it }::launchesDown)
         step(
             "01 first run plays a sample, opens the reader and offers the tour once",
             ::firstRunWalksThroughAndFinishes,

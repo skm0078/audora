@@ -38,7 +38,7 @@ the car asked to play.
 - **Behaviour kept:** playing in the background, then opening the app: the service is up, the mini player joins it.
   The service ending (nothing bound, nothing playing) drops the mini player's connection, as a fresh start would.
 - **Tests:** `JoinWantedTest` (down on a fresh screen, joins once up, lets go when hidden or when the service ends,
-  joins a service started while hidden); release journey step 59 (the first screen of a fresh install leaves the
+  joins a service started while hidden); release journey step 63 (the first screen of a fresh install leaves the
   service down for three seconds).
 
 ## Alternatives considered
