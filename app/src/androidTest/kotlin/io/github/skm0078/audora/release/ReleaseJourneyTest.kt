@@ -222,7 +222,7 @@ class ReleaseJourneyTest {
             ZipNamesJourney(rule, ::activity, ::backToTabs).booksWithCodePageNamesOpen()
         }
         step("58 the player names its line actions", LineActionsJourney(rule, BOOK, ::backToTabs)::namedAndInSight)
-        step("59 an opened group comes into view", OpenInPlaceJourney(rule, BOOK, ::backToTabs)::anOpenedGroupComesIntoView)
+        step("59 an opened group shows", OpenInPlaceJourney(rule, BOOK, ::backToTabs)::anOpenedGroupComesIntoView)
     }
 
     /**
