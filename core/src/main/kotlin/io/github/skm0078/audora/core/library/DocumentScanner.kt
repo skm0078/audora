@@ -44,5 +44,6 @@ internal data class ScannedDocument(val displayName: String?, val sizeBytes: Lon
 
 internal fun DocumentError.toLibraryError(): LibraryError = when (this) {
     is DocumentError.CannotKeepAccess -> LibraryError.CannotKeepAccess
+    is DocumentError.GrantsFull -> LibraryError.GrantsFull
     is DocumentError.NotFound, is DocumentError.AccessDenied, is DocumentError.ReadFailed -> LibraryError.Unreadable
 }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Books kept as ListenLock's own copy, when the file's lasting access cannot be kept. -->
+<resources>
+    <string name="library_added_copy">“%1$s” जोड़ी गई। ListenLock इसकी अपनी कॉपी रखता है, ताकि यह हमेशा खुले।</string>
+    <string name="library_error_no_room_for_copy">ListenLock इस किताब की कॉपी नहीं रख सका। फ़ोन में कुछ जगह खाली करें, या पढ़ी हुई कोई किताब हटाएँ, फिर इसे दोबारा जोड़ें।</string>
+</resources>

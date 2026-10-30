@@ -35,6 +35,12 @@ sealed interface DocumentError {
     /** The provider gives only a one-time grant (some cloud and messaging apps), so Audora cannot keep the book. */
     data class CannotKeepAccess(val detail: String) : DocumentError
 
+    /**
+     * Android keeps lasting grants for only so many files per app (512) and silently drops the oldest beyond that, so
+     * an old book would stop opening; Audora stops short of the limit (`LibraryConfig.maxKeptFileGrants`) instead.
+     */
+    data class GrantsFull(val detail: String) : DocumentError
+
     /** Moved, deleted, or the providing app is gone. */
     data class NotFound(val detail: String) : DocumentError
 

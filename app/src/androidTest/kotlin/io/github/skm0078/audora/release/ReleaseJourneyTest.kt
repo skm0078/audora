@@ -212,12 +212,16 @@ class ReleaseJourneyTest {
         step("49 the side panel holds the library's tools", DrawerJourney(rule, ::backToTabs)::holdsTheLibrarysTools)
         step("51 player shortcuts open their group", SpeechJourney(rule, BOOK, ::backToTabs)::shortcutsOpenTheirGroup)
         step("52 From ListenLock opens the cookbook", CookbookJourney(rule, ::backToTabs)::opensFromTheLibrary)
-        step("53 the reader's Share button opens the choices and a card in the reader's colours") {
+        step("53 the reader's Share opens the choices and a card in the reader's colours with Whole page") {
             ShareHereJourney(rule, ::activity).theShareButtonOpensTheChoices(BOOK)
         }
         step("54 search and You open the player's options", FindOptionsJourney(rule, ::backToTabs)::openTheSheet)
         step("55 Jobs cleans up unfinished work", JobsCleanupJourney(rule, ::backToTabs)::cleansUpUnfinishedWork)
         step("56 an open book loads its voice early", WarmUpJourney(rule, BOOK, { port }, ::backToTabs)::loadsTheVoice)
+        step("57 books zipped with code-page names open") {
+            ZipNamesJourney(rule, ::activity, ::backToTabs).booksWithCodePageNamesOpen()
+        }
+        step("58 the player names its line actions", LineActionsJourney(rule, BOOK, ::backToTabs)::namedAndInSight)
     }
 
     /**

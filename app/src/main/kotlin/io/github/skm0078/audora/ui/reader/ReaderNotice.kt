@@ -60,6 +60,11 @@ internal class GestureTipsState(private val prefs: OnboardingPreferences, privat
         pending = withContext(Dispatchers.IO) { !prefs.gestureTipsSeen }
     }
 
+    /** The reader's ⋮ "Gestures and tips": the card shows again, until Got it. */
+    fun show() {
+        pending = true
+    }
+
     fun dismiss() {
         pending = false
         scope.launch(Dispatchers.IO) { prefs.gestureTipsSeen = true }

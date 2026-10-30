@@ -27,6 +27,7 @@ class ShareLinkConfigTest {
             { ShareLinkConfig(cardLink = " ") },
             { ShareLinkConfig(cardLink = "skm0078.github.io/audora/long") },
             { ShareCardConfig(maxWords = 60, maxTextWords = 10) },
+            { ShareCardConfig(maxWords = 60, maxPageWords = 10) },
         ).forEach { build -> assertThrows(IllegalArgumentException::class.java) { build() } }
     }
 }

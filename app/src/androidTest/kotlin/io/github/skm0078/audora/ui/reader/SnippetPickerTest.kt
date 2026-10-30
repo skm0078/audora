@@ -147,7 +147,9 @@ class SnippetPickerTest {
             for (y in 0 until page.height) page.setPixel(x, y, if (x < page.width / 2) Color.RED else Color.BLUE)
         }
         assertTrue(PageSnippets.hold(page, SnippetBox(0.5f, 0.2f, 1f, 0.6f)))
-        val cut = requireNotNull(PageSnippets.current())
+        val held = requireNotNull(PageSnippets.current())
+        val cut = held.part
+        assertEquals(page.width, held.page.width)
         assertEquals(page.width / 2, cut.width)
         assertNear((page.height * 0.4f).toInt(), cut.height, 1)
         assertEquals(Color.BLUE, cut.getPixel(0, 0))

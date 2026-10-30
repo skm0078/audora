@@ -171,6 +171,12 @@ sealed interface LibraryError {
     /** The picking app gives only a one-time grant: the file must be copied to the phone first. */
     data object CannotKeepAccess : LibraryError
 
+    /**
+     * The app holds as many lasting file grants as it safely can (`DocumentError.GrantsFull`): the book must be added
+     * through Audora's own copy instead.
+     */
+    data object GrantsFull : LibraryError
+
     data object Unreadable : LibraryError
 
     data object NotAPdf : LibraryError

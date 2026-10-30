@@ -44,6 +44,13 @@ data class CardQuote(val text: String, val cut: Boolean, val script: Lang) {
             return CardQuote(text, cut = true, script = scriptOf(text))
         }
 
+        /**
+         * A whole page for a "Whole page" card: tidied like a quote, cut at [ShareCardConfig.maxPageWords] instead
+         * of the quote's limit. Pure.
+         */
+        fun ofPage(page: String, config: ShareCardConfig = ShareCardConfig()): CardQuote =
+            of(page, config.copy(maxWords = config.maxPageWords, maxTextWords = config.maxPageWords))
+
         /** The script most letters belong to; ties and text without letters read as English. */
         fun scriptOf(text: String): Lang {
             val letters = text.codePoints().toArray().asList().mapNotNull(ScriptLang::of)
