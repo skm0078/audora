@@ -30,7 +30,7 @@
     <string name="sentence_hint_copy">এই বাক্যটি কপি করে, যেকোনো অ্যাপে পেস্ট করার জন্য।</string>
     <string name="sentence_hint_copy_highlight">পুরো হাইলাইট করা অংশটি কপি করে, যেকোনো অ্যাপে পেস্ট করার জন্য।</string>
     <string name="sentence_menu_share_text">লেখা শেয়ার করুন</string>
-    <string name="sentence_hint_share_text">শব্দগুলো (হাইলাইট হলে পুরো অংশ) চ্যাট, মেল বা নোটস অ্যাপে পাঠায়।</string>
+    <string name="sentence_hint_share_text">শব্দগুলো (হাইলাইট হলে পুরো অংশ), বই, তার লেখক আর ListenLock-এর লিংকসহ, চ্যাট, মেল বা নোটস অ্যাপে।</string>
     <string name="sentence_copied">কপি হয়েছে</string>
 
     <string name="shortcut_resume">আবার শুনুন</string>

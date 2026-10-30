@@ -24,6 +24,7 @@
     <string name="found_book_finished">%1$s শেষ হিসেবে চিহ্নিত করুন</string>
     <string name="found_book_not_started">%1$s শুরু হয়নি হিসেবে চিহ্নিত করুন</string>
     <string name="found_terms_play">শুনুন পড়ুন শুরু</string>
+    <string name="found_terms_speech">গতি পিচ দ্রুত ধীর ভয়েস</string>
     <string name="found_terms_audiobook">অডিও ফাইল</string>
     <string name="found_terms_share">ছবি কার্ড</string>
     <string name="found_terms_guide">চরিত্র মানুষ কে</string>

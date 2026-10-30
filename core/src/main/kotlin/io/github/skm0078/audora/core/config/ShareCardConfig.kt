@@ -18,6 +18,8 @@ package io.github.skm0078.audora.core.config
  * @property snippetPad the box first drawn around a sentence leaves this share of the page around its lines.
  * @property snippetNudgeStep one TalkBack action ("Move up", "Make bigger") moves or grows the box by this share of
  *   the page: small enough to aim, big enough that a few steps cross the page.
+ * @property maxTextWords lines shared as text are cut to this many words, at a sentence end when one is close: longer
+ *   than a card's quote (text has no layout to fill), still a passage and never a page (the same guard).
  */
 data class ShareCardConfig(
     val maxWords: Int = 60,
@@ -28,8 +30,10 @@ data class ShareCardConfig(
     val snippetMinSide: Float = 0.08f,
     val snippetPad: Float = 0.015f,
     val snippetNudgeStep: Float = 0.05f,
+    val maxTextWords: Int = 150,
 ) {
     init {
+        require(maxTextWords >= maxWords) { "maxTextWords ($maxTextWords) must be >= maxWords ($maxWords)" }
         require(maxWords >= 1) { "maxWords must be >= 1, was $maxWords" }
         require(sentenceEndShare in 0f..1f) { "sentenceEndShare must be in 0..1, was $sentenceEndShare" }
         require(maxDedicationChars >= 1) { "maxDedicationChars must be >= 1, was $maxDedicationChars" }

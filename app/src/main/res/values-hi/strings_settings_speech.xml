@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_settings_speech.xml -->
+<!-- Purpose: You › Listening's door to the player's Voice and speed sheet (ADR 2026-10-29-find-player-options). -->
+<resources>
+    <string name="settings_speech_body">स्पीड, पिच, क्या पढ़ें और फ़ोकस साउंड, पिछली पढ़ी किताब में</string>
+    <string name="settings_speech_no_book">पहले कोई किताब खोलें, फिर उसकी स्पीड और आवाज़ यहाँ मिलेगी</string>
+</resources>

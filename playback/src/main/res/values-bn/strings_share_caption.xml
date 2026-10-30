@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_credit_author_page">%1$s, %2$s, পৃষ্ঠা %3$d</string>
+    <string name="share_credit_page">%1$s, পৃষ্ঠা %2$d</string>
+    <string name="share_invite">ListenLock-এ বই জোরে পড়ে শুনুন, বিনামূল্যে আর ইন্টারনেট ছাড়াই:</string>
+</resources>

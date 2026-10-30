@@ -7,6 +7,7 @@ package io.github.skm0078.audora
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.ui.graphics.asAndroidBitmap
+import io.github.skm0078.audora.core.library.BookTitles
 import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.Pace
@@ -24,6 +25,7 @@ import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.export.AudioClips
 import io.github.skm0078.audora.playback.export.AudiobookExport
 import io.github.skm0078.audora.playback.export.ClipPassage
+import io.github.skm0078.audora.playback.export.ShareSource
 import io.github.skm0078.audora.playback.jobs.LongJobKind
 import io.github.skm0078.audora.playback.report.SoundedWrongReason
 import io.github.skm0078.audora.speech.ocr.OcrModels
@@ -103,6 +105,20 @@ internal class BookReaderActions(
             model.openPassword,
         )
     }
+
+    override fun onSharePassage(first: ReadingUnit, last: ReadingUnit) = playWithPermission {
+        val passage = ClipPassage(first.charStart, last.page, last.charEnd)
+        AudioClips.sharePassage(context, model.state.value.bookId, first.page, passage, model.openPassword)
+    }
+
+    override fun onShareText(lines: String, page: Int) {
+        val current = model.state.value
+        val title = current.title?.takeUnless { it == BookTitles.UNTITLED }
+            ?: context.getString(R.string.library_untitled)
+        ShareEntry.text(context, ShareSource(title, current.author, page), lines)
+    }
+
+    override fun onShareBook() = ShareEntry.book(context, model.state.value.bookId)
 
     override fun onSharePicture(lines: String, page: Int) =
         ShareEntry.quote(context, model.state.value.bookId, lines, page)

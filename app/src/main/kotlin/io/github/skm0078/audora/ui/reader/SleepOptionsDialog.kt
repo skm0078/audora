@@ -20,7 +20,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,7 +45,8 @@ fun SleepOptionsDialog(
     onSave: (SleepOptions) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var draft by remember(options) { mutableStateOf(options) }
+    // The unsaved choices survive a rotation; new options from the service start a new draft.
+    var draft by rememberSaveable(options.encode(), stateSaver = SleepOptionsSaver) { mutableStateOf(options) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.sleep_options_title)) },
@@ -129,3 +131,9 @@ internal fun clockText(minuteOfDay: Int): String =
     String.format(Locale.ROOT, "%02d:%02d", minuteOfDay / MINUTES_PER_HOUR, minuteOfDay % MINUTES_PER_HOUR)
 
 private const val MINUTES_PER_HOUR = 60
+
+/** A draft as the one line the service stores it in ([SleepOptions.encode]). */
+private val SleepOptionsSaver = Saver<SleepOptions, String>(
+    save = { it.encode() },
+    restore = { SleepOptions.decode(it) },
+)

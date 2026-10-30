@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/strings_share_here.xml
+  Purpose: The reader's Share button, "Choose more lines" and sharing the book from the reader (ADR
+           2026-10-29-share-credit-and-link).
+-->
+<resources>
+    <string name="reader_share">Share</string>
+    <string name="share_more_lines">Choose more lines…</string>
+    <string name="share_hint_more_lines">Then tap the last line you want, on this page or a later one. Nothing is highlighted.</string>
+    <string name="share_this_book">Share this book</string>
+    <string name="share_hint_this_book">A picture of its cover, title and author.</string>
+    <string name="share_hint_lines_audio">These lines as an audio clip (up to 2 minutes), to send in any app.</string>
+    <string name="share_range_prompt">Sharing from page %1$d. Tap the last line you want.</string>
+    <string name="share_range_too_long">Lines to share can cover up to %1$d pages. Pick a last line nearer the start.</string>
+</resources>

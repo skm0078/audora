@@ -75,6 +75,7 @@ fun ReaderScreen(
     voicePacks: VoicePackActions = VoicePackActions(),
     people: (@Composable (Modifier) -> Unit)? = null,
     windowWidth: Dp = currentWindowWidth(),
+    speech: SpeechRequest = SpeechRequest.NONE,
 ) {
     var pageTextOpen by rememberSaveable { mutableStateOf(false) }
     val offer = rememberVoicePackOffer(state.bookId, voices, voicePacks)
@@ -101,7 +102,7 @@ fun ReaderScreen(
         bottomBar = {
             if (state.document is DocumentState.Open) {
                 val onTipsSeen = tips::dismiss.takeIf { notice == ReaderNotice.GESTURE_TIPS }
-                ReaderControls(state, config, actions, voices = voices, onTipsSeen = onTipsSeen)
+                ReaderControls(state, config, actions, voices = voices, onTipsSeen = onTipsSeen, speech = speech)
             }
         },
     ) { innerPadding ->
