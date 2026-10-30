@@ -16,7 +16,7 @@ internal fun HintsItem() {
     SwitchOption(
         stringResource(R.string.settings_hints_title),
         checked = !hints.muted,
-        onChange = { on -> hints.setMuted(!on) },
+        onChange = { on -> hints.mute(!on) },
         subtitle = stringResource(R.string.row_line_hints),
         help = stringResource(R.string.settings_hints_body),
     )

@@ -80,7 +80,8 @@ class HintsState internal constructor(context: Context, file: String = FILE) {
         prefs.edit { putStringSet(KEY_SEEN, seen.mapTo(mutableSetOf()) { it.key }) }
     }
 
-    fun setMuted(value: Boolean) {
+    /** Saves the Settings switch: muted shows no hint, now or later. */
+    fun mute(value: Boolean) {
         muted = value
         history = history.copy(muted = value)
         prefs.edit { putBoolean(KEY_MUTED, value) }

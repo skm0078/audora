@@ -113,7 +113,7 @@ class FirstUseHintsUiTest {
     @Test
     fun mutedShowsNoHint() {
         runBlocking { hints.load() }
-        hints.setMuted(true)
+        hints.mute(true)
         showReader(reading(speed = FAST))
         rule.onNodeWithContentDescription(text(R.string.reader_play)).assertExists()
         rule.waitForIdle()
