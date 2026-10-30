@@ -157,9 +157,6 @@ class ReleaseJourneyTest {
         step("13 Open with reads FB2, Kindle and help-file books", ::openWithReadsMoreEbookFormats)
         step("14 Open with makes a comic archive into a photo book", ::openWithMakesAComicIntoAPhotoBook)
         step("15 Open with reads a DjVu's text and makes a DjVu scan a photo book", ::openWithReadsDjvuBooks)
-        step("54 books zipped with code-page names open") {
-            ZipNamesJourney(rule, ::activity, ::backToTabs).booksWithCodePageNamesOpen()
-        }
         step("16 Supertonic's licence rules show before its download", ::supertonicRulesShowBeforeItsDownload)
         step("17 an exported chapter carries the book's cover", ::anExportedChapterCarriesTheCover)
         step("18 the app font draws English, Hindi and Bengali", ::theAppFontDrawsAllThreeScripts)
@@ -221,6 +218,9 @@ class ReleaseJourneyTest {
         step("54 search and You open the player's options", FindOptionsJourney(rule, ::backToTabs)::openTheSheet)
         step("55 Jobs cleans up unfinished work", JobsCleanupJourney(rule, ::backToTabs)::cleansUpUnfinishedWork)
         step("56 an open book loads its voice early", WarmUpJourney(rule, BOOK, { port }, ::backToTabs)::loadsTheVoice)
+        step("57 books zipped with code-page names open") {
+            ZipNamesJourney(rule, ::activity, ::backToTabs).booksWithCodePageNamesOpen()
+        }
     }
 
     /**
