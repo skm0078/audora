@@ -45,17 +45,11 @@ fun MoreOptions(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
-    val opening = rememberInPlaceOpening()
     InPlaceGroup(
-        opening,
         open,
+        onOpenChange = { open = it },
+        header = { toggle -> MoreOptionsHeader(title, summary, open, headerPadding, toggle) },
         modifier = modifier.fillMaxWidth(),
-        header = {
-            MoreOptionsHeader(title, summary, open, headerPadding) {
-                if (!open) opening.opened()
-                open = !open
-            }
-        },
         content = content,
     )
 }

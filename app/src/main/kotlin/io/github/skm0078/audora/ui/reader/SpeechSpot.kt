@@ -28,7 +28,6 @@ import io.github.skm0078.audora.ui.theme.OptionGroup
 import io.github.skm0078.audora.ui.theme.OptionSubtitle
 import io.github.skm0078.audora.ui.theme.OptionTitle
 import io.github.skm0078.audora.ui.theme.optionRowColors
-import io.github.skm0078.audora.ui.theme.rememberInPlaceOpening
 
 /**
  * Where the Voice and speed sheet opens: its top ([TOP]), the voice list, or one of the finer groups, open. The
@@ -80,17 +79,11 @@ internal fun SpeechGroup(
 ) {
     val title = stringResource(spot.title)
     val state = stringResource(if (open) R.string.more_options_expanded else R.string.more_options_collapsed)
-    val opening = rememberInPlaceOpening()
     InPlaceGroup(
-        opening,
         open,
+        onOpenChange = { onToggle() },
+        header = { toggle -> SpeechGroupHeader(title, summary, open, state, toggle) },
         modifier = modifier,
-        header = {
-            SpeechGroupHeader(title, summary, open, state) {
-                if (!open) opening.opened()
-                onToggle()
-            }
-        },
     ) { content() }
 }
 
