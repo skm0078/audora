@@ -35,6 +35,12 @@ enum class RouteReason {
     GARBAGE,
     INVALID_INDIC,
 
+    /**
+     * Hindi or Bengali with almost no virama: the font maps its conjunct glyphs to nothing, so every conjunct is
+     * lost ("সাহিত্য" extracts as "সাহিত"). The letters left are all possible, so only the missing sign shows it.
+     */
+    LOST_CONJUNCTS,
+
     /** The book's OCR sample disagreed with its text layer, so every Indic page is OCR'd ([TextLayerCheck]). */
     SAMPLE_MISMATCH,
 }
@@ -52,6 +58,7 @@ data class PageSignals(
     val invisibleShare: Float,
     val garbageRate: Float,
     val invalidIndicRate: Float,
+    val viramaShare: Float,
     val legacyShare: Float,
     val legacyUnknownRate: Float = 0f,
 )
@@ -75,10 +82,11 @@ data class PageQuality(
  * Build Spec §5 step 2, ADR-011 §3, ADR-021, ADR-023. Pure and per page; runs once per extracted page (PdfBook caches
  * the result with the page's layout). Checks, in order: mostly legacy-font text with codes the converter does not
  * know → OCR; almost no letters (a scan) → OCR; mostly invisible text (a scanner's OCR layer) → OCR; Unicode-map
- * errors, junk characters or impossible Indic sequences above their thresholds → OCR; then mostly legacy-font text →
- * converter, else text layer. Everything but the PDFium rates is measured on the text as it will be read: legacy
- * runs converted ([LegacyConverter]) and the page's own Indic repair applied ([IndicReorder]), so a visual-order
- * page the reorder pass fixes stays on its text layer and a converted page is judged by its Unicode.
+ * errors, junk characters or impossible Indic sequences above their thresholds → OCR; a long Indic page with almost
+ * no virama (its conjuncts lost) → OCR; then mostly legacy-font text → converter, else text layer. Everything but the
+ * PDFium rates is measured on the text as it will be read: legacy runs converted ([LegacyConverter]) and the page's
+ * own Indic repair applied ([IndicReorder]), so a visual-order page the reorder pass fixes stays on its text layer
+ * and a converted page is judged by its Unicode.
  */
 class PageQualityScorer(private val config: QualityConfig = QualityConfig()) {
     fun score(page: PageText): PageQuality {
@@ -114,18 +122,26 @@ class PageQualityScorer(private val config: QualityConfig = QualityConfig()) {
 
             isIndic && s.invalidIndicRate > config.maxInvalidIndicRate -> RouteReason.INVALID_INDIC
 
+            isIndic && lostConjuncts(s) -> RouteReason.LOST_CONJUNCTS
+
             legacy -> RouteReason.LEGACY_FONT
 
             else -> RouteReason.TEXT_LAYER_OK
         }
     }
 
+    /** Long enough to tell, and almost no virama: the font's conjunct glyphs map to nothing. */
+    private fun lostConjuncts(s: PageSignals): Boolean =
+        s.indicLetters >= config.minConjunctCheckLetters && s.viramaShare < config.minViramaShare
+
     private fun signalsOf(page: PageText, readable: String, legacy: LegacyRuns, legacyUnknownRate: Float): PageSignals {
         var letters = 0
         var indic = 0
+        var viramas = 0
         for (c in readable) {
             if (IndicChars.isIndicLetter(c)) {
                 indic++
+                if (IndicChars.isVirama(c)) viramas++
                 letters++
             } else if (c.isLetter()) {
                 letters++
@@ -139,6 +155,7 @@ class PageQualityScorer(private val config: QualityConfig = QualityConfig()) {
             invisibleShare = page.stats.invisibleChars.toFloat() / extracted,
             garbageRate = share(TextDefects.garbageChars(readable), letters),
             invalidIndicRate = share(TextDefects.invalidIndicChars(readable), indic),
+            viramaShare = share(viramas, indic),
             legacyShare = if (legacy.isEmpty) 0f else share(legacy.letters, page.text.count { it.isLetter() }),
             legacyUnknownRate = legacyUnknownRate,
         )

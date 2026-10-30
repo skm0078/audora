@@ -42,7 +42,8 @@ internal class MappedText(val text: String, val sources: IntArray) {
  *    may stumble on: zero-width space, word joiner, BOM, soft hyphens, control characters (glyphs a font maps to
  *    nothing arrive as C0 controls). ZWJ and ZWNJ stay: they change how Devanagari and Bengali clusters form.
  *    Latin presentation-form ligatures ("ﬁ") are expanded. A "|" typed for a danda after Hindi or Bengali text
- *    becomes "।" ([UnicodeRepair.dandasFromPipes]).
+ *    becomes "।" ([UnicodeRepair.dandasFromPipes]), and so does a Bengali "৷" drawn for one
+ *    ([UnicodeRepair.dandasFromBars]).
  * 2. **De-hyphenate.** PDFium replaces a hyphen at a line end with U+0002 and joins the lines (P2-02). Between two
  *    letters it is resolved: the hyphen stays when the word is printed with a hyphen elsewhere nearby
  *    ([lexicon], "block-pulse"), when the second part starts with a capital ("Cape-Horner") or the first
@@ -54,7 +55,7 @@ internal class MappedText(val text: String, val sources: IntArray) {
  */
 internal class TextRepair(private val config: CleanupConfig) {
     fun repair(paragraph: MappedText, lexicon: Set<String>): MappedText {
-        var text = UnicodeRepair.dandasFromPipes(fold(UnicodeRepair.compose(paragraph)))
+        var text = UnicodeRepair.dandasFromBars(UnicodeRepair.dandasFromPipes(fold(UnicodeRepair.compose(paragraph))))
         text = dehyphenate(text, lexicon)
         text = dropBullets(text)
         if (config.skipCitationMarkers) text = dropCitations(text)
