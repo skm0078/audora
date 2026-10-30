@@ -215,7 +215,7 @@ class CatalogTest(unittest.TestCase):
         models = [v for v in voices if v.id in {entry["id"] for entry in root.get("models", [])}]
         self.assertEqual(
             [v.id for v in models],
-            ["punct-en-cnn-bilstm", "kws-en-zipformer-gigaspeech", "acted-hi-chatterbox-core", "acted-hi-chatterbox-lm"],
+            ["punct-en-cnn-bilstm", "kws-en-zipformer-librispeech", "acted-hi-chatterbox-core", "acted-hi-chatterbox-lm"],
         )
         # The acted Hindi voice has no token table in its zips ("tokens": null); its tokenizer is an app asset.
         self.assertEqual(models[3].required_files(), ["language_model.onnx", "language_model.onnx_data"])
@@ -224,10 +224,10 @@ class CatalogTest(unittest.TestCase):
         self.assertEqual(
             models[1].required_files(),
             [
-                "encoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
+                "encoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
                 "tokens.txt",
-                "decoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
-                "joiner-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
+                "decoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
+                "joiner-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
             ],
         )
 

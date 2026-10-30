@@ -23,8 +23,8 @@ class KeywordTokensTest {
 
     /**
      * The shipped keyword model's token list, unchanged: tokens.txt from
-     * sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01 (Apache-2.0; archive sha256 as in models.json, file sha256
-     * fd2ded40…). A new phrase with a piece outside it would end the process when the spotter loads.
+     * sherpa-onnx-streaming-zipformer-en-2023-06-26 (Apache-2.0; archive sha256 as in models.json, file sha256
+     * 49e3c264…). A new phrase with a piece outside it would end the process when the spotter loads.
      */
     @Test
     fun `every phrase of this build is made of pieces the shipped model has`() {
@@ -47,7 +47,7 @@ class KeywordTokensTest {
     }
 
     private companion object {
-        const val SHIPPED_TOKENS = "/kws/gigaspeech-3.3M-tokens.txt"
-        const val SHIPPED_TOKEN_COUNT = 500
+        const val SHIPPED_TOKENS = "/kws/librispeech-2023-06-26-tokens.txt"
+        const val SHIPPED_TOKEN_COUNT = 502
     }
 }

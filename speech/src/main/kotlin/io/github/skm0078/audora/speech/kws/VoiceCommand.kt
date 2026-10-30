@@ -11,13 +11,13 @@ package io.github.skm0078.audora.speech.kws
  * needs no tokenizer. Two phrases can mean one command ("pause" and "stop").
  */
 enum class VoiceCommand(private vararg val commandTokens: String) {
-    PAUSE("▁PA U SE", "▁ST O P"),
-    PLAY("▁PLAY", "▁RE S U ME"),
-    NEXT("▁NEXT"),
+    PAUSE("▁PA U SE", "▁STO P"),
+    PLAY("▁PLA Y", "▁RE S UM E"),
+    NEXT("▁NE X T"),
     BACK("▁BACK", "▁GO ▁BACK"),
     REPEAT("▁RE PE AT"),
     FASTER("▁FA S TER"),
-    SLOWER("▁S LO W ER"),
+    SLOWER("▁S L OW ER"),
     ;
 
     /** Every phrase for this command: each spelling of the app's name followed by each command word. */
@@ -25,7 +25,7 @@ enum class VoiceCommand(private vararg val commandTokens: String) {
 
     companion object {
         /** "ListenLock" as one word and as "listen lock", in the model's pieces. */
-        val WAKE_TOKENS = listOf("▁LI S T EN LO CK", "▁LI S T EN ▁LO CK")
+        val WAKE_TOKENS = listOf("▁LI S TEN LO CK", "▁LI S TEN ▁LO CK")
 
         /**
          * The keywords file: one phrase per line, tagged with its command's name (`@PAUSE`), which is what the
