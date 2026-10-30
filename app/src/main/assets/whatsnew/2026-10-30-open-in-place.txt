@@ -1,0 +1,3 @@
+en: Opening a group in Voice and speed now scrolls its options into view, so they never open out of sight below the sheet.
+hi: आवाज़ और स्पीड में कोई समूह खोलने पर अब उसके विकल्प खुद स्क्रीन पर आ जाते हैं, शीट के नीचे छिपे नहीं रहते।
+bn: ভয়েস আর গতিতে কোনো গ্রুপ খুললে এখন তার বিকল্পগুলো নিজে থেকেই সামনে চলে আসে, শিটের নিচে লুকিয়ে থাকে না।
