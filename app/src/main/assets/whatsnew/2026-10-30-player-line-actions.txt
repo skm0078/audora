@@ -1,0 +1,3 @@
+en: The player now has Bookmark, Highlight and Share buttons for the line being read. The reader's ⋮ has Gestures and tips, and the page/text button says which view it opens.
+hi: अब प्लेयर में पढ़ी जा रही पंक्ति के लिए बुकमार्क, हाइलाइट और शेयर बटन हैं। रीडर के ⋮ में इशारे और सुझाव है, और पेज/टेक्स्ट बटन बताता है कि वह कौन-सा रूप खोलेगा।
+bn: এখন প্লেয়ারে পড়া লাইনের জন্য বুকমার্ক, হাইলাইট আর শেয়ার বোতাম আছে। রিডারের ⋮-এ ইশারা আর টিপস আছে, আর পৃষ্ঠা/লেখা বোতাম বলে দেয় কোন রূপ খুলবে।

@@ -62,4 +62,19 @@ class CardQuoteTest {
         assertEquals(Lang.BN, CardQuote.of("প্রতিটি বই শুনুন").script)
         assertEquals(Lang.EN, CardQuote.of("1234 …").script)
     }
+
+    @Test
+    fun `a whole page keeps up to the page limit, not the quote's`() {
+        val page = "One two three four five six seven eight."
+        val roomy = ShareCardConfig(maxWords = 3, maxPageWords = 20)
+        val whole = CardQuote.ofPage(page, roomy)
+        assertEquals(page, whole.text)
+        assertFalse(whole.cut)
+        assertTrue(CardQuote.of(page, roomy).cut)
+
+        val tight = ShareCardConfig(maxWords = 3, maxPageWords = 5)
+        val cut = CardQuote.ofPage("One two three four. Five six seven eight.", tight)
+        assertEquals("One two three four.", cut.text)
+        assertTrue(cut.cut)
+    }
 }

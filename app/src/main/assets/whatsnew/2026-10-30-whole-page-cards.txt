@@ -1,0 +1,3 @@
+en: Picture cards can now show the whole page. On the card screen, pick "Whole page" under "Card shows", and it stays your choice next time. The card keeps your reading colours, the book's credit and the ListenLock mark.
+hi: अब तस्वीर वाले कार्ड पर पूरा पृष्ठ भी आ सकता है। कार्ड वाली स्क्रीन पर "पूरा पृष्ठ" चुनें, अगली बार भी यही चुना रहेगा। कार्ड में आपके पढ़ने के रंग, किताब का नाम और लेखक, और ListenLock का निशान रहता है।
+bn: এখন ছবির কার্ডে পুরো পৃষ্ঠাও দেখানো যায়। কার্ডের স্ক্রিনে "পুরো পৃষ্ঠা" বাছুন, পরের বারও সেটাই থাকবে। কার্ডে আপনার পড়ার রং, বইয়ের নাম ও লেখক, আর ListenLock-এর চিহ্ন থাকে।

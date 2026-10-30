@@ -192,11 +192,63 @@ class ShareCardScreenTest {
         val page = Bitmap.createBitmap(SNIPPET_WIDTH, SNIPPET_HEIGHT, Bitmap.Config.ARGB_8888).apply {
             eraseColor(android.graphics.Color.WHITE)
         }
-        show(subjectOf(CardBody.Snippet(page.asImageBitmap(), 11, "Page 12")), "en", 2f)
+        show(subjectOf(CardBody.Snippet(page.asImageBitmap(), 11, "Page 12", page.asImageBitmap())), "en", 2f)
         rule.onNodeWithText(text(R.string.share_card_snippet_title)).assertExists()
         rule.onNodeWithText(text(R.string.share_card_kind_video)).assertDoesNotExist()
         Screens.save("share-card-snippet-2x", rule.onRoot().captureToImage().asAndroidBitmap())
         madePicture("share-card-snippet", CardShape.STORY)
+    }
+
+    @Test
+    fun aSnippetCardSwitchesToTheWholePageAndBack() {
+        // The boxed part is red, the page around it blue: the made card shows whichever was picked.
+        val part = Bitmap.createBitmap(SNIPPET_WIDTH, SNIPPET_HEIGHT, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(android.graphics.Color.RED)
+        }
+        val page = Bitmap.createBitmap(PAGE_WIDTH, PAGE_HEIGHT, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(android.graphics.Color.BLUE)
+        }
+        choices = CardChoices(look = CardLook.PAPER)
+        show(subjectOf(CardBody.Snippet(part.asImageBitmap(), 11, "Page 12", page.asImageBitmap())), "en", 1f)
+        assertTrue("the selection shows first", centre().let { it.red > it.blue })
+
+        rule.onNodeWithText(text(R.string.share_card_span_page)).performScrollTo().performClick()
+        rule.waitForIdle()
+        assertTrue(choices.wholePage)
+        rule.onNodeWithText(text(R.string.share_card_page_title)).assertExists()
+        assertTrue("the whole page shows", centre().let { it.blue > it.red })
+        madePicture("share-card-snippet-whole-page", CardShape.STORY)
+
+        rule.onNodeWithText(text(R.string.share_card_span_selection)).performScrollTo().performClick()
+        rule.waitForIdle()
+        assertTrue("back to the selection", centre().let { it.red > it.blue })
+    }
+
+    @Test
+    fun aWholePageOfTextShrinksToFitAStoryAndSaysWhenASquareCannotHoldIt() {
+        val sentence = "Remarkable listeners appreciate beautifully narrated paragraphs everywhere."
+        val pageText = List(PAGE_SENTENCES) { sentence }.joinToString(" ")
+        val body = CardBody.Quote(CardQuote.of(ENGLISH), 11, "Page 12", CardQuote.ofPage(pageText))
+        choices = CardChoices(wholePage = true)
+        show(subjectOf(body), "en", 1f)
+        rule.onNodeWithText(text(R.string.share_card_page_title)).assertExists()
+        rule.onNodeWithText(text(R.string.share_card_page_overflow)).assertDoesNotExist()
+        madePicture("share-card-text-whole-page-story", CardShape.STORY)
+
+        rule.onNodeWithText(text(R.string.share_card_square)).performScrollTo().performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText(text(R.string.share_card_page_overflow)).performScrollTo().assertExists()
+
+        // Video reads the lines picked, so the choice hides there.
+        rule.onNodeWithText(text(R.string.share_card_kind_video)).performScrollTo().performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText(text(R.string.share_card_span_page)).assertDoesNotExist()
+    }
+
+    @Test
+    fun aQuoteWithoutItsPageOffersNoWholePage() {
+        show(subject(ENGLISH), "en", 1f)
+        rule.onNodeWithText(text(R.string.share_card_span_page)).assertDoesNotExist()
     }
 
     @Test
@@ -246,6 +298,14 @@ class ShareCardScreenTest {
 
     private data class Rgb(val red: Int, val blue: Int)
 
+    /** The made card's colour in its middle, where a snippet card draws its picture. */
+    private fun centre(): Rgb {
+        rule.onRoot().captureToImage()
+        val card = runBlocking { withContext(Dispatchers.Main) { recorder.capture() } }
+        val pixel = card.getPixel(card.width / 2, card.height * 2 / 5)
+        return Rgb(android.graphics.Color.red(pixel), android.graphics.Color.blue(pixel))
+    }
+
     /** The made card's colour high on the card, right of the middle, where a book card draws nothing over it. */
     private fun probe(): Rgb {
         rule.onRoot().captureToImage()
@@ -271,6 +331,11 @@ class ShareCardScreenTest {
         const val LONG_REPEATS = 8
         const val SNIPPET_WIDTH = 900
         const val SNIPPET_HEIGHT = 420
+        const val PAGE_WIDTH = 900
+        const val PAGE_HEIGHT = 1300
+
+        // 320 long words (about 3,000 letters): a story holds them at the page fit's sizes, a square cannot.
+        const val PAGE_SENTENCES = 40
 
         // Three by four: a story card (9:16) shows three quarters of its width, so it moves a quarter sideways.
         const val PHOTO_WIDTH = 300

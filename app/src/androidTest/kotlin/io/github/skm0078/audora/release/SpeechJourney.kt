@@ -13,6 +13,7 @@ import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.battery.OnboardingPreferences
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import org.junit.Assert.assertEquals
@@ -44,15 +45,13 @@ internal class SpeechJourney(
     /** Opens [pdf] in the player, then the sheet from a shortcut and from the chip. */
     fun shortcutsOpenTheirGroup() {
         backToTabs()
+        // The shortcuts wait for the first-run tips to be put away. The tips are read off the main thread after the
+        // reader opens, so a check for them can come too early; marking them seen first leaves nothing to race.
+        OnboardingPreferences(app).gestureTipsSeen = true
         val activity = requireNotNull(JourneyDevice.resumedActivity()) { "No app on screen" }
         val uri = JourneyDevice.downloadedPdf(pdf)
         JourneyDevice.onMain { activity.startActivity(JourneyDevice.openWith(uri)) }
         waitFor(hasContentDescription(text(R.string.reader_play)), OPEN_TIMEOUT_MS)
-
-        // The shortcuts wait for the first-run tips to be put away.
-        val gotIt = hasText(text(R.string.gesture_tips_got_it)) and hasClickAction()
-        rule.waitForIdle()
-        if (rule.shows(gotIt)) tap(gotIt)
 
         // A row only What to read holds, shown as soon as its shortcut opens the sheet.
         val readingLine = hasText(text(R.string.reading_skim_short))

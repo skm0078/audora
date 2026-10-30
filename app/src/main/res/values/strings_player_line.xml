@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_player_line.xml -->
+<!-- Purpose: Names for what was icon-only or hidden (ADR 2026-10-30-player-line-actions): the player's buttons for the line being read, the reader's Page or Text button and its Gestures and tips. -->
+<resources>
+    <string name="player_line_bookmark">Bookmark</string>
+    <string name="player_line_bookmarked">Bookmarked</string>
+    <string name="player_line_highlight">Highlight</string>
+    <string name="player_line_highlighted">Highlighted</string>
+    <string name="reader_view_text">Text</string>
+    <string name="reader_view_page">Page</string>
+    <string name="gesture_tips_menu">Gestures and tips</string>
+</resources>

@@ -140,7 +140,7 @@ class ReleaseJourneyTest {
             "01 first run plays a sample, opens the reader and offers the tour once",
             ::firstRunWalksThroughAndFinishes,
         )
-        step("02 the launcher says ListenLock", BrandJourney::theLauncherSaysListenLock)
+        step("02 the launcher says ListenLock and links go to its site", BrandJourney::nameAndLinksAreListenLocks)
         step("03 Open with adds the book and opens the reader", ::openWithAddsTheBookAndOpensTheReader)
         step("04 play starts without the notification permission", ::playStartsWithoutTheNotificationPermission)
         step("05 media controls pause, resume and skip", ::mediaControlsPauseResumeAndSkip)
@@ -212,7 +212,7 @@ class ReleaseJourneyTest {
         step("49 the side panel holds the library's tools", DrawerJourney(rule, ::backToTabs)::holdsTheLibrarysTools)
         step("51 player shortcuts open their group", SpeechJourney(rule, BOOK, ::backToTabs)::shortcutsOpenTheirGroup)
         step("52 From ListenLock opens the cookbook", CookbookJourney(rule, ::backToTabs)::opensFromTheLibrary)
-        step("53 the reader's Share button opens the choices and a card in the reader's colours") {
+        step("53 the reader's Share opens the choices and a card in the reader's colours with Whole page") {
             ShareHereJourney(rule, ::activity).theShareButtonOpensTheChoices(BOOK)
         }
         step("54 search and You open the player's options", FindOptionsJourney(rule, ::backToTabs)::openTheSheet)
@@ -221,9 +221,8 @@ class ReleaseJourneyTest {
         step("57 books zipped with code-page names open") {
             ZipNamesJourney(rule, ::activity, ::backToTabs).booksWithCodePageNamesOpen()
         }
-        step("59 an opened Voice and speed group comes into view") {
-            OpenInPlaceJourney(rule, BOOK, ::backToTabs).anOpenedGroupComesIntoView()
-        }
+        step("58 the player names its line actions", LineActionsJourney(rule, BOOK, ::backToTabs)::namedAndInSight)
+        step("59 an opened group comes into view", OpenInPlaceJourney(rule, BOOK, ::backToTabs)::anOpenedGroupComesIntoView)
     }
 
     /**

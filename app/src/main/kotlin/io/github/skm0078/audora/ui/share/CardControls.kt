@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/share/CardControls.kt
-// Purpose: The card screen's choices: picture size chips, background swatches and the dedication line.
+// Purpose: The card screen's choices: selection or whole page, picture size chips, background swatches and the
+//          dedication line.
 
 package io.github.skm0078.audora.ui.share
 
@@ -52,6 +53,32 @@ internal fun ShapeChips(selected: CardShape, onShape: (CardShape) -> Unit) {
                     label = { Text(stringResource(shape.label)) },
                 )
             }
+        }
+    }
+}
+
+/**
+ * Selection (the lines or the part of the page picked, the default) or the whole page (ADR
+ * 2026-10-30-whole-page-cards); the last pick is kept for the next card.
+ */
+@Composable
+internal fun SpanChips(wholePage: Boolean, onWholePage: (Boolean) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+        Text(stringResource(R.string.share_card_span), style = MaterialTheme.typography.titleSmall)
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+        ) {
+            FilterChip(
+                selected = !wholePage,
+                onClick = { onWholePage(false) },
+                label = { Text(stringResource(R.string.share_card_span_selection)) },
+            )
+            FilterChip(
+                selected = wholePage,
+                onClick = { onWholePage(true) },
+                label = { Text(stringResource(R.string.share_card_span_page)) },
+            )
         }
     }
 }
