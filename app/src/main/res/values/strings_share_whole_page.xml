@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/strings_share_whole_page.xml
+  Purpose: The card screen's choice between the lines picked and the whole page (ADR 2026-10-30-whole-page-cards).
+-->
+<resources>
+    <string name="share_card_span">Card shows</string>
+    <string name="share_card_span_selection">Selection</string>
+    <string name="share_card_span_page">Whole page</string>
+    <string name="share_card_page_title">Share the whole page</string>
+    <string name="share_card_page_cut">Only the first %1$d words of this page fit on a card.</string>
+    <string name="share_card_page_overflow">The whole page does not fit this size. Story fits the most.</string>
+</resources>
