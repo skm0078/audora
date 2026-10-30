@@ -51,8 +51,11 @@ internal class WarmUpJourney(
         const val WARMED = "Warmed voice="
         const val OPEN_TIMEOUT_MS = 60_000L
 
-        /** The reader's one-second wait, plus loading the model on a slow emulator. */
-        const val WARM_TIMEOUT_MS = 30_000L
+        /**
+         * Counted from the page image: the page's text is read first (seconds on the CI emulator), then the reader's
+         * one-second wait, then loading the model.
+         */
+        const val WARM_TIMEOUT_MS = 60_000L
         const val MAX_SCANNED_PAGES = 40
         const val LOG_LINES = 60
     }
