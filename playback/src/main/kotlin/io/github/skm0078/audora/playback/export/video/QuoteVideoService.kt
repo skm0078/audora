@@ -24,6 +24,8 @@ import io.github.skm0078.audora.playback.R
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.export.JobSlots
 import io.github.skm0078.audora.playback.export.ShareSheet
+import io.github.skm0078.audora.playback.export.ShareSource
+import io.github.skm0078.audora.playback.export.ShareWords
 import io.github.skm0078.audora.playback.jobs.ForegroundJobs
 import io.github.skm0078.audora.playback.jobs.jobWakeLock
 import io.github.skm0078.audora.playback.jobs.leaveForeground
@@ -178,7 +180,7 @@ class QuoteVideoService : Service() {
 
     private fun share(book: Book, request: QuoteVideoRequest, file: File) {
         val title = book.title.takeUnless { it == BookTitles.UNTITLED } ?: getString(R.string.export_untitled)
-        val text = getString(R.string.video_share_text, request.quote, title)
+        val text = ShareWords.caption(this, ShareSource(title, book.author, request.page), lines = request.quote)
         val chooser = ShareSheet.chooserFor(this, file, MIME_TYPE, text, getString(R.string.video_chooser_title))
         AudoraLog.i(TAG, "Video ready, book=${book.id.logLabel} bytes=${file.length()}")
         notices.showReady(chooser)

@@ -94,9 +94,21 @@ class SpeechVoices(
     fun speedOf(lang: Lang): VoiceSpeed? = knownVoice(lang)?.let { engines.speeds().get(it) }
 
     /** The voice reading [lang]. Suspends while the phone's TTS binds to find a default. */
-    override suspend fun voiceFor(lang: Lang): Outcome<VoiceId, SpeechError> {
-        val known = knownVoice(lang)
-        if (known != null) return Outcome.Success(known)
+    override suspend fun voiceFor(lang: Lang): Outcome<VoiceId, SpeechError> =
+        knownVoice(lang)?.let { Outcome.Success(it) } ?: defaultVoice(lang)
+
+    /**
+     * The voice that would read [lang] in a book whose own voice is [bookVoice] (null: it has none), whichever book is
+     * open now: what loading a voice ahead of Play needs (ADR 2026-10-29-speed-quick-wins). The same order as
+     * [choiceFor]: the book's voice while installed, Settings → Voices' pick, then the default.
+     */
+    suspend fun voiceForBook(lang: Lang, bookVoice: VoiceId?): Outcome<VoiceId, SpeechError> =
+        VoiceChoice.of(bookVoice, engines::canSpeak) { engines.preferred(lang) }?.let { Outcome.Success(it) }
+            ?: defaultVoice(lang)
+
+    /** The language's default voice, found once and kept. Suspends while the phone's TTS binds. */
+    private suspend fun defaultVoice(lang: Lang): Outcome<VoiceId, SpeechError> {
+        defaults[lang]?.let { return Outcome.Success(it) }
         val resolved = if (lang == Lang.EN) engines.bundled().map { it.voice.id } else engines.system().bestVoice(lang)
         // Two calls racing on a cold start answer alike: the first voice stored wins.
         return if (resolved is Outcome.Success) {

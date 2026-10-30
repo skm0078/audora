@@ -71,11 +71,16 @@ internal class ShareCardFiles(context: Context, private val config: ShareCardCon
     }
 }
 
-/** Android's share sheet with the card; false when no app on the phone takes a picture. */
-internal fun Context.sendCard(uri: Uri, mimeType: String): Boolean {
+/**
+ * Android's share sheet with the card and [caption] beside it (the credit and ListenLock's link, ADR
+ * 2026-10-29-share-credit-and-link: chat apps send it with the picture); false when no app on the phone takes a
+ * picture.
+ */
+internal fun Context.sendCard(uri: Uri, mimeType: String, caption: String): Boolean {
     val send = Intent(Intent.ACTION_SEND)
         .setType(mimeType)
         .putExtra(Intent.EXTRA_STREAM, uri)
+        .putExtra(Intent.EXTRA_TEXT, caption)
         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     // ClipData lets the share sheet preview the picture and carries the read grant to the chosen app.
     send.clipData = ClipData.newRawUri(null, uri)

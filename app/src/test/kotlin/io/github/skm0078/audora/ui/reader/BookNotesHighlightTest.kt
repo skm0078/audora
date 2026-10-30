@@ -1,5 +1,6 @@
 // File: app/src/test/kotlin/io/github/skm0078/audora/ui/reader/BookNotesHighlightTest.kt
-// Purpose: The reader's highlights follow the sentences showing, and Remove clears every highlight a band shows.
+// Purpose: The reader's highlights follow the sentences showing, and Remove clears every highlight a band shows;
+//          lines chosen to share are picked the same way but open their Share choices instead.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -163,6 +164,61 @@ class BookNotesHighlightTest {
             assertEquals(RangeRefusal.TOO_LONG, notes.state.value.rangeRefused)
             assertEquals(emptyList<Highlight>(), highlights.rows.value)
         }
+
+    @Test
+    fun `lines chosen to share over two pages open their Share choices and highlight nothing`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val notes = notes()
+            val start = unitsOf(FIRST, DR)
+            otherPages[PAGE + 1] = unitsOf(HELLO, "* * *", page = PAGE + 1)
+            notes.showing(start)
+            notes.openShare(start[1])
+            assertEquals(true, notes.state.value.menuOnShare)
+
+            notes.startShareRange(start[1])
+            assertEquals(null, notes.state.value.menuFor)
+            assertEquals(true, notes.state.value.rangeForShare)
+            notes.endRange(otherPages.getValue(PAGE + 1)[1])
+
+            val picked = notes.state.value.sharing
+            assertEquals("$DR $HELLO", picked?.quote)
+            assertEquals(start[1], picked?.first)
+            assertEquals(PAGE + 1, picked?.last?.page)
+            assertEquals(null, notes.state.value.rangeFrom)
+            assertEquals(emptyList<Highlight>(), highlights.rows.value)
+
+            notes.dismissSharing()
+            assertEquals(null, notes.state.value.sharing)
+        }
+
+    @Test
+    fun `lines to share over too many pages are refused in their own words, and a later highlight is a highlight`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val notes = notes()
+            val start = unitsOf(FIRST, DR)
+            notes.showing(start)
+            notes.startShareRange(start[0])
+            notes.endRange(unitsOf(HELLO, page = PAGE + HighlightConfig.DEFAULT_MAX_PASSAGE_PAGES)[0])
+            assertEquals(RangeRefusal.SHARE_TOO_LONG, notes.state.value.rangeRefused)
+            assertEquals(null, notes.state.value.sharing)
+
+            notes.dismissRangeRefusal()
+            notes.startRange(start[0])
+            assertEquals(false, notes.state.value.rangeForShare)
+            notes.endRange(start[1])
+            assertEquals("$FIRST $DR", highlights.rows.value.single().quote)
+            assertEquals(null, notes.state.value.sharing)
+        }
+
+    @Test
+    fun `a long-press opens the menu on its first page, not on Share`() = runTest(UnconfinedTestDispatcher()) {
+        val notes = notes()
+        val page = unitsOf(FIRST)
+        notes.openShare(page[0])
+        notes.dismissMenu()
+        notes.openMenu(page[0])
+        assertEquals(false, notes.state.value.menuOnShare)
+    }
 
     private companion object {
         val BOOK = BookId("book")

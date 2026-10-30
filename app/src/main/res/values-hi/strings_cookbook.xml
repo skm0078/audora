@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_cookbook.xml -->
+<!-- Purpose: Hindi copy of values/strings_cookbook.xml. -->
+<resources>
+    <string name="cookbook_open">ListenLock कुकबुक</string>
+    <string name="menu_hint_cookbook">असली हालात, जैसे सफ़र में पढ़ाई या किताब सुनते-सुनते सो जाना, कई सुविधाओं को साथ जोड़कर। किसी भी किताब की तरह पढ़कर सुनाई जाती है; जब चाहें हटा दें।</string>
+    <string name="cookbook_title">ListenLock कुकबुक</string>
+    <string name="cookbook_intro_title">यह कुकबुक कैसे इस्तेमाल करें</string>
+    <string name="cookbook_intro">हर अध्याय एक रेसिपी है: एक असली हालात, क्या चाहिए, और स्क्रीन पर दिखने वाले नामों के साथ कदम। कुछ न मिले तो लाइब्रेरी में खोजें: खोज सेटिंग और काम भी ढूँढती है।\n\nजिन रेसिपी का अभी अनुवाद नहीं हुआ, वे अंग्रेज़ी में हैं। यही रेसिपी ListenLock की वेबसाइट पर भी हैं, और समय के साथ नई जुड़ती हैं। यह किताब ऐप के साथ आती है और इसके लिए इंटरनेट नहीं चाहिए।</string>
+    <string name="home_section_from_listenlock">ListenLock की ओर से</string>
+</resources>

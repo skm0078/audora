@@ -71,6 +71,9 @@ android {
             // R8 shrinks and optimises the code (ADR-072). Names are kept (-dontobfuscate), so shared logs and crash
             // stacks read the same as in a debug build.
             isMinifyEnabled = true
+            // Drops images, layouts and other resources no code or manifest reaches (ADR 2026-10-29-speed-quick-wins).
+            // Nothing looks a resource up by name at run time, which is the one thing this would break.
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             // The Play build lists one download per language and hides voices still being judged (ADR-056).
             buildConfigField("boolean", "SIMPLE_VOICES", simpleVoices(release = true))
@@ -168,4 +171,15 @@ dependencies {
     androidTestImplementation(libs.junit)
     // Declares the ComponentActivity the tests host; in the UI-test variant only, so no shipped APK carries it.
     "uiTestImplementation"(libs.compose.ui.test.manifest)
+}
+
+// The in-app ListenLock Cookbook (ADR 2026-10-29-in-app-cookbook): the site's recipes, one Markdown book per language.
+val cookbookAssets = tasks.register<CookbookAssetsTask>("cookbookAssets") {
+    recipes.set(rootProject.layout.projectDirectory.dir("docs/_recipes"))
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(cookbookAssets, CookbookAssetsTask::outputDirectory)
+    }
 }

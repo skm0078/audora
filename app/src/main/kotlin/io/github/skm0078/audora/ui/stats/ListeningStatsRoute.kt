@@ -34,6 +34,7 @@ import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.stats.ListeningLog
 import io.github.skm0078.audora.core.stats.ListeningPeriod
 import io.github.skm0078.audora.di.LibraryEntryPoint
+import io.github.skm0078.audora.playback.export.ShareWords
 import io.github.skm0078.audora.ui.library.CoverSource
 import io.github.skm0078.audora.ui.loggingFailures
 import io.github.skm0078.audora.ui.share.CardShape
@@ -190,7 +191,9 @@ private fun StatsShareRoute(
                 busy = false
                 when {
                     card == null -> toast(context, R.string.share_card_failed)
-                    !context.sendCard(files.uri(card), card.mimeType) -> toast(context, R.string.share_card_no_app)
+
+                    !context.sendCard(files.uri(card), card.mimeType, ShareWords.caption(context, source = null)) ->
+                        toast(context, R.string.share_card_no_app)
                 }
             }
         }

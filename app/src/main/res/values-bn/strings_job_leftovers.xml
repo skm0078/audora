@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_job_leftovers.xml -->
+<!-- Purpose: The Jobs screen's new card and unfinished jobs' leftovers, in Bengali. -->
+<resources>
+    <string name="jobs_status_starting">শুরু হচ্ছে</string>
+    <string name="jobs_status_percent">%1$d%%</string>
+    <string name="jobs_status_waiting">অপেক্ষায়</string>
+    <string name="jobs_status_done">হয়ে গেছে</string>
+    <string name="jobs_status_failed">শেষ হয়নি</string>
+    <string name="jobs_status_stopped">থেমেছে</string>
+    <string name="jobs_download_line">%1$s · %2$s</string>
+    <plurals name="jobs_download_kept_days">
+        <item quantity="one">বাতিল করলে যতটা এসেছে তা %1$d দিন থাকে: আবার ডাউনলোড করলে সেখান থেকেই চলে।</item>
+        <item quantity="other">বাতিল করলে যতটা এসেছে তা %1$d দিন থাকে: আবার ডাউনলোড করলে সেখান থেকেই চলে।</item>
+    </plurals>
+    <plurals name="jobs_unfinished_kept">
+        <item quantity="one">যতটা হয়েছে (%1$s) তা %2$d দিন রাখা হয়, যাতে বইয়ের মেনু থেকে এগিয়ে নিতে পারেন। তারপর নিজে থেকেই পরিষ্কার হয়ে যায়।</item>
+        <item quantity="other">যতটা হয়েছে (%1$s) তা %2$d দিন রাখা হয়, যাতে বইয়ের মেনু থেকে এগিয়ে নিতে পারেন। তারপর নিজে থেকেই পরিষ্কার হয়ে যায়।</item>
+    </plurals>
+    <string name="jobs_unfinished_delete">অসম্পূর্ণ ফাইল মুছুন</string>
+    <string name="jobs_unfinished_delete_question">অসম্পূর্ণ ফাইল (%1$s) মুছবেন? আবার শুরু করলে একদম গোড়া থেকে তৈরি হবে।</string>
+    <string name="jobs_unfinished_deleted">অসম্পূর্ণ ফাইল মোছা হয়েছে (%1$s)।</string>
+    <string name="jobs_leftovers_section">অসম্পূর্ণ কাজ</string>
+    <string name="jobs_leftovers_waiting">থেমে যাওয়া কাজের বাকি: %1$s</string>
+    <string name="jobs_leftovers_nothing">থেমে যাওয়া কাজের কিছু বাকি নেই</string>
+    <plurals name="jobs_leftovers_rule">
+        <item quantity="one">%1$d দিন রাখা হয় যাতে কাজ এগোতে পারে, তারপর নিজে থেকেই পরিষ্কার হয়। সম্পূর্ণ অডিওবুক, কপি আর স্টুডিও অডিও কখনও মোছা হয় না।</item>
+        <item quantity="other">%1$d দিন রাখা হয় যাতে কাজ এগোতে পারে, তারপর নিজে থেকেই পরিষ্কার হয়। সম্পূর্ণ অডিওবুক, কপি আর স্টুডিও অডিও কখনও মোছা হয় না।</item>
+    </plurals>
+    <string name="jobs_leftovers_last">শেষ পরিষ্কার %1$s: %3$s থেকে %2$s।</string>
+    <string name="jobs_leftovers_join">, </string>
+    <plurals name="jobs_leftovers_downloads">
+        <item quantity="one">%1$dটি ডাউনলোড</item>
+        <item quantity="other">%1$dটি ডাউনলোড</item>
+    </plurals>
+    <plurals name="jobs_leftovers_audiobooks">
+        <item quantity="one">%1$dটি অডিওবুক</item>
+        <item quantity="other">%1$dটি অডিওবুক</item>
+    </plurals>
+    <plurals name="jobs_leftovers_talking_books">
+        <item quantity="one">%1$dটি কথা বলা বই</item>
+        <item quantity="other">%1$dটি কথা বলা বই</item>
+    </plurals>
+    <string name="jobs_leftovers_clean">এখনই পরিষ্কার করুন</string>
+    <string name="jobs_leftovers_clean_question">থেমে যাওয়া কাজের সব বাকি (%1$s) মুছবেন? যে ডাউনলোড এখনও চলছে তা ছোঁয়া হয় না। থেমে যাওয়া কাজ আবার শুরু করলে গোড়া থেকে তৈরি হবে।</string>
+</resources>

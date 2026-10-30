@@ -117,10 +117,13 @@ class StagedChapters(private val folder: File) {
          * folder is deleted, so at most one talking book is staged at a time (its audio, about 30 MB an hour).
          */
         fun folderFor(root: File, bookId: String, signature: String): File {
-            val name = "${hash(bookId)}-${hash(signature)}"
+            val name = "${bookPrefix(bookId)}${hash(signature)}"
             root.listFiles()?.filter { it.name != name }?.forEach { it.deleteRecursively() }
             return File(root, name).apply { mkdirs() }
         }
+
+        /** How every staging folder of [bookId] begins, whatever its signature ([TalkingBookLeftovers]). */
+        fun bookPrefix(bookId: String): String = "${hash(bookId)}-"
 
         private fun hash(value: String): String = MessageDigest.getInstance("SHA-256")
             .digest(value.toByteArray())

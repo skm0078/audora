@@ -141,6 +141,15 @@ class MediaStoreSavedFiles(private val resolver: ContentResolver) : SavedFiles {
         false
     }
 
+    override fun sizeOf(location: String): Long = try {
+        resolver.query(Uri.parse(location), arrayOf(MediaStore.MediaColumns.SIZE), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0) else 0L
+        } ?: 0L
+    } catch (e: SecurityException) {
+        AudoraLog.w(TAG, "Earlier chapter file size unreadable: ${e.javaClass.simpleName}")
+        0L
+    }
+
     override fun delete(location: String): Boolean = try {
         resolver.delete(Uri.parse(location), null, null) > 0 || !exists(location)
     } catch (e: SecurityException) {

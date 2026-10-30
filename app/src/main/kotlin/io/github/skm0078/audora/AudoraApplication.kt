@@ -1,7 +1,8 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/AudoraApplication.kt
 // Purpose: Process entry point. Applies a staged restore, starts logging, then logs how the last process ended;
-//          sets the app's language (plan item 44); fills books in from their files (ADR-068). Debug and dev builds
-//          also watch the main thread for stalls.
+//          sets the app's language (plan item 44); fills books in from their files (ADR-068); cleans up what
+//          unfinished jobs left (ADR 2026-10-29-jobs-card-and-leftovers). Debug and dev builds also watch the main
+//          thread for stalls.
 
 package io.github.skm0078.audora
 
@@ -14,11 +15,13 @@ import io.github.skm0078.audora.core.diagnostics.StallWatchdog
 import io.github.skm0078.audora.core.diagnostics.StartupDiagnostics
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.di.FolderSyncEntryPoint
+import io.github.skm0078.audora.di.LibraryEntryPoint
 import io.github.skm0078.audora.language.AppLanguageStore
 import io.github.skm0078.audora.language.AppLanguages
 import io.github.skm0078.audora.logging.AppLogging
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.backup.PendingRestore
+import io.github.skm0078.audora.playback.jobs.JobLeftovers
 import io.github.skm0078.audora.ui.library.BookDetailsFill
 import io.github.skm0078.audora.ui.library.FolderSyncTrigger
 import javax.inject.Inject
@@ -27,6 +30,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 @HiltAndroidApp
 class AudoraApplication : Application() {
@@ -62,6 +66,11 @@ class AudoraApplication : Application() {
         // File reads and a binder call: kept off the main thread so they never delay the first frame.
         thread(name = STARTUP_DIAGNOSTICS_THREAD) { startupDiagnostics.run() }
         bookDetailsFill.start(background)
+        // After a delay, on the background thread: what unfinished jobs left and nothing could continue any more.
+        background.launch {
+            val entry = LibraryEntryPoint.of(this@AudoraApplication)
+            JobLeftovers.get(this@AudoraApplication).cleanAtStart(entry.library(), entry.outputs())
+        }
         // Built on first use, never at start: a listener who never picked a sync folder pays nothing.
         registerActivityLifecycleCallbacks(FolderSyncTrigger(appScope) { FolderSyncEntryPoint.of(this) })
         if (BuildConfig.DEV_TOOLS) watchForHangs()

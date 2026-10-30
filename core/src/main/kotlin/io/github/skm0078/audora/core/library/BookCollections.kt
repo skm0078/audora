@@ -5,6 +5,7 @@
 package io.github.skm0078.audora.core.library
 
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.core.text.TextCuts
 import kotlinx.coroutines.flow.Flow
 
 data class BookCollection(val id: String, val name: String, val createdAtMillis: Long)
@@ -32,6 +33,7 @@ object CollectionNames {
     /** Longer than a chip can show; the name is cut here. */
     const val MAX_LENGTH = 60
 
-    /** [raw] trimmed and cut, or null when nothing is left. */
-    fun clean(raw: String): String? = raw.trim().replace(Regex("\\s+"), " ").take(MAX_LENGTH).ifEmpty { null }
+    /** [raw] trimmed and cut between whole characters ([TextCuts]), or null when nothing is left. */
+    fun clean(raw: String): String? =
+        TextCuts.take(raw.trim().replace(Regex("\\s+"), " "), MAX_LENGTH).trimEnd().ifEmpty { null }
 }

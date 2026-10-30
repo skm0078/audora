@@ -24,6 +24,7 @@
     <string name="found_book_finished">%1$s को पूरी हुई चिह्नित करें</string>
     <string name="found_book_not_started">%1$s को शुरू नहीं की चिह्नित करें</string>
     <string name="found_terms_play">सुनें पढ़ें शुरू</string>
+    <string name="found_terms_speech">स्पीड पिच रफ़्तार तेज़ धीमा आवाज़</string>
     <string name="found_terms_audiobook">ऑडियो फ़ाइल</string>
     <string name="found_terms_share">तस्वीर कार्ड</string>
     <string name="found_terms_guide">पात्र लोग कौन</string>

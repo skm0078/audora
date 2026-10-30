@@ -1,0 +1,3 @@
+en: New: From ListenLock on the library's home, starting with the ListenLock Cookbook. Real situations, like studying on a commute or falling asleep to a book, solved by combining features, and read aloud like any book.
+hi: नया: लाइब्रेरी के होम पर "ListenLock की ओर से", शुरुआत ListenLock कुकबुक से। असली हालात, जैसे सफ़र में पढ़ाई या किताब सुनते-सुनते सो जाना, कई सुविधाओं को साथ जोड़कर, और किसी भी किताब की तरह पढ़कर सुनाई जाती है।
+bn: নতুন: লাইব্রেরির হোমে "ListenLock-এর তরফ থেকে", শুরু ListenLock কুকবুক দিয়ে। সত্যিকারের পরিস্থিতি, যেমন যাতায়াতের পথে পড়াশোনা বা বই শুনতে শুনতে ঘুমিয়ে পড়া, কয়েকটি সুবিধা একসঙ্গে ব্যবহার করে, আর যেকোনো বইয়ের মতো পড়ে শোনানো হয়।

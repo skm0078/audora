@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -32,6 +33,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.core.config.ShareLinkConfig
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -85,24 +87,33 @@ fun ShareCardFrame(
     }
 }
 
-/** The small mark in the card's corner: the real logo and the name, quiet enough not to compete with the quote. */
+/**
+ * The small mark in the card's corner: the real logo and the name, quiet enough not to compete with the quote; under
+ * it the short domain once [ShareLinkConfig.cardLink] is set (ADR 2026-10-29-share-credit-and-link). The full link
+ * travels in the message beside the picture.
+ */
 @Composable
 private fun ListenLockMark(color: Color, modifier: Modifier = Modifier) {
-    Row(
-        modifier,
-        horizontalArrangement = Arrangement.spacedBy(MARK_GAP),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Image(
-            painterResource(R.drawable.ic_launcher_logo),
-            contentDescription = null,
-            modifier = Modifier.size(MARK_LOGO),
-        )
-        Text(
-            BRAND,
-            color = color,
-            style = MaterialTheme.typography.labelMedium.copy(fontSize = MARK_TEXT, letterSpacing = MARK_SPACING),
-        )
+    Column(modifier, horizontalAlignment = Alignment.End) {
+        Row(horizontalArrangement = Arrangement.spacedBy(MARK_GAP), verticalAlignment = Alignment.CenterVertically) {
+            Image(
+                painterResource(R.drawable.ic_launcher_logo),
+                contentDescription = null,
+                modifier = Modifier.size(MARK_LOGO),
+            )
+            Text(
+                BRAND,
+                color = color,
+                style = MaterialTheme.typography.labelMedium.copy(fontSize = MARK_TEXT, letterSpacing = MARK_SPACING),
+            )
+        }
+        ShareLinkConfig().cardLink?.let { link ->
+            Text(
+                link,
+                color = color.copy(alpha = color.alpha * LINK_ALPHA),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = LINK_TEXT),
+            )
+        }
     }
 }
 
@@ -113,3 +124,7 @@ private val MARK_GAP = 6.dp
 private val MARK_LOGO = 16.dp
 private val MARK_TEXT = 12.sp
 private val MARK_SPACING = 0.4.sp
+private val LINK_TEXT = 9.sp
+
+// The link is quieter than the name: there to be found, not read first.
+private const val LINK_ALPHA = 0.8f
