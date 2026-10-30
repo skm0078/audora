@@ -145,10 +145,7 @@ private fun relativeTime(millis: Long): String {
 
 @Composable
 internal fun messageText(message: LibraryMessage): String = when (message) {
-    is LibraryMessage.Added -> stringResource(
-        if (message.copied) R.string.library_added_copy else R.string.library_added,
-        titleOrUntitled(message.title),
-    )
+    is LibraryMessage.Added -> stringResource(addedText(message.copied), titleOrUntitled(message.title))
     is LibraryMessage.AlreadyInLibrary -> stringResource(R.string.library_already, titleOrUntitled(message.title))
     is LibraryMessage.FoundAgain -> stringResource(R.string.library_found_again, titleOrUntitled(message.title))
     is LibraryMessage.Removed -> stringResource(R.string.library_removed, titleOrUntitled(message.title))
@@ -158,6 +155,9 @@ internal fun messageText(message: LibraryMessage): String = when (message) {
 @Composable
 internal fun titleOrUntitled(title: String): String =
     title.takeUnless { it == BookTitles.UNTITLED } ?: stringResource(R.string.library_untitled)
+
+/** [copied]: kept as Audora's own copy, which takes phone space, so the snackbar says so. */
+private fun addedText(copied: Boolean): Int = if (copied) R.string.library_added_copy else R.string.library_added
 
 private fun errorText(error: LibraryError): Int = when (error) {
     LibraryError.CannotKeepAccess -> R.string.library_error_cannot_keep

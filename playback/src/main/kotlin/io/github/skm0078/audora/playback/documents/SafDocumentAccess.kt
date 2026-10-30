@@ -44,15 +44,13 @@ class SafDocumentAccess(
                 Outcome.Failure(DocumentError.GrantsFull("grants=${grants.size} authority=${uri.authority}"))
             }
 
-            else -> take(uri)
+            else -> try {
+                resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                Outcome.Success(Unit)
+            } catch (e: SecurityException) {
+                Outcome.Failure(DocumentError.CannotKeepAccess(detail(e, uri)))
+            }
         }
-    }
-
-    private fun take(uri: Uri): Outcome<Unit, DocumentError> = try {
-        resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        Outcome.Success(Unit)
-    } catch (e: SecurityException) {
-        Outcome.Failure(DocumentError.CannotKeepAccess(detail(e, uri)))
     }
 
     override fun releaseAccess(documentUri: String) {
