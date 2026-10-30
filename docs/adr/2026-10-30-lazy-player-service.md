@@ -16,13 +16,15 @@ the car asked to play.
 
 ## Decision
 
-1. **The service says when it is up** (`PlaybackServiceLife.up`, in `:playback`): true from the end of
+1. **The service says when it is up** (`PlaybackServiceLife.up`, in `:playback`'s contract package): true from the end of
    `AudoraPlaybackService.onCreate` (session built) to the start of `onDestroy`. The service runs in the app's
    process, so a new process starts with it down, as it is. A process with a restore half undone builds no session
    and never reports itself up (ADR-046).
 2. **Screens that only show playback join it, never start it** (`rememberConnectedPlaybackPort`): connected while
    visible and while the service is up (`joinWanted`), released otherwise. Once connected, the controller keeps the
-   service bound as before, so a paused book stays in the mini player while the app is on screen.
+   service bound as before, so a paused book stays in the mini player while the app is on screen. The reader's
+   connection and this one now share one effect (`ConnectWhileEffect`, `rememberShown` in `PlayerConnection.kt`)
+   instead of two copies of the same lifecycle plumbing.
 3. **Everything that plays still starts it**: the reader's own controller (`PlayerConnectionEffect`), the quick
    settings tile, headset and media buttons (playback resumption), Android Auto. None of them changes.
 

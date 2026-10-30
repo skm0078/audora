@@ -10,7 +10,7 @@ import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.test.core.app.ActivityScenario
 import io.github.skm0078.audora.MainActivity
 import io.github.skm0078.audora.R
-import io.github.skm0078.audora.playback.service.PlaybackServiceLife
+import io.github.skm0078.audora.playback.contract.PlaybackServiceLife
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.ui.firstrun.FirstRunStep

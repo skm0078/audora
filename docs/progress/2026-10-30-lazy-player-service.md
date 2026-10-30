@@ -2,6 +2,7 @@
 - A cold start no longer starts the playback service. The mini player and the app lock's saver join it once
   something else started it: the reader, the tile, a headset, the car (`PlaybackServiceLife`, `joinWanted` in
   `ConnectedPlaybackPort.kt`).
+- The reader's controller and the show-only ones connect through one `ConnectWhileEffect` (`PlayerConnection.kt`).
 - `AudoraPlaybackService.onCreate` hands playback resumption's setup to `playbackResumption()` (same code, kept under
   detekt's method length).
 - **Could affect:** the mini player after playing in the background, the lock screen's saver while reading, the first
