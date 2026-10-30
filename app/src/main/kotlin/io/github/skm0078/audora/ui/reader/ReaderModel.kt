@@ -147,6 +147,12 @@ class ReaderModel(
                 voiceWarmUp.offer(lang)
             }
         }
+        // Why there is none, in Share logs: kept apart so these changes never restart the warm-up's wait.
+        scope.launch {
+            state.map { "player=${it.playback.connection} playing=${it.playback.wantsToPlay} page=${it.pageKind}" }
+                .distinctUntilChanged()
+                .collect { AudoraLog.d(TAG, "Warm-up inputs: $it, $logContext") }
+        }
         scope.launch {
             state.map { it.playback.connection == PlaybackSnapshot.Connection.CONNECTED }.distinctUntilChanged()
                 .filter { connected -> !connected }
