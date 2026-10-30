@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_notices.xml -->
+<!-- Purpose: Voices and licences: every licence text and notice the app carries (ADR 2026-10-30-open-source-notices). -->
+<resources>
+    <string name="notices_title">All licence texts</string>
+    <string name="notices_body">The full licence and notice of every library, engine and font inside ListenLock, and ListenLock\'s own GPL.</string>
+    <string name="notices_read">Read</string>
+</resources>

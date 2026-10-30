@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/licences/LicencesScreen.kt
-// Purpose: Settings → "Voices & licences" (P3-06): credits, licence and source of every voice, and the software.
+// Purpose: Settings → "Voices & licences" (P3-06): credits, licence and source of every voice, the software, and
+//          every licence text the app carries.
 
 package io.github.skm0078.audora.ui.licences
 
@@ -11,8 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,18 +29,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.EngineId
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.speech.voices.LicenceKind
+import io.github.skm0078.audora.speech.voices.LicenceText
 import io.github.skm0078.audora.speech.voices.VoiceCredits
 import io.github.skm0078.audora.speech.voices.VoiceLicence
 import io.github.skm0078.audora.ui.theme.AudoraTheme
@@ -54,6 +57,7 @@ fun LicencesScreen(
     state: LicencesState,
     onBack: () -> Unit,
     onOpenTexts: (VoiceLicence) -> Unit,
+    onOpenNotices: () -> Unit,
     onCloseTexts: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -67,7 +71,7 @@ fun LicencesScreen(
 
                 voices == null -> CircularProgressIndicator()
 
-                else -> LicencesList(voices, openLink, onOpenTexts)
+                else -> LicencesList(voices, openLink, onOpenTexts, onOpenNotices)
             }
         }
     }
@@ -88,9 +92,24 @@ private fun LicencesTopBar(onBack: () -> Unit) {
 }
 
 @Composable
-private fun LicencesList(voices: List<VoiceLicence>, openLink: (String) -> Unit, onOpenTexts: (VoiceLicence) -> Unit) {
+private fun LicencesList(
+    voices: List<VoiceLicence>,
+    openLink: (String) -> Unit,
+    onOpenTexts: (VoiceLicence) -> Unit,
+    onOpenNotices: () -> Unit,
+) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item(key = "intro") { Caption(R.string.licences_intro, header = false) }
+        // Near the top, so the app's own GPL and every library's notice are one tap from the screen's title.
+        item(key = "notices") {
+            val title = stringResource(R.string.notices_title)
+            ListItem(
+                headlineContent = { Text(title) },
+                supportingContent = { Text(stringResource(R.string.notices_body)) },
+                trailingContent = { LinkButton(R.string.notices_read, title, onOpenNotices) },
+            )
+            HorizontalDivider()
+        }
         Lang.entries.forEach { lang ->
             val inLang = voices.filter { it.lang == lang }
             if (inLang.isEmpty()) return@forEach
@@ -151,22 +170,40 @@ private fun kindText(voice: VoiceLicence): Int = when (voice.kind) {
 private fun LicenceTextsDialog(open: OpenLicence, onClose: () -> Unit) {
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text(open.voice.label) },
+        title = { Text(open.title) },
         text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                if (open.texts.isEmpty()) Text(stringResource(R.string.licences_no_files))
-                open.texts.forEach { file ->
-                    Text(
-                        file.name,
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(top = HEADER_PADDING),
-                    )
-                    Text(file.text, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
-                }
+            if (open.texts.isEmpty()) {
+                Text(stringResource(R.string.licences_no_files))
+            } else {
+                LicenceTextList(open.texts)
             }
         },
         confirmButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.licences_close)) } },
     )
+}
+
+/** Each file's name as a heading, then its text a paragraph at a time, so even the longest file scrolls smoothly. */
+@Composable
+private fun LicenceTextList(texts: List<LicenceText>) {
+    LazyColumn(modifier = Modifier.testTag(LICENCE_TEXTS_TAG)) {
+        texts.forEachIndexed { index, file ->
+            item(key = "name:$index") {
+                Text(
+                    file.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(top = HEADER_PADDING).semantics { heading() },
+                )
+            }
+            itemsIndexed(AppNotices.paragraphs(file.text), key = { at, _ -> "text:$index:$at" }) { _, text ->
+                Text(
+                    text,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                    modifier = Modifier.padding(top = PARAGRAPH_GAP),
+                )
+            }
+        }
+    }
 }
 
 /** A section title, or with [header] false a paragraph of explanation. */
@@ -283,6 +320,11 @@ private val SPEECH_SOFTWARE = listOf(
 
 private const val TAG = "UI.Licences"
 
+/** The licence-text list in its dialog, for tests. */
+const val LICENCE_TEXTS_TAG = "licence-texts"
+
+private val PARAGRAPH_GAP = 8.dp
+
 @Preview(showBackground = true)
 @Composable
 private fun LicencesScreenPreview() {
@@ -301,5 +343,13 @@ private fun LicencesScreenPreview() {
             installed = true,
         ),
     )
-    AudoraTheme { LicencesScreen(LicencesState(voices = voices), onBack = {}, onOpenTexts = {}, onCloseTexts = {}) }
+    AudoraTheme {
+        LicencesScreen(
+            LicencesState(voices = voices),
+            onBack = {},
+            onOpenTexts = {},
+            onOpenNotices = {},
+            onCloseTexts = {},
+        )
+    }
 }
