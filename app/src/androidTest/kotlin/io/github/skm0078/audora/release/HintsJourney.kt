@@ -33,6 +33,12 @@ internal class HintsJourney(private val rule: ComposeTestRule, private val backT
 
     private fun tap(matcher: SemanticsMatcher) {
         waitFor(matcher)
+        rule.onAllNodes(matcher).onFirst().performClick()
+    }
+
+    /** A row in a scrolling page: brought into view first (the top bar's buttons do not scroll, so [tap] does not). */
+    private fun tapRow(matcher: SemanticsMatcher) {
+        waitFor(matcher)
         rule.onAllNodes(matcher).onFirst().performScrollTo().performClick()
     }
 
@@ -48,9 +54,9 @@ internal class HintsJourney(private val rule: ComposeTestRule, private val backT
         waitFor(row)
         // Muted by the test runner; the switch reads the saved flag off the main thread, so wait for it to show.
         rule.waitUntil(UI_TIMEOUT_MS) { hints.muted }
-        tap(row)
+        tapRow(row)
         rule.waitUntil(UI_TIMEOUT_MS) { !hints.muted }
-        tap(row)
+        tapRow(row)
         rule.waitUntil(UI_TIMEOUT_MS) { hints.muted }
         backToTabs()
         closeTheSearch()
