@@ -65,7 +65,8 @@ sealed interface LibraryListState {
 
 /** Shown once in a snackbar, then cleared. Titles here are for the screen only, never the log. */
 sealed interface LibraryMessage {
-    data class Added(val title: String) : LibraryMessage
+    /** [copied]: kept as Audora's own copy (the file's grant could not be kept), which the snackbar says. */
+    data class Added(val title: String, val copied: Boolean = false) : LibraryMessage
 
     /** [id] lets the duplicate check (plan item 27) open the book the library already has. */
     data class AlreadyInLibrary(val title: String, val id: BookId? = null) : LibraryMessage
