@@ -25,6 +25,7 @@ import io.github.skm0078.audora.pdf.render.PageTransform
 import io.github.skm0078.audora.playback.contract.StudyAction
 import io.github.skm0078.audora.playback.report.SoundedWrongReport
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 val BOOK = BookId("3f2a9c01-7b1e-4c55-9a0d-2f6c1e8b7d10")
 val OTHER_BOOK = BookId("other-book")
@@ -216,6 +217,11 @@ class FakeDocument(
     var closed = false
     val reads = mutableListOf<Int>()
     val renders = mutableListOf<FakePageImage>()
+
+    /** Set by a test to say the book's OCR is reading a page right now. */
+    val ocrRunning = MutableStateFlow(false)
+
+    override val recognizing: StateFlow<Boolean> get() = ocrRunning
 
     override suspend fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError> {
         reads += page
