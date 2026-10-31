@@ -49,9 +49,9 @@ internal class MissingFileJourney(
     }
 
     /**
-     * A book of its own is added and shown in the library's list, with no warning. Its file is deleted, the app goes to the
-     * background and comes back (pause and resume, as switching apps does), and the row says the file has gone. The
-     * book is removed at the end, also when a check fails.
+     * A book of its own is added and shown in the library's list, with no warning. Its file is deleted, the app goes
+     * to the background and comes back (pause and resume, as switching apps does), and the row says the file has gone.
+     * The book is removed at the end, also when a check fails.
      */
     fun flagsAGoneFile() {
         val library = LibraryEntryPoint.of(app).library()
