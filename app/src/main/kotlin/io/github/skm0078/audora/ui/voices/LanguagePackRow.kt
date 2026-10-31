@@ -38,6 +38,8 @@ internal fun LanguagePackRow(pack: LanguagePack, onDownload: () -> Unit, onCance
         headlineContent = { Text(language) },
         supportingContent = {
             Column {
+                // The one-tap download is where most listeners meet a language: a beta one says so here too.
+                if (pack.voice.beta) BetaLabel()
                 PackStatus(pack, language)
                 when {
                     pack.ready -> Unit

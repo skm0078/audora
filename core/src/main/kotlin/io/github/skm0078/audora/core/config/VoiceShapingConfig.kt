@@ -25,6 +25,11 @@ import io.github.skm0078.audora.core.model.VoiceShaping
  *   sounds as before; much past 0.9 the voice starts to slur.
  * @property expressionNoiseWidths the voice's `noise_w` (how much word and phoneme lengths vary) at each step, the
  *   same number of steps; the middle is the voices' own 0.8. calibre's Piper settings tune the same two values.
+ * @property styledNoiseScales and [styledNoiseWidths] the same steps for a model with speaking styles (Rasa,
+ *   ADR-057), which carries a sentence's feeling in its style, so its noise only adds random swings: at the plain
+ *   steps its voice jumped in pitch and pace ("shrill, changes again and again"), and a native listener found 0.35
+ *   and 0.4 natural at the middle step (ADR 2026-10-30-bengali-spoken-spelling). The storyteller end stays below the
+ *   plain middle.
  */
 data class VoiceShapingConfig(
     val frameMs: Int = 10,
@@ -39,6 +44,8 @@ data class VoiceShapingConfig(
     val edgeMs: Int = 40,
     val expressionNoiseScales: List<Float> = DEFAULT_NOISE_SCALES,
     val expressionNoiseWidths: List<Float> = DEFAULT_NOISE_WIDTHS,
+    val styledNoiseScales: List<Float> = DEFAULT_STYLED_NOISE_SCALES,
+    val styledNoiseWidths: List<Float> = DEFAULT_STYLED_NOISE_WIDTHS,
 ) {
     /** The highest expressiveness step; steps run from 0 (newsreader) to this (storyteller). */
     val maxExpression: Int get() = expressionNoiseScales.lastIndex
@@ -53,13 +60,24 @@ data class VoiceShapingConfig(
         require(longPauseMs >= edgeMs && edgeMs >= 0) { "need 0 <= edgeMs <= longPauseMs" }
         require(expressionNoiseScales.size == expressionNoiseWidths.size) { "one noise width per noise scale" }
         require(VoiceShaping.DEFAULT_EXPRESSION in expressionNoiseScales.indices) { "default step out of range" }
-        require((expressionNoiseScales + expressionNoiseWidths).all { it > 0f }) { "noise values must be > 0" }
+        require(listOf(styledNoiseScales, styledNoiseWidths).all { it.size == expressionNoiseScales.size }) {
+            "one styled noise scale and width per step"
+        }
+        val noise = expressionNoiseScales + expressionNoiseWidths + styledNoiseScales + styledNoiseWidths
+        require(noise.all { it > 0f }) { "noise values must be > 0" }
     }
 
-    /** The `noise_scale` and `noise_w` for [step], clamped to the steps there are. */
-    fun expressionNoise(step: Int): Pair<Float, Float> {
+    /**
+     * The `noise_scale` and `noise_w` for [step], clamped to the steps there are: a model with speaking styles
+     * ([styled]) takes the calmer [styledNoiseScales] and [styledNoiseWidths].
+     */
+    fun expressionNoise(step: Int, styled: Boolean = false): Pair<Float, Float> {
         val index = step.coerceIn(0, maxExpression)
-        return expressionNoiseScales[index] to expressionNoiseWidths[index]
+        return if (styled) {
+            styledNoiseScales[index] to styledNoiseWidths[index]
+        } else {
+            expressionNoiseScales[index] to expressionNoiseWidths[index]
+        }
     }
 
     private companion object {
@@ -70,5 +88,7 @@ data class VoiceShapingConfig(
         val DEFAULT_BOOST_CHOICES_DB = listOf(0, 3, 6, 9)
         val DEFAULT_NOISE_SCALES = listOf(0.33f, 0.5f, 0.667f, 0.78f, 0.9f)
         val DEFAULT_NOISE_WIDTHS = listOf(0.4f, 0.6f, 0.8f, 0.92f, 1.05f)
+        val DEFAULT_STYLED_NOISE_SCALES = listOf(0.2f, 0.28f, 0.35f, 0.45f, 0.55f)
+        val DEFAULT_STYLED_NOISE_WIDTHS = listOf(0.25f, 0.32f, 0.4f, 0.5f, 0.6f)
     }
 }

@@ -57,9 +57,11 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
         val target = outputDirectory.get().dir(ASSET_DIR).asFile.apply { mkdirs() }
         val packed = entries.filter { it.text("id") != bundledId }
         val recommended = recommendedIds(root, packed)
+        val beta = betaLangs(root)
         packed.forEach { entry ->
             val id = entry.text("id")
-            File(target, "$id.properties").writeText(manifest(entry, baseUrl, id in recommended))
+            val flags = Flags(recommended = id in recommended, beta = entry.text("lang") in beta)
+            File(target, "$id.properties").writeText(manifest(entry, baseUrl, flags))
         }
         logger.lifecycle("Voice catalog: ${packed.map { it.text("id") }} (bundled $bundledId left out)")
     }
@@ -75,7 +77,20 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
         return recommended.values.map { it.toString() }.toSet()
     }
 
-    private fun manifest(entry: Map<String, Any?>, baseUrl: String, recommended: Boolean): String {
+    /**
+     * `beta` lists the languages whose downloadable voices are still early (2026-10-31: Bengali). Every voice of such a
+     * language is marked, so the Voices screen says so; graduating a language is deleting it from the list.
+     */
+    private fun betaLangs(root: Map<String, Any?>): Set<String> {
+        val langs = (root["beta"] as? List<*>).orEmpty().map { it.toString() }
+        langs.forEach { if (it !in LANGS) fail("beta language '$it' must be one of $LANGS") }
+        return langs.toSet()
+    }
+
+    /** What the catalog's top-level lists say about one voice. */
+    private data class Flags(val recommended: Boolean, val beta: Boolean)
+
+    private fun manifest(entry: Map<String, Any?>, baseUrl: String, flags: Flags): String {
         val id = entry.text("id")
         val sha256 = entry.text("sha256").lowercase()
         val size = (entry["sizeBytes"] as? Number)?.toLong() ?: 0L
@@ -110,7 +125,9 @@ abstract class VoiceCatalogAssetsTask : DefaultTask() {
             "licenceUrl" to entry.text("licenceUrl"),
             "sourceUrl" to entry.text("sourceUrl"),
             "useTerms" to useTerms(id, entry),
-            "recommended" to recommended.toString(),
+            "recommended" to flags.recommended.toString(),
+            // Written only when true, so the other voices' assets stay byte-for-byte as they were.
+            "beta" to flags.beta.takeIf { it }?.toString(),
             "contentVersion" to sha256,
             "url" to "$baseUrl$file",
             "sha256" to sha256,

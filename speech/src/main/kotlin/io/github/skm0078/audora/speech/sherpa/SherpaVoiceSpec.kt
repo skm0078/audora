@@ -90,10 +90,31 @@ data class SherpaVoiceSpec(
         else -> listOfNotNull(model, tokens, voices, lexicon)
     }
 
+    /**
+     * Whether the model reads letters, not phonemes: a VITS voice with neither espeak-ng data nor a lexicon (SYSPIN,
+     * Rasa, MMS), whose tokens are the script's own characters. It says what is written and nothing else, so the
+     * spelling decides how it sounds ([LetterVoices]).
+     */
+    val readsLetters: Boolean get() = family == SherpaFamily.VITS && dataDir == null && lexicon == null
+
     fun toVoiceInfo(): VoiceInfo = VoiceInfo(voiceId, lang, label, licence)
 
     /** The style [feeling] is read in, the neutral one when it has none of its own; null for a model without styles. */
     fun styleFor(feeling: Feeling): Int? = styles[feeling] ?: styles[Feeling.NEUTRAL]
+}
+
+/**
+ * Each VITS voice with the listener's expressiveness ([SherpaVoiceSpec.noise]): [noise] gives the values for a plain
+ * model or, `styled`, for one with speaking styles (Rasa), which carries a sentence's feeling in its style and so
+ * takes calmer noise. A null leaves the voice with sherpa's own values; other families have none to set.
+ */
+fun List<SherpaVoiceSpec>.withNoise(noise: (styled: Boolean) -> VitsNoise?): List<SherpaVoiceSpec> {
+    val plain = noise(false)
+    val styled = noise(true)
+    return map { spec ->
+        val values = if (spec.styles.isEmpty()) plain else styled
+        if (spec.family == SherpaFamily.VITS && values != null) spec.copy(noise = values) else spec
+    }
 }
 
 /**

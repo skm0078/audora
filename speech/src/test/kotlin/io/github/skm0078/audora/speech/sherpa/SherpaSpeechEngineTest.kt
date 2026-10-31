@@ -93,6 +93,40 @@ class SherpaSpeechEngineTest {
     }
 
     @Test
+    fun `a Bengali voice that reads letters is handed its words as said, at its pace`() = runBlocking {
+        val syspin = spec("syspin-bn-male", Lang.BN).copy(dataDir = null)
+        val rasa = spec("rasa-bn", Lang.BN, speakerId = 2).copy(dataDir = null, styles = mapOf(Feeling.NEUTRAL to 3))
+        val letters = SherpaSpeechEngine(listOf(syspin, rasa), factory, Dispatchers.IO.limitedParallelism(1), 2, 0.9f)
+
+        letters.render("সব চোর গেল?", syspin.voiceId)
+        letters.render("সব চোর গেল?", syspin.voiceId, rate = 2f)
+        letters.render("সব চোর গেল?", rasa.voiceId)
+
+        assertEquals(listOf("সব্ চোর্ গ্যালো?" to 0, "সব্ চোর্ গ্যালো?" to 0), synthesizerOf("syspin-bn-male").calls)
+        assertEquals(listOf(0.9f, 1.8f), synthesizerOf("syspin-bn-male").rates)
+        assertEquals("সব্ চোর্ গ্যালো।", synthesizerOf("rasa-bn").calls.single().first) // then the styled ending
+        assertEquals(listOf(0.9f), synthesizerOf("rasa-bn").rates)
+    }
+
+    @Test
+    fun `a Bengali voice with espeak-ng and an English voice get their text and rate as they are`() = runBlocking {
+        val piper = spec("piper-bn-imported", Lang.BN)
+        val mixed = SherpaSpeechEngine(listOf(piper, english), factory, Dispatchers.IO.limitedParallelism(1), 2, 0.9f)
+
+        mixed.render("সব চোর গেল।", piper.voiceId, rate = 1.5f)
+        mixed.render("Hello there.", english.voiceId, rate = 1.5f)
+
+        assertEquals("সব চোর গেল।", synthesizerOf("piper-bn-imported").calls.single().first)
+        assertEquals(listOf(1.5f), synthesizerOf("piper-bn-imported").rates)
+        assertEquals(listOf(1.5f), synthesizerOf("piper-en-ljspeech").rates)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `a Bengali pace of zero is refused`() {
+        SherpaSpeechEngine(listOf(english), factory, bengaliPace = 0f)
+    }
+
+    @Test
     fun `lists its voices without loading a model, and loads lazily once`() = runBlocking {
         assertEquals(listOf(english.voiceId, other.voiceId), requireNotNull(engine.voices().getOrNull()).map { it.id })
         assertTrue(engine.supports(Lang.EN))
