@@ -17,6 +17,12 @@ package io.github.skm0078.audora.core.config
  *   word) above which the page goes to OCR.
  * @property maxInvalidIndicRate share of Indic letters in an impossible position (a vowel sign or virama with no
  *   consonant before it), counted after the reorder pass, above which the page goes to OCR.
+ * @property minConjunctCheckLetters a page is checked for lost conjuncts only with at least this many Indic letters;
+ *   a short page can be plain words with no conjunct at all.
+ * @property minViramaShare share of a page's Indic letters that are a virama (the sign every conjunct, ya-phala,
+ *   ra-phala and reph is spelled with) below which its conjuncts are lost and the page goes to OCR. Unicode Hindi
+ *   and Bengali hold 2-8 % (the plainest 600-letter stretch of the story eval passages: 0.5 %); a publisher's font
+ *   whose map leaves conjunct glyphs unmapped extracts "সািহত" for "সাহিত্য", near 0 % on every page.
  * @property legacyFonts font-name fragments of pre-Unicode Hindi and Bengali fonts (matched case-insensitively,
  *   subset prefix ignored, first match wins) and their encodings. Their glyphs extract as ASCII; the legacy-font
  *   converter (P3-04, ADR-023) maps every run in one of them back to Unicode, whatever the page's route.
@@ -54,6 +60,8 @@ data class QualityConfig(
     val maxInvisibleShare: Float = 0.5f,
     val maxGarbageRate: Float = 0.02f,
     val maxInvalidIndicRate: Float = 0.01f,
+    val minConjunctCheckLetters: Int = 500,
+    val minViramaShare: Float = 0.002f,
     val legacyFonts: Map<String, LegacyEncoding> = DEFAULT_LEGACY_FONTS,
     val minLegacyLatinShare: Float = 0.8f,
     val minLegacyShare: Float = 0.2f,
@@ -70,12 +78,13 @@ data class QualityConfig(
 ) {
     init {
         val shares = listOf(
-            maxUnicodeMapErrorRate, maxInvisibleShare, maxGarbageRate, maxInvalidIndicRate, minLegacyLatinShare,
-            minLegacyShare, maxLegacyUnknownRate, minWordInitialShare, minRephAtSyllableEndShare, minIndicShare,
-            maxSampleCer,
+            maxUnicodeMapErrorRate, maxInvisibleShare, maxGarbageRate, maxInvalidIndicRate, minViramaShare,
+            minLegacyLatinShare, minLegacyShare, maxLegacyUnknownRate, minWordInitialShare, minRephAtSyllableEndShare,
+            minIndicShare, maxSampleCer,
         )
         require(shares.all { it in 0f..1f }) { "rates and shares must be in 0..1" }
         require(minPageLetters >= 0) { "minPageLetters must be >= 0, was $minPageLetters" }
+        require(minConjunctCheckLetters > 0) { "minConjunctCheckLetters must be > 0, was $minConjunctCheckLetters" }
         require(maxSupplementLetters >= 0) { "maxSupplementLetters must be >= 0, was $maxSupplementLetters" }
         require(minVisualOrderSigns > 0 && minRephs > 0) { "minVisualOrderSigns and minRephs must be > 0" }
         require(minSampleLetters > 0 && recheckEveryPages > 0) { "minSampleLetters and recheckEveryPages must be > 0" }

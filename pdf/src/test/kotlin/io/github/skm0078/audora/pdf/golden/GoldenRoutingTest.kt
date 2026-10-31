@@ -76,6 +76,7 @@ class GoldenRoutingTest {
             maxUnicodeMapErrorRate = 1f,
             maxGarbageRate = 1f,
             maxInvalidIndicRate = 1f,
+            minViramaShare = 0f,
         )
         val documents = documents("hi-broken-map", "bn-broken-map").filter { it.id !in LETTERS_RIGHT_JUNK_ADDED }
         assertTrue(documents.isNotEmpty())

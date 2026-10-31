@@ -1,5 +1,5 @@
 // File: pdf/src/test/kotlin/io/github/skm0078/audora/pdf/cleanup/UnicodeRepairTest.kt
-// Purpose: Table-driven tests for NFC with offsets kept and for "|" typed as a danda.
+// Purpose: Table-driven tests for NFC with offsets kept and for "|" or "৷" typed as a danda.
 
 package io.github.skm0078.audora.pdf.cleanup
 
@@ -61,6 +61,31 @@ class UnicodeRepairTest {
         ),
         UnicodeRepair::dandasFromPipes,
     )
+
+    @Test
+    fun `a Bengali currency bar drawn for a danda becomes one`() = check(
+        listOf(
+            Case("before a space", "এটা বাক্য৷ পরের", "এটা বাক্য। পরের"),
+            Case("after a vowel sign", "সে বলল৷ তারপর গেল৷", "সে বলল। তারপর গেল।"),
+            Case("at the end", "শেষ হল৷", "শেষ হল।"),
+            Case("before a closing quote", "'কোথায় যাবে৷'", "'কোথায় যাবে।'"),
+            Case("before a line break", "প্রথম লাইন৷\nদ্বিতীয়", "প্রথম লাইন।\nদ্বিতীয়"),
+            Case("after a digit stays a fraction", "মূল্য ১৷", "মূল্য ১৷"),
+            Case("after a space stays", "অধিকার ৷", "অধিকার ৷"),
+            Case("inside a word stays", "কর৷ছি", "কর৷ছি"),
+        ),
+        UnicodeRepair::dandasFromBars,
+    )
+
+    @Test
+    fun `a currency bar becomes a danda in place, sources kept`() {
+        val input = MappedText("হল৷", intArrayOf(3, 4, 9))
+        val out = UnicodeRepair.dandasFromBars(input)
+        assertEquals("হল।", out.text)
+        assertArrayEquals(intArrayOf(3, 4, 9), out.sources)
+        val none = MappedText.plain("হল।")
+        assertSame(none, UnicodeRepair.dandasFromBars(none))
+    }
 
     @Test
     fun `a double pipe keeps the first pipe's source`() {
