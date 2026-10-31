@@ -41,8 +41,8 @@ itself; dropping it would let a deleted file look fine until a tap.
   to the library).
 - **Tests:** `LibraryTest` (the check is one batch), `LibraryRecheckTest` (quick returns run one more check, not one
   each; an unchanged check keeps the list; a file deleted while away is flagged), `AvailabilityBatchDeviceTest` (the
-  batch answers exactly as single checks do, on a device), release journey step 64 (a file deleted while the app is
-  in the background is flagged when it comes back).
+  batch answers exactly as single checks do, on a device), release journey step 64 (a file deleted while another tab
+  is open is flagged when the library shows again, which runs the same check as a return from another app).
 
 ## Alternatives considered
 
