@@ -337,6 +337,8 @@ private fun ListeningGroup(
             )
         }
         OptionDivider()
+        SettingAnchor(SettingKey.SKIP_FRONT_MATTER) { SkipFrontMatterItem() }
+        OptionDivider()
         SettingAnchor(SettingKey.RESUME_ON_RECONNECT) { ResumeOnReconnectItem() }
     }
 }

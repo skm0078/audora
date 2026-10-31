@@ -134,7 +134,9 @@ import io.github.skm0078.audora.ui.notes.NoteSources
 import io.github.skm0078.audora.ui.notes.NotesScreen
 import io.github.skm0078.audora.ui.notes.bookNotes
 import io.github.skm0078.audora.ui.reader.BookNotesModel
+import io.github.skm0078.audora.ui.reader.BookStartPreferences
 import io.github.skm0078.audora.ui.reader.DocumentState
+import io.github.skm0078.audora.ui.reader.FrontMatterBookStart
 import io.github.skm0078.audora.ui.reader.KeepScreenOn
 import io.github.skm0078.audora.ui.reader.LibraryReaderBooks
 import io.github.skm0078.audora.ui.reader.LocatorReaderResume
@@ -827,9 +829,8 @@ class MainActivity : ComponentActivity() {
         onAutoResumeTaken: () -> Unit = {},
     ) {
         val id = target.id
-        val context = LocalContext.current.applicationContext
         val scope = rememberCoroutineScope()
-        val port = remember(id) { MediaControllerPlaybackPort(context) }
+        val port = remember(id) { MediaControllerPlaybackPort(applicationContext) }
         // The page on screen survives a rotation: no jump to the resume point, no second "Resumed at".
         var shownPage by rememberSaveable(id) { mutableStateOf<Int?>(null) }
         val model = remember(id) {
@@ -846,6 +847,7 @@ class MainActivity : ComponentActivity() {
                 views = viewPreference,
                 textSettings = ReadingTextPreferences.changes,
                 shownPage = shownPage,
+                bookStart = FrontMatterBookStart(BookStartPreferences(applicationContext)),
             ).also { it.start() }
         }
         val thumbs = rememberPageThumbnails(id, model)

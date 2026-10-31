@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_front_matter.xml -->
+<!-- Purpose: New books open past their front matter, and the reader says so (ADR 2026-10-31-skip-front-matter). -->
+<resources>
+    <string name="front_matter_started_at">“%1$s” से शुरू किया, पेज %2$d</string>
+    <string name="front_matter_started_on">जहाँ किताब शुरू होती है वहीं से शुरू किया, पेज %1$d</string>
+    <plurals name="front_matter_skipped">
+        <item quantity="one">उससे पहले का %d पेज छोड़ा</item>
+        <item quantity="other">उससे पहले के %d पेज छोड़े</item>
+    </plurals>
+    <string name="front_matter_skipped_what">%1$s: %2$s।</string>
+    <string name="front_matter_list_joiner">", "</string>
+    <string name="front_matter_kind_title_pages">शीर्षक पेज</string>
+    <string name="front_matter_kind_copyright">कॉपीराइट</string>
+    <string name="front_matter_kind_contents">विषय सूची</string>
+    <string name="front_matter_kind_dedication">समर्पण</string>
+    <string name="front_matter_kind_thanks">आभार</string>
+    <string name="front_matter_kind_preface">भूमिका</string>
+    <string name="front_matter_read_from_start">शुरू से पढ़ें</string>
+    <string name="front_matter_ok">ठीक है</string>
+    <string name="settings_skip_front_matter_title">नई किताबें पहले अध्याय से शुरू करें</string>
+    <string name="settings_skip_front_matter_short">विषय सूची, कॉपीराइट और भूमिका के पेज छोड़ता है</string>
+    <string name="settings_skip_front_matter_body">चालू: जो किताब आपने अभी तक नहीं पढ़ी, वह वहीं खुलती है जहाँ असली पढ़ाई शुरू होती है, विषय सूची, कॉपीराइट, शीर्षक और भूमिका के पेजों के बाद। एक कार्ड बताता है कि क्या छोड़ा गया, साथ में “शुरू से पढ़ें”। बंद: हर किताब पेज 1 पर खुलती है। छोड़े गए पेज कभी छिपते नहीं; जब चाहें पीछे पलटें।</string>
+    <string name="found_terms_front_matter">भूमिका विषय सूची अनुक्रमणिका कॉपीराइट पहला अध्याय छोड़ें प्रस्तावना</string>
+</resources>

@@ -73,6 +73,7 @@ class ReaderModel(
     private val textSettings: Flow<Int> = emptyFlow(),
     shownPage: Int? = null,
     private val now: () -> Long = System::currentTimeMillis,
+    private val bookStart: BookStart = BookStart.None,
 ) {
     private val mutableState = MutableStateFlow(ReaderState(bookId))
     val state: StateFlow<ReaderState> = mutableState.asStateFlow()
@@ -467,6 +468,17 @@ class ReaderModel(
 
     fun openingLineShown() = mutableState.update { it.copy(firstOpen = false) }
 
+    /** The skipped-pages notice's "Read from the start": page 1 now, and whenever this book opens unread. */
+    fun readFromStart() {
+        AudoraLog.i(TAG, "Read from the start, $logContext")
+        mutableState.update { it.copy(skippedFrontMatter = null, startPage = 0) }
+        showPage(0)
+        scope.launch { bookStart.readFromStart(bookId) }
+    }
+
+    /** The skipped-pages notice's OK: the notice goes; the book stays where it opened. */
+    fun frontMatterNoticeShown() = mutableState.update { it.copy(skippedFrontMatter = null) }
+
     /**
      * Study loops (plan item 31): marks A or B at the sentence being read in this book, turns looping on or off, or
      * clears the range. A mark needs this book to be the one being read.
@@ -566,13 +578,26 @@ class ReaderModel(
             }?.let { ReadingPosition(bookId, it.page, it.charStart) }
             savedPosition?.takeIf { !reopened }?.let { position -> sayWhereResumed(position, read[position.page]) }
         }
-        val firstOpen = !reopened && playing == null && savedPosition == null && book?.lastOpenedAtMillis == null
-        if (firstOpen) mutableState.update { it.copy(firstOpen = true) }
-        val startPage = keepPage?.also { keepPage = null } ?: playing?.page ?: savedPosition?.page ?: 0
+        val skipped = if (!reopened && playing == null && savedPosition == null) openUnread(opened) else null
+        val startPage = keepPage?.also { keepPage = null } ?: playing?.page ?: savedPosition?.page ?: skipped?.page ?: 0
         loadPage(startPage.coerceIn(0, opened.pageCount - 1))
         loadChapters(opened)
         books.markOpened(bookId, opened.pageCount)
         autoResumeIfDue()
+    }
+
+    /**
+     * A book with nothing read yet: its first open shows the opening line, and it opens past its contents, copyright
+     * and preface pages and says so: never silently (ADR 2026-10-31-skip-front-matter). A page shown meanwhile (a
+     * bookmark opened from Notes) wins over the search.
+     */
+    private suspend fun openUnread(opened: ReaderDocument): SkippedFrontMatter? {
+        if (book?.lastOpenedAtMillis == null) mutableState.update { it.copy(firstOpen = true) }
+        val shownBefore = state.value.page
+        val found = bookStart.find(bookId, opened)?.takeIf { state.value.page == shownBefore } ?: return null
+        AudoraLog.i(TAG, "Opening past front matter, $logContext $found")
+        mutableState.update { it.copy(skippedFrontMatter = found, startPage = found.page) }
+        return found
     }
 
     /** After days away, the recap ([previouslyOn]); otherwise the one-line "Picked up on page N". */

@@ -83,7 +83,7 @@ fun ReaderScreen(
     val tips = rememberGestureTips()
     val hint = readerHint(state, notes, hintLinks, actions, speech)
     val notice = readerNotice(state, offer, tips.pending, hint.pending)
-    val pack = offer.takeIf { notice == ReaderNotice.VOICE_PACK }
+    val card = ReaderCards(offer.takeIf { notice == ReaderNotice.VOICE_PACK }, state, notice)
     if (pageTextOpen) {
         PageTextSheet(look, onLookChange, textView = state.view == ReaderView.TEXT) { pageTextOpen = false }
     }
@@ -132,7 +132,7 @@ fun ReaderScreen(
                 is DocumentState.Open -> {
                     PlaceHighlights(state, notesActions)
                     BesidePanel(panel, { ReaderSidePanel(state, actions, notes, notesActions, voiceNotes, people) }) {
-                        OpenBook(state, document, config, actions, ocrModels, look, spokenWord, thumbnails, pack, notes)
+                        OpenBook(state, document, config, actions, ocrModels, look, spokenWord, thumbnails, card, notes)
                     }
                     NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)
                 }
@@ -174,7 +174,7 @@ private fun OpenBook(
     look: ReadingLook,
     spokenWord: () -> IntRange?,
     thumbnails: PageThumbnails?,
-    voicePack: VoicePackOffer?,
+    cards: ReaderCards,
     notes: NotesState,
 ) {
     // The start of a passage being highlighted shows as highlighted while its end is picked.
@@ -197,7 +197,8 @@ private fun OpenBook(
             is PageContent.Ready -> {
                 val badge = ocrBadgeText(content.origin, content.ocrConfidence, config)
                 PageOriginNotice(content.origin, ocrModels, badge, actions::onDownloadOcrModels)
-                VoicePackNotice(content.units, voicePack)
+                cards.frontMatter?.let { FrontMatterNotice(it, actions::onReadFromStart, actions::onFrontMatterSeen) }
+                VoicePackNotice(content.units, cards.voicePack)
                 ReadingArea(state, content, actions, look, config, spokenWord, isHighlighted, turnBack)
             }
         }

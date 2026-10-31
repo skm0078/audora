@@ -178,4 +178,10 @@ interface ReaderActions {
 
     /** Download the text recognition files a scanned page needs (P3-05). */
     fun onDownloadOcrModels() = Unit
+
+    /** The skipped-pages card's "Read from the start" (ADR 2026-10-31-skip-front-matter). */
+    fun onReadFromStart() = Unit
+
+    /** The skipped-pages card's OK. */
+    fun onFrontMatterSeen() = Unit
 }
