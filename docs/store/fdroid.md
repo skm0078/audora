@@ -11,7 +11,7 @@ F-Droid builds the app itself from the source at a release tag and signs it with
 | Requirement (f-droid.org/docs/Inclusion_Policy) | Status |
 | --- | --- |
 | FLOSS licence | GPL-3.0-only. Every voice, model and library is checked in the licence audit and credited in the app. |
-| Prebuilt libraries only from trusted Maven repos | Maven Central, Google and JitPack only. sherpa-onnx moved from a GitHub release asset to JitPack (same file, same checksum). PDFium (Maven Central) and Tesseract4Android (JitPack) are prebuilt FLOSS from trusted repos. llama.cpp is built from source. |
+| Prebuilt libraries only from trusted Maven repos | **Open: sherpa-onnx** still comes from its GitHub release, which F-Droid does not trust. JitPack's v1.13.8 build has no AAR (its build hit a 404), so moving there fails. Fix before applying: a sherpa-onnx version whose JitPack build has the AAR, or build it from source in the recipe. PDFium (Maven Central) and Tesseract4Android (JitPack) are fine; llama.cpp is built from source. |
 | No Google Play Services, Firebase, analytics, ads | None. The Android Auto `meta-data` line is a manifest entry, not a library. |
 | No Google dependency-info blob in the APK | Off since this ADR; CI fails a signed APK that carries it. |
 | No downloading executable code without opt-in | Downloads are voice, OCR and dictionary data only, each started by the listener. |
@@ -28,8 +28,8 @@ F-Droid builds the app itself from the source at a release tag and signs it with
 
 **Known review risks** (no fix needed now, answer if a reviewer asks):
 
-- A reviewer may still ask to build sherpa-onnx and ONNX Runtime from source. Fallback: a `srclibs` build of
-  sherpa-onnx's `build-android-arm64-v8a.sh` with ONNX Runtime built from its tag.
+- sherpa-onnx from source, if chosen: a `srclibs` build of sherpa-onnx's `build-android-arm64-v8a.sh` with ONNX
+  Runtime built from its tag, and a Gradle property that points `:speech` at the resulting AAR.
 - The build downloads llama.cpp's source archive and the bundled English voice, both checked against pinned SHA-256
   values. If F-Droid wants them offline, the recipe can fetch them as `srclibs`/`prebuild` into the same cache paths
   (`~/.gradle/caches/audora-llama`, `~/.gradle/caches/audora-voices`).

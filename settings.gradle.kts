@@ -21,10 +21,22 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // JitPack serves exactly two libraries, and they are looked up nowhere else. Tesseract4Android is published
-        // only there (ADR-025). sherpa-onnx's JitPack build republishes its GitHub release AAR byte for byte, and
-        // JitPack is a source F-Droid trusts while a GitHub release asset is not (ADR 2026-10-31-fdroid-ready-build).
-        // Checksums: tesseract4androidAarSha256 and sherpaOnnxAarSha256 in libs.versions.toml.
+        // sherpa-onnx ships its Android AAR only as a GitHub release asset, not on Maven (ADR-012). Exclusive, so
+        // this module is never looked up anywhere else and nothing else is looked up here. Checksum: see
+        // sherpaOnnxAarSha256 in libs.versions.toml.
+        exclusiveContent {
+            forRepository {
+                ivy {
+                    name = "sherpaOnnxGitHubReleases"
+                    url = uri("https://github.com/k2-fsa/sherpa-onnx/releases/download/")
+                    patternLayout { artifact("v[revision]/[artifact]-[revision].[ext]") }
+                    metadataSources { artifact() }
+                }
+            }
+            filter { includeModule("com.k2fsa", "sherpa-onnx") }
+        }
+        // Tesseract4Android is published only on JitPack (ADR-025). Exclusive and limited to its group, so JitPack
+        // serves nothing else and this library is looked up nowhere else. Checksum: tesseract4androidAarSha256.
         exclusiveContent {
             forRepository {
                 maven {
@@ -32,10 +44,7 @@ dependencyResolutionManagement {
                     url = uri("https://jitpack.io")
                 }
             }
-            filter {
-                includeGroup("cz.adaptech.tesseract4android")
-                includeModule("com.github.k2-fsa", "sherpa-onnx")
-            }
+            filter { includeGroup("cz.adaptech.tesseract4android") }
         }
     }
 }
