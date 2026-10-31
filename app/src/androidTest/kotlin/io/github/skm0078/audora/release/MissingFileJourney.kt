@@ -41,8 +41,15 @@ internal class MissingFileJourney(private val rule: ComposeTestRule, private val
             tap(hasContentDescription(text(R.string.library_search)))
             rule.onAllNodes(hasSetTextAction()).onFirst().performTextInput(TITLE)
         }
-        rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(hasText(TITLE, substring = true)) }
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(says(TITLE) and hasClickAction()) }
     }
+
+    /**
+     * A list row shows [words] as text; a grid tile folds its lines into its description (BookTile), so both count.
+     * Not the search field's own text, which also holds the title.
+     */
+    private fun says(words: String): SemanticsMatcher =
+        (hasText(words, substring = true) and !hasSetTextAction()) or hasContentDescription(words, substring = true)
 
     /**
      * A book of its own is added and shown in the library, with no warning. Its file is deleted while another tab is
@@ -57,7 +64,7 @@ internal class MissingFileJourney(private val rule: ComposeTestRule, private val
             is Outcome.Success -> added.value.book.id
             is Outcome.Failure -> return fail("The book was not added: ${added.error}")
         }
-        val flagged = hasText(text(R.string.library_file_missing), substring = true)
+        val flagged = says(text(R.string.library_file_missing))
         try {
             backToTabs()
             showTheBook()
