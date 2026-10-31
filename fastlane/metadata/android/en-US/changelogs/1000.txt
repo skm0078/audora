@@ -1,0 +1,1 @@
+First public release. Reads PDFs, e-books, documents and photos of pages aloud in English, Hindi and Bengali, fully on the phone. Starts from any sentence, keeps playing with the screen off, and picks up at the same sentence after a restart.

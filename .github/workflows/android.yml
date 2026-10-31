@@ -87,6 +87,9 @@ jobs:
       - name: Test the repo scripts (16 KB checker, voice mirror, hotspot check)
         run: python3 -m unittest discover -s scripts/tests -v
 
+      - name: Store text and graphics (fastlane, read by F-Droid, IzzyOnDroid and the Play listing)
+        run: python3 scripts/check_store_metadata.py
+
       - name: Golden corpus page dumps are current
         # The JVM golden test reads PDFium page dumps (P2-01, pdf/golden/README.md). Re-dump every golden page with
         # the pinned desktop PDFium and the production page reader, and fail if a golden PDF or page_reader.cpp
@@ -154,6 +157,11 @@ jobs:
             app/build/outputs/apk/release/*.apk \
             spikes/playback/build/outputs/apk/debug/*.apk \
             spikes/voices/build/outputs/apk/debug/*.apk
+
+      - name: No Google dependency blob in the signed APK
+        # The dev APK is the one signed here, built like release (ADR-072). F-Droid and IzzyOnDroid reject an APK whose
+        # signing block carries AGP's encrypted dependency list (ADR 2026-10-31-fdroid-ready-build).
+        run: python3 scripts/check_apk_signing_block.py app/build/outputs/apk/dev/*.apk
 
       - name: APK size budget
         # Fails an APK over scripts/perf/apk-budget.json and shows each APK's size, and the dev APK's change from the
