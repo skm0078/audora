@@ -1,0 +1,30 @@
+ListenLock reads your PDFs, e-books, documents and photos of pages aloud in natural voices, in English, Hindi and Bengali. Start from any page or sentence and keep listening with the screen off or while you use other apps.
+
+Everything happens on your phone. There is no account, no ads, no analytics and no server. After the voices you choose are downloaded, ListenLock works without the internet.
+
+Reads like a person
+• Follows two-column pages in the right order and skips page numbers, headers and footers.
+• Pauses after headings and list items, and reads tables, footnotes and numbers in a way that makes sense when heard.
+• Works out whether a book is a story, poem, news, report or textbook, and sets pace and pauses to match.
+
+English, Hindi and Bengali
+• Each part of a mixed sentence is read in its own language's voice.
+• Older Hindi and Bengali fonts are read correctly.
+• Scanned pages and photos of pages are read with offline text recognition.
+
+Listening
+• Picks up at the same sentence, even after a restart.
+• Sleep timer, speed from 0.5x to 4x, lock-screen and headset controls, Android Auto, a home-screen widget and a Quick Settings tile.
+• Follow along with the sentence highlighted, or in a clean text view.
+• Studio mode renders a book ahead of time while the phone charges, for gap-free listening with the slower voices.
+• Save a book as an audiobook, or share a clip or a quote card.
+
+Your library
+• PDF, EPUB, Word, OpenDocument, RTF, Markdown, text files and web pages, plus text shared from other apps.
+• Bookmarks, highlights, voice notes, search and an offline dictionary.
+• Back up and restore to move everything to a new phone.
+
+Privacy
+Your books, notes and reading history stay on your phone. The internet is used only for downloads you start: voices and language packs, a web page you ask it to read, or a free book you pick from a catalogue. App lock and Hide app content keep it private on a shared phone.
+
+ListenLock is free and open source under the GPL-3.0 licence, made by TelosMind Labs.

@@ -43,9 +43,9 @@ work = "2.12.0"
 readability4j = "1.0.8"
 jsoup = "1.23.2"
 pdfiumAndroid = "2.0.3"
-# sherpa-onnx ships as an AAR on its GitHub releases, not on Maven: resolved from there by an exclusive ivy
-# repository (settings.gradle.kts) and checked against this SHA-256 before every build that uses it (ADR-012).
-# Bump both together.
+# sherpa-onnx is not on Maven Central. Resolved from JitPack, whose build of each tag republishes the GitHub release
+# AAR unchanged (ADR 2026-10-31-fdroid-ready-build; ADR-012 chose the library), through an exclusive repository
+# (settings.gradle.kts) and checked against this SHA-256 before every build that uses it. Bump both together.
 sherpaOnnx = "1.13.8"
 sherpaOnnxAarSha256 = "633c24321e06b1fe79feafa03ea16cbc0f8a286641e2da3559bac91bdb13bd96"
 # llama.cpp for the story brain (ADR 2026-10-25-story-brain): built from source in :speech's CMake build (arm64 only), from GitHub's
@@ -97,7 +97,7 @@ jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 # JNI library needs (ADR-011). Same library and version as the public wrapper, which :pdf does not use.
 pdfium-android-core = { module = "io.legere:pdfiumandroid-core", version.ref = "pdfiumAndroid" }
 pdfium-android-api = { module = "io.legere:pdfiumandroid-api", version.ref = "pdfiumAndroid" }
-sherpa-onnx = { module = "com.k2fsa:sherpa-onnx", version.ref = "sherpaOnnx" }
+sherpa-onnx = { module = "com.github.k2-fsa:sherpa-onnx", version.ref = "sherpaOnnx" }
 tesseract4android = { module = "cz.adaptech.tesseract4android:tesseract4android", version.ref = "tesseract4android" }
 
 # Code-quality CLIs, run by the root build (not shipped in the APK)
