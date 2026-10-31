@@ -10,6 +10,9 @@ import io.github.skm0078.audora.pdf.document.OutlineEntry
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.document.PdfPageError
 import java.io.Closeable
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * What the reader shows. The playback service opens the same PDF on its own and builds the same units (same
@@ -37,7 +40,18 @@ interface ReaderDocument : Closeable {
      * which must not queue hundreds of pages of OCR in front of the page the listener is on.
      */
     suspend fun pageIfReady(page: Int): Outcome<ReaderPage?, PdfPageError> = page(page)
+
+    /**
+     * True while the book is reading a page with text recognition (OCR), its wait for another screen's OCR included:
+     * the only time the slow-page notice may say OCR. Always false for a book that has no OCR (EPUB and text).
+     */
+    val recognizing: StateFlow<Boolean> get() = NEVER_RECOGNIZING
+
+    /** Milliseconds this book has spent in OCR so far, for the slow-page log; 0 for a book that has no OCR. */
+    val ocrSpentMs: Long get() = 0
 }
+
+private val NEVER_RECOGNIZING: StateFlow<Boolean> = MutableStateFlow(false).asStateFlow()
 
 /** [ocrConfidence]: how sure OCR was of the page, 0–100, for a page read by OCR; else null (RI-9). */
 data class ReaderPage(val units: List<ReadingUnit>, val origin: PageOrigin, val ocrConfidence: Int? = null)
