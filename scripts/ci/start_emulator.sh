@@ -25,7 +25,12 @@ fail() {
 }
 
 yes | "$tools/sdkmanager" --licenses > /dev/null || true
-"$tools/sdkmanager" --install emulator platform-tools "$EMULATOR_IMAGE" > /dev/null
+# The system image download sometimes arrives broken ("Error on ZipFile unknown archive"); a fresh try fixes it.
+for attempt in 1 2 3; do
+    "$tools/sdkmanager" --install emulator platform-tools "$EMULATOR_IMAGE" > /dev/null && break
+    [ "$attempt" -lt 3 ] || fail "sdkmanager could not install $EMULATOR_IMAGE after 3 tries"
+    echo "::warning::sdkmanager failed (try $attempt of 3); trying again"
+done
 # Pin where the AVD lives: the runner's older avdmanager and the new emulator disagree on the default.
 export ANDROID_AVD_HOME="$RUNNER_TEMP/avd"
 mkdir -p "$ANDROID_AVD_HOME"
