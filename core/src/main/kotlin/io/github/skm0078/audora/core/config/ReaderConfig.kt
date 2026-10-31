@@ -3,6 +3,8 @@
 
 package io.github.skm0078.audora.core.config
 
+import io.github.skm0078.audora.core.model.Lang
+
 /**
  * @property speeds one-tap speed presets beside the slider, ascending, within [speech]'s range. The voice speaks at
  *   the speed itself (ADR-033), so the sentence playing restarts at the new speed.
@@ -31,6 +33,9 @@ package io.github.skm0078.audora.core.config
  * @property voiceWarmUpDelayMs how long a book must stay open, with nothing playing, before the voice that will read
  *   it is loaded, so the first Play does not wait for the model (about a second for the bundled voice). Long enough
  *   that flicking through books loads nothing; 0 loads it as soon as the first page is read.
+ * @property betaScanLanguages a scanned page mostly in one of these says it is an early beta and offers the phone's
+ *   voice (2026-10-31): Tesseract misreads older Bengali print, and our voices read the slips aloud. Graduating a
+ *   language is taking it out.
  */
 data class ReaderConfig(
     val speeds: List<Float> = DEFAULT_SPEEDS,
@@ -50,6 +55,7 @@ data class ReaderConfig(
     val slowPageNoticeMs: Long = DEFAULT_SLOW_PAGE_NOTICE_MS,
     val flip: PageFlipConfig = PageFlipConfig(),
     val voiceWarmUpDelayMs: Long = DEFAULT_VOICE_WARM_UP_DELAY_MS,
+    val betaScanLanguages: Set<Lang> = DEFAULT_BETA_SCAN_LANGUAGES,
 ) {
     init {
         require(speeds.isNotEmpty() && speeds == speeds.sorted()) { "speeds must be non-empty and ascending" }
@@ -94,6 +100,7 @@ data class ReaderConfig(
         private const val DEFAULT_REPLAY_FACTOR = 0.85f
         private const val DEFAULT_SLOW_PAGE_NOTICE_MS = 3_000L
         private const val DEFAULT_VOICE_WARM_UP_DELAY_MS = 1_000L
+        private val DEFAULT_BETA_SCAN_LANGUAGES = setOf(Lang.BN)
         private const val MIN_REPLAY_FACTOR = 0.5f
     }
 }

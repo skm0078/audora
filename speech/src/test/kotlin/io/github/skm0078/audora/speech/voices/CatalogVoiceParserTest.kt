@@ -94,6 +94,14 @@ class CatalogVoiceParserTest {
     }
 
     @Test
+    fun `a beta language's voice is read as beta, and only a true value counts`() {
+        assertTrue(requireNotNull(CatalogVoiceParser.parse(entry("beta" to "true")).getOrNull()).beta)
+        listOf(entry(), entry("beta" to "false"), entry("beta" to "yes")).forEachIndexed { index, properties ->
+            assertEquals("case $index", false, requireNotNull(CatalogVoiceParser.parse(properties).getOrNull()).beta)
+        }
+    }
+
+    @Test
     fun `invalid entries are refused`() {
         val cases = listOf(
             entry("url" to "http://example.test/a.zip"),

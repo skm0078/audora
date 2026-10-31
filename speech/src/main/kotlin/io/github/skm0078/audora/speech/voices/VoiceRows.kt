@@ -47,6 +47,7 @@ sealed interface VoiceStatus {
  * @property tooSlow measured too slow to keep up (Build Spec §3: offered only below the limit); it cannot be newly
  *   picked, but stays if it is already the language's voice, since the user chose it.
  * @property recommended the catalog's suggested download for its language (P3-06); listed first among downloads.
+ * @property beta a catalog voice of a language still in beta ([CatalogVoice.beta]): shown with a Beta tag.
  */
 data class VoiceRow(
     val id: VoiceId,
@@ -61,6 +62,7 @@ data class VoiceRow(
     val tooSlow: Boolean = false,
     val recommended: Boolean = false,
     val useTerms: VoiceUseTerms? = null,
+    val beta: Boolean = false,
 ) {
     /** Unique in the list even when an installed voice shares the built-in voice's id after a bundled-voice swap. */
     val key: String get() = "${kind.name}:${id.name}"
@@ -94,7 +96,7 @@ object VoiceRows {
             val spec = copy?.spec ?: voice.spec
             val reads = copy != null && preferred[spec.lang] == spec.voiceId
             row(spec, VoiceKind.CATALOG, status, copy?.sizeBytes ?: voice.sizeBytes, reads)
-                .copy(recommended = voice.recommended, useTerms = voice.useTerms)
+                .copy(recommended = voice.recommended, useTerms = voice.useTerms, beta = voice.beta)
         }
         val catalogIds = catalog.voices.map { it.id }.toSet()
         val others = installed.filter { it.origin == VoiceOrigin.CUSTOM || it.spec.id !in catalogIds }.map {

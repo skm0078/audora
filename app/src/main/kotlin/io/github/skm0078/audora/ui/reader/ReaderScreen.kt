@@ -132,7 +132,10 @@ fun ReaderScreen(
                 is DocumentState.Open -> {
                     PlaceHighlights(state, notesActions)
                     BesidePanel(panel, { ReaderSidePanel(state, actions, notes, notesActions, voiceNotes, people) }) {
-                        OpenBook(state, document, config, actions, ocrModels, look, spokenWord, thumbnails, pack, notes)
+                        OpenBook(
+                            state, document, config, actions, ocrModels, look, spokenWord, thumbnails, pack, notes,
+                            voices,
+                        )
                     }
                     NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)
                 }
@@ -176,6 +179,7 @@ private fun OpenBook(
     thumbnails: PageThumbnails?,
     voicePack: VoicePackOffer?,
     notes: NotesState,
+    voices: List<VoiceRow>,
 ) {
     // The start of a passage being highlighted shows as highlighted while its end is picked.
     val isHighlighted: (ReadingUnit) -> Boolean = notes::showsHighlight
@@ -183,6 +187,11 @@ private fun OpenBook(
     var picking by rememberSaveable { mutableStateOf(false) }
     // Outlives each page's text, so a turn back from one page opens the page before at its end.
     val turnBack = remember { TextTurnBack() }
+    val betaLang = remember(state.content, config) {
+        (state.content as? PageContent.Ready)?.let { betaScanLanguage(it.origin, it.units, config.betaScanLanguages) }
+    }
+    val own = state.playback.bookVoices.takeIf { state.playback.ownSettings }.orEmpty()
+    val betaScan = rememberBetaScanOffer(state.bookId, betaLang, voices, own, actions::onBookVoice)
     Column(Modifier.fillMaxSize()) {
         PageBar(state.page, pageCount, actions, announce = !state.isReading, onPick = { picking = true })
         PageScrubber(state.page, pageCount, thumbnails, actions::onGoToPage)
@@ -197,6 +206,7 @@ private fun OpenBook(
             is PageContent.Ready -> {
                 val badge = ocrBadgeText(content.origin, content.ocrConfidence, config)
                 PageOriginNotice(content.origin, ocrModels, badge, actions::onDownloadOcrModels)
+                BetaScanNotice(betaLang, betaScan)
                 VoicePackNotice(content.units, voicePack)
                 ReadingArea(state, content, actions, look, config, spokenWord, isHighlighted, turnBack)
             }

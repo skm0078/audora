@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_beta_language.xml -->
+<!-- Purpose: Hindi copy of values/strings_beta_language.xml. -->
+<resources>
+    <!-- A language still in beta (Bengali, 2026-10-31): its voices and its scanned pages say so plainly. -->
+    <string name="voices_beta">बीटा: शुरुआती गुणवत्ता, कुछ शब्द गलत बोले जा सकते हैं</string>
+    <!-- %1$s is the language's name, as in the Voices screen. -->
+    <string name="reader_beta_scan_title">स्कैन किया %1$s पेज: शुरुआती बीटा</string>
+    <string name="reader_beta_scan_body">पुरानी छपाई के %1$s अक्षर पहचानने में OCR अक्सर गलती करता है, और आवाज़ वही पढ़ती है जो पहचाना गया, इसलिए शब्द गलत सुनाई दे सकते हैं। किताब की टेक्स्ट (डिजिटल) PDF कहीं बेहतर पढ़ी जाती है।</string>
+    <string name="reader_beta_scan_phone_voice">फ़ोन की %1$s आवाज़ इस्तेमाल करें</string>
+</resources>

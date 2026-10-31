@@ -8,6 +8,8 @@ import android.content.res.AssetManager
 import io.github.skm0078.audora.core.config.SpeechConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.model.EngineId
+import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.model.VoiceId
 import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.core.result.flatMap
 import io.github.skm0078.audora.core.result.getOrNull
@@ -133,6 +135,23 @@ object SpeechEngines {
         val engine = system(context, config)
         return try {
             engine.offlineLanguages()
+        } finally {
+            engine.release()
+        }
+    }
+
+    /**
+     * The phone's best offline voice for [lang] ([SystemSpeechEngine.bestVoice]), or why there is none: what a beta
+     * language's scanned page offers instead of ours (2026-10-31). Binds the phone's TTS for this call only.
+     */
+    suspend fun phoneVoice(
+        context: Context,
+        lang: Lang,
+        config: SpeechConfig = SpeechConfig(),
+    ): Outcome<VoiceId, SpeechError> {
+        val engine = system(context, config)
+        return try {
+            engine.bestVoice(lang)
         } finally {
             engine.release()
         }

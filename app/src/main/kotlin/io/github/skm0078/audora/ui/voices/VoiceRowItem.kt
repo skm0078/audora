@@ -76,6 +76,7 @@ internal fun VoiceRowItem(row: VoiceRow, actions: VoicesActions, sample: VoiceSa
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
+                if (row.beta) BetaLabel()
                 StatusLine(row)
                 SpeedLine(row)
                 Text(
@@ -133,6 +134,16 @@ private fun VoiceChoiceMark(selected: Boolean, canSpeak: Boolean, enabled: Boole
             modifier = Modifier.size(MARK_SIZE),
         )
     }
+}
+
+/** A voice of a language still in beta (2026-10-31): said plainly, so nobody takes its slips for the finished app. */
+@Composable
+internal fun BetaLabel() {
+    Text(
+        stringResource(R.string.voices_beta),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.tertiary,
+    )
 }
 
 @Composable

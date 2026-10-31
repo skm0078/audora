@@ -227,6 +227,7 @@ class ReleaseJourneyTest {
         step("59 an opened group shows", OpenInPlaceJourney(rule, BOOK, ::backToTabs)::anOpenedGroupComesIntoView)
         step("60 search finds the switch that mutes tips", HintsJourney(rule, ::backToTabs)::searchFindsTheMute)
         step("61 Voices & licences opens every licence text", NoticesJourney(rule, ::backToTabs)::everyLicenceTextOpens)
+        step("65 Bengali voices say they are beta", BetaLanguageJourney(rule, ::backToTabs)::bengaliVoicesSayBeta)
     }
 
     /**
