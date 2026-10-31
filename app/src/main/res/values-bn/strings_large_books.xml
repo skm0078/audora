@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Large and scanned books: what the reader says while a slow page is read. -->
+<!-- Large and scanned books: what the reader says while a slow page is read. OCR is named only while it runs. -->
 <resources>
-    <string name="reader_page_slow">এই পৃষ্ঠাটি এখনও পড়া হচ্ছে। স্ক্যান করা পৃষ্ঠা টেক্সট শনাক্তকরণ (OCR) দিয়ে পড়া হয়, এতে এক মিনিট পর্যন্ত লাগতে পারে। আপনি পৃষ্ঠা উল্টাতে থাকতে পারেন।</string>
+    <string name="reader_page_slow">এই পৃষ্ঠাটি তৈরি হতে স্বাভাবিকের চেয়ে বেশি সময় লাগছে। আপনি পৃষ্ঠা উল্টাতে থাকতে পারেন।</string>
+    <string name="reader_page_slow_ocr">এটি একটি স্ক্যান করা পৃষ্ঠা, তাই এটি টেক্সট শনাক্তকরণ (OCR) দিয়ে পড়া হচ্ছে। এতে এক মিনিট পর্যন্ত লাগতে পারে। আপনি পৃষ্ঠা উল্টাতে থাকতে পারেন।</string>
 </resources>

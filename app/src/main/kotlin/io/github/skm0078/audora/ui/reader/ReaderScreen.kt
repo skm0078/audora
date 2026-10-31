@@ -190,7 +190,7 @@ private fun OpenBook(
         ReadingJumps(state, actions, Modifier.align(Alignment.CenterHorizontally))
         PlayerStatus(state.playback)
         when (val content = state.content) {
-            PageContent.Loading -> PageLoading(state.page, config.slowPageNoticeMs)
+            PageContent.Loading -> PageLoading(state.page, state.recognizingText, config.slowPageNoticeMs)
 
             PageContent.Failed -> Message(stringResource(R.string.reader_page_failed))
 

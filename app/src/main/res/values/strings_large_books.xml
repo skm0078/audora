@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Large and scanned books: what the reader says while a slow page is read. -->
+<!-- Large and scanned books: what the reader says while a slow page is read. OCR is named only while it runs. -->
 <resources>
-    <string name="reader_page_slow">Still reading this page. A scanned page is read with text recognition (OCR), which can take up to a minute. You can keep turning pages.</string>
+    <string name="reader_page_slow">This page is taking longer than usual to get ready. You can keep turning pages.</string>
+    <string name="reader_page_slow_ocr">This is a scanned page, so it is read with text recognition (OCR). That can take up to a minute. You can keep turning pages.</string>
 </resources>

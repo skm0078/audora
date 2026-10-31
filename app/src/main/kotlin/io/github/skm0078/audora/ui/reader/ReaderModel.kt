@@ -101,6 +101,9 @@ class ReaderModel(
     private val neighbours = PageNeighbours(config.flip)
     private var aheadJob: Job? = null
 
+    /** Follows the open book's OCR into [ReaderState.recognizingText]. */
+    private var recognitionJob: Job? = null
+
     /** The page is zoomed in: nothing is drawn ahead, as each page would be drawn at the zoomed size. */
     private var zoomed = false
 
@@ -517,6 +520,7 @@ class ReaderModel(
         pageJob?.cancel()
         renderJob?.cancel()
         aheadJob?.cancel()
+        recognitionJob?.cancel()
         neighbours.clear()
         document?.close()
         document = null
@@ -564,6 +568,10 @@ class ReaderModel(
         document?.close()
         document = opened
         neighbours.clear()
+        recognitionJob?.cancel()
+        recognitionJob = scope.launch {
+            opened.recognizing.collect { on -> mutableState.update { it.copy(recognizingText = on) } }
+        }
         this.password = password
         mutableState.update { it.copy(document = DocumentState.Open(opened.pageCount)) }
         if (!opened.hasPageImages) applyView(ReaderView.TEXT)
@@ -700,6 +708,8 @@ class ReaderModel(
             return
         }
         pageJob = scope.launch {
+            val started = now()
+            val ocrBefore = open.ocrSpentMs
             val content = when (val shown = open.page(page)) {
                 is Outcome.Success -> shown.value.let { PageContent.Ready(it.units, it.origin, it.ocrConfidence) }
 
@@ -714,8 +724,24 @@ class ReaderModel(
             }
             mutableState.update { if (it.page == page) it.copy(content = content) else it }
             refreshTimeLeft()
+            logPageWait(page, content, waitedMs = now() - started, ocrMs = open.ocrSpentMs - ocrBefore)
         }
         renderPage(page)
+    }
+
+    /**
+     * How long a page took and how much of that was OCR, never its text. A slow one is a warning: a text page that
+     * waited with no OCR waited for something else (another screen holding the book, or the phone busy), which a
+     * shared log then shows.
+     */
+    private fun logPageWait(page: Int, content: PageContent, waitedMs: Long, ocrMs: Long) {
+        val origin = (content as? PageContent.Ready)?.origin ?: "FAILED"
+        val line = "$logContext page=$page waitMs=$waitedMs ocrMs=$ocrMs origin=$origin"
+        if (waitedMs >= config.slowPageNoticeMs) {
+            AudoraLog.w(TAG, "Slow page, $line")
+        } else {
+            AudoraLog.d(TAG, "Page read, $line")
+        }
     }
 
     private fun applyView(view: ReaderView) {

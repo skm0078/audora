@@ -124,6 +124,7 @@ class ReleaseJourneyTest {
             firstRunToTheLibrary()
             readingSharingAndVoices()
             step("62 voice commands use the LibriSpeech model", CommandsModelJourney(rule, ::backToTabs)::isLibriSpeech)
+            step("64 a text page never says OCR", PageWaitJourney(rule, BOOK, ::backToTabs)::textPageNeverSaysOcr)
             step("65 a new book opens at chapter 1", FrontMatterJourney(rule, ::backToTabs)::opensAtChapterOne)
             // Last on purpose: run after step 19, the thousand books' background work left step 26 without its menu.
             step("40 search finds the last of 1,000 books", LoadJourney(rule, ::backToTabs)::lastOfManyIsFound)

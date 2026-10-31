@@ -1,5 +1,5 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/SlowPageNotice.kt
-// Purpose: The spinner for a page being read, with a line saying why once it is slow (a scanned page in OCR).
+// Purpose: The spinner for a page being read, with a line once it is slow that names OCR only while OCR runs.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -31,7 +31,7 @@ import kotlinx.coroutines.delay
 
 /** [page] loading: a spinner, and [SlowPageLine] under it once the page has taken [noticeAfterMs]. */
 @Composable
-internal fun PageLoading(page: Int, noticeAfterMs: Long, modifier: Modifier = Modifier) {
+internal fun PageLoading(page: Int, recognizing: Boolean, noticeAfterMs: Long, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize()) {
         Column(
             Modifier.align(Alignment.Center).padding(Dimens.SpaceL),
@@ -39,17 +39,18 @@ internal fun PageLoading(page: Int, noticeAfterMs: Long, modifier: Modifier = Mo
             verticalArrangement = Arrangement.spacedBy(Dimens.SpaceL),
         ) {
             CircularProgressIndicator()
-            SlowPageLine(page, noticeAfterMs)
+            SlowPageLine(page, recognizing, noticeAfterMs)
         }
     }
 }
 
 /**
- * Nothing for [noticeAfterMs], then why the page is slow (OCR, up to a minute) and that turning pages still works,
- * announced politely by TalkBack. Starts over for every page, so a quick page never shows it.
+ * Nothing for [noticeAfterMs], then that the page is slow and turning pages still works, announced politely by
+ * TalkBack. It says OCR (up to a minute) only while [recognizing]: a text page that waits for something else must
+ * never claim to be a scan. Starts over for every page, so a quick page never shows it.
  */
 @Composable
-internal fun SlowPageLine(page: Int, noticeAfterMs: Long = DEFAULT_NOTICE_AFTER_MS) {
+internal fun SlowPageLine(page: Int, recognizing: Boolean, noticeAfterMs: Long = DEFAULT_NOTICE_AFTER_MS) {
     var slow by remember(page) { mutableStateOf(false) }
     LaunchedEffect(page, noticeAfterMs) {
         delay(noticeAfterMs)
@@ -57,7 +58,7 @@ internal fun SlowPageLine(page: Int, noticeAfterMs: Long = DEFAULT_NOTICE_AFTER_
     }
     if (slow) {
         Text(
-            stringResource(R.string.reader_page_slow),
+            stringResource(if (recognizing) R.string.reader_page_slow_ocr else R.string.reader_page_slow),
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
