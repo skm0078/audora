@@ -24,15 +24,20 @@ data class KeywordModel(
     override val files: List<String> get() = listOf(encoder, decoder, joiner, tokens)
 
     companion object {
-        /** k2-fsa's 3.3M-parameter zipformer keyword spotter trained on GigaSpeech (Apache-2.0), int8. */
+        /**
+         * k2-fsa's streaming Zipformer English recogniser trained on LibriSpeech only (Apache-2.0 weights, CC BY 4.0
+         * data), int8, run as a keyword spotter. It replaced the 3.3M GigaSpeech spotter, whose training data is
+         * licensed for non-commercial research only (ADR 2026-10-30-voice-commands-librispeech). The tutor's smaller
+         * 20M LibriSpeech model cannot hear short single words, so it is not shared.
+         */
         val ENGLISH = KeywordModel(
-            id = "kws-en-zipformer-gigaspeech",
-            fileName = "kws-en-zipformer-gigaspeech-325100325fc0.zip",
-            sha256 = "325100325fc0b984169e2654d3b4fa01194df28bf8182a0b98d0b1d3f5c68dfa",
-            sizeBytes = 5_254_988,
-            encoder = "encoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
-            decoder = "decoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
-            joiner = "joiner-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
+            id = "kws-en-zipformer-librispeech",
+            fileName = "kws-en-zipformer-librispeech-e08608953a6b.zip",
+            sha256 = "e08608953a6bda81af4666cb9269d7c2f942b86df69b2f730b6cd4be60fcfff1",
+            sizeBytes = 70_914_922,
+            encoder = "encoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
+            decoder = "decoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
+            joiner = "joiner-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
             tokens = "tokens.txt",
             baseUrl = "https://github.com/skm0078/audora/releases/download/voices/",
         )

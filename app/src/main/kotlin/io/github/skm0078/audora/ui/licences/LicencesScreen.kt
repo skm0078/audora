@@ -234,7 +234,7 @@ private val SPEECH_SOFTWARE = listOf(
         "https://github.com/frankyoujian/Edge-Punct-Casing",
     ),
     Software(
-        "Zipformer keyword spotter (k2-fsa, GigaSpeech), voice commands, if downloaded",
+        "Zipformer English recogniser (k2-fsa, LibriSpeech), voice commands, if downloaded",
         R.string.licences_apache,
         "https://github.com/k2-fsa/icefall",
     ),

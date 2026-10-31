@@ -231,28 +231,28 @@
       "sizeBytes": 7640490
     },
     {
-      "id": "kws-en-zipformer-gigaspeech",
+      "id": "kws-en-zipformer-librispeech",
       "label": "English voice commands",
       "lang": "en",
       "family": "kws-zipformer",
-      "model": "encoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
+      "model": "encoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
       "tokens": "tokens.txt",
       "extraFiles": [
-        "decoder-epoch-12-avg-2-chunk-16-left-64.int8.onnx",
-        "joiner-epoch-12-avg-2-chunk-16-left-64.int8.onnx"
+        "decoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
+        "joiner-epoch-99-avg-1-chunk-16-left-128.int8.onnx"
       ],
       "licence": "Apache-2.0",
-      "credit": "Zipformer keyword spotter (3.3M, GigaSpeech) by the k2-fsa project (Apache-2.0), trained with icefall and converted for sherpa-onnx. Only the int8 encoder, decoder and joiner and the token list are kept, unchanged.",
+      "credit": "Streaming Zipformer English speech recogniser by the k2-fsa project (Apache-2.0), trained with icefall on LibriSpeech (CC BY 4.0, Panayotov et al.) and converted for sherpa-onnx, used here as a keyword spotter. Only the int8 encoder, decoder and joiner, the token list and the README are kept, unchanged.",
       "licenceUrl": "https://github.com/k2-fsa/icefall/blob/master/LICENSE",
-      "sourceUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/kws-models",
+      "sourceUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
       "source": {
-        "archive": "sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01",
-        "sha256": "f170013b4716e41b62b9bfd809687c207cef798ef9bc6534d524e17af9b6561a",
-        "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/kws-models/sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01.tar.bz2"
+        "archive": "sherpa-onnx-streaming-zipformer-en-2023-06-26",
+        "sha256": "639e25b578e9e997131402199419c13a941f8e4e198e2da1ce57dbf5cf401282",
+        "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-en-2023-06-26.tar.bz2"
       },
-      "file": "kws-en-zipformer-gigaspeech-325100325fc0.zip",
-      "sha256": "325100325fc0b984169e2654d3b4fa01194df28bf8182a0b98d0b1d3f5c68dfa",
-      "sizeBytes": 5254988
+      "file": "kws-en-zipformer-librispeech-e08608953a6b.zip",
+      "sha256": "e08608953a6bda81af4666cb9269d7c2f942b86df69b2f730b6cd4be60fcfff1",
+      "sizeBytes": 70914922
     },
     {
       "id": "acted-hi-chatterbox-core",

@@ -123,6 +123,7 @@ class ReleaseJourneyTest {
         try {
             firstRunToTheLibrary()
             readingSharingAndVoices()
+            step("62 voice commands use the LibriSpeech model", CommandsModelJourney(rule, ::backToTabs)::isLibriSpeech)
             // Last on purpose: run after step 19, the thousand books' background work left step 26 without its menu.
             step("40 search finds the last of 1,000 books", LoadJourney(rule, ::backToTabs)::lastOfManyIsFound)
         } finally {
