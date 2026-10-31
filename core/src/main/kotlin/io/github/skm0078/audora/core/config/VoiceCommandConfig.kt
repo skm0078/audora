@@ -11,8 +11,8 @@ package io.github.skm0078.audora.core.config
  * @property keywordsThreshold how sure the spotter must be before it reports a phrase. Higher misses more commands,
  *   lower acts on more words that only sound alike; the book's own voice through the speaker is the likely culprit,
  *   so this sits above sherpa-onnx's 0.25.
- * @property numThreads ONNX Runtime threads; one is plenty for a 3.3M-parameter model and leaves the rest to the
- *   voice.
+ * @property numThreads ONNX Runtime threads; one keeps up with the LibriSpeech Zipformer (about a tenth of a core on a
+ *   desktop) and leaves the rest to the voice.
  * @property repeatGapMs a phrase heard again within this time is the same utterance, not a second command.
  * @property narratorHoldMs commands stay ignored this long after the book itself said the app's name: past the
  *   spotter's lag after a phrase ends.

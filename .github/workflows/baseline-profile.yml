@@ -20,6 +20,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# A named shell runs with pipefail. The default does not, so `baseline_profile.sh | tee` passed even when the
+# generator failed, and the steps after it showed the profile already in the repo as if it were new.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   record:
     name: Record the Baseline Profile

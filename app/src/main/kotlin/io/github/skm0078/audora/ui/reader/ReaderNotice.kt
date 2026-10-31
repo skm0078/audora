@@ -31,20 +31,34 @@ internal enum class ReaderNotice {
 
     /** The one-time card naming the tap and long-press gestures. */
     GESTURE_TIPS,
+
+    /** A first-use hint (ADR 2026-10-30-first-use-hints): last, since it is only ever a suggestion. */
+    HINT,
 }
 
 /** The notice to show for a page, or null for none. Pure, so its order is unit-tested. */
-internal fun readerNotice(origin: PageOrigin?, voicePackOffered: Boolean, tipsPending: Boolean): ReaderNotice? = when {
+internal fun readerNotice(
+    origin: PageOrigin?,
+    voicePackOffered: Boolean,
+    tipsPending: Boolean,
+    hintPending: Boolean = false,
+): ReaderNotice? = when {
     origin == PageOrigin.NEEDS_OCR_MODELS || origin == PageOrigin.OCR_FAILED -> ReaderNotice.PAGE_PROBLEM
     voicePackOffered -> ReaderNotice.VOICE_PACK
     tipsPending -> ReaderNotice.GESTURE_TIPS
+    hintPending -> ReaderNotice.HINT
     else -> null
 }
 
 /** [readerNotice] for the reader's current page. */
-internal fun readerNotice(state: ReaderState, offer: VoicePackOffer, tipsPending: Boolean): ReaderNotice? {
+internal fun readerNotice(
+    state: ReaderState,
+    offer: VoicePackOffer,
+    tipsPending: Boolean,
+    hintPending: Boolean = false,
+): ReaderNotice? {
     val page = state.content as? PageContent.Ready
-    return readerNotice(page?.origin, page?.let { offer.packFor(it.units) } != null, tipsPending)
+    return readerNotice(page?.origin, page?.let { offer.packFor(it.units) } != null, tipsPending, hintPending)
 }
 
 /**
