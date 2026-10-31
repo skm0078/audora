@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Large and scanned books: what the reader says while a slow page is read. -->
+<!-- Large and scanned books: what the reader says while a slow page is read. OCR is named only while it runs. -->
 <resources>
-    <string name="reader_page_slow">यह पेज अभी पढ़ा जा रहा है। स्कैन किया हुआ पेज टेक्स्ट पहचान (OCR) से पढ़ा जाता है, इसमें एक मिनट तक लग सकता है। आप पेज पलटते रह सकते हैं।</string>
+    <string name="reader_page_slow">यह पेज तैयार होने में सामान्य से ज़्यादा समय ले रहा है। आप पेज पलटते रह सकते हैं।</string>
+    <string name="reader_page_slow_ocr">यह स्कैन किया हुआ पेज है, इसलिए इसे टेक्स्ट पहचान (OCR) से पढ़ा जा रहा है। इसमें एक मिनट तक लग सकता है। आप पेज पलटते रह सकते हैं।</string>
 </resources>

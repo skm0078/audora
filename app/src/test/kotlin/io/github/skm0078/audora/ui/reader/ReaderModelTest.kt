@@ -45,6 +45,22 @@ class ReaderModelTest {
     }
 
     @Test
+    fun `the slow-page notice may name OCR only while the book's OCR runs`() = runTest(UnconfinedTestDispatcher()) {
+        val model = model()
+        assertFalse("a text page waiting is not OCR", model.state.value.recognizingText)
+
+        document.ocrRunning.value = true
+        assertTrue(model.state.value.recognizingText)
+
+        document.ocrRunning.value = false
+        assertFalse(model.state.value.recognizingText)
+
+        model.close()
+        document.ocrRunning.value = true
+        assertFalse("a closed book's OCR is no longer followed", model.state.value.recognizingText)
+    }
+
+    @Test
     fun `a book removed from the library says so`() = runTest(UnconfinedTestDispatcher()) {
         val model =
             ReaderModel(BOOK, FakeBooks(book = null), FakeOpener(), port, speeds, ReaderConfig(), backgroundScope)

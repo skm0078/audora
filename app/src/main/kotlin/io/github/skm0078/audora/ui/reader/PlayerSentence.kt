@@ -39,7 +39,7 @@ internal fun SentencesAround(state: ReaderState, spokenWord: () -> IntRange?, mo
         when {
             state.content == PageContent.Loading || state.document == DocumentState.Loading -> {
                 CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
-                SlowPageLine(state.page)
+                SlowPageLine(state.page, state.recognizingText)
             }
 
             spoken == null -> Text(
