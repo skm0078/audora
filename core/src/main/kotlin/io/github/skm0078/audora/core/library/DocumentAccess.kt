@@ -21,6 +21,14 @@ interface DocumentAccess {
 
     fun availability(documentUri: String): BookAvailability
 
+    /**
+     * The check for many documents at once: one entry for every URI asked about. An access layer whose single check
+     * repeats a lookup that covers every document (the list of lasting grants) overrides it to make that lookup once
+     * per batch.
+     */
+    fun availability(documentUris: Collection<String>): Map<String, BookAvailability> =
+        documentUris.associateWith { availability(it) }
+
     /** Deletes Audora's own copies that no book uses; [inUse] is every book's URI. A grant has nothing to clean. */
     fun pruneUnused(inUse: Set<String>) = Unit
 }

@@ -138,6 +138,19 @@ class LibraryTest {
     }
 
     @Test
+    fun `the file check asks about every book in one batch`() = runTest(dispatcher) {
+        docs.put(URI_A, "a.pdf", pdfBytes("a"))
+        docs.put(URI_B, "b.pdf", pdfBytes("b"))
+        val a = addOk(URI_A).book
+        val b = addOk(URI_B).book
+
+        val availability = library.availability(listOf(a, b))
+
+        assertEquals(listOf(listOf(URI_A, URI_B)), docs.batches)
+        assertEquals(mapOf(a.id to BookAvailability.AVAILABLE, b.id to BookAvailability.AVAILABLE), availability)
+    }
+
+    @Test
     fun `relocating a missing book to the same PDF keeps the book`() = runTest(dispatcher) {
         docs.put(URI_A, "a.pdf", pdfBytes("a"))
         val book = addOk(URI_A).book

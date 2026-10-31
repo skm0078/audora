@@ -118,10 +118,14 @@ class Library(
         }
     }
 
-    /** One provider call per book; run when the library is shown, so a deleted file is flagged before a tap. */
+    /**
+     * One provider call per file, in one batch so the access layer reads its list of grants once, not once per book;
+     * run when the library is shown, so a deleted file is flagged before a tap.
+     */
     suspend fun availability(books: List<Book>): Map<BookId, BookAvailability> = withContext(io) {
+        val byUri = documents.availability(books.mapTo(LinkedHashSet()) { it.documentUri })
         books.associate { book ->
-            val availability = documents.availability(book.documentUri)
+            val availability = byUri.getValue(book.documentUri)
             if (availability != BookAvailability.AVAILABLE) {
                 AudoraLog.i(TAG, "Book file unavailable: book=${book.id.logLabel} state=$availability")
             }

@@ -85,16 +85,25 @@ class SafDocumentAccess(
         return guarded(uri) { resolver.openInputStream(uri) ?: throw FileNotFoundException("provider returned null") }
     }
 
-    override fun availability(documentUri: String): BookAvailability {
-        val uri = Uri.parse(documentUri)
-        return when {
-            copies.owns(uri) -> if (copies.fileOf(uri).isFile) BookAvailability.AVAILABLE else BookAvailability.MISSING
+    override fun availability(documentUri: String): BookAvailability =
+        availability(listOf(documentUri)).getValue(documentUri)
 
-            resolver.persistedUriPermissions.none { it.uri == uri && it.isReadPermission } &&
-                !resolver.inGrantedFolder(uri) ->
-                BookAvailability.ACCESS_LOST
+    /**
+     * Reads the list of lasting grants once for the whole batch. Android hands over every grant the app holds on each
+     * read (up to 512), so reading it per book made a big library's check grow with the square of its size.
+     */
+    override fun availability(documentUris: Collection<String>): Map<String, BookAvailability> {
+        val grants = resolver.readGrants()
+        return documentUris.associateWith { documentUri ->
+            val uri = Uri.parse(documentUri)
+            when {
+                copies.owns(uri) ->
+                    if (copies.fileOf(uri).isFile) BookAvailability.AVAILABLE else BookAvailability.MISSING
 
-            else -> providerAvailability(uri)
+                uri !in grants && WatchedFolders.folderOf(uri) !in grants -> BookAvailability.ACCESS_LOST
+
+                else -> providerAvailability(uri)
+            }
         }
     }
 
@@ -130,27 +139,27 @@ class SafDocumentAccess(
         descriptor.statSize.takeIf { it >= 0 }
     }
 
-    /** Providers report a missing file, a dead provider and a lost grant through different exceptions. */
-    private inline fun <T> guarded(uri: Uri, block: () -> T): Outcome<T, DocumentError> = try {
-        Outcome.Success(block())
-    } catch (e: FileNotFoundException) {
-        Outcome.Failure(DocumentError.NotFound(detail(e, uri)))
-    } catch (e: IllegalArgumentException) {
-        // Unknown URI, typically because the providing app was uninstalled or its document is gone.
-        Outcome.Failure(DocumentError.NotFound(detail(e, uri)))
-    } catch (e: SecurityException) {
-        Outcome.Failure(DocumentError.AccessDenied(detail(e, uri)))
-    } catch (e: IOException) {
-        Outcome.Failure(DocumentError.ReadFailed(detail(e, uri)))
-    } catch (e: IllegalStateException) {
-        // A provider crashing mid-call reaches the caller as IllegalStateException on some Android versions.
-        Outcome.Failure(DocumentError.ReadFailed(detail(e, uri)))
-    }
-
     private companion object {
         const val TAG = "Audora.Documents"
         const val READ_MODE = "r"
     }
+}
+
+/** Providers report a missing file, a dead provider and a lost grant through different exceptions. */
+private inline fun <T> guarded(uri: Uri, block: () -> T): Outcome<T, DocumentError> = try {
+    Outcome.Success(block())
+} catch (e: FileNotFoundException) {
+    Outcome.Failure(DocumentError.NotFound(detail(e, uri)))
+} catch (e: IllegalArgumentException) {
+    // Unknown URI, typically because the providing app was uninstalled or its document is gone.
+    Outcome.Failure(DocumentError.NotFound(detail(e, uri)))
+} catch (e: SecurityException) {
+    Outcome.Failure(DocumentError.AccessDenied(detail(e, uri)))
+} catch (e: IOException) {
+    Outcome.Failure(DocumentError.ReadFailed(detail(e, uri)))
+} catch (e: IllegalStateException) {
+    // A provider crashing mid-call reaches the caller as IllegalStateException on some Android versions.
+    Outcome.Failure(DocumentError.ReadFailed(detail(e, uri)))
 }
 
 private fun detail(e: Exception, uri: Uri): String = "${e.javaClass.simpleName} authority=${uri.authority}"
@@ -160,3 +169,7 @@ private fun ContentResolver.inGrantedFolder(uri: Uri): Boolean {
     val folder = WatchedFolders.folderOf(uri) ?: return false
     return persistedUriPermissions.any { it.uri == folder && it.isReadPermission }
 }
+
+/** Every file and folder Audora holds a lasting read grant on: one binder call that returns all of them. */
+private fun ContentResolver.readGrants(): Set<Uri> =
+    persistedUriPermissions.filter { it.isReadPermission }.mapTo(HashSet()) { it.uri }

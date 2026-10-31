@@ -25,6 +25,8 @@ import io.github.skm0078.audora.core.resume.ResumeAnchor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -94,6 +96,12 @@ class LibraryController(
     private var checked: Map<BookId, Pair<String, BookAvailability>> = emptyMap()
     private var watch: Job? = null
 
+    /**
+     * Requests to check every file again. Conflated: returns to the screen while a check runs collapse into one check
+     * after it, so quick app switches never stack checks, and a file deleted during a check is still seen.
+     */
+    private val rechecks = Channel<Unit>(Channel.CONFLATED)
+
     fun start() {
         if (watch != null) return
         // Progress is a nicety: if the anchors cannot be read the library still shows, without it. A save every
@@ -104,6 +112,7 @@ class LibraryController(
             emit(emptyList())
         }.distinctUntilChanged { old, new -> progressShown(old) == progressShown(new) }
         scope.launch { library.pruneDocuments() }
+        scope.launch { rechecks.consumeEach { checkNow(books) } }
         watch = scope.launch {
             combine(library.books(), saved, ownCollections()) { latest, positions, own ->
                 Triple(latest, positions, own)
@@ -157,7 +166,9 @@ class LibraryController(
     }
 
     /** The screen came back to the foreground: files may have been moved or deleted meanwhile. */
-    fun refreshAvailability() = checkFiles(books)
+    fun refreshAvailability() {
+        rechecks.trySend(Unit)
+    }
 
     fun add(documentUri: String) = runPick { addNow(documentUri) }
 
@@ -296,11 +307,17 @@ class LibraryController(
     }
 
     private fun checkFiles(targets: List<Book>) {
+        if (targets.isNotEmpty()) scope.launch { checkNow(targets) }
+    }
+
+    /** Shows the results only when one changed: an unchanged check leaves the list as it is (no re-sort). */
+    private suspend fun checkNow(targets: List<Book>) {
         if (targets.isEmpty()) return
-        scope.launch {
-            val results = library.availability(targets)
-            val uris = targets.associate { it.id to it.documentUri }
-            checked = checked + results.mapValues { (id, state) -> requireNotNull(uris[id]) to state }
+        val results = library.availability(targets)
+        val uris = targets.associate { it.id to it.documentUri }
+        val latest = results.mapValues { (id, state) -> requireNotNull(uris[id]) to state }
+        if (latest.any { (id, check) -> checked[id] != check }) {
+            checked = checked + latest
             publish()
         }
     }

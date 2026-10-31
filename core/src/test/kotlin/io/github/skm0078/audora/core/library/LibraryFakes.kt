@@ -71,6 +71,9 @@ class FakeDocuments : DocumentAccess {
     val released = mutableListOf<String>()
     val pruned = mutableListOf<Set<String>>()
 
+    /** Each batch check's URIs, in call order: a batch is where the real access layer reads its grants once. */
+    val batches = mutableListOf<Collection<String>>()
+
     fun put(uri: String, name: String?, bytes: ByteArray) {
         docs[uri] = Doc(name, bytes)
     }
@@ -105,6 +108,11 @@ class FakeDocuments : DocumentAccess {
         documentUri !in granted -> BookAvailability.ACCESS_LOST
         documentUri !in docs -> BookAvailability.MISSING
         else -> BookAvailability.AVAILABLE
+    }
+
+    override fun availability(documentUris: Collection<String>): Map<String, BookAvailability> {
+        batches += documentUris.toList()
+        return super.availability(documentUris)
     }
 
     override fun pruneUnused(inUse: Set<String>) {
