@@ -16,6 +16,7 @@ import java.util.Properties
  * @property credits for the licences screen (P3-06); null only for an asset written by an older build.
  * @property recommended its language's suggested download (speech/models.json `recommended`, ADR-030).
  * @property useTerms terms the user agrees to before the download starts; null for a plain licence.
+ * @property beta its language is still early (speech/models.json `beta`): the Voices screen says so.
  */
 data class CatalogVoice(
     val spec: SherpaVoiceSpec,
@@ -25,6 +26,7 @@ data class CatalogVoice(
     val credits: VoiceCredits? = null,
     val recommended: Boolean = false,
     val useTerms: VoiceUseTerms? = null,
+    val beta: Boolean = false,
 ) : PinnedFile {
     override val id: String get() = spec.id
 }
@@ -48,14 +50,15 @@ class VoiceCatalog(val voices: List<CatalogVoice>) {
 
 /**
  * Parses one catalog entry: the `voice.properties` keys of [SherpaVoiceManifest] plus `url`, `sha256`,
- * `sizeBytes`, the credits ([VoiceCredits]) and `recommended`. The build already validated it; this guards against
- * a hand-edited asset or a build bug.
+ * `sizeBytes`, the credits ([VoiceCredits]), `recommended` and `beta`. The build already validated it; this guards
+ * against a hand-edited asset or a build bug.
  */
 object CatalogVoiceParser {
     private const val KEY_URL = "url"
     private const val KEY_SHA256 = "sha256"
     private const val KEY_SIZE = "sizeBytes"
     private const val KEY_RECOMMENDED = "recommended"
+    private const val KEY_BETA = "beta"
     private const val KEY_USE_TERMS = "useTerms"
     private const val HTTPS = "https://"
     private val SHA256_HEX = Regex("[0-9a-f]{64}")
@@ -87,6 +90,7 @@ object CatalogVoiceParser {
                         credits = VoiceCredits.parse(properties),
                         recommended = properties.getProperty(KEY_RECOMMENDED)?.trim().toBoolean(),
                         useTerms = useTerms,
+                        beta = properties.getProperty(KEY_BETA)?.trim().toBoolean(),
                     ),
                 )
             }

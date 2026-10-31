@@ -20,5 +20,7 @@ package io.github.skm0078.audora.playback.studio
  *     the page); a one-speaker narrator's other gender borrows another installed voice (ADR character-genders).
  * 8 = arrows, maths signs, Greek letters and powers in sentences are said in the part's language; emoji, stars and
  *     broken-font glyphs are left out (ADR 2026-10-28-symbols-in-sentences).
+ * 9 = Bengali voices that read letters (SYSPIN, Rasa) are handed words spelled as said, at 0.9 of the asked pace, and
+ *     Rasa reads with calmer noise (ADR 2026-10-30-bengali-spoken-spelling).
  */
-const val STUDIO_AUDIO_VERSION: Int = 8
+const val STUDIO_AUDIO_VERSION: Int = 9

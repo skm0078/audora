@@ -83,7 +83,7 @@ fun ReaderScreen(
     val tips = rememberGestureTips()
     val hint = readerHint(state, notes, hintLinks, actions, speech)
     val notice = readerNotice(state, offer, tips.pending, hint.pending)
-    val card = ReaderCards(offer.takeIf { notice == ReaderNotice.VOICE_PACK }, state, notice)
+    val tops = PageTopNotices(offer.takeIf { notice == ReaderNotice.VOICE_PACK }, voices, skipCard(state, notice))
     if (pageTextOpen) {
         PageTextSheet(look, onLookChange, textView = state.view == ReaderView.TEXT) { pageTextOpen = false }
     }
@@ -132,7 +132,7 @@ fun ReaderScreen(
                 is DocumentState.Open -> {
                     PlaceHighlights(state, notesActions)
                     BesidePanel(panel, { ReaderSidePanel(state, actions, notes, notesActions, voiceNotes, people) }) {
-                        OpenBook(state, document, config, actions, ocrModels, look, spokenWord, thumbnails, card, notes)
+                        OpenBook(state, document, config, actions, ocrModels, look, spokenWord, thumbnails, tops, notes)
                     }
                     NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)
                 }
@@ -174,7 +174,7 @@ private fun OpenBook(
     look: ReadingLook,
     spokenWord: () -> IntRange?,
     thumbnails: PageThumbnails?,
-    cards: ReaderCards,
+    tops: PageTopNotices,
     notes: NotesState,
 ) {
     // The start of a passage being highlighted shows as highlighted while its end is picked.
@@ -183,6 +183,11 @@ private fun OpenBook(
     var picking by rememberSaveable { mutableStateOf(false) }
     // Outlives each page's text, so a turn back from one page opens the page before at its end.
     val turnBack = remember { TextTurnBack() }
+    val betaLang = remember(state.content, config) {
+        (state.content as? PageContent.Ready)?.let { betaScanLanguage(it.origin, it.units, config.betaScanLanguages) }
+    }
+    val own = state.playback.bookVoices.takeIf { state.playback.ownSettings }.orEmpty()
+    val betaScan = rememberBetaScanOffer(state.bookId, betaLang, tops.voices, own, actions::onBookVoice)
     Column(Modifier.fillMaxSize()) {
         PageBar(state.page, pageCount, actions, announce = !state.isReading, onPick = { picking = true })
         PageScrubber(state.page, pageCount, thumbnails, actions::onGoToPage)
@@ -197,8 +202,9 @@ private fun OpenBook(
             is PageContent.Ready -> {
                 val badge = ocrBadgeText(content.origin, content.ocrConfidence, config)
                 PageOriginNotice(content.origin, ocrModels, badge, actions::onDownloadOcrModels)
-                cards.frontMatter?.let { FrontMatterNotice(it, actions::onReadFromStart, actions::onFrontMatterSeen) }
-                VoicePackNotice(content.units, cards.voicePack)
+                tops.frontMatter?.let { FrontMatterNotice(it, actions::onReadFromStart, actions::onFrontMatterSeen) }
+                BetaScanNotice(betaLang, betaScan)
+                VoicePackNotice(content.units, tops.voicePack)
                 ReadingArea(state, content, actions, look, config, spokenWord, isHighlighted, turnBack)
             }
         }

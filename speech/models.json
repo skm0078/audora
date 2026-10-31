@@ -1,5 +1,5 @@
 {
-  "comment": "File: speech/models.json. Purpose: the voices Audora can download (P4-01, ADR-022). Each voice is a flat, uncompressed zip on this repo's 'voices' release, built from the SHA-pinned upstream archive by scripts/build_voice_mirror.py (same bytes every run) and published by .github/workflows/voice-mirror.yml, which never replaces an asset. The app checks every download against sha256 and sizeBytes. A voice whose id matches the bundled voice (bundled-voices.json) is left out of the APK's catalog. To add or change a voice: edit its entry, run the script with --print-pins, paste file/sha256/sizeBytes. 'models' holds the other downloadable models, built the same way but not voices: the opt-in English punctuation model (RI-11), whose pins speech/src/.../punct/PunctuationModelSpec.kt repeats (a test checks they match). Never add Lessac/Blizzard-derived voices (lessac, amy, hfc_*, hi_IN rohan).",
+  "comment": "File: speech/models.json. Purpose: the voices Audora can download (P4-01, ADR-022). Each voice is a flat, uncompressed zip on this repo's 'voices' release, built from the SHA-pinned upstream archive by scripts/build_voice_mirror.py (same bytes every run) and published by .github/workflows/voice-mirror.yml, which never replaces an asset. The app checks every download against sha256 and sizeBytes. A voice whose id matches the bundled voice (bundled-voices.json) is left out of the APK's catalog. To add or change a voice: edit its entry, run the script with --print-pins, paste file/sha256/sizeBytes. 'models' holds the other downloadable models, built the same way but not voices: the opt-in English punctuation model (RI-11), whose pins speech/src/.../punct/PunctuationModelSpec.kt repeats (a test checks they match). Never add Lessac/Blizzard-derived voices (lessac, amy, hfc_*, hi_IN rohan). 'beta' lists the languages whose voices are still early (Bengali, 2026-10-31): the Voices screen tags each of their voices Beta; delete a language from it when it graduates.",
   "baseUrl": "https://github.com/skm0078/audora/releases/download/voices/",
   "sourceBaseUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/",
   "espeakDictionaries": [
@@ -11,6 +11,9 @@
     "hi": "supertonic-hi",
     "bn": "syspin-bn-male"
   },
+  "beta": [
+    "bn"
+  ],
   "voices": [
     {
       "id": "piper-en-cori",

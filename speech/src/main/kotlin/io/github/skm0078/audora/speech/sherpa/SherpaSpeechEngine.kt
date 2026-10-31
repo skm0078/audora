@@ -42,9 +42,13 @@ import kotlinx.coroutines.withContext
  * Cancellation: sherpa-onnx can only stop between its internal sentences, so a cancelled render returns as soon as
  * the sentence being computed finishes (a fraction of a second for Piper on the test phone) and its audio is discarded.
  *
+ * Bengali voices that read letters (SYSPIN, Rasa) are handed their words spelled as said, at a calmer pace
+ * ([LetterVoices]).
+ *
  * @param dispatcher where model loads and renders run. One thread: sherpa-onnx uses its own worker threads inside a
  *   call, and two renders at once would only compete for the same cores.
  * @param maxLoadedVoices models kept loaded at once ([SpeechConfig.maxLoadedVoices]).
+ * @param bengaliPace the Bengali letter voices' pace ([SpeechConfig.bengaliPace]).
  */
 @Suppress("TooManyFunctions") // SpeechEngine's members (two render overloads) and the memory hooks.
 class SherpaSpeechEngine(
@@ -52,6 +56,7 @@ class SherpaSpeechEngine(
     private val factory: SherpaSynthesizerFactory,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(1),
     private val maxLoadedVoices: Int = SpeechConfig().maxLoadedVoices,
+    bengaliPace: Float = SpeechConfig().bengaliPace,
 ) : SpeechEngine {
     /** A fixed set of voices (tests, and the bundled voice alone). */
     constructor(
@@ -59,7 +64,8 @@ class SherpaSpeechEngine(
         factory: SherpaSynthesizerFactory,
         dispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(1),
         maxLoadedVoices: Int = SpeechConfig().maxLoadedVoices,
-    ) : this(fixedVoices(voices), factory, dispatcher, maxLoadedVoices)
+        bengaliPace: Float = SpeechConfig().bengaliPace,
+    ) : this(fixedVoices(voices), factory, dispatcher, maxLoadedVoices, bengaliPace)
 
     init {
         require(maxLoadedVoices >= 1) { "maxLoadedVoices must be >= 1, was $maxLoadedVoices" }
@@ -67,6 +73,7 @@ class SherpaSpeechEngine(
 
     override val id: EngineId = EngineId.SHERPA
 
+    private val letters = LetterVoices(bengaliPace)
     private val mutex = Mutex()
     private val released = AtomicBoolean(false)
     private val trimRequested = AtomicBoolean(false)
@@ -167,11 +174,12 @@ class SherpaSpeechEngine(
     ): RenderResult {
         val job = coroutineContext[Job]
         val started = System.nanoTime()
+        val words = letters.text(spec, take.text)
         val text = when {
-            take.style != null -> StyledText.ending(take.text, spec.lang)
-            else -> ClosingMarks.inside(take.text)
+            take.style != null -> StyledText.ending(words, spec.lang)
+            else -> ClosingMarks.inside(words)
         }
-        val rate = take.rate
+        val rate = letters.rate(spec, take.rate)
         val samples: Outcome<FloatArray, SpeechError> = try {
             Outcome.Success(synthesizer.generate(text, speaker, rate, take.style) { job?.isActive != false })
         } catch (e: IllegalStateException) {

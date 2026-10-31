@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_beta_language.xml -->
+<!-- Purpose: A language still in beta (Bengali, 2026-10-31): its voices' Beta tag, its scans' notice. -->
+<resources>
+    <!-- A language still in beta (Bengali, 2026-10-31): its voices and its scanned pages say so plainly. -->
+    <string name="voices_beta">Beta: early quality, may say some words wrong</string>
+    <!-- %1$s is the language's name, as in the Voices screen. -->
+    <string name="reader_beta_scan_title">Scanned %1$s page: early beta</string>
+    <string name="reader_beta_scan_body">Text recognition (OCR) often misreads older %1$s print, and the voice reads what was recognised, so words can come out wrong. A text (digital) PDF of the book reads far better.</string>
+    <string name="reader_beta_scan_phone_voice">Use the phone\'s %1$s voice</string>
+</resources>

@@ -84,6 +84,15 @@ class VoiceRowsTest {
     }
 
     @Test
+    fun `a beta voice's row says beta, the others do not`() {
+        val bengali = catalogVoice(ByteArray(30), "syspin-bn-male", Lang.BN).copy(beta = true)
+        val rows = VoiceRows.build(bundled, VoiceCatalog(listOf(cori, bengali)), emptyList(), emptyMap(), emptyMap())
+
+        assertTrue(rows.single { it.id.name == "syspin-bn-male" }.beta)
+        assertEquals(listOf("syspin-bn-male"), rows.filter { it.beta }.map { it.id.name })
+    }
+
+    @Test
     fun `download states show on their voice`() {
         val rows = rows(
             downloads = mapOf(

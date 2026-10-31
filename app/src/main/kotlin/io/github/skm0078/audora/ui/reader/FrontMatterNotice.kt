@@ -61,10 +61,9 @@ internal fun FrontMatterNotice(skipped: SkippedFrontMatter, onReadFromStart: () 
     }
 }
 
-/** The cards the open book shows above its page, each only when [ReaderNotice] picked it. */
-internal class ReaderCards(val voicePack: VoicePackOffer?, state: ReaderState, notice: ReaderNotice?) {
-    val frontMatter: SkippedFrontMatter? = state.skippedFrontMatter.takeIf { notice == ReaderNotice.FRONT_MATTER }
-}
+/** The skipped front matter to show on the page, only when [ReaderNotice] picked its card. */
+internal fun skipCard(state: ReaderState, notice: ReaderNotice?): SkippedFrontMatter? =
+    state.skippedFrontMatter.takeIf { notice == ReaderNotice.FRONT_MATTER }
 
 @StringRes
 internal fun kindLabel(kind: FrontMatterKind): Int = when (kind) {

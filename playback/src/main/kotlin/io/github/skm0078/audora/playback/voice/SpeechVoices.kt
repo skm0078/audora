@@ -178,9 +178,9 @@ internal class PhoneVoices(
 
 /**
  * Creates each engine once, on first use, and releases only what was created. [expressiveness] is the listener's step
- * (plan item 8), read on every neural render; the Piper and MMS voices reload when it changes. [blend] is the
- * listener's narrator blend (plan item 75) for the narrator it names, read the same way; that voice reloads when it
- * changes.
+ * (plan item 8), read on every neural render; the Piper and MMS voices reload when it changes, a model with speaking
+ * styles (Rasa) on its calmer steps. [blend] is the listener's narrator blend (plan item 75) for the narrator it
+ * names, read the same way; that voice reloads when it changes.
  */
 class VoiceEngines(
     context: Context,
@@ -191,8 +191,8 @@ class VoiceEngines(
 ) {
     private val appContext = context.applicationContext
     private val bundled = lazy {
-        SpeechEngines.bundled(appContext, config, blend) {
-            val (scale, width) = shapingConfig.expressionNoise(expressiveness())
+        SpeechEngines.bundled(appContext, config, blend) { styled ->
+            val (scale, width) = shapingConfig.expressionNoise(expressiveness(), styled)
             VitsNoise(scale, width)
         }
     }

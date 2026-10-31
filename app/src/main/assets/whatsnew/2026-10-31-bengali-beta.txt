@@ -1,0 +1,3 @@
+en: Bengali is an early beta, and now says so: its voices carry a Beta tag, and a scanned Bengali page explains that text recognition often misreads older print (a text PDF reads far better) and offers your phone's own Bengali voice in one tap.
+hi: बांग्ला अभी शुरुआती बीटा है, और अब यह साफ़ बताया जाता है: इसकी आवाज़ों पर बीटा लिखा है, और स्कैन किया बांग्ला पेज बताता है कि पुरानी छपाई पहचानने में OCR अक्सर गलती करता है (टेक्स्ट PDF कहीं बेहतर पढ़ी जाती है), और एक टैप में फ़ोन की अपनी बांग्ला आवाज़ देता है।
+bn: বাংলা এখনও প্রথম দিকের বিটা, আর এখন সেটা স্পষ্ট বলা হয়: এর ভয়েসগুলোতে বিটা লেখা থাকে, আর স্ক্যান করা বাংলা পাতা জানায় যে পুরোনো ছাপা চিনতে OCR প্রায়ই ভুল করে (টেক্সট PDF অনেক ভালো পড়া যায়), আর এক ট্যাপে ফোনের নিজের বাংলা ভয়েস ব্যবহার করতে দেয়।

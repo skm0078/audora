@@ -13,6 +13,6 @@
   SharedPreferences read per book open. `:pdf` output and `PIPELINE_VERSION` unchanged.
 - **Could affect:** where unread books open, the reader's notice slot (a new card second after page problems), the
   opening line card (now from the start page), Settings › Listening (one switch).
-- **Verified in CI:** `ContentStartFinderTest`, `FrontMatterWordsTest`, `SkipFrontMatterTest`, release journey step 65.
+- **Verified in CI:** `ContentStartFinderTest`, `FrontMatterWordsTest`, `SkipFrontMatterTest`, release journey step 67.
 
 **Real-device checks (the test phone):** see the PR's phone steps.
