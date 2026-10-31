@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_notices.xml -->
+<!-- Purpose: Bengali copy of values/strings_notices.xml. -->
+<resources>
+    <string name="notices_title">সব লাইসেন্সের লেখা</string>
+    <string name="notices_body">ListenLock-এর ভেতরের প্রতিটি লাইব্রেরি, ইঞ্জিন ও ফন্টের পুরো লাইসেন্স ও নোটিস, আর ListenLock-এর নিজের GPL।</string>
+    <string name="notices_read">পড়ুন</string>
+</resources>

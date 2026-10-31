@@ -1,5 +1,6 @@
 // File: app/src/test/kotlin/io/github/skm0078/audora/ui/licences/LicencesControllerTest.kt
-// Purpose: Licences screen rules: the list loads once, a failure says so, only installed voices open their files.
+// Purpose: Licences screen rules: the list loads once, a failure says so, only installed voices open their files, and
+//          the app's own licence texts open under their title.
 
 package io.github.skm0078.audora.ui.licences
 
@@ -50,7 +51,7 @@ class LicencesControllerTest {
         val controller = controller()
 
         controller.openTexts(INSTALLED)
-        assertEquals(OpenLicence(INSTALLED, listOf(CARD)), controller.state.value.open)
+        assertEquals(OpenLicence(INSTALLED.label, listOf(CARD)), controller.state.value.open)
 
         controller.closeTexts()
         assertNull(controller.state.value.open)
@@ -73,7 +74,28 @@ class LicencesControllerTest {
 
         controller.openTexts(INSTALLED)
 
-        assertEquals(OpenLicence(INSTALLED, emptyList()), controller.state.value.open)
+        assertEquals(OpenLicence(INSTALLED.label, emptyList()), controller.state.value.open)
+    }
+
+    @Test
+    fun `the app's licence texts open under their title and close again`() = runTest(UnconfinedTestDispatcher()) {
+        val controller = controller()
+
+        controller.openNotices("All licence texts")
+        assertEquals(OpenLicence("All licence texts", listOf(NOTICES, GPL)), controller.state.value.open)
+
+        controller.closeTexts()
+        assertNull(controller.state.value.open)
+    }
+
+    @Test
+    fun `unreadable app licence texts open an empty list`() = runTest(UnconfinedTestDispatcher()) {
+        source.failTexts = true
+        val controller = controller()
+
+        controller.openNotices("All licence texts")
+
+        assertEquals(OpenLicence("All licence texts", emptyList()), controller.state.value.open)
     }
 
     private class FakeLicenceSource : LicenceSource {
@@ -93,10 +115,17 @@ class LicencesControllerTest {
             if (failTexts) throw IOException("disk")
             return listOf(CARD)
         }
+
+        override suspend fun noticeTexts(): List<LicenceText> {
+            if (failTexts) throw IOException("asset")
+            return listOf(NOTICES, GPL)
+        }
     }
 
     private companion object {
         val CARD = LicenceText("MODEL_CARD", "card")
+        val NOTICES = LicenceText("THIRD-PARTY-NOTICES.txt", "notices")
+        val GPL = LicenceText("listenlock-GPL-3.0.txt", "GPL")
         val INSTALLED = licence("supertonic-hi", installed = true)
         val NOT_INSTALLED = licence("piper-bn-google", installed = false)
 
