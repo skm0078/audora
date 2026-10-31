@@ -9,10 +9,10 @@ import io.github.skm0078.audora.core.result.map
 import io.github.skm0078.audora.pdf.document.OutlineEntry
 import io.github.skm0078.audora.pdf.document.PdfOpenError
 import io.github.skm0078.audora.pdf.document.PdfPageError
+import java.io.Closeable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.io.Closeable
 
 /**
  * What the reader shows. The playback service opens the same PDF on its own and builds the same units (same
