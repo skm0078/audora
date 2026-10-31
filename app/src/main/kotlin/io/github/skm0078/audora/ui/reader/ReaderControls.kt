@@ -53,6 +53,7 @@ fun ReaderControls(
     voices: List<VoiceRow> = emptyList(),
     onTipsSeen: (() -> Unit)? = null,
     speech: SpeechRequest = SpeechRequest.NONE,
+    hint: (@Composable (Modifier) -> Unit)? = null,
 ) {
     // A raised panel with rounded top corners, so the controls read as one block under the thumb (ADR-036).
     Surface(
@@ -65,6 +66,8 @@ fun ReaderControls(
             onTipsSeen?.let {
                 GestureTips(it, Modifier.padding(start = Dimens.SpaceM, end = Dimens.SpaceM, top = Dimens.SpaceM))
             }
+            // A first-use hint (ADR 2026-10-30-first-use-hints) takes the same place: above Play, never over it.
+            hint?.invoke(Modifier.padding(start = Dimens.SpaceM, end = Dimens.SpaceM, top = Dimens.SpaceM))
             // Which place in the Voice and speed sheet is open, if it is: the chip opens its top, a shortcut its group.
             var speechAt by rememberSaveable { mutableStateOf<SpeechSpot?>(null) }
             // A search result or Settings asked for a place in the sheet: opened once, then handed back.
@@ -75,9 +78,10 @@ fun ReaderControls(
                 }
             }
             ControlsRow(state, config, actions, voices) { speechAt = SpeechSpot.TOP }
-            // Not while the first-run tips show: both under the page would leave it too short on small screens
-            // (an emulator's 640 dp: the snippet picker's Share button had no room). They appear after Got it.
-            if (onTipsSeen == null) SpeechShortcuts(enabled = state.playerReady, onOpen = { speechAt = it })
+            // Not while the first-run tips or a hint show: both under the page would leave it too short on small
+            // screens (an emulator's 640 dp: the snippet picker's Share button had no room). They appear after Got it.
+            val cardShown = onTipsSeen != null || hint != null
+            if (!cardShown) SpeechShortcuts(enabled = state.playerReady, onOpen = { speechAt = it })
             speechAt?.let { spot -> ControlsSpeechSheet(spot, state, config, actions, voices) { speechAt = null } }
         }
     }

@@ -1,5 +1,5 @@
 // File: pdf/src/main/kotlin/io/github/skm0078/audora/pdf/cleanup/UnicodeRepair.kt
-// Purpose: NFC with offsets kept, and the ASCII "|" typed for a danda turned into one (P3-02, ADR-028).
+// Purpose: NFC with offsets kept, and the "|" or "৷" typed for a danda turned into one (P3-02, ADR-028).
 
 package io.github.skm0078.audora.pdf.cleanup
 
@@ -14,6 +14,9 @@ import java.text.Normalizer
  * - [dandasFromPipes]: Hindi and Bengali typed in Word often use "|" for the danda ("।") and "||" for the double
  *   danda. After a Devanagari or Bengali letter they become dandas, so sentences split there and a voice never
  *   reads "vertical bar".
+ * - [dandasFromBars]: Bengali fonts of many Kolkata publishers draw the danda with "৷" (U+09F7, a currency
+ *   numerator of the same shape). Right after a Bengali letter and before a space or the line's end it becomes "।",
+ *   so the sentence ends there. After a digit it stays: "১৷" is a currency fraction.
  */
 internal object UnicodeRepair {
     /**
@@ -58,6 +61,23 @@ internal object UnicodeRepair {
         return out.build()
     }
 
+    fun dandasFromBars(input: MappedText): MappedText {
+        val text = input.text
+        if (CURRENCY_BAR !in text) return input
+        val chars = text.toCharArray()
+        for (i in 1 until chars.size) {
+            if (chars[i] == CURRENCY_BAR && isBengaliWordEnd(text[i - 1]) && endsHere(text, i + 1)) chars[i] = DANDA
+        }
+        return MappedText(String(chars), input.sources)
+    }
+
+    /** A Bengali letter or sign (not a digit, not punctuation) ends the word before the bar. */
+    private fun isBengaliWordEnd(c: Char): Boolean =
+        Character.UnicodeScript.of(c.code) == Character.UnicodeScript.BENGALI && !c.isDigit() && c != CURRENCY_BAR
+
+    private fun endsHere(text: String, at: Int): Boolean = at == text.length || text[at].isWhitespace() ||
+        text[at] in CLOSERS
+
     /** End of the cluster starting at [start]: its first code point and every combining mark after it. */
     private fun clusterEnd(text: String, start: Int): Int {
         var end = start + Character.charCount(text.codePointAt(start))
@@ -85,6 +105,7 @@ internal object UnicodeRepair {
     private const val DOUBLE_PIPE = "||"
     private const val DANDA = '\u0964'
     private const val DOUBLE_DANDA = '\u0965'
+    private const val CURRENCY_BAR = '\u09F7'
 
     /** Closing quotes and brackets that may follow a danda. */
     private const val CLOSERS = "\"'\u2019\u201D)]"

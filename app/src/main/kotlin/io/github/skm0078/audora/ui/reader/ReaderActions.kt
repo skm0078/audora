@@ -147,6 +147,9 @@ interface ReaderActions {
     /** Saves this book as audiobook files, with the password it was opened with (ADR-034). */
     fun onSaveAudiobook() = Unit
 
+    /** Prepares the rest of this book ahead (studio mode), from its first-use hint (ADR 2026-10-30-first-use-hints). */
+    fun onPrepareAhead() = Unit
+
     /** A bookmark picked in the bookmarks sheet (plan item 29). */
     fun onBookmark(bookmark: Bookmark) = Unit
 

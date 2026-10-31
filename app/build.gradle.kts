@@ -25,7 +25,8 @@ android {
         applicationId = "io.github.skm0078.audora"
         versionCode = versionCodeOf(releaseVersionName)
         versionName = releaseVersionName
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Mutes the first-use hints before the app starts (ADR 2026-10-30-first-use-hints).
+        testInstrumentationRunner = "io.github.skm0078.audora.AudoraTestRunner"
     }
 
     signingConfigs {

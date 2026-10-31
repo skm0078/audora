@@ -1,0 +1,230 @@
+ListenLock: open-source notices
+================================
+
+ListenLock is free software under the GNU General Public License, version 3 (listenlock-GPL-3.0.txt). Its complete
+source code, including the build scripts, is at https://github.com/skm0078/audora, with a Git tag for every
+release.
+
+ListenLock is built with the software below. Each entry names the work, its copyright holders, its licence and the
+file in this folder that holds the licence's full text. Where a licence asks for a sentence in the documentation,
+the sentence is quoted here.
+
+Voices, speech and dictionary models are credited on the "Voices & licences" screen, each with its own licence; the
+licence files a downloaded model carries are shown there under "Files". Fonts are credited on the same screen; their
+licences are the *-OFL.txt files in this folder.
+
+
+Required statements
+-------------------
+
+This software is based in part on the work of the Independent JPEG Group.
+
+Portions of this software are copyright (c) 2025 The FreeType Project (https://freetype.org). All rights reserved.
+
+
+Libraries in the app (Java and Kotlin)
+--------------------------------------
+
+AndroidX (androidx.core, androidx.activity, androidx.lifecycle, androidx.compose, androidx.media3,
+androidx.datastore, androidx.work, androidx.room, androidx.profileinstaller and their AndroidX dependencies)
+  Copyright The Android Open Source Project
+  Apache License 2.0 (apache-2.0.txt)
+  https://developer.android.com/jetpack/androidx
+
+Protocol Buffers runtime, bundled in androidx.datastore
+  Copyright 2008 Google Inc.
+  BSD 3-Clause License (protobuf-LICENSE.txt)
+  https://github.com/protocolbuffers/protobuf
+
+Guava (com.google.guava), used by androidx.media3 and androidx.work
+  Copyright The Guava Authors
+  Apache License 2.0 (apache-2.0.txt)
+  https://github.com/google/guava
+
+Dagger and Hilt (com.google.dagger)
+  Copyright The Dagger Authors
+  Apache License 2.0 (apache-2.0.txt)
+  https://github.com/google/dagger
+
+Kotlin standard library (org.jetbrains.kotlin) and kotlinx.coroutines (org.jetbrains.kotlinx)
+  Copyright JetBrains s.r.o. and Kotlin Programming Language contributors
+  Apache License 2.0 (apache-2.0.txt)
+  https://github.com/JetBrains/kotlin, https://github.com/Kotlin/kotlinx.coroutines
+
+Material Icons, drawn as the app's icons
+  Copyright Google LLC
+  Apache License 2.0 (apache-2.0.txt)
+  https://github.com/google/material-design-icons
+
+Readability4J (net.dankito.readability4j)
+  Copyright dankito
+  Apache License 2.0 (apache-2.0.txt)
+  https://github.com/dankito/Readability4J
+
+jsoup (org.jsoup)
+  Copyright (c) 2009-2026 Jonathan Hedley
+  MIT License (jsoup-LICENSE.txt)
+  https://jsoup.org/
+
+SLF4J API (org.slf4j), used by Readability4J
+  Copyright (c) 2004-2022 QOS.ch Sarl
+  MIT License (slf4j-LICENSE.txt)
+  https://www.slf4j.org/
+
+
+Speech: sherpa-onnx and what it is built from
+----------------------------------------------
+
+sherpa-onnx (com.k2fsa:sherpa-onnx)
+  Copyright Xiaomi Corporation and the k2-fsa authors
+  Apache License 2.0 (apache-2.0.txt)
+  https://github.com/k2-fsa/sherpa-onnx
+
+ONNX Runtime, inside sherpa-onnx
+  Copyright (c) Microsoft Corporation
+  MIT License (onnxruntime-LICENSE.txt); its own third-party notices: onnxruntime-ThirdPartyNotices.txt
+  https://github.com/microsoft/onnxruntime
+
+ONNX, inside sherpa-onnx
+  Copyright (c) ONNX Project Contributors
+  Apache License 2.0 (apache-2.0.txt)
+  https://github.com/onnx/onnx
+
+Protocol Buffers, inside sherpa-onnx
+  Copyright 2008 Google Inc.
+  BSD 3-Clause License (protobuf-LICENSE.txt)
+  https://github.com/protocolbuffers/protobuf
+
+RE2, inside sherpa-onnx
+  Copyright (c) 2009 The RE2 Authors
+  BSD 3-Clause License (re2-LICENSE.txt)
+  https://github.com/google/re2
+
+Abseil, inside sherpa-onnx and PDFium
+  Copyright The Abseil Authors
+  Apache License 2.0 (apache-2.0.txt)
+  https://github.com/abseil/abseil-cpp
+
+kaldi-native-fbank, kaldi-decoder and kaldifst, inside sherpa-onnx
+  Copyright Xiaomi Corporation
+  Apache License 2.0 (apache-2.0.txt)
+  https://github.com/csukuangfj
+
+OpenFst, inside sherpa-onnx
+  Copyright Google Inc. and the OpenFst authors
+  Apache License 2.0 (apache-2.0.txt)
+  https://www.openfst.org/
+
+simple-sentencepiece, inside sherpa-onnx
+  Copyright Fangjun Kuang
+  Apache License 2.0 (apache-2.0.txt)
+  https://github.com/pkufool/simple-sentencepiece
+
+eSpeak NG and its pronunciation data, inside sherpa-onnx
+  Copyright (C) 2005-2014 Jonathan Duddington and the eSpeak NG contributors
+  GNU General Public License v3.0 or later (listenlock-GPL-3.0.txt)
+  https://github.com/espeak-ng/espeak-ng
+
+llama.cpp and ggml, the story brain's engine (built from source)
+  Copyright (c) 2023-2026 The ggml authors
+  MIT License (llama.cpp-LICENSE.txt)
+  https://github.com/ggml-org/llama.cpp
+
+
+Pages and books: PDFium, DjVuLibre, Tesseract
+---------------------------------------------
+
+PDFium, via PdfiumAndroidKt (io.legere:pdfiumandroid)
+  Copyright 2014 The PDFium Authors; PdfiumAndroidKt copyright legere
+  BSD 3-Clause License and Apache License 2.0 (pdfium-LICENSE.txt, apache-2.0.txt)
+  https://pdfium.googlesource.com/pdfium/, https://github.com/johngray1965/PdfiumAndroidKt
+
+FreeType, inside PDFium
+  Copyright 1996-2025 David Turner, Robert Wilhelm, Werner Lemberg and the FreeType Project
+  The FreeType Project License (freetype-FTL.txt)
+  https://freetype.org/
+
+libjpeg-turbo, inside PDFium
+  Copyright (C) 2009-2026 D. R. Commander; Copyright (C) 1991-2020 Thomas G. Lane, Guido Vollbeding
+  IJG License, BSD 3-Clause License and zlib License (libjpeg-turbo-LICENSE.md)
+  https://libjpeg-turbo.org/
+
+OpenJPEG, inside PDFium
+  Copyright (c) 2002-2014 Universite catholique de Louvain (UCL), Belgium, and the OpenJPEG contributors
+  BSD 2-Clause License (openjpeg-LICENSE.txt)
+  https://www.openjpeg.org/
+
+Little CMS, inside PDFium
+  Copyright (c) 2023 Marti Maria Saguer
+  MIT License (little-cms-LICENSE.txt)
+  https://www.littlecms.com/
+
+Anti-Grain Geometry 2.3, inside PDFium
+  Copyright (C) 2002-2005 Maxim Shemanarev (http://www.antigrain.com)
+  Permission to copy, use, modify, sell and distribute this software is granted provided this copyright notice
+  appears in all copies. This software is provided "as is" without express or implied warranty, and with no claim
+  as to its suitability for any purpose.
+
+libpng, inside PDFium and Tesseract4Android
+  Copyright (c) 1995-2025 The PNG Reference Library Authors
+  PNG Reference Library License version 2 (libpng-LICENSE.txt)
+  http://www.libpng.org/pub/png/libpng.html
+
+zlib, inside PDFium
+  Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler
+  zlib License (zlib-LICENSE.txt)
+  https://zlib.net/
+
+DjVuLibre 3.5.28 (built from source)
+  Copyright (c) 2002-2016 Leon Bottou and Yann Le Cun; Copyright (c) 2001 AT&T; Copyright (c) 1999-2001 LizardTech
+  GNU General Public License v2.0 or later (djvulibre-COPYING.txt)
+  https://sourceforge.net/projects/djvu/
+
+Tesseract4Android (cz.adaptech.tesseract4android)
+  Copyright Adaptech s.r.o., Robert Pösel
+  Apache License 2.0 (apache-2.0.txt)
+  https://github.com/adaptech-cz/Tesseract4Android
+
+Tesseract OCR 5.5.1, inside Tesseract4Android
+  Copyright The Tesseract OCR authors
+  Apache License 2.0 (apache-2.0.txt)
+  https://github.com/tesseract-ocr/tesseract
+
+Leptonica 1.85.0, inside Tesseract4Android
+  Copyright (C) 2001-2020 Leptonica
+  Leptonica License, BSD 2-Clause style (leptonica-LICENSE.txt)
+  http://www.leptonica.org/
+
+Independent JPEG Group's libjpeg 9f, inside Tesseract4Android
+  Copyright (C) 1991-2024 Thomas G. Lane, Guido Vollbeding
+  IJG License (libjpeg-IJG-README.txt)
+  https://www.ijg.org/
+
+
+Licence texts in this folder
+----------------------------
+
+listenlock-GPL-3.0.txt
+apache-2.0.txt
+pdfium-LICENSE.txt
+djvulibre-COPYING.txt
+freetype-FTL.txt
+libjpeg-turbo-LICENSE.md
+libjpeg-IJG-README.txt
+openjpeg-LICENSE.txt
+little-cms-LICENSE.txt
+libpng-LICENSE.txt
+zlib-LICENSE.txt
+leptonica-LICENSE.txt
+protobuf-LICENSE.txt
+re2-LICENSE.txt
+onnxruntime-LICENSE.txt
+onnxruntime-ThirdPartyNotices.txt
+llama.cpp-LICENSE.txt
+jsoup-LICENSE.txt
+slf4j-LICENSE.txt
+anek-OFL.txt
+atkinson-hyperlegible-OFL.txt
+opendyslexic-OFL.txt
+tiro-bangla-OFL.txt
+tiro-devanagari-hindi-OFL.txt

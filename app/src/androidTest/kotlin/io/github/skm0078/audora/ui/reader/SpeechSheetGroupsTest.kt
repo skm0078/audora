@@ -1,11 +1,13 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/ui/reader/SpeechSheetGroupsTest.kt
 // Purpose: The Voice and speed sheet stays one level deep (ADR 2026-10-29-voice-and-speed-one-level): a group opens
-//          in place under its header, one at a time, never as a second sheet, and a shortcut opens its group.
+//          in place under its header, one at a time, never as a second sheet, and a shortcut opens its group. An opened
+//          group scrolls its options into view (phone test 2026-10-30: they opened below the sheet's edge).
 
 package io.github.skm0078.audora.ui.reader
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -77,5 +79,16 @@ class SpeechSheetGroupsTest {
         showSheet(opensAt = SpeechSpot.FOCUS)
         assertShown(text(R.string.focus_level))
         rule.onAllNodesWithText(text(R.string.row_line_even_loudness)).assertCountEquals(0)
+    }
+
+    @Test
+    fun openingAGroupLowDownBringsItsOptionsIntoView() {
+        showSheet()
+        // Scrolled only far enough to show the header, so the group opens at the sheet's bottom edge.
+        val header = rule.onNodeWithText(text(R.string.study_title))
+        header.performScrollTo().performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText(text(R.string.study_repeats)).assertIsDisplayed()
+        header.assertIsDisplayed()
     }
 }
