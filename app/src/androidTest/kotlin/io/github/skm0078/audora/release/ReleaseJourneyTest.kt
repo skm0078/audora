@@ -31,7 +31,6 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasClickAction
@@ -40,7 +39,6 @@ import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
-import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
@@ -84,6 +82,7 @@ import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
 import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.shows
+import io.github.skm0078.audora.release.JourneyDevice.toggleRow
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.audio.WordTimes
 import io.github.skm0078.audora.speech.voices.VoiceKind
@@ -155,8 +154,9 @@ class ReleaseJourneyTest {
         step("11 Hide app content blocks screenshots", ::hideAppContentBlocksScreenshots)
         step("12 a scan offers OCR and reads after the download", ::aScanOffersOcrAndReadsAfterTheDownload)
         step("13 Open with reads FB2, Kindle and help-file books", ::openWithReadsMoreEbookFormats)
-        step("14 Open with makes a comic archive into a photo book", ::openWithMakesAComicIntoAPhotoBook)
-        step("15 Open with reads a DjVu's text and makes a DjVu scan a photo book", ::openWithReadsDjvuBooks)
+        val photoBooks = PhotoBookJourney(rule, ::activity, ::backToTabs)
+        step("14 Open with makes a comic archive into a photo book", photoBooks::aComicBecomesAPhotoBook)
+        step("15 Open with reads a DjVu's text and makes a DjVu scan a photo book", photoBooks::djvuTextAndScanOpen)
         step("16 Supertonic's licence rules show before its download", ::supertonicRulesShowBeforeItsDownload)
         step("17 an exported chapter carries the book's cover", ::anExportedChapterCarriesTheCover)
         step("18 the app font draws English, Hindi and Bengali", ::theAppFontDrawsAllThreeScripts)
@@ -222,6 +222,8 @@ class ReleaseJourneyTest {
             ZipNamesJourney(rule, ::activity, ::backToTabs).booksWithCodePageNamesOpen()
         }
         step("58 the player names its line actions", LineActionsJourney(rule, BOOK, ::backToTabs)::namedAndInSight)
+        step("59 an opened group shows", OpenInPlaceJourney(rule, BOOK, ::backToTabs)::anOpenedGroupComesIntoView)
+        step("60 search finds the switch that mutes tips", HintsJourney(rule, ::backToTabs)::searchFindsTheMute)
         step("61 Voices & licences opens every licence text", NoticesJourney(rule, ::backToTabs)::everyLicenceTextOpens)
     }
 
@@ -288,8 +290,6 @@ class ReleaseJourneyTest {
         awaitTrue("the log line \"$fragment\"", state = { "Seen ${JourneyDevice.logCount(fragment)} time(s)" }) {
             JourneyDevice.logCount(fragment) > before
         }
-
-    private fun toggleRow(title: String): SemanticsMatcher = hasText(title) and isToggleable()
 
     private fun toggleState(matcher: SemanticsMatcher): ToggleableState =
         node(matcher).fetchSemanticsNode().config[SemanticsProperties.ToggleableState]
@@ -540,60 +540,6 @@ class ReleaseJourneyTest {
 
     private fun textBookLog(): String =
         "Opened: ${JourneyDevice.logCount(TEXT_BOOK_OPENED)}, not opened: ${JourneyDevice.logCount(TEXT_BOOK_FAILED)}"
-
-    /**
-     * A comic archive is not added as a book: its pages become a photo book, added to the library, which opens in the
-     * reader by itself. Its pages are blank pictures; OCR reading a picture page is step 12's. The library's work runs
-     * in the screen's scope, which the Compose test clock drives, so these waits go through [awaitSynced].
-     */
-    private fun openWithMakesAComicIntoAPhotoBook() {
-        backToTabs()
-        val added = JourneyDevice.logCount(PHOTO_BOOK_ADDED)
-        val uri = JourneyDevice.downloadedBook(COMIC)
-        val current = activity()
-        JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, COMIC_TYPE)) }
-        awaitSynced("the comic to be added as a photo book", OPEN_TIMEOUT_MS) {
-            JourneyDevice.logCount(PHOTO_BOOK_ADDED) > added
-        }
-        awaitSynced("the comic to open in the reader", OPEN_TIMEOUT_MS) {
-            rule.shows(hasText(COMIC_TITLE))
-        }
-    }
-
-    /**
-     * DjVu through DjVuLibre (ADR 2026-10-27-djvu-books): one with a text layer opens as a text book showing its first
-     * paragraph, joined across lines and a broken word; a scan (no text layer) becomes a photo book that opens by
-     * itself, like a comic.
-     */
-    private fun openWithReadsDjvuBooks() {
-        backToTabs()
-        val textUri = JourneyDevice.downloadedBook(DJVU_TEXT)
-        val textHost = activity()
-        JourneyDevice.onMain { textHost.startActivity(JourneyDevice.openWith(textUri, DJVU_TYPE)) }
-        awaitSynced("$DJVU_TEXT to show \"$DJVU_SENTENCE\" in the reader", OPEN_TIMEOUT_MS) {
-            rule.shows(hasText(DJVU_SENTENCE, substring = true))
-        }
-        backToTabs()
-        val added = JourneyDevice.logCount(PHOTO_BOOK_ADDED)
-        val scanUri = JourneyDevice.downloadedBook(DJVU_SCAN)
-        val scanHost = activity()
-        JourneyDevice.onMain { scanHost.startActivity(JourneyDevice.openWith(scanUri, DJVU_TYPE)) }
-        awaitSynced("the DjVu scan to be added as a photo book", OPEN_TIMEOUT_MS) {
-            JourneyDevice.logCount(PHOTO_BOOK_ADDED) > added
-        }
-        awaitSynced("the DjVu scan to open in the reader", OPEN_TIMEOUT_MS) {
-            rule.shows(hasText(DJVU_SCAN_TITLE))
-        }
-    }
-
-    /** Waits on the Compose test clock (frames and effects run meanwhile); a timeout lists the app's last log lines. */
-    private fun awaitSynced(what: String, timeoutMs: Long, condition: () -> Boolean) {
-        try {
-            rule.waitUntil(timeoutMs, condition)
-        } catch (e: ComposeTimeoutException) {
-            throw AssertionError("Timed out waiting for: $what. Last log lines: ${JourneyDevice.logTail(LOG_TAIL)}", e)
-        }
-    }
 
     private fun pause() {
         JourneyDevice.onMain(requireNotNull(port)::pause)
@@ -886,23 +832,7 @@ class ReleaseJourneyTest {
         // TextBooks' own words when a text book opens, or does not (shown when a step times out).
         const val TEXT_BOOK_OPENED = "Text book opened"
         const val TEXT_BOOK_FAILED = "Text book not opened"
-        const val COMIC = "comic.cbz"
-        const val COMIC_TYPE = "application/vnd.comicbook+zip"
 
-        // The photo book is named after the file; the reader's top bar shows it.
-        const val COMIC_TITLE = "comic"
-
-        // assets/ebooks, written by scripts/fixtures/make_djvu_fixtures.py: its first paragraph has "remark-" / "able"
-        // across a line end, so the sentence shows only when the lines are joined.
-        const val DJVU_TEXT = "text.djvu"
-        const val DJVU_SCAN = "scan.djvu"
-        const val DJVU_TYPE = "image/vnd.djvu"
-        const val DJVU_SENTENCE = "The first page of a small DjVu book has a remarkable sentence"
-        const val DJVU_SCAN_TITLE = "scan"
-
-        // PhotoBooks' own words once the photo book is in the library.
-        const val PHOTO_BOOK_ADDED = "Photo book added"
-        const val LOG_TAIL = 30
         val firstRunSteps = FirstRunStep.entries.size
         const val MAX_BACKS = 4
         const val POLL_MS = 200L

@@ -105,6 +105,12 @@ enum class SettingKey(
         R.string.settings_group_pronunciation,
         R.string.found_terms_pronunciation,
     ),
+    HINTS(
+        R.string.settings_hints_title,
+        SettingsPage.ADVANCED,
+        R.string.settings_group_help,
+        R.string.found_terms_hints,
+    ),
     SHARE_LOGS(
         R.string.share_logs_title,
         SettingsPage.ADVANCED,

@@ -23,6 +23,7 @@ import io.github.skm0078.audora.core.model.AfterSentence
 import io.github.skm0078.audora.core.model.FocusSoundOptions
 import io.github.skm0078.audora.core.model.ReadingModes
 import io.github.skm0078.audora.core.model.VoiceShaping
+import io.github.skm0078.audora.ui.theme.InPlaceGroup
 import io.github.skm0078.audora.ui.theme.OptionGroup
 import io.github.skm0078.audora.ui.theme.OptionSubtitle
 import io.github.skm0078.audora.ui.theme.OptionTitle
@@ -64,7 +65,8 @@ class SpeechRequest(val spot: SpeechSpot?, val onTaken: () -> Unit) {
 
 /**
  * A group's header row: its name, what is set in it ([summary]), and an arrow that turns when it opens. TalkBack hears
- * "expanded" or "collapsed". [content] is composed only while open.
+ * "expanded" or "collapsed". [content] is composed only while open; opening it scrolls it into view
+ * ([InPlaceGroup]).
  */
 @Composable
 internal fun SpeechGroup(
@@ -77,7 +79,17 @@ internal fun SpeechGroup(
 ) {
     val title = stringResource(spot.title)
     val state = stringResource(if (open) R.string.more_options_expanded else R.string.more_options_collapsed)
-    OptionGroup(title = null, modifier = modifier) {
+    InPlaceGroup(
+        open,
+        onOpenChange = { onToggle() },
+        header = { toggle -> SpeechGroupHeader(title, summary, open, state, toggle) },
+        modifier = modifier,
+    ) { content() }
+}
+
+@Composable
+private fun SpeechGroupHeader(title: String, summary: String, open: Boolean, state: String, onToggle: () -> Unit) {
+    OptionGroup(title = null) {
         ListItem(
             headlineContent = { OptionTitle(title, enabled = true) },
             supportingContent = { OptionSubtitle(summary, isError = false) },
@@ -95,7 +107,6 @@ internal fun SpeechGroup(
                 .semantics { stateDescription = state },
         )
     }
-    if (open) content()
 }
 
 /** The Sound group's switches that are on, by name; none is "All off". */

@@ -148,6 +148,7 @@ import io.github.skm0078.audora.ui.reader.PlayerConnectionEffect
 import io.github.skm0078.audora.ui.reader.PlayerScreen
 import io.github.skm0078.audora.ui.reader.ReaderActions
 import io.github.skm0078.audora.ui.reader.ReaderDocumentOpener
+import io.github.skm0078.audora.ui.reader.ReaderHintLinks
 import io.github.skm0078.audora.ui.reader.ReaderModel
 import io.github.skm0078.audora.ui.reader.ReaderScreen
 import io.github.skm0078.audora.ui.reader.ReaderState
@@ -587,6 +588,7 @@ class MainActivity : ComponentActivity() {
                 onPlaceOpened = { nav.pendingPlace = null },
                 onOtherBookPlaying = { other -> nav.navigate(AppDestination.Player(other, from)) },
                 speech = nav.speechFor(id),
+                hintLinks = readerHintLinks(id, books, nav),
                 // Taken once, so opening the book again later never starts reading by itself.
                 onAutoResumeTaken = { nav.autoResumeBook = null },
             )
@@ -821,6 +823,7 @@ class MainActivity : ComponentActivity() {
         onPlaceOpened: () -> Unit = {},
         onOtherBookPlaying: (BookId) -> Unit = {},
         speech: SpeechRequest = SpeechRequest.NONE,
+        hintLinks: ReaderHintLinks = ReaderHintLinks.None,
         onAutoResumeTaken: () -> Unit = {},
     ) {
         val id = target.id
@@ -882,7 +885,7 @@ class MainActivity : ComponentActivity() {
                 onPlaceOpened()
             }
         }
-        val screen = BookScreen(target, books, onShowPage, onOtherBookPlaying, speech)
+        val screen = BookScreen(target, books, onShowPage, onOtherBookPlaying, speech, hintLinks)
         WithOpeningLine(state.openingLine, model::openingLineShown) {
             ReaderContent(screen, state, actions, ocrState, notesState, notes, voiceRows, port, thumbs, studio)
         }
@@ -976,6 +979,7 @@ class MainActivity : ComponentActivity() {
                 voicePacks = remember { voicePackActions(voiceManager) },
                 people = { panel -> CharacterGuidePanel(target.id, state.page, resumeAnchors, panel) },
                 speech = screen.speech,
+                hintLinks = screen.hintLinks,
             )
         }
         // What is playing, not the book on screen: with A playing, B's reader must not hide B from the sheet.
@@ -1076,6 +1080,7 @@ internal data class BookScreen(
     val onShowPage: () -> Unit,
     val onOtherBookPlaying: (BookId) -> Unit,
     val speech: SpeechRequest = SpeechRequest.NONE,
+    val hintLinks: ReaderHintLinks = ReaderHintLinks.None,
 )
 
 /**

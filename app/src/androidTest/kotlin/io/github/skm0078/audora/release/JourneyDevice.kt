@@ -13,6 +13,8 @@ import android.os.Environment
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
@@ -116,6 +118,9 @@ object JourneyDevice {
         }
         fail("Timed out after $timeoutMs ms waiting for: $what. ${state()}")
     }
+
+    /** A switch or checkbox row by its title: the title is merged into the toggleable row. */
+    fun toggleRow(title: String): SemanticsMatcher = hasText(title) and isToggleable()
 
     /**
      * Whether a node matching [matcher] is on screen. False, not a failure, while the screen cannot be read (see
