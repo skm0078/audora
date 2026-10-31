@@ -8,13 +8,12 @@ package io.github.skm0078.audora.release
 import android.net.Uri
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasClickAction
-import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performScrollToNode
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import io.github.skm0078.audora.MainActivity
@@ -41,8 +40,16 @@ internal class MissingFileJourney(
         rule.onAllNodes(matcher).onFirst().performClick()
     }
 
+    /** Scrolls the library's list until [matcher] is on screen (the list composes only the rows in view). */
+    private fun scrollTo(matcher: SemanticsMatcher) {
+        val list = hasScrollToIndexAction()
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(list) }
+        rule.onAllNodes(list).onFirst().performScrollToNode(matcher)
+        rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(matcher) }
+    }
+
     /**
-     * A book of its own is added and found by a search, with no warning. Its file is deleted, the app goes to the
+     * A book of its own is added and shown in the library's list, with no warning. Its file is deleted, the app goes to the
      * background and comes back (pause and resume, as switching apps does), and the row says the file has gone. The
      * book is removed at the end, also when a check fails.
      */
@@ -57,31 +64,29 @@ internal class MissingFileJourney(
         try {
             backToTabs()
             tap(hasText(text(R.string.tab_library)) and hasClickAction())
-            tap(hasContentDescription(text(R.string.library_search)))
-            rule.onAllNodes(hasSetTextAction()).onFirst().performTextInput(TITLE)
-            val row = hasText(TITLE, substring = true) or hasContentDescription(TITLE, substring = true)
-            rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(row) }
-            val missing = hasText(text(R.string.library_file_missing), substring = true)
-            check(!rule.shows(missing)) { "The book's file was flagged before it was deleted" }
+            // The library's own list, not the app's search: only the library screen re-checks files on its return.
+            val row = hasText(TITLE, substring = true) and hasClickAction()
+            scrollTo(row)
+            val flagged = row and hasText(text(R.string.library_file_missing), substring = true)
+            check(!rule.shows(flagged)) { "The book's file was flagged before it was deleted" }
 
             check(file.delete()) { "The book's file could not be deleted" }
             val running = checkNotNull(scenario()) { "The journey has no running app" }
             running.moveToState(Lifecycle.State.STARTED)
             running.moveToState(Lifecycle.State.RESUMED)
 
-            rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(missing) }
+            scrollTo(row)
+            rule.waitUntil(UI_TIMEOUT_MS) { rule.shows(flagged) }
         } finally {
             runBlocking { library.remove(id) }
-            repeat(MAX_BACKS) { if (rule.shows(hasSetTextAction())) JourneyDevice.pressBackKey() }
             backToTabs()
         }
     }
 
     private companion object {
         const val UI_TIMEOUT_MS = 15_000L
-        const val MAX_BACKS = 3
 
-        /** One word no other journey book has in its title, so the search shows this book alone. */
+        /** One word no other journey book has in its title, so the row found is this book's. */
         const val TITLE = "Vanishing"
     }
 }
