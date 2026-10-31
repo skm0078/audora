@@ -124,6 +124,8 @@ class ReleaseJourneyTest {
             firstRunToTheLibrary()
             readingSharingAndVoices()
             step("62 voice commands use the LibriSpeech model", CommandsModelJourney(rule, ::backToTabs)::isLibriSpeech)
+            step("65 Bengali voices say they are beta", BetaLanguageJourney(rule, ::backToTabs)::bengaliVoicesSayBeta)
+            step("66 a Bengali voice that reads letters is handed words as said", BengaliSpellingJourney::spelledAsSaid)
             // Last on purpose: run after step 19, the thousand books' background work left step 26 without its menu.
             step("40 search finds the last of 1,000 books", LoadJourney(rule, ::backToTabs)::lastOfManyIsFound)
         } finally {
@@ -204,7 +206,6 @@ class ReleaseJourneyTest {
         step("43 arrows, maths and emoji reach the voice as words or not at all") {
             SymbolJourney.symbolsAreSaidOrLeftOut()
         }
-        step("66 a Bengali voice that reads letters is handed words as said", BengaliSpellingJourney::spelledAsSaid)
         step("32 Made plays a saved audiobook like the book player", MadeJourney(rule, ::backToTabs)::playsLikeBook)
         step("41 catalogues are a curated list", CatalogueJourney(rule, ::backToTabs)::theCuratedCataloguesAreListed)
         step("44 Make it yours names the greeting and adds a part", HomeJourney(rule, ::backToTabs)::makesItYours)
@@ -228,7 +229,6 @@ class ReleaseJourneyTest {
         step("59 an opened group shows", OpenInPlaceJourney(rule, BOOK, ::backToTabs)::anOpenedGroupComesIntoView)
         step("60 search finds the switch that mutes tips", HintsJourney(rule, ::backToTabs)::searchFindsTheMute)
         step("61 Voices & licences opens every licence text", NoticesJourney(rule, ::backToTabs)::everyLicenceTextOpens)
-        step("65 Bengali voices say they are beta", BetaLanguageJourney(rule, ::backToTabs)::bengaliVoicesSayBeta)
     }
 
     /**

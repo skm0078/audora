@@ -98,6 +98,7 @@ internal fun rememberBetaScanOffer(
         val lang = betaLang?.takeIf { it !in phoneVoices } ?: return@LaunchedEffect
         when (val found = SpeechEngines.phoneVoice(context, lang)) {
             is Outcome.Success -> phoneVoices = phoneVoices + (lang to found.value)
+
             // The usual case on a phone without the language's voice pack: the notice then only explains.
             is Outcome.Failure -> AudoraLog.i(TAG, "No phone voice to offer for ${lang.name}: ${found.error}")
         }
@@ -131,3 +132,9 @@ internal fun BetaScanNotice(lang: Lang?, offer: BetaScanOffer) {
         }
     }
 }
+
+/**
+ * What the notices at the top of an open page need beyond the page: the language-pack offer while it is the notice
+ * shown ([VoicePackNotice]), and the voices, for [BetaScanNotice].
+ */
+internal class PageTopNotices(val voicePack: VoicePackOffer?, val voices: List<VoiceRow>)
