@@ -35,6 +35,7 @@ the open models that read it better are too big and slow for a phone.
   page is shown in a reader session; no new dependency, model or download.
 - Graduating Bengali is deleting it from both lists; `BetaLanguagesCatalogTest` and `BetaScanNoticeTest` then need
   the same edit, on purpose.
-- The pronunciation fixes for clean text (ADR 2026-10-30-bengali-spoken-spelling) are a separate PR and still needed.
+- The pronunciation fixes for clean text (ADR 2026-10-30-bengali-spoken-spelling) ship in the same PR: the labels say
+  what is still rough, the respelling fixes what can be fixed on the text we are given.
 - **Tests:** `BetaScanNoticeTest`, `CatalogVoiceParserTest`, `VoiceRowsTest`, `BetaLanguagesCatalogTest`; release
   journey step 65 (`BetaLanguageJourney`).
