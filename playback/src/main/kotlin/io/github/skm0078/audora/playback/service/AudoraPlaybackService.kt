@@ -51,6 +51,7 @@ import io.github.skm0078.audora.playback.browse.LibraryBrowser
 import io.github.skm0078.audora.playback.browse.OutlineChapters
 import io.github.skm0078.audora.playback.browse.ResourceBrowseTexts
 import io.github.skm0078.audora.playback.contract.PendingIntentCodes
+import io.github.skm0078.audora.playback.contract.PlaybackServiceLife
 import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.covers.CoverFolders
 import io.github.skm0078.audora.playback.focus.FocusLoops
@@ -241,13 +242,8 @@ class AudoraPlaybackService : MediaLibraryService() {
             env = sessionEnvironment(scope, AccelerometerShakes(this, config.sleep)),
         )
         followReadingChanges()
-        resumption = PlaybackResumption(
-            anchors = resumeAnchors,
-            library = library,
-            locator = locator,
-            scope = scope,
-            player = player,
-        ) { bookSession }
+        resumption = playbackResumption()
+        PlaybackServiceLife.created()
         AudoraLog.i(TAG, "Service created")
     }
 
@@ -451,10 +447,20 @@ class AudoraPlaybackService : MediaLibraryService() {
         }
     }
 
+    /** A headset's play or the system's resumption card with nothing loaded: the newest book, where it stopped. */
+    private fun playbackResumption() = PlaybackResumption(
+        anchors = resumeAnchors,
+        library = library,
+        locator = locator,
+        scope = scope,
+        player = player,
+    ) { bookSession }
+
     /** The open book's fixes changed while it plays: what was rendered ahead is rendered again. */
     private fun onBookRulesChanged() = bookSession.restartRendering()
 
     override fun onDestroy() {
+        PlaybackServiceLife.destroyed()
         if (restoring) {
             super.onDestroy()
             return
