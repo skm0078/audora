@@ -51,6 +51,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -191,6 +192,7 @@ private fun LibraryMain(
     parts: LibraryParts,
     picked: PanePick?,
 ) {
+    val folding = remember { AddBookFolding() }
     Scaffold(
         modifier = modifier,
         contentWindowInsets = if (picked == null) TAB_INSETS else BESIDE_PANE_INSETS,
@@ -199,12 +201,12 @@ private fun LibraryMain(
         },
         floatingActionButton = {
             if (!LocalKidsMode.current && listState is LibraryListState.Loaded && listState.all.isNotEmpty()) {
-                AddBookButton { if (!busy) onAddPdf() }
+                AddBookButton(folding.expanded) { if (!busy) onAddPdf() }
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        Column(modifier = Modifier.padding(innerPadding).fillMaxSize().nestedScroll(folding)) {
             if (busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             parts.banner()
             LibraryHint(listState, onAddPdf)
