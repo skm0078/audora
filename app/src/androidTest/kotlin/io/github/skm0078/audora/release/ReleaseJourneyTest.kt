@@ -124,6 +124,7 @@ class ReleaseJourneyTest {
             firstRunToTheLibrary()
             readingSharingAndVoices()
             step("62 voice commands use the LibriSpeech model", CommandsModelJourney(rule, ::backToTabs)::isLibriSpeech)
+            step("64 a text page never says OCR", PageWaitJourney(rule, BOOK, ::backToTabs)::textPageNeverSaysOcr)
             step("65 Bengali voices say they are beta", BetaLanguageJourney(rule, ::backToTabs)::bengaliVoicesSayBeta)
             step("66 a Bengali voice that reads letters is handed words as said", BengaliSpellingJourney::spelledAsSaid)
             // Last on purpose: run after step 19, the thousand books' background work left step 26 without its menu.

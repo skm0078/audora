@@ -31,6 +31,7 @@ import io.github.skm0078.audora.playback.text.TextBookText
 import io.github.skm0078.audora.playback.text.TextBooks
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
@@ -83,12 +84,14 @@ class PdfReaderDocumentOpener(
         logContext: String,
     ): Outcome<ReaderDocument, PdfOpenError> {
         val engine = PdfiumEngine.forUri(context, SharedPdfCopies.readableUri(context, documentUri))
-        // Same OCR, models and text cache as the playback service, so a page is recognised once for both.
-        val ocr = BookOcr.factory(context, documentUri, logContext)
+        // Same OCR, models and text cache as the playback service, so a page is recognised once for both; tracked so
+        // the slow-page notice says OCR only while OCR really runs.
+        val ocrInUse = OcrInUse()
+        val ocr = ocrInUse.tracking(BookOcr.factory(context, documentUri, logContext))
         val builder = ReadingUnitBuilder(cleanupConfig = textPreferences.cleanupConfig())
         return when (val opened = PdfBook.open(engine, password, logContext = logContext, ocr = ocr)) {
             is Outcome.Success -> Outcome.Success(
-                PdfReaderDocument(opened.value, engine, password, logContext, io, builder),
+                PdfReaderDocument(opened.value, engine, password, logContext, io, builder, ocrInUse),
             )
 
             is Outcome.Failure -> opened
@@ -122,6 +125,8 @@ private class TextReaderDocument(private val text: TextBookText) : ReaderDocumen
  * reader cancels the old load) must not wait behind it. [close] never blocks the main thread: the book closes once
  * the page being read lets go, and the renderer closes on [io].
  */
+// The book, what its renderer reopens (engine, password), its log name, thread, sentence builder and OCR tracker.
+@Suppress("LongParameterList")
 private class PdfReaderDocument(
     private val book: PdfBook,
     private val engine: PdfiumEngine,
@@ -129,8 +134,13 @@ private class PdfReaderDocument(
     private val logContext: String,
     private val io: CoroutineDispatcher,
     private val builder: ReadingUnitBuilder,
+    private val ocrInUse: OcrInUse,
 ) : ReaderDocument {
     private var renderer: PdfiumPageRenderer? = null
+
+    override val recognizing: StateFlow<Boolean> get() = ocrInUse.recognizing
+
+    override val ocrSpentMs: Long get() = ocrInUse.spentMs
 
     @Volatile
     private var closed = false

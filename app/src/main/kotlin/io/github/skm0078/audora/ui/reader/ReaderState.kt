@@ -114,6 +114,8 @@ data class ReaderState(
     /** The book's first open: its opening line shows once the first page has words ([ReaderModel.openingLineShown]). */
     val firstOpen: Boolean = false,
     val snippet: SnippetBox? = null,
+    /** The open book is reading a page with OCR right now: the slow-page notice names OCR only then. */
+    val recognizingText: Boolean = false,
 ) {
     val pageCount: Int? get() = (document as? DocumentState.Open)?.pageCount
 
