@@ -219,6 +219,7 @@ private fun AdvancedPage(
     }
     pronunciation?.let { SettingAnchor(SettingKey.PRONUNCIATION) { PronunciationGroup(it) } }
     OptionGroup(stringResource(R.string.settings_group_help)) {
+        SettingAnchor(SettingKey.HINTS) { HintsItem() }
         SettingAnchor(SettingKey.SHARE_LOGS) { ShareLogsItem(shareState, onShareLogs) }
     }
     onSimulateReadingSession?.let { simulate ->

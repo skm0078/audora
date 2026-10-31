@@ -1,0 +1,3 @@
+en: Small tips now show once when a feature would help, such as smart speed at high speed or Quiz me after a highlight. Turn them off in Settings › Help › Tips as you go.
+hi: अब कोई सुविधा काम आए तब छोटे सुझाव एक बार दिखते हैं, जैसे तेज़ गति पर स्मार्ट स्पीड या हाइलाइट के बाद क्विज़। इन्हें सेटिंग › मदद › काम के सुझाव में बंद करें।
+bn: এখন কোনো সুবিধা কাজে লাগলে ছোট টিপস একবার দেখা যায়, যেমন বেশি গতিতে স্মার্ট স্পিড বা হাইলাইটের পরে কুইজ। সেটিংস › সাহায্য › কাজের টিপস থেকে বন্ধ করুন।
