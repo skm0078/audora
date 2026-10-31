@@ -652,8 +652,8 @@ private class KnownTail(
 /** Route, reason and the scorer's measurements, for the log (no text). */
 private fun describe(quality: PageQuality): String = with(quality.signals) {
     "${quality.route} (${quality.reason}) letters=$letters indic=$indicLetters mapErrors=$unicodeMapErrorRate " +
-        "invisible=$invisibleShare garbage=$garbageRate invalidIndic=$invalidIndicRate legacy=$legacyShare " +
-        "legacyUnknown=$legacyUnknownRate"
+        "invisible=$invisibleShare garbage=$garbageRate invalidIndic=$invalidIndicRate virama=$viramaShare " +
+        "legacy=$legacyShare legacyUnknown=$legacyUnknownRate"
 }
 
 /**

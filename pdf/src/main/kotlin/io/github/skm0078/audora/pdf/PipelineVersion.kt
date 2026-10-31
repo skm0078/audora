@@ -72,5 +72,7 @@ package io.github.skm0078.audora.pdf
  *     read kept (WornPrintConfig), so its words can change.
  * 13 = a sentence too long for one unit and without spaces is cut between letters, never before a vowel sign or
  *     after a virama; a book's OCR languages follow most of its pages, not every language any page showed.
+ * 14 = a long Hindi or Bengali page with almost no virama (a font map that drops every conjunct) goes to OCR; a
+ *     Bengali "৷" drawn for a danda after a word becomes "।", so the sentence ends there.
  */
-const val PIPELINE_VERSION: Int = 13
+const val PIPELINE_VERSION: Int = 14

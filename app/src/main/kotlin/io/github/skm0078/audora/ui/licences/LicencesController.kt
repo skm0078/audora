@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/licences/LicencesController.kt
-// Purpose: "Voices & licences" screen state (P3-06): every voice's credits and an installed voice's licence files.
+// Purpose: "Voices & licences" screen state (P3-06): every voice's credits, an installed voice's licence files and
+//          every licence text the app carries.
 
 package io.github.skm0078.audora.ui.licences
 
@@ -19,14 +20,17 @@ interface LicenceSource {
     suspend fun licences(): List<VoiceLicence>
 
     suspend fun licenceTexts(id: String): List<LicenceText>
+
+    /** Every licence text and notice the APK carries, in reading order ([AppNotices]). */
+    suspend fun noticeTexts(): List<LicenceText>
 }
 
-/** The licence files of one voice, shown over the list. */
-data class OpenLicence(val voice: VoiceLicence, val texts: List<LicenceText>)
+/** Licence files shown over the list under [title]: one voice's, or all the app's. */
+data class OpenLicence(val title: String, val texts: List<LicenceText>)
 
 /**
  * @property voices null while the list loads.
- * @property open the voice whose licence files are shown, if any.
+ * @property open the licence files shown, if any.
  */
 data class LicencesState(
     val voices: List<VoiceLicence>? = null,
@@ -56,7 +60,15 @@ class LicencesController(private val source: LicenceSource, private val scope: C
             val texts = runCatchingLogged("Licence files of voice=${voice.id.name} unreadable") {
                 source.licenceTexts(voice.id.name)
             }.orEmpty()
-            mutable.update { it.copy(open = OpenLicence(voice, texts)) }
+            mutable.update { it.copy(open = OpenLicence(voice.label, texts)) }
+        }
+    }
+
+    /** Shows every licence text the app carries under [title]; a file that cannot be read shows none, and is logged. */
+    fun openNotices(title: String) {
+        scope.launch {
+            val texts = runCatchingLogged("App licence texts unreadable") { source.noticeTexts() }.orEmpty()
+            mutable.update { it.copy(open = OpenLicence(title, texts)) }
         }
     }
 

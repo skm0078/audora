@@ -207,6 +207,7 @@ private fun LibraryMain(
         Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             if (busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             parts.banner()
+            LibraryHint(listState, onAddPdf)
             LibraryContent(
                 listState = listState,
                 busy = busy,

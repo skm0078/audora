@@ -20,7 +20,7 @@ class TextLayerCheckTest {
         PageQuality(
             route = route,
             reason = if (route == PageRoute.TEXT_LAYER) RouteReason.TEXT_LAYER_OK else RouteReason.GARBAGE,
-            signals = PageSignals(letters, if (isIndic) letters else 0, 0f, 0f, 0f, 0f, 0f),
+            signals = PageSignals(letters, if (isIndic) letters else 0, 0f, 0f, 0f, 0f, 0f, 0f),
             indicOrder = IndicOrderEvidence.NONE,
             isIndic = isIndic,
         )

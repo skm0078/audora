@@ -1,0 +1,3 @@
+en: Bengali and Hindi books whose font hides joined letters are now read from the page picture, so words like "সাহিত্য" are read whole instead of with letters missing. Sentences that end in "৷" now pause where they end.
+hi: जिन बांग्ला और हिंदी किताबों का फ़ॉन्ट संयुक्त अक्षर छिपा देता है, वे अब पन्ने की तस्वीर से पढ़ी जाती हैं, इसलिए "साहित्य" जैसे शब्द पूरे पढ़े जाते हैं, अक्षर छूटते नहीं। "৷" पर खत्म होने वाले वाक्यों के बाद अब ठहराव आता है।
+bn: যেসব বাংলা আর হিন্দি বইয়ের ফন্ট যুক্তাক্ষর লুকিয়ে রাখে, সেগুলো এখন পাতার ছবি থেকে পড়া হয়, তাই "সাহিত্য"-র মতো শব্দ পুরো পড়া হয়, অক্ষর বাদ পড়ে না। "৷" দিয়ে শেষ হওয়া বাক্যের পরে এখন থামা হয়।
