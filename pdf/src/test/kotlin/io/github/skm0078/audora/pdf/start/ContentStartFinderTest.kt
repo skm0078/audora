@@ -9,7 +9,7 @@ import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.model.UnitKind
 import io.github.skm0078.audora.pdf.document.OutlineEntry
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -71,13 +71,13 @@ class ContentStartFinderTest {
     }
 
     @Test
-    fun `a short document is never searched`() = runTest {
+    fun `a short document is never searched`() = runBlocking {
         val search = finder.find(listOf(entry("Chapter 1", 3)), pageCount = 5, nowMs = { 0L }) { error("no reads") }
         assertEquals(StartSearch.FirstPage(StartSearch.Why.SHORT_DOCUMENT, 0), search)
     }
 
     @Test
-    fun `pages past title, copyright, contents and preface find the first chapter`() = runTest {
+    fun `pages past title, copyright, contents and preface find the first chapter`() = runBlocking {
         val book = Book(
             short("A Novel"),
             copyright(),
@@ -99,20 +99,20 @@ class ContentStartFinderTest {
     }
 
     @Test
-    fun `a chapter named only by its title starts the reading after the front matter`() = runTest {
+    fun `a chapter named only by its title starts the reading after the front matter`() = runBlocking {
         val found = Book(short("A Novel"), copyright(), page(heading("The Boy Who Lived"), prose())).search()
         assertEquals(StartSearch.Found(ContentStart(2, "The Boy Who Lived", setOf(TITLE, COPY), PAGES)), found)
     }
 
     @Test
-    fun `a contents page opening with chapter one is still the contents`() = runTest {
+    fun `a contents page opening with chapter one is still the contents`() = runBlocking {
         val found = Book(contents(firstLine = "Chapter 1 The Storm .... 1"), page(heading("Chapter 1"), prose()))
             .search() as StartSearch.Found
         assertEquals(1, found.start.page)
     }
 
     @Test
-    fun `a bengali book with its index and introduction starts at chapter one`() = runTest {
+    fun `a bengali book with its index and introduction starts at chapter one`() = runBlocking {
         val found = Book(
             short("কিশোর সাহিত্য সমগ্র"),
             page(heading("সূচিপত্র"), prose(words = 12)),
@@ -126,7 +126,7 @@ class ContentStartFinderTest {
     }
 
     @Test
-    fun `a hindi copyright page is told by its publisher words`() = runTest {
+    fun `a hindi copyright page is told by its publisher words`() = runBlocking {
         val found = Book(
             short("उपन्यास"),
             page(unit("प्रकाशक: राजकमल प्रकाशन, प्रथम संस्करण 2019, मूल्य 250 रुपये")),
@@ -137,7 +137,7 @@ class ContentStartFinderTest {
     }
 
     @Test
-    fun `a first page with its title, a preamble heading and its text starts the book`() = runTest {
+    fun `a first page with its title, a preamble heading and its text starts the book`() = runBlocking {
         // The Bengali Universal Declaration: "মুখবন্ধ" (preamble, also "preface") under the title, then the text.
         val first = page(heading("মানবাধিকারের সার্বজনীন ঘোষণাপত্র"), heading("মুখবন্ধ"), prose(word = "যেহেতু"))
         val book = Book(first, page(prose(word = "যেহেতু")), page(heading("অনুচ্ছেদ ১"), prose(word = "সকল")))
@@ -145,18 +145,18 @@ class ContentStartFinderTest {
     }
 
     @Test
-    fun `a book that starts with running text skips nothing`() = runTest {
+    fun `a book that starts with running text skips nothing`() = runBlocking {
         assertEquals(StartSearch.FirstPage(StartSearch.Why.STARTS_AT_ONCE, 1), Book(page(prose())).search())
     }
 
     @Test
-    fun `a scanned page that is not recognised yet ends the search without skipping`() = runTest {
+    fun `a scanned page that is not recognised yet ends the search without skipping`() = runBlocking {
         val search = Book(short("A Novel"), null, page(prose())).search()
         assertEquals(StartSearch.FirstPage(StartSearch.Why.SCANNED_PAGE, 1), search)
     }
 
     @Test
-    fun `a preface that never ends within reach skips nothing`() = runTest {
+    fun `a preface that never ends within reach skips nothing`() = runBlocking {
         val pages = listOf(short("A Novel"), page(heading("Preface"), prose())) + List(40) { page(prose()) }
         val book = Book(*pages.toTypedArray())
         assertEquals(StartSearch.FirstPage(StartSearch.Why.NOT_SURE, 30), book.search(pageCount = 300))
@@ -164,7 +164,7 @@ class ContentStartFinderTest {
     }
 
     @Test
-    fun `the search gives up when it runs out of time`() = runTest {
+    fun `the search gives up when it runs out of time`() = runBlocking {
         var clock = 0L
         val book = Book(*Array(20) { short("Plate $it") })
         val search = finder.find(emptyList(), 300, nowMs = { clock }) { p ->
