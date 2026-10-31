@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-hi/strings_job_leftovers.xml -->
+<!-- Purpose: The Jobs screen's new card and unfinished jobs' leftovers, in Hindi. -->
+<resources>
+    <string name="jobs_status_starting">शुरू हो रहा है</string>
+    <string name="jobs_status_percent">%1$d%%</string>
+    <string name="jobs_status_waiting">इंतज़ार में</string>
+    <string name="jobs_status_done">हो गया</string>
+    <string name="jobs_status_failed">पूरा नहीं हुआ</string>
+    <string name="jobs_status_stopped">रुका</string>
+    <string name="jobs_download_line">%1$s · %2$s</string>
+    <plurals name="jobs_download_kept_days">
+        <item quantity="one">रद्द करने पर जितना आ चुका है वह %1$d दिन रहता है: दोबारा डाउनलोड वहीं से आगे चलता है।</item>
+        <item quantity="other">रद्द करने पर जितना आ चुका है वह %1$d दिन रहता है: दोबारा डाउनलोड वहीं से आगे चलता है।</item>
+    </plurals>
+    <plurals name="jobs_unfinished_kept">
+        <item quantity="one">जितना हो चुका है (%1$s) वह %2$d दिन रखा जाता है, ताकि आप किताब के मेन्यू से आगे बढ़ा सकें। उसके बाद यह अपने-आप साफ़ हो जाता है।</item>
+        <item quantity="other">जितना हो चुका है (%1$s) वह %2$d दिन रखा जाता है, ताकि आप किताब के मेन्यू से आगे बढ़ा सकें। उसके बाद यह अपने-आप साफ़ हो जाता है।</item>
+    </plurals>
+    <string name="jobs_unfinished_delete">अधूरी फ़ाइलें हटाएँ</string>
+    <string name="jobs_unfinished_delete_question">अधूरी फ़ाइलें (%1$s) हटाएँ? फिर से शुरू करने पर यह शुरू से बनेगा।</string>
+    <string name="jobs_unfinished_deleted">अधूरी फ़ाइलें हटा दी गईं (%1$s)।</string>
+    <string name="jobs_leftovers_section">अधूरा काम</string>
+    <string name="jobs_leftovers_waiting">रुके कामों का बचा हुआ: %1$s</string>
+    <string name="jobs_leftovers_nothing">रुके कामों का कुछ बचा नहीं है</string>
+    <plurals name="jobs_leftovers_rule">
+        <item quantity="one">%1$d दिन रखा जाता है ताकि काम आगे बढ़ सके, फिर अपने-आप साफ़ हो जाता है। पूरी बनी ऑडियोबुक, कॉपियाँ और स्टूडियो ऑडियो कभी नहीं हटते।</item>
+        <item quantity="other">%1$d दिन रखा जाता है ताकि काम आगे बढ़ सके, फिर अपने-आप साफ़ हो जाता है। पूरी बनी ऑडियोबुक, कॉपियाँ और स्टूडियो ऑडियो कभी नहीं हटते।</item>
+    </plurals>
+    <string name="jobs_leftovers_last">पिछली सफ़ाई %1$s: %3$s से %2$s।</string>
+    <string name="jobs_leftovers_join">, </string>
+    <plurals name="jobs_leftovers_downloads">
+        <item quantity="one">%1$d डाउनलोड</item>
+        <item quantity="other">%1$d डाउनलोड</item>
+    </plurals>
+    <plurals name="jobs_leftovers_audiobooks">
+        <item quantity="one">%1$d ऑडियोबुक</item>
+        <item quantity="other">%1$d ऑडियोबुक</item>
+    </plurals>
+    <plurals name="jobs_leftovers_talking_books">
+        <item quantity="one">%1$d बोलती किताब</item>
+        <item quantity="other">%1$d बोलती किताबें</item>
+    </plurals>
+    <string name="jobs_leftovers_clean">अभी साफ़ करें</string>
+    <string name="jobs_leftovers_clean_question">रुके कामों का सारा बचा हुआ (%1$s) हटाएँ? जो डाउनलोड अभी चल रहा है, वह नहीं छुआ जाता। रुका काम फिर शुरू करने पर शुरू से बनेगा।</string>
+</resources>

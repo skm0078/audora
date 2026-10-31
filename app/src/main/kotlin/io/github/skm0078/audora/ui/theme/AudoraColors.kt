@@ -10,6 +10,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
+import io.github.skm0078.audora.core.library.ShelfColour
 
 // Daylight in forest green (maintainer's pick, 2026-10-28): a pale sage page instead of the old cream, deep forest
 // green for the accent (6.4:1 under white text), and the lamp's amber kept as the tertiary colour.
@@ -97,12 +98,22 @@ internal fun ColorScheme.trueBlack(): ColorScheme = copy(
     surfaceContainerHighest = surfaceContainerHigh,
 )
 
-/** Collection markers (the tablet sidebar): mid tones that read on light and dark surfaces alike, never alone. */
-internal val ShelfDotColours: List<Color> = listOf(
-    Color(0xFF9C5A33),
-    Color(0xFF2F7A5F),
-    Color(0xFF3F5FA8),
-    Color(0xFF7A4C9A),
-    Color(0xFFB0832A),
-    Color(0xFF3E8A99),
+/**
+ * The six colours a listener can give a collection: mid tones at least 3:1 against the light and dark backgrounds,
+ * and never carrying meaning alone (the name and emoji go with them). A collection given none takes one from its id.
+ */
+internal val ShelfColours: Map<ShelfColour, Color> = mapOf(
+    ShelfColour.CLAY to Color(0xFF9C5A33),
+    ShelfColour.FOREST to Color(0xFF2F7A5F),
+    ShelfColour.INDIGO to Color(0xFF3F5FA8),
+    ShelfColour.PLUM to Color(0xFF8252A4),
+    ShelfColour.SAFFRON to Color(0xFFB0832A),
+    ShelfColour.TEAL to Color(0xFF3E8A99),
 )
+
+/** Collection markers by id, in the order the sidebar has always used, so an unchanged shelf keeps its colour. */
+internal val ShelfDotColours: List<Color> = ShelfColours.values.toList()
+
+/** [colour] if the listener chose one, else the one this [id] has always had. */
+internal fun shelfDotColour(id: String, colour: ShelfColour?): Color =
+    colour?.let(ShelfColours::getValue) ?: ShelfDotColours[Math.floorMod(id.hashCode(), ShelfDotColours.size)]

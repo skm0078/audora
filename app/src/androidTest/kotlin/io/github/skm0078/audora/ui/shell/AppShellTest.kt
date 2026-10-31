@@ -144,9 +144,7 @@ class AppShellTest {
     fun theSidebarHasTheDrawersOwnRowsUnderTheCollections() {
         val opened = mutableListOf<String>()
         val links = PanelLinks(
-            onMakeItYours = { opened += "make it yours" },
-            onEditCollections = { opened += "collections" },
-            onListeningStats = { opened += "stats" },
+            onLibraryAction = { opened += it.name },
             onTour = { opened += "tour" },
             onSettings = { opened += "settings" },
         )
@@ -167,7 +165,7 @@ class AppShellTest {
         for (row in listOf(R.string.library_make_it_yours, R.string.collections_edit, R.string.settings_title)) {
             rule.onNodeWithText(text(row)).performScrollTo().performClick()
         }
-        rule.runOnIdle { assertEquals(listOf("make it yours", "collections", "settings"), opened) }
+        rule.runOnIdle { assertEquals(listOf("MAKE_IT_YOURS", "EDIT_COLLECTIONS", "settings"), opened) }
     }
 
     @Test

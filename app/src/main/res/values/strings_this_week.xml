@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values/strings_this_week.xml
+  Purpose: The home's "This week" card (personal touch 7): the week's listening against the goal, and the streak.
+-->
+<resources>
+    <string name="home_section_week">This week</string>
+    <string name="home_week_of_goal">%1$s of %2$s</string>
+    <plurals name="home_week_streak">
+        <item quantity="one">%d-day streak</item>
+        <item quantity="other">%d-day streak</item>
+    </plurals>
+    <string name="home_week_open">Open your listening</string>
+</resources>

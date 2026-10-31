@@ -43,6 +43,10 @@ import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.library.BookProgress
 import io.github.skm0078.audora.core.library.LibraryQuery
 import io.github.skm0078.audora.core.library.LibrarySort
+import io.github.skm0078.audora.core.model.Lang
+import io.github.skm0078.audora.core.words.LookedUpWord
+import io.github.skm0078.audora.di.LibraryEntryPoint
+import io.github.skm0078.audora.release.JourneyDevice
 import io.github.skm0078.audora.ui.Screens
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import org.junit.Assert.assertEquals
@@ -212,6 +216,28 @@ class BookMenuScreensTest {
         rule.runOnIdle {
             assertEquals(LibrarySort.RECENT, query.sort)
             assertEquals(LibraryLayout.AUTO, layout)
+        }
+    }
+
+    @Test
+    fun theBooksLookedUpWordsOpenInTheMenuAndBackReturnsToIt() {
+        val words = LibraryEntryPoint.of(context).lookedUpWords()
+        val meaning = "a sense of right and wrong"
+        words.add(LookedUpWord(GORA.id, "conscience", meaning, 2, "His conscience woke.", Lang.EN, 1))
+        try {
+            showLibrary()
+            openMenuByLongPress()
+
+            rule.onNodeWithText(text(R.string.book_words_title)).performScrollTo().performClick()
+            rule.onNodeWithText("conscience").assertExists()
+            rule.onNodeWithText(meaning).assertExists()
+            JourneyDevice.pressBackKey()
+            rule.waitForIdle()
+
+            rule.onNodeWithText("conscience").assertDoesNotExist()
+            rule.onNodeWithContentDescription(text(R.string.book_actions_title, "Gora")).assertExists()
+        } finally {
+            words.forget(GORA.id)
         }
     }
 

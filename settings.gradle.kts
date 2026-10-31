@@ -56,6 +56,9 @@ include(":core")
 include(":pdf")
 include(":speech")
 include(":playback")
+// Test-only: drives the dev build on an emulator to write app/src/main/baseline-prof.txt
+// (ADR 2026-10-30-baseline-profile).
+include(":baselineprofile")
 
 // Spikes: throwaway debug apps that answer one risky question each (docs/TICKET-PLAN.md). Never shipped.
 include(":spikes:playback")

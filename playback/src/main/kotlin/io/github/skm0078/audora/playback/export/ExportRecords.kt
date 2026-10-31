@@ -31,26 +31,33 @@ data class ExportRecord(
 }
 
 /**
+ * One book's record as it is stored: [hash] names its file (the book id is never stored), [touchedAtMs] is when it
+ * was last written, [record] what it says (null when it cannot be read).
+ */
+data class StoredExportRecord(val hash: String, val touchedAtMs: Long, val record: ExportRecord?)
+
+/**
  * One small text file per book in [folder], named by a hash of the book id and replaced whole (temp file synced
  * to disk, then rename), so a record never describes a file that was not finished, even after a power cut. It
  * holds chapter numbers, durations, file names built from page numbers and the files' MediaStore URIs: never the
  * book's text or title.
  */
 class ExportRecords(private val folder: File) {
-    fun load(bookId: String): ExportRecord? {
-        val file = fileOf(bookId)
-        if (!file.isFile) return null
-        return try {
-            decode(file.readLines())
-        } catch (e: IOException) {
-            AudoraLog.w(TAG, "Export record unreadable: ${e.javaClass.simpleName}")
-            null
-        }
+    fun load(bookId: String): ExportRecord? = read(fileOf(hashOf(bookId)))
+
+    /** Every book's record, for cleaning up what unfinished exports left ([AudiobookLeftovers]). */
+    fun stored(): List<StoredExportRecord> = folder.listFiles { file ->
+        file.isFile && file.name.endsWith(RECORD_SUFFIX)
+    }.orEmpty().map { file ->
+        StoredExportRecord(file.name.removeSuffix(RECORD_SUFFIX), file.lastModified(), read(file))
     }
 
     /** False (logged) if the record could not be written; the next export then starts over. */
-    fun save(bookId: String, record: ExportRecord): Boolean {
-        val file = fileOf(bookId)
+    fun save(bookId: String, record: ExportRecord): Boolean = saveStored(hashOf(bookId), record)
+
+    /** Replaces the record stored as [hash]; as [save]. */
+    fun saveStored(hash: String, record: ExportRecord): Boolean {
+        val file = fileOf(hash)
         val partial = File(folder, file.name + PARTIAL_SUFFIX)
         return try {
             if (!folder.isDirectory && !folder.mkdirs()) throw IOException("no folder")
@@ -67,12 +74,27 @@ class ExportRecords(private val folder: File) {
         }
     }
 
-    fun delete(bookId: String) {
-        val file = fileOf(bookId)
+    /** Deletes the record stored as [hash]: the next export of that book starts over. */
+    fun deleteStored(hash: String) {
+        val file = fileOf(hash)
         if (file.exists() && !file.delete()) AudoraLog.w(TAG, "Export record not deleted")
     }
 
-    private fun fileOf(bookId: String) = File(folder, hash(bookId) + RECORD_SUFFIX)
+    /** Temp files a kill left between writing a record and renaming it into place; none while no export runs. */
+    fun strayTemps(): List<File> =
+        folder.listFiles { file -> file.isFile && file.name.endsWith(PARTIAL_SUFFIX) }.orEmpty().asList()
+
+    private fun read(file: File): ExportRecord? {
+        if (!file.isFile) return null
+        return try {
+            decode(file.readLines())
+        } catch (e: IOException) {
+            AudoraLog.w(TAG, "Export record unreadable: ${e.javaClass.simpleName}")
+            null
+        }
+    }
+
+    private fun fileOf(hash: String) = File(folder, hash + RECORD_SUFFIX)
 
     private fun encode(record: ExportRecord): String = buildString {
         append(VERSION).append('\n')
@@ -105,14 +127,6 @@ class ExportRecords(private val folder: File) {
         }
     }
 
-    private fun chapterOf(line: String): SavedChapter? {
-        val parts = line.split(SEPARATOR, limit = CHAPTER_FIELDS)
-        val number = parts.getOrNull(0)?.toIntOrNull()
-        val durationMs = parts.getOrNull(1)?.toLongOrNull()
-        if (parts.size != CHAPTER_FIELDS || number == null || durationMs == null) return null
-        return SavedChapter(number, name = parts[NAME_FIELD], durationMs, location = parts[LOCATION_FIELD])
-    }
-
     companion object {
         private const val FOLDER = "audiobook-exports"
         private const val TAG = "Export.Records"
@@ -129,11 +143,20 @@ class ExportRecords(private val folder: File) {
         private const val PARTIAL_SUFFIX = ".partial"
         private const val HASH_HEX_CHARS = 16
 
+        private fun chapterOf(line: String): SavedChapter? {
+            val parts = line.split(SEPARATOR, limit = CHAPTER_FIELDS)
+            val number = parts.getOrNull(0)?.toIntOrNull()
+            val durationMs = parts.getOrNull(1)?.toLongOrNull()
+            if (parts.size != CHAPTER_FIELDS || number == null || durationMs == null) return null
+            return SavedChapter(number, name = parts[NAME_FIELD], durationMs, location = parts[LOCATION_FIELD])
+        }
+
         /** The app's own records, in its files folder. */
         fun of(context: Context) = ExportRecords(File(context.filesDir, FOLDER))
 
-        private fun hash(value: String): String = MessageDigest.getInstance("SHA-256")
-            .digest(value.toByteArray())
+        /** The name a book's record is stored under ([StoredExportRecord.hash]). */
+        fun hashOf(bookId: String): String = MessageDigest.getInstance("SHA-256")
+            .digest(bookId.toByteArray())
             .joinToString("") { "%02x".format(it) }
             .take(HASH_HEX_CHARS)
     }

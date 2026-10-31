@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="book_voice_reads_at">এটি %1$s-এর ভয়েসে পড়া হয়, %2$s× গতিতে</string>
+    <string name="book_voice_reads">এটি %1$s-এর ভয়েসে পড়া হয়</string>
+    <string name="book_voice_at">এই বই %1$s× গতিতে চলে</string>
+    <string name="book_voice_kept">শুধু এই বইয়ের জন্য রাখা</string>
+    <string name="book_voice_change">বদলান</string>
+</resources>

@@ -36,10 +36,12 @@ When you add a document, add a line here in the same change. ADRs and progress e
 | Document | What it is for |
 | --- | --- |
 | [PERFORMANCE.md](PERFORMANCE.md) | How speed is measured: CI's debug-vs-dev timing, Share logs render lines, System Tracing and adb on the phone |
-| [RELEASING.md](RELEASING.md) | Signing keys, cutting a release from `prod`, Obtainium, Google Play, Data safety answers |
+| [RELEASING.md](RELEASING.md) | Signing keys, cutting a release from `prod`, Obtainium, Google Play, Data safety, content rating and foreground-service answers |
+| [store/listing.md](store/listing.md) | Play store listing text (English, Hindi, Bengali), graphics and category |
 | [index.html](index.html) | Public home page, English, Hindi and Bengali (GitHub Pages, served from `prod` `/docs`); no trackers or external requests |
 | [assets/](assets/) | The home page's stylesheet, Hindi and Bengali text (`i18n.js`), web-sized logo and icons |
 | [privacy.html](privacy.html) | Public privacy policy (the URL Play links to) |
+| [CONTENT.md](CONTENT.md) | How to write recipes and blog posts for the site (Markdown in `_recipes/` and `_posts/`, built by GitHub Pages) |
 | [store/](store/) | Play icon and feature graphic (SVG sources and PNGs) |
 
 ## Research in the repository

@@ -70,7 +70,8 @@ import io.github.skm0078.audora.ui.theme.WindowWidths
  * @param book the library's book, for its cover.
  * @param spokenWord the word being said in the spoken sentence (plan item 14), marked like the reader marks it; read
  *   only by the sentence, so the rest of the player does not redraw on every word.
- * @param notes the book's bookmarks, for the one-tap bookmark beside the title (CF-2), its notice and the note dialog.
+ * @param notes the book's bookmarks and highlights, for the line actions under the sentence (Bookmark, Highlight,
+ *   Share), the bookmark's notice and the note dialog.
  */
 @Composable
 fun PlayerScreen(
@@ -86,11 +87,24 @@ fun PlayerScreen(
     spokenWord: () -> IntRange? = { null },
     notes: NotesState = NotesState(),
     notesActions: BookNotesActions = BookNotesActions.None,
+    speech: SpeechRequest = SpeechRequest.NONE,
 ) {
     val title = state.title.orEmpty()
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
         BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-            val parts = PlayerParts(state, config, actions, onShowPage, onOpenUpNext, title, book, covers, notes)
+            val parts = PlayerParts(
+                state,
+                config,
+                actions,
+                onShowPage,
+                onOpenUpNext,
+                title,
+                book,
+                covers,
+                notes,
+                speech,
+                notesActions,
+            )
             // A phone in landscape, a foldable open or a tablet on its side: book and progress on one side, the
             // sentence and the controls on the other, instead of one tall column squeezed into a short window.
             if (rememberPanes(maxWidth, maxHeight)) {
@@ -104,13 +118,15 @@ fun PlayerScreen(
                         PlayerBody(parts, spokenWord, compact = maxHeight < COMPACT_HEIGHT)
                     }
                     PlayerBookmarkNotice(notes.quickBookmark, notesActions)
-                    PlayerControls(state, config, actions, voices)
+                    PlayerControls(parts, voices)
                 }
             }
         }
     }
-    // The note dialog a bookmark opens, and a failed save's message; the reader's other notes never open here.
+    // The note dialog a bookmark opens, the Share choices and a failed save's message.
     NotesOverlays(notes, notesActions, actions)
+    // So Highlight knows whether the line being read has one.
+    PlaceHighlights(state, notesActions)
 }
 
 /**
@@ -141,10 +157,13 @@ private data class PlayerParts(
     val book: Book?,
     val covers: CoverSource,
     val notes: NotesState,
+    val speech: SpeechRequest,
+    val notesActions: BookNotesActions,
 )
 
 @Composable
-private fun PlayerControls(state: ReaderState, config: ReaderConfig, actions: ReaderActions, voices: List<VoiceRow>) {
+private fun PlayerControls(parts: PlayerParts, voices: List<VoiceRow>) {
+    val (state, config, actions) = parts
     when {
         state.document !is DocumentState.Open -> Unit
 
@@ -155,7 +174,7 @@ private fun PlayerControls(state: ReaderState, config: ReaderConfig, actions: Re
             onForward = actions::onSkipForward,
         )
 
-        else -> ReaderControls(state, config, actions, voices = voices)
+        else -> ReaderControls(state, config, actions, voices = voices, speech = parts.speech)
     }
 }
 
@@ -178,6 +197,7 @@ private fun PlayerBody(parts: PlayerParts, spokenWord: () -> IntRange?, compact:
             spokenWord,
             if (compact) Modifier.height(COMPACT_SENTENCE_HEIGHT) else Modifier.weight(1f),
         )
+        PlayerLineActions(parts.state, parts.notes, parts.actions, parts.notesActions)
         ReplayAndProgress(parts)
     }
 }
@@ -220,8 +240,15 @@ private fun PlayerPanes(
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(END_PANE))
                     .padding(horizontal = Dimens.ScreenPadding),
             )
+            PlayerLineActions(
+                parts.state,
+                parts.notes,
+                parts.actions,
+                parts.notesActions,
+                Modifier.padding(horizontal = Dimens.ScreenPadding),
+            )
             PlayerBookmarkNotice(parts.notes.quickBookmark, notesActions)
-            PlayerControls(parts.state, parts.config, parts.actions, voices)
+            PlayerControls(parts, voices)
         }
     }
 }
@@ -284,7 +311,7 @@ private fun PlayerExtras(
     }
 }
 
-/** The cover, the title and, outside kids mode, the one-tap bookmark (CF-2) at the end, under the thumb's reach. */
+/** The cover and the title. */
 @Composable
 private fun BookLine(parts: PlayerParts, book: Book?) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceL)) {
@@ -302,14 +329,6 @@ private fun BookLine(parts: PlayerParts, book: Book?) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).semantics { heading() },
         )
-        if (!LocalKidsMode.current && parts.state.document is DocumentState.Open) {
-            val here = parts.state.sentenceHere
-            PlayerBookmarkButton(
-                marked = here != null && parts.notes.isBookmarked(here),
-                enabled = here != null,
-                onClick = parts.actions::onQuickBookmark,
-            )
-        }
     }
 }
 

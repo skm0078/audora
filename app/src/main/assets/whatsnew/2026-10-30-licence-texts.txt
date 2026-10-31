@@ -1,0 +1,3 @@
+en: Settings → Voices & licences now opens every licence text inside ListenLock: its own GPL and the notice of every library, engine and font it is built with.
+hi: सेटिंग्स → आवाज़ें और लाइसेंस में अब ListenLock के अंदर का हर लाइसेंस पाठ खुलता है: उसका अपना GPL और हर उस लाइब्रेरी, इंजन और फ़ॉन्ट का नोटिस जिससे वह बना है।
+bn: সেটিংস → ভয়েস ও লাইসেন্স-এ এখন ListenLock-এর ভেতরের প্রতিটি লাইসেন্সের লেখা খোলে: তার নিজের GPL আর যে লাইব্রেরি, ইঞ্জিন ও ফন্ট দিয়ে সে তৈরি, তাদের প্রত্যেকের নোটিস।

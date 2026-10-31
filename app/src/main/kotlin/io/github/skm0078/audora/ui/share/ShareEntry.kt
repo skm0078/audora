@@ -5,19 +5,31 @@
 package io.github.skm0078.audora.ui.share
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.text.TextCuts
+import io.github.skm0078.audora.playback.export.ShareSource
+import io.github.skm0078.audora.playback.export.ShareWords
 
 /** What the card screen was opened for. */
 sealed interface ShareCardRequest {
     val book: BookId
 
-    /** [lines] the listener picked, on zero-based [page] when it is known; [video] opens the screen on Video. */
-    data class Quote(override val book: BookId, val lines: String, val page: Int?, val video: Boolean = false) :
-        ShareCardRequest
+    /**
+     * [lines] the listener picked, on zero-based [page] when it is known; [video] opens the screen on Video.
+     * [pageText] is that page's whole text, for the card's "Whole page" (ADR 2026-10-30-whole-page-cards).
+     */
+    data class Quote(
+        override val book: BookId,
+        val lines: String,
+        val page: Int?,
+        val video: Boolean = false,
+        val pageText: String? = null,
+    ) : ShareCardRequest
 
     data class WholeBook(override val book: BookId) : ShareCardRequest
 
@@ -30,10 +42,14 @@ sealed interface ShareCardRequest {
         internal const val EXTRA_PAGE = "io.github.skm0078.audora.share.PAGE"
         internal const val EXTRA_VIDEO = "io.github.skm0078.audora.share.VIDEO"
         internal const val EXTRA_SNIPPET = "io.github.skm0078.audora.share.SNIPPET"
+        internal const val EXTRA_PAGE_TEXT = "io.github.skm0078.audora.share.PAGE_TEXT"
         private const val NO_PAGE = -1
 
         // A card shows 60 words; this much is plenty to cut them from and keeps the intent small.
         internal const val MAX_LINES_CHARS = 4_000
+
+        // A whole page is cut to 400 words; this much holds them in any of the app's scripts.
+        internal const val MAX_PAGE_CHARS = 8_000
 
         fun from(intent: Intent): ShareCardRequest? {
             val book = intent.getStringExtra(EXTRA_BOOK)?.takeIf(String::isNotBlank)?.let(::BookId) ?: return null
@@ -43,7 +59,7 @@ sealed interface ShareCardRequest {
             return when {
                 intent.getBooleanExtra(EXTRA_SNIPPET, false) -> Snippet(book, page ?: 0)
                 lines == null -> WholeBook(book)
-                else -> Quote(book, lines, page, video)
+                else -> Quote(book, lines, page, video, intent.getStringExtra(EXTRA_PAGE_TEXT))
             }
         }
 
@@ -53,6 +69,7 @@ sealed interface ShareCardRequest {
                 putExtra(EXTRA_LINES, TextCuts.take(request.lines, MAX_LINES_CHARS))
                 putExtra(EXTRA_PAGE, request.page ?: NO_PAGE)
                 putExtra(EXTRA_VIDEO, request.video)
+                request.pageText?.let { putExtra(EXTRA_PAGE_TEXT, TextCuts.take(it, MAX_PAGE_CHARS)) }
             }
             if (request is Snippet) {
                 putExtra(EXTRA_SNIPPET, true)
@@ -63,15 +80,16 @@ sealed interface ShareCardRequest {
 }
 
 /**
- * Called from the reader's sentence menu and the library's book menu (and, later, the reader's side panel), always
+ * Called from the reader's Share button and sentence menu and the library's book menu, always
  * from a tap while ListenLock is on screen. Nothing is shared until the listener presses Share on the card screen.
  */
 object ShareEntry {
     private const val TAG = "ShareCard"
+    private const val PLAIN_TEXT = "text/plain"
 
-    /** Lines from a book as a quote card; [page] is zero-based, as the reader counts. */
-    fun quote(context: Context, book: BookId, lines: String, page: Int?) =
-        open(context, ShareCardRequest.Quote(book, lines, page))
+    /** Lines from a book as a quote card; [page] is zero-based, as the reader counts, and [pageText] its whole text. */
+    fun quote(context: Context, book: BookId, lines: String, page: Int?, pageText: String? = null) =
+        open(context, ShareCardRequest.Quote(book, lines, page, pageText = pageText))
 
     /** The same lines as a quote video: the card screen opens on Video, read aloud in the book's voice. */
     fun video(context: Context, book: BookId, lines: String, page: Int?) =
@@ -82,6 +100,24 @@ object ShareEntry {
 
     /** The book itself: cover, title and author. */
     fun book(context: Context, book: BookId) = open(context, ShareCardRequest.WholeBook(book))
+
+    /**
+     * [lines] as plain text, in quotes and cut to the text limit, with [source]'s credit and ListenLock's link (ADR
+     * 2026-10-29-share-credit-and-link), straight to the app the listener picks.
+     */
+    fun text(context: Context, source: ShareSource, lines: String) {
+        val send = Intent(Intent.ACTION_SEND)
+            .setType(PLAIN_TEXT)
+            .putExtra(Intent.EXTRA_TEXT, ShareWords.caption(context, source, lines))
+        val chooser = Intent.createChooser(send, context.getString(R.string.sentence_menu_share_text))
+        if (context !is Activity) chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            context.startActivity(chooser)
+            AudoraLog.i(TAG, "Text share opened, page=${source.page}")
+        } catch (e: ActivityNotFoundException) {
+            AudoraLog.w(TAG, "No app to share text with: ${e.javaClass.simpleName}")
+        }
+    }
 
     private fun open(context: Context, request: ShareCardRequest) {
         AudoraLog.i(TAG, "Card screen opened for book=${request.book.logLabel} kind=${request.javaClass.simpleName}")

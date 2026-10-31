@@ -21,6 +21,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.playback.web.CuratedCatalogue
 import io.github.skm0078.audora.ui.library.LibraryAction
+import io.github.skm0078.audora.ui.library.LibraryActionPlace
 import io.github.skm0078.audora.ui.theme.AudoraTheme
 import org.junit.After
 import org.junit.Assert.assertNull
@@ -53,10 +54,10 @@ class WebBooksScreenTest {
     }
 
     @Test
-    fun theLibraryMenuOffersBothWebEntries() {
-        val inMenu = LibraryAction.entries.filter { it.inMenu }
-        assertTrue(LibraryAction.READ_WEB_PAGE in inMenu)
-        assertTrue(LibraryAction.BOOK_CATALOGUES in inMenu)
+    fun theAddBookSheetOffersBothWebEntries() {
+        val inSheet = LibraryAction.entries.filter { it.place == LibraryActionPlace.ADD_SHEET }
+        assertTrue(LibraryAction.READ_WEB_PAGE in inSheet)
+        assertTrue(LibraryAction.BOOK_CATALOGUES in inSheet)
     }
 
     @Test

@@ -41,6 +41,22 @@ class ReaderNoticeTest {
     }
 
     @Test
+    fun `a first-use hint waits for every other card`() {
+        assertEquals(
+            ReaderNotice.GESTURE_TIPS,
+            readerNotice(PageOrigin.TEXT, voicePackOffered = false, tipsPending = true, hintPending = true),
+        )
+        assertEquals(
+            ReaderNotice.VOICE_PACK,
+            readerNotice(PageOrigin.TEXT, voicePackOffered = true, tipsPending = false, hintPending = true),
+        )
+        assertEquals(
+            ReaderNotice.HINT,
+            readerNotice(PageOrigin.TEXT, voicePackOffered = false, tipsPending = false, hintPending = true),
+        )
+    }
+
+    @Test
     fun `nothing to say shows nothing`() {
         assertNull(readerNotice(PageOrigin.TEXT, voicePackOffered = false, tipsPending = false))
         assertNull(readerNotice(null, voicePackOffered = false, tipsPending = false))

@@ -37,13 +37,14 @@ import java.util.Locale
 
 /**
  * What the search text in [list] finds besides books; none in kids mode, where the book menu and You are hidden too.
- * The list is made again only when the language, the book it names or a shown value changes, and each keystroke
- * compares a few dozen short entries.
+ * The list is made again only when the language, the book it names or a shown value changes, and each pause in typing
+ * compares a few dozen short entries. It follows the text the books were narrowed for, so both change together; a
+ * cleared search finds nothing at once.
  */
 @Composable
 internal fun rememberFoundRows(list: LibraryListState.Loaded, values: Map<SettingKey, String>): List<FoundRow> {
     val kids = LocalKidsMode.current
-    val query = list.query.text
+    val query = list.narrowedFor.takeIf { list.query.text.isNotBlank() }.orEmpty()
     val texts = rememberFoundTexts()
     val book = remember(query, list.all, list.latest) { FoundIndex.bookFor(query, list) }
     val entries = remember(texts, book?.item, book?.reading, values) { FoundIndex.entries(texts, book, values) }

@@ -35,8 +35,11 @@ import kotlinx.coroutines.launch
  * @property editing the bookmark whose note is being written.
  * @property listOpen the bookmarks sheet is showing.
  * @property failed the last save failed; the screen says so once.
+ * @property menuOnShare the menu opened straight on its Share choices (the reader's Share button).
  * @property rangeFrom where a highlight over several sentences starts, while the listener picks where it ends.
+ * @property rangeForShare the passage being picked is to share ("Choose more lines"), not to highlight.
  * @property rangeRefused why the last such highlight was not made, shown once.
+ * @property sharing lines picked with "Choose more lines", while their Share choices show.
  * @property quickBookmark the bookmark the player's one-tap button just saved (CF-2), while its notice offers Add note
  *   and Undo.
  */
@@ -44,6 +47,7 @@ data class NotesState(
     val bookmarks: List<Bookmark> = emptyList(),
     val rules: List<PronunciationRule> = emptyList(),
     val menuFor: ReadingUnit? = null,
+    val menuOnShare: Boolean = false,
     val fixing: ReadingUnit? = null,
     val editing: Bookmark? = null,
     val listOpen: Boolean = false,
@@ -51,8 +55,10 @@ data class NotesState(
     val highlights: List<Highlight> = emptyList(),
     val placed: PlacedHighlights = PlacedHighlights(),
     val rangeFrom: ReadingUnit? = null,
+    val rangeForShare: Boolean = false,
     val rangeRefused: RangeRefusal? = null,
     val quickBookmark: Bookmark? = null,
+    val sharing: SharedPassage? = null,
 ) {
     /** [unit] already has a bookmark: the player shows its bookmark button filled. */
     fun isBookmarked(unit: ReadingUnit): Boolean = bookmarks.any { it.marks(unit) }
@@ -76,7 +82,13 @@ enum class RangeRefusal {
 
     /** A page in it could not be read now (a scanned page not read yet, or a page that failed). */
     PAGE_UNREADABLE,
+
+    /** Lines to share would cover more than [HighlightConfig.maxPassagePages] pages. */
+    SHARE_TOO_LONG,
 }
+
+/** Lines picked to share, from the start of [first] to the end of [last]; [quote] their words, reading order. */
+data class SharedPassage(val first: ReadingUnit, val last: ReadingUnit, val quote: String)
 
 /**
  * The showing page's highlights by the [ReadingUnit.index] of each sentence they cover, found again after a pipeline
@@ -88,6 +100,9 @@ data class PlacedHighlights(val page: Int? = null, val byIndex: Map<Int, List<Hi
 @Suppress("TooManyFunctions") // One per control in the sentence menu, the bookmarks sheet and the fix dialog.
 interface BookNotesActions {
     fun openMenu(unit: ReadingUnit) = Unit
+
+    /** The reader's Share button: [unit]'s menu, opened on its Share choices. */
+    fun openShare(unit: ReadingUnit) = Unit
 
     fun dismissMenu() = Unit
 
@@ -114,7 +129,13 @@ interface BookNotesActions {
     /** Highlights from the start picked to [unit], on any page after it or before it. */
     fun endRange(unit: ReadingUnit) = Unit
 
+    /** "Choose more lines": [unit] starts lines to share; the next sentence tapped ends them ([endRange]). */
+    fun startShareRange(unit: ReadingUnit) = Unit
+
     fun cancelRange() = Unit
+
+    /** The Share choices for picked lines closed, shared or not. */
+    fun dismissSharing() = Unit
 
     fun dismissRangeRefusal() = Unit
 
@@ -212,7 +233,9 @@ class BookNotesModel(
     private fun placed(highlights: List<Highlight>) =
         PlacedHighlights(pageUnits.firstOrNull()?.page, placement.place(highlights, pageUnits))
 
-    override fun openMenu(unit: ReadingUnit) = mutableState.update { it.copy(menuFor = unit) }
+    override fun openMenu(unit: ReadingUnit) = mutableState.update { it.copy(menuFor = unit, menuOnShare = false) }
+
+    override fun openShare(unit: ReadingUnit) = mutableState.update { it.copy(menuFor = unit, menuOnShare = true) }
 
     override fun dismissMenu() = mutableState.update { it.copy(menuFor = null) }
 
@@ -293,26 +316,47 @@ class BookNotesModel(
         }
     }
 
-    override fun startRange(unit: ReadingUnit) = mutableState.update { it.copy(menuFor = null, rangeFrom = unit) }
+    override fun startRange(unit: ReadingUnit) =
+        mutableState.update { it.copy(menuFor = null, rangeFrom = unit, rangeForShare = false) }
+
+    override fun startShareRange(unit: ReadingUnit) =
+        mutableState.update { it.copy(menuFor = null, rangeFrom = unit, rangeForShare = true) }
 
     override fun cancelRange() = mutableState.update { it.copy(rangeFrom = null) }
+
+    override fun dismissSharing() = mutableState.update { it.copy(sharing = null) }
 
     override fun dismissRangeRefusal() = mutableState.update { it.copy(rangeRefused = null) }
 
     /**
      * One highlight from the earlier of the two sentences to the later, its quote their words (sentences without any,
-     * "* * *", are left out of it). Pages between are read through [unitsOf]; a passage longer than
-     * [HighlightConfig.maxPassagePages] pages, or one over a page that cannot be read now, is refused and said so.
+     * "* * *", are left out of it); for "Choose more lines", the same lines' Share choices instead. Pages between are
+     * read through [unitsOf]; a passage longer than [HighlightConfig.maxPassagePages] pages, or one over a page that
+     * cannot be read now, is refused and said so.
      */
     override fun endRange(unit: ReadingUnit) {
-        val from = state.value.rangeFrom ?: return
+        val picking = state.value
+        val from = picking.rangeFrom ?: return
         mutableState.update { it.copy(rangeFrom = null) }
         val store = highlights
         val (first, last) = if (unit.isBefore(from)) unit to from else from to unit
+        val tooLong = last.page - first.page >= config.maxPassagePages
         when {
+            picking.rangeForShare && tooLong -> refuse(RangeRefusal.SHARE_TOO_LONG)
+            picking.rangeForShare -> sharePassage(first, last)
             store == null -> Unit
-            last.page - first.page >= config.maxPassagePages -> refuse(RangeRefusal.TOO_LONG)
+            tooLong -> refuse(RangeRefusal.TOO_LONG)
             else -> highlightPassage(store, first, last)
+        }
+    }
+
+    private fun sharePassage(first: ReadingUnit, last: ReadingUnit) {
+        scope.launch {
+            val passage = passage(first, last) ?: return@launch refuse(RangeRefusal.PAGE_UNREADABLE)
+            val quote = passage.filter { it.hasWords() }.joinToString(" ") { it.text.trim() }
+            if (quote.isEmpty()) return@launch
+            AudoraLog.i(TAG, "Lines picked to share, $logContext pages=${first.page}-${last.page}")
+            mutableState.update { it.copy(sharing = SharedPassage(first, last, quote)) }
         }
     }
 

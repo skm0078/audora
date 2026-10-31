@@ -87,8 +87,8 @@ private fun LockedScreen(activity: Activity, session: AppLockSession) {
     }
     // A prompt left open by a lock that went away some other way (the lock turned off) would cover the open app.
     DisposableEffect(Unit) { onDispose { prompt?.cancel() } }
-    // Its own controller, so the lock never reaches into the screens it hides; the mini player under it has the
-    // service bound already, so this binds nothing new. Whether it reads, and Pause: never what it reads.
+    // Its own controller, so the lock never reaches into the screens it hides. Like the mini player's, it joins the
+    // service only while it is up: nothing playing, nothing to show. Whether it reads, and Pause: never what it reads.
     val playback = rememberConnectedPlaybackPort()
     val snapshot by playback.state.collectAsStateWithLifecycle()
     LockSaver(reading = snapshot.wantsToPlay, onPause = playback::pause, onUnlock = ask)

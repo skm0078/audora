@@ -49,6 +49,8 @@
       footPrivacy: "गोपनीयता नीति",
       footSource: "सोर्स कोड (GPL-3.0)",
       footIssues: "समस्या बताएँ",
+      footRecipes: "रेसिपी: ListenLock कैसे इस्तेमाल करें (अंग्रेज़ी में)",
+      footBlog: "ब्लॉग (अंग्रेज़ी में)",
       footDocs: "डेवलपरों के लिए",
       byline: "ListenLock को TelosMind Labs ने बनाया है।",
       licence: "ऐप का कोड GNU GPL संस्करण 3 के तहत मुक्त सॉफ़्टवेयर है। ListenLock नाम और लोगो इस लाइसेंस में शामिल नहीं हैं; फ़ोर्क को अपना नाम और लोगो रखना होगा।"
@@ -96,6 +98,8 @@
       footPrivacy: "গোপনীয়তা নীতি",
       footSource: "সোর্স কোড (GPL-3.0)",
       footIssues: "সমস্যা জানান",
+      footRecipes: "রেসিপি: ListenLock কীভাবে ব্যবহার করবেন (ইংরেজিতে)",
+      footBlog: "ব্লগ (ইংরেজিতে)",
       footDocs: "ডেভেলপারদের জন্য",
       byline: "ListenLock তৈরি করেছে TelosMind Labs।",
       licence: "অ্যাপের কোড GNU GPL সংস্করণ ৩-এর অধীনে মুক্ত সফটওয়্যার। ListenLock নাম আর লোগো এই লাইসেন্সের আওতায় পড়ে না; ফর্কের নিজস্ব নাম ও লোগো লাগবে।"

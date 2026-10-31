@@ -27,5 +27,5 @@ object VoicesModule {
     @Provides
     @Singleton
     fun licenceSource(@ApplicationContext context: Context): LicenceSource =
-        LibraryLicenceSource(VoiceLibrary.get(context))
+        LibraryLicenceSource(VoiceLibrary.get(context), context.assets)
 }

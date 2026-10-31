@@ -29,6 +29,7 @@ import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
 import io.github.skm0078.audora.release.JourneyDevice.shows
 import io.github.skm0078.audora.ui.reader.ReadingLookPreferences
+import io.github.skm0078.audora.ui.reader.flip.TurnStyle
 import io.github.skm0078.audora.ui.share.ShareCardActivity
 import io.github.skm0078.audora.ui.share.ShareCardFiles
 import io.github.skm0078.audora.ui.share.ShareEntry
@@ -152,7 +153,7 @@ internal class ShareJourney(
      * A text turn's slide on the installed app (ADR 2026-10-28-text-pages): a turn on and back slides the first
      * screen in again and it settles exactly where it was, so the slide never leaves the text off to one side.
      */
-    fun aTextTurnSlidesAndSettles(textBook: Triple<String, String, String>) = withTurnPages(textBook) {
+    fun aTextTurnSlidesAndSettles(textBook: Triple<String, String, String>) = withTurnPages(textBook, TurnStyle.SLIDE) {
         val sentence = hasText(textBook.third, substring = true)
         val left = { node(sentence).fetchSemanticsNode().boundsInRoot.left }
         val before = left()
@@ -163,13 +164,17 @@ internal class ShareJourney(
     }
 
     /**
-     * [textBook] (an asset, its type and a sentence in it) opened with Turn pages on, then [check]. The look is put
-     * back as it was, so later runs start from the default.
+     * [textBook] (an asset, its type and a sentence in it) opened with Turn pages on, turning in [style], then
+     * [check]. The look is put back as it was, so later runs start from the default.
      */
-    private fun withTurnPages(textBook: Triple<String, String, String>, check: () -> Unit) {
+    private fun withTurnPages(
+        textBook: Triple<String, String, String>,
+        style: TurnStyle = TurnStyle.CURL,
+        check: () -> Unit,
+    ) {
         val looks = ReadingLookPreferences(app)
         val before = runBlocking { looks.look.first() }
-        runBlocking { looks.save(before.copy(turnPages = true)) }
+        runBlocking { looks.save(before.copy(turnPages = true, turn = before.turn.copy(style = style))) }
         try {
             val (asset, type, sentence) = textBook
             backToTabs()

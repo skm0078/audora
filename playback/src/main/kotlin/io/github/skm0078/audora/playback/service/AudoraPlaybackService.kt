@@ -30,6 +30,8 @@ import io.github.skm0078.audora.core.model.SpeechStyle
 import io.github.skm0078.audora.core.notes.BookSettingsStore
 import io.github.skm0078.audora.core.notes.BookmarkStore
 import io.github.skm0078.audora.core.notes.PronunciationStore
+import io.github.skm0078.audora.core.result.flatMap
+import io.github.skm0078.audora.core.result.map
 import io.github.skm0078.audora.core.resume.ResumeAnchorStore
 import io.github.skm0078.audora.core.resume.ResumeLocator
 import io.github.skm0078.audora.core.resume.ResumeRecorder
@@ -49,6 +51,7 @@ import io.github.skm0078.audora.playback.browse.LibraryBrowser
 import io.github.skm0078.audora.playback.browse.OutlineChapters
 import io.github.skm0078.audora.playback.browse.ResourceBrowseTexts
 import io.github.skm0078.audora.playback.contract.PendingIntentCodes
+import io.github.skm0078.audora.playback.contract.PlaybackServiceLife
 import io.github.skm0078.audora.playback.contract.SentenceTiming
 import io.github.skm0078.audora.playback.covers.CoverFolders
 import io.github.skm0078.audora.playback.focus.FocusLoops
@@ -86,6 +89,7 @@ import io.github.skm0078.audora.playback.voice.SpeechStyleStore
 import io.github.skm0078.audora.playback.voice.SpeechVoices
 import io.github.skm0078.audora.playback.voice.StudyGapRenderer
 import io.github.skm0078.audora.playback.voice.VoiceEngines
+import io.github.skm0078.audora.playback.voice.VoiceWarmUp
 import io.github.skm0078.audora.playback.voice.forReading
 import io.github.skm0078.audora.playback.voice.narratorBlend
 import io.github.skm0078.audora.speech.brain.StoryBrainModels
@@ -238,13 +242,8 @@ class AudoraPlaybackService : MediaLibraryService() {
             env = sessionEnvironment(scope, AccelerometerShakes(this, config.sleep)),
         )
         followReadingChanges()
-        resumption = PlaybackResumption(
-            anchors = resumeAnchors,
-            library = library,
-            locator = locator,
-            scope = scope,
-            player = player,
-        ) { bookSession }
+        resumption = playbackResumption()
+        PlaybackServiceLife.created()
         AudoraLog.i(TAG, "Service created")
     }
 
@@ -302,6 +301,15 @@ class AudoraPlaybackService : MediaLibraryService() {
         Toast.makeText(this, R.string.voice_book_keeps_own, Toast.LENGTH_LONG).show()
     }
 
+    /**
+     * Loads a book's voice while its reader is open, before Play (ADR 2026-10-29-speed-quick-wins). The book's own
+     * voice is read from its saved settings, as reading will once the book is opened for playback.
+     */
+    private fun voiceWarmUp() = VoiceWarmUp(
+        voiceFor = { id, lang -> voices.voiceForBook(lang, bookVoice = bookSettings.get(id)?.voices?.get(lang)) },
+        load = { voice -> voices.engine(voice.engine).flatMap { it.render(text = "", voice = voice) }.map { } },
+    )
+
     private fun mediaSession(stores: SessionStores): MediaLibrarySession {
         // The lock screen's buttons, headphones coming back and the widget's time listened (CF-1, CF-4, CF-7).
         controls = QuickControls(this, player, { bookSession }, bookmarks, scope, PIPELINE_VERSION, config.sleep.buzzMs)
@@ -326,6 +334,7 @@ class AudoraPlaybackService : MediaLibraryService() {
                 PlaybackResumption.playlistOf(player)
             },
             controls.lockScreen,
+            voiceWarmUp(),
         )
         // The notification's and lock screen's buttons: a sentence back, play/pause, a sentence on, bookmark (CF-1).
         return MediaLibrarySession.Builder(this, player, callback)
@@ -438,10 +447,20 @@ class AudoraPlaybackService : MediaLibraryService() {
         }
     }
 
+    /** A headset's play or the system's resumption card with nothing loaded: the newest book, where it stopped. */
+    private fun playbackResumption() = PlaybackResumption(
+        anchors = resumeAnchors,
+        library = library,
+        locator = locator,
+        scope = scope,
+        player = player,
+    ) { bookSession }
+
     /** The open book's fixes changed while it plays: what was rendered ahead is rendered again. */
     private fun onBookRulesChanged() = bookSession.restartRendering()
 
     override fun onDestroy() {
+        PlaybackServiceLife.destroyed()
         if (restoring) {
             super.onDestroy()
             return

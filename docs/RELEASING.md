@@ -164,7 +164,8 @@ installs with `adb install` or after Android's one-time "advanced flow" (Develop
 
 ## Google Play
 
-Audora is published on Google Play from a personal Play Console account (developer name TelosMind). Play installs
+ListenLock is published on Google Play from a personal Play Console account (developer name TelosMind Labs, contact
+`support@telosmindlabs.com`; never a personal address). Play installs
 and GitHub/Obtainium installs carry the **same signature**, so either one updates the other and nobody loses their
 library when they switch.
 
@@ -178,16 +179,52 @@ library when they switch.
   a versionCode it has already seen, so every upload needs a new `audora.versionName`.
 - **Language splits are off** (`bundle.language.enableSplit = false` in `app/build.gradle.kts`): the in-app
   language switch needs the Hindi and Bengali strings on every phone.
-- **Privacy policy:** `docs/privacy.html`, served by GitHub Pages at https://skm0078.github.io/audora/privacy.html
-  and linked from Settings → Privacy policy. Pages setup (once): https://github.com/skm0078/audora/settings/pages →
-  *Source* **Deploy from a branch** → branch **dev**, folder **/docs** → **Save**. `docs/.nojekyll` makes Pages
-  serve the files as they are, without building the Markdown docs. Update the date on the page with every change,
+- **Privacy policy:** `docs/privacy.html`, served by GitHub Pages at https://listenlock.telosmindlabs.com/privacy.html
+  and linked from Settings → Privacy policy (`SiteConfig`). Pages setup (once): https://github.com/skm0078/audora/settings/pages →
+  *Source* **Deploy from a branch** → branch **prod**, folder **/docs** → **Save**. The custom domain comes from
+  `docs/CNAME` when it reaches `prod`: never type it in that settings page first, because the box commits straight to
+  `prod`. After the release that brings it, tick **Enforce HTTPS** there. DNS (Cloudflare, `telosmindlabs.com`): CNAME
+  `listenlock` → `skm0078.github.io`, DNS only; the domain is verified for the account at
+  https://github.com/settings/pages, so nobody else can claim it (ADR 2026-10-30-company-domain). Pages builds the site with its
+  built-in Jekyll: the hand-written pages are copied as they are, recipes and blog posts are built from Markdown
+  (docs/CONTENT.md), and the developer docs are left out by `docs/_config.yml`. Update the date on the page with every change,
   and update Play Console's Data safety form in the same release if what Audora sends or keeps changes.
 - **Data safety form** (answers from the audit in ADR-061): *Does your app collect or share any of the required user
-  data types?* **No**. The app sends nothing about the person or their books anywhere; the only network use is a
-  download the person starts, of public files from GitHub, carrying the file's address and the app's name. No
-  account, so no deletion request flow. Re-check ADR-061's table before every release: a new dependency, a new
-  network call or a new upload of any kind makes this answer wrong.
+  data types?* **No**. The app sends nothing about the person or their books anywhere; every network request is one
+  the person starts (a voice or language pack from GitHub, a web page they ask it to read, a book from a curated free
+  catalogue) and carries only the address, the app's name and the file types it reads. No account, so no deletion
+  request flow. Re-check ADR-061's table before every release: a new dependency, a new network call or a new upload
+  of any kind makes this answer wrong.
+- **Store listing:** the text in English, Hindi and Bengali, the graphics and the category are in
+  [store/listing.md](store/listing.md). Change the file first, then paste it into Play Console, so the listing is
+  reviewed like code.
+
+### Play Console app content, once
+
+Play Console → the app → Policy and programs → App content. Answers for v0.1.0; re-check them when a feature changes
+what they describe.
+
+| Declaration | Answer | Why |
+| --- | --- | --- |
+| Privacy policy | `https://listenlock.telosmindlabs.com/privacy.html` | `SiteConfig.PRIVACY_PAGE`; live once the release that carries `docs/CNAME` is on `prod` |
+| Ads | No ads | None in any module |
+| App access | All functionality is available without special access | No account or login |
+| Content rating | Category *Reference, News, or Educational*; every content question **No**; users interact or share content in the app **No** (sharing goes through Android's share sheet to an app the person picks); shares location **No**; digital purchases **No** | The app shows only books the person opens; the free catalogues and web pages are content the person chooses |
+| Target audience | 13 and over (13–15, 16–17, 18+); not appealing to children | Keeps the app out of the Families policy; the listing does not advertise Kids mode, which is for a parent to hand over a locked-down phone |
+| News app | No | |
+| Data safety | See the bullet above | ADR-061 |
+| Government, financial, health | No to each | |
+| Foreground service types | The table below, one short video each | Android 14+ requires a declared type; Play reviews each |
+
+**Foreground service declarations.** For each type: what the person does that starts it, why it cannot wait or be
+deferred, and a video (unlisted YouTube link, under 1 minute) that shows the person starting it and the notification.
+
+| Type | Services | What the person does | Video shows |
+| --- | --- | --- | --- |
+| `mediaPlayback` | `AudoraPlaybackService`, `MadeAudioService` | Taps Play on a book or on a saved audiobook, then locks the phone or opens another app | Play, lock the phone, audio continues, lock-screen controls pause and resume |
+| `mediaProcessing` | `AudiobookExportService`, `StudioService`, `BookCopyService`, `ClipService`, `QuoteVideoService` | Taps Save as audiobook, Studio mode, Accessible copy, Share as audio or Share as a video | Start Save as audiobook, leave the app, the progress notification counts up, the file appears when done |
+| `dataSync` | The same five services | The same: each writes the rendered audio or book to a file the person keeps or shares | The same video, ending on the saved file in Files or the share sheet |
+| `microphone` | `VoiceCommandService` (opt-in) | Turns on screen-off voice commands in the reader, then locks the phone | Turn it on, lock the phone, say "ListenLock, pause", playback pauses |
 
 ## When something fails
 

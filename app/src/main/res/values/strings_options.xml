@@ -8,6 +8,8 @@
     <string name="speech_sheet_title">Voice and speed</string>
     <string name="speech_speed_title">Speed</string>
     <string name="speech_speed_value">%1$s×</string>
+    <string name="speech_group_all_off">All off</string>
+    <string name="speech_chip_state">Speed %1$s×, %2$s</string>
     <string name="reading_skim_short">Headings and key sentences only</string>
     <string name="reading_skip_unreadable_short">Garbled scan text becomes a soft tone</string>
     <string name="settings_skip_citations_short">Leaves out [12] and [4–7]</string>

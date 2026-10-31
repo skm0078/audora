@@ -1,7 +1,9 @@
 // File: app/src/test/kotlin/io/github/skm0078/audora/ui/library/LibraryControllerSharedTest.kt
 // Purpose: A PDF shared from another app is added and opened, through a copy when its grant cannot be kept, and is
 //          reported done only when the add finished: a screen closed mid-add (a rotation) leaves it to try again. A
-//          comic archive goes to the comic hook instead of the library (ADR 2026-10-26-more-ebook-formats).
+//          comic archive goes to the comic hook instead of the library (ADR 2026-10-26-more-ebook-formats). A picked
+//          or found-again file whose grant cannot be kept (lent for a moment, or the app's lasting grants are full) is
+//          kept as a copy and the message says so; only a failed copy reports the error.
 
 package io.github.skm0078.audora.ui.library
 
@@ -14,6 +16,7 @@ import io.github.skm0078.audora.core.library.DocumentAccess
 import io.github.skm0078.audora.core.library.DocumentError
 import io.github.skm0078.audora.core.library.DocumentInfo
 import io.github.skm0078.audora.core.library.Library
+import io.github.skm0078.audora.core.library.LibraryError
 import io.github.skm0078.audora.core.library.StorageError
 import io.github.skm0078.audora.core.result.Outcome
 import java.io.ByteArrayInputStream
@@ -138,6 +141,93 @@ class LibraryControllerSharedTest {
             assertNotNull(store.byDocumentUri(LENT))
         }
 
+    @Test
+    fun `a picked file past the grant limit is added through a copy, and the message says so`() =
+        runTest(UnconfinedTestDispatcher()) {
+            documents.put(LENT, "Moby Dick.pdf")
+            documents.put(COPY, "Moby Dick.pdf")
+            documents.grantsFull = true
+            val controller = LibraryController(
+                library(UnconfinedTestDispatcher(testScheduler)),
+                backgroundScope,
+                importShared = { COPY },
+            )
+
+            controller.add(LENT)
+
+            assertNotNull(store.byDocumentUri(COPY))
+            assertNull(store.byDocumentUri(LENT))
+            assertEquals(LibraryMessage.Added(TITLE, copied = true), controller.message)
+        }
+
+    @Test
+    fun `a picked file lent only for a moment is added through a copy`() = runTest(UnconfinedTestDispatcher()) {
+        documents.put(LENT, "Moby Dick.pdf")
+        documents.put(COPY, "Moby Dick.pdf")
+        documents.oneTimeOnly += LENT
+        val controller = LibraryController(
+            library(UnconfinedTestDispatcher(testScheduler)),
+            backgroundScope,
+            importShared = { COPY },
+        )
+
+        controller.add(LENT)
+
+        assertNotNull(store.byDocumentUri(COPY))
+        assertEquals(LibraryMessage.Added(TITLE, copied = true), controller.message)
+    }
+
+    @Test
+    fun `a file kept by its grant says nothing about a copy`() = runTest(UnconfinedTestDispatcher()) {
+        documents.put(LENT, "Moby Dick.pdf")
+        val controller = LibraryController(
+            library(UnconfinedTestDispatcher(testScheduler)),
+            backgroundScope,
+            importShared = { error("no copy is needed") },
+        )
+
+        controller.add(LENT)
+
+        assertEquals(LibraryMessage.Added(TITLE), controller.message)
+    }
+
+    @Test
+    fun `past the grant limit a copy that fails (a full phone) is reported, and nothing is added`() =
+        runTest(UnconfinedTestDispatcher()) {
+            documents.put(LENT, "Moby Dick.pdf")
+            documents.grantsFull = true
+            val controller = LibraryController(
+                library(UnconfinedTestDispatcher(testScheduler)),
+                backgroundScope,
+                importShared = { null },
+            )
+
+            controller.add(LENT)
+
+            assertNull(store.byDocumentUri(LENT))
+            assertEquals(LibraryMessage.Failed(LibraryError.GrantsFull), controller.message)
+        }
+
+    @Test
+    fun `a missing book found again past the grant limit points at a copy`() = runTest(UnconfinedTestDispatcher()) {
+        documents.put(OLD, "Moby Dick.pdf")
+        documents.put(LENT, "Moby Dick.pdf")
+        documents.put(COPY, "Moby Dick.pdf")
+        val controller = LibraryController(
+            library(UnconfinedTestDispatcher(testScheduler)),
+            backgroundScope,
+            importShared = { COPY },
+        )
+        controller.add(OLD)
+        val book = requireNotNull(store.byDocumentUri(OLD))
+        documents.grantsFull = true
+
+        controller.locate(book.id, LENT)
+
+        assertEquals(COPY, store.byId(book.id)?.documentUri)
+        assertEquals(LibraryMessage.FoundAgain(TITLE), controller.message)
+    }
+
     private class MemoryBooks : BookStore {
         private val books = MutableStateFlow<Map<BookId, Book>>(emptyMap())
 
@@ -171,6 +261,9 @@ class LibraryControllerSharedTest {
         private val names = mutableMapOf<String, String>()
         val oneTimeOnly = mutableSetOf<String>()
 
+        /** The app's lasting grants are full: every file not Audora's own copy is refused one. */
+        var grantsFull = false
+
         fun put(uri: String, name: String) {
             names[uri] = name
         }
@@ -178,7 +271,8 @@ class LibraryControllerSharedTest {
         override fun keepAccess(documentUri: String): Outcome<Unit, DocumentError> = when (documentUri) {
             in oneTimeOnly -> Outcome.Failure(DocumentError.CannotKeepAccess("no persistable grant"))
             !in names -> Outcome.Failure(DocumentError.NotFound("gone"))
-            else -> Outcome.Success(Unit)
+            COPY -> Outcome.Success(Unit)
+            else -> if (grantsFull) Outcome.Failure(DocumentError.GrantsFull("full")) else Outcome.Success(Unit)
         }
 
         override fun releaseAccess(documentUri: String) = Unit
@@ -203,6 +297,8 @@ class LibraryControllerSharedTest {
         const val LENT = "content://chat/lent.pdf"
         const val COPY = "content://audora/copy.pdf"
         const val COMIC = "content://files/strip.cbz"
+        const val OLD = "content://files/old/moby.pdf"
+        const val TITLE = "Moby Dick"
         val PDF = "%PDF-1.7\n% moby\n".toByteArray(Charsets.US_ASCII)
     }
 }

@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/licences/LicencesScreen.kt
-// Purpose: Settings → "Voices & licences" (P3-06): credits, licence and source of every voice, and the software.
+// Purpose: Settings → "Voices & licences" (P3-06): credits, licence and source of every voice, the software, and
+//          every licence text the app carries.
 
 package io.github.skm0078.audora.ui.licences
 
@@ -11,9 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -33,7 +31,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.logging.AudoraLog
@@ -54,6 +51,7 @@ fun LicencesScreen(
     state: LicencesState,
     onBack: () -> Unit,
     onOpenTexts: (VoiceLicence) -> Unit,
+    onOpenNotices: () -> Unit,
     onCloseTexts: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -67,7 +65,7 @@ fun LicencesScreen(
 
                 voices == null -> CircularProgressIndicator()
 
-                else -> LicencesList(voices, openLink, onOpenTexts)
+                else -> LicencesList(voices, openLink, onOpenTexts, onOpenNotices)
             }
         }
     }
@@ -88,9 +86,24 @@ private fun LicencesTopBar(onBack: () -> Unit) {
 }
 
 @Composable
-private fun LicencesList(voices: List<VoiceLicence>, openLink: (String) -> Unit, onOpenTexts: (VoiceLicence) -> Unit) {
+private fun LicencesList(
+    voices: List<VoiceLicence>,
+    openLink: (String) -> Unit,
+    onOpenTexts: (VoiceLicence) -> Unit,
+    onOpenNotices: () -> Unit,
+) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item(key = "intro") { Caption(R.string.licences_intro, header = false) }
+        // Near the top, so the app's own GPL and every library's notice are one tap from the screen's title.
+        item(key = "notices") {
+            val title = stringResource(R.string.notices_title)
+            ListItem(
+                headlineContent = { Text(title) },
+                supportingContent = { Text(stringResource(R.string.notices_body)) },
+                trailingContent = { LinkButton(R.string.notices_read, title, onOpenNotices) },
+            )
+            HorizontalDivider()
+        }
         Lang.entries.forEach { lang ->
             val inLang = voices.filter { it.lang == lang }
             if (inLang.isEmpty()) return@forEach
@@ -145,28 +158,6 @@ private fun kindText(voice: VoiceLicence): Int = when (voice.kind) {
     LicenceKind.BUILT_IN -> R.string.licences_kind_built_in
     LicenceKind.IMPORTED -> R.string.licences_kind_imported
     LicenceKind.DOWNLOAD -> if (voice.installed) R.string.licences_kind_downloaded else R.string.licences_kind_download
-}
-
-@Composable
-private fun LicenceTextsDialog(open: OpenLicence, onClose: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onClose,
-        title = { Text(open.voice.label) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                if (open.texts.isEmpty()) Text(stringResource(R.string.licences_no_files))
-                open.texts.forEach { file ->
-                    Text(
-                        file.name,
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(top = HEADER_PADDING),
-                    )
-                    Text(file.text, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.licences_close)) } },
-    )
 }
 
 /** A section title, or with [header] false a paragraph of explanation. */
@@ -243,7 +234,7 @@ private val SPEECH_SOFTWARE = listOf(
         "https://github.com/frankyoujian/Edge-Punct-Casing",
     ),
     Software(
-        "Zipformer keyword spotter (k2-fsa, GigaSpeech), voice commands, if downloaded",
+        "Zipformer English recogniser (k2-fsa, LibriSpeech), voice commands, if downloaded",
         R.string.licences_apache,
         "https://github.com/k2-fsa/icefall",
     ),
@@ -301,5 +292,13 @@ private fun LicencesScreenPreview() {
             installed = true,
         ),
     )
-    AudoraTheme { LicencesScreen(LicencesState(voices = voices), onBack = {}, onOpenTexts = {}, onCloseTexts = {}) }
+    AudoraTheme {
+        LicencesScreen(
+            LicencesState(voices = voices),
+            onBack = {},
+            onOpenTexts = {},
+            onOpenNotices = {},
+            onCloseTexts = {},
+        )
+    }
 }

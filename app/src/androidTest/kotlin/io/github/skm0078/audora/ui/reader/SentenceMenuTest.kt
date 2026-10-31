@@ -59,6 +59,14 @@ class SentenceMenuTest {
         override fun cancelRange() {
             calls += "cancel range"
         }
+
+        override fun startShareRange(unit: ReadingUnit) {
+            calls += "share range ${unit.index}"
+        }
+
+        override fun dismissSharing() {
+            calls += "dismiss sharing"
+        }
     }
 
     private val reader = object : ReaderActions by NoReaderActions {
@@ -80,6 +88,18 @@ class SentenceMenuTest {
 
         override fun onSharePagePart(unit: ReadingUnit) {
             calls += "page part ${unit.index}"
+        }
+
+        override fun onShareText(lines: String, page: Int) {
+            calls += "text $page: $lines"
+        }
+
+        override fun onSharePassage(first: ReadingUnit, last: ReadingUnit) {
+            calls += "lines ${first.page}:${first.index}-${last.page}:${last.index}"
+        }
+
+        override fun onShareBook() {
+            calls += "book"
         }
     }
 
@@ -156,7 +176,7 @@ class SentenceMenuTest {
         rule.setContent { AudoraTheme { NotesOverlays(NotesState(menuFor = UNIT), notes, reader) } }
 
         rule.onNodeWithText(text(R.string.sentence_hint_share)).performScrollTo().assertExists()
-        rule.onNodeWithText(text(R.string.sentence_menu_share)).performClick()
+        rule.onNodeWithText(text(R.string.sentence_menu_share)).performScrollTo().performClick()
         rule.onNodeWithText(text(R.string.sentence_hint_share_clip)).assertExists()
         rule.onNodeWithText(text(R.string.share_as_picture)).performClick()
         assertEquals(listOf("dismiss", "picture ${UNIT.page}: ${UNIT.text}"), calls)
@@ -180,8 +200,58 @@ class SentenceMenuTest {
     }
 
     @Test
+    fun theShareButtonOpensStraightOnTheChoicesWithTheLinesQuoted() {
+        rule.setContent { AudoraTheme { NotesOverlays(NotesState(menuFor = UNIT, menuOnShare = true), notes, reader) } }
+
+        rule.onNodeWithText(text(R.string.share_choices_title)).assertExists()
+        rule.onNodeWithText("“${UNIT.text}”").assertExists()
+        rule.onNodeWithText(text(R.string.share_hint_more_lines)).performScrollTo().assertExists()
+        Screens.save("share-choices-from-button", rule.onNode(isDialog()).captureToImage().asAndroidBitmap())
+        rule.onNodeWithText(text(R.string.sentence_menu_share_text)).performScrollTo().performClick()
+        assertEquals(listOf("dismiss", "text ${UNIT.page}: ${UNIT.text}"), calls)
+    }
+
+    @Test
+    fun chooseMoreLinesStartsLinesToShare() {
+        rule.setContent { AudoraTheme { NotesOverlays(NotesState(menuFor = UNIT, menuOnShare = true), notes, reader) } }
+
+        rule.onNodeWithText(text(R.string.share_more_lines)).performScrollTo().performClick()
+        assertEquals(listOf("share range ${UNIT.index}"), calls)
+    }
+
+    @Test
+    fun shareThisBookClosesTheMenuThenSharesTheBook() {
+        rule.setContent { AudoraTheme { NotesOverlays(NotesState(menuFor = UNIT, menuOnShare = true), notes, reader) } }
+
+        rule.onNodeWithText(text(R.string.share_this_book)).performScrollTo().performClick()
+        assertEquals(listOf("dismiss", "book"), calls)
+    }
+
+    @Test
+    fun linesPickedToShareAreSharedAsOnePassage() {
+        val last = UNIT.copy(page = UNIT.page + 1, index = 2, text = "And it ended.")
+        val picked = SharedPassage(UNIT, last, "${UNIT.text} ${last.text}")
+        rule.setContent { AudoraTheme { NotesOverlays(NotesState(sharing = picked), notes, reader) } }
+
+        rule.onNodeWithText("“${picked.quote}”").assertExists()
+        // One sentence's extras do not apply to picked lines.
+        rule.onNodeWithText(text(R.string.share_more_lines)).assertDoesNotExist()
+        rule.onNodeWithText(text(R.string.share_hint_lines_audio)).performScrollTo().assertExists()
+        rule.onNodeWithText(text(R.string.sentence_menu_share_clip)).performScrollTo().performClick()
+        assertEquals(listOf("dismiss sharing", "lines ${UNIT.page}:${UNIT.index}-${last.page}:2"), calls)
+    }
+
+    @Test
+    fun theBarWhilePickingLinesToShareSaysSo() {
+        rule.setContent { AudoraTheme { HighlightRangeBar(UNIT, forShare = true, onCancel = notes::cancelRange) } }
+
+        rule.onNodeWithText(context.getString(R.string.share_range_prompt, UNIT.page + 1)).assertExists()
+        Screens.save("share-range-bar", rule.onRoot().captureToImage().asAndroidBitmap())
+    }
+
+    @Test
     fun theBarWhilePickingAPassagesEndCancels() {
-        rule.setContent { AudoraTheme { HighlightRangeBar(UNIT, notes::cancelRange) } }
+        rule.setContent { AudoraTheme { HighlightRangeBar(UNIT, forShare = false, onCancel = notes::cancelRange) } }
 
         rule.onNodeWithText(context.getString(R.string.highlight_range_prompt, UNIT.page + 1)).assertExists()
         Screens.save("highlight-range-bar", rule.onRoot().captureToImage().asAndroidBitmap())

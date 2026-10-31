@@ -119,6 +119,15 @@ interface ReaderActions {
     /** "Share as a video" (ADR 2026-10-28-quote-video): [lines] read aloud over a quote card in the book's voice. */
     fun onShareVideo(lines: String, page: Int) = Unit
 
+    /** "Share as audio" on lines picked with "Choose more lines": from [first] to the end of [last], as a clip. */
+    fun onSharePassage(first: ReadingUnit, last: ReadingUnit) = Unit
+
+    /** "Share as text": [lines] from zero-based [page] with the book's credit and ListenLock's link. */
+    fun onShareText(lines: String, page: Int) = Unit
+
+    /** "Share this book": the book's own card, from the reader. */
+    fun onShareBook() = Unit
+
     /** "Share part of the page" (ADR 2026-10-28-page-snippet): a box around [unit] to drag on the drawn page. */
     fun onSharePagePart(unit: ReadingUnit) = Unit
 
@@ -137,6 +146,9 @@ interface ReaderActions {
 
     /** Saves this book as audiobook files, with the password it was opened with (ADR-034). */
     fun onSaveAudiobook() = Unit
+
+    /** Prepares the rest of this book ahead (studio mode), from its first-use hint (ADR 2026-10-30-first-use-hints). */
+    fun onPrepareAhead() = Unit
 
     /** A bookmark picked in the bookmarks sheet (plan item 29). */
     fun onBookmark(bookmark: Bookmark) = Unit

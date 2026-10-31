@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The generator reads the app's own strings to find its buttons, so it must see the app (package visibility). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <queries>
+        <package android:name="${targetAppId}" />
+    </queries>
+</manifest>

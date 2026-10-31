@@ -24,6 +24,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -34,6 +35,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -44,9 +46,11 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.library.BookId
 import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.core.share.PhotoFocus
+import io.github.skm0078.audora.playback.export.ShareWords
 import io.github.skm0078.audora.playback.export.video.QuoteVideoRequest
 import io.github.skm0078.audora.playback.export.video.QuoteVideos
 import io.github.skm0078.audora.privacy.PrivacyHost
+import io.github.skm0078.audora.ui.reader.ReadingLookPreferences
 import io.github.skm0078.audora.ui.reader.rememberPlayWithNotificationPermission
 import io.github.skm0078.audora.ui.theme.Appearance
 import io.github.skm0078.audora.ui.theme.AppearancePreferences
@@ -57,6 +61,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -139,6 +144,25 @@ private fun ReadyCard(request: ShareCardRequest, subject: CardSubject, onClose: 
     }
     var photo by remember { mutableStateOf<CardPhoto?>(null) }
     var busy by remember { mutableStateOf(false) }
+    // Lines from the reader open in its page colours once; a book's card keeps its own default, and a look the
+    // listener picks always wins.
+    var lookSettled by rememberSaveable { mutableStateOf(request is ShareCardRequest.WholeBook) }
+    val darkApp = MaterialTheme.colorScheme.background.luminance() < HALF_LUMINANCE
+    LaunchedEffect(Unit) {
+        if (lookSettled) return@LaunchedEffect
+        val tone = ReadingLookPreferences(context).look.first().tone
+        if (!lookSettled) choices = choices.copy(look = CardLook.forReading(tone, darkApp))
+        lookSettled = true
+    }
+    // "Card shows" opens on the listener's last pick, once; after that the screen's own pick (kept across rotation).
+    val spans = remember(context) { CardSpanPreferences(context) }
+    var spanSettled by rememberSaveable { mutableStateOf(!subject.hasWholePage) }
+    LaunchedEffect(Unit) {
+        if (spanSettled) return@LaunchedEffect
+        val wholePage = spans.wholePage.first()
+        if (!spanSettled) choices = choices.copy(wholePage = wholePage)
+        spanSettled = true
+    }
     val pick = rememberLauncherForActivityResult(PickVisualMedia()) { uri: Uri? ->
         if (uri != null) {
             scope.launch {
@@ -158,7 +182,12 @@ private fun ReadyCard(request: ShareCardRequest, subject: CardSubject, onClose: 
         override fun onBack() = onClose()
 
         override fun onChoices(next: CardChoices) {
+            if (next.wholePage != choices.wholePage) {
+                spanSettled = true
+                scope.launch { spans.save(next.wholePage) }
+            }
             choices = next
+            lookSettled = true
         }
 
         override fun onPhotoFocus(next: PhotoFocus) {
@@ -176,7 +205,7 @@ private fun ReadyCard(request: ShareCardRequest, subject: CardSubject, onClose: 
                 when {
                     card == null -> Toast.makeText(context, R.string.share_card_failed, Toast.LENGTH_LONG).show()
 
-                    !context.sendCard(files.uri(card), card.mimeType) ->
+                    !context.sendCard(files.uri(card), card.mimeType, ShareWords.caption(context, subject.source)) ->
                         Toast.makeText(context, R.string.share_card_no_app, Toast.LENGTH_LONG).show()
                 }
             }
@@ -250,16 +279,29 @@ private fun writeBackdrop(backdrop: Bitmap, file: File): File? = try {
     null
 }
 
+// Below this the app's background is dark (Material's own threshold for light or dark content).
+private const val HALF_LUMINANCE = 0.5f
+
 // PNG ignores the quality; the platform asks for one.
 private const val PNG_QUALITY = 100
 
 // Where the saver keeps the video choices (after shape, look and dedication); missing in a state saved before them.
 private const val SAVED_VIDEO = 3
 private const val SAVED_SHARP = 4
+private const val SAVED_WHOLE_PAGE = 5
 
 /** The choices survive rotation; the picked picture does not (it is decoded again only if picked again). */
 private val CardChoicesSaver = listSaver<CardChoices, String>(
-    save = { listOf(it.shape.name, it.look.name, it.dedication, it.video.toString(), it.sharp.toString()) },
+    save = {
+        listOf(
+            it.shape.name,
+            it.look.name,
+            it.dedication,
+            it.video.toString(),
+            it.sharp.toString(),
+            it.wholePage.toString(),
+        )
+    },
     restore = { saved ->
         CardChoices(
             shape = CardShape.entries.firstOrNull { it.name == saved[0] } ?: CardShape.STORY,
@@ -267,6 +309,7 @@ private val CardChoicesSaver = listSaver<CardChoices, String>(
             dedication = saved[2],
             video = saved.getOrNull(SAVED_VIDEO) == true.toString(),
             sharp = saved.getOrNull(SAVED_SHARP) == true.toString(),
+            wholePage = saved.getOrNull(SAVED_WHOLE_PAGE) == true.toString(),
         )
     },
 )

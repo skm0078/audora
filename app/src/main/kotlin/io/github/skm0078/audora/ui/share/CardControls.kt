@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/share/CardControls.kt
-// Purpose: The card screen's choices: picture size chips, background swatches and the dedication line.
+// Purpose: The card screen's choices: selection or whole page, picture size chips, background swatches and the
+//          dedication line.
 
 package io.github.skm0078.audora.ui.share
 
@@ -33,6 +34,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.ShareCardConfig
+import io.github.skm0078.audora.core.text.TextCuts
 import io.github.skm0078.audora.ui.theme.Dimens
 
 /** Square, story, post: one row that scrolls sideways when large text makes it wider than the screen. */
@@ -51,6 +53,32 @@ internal fun ShapeChips(selected: CardShape, onShape: (CardShape) -> Unit) {
                     label = { Text(stringResource(shape.label)) },
                 )
             }
+        }
+    }
+}
+
+/**
+ * Selection (the lines or the part of the page picked, the default) or the whole page (ADR
+ * 2026-10-30-whole-page-cards); the last pick is kept for the next card.
+ */
+@Composable
+internal fun SpanChips(wholePage: Boolean, onWholePage: (Boolean) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+        Text(stringResource(R.string.share_card_span), style = MaterialTheme.typography.titleSmall)
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+        ) {
+            FilterChip(
+                selected = !wholePage,
+                onClick = { onWholePage(false) },
+                label = { Text(stringResource(R.string.share_card_span_selection)) },
+            )
+            FilterChip(
+                selected = wholePage,
+                onClick = { onWholePage(true) },
+                label = { Text(stringResource(R.string.share_card_span_page)) },
+            )
         }
     }
 }
@@ -123,7 +151,7 @@ internal fun DedicationField(value: String, onValue: (String) -> Unit) {
     val max = ShareCardConfig().maxDedicationChars
     OutlinedTextField(
         value = value,
-        onValueChange = { onValue(it.take(max)) },
+        onValueChange = { onValue(TextCuts.take(it, max)) },
         label = { Text(stringResource(R.string.share_card_dedication)) },
         placeholder = { Text(stringResource(R.string.share_card_dedication_hint)) },
         singleLine = true,

@@ -7,5 +7,4 @@
     <string name="video_chooser_title">উদ্ধৃতির ভিডিও শেয়ার করুন</string>
     <string name="video_failed">এই উদ্ধৃতি থেকে ভিডিও তৈরি করা গেল না</string>
     <string name="video_ai_label">AI ভয়েস</string>
-    <string name="video_share_text">“%1$s” (%2$s)</string>
 </resources>

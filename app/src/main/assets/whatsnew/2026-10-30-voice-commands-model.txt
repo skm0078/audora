@@ -1,0 +1,3 @@
+en: Voice commands now use a new English model trained only on openly licensed speech. It is a bigger download (about 71 MB). If you used voice commands before, download the model again in Settings.
+hi: वॉइस कमांड अब एक नए अंग्रेज़ी मॉडल से चलते हैं, जो केवल खुले लाइसेंस वाली आवाज़ों पर सिखाया गया है। इसका डाउनलोड बड़ा है (लगभग 71 MB)। अगर आपने पहले वॉइस कमांड इस्तेमाल किए थे, तो सेटिंग्स में मॉडल फिर से डाउनलोड करें।
+bn: ভয়েস কমান্ড এখন একটি নতুন ইংরেজি মডেলে চলে, যা শুধু খোলা লাইসেন্সের কথা শুনে শেখানো। এর ডাউনলোড বড় (প্রায় 71 MB)। আগে ভয়েস কমান্ড ব্যবহার করে থাকলে সেটিংসে মডেলটি আবার ডাউনলোড করুন।

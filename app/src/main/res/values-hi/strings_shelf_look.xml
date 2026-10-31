@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shelf_edit_title">संग्रह संपादित करें</string>
+    <string name="shelf_edit">बदलें</string>
+    <string name="shelf_edit_named">%1$s बदलें</string>
+    <string name="shelf_colour">रंग</string>
+    <string name="shelf_emoji">इमोजी</string>
+    <string name="shelf_emoji_none">कोई नहीं</string>
+    <string name="shelf_colour_clay">मिट्टी</string>
+    <string name="shelf_colour_saffron">केसरिया</string>
+    <string name="shelf_colour_forest">हरा</string>
+    <string name="shelf_colour_teal">नीला-हरा</string>
+    <string name="shelf_colour_indigo">नील</string>
+    <string name="shelf_colour_plum">बैंगनी</string>
+    <string name="shelf_emoji_books">किताबें</string>
+    <string name="shelf_emoji_moon">चाँद</string>
+    <string name="shelf_emoji_lamp">दीया</string>
+    <string name="shelf_emoji_heart">दिल</string>
+    <string name="shelf_emoji_school">पढ़ाई</string>
+
+    <string name="smart_shelf_title">शायद आपको ये शेल्फ़ पसंद आएँ</string>
+    <string name="smart_shelf_where">आपकी किताबों के विवरण से इसी फ़ोन पर बनाए गए। टैप करने तक कुछ नहीं बनता।</string>
+    <string name="smart_shelf_language">%1$s किताबें</string>
+    <plurals name="smart_shelf_series">
+        <item quantity="one">%d किताब एक सीरीज़ में, शीर्षक से</item>
+        <item quantity="other">%d किताबें एक सीरीज़ में, शीर्षक से</item>
+    </plurals>
+    <plurals name="smart_shelf_author">
+        <item quantity="one">एक ही लेखक की %d किताब</item>
+        <item quantity="other">एक ही लेखक की %d किताबें</item>
+    </plurals>
+    <plurals name="smart_shelf_language_line">
+        <item quantity="one">%d किताब, फ़ाइल की भाषा से</item>
+        <item quantity="other">%d किताबें, फ़ाइलों की भाषा से</item>
+    </plurals>
+    <string name="smart_shelf_make">शेल्फ़ बनाएँ</string>
+    <string name="smart_shelf_make_named">%1$s नाम का शेल्फ़ बनाएँ</string>
+</resources>

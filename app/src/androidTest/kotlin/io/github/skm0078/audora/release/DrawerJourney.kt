@@ -1,10 +1,12 @@
 // File: app/src/androidTest/kotlin/io/github/skm0078/audora/release/DrawerJourney.kt
-// Purpose: Release journey steps 45 and 46 (ADR 2026-10-28-phone-drawer): the library's menu button opens the side
-//          drawer; its Settings row opens the Settings page, and Make it yours opens its sheet on the library.
+// Purpose: Release journey steps 45, 46 and 49 (ADR 2026-10-28-phone-drawer, ADR 2026-10-29-tools-in-the-panel): the
+//          library's menu button opens the side drawer; its Settings row opens the Settings page, Make it yours opens
+//          its sheet on the library, and every library tool is a row there, with no ⋮ menu left on the library.
 
 package io.github.skm0078.audora.release
 
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
@@ -17,8 +19,11 @@ import io.github.skm0078.audora.R
 import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.shows
+import io.github.skm0078.audora.ui.library.ADD_BOOK_SHEET_TAG
+import io.github.skm0078.audora.ui.library.LibraryAction
 import io.github.skm0078.audora.ui.library.MAKE_IT_YOURS_TAG
 import io.github.skm0078.audora.ui.shell.DRAWER_TAG
+import org.junit.Assert.assertFalse
 
 /** [backToTabs] leaves any screen for the main tabs, as the journey does. */
 internal class DrawerJourney(private val rule: ComposeTestRule, private val backToTabs: () -> Unit) {
@@ -42,14 +47,39 @@ internal class DrawerJourney(private val rule: ComposeTestRule, private val back
         rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(hasTestTag(MAKE_IT_YOURS_TAG)) }
     }
 
-    /** From the library, opens the drawer and taps the row named [row]; the drawer closes first. */
-    private fun tapInDrawer(row: Int) {
+    /**
+     * The library's top bar has no ⋮ menu; the drawer lists every tool it held, and Add a book opens the same sheet
+     * as the library's Add book button. Back closes it.
+     */
+    fun holdsTheLibrarysTools() {
         backToTabs()
+        openDrawerOnTheLibrary()
+        assertFalse("The library still has a ⋮ menu", rule.shows(hasContentDescription(text(R.string.reader_more))))
+        LibraryAction.inPanel.filter { it != LibraryAction.EDIT_COLLECTIONS }.forEach { tool ->
+            rule.onNode(inDrawer(tool.label)).performScrollTo().assertExists()
+        }
+        rule.onNode(inDrawer(R.string.library_add_pdf)).performScrollTo().performClick()
+        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasTestTag(DRAWER_TAG)) }
+        waitFor(hasTestTag(ADD_BOOK_SHEET_TAG))
+        JourneyDevice.pressBackKey()
+        rule.waitUntil(UI_TIMEOUT_MS) { !rule.shows(hasTestTag(ADD_BOOK_SHEET_TAG)) }
+    }
+
+    private fun inDrawer(label: Int): SemanticsMatcher =
+        hasText(text(label)) and hasClickAction() and hasAnyAncestor(hasTestTag(DRAWER_TAG))
+
+    private fun openDrawerOnTheLibrary() {
         waitFor(hasText(text(R.string.tab_library)) and hasClickAction())
         rule.onAllNodes(hasText(text(R.string.tab_library)) and hasClickAction()).onFirst().performClick()
         waitFor(hasContentDescription(text(R.string.drawer_open)))
         rule.onAllNodes(hasContentDescription(text(R.string.drawer_open))).onFirst().performClick()
         waitFor(hasTestTag(DRAWER_TAG))
+    }
+
+    /** From the library, opens the drawer and taps the row named [row]; the drawer closes first. */
+    private fun tapInDrawer(row: Int) {
+        backToTabs()
+        openDrawerOnTheLibrary()
         rule.onNode(hasText(text(row)) and hasClickAction()).performScrollTo().performClick()
         rule.waitUntil(UI_TIMEOUT_MS) { rule.hides(hasTestTag(DRAWER_TAG)) }
     }

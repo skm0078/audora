@@ -14,6 +14,7 @@ import io.github.skm0078.audora.core.library.BookProgress
 import io.github.skm0078.audora.core.library.LibraryQuery
 import io.github.skm0078.audora.core.notes.Highlight
 import io.github.skm0078.audora.core.resume.ResumeAnchor
+import io.github.skm0078.audora.core.stats.WeekGlance
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -34,7 +35,7 @@ class LibraryHomeTest {
     private val line = DayLine("A line.", a.book, 1, anchor("a"))
 
     private fun keys(home: LibraryHome, shown: LibraryListState.Loaded = list) =
-        homeParts(shown, home, CoverSource.None, {}, {}).map { it.key }
+        homeParts(shown, home, CoverSource.None, HomeActions({}, {})).map { it.key }
 
     @Test
     fun `the parts follow the listener's order and leave out what is off`() {
@@ -43,13 +44,35 @@ class LibraryHomeTest {
             .moved(HomeSection.RECENTLY_ADDED, up = true)
             .moved(HomeSection.RECENTLY_ADDED, up = true)
             .toggled(HomeSection.LINE_OF_THE_DAY)
-        assertEquals(listOf(RECENT_KEY, CONTINUE_KEY), keys(LibraryHome(layout, line = line)))
+        assertEquals(listOf(RECENT_KEY, CONTINUE_KEY, FROM_LISTENLOCK_KEY), keys(LibraryHome(layout, line = line)))
     }
 
     @Test
     fun `a part with nothing to show is left out`() {
-        assertEquals(listOf(CONTINUE_KEY), keys(LibraryHome(HomeLayout(), line = null)))
-        assertEquals(listOf(CONTINUE_KEY, LINE_KEY), keys(LibraryHome(HomeLayout(), line = line)))
+        assertEquals(listOf(CONTINUE_KEY, FROM_LISTENLOCK_KEY), keys(LibraryHome(HomeLayout(), line = null)))
+        assertEquals(
+            listOf(CONTINUE_KEY, LINE_KEY, FROM_LISTENLOCK_KEY),
+            keys(LibraryHome(HomeLayout(), line = line)),
+        )
+    }
+
+    @Test
+    fun `From ListenLock is labelled apart from the books and can be turned off`() {
+        assertTrue(FROM_LISTENLOCK_KEY in keys(LibraryHome(HomeLayout())))
+        val off = HomeLayout().toggled(HomeSection.FROM_LISTENLOCK)
+        assertFalse(FROM_LISTENLOCK_KEY in keys(LibraryHome(off)))
+        assertTrue(AppDocument.entries.all { it.action in LibraryAction.inPanel })
+    }
+
+    @Test
+    fun `this week leads the home once there is listening`() {
+        val week = HomeWeek(WeekGlance(ms = 0, goalMs = null, streak = 0)) {}
+        assertEquals(
+            listOf(WEEK_KEY, CONTINUE_KEY, FROM_LISTENLOCK_KEY),
+            keys(LibraryHome(HomeLayout(), week = week)),
+        )
+        val off = HomeLayout().toggled(HomeSection.THIS_WEEK)
+        assertEquals(listOf(CONTINUE_KEY, FROM_LISTENLOCK_KEY), keys(LibraryHome(off, week = week)))
     }
 
     @Test

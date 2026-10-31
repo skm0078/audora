@@ -4,6 +4,7 @@
 package io.github.skm0078.audora.ui.reader
 
 import io.github.skm0078.audora.core.library.BookId
+import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.share.SnippetBox
 import io.github.skm0078.audora.pdf.outline.ChapterEntry
@@ -88,6 +89,8 @@ data class TimeLeftEstimate(val bookMs: Long, val chapterMs: Long?)
 data class ReaderState(
     val bookId: BookId,
     val title: String? = null,
+    /** The book's author when known, for the credit beside shared lines. */
+    val author: String? = null,
     val document: DocumentState = DocumentState.Loading,
     val page: Int = 0,
     val content: PageContent = PageContent.Loading,
@@ -106,6 +109,10 @@ data class ReaderState(
     val skipRefused: ParagraphSkipRefusal? = null,
     /** The book opened where it was left: said once, then cleared ([ReaderModel.resumedShown]). */
     val resumedAt: ResumedAt? = null,
+    /** Opened after days away: the recap shown instead of [resumedAt], until a button or a tap outside clears it. */
+    val previouslyOn: PreviouslyOn? = null,
+    /** The book's first open: its opening line shows once the first page has words ([ReaderModel.openingLineShown]). */
+    val firstOpen: Boolean = false,
     val snippet: SnippetBox? = null,
 ) {
     val pageCount: Int? get() = (document as? DocumentState.Open)?.pageCount
@@ -119,8 +126,29 @@ data class ReaderState(
     /** This book is being read aloud (or buffering to be). */
     val isReading: Boolean get() = readingPosition != null && playback.wantsToPlay
 
+    /** The shown page and how far its text is, for the log: "page=2 Loading", "page=2 ready", "page=2 empty". */
+    val pageForLog: String
+        get() = "page=$page " + when (val shown = content) {
+            is PageContent.Ready -> if (shown.units.isEmpty()) "empty" else "ready"
+            else -> shown::class.simpleName.orEmpty()
+        }
+
     val playerReady: Boolean
         get() = document is DocumentState.Open && playback.connection == PlaybackSnapshot.Connection.CONNECTED
+
+    /**
+     * The language whose voice the first Play would need, while loading it ahead makes sense: the shown page's
+     * sentences are known, the player is connected and nothing plays (a second model loading beside one that reads
+     * would slow it). Null otherwise (ADR 2026-10-29-speed-quick-wins).
+     */
+    val voiceToWarm: Lang?
+        get() = (content as? PageContent.Ready)?.units?.firstOrNull()?.lang
+            ?.takeIf { playerReady && !playback.wantsToPlay }
+
+    /** The first open's opening line: the first page's first sentence with a letter in it, once that page is read. */
+    val openingLine: ReadingUnit?
+        get() = (content as? PageContent.Ready)?.units?.takeIf { firstOpen && page == 0 }
+            ?.firstOrNull { unit -> unit.text.any(Char::isLetter) }
 
     /** Where "Undo jump" goes back to in this book (plan item 78), if anywhere. */
     val undoJumpTo: ReadingPosition? get() = playback.undoJumpTo?.takeIf { it.bookId == bookId }
@@ -140,6 +168,12 @@ data class ReaderState(
             val units = (content as? PageContent.Ready)?.units ?: return null
             return spokenUnitIndex?.let(units::getOrNull) ?: units.firstOrNull()
         }
+
+    /** The text of zero-based [page] when it is the page shown and loaded, its sentences in order; else null. */
+    fun pageText(page: Int): String? {
+        val units = (content as? PageContent.Ready)?.units?.takeIf { page == this.page } ?: return null
+        return units.map { it.text }.filter(String::isNotBlank).joinToString(" ").takeIf(String::isNotBlank)
+    }
 
     /** The chapter-list row being read (or shown, when nothing of this book is read), if any. */
     val currentChapter: Int? get() = ChapterList.currentIndex(chapters, readingPosition?.page ?: page)

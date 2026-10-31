@@ -13,7 +13,7 @@
     <string name="found_where_reading">The book you\'re reading</string>
     <string name="found_where_library">From your library</string>
     <string name="found_where_place">A place of its own</string>
-    <string name="found_more">More</string>
+    <string name="found_menu">Menu</string>
     <string name="found_book_play">Play %1$s</string>
     <string name="found_book_up_next">Add %1$s to Up next</string>
     <string name="found_book_audiobook">Save %1$s as an audiobook</string>
@@ -26,6 +26,7 @@
     <string name="found_book_finished">Mark %1$s as finished</string>
     <string name="found_book_not_started">Mark %1$s as not started</string>
     <string name="found_terms_play">listen read aloud start</string>
+    <string name="found_terms_speech">speed pitch pace faster slower voice</string>
     <string name="found_terms_audiobook">mp3 audio file offline</string>
     <string name="found_terms_share">picture image card</string>
     <string name="found_terms_guide">characters people who</string>

@@ -31,24 +31,19 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
-import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToIndexAction
-import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
-import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
-import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.swipeLeft
@@ -87,6 +82,7 @@ import io.github.skm0078.audora.release.JourneyDevice.app
 import io.github.skm0078.audora.release.JourneyDevice.awaitTrue
 import io.github.skm0078.audora.release.JourneyDevice.hides
 import io.github.skm0078.audora.release.JourneyDevice.shows
+import io.github.skm0078.audora.release.JourneyDevice.toggleRow
 import io.github.skm0078.audora.speech.audio.PcmAudio
 import io.github.skm0078.audora.speech.audio.WordTimes
 import io.github.skm0078.audora.speech.voices.VoiceKind
@@ -98,8 +94,6 @@ import io.github.skm0078.audora.ui.reader.MediaControllerPlaybackPort
 import io.github.skm0078.audora.ui.reader.PlaybackSnapshot
 import io.github.skm0078.audora.ui.reader.ReadingPosition
 import io.github.skm0078.audora.ui.reader.SIDE_PANEL_TAG
-import io.github.skm0078.audora.ui.search.FOUND_TAG
-import io.github.skm0078.audora.ui.settings.FOCUSED_TAG
 import io.github.skm0078.audora.ui.share.ShareCardActivity
 import io.github.skm0078.audora.ui.share.ShareCardFiles
 import io.github.skm0078.audora.ui.share.ShareEntry
@@ -129,6 +123,7 @@ class ReleaseJourneyTest {
         try {
             firstRunToTheLibrary()
             readingSharingAndVoices()
+            step("62 voice commands use the LibriSpeech model", CommandsModelJourney(rule, ::backToTabs)::isLibriSpeech)
             // Last on purpose: run after step 19, the thousand books' background work left step 26 without its menu.
             step("40 search finds the last of 1,000 books", LoadJourney(rule, ::backToTabs)::lastOfManyIsFound)
         } finally {
@@ -140,13 +135,14 @@ class ReleaseJourneyTest {
         }
     }
 
-    /** Steps 01 to 20: first run, playback, settings, every format, and the library's menus. */
+    /** Steps 63 and 01 to 20: the first screen, first run, playback, settings, every format, the library's menus. */
     private fun firstRunToTheLibrary() {
+        step("63 the first screen leaves the player down", PlayerServiceJourney(rule) { scenario = it }::launchesDown)
         step(
             "01 first run plays a sample, opens the reader and offers the tour once",
             ::firstRunWalksThroughAndFinishes,
         )
-        step("02 the launcher says ListenLock", ::theLauncherSaysListenLock)
+        step("02 the launcher says ListenLock and links go to its site", BrandJourney::nameAndLinksAreListenLocks)
         step("03 Open with adds the book and opens the reader", ::openWithAddsTheBookAndOpensTheReader)
         step("04 play starts without the notification permission", ::playStartsWithoutTheNotificationPermission)
         step("05 media controls pause, resume and skip", ::mediaControlsPauseResumeAndSkip)
@@ -160,8 +156,9 @@ class ReleaseJourneyTest {
         step("11 Hide app content blocks screenshots", ::hideAppContentBlocksScreenshots)
         step("12 a scan offers OCR and reads after the download", ::aScanOffersOcrAndReadsAfterTheDownload)
         step("13 Open with reads FB2, Kindle and help-file books", ::openWithReadsMoreEbookFormats)
-        step("14 Open with makes a comic archive into a photo book", ::openWithMakesAComicIntoAPhotoBook)
-        step("15 Open with reads a DjVu's text and makes a DjVu scan a photo book", ::openWithReadsDjvuBooks)
+        val photoBooks = PhotoBookJourney(rule, ::activity, ::backToTabs)
+        step("14 Open with makes a comic archive into a photo book", photoBooks::aComicBecomesAPhotoBook)
+        step("15 Open with reads a DjVu's text and makes a DjVu scan a photo book", photoBooks::djvuTextAndScanOpen)
         step("16 Supertonic's licence rules show before its download", ::supertonicRulesShowBeforeItsDownload)
         step("17 an exported chapter carries the book's cover", ::anExportedChapterCarriesTheCover)
         step("18 the app font draws English, Hindi and Bengali", ::theAppFontDrawsAllThreeScripts)
@@ -180,7 +177,9 @@ class ReleaseJourneyTest {
             "24 a phone keeps the reader's bookmarks sheet and the library has no book pane",
             ::aPhoneKeepsTheSheets,
         )
-        step("24b a search finds a setting, opens it on You, and Back returns to the search", ::searchOpensASetting)
+        step("24b a search finds a setting, opens it on You, and Back returns to the search") {
+            SearchJourney(rule, ::back).opensASetting()
+        }
         step("24c You › Show me around walks the 5 stops and Done returns to the library", TourJourney(rule)::replays)
         val share = ShareJourney(rule, ::activity, ::backToTabs)
         step("25 Share as a video reads the quote in the book's voice into an MP4", share::aQuoteVideoIsShared)
@@ -192,6 +191,9 @@ class ReleaseJourneyTest {
         }
         step("28 a text turn slides in and settles where the text was") {
             share.aTextTurnSlidesAndSettles(MORE_FORMATS.first())
+        }
+        step("50 a PDF page curls as it turns, and Page and text keeps Slide when picked") {
+            CurlJourney(rule, ::activity).aPdfPageCurlsAndSlideCanBePicked(BOOK)
         }
         step(
             "29 a story's women and men each get a voice of their own gender",
@@ -208,6 +210,23 @@ class ReleaseJourneyTest {
         step("45 the phone drawer opens Settings", DrawerJourney(rule, ::backToTabs)::opensSettings)
         step("46 the phone drawer opens Make it yours", DrawerJourney(rule, ::backToTabs)::opensMakeItYours)
         step("47 Settings' switches say what they cost", RowLinesJourney(rule, ::backToTabs)::settingsSayWhatTheyCost)
+        step("48 This week is a home part and opens Your listening", HomeJourney(rule, ::backToTabs)::offersThisWeek)
+        step("49 the side panel holds the library's tools", DrawerJourney(rule, ::backToTabs)::holdsTheLibrarysTools)
+        step("51 player shortcuts open their group", SpeechJourney(rule, BOOK, ::backToTabs)::shortcutsOpenTheirGroup)
+        step("52 From ListenLock opens the cookbook", CookbookJourney(rule, ::backToTabs)::opensFromTheLibrary)
+        step("53 the reader's Share opens the choices and a card in the reader's colours with Whole page") {
+            ShareHereJourney(rule, ::activity).theShareButtonOpensTheChoices(BOOK)
+        }
+        step("54 search and You open the player's options", FindOptionsJourney(rule, ::backToTabs)::openTheSheet)
+        step("55 Jobs cleans up unfinished work", JobsCleanupJourney(rule, ::backToTabs)::cleansUpUnfinishedWork)
+        step("56 an open book loads its voice early", WarmUpJourney(rule, BOOK, { port }, ::backToTabs)::loadsTheVoice)
+        step("57 books zipped with code-page names open") {
+            ZipNamesJourney(rule, ::activity, ::backToTabs).booksWithCodePageNamesOpen()
+        }
+        step("58 the player names its line actions", LineActionsJourney(rule, BOOK, ::backToTabs)::namedAndInSight)
+        step("59 an opened group shows", OpenInPlaceJourney(rule, BOOK, ::backToTabs)::anOpenedGroupComesIntoView)
+        step("60 search finds the switch that mutes tips", HintsJourney(rule, ::backToTabs)::searchFindsTheMute)
+        step("61 Voices & licences opens every licence text", NoticesJourney(rule, ::backToTabs)::everyLicenceTextOpens)
     }
 
     /**
@@ -226,9 +245,8 @@ class ReleaseJourneyTest {
 
     private fun text(id: Int, vararg args: Any): String = app.getString(id, *args)
 
-    private fun waitForNode(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) {
+    private fun waitForNode(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) =
         rule.waitUntil(timeoutMs) { rule.shows(matcher) }
-    }
 
     private fun node(matcher: SemanticsMatcher): SemanticsNodeInteraction {
         waitForNode(matcher)
@@ -241,9 +259,8 @@ class ReleaseJourneyTest {
 
     private fun tapText(id: Int, vararg args: Any) = tap(hasText(text(id, *args)))
 
-    private fun gone(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) {
+    private fun gone(matcher: SemanticsMatcher, timeoutMs: Long = UI_TIMEOUT_MS) =
         rule.waitUntil(timeoutMs) { rule.hides(matcher) }
-    }
 
     private fun back() {
         val current = activity()
@@ -276,8 +293,6 @@ class ReleaseJourneyTest {
             JourneyDevice.logCount(fragment) > before
         }
 
-    private fun toggleRow(title: String): SemanticsMatcher = hasText(title) and isToggleable()
-
     private fun toggleState(matcher: SemanticsMatcher): ToggleableState =
         node(matcher).fetchSemanticsNode().config[SemanticsProperties.ToggleableState]
 
@@ -293,7 +308,6 @@ class ReleaseJourneyTest {
     }
 
     private fun firstRunWalksThroughAndFinishes() {
-        scenario = ActivityScenario.launch(MainActivity::class.java)
         val stepOne = hasText(text(R.string.first_run_step, 1, firstRunSteps))
         waitForNode(stepOne)
         node(hasText(text(R.string.first_run_privacy))).assertExists()
@@ -316,12 +330,6 @@ class ReleaseJourneyTest {
         val stop = hasContentDescription(text(R.string.voices_sample_stop, ""), substring = true)
         gone(stop, PLAY_TIMEOUT_MS)
         node(play).assertExists()
-    }
-
-    private fun theLauncherSaysListenLock() {
-        val label = app.packageManager.getApplicationLabel(app.applicationInfo).toString()
-        assertTrue("Launcher label was \"$label\"", label.startsWith("ListenLock"))
-        assertFalse("Launcher label was \"$label\"", label.contains("Audora", ignoreCase = true))
     }
 
     private fun openWithAddsTheBookAndOpensTheReader() {
@@ -456,8 +464,9 @@ class ReleaseJourneyTest {
         val row = toggleRow(text(R.string.settings_skip_citations_title))
         val before = toggleState(row)
         val rereads = JourneyDevice.logCount(TEXT_REREAD)
-        // The title, not the switch: the whole row is the target (ADR-062).
-        tap(hasText(text(R.string.settings_skip_citations_title)))
+        // The title, not the switch: the whole row is the target (ADR-062). Scrolled to first: rows above it (Voice
+        // and speed) can leave it under the bottom bar on a small screen, where a tap lands on nothing.
+        node(hasText(text(R.string.settings_skip_citations_title))).performScrollTo().performClick()
         awaitTrue("the switch to flip") { toggleState(row) != before }
         awaitLog(TEXT_REREAD, rereads)
         JourneyDevice.onMain(requireNotNull(port)::play)
@@ -471,7 +480,7 @@ class ReleaseJourneyTest {
         val title = text(R.string.settings_skip_citations_title)
         val row = toggleRow(title)
         val before = toggleState(row)
-        tap(hasContentDescription(text(R.string.option_help_about, title)))
+        node(hasContentDescription(text(R.string.option_help_about, title))).performScrollTo().performClick()
         tapText(R.string.option_help_ok)
         assertEquals("The help button must not toggle its row", before, toggleState(row))
     }
@@ -532,60 +541,6 @@ class ReleaseJourneyTest {
 
     private fun textBookLog(): String =
         "Opened: ${JourneyDevice.logCount(TEXT_BOOK_OPENED)}, not opened: ${JourneyDevice.logCount(TEXT_BOOK_FAILED)}"
-
-    /**
-     * A comic archive is not added as a book: its pages become a photo book, added to the library, which opens in the
-     * reader by itself. Its pages are blank pictures; OCR reading a picture page is step 12's. The library's work runs
-     * in the screen's scope, which the Compose test clock drives, so these waits go through [awaitSynced].
-     */
-    private fun openWithMakesAComicIntoAPhotoBook() {
-        backToTabs()
-        val added = JourneyDevice.logCount(PHOTO_BOOK_ADDED)
-        val uri = JourneyDevice.downloadedBook(COMIC)
-        val current = activity()
-        JourneyDevice.onMain { current.startActivity(JourneyDevice.openWith(uri, COMIC_TYPE)) }
-        awaitSynced("the comic to be added as a photo book", OPEN_TIMEOUT_MS) {
-            JourneyDevice.logCount(PHOTO_BOOK_ADDED) > added
-        }
-        awaitSynced("the comic to open in the reader", OPEN_TIMEOUT_MS) {
-            rule.shows(hasText(COMIC_TITLE))
-        }
-    }
-
-    /**
-     * DjVu through DjVuLibre (ADR 2026-10-27-djvu-books): one with a text layer opens as a text book showing its first
-     * paragraph, joined across lines and a broken word; a scan (no text layer) becomes a photo book that opens by
-     * itself, like a comic.
-     */
-    private fun openWithReadsDjvuBooks() {
-        backToTabs()
-        val textUri = JourneyDevice.downloadedBook(DJVU_TEXT)
-        val textHost = activity()
-        JourneyDevice.onMain { textHost.startActivity(JourneyDevice.openWith(textUri, DJVU_TYPE)) }
-        awaitSynced("$DJVU_TEXT to show \"$DJVU_SENTENCE\" in the reader", OPEN_TIMEOUT_MS) {
-            rule.shows(hasText(DJVU_SENTENCE, substring = true))
-        }
-        backToTabs()
-        val added = JourneyDevice.logCount(PHOTO_BOOK_ADDED)
-        val scanUri = JourneyDevice.downloadedBook(DJVU_SCAN)
-        val scanHost = activity()
-        JourneyDevice.onMain { scanHost.startActivity(JourneyDevice.openWith(scanUri, DJVU_TYPE)) }
-        awaitSynced("the DjVu scan to be added as a photo book", OPEN_TIMEOUT_MS) {
-            JourneyDevice.logCount(PHOTO_BOOK_ADDED) > added
-        }
-        awaitSynced("the DjVu scan to open in the reader", OPEN_TIMEOUT_MS) {
-            rule.shows(hasText(DJVU_SCAN_TITLE))
-        }
-    }
-
-    /** Waits on the Compose test clock (frames and effects run meanwhile); a timeout lists the app's last log lines. */
-    private fun awaitSynced(what: String, timeoutMs: Long, condition: () -> Boolean) {
-        try {
-            rule.waitUntil(timeoutMs, condition)
-        } catch (e: ComposeTimeoutException) {
-            throw AssertionError("Timed out waiting for: $what. Last log lines: ${JourneyDevice.logTail(LOG_TAIL)}", e)
-        }
-    }
 
     private fun pause() {
         JourneyDevice.onMain(requireNotNull(port)::pause)
@@ -856,24 +811,6 @@ class ReleaseJourneyTest {
         assertTrue("no book pane on a phone", none(hasTestTag(BOOK_PANE_TAG)))
     }
 
-    /**
-     * The library's search finds a setting on Advanced; its row opens You on that page with the setting focused, and
-     * Back returns to the search, its words still there (ADR 2026-10-28-action-search).
-     */
-    private fun searchOpensASetting() {
-        tap(hasContentDescription(text(R.string.library_search)))
-        node(hasSetTextAction()).performTextInput(SEARCHED_SETTING)
-        val found = hasAnyAncestor(hasTestTag(FOUND_TAG))
-        tap(hasText(text(R.string.settings_volume_keys_title)) and found)
-        waitForNode(hasTestTag(FOCUSED_TAG))
-        waitForNode(hasText(text(R.string.settings_advanced_title)))
-        back()
-        waitForNode(hasTestTag(FOUND_TAG))
-        back()
-        gone(hasTestTag(FOUND_TAG))
-        waitForNode(hasText(text(R.string.library_title)))
-    }
-
     private fun none(matcher: SemanticsMatcher): Boolean = rule.onAllNodes(matcher).fetchSemanticsNodes().isEmpty()
 
     private companion object {
@@ -896,23 +833,7 @@ class ReleaseJourneyTest {
         // TextBooks' own words when a text book opens, or does not (shown when a step times out).
         const val TEXT_BOOK_OPENED = "Text book opened"
         const val TEXT_BOOK_FAILED = "Text book not opened"
-        const val COMIC = "comic.cbz"
-        const val COMIC_TYPE = "application/vnd.comicbook+zip"
 
-        // The photo book is named after the file; the reader's top bar shows it.
-        const val COMIC_TITLE = "comic"
-
-        // assets/ebooks, written by scripts/fixtures/make_djvu_fixtures.py: its first paragraph has "remark-" / "able"
-        // across a line end, so the sentence shows only when the lines are joined.
-        const val DJVU_TEXT = "text.djvu"
-        const val DJVU_SCAN = "scan.djvu"
-        const val DJVU_TYPE = "image/vnd.djvu"
-        const val DJVU_SENTENCE = "The first page of a small DjVu book has a remarkable sentence"
-        const val DJVU_SCAN_TITLE = "scan"
-
-        // PhotoBooks' own words once the photo book is in the library.
-        const val PHOTO_BOOK_ADDED = "Photo book added"
-        const val LOG_TAIL = 30
         val firstRunSteps = FirstRunStep.entries.size
         const val MAX_BACKS = 4
         const val POLL_MS = 200L
@@ -948,6 +869,5 @@ class ReleaseJourneyTest {
         const val CARD_HEIGHT = 1920
 
         // Step 24b: a word that names a setting on Advanced, not a book.
-        const val SEARCHED_SETTING = "volume"
     }
 }

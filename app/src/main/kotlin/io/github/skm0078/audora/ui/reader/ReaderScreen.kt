@@ -75,11 +75,14 @@ fun ReaderScreen(
     voicePacks: VoicePackActions = VoicePackActions(),
     people: (@Composable (Modifier) -> Unit)? = null,
     windowWidth: Dp = currentWindowWidth(),
+    speech: SpeechRequest = SpeechRequest.NONE,
+    hintLinks: ReaderHintLinks = ReaderHintLinks.None,
 ) {
     var pageTextOpen by rememberSaveable { mutableStateOf(false) }
     val offer = rememberVoicePackOffer(state.bookId, voices, voicePacks)
     val tips = rememberGestureTips()
-    val notice = readerNotice(state, offer, tips.pending)
+    val hint = readerHint(state, notes, hintLinks, actions, speech)
+    val notice = readerNotice(state, offer, tips.pending, hint.pending)
     val pack = offer.takeIf { notice == ReaderNotice.VOICE_PACK }
     if (pageTextOpen) {
         PageTextSheet(look, onLookChange, textView = state.view == ReaderView.TEXT) { pageTextOpen = false }
@@ -95,13 +98,14 @@ fun ReaderScreen(
                     onSearch = onSearch,
                     onSaveAudiobook = actions::onSaveAudiobook,
                     onReadAloudToMe = onTutor,
+                    onShowTips = tips::show,
                 )
             }
         },
         bottomBar = {
             if (state.document is DocumentState.Open) {
                 val onTipsSeen = tips::dismiss.takeIf { notice == ReaderNotice.GESTURE_TIPS }
-                ReaderControls(state, config, actions, voices = voices, onTipsSeen = onTipsSeen)
+                ReaderControls(state, config, actions, Modifier, voices, onTipsSeen, hint.speech, hint.cardFor(notice))
             }
         },
     ) { innerPadding ->
@@ -135,6 +139,28 @@ fun ReaderScreen(
             }
             BookJobsOnTop(state.bookId)
         }
+    }
+}
+
+/** The page as drawn or as its text, whichever view is chosen; a text page with no words says so. */
+@Composable
+private fun ReadingArea(
+    state: ReaderState,
+    content: PageContent.Ready,
+    actions: ReaderActions,
+    look: ReadingLook,
+    config: ReaderConfig,
+    spokenWord: () -> IntRange?,
+    isHighlighted: (ReadingUnit) -> Boolean,
+    turnBack: TextTurnBack,
+) {
+    when {
+        state.view == ReaderView.PAGE -> PageView(state, content.units, actions, look.tone, config.flip, look.turn)
+
+        content.units.isNotEmpty() ->
+            Sentences(state, content.units, actions, look, spokenWord, isHighlighted, turnBack, config.flip)
+
+        content.origin == PageOrigin.TEXT -> Message(stringResource(R.string.reader_page_no_text))
     }
 }
 
@@ -172,14 +198,7 @@ private fun OpenBook(
                 val badge = ocrBadgeText(content.origin, content.ocrConfidence, config)
                 PageOriginNotice(content.origin, ocrModels, badge, actions::onDownloadOcrModels)
                 VoicePackNotice(content.units, voicePack)
-                when {
-                    state.view == ReaderView.PAGE -> PageView(state, content.units, actions, look.tone, config.flip)
-
-                    content.units.isNotEmpty() ->
-                        Sentences(state, content.units, actions, look, spokenWord, isHighlighted, turnBack)
-
-                    content.origin == PageOrigin.TEXT -> Message(stringResource(R.string.reader_page_no_text))
-                }
+                ReadingArea(state, content, actions, look, config, spokenWord, isHighlighted, turnBack)
             }
         }
     }
@@ -344,7 +363,7 @@ private object PreviewActions : ReaderActions {
 
 /** Tells the notes which sentences show, so highlights land on them after a pipeline change (plan item 30). */
 @Composable
-private fun PlaceHighlights(state: ReaderState, notes: BookNotesActions) {
+internal fun PlaceHighlights(state: ReaderState, notes: BookNotesActions) {
     val units = (state.content as? PageContent.Ready)?.units.orEmpty()
     LaunchedEffect(units) { notes.showing(units) }
 }

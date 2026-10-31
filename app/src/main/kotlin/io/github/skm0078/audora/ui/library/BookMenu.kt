@@ -4,6 +4,7 @@
 
 package io.github.skm0078.audora.ui.library
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +27,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -61,7 +66,13 @@ internal fun BookMenuButton(item: LibraryItem, onClick: () -> Unit) {
  * removal dialog or the details sheet is never hidden behind it. None in kids mode.
  */
 @Composable
-internal fun BookMenuSheet(item: LibraryItem, covers: CoverSource, actions: BookMenuActions, onDismiss: () -> Unit) {
+internal fun BookMenuSheet(
+    item: LibraryItem,
+    covers: CoverSource,
+    actions: BookMenuActions,
+    onOpen: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     if (LocalKidsMode.current) return
     AppSheet(onDismissRequest = onDismiss, skipPartiallyExpanded = true) {
         BookMenuContent(
@@ -69,6 +80,7 @@ internal fun BookMenuSheet(item: LibraryItem, covers: CoverSource, actions: Book
             covers,
             actions,
             Modifier.verticalScroll(rememberScrollState()).padding(bottom = Dimens.SpaceXl),
+            onOpen = onOpen,
         ) { action ->
             onDismiss()
             action()
@@ -79,7 +91,9 @@ internal fun BookMenuSheet(item: LibraryItem, covers: CoverSource, actions: Book
 /**
  * The menu's parts top to bottom, shared by the sheet and the wide screen's book pane so both offer the same choices
  * in the same order. [choose] runs a choice: the sheet closes first, the pane stays. [saveAsOpen]: the pane has room
- * to show the Save as tiles from the start. [onOpen]: the pane's cover and title open the book.
+ * to show the Save as tiles from the start. [onOpen] opens the book: from the voice card's Change, and with
+ * [coverOpens] (the pane) from the cover and title too. "Words you looked up" and its quiz show in place of the menu,
+ * Back returning a page at a time.
  */
 @Composable
 internal fun BookMenuContent(
@@ -87,21 +101,40 @@ internal fun BookMenuContent(
     covers: CoverSource,
     actions: BookMenuActions,
     modifier: Modifier = Modifier,
+    onOpen: () -> Unit,
     saveAsOpen: Boolean = false,
-    onOpen: (() -> Unit)? = null,
+    coverOpens: Boolean = false,
     choose: (() -> Unit) -> Unit,
 ) {
+    var page by rememberSaveable(item.book.id.value) { mutableStateOf(BookMenuPage.MENU) }
+    val allWords = rememberLookedUpWords()
+    val words = allWords.filter { it.bookId == item.book.id }
+    BackHandler(page != BookMenuPage.MENU) {
+        page = if (page == BookMenuPage.QUIZ) BookMenuPage.WORDS else BookMenuPage.MENU
+    }
+    if (page != BookMenuPage.MENU) {
+        Column(modifier) { BookWordsPages(page, words, allWords) { page = it } }
+        return
+    }
     val choices = BookMenuChoices.of(item)
     Column(modifier) {
-        MenuBook(item, covers, onOpen)
+        MenuBook(item, covers, onOpen.takeIf { coverOpens })
         if (choices.quick.isNotEmpty()) {
             QuickButtons(choices.quick, Modifier.padding(horizontal = Dimens.ScreenPadding)) { quick ->
                 choose { quick.perform(actions) }
             }
         }
+        rememberBookVoiceNote(item.book)?.let { note ->
+            BookVoiceCard(note, { choose(onOpen) }, Modifier.padding(Dimens.ScreenPadding, Dimens.SpaceS))
+        }
         MenuDivider()
         MenuRow(R.drawable.ic_info, stringResource(R.string.book_details_title), trailing = { Chevron() }) {
             choose(actions.onDetails)
+        }
+        if (words.isNotEmpty()) {
+            MenuRow(R.drawable.ic_spellcheck, stringResource(R.string.book_words_title), trailing = { Chevron() }) {
+                page = BookMenuPage.WORDS
+            }
         }
         if (choices.saveAs.isNotEmpty()) {
             SaveAsCard(

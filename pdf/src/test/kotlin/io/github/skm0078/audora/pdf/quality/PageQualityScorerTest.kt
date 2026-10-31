@@ -3,6 +3,7 @@
 
 package io.github.skm0078.audora.pdf.quality
 
+import io.github.skm0078.audora.core.config.QualityConfig
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.pdf.extract.PageTextAssembler
 import io.github.skm0078.audora.pdf.extract.RawChars
@@ -101,6 +102,27 @@ class PageQualityScorerTest {
         val quality = score(repeat("প্রাপক ও পরিচর্যাকািীদেি জন্য তথ্যপত্র"))
         assertEquals(RouteReason.INVALID_INDIC, quality.reason)
         assertEquals(PageRoute.OCR, quality.route)
+    }
+
+    @Test
+    fun `a long Indic page that lost its conjuncts goes to OCR`() {
+        // A publisher font whose map leaves every conjunct glyph unmapped: "সাহিত্য" extracts as "সাহিত", "প্রথম
+        // প্রকাশ" as "থম কাশ". Every letter left is possible, so only the missing virama shows it.
+        val lost = score(repeat("শিশু সাহিত সংসদের থম কাশ হল জানুয়ারি মাসে, তার বই পড়ে সবাই খুশি হল৷"))
+        assertEquals(RouteReason.LOST_CONJUNCTS, lost.reason)
+        assertEquals(PageRoute.OCR, lost.route)
+        assertEquals(setOf(Lang.BN), lost.ocrLangs)
+        val hindi = score(repeat("बालक ने पहली बार साहित सभा में भाग लिया और सब लोग बहुत खुश हुए।"))
+        assertEquals(RouteReason.LOST_CONJUNCTS, hindi.reason)
+    }
+
+    @Test
+    fun `the same page with its conjuncts, or too short to tell, stays on the text layer`() {
+        val whole = score(repeat("শিশু সাহিত্য সংসদের প্রথম প্রকাশ হল জানুয়ারি মাসে, তার বই পড়ে সবাই খুশি হল।"))
+        assertEquals(RouteReason.TEXT_LAYER_OK, whole.reason)
+        val short = score(repeat("শিশু সাহিত সংসদের থম কাশ হল জানুয়ারি মাসে৷", times = 3))
+        assertEquals(RouteReason.TEXT_LAYER_OK, short.reason)
+        assertTrue(short.signals.indicLetters < QualityConfig().minConjunctCheckLetters)
     }
 
     @Test

@@ -1,0 +1,3 @@
+en: The player now shows the voice reading next to the speed, and three shortcuts under the buttons open Voices, What to read and Focus sound directly. In Voice and speed, each group opens in place and says what is on, with no sheet over the sheet.
+hi: अब प्लेयर स्पीड के साथ पढ़ने वाली आवाज़ भी दिखाता है, और बटनों के नीचे तीन शॉर्टकट सीधे आवाज़ें, क्या पढ़ें और फ़ोकस साउंड खोलते हैं। आवाज़ और स्पीड में हर समूह वहीं खुलता है और बताता है कि क्या चालू है, शीट के ऊपर कोई और शीट नहीं।
+bn: এখন প্লেয়ার গতির পাশে কোন ভয়েস পড়ছে তাও দেখায়, আর বোতামের নিচে তিনটি শর্টকাট সরাসরি ভয়েস, কী পড়া হবে আর ফোকাস সাউন্ড খোলে। ভয়েস আর গতিতে প্রতিটি দল সেখানেই খোলে আর বলে কী চালু আছে, শিটের ওপর আর কোনো শিট নয়।

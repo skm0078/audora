@@ -1,5 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReaderControls.kt
-// Purpose: The reader's bottom bar: speed and pace, previous/next sentence, play/pause and the sleep timer.
+// Purpose: The reader's bottom bar: the Voice and speed chip, previous/next sentence, play/pause and the sleep timer,
+//          with shortcuts into the Voice and speed sheet under them (ADR 2026-10-29-voice-and-speed-one-level).
 
 package io.github.skm0078.audora.ui.reader
 
@@ -21,13 +22,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +52,8 @@ fun ReaderControls(
     modifier: Modifier = Modifier,
     voices: List<VoiceRow> = emptyList(),
     onTipsSeen: (() -> Unit)? = null,
+    speech: SpeechRequest = SpeechRequest.NONE,
+    hint: (@Composable (Modifier) -> Unit)? = null,
 ) {
     // A raised panel with rounded top corners, so the controls read as one block under the thumb (ADR-036).
     Surface(
@@ -63,13 +66,61 @@ fun ReaderControls(
             onTipsSeen?.let {
                 GestureTips(it, Modifier.padding(start = Dimens.SpaceM, end = Dimens.SpaceM, top = Dimens.SpaceM))
             }
-            ControlsRow(state, config, actions, voices)
+            // A first-use hint (ADR 2026-10-30-first-use-hints) takes the same place: above Play, never over it.
+            hint?.invoke(Modifier.padding(start = Dimens.SpaceM, end = Dimens.SpaceM, top = Dimens.SpaceM))
+            // Which place in the Voice and speed sheet is open, if it is: the chip opens its top, a shortcut its group.
+            var speechAt by rememberSaveable { mutableStateOf<SpeechSpot?>(null) }
+            // A search result or Settings asked for a place in the sheet: opened once, then handed back.
+            LaunchedEffect(speech.spot) {
+                speech.spot?.let {
+                    speechAt = it
+                    speech.onTaken()
+                }
+            }
+            ControlsRow(state, config, actions, voices) { speechAt = SpeechSpot.TOP }
+            // Not while the first-run tips or a hint show: both under the page would leave it too short on small
+            // screens (an emulator's 640 dp: the snippet picker's Share button had no room). They appear after Got it.
+            val cardShown = onTipsSeen != null || hint != null
+            if (!cardShown) SpeechShortcuts(enabled = state.playerReady, onOpen = { speechAt = it })
+            speechAt?.let { spot -> ControlsSpeechSheet(spot, state, config, actions, voices) { speechAt = null } }
         }
     }
 }
 
 @Composable
-private fun ControlsRow(state: ReaderState, config: ReaderConfig, actions: ReaderActions, voices: List<VoiceRow>) {
+private fun ControlsSpeechSheet(
+    spot: SpeechSpot,
+    state: ReaderState,
+    config: ReaderConfig,
+    actions: ReaderActions,
+    voices: List<VoiceRow>,
+    onDismiss: () -> Unit,
+) {
+    val study = StudyControls(state.study, canMark = state.readingPosition != null, onStudy = actions::onStudy)
+    PlayerSpeechSheet(
+        spot = spot,
+        playback = state.playback,
+        config = config,
+        actions = actions,
+        voices = voices,
+        study = study,
+        bookInPlayer = state.readingPosition != null,
+        bookLang = bookLanguage(state.content),
+        onDismiss = onDismiss,
+    )
+}
+
+/** The open page's language, so a Hindi or Bengali book's voices come first in the speech sheet. */
+private fun bookLanguage(content: PageContent): Lang? = (content as? PageContent.Ready)?.units?.let(::pageLanguage)
+
+@Composable
+private fun ControlsRow(
+    state: ReaderState,
+    config: ReaderConfig,
+    actions: ReaderActions,
+    voices: List<VoiceRow>,
+    onSpeech: () -> Unit,
+) {
     val enabled = state.playerReady
     val loaded = state.readingPosition != null
     // Full width, or SpaceBetween has no room to spread into and the row huddles at the start (seen on a phone).
@@ -78,10 +129,12 @@ private fun ControlsRow(state: ReaderState, config: ReaderConfig, actions: Reade
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        val study = StudyControls(state.study, canMark = state.readingPosition != null, onStudy = actions::onStudy)
-        // The open page's language, so a Hindi or Bengali book's voices come first in the speech sheet.
-        val bookLang = (state.content as? PageContent.Ready)?.units?.let(::pageLanguage)
-        SpeedButton(state.playback, config, enabled, actions, voices, study, state.readingPosition != null, bookLang)
+        val playback = state.playback
+        // Kept across the playback ticks that redraw this row: it changes only with the page, voices or picks.
+        val lang = remember(state.content) { bookLanguage(state.content) }
+        val own = playback.bookVoices.takeIf { playback.ownSettings }.orEmpty()
+        val voiceName = remember(voices, own, lang) { lang?.let { readingVoiceName(voices, own, it) } }
+        SpeechChip(playback.speed, voiceName, enabled, onSpeech)
         SkipButton(
             forward = false,
             enabled = enabled && loaded && state.playback.canSkipBack,
@@ -156,58 +209,14 @@ private fun PlayPauseButton(reading: Boolean, buffering: Boolean, enabled: Boole
 }
 
 @Composable
-private fun SpeedButton(
-    playback: PlaybackSnapshot,
-    config: ReaderConfig,
-    enabled: Boolean,
-    actions: ReaderActions,
-    voices: List<VoiceRow>,
-    study: StudyControls,
-    bookInPlayer: Boolean,
-    bookLang: Lang?,
-) {
-    var open by remember { mutableStateOf(false) }
-    TextButton(onClick = { open = true }, enabled = enabled) {
-        Text(stringResource(R.string.reader_speed, speedLabel(playback.speed)))
-    }
-    if (open) {
-        SpeechSheet(
-            speed = playback.speed,
-            pace = playback.pace,
-            config = config,
-            onSpeed = actions::onSpeed,
-            pitch = playback.pitch,
-            onPitch = actions::onPitch,
-            onPace = actions::onPace,
-            clausePauses = playback.clausePauses,
-            onClausePauses = actions::onClausePauses,
-            readingModes = playback.readingModes,
-            onReadingModes = actions::onReadingModes,
-            voiceShaping = playback.voiceShaping,
-            onVoiceShaping = actions::onVoiceShaping,
-            ownSettings = playback.ownSettings,
-            onOwnSettings = actions::onOwnSettings,
-            voices = BookVoices(voices, playback.bookVoices, actions::onBookVoice, actions::onVoice, bookLang),
-            study = study,
-            focusSound = playback.focusSound,
-            onFocusSound = actions::onFocusSound,
-            blend = NarratorBlendState(playback.blendOwnSpeaker, playback.blendNeedsBytes),
-            bookInPlayer = bookInPlayer,
-            expressive = playback.voiceExpressive != false,
-            readingIntent = playback.readingIntent,
-            onDismiss = { open = false },
-        )
-    }
-}
-
-@Composable
 private fun SleepTimerButton(
     playback: PlaybackSnapshot,
     config: ReaderConfig,
     enabled: Boolean,
     actions: ReaderActions,
 ) {
-    var editingOptions by remember { mutableStateOf(false) }
+    // Kept across a rotation, as the dialog's unsaved choices are.
+    var editingOptions by rememberSaveable { mutableStateOf(false) }
     SleepTimerMenuButton(
         timer = playback.sleepTimer,
         choices = sleepTimerChoices(playback.hasChapters, config),

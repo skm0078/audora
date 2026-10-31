@@ -181,9 +181,11 @@ private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Un
 
 @StringRes
 internal fun sectionLabel(section: HomeSection): Int = when (section) {
+    HomeSection.THIS_WEEK -> R.string.home_section_week
     HomeSection.CONTINUE -> R.string.home_section_continue
     HomeSection.LINE_OF_THE_DAY -> R.string.home_section_line
     HomeSection.RECENTLY_ADDED -> R.string.home_section_recent
+    HomeSection.FROM_LISTENLOCK -> R.string.home_section_from_listenlock
     HomeSection.SHELF_CHIPS -> R.string.home_section_chips
 }
 

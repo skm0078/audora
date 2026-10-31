@@ -20,8 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,7 +45,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
@@ -62,6 +59,7 @@ import io.github.skm0078.audora.pdf.render.ViewPoint
 import io.github.skm0078.audora.pdf.render.ViewRect
 import io.github.skm0078.audora.ui.reader.flip.FlipPages
 import io.github.skm0078.audora.ui.reader.flip.PageFlip
+import io.github.skm0078.audora.ui.reader.flip.PageTurn
 import io.github.skm0078.audora.ui.theme.readingBand
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
@@ -78,6 +76,7 @@ internal fun PageView(
     actions: ReaderActions,
     tone: PageTone,
     flip: PageFlipConfig = PageFlipConfig(),
+    turn: PageTurn = PageTurn(),
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val widthPx = constraints.maxWidth
@@ -101,10 +100,10 @@ internal fun PageView(
             shown != null -> {
                 val sentences = remember(units) { units.filter { it.text.isNotBlank() } }
                 val perSentence = rememberSentenceActions(sentences, state.playerReady, actions)
-                val pages = FlipPages(state.page, state.pageCount ?: 1, state.nearbyPages, tone)
+                val pages = FlipPages(state.page, state.pageCount ?: 1, state.nearbyPages, tone, state.isReading)
                 val picking = state.snippet != null
                 // While a snippet is picked, a drag moves its box: the page neither turns nor reads.
-                PageFlip(pages, enabled = !zoom.zoomed && !picking, config = flip, onTurn = actions::onGoToPage) {
+                PageFlip(pages, !zoom.zoomed && !picking, flip, actions::onGoToPage, turn) {
                     DrawnPage(state, shown.image, PageLook(pageNote(units), tone, zoom, perSentence), viewport, actions)
                 }
                 if (picking) {
@@ -130,20 +129,6 @@ internal fun PageView(
             )
 
             else -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-        }
-    }
-}
-
-/** Switches between the drawn page and its sentences as text. */
-@Composable
-internal fun ViewToggle(view: ReaderView, actions: ReaderActions) {
-    when (view) {
-        ReaderView.PAGE -> IconButton(onClick = { actions.onViewChanged(ReaderView.TEXT) }) {
-            Icon(painterResource(R.drawable.ic_view_text), stringResource(R.string.reader_show_text))
-        }
-
-        ReaderView.TEXT -> IconButton(onClick = { actions.onViewChanged(ReaderView.PAGE) }) {
-            Icon(painterResource(R.drawable.ic_view_page), stringResource(R.string.reader_show_page))
         }
     }
 }

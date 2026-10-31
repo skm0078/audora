@@ -65,6 +65,7 @@ fun NotesOverlays(
 ) {
     notes.menuFor?.let { unit -> SentenceMenu(unit, notes, actions, reader, voice, lookUp) }
     PassageOverlays(notes, actions)
+    notes.sharing?.let { SharedPassageMenu(it, actions, reader) }
     if (notes.listOpen) BookmarksSheet(notes.bookmarks, actions, reader, voice)
     VoiceNotesOverlays(voice)
     LookUpOverlay(lookUp)

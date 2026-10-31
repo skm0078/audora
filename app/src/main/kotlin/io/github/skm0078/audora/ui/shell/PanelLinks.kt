@@ -20,20 +20,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import io.github.skm0078.audora.R
+import io.github.skm0078.audora.ui.library.LibraryAction
 import io.github.skm0078.audora.ui.theme.Dimens
 
 /**
- * What the side panel opens besides the places: the library's own sheets and the listening stats (each also in the
- * ⋮ menu or on a chip, so neither way hides them), then the tour and Settings.
+ * What the side panel opens besides the places: the library's tools ([LibraryAction.inPanel], each run through the
+ * library as its own button would), then the tour and Settings.
  */
 @Immutable
-class PanelLinks(
-    val onMakeItYours: () -> Unit,
-    val onEditCollections: () -> Unit,
-    val onListeningStats: () -> Unit,
-    val onTour: () -> Unit,
-    val onSettings: () -> Unit,
-)
+class PanelLinks(val onLibraryAction: (LibraryAction) -> Unit, val onTour: () -> Unit, val onSettings: () -> Unit)
 
 /**
  * The shared rows: Your library, then the tour and Settings. [then] wraps each action, so the drawer can close
@@ -43,14 +38,18 @@ class PanelLinks(
 internal fun PanelLinkRows(links: PanelLinks, hasCollections: Boolean, then: (() -> Unit) -> () -> Unit = { it }) {
     PanelDivider()
     PanelHeading(R.string.drawer_your_library)
-    PanelRow(R.string.library_make_it_yours, R.drawable.ic_palette, then(links.onMakeItYours))
-    val collections = if (hasCollections) R.string.collections_edit else R.string.collections_new
-    PanelRow(collections, R.drawable.ic_edit, then(links.onEditCollections))
-    PanelRow(R.string.library_listening_stats, R.drawable.ic_bar_chart, then(links.onListeningStats))
+    LibraryAction.inPanel.forEach { action ->
+        PanelRow(panelLabel(action, hasCollections), action.icon, then { links.onLibraryAction(action) })
+    }
     PanelDivider()
     PanelRow(R.string.settings_tour_title, R.drawable.ic_explore, then(links.onTour))
     PanelRow(R.string.settings_title, R.drawable.ic_settings, then(links.onSettings))
 }
+
+/** Before the first collection, its row offers a new one, as the library's chip does. */
+@StringRes
+private fun panelLabel(action: LibraryAction, hasCollections: Boolean): Int =
+    if (action == LibraryAction.EDIT_COLLECTIONS && !hasCollections) R.string.collections_new else action.label
 
 @Composable
 internal fun PanelDivider() {

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_first_use_hints.xml -->
+<!-- Purpose: The first-use hints and their Settings switch (ADR 2026-10-30-first-use-hints). -->
+<resources>
+    <string name="hint_got_it">Got it</string>
+    <string name="hint_show_me">Show me</string>
+    <string name="hint_action_keep">Keep a copy</string>
+    <string name="hint_action_prepare">Start studio mode</string>
+    <string name="hint_keep_offline">This book is read through another app. Keep a copy on this phone to read it with no internet.</string>
+    <string name="hint_smart_speed">At this speed, smart speed keeps the voice clear. It is in Sound.</string>
+    <string name="hint_cast">This reads like a story. Give its quotes and characters voices of their own?</string>
+    <string name="hint_quiz">Highlights turn into quiz questions. Find Quiz me in the library.</string>
+    <string name="hint_finished">You reached the end. Share this book, or see your listening stats.</string>
+    <string name="hint_prepare_ahead">The phone is charging. Studio mode can prepare the rest of this book now, so it never waits.</string>
+    <string name="hint_more_books">You can also add books from photos, copied text, a web page or free catalogues.</string>
+    <string name="settings_hints_title">Tips as you go</string>
+    <string name="row_line_hints">One small tip when it helps · at most one each time the app opens</string>
+    <string name="settings_hints_body">A tip shows when a feature would help right then, such as smart speed when you speed up or Quiz me after your first highlight. Each tip shows once. Turn this off to see none.</string>
+    <string name="found_terms_hints">tips hints help suggestions advice</string>
+</resources>

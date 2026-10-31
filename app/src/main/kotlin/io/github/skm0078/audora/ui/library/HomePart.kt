@@ -1,6 +1,7 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/library/HomePart.kt
-// Purpose: The parts above the books the listener orders in "Make it yours": Continue listening, the line of the day
-//          and Recently added, built once for the grid and the list alike (ADR 2026-10-28-make-it-yours).
+// Purpose: The parts above the books the listener orders in "Make it yours": This week, Continue listening, the line
+//          of the day, Recently added and From ListenLock, built once for the grid and the list alike (ADR
+//          2026-10-28-make-it-yours, ADR 2026-10-29-in-app-cookbook).
 
 package io.github.skm0078.audora.ui.library
 
@@ -28,10 +29,18 @@ import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.home.HomeLayout
 import io.github.skm0078.audora.core.home.HomeSection
+import io.github.skm0078.audora.ui.stats.ThisWeekCard
 import io.github.skm0078.audora.ui.theme.Dimens
 
 /** One part above the books: [key] for the lazy list, [content] drawn edge to edge of the books' column. */
 internal class HomePart(val key: String, val content: @Composable () -> Unit)
+
+/** What the home's parts do when tapped: resume or open a book, or run a library action (From ListenLock's cards). */
+internal class HomeActions(
+    val onContinue: (LibraryItem) -> Unit,
+    val onTap: (LibraryItem) -> Unit,
+    val onLibraryAction: (LibraryAction) -> Unit = {},
+)
 
 /**
  * The parts to show above [list]'s books, in the listener's order. Only on the whole library: while a search, a shelf
@@ -41,18 +50,21 @@ internal fun homeParts(
     list: LibraryListState.Loaded,
     home: LibraryHome,
     covers: CoverSource,
-    onContinue: (LibraryItem) -> Unit,
-    onTap: (LibraryItem) -> Unit,
+    actions: HomeActions,
 ): List<HomePart> {
     val layout = home.layout?.takeIf { list.query.isDefault } ?: return emptyList()
     return layout.shownOrder.mapNotNull { section ->
         when (section) {
+            HomeSection.THIS_WEEK -> home.week?.let { week ->
+                HomePart(WEEK_KEY) { ThisWeekCard(week.glance, week.onOpen) }
+            }
+
             HomeSection.CONTINUE -> list.continueReading?.let { latest ->
                 HomePart(CONTINUE_KEY) {
                     ContinueReadingCard(
                         latest,
-                        onContinue = { onContinue(latest) },
-                        onOpen = { onTap(latest) },
+                        onContinue = { actions.onContinue(latest) },
+                        onOpen = { actions.onTap(latest) },
                         covers = covers,
                         glance = home.glances[latest.book.id],
                         tinted = layout.coverTint,
@@ -65,7 +77,11 @@ internal fun homeParts(
             }
 
             HomeSection.RECENTLY_ADDED -> recentlyAdded(list).takeIf { it.isNotEmpty() }?.let { recent ->
-                HomePart(RECENT_KEY) { RecentlyAddedRow(recent, covers, onTap) }
+                HomePart(RECENT_KEY) { RecentlyAddedRow(recent, covers, actions.onTap) }
+            }
+
+            HomeSection.FROM_LISTENLOCK -> HomePart(FROM_LISTENLOCK_KEY) {
+                FromListenLockRow(AppDocument.entries) { actions.onLibraryAction(it.action) }
             }
 
             HomeSection.SHELF_CHIPS -> null // Pinned above the books, not one of these.
@@ -147,9 +163,11 @@ internal fun RecentlyAddedRow(books: List<LibraryItem>, covers: CoverSource, onT
     }
 }
 
+internal const val WEEK_KEY = "this-week"
 internal const val CONTINUE_KEY = "continue-reading"
 internal const val LINE_KEY = "line-of-the-day"
 internal const val RECENT_KEY = "recently-added"
+internal const val FROM_LISTENLOCK_KEY = "from-listenlock"
 internal const val RECENT_COUNT = 12
 private const val LINE_LINES = 3
 private val RECENT_COVER_WIDTH = 96.dp

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="reader_share">शेयर करें</string>
+    <string name="share_more_lines">और पंक्तियाँ चुनें…</string>
+    <string name="share_hint_more_lines">फिर आख़िरी पंक्ति पर टैप करें, इसी पृष्ठ पर या आगे के किसी पृष्ठ पर। कुछ भी हाइलाइट नहीं होता।</string>
+    <string name="share_this_book">यह किताब शेयर करें</string>
+    <string name="share_hint_this_book">इसके कवर, नाम और लेखक की तस्वीर।</string>
+    <string name="share_hint_lines_audio">ये पंक्तियाँ ऑडियो क्लिप के रूप में (2 मिनट तक), किसी भी ऐप में भेजने के लिए।</string>
+    <string name="share_range_prompt">पृष्ठ %1$d से शेयर हो रहा है। आख़िरी पंक्ति पर टैप करें।</string>
+    <string name="share_range_too_long">शेयर की जाने वाली पंक्तियाँ ज़्यादा से ज़्यादा %1$d पृष्ठों की हो सकती हैं। शुरुआत के पास की आख़िरी पंक्ति चुनें।</string>
+</resources>

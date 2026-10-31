@@ -21,8 +21,8 @@ class VoiceCommandTest {
             assertTrue(line, tag.startsWith("@"))
             assertTrue(line, VoiceCommand.of(tag) != null)
         }
-        assertTrue("▁LI S T EN LO CK ▁ST O P @PAUSE" in lines)
-        assertTrue("▁LI S T EN ▁LO CK ▁ST O P @PAUSE" in lines)
+        assertTrue("▁LI S TEN LO CK ▁STO P @PAUSE" in lines)
+        assertTrue("▁LI S TEN ▁LO CK ▁STO P @PAUSE" in lines)
     }
 
     @Test

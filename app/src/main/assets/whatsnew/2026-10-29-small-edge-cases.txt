@@ -1,0 +1,3 @@
+en: Words, the quiz and voice samples no longer talk over a phone call. Turning the phone keeps the sleep options you just changed, and a shelf name cut at its limit never breaks an emoji or a letter in half.
+hi: शब्द, क्विज़ और आवाज़ के नमूने अब फ़ोन कॉल के ऊपर नहीं बोलते। फ़ोन घुमाने पर अभी बदले गए स्लीप विकल्प बने रहते हैं, और सीमा पर कटा शेल्फ़ का नाम किसी इमोजी या अक्षर को आधा नहीं तोड़ता।
+bn: শব্দ, কুইজ আর ভয়েসের নমুনা এখন ফোন কলের ওপর কথা বলে না। ফোন ঘোরালে এইমাত্র বদলানো স্লিপ বিকল্প থেকে যায়, আর সীমায় কাটা তাকের নাম কোনো ইমোজি বা অক্ষর অর্ধেক করে ভাঙে না।

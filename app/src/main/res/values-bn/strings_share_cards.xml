@@ -5,11 +5,11 @@
 -->
 <resources>
     <string name="sentence_menu_share">শেয়ার করুন…</string>
-    <string name="sentence_hint_share">অডিও, ছবি, ভিডিও বা লেখা হিসেবে। ছবি আর ভিডিওতে সবসময় বইয়ের নাম আর লেখক থাকে।</string>
+    <string name="sentence_hint_share">ছবি, লেখা, ভিডিও বা অডিও হিসেবে, সবসময় বই, তার লেখক আর ListenLock-এর লিংকসহ।</string>
     <string name="share_choices_title">এই লাইনগুলো শেয়ার করুন</string>
     <string name="share_as_picture">ছবি হিসেবে শেয়ার করুন</string>
     <string name="share_hint_picture">বই, লেখক আর পৃষ্ঠাসহ একটি উদ্ধৃতি কার্ড, স্ট্যাটাস, স্টোরি বা পোস্টের মাপে।</string>
-    <string name="share_choices_note">প্রতিটি ছবি আর ভিডিওতে বই, তার লেখক আর ListenLock-এর ছোট চিহ্ন থাকে।</string>
+    <string name="share_choices_note">আপনি যা-ই শেয়ার করুন, তাতে বই, তার লেখক, ListenLock-এর ছোট চিহ্ন আর অ্যাপের লিংক থাকে।</string>
 
     <string name="share_card_title">ছবি হিসেবে শেয়ার করুন</string>
     <string name="share_card_book_title">এই বইটি শেয়ার করুন</string>

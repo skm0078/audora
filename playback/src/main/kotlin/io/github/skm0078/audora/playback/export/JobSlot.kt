@@ -31,6 +31,23 @@ class JobSlot {
         return true
     }
 
+    /**
+     * Runs [work] on the calling thread while holding the slot, so no job of this kind can start meanwhile (its start
+     * is refused as busy); null, without running it, if a job of this kind is running. For short work on a job's
+     * files, such as cleaning up what an unfinished one left. A Cancel meant for a job interrupts this thread
+     * instead; the flag is cleared before returning, so a pooled thread is never left interrupted.
+     */
+    fun <T> runIfFree(work: () -> T): T? {
+        val current = Thread.currentThread()
+        if (!holder.compareAndSet(null, current)) return null
+        try {
+            return work()
+        } finally {
+            holder.compareAndSet(current, null)
+            Thread.interrupted()
+        }
+    }
+
     /** Interrupts the running job, if any; it ends at its next check. */
     fun interrupt() {
         holder.get()?.interrupt()
