@@ -250,4 +250,8 @@ internal class BookReaderActions(
     override fun onRetry() = model.retry()
 
     override fun onDownloadOcrModels() = ocrModels.download()
+
+    override fun onReadFromStart() = model.readFromStart()
+
+    override fun onFrontMatterSeen() = model.frontMatterNoticeShown()
 }

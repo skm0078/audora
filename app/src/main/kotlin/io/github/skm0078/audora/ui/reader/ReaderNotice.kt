@@ -26,6 +26,12 @@ internal enum class ReaderNotice {
     /** The page cannot be read yet: its text recognition files are missing, or recognition failed. */
     PAGE_PROBLEM,
 
+    /**
+     * The book opened past its front matter (ADR 2026-10-31-skip-front-matter): said before anything else, since the
+     * listener did not choose that page and must be able to go back to page 1 at once.
+     */
+    FRONT_MATTER,
+
     /** The page is in Hindi or Bengali and that language's natural voice is not on the phone. */
     VOICE_PACK,
 
@@ -42,8 +48,10 @@ internal fun readerNotice(
     voicePackOffered: Boolean,
     tipsPending: Boolean,
     hintPending: Boolean = false,
+    frontMatterSkipped: Boolean = false,
 ): ReaderNotice? = when {
     origin == PageOrigin.NEEDS_OCR_MODELS || origin == PageOrigin.OCR_FAILED -> ReaderNotice.PAGE_PROBLEM
+    frontMatterSkipped -> ReaderNotice.FRONT_MATTER
     voicePackOffered -> ReaderNotice.VOICE_PACK
     tipsPending -> ReaderNotice.GESTURE_TIPS
     hintPending -> ReaderNotice.HINT
@@ -58,7 +66,8 @@ internal fun readerNotice(
     hintPending: Boolean = false,
 ): ReaderNotice? {
     val page = state.content as? PageContent.Ready
-    return readerNotice(page?.origin, page?.let { offer.packFor(it.units) } != null, tipsPending, hintPending)
+    val skipped = state.skippedFrontMatter?.page == state.page
+    return readerNotice(page?.origin, page?.let { offer.packFor(it.units) } != null, tipsPending, hintPending, skipped)
 }
 
 /**

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values/strings_front_matter.xml -->
+<!-- Purpose: New books open past their front matter, and the reader says so (ADR 2026-10-31-skip-front-matter). -->
+<resources>
+    <string name="front_matter_started_at">Started at “%1$s”, page %2$d</string>
+    <string name="front_matter_started_on">Started where the book begins, page %1$d</string>
+    <plurals name="front_matter_skipped">
+        <item quantity="one">Skipped %d page before it</item>
+        <item quantity="other">Skipped %d pages before it</item>
+    </plurals>
+    <string name="front_matter_skipped_what">%1$s: %2$s.</string>
+    <string name="front_matter_list_joiner">", "</string>
+    <string name="front_matter_kind_title_pages">title pages</string>
+    <string name="front_matter_kind_copyright">copyright</string>
+    <string name="front_matter_kind_contents">contents</string>
+    <string name="front_matter_kind_dedication">dedication</string>
+    <string name="front_matter_kind_thanks">acknowledgements</string>
+    <string name="front_matter_kind_preface">preface</string>
+    <string name="front_matter_read_from_start">Read from the start</string>
+    <string name="front_matter_ok">OK</string>
+    <string name="settings_skip_front_matter_title">Start new books at the first chapter</string>
+    <string name="settings_skip_front_matter_short">Skips contents, copyright and preface pages</string>
+    <string name="settings_skip_front_matter_body">On: a book you have not read yet opens where its reading starts, past the contents, copyright, title and preface pages, and a card says what was skipped, with Read from the start. Off: every book opens on page 1. The skipped pages are never hidden; turn back to them any time.</string>
+    <string name="found_terms_front_matter">front matter preface contents index table of contents copyright first chapter skip intro</string>
+</resources>

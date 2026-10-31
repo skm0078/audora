@@ -137,4 +137,8 @@ internal fun BetaScanNotice(lang: Lang?, offer: BetaScanOffer) {
  * What the notices at the top of an open page need beyond the page: the language-pack offer while it is the notice
  * shown ([VoicePackNotice]), and the voices, for [BetaScanNotice].
  */
-internal class PageTopNotices(val voicePack: VoicePackOffer?, val voices: List<VoiceRow>)
+internal class PageTopNotices(
+    val voicePack: VoicePackOffer?,
+    val voices: List<VoiceRow>,
+    val frontMatter: SkippedFrontMatter? = null,
+)

@@ -113,6 +113,13 @@ data class ReaderState(
     val previouslyOn: PreviouslyOn? = null,
     /** The book's first open: its opening line shows once the first page has words ([ReaderModel.openingLineShown]). */
     val firstOpen: Boolean = false,
+    /**
+     * The book opened past its front matter (ADR 2026-10-31-skip-front-matter): the notice saying so shows until
+     * its OK or "Read from the start" ([ReaderModel.frontMatterNoticeShown], [ReaderModel.readFromStart]).
+     */
+    val skippedFrontMatter: SkippedFrontMatter? = null,
+    /** The page the book opened on for its first open: where its opening line comes from. */
+    val startPage: Int = 0,
     val snippet: SnippetBox? = null,
     /** The open book is reading a page with OCR right now: the slow-page notice names OCR only then. */
     val recognizingText: Boolean = false,
@@ -147,9 +154,12 @@ data class ReaderState(
         get() = (content as? PageContent.Ready)?.units?.firstOrNull()?.lang
             ?.takeIf { playerReady && !playback.wantsToPlay }
 
-    /** The first open's opening line: the first page's first sentence with a letter in it, once that page is read. */
+    /**
+     * The first open's opening line: the first sentence with a letter in it on the page the book opened on (past any
+     * skipped front matter), once that page is read.
+     */
     val openingLine: ReadingUnit?
-        get() = (content as? PageContent.Ready)?.units?.takeIf { firstOpen && page == 0 }
+        get() = (content as? PageContent.Ready)?.units?.takeIf { firstOpen && page == startPage }
             ?.firstOrNull { unit -> unit.text.any(Char::isLetter) }
 
     /** Where "Undo jump" goes back to in this book (plan item 78), if anywhere. */

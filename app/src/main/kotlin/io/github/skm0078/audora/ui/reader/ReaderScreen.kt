@@ -83,7 +83,7 @@ fun ReaderScreen(
     val tips = rememberGestureTips()
     val hint = readerHint(state, notes, hintLinks, actions, speech)
     val notice = readerNotice(state, offer, tips.pending, hint.pending)
-    val tops = PageTopNotices(offer.takeIf { notice == ReaderNotice.VOICE_PACK }, voices)
+    val tops = PageTopNotices(offer.takeIf { notice == ReaderNotice.VOICE_PACK }, voices, skipCard(state, notice))
     if (pageTextOpen) {
         PageTextSheet(look, onLookChange, textView = state.view == ReaderView.TEXT) { pageTextOpen = false }
     }
@@ -202,6 +202,7 @@ private fun OpenBook(
             is PageContent.Ready -> {
                 val badge = ocrBadgeText(content.origin, content.ocrConfidence, config)
                 PageOriginNotice(content.origin, ocrModels, badge, actions::onDownloadOcrModels)
+                tops.frontMatter?.let { FrontMatterNotice(it, actions::onReadFromStart, actions::onFrontMatterSeen) }
                 BetaScanNotice(betaLang, betaScan)
                 VoicePackNotice(content.units, tops.voicePack)
                 ReadingArea(state, content, actions, look, config, spokenWord, isHighlighted, turnBack)

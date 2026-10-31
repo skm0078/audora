@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File: app/src/main/res/values-bn/strings_front_matter.xml -->
+<!-- Purpose: New books open past their front matter, and the reader says so (ADR 2026-10-31-skip-front-matter). -->
+<resources>
+    <string name="front_matter_started_at">“%1$s” থেকে শুরু হলো, পাতা %2$d</string>
+    <string name="front_matter_started_on">যেখানে বই শুরু হয় সেখান থেকে শুরু হলো, পাতা %1$d</string>
+    <plurals name="front_matter_skipped">
+        <item quantity="one">তার আগের %d পাতা বাদ দেওয়া হলো</item>
+        <item quantity="other">তার আগের %d পাতা বাদ দেওয়া হলো</item>
+    </plurals>
+    <string name="front_matter_skipped_what">%1$s: %2$s।</string>
+    <string name="front_matter_list_joiner">", "</string>
+    <string name="front_matter_kind_title_pages">নামপত্র</string>
+    <string name="front_matter_kind_copyright">কপিরাইট</string>
+    <string name="front_matter_kind_contents">সূচিপত্র</string>
+    <string name="front_matter_kind_dedication">উৎসর্গ</string>
+    <string name="front_matter_kind_thanks">কৃতজ্ঞতা</string>
+    <string name="front_matter_kind_preface">ভূমিকা</string>
+    <string name="front_matter_read_from_start">শুরু থেকে পড়ুন</string>
+    <string name="front_matter_ok">ঠিক আছে</string>
+    <string name="settings_skip_front_matter_title">নতুন বই প্রথম অধ্যায় থেকে শুরু করুন</string>
+    <string name="settings_skip_front_matter_short">সূচিপত্র, কপিরাইট আর ভূমিকার পাতা বাদ দেয়</string>
+    <string name="settings_skip_front_matter_body">চালু: যে বই এখনও পড়েননি, সেটা খোলে যেখানে আসল পড়া শুরু হয়, সূচিপত্র, কপিরাইট, নামপত্র আর ভূমিকার পাতার পরে। একটা কার্ড বলে কী বাদ গেল, সঙ্গে “শুরু থেকে পড়ুন”। বন্ধ: প্রতিটা বই পাতা 1-এ খোলে। বাদ দেওয়া পাতা কখনও লুকোনো হয় না; যখন খুশি পিছনে উল্টান।</string>
+    <string name="found_terms_front_matter">ভূমিকা সূচিপত্র সূচি কপিরাইট প্রথম অধ্যায় বাদ মুখবন্ধ</string>
+</resources>

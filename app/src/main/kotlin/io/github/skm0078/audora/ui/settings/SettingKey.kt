@@ -41,6 +41,12 @@ enum class SettingKey(
         R.string.settings_group_listening,
         R.string.found_terms_citations,
     ),
+    SKIP_FRONT_MATTER(
+        R.string.settings_skip_front_matter_title,
+        SettingsPage.MAIN,
+        R.string.settings_group_listening,
+        R.string.found_terms_front_matter,
+    ),
     RESUME_ON_RECONNECT(
         R.string.settings_reconnect_title,
         SettingsPage.MAIN,

@@ -1,0 +1,3 @@
+en: New books now open at their first chapter, past the contents, copyright and preface pages. A card says what was skipped; Read from the start goes back to page 1. Turn it off in Settings › Start new books at the first chapter.
+hi: नई किताबें अब पहले अध्याय से खुलती हैं, विषय सूची, कॉपीराइट और भूमिका के पेजों के बाद। एक कार्ड बताता है कि क्या छोड़ा गया; “शुरू से पढ़ें” पेज 1 पर ले जाता है। सेटिंग › नई किताबें पहले अध्याय से शुरू करें में बंद करें।
+bn: নতুন বই এখন প্রথম অধ্যায় থেকে খোলে, সূচিপত্র, কপিরাইট আর ভূমিকার পাতার পরে। একটা কার্ড বলে কী বাদ গেল; “শুরু থেকে পড়ুন” পাতা 1-এ নিয়ে যায়। সেটিংস › নতুন বই প্রথম অধ্যায় থেকে শুরু করুন থেকে বন্ধ করুন।
