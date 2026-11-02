@@ -172,29 +172,27 @@ private class SessionListener(
     override fun onEndOfSpeech() = Unit
 
     override fun onEvent(eventType: Int, params: Bundle?) = Unit
-
-    /** The best guess only: alternatives would act on words the listener did not say. */
-    private fun texts(bundle: Bundle?): List<String> =
-        bundle?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.take(1).orEmpty()
-
-    private fun endFor(error: Int): SessionEnd = when (error) {
-        SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> SessionEnd.NOTHING
-
-        SpeechRecognizer.ERROR_RECOGNIZER_BUSY, SpeechRecognizer.ERROR_AUDIO,
-        SpeechRecognizer.ERROR_TOO_MANY_REQUESTS,
-        -> SessionEnd.BUSY
-
-        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> SessionEnd.NO_PERMISSION
-
-        SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED, SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ->
-            SessionEnd.LANGUAGE_MISSING
-
-        SpeechRecognizer.ERROR_CANNOT_CHECK_SUPPORT -> SessionEnd.NOT_AVAILABLE
-
-        else -> SessionEnd.FAILED.also { AudoraLog.w(TAG, "Recogniser error $error") }
-    }
-
-    private companion object {
-        const val TAG = "Speech.Commands"
-    }
 }
+
+/** The best guess only: alternatives would act on words the listener did not say. */
+private fun texts(bundle: Bundle?): List<String> =
+    bundle?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.take(1).orEmpty()
+
+private fun endFor(error: Int): SessionEnd = when (error) {
+    SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> SessionEnd.NOTHING
+
+    SpeechRecognizer.ERROR_RECOGNIZER_BUSY, SpeechRecognizer.ERROR_AUDIO,
+    SpeechRecognizer.ERROR_TOO_MANY_REQUESTS,
+    -> SessionEnd.BUSY
+
+    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> SessionEnd.NO_PERMISSION
+
+    SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED, SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ->
+        SessionEnd.LANGUAGE_MISSING
+
+    SpeechRecognizer.ERROR_CANNOT_CHECK_SUPPORT -> SessionEnd.NOT_AVAILABLE
+
+    else -> SessionEnd.FAILED.also { AudoraLog.w(SESSION_TAG, "Recogniser error $error") }
+}
+
+private const val SESSION_TAG = "Speech.Commands"

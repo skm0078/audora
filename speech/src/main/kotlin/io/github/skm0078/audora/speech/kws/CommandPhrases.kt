@@ -12,7 +12,13 @@ package io.github.skm0078.audora.speech.kws
 object CommandPhrases {
     /** The app's name as the recogniser writes it, each spelling as its words. */
     private val WAKE_SPELLINGS: List<List<String>> = listOf(
-        "listenlock", "listen lock", "listen locks", "listen log", "listen look", "listen luck", "lesson lock",
+        "listenlock",
+        "listen lock",
+        "listen locks",
+        "listen log",
+        "listen look",
+        "listen luck",
+        "lesson lock",
         "listening lock",
     ).map { it.split(' ') }
 
@@ -36,8 +42,7 @@ object CommandPhrases {
     }
 
     /** Lower-case letters only: punctuation and digits split words, as the recogniser's commas would. */
-    internal fun wordsOf(text: String): List<String> =
-        text.lowercase().split(NON_LETTERS).filter { it.isNotEmpty() }
+    internal fun wordsOf(text: String): List<String> = text.lowercase().split(NON_LETTERS).filter { it.isNotEmpty() }
 
     /** The index just past a wake spelling starting at [start], or null. */
     private fun wakeEndingAt(words: List<String>, start: Int): Int? = WAKE_SPELLINGS

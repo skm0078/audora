@@ -4,7 +4,6 @@
 
 package io.github.skm0078.audora.ui.reader
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,31 +22,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.skm0078.audora.R
-import io.github.skm0078.audora.speech.kws.ListenFailure
 import io.github.skm0078.audora.ui.theme.Dimens
-
-/**
- * Where voice commands stand while they are switched on for this reader; null in [ReaderState] while they are off.
- * [listening] is true only between the microphone really opening and closing; [failure] says why listening stopped.
- */
-data class VoiceCommandsStatus(val listening: Boolean = false, val failure: ListenFailure? = null) {
-    @get:StringRes
-    val text: Int
-        get() = when {
-            failure != null -> failure.message
-            listening -> R.string.reader_commands_listening
-            else -> R.string.reader_commands_starting
-        }
-
-    private val ListenFailure.message: Int
-        get() = when (this) {
-            ListenFailure.NO_PERMISSION -> R.string.reader_commands_no_permission
-            ListenFailure.NOT_AVAILABLE -> R.string.reader_commands_not_available
-            ListenFailure.LANGUAGE_MISSING -> R.string.reader_commands_language_missing
-            ListenFailure.MICROPHONE_BUSY -> R.string.reader_commands_busy
-            ListenFailure.MICROPHONE_LOST -> R.string.reader_commands_lost
-        }
-}
 
 /**
  * A mic and one short line under the time left: the phrase to say while listening, or what went wrong. TalkBack
