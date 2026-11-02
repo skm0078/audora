@@ -1,44 +1,13 @@
 // File: speech/src/test/kotlin/io/github/skm0078/audora/speech/kws/VoiceCommandTest.kt
-// Purpose: Voice commands (plan item 38): the keywords file, the tags read back, repeats and the model's pins.
+// Purpose: Voice commands (plan item 38): one utterance acts once, and the book's own voice never gives commands.
 
 package io.github.skm0078.audora.speech.kws
 
-import java.io.File
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VoiceCommandTest {
-    @Test
-    fun `every phrase is one line starting with ListenLock and tagged with its command`() {
-        val lines = VoiceCommand.keywordsFile().trimEnd('\n').lines()
-        assertEquals(VoiceCommand.entries.sumOf { it.tokens.size }, lines.size)
-        lines.forEach { line ->
-            assertTrue(line, VoiceCommand.WAKE_TOKENS.any { line.startsWith("$it ▁") })
-            val tag = line.substringAfterLast(' ')
-            assertTrue(line, tag.startsWith("@"))
-            assertTrue(line, VoiceCommand.of(tag) != null)
-        }
-        assertTrue("▁LI S TEN LO CK ▁STO P @PAUSE" in lines)
-        assertTrue("▁LI S TEN ▁LO CK ▁STO P @PAUSE" in lines)
-    }
-
-    @Test
-    fun `no two commands share a phrase`() {
-        val phrases = VoiceCommand.entries.flatMap { it.tokens }
-        assertEquals(phrases.size, phrases.toSet().size)
-    }
-
-    @Test
-    fun `a spotter result maps back to its command`() {
-        assertEquals(VoiceCommand.NEXT, VoiceCommand.of("@NEXT"))
-        assertEquals(VoiceCommand.SLOWER, VoiceCommand.of(" @SLOWER "))
-        assertNull(VoiceCommand.of(""))
-        assertNull(VoiceCommand.of("@SKIP"))
-    }
-
     @Test
     fun `the same command inside the gap acts once, another command always acts`() {
         val repeats = CommandRepeats(gapMs = 1_500)
@@ -62,24 +31,5 @@ class VoiceCommandTest {
         echo.stopped(8_000)
         assertTrue(echo.suppresses(9_000))
         assertFalse(echo.suppresses(10_000))
-    }
-
-    @Test
-    fun `the pins repeat speech models json`() {
-        val catalog = File("models.json").takeIf { it.isFile } ?: File("speech/models.json")
-        val text = catalog.readText()
-        val english = KeywordModel.ENGLISH
-        val entry = text.substringAfter("\"id\": \"${english.id}\"").substringBefore("\"id\":")
-        listOf(
-            "\"file\": \"${english.fileName}\"",
-            "\"sha256\": \"${english.sha256}\"",
-            "\"sizeBytes\": ${english.sizeBytes}",
-            "\"model\": \"${english.encoder}\"",
-            "\"tokens\": \"${english.tokens}\"",
-            "\"${english.decoder}\"",
-            "\"${english.joiner}\"",
-        ).forEach { assertTrue("models.json lacks $it", it in entry) }
-        assertTrue("\"baseUrl\": \"${english.baseUrl}\"" in text)
-        assertEquals("${english.id}-${english.sha256.take(12)}.zip", english.fileName)
     }
 }

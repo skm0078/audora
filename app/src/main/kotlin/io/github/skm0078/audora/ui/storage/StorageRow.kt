@@ -37,7 +37,6 @@ enum class StorageKind(@StringRes val label: Int) {
     STORY_BRAIN(R.string.storage_story_brain),
     OCR(R.string.storage_ocr),
     PUNCTUATION(R.string.storage_punctuation),
-    VOICE_COMMANDS(R.string.storage_voice_commands),
     DICTIONARIES(R.string.storage_dictionaries),
     READING_TUTOR(R.string.storage_reading_tutor),
     PAGE_PICTURES(R.string.storage_page_pictures),
@@ -57,7 +56,7 @@ fun actionOf(kind: StorageKind): StorageAction? = when (kind) {
     StorageKind.VOICES -> StorageAction.MANAGE_VOICES
 
     StorageKind.ACTED_VOICE, StorageKind.STORY_BRAIN, StorageKind.OCR, StorageKind.PUNCTUATION,
-    StorageKind.VOICE_COMMANDS, StorageKind.DICTIONARIES, StorageKind.READING_TUTOR,
+    StorageKind.DICTIONARIES, StorageKind.READING_TUTOR,
     -> StorageAction.DELETE
 
     StorageKind.PAGE_PICTURES, StorageKind.OCR_TEXT, StorageKind.COVERS, StorageKind.VOICE_BLENDS,

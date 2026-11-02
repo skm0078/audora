@@ -234,30 +234,6 @@
       "sizeBytes": 7640490
     },
     {
-      "id": "kws-en-zipformer-librispeech",
-      "label": "English voice commands",
-      "lang": "en",
-      "family": "kws-zipformer",
-      "model": "encoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
-      "tokens": "tokens.txt",
-      "extraFiles": [
-        "decoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
-        "joiner-epoch-99-avg-1-chunk-16-left-128.int8.onnx"
-      ],
-      "licence": "Apache-2.0",
-      "credit": "Streaming Zipformer English speech recogniser by the k2-fsa project (Apache-2.0), trained with icefall on LibriSpeech (CC BY 4.0, Panayotov et al.) and converted for sherpa-onnx, used here as a keyword spotter. Only the int8 encoder, decoder and joiner, the token list and the README are kept, unchanged.",
-      "licenceUrl": "https://github.com/k2-fsa/icefall/blob/master/LICENSE",
-      "sourceUrl": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models",
-      "source": {
-        "archive": "sherpa-onnx-streaming-zipformer-en-2023-06-26",
-        "sha256": "639e25b578e9e997131402199419c13a941f8e4e198e2da1ce57dbf5cf401282",
-        "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-en-2023-06-26.tar.bz2"
-      },
-      "file": "kws-en-zipformer-librispeech-e08608953a6b.zip",
-      "sha256": "e08608953a6bda81af4666cb9269d7c2f942b86df69b2f730b6cd4be60fcfff1",
-      "sizeBytes": 70914922
-    },
-    {
       "id": "acted-hi-chatterbox-core",
       "label": "Acted Hindi voice for studio mode (part 1 of 2)",
       "lang": "hi",

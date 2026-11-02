@@ -16,8 +16,6 @@ import io.github.skm0078.audora.speech.acted.sizeOnDisk
 import io.github.skm0078.audora.speech.brain.StoryBrainModels
 import io.github.skm0078.audora.speech.brain.sizeOnDisk
 import io.github.skm0078.audora.speech.dictionary.Dictionaries
-import io.github.skm0078.audora.speech.kws.VoiceCommandModels
-import io.github.skm0078.audora.speech.kws.sizeOnDisk
 import io.github.skm0078.audora.speech.listen.ListenModels
 import io.github.skm0078.audora.speech.listen.deleteAllModels
 import io.github.skm0078.audora.speech.listen.storedBytes
@@ -42,7 +40,6 @@ internal fun storageOwners(
 ): Map<StorageKind, StorageOwner> {
     val ocr = OcrModels.get(context)
     val punctuation = PunctuationModels.get(context)
-    val voiceCommands = VoiceCommandModels.get(context)
     val acted = ActedVoices.get(context)
     val brain = StoryBrainModels.get(context)
     val pictures = File(context.cacheDir, THUMBNAILS_DIR)
@@ -51,7 +48,6 @@ internal fun storageOwners(
         StorageKind.STORY_BRAIN to StorageOwner({ brain.sizeOnDisk() }, brain::delete),
         StorageKind.OCR to StorageOwner({ ocr.sizeOnDisk() }, ocr::delete),
         StorageKind.PUNCTUATION to StorageOwner({ punctuation.sizeOnDisk() }, punctuation::delete),
-        StorageKind.VOICE_COMMANDS to StorageOwner({ voiceCommands.sizeOnDisk() }, voiceCommands::delete),
         StorageKind.PAGE_PICTURES to StorageOwner(
             measure = { withContext(Dispatchers.IO) { directoryBytes(pictures) } },
             free = {

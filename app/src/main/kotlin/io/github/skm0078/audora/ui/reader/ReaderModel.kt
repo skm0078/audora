@@ -482,6 +482,9 @@ class ReaderModel(
     /** The skipped-pages notice's OK: the notice goes; the book stays where it opened. */
     fun frontMatterNoticeShown() = mutableState.update { it.copy(skippedFrontMatter = null) }
 
+    /** Where voice commands stand, from the listener's thread or the main one; null once they are off. */
+    fun voiceCommandsChanged(status: VoiceCommandsStatus?) = mutableState.update { it.copy(voiceCommands = status) }
+
     /**
      * Study loops (plan item 31): marks A or B at the sentence being read in this book, turns looping on or off, or
      * clears the range. A mark needs this book to be the one being read.

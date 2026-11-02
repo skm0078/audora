@@ -123,7 +123,7 @@ class ReleaseJourneyTest {
         try {
             firstRunToTheLibrary()
             readingSharingAndVoices()
-            step("62 voice commands use the LibriSpeech model", CommandsModelJourney(rule, ::backToTabs)::isLibriSpeech)
+            step("62 commands need no download", VoiceCommandsJourney(rule, ::back, ::backToTabs)::needNoDownload)
             step("64 a text page never says OCR", PageWaitJourney(rule, BOOK, ::backToTabs)::textPageNeverSaysOcr)
             step("65 Bengali voices say they are beta", BetaLanguageJourney(rule, ::backToTabs)::bengaliVoicesSayBeta)
             step("66 a Bengali voice that reads letters is handed words as said", BengaliSpellingJourney::spelledAsSaid)

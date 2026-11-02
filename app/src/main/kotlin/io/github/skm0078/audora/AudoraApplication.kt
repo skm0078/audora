@@ -22,6 +22,7 @@ import io.github.skm0078.audora.logging.AppLogging
 import io.github.skm0078.audora.playback.backup.Backups
 import io.github.skm0078.audora.playback.backup.PendingRestore
 import io.github.skm0078.audora.playback.jobs.JobLeftovers
+import io.github.skm0078.audora.speech.kws.CommandListener
 import io.github.skm0078.audora.ui.library.BookDetailsFill
 import io.github.skm0078.audora.ui.library.FolderSyncTrigger
 import javax.inject.Inject
@@ -70,6 +71,8 @@ class AudoraApplication : Application() {
         background.launch {
             val entry = LibraryEntryPoint.of(this@AudoraApplication)
             JobLeftovers.get(this@AudoraApplication).cleanAtStart(entry.library(), entry.outputs())
+            // Voice commands now use the phone's own recogniser: older builds' 70 MB model is freed once.
+            CommandListener.forgetOldModel(this@AudoraApplication)
         }
         // Built on first use, never at start: a listener who never picked a sync folder pays nothing.
         registerActivityLifecycleCallbacks(FolderSyncTrigger(appScope) { FolderSyncEntryPoint.of(this) })

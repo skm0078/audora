@@ -347,6 +347,7 @@ private fun BookProgress(state: ReaderState, actions: ReaderActions) {
             onChapter = if (kids) null else actions::onChapter,
         )
         state.timeLeft?.let { TimeLeftLine(it, state.playback.speed) }
+        state.voiceCommands?.let { VoiceCommandsLine(it) }
         Row {
             Text(
                 stringResource(R.string.player_page, page + 1),

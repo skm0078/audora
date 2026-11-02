@@ -215,21 +215,11 @@ class CatalogTest(unittest.TestCase):
         models = [v for v in voices if v.id in {entry["id"] for entry in root.get("models", [])}]
         self.assertEqual(
             [v.id for v in models],
-            ["punct-en-cnn-bilstm", "kws-en-zipformer-librispeech", "acted-hi-chatterbox-core", "acted-hi-chatterbox-lm"],
+            ["punct-en-cnn-bilstm", "acted-hi-chatterbox-core", "acted-hi-chatterbox-lm"],
         )
         # The acted Hindi voice has no token table in its zips ("tokens": null); its tokenizer is an app asset.
-        self.assertEqual(models[3].required_files(), ["language_model.onnx", "language_model.onnx_data"])
+        self.assertEqual(models[2].required_files(), ["language_model.onnx", "language_model.onnx_data"])
         self.assertEqual(models[0].required_files(), ["model.int8.onnx", "bpe.vocab"])
-        # The keyword spotter's decoder and joiner come in through extraFiles (plan item 38).
-        self.assertEqual(
-            models[1].required_files(),
-            [
-                "encoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
-                "tokens.txt",
-                "decoder-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
-                "joiner-epoch-99-avg-1-chunk-16-left-128.int8.onnx",
-            ],
-        )
 
     def test_every_voice_is_credited_and_recommendations_name_a_voice_of_their_language(self):
         root, _ = mirror.load_catalog(Path(__file__).resolve().parents[2] / "speech" / "models.json")

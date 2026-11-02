@@ -156,11 +156,5 @@ internal data class ModelPackTexts(
             R.string.brain_model_ready,
             R.string.row_line_pack_story_brain,
         )
-        val VOICE_COMMANDS = ModelPackTexts(
-            R.string.commands_model_title,
-            R.string.commands_model_missing,
-            R.string.commands_model_ready,
-            R.string.row_line_pack_voice_commands,
-        )
     }
 }

@@ -23,11 +23,13 @@ import androidx.lifecycle.compose.currentStateAsState
 import io.github.skm0078.audora.core.config.ReaderConfig
 import io.github.skm0078.audora.core.config.VoiceCommandConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
+import io.github.skm0078.audora.core.result.Outcome
 import io.github.skm0078.audora.playback.commands.ListeningNotice
 import io.github.skm0078.audora.playback.commands.VoiceCommandService
 import io.github.skm0078.audora.speech.kws.CommandListener
+import io.github.skm0078.audora.speech.kws.ListenEvents
+import io.github.skm0078.audora.speech.kws.ListenFailure
 import io.github.skm0078.audora.speech.kws.VoiceCommand
-import io.github.skm0078.audora.speech.kws.VoiceCommandModels
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -41,6 +43,8 @@ import kotlinx.coroutines.flow.map
  *   background. Paused counts too, so "ListenLock, play" works.
  * - [VoiceCommandsMode.SCREEN_OFF]: [ScreenOffListening], with [VoiceCommandService]; [inBackground] is told while a
  *   session runs, so the reader keeps its player connected with the screen off.
+ *
+ * [onStatus] hears where listening stands (null while [mode] is off), from the listening thread or the main one.
  */
 @Composable
 fun VoiceCommandsEffect(
@@ -49,12 +53,14 @@ fun VoiceCommandsEffect(
     reading: Flow<Boolean>,
     inBackground: (Boolean) -> Unit,
     config: VoiceCommandConfig = VoiceCommandConfig(),
+    onStatus: (VoiceCommandsStatus?) -> Unit = {},
     onCommand: (VoiceCommand) -> Unit,
 ) {
     val context = LocalContext.current.applicationContext
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val handle by rememberUpdatedState(onCommand)
     val background by rememberUpdatedState(inBackground)
+    val status by rememberUpdatedState(onStatus)
     val tone = remember(config) { CommandTone(config) }
     DisposableEffect(tone) { onDispose { tone.release() } }
     LaunchedEffect(mode, listener, reading, lifecycle) {
@@ -63,7 +69,8 @@ fun VoiceCommandsEffect(
             handle(it)
         }
         val visible = lifecycle.currentStateFlow.map { it.isAtLeast(Lifecycle.State.STARTED) }
-        val listen: Listen = { listener.listen(it) }
+        val listen = reportingListen({ listener.listen(it) }) { status(it) }
+        status(if (mode == VoiceCommandsMode.OFF) null else VoiceCommandsStatus())
         when (mode) {
             VoiceCommandsMode.OFF -> Unit
 
@@ -81,24 +88,49 @@ fun VoiceCommandsEffect(
     }
 }
 
-/** Voice commands in the reader, as Settings, the model and the phone's permissions allow. */
+/**
+ * [listen], telling [report] when the microphone really opens and closes and why listening stopped, for the
+ * reader's [VoiceCommandsLine]. A spell cancelled (the reader hidden) is not a failure.
+ */
+internal fun reportingListen(listen: Listen, report: (VoiceCommandsStatus) -> Unit): Listen = { events ->
+    val reporting = ListenEvents(
+        onSilenced = events.onSilenced,
+        onMicrophone = { open ->
+            events.onMicrophone(open)
+            report(VoiceCommandsStatus(listening = open))
+        },
+        onCommand = events.onCommand,
+    )
+    listen(reporting).also { outcome ->
+        if (outcome is Outcome.Failure) report(VoiceCommandsStatus(failure = outcome.error))
+    }
+}
+
+/**
+ * Voice commands in the reader, as Settings and the phone's permissions allow. A phone without an on-device
+ * recogniser is told so on the reader's line ([ListenFailure.NOT_AVAILABLE]); Settings hides the switch there.
+ */
 @Composable
 fun ReaderVoiceCommands(
     model: ReaderModel,
     preference: ScreenPreference,
-    models: VoiceCommandModels,
     config: ReaderConfig,
     inBackground: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current.applicationContext
     val saved by remember(preference) { preference.voiceCommands() }.collectAsStateWithLifecycle(VoiceCommandsMode.OFF)
     val mode = rememberEffectiveVoiceCommands(saved, preference)
-    val installed by remember(models) { models.installed() }.collectAsStateWithLifecycle(false)
-    val listener = remember(models) { CommandListener(context, models) }
+    val listener = remember(context) { CommandListener(context) }
     val reading = remember(model) { model.state.map { it.isReading }.distinctUntilChanged() }
-    VoiceCommandsEffect(mode.takeIf { installed } ?: VoiceCommandsMode.OFF, listener, reading, inBackground) {
-        model.onVoiceCommand(it, config)
-    }
+    VoiceCommandsEffect(
+        mode = mode,
+        listener = listener,
+        reading = reading,
+        inBackground = inBackground,
+        onStatus = model::voiceCommandsChanged,
+    ) { model.onVoiceCommand(it, config) }
+    // The line goes with the reader's listening: none once this book's window no longer holds the microphone.
+    DisposableEffect(model) { onDispose { model.voiceCommandsChanged(null) } }
 }
 
 /**

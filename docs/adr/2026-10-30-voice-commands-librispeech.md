@@ -1,8 +1,9 @@
 # ADR 2026-10-30-voice-commands-librispeech: voice commands use a LibriSpeech-only model
 
-**Status:** Accepted (2026-10-30). The user chose this option after the pre-store licence audit. It follows ADR
-060-app-name-listenlock (the phrases) and ADR 051-screen-off-voice-commands. A licence fix, allowed in the feature
-freeze. No new dependency.
+**Status:** Superseded by ADR 2026-11-02-voice-commands-system-recogniser (the model missed most commands in
+Indian-accented English on the test phone). Was accepted (2026-10-30). The user chose this option after the
+pre-store licence audit. It follows ADR 060-app-name-listenlock (the phrases) and ADR 051-screen-off-voice-commands.
+A licence fix, allowed in the feature freeze. No new dependency.
 
 ## Context
 
