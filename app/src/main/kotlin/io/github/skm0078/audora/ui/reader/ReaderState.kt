@@ -118,6 +118,8 @@ data class ReaderState(
      * its OK or "Read from the start" ([ReaderModel.frontMatterNoticeShown], [ReaderModel.readFromStart]).
      */
     val skippedFrontMatter: SkippedFrontMatter? = null,
+    /** Voice commands while switched on for this reader: listening, starting, or why not; null while off. */
+    val voiceCommands: VoiceCommandsStatus? = null,
     /** The page the book opened on for its first open: where its opening line comes from. */
     val startPage: Int = 0,
     val snippet: SnippetBox? = null,

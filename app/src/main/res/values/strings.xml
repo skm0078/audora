@@ -490,7 +490,6 @@
     <string name="storage_acted_voice">Acted Hindi voice</string>
     <string name="storage_punctuation">Punctuation model</string>
     <string name="storage_page_pictures">Page pictures (scrubber)</string>
-    <string name="storage_voice_commands">Voice commands model</string>
     <string name="storage_ocr_text">Text read from scanned pages</string>
     <string name="storage_covers">Book covers</string>
     <string name="storage_voice_blends">Narrator blends</string>

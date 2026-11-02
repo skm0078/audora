@@ -2,12 +2,9 @@
 <!-- File: app/src/main/res/values/strings_commands.xml -->
 <!-- Purpose: Strings for spoken commands in the reader (plan item 38). -->
 <resources>
-    <string name="commands_model_title">Voice commands model (English)</string>
-    <string name="commands_model_missing">Lets you say \"ListenLock, pause\", \"play\", \"next\", \"back\", \"repeat\", \"faster\" or \"slower\" with the reader open. Everything is heard on your phone; nothing is recorded or sent. Needs %1$d MB.</string>
-    <string name="commands_model_ready">Installed · %1$d MB</string>
     <string name="commands_switch_title">Listen for voice commands</string>
-    <string name="commands_switch_body">While the reader is on screen, ListenLock listens for \"ListenLock\" and a command, and Android shows the microphone indicator. Uses a little battery while it listens.</string>
-    <string name="commands_switch_needs_model">Download the voice commands model first.</string>
+    <string name="commands_switch_body">While the reader is on screen, ListenLock listens for \"ListenLock\" and a command: \"pause\", \"play\", \"next\", \"back\", \"repeat\", \"faster\" or \"slower\". Your phone\'s own speech recogniser does the listening, on the phone: nothing is recorded or sent, and there is nothing to download. Android shows the microphone indicator meanwhile. Uses some battery while it listens.</string>
+    <string name="commands_not_available">Not available: this phone has no on-device speech recogniser.</string>
     <string name="commands_screen_off_title">Keep listening with the screen off</string>
     <plurals name="commands_screen_off_body">
         <item quantity="one">While a book is open in the reader, ListenLock also listens with the screen off or in another app, and shows a notification you can stop it from. To save battery it stops once reading has been paused for %1$d minute and the reader is off screen.</item>
@@ -15,4 +12,12 @@
     </plurals>
     <string name="commands_notifications_denied">Listening with the screen off needs notifications, so you can always see it and stop it. You can allow them in Android\'s app settings.</string>
     <string name="commands_permission_denied">Voice commands need the microphone. You can allow it in Android\'s app settings.</string>
+    <!-- The reader's line saying whether voice commands really listen, or why not. -->
+    <string name="reader_commands_listening">Listening · say \"ListenLock, pause\" or \"ListenLock, play\"</string>
+    <string name="reader_commands_starting">Voice commands getting ready…</string>
+    <string name="reader_commands_no_permission">Voice commands can\'t listen: allow the microphone in Android\'s app settings.</string>
+    <string name="reader_commands_not_available">This phone has no on-device speech recogniser, so voice commands can\'t listen.</string>
+    <string name="reader_commands_language_missing">Your phone is downloading its English speech pack. Voice commands start once it\'s ready: open the book again then.</string>
+    <string name="reader_commands_busy">Another app is using the microphone, so voice commands can\'t listen.</string>
+    <string name="reader_commands_lost">The microphone stopped, so voice commands stopped. Open the book again to restart them.</string>
 </resources>

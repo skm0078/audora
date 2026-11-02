@@ -14,7 +14,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 /**
  * Android gives a recording to one app's microphone reader at a time in practice, and two readers in one app would
  * hear each other's prompts. A feature that records wraps its recording in [holding] (or calls [hold] and closes the
- * [Hold] when done); [CommandListener] lets the microphone go within a chunk and listens again once no hold is left.
+ * [Hold] when done); [CommandListener] stops its recogniser at once and listens again once no hold is left.
  * Holds nest: two features holding at once both close theirs before listening resumes. With no listener attached
  * (voice commands off, or not built) a hold returns at once.
  *
@@ -67,6 +67,11 @@ class VoiceCommandPause(private val releaseWaitMs: Long = DEFAULT_RELEASE_WAIT_M
         state.first { it.holds.isEmpty() }
     }
 
+    /** Suspends until some feature holds the microphone (at once while one does). */
+    internal suspend fun awaitHeld() {
+        state.first { it.holds.isNotEmpty() }
+    }
+
     /**
      * For a listener about to open the microphone: true, and counted as open, only while no hold is open. A true
      * claim must be ended with [microphoneClosed] whether or not the microphone then opens.
@@ -86,7 +91,7 @@ class VoiceCommandPause(private val releaseWaitMs: Long = DEFAULT_RELEASE_WAIT_M
     companion object {
         private const val TAG = "Speech.CommandPause"
 
-        /** A chunk being read (100 ms) plus closing the recorder, with room to spare. */
+        /** Stopping the recogniser's session, with room to spare. */
         const val DEFAULT_RELEASE_WAIT_MS = 1_000L
 
         val shared = VoiceCommandPause()

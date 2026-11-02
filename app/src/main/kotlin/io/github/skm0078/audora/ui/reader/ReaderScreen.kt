@@ -192,6 +192,7 @@ private fun OpenBook(
         PageBar(state.page, pageCount, actions, announce = !state.isReading, onPick = { picking = true })
         PageScrubber(state.page, pageCount, thumbnails, actions::onGoToPage)
         state.timeLeft?.let { TimeLeftLine(it, state.playback.speed) }
+        state.voiceCommands?.let { VoiceCommandsLine(it) }
         ReadingJumps(state, actions, Modifier.align(Alignment.CenterHorizontally))
         PlayerStatus(state.playback)
         when (val content = state.content) {

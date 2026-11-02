@@ -82,7 +82,6 @@ import io.github.skm0078.audora.shortcuts.AppShortcut
 import io.github.skm0078.audora.shortcuts.AppShortcutEffect
 import io.github.skm0078.audora.speech.acted.ActedVoices
 import io.github.skm0078.audora.speech.brain.StoryBrainModels
-import io.github.skm0078.audora.speech.kws.VoiceCommandModels
 import io.github.skm0078.audora.speech.ocr.OcrModels
 import io.github.skm0078.audora.speech.ocr.OcrModelsState
 import io.github.skm0078.audora.speech.punct.PunctuationModels
@@ -288,7 +287,6 @@ class MainActivity : ComponentActivity() {
     /** The OCR model manager (P3-05); one per process, shared with the playback service's OCR. */
     private val ocrModels: OcrModels by lazy { OcrModels.get(applicationContext) }
     private val punctuationModels: PunctuationModels by lazy { PunctuationModels.get(applicationContext) }
-    private val voiceCommandModels: VoiceCommandModels by lazy { VoiceCommandModels.get(applicationContext) }
 
     @Inject
     lateinit var licenceSource: LicenceSource
@@ -647,7 +645,7 @@ class MainActivity : ComponentActivity() {
             volumeKeysSkip = volumeKeys,
             onVolumeKeysSkipChange = { on -> scope.launch { screenPreference.saveVolumeKeysSkip(on) } },
             onPunctuationModel = punctuation.onAction,
-            voiceCommands = rememberVoiceCommandsSettings(voiceCommandModels, screenPreference),
+            voiceCommands = rememberVoiceCommandsSettings(screenPreference),
             pronunciation = rememberPronunciationSettings(pronunciationStore),
             actedVoice = rememberActedVoiceSettings(ActedVoices.get(applicationContext)),
             storyBrain = rememberStoryBrainSettings(StoryBrainModels.get(applicationContext)),
@@ -908,7 +906,7 @@ class MainActivity : ComponentActivity() {
         VolumeKeySkips(playing && volumeKeys, model::skipForward, model::skipBack)
         if (shown) {
             ReaderToasts(state, model)
-            ReaderVoiceCommands(model, screenPreference, voiceCommandModels, readerConfig) { listening.value = it }
+            ReaderVoiceCommands(model, screenPreference, readerConfig) { listening.value = it }
         }
     }
 

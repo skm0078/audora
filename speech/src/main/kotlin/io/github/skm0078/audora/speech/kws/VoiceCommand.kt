@@ -1,46 +1,20 @@
 // File: speech/src/main/kotlin/io/github/skm0078/audora/speech/kws/VoiceCommand.kt
-// Purpose: The spoken commands (plan item 38) and the keyword spotter's phrases for them.
+// Purpose: The spoken commands (plan item 38) and the words that mean each one in the recogniser's text.
 
 package io.github.skm0078.audora.speech.kws
 
 /**
  * Every command starts with the app's name, "ListenLock", so the book being read aloud (which says "pause" or "next"
- * often enough) does not drive the player; a made-up name is rare in any text. The name is spotted as one word and
- * as two ("listen lock"), since people say it both ways. [commandTokens] are each command word in the model's BPE
- * pieces and [tokens] the full phrases, produced once with the model's own `bpe.model` (sentencepiece), so the phone
- * needs no tokenizer. Two phrases can mean one command ("pause" and "stop").
+ * often enough) does not drive the player; a made-up name is rare in any text. [words] are what the phone's
+ * recogniser writes for the command, lower case: the word itself, and the near spellings it writes for it in a
+ * strong accent or a noisy room. Two words can mean one command ("pause" and "stop"); [CommandPhrases] matches them.
  */
-enum class VoiceCommand(private vararg val commandTokens: String) {
-    PAUSE("▁PA U SE", "▁STO P"),
-    PLAY("▁PLA Y", "▁RE S UM E"),
-    NEXT("▁NE X T"),
-    BACK("▁BACK", "▁GO ▁BACK"),
-    REPEAT("▁RE PE AT"),
-    FASTER("▁FA S TER"),
-    SLOWER("▁S L OW ER"),
-    ;
-
-    /** Every phrase for this command: each spelling of the app's name followed by each command word. */
-    val tokens: List<String> get() = WAKE_TOKENS.flatMap { wake -> commandTokens.map { "$wake $it" } }
-
-    companion object {
-        /** "ListenLock" as one word and as "listen lock", in the model's pieces. */
-        val WAKE_TOKENS = listOf("▁LI S TEN LO CK", "▁LI S TEN ▁LO CK")
-
-        /**
-         * The keywords file: one phrase per line, tagged with its command's name (`@PAUSE`), which is what the
-         * spotter reports back when it hears the phrase.
-         */
-        fun keywordsFile(): String = entries.flatMap { command ->
-            command.tokens.map { phrase -> "$phrase $TAG${command.name}" }
-        }.joinToString("\n", postfix = "\n")
-
-        /** The command a spotter result names; null for an empty result or a tag this build doesn't know. */
-        fun of(keyword: String): VoiceCommand? {
-            val name = keyword.trim().removePrefix(TAG)
-            return entries.firstOrNull { it.name == name }
-        }
-
-        private const val TAG = "@"
-    }
+enum class VoiceCommand(vararg val words: String) {
+    PAUSE("pause", "paws", "pose", "pours", "stop"),
+    PLAY("play", "plays", "played", "resume"),
+    NEXT("next", "nest"),
+    BACK("back", "go back", "bag"),
+    REPEAT("repeat", "again"),
+    FASTER("faster", "fast"),
+    SLOWER("slower", "slow"),
 }

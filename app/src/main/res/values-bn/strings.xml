@@ -490,7 +490,6 @@
     <string name="storage_acted_voice">অভিনয়ের হিন্দি ভয়েস</string>
     <string name="storage_punctuation">যতিচিহ্ন মডেল</string>
     <string name="storage_page_pictures">পৃষ্ঠার ছবি (স্ক্রাবার)</string>
-    <string name="storage_voice_commands">ভয়েস কমান্ড মডেল</string>
     <string name="storage_ocr_text">স্ক্যান করা পৃষ্ঠা থেকে পড়া লেখা</string>
     <string name="storage_covers">বইয়ের প্রচ্ছদ</string>
     <string name="storage_voice_blends">ন্যারেটরের মেশানো ভয়েস</string>

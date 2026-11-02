@@ -236,7 +236,6 @@ private fun labelOf(kind: DownloadKind): DownloadLabel = when (kind) {
     DownloadKind.DICTIONARY -> DownloadLabel(R.string.jobs_download_dictionary, R.string.jobs_download_dictionary_any)
     DownloadKind.TEXT_RECOGNITION -> DownloadLabel(null, R.string.storage_ocr)
     DownloadKind.PUNCTUATION -> DownloadLabel(null, R.string.storage_punctuation)
-    DownloadKind.VOICE_COMMANDS -> DownloadLabel(null, R.string.storage_voice_commands)
     DownloadKind.ACTED_VOICE -> DownloadLabel(null, R.string.storage_acted_voice)
     DownloadKind.STORY_BRAIN -> DownloadLabel(null, R.string.storage_story_brain)
 }

@@ -13,7 +13,6 @@ import io.github.skm0078.audora.core.logging.AudoraLog
 import io.github.skm0078.audora.speech.acted.ActedVoiceDownloadWorker
 import io.github.skm0078.audora.speech.brain.StoryBrainDownloadWorker
 import io.github.skm0078.audora.speech.dictionary.DictionaryDownloadWorker
-import io.github.skm0078.audora.speech.kws.VoiceCommandDownloadWorker
 import io.github.skm0078.audora.speech.listen.ListenDownloadWorker
 import io.github.skm0078.audora.speech.ocr.OcrModelDownloadWorker
 import io.github.skm0078.audora.speech.punct.PunctuationDownloadWorker
@@ -30,7 +29,6 @@ enum class DownloadKind(internal val worker: Class<*>) {
     DICTIONARY(DictionaryDownloadWorker::class.java),
     TEXT_RECOGNITION(OcrModelDownloadWorker::class.java),
     PUNCTUATION(PunctuationDownloadWorker::class.java),
-    VOICE_COMMANDS(VoiceCommandDownloadWorker::class.java),
     ACTED_VOICE(ActedVoiceDownloadWorker::class.java),
     STORY_BRAIN(StoryBrainDownloadWorker::class.java),
 }

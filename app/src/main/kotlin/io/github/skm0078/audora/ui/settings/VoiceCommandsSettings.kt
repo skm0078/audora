@@ -16,10 +16,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,18 +23,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.skm0078.audora.R
 import io.github.skm0078.audora.core.config.VoiceCommandConfig
 import io.github.skm0078.audora.core.logging.AudoraLog
-import io.github.skm0078.audora.speech.kws.VoiceCommandModels
-import io.github.skm0078.audora.speech.ocr.OcrModelsState
+import io.github.skm0078.audora.speech.kws.CommandListener
 import io.github.skm0078.audora.ui.reader.ScreenPreference
 import io.github.skm0078.audora.ui.reader.VoiceCommandsMode
 import io.github.skm0078.audora.ui.reader.microphoneAllowed
@@ -49,27 +42,26 @@ import io.github.skm0078.audora.ui.theme.SwitchOption
 import kotlinx.coroutines.launch
 
 /**
- * @property model the voice-command model's download state; null while it loads.
+ * @property available this phone has an on-device speech recogniser; without one the switch is off and says so.
  * @property mode the saved choice. Turning listening on asks for the microphone first ([onChange] is told only once
  *   allowed).
  */
 data class VoiceCommandsSettings(
-    val model: OcrModelsState?,
+    val available: Boolean,
     val mode: VoiceCommandsMode,
-    val onModel: (OcrModelsAction) -> Unit,
     val onChange: (VoiceCommandsMode) -> Unit,
 )
 
 /**
- * The model row, the switch (only once the model is installed), and under it, while on, the screen-off opt-in: it
- * keeps a microphone notification up while the reader is open, and costs battery for as long as it listens. Rows of
- * Advanced's first group, each with the group's divider before it.
+ * The switch (usable only where the phone has an on-device recogniser), and under it, while on, the screen-off
+ * opt-in: it keeps a microphone notification up while the reader is open, and costs battery for as long as it
+ * listens. Rows of Advanced's first group, each with the group's divider before it. Nothing to download: the phone's
+ * own recogniser does the listening (ADR 2026-11-02-voice-commands-system-recogniser).
  */
 @Composable
 internal fun VoiceCommandsItems(settings: VoiceCommandsSettings) {
-    ModelPackRow(settings.model, settings.onModel, ModelPackTexts.VOICE_COMMANDS)
-    val ready = settings.model is OcrModelsState.Ready
-    // Shown as off without the model, whatever was saved: nothing listens then.
+    val ready = settings.available
+    // Shown as off where the phone cannot listen, whatever was saved: nothing listens then.
     val on = settings.mode != VoiceCommandsMode.OFF && ready
     OptionDivider()
     SwitchOption(
@@ -77,7 +69,7 @@ internal fun VoiceCommandsItems(settings: VoiceCommandsSettings) {
         on,
         { turnOn -> settings.onChange(if (turnOn) VoiceCommandsMode.WHILE_VISIBLE else VoiceCommandsMode.OFF) },
         subtitle = stringResource(
-            if (ready) R.string.row_line_voice_commands else R.string.commands_switch_needs_model,
+            if (ready) R.string.row_line_voice_commands else R.string.commands_not_available,
         ),
         help = stringResource(R.string.commands_switch_body),
         enabled = ready,
@@ -97,16 +89,16 @@ internal fun VoiceCommandsItems(settings: VoiceCommandsSettings) {
 }
 
 /**
- * Settings' state for voice commands: [models]' state, the saved mode as it can run now
+ * Settings' state for voice commands: whether the phone can listen, the saved mode as it can run now
  * ([rememberEffectiveVoiceCommands]), and turning listening on only once the microphone is allowed (asked then,
  * never before). Screen-off listening also needs notifications on Android 13+, since its notification is where Stop
  * lives. A refusal leaves the setting as it was and says why.
  */
 @Composable
-fun rememberVoiceCommandsSettings(models: VoiceCommandModels, preference: ScreenPreference): VoiceCommandsSettings {
+fun rememberVoiceCommandsSettings(preference: ScreenPreference): VoiceCommandsSettings {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val state by remember(models) { models.state() }.collectAsStateWithLifecycle(initialValue = null)
+    val available = remember(context) { CommandListener.isAvailable(context) }
     val saved by remember(preference) { preference.voiceCommands() }
         .collectAsStateWithLifecycle(initialValue = VoiceCommandsMode.OFF)
     val save: (VoiceCommandsMode) -> Unit = { mode -> scope.launch { preference.saveVoiceCommands(mode) } }
@@ -131,9 +123,8 @@ fun rememberVoiceCommandsSettings(models: VoiceCommandModels, preference: Screen
         }
     }
     return VoiceCommandsSettings(
-        model = state,
+        available = available,
         mode = rememberEffectiveVoiceCommands(saved, preference),
-        onModel = { action -> scope.runModelAction(action, models::download, models::cancel) { models.delete() } },
         onChange = { next ->
             when {
                 next != VoiceCommandsMode.OFF && !microphoneAllowed(context) -> {

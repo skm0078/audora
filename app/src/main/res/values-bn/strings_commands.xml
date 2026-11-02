@@ -2,12 +2,9 @@
 <!-- File: app/src/main/res/values-bn/strings_commands.xml -->
 <!-- Purpose: Bengali copy of values/strings_commands.xml: Strings for spoken commands in the reader (plan item 38). -->
 <resources>
-    <string name="commands_model_title">ভয়েস কমান্ড মডেল (ইংরেজি)</string>
-    <string name="commands_model_missing">রিডার খোলা থাকলে আপনি “ListenLock, pause”, “play”, “next”, “back”, “repeat”, “faster” বা “slower” বলতে পারেন। সবকিছু আপনার ফোনেই শোনা হয়; কিছুই রেকর্ড বা পাঠানো হয় না। %1$d MB লাগবে।</string>
-    <string name="commands_model_ready">ইনস্টল করা · %1$d MB</string>
     <string name="commands_switch_title">ভয়েস কমান্ড শুনুন</string>
-    <string name="commands_switch_body">রিডার স্ক্রিনে থাকলে ListenLock “ListenLock” আর তারপর একটি কমান্ড শোনে, আর Android মাইক্রোফোনের চিহ্ন দেখায়। শোনার সময় সামান্য ব্যাটারি খরচ হয়।</string>
-    <string name="commands_switch_needs_model">আগে ভয়েস কমান্ড মডেল ডাউনলোড করুন।</string>
+    <string name="commands_switch_body">রিডার স্ক্রিনে থাকলে ListenLock “ListenLock” আর তারপর একটি কমান্ড শোনে: “pause”, “play”, “next”, “back”, “repeat”, “faster” বা “slower”। শোনার কাজটি আপনার ফোনের নিজস্ব কথা চেনার ইঞ্জিন ফোনেই করে: কিছুই রেকর্ড বা পাঠানো হয় না, আর কিছু ডাউনলোড করতে হয় না। এই সময় Android মাইক্রোফোনের চিহ্ন দেখায়। শোনার সময় কিছু ব্যাটারি খরচ হয়।</string>
+    <string name="commands_not_available">পাওয়া যাচ্ছে না: এই ফোনে ফোনেই চলা কথা চেনার ইঞ্জিন নেই।</string>
     <string name="commands_screen_off_title">স্ক্রিন বন্ধ থাকলেও শুনতে থাকুন</string>
     <plurals name="commands_screen_off_body">
         <item quantity="one">রিডারে বই খোলা থাকলে, স্ক্রিন বন্ধ বা অন্য অ্যাপ খোলা থাকলেও ListenLock শুনতে থাকে, আর একটি নোটিফিকেশন দেখায় যেখান থেকে আপনি এটি থামাতে পারেন। ব্যাটারি বাঁচাতে, পড়া %1$d মিনিট থেমে থাকলে আর রিডার স্ক্রিনে না থাকলে এটি বন্ধ হয়ে যায়।</item>
@@ -15,4 +12,12 @@
     </plurals>
     <string name="commands_notifications_denied">স্ক্রিন বন্ধ থাকা অবস্থায় শোনার জন্য নোটিফিকেশন দরকার, যাতে আপনি সবসময় এটি দেখতে আর থামাতে পারেন। Android-এর অ্যাপ সেটিংসে এগুলো চালু করতে পারেন।</string>
     <string name="commands_permission_denied">ভয়েস কমান্ডের জন্য মাইক্রোফোন দরকার। Android-এর অ্যাপ সেটিংসে এটি চালু করতে পারেন।</string>
+    <!-- The reader's line saying whether voice commands really listen, or why not. -->
+    <string name="reader_commands_listening">শুনছে · বলুন \"ListenLock, pause\" বা \"ListenLock, play\"</string>
+    <string name="reader_commands_starting">ভয়েস কমান্ড তৈরি হচ্ছে…</string>
+    <string name="reader_commands_no_permission">ভয়েস কমান্ড শুনতে পারছে না: Android-এর অ্যাপ সেটিংসে মাইক্রোফোনের অনুমতি দিন।</string>
+    <string name="reader_commands_not_available">এই ফোনে ফোনেই চলা কথা চেনার ইঞ্জিন নেই, তাই ভয়েস কমান্ড শুনতে পারছে না।</string>
+    <string name="reader_commands_language_missing">আপনার ফোন তার ইংরেজি কথার প্যাক ডাউনলোড করছে। তৈরি হলেই ভয়েস কমান্ড চলবে: তখন বইটি আবার খুলুন।</string>
+    <string name="reader_commands_busy">অন্য একটি অ্যাপ মাইক্রোফোন ব্যবহার করছে, তাই ভয়েস কমান্ড শুনতে পারছে না।</string>
+    <string name="reader_commands_lost">মাইক্রোফোন বন্ধ হয়ে গেছে, তাই ভয়েস কমান্ড থেমে গেছে। আবার চালু করতে বইটি আবার খুলুন।</string>
 </resources>

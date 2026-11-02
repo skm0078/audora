@@ -25,6 +25,14 @@
     <!-- No camera needed: the camera app takes the photo, and phones without one never see Point and read fail. -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
+    <!-- Voice commands (ADR 2026-11-02-voice-commands-system-recogniser) use the phone's own speech recogniser:
+         Android 11+ hides it from apps that do not declare they look for one. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
+
     <application
         android:name=".AudoraApplication"
         android:allowBackup="false"
