@@ -1,0 +1,1 @@
+Reads PDFs, books and photos of pages aloud in English, Hindi and Bengali.

@@ -47,6 +47,14 @@ android {
         noCompress += "onnx"
     }
 
+    dependenciesInfo {
+        // AGP otherwise writes an encrypted list of the app's libraries into the APK signing block, readable only by
+        // Google. F-Droid and IzzyOnDroid reject it, and a sideloaded APK has no use for it. The Play bundle keeps it
+        // (Play Console's SDK warnings read it; ADR 2026-10-31-fdroid-ready-build).
+        includeInApk = false
+        includeInBundle = true
+    }
+
     bundle {
         // Settings can switch the app to Hindi or Bengali whatever the phone's language is (ADR-036). Play's
         // language splits would install only the phone's languages, so the switch would show English.

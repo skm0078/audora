@@ -37,7 +37,8 @@ When you add a document, add a line here in the same change. ADRs and progress e
 | --- | --- |
 | [PERFORMANCE.md](PERFORMANCE.md) | How speed is measured: CI's debug-vs-dev timing, Share logs render lines, System Tracing and adb on the phone |
 | [RELEASING.md](RELEASING.md) | Signing keys, cutting a release from `prod`, Obtainium, Google Play, Data safety, content rating and foreground-service answers |
-| [store/listing.md](store/listing.md) | Play store listing text (English, Hindi, Bengali), graphics and category |
+| [store/listing.md](store/listing.md) | Store listing: where the text lives (fastlane), graphics and category |
+| [store/fdroid.md](store/fdroid.md) | F-Droid and IzzyOnDroid: what each needs, what is done, the draft F-Droid recipe and the maintainer's steps |
 | [index.html](index.html) | Public home page, English, Hindi and Bengali (GitHub Pages, served from `prod` `/docs`); no trackers or external requests |
 | [assets/](assets/) | The home page's stylesheet, Hindi and Bengali text (`i18n.js`), web-sized logo and icons |
 | [privacy.html](privacy.html) | Public privacy policy (the URL Play links to) |

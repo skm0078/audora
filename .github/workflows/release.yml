@@ -132,6 +132,13 @@ jobs:
       - name: 16 KB alignment check
         run: python3 scripts/check_16kb_alignment.py app/build/outputs/apk/release/*.apk
 
+      - name: No Google dependency blob, and F-Droid has this version's changelog
+        # F-Droid and IzzyOnDroid reject an APK carrying AGP's encrypted dependency list, and F-Droid shows
+        # fastlane/metadata/android/en-US/changelogs/<versionCode>.txt as What's new (ADR 2026-10-31-fdroid-ready-build).
+        run: |
+          python3 scripts/check_apk_signing_block.py app/build/outputs/apk/release/*.apk
+          python3 scripts/check_store_metadata.py --require-changelog
+
       - name: Verify the signature
         id: verify
         run: |
