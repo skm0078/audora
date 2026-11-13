@@ -7,7 +7,8 @@ package io.github.skm0078.audora.ui.reader
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import androidx.activity.compose.BackHandler
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.material3.Icon
@@ -72,7 +73,7 @@ internal fun readerInsets(full: Boolean): WindowInsets =
  */
 @Composable
 private fun FullScreenEffects(screen: ReaderFullScreen, on: Boolean) {
-    BackHandler(enabled = on, onBack = screen::leave)
+    LeaveOnBack(screen, on)
     val view = LocalView.current
     DisposableEffect(on, view) {
         val window = view.context.findActivity()?.window
@@ -81,6 +82,25 @@ private fun FullScreenEffects(screen: ReaderFullScreen, on: Boolean) {
         bars.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         bars.hide(WindowInsetsCompat.Type.systemBars())
         onDispose { bars.show(WindowInsetsCompat.Type.systemBars()) }
+    }
+}
+
+/**
+ * Back leaves full screen, registered only while it is on. Not Compose's BackHandler: that ties its callback to the
+ * lifecycle, and removing a lifecycle observer must happen on the main thread, which UI tests do not guarantee when a
+ * screen leaves composition (the release journey crashed with "removeObserver must be called on the main thread"
+ * once the reader always held one). Added last, so it runs before the screen-level back.
+ */
+@Composable
+private fun LeaveOnBack(screen: ReaderFullScreen, on: Boolean) {
+    val dispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
+    DisposableEffect(dispatcher, on) {
+        if (!on || dispatcher == null) return@DisposableEffect onDispose {}
+        val callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() = screen.leave()
+        }
+        dispatcher.addCallback(callback)
+        onDispose { callback.remove() }
     }
 }
 
