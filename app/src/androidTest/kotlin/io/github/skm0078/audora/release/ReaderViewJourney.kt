@@ -5,6 +5,7 @@
 
 package io.github.skm0078.audora.release
 
+import android.util.Log
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -45,14 +46,18 @@ internal class ReaderViewJourney(
         try {
             openTheBook()
             val back = described(R.string.navigate_back)
+            // CI's emulator image has no system UI, so there is no status bar to hide; the bars are checked where
+            // there is one.
+            val hasStatusBar = statusBarShown()
+            Log.i(LOG_TAG, "Status bar on screen before full screen: $hasStatusBar")
             tap(described(R.string.reader_full_screen))
             awaitTrue("the reader's top bar gone") { rule.hides(back) }
             awaitTrue("Exit full screen in sight") { rule.shows(described(R.string.reader_full_screen_exit)) }
-            awaitTrue("the status bar hidden") { !statusBarShown() }
+            if (hasStatusBar) awaitTrue("the status bar hidden") { !statusBarShown() }
 
             JourneyDevice.pressBackKey()
             awaitTrue("the top bar back after Back") { rule.shows(back) }
-            awaitTrue("the status bar back after Back") { statusBarShown() }
+            if (hasStatusBar) awaitTrue("the status bar back after Back") { statusBarShown() }
             awaitTrue("still in the book") { rule.shows(described(R.string.reader_full_screen)) }
 
             tap(described(R.string.reader_more))
@@ -76,16 +81,17 @@ internal class ReaderViewJourney(
     }
 
     private fun statusBarShown(): Boolean {
-        val activity = JourneyDevice.resumedActivity() ?: return true
-        var shown = true
+        val activity = JourneyDevice.resumedActivity() ?: return false
+        var shown = false
         JourneyDevice.onMain {
             val insets = ViewCompat.getRootWindowInsets(activity.window.decorView)
-            shown = insets?.isVisible(WindowInsetsCompat.Type.statusBars()) ?: true
+            shown = insets?.isVisible(WindowInsetsCompat.Type.statusBars()) == true
         }
         return shown
     }
 
     private companion object {
         const val OPEN_TIMEOUT_MS = 60_000L
+        const val LOG_TAG = "ReleaseJourney"
     }
 }
