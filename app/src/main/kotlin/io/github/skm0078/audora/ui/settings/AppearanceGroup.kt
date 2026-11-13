@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/settings/AppearanceGroup.kt
-// Purpose: Settings → Reading and look: keep the screen on, light/dark/system, wallpaper colours or ListenLock's
-//          palette, true black, and the app's language (plan item 44).
+// Purpose: Settings → Reading and look: keep the screen on, the reader's text size, light/dark/system, wallpaper
+//          colours or ListenLock's palette, true black, and the app's language (plan item 44).
 
 package io.github.skm0078.audora.ui.settings
 
@@ -35,6 +35,8 @@ internal fun AppearanceGroup(
                 help = stringResource(R.string.settings_keep_screen_on_body),
             )
         }
+        OptionDivider()
+        SettingAnchor(SettingKey.TEXT_SIZE) { TextSizeItem() }
         OptionDivider()
         SettingAnchor(SettingKey.THEME) {
             ChoiceOption(

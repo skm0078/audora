@@ -13,7 +13,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -29,7 +28,6 @@ import io.github.skm0078.audora.ui.theme.OptionDivider
 import io.github.skm0078.audora.ui.theme.OptionGroup
 import io.github.skm0078.audora.ui.theme.OptionSheet
 import io.github.skm0078.audora.ui.theme.SwitchOption
-import io.github.skm0078.audora.ui.theme.namedSlider
 import kotlin.math.roundToInt
 
 /**
@@ -114,19 +112,13 @@ private fun TurnRows(look: ReadingLook, onLookChange: (ReadingLook) -> Unit) {
     )
 }
 
-/** Size as a slider with its percentage; font, spacing and running paragraphs as rows that show what is set. */
+/**
+ * Size as the shared slider with its buttons and percentage (the reader's Text size sheet and Settings show the same);
+ * font, spacing and running paragraphs as rows that show what is set.
+ */
 @Composable
 private fun TypeRows(look: ReadingLook, onLookChange: (ReadingLook) -> Unit) {
-    val percent = stringResource(R.string.text_look_size_value, (look.textScale * PERCENT).roundToInt())
-    val title = stringResource(R.string.text_look_size)
-    OptionBlock(title, value = percent) {
-        Slider(
-            value = look.textScale,
-            onValueChange = { onLookChange(look.copy(textScale = snapScale(it))) },
-            valueRange = ReadingLook.TEXT_SCALES,
-            modifier = Modifier.namedSlider(title, percent),
-        )
-    }
+    TextSizeBlock(look, onLookChange, title = R.string.text_look_size, sample = false)
     OptionDivider()
     ChoiceOption(
         stringResource(R.string.text_look_font),
@@ -268,5 +260,4 @@ private val LineSpacing.label: Int
         LineSpacing.RELAXED -> R.string.text_look_spacing_relaxed
     }
 
-private const val PERCENT = 100
 private const val SCALE_STEP = 0.05f
