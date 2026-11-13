@@ -24,6 +24,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -79,9 +80,14 @@ private fun FullScreenEffects(screen: ReaderFullScreen, on: Boolean) {
         val window = view.context.findActivity()?.window
         if (!on || window == null) return@DisposableEffect onDispose {}
         val bars = WindowCompat.getInsetsController(window, view)
-        bars.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        bars.hide(WindowInsetsCompat.Type.systemBars())
-        onDispose { bars.show(WindowInsetsCompat.Type.systemBars()) }
+        // On the main thread, in order: effects can run elsewhere in UI tests, and a window call made there did not
+        // bring the bars back (release journey step 68).
+        val main = ContextCompat.getMainExecutor(view.context)
+        main.execute {
+            bars.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            bars.hide(WindowInsetsCompat.Type.systemBars())
+        }
+        onDispose { main.execute { bars.show(WindowInsetsCompat.Type.systemBars()) } }
     }
 }
 
