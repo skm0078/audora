@@ -59,6 +59,12 @@ enum class SettingKey(
         R.string.settings_group_reading,
         R.string.found_terms_keep_screen_on,
     ),
+    TEXT_SIZE(
+        R.string.text_size_title,
+        SettingsPage.MAIN,
+        R.string.settings_group_reading,
+        R.string.found_terms_text_size,
+    ),
     THEME(
         R.string.settings_dark_mode_title,
         SettingsPage.MAIN,

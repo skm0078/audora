@@ -1,0 +1,3 @@
+en: Full screen: tap the button beside the page number to hide everything but the page. Back, or the same button, brings the controls back. Text size is now in the reader's ⋮ menu and in Settings, with Smaller and Larger buttons.
+hi: पूरी स्क्रीन: पेज नंबर के पास वाला बटन दबाएँ, पेज के सिवा सब छिप जाएगा। बैक या वही बटन दबाने पर कंट्रोल वापस आ जाते हैं। टेक्स्ट का आकार अब रीडर के ⋮ मेन्यू और सेटिंग्स में है, छोटा और बड़ा करने के बटन के साथ।
+bn: পুরো স্ক্রিন: পৃষ্ঠা নম্বরের পাশের বোতামে চাপ দিন, পৃষ্ঠা ছাড়া সব লুকিয়ে যাবে। ব্যাক বা ওই বোতামেই কন্ট্রোল ফিরে আসে। লেখার আকার এখন রিডারের ⋮ মেনু আর সেটিংসে, ছোট আর বড় করার বোতাম সহ।

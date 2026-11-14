@@ -128,6 +128,7 @@ class ReleaseJourneyTest {
             step("65 Bengali voices say they are beta", BetaLanguageJourney(rule, ::backToTabs)::bengaliVoicesSayBeta)
             step("66 a Bengali voice that reads letters is handed words as said", BengaliSpellingJourney::spelledAsSaid)
             step("67 a new book opens at chapter 1", FrontMatterJourney(rule, ::backToTabs)::opensAtChapterOne)
+            step("68 full screen and Text size", ReaderViewJourney(rule, BOOK, ::backToTabs)::fullScreenAndTextSize)
             // Last on purpose: run after step 19, the thousand books' background work left step 26 without its menu.
             step("40 search finds the last of 1,000 books", LoadJourney(rule, ::backToTabs)::lastOfManyIsFound)
         } finally {

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  File: app/src/main/res/values-hi/strings_reader_view.xml
+  Purpose: The reader's full screen button and the text size control (reader sheet and Settings).
+-->
+<resources>
+    <string name="reader_full_screen">पूरी स्क्रीन</string>
+    <string name="reader_full_screen_exit">पूरी स्क्रीन से बाहर निकलें</string>
+    <string name="text_size_title">टेक्स्ट का आकार</string>
+    <string name="text_size_smaller">छोटा टेक्स्ट</string>
+    <string name="text_size_larger">बड़ा टेक्स्ट</string>
+    <string name="text_size_short">टेक्स्ट व्यू में शब्द कितने बड़े हों</string>
+    <string name="text_size_body">रीडर के टेक्स्ट व्यू में शब्दों का आकार, आपके फ़ोन के अपने फ़ॉन्ट साइज़ के ऊपर। बना हुआ पेज दो उँगलियों से ज़ूम होता है।</string>
+    <string name="found_terms_text_size">फ़ॉन्ट साइज़ बड़ा छोटा अक्षर ज़ूम font size</string>
+</resources>

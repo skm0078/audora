@@ -1,6 +1,6 @@
 // File: app/src/main/kotlin/io/github/skm0078/audora/ui/reader/ReaderScreen.kt
 // Purpose: The reader: a page drawn or as sentences (tap to read, long-press for the sentence menu), controls;
-//          Focus view and bold word starts in the text view (plan item 77).
+//          Focus view and bold word starts in the text view (plan item 77); full screen and the Text size sheet.
 
 package io.github.skm0078.audora.ui.reader
 
@@ -78,32 +78,29 @@ fun ReaderScreen(
     speech: SpeechRequest = SpeechRequest.NONE,
     hintLinks: ReaderHintLinks = ReaderHintLinks.None,
 ) {
-    var pageTextOpen by rememberSaveable { mutableStateOf(false) }
+    val sheets = rememberLookSheets()
     val offer = rememberVoicePackOffer(state.bookId, voices, voicePacks)
     val tips = rememberGestureTips()
     val hint = readerHint(state, notes, hintLinks, actions, speech)
     val notice = readerNotice(state, offer, tips.pending, hint.pending)
     val tops = PageTopNotices(offer.takeIf { notice == ReaderNotice.VOICE_PACK }, voices, skipCard(state, notice))
-    if (pageTextOpen) {
-        PageTextSheet(look, onLookChange, textView = state.view == ReaderView.TEXT) { pageTextOpen = false }
-    }
-    val panel = showsSidePanel(windowWidth) && state.document is DocumentState.Open
+    sheets.Shown(look, onLookChange, textView = state.view == ReaderView.TEXT)
+    val open = state.document is DocumentState.Open
+    val fullScreen = rememberReaderFullScreen(bookOpen = open)
+    val full = fullScreen.on && open
+    val panel = showsSidePanel(windowWidth) && open && !full
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        contentWindowInsets = readerInsets(full),
         topBar = {
-            ReaderTopBar(state, actions, notes, notesActions, panelShown = panel) {
-                MoreMenu(
-                    onOpenPageText = { pageTextOpen = true },
-                    onOpenUpNext = onOpenUpNext,
-                    onSearch = onSearch,
-                    onSaveAudiobook = actions::onSaveAudiobook,
-                    onReadAloudToMe = onTutor,
-                    onShowTips = tips::show,
-                )
+            if (!full) {
+                ReaderTopBar(state, actions, notes, notesActions, panelShown = panel) {
+                    ReaderMoreMenu(state.view, actions, sheets, onOpenUpNext, onSearch, onTutor, tips::show)
+                }
             }
         },
         bottomBar = {
-            if (state.document is DocumentState.Open) {
+            if (open && !full) {
                 val onTipsSeen = tips::dismiss.takeIf { notice == ReaderNotice.GESTURE_TIPS }
                 ReaderControls(state, config, actions, Modifier, voices, onTipsSeen, hint.speech, hint.cardFor(notice))
             }
@@ -132,7 +129,10 @@ fun ReaderScreen(
                 is DocumentState.Open -> {
                     PlaceHighlights(state, notesActions)
                     BesidePanel(panel, { ReaderSidePanel(state, actions, notes, notesActions, voiceNotes, people) }) {
-                        OpenBook(state, document, config, actions, ocrModels, look, spokenWord, thumbnails, tops, notes)
+                        OpenBook(
+                            state, document, config, actions, ocrModels, look, spokenWord, thumbnails, tops, notes,
+                            fullScreen,
+                        )
                     }
                     NotesOverlays(notes, notesActions, actions, voiceNotes, lookUp)
                 }
@@ -176,6 +176,7 @@ private fun OpenBook(
     thumbnails: PageThumbnails?,
     tops: PageTopNotices,
     notes: NotesState,
+    fullScreen: ReaderFullScreen,
 ) {
     // The start of a passage being highlighted shows as highlighted while its end is picked.
     val isHighlighted: (ReadingUnit) -> Boolean = notes::showsHighlight
@@ -189,9 +190,12 @@ private fun OpenBook(
     val own = state.playback.bookVoices.takeIf { state.playback.ownSettings }.orEmpty()
     val betaScan = rememberBetaScanOffer(state.bookId, betaLang, tops.voices, own, actions::onBookVoice)
     Column(Modifier.fillMaxSize()) {
-        PageBar(state.page, pageCount, actions, announce = !state.isReading, onPick = { picking = true })
-        PageScrubber(state.page, pageCount, thumbnails, actions::onGoToPage)
-        state.timeLeft?.let { TimeLeftLine(it, state.playback.speed) }
+        PageBar(state, pageCount, actions, fullScreen, onPick = { picking = true })
+        // Full screen keeps the page row only: the scrubber and time left go with the rest of the controls.
+        if (!fullScreen.on) {
+            PageScrubber(state.page, pageCount, thumbnails, actions::onGoToPage)
+            state.timeLeft?.let { TimeLeftLine(it, state.playback.speed) }
+        }
         state.voiceCommands?.let { VoiceCommandsLine(it) }
         ReadingJumps(state, actions, Modifier.align(Alignment.CenterHorizontally))
         PlayerStatus(state.playback)
@@ -255,11 +259,20 @@ private fun ReadingJumps(state: ReaderState, actions: ReaderActions, modifier: M
 }
 
 /**
- * [announce]: TalkBack says the new page when the listener turns it (not while reading, where it would talk over the
- * voice at every page turn).
+ * Page turns either side of the page number and the full screen button. TalkBack says the new page when the listener
+ * turns it (not while reading, where it would talk over the voice at every page turn). In full screen it is the only
+ * row left, so it also holds play and pause.
  */
 @Composable
-private fun PageBar(page: Int, pageCount: Int, actions: ReaderActions, announce: Boolean, onPick: () -> Unit) {
+private fun PageBar(
+    state: ReaderState,
+    pageCount: Int,
+    actions: ReaderActions,
+    fullScreen: ReaderFullScreen,
+    onPick: () -> Unit,
+) {
+    val page = state.page
+    val announce = !state.isReading
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceS),
         verticalAlignment = Alignment.CenterVertically,
@@ -268,10 +281,18 @@ private fun PageBar(page: Int, pageCount: Int, actions: ReaderActions, announce:
         IconButton(onClick = actions::onPreviousPage, enabled = page > 0) {
             Icon(painterResource(R.drawable.ic_chevron_left), stringResource(R.string.reader_previous_page))
         }
-        TextButton(
-            onClick = onPick,
-            modifier = Modifier.semantics { if (announce) liveRegion = LiveRegionMode.Polite },
-        ) { Text(stringResource(R.string.reader_page_of, page + 1, pageCount)) }
+        // Weighted, and the page number within it, so at large font sizes the number wraps instead of pushing the
+        // buttons beside it, or the next-page arrow, off screen.
+        Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.CenterVertically) {
+            TextButton(
+                onClick = onPick,
+                modifier = Modifier.weight(1f, fill = false).semantics {
+                    if (announce) liveRegion = LiveRegionMode.Polite
+                },
+            ) { Text(stringResource(R.string.reader_page_of, page + 1, pageCount)) }
+            if (fullScreen.on) FullScreenPlayPause(state, actions)
+            FullScreenButton(fullScreen.on, fullScreen::toggle)
+        }
         IconButton(onClick = actions::onNextPage, enabled = page < pageCount - 1) {
             Icon(painterResource(R.drawable.ic_chevron_right), stringResource(R.string.reader_next_page))
         }

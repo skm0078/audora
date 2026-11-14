@@ -114,6 +114,17 @@ class FoundIndexTest {
     }
 
     @Test
+    fun `font size finds Text size in all three languages`() {
+        val hindi = XmlTexts("values-hi", "values")
+        val bengali = XmlTexts("values-bn", "values")
+        val textSize = FoundTarget.Setting(SettingKey.TEXT_SIZE)
+        assertEquals(textSize, find("font size", english, library(gora)).first().target)
+        assertEquals(textSize, find("bigger text", english, library(gora)).first().target)
+        assertEquals(textSize, find("फ़ॉन्ट", hindi, library(gora)).first().target)
+        assertEquals(textSize, find("ফন্ট", bengali, library(gora)).first().target)
+    }
+
+    @Test
     fun `a book whose file is lost offers nothing`() {
         val lost = gora.copy(availability = BookAvailability.MISSING)
         assertTrue(find("audiobook", english, library(latest = lost)).none { it.target is FoundTarget.ForBook })
