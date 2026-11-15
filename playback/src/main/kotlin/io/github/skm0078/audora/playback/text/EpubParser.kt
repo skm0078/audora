@@ -1,5 +1,5 @@
 // File: playback/src/main/kotlin/io/github/skm0078/audora/playback/text/EpubParser.kt
-// Purpose: Reads an EPUB 2 or 3 book's text in reading order, with chapter titles from its contents (plan item 43).
+// Purpose: Reads an EPUB 2 or 3 book's text in reading order, with its table of contents (plan item 43).
 
 package io.github.skm0078.audora.playback.text
 
@@ -13,9 +13,12 @@ import java.nio.charset.UnsupportedCharsetException
 
 /**
  * Container (`META-INF/container.xml`) → package document (metadata, manifest, spine) → each spine document in order
- * ([XhtmlBlocks]). Chapter titles come from the EPUB 3 navigation document, else the EPUB 2 NCX, else the chapter's
- * first heading. Spine items marked `linear="no"` (pop-up notes, answer keys) are left out. DRM-protected books
- * (an `encryption.xml` over the content) cannot be read and are refused.
+ * ([XhtmlBlocks]); each document is one chapter. The table of contents is the EPUB 3 navigation document or the
+ * EPUB 2 NCX, whichever lists more ([EpubContents.fuller]), nesting and `#id` links kept, so a book that keeps several
+ * chapters in one file lists them all. A document no contents row points at is listed by its first heading. Spine
+ * items marked `linear="no"` (pop-up notes, answer keys) are left out. DRM-protected books (an `encryption.xml`
+ * over the content) cannot be read and are refused. A book whose contents name next to nothing (a scanned book's
+ * "Notice") gets its chapters from its text instead ([BookContents]).
  *
  * [entries] maps each ZIP entry's path to its bytes; only text entries need to be there ([isTextEntry]).
  */
@@ -33,9 +36,20 @@ object EpubParser {
 
     fun parse(entries: Map<String, ByteArray>): Outcome<TextDocument, TextBookError> =
         packageOf(entries).flatMap { pkg ->
-            val titles = tableOfContents(pkg, entries)
-            val chapters = pkg.spine.mapNotNull { item -> chapterOf(item, entries, titles) }
-            val document = TextDocument(pkg.title, pkg.language, chapters)
+            // Spine position → (chapter index, document) for each spine document with text; pictures, missing files
+            // and empty documents are no chapter.
+            val placed = pkg.spine.withIndex().mapNotNull { (position, item) ->
+                entries[item.path]?.takeIf { item.mediaType in CONTENT_TYPES }
+                    ?.let { XhtmlBlocks.read(MarkupScanner.scan(decode(it))) }
+                    ?.takeIf { it.blocks.isNotEmpty() }
+                    ?.let { position to it }
+            }.withIndex().associate { (chapter, read) -> read.first to (chapter to read.second) }
+            val rows = EpubContents.place(tableOfContents(pkg, entries), pkg.spine.map { it.path }, placed)
+            val contents = EpubContents.withHeadings(rows, placed.values)
+            val titles = HashMap<Int, String>()
+            contents.filter { it.block == 0 && it.char == 0 }.forEach { titles.putIfAbsent(it.chapter, it.title) }
+            val chapters = placed.values.map { (chapter, document) -> TextChapter(titles[chapter], document.blocks) }
+            val document = TextDocument(pkg.title, pkg.language, chapters, contents)
             if (document.isEmpty) Outcome.Failure(TextBookError.NoText) else Outcome.Success(document)
         }
 
@@ -55,33 +69,14 @@ object EpubParser {
         }
     }
 
-    private fun chapterOf(
-        item: PackageDocument.SpineItem,
-        entries: Map<String, ByteArray>,
-        titles: Map<String, String>,
-    ): TextChapter? {
-        val bytes = entries[item.path]?.takeIf { item.mediaType in CONTENT_TYPES } ?: return null
-        val blocks = XhtmlBlocks.blocks(MarkupScanner.scan(decode(bytes)))
-        return if (blocks.isEmpty()) {
-            null
-        } else {
-            TextChapter(
-                titles[item.path] ?: XhtmlBlocks.firstHeading(blocks),
-                blocks,
-            )
-        }
-    }
-
-    /** Spine path → chapter title, from the navigation document or the NCX (fragments dropped, first wins). */
-    private fun tableOfContents(pkg: PackageDocument, entries: Map<String, ByteArray>): Map<String, String> {
+    private fun tableOfContents(pkg: PackageDocument, entries: Map<String, ByteArray>): List<TocEntry> {
         val nav = pkg.navPath?.let { path ->
-            entries[path]?.let { NavTitles.fromNav(MarkupScanner.scan(decode(it)), baseOf(path)) }
+            entries[path]?.let { EpubContents.fromNav(MarkupScanner.scan(decode(it)), baseOf(path)) }
         }
-        if (!nav.isNullOrEmpty()) return nav
-        return pkg.ncxPath?.let { path ->
-            entries[path]?.let { NavTitles.fromNcx(MarkupScanner.scan(decode(it)), baseOf(path)) }
+        val ncx = pkg.ncxPath?.let { path ->
+            entries[path]?.let { EpubContents.fromNcx(MarkupScanner.scan(decode(it)), baseOf(path)) }
         }
-            .orEmpty()
+        return EpubContents.fuller(nav.orEmpty(), ncx.orEmpty())
     }
 
     /** Fonts are often obfuscated (listed in encryption.xml) in books without DRM; only encrypted content counts. */
@@ -116,9 +111,20 @@ object EpubParser {
         if (it.isEmpty()) "" else "$it/"
     }
 
+    /**
+     * A stray "%" (a link to "100%.xhtml" written without escaping it) is kept as written instead of failing the
+     * whole book: before, it threw out of the parser and the book would not open.
+     */
+    internal fun percentDecoded(text: String): String = try {
+        URLDecoder.decode(text.replace("+", "%2B"), Charsets.UTF_8.name())
+    } catch (e: IllegalArgumentException) {
+        AudoraLog.d(TAG, "EPUB link with a stray %, kept as written: ${e.javaClass.simpleName}")
+        text
+    }
+
     /** [href] relative to the folder [base] (which ends in "/" or is empty), percent-decoded, without "./" and "..". */
     internal fun resolve(base: String, href: String): String {
-        val decoded = URLDecoder.decode(href.substringBefore('#').replace("+", "%2B"), Charsets.UTF_8.name())
+        val decoded = percentDecoded(href.substringBefore('#'))
         val parts = ArrayList<String>()
         for (part in (base + decoded).split('/')) {
             when (part) {
@@ -210,86 +216,5 @@ internal class PackageDocument(
             coverPath = (manifest.values.firstOrNull { "cover-image" in it.properties } ?: coverId?.let(manifest::get))
                 ?.takeIf { it.mediaType.startsWith(IMAGE_TYPE) }?.path,
         )
-    }
-}
-
-/** Chapter titles from an EPUB 3 navigation document's `toc` list or an EPUB 2 NCX. */
-internal object NavTitles {
-    private val WHITESPACE = Regex("\\s+")
-
-    fun fromNav(markup: List<Markup>, base: String): Map<String, String> {
-        val reader = NavReader(base)
-        markup.forEach(reader::accept)
-        return reader.titles
-    }
-
-    fun fromNcx(markup: List<Markup>, base: String): Map<String, String> {
-        val reader = NcxReader(base)
-        markup.forEach(reader::accept)
-        return reader.titles
-    }
-
-    private fun add(titles: MutableMap<String, String>, path: String, label: CharSequence) {
-        val text = label.toString().replace(WHITESPACE, " ").trim()
-        if (text.isNotEmpty() && path !in titles) titles[path] = text
-    }
-
-    /** Links inside the `nav` whose epub:type is `toc` (nested navs, landmarks and page lists are ignored). */
-    private class NavReader(private val base: String) {
-        val titles = LinkedHashMap<String, String>()
-        private var navDepth = 0
-        private var tocDepth = -1
-        private var href: String? = null
-        private val label = StringBuilder()
-
-        fun accept(token: Markup) {
-            when (token) {
-                is Markup.Start -> start(token)
-                is Markup.Text -> if (href != null) label.append(token.text)
-                is Markup.End -> end(token)
-            }
-        }
-
-        private fun start(token: Markup.Start) {
-            if (token.localName == "nav") {
-                navDepth++
-                if (tocDepth < 0 && "toc" in token.attributes["epub:type"].orEmpty()) tocDepth = navDepth
-            } else if (token.localName == "a" && tocDepth > 0) {
-                href = token.attributes["href"]
-                label.clear()
-            }
-        }
-
-        private fun end(token: Markup.End) {
-            val link = href
-            if (token.localName == "a" && link != null) {
-                add(titles, EpubParser.resolve(base, link), label)
-                href = null
-            } else if (token.localName == "nav") {
-                if (navDepth == tocDepth) tocDepth = -1
-                navDepth--
-            }
-        }
-    }
-
-    /** Each navPoint's label, for the document its content element points at. */
-    private class NcxReader(private val base: String) {
-        val titles = LinkedHashMap<String, String>()
-        private val label = StringBuilder()
-        private var inText = false
-
-        fun accept(token: Markup) {
-            when (token) {
-                is Markup.Start -> when (token.localName) {
-                    "navpoint" -> label.clear()
-                    "text" -> inText = true
-                    "content" -> token.attributes["src"]?.let { add(titles, EpubParser.resolve(base, it), label) }
-                }
-
-                is Markup.Text -> if (inText) label.append(token.text)
-
-                is Markup.End -> if (token.localName == "text") inText = false
-            }
-        }
     }
 }

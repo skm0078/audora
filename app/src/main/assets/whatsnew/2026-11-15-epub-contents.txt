@@ -1,0 +1,3 @@
+en: EPUB chapters: scanned books (like those from the Internet Archive) now list their chapters, and books that keep many chapters in one file, or nest parts and sections, show every chapter in the chapter list.
+hi: EPUB के अध्याय: स्कैन की हुई किताबें (जैसे इंटरनेट आर्काइव वाली) अब अपने अध्याय दिखाती हैं, और जिन किताबों में कई अध्याय एक ही फ़ाइल में हैं या भाग और खंड एक-दूसरे के अंदर हैं, उनके सारे अध्याय अध्यायों की सूची में दिखते हैं।
+bn: EPUB-এর অধ্যায়: স্ক্যান করা বই (যেমন ইন্টারনেট আর্কাইভের) এখন তাদের অধ্যায় দেখায়, আর যে বইয়ে অনেক অধ্যায় একটাই ফাইলে বা ভাগ ও অংশ একটার ভেতরে আরেকটা, তাদের সব অধ্যায় অধ্যায়ের তালিকায় দেখা যায়।
