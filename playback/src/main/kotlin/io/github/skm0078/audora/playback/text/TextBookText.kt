@@ -107,7 +107,11 @@ class TextBookText(
     private val pages: List<TextPage> = TextPages.of(document, config)
     private val bookLang: Lang =
         Lang.entries.firstOrNull { document.language?.startsWith(it.bcp47Tag) == true } ?: Lang.EN
-    private val firstPages: Map<Int, Int> = pages.indices.reversed().associateBy { pages[it].chapter }
+
+    /** Chapter index → the first page of that chapter. */
+    private val firstPages: Map<Int, Int> = HashMap<Int, Int>().apply {
+        pages.forEachIndexed { index, page -> putIfAbsent(page.chapter, index) }
+    }
 
     /** The table of contents ([BookContents]) with the page each row starts on, for the reader's chapter list. */
     val contents: List<ContentsRow> = BookContents.of(document, config).map {
@@ -194,10 +198,6 @@ class TextBookText(
         return start until end
     }
 
-    private companion object {
-        const val MIN_CHAPTERS = 2
-    }
-
     /** A "sentence" longer than maxUnitChars is cut at the last space before the limit, as the PDF pipeline does. */
     private fun cap(text: String, range: IntRange): List<IntRange> {
         if (range.isEmpty()) return emptyList()
@@ -213,6 +213,10 @@ class TextBookText(
         }
         pieces += start until end
         return pieces.filterNot { it.isEmpty() }
+    }
+
+    private companion object {
+        const val MIN_CHAPTERS = 2
     }
 }
 
