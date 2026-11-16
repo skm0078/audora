@@ -107,9 +107,7 @@ private class TextReaderDocument(private val text: TextBookText) : ReaderDocumen
 
     override suspend fun units(page: Int): Outcome<List<ReadingUnit>, PdfPageError> = text.units(page)
 
-    override suspend fun outline(): List<OutlineEntry> = text.contents.map { (title, page) ->
-        OutlineEntry(title, page)
-    }
+    override suspend fun outline(): List<OutlineEntry> = text.outline
 
     override suspend fun render(page: Int, widthPx: Int, maxPixels: Int): Outcome<PageImage, PdfPageError> =
         Outcome.Failure(PdfPageError.ExtractionFailed(page, "a text book has no page images"))

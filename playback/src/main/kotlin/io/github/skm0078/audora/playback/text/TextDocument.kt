@@ -17,8 +17,34 @@ data class TextBlock(val kind: BlockKind, val text: String)
 
 data class TextChapter(val title: String?, val blocks: List<TextBlock>)
 
-/** [title] and [language] from the book's own metadata, when it has any (an EPUB); the library keeps its own title. */
-data class TextDocument(val title: String?, val language: String?, val chapters: List<TextChapter>) {
+/**
+ * One row of a book's table of contents and the place it points at: [chapter] (an index into
+ * [TextDocument.chapters]), the [block] in it, and [char], a character offset into that block's text. [depth] is 0
+ * for a top-level row, 1 for one nested under it, and so on. A row can point into the middle of a chapter: an EPUB
+ * that keeps several chapters in one file, or a scanned book whose chapters start mid-page.
+ */
+data class ContentsEntry(
+    val title: String,
+    val chapter: Int,
+    val block: Int = 0,
+    val char: Int = 0,
+    val depth: Int = 0,
+) {
+    /** Leaves the title out, so logging a row never writes the book's text. */
+    override fun toString() = "ContentsEntry(chapter=$chapter, block=$block, char=$char, depth=$depth)"
+}
+
+/**
+ * [title] and [language] from the book's own metadata, when it has any (an EPUB); the library keeps its own title.
+ * [contents] is the book's own table of contents when its format has one (an EPUB); null means "the titled
+ * chapters", which is what every other format's parser gives ([BookContents]).
+ */
+data class TextDocument(
+    val title: String?,
+    val language: String?,
+    val chapters: List<TextChapter>,
+    val contents: List<ContentsEntry>? = null,
+) {
     val isEmpty: Boolean get() = chapters.all { it.blocks.isEmpty() }
 }
 

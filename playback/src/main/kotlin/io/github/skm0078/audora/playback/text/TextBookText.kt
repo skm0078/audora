@@ -8,14 +8,20 @@ import io.github.skm0078.audora.core.config.TextBookConfig
 import io.github.skm0078.audora.core.model.Lang
 import io.github.skm0078.audora.core.model.ReadingUnit
 import io.github.skm0078.audora.core.result.Outcome
+import io.github.skm0078.audora.pdf.document.OutlineEntry
 import io.github.skm0078.audora.pdf.document.PdfPageError
+import io.github.skm0078.audora.pdf.outline.ChapterStarts
 import io.github.skm0078.audora.pdf.units.BreakIteratorSentenceSplitter
 import io.github.skm0078.audora.pdf.units.ScriptDetector
 import io.github.skm0078.audora.pdf.units.SentenceSplitter
 import io.github.skm0078.audora.playback.book.BookText
 
-/** One page of a text book: its blocks, and the chapter it belongs to. */
-class TextPage(val chapter: Int, val blocks: List<TextBlock>) {
+/**
+ * One page of a text book: its blocks, and the chapter it belongs to. [firstBlock] and [firstChar] say where in the
+ * chapter the page starts: the index of its first block's source block, and the character in that block's text (a
+ * block longer than a page is cut into pieces).
+ */
+class TextPage(val chapter: Int, val blocks: List<TextBlock>, val firstBlock: Int = 0, val firstChar: Int = 0) {
     /** What a page's offsets index: its blocks, separated by a blank line. */
     val text: String by lazy { blocks.joinToString(BLOCK_SEPARATOR) { it.text } }
 
@@ -37,18 +43,37 @@ object TextPages {
         document.chapters.forEachIndexed { chapter, content ->
             var page = ArrayList<TextBlock>()
             var chars = 0
-            for (block in content.blocks.flatMap { split(it, config.pageChars) }) {
+            var first: Piece? = null
+            for (piece in pieces(content.blocks, config.pageChars)) {
+                val block = piece.block
                 if (page.isNotEmpty() && chars + block.text.length > config.pageChars) {
-                    pages += TextPage(chapter, page)
+                    pages += pageOf(chapter, page, first)
                     page = ArrayList()
                     chars = 0
                 }
+                if (page.isEmpty()) first = piece
                 page += block
                 chars += block.text.length
             }
-            if (page.isNotEmpty()) pages += TextPage(chapter, page)
+            if (page.isNotEmpty()) pages += pageOf(chapter, page, first)
         }
         return pages
+    }
+
+    /** A block, or a page-sized piece of one: [source] is the block's index in its chapter, [char] where it starts. */
+    private class Piece(val source: Int, val char: Int, val block: TextBlock)
+
+    private fun pageOf(chapter: Int, blocks: List<TextBlock>, first: Piece?) =
+        TextPage(chapter, blocks, first?.source ?: 0, first?.char ?: 0)
+
+    /** Each block cut to page size, with the source block's index and where in its text the piece starts. */
+    private fun pieces(blocks: List<TextBlock>, pageChars: Int): List<Piece> = blocks.flatMapIndexed { source, block ->
+        var from = 0
+        split(block, pageChars).map { piece ->
+            val at = block.text.indexOf(piece.text, from).coerceAtLeast(from)
+            from = at + piece.text.length
+            Piece(source, at, piece)
+        }
     }
 
     private fun split(block: TextBlock, pageChars: Int): List<TextBlock> {
@@ -82,16 +107,27 @@ class TextBookText(
     private val pages: List<TextPage> = TextPages.of(document, config)
     private val bookLang: Lang =
         Lang.entries.firstOrNull { document.language?.startsWith(it.bcp47Tag) == true } ?: Lang.EN
-    private val chapterStarts: List<Int> = if (document.chapters.size < 2) {
-        emptyList()
-    } else {
-        pages.indices.filter { it == 0 || pages[it].chapter != pages[it - 1].chapter }
+
+    /** Chapter index → the first page of that chapter. */
+    private val firstPages: Map<Int, Int> = HashMap<Int, Int>().apply {
+        pages.forEachIndexed { index, page -> putIfAbsent(page.chapter, index) }
     }
 
-    /** The chapters with a title and the page each starts on, for the reader's chapter list. */
-    val contents: List<Pair<String, Int>> = chapterStarts.mapNotNull { page ->
-        document.chapters[pages[page].chapter].title?.let { it to page }
+    /** The table of contents ([BookContents]) with the page each row starts on, for the reader's chapter list. */
+    val contents: List<ContentsRow> = BookContents.of(document, config).map {
+        ContentsRow(it.title, pageOf(it), it.depth)
     }
+
+    /** [contents] as a tree, as a PDF's outline is, so the reader lists and indents both the same way. */
+    val outline: List<OutlineEntry> = ContentsRow.tree(contents)
+
+    /**
+     * Where the chapters of the contents start ([ChapterStarts]: the shallowest level with two or more), for the
+     * end-of-chapter sleep timer and audiobook chapters. A book with fewer has each of its files' starts instead.
+     */
+    private val chapterStarts: List<Int> = ChapterStarts.from(outline, pages.size, Int.MAX_VALUE)
+        .takeIf { it.size >= MIN_CHAPTERS }
+        ?: chapterFileStarts(document)
 
     override val pageCount: Int get() = pages.size
 
@@ -107,6 +143,22 @@ class TextBookText(
     }
 
     override fun chapterStarts(): List<Int> = chapterStarts
+
+    /** The last page of the row's chapter that starts at or before the row's place. */
+    private fun pageOf(row: ContentsEntry): Int {
+        var page = firstPages[row.chapter] ?: return 0
+        while (page + 1 < pages.size && pages[page + 1].chapter == row.chapter && startsBy(pages[page + 1], row)) page++
+        return page
+    }
+
+    private fun startsBy(page: TextPage, row: ContentsEntry) =
+        page.firstBlock < row.block || (page.firstBlock == row.block && page.firstChar <= row.char)
+
+    private fun chapterFileStarts(document: TextDocument): List<Int> = if (document.chapters.size < MIN_CHAPTERS) {
+        emptyList()
+    } else {
+        pages.indices.filter { it == 0 || pages[it].chapter != pages[it - 1].chapter }
+    }
 
     override fun close() = Unit
 
@@ -161,5 +213,33 @@ class TextBookText(
         }
         pieces += start until end
         return pieces.filterNot { it.isEmpty() }
+    }
+
+    private companion object {
+        const val MIN_CHAPTERS = 2
+    }
+}
+
+/** One row of a text book's contents: its [title], the [page] it starts on, and its [depth] (0 at the top). */
+data class ContentsRow(val title: String, val page: Int, val depth: Int = 0) {
+    /** Leaves the title out, so logging a row never writes the book's text. */
+    override fun toString() = "ContentsRow(page=$page, depth=$depth)"
+
+    companion object {
+        /** Rows in contents order to a tree: a row deeper than the one before it is nested under it. */
+        fun tree(rows: List<ContentsRow>): List<OutlineEntry> {
+            class Node(val row: ContentsRow, val children: MutableList<Node> = ArrayList())
+
+            val roots = ArrayList<Node>()
+            val open = ArrayList<Node>()
+            for (row in rows) {
+                while (open.isNotEmpty() && open.last().row.depth >= row.depth) open.removeAt(open.lastIndex)
+                val node = Node(row)
+                (open.lastOrNull()?.children ?: roots) += node
+                open += node
+            }
+            fun Node.entry(): OutlineEntry = OutlineEntry(row.title, row.page, children.map { it.entry() })
+            return roots.map { it.entry() }
+        }
     }
 }
